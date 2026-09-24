@@ -514,6 +514,7 @@ describe("spawn_agent", () => {
       parent_agent_id: null,
       created_at: 1_700_000_000_000,
       model: null,
+      runner_id: "claude-code",
     });
 
     const result = await client.callTool({
@@ -554,6 +555,7 @@ describe("spawn_agent", () => {
       parent_agent_id: null,
       created_at: 1_700_000_000_000,
       model: null,
+      runner_id: "claude-code",
     });
 
     await client.callTool({
@@ -610,6 +612,7 @@ describe("list_agents", () => {
         parent_agent_id: null,
         created_at: 1_700_000_000_000,
         model: null,
+        runner_id: "claude-code",
       },
     ]);
 
@@ -639,6 +642,7 @@ describe("list_agents", () => {
             parent_agent_id: null,
             created_at: 1_700_000_000_000,
             model: null,
+            runner_id: "claude-code",
           },
         ];
       }
@@ -651,6 +655,7 @@ describe("list_agents", () => {
             parent_agent_id: null,
             created_at: 1_700_000_000_000,
             model: null,
+            runner_id: "claude-code",
           },
         ];
       }
@@ -921,6 +926,7 @@ describe("spawn_agents_batch", () => {
       parent_agent_id: null,
       created_at: 1_700_000_000_000,
       model: null,
+      runner_id: "claude-code",
     }));
   });
 

@@ -20,6 +20,7 @@ import {
   createCheckpoint,
   type ImageAttachment,
   sendAgentMessage,
+  setAgentRunner,
   startAgent as apiStartAgent,
 } from "./ipc";
 
@@ -28,6 +29,8 @@ interface StartAgentOptions {
   model?: string;
   permissionMode?: string;
   resumeSessionId?: string;
+  /** Runner to spawn under. Defaults to the session's. */
+  runnerId?: string;
 }
 
 /**
@@ -40,7 +43,7 @@ export async function startAgentInSession(
   sessionId: string,
   options: StartAgentOptions = {},
 ): Promise<AgentStatus> {
-  const { focus = true, model, resumeSessionId } = options;
+  const { focus = true, model, resumeSessionId, runnerId } = options;
   // Resolve the permission mode for every spawn — the app-level default
   // applies unless the caller passed an explicit one, so an agent never
   // silently falls back to the CLI's prompt-for-everything default.
@@ -54,6 +57,11 @@ export async function startAgentInSession(
     const slot = getPrewarmSlot(sessionId);
     if (slot && slot.status === "ready" && slot.agentId) {
       try {
+        // The warm subprocess was spawned under the session's runner; a
+        // no-op when the dialog already re-bound it on pick.
+        if (runnerId) {
+          await setAgentRunner(slot.agentId, runnerId);
+        }
         const claimed = await claimPrewarm(slot.agentId, sessionId, {
           focus,
           model,
@@ -101,6 +109,7 @@ export async function startAgentInSession(
       resumeSessionId,
       undefined,
       agentId,
+      runnerId,
     );
     // Reconcile backend-authoritative fields onto the optimistic entry.
     // The id is identical, so no replace — just patch any drift.
@@ -109,6 +118,7 @@ export async function startAgentInSession(
       parent_agent_id: info.parent_agent_id,
       created_at: info.created_at,
       model: info.model,
+      runner_id: info.runner_id,
     });
     // Capabilities are returned inline on start_agent because the backend's
     // `agent:capabilities` event fires before renderer listeners attach and
@@ -166,6 +176,7 @@ async function claimPrewarm(
       parent_agent_id: info.parent_agent_id,
       created_at: info.created_at,
       model: info.model,
+      runner_id: info.runner_id,
     });
     if (info.capabilities) {
       setCapabilities(agentId, info.capabilities);

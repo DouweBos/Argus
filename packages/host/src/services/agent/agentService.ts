@@ -228,6 +228,7 @@ export async function startAgent(
   parentAgentId?: string,
   reuseAgentId?: string,
   presetAgentId?: string,
+  runnerIdOverride?: string,
 ): Promise<AgentInfo> {
   const argusSession = appState.sessions.get(sessionId);
   if (!argusSession) {
@@ -259,11 +260,15 @@ export async function startAgent(
     previousAgentForModel?.permissionMode ??
     DEFAULT_AGENT_PERMISSION_MODE;
 
-  // Resolve the runner. It's stamped on the session (`session.runner_id`)
-  // and inherited by every agent in it; the user can only swap it before the
-  // first message. Legacy sessions persisted before `runner_id` existed
-  // default to `"claude-code"` via `sessionRunnerId`.
-  const runnerId = sessionRunnerId(argusSession);
+  // Resolve the runner. The session's `runner_id` is only the default for
+  // new agents — each agent carries its own, switchable until its first
+  // prompt, and preserved across respawns via the reused slot. Legacy
+  // sessions persisted before `runner_id` existed default to `"claude-code"`.
+  const sessionDefaultRunnerId = sessionRunnerId(argusSession);
+  const runnerId =
+    runnerIdOverride ??
+    previousAgentForModel?.runner.id ??
+    sessionDefaultRunnerId;
   let runner: LlmRunner | null = getRunnerById(runnerId);
   if (!runner) {
     // Runner was unregistered between session create and now — fall back
@@ -286,15 +291,21 @@ export async function startAgent(
   } catch {
     projectLlmConfig = undefined;
   }
+  // Model ids don't carry across runners — a gateway rejects the other
+  // runner's. Once the agent has left the session's default runner, only its
+  // own model and the runner default are in play.
+  const onSessionRunner = runner.id === sessionDefaultRunnerId;
   const { model: effectiveModel } = resolveModelForAgent({
     session: {
-      runner_id: argusSession.runner_id ?? null,
+      runner_id: runner.id,
       // Restore-at-turn reuses the previous agent's model so we don't drop
       // variant suffixes (e.g. `[1m]`) that aren't preserved in the JSONL.
-      model: argusSession.model ?? previousAgentForModel?.model ?? null,
+      model: onSessionRunner
+        ? (argusSession.model ?? previousAgentForModel?.model ?? null)
+        : (previousAgentForModel?.model ?? null),
     },
     agentOverride: { model: model ?? null },
-    argusConfig: projectLlmConfig,
+    ...(onSessionRunner ? { argusConfig: projectLlmConfig } : {}),
     runnerDefaultModel: runner.defaultModel?.() ?? null,
   });
 
@@ -657,6 +668,7 @@ export async function startAgent(
     created_at: agentSession.createdAt,
     capabilities: handle.initializeResponse(),
     model: agentSession.model,
+    runner_id: runner.id,
   };
 
   return agentInfo;
@@ -1441,6 +1453,7 @@ export function listAgents(sessionId: string): AgentInfo[] {
         parent_agent_id: session.parentAgentId,
         created_at: session.createdAt,
         model: session.model,
+        runner_id: session.runner.id,
       });
     }
   }
@@ -1450,20 +1463,21 @@ export function listAgents(sessionId: string): AgentInfo[] {
 
 /**
  * Restart a message-free agent in place so it picks up new spawn-time
- * settings — today only a session runner switch. The agent id is reused so
- * the tab and conversation slot survive the swap.
+ * settings — today only a runner switch. The agent id is reused so the tab
+ * and conversation slot survive the swap, and the runner already stamped on
+ * the slot is what the new subprocess spawns under.
  */
 export async function respawnAgent(agentId: string): Promise<void> {
   const session = appState.agents.get(agentId);
   if (!session) {
     return;
   }
-  const { sessionId, parentAgentId } = session;
+  const { sessionId, parentAgentId, prewarmed } = session;
 
   // Silence the kill → spawn status flicker in the UI.
   session.suppressStatus = true;
   // The old runner's model id means nothing to the new one; drop it so the
-  // spawn cascade falls through to the session/runner default.
+  // spawn cascade falls through to the runner default.
   session.model = null;
 
   await session.handle.kill();
@@ -1483,6 +1497,9 @@ export async function respawnAgent(agentId: string): Promise<void> {
   const fresh = appState.agents.get(agentId);
   if (fresh) {
     fresh.suppressStatus = false;
+    // A warm slot stays warm across the swap — the renderer's prewarm slot
+    // still points at this id.
+    fresh.prewarmed = prewarmed;
   }
 }
 
@@ -1536,6 +1553,7 @@ export async function claimPrewarmAgent(
     created_at: session.createdAt,
     capabilities: session.handle.initializeResponse(),
     model: session.model,
+    runner_id: session.runner.id,
   };
 }
 

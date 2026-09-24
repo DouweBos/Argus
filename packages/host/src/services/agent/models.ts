@@ -190,4 +190,9 @@ export interface AgentInfo {
    * or null if the CLI default was used.
    */
   model: string | null;
+  /**
+   * Runner this agent is bound to. Inherited from the session at spawn, then
+   * switchable per agent until its first prompt.
+   */
+  runner_id: string;
 }

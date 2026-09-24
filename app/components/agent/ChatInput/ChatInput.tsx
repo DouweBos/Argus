@@ -22,8 +22,8 @@ import {
 } from "../../../lib/imageAttachments";
 import {
   listProjects,
+  setAgentRunner,
   setSessionClaudeAccount,
-  setSessionRunner,
 } from "../../../lib/ipc";
 import { buildLinkedProjectsPreamble } from "../../../lib/linkedProjectsPreamble";
 import {
@@ -32,6 +32,7 @@ import {
   permissionModeDisplayName,
   toCanonicalPermissionMode,
 } from "../../../lib/permissionModes";
+import { updateAgent } from "../../../stores/agentStore";
 import { useClaudeAccounts } from "../../../stores/claudeAccountsStore";
 import {
   clearDraft,
@@ -49,6 +50,7 @@ import { openImageViewer } from "../../../stores/imageViewerStore";
 import { pushError } from "../../../stores/notificationsStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { updateSession, useSessions } from "../../../stores/sessionStore";
+import { DEFAULT_LLM_RUNNER } from "../../../stores/settingsStore";
 import { EffortPicker, effortDisplayName } from "../EffortPicker";
 import { useHuddleTyping } from "../HuddleShare";
 import {
@@ -65,6 +67,8 @@ import { useMentionPicker } from "./useMentionPicker";
 interface ChatInputProps {
   /** Agent ID — used to persist draft text across tab switches. */
   agentId?: string | null;
+  /** Runner this agent is bound to. Falls back to the session's. */
+  agentRunnerId?: string | null;
   agentStatus?:
     | "error"
     | "idle"
@@ -73,8 +77,8 @@ interface ChatInputProps {
     | "stopped"
     | null;
   /**
-   * True while the conversation is still empty — the session's runner is
-   * only switchable up to the first message.
+   * True while this agent's conversation is still empty — its runner is only
+   * switchable up to the first message.
    */
   canSwitchRunner?: boolean;
   /** Max context-window size for the active model (tokens). */
@@ -128,6 +132,7 @@ export function ChatInput({
   onSend,
   onInterrupt,
   agentId,
+  agentRunnerId,
   agentStatus,
   canSwitchRunner = false,
   contextTokens,
@@ -181,22 +186,26 @@ export function ChatInput({
     : null;
   const currentRepoRoot = currentSession?.repo_root ?? null;
   const registeredRunners = useRegisteredRunners();
-  const sessionRunnerId = currentSession?.runner_id ?? "claude-code";
-  // The runner locks as soon as the conversation starts — the transcript
-  // belongs to the CLI and gateway that produced it.
+  const runnerId =
+    agentRunnerId ?? currentSession?.runner_id ?? DEFAULT_LLM_RUNNER;
+  // The runner locks as soon as this agent's conversation starts — the
+  // transcript belongs to the CLI and gateway that produced it. Siblings in
+  // the same session keep their own.
   const runnerSelection: RunnerSelection = {
-    currentId: sessionRunnerId,
+    currentId: runnerId,
     locked: !canSwitchRunner,
     available: registeredRunners,
     onSelect: (id) => {
-      if (!sessionId || id === sessionRunnerId) {
+      if (!agentId || id === runnerId) {
         return;
       }
-      // Optimistic; the backend re-broadcasts the session with its new model.
-      updateSession(sessionId, { runner_id: id });
-      setSessionRunner(sessionId, id).catch((err) =>
-        pushError(String(err), "set_session_runner"),
-      );
+      // Optimistic; rolled back if the backend refuses, so the picker can't
+      // claim a runner the agent never switched to.
+      updateAgent(agentId, { runner_id: id });
+      setAgentRunner(agentId, id).catch((err) => {
+        updateAgent(agentId, { runner_id: runnerId });
+        pushError(String(err), "set_agent_runner");
+      });
     },
   };
   // Pinning is only offered once a second account exists — with one account

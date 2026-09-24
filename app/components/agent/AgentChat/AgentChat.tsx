@@ -259,13 +259,18 @@ export function AgentChat({
   // the CLI's handshake only knows the base runner's, which don't exist on
   // the gateway it's pointed at.
   const registeredRunners = useRegisteredRunners();
-  const runnerModels = useMemo(() => {
-    const runnerId = sessions.find((s) => s.id === sessionId)?.runner_id;
-
-    return runnerId
-      ? (registeredRunners.find((r) => r.id === runnerId)?.models ?? [])
-      : [];
-  }, [registeredRunners, sessions, sessionId]);
+  // The agent owns its runner; the session's is only what it inherited.
+  const agentRunnerId =
+    agentSnapshot?.runner_id ??
+    sessions.find((s) => s.id === sessionId)?.runner_id ??
+    null;
+  const runnerModels = useMemo(
+    () =>
+      agentRunnerId
+        ? (registeredRunners.find((r) => r.id === agentRunnerId)?.models ?? [])
+        : [],
+    [registeredRunners, agentRunnerId],
+  );
   const modelOptions = useMemo(() => {
     if (runnerModels.length > 0) {
       return runnerModels;
@@ -1131,6 +1136,7 @@ export function AgentChat({
         <ChatInput
           agentId={agentId}
           agentStatus={agentStatus}
+          agentRunnerId={agentRunnerId}
           canSwitchRunner={messages.length === 0}
           contextLimit={contextLimit}
           contextTokens={contextTokens}

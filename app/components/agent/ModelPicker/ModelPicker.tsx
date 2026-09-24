@@ -14,7 +14,7 @@ export interface ModelOption {
 /**
  * Runner state surfaced at the top of the picker.
  *
- * - `locked: true`: the runner is read-only — the session's conversation has
+ * - `locked: true`: the runner is read-only — this agent's conversation has
  *   started, and its transcript belongs to that runner.
  * - `locked: false` + `available` provided: the user can switch between
  *   registered runners. With only one registered the list collapses to a
@@ -25,7 +25,7 @@ export interface RunnerSelection {
   available?: RegisteredRunner[];
   /** Currently bound or proposed runner id. */
   currentId: string;
-  /** When true, the runner is fixed for this session and cannot change. */
+  /** When true, the runner is fixed for this agent and cannot change. */
   locked: boolean;
   /** Callback fired when a different runner is picked (only when not locked). */
   onSelect?: (runnerId: string) => void;
@@ -135,7 +135,8 @@ function RunnerSection({ runner }: { runner: RunnerSelection }) {
     available.find((r) => r.id === runner.currentId) ??
     fallbackRunner(runner.currentId);
 
-  // Locked (the conversation has started) or only one registered runner:
+  // Locked (this agent's conversation has started) or only one registered
+  // runner:
   // render a single read-only row.
   const selectable = !runner.locked && available.length > 1;
 
@@ -145,7 +146,7 @@ function RunnerSection({ runner }: { runner: RunnerSelection }) {
         <PickerPopover.Header>Runner</PickerPopover.Header>
         <PickerPopover.Static
           name={current.displayName}
-          description={runner.locked ? "Fixed for this session" : undefined}
+          description={runner.locked ? "Fixed for this agent" : undefined}
         />
       </>
     );

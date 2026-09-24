@@ -223,6 +223,11 @@ export interface AgentStatus {
   parent_agent_id?: string | null;
   /** Claude Code permission mode (e.g. "plan", "default"). Frontend-only field. */
   permission_mode?: string;
+  /**
+   * Runner this agent is bound to. Inherited from the session at spawn, then
+   * switchable per agent until its first prompt.
+   */
+  runner_id?: string;
   session_id: string;
   status: "error" | "idle" | "requires_action" | "running" | "stopped";
 }
