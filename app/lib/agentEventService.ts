@@ -179,6 +179,7 @@ export function saveAgentConversation(agentId: string): void {
     sessionBranch: session.branch ?? "",
     sessionDescription: session.description ?? "",
     model: conv.model,
+    runnerId: agent.runner_id,
     totalCost: conv.totalCost,
     totalDuration: conv.totalDuration,
     messageCount: conv.messages.length,
@@ -324,6 +325,7 @@ export async function stopAgentById(agentId: string): Promise<void> {
       conv?.title?.trim() || firstUserText?.trim() || "Untitled agent";
     recordRecentlyClosed(agent.session_id, {
       agentId,
+      runnerId: agent.runner_id,
       runnerSessionId: conv?.sessionId,
       closedAt: Date.now(),
       title: title.length > 60 ? title.slice(0, 60) + "…" : title,

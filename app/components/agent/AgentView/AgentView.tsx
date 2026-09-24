@@ -173,7 +173,12 @@ export function AgentView({ sessionId }: AgentViewProps) {
       label: entry.title,
       onClick: () => {
         removeRecentlyClosed(sessionId, entry.agentId);
-        startNew(undefined, undefined, entry.runnerSessionId).catch(() => {});
+        startNew(
+          undefined,
+          undefined,
+          entry.runnerSessionId,
+          entry.runnerId,
+        ).catch(() => {});
       },
     }));
   }, [recentlyClosed, sessionId, startNew]);

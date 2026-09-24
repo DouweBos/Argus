@@ -31,6 +31,10 @@ export interface ChatHistoryEntry {
   sessionBranch: string;
   sessionDescription: string;
   model?: string;
+  /** Runner that produced the conversation — absent on older records.
+   *  Resuming re-binds the new agent to it; a transcript belongs to the
+   *  gateway that wrote it. */
+  runnerId?: string;
   totalCost?: number;
   totalDuration?: number;
   messageCount: number;
@@ -162,6 +166,7 @@ export function saveConversation(
     sessionBranch: conversation.sessionBranch,
     sessionDescription: conversation.sessionDescription,
     model: conversation.model,
+    runnerId: conversation.runnerId,
     totalCost: conversation.totalCost,
     totalDuration: conversation.totalDuration,
     messageCount: conversation.messageCount,
