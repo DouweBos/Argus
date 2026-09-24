@@ -69,6 +69,9 @@ export const DEFAULT_GUARDRAILS: AutomationGuardrails = {
   // Off. A spend ceiling is a decision about your own money, so it is one you
   // make per automation in the editor, not one Argus makes for you.
   max_cost_usd_per_run: 0,
+  // Long enough for a triage playbook that reads a nightly CI run end to end;
+  // short enough that an agent stalled on a prompt frees its schedule.
+  max_run_minutes: 20,
   path_denylist: [],
   require_clean_ci: true,
 };
@@ -140,6 +143,14 @@ export function normalizeGuardrails(input: unknown): AutomationGuardrails {
     max_cost_usd_per_run: positiveNumber(
       raw.max_cost_usd_per_run,
       DEFAULT_GUARDRAILS.max_cost_usd_per_run,
+    ),
+    // Never zero: unlike spend, "no time limit" means a stalled agent holds
+    // its schedule forever.
+    max_run_minutes: Math.max(
+      1,
+      Math.floor(
+        positiveNumber(raw.max_run_minutes, DEFAULT_GUARDRAILS.max_run_minutes),
+      ),
     ),
     path_denylist: globList(raw.path_denylist) ?? [],
     require_clean_ci:

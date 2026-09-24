@@ -763,6 +763,8 @@ export interface AutomationGuardrails {
   max_cost_usd_per_run: number;
   /** A branch touching more files than this cannot be pushed. */
   max_files_changed: number;
+  /** Wall-clock ceiling on a single run. A run past this is abandoned. */
+  max_run_minutes: number;
   /** Globs no automation-started branch may touch. */
   path_denylist: string[];
   /** Gates `auto_merge`: CI must be green first. */

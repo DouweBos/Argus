@@ -42,11 +42,14 @@ import {
 import { dailyBudgetBlock, runBudgetBlock, runSpendUsd } from "./spend";
 
 /**
- * How long a run may take before it is abandoned. Nobody is watching an
- * automation, so an agent that stalls on a prompt must not hold its schedule
- * hostage forever.
+ * How long a run may take before it is abandoned, from its `max_run_minutes`
+ * guardrail. Nobody is watching an automation, so an agent that stalls on a
+ * prompt must not hold its schedule hostage forever — but a triage playbook
+ * reading a whole nightly CI run legitimately needs longer than the default.
  */
-const RUN_TIMEOUT_MS = 20 * 60 * 1000;
+function runTimeoutMs(maxRunMinutes: number): number {
+  return maxRunMinutes * 60 * 1000;
+}
 
 /** How often a run's spend is compared against its ceiling. */
 const COST_POLL_MS = 15 * 1000;
@@ -210,12 +213,17 @@ async function execute(automation: Automation, runId: string): Promise<void> {
 
   let outcome: Awaited<ReturnType<typeof waitForAgent>>;
   try {
-    outcome = await waitForAgent(agentInfo.agent_id, RUN_TIMEOUT_MS);
-  } catch (e) {
+    outcome = await waitForAgent(
+      agentInfo.agent_id,
+      runTimeoutMs(guardrails.max_run_minutes),
+    );
+  } catch {
     clearInterval(costWatch);
     await stopAgentQuietly(agentInfo.agent_id);
+    // The agent id means nothing to whoever reads the run; the limit it hit,
+    // and where to raise it, is the only actionable part.
     finish(runId, "failed", {
-      error: typeof e === "string" ? e : String(e),
+      error: `Stopped after ${guardrails.max_run_minutes} minutes — the run hit its time limit. Raise it in the automation's guardrails if this playbook needs longer.`,
       cost_usd: runSpendUsd(runId),
     });
 

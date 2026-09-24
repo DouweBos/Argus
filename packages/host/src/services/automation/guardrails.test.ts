@@ -65,6 +65,15 @@ describe("normalizeGuardrails", () => {
     expect(g.confidence_threshold).toBe(1);
     expect(g.path_denylist).toEqual(["infra/**"]);
   });
+
+  it("keeps a run's time limit above zero", () => {
+    expect(normalizeGuardrails({}).max_run_minutes).toBe(20);
+    expect(normalizeGuardrails({ max_run_minutes: 45 }).max_run_minutes).toBe(
+      45,
+    );
+    // Off is not on offer: an unlimited run holds its schedule forever.
+    expect(normalizeGuardrails({ max_run_minutes: 0 }).max_run_minutes).toBe(1);
+  });
 });
 
 describe("evaluateAutoStart", () => {

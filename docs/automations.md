@@ -139,15 +139,22 @@ Per-automation limits, applied to every proposal before it may start work:
 | `max_concurrent_sessions` | `2`     | Sessions this automation may have in flight at once.               |
 | `max_files_changed`       | `25`    | A branch touching more files than this cannot be pushed.           |
 | `max_cost_usd_per_run`    | `0`     | Ceiling on one run's spend. `0` is off, which is the default.      |
+| `max_run_minutes`         | `20`    | Wall-clock ceiling on one run. Past it, the run is stopped.        |
 | `path_denylist`           | empty   | Globs no automation-started branch may touch, e.g. `["infra/**"]`. |
 | `require_clean_ci`        | `true`  | Gates auto-merge: CI must be green.                                |
 
-All six are edited per automation in **Automations → the automation → Autonomy**,
-including the spend ceiling. It ships **off**: how much a run may cost is a
+All seven are edited per automation in **Automations → the automation →
+Autonomy**, including the spend ceiling. It ships **off**: how much a run may cost is a
 decision about your own money, so nothing is capped until you say so — for a
 built-in template as much as for one you wrote. An automation created before it
 was editable had a $5 ceiling imposed on it; that one is cleared for you on
 upgrade, and a number you picked by hand is left alone.
+
+The time limit exists because nobody is watching an automation: an agent stalled
+on a prompt would otherwise hold its schedule forever. Twenty minutes suits most
+playbooks, but a triage run that reads a whole nightly CI run end to end needs
+more — raise it on that automation rather than letting it fail every night.
+Unlike the spend ceiling this one cannot be turned off; the minimum is a minute.
 
 Two more caps live above the individual automation, in
 [App settings](./app-settings.md#autonomy): **concurrent automation sessions**

@@ -10,6 +10,7 @@ const GUARDRAILS = {
   max_concurrent_sessions: 2,
   max_cost_usd_per_run: 4,
   max_files_changed: 25,
+  max_run_minutes: 20,
   path_denylist: ["fastlane/**", "**/*.pbxproj"],
   require_clean_ci: true,
 };
