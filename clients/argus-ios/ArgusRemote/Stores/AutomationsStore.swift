@@ -12,6 +12,7 @@ final class AutomationsStore {
   var automations: [RemoteAutomation] = []
   var detailById: [String: RemoteAutomationDetail] = [:]
   var sources: [RemoteSignalSource] = []
+  var runners: [RemoteRunner] = []
   /// Newest first, across every automation.
   var runs: [RemoteAutomationRun] = []
   var detailByRun: [String: RemoteAutomationRunDetail] = [:]
@@ -31,6 +32,7 @@ final class AutomationsStore {
     automations = []
     detailById = [:]
     sources = []
+    runners = []
     runs = []
     detailByRun = [:]
     triggering = []
@@ -86,6 +88,16 @@ final class AutomationsStore {
     guard let result = try? await transport.request(
       .automationsSources, EmptyParams(), as: Result.self) else { return }
     sources = result.sources
+  }
+
+  /// Runners an automation can be pinned to. Older hosts don't answer this, so
+  /// a failure just leaves the picker showing the automation's current runner.
+  func loadRunners() async {
+    guard let transport = app.transport else { return }
+    struct Result: Decodable { let runners: [RemoteRunner] }
+    guard let result = try? await transport.request(
+      .automationsRunners, EmptyParams(), as: Result.self) else { return }
+    runners = result.runners
   }
 
   struct SaveResult: Decodable {

@@ -75,6 +75,8 @@ export interface Automation {
   guardrails: AutomationGuardrails;
   /** Model id for the run's agent; null inherits the app default. */
   model: string | null;
+  /** Runner id for the run's agent; null inherits the app default. */
+  runner: string | null;
   /** Built-in template this was seeded from, for upgrade-on-release. */
   template_id: string | null;
   /**
@@ -166,6 +168,7 @@ export interface CreateAutomationInput {
   autonomy?: AutonomyLevel | null;
   guardrails?: Partial<AutomationGuardrails>;
   model?: string | null;
+  runner?: string | null;
   template_id?: string | null;
 }
 

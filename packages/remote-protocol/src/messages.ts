@@ -33,6 +33,7 @@ import {
   RemotePullRequest,
   RemotePullRequestDetail,
   RemoteQueuedMessage,
+  RemoteRunner,
   RemoteSession,
   RemoteSignalSource,
   RemoteFoldPose,
@@ -74,6 +75,8 @@ export const AutomationInput = z.object({
   playbook: z.string(),
   autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
   model: z.string().nullable(),
+  /** Optional so a client built before runners could be picked still creates. */
+  runner: z.string().nullable().optional(),
   guardrails: RemoteAutomationGuardrails,
 });
 export type AutomationInput = z.infer<typeof AutomationInput>;
@@ -323,6 +326,7 @@ export const MethodParams = {
   "automations.run": z.object({ run_id: z.string() }),
   "automations.get": z.object({ automation_id: z.string() }),
   "automations.sources": z.object({}),
+  "automations.runners": z.object({}),
   "automations.create": z.object({ input: AutomationInput }),
   /** Every field optional: an editor sends only what it changed. */
   "automations.update": z.object({
@@ -549,6 +553,7 @@ export const MethodResult = {
   }),
   "automations.get": z.object({ automation: RemoteAutomationDetail }),
   "automations.sources": z.object({ sources: z.array(RemoteSignalSource) }),
+  "automations.runners": z.object({ runners: z.array(RemoteRunner) }),
   /** Both shapes back, so a client can refresh its list and its editor. */
   "automations.create": z.object({
     automation: RemoteAutomation,

@@ -16,6 +16,7 @@ import { appState } from "../../../state";
 import { sendAgentMessage, startAgent } from "../../agent/agentService";
 import { ensureRepoRegistered } from "../../mcp/projects";
 import { createSession } from "../../session/manager";
+import { getAutomation } from "../manager";
 import { recordAutomationSession } from "../ownedSessions";
 import { requireProposal, updateProposal } from "./manager";
 
@@ -58,13 +59,17 @@ export async function acceptProposal(
 
   ensureRepoRegistered(repoRoot);
 
+  // The work was thought up by an agent on the automation's runner, so it is
+  // carried on here too — for the human-Accept path as much as the gated one.
+  const automation = getAutomation(proposal.automation_id);
+
   const session = await createSession(
     repoRoot,
     proposal.title || "Proposal",
     proposal.summary,
     false,
     undefined,
-    undefined,
+    { runner: automation?.runner ?? null, model: automation?.model ?? null },
     {
       awaitWorktreeReady: true,
       // A human clicking Accept started this session themselves, so it belongs

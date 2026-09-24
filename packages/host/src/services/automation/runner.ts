@@ -176,6 +176,8 @@ async function execute(automation: Automation, runId: string): Promise<void> {
     automationId: automation.id,
     runId,
     displayName: automation.name,
+    runner: automation.runner,
+    model: automation.model,
   });
   updateRun(runId, { host_session_id: session.id });
 

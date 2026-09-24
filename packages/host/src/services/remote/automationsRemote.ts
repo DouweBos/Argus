@@ -23,6 +23,7 @@ import type {
   RemoteAutomationGuardrails,
   RemoteAutomationDetail,
   RemoteAutomationRun,
+  RemoteRunner,
   RemoteSignalSource,
 } from "@argus/remote-protocol";
 import path from "node:path";
@@ -43,6 +44,7 @@ import {
   saveScratchRunAsAutomation,
   startScratchRun,
 } from "../automation/scratch";
+import { listRunners } from "../llm/registry";
 import { describeSignalSources } from "../signals/registry";
 
 /** How many runs a client gets when it doesn't say. */
@@ -116,6 +118,7 @@ function toRemoteAutomationDetail(
     playbook: automation.playbook,
     autonomy: automation.autonomy,
     model: automation.model,
+    runner: automation.runner ?? null,
     guardrails: automation.guardrails,
   };
 }
@@ -158,6 +161,23 @@ export async function remoteSignalSources(): Promise<{
   return { sources: await describeSignalSources() };
 }
 
+/** Runners an automation may be pinned to, for the phone's editor. */
+export function remoteRunners(): { runners: RemoteRunner[] } {
+  return {
+    runners: listRunners().map((runner) => ({
+      id: runner.id,
+      display_name: runner.displayName,
+      is_custom: runner.isCustom ?? false,
+      default_model: runner.defaultModel?.() ?? null,
+      models: (runner.models?.() ?? []).map((model) => ({
+        value: model.value,
+        display_name: model.displayName,
+        description: model.description ?? null,
+      })),
+    })),
+  };
+}
+
 export function createRemoteAutomation(input: AutomationInput): {
   automation: RemoteAutomation;
   detail: RemoteAutomationDetail;
@@ -173,6 +193,7 @@ export function createRemoteAutomation(input: AutomationInput): {
     autonomy: input.autonomy,
     guardrails: input.guardrails,
     model: input.model,
+    runner: input.runner ?? null,
   };
 
   return both(createAutomation(create));
@@ -198,6 +219,7 @@ export function updateRemoteAutomation(
     ...(patch.playbook !== undefined && { playbook: patch.playbook }),
     ...(patch.autonomy !== undefined && { autonomy: patch.autonomy }),
     ...(patch.model !== undefined && { model: patch.model }),
+    ...(patch.runner !== undefined && { runner: patch.runner ?? null }),
     ...(patch.guardrails !== undefined && { guardrails: patch.guardrails }),
   };
 

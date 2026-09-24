@@ -173,6 +173,9 @@ Resolution order for the runner (at session creation):
    [`.argus.json`](./project-settings.md).
 2. App default — this setting.
 
+An [automation](./automations.md) can pin its own runner, which wins over both
+for its runs and for the sessions its proposals start.
+
 Resolution order for the model (at every agent spawn):
 
 1. Agent override (set in the new-agent picker).

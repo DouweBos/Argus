@@ -53,6 +53,23 @@ every automation supports regardless of its trigger.
 
 ---
 
+## Which runner and model it uses
+
+**Runner and model** in the automation editor picks what the run's agent talks
+to. Leave it alone and the run follows the app-wide default
+([App settings → Agents](./app-settings.md)); pin a runner and every run of that
+automation uses it, whatever the default becomes later.
+
+Model ids do not carry across runners — a gateway rejects another runner's ids —
+so switching the runner clears the model back to that runner's default.
+
+The pick carries through to the work: a session started from one of this
+automation's proposals is created on the same runner, whether Argus auto-started
+it or you pressed Start in the Inbox. The work was thought up by an agent on
+that runner, so it continues there.
+
+---
+
 ## Quick runs — one-off, without saving
 
 Sometimes you just want a playbook run once. **Automations → Quick run**
@@ -60,12 +77,13 @@ Sometimes you just want a playbook run once. **Automations → Quick run**
 at, and a **Run once** button. Nothing is saved: no automation appears in the
 list, and nothing is written to `automations.json`.
 
-Everything else is identical to a scheduled run. It is the same runner, the same
-neutral host session, the same agent you can open and talk to, the same report,
+Everything else is identical to a scheduled run. It is the same neutral host
+session, the same agent you can open and talk to, the same report,
 and — this is the part that matters — the same
 [autonomy ladder](#the-autonomy-ladder). A quick run has no autonomy of its own,
 so it inherits the app default and is still floored by every project's ceiling.
-It cannot ask for a higher rung, because there is no field in which to ask.
+It cannot ask for a higher rung, because there is no field in which to ask, and
+it has no runner of its own either: it runs on the app default.
 The MCP gate, the shell guard and the spend ceilings all see it as exactly what
 it is.
 
@@ -468,7 +486,7 @@ phone clears it on the computer too — there is one inbox, not two.
 
 A phone authors them too. Edit on an automation, and + on the automations
 list, open the same fields the desktop editor has: name, description, trigger
-(cron, timezone, catch-up), projects, signal sources, model, autonomy, the
+(cron, timezone, catch-up), projects, signal sources, runner and model, autonomy, the
 guardrails and the playbook itself. Saving is explicit, and deleting asks
 first; past runs and their reports survive the automation.
 
