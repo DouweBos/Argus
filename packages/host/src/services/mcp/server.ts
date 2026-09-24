@@ -61,6 +61,7 @@ import {
   stripAnsi,
   waitForTerminal,
 } from "../terminal/multiplexer";
+import { worktreePurposeForCaller } from "./automationCaller";
 import {
   automationMergeBlock,
   automationSessionToolBlock,
@@ -723,6 +724,8 @@ export function createMcpServer(
         description ?? "",
         false,
         base_branch,
+        undefined,
+        { worktreePurpose: worktreePurposeForCaller(callerAgentId) },
       );
 
       // An automation's own session: it holds one of its concurrency slots
@@ -1160,6 +1163,8 @@ export function createMcpServer(
             spec.description ?? "",
             false,
             base_branch,
+            undefined,
+            { worktreePurpose: worktreePurposeForCaller(callerAgentId) },
           );
 
           // `createSession` already broadcasts `session:created`, so don't

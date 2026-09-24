@@ -19,6 +19,72 @@ describe("computeWorktreesRoot", () => {
     });
   });
 
+  it("sends automations to their own base, project first", () => {
+    const bases = {
+      appBase: "/Volumes/SSD/wt",
+      automationAppBase: "/Volumes/Bulk/wt",
+      automationProjectBase: "/Volumes/Archive/wt",
+      projectBase: "/Volumes/Fast/wt",
+    };
+
+    expect(
+      computeWorktreesRoot({
+        repoRoot,
+        argusHome,
+        purpose: "automation",
+        ...bases,
+      }),
+    ).toEqual({
+      root: "/Volumes/Archive/wt/MyApp-argus-worktrees",
+      source: "automation_project",
+    });
+
+    expect(
+      computeWorktreesRoot({
+        repoRoot,
+        argusHome,
+        purpose: "automation",
+        ...bases,
+        automationProjectBase: "  ",
+      }),
+    ).toEqual({
+      root: "/Volumes/Bulk/wt/MyApp-argus-worktrees",
+      source: "automation_app",
+    });
+  });
+
+  it("falls through to the user cascade when no automation base is set", () => {
+    // The two purposes must agree exactly, or turning the setting off would
+    // strand every automation worktree.
+    const args = {
+      repoRoot,
+      argusHome,
+      appBase: "/Volumes/SSD/wt",
+      projectBase: "/Volumes/Fast/wt",
+    };
+
+    expect(computeWorktreesRoot({ ...args, purpose: "automation" })).toEqual(
+      computeWorktreesRoot({ ...args, purpose: "user" }),
+    );
+    expect(
+      computeWorktreesRoot({ repoRoot, argusHome, purpose: "automation" }),
+    ).toEqual(computeWorktreesRoot({ repoRoot, argusHome }));
+  });
+
+  it("ignores the automation base for the user's own worktrees", () => {
+    expect(
+      computeWorktreesRoot({
+        repoRoot,
+        argusHome,
+        automationAppBase: "/Volumes/Bulk/wt",
+        automationProjectBase: "/Volumes/Archive/wt",
+      }),
+    ).toEqual({
+      root: "/home/me/.argus/worktrees/MyApp-argus-worktrees",
+      source: "default",
+    });
+  });
+
   it("puts the repo folder under an app-wide base", () => {
     expect(
       computeWorktreesRoot({ repoRoot, argusHome, appBase: "/Volumes/SSD/wt" }),

@@ -23,6 +23,12 @@ export interface AppSettings {
    */
   worktrees_base_dir?: string;
   /**
+   * Base directory worktrees opened by automations are created in. Automations
+   * produce far more worktrees than anyone merges, so they can be sent to a
+   * roomier drive. Absent falls through to `worktrees_base_dir`.
+   */
+  automation_worktrees_base_dir?: string;
+  /**
    * App-level default LLM picked in Settings. Mirrored here from the renderer
    * so sessions created outside the UI (MCP, remote) resolve the same runner.
    */

@@ -155,7 +155,7 @@ export function assertWorktreeBaseAvailable(baseDir: string): void {
     return;
   }
 
-  throw `${volumeLabel(availability.volume)} isn't connected. Reconnect the drive, or change where this project stores its worktrees.`;
+  throw `${volumeLabel(availability.volume)} isn't connected. Reconnect the drive, or change the worktree location this session uses.`;
 }
 
 /**

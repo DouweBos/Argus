@@ -10,6 +10,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
 import { argusHomeDir } from "../../lib/argusHome";
+import { loadAppSettings } from "../appSettings/store";
+import { computeWorktreesRoot } from "../session/worktreeLocationCore";
 import { invalidateWorktreeLocationCache } from "../session/worktreeRootCache";
 
 const SCHEMA_VERSION = 1;
@@ -46,6 +48,11 @@ export interface UserProjectSettings {
    * underneath it. Empty or absent follows the app-wide value.
    */
   worktrees_base_dir?: string;
+  /**
+   * Base directory worktrees opened by automations are created in for this
+   * project. Empty or absent falls through to `worktrees_base_dir`.
+   */
+  automation_worktrees_base_dir?: string;
   /**
    * Roots this project's worktrees used to live under, kept so worktrees left
    * behind by a location change stay visible until they are moved or deleted.
@@ -132,6 +139,20 @@ export function saveUserProjectSettings(
   } else {
     next.worktrees_base_dir = next.worktrees_base_dir.trim();
   }
+  if (!next.automation_worktrees_base_dir?.trim()) {
+    delete next.automation_worktrees_base_dir;
+  } else {
+    next.automation_worktrees_base_dir =
+      next.automation_worktrees_base_dir.trim();
+  }
+
+  // Changing a base without moving would hide every worktree still at the old
+  // root, so remember it. `executeWorktreeMove` writes the same field.
+  next.previous_worktrees_roots = [
+    ...(next.previous_worktrees_roots ?? []),
+    ...strandedRoots(repoRoot, current, next),
+  ];
+
   if (!next.previous_worktrees_roots?.length) {
     delete next.previous_worktrees_roots;
   } else {
@@ -181,6 +202,48 @@ export function saveUserProjectSettings(
   invalidateWorktreeLocationCache(repoRoot);
 
   return next;
+}
+
+/**
+ * Roots that hold worktrees but are about to stop being resolvable, because a
+ * base dir changed. Only reports roots that exist and are non-empty — a base
+ * that was never used leaves nothing behind.
+ */
+function strandedRoots(
+  repoRoot: string,
+  before: UserProjectSettings,
+  after: UserProjectSettings,
+): string[] {
+  const app = loadAppSettings();
+  const rootFor = (
+    settings: UserProjectSettings,
+    purpose: "automation" | "user",
+  ) =>
+    computeWorktreesRoot({
+      repoRoot,
+      purpose,
+      projectBase: settings.worktrees_base_dir,
+      automationProjectBase: settings.automation_worktrees_base_dir,
+      appBase: app.worktrees_base_dir,
+      automationAppBase: app.automation_worktrees_base_dir,
+      argusHome: argusHomeDir(),
+    }).root;
+
+  const live = new Set(
+    (["automation", "user"] as const).map((purpose) => rootFor(after, purpose)),
+  );
+
+  return (["automation", "user"] as const)
+    .map((purpose) => rootFor(before, purpose))
+    .filter((root) => !live.has(root) && hasEntries(root));
+}
+
+function hasEntries(dir: string): boolean {
+  try {
+    return fs.readdirSync(dir).length > 0;
+  } catch {
+    return false;
+  }
 }
 
 /** Add a branch to the archived list. Idempotent. */

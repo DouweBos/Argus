@@ -664,6 +664,11 @@ export interface AppSettings {
   /** Spend automations may reach in a day, in USD. 0 or unset = no budget. */
   automation_daily_budget_usd?: number;
   /**
+   * Base directory worktrees opened by automations are created in. Absent
+   * falls through to `worktrees_base_dir`.
+   */
+  automation_worktrees_base_dir?: string;
+  /**
    * Master switch for the automation scheduler. Defaults to true; manual runs
    * work regardless.
    */
@@ -704,6 +709,11 @@ export interface UserProjectSettings {
    * under "Archived Branches". Pure UI filter — git is untouched.
    */
   archived_branches?: string[];
+  /**
+   * Base directory worktrees opened by automations are created in for this
+   * project. Absent falls through to `worktrees_base_dir`.
+   */
+  automation_worktrees_base_dir?: string;
   /**
    * Required prefix prepended to newly created branches (e.g. "douwe/"). Empty
    * or undefined disables the prefix.
@@ -1646,17 +1656,39 @@ export interface SimulatorDeviceState {
   udid: string;
 }
 
+/** Which level of the cascade decided a worktree location. */
+export type WorktreeRootSource =
+  | "app"
+  | "automation_app"
+  | "automation_project"
+  | "default"
+  | "project";
+
+/** Who a worktree is for. Automations can be pointed at a separate drive. */
+export type WorktreePurpose = "automation" | "user";
+
 /** Where a project's worktrees live, and whether that drive is connected. */
 export interface WorktreeStorage {
   /** Base dir set app-wide, if any. */
   app_base: string | null;
+  /** Automation base dir set app-wide, if any. */
+  automation_app_base: string | null;
+  /** Automation base dir set for this project, if any. */
+  automation_project_base: string | null;
+  /** The same, for worktrees automations open. Equal to the above when no
+   * automation base is set. */
+  automation_root: string;
+  automation_source: WorktreeRootSource;
+  automation_state: "available" | "unavailable";
+  automation_volume: string | null;
+  automation_volume_label: string | null;
   /** The base dir used when neither is set. */
   default_base: string;
   /** Base dir set for this project, if any. Personal, never checked in. */
   project_base: string | null;
   /** Absolute dir holding this project's worktrees right now. */
   root: string;
-  source: "app" | "default" | "project";
+  source: WorktreeRootSource;
   state: "available" | "unavailable";
   /** Mount point the root depends on; null when it is on the internal disk. */
   volume: string | null;

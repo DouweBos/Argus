@@ -82,6 +82,7 @@ import type {
   FoldPose,
   SimulatorDeviceState,
   WorktreeStorage,
+  WorktreePurpose,
   WorktreeLocationProbe,
   MoveWorktreesPlan,
   MoveWorktreesResult,
@@ -2004,11 +2005,13 @@ export const closeAgentPopout = (agentId: string): Promise<void> =>
 // Relocating a project's worktrees. `plan` reports what would move and what
 // is holding it; `move` stops those agents and terminals and does it.
 export const planWorktreesMove = (args: {
+  purpose?: WorktreePurpose;
   repoRoot: string;
   toBaseDir: string;
 }): Promise<MoveWorktreesPlan> => invoke("plan_worktrees_move", args);
 
 export const moveWorktrees = (args: {
+  purpose?: WorktreePurpose;
   repoRoot: string;
   toBaseDir: string;
 }): Promise<MoveWorktreesResult> => invoke("move_worktrees", args);

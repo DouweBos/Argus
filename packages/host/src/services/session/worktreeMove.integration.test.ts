@@ -14,8 +14,15 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { appState } from "../../state";
+import {
+  forgetAutomationSession,
+  recordAutomationSession,
+} from "../automation/ownedSessions";
+import { liveWorktreeRoots } from "./worktreeLocation";
 import { executeWorktreeMove, planWorktreeMove } from "./worktreeMove";
+import { invalidateWorktreeLocationCache } from "./worktreeRootCache";
 
+let argusHome: string | undefined;
 let repoRoot: string;
 let tmp: string;
 
@@ -47,15 +54,26 @@ describe("executeWorktreeMove (integration)", () => {
     git(repoRoot, ["add", "-A"]);
     git(repoRoot, ["commit", "-qm", "init"]);
     appState.sessions.clear();
+    // The move reads and writes the settings stores, and the plan only covers
+    // worktrees under the resolved root — both need a throwaway ARGUS_HOME.
+    argusHome = process.env.ARGUS_HOME;
+    process.env.ARGUS_HOME = path.join(tmp, "argus-home");
+    invalidateWorktreeLocationCache();
   });
 
   afterEach(() => {
     appState.sessions.clear();
+    if (argusHome === undefined) {
+      delete process.env.ARGUS_HOME;
+    } else {
+      process.env.ARGUS_HOME = argusHome;
+    }
+    invalidateWorktreeLocationCache();
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 
   function addWorktree(name: string): string {
-    const wtPath = path.join(tmp, "old", name);
+    const wtPath = path.join(liveWorktreeRoots(repoRoot)[0], name);
     git(repoRoot, ["worktree", "add", "-q", "-b", name, wtPath]);
     appState.sessions.set(name, {
       id: name,
@@ -106,6 +124,32 @@ describe("executeWorktreeMove (integration)", () => {
     expect(plan.blockers[0]?.kind).toBe("mid_operation");
     // Blocked worktrees are not offered for the move.
     expect(plan.sessions).toHaveLength(0);
+  });
+
+  it("moves only the automation's own worktrees out of a shared root", async () => {
+    // Setting an automation base for the first time: both purposes still
+    // resolve to the same root, so containment alone would sweep up the
+    // developer's session too.
+    const mine = addWorktree("mine");
+    addWorktree("theirs");
+    recordAutomationSession("auto-1", "run-1", "theirs");
+    const history = path.join(
+      liveWorktreeRoots(repoRoot)[0],
+      ".argus-chat-history",
+    );
+    fs.mkdirSync(history, { recursive: true });
+
+    const result = await executeWorktreeMove(
+      repoRoot,
+      path.join(tmp, "bulk"),
+      "automation",
+    );
+    forgetAutomationSession("theirs");
+
+    expect(result.moved).toEqual(["theirs"]);
+    expect(fs.existsSync(mine)).toBe(true);
+    // Chat history is per project and pinned to the user root — it stays.
+    expect(fs.existsSync(history)).toBe(true);
   });
 
   it("keeps the original when the copy cannot be verified", async () => {

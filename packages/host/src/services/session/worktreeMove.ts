@@ -9,11 +9,13 @@
  * leaves the worktree where it was rather than nowhere.
  */
 
+import type { WorktreePurpose } from "./worktreeLocationCore";
 import fs from "node:fs";
 import path from "node:path";
 import { emitHostEvent } from "../../bus";
 import { info, warn } from "../../logger";
 import { appState } from "../../state";
+import { liveOwnedSessions } from "../automation/ownedSessions";
 import {
   loadUserProjectSettings,
   saveUserProjectSettings,
@@ -21,7 +23,7 @@ import {
 import { git, worktreesRoot } from "./git";
 import { loadMetadata, normalizeMetaKey, saveMetadata } from "./metadata";
 import { pathAvailability, volumeLabel } from "./volumeAvailability";
-import { worktreeDirName } from "./worktreeLocation";
+import { isInsideRoot, worktreeDirName } from "./worktreeLocation";
 import { invalidateWorktreeLocationCache } from "./worktreeRootCache";
 
 /** Files and directories Argus keeps beside the worktrees themselves. */
@@ -53,10 +55,35 @@ export interface MoveWorktreesResult {
   to_root: string;
 }
 
-function sessionsFor(repoRoot: string) {
-  return [...appState.sessions.values()].filter(
-    (ws) => ws.repo_root === repoRoot && ws.kind === "worktree" && ws.path,
+/**
+ * The worktrees a move of `purpose` should relocate.
+ *
+ * Containment in the from-root is the durable signal. It stops being enough in
+ * one case: setting an automation base for the first time, where the automation
+ * root *is* the user root and every session in the project would match. There,
+ * fall back to the automation's own ownership claims — a claim that has expired
+ * just leaves that worktree where it is, which is safe.
+ */
+function sessionsFor(repoRoot: string, purpose: WorktreePurpose) {
+  const fromRoot = worktreesRoot(repoRoot, purpose);
+  const inRoot = [...appState.sessions.values()].filter(
+    (ws) =>
+      ws.repo_root === repoRoot &&
+      ws.kind === "worktree" &&
+      ws.path &&
+      isInsideRoot(fromRoot, ws.path),
   );
+
+  if (
+    purpose !== "automation" ||
+    fromRoot !== worktreesRoot(repoRoot, "user")
+  ) {
+    return inRoot;
+  }
+
+  const owned = new Set(liveOwnedSessions().map((claim) => claim.session_id));
+
+  return inRoot.filter((ws) => owned.has(ws.id));
 }
 
 /**
@@ -116,14 +143,15 @@ async function lockedPaths(repoRoot: string): Promise<Set<string>> {
 export async function planWorktreeMove(
   repoRoot: string,
   toBaseDir: string,
+  purpose: WorktreePurpose = "user",
 ): Promise<MoveWorktreesPlan> {
-  const fromRoot = worktreesRoot(repoRoot);
+  const fromRoot = worktreesRoot(repoRoot, purpose);
   const toRoot = path.join(toBaseDir, worktreeDirName(repoRoot));
   const locked = await lockedPaths(repoRoot);
   const blockers: MoveBlocker[] = [];
   const sessions: MoveWorktreesPlan["sessions"] = [];
 
-  for (const ws of sessionsFor(repoRoot)) {
+  for (const ws of sessionsFor(repoRoot, purpose)) {
     const label = ws.display_name ?? ws.branch;
     if (locked.has(ws.path)) {
       blockers.push({
@@ -246,8 +274,13 @@ function moveSidecars(fromRoot: string, toRoot: string): void {
 export async function executeWorktreeMove(
   repoRoot: string,
   toBaseDir: string,
+  purpose: WorktreePurpose = "user",
 ): Promise<MoveWorktreesResult> {
-  const plan = await planWorktreeMove(repoRoot, toBaseDir);
+  const plan = await planWorktreeMove(repoRoot, toBaseDir, purpose);
+  const baseKey =
+    purpose === "automation"
+      ? "automation_worktrees_base_dir"
+      : "worktrees_base_dir";
 
   if (pathAvailability(toBaseDir).state === "volume_missing") {
     throw `${volumeLabel(toBaseDir)} isn't connected.`;
@@ -261,6 +294,11 @@ export async function executeWorktreeMove(
     throw `Argus can't write to ${toBaseDir}.`;
   }
   if (plan.to_root === plan.from_root) {
+    // Nothing to relocate, but the setting still has to land — otherwise
+    // pointing automations at the current location silently does nothing.
+    saveUserProjectSettings(repoRoot, { [baseKey]: toBaseDir });
+    invalidateWorktreeLocationCache(repoRoot);
+
     return { failed: [], moved: [], to_root: plan.to_root };
   }
   fs.mkdirSync(plan.to_root, { recursive: true });
@@ -294,7 +332,11 @@ export async function executeWorktreeMove(
   }
 
   if (moved.length > 0) {
-    moveSidecars(plan.from_root, plan.to_root);
+    // Chat history and command metrics are per project and pinned to the user
+    // root; an automation move must not drag them somewhere nothing reads.
+    if (purpose !== "automation") {
+      moveSidecars(plan.from_root, plan.to_root);
+    }
     saveMetadata(repoRoot, meta);
   }
 
@@ -304,7 +346,7 @@ export async function executeWorktreeMove(
   if (failed.length === 0 || moved.length > 0) {
     const previous = loadUserProjectSettings(repoRoot).previous_worktrees_roots;
     saveUserProjectSettings(repoRoot, {
-      worktrees_base_dir: toBaseDir,
+      [baseKey]: toBaseDir,
       previous_worktrees_roots:
         failed.length > 0
           ? [...new Set([...(previous ?? []), plan.from_root])]

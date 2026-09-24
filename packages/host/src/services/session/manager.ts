@@ -2,6 +2,7 @@
  * Session lifecycle management: create, delete, list git worktrees.
  */
 
+import type { WorktreePurpose } from "./worktreeLocationCore";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -383,6 +384,11 @@ export interface CreateSessionOptions {
    * resolving.
    */
   postWorktreeReady?: (session: Session) => Promise<void>;
+  /**
+   * Which base directory the worktree is created under. Automations can be
+   * pointed at a separate drive; see `worktreeLocation.ts`.
+   */
+  worktreePurpose?: WorktreePurpose;
 }
 
 /**
@@ -406,7 +412,10 @@ export async function createSession(
   useExistingBranch?: boolean,
   explicitBaseBranch?: string,
   sessionLlm?: AppDefaultLlm,
-  opts?: Pick<CreateSessionOptions, "awaitWorktreeReady" | "postWorktreeReady">,
+  opts?: Pick<
+    CreateSessionOptions,
+    "awaitWorktreeReady" | "postWorktreeReady" | "worktreePurpose"
+  >,
 ): Promise<Session> {
   requireKnownProject(repoRoot);
   const id = crypto.randomUUID();
@@ -486,6 +495,7 @@ export async function createSession(
     useExistingBranch,
     explicitBaseBranch,
     postWorktreeReady: opts?.postWorktreeReady,
+    worktreePurpose: opts?.worktreePurpose,
     signalWorktreeReady: signalReady,
     signalWorktreeFailed: signalReadyError,
   }).catch((e: unknown) => {
@@ -516,6 +526,7 @@ async function finalizeSession(
     useExistingBranch?: boolean;
     explicitBaseBranch?: string;
     postWorktreeReady?: (session: Session) => Promise<void>;
+    worktreePurpose?: WorktreePurpose;
     signalWorktreeReady?: (session: Session) => void;
     signalWorktreeFailed?: (err: unknown) => void;
   },
@@ -524,6 +535,7 @@ async function finalizeSession(
     useExistingBranch,
     explicitBaseBranch,
     postWorktreeReady,
+    worktreePurpose,
     signalWorktreeReady,
     signalWorktreeFailed,
   } = opts;
@@ -599,8 +611,18 @@ async function finalizeSession(
     // --- Phase 4: create the worktree ------------------------------------
     const worktreeInfo =
       useExistingBranch === true
-        ? await checkoutBranchIntoWorktree(repoRoot, branchInput, baseBranch)
-        : await createWorktree(repoRoot, branchInput, baseBranch);
+        ? await checkoutBranchIntoWorktree(
+            repoRoot,
+            branchInput,
+            baseBranch,
+            worktreePurpose,
+          )
+        : await createWorktree(
+            repoRoot,
+            branchInput,
+            baseBranch,
+            worktreePurpose,
+          );
 
     // If the session was deleted while we were creating the worktree, tear
     // the worktree back down instead of leaking the directory.
@@ -1558,9 +1580,10 @@ async function createWorktree(
   repoRoot: string,
   branch: string,
   baseBranch: string | undefined,
+  purpose: WorktreePurpose = "user",
 ): Promise<WorktreeInfo> {
   const branchSlug = titleToBranchSlug(branch);
-  const worktreesDir = worktreesRoot(repoRoot);
+  const worktreesDir = worktreesRoot(repoRoot, purpose);
   const dirName = branchToDir(branchSlug);
   const worktreePath = path.join(worktreesDir, dirName);
 
@@ -1612,8 +1635,9 @@ async function checkoutBranchIntoWorktree(
   repoRoot: string,
   branch: string,
   _baseBranch: string | undefined,
+  purpose: WorktreePurpose = "user",
 ): Promise<WorktreeInfo> {
-  const worktreesDir = worktreesRoot(repoRoot);
+  const worktreesDir = worktreesRoot(repoRoot, purpose);
   const baseDir = branchToDir(branch);
   let worktreePath = `${worktreesDir}/${baseDir}`;
   let suffix = 2;

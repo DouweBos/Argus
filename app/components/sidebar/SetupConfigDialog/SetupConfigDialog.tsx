@@ -1786,6 +1786,9 @@ export function SetupConfigDialog({
   const [branchPrefix, setBranchPrefix] = useState("");
   const [worktreeBase, setWorktreeBase] = useState("");
   const [worktreeDefaultBase, setWorktreeDefaultBase] = useState("");
+  const [automationWorktreeBase, setAutomationWorktreeBase] = useState("");
+  const [automationWorktreeDefaultBase, setAutomationWorktreeDefaultBase] =
+    useState("");
   const [initialBranchPrefix, setInitialBranchPrefix] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -1941,6 +1944,7 @@ export function SetupConfigDialog({
         setBranchPrefix(prefix);
         setInitialBranchPrefix(prefix);
         setWorktreeBase(personal.worktrees_base_dir ?? "");
+        setAutomationWorktreeBase(personal.automation_worktrees_base_dir ?? "");
       } catch {
         // No personal settings yet — leave blank.
       } finally {
@@ -1954,6 +1958,11 @@ export function SetupConfigDialog({
       .then((storage) => {
         if (!cancelled) {
           setWorktreeDefaultBase(storage.app_base ?? storage.default_base);
+          // What the automation field inherits: the app-wide automation base
+          // if set, otherwise this project's own worktree location.
+          setAutomationWorktreeDefaultBase(
+            storage.automation_app_base ?? storage.root,
+          );
         }
       })
       .catch(() => undefined);
@@ -2723,6 +2732,20 @@ export function SetupConfigDialog({
                       worktrees_base_dir: next,
                     });
                     setWorktreeBase(next);
+                  }}
+                />
+                <WorktreeLocationField
+                  label="Automation worktree location"
+                  caption="Where automations working on this project create their worktrees. Leave it empty to use the location above."
+                  defaultPath={automationWorktreeDefaultBase}
+                  purpose="automation"
+                  repoRoot={repoRoot}
+                  value={automationWorktreeBase}
+                  onCommit={async (next) => {
+                    await setUserProjectSettings(repoRoot, {
+                      automation_worktrees_base_dir: next,
+                    });
+                    setAutomationWorktreeBase(next);
                   }}
                 />
               </SettingsScreenDetailBody>
