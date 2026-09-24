@@ -57,10 +57,11 @@ export interface AppSettings {
    */
   launch_route?: "home" | "inbox";
   /**
-   * How far an automation may go by default when it does not set its own
-   * level. Ships as `"propose"`; a repo can cap it lower, never higher.
+   * App-wide cap on how far any automation may go. Unset or null means no
+   * cap — the automation's own level stands. A repo can cap it lower, never
+   * higher.
    */
-  default_autonomy?: AutonomyLevel;
+  default_autonomy?: AutonomyLevel | null;
   /**
    * Ceiling on auto-started automation sessions running at once, across every
    * automation. Defaults to 3.

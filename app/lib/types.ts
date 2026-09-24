@@ -664,10 +664,11 @@ export interface AppSettings {
    */
   automations_enabled?: boolean;
   /**
-   * How far an automation may go when it does not set its own level. Ships as
-   * `propose`; a project can cap it lower, never higher.
+   * App-wide cap on how far any automation may go. Unset or null means no
+   * cap — the automation's own level stands. A project can cap it lower,
+   * never higher.
    */
-  default_autonomy?: AutonomyLevel;
+  default_autonomy?: AutonomyLevel | null;
   /** App-level default LLM picked in Settings, mirrored for the main process. */
   default_llm?: { model?: string | null; runner?: string | null };
   /** Screen Argus opens on: the project picker, or the inbox. Defaults to home. */

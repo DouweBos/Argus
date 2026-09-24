@@ -3,7 +3,9 @@
  * in this repo, and how many sessions it already has running.
  *
  * Effective autonomy is `min(app default, automation.autonomy, project
- * ceiling)`. A repo can always cap itself lower than the app; never higher.
+ * ceiling)`, ignoring whichever of those is unset. A repo can always cap
+ * itself lower than the app; never higher. Nothing set anywhere falls back to
+ * `propose`.
  */
 
 import type { Automation, AutomationGuardrails, AutonomyLevel } from "./models";
@@ -11,7 +13,6 @@ import { loadAppSettings } from "../appSettings/store";
 import { loadArgusConfig } from "../session/argusConfig";
 import { isOnMissingVolume } from "../session/volumeAvailability";
 import {
-  DEFAULT_AUTONOMY,
   isAutonomyLevel,
   minAutonomy,
   normalizeGuardrails,
@@ -30,11 +31,15 @@ export interface AutomationPolicy {
   disabledByProject: boolean;
 }
 
-/** The app-level default, or `"propose"` when unset or nonsense. */
-export function appDefaultAutonomy(): AutonomyLevel {
+/**
+ * The app-level default, or null when unset. Null is "no opinion", not
+ * `"propose"` — an absent cap must not cap what the automation itself asked
+ * for.
+ */
+export function appDefaultAutonomy(): AutonomyLevel | null {
   const configured = loadAppSettings().default_autonomy;
 
-  return isAutonomyLevel(configured) ? configured : DEFAULT_AUTONOMY;
+  return isAutonomyLevel(configured) ? configured : null;
 }
 
 export function maxConcurrentAutomationSessions(): number {
