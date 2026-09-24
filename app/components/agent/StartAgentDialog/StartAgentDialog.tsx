@@ -21,7 +21,7 @@ import {
   extractImageFilesFromClipboard,
   filesToPendingImages,
 } from "../../../lib/imageAttachments";
-import { listProjects, setSessionRunner } from "../../../lib/ipc";
+import { listProjects, setAgentRunner } from "../../../lib/ipc";
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { buildLinkedProjectsPreamble } from "../../../lib/linkedProjectsPreamble";
 import {
@@ -33,8 +33,11 @@ import { openImageViewer } from "../../../stores/imageViewerStore";
 import { pushError } from "../../../stores/notificationsStore";
 import { usePrewarmSlot } from "../../../stores/prewarmStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
-import { updateSession, useSessions } from "../../../stores/sessionStore";
-import { getDefaultPermissionMode } from "../../../stores/settingsStore";
+import { useSessions } from "../../../stores/sessionStore";
+import {
+  DEFAULT_LLM_RUNNER,
+  getDefaultPermissionMode,
+} from "../../../stores/settingsStore";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 import { useMentionPicker } from "../ChatInput/useMentionPicker";
 import { ModelPicker, type RunnerSelection } from "../ModelPicker";
@@ -110,12 +113,14 @@ export function StartAgentDialog({
   const [modelValue, setModelValue] = useState<string>("default");
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
 
-  // No agent has been started yet, so the runner is still switchable — it
-  // only locks once the session's agent has sent its first message.
+  // The agent this dialog is about to start doesn't exist yet, so the pick
+  // is local state until submit — it binds that agent alone, never the
+  // session or its siblings.
   const sessions = useSessions();
   const session = sessions.find((s) => s.id === sessionId) ?? null;
   const registeredRunners = useRegisteredRunners();
-  const runnerId = session?.runner_id ?? "claude-code";
+  const sessionRunnerId = session?.runner_id ?? DEFAULT_LLM_RUNNER;
+  const [runnerId, setRunnerId] = useState(sessionRunnerId);
   const runnerSelection: RunnerSelection = {
     currentId: runnerId,
     locked: false,
@@ -130,11 +135,15 @@ export function StartAgentDialog({
       setModelValue(
         next?.defaultModel ?? next?.models?.[0]?.value ?? "default",
       );
-      updateSession(sessionId, { runner_id: id });
-      setSessionRunner(sessionId, id)
-        // The warmed subprocess ran under the old runner's env.
-        .then(() => refreshPrewarm(sessionId))
-        .catch((err) => pushError(String(err), "set_session_runner"));
+      setRunnerId(id);
+      // Re-bind the warm subprocess now so submitting is still instant; it
+      // ran under the old runner's env.
+      const warmAgentId = prewarmSlot?.agentId;
+      if (warmAgentId) {
+        setAgentRunner(warmAgentId, id)
+          .then(() => refreshPrewarm(sessionId))
+          .catch((err) => pushError(String(err), "set_agent_runner"));
+      }
     },
   };
 
@@ -376,6 +385,7 @@ export function StartAgentDialog({
         focus: true,
         model: modelValue !== "default" ? modelValue : undefined,
         permissionMode,
+        runnerId,
       });
       await sendUserMessageToAgent(
         info.agent_id,
@@ -397,6 +407,7 @@ export function StartAgentDialog({
     onClose,
     pendingImages,
     prompt,
+    runnerId,
     sessionId,
   ]);
 

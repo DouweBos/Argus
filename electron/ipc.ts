@@ -207,6 +207,7 @@ import {
   probeInjection,
 } from "@argus/host/services/inspection/launcher";
 import { getNodeProps } from "@argus/host/services/inspection/props";
+import { setAgentRunner } from "@argus/host/services/llm/agentRunner";
 import { CUSTOM_RUNNER_PRESETS } from "@argus/host/services/llm/customRunners/presets";
 import {
   deleteCustomRunner,
@@ -218,7 +219,6 @@ import {
   listRunners as listLlmRunners,
   syncCustomRunners,
 } from "@argus/host/services/llm/registry";
-import { setSessionRunner } from "@argus/host/services/llm/sessionRunner";
 import { generateChatTitle } from "@argus/host/services/llm/titleGenerator";
 import { testMcpServer } from "@argus/host/services/mcp/connectivity";
 import {
@@ -1753,6 +1753,7 @@ export function registerIpcHandlers(): void {
       undefined,
       undefined, // reuseAgentId — IPC callers are always fresh starts
       a.agentId as string | undefined, // presetAgentId — renderer-minted optimistic id
+      a.runnerId as string | undefined,
     );
     emitHostEvent("agent:started", info);
 
@@ -2574,12 +2575,10 @@ export function registerIpcHandlers(): void {
   // Custom runners — official runners re-pointed at another endpoint. Every
   // mutation re-syncs the registry so the picker and resolver see the change
   // without an app restart.
-  // Re-binding a session to another runner. Only legal while the session has
+  // Re-binding one agent to another runner. Only legal while that agent has
   // no conversation yet — the handler enforces it.
-  handle("set_session_runner", "admin", (a) =>
-    setSessionRunner(a.sessionId as string, a.runnerId as string).then(
-      () => null,
-    ),
+  handle("set_agent_runner", "admin", (a) =>
+    setAgentRunner(a.agentId as string, a.runnerId as string).then(() => null),
   );
   handle("llm_list_custom_runners", "admin", () => listCustomRunners());
   handle(

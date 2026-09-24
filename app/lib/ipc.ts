@@ -1355,9 +1355,11 @@ export const startAgent = (
   resumeSessionId?: string,
   appendSystemPrompt?: string,
   agentId?: string,
+  runnerId?: string,
 ): Promise<AgentStatus> =>
   invoke("start_agent", {
     sessionId,
+    ...(runnerId != null && runnerId !== "" && { runnerId }),
     ...(model != null && model !== "" && { model }),
     ...(permissionMode != null && permissionMode !== "" && { permissionMode }),
     ...(resumeSessionId != null &&
@@ -2525,13 +2527,13 @@ export const listRegisteredRunners = (): Promise<RegisteredRunner[]> =>
   invoke("llm_list_runners");
 
 /**
- * Re-bind a session to another runner. Rejects once the session's agent has
- * started working; message-free agents are restarted under the new runner.
+ * Re-bind one agent to another runner. Rejects once that agent has started
+ * working; a message-free agent is restarted under the new runner in place.
  */
-export const setSessionRunner = (
-  sessionId: string,
+export const setAgentRunner = (
+  agentId: string,
   runnerId: string,
-): Promise<void> => invoke("set_session_runner", { sessionId, runnerId });
+): Promise<void> => invoke("set_agent_runner", { agentId, runnerId });
 
 export const listCustomRunners = (): Promise<CustomRunnerConfig[]> =>
   invoke("llm_list_custom_runners");

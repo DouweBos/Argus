@@ -57,12 +57,12 @@ export interface Session {
    */
   setup_terminal_id?: string | null;
   /**
-   * LLM runner this session is bound to (e.g. `"claude-code"`). Stamped at
-   * `create_session` time by `resolveRunnerForSession`; switchable via
-   * `set_session_runner` until the first message is sent, after which the
-   * transcript pins it. Every agent spawned in this session inherits it and
-   * cannot override it at spawn time. Legacy sessions persisted before this
-   * field existed default to {@link DEFAULT_RUNNER_ID} via
+   * Default LLM runner for agents spawned in this session (e.g.
+   * `"claude-code"`). Stamped at `create_session` time by
+   * `resolveRunnerForSession`. Each agent inherits it at spawn and then owns
+   * its own — `set_agent_runner` re-binds one agent until its first message,
+   * after which its transcript pins it. Legacy sessions persisted before
+   * this field existed default to {@link DEFAULT_RUNNER_ID} via
    * {@link sessionRunnerId} on read.
    */
   runner_id?: string | null;

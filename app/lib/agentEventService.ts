@@ -345,6 +345,7 @@ const permCancelListeners = new Map<string, UnlistenFn>();
 const permResolvedListeners = new Map<string, UnlistenFn>();
 const capListeners = new Map<string, UnlistenFn>();
 const modelListeners = new Map<string, UnlistenFn>();
+const runnerListeners = new Map<string, UnlistenFn>();
 const permModeListeners = new Map<string, UnlistenFn>();
 const effortListeners = new Map<string, UnlistenFn>();
 const stderrListeners = new Map<string, UnlistenFn>();
@@ -634,6 +635,22 @@ export function startAgentListening(agentId: string): void {
     modelListeners.set(agentId, unlisten);
   });
 
+  // Watch for per-agent runner switches (the agent is respawned under the
+  // new runner's env, so the id survives but the binding changes).
+  runnerListeners.set(agentId, () => {});
+
+  listen<string>(`agent:runner-changed:${agentId}`, (event) => {
+    updateAgent(agentId, { runner_id: event.payload });
+  }).then((unlisten) => {
+    if (!runnerListeners.has(agentId)) {
+      unlisten();
+
+      return;
+    }
+
+    runnerListeners.set(agentId, unlisten);
+  });
+
   // Watch for permission mode changes via the control protocol.
   permModeListeners.set(agentId, () => {});
 
@@ -895,6 +912,12 @@ export function stopAgentListening(agentId: string): void {
     modelUnlisten();
   }
   modelListeners.delete(agentId);
+
+  const runnerUnlisten = runnerListeners.get(agentId);
+  if (runnerUnlisten) {
+    runnerUnlisten();
+  }
+  runnerListeners.delete(agentId);
 
   const permModeUnlisten = permModeListeners.get(agentId);
   if (permModeUnlisten) {
