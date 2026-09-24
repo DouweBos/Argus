@@ -563,6 +563,7 @@ export const RemoteAutomationGuardrails = z.object({
   max_concurrent_sessions: z.number(),
   max_files_changed: z.number(),
   max_cost_usd_per_run: z.number(),
+  max_run_minutes: z.number(),
   path_denylist: z.array(z.string()),
   require_clean_ci: z.boolean(),
 });

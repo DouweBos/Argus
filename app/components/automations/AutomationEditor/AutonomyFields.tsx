@@ -107,6 +107,21 @@ export function AutonomyFields({
         </FormField>
 
         <FormField
+          label="Time limit (minutes)"
+          helper="A run past this is stopped and marked failed."
+        >
+          <Input
+            mono
+            min={1}
+            type="number"
+            value={String(guardrails.max_run_minutes)}
+            onChange={(e) =>
+              patch({ max_run_minutes: numberInput(e.target.value, 20) })
+            }
+          />
+        </FormField>
+
+        <FormField
           label="Spend ceiling (USD)"
           helper={
             guardrails.max_cost_usd_per_run > 0

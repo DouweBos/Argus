@@ -48,6 +48,8 @@ export interface AutomationGuardrails {
   max_files_changed: number;
   /** Ceiling on a single run's spend. */
   max_cost_usd_per_run: number;
+  /** Wall-clock ceiling on a single run. A run past this is abandoned. */
+  max_run_minutes: number;
   /** Globs no auto-started branch may touch, e.g. `["infra/**"]`. */
   path_denylist: string[];
   /** Gates `auto_merge`: CI must be green before the merge is allowed. */
