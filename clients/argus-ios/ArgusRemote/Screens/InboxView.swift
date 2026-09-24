@@ -139,27 +139,30 @@ struct ProposalCard: View {
 
   @ViewBuilder
   private var actions: some View {
-    HStack(spacing: 8) {
-      if canDecide, let cta = proposal.cta {
-        switch cta.kind {
-        case .startSession:
-          Btn(label: cta.label, small: true, icon: Icon.play, action: onAccept)
-        case .deleteBranch, .deleteSession:
-          Btn(label: cta.label, tone: .danger, small: true) { confirmingCleanup = true }
-        case .openUrl:
-          Btn(label: cta.label, tone: .secondary, small: true) {
-            if let url = cta.url.flatMap(URL.init(string:)) { openURL(url) }
+    VStack(alignment: .leading, spacing: 8) {
+      // Three decisions with real labels do not fit one phone-width row, and
+      // squeezing them wraps the text inside the buttons instead.
+      FlowRow(spacing: 8) {
+        if canDecide, let cta = proposal.cta {
+          switch cta.kind {
+          case .startSession:
+            Btn(label: cta.label, small: true, icon: Icon.play, action: onAccept)
+          case .deleteBranch, .deleteSession:
+            Btn(label: cta.label, tone: .danger, small: true) { confirmingCleanup = true }
+          case .openUrl:
+            Btn(label: cta.label, tone: .secondary, small: true) {
+              if let url = cta.url.flatMap(URL.init(string:)) { openURL(url) }
+            }
           }
         }
+        if canDecide {
+          Btn(
+            label: "Mark as done", tone: proposal.cta == nil ? .primary : .secondary,
+            small: true, icon: Icon.check
+          ) { resolving = true }
+          Btn(label: "Dismiss", tone: .ghost, small: true) { dismissing = true }
+        }
       }
-      if canDecide {
-        Btn(
-          label: "Mark as done", tone: proposal.cta == nil ? .primary : .secondary,
-          small: true, icon: Icon.check
-        ) { resolving = true }
-        Btn(label: "Dismiss", tone: .ghost, small: true) { dismissing = true }
-      }
-      Spacer()
       if let source = proposal.sourceUrl, let url = URL(string: source) {
         Link(proposal.sourceLabel ?? "Source", destination: url)
           .font(.system(size: 12))
@@ -172,7 +175,7 @@ struct ProposalCard: View {
   private var dismissForm: some View {
     VStack(alignment: .leading, spacing: 8) {
       ThemedTextField(placeholder: "Why? (optional)", text: $reason) { submitDismiss() }
-      HStack(spacing: 8) {
+      FlowRow(spacing: 8) {
         Btn(label: "Dismiss", tone: .danger, small: true) { submitDismiss() }
         Btn(label: "Cancel", tone: .ghost, small: true) { dismissing = false }
       }
@@ -186,7 +189,7 @@ struct ProposalCard: View {
       ThemedTextField(placeholder: "What did you do? (optional)", text: $done) {
         submitResolve()
       }
-      HStack(spacing: 8) {
+      FlowRow(spacing: 8) {
         Btn(label: "Mark as done", small: true, icon: Icon.check) { submitResolve() }
         Btn(label: "Cancel", tone: .ghost, small: true) { resolving = false }
       }

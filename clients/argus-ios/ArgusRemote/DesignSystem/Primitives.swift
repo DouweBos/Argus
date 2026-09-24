@@ -368,3 +368,73 @@ struct Loading: View {
     .accessibilityLabel(label)
   }
 }
+
+// MARK: - Wrapping rows
+
+/// Lay controls out left to right, wrapping to a new row when the next one
+/// would not fit. Items in a row share its width equally, so a row of two
+/// reads as two columns rather than two differently-sized buttons.
+///
+/// An `HStack` of buttons does the opposite: it squeezes every label until the
+/// text wraps mid-word, which is how "Mark as done" became three lines on a
+/// phone.
+struct FlowRow: SwiftUI.Layout {
+  var spacing: CGFloat = 8
+  var rowSpacing: CGFloat = 8
+
+  func sizeThatFits(proposal: ProposedViewSize, subviews: LayoutSubviews, cache: inout ()) -> CGSize {
+    let width = proposal.replacingUnspecifiedDimensions().width
+    let rows = rows(subviews, in: width)
+    let height = rows.reduce(0) { $0 + rowHeight($1, subviews: subviews) }
+      + rowSpacing * CGFloat(max(0, rows.count - 1))
+
+    return CGSize(width: width, height: height)
+  }
+
+  func placeSubviews(
+    in bounds: CGRect, proposal: ProposedViewSize, subviews: LayoutSubviews, cache: inout ()
+  ) {
+    var y = bounds.minY
+    for row in rows(subviews, in: bounds.width) {
+      let height = rowHeight(row, subviews: subviews)
+      let cell = (bounds.width - spacing * CGFloat(row.count - 1)) / CGFloat(row.count)
+      var x = bounds.minX
+      for index in row {
+        // Centred in the cell: a control that declines to fill it — a ghost
+        // button, say — should still sit on the column, not against its edge.
+        subviews[index].place(
+          at: CGPoint(x: x + cell / 2, y: y + height / 2), anchor: .center,
+          proposal: ProposedViewSize(width: cell, height: height))
+        x += cell + spacing
+      }
+      y += height + rowSpacing
+    }
+  }
+
+  /// Greedy packing on each subview's ideal width — the width it wants before
+  /// anything gets compressed.
+  private func rows(_ subviews: LayoutSubviews, in width: CGFloat) -> [[Int]] {
+    var rows: [[Int]] = []
+    var current: [Int] = []
+    var used: CGFloat = 0
+    for index in subviews.indices {
+      let ideal = subviews[index].sizeThatFits(.unspecified).width
+      let needed = current.isEmpty ? ideal : used + spacing + ideal
+      if !current.isEmpty, needed > width {
+        rows.append(current)
+        current = [index]
+        used = ideal
+      } else {
+        current.append(index)
+        used = needed
+      }
+    }
+    if !current.isEmpty { rows.append(current) }
+
+    return rows
+  }
+
+  private func rowHeight(_ row: [Int], subviews: LayoutSubviews) -> CGFloat {
+    row.reduce(0) { max($0, subviews[$1].sizeThatFits(.unspecified).height) }
+  }
+}
