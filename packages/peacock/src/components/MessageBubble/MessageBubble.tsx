@@ -160,10 +160,7 @@ export function MessageBubble({
     }
 
     return (
-      <div
-        className={`${styles.systemMsg}${toneClass(tone)}`}
-        ref={rootRef}
-      >
+      <div className={`${styles.systemMsg}${toneClass(tone)}`} ref={rootRef}>
         <TimestampGutter timestamp={timestamp} />
         {textBlocks.map((text, i) => (
           <span key={i}>{text}</span>

@@ -18,9 +18,9 @@ describe("parseCliDiagnostic", () => {
   });
 
   it("keeps a non-JSON payload as its own line", () => {
-    expect(parseCliDiagnostic("[claude-code:auth] token expired")?.details).toEqual([
-      "token expired",
-    ]);
+    expect(
+      parseCliDiagnostic("[claude-code:auth] token expired")?.details,
+    ).toEqual(["token expired"]);
   });
 
   it("handles a payload-free diagnostic", () => {
