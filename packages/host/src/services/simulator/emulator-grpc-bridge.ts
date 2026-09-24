@@ -30,6 +30,7 @@ import { resolveAssetPath } from "../tools/assets";
 import { discoverEmulatorGrpc } from "./emulator-discovery";
 import { ANDROID_TO_EVDEV, BUTTON_TO_KEY } from "./emulator-input";
 import { H264AccessUnitParser } from "./h264-parser";
+import { clearVideo, emitVideoConfig, emitVideoFrame } from "./videoForward";
 
 const execFileAsync = promisify(execFile);
 
@@ -229,6 +230,8 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
 
     this.client?.close();
     this.client = null;
+
+    clearVideo(this.serial);
   }
 
   // -------------------------------------------------------------------------
@@ -303,6 +306,7 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
           `[EmulatorGrpc] H.264 config: ${config.codec}, ${String(config.codedWidth)}x${String(config.codedHeight)}`,
         );
         emitHostEvent(`android_video_config:${this.serial}`, config);
+        emitVideoConfig(this.serial, config);
       },
       onFrame: (data, keyFrame, timestamp) => {
         emitHostEvent(`android_video_frame:${this.serial}`, {
@@ -310,6 +314,7 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
           keyFrame,
           timestamp,
         });
+        emitVideoFrame(this.serial, data, keyFrame, timestamp);
       },
     });
 
