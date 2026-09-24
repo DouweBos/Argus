@@ -286,18 +286,22 @@ export function initExternalAgentStarted(): void {
     });
     startAgentListening(info.agent_id);
     hydrateFromSnapshot(info.agent_id);
+    // An agent spawned without a prompt (the phone's "New agent") is idle and
+    // waiting. Faking "running" here strands it: `trySetIdle` is blocked by
+    // `inflight`, and the queue drainer only fires for an idle agent, so the
+    // first message from any client never leaves the queue.
+    if (!info.initial_prompt) {
+      return;
+    }
     // Derive a human-readable title from the prompt the MCP tool sent.
     // Without this, the Agents overview falls back to the branch name for
     // MCP-spawned agents, since the renderer never sees the first user
     // message (it is written to stdin by the backend).
-    if (info.initial_prompt) {
-      maybeGenerateTitle(info.agent_id, info.initial_prompt);
-    }
-    // MCP-spawned agents receive an initial prompt from the backend before
-    // the renderer gets a chance to subscribe. Mark the session as in-flight
-    // so early `system:init` / `session_state_changed(idle)` signals don't
-    // flip the agent to "idle" while it's actually still processing the
-    // initial prompt.
+    maybeGenerateTitle(info.agent_id, info.initial_prompt);
+    // Prompted spawns receive that prompt from the backend before the renderer
+    // gets a chance to subscribe. Mark the session as in-flight so early
+    // `system:init` / `session_state_changed(idle)` signals don't flip the
+    // agent to "idle" while it's actually still processing it.
     inflight.add(info.agent_id);
     updateAgent(info.agent_id, { status: "running" });
   });
