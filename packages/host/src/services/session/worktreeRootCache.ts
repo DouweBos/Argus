@@ -7,22 +7,37 @@
 
 export interface CachedWorktreeRoot {
   root: string;
-  source: "app" | "default" | "project";
+  /** Hand-copied from `WorktreeRootSource`; importing it would be the cycle. */
+  source:
+    | "app"
+    | "automation_app"
+    | "automation_project"
+    | "default"
+    | "project";
+}
+
+/** Both purposes are cached per repo, so the key carries both. */
+const PURPOSES = ["automation", "user"] as const;
+
+function keyFor(repoRoot: string, purpose: string): string {
+  return `${repoRoot}\0${purpose}`;
 }
 
 const cache = new Map<string, CachedWorktreeRoot>();
 
 export function getCachedWorktreeRoot(
   repoRoot: string,
+  purpose: string,
 ): CachedWorktreeRoot | undefined {
-  return cache.get(repoRoot);
+  return cache.get(keyFor(repoRoot, purpose));
 }
 
 export function setCachedWorktreeRoot(
   repoRoot: string,
+  purpose: string,
   value: CachedWorktreeRoot,
 ): void {
-  cache.set(repoRoot, value);
+  cache.set(keyFor(repoRoot, purpose), value);
 }
 
 /** Called whenever either settings store is written. */
@@ -32,5 +47,7 @@ export function invalidateWorktreeLocationCache(repoRoot?: string): void {
 
     return;
   }
-  cache.delete(repoRoot);
+  for (const purpose of PURPOSES) {
+    cache.delete(keyFor(repoRoot, purpose));
+  }
 }

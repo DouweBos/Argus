@@ -22,6 +22,7 @@ import type {
   PrereqResult,
 } from "@argus/host/services/onboarding/types";
 import type { Session } from "@argus/host/services/session/models";
+import type { WorktreePurpose } from "@argus/host/services/session/worktreeLocationCore";
 import type {
   DeviceOrientation,
   FoldPose,
@@ -1052,10 +1053,18 @@ export function registerIpcHandlers(): void {
 
   // Where a project's worktrees live, and whether that drive is connected.
   handle("plan_worktrees_move", "admin", (a) =>
-    planWorktreeMove(a.repoRoot as string, a.toBaseDir as string),
+    planWorktreeMove(
+      a.repoRoot as string,
+      a.toBaseDir as string,
+      a.purpose as WorktreePurpose | undefined,
+    ),
   );
   handle("move_worktrees", "admin", (a) =>
-    executeWorktreeMove(a.repoRoot as string, a.toBaseDir as string),
+    executeWorktreeMove(
+      a.repoRoot as string,
+      a.toBaseDir as string,
+      a.purpose as WorktreePurpose | undefined,
+    ),
   );
   handle("get_worktrees_default_base", "admin", () =>
     Promise.resolve(defaultWorktreesBase()),

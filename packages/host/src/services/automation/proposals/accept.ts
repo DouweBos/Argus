@@ -65,7 +65,12 @@ export async function acceptProposal(
     false,
     undefined,
     undefined,
-    { awaitWorktreeReady: true },
+    {
+      awaitWorktreeReady: true,
+      // A human clicking Accept started this session themselves, so it belongs
+      // on the normal drive; only the unattended path is automation traffic.
+      worktreePurpose: status === "auto_started" ? "automation" : "user",
+    },
   );
   emitSessionCreated(session);
 

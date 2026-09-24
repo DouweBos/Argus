@@ -19,15 +19,17 @@ export interface ScopeAvailability {
 }
 
 /**
- * A project counts as unreachable when either its checkout or its worktrees
- * are on a drive that isn't connected — an agent needs both.
+ * A project counts as unreachable when either its checkout or the worktrees
+ * automations create for it are on a drive that isn't connected — an agent
+ * needs both. Never fall back to the default location: filling the boot disk
+ * is what a separate automation worktree location exists to prevent.
  */
 export function scopeAvailability(repoRoots: string[]): ScopeAvailability {
   const available: string[] = [];
   const unavailable: ScopeAvailability["unavailable"] = [];
 
   for (const repoRoot of repoRoots) {
-    const missing = [repoRoot, worktreesRoot(repoRoot)]
+    const missing = [repoRoot, worktreesRoot(repoRoot, "automation")]
       .map((target) => pathAvailability(target))
       .find((state) => state.state === "volume_missing");
     if (missing?.state === "volume_missing") {
@@ -60,6 +62,6 @@ export function scopeAvailabilityBlock(repoRoots: string[]): string | null {
   const names = unavailable.map((u) => path.basename(u.repo_root));
 
   return drives.length === 1
-    ? `${drives[0]} isn't connected, so ${names.length === 1 ? names[0] : "no project in scope"} can't be read`
-    : `the drives holding this automation's projects (${drives.join(", ")}) aren't connected`;
+    ? `${drives[0]} isn't connected, so ${names.length === 1 ? names[0] : "no project in scope"} can't be read or worked in`
+    : `the drives holding this automation's projects and their worktrees (${drives.join(", ")}) aren't connected`;
 }

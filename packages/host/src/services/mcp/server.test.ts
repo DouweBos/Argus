@@ -349,6 +349,8 @@ describe("create_session", () => {
       "A cool feature",
       false,
       undefined,
+      undefined,
+      { worktreePurpose: "user" },
     );
   });
 
@@ -372,6 +374,8 @@ describe("create_session", () => {
       "",
       false,
       "develop",
+      undefined,
+      { worktreePurpose: "user" },
     );
   });
 });

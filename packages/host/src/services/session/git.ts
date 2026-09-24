@@ -2,6 +2,7 @@
  * Low-level git CLI utilities and worktree directory helpers.
  */
 
+import type { WorktreePurpose } from "./worktreeLocationCore";
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -9,7 +10,7 @@ import { promisify } from "node:util";
 import { warn } from "@argus/host/logger";
 import { GitError, classifyGitStderr } from "./gitError";
 import { isOnMissingVolume } from "./volumeAvailability";
-import { resolveWorktreeRoot } from "./worktreeLocation";
+import { liveWorktreeRoots, resolveWorktreeRoot } from "./worktreeLocation";
 
 const execFileAsync = promisify(execFile);
 
@@ -29,8 +30,11 @@ const execFileAsync = promisify(execFile);
  * before a location change stay where they are, so anything that *searches*
  * for worktrees must use `worktreeRootsForRepo`, not this.
  */
-export function worktreesRoot(repoRoot: string): string {
-  return resolveWorktreeRoot(repoRoot).root;
+export function worktreesRoot(
+  repoRoot: string,
+  purpose: WorktreePurpose = "user",
+): string {
+  return resolveWorktreeRoot(repoRoot, purpose).root;
 }
 
 /**
@@ -225,8 +229,10 @@ export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
     // Non-fatal — if prune fails we still attempt the orphan-repair below.
   }
 
-  const root = worktreesRoot(repoRoot);
-  if (!fs.existsSync(root)) {
+  // Both live roots, not every historical one — the failure branch below
+  // deletes, and roots left behind by a location change are deliberate.
+  const roots = liveWorktreeRoots(repoRoot).filter((dir) => fs.existsSync(dir));
+  if (roots.length === 0) {
     return;
   }
 
@@ -245,23 +251,24 @@ export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
       .map((line) => line.slice("worktree ".length).trim()),
   );
 
-  // Scan managed directory for orphans.
-  let entries: fs.Dirent[];
-  try {
-    entries = fs.readdirSync(root, { withFileTypes: true });
-  } catch {
-    return;
-  }
-
+  // Scan managed directories for orphans.
   const orphanPaths: string[] = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) {
+  for (const root of roots) {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(root, { withFileTypes: true });
+    } catch {
       continue;
     }
-    const dirPath = path.join(root, entry.name);
-    const gitFile = path.join(dirPath, ".git");
-    if (fs.existsSync(gitFile) && !known.has(dirPath)) {
-      orphanPaths.push(dirPath);
+    for (const entry of entries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+      const dirPath = path.join(root, entry.name);
+      const gitFile = path.join(dirPath, ".git");
+      if (fs.existsSync(gitFile) && !known.has(dirPath)) {
+        orphanPaths.push(dirPath);
+      }
     }
   }
 

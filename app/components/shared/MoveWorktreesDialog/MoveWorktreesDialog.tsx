@@ -1,6 +1,7 @@
 import type {
   MoveWorktreesPlan,
   MoveWorktreesResult,
+  WorktreePurpose,
 } from "../../../lib/types";
 import { useEffect, useState } from "react";
 import {
@@ -17,6 +18,8 @@ import styles from "./MoveWorktreesDialog.module.css";
 interface MoveWorktreesDialogProps {
   onClose: () => void;
   onMoved?: () => void;
+  /** Which set of worktrees is being relocated. Defaults to the user's own. */
+  purpose?: WorktreePurpose;
   repoRoot: string;
   toBaseDir: string;
 }
@@ -29,6 +32,7 @@ type Phase = "confirm" | "done" | "loading" | "moving";
  * keep working from the old location either way.
  */
 export function MoveWorktreesDialog({
+  purpose = "user",
   repoRoot,
   toBaseDir,
   onClose,
@@ -40,7 +44,7 @@ export function MoveWorktreesDialog({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    planWorktreesMove({ repoRoot, toBaseDir })
+    planWorktreesMove({ purpose, repoRoot, toBaseDir })
       .then((next) => {
         setPlan(next);
         setPhase("confirm");
@@ -49,11 +53,11 @@ export function MoveWorktreesDialog({
         setError(e instanceof Error ? e.message : String(e));
         setPhase("confirm");
       });
-  }, [repoRoot, toBaseDir]);
+  }, [purpose, repoRoot, toBaseDir]);
 
   const start = () => {
     setPhase("moving");
-    moveWorktrees({ repoRoot, toBaseDir })
+    moveWorktrees({ purpose, repoRoot, toBaseDir })
       .then((next) => {
         setResult(next);
         setPhase("done");
@@ -70,7 +74,11 @@ export function MoveWorktreesDialog({
 
   return (
     <Dialog
-      title="Move existing worktrees?"
+      title={
+        purpose === "automation"
+          ? "Move existing automation worktrees?"
+          : "Move existing worktrees?"
+      }
       titleId="move-worktrees-title"
       size="medium"
       // Interrupting a move mid-copy is how you end up with two half trees.
@@ -85,7 +93,7 @@ export function MoveWorktreesDialog({
           <>
             <p className={styles.body}>
               {count > 0
-                ? `Argus can move this project's ${count} worktree${count === 1 ? "" : "s"} to the new location, or leave them where they are and use it for new sessions only.`
+                ? `Argus can move ${count} ${purpose === "automation" ? "automation " : ""}worktree${count === 1 ? "" : "s"} to the new location, or leave them where they are and use it for new sessions only.`
                 : "There are no worktrees to move. New sessions will use the new location."}
             </p>
             <p className={styles.path}>{plan?.to_root}</p>

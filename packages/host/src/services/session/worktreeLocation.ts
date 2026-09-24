@@ -6,91 +6,81 @@
  * is configurable app-wide and overridable per project. The per-project value
  * is personal and machine-local — where files sit on *this* machine is not a
  * decision to check into a repo other people clone.
+ *
+ * Automations get their own base dir on top of that. A scheduled automation
+ * opens worktrees faster than anyone merges them, and a full boot disk breaks
+ * every session, not just the automation's.
+ *
+ * The cascade itself lives in `worktreeLocationCore`; this module is the layer
+ * that reads the settings stores.
  */
 
-import path from "node:path";
 import { argusHomeDir } from "../../lib/argusHome";
 import { loadAppSettings } from "../appSettings/store";
 import { loadUserProjectSettings } from "../userProjectSettings/store";
+import {
+  computeWorktreesRoot,
+  isInsideRoot,
+  type ResolvedWorktreeRoot,
+  type WorktreePurpose,
+} from "./worktreeLocationCore";
 import {
   getCachedWorktreeRoot,
   setCachedWorktreeRoot,
 } from "./worktreeRootCache";
 
-/** The suffix that makes a worktrees directory obvious from the outside. */
-const SUFFIX = "-argus-worktrees";
-
-export type WorktreeRootSource = "app" | "default" | "project";
-
-export interface ResolvedWorktreeRoot {
-  root: string;
-  source: WorktreeRootSource;
-}
-
-/** The directory a repo's worktrees get inside a chosen base dir. */
-export function worktreeDirName(repoRoot: string): string {
-  return `${path.basename(repoRoot) || "repo"}${SUFFIX}`;
-}
-
-/**
- * Pure cascade: per-project beats app-wide beats the built-in location.
- *
- * The default branch must stay byte-identical to the original hard-coded path
- * — every existing install resolves through here, and a different string would
- * silently orphan every worktree on disk.
- */
-export function computeWorktreesRoot(args: {
-  appBase?: string;
-  argusHome: string;
-  projectBase?: string;
-  repoRoot: string;
-}): ResolvedWorktreeRoot {
-  const project = args.projectBase?.trim();
-  if (project) {
-    return {
-      root: path.join(project, worktreeDirName(args.repoRoot)),
-      source: "project",
-    };
-  }
-
-  const app = args.appBase?.trim();
-  if (app) {
-    return {
-      root: path.join(app, worktreeDirName(args.repoRoot)),
-      source: "app",
-    };
-  }
-
-  return {
-    root: path.join(
-      args.argusHome,
-      "worktrees",
-      `${path.basename(args.repoRoot) || "repo"}${SUFFIX}`,
-    ),
-    source: "default",
-  };
-}
+export {
+  computeWorktreesRoot,
+  isInsideRoot,
+  worktreeDirName,
+} from "./worktreeLocationCore";
+export type {
+  ResolvedWorktreeRoot,
+  WorktreePurpose,
+  WorktreeRootSource,
+} from "./worktreeLocationCore";
 
 /**
  * Memoized because this sits on the session-list refresh and neither settings
  * store caches its file read. The cache lives in its own module so those
  * stores can invalidate it on write without importing this one.
  */
-export function resolveWorktreeRoot(repoRoot: string): ResolvedWorktreeRoot {
-  const hit = getCachedWorktreeRoot(repoRoot);
+export function resolveWorktreeRoot(
+  repoRoot: string,
+  purpose: WorktreePurpose = "user",
+): ResolvedWorktreeRoot {
+  const hit = getCachedWorktreeRoot(repoRoot, purpose);
   if (hit) {
     return hit;
   }
 
+  const projectSettings = loadUserProjectSettings(repoRoot);
+  const appSettings = loadAppSettings();
   const resolved = computeWorktreesRoot({
     repoRoot,
-    projectBase: loadUserProjectSettings(repoRoot).worktrees_base_dir,
-    appBase: loadAppSettings().worktrees_base_dir,
+    purpose,
+    projectBase: projectSettings.worktrees_base_dir,
+    automationProjectBase: projectSettings.automation_worktrees_base_dir,
+    appBase: appSettings.worktrees_base_dir,
+    automationAppBase: appSettings.automation_worktrees_base_dir,
     argusHome: argusHomeDir(),
   });
-  setCachedWorktreeRoot(repoRoot, resolved);
+  setCachedWorktreeRoot(repoRoot, purpose, resolved);
 
   return resolved;
+}
+
+/**
+ * The roots this repo creates worktrees in right now — one per purpose, which
+ * collapses to a single entry unless automations are pointed elsewhere.
+ */
+export function liveWorktreeRoots(repoRoot: string): string[] {
+  return [
+    ...new Set([
+      resolveWorktreeRoot(repoRoot, "user").root,
+      resolveWorktreeRoot(repoRoot, "automation").root,
+    ]),
+  ];
 }
 
 /**
@@ -103,18 +93,11 @@ export function worktreeRootsForRepo(repoRoot: string): string[] {
 
   return [
     ...new Set([
-      resolveWorktreeRoot(repoRoot).root,
+      ...liveWorktreeRoots(repoRoot),
       ...(previous ?? []),
       computeWorktreesRoot({ repoRoot, argusHome: argusHomeDir() }).root,
     ]),
   ];
-}
-
-/** True when `target` is inside `root` (or is it). */
-export function isInsideRoot(root: string, target: string): boolean {
-  const rel = path.relative(root, target);
-
-  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
 /** True when the path sits under any root this repo's worktrees may use. */

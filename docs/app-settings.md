@@ -240,19 +240,28 @@ Each entry has a **Name** and a **Command**. The command is either:
 
 ## Worktrees
 
-| Setting               | Default              | Description                                       |
-| --------------------- | -------------------- | ------------------------------------------------- |
-| **Worktree location** | `~/.argus/worktrees` | Base folder new session worktrees are created in. |
+| Setting                          | Default              | Description                                                 |
+| -------------------------------- | -------------------- | ----------------------------------------------------------- |
+| **Worktree location**            | `~/.argus/worktrees` | Base folder new session worktrees are created in.           |
+| **Automation worktree location** | _(inherits above)_   | Base folder worktrees opened by automations are created in. |
 
 Argus creates `<this folder>/<Repo>-argus-worktrees/<branch>/` underneath,
 so one folder can hold several projects. Point it at an external drive to
 keep large checkouts off your boot disk; a project can override it from its
 own settings.
 
+Automations open worktrees far faster than anyone merges them — nothing is
+deleted when a run ends — so they get their own location. Leave it empty and
+they follow the setting above. The full order is: this project's automation
+location, the app-wide automation location, this project's worktree location,
+the app-wide worktree location, then `~/.argus/worktrees`.
+
 **When the drive isn't connected**, that project's sessions stay in the
 sidebar showing their last known branch and name, greyed out and not
 selectable, and come back untouched when you plug it in. Nothing is pruned
-or deleted while a drive is away.
+or deleted while a drive is away. If it's the automation drive that's
+missing, scheduled runs skip that project with a "… isn't connected" reason
+rather than quietly falling back to your boot disk.
 
 ---
 
@@ -425,10 +434,11 @@ These are machine-local settings _about_ a specific project. They live
 in `~/.argus/user-project-settings.json` and never get committed to
 your repo.
 
-| Setting               | Default | Description                                                                                                                                                                         |
-| --------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Branch prefix**     | `""`    | Prepended to the branch name when creating a session in this project (e.g. `douwe/`, `team/feature-`). Leave empty to disable. Already-prefixed user-typed branches aren't doubled. |
-| **Worktree location** | `""`    | Base folder this project's worktrees are created in, overriding the app-wide setting. Empty follows the app-wide value. Changing it offers to move the worktrees you already have.  |
+| Setting                          | Default | Description                                                                                                                                                                         |
+| -------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Branch prefix**                | `""`    | Prepended to the branch name when creating a session in this project (e.g. `douwe/`, `team/feature-`). Leave empty to disable. Already-prefixed user-typed branches aren't doubled. |
+| **Worktree location**            | `""`    | Base folder this project's worktrees are created in, overriding the app-wide setting. Empty follows the app-wide value. Changing it offers to move the worktrees you already have.  |
+| **Automation worktree location** | `""`    | Base folder this project's automation worktrees are created in. Empty follows the worktree location above. Changing it offers to move the automation worktrees you already have.    |
 
 ---
 
@@ -722,7 +732,7 @@ Argus keeps everything under `~/.argus/`:
   claude-accounts.json        ← Signed-in Claude accounts + the active one
   claude-accounts/            ← Per-account Claude credentials
   remote-devices.json         ← Remote-access identity key, paired devices, push credentials (encrypted)
-  user-project-settings.json  ← Per-developer project prefs (branch prefix, …)
+  user-project-settings.json  ← Per-developer project prefs (branch prefix, worktree locations, …)
   telemetry-id                ← Anonymous install id
 ```
 

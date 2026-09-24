@@ -2,7 +2,8 @@
  * Per-project slash command usage metrics.
  *
  * Tracks how often each command is used so the autocomplete can sort by
- * popularity. Stored at `{worktreesRoot}/.argus-command-metrics.json`.
+ * popularity. Stored at `{user worktrees root}/.argus-command-metrics.json` —
+ * per project, not per purpose, so automations share the same counts.
  *
  * The file is a simple `{ version, counts: { [commandName]: number } }` map.
  */
@@ -20,7 +21,7 @@ interface MetricsFile {
 }
 
 function metricsPath(repoRoot: string): string {
-  return path.join(worktreesRoot(repoRoot), METRICS_FILENAME);
+  return path.join(worktreesRoot(repoRoot, "user"), METRICS_FILENAME);
 }
 
 /**
@@ -56,7 +57,7 @@ function saveCommandMetrics(
   counts: Record<string, number>,
 ): void {
   const file: MetricsFile = { version: SCHEMA_VERSION, counts };
-  const dir = worktreesRoot(repoRoot);
+  const dir = worktreesRoot(repoRoot, "user");
   try {
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(

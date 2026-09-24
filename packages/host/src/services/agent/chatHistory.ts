@@ -2,8 +2,9 @@
  * Chat history persistence service.
  *
  * Saves and loads agent conversations to disk. Stored per project (repo root)
- * alongside session metadata in:
- * `~/.argus/worktrees/{RepoName}-argus-worktrees/.argus-chat-history/`
+ * alongside session metadata, in `.argus-chat-history/` under the project's
+ * user worktrees root (by default
+ * `~/.argus/worktrees/{RepoName}-argus-worktrees/`).
  *
  * Each conversation is an individual JSON file ({id}.json). A lightweight
  * `index.json` stores summaries for fast listing without parsing every file.
@@ -53,7 +54,8 @@ interface IndexFile {
 }
 
 function historyDir(repoRoot: string): string {
-  return path.join(worktreesRoot(repoRoot), HISTORY_DIR_NAME);
+  // Per project, not per purpose — automations must not get a second history.
+  return path.join(worktreesRoot(repoRoot, "user"), HISTORY_DIR_NAME);
 }
 
 function indexPath(repoRoot: string): string {

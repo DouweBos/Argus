@@ -16,6 +16,7 @@ import {
 } from "./volumeAvailability";
 import {
   resolveWorktreeRoot,
+  type WorktreePurpose,
   type WorktreeRootSource,
 } from "./worktreeLocation";
 
@@ -24,6 +25,10 @@ export interface WorktreeStorage {
   app_base: string | null;
   /** Base dir set for this project, if any. Personal, never checked in. */
   project_base: string | null;
+  /** Automation base dir set app-wide, if any. */
+  automation_app_base: string | null;
+  /** Automation base dir set for this project, if any. */
+  automation_project_base: string | null;
   /** The base dir used when neither is set. */
   default_base: string;
   /** Absolute dir holding this project's worktrees right now. */
@@ -33,6 +38,13 @@ export interface WorktreeStorage {
   /** Mount point the root depends on; null when it is on the internal disk. */
   volume: string | null;
   volume_label: string | null;
+  /** The same four, for worktrees automations open. Equal to the above when
+   * no automation base is set. */
+  automation_root: string;
+  automation_source: WorktreeRootSource;
+  automation_state: "available" | "unavailable";
+  automation_volume: string | null;
+  automation_volume_label: string | null;
 }
 
 export interface WorktreeLocationProbe {
@@ -51,8 +63,9 @@ export function defaultWorktreesBase(): string {
   return path.join(argusHomeDir(), "worktrees");
 }
 
-export function getWorktreeStorage(repoRoot: string): WorktreeStorage {
-  const { root, source } = resolveWorktreeRoot(repoRoot);
+/** Resolved location plus drive state for one purpose. */
+function locationFor(repoRoot: string, purpose: WorktreePurpose) {
+  const { root, source } = resolveWorktreeRoot(repoRoot, purpose);
   const availability = pathAvailability(root);
   const volume =
     availability.state === "volume_missing"
@@ -60,15 +73,35 @@ export function getWorktreeStorage(repoRoot: string): WorktreeStorage {
       : mountRootFor(root, process.platform);
 
   return {
-    app_base: loadAppSettings().worktrees_base_dir ?? null,
-    project_base: loadUserProjectSettings(repoRoot).worktrees_base_dir ?? null,
-    default_base: defaultWorktreesBase(),
     root,
     source,
-    state:
-      availability.state === "volume_missing" ? "unavailable" : "available",
+    state: (availability.state === "volume_missing"
+      ? "unavailable"
+      : "available") as "available" | "unavailable",
     volume,
     volume_label: volume ? volumeLabel(volume) : null,
+  };
+}
+
+export function getWorktreeStorage(repoRoot: string): WorktreeStorage {
+  const appSettings = loadAppSettings();
+  const projectSettings = loadUserProjectSettings(repoRoot);
+  const user = locationFor(repoRoot, "user");
+  const automation = locationFor(repoRoot, "automation");
+
+  return {
+    app_base: appSettings.worktrees_base_dir ?? null,
+    project_base: projectSettings.worktrees_base_dir ?? null,
+    automation_app_base: appSettings.automation_worktrees_base_dir ?? null,
+    automation_project_base:
+      projectSettings.automation_worktrees_base_dir ?? null,
+    default_base: defaultWorktreesBase(),
+    ...user,
+    automation_root: automation.root,
+    automation_source: automation.source,
+    automation_state: automation.state,
+    automation_volume: automation.volume,
+    automation_volume_label: automation.volume_label,
   };
 }
 

@@ -1,4 +1,7 @@
-import type { WorktreeLocationProbe } from "../../../lib/types";
+import type {
+  WorktreeLocationProbe,
+  WorktreePurpose,
+} from "../../../lib/types";
 import { useCallback, useEffect, useState } from "react";
 import {
   Banner,
@@ -14,10 +17,14 @@ import { MoveWorktreesDialog } from "../MoveWorktreesDialog";
 import styles from "./WorktreeLocationField.module.css";
 
 interface WorktreeLocationFieldProps {
+  caption?: string;
   /** Shown as the placeholder — what the location resolves to when unset. */
   defaultPath: string;
   hostLabel?: string;
+  label?: string;
   onCommit: (next: string) => Promise<void>;
+  /** Which set of worktrees this location governs. */
+  purpose?: WorktreePurpose;
   /** Repo this is for, when the field is editing a single project. */
   repoRoot?: string;
   /** The saved value. Empty means "inherit". */
@@ -31,8 +38,11 @@ interface WorktreeLocationFieldProps {
  * — especially the one about removable drives — are written once.
  */
 export function WorktreeLocationField({
+  caption,
   defaultPath,
   hostLabel = "this Mac",
+  label = "Worktree location",
+  purpose = "user",
   repoRoot,
   value,
   onCommit,
@@ -69,21 +79,25 @@ export function WorktreeLocationField({
     try {
       await onCommit(trimmed);
       // Only a project can be relocated — the app-wide setting spans several,
-      // each of which has its own worktrees and its own blockers.
-      if (repoRoot && trimmed) {
-        setOfferMove(trimmed);
+      // each of which has its own worktrees and its own blockers. Clearing the
+      // field is offered too: the worktrees are just as stranded either way.
+      if (repoRoot) {
+        setOfferMove(trimmed || defaultPath);
       }
     } finally {
       setSaving(false);
     }
-  }, [onCommit, repoRoot, trimmed]);
+  }, [defaultPath, onCommit, repoRoot, trimmed]);
 
   const blocked = probe?.reason != null;
 
   return (
     <SettingsScreenField
-      label="Worktree location"
-      caption={`Argus creates <this folder>/<Repo>-argus-worktrees/ underneath. Leave it empty to use ${defaultPath}.`}
+      label={label}
+      caption={
+        caption ??
+        `Argus creates <this folder>/<Repo>-argus-worktrees/ underneath. Leave it empty to use ${defaultPath}.`
+      }
     >
       <div className={styles.row}>
         <Input
@@ -128,6 +142,7 @@ export function WorktreeLocationField({
 
       {offerMove != null && repoRoot != null && (
         <MoveWorktreesDialog
+          purpose={purpose}
           repoRoot={repoRoot}
           toBaseDir={offerMove}
           onClose={() => setOfferMove(null)}
