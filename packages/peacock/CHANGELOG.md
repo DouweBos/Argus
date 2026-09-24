@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.19.0
+
+### Minor Changes
+
+- bc535cd: System messages take a `tone` of `error` or `warning`, replacing the `isError` flag.
+
 ## 0.18.1
 
 ### Patch Changes
