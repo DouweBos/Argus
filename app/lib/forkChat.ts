@@ -1,4 +1,5 @@
 import type { ConversationMessage } from "../stores/conversationStore";
+import { getAgentState } from "../stores/agentStore";
 import {
   getConversationState,
   loadSavedMessages,
@@ -168,6 +169,7 @@ export async function forkChatFromMessage(
   const agent = await startAgentInSession(newSession.id, {
     focus: true,
     resumeSessionId: newClaudeSessionId ?? undefined,
+    runnerId: getAgentState().agents[agentId]?.runner_id,
   });
 
   // Seed the UI transcript with the truncated history. `resuming: true`
@@ -224,6 +226,7 @@ export async function forkChatIntoNewAgent(
   const agent = await startAgentInSession(sessionId, {
     focus: true,
     resumeSessionId: newClaudeSessionId ?? undefined,
+    runnerId: getAgentState().agents[agentId]?.runner_id,
   });
 
   loadSavedMessages(

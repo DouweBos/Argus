@@ -117,6 +117,7 @@ export function useSessionAgents(
       model?: string,
       permissionMode?: string,
       resumeSessionId?: string,
+      runnerId?: string,
     ): Promise<string | null> => {
       if (!sessionId) {
         return null;
@@ -131,6 +132,7 @@ export function useSessionAgents(
           model,
           permissionMode,
           resumeSessionId,
+          runnerId,
         });
 
         return agentInfo.agent_id;

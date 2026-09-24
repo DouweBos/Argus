@@ -11,6 +11,8 @@ export interface SplitPair {
 export interface RecentlyClosedAgent {
   agentId: string;
   closedAt: number;
+  /** Runner the agent ran on, so reopening resumes on the same one. */
+  runnerId?: string;
   runnerSessionId?: string;
   title: string;
 }

@@ -16,6 +16,8 @@ export interface ChatHistoryEntry {
   id: string;
   messageCount: number;
   model?: string;
+  /** Runner that produced the conversation — absent on older records. */
+  runnerId?: string;
   sessionBranch: string;
   sessionDescription: string;
   sessionId: string;

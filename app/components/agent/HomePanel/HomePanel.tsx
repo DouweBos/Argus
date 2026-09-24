@@ -95,30 +95,36 @@ export function HomePanel({ sessionId }: HomePanelProps) {
       handleCloseHistory();
       setActiveCenterView("agents");
 
-      const newAgentId = await startNew(undefined, undefined, claudeSessionId);
-      if (!newAgentId || !repoRoot) {
+      // Read the saved record first: the new agent has to resume on the
+      // runner that wrote the transcript, not the session's default.
+      const entries = repoRoot
+        ? await listChatHistory(repoRoot).catch(() => [])
+        : [];
+      const entry = entries.find((e) => e.sessionId === claudeSessionId);
+
+      const newAgentId = await startNew(
+        undefined,
+        undefined,
+        claudeSessionId,
+        entry?.runnerId,
+      );
+      if (!newAgentId || !repoRoot || !entry) {
         return;
       }
 
-      const entries = await listChatHistory(repoRoot).catch(() => []);
-      const entry = entries.find((e) => e.sessionId === claudeSessionId);
-      if (entry) {
-        const saved = await loadChatHistory(repoRoot, entry.id).catch(
-          () => null,
+      const saved = await loadChatHistory(repoRoot, entry.id).catch(() => null);
+      if (saved && saved.messages.length > 0) {
+        loadSavedMessages(
+          newAgentId,
+          saved.messages,
+          saved.model,
+          saved.sessionId,
+          true,
+          saved.title,
         );
-        if (saved && saved.messages.length > 0) {
-          loadSavedMessages(
-            newAgentId,
-            saved.messages,
-            saved.model,
-            saved.sessionId,
-            true,
-            saved.title,
-          );
-          // Hydration is renderer-only state. Publish it so the web and phone
-          // clients see the restored transcript instead of an empty chat.
-          saveAgentConversation(newAgentId);
-        }
+        // Hydration is renderer-only state. Publish it so the web and phone
+        // clients see the restored transcript instead of an empty chat.
+        saveAgentConversation(newAgentId);
       }
     },
     [handleCloseHistory, repoRoot, startNew],
