@@ -35,6 +35,9 @@ export const CUSTOM_RUNNER_PRESETS: CustomRunnerPreset[] = [
         ANTHROPIC_AUTH_TOKEN: "",
         // Attribution headers are rejected by the gateway.
         CLAUDE_CODE_ATTRIBUTION_HEADER: "0",
+        // The gateway doesn't advertise a window, so auto-compact assumes
+        // 200k. Fill this in to hold the real one; blank leaves it unset.
+        CLAUDE_CODE_MAX_CONTEXT_TOKENS: "",
       },
       models: [
         {
