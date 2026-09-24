@@ -39,6 +39,22 @@ export const System: Story = {
   args: { role: "system", textBlocks: ["API retry 1/3 — retrying in 2s"] },
 };
 
+export const SystemWarning: Story = {
+  args: {
+    role: "system",
+    tone: "warning",
+    textBlocks: ["Unrecognized model", "Model: callstack/Apex"],
+  },
+};
+
+export const SystemError: Story = {
+  args: {
+    role: "system",
+    tone: "error",
+    textBlocks: ["Agent process exited with code 1"],
+  },
+};
+
 export const Mcp: Story = {
   args: {
     role: "system",

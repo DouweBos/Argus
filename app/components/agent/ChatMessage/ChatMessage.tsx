@@ -251,7 +251,7 @@ export function ChatMessage({
     return (
       <MessageBubble
         role="system"
-        isError={message.isError}
+        tone={message.tone}
         timestamp={message.timestamp}
         textBlocks={trimmed}
       />

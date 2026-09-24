@@ -45,6 +45,7 @@ import {
   notifyPermissionRequested,
 } from "./agentNotifications";
 import { deriveTitle } from "./chatHistory";
+import { parseCliDiagnostic } from "./cliDiagnostics";
 import { type UnlistenFn, listen } from "./events";
 import {
   createCheckpoint,
@@ -746,11 +747,17 @@ export function startAgentListening(agentId: string): void {
     if (!line) {
       return;
     }
+    // A structured CLI diagnostic is a notice the run survived — a gateway
+    // runner trips a couple on every session — so it reads as a warning with
+    // spelled-out fields, not as a failure with a JSON blob.
+    const diagnostic = parseCliDiagnostic(line);
     appendSystemMessage(agentId, {
       id: crypto.randomUUID(),
       role: "system",
-      isError: true,
-      textBlocks: [line],
+      tone: diagnostic ? "warning" : "error",
+      textBlocks: diagnostic
+        ? [diagnostic.title, ...diagnostic.details]
+        : [line],
       toolCalls: [],
       timestamp: Date.now(),
     });
