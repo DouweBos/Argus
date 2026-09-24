@@ -12,8 +12,14 @@ extension AppStore {
     agentId: String, message: String, images: [RemoteImageAttachment] = [],
     displayText: String? = nil
   ) async {
-    guard let transport else { return }
-    appendOptimistic(agentId: agentId, text: displayText ?? message, images: images)
+    let localId = appendOptimistic(agentId: agentId, text: displayText ?? message, images: images)
+    // No socket at all still has to land somewhere the user can see and retry,
+    // or the message is gone the moment the lock screen took the connection.
+    guard let transport else {
+      markFailed(agentId: agentId, localId: localId, message: message, displayText: displayText,
+        images: images)
+      return
+    }
 
     struct Params: Encodable {
       let agent_id: String
@@ -31,14 +37,50 @@ extension AppStore {
       await loadTranscript(agentId: agentId)
     } catch {
       report(error)
+      markFailed(agentId: agentId, localId: localId, message: message, displayText: displayText,
+        images: images)
+    }
+  }
+
+  /// Move a bubble from "sent" to "not sent". Without this the optimistic copy
+  /// is indistinguishable from a delivered message — the computer never got it,
+  /// nothing retries, and nothing ever echoes it back to reconcile against.
+  private func markFailed(
+    agentId: String, localId: String, message: String, displayText: String?,
+    images: [RemoteImageAttachment]
+  ) {
+    optimisticByAgent[agentId]?.removeAll { $0.id == localId }
+    if optimisticByAgent[agentId]?.isEmpty == true {
+      optimisticByAgent[agentId] = nil
+    }
+    failedByAgent[agentId, default: []].append(
+      FailedSend(
+        id: localId, body: message, displayText: displayText, images: images))
+  }
+
+  /// Send a failed message again. It leaves the failed list first, so a second
+  /// failure re-adds it rather than showing the same message twice.
+  func retryFailed(agentId: String, id: String) async {
+    guard let pending = failedByAgent[agentId]?.first(where: { $0.id == id }) else { return }
+    discardFailed(agentId: agentId, id: id)
+    await sendMessage(
+      agentId: agentId, message: pending.body, images: pending.images,
+      displayText: pending.displayText)
+  }
+
+  func discardFailed(agentId: String, id: String) {
+    failedByAgent[agentId]?.removeAll { $0.id == id }
+    if failedByAgent[agentId]?.isEmpty == true {
+      failedByAgent[agentId] = nil
     }
   }
 
   /// Show the user's message immediately, with its attachments, rather than
-  /// waiting a poll cycle for the snapshot to catch up.
+  /// waiting a poll cycle for the snapshot to catch up. Returns its local id.
+  @discardableResult
   private func appendOptimistic(
     agentId: String, text: String, images: [RemoteImageAttachment]
-  ) {
+  ) -> String {
     let id = "optimistic-\(Int(Date().timeIntervalSince1970 * 1000))-\(Int.random(in: 0..<10000))"
     var refs: [RemoteImageRef] = []
     for (index, image) in images.enumerated() {
@@ -53,6 +95,8 @@ extension AppStore {
       images: refs.isEmpty ? nil : refs,
       timestamp: Date().timeIntervalSince1970 * 1000)
     optimisticByAgent[agentId, default: []].append(message)
+
+    return id
   }
 
   // MARK: Queue
@@ -64,7 +108,13 @@ extension AppStore {
   func queueMessage(
     agentId: String, message: String, images: [RemoteImageAttachment], displayText: String
   ) async {
-    guard let transport else { return }
+    guard let transport else {
+      failedByAgent[agentId, default: []].append(
+        FailedSend(
+          id: "failed-\(UUID().uuidString)", body: message, displayText: displayText,
+          images: images))
+      return
+    }
     struct Params: Encodable {
       let agent_id: String
       let message: String
@@ -79,7 +129,15 @@ extension AppStore {
           images: images.isEmpty ? nil : images),
         as: IgnoredResult.self)
       await loadQueue(agentId: agentId)
-    } catch { report(error) }
+    } catch {
+      report(error)
+      // A queue add that never landed is as invisible as a send that didn't:
+      // the computer's queue is the only record, and it has no row for this.
+      failedByAgent[agentId, default: []].append(
+        FailedSend(
+          id: "failed-\(UUID().uuidString)", body: message, displayText: displayText,
+          images: images))
+    }
   }
 
   func loadQueue(agentId: String) async {
