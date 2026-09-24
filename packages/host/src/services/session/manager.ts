@@ -47,6 +47,7 @@ import {
   type SessionMeta,
 } from "./metadata";
 import { defaultArgusConfig, type Session, type SessionStatus } from "./models";
+import { loadPersistedRepoRoots, persistRepoRoots } from "./repoRootsStore";
 import { runSetupPipeline } from "./setup";
 import {
   assertWorktreeBaseAvailable,
@@ -70,12 +71,52 @@ export function addRepoRoot(dirPath: string): void {
   }
   info(`Adding repo root: ${dirPath}`);
   appState.repoRoots.add(dirPath);
+  saveRepoRoots();
   emitHostEvent("project:added", dirPath);
+}
+
+/**
+ * Saved roots we couldn't register at boot because their volume wasn't
+ * mounted. Held so a later add/remove doesn't quietly drop them from the file.
+ */
+const unreachableRepoRoots = new Set<string>();
+
+function saveRepoRoots(): void {
+  persistRepoRoots([...appState.repoRoots, ...unreachableRepoRoots]);
+}
+
+/**
+ * Re-register the roots a previous run had open, so a host comes back with the
+ * same projects even when no client has asked for them yet. Roots on a volume
+ * that isn't mounted stay saved and are picked up on a later launch.
+ */
+export function restoreRepoRoots(): void {
+  for (const dirPath of loadPersistedRepoRoots()) {
+    if (appState.repoRoots.has(dirPath)) {
+      continue;
+    }
+    let isDir = false;
+    try {
+      isDir = fs.statSync(dirPath).isDirectory();
+    } catch {
+      isDir = false;
+    }
+    if (!isDir) {
+      info(`Repo root not reachable, leaving it saved: ${dirPath}`);
+      unreachableRepoRoots.add(dirPath);
+      continue;
+    }
+    info(`Restoring repo root: ${dirPath}`);
+    appState.repoRoots.add(dirPath);
+    emitHostEvent("project:added", dirPath);
+  }
 }
 
 /** Remove a repository root from the set of open projects. */
 export function removeRepoRoot(dirPath: string): void {
   appState.repoRoots.delete(dirPath);
+  unreachableRepoRoots.delete(dirPath);
+  saveRepoRoots();
   emitHostEvent("project:removed", dirPath);
 
   // Find session IDs belonging to this repo root.
