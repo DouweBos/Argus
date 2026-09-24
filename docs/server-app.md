@@ -36,6 +36,11 @@ processes running git in one worktree is not a thing to design for.
 
 `ARGUS_HOME` still overrides the default, on both apps.
 
+Its open projects live in `repo-roots.json` under that same directory and are
+re-registered at launch. The server has no renderer to replay a project list, so
+without this it came back from every restart with nothing for clients to attach
+to.
+
 The gateway is not a setting on the server — it is the only way in, so it is
 forced on at startup regardless of `remote_enabled`.
 

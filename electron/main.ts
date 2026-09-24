@@ -54,6 +54,7 @@ import {
   setWebClientDir,
   stopRemote,
 } from "@argus/host/services/remote/remoteService";
+import { restoreRepoRoots } from "@argus/host/services/session/manager";
 import { refreshAllBranches } from "@argus/host/services/session/watcher";
 import { stopAndroidCapture } from "@argus/host/services/simulator/android";
 import { stopSimulatorCapture } from "@argus/host/services/simulator/ios";
@@ -949,6 +950,11 @@ app.whenReady().then(() => {
   // Restore a user-pinned conductor version, installing it in the background
   // if it isn't provisioned yet. Falls back to the bundled version meanwhile.
   initConductorOverride();
+
+  // The projects this host had open last run. Must happen before the gateway
+  // accepts anyone: a client hydrates from this set the moment it attaches,
+  // and on the headless server nothing else would ever fill it.
+  restoreRepoRoots();
 
   // Automations. Nothing else starts the clock — the scheduler has no
   // neighbours since organizations were removed.

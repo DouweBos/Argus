@@ -1,7 +1,7 @@
 /**
  * Module-level project lifecycle. Owns `openProject` / `closeProject` plus a
- * one-shot `bootstrapProjects()` that hydrates `recentProjectsStore`'s saved
- * open list at app start.
+ * one-shot `bootstrapProjects()` that opens this Mac's projects at app start,
+ * from the backend's restored roots plus `recentProjectsStore`'s saved list.
  *
  * Living outside React lets us avoid running the hydration N times for the
  * N components that consume `useProjects()` — historically each mount fired
@@ -35,11 +35,13 @@ import {
   createSession as apiCreateSession,
   deleteSession as apiDeleteSession,
   removeRepoRoot as apiRemoveRepoRoot,
+  listProjects,
   listSessions,
 } from "./ipc";
 import { refreshRepoBranch } from "./repoBranchSync";
 import { LOCAL_HOST_ID, hostScopedKey, type HostId } from "./transport/hostId";
 import { projectHost, rememberProjectHost } from "./transport/hostIndex";
+import { runOnHost } from "./transport/hostRouting";
 
 /** Repo roots registered with a backend in this process, keyed by host. */
 const knownRepoRoots = new Set<string>();
@@ -163,9 +165,14 @@ export async function deleteSessionById(
 }
 
 /**
- * Hydrate saved open projects from `recentProjectsStore`. Idempotent — only
- * the first call has effect. Call once at renderer start, before any
- * `useProjects()` consumer renders.
+ * Hydrate this Mac's open projects. Idempotent — only the first call has
+ * effect. Call once at renderer start, before any `useProjects()` consumer
+ * renders.
+ *
+ * The backend restores its own roots now, so a window that opens against an
+ * already-running backend (a second window, a reloaded renderer, a fresh
+ * profile) picks those up too rather than only what this renderer last saved.
+ * Attached hosts are left alone — `hydrateHost` owns each of those.
  */
 export async function bootstrapProjects(): Promise<void> {
   if (bootstrapped) {
@@ -173,14 +180,24 @@ export async function bootstrapProjects(): Promise<void> {
   }
   bootstrapped = true;
 
-  // Only this Mac's projects: an attached host hydrates its own, and a host
-  // that is not attached has no sidebar rows at all.
-  const open = getOpenProjects().filter((p) => p.hostId === LOCAL_HOST_ID);
-  for (const p of open) {
+  const saved = getOpenProjects()
+    .filter((p) => p.hostId === LOCAL_HOST_ID)
+    .map((p) => p.path);
+
+  let registered: string[] = [];
+  try {
+    registered = (await runOnHost(LOCAL_HOST_ID, () => listProjects()))
+      .filter((p) => p.registered)
+      .map((p) => p.path);
+  } catch {
+    // Backend not answering yet — the saved list alone is still worth opening.
+  }
+
+  for (const path of new Set([...saved, ...registered])) {
     try {
-      await openProject(p.path, { autoSelect: false, skipRecent: true });
+      await openProject(path, { autoSelect: false, skipRecent: true });
     } catch {
-      removeOpenProject(p.path);
+      removeOpenProject(path);
     }
   }
 }
