@@ -66,7 +66,10 @@ export async function openProject(
     rememberProjectHost(path, hostId);
     const known = hostScopedKey(hostId, path);
     if (!knownRepoRoots.has(known)) {
-      await apiAddRepoRoot(path);
+      // Pinned: `add_repo_root` names its subject `path`, which isn't a
+      // routing key, so it would otherwise follow the focused host — and
+      // hydration runs before the host's tab exists.
+      await runOnHost(hostId, () => apiAddRepoRoot(path));
       knownRepoRoots.add(known);
     }
     addProject(path, hostId);
@@ -106,7 +109,9 @@ export async function closeProject(
   hostId: HostId = LOCAL_HOST_ID,
 ): Promise<void> {
   try {
-    await apiRemoveRepoRoot(repoRoot);
+    // Same pinning as `openProject` — otherwise closing a project on a remote
+    // tab unregisters your own copy of that path instead.
+    await runOnHost(hostId, () => apiRemoveRepoRoot(repoRoot));
     knownRepoRoots.delete(hostScopedKey(hostId, repoRoot));
     removeProject(repoRoot, hostId);
     removeOpenProject(repoRoot, hostId);
