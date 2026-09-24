@@ -68,7 +68,7 @@ files across accounts.
 | ------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
 | **Default permission mode**           | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker.       |
 | **Automations**                       | On      | Whether automations start agents on their own schedule. Turning it off leaves the manual Run button working. |
-| **Default autonomy**                  | Propose | How far an automation may go when it does not set its own level.                                             |
+| **Default autonomy**                  | No cap  | App-wide ceiling on how far any automation may go, and the level used by automations that set none.          |
 | **Concurrent automation sessions**    | 3       | How many sessions automations may have open at once, across all of them.                                     |
 | **Daily automation budget**           | 0       | Spend automations may reach in a day, in USD. 0 means no budget.                                             |
 | **Extra commands for read-only runs** | none    | Shell commands a read-only automation may run beyond the built-in reads.                                     |
@@ -127,8 +127,8 @@ start disabled, so nothing ever runs until you turn one on. See
 
 ### Autonomy
 
-**Default autonomy** is the ladder an automation climbs, and each rung contains
-the one before it:
+**Default autonomy** caps the ladder an automation climbs, and each rung
+contains the one before it:
 
 - **Propose** — writes a proposal into the inbox and touches nothing.
 - **Draft** — opens a worktree, implements the change and commits, then stops.
@@ -136,9 +136,14 @@ the one before it:
 - **Auto-merge** — also merges once CI is green. Never a default; opt in per
   automation.
 
+Leave it on **No cap** and every automation runs at the level it set for
+itself. Pick a rung and it becomes an app-wide ceiling as well as the level for
+automations that set none.
+
 An automation can set its own level, and a project can set a ceiling in its
-Project Settings. Argus takes the **lowest** of the three, so a repository can
-always ask for less autonomy than this setting allows and never for more.
+Project Settings. Argus takes the **lowest** of whichever of the three are set,
+so a repository can always ask for less autonomy than this setting allows and
+never for more. With none of them set the level is Propose.
 
 The limits are enforced by Argus, not by the instructions an automation is
 given: a playbook that tells the agent to start a session anyway still produces

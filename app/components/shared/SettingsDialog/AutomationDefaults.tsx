@@ -9,19 +9,23 @@ import {
 import { getAppSettings, setAppSettings } from "../../../lib/ipc";
 import { AutomationAllowlist } from "./AutomationAllowlist";
 
-const OPTIONS = AUTONOMY_LEVELS.map((level) => ({
-  label: AUTONOMY_LABELS[level],
-  value: level,
-}));
+type AutonomyChoice = AutonomyLevel | "none";
+
+const OPTIONS = [
+  { label: "No cap", value: "none" as const },
+  ...AUTONOMY_LEVELS.map((level) => ({
+    label: AUTONOMY_LABELS[level],
+    value: level,
+  })),
+];
 
 const DEFAULTS = {
-  default_autonomy: "propose" as AutonomyLevel,
   max_concurrent_automation_sessions: 3,
   automation_daily_budget_usd: 0,
 };
 
 /**
- * What an automation may do when it does not say. Host state, not renderer
+ * The app-wide ceiling on what an automation may do. Host state, not renderer
  * state, so it follows whichever machine runs the clock.
  */
 export function AutomationDefaults() {
@@ -53,7 +57,7 @@ export function AutomationDefaults() {
     setAppSettings(patch).catch(() => setSettings(previous));
   };
 
-  const autonomy = settings?.default_autonomy ?? DEFAULTS.default_autonomy;
+  const autonomy: AutonomyChoice = settings?.default_autonomy ?? "none";
   const concurrency =
     settings?.max_concurrent_automation_sessions ??
     DEFAULTS.max_concurrent_automation_sessions;
@@ -65,12 +69,18 @@ export function AutomationDefaults() {
     <>
       <SettingsScreenField
         label="Default autonomy"
-        caption={`${AUTONOMY_CAPTIONS[autonomy]} Applies to automations that don't set their own level. A project can cap it lower, never higher.`}
+        caption={
+          autonomy === "none"
+            ? "Every automation runs at the level it sets for itself. A project can still cap it lower."
+            : `${AUTONOMY_CAPTIONS[autonomy]} Caps every automation, and applies to those that don't set their own level. A project can cap it lower, never higher.`
+        }
       >
         <SegmentedControl
           options={OPTIONS}
           value={autonomy}
-          onChange={(value) => save({ default_autonomy: value })}
+          onChange={(value) =>
+            save({ default_autonomy: value === "none" ? null : value })
+          }
         />
       </SettingsScreenField>
 

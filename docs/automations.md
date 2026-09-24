@@ -97,14 +97,16 @@ How far a run may go on its own. Each rung strictly contains the one before it:
 | **Pull request** | Also push the branch and open a draft PR.                             |
 | **Auto-merge**   | Also merge, once CI is green. Never a default; opt in per automation. |
 
-The effective level is the **lowest** of three: the app-wide default
+The effective level is the **lowest** of the three that are set: the app-wide
+default
 ([App settings → Agents → Autonomy](./app-settings.md#autonomy)), the
 automation's own setting, and the project's ceiling
 ([`.argus.json` → `automations`](./project-settings.md#automations--how-far-automations-may-go-here)).
 A repository can always ask for less than the app allows, and never for more.
 
-**The app default is Propose.** So is the floor a project drops to when it lists
-an automation as disabled.
+**The app default is No cap** — unset, so it does not hold an automation back.
+When nothing is set anywhere the level is Propose, and Propose is also the floor
+a project drops to when it lists an automation as disabled.
 
 ### The ladder is code, not instructions
 
