@@ -67,6 +67,7 @@ struct AgentTranscriptView: View {
             hasPendingPermission: hasPendingPermission)
 
           queued
+          notSent
 
           Color.clear.frame(height: 1).id(Self.bottomAnchor)
         }
@@ -166,6 +167,19 @@ struct AgentTranscriptView: View {
     }
   }
 
+  /// Messages that never reached the computer. They sit below the queue
+  /// because the queue is the computer's record and this is the absence of one.
+  @ViewBuilder
+  private var notSent: some View {
+    let items = app.failedByAgent[agentKey] ?? []
+    if !items.isEmpty {
+      SectionHeader(title: "Not sent", count: items.count)
+      ForEach(items) { item in
+        FailedSendCard(agentKey: agentKey, item: item)
+      }
+    }
+  }
+
   @ViewBuilder
   private var queued: some View {
     let items = app.queuedByAgent[agentKey] ?? []
@@ -187,6 +201,56 @@ struct AgentTranscriptView: View {
     // usual casualty. One catch-up fetch closes that window.
     try? await Task.sleep(for: .milliseconds(600))
     await app.loadTranscript(agentId: agentKey)
+  }
+}
+
+/// A message the computer never received. Shown as its own card rather than a
+/// transcript bubble: a bubble reads as delivered, and this one was not.
+struct FailedSendCard: View {
+  @Environment(AppStore.self) private var app
+
+  let agentKey: String
+  let item: FailedSend
+
+  /// The attachments travel with the card as base64, so they are seeded into
+  /// the same cache the transcript reads and render through the usual thumbnail.
+  private var attachmentIds: [String] {
+    item.images.indices.map { "failed:\(item.id):img:\($0)" }
+  }
+
+  private func seedAttachments() {
+    for (index, image) in item.images.enumerated() {
+      app.seedImage(
+        agentId: agentKey,
+        imageId: "failed:\(item.id):img:\(index)",
+        dataURI: "data:\(image.mediaType);base64,\(image.data)")
+    }
+  }
+
+  var body: some View {
+    Card {
+      HStack(alignment: .top, spacing: 8) {
+        Badge(label: "Not sent", tone: .danger)
+        BodyText(item.text)
+        Spacer(minLength: 4)
+        IconBtn(systemName: Icon.refresh, label: "Send again", size: 13) {
+          Task { await app.retryFailed(agentId: agentKey, id: item.id) }
+        }
+        IconBtn(systemName: Icon.close, label: "Discard message", size: 13) {
+          app.discardFailed(agentId: agentKey, id: item.id)
+        }
+      }
+      if !attachmentIds.isEmpty {
+        HStack(spacing: 6) {
+          ForEach(attachmentIds, id: \.self) { imageId in
+            TranscriptImage(
+              agentKey: agentKey, imageId: imageId,
+              siblings: attachmentIds, maxHeight: 56)
+          }
+        }
+      }
+    }
+    .task(id: item.id) { seedAttachments() }
   }
 }
 

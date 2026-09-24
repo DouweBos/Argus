@@ -2,6 +2,21 @@ import ArgusKit
 import Foundation
 import Observation
 
+/// A message this client could not hand to the computer. It keeps the body it
+/// would have sent — preamble and attachments included — so retrying is one
+/// tap rather than retyping.
+struct FailedSend: Identifiable, Sendable {
+  var id: String
+  var body: String
+  var displayText: String?
+  var images: [RemoteImageAttachment]
+
+  /// What the user actually typed, without the linked-projects preamble.
+  var text: String {
+    LinkedProjects.parsePreamble(body)?.rest ?? displayText ?? body
+  }
+}
+
 /// Owns the paired computers, the live `Transport` to the active one, and the
 /// data it fetches. Views read slices and call actions; the transport pushes
 /// events back in through `handle(_:)`.
@@ -44,6 +59,9 @@ final class AppStore {
   var messagesByAgent: [String: [RemoteMessage]] = [:]
   /// Locally-appended user messages awaiting confirmation in the next snapshot.
   var optimisticByAgent: [String: [RemoteMessage]] = [:]
+  /// Messages that never reached the computer, kept with their payload so a
+  /// retry re-sends them instead of making you retype.
+  var failedByAgent: [String: [FailedSend]] = [:]
   /// The computer's queue per agent — messages waiting on a busy agent.
   var queuedByAgent: [String: [RemoteQueuedMessage]] = [:]
   var tasksByAgent: [String: [RemoteTask]] = [:]
@@ -268,6 +286,7 @@ final class AppStore {
     stoppedByRepo = [:]
     messagesByAgent = [:]
     optimisticByAgent = [:]
+    failedByAgent = [:]
     queuedByAgent = [:]
     tasksByAgent = [:]
     todosByAgent = [:]
