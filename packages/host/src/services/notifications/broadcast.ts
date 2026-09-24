@@ -15,17 +15,11 @@ export {
   type RemoteNotificationAction,
 } from "./actions";
 
-export type NotificationLevel = "error" | "warning";
-
-export interface NotificationPayload {
-  level: NotificationLevel;
-  message: string;
-  source?: string;
-}
-
-export function broadcastNotification(payload: NotificationPayload): void {
-  emitHostEvent("notification", payload);
-}
+export {
+  broadcastNotification,
+  type NotificationLevel,
+  type NotificationPayload,
+} from "./notify";
 
 /** A user-facing notification, mirrored to every surface that can show it. */
 export interface RemoteNotificationPayload {

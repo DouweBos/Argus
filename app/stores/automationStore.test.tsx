@@ -69,6 +69,7 @@ function automation(id: string, name: string): Automation {
     guardrails: DEFAULT_GUARDRAILS,
     playbook: "do the thing",
     model: null,
+    runner: null,
     template_id: null,
     trigger: { kind: "manual" },
     scope: { repo_roots: [] },

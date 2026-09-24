@@ -804,6 +804,8 @@ export interface Automation {
   next_run_at: number | null;
   /** The instructions handed to the run's agent. Markdown. */
   playbook: string;
+  /** Runner for the run's agent; null inherits the app default. */
+  runner: string | null;
   /** Projects the run may read. */
   scope: { repo_roots: string[] };
   /** Signal sources feeding the run, by id. Empty = no signals. */
@@ -936,6 +938,7 @@ export interface CreateAutomationInput {
   model?: string | null;
   name: string;
   playbook: string;
+  runner?: string | null;
   scope?: { repo_roots: string[] };
   source_ids?: string[];
   template_id?: string | null;

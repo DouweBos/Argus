@@ -5,9 +5,10 @@ import type {
   AutomationTrigger,
   SignalSourceInfo,
 } from "../../../lib/types";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
+  Chip,
   CronSchedulePreview,
   FormField,
   Input,
@@ -23,10 +24,20 @@ import {
   nextFireTimes,
 } from "../../../lib/automations";
 import { listSignalSources } from "../../../lib/ipc";
+import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { saveAutomation } from "../../../stores/automationStore";
+import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { useSessionProjects } from "../../../stores/sessionStore";
+import {
+  DEFAULT_LLM_RUNNER,
+  useDefaultLlm,
+} from "../../../stores/settingsStore";
+import { ModelPicker, type RunnerSelection } from "../../agent/ModelPicker";
 import styles from "./AutomationEditor.module.css";
 import { AutonomyFields } from "./AutonomyFields";
+
+/** Model entry standing for "whatever the app default is". */
+const INHERIT_MODEL = { value: "", displayName: "Default" };
 
 const PREVIEW_COUNT = 5;
 
@@ -58,6 +69,7 @@ interface Draft {
   name: string;
   playbook: string;
   repoRoots: string[];
+  runner: string;
   sourceIds: string[];
   timezone: string;
 }
@@ -71,6 +83,7 @@ function toDraft(automation: Automation): Draft {
     description: automation.description,
     playbook: automation.playbook,
     model: automation.model ?? "",
+    runner: automation.runner ?? "",
     kind: automation.trigger.kind,
     cron: schedule?.cron ?? "0 9 * * 1-5",
     timezone: schedule?.timezone ?? localTimezone(),
@@ -100,6 +113,42 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
   const [error, setError] = useState<string | null>(null);
   const projects = useSessionProjects();
   const sources = useSignalSources();
+
+  const runners = useRegisteredRunners();
+  const defaultLlm = useDefaultLlm();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const llmChipRef = useRef<HTMLDivElement>(null);
+
+  // Blank means "inherit", so the picker still has to show something concrete.
+  const effectiveRunnerId =
+    draft.runner || defaultLlm.runner || DEFAULT_LLM_RUNNER;
+  const runnerLabel =
+    runners.find((r) => r.id === effectiveRunnerId)?.displayName ??
+    effectiveRunnerId;
+
+  // A custom runner declares its own models; otherwise fall back to whatever a
+  // live conversation last reported, since Claude Code only learns its list
+  // from the handshake.
+  const models = useMemo(() => {
+    const declared = runners.find((r) => r.id === effectiveRunnerId)?.models;
+    const list = declared?.length
+      ? declared
+      : getLastKnownCapabilities().models;
+
+    return [INHERIT_MODEL, ...list];
+  }, [runners, effectiveRunnerId]);
+  const modelLabel =
+    models.find((m) => m.value === draft.model)?.displayName ?? draft.model;
+
+  const runnerSelection: RunnerSelection = {
+    currentId: effectiveRunnerId,
+    locked: false,
+    available: runners,
+    onSelect: (id) =>
+      // Model ids don't carry across runners, so a switch drops the model back
+      // to the new runner's default.
+      setDraft((d) => ({ ...d, runner: id, model: "" })),
+  };
 
   // Save is explicit, so the button only lights up once the form differs from
   // what the host holds.
@@ -150,6 +199,7 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
         description: draft.description.trim(),
         playbook: draft.playbook,
         model: draft.model.trim() || null,
+        runner: draft.runner.trim() || null,
         trigger: toTrigger(draft),
         scope: { repo_roots: draft.repoRoots },
         source_ids: draft.sourceIds,
@@ -303,15 +353,33 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
         </FormField>
 
         <FormField
-          label="Model"
-          helper="Blank uses the default model for new agents."
+          label="Runner and model"
+          helper="What the run's agent talks to. Defaults follow the app settings."
         >
-          <Input
-            mono
-            placeholder="e.g. opus, sonnet"
-            value={draft.model}
-            onChange={(e) => patch("model", e.target.value)}
-          />
+          <div ref={llmChipRef} className={styles.chipAnchor}>
+            <Chip
+              mono
+              muted
+              interactive
+              title="Switch the runner and model for this automation"
+              onClick={() => setPickerOpen((o) => !o)}
+            >
+              {`${runnerLabel} · ${modelLabel}`}
+            </Chip>
+            {pickerOpen && (
+              <ModelPicker
+                triggerRef={llmChipRef}
+                currentModel={draft.model}
+                models={models}
+                runner={runnerSelection}
+                onClose={() => setPickerOpen(false)}
+                onSelect={(m) => {
+                  setPickerOpen(false);
+                  patch("model", m);
+                }}
+              />
+            )}
+          </div>
         </FormField>
 
         <AutonomyFields

@@ -118,6 +118,7 @@ import {
   remoteAutomationRun,
   remoteAutomationRuns,
   remoteAutomations,
+  remoteRunners,
   remoteSignalSources,
   saveRemoteScratchRun,
   startRemoteScratchRun,
@@ -1603,6 +1604,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return detail;
   },
   "automations.sources": async () => await remoteSignalSources(),
+  "automations.runners": async () => remoteRunners(),
   "automations.create": async (params) => {
     const { input } = parse("automations.create", params);
     requireKnownRepoRoots(input.repo_roots);

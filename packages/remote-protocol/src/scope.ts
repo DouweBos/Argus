@@ -140,6 +140,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "automations.run": DENIED,
   "automations.get": DENIED,
   "automations.sources": DENIED,
+  "automations.runners": DENIED,
   "automations.create": DENIED,
   "automations.update": DENIED,
   "automations.delete": DENIED,

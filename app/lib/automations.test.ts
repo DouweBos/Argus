@@ -61,6 +61,7 @@ describe("labels", () => {
         autonomy: null,
         guardrails: DEFAULT_GUARDRAILS,
         model: null,
+        runner: null,
         template_id: null,
         trigger: {
           kind: "schedule",

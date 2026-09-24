@@ -58,6 +58,7 @@ function automation(overrides: Partial<Automation> = {}): Automation {
     autonomy: null,
     guardrails: DEFAULT_GUARDRAILS,
     model: null,
+    runner: null,
     template_id: STANDUP_DIGEST_TEMPLATE_ID,
     seeded_playbook_hash: null,
     created_at: 1,

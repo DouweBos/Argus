@@ -8,7 +8,7 @@ import SwiftUI
 /// switch — everything else is the same form, because it is the same spec.
 struct AutomationFields: View {
   private enum Sheet: String, Identifiable {
-    case projects, sources, autonomy
+    case projects, sources, autonomy, runner, model
     var id: String { rawValue }
   }
 
@@ -18,6 +18,8 @@ struct AutomationFields: View {
   @Binding var draft: RemoteAutomationDetail
   var showsSchedule = true
   let sources: [RemoteSignalSource]
+  /// Empty on a host too old to answer `automations.runners`.
+  var runners: [RemoteRunner] = []
 
   @State private var sheet: Sheet?
 
@@ -86,10 +88,19 @@ struct AutomationFields: View {
       Btn(
         label: "Autonomy: \(draft.autonomy?.label ?? "inherit")", tone: .secondary, small: true
       ) { sheet = .autonomy }
-      ThemedTextField(
-        placeholder: "Model — blank uses the default",
-        text: Binding(get: { draft.model ?? "" }, set: { draft.model = $0.isEmpty ? nil : $0 }),
-        mono: true)
+      if !runners.isEmpty {
+        Btn(label: "Runner: \(runnerLabel)", tone: .secondary, small: true) { sheet = .runner }
+      }
+      // A runner that declares its models gets a picker; Claude Code only
+      // learns its list from a live handshake, so there it stays free text.
+      if declaredModels.isEmpty {
+        ThemedTextField(
+          placeholder: "Model — blank uses the default",
+          text: Binding(get: { draft.model ?? "" }, set: { draft.model = $0.isEmpty ? nil : $0 }),
+          mono: true)
+      } else {
+        Btn(label: "Model: \(modelLabel)", tone: .secondary, small: true) { sheet = .model }
+      }
       GuardrailFields(guardrails: $draft.guardrails)
     }
   }
@@ -140,7 +151,47 @@ struct AutomationFields: View {
       ) { value in
         draft.autonomy = RemoteAutonomy(rawValue: value)
       }
+    case .runner:
+      PickerSheet(
+        title: "Runner",
+        options: [.init(value: "", label: "Default", hint: "Use the computer's default")]
+          + runners.map {
+            .init(value: $0.id, label: $0.displayName, hint: $0.isCustom ? "custom" : nil)
+          },
+        selected: [draft.runner ?? ""]
+      ) { value in
+        draft.runner = value.isEmpty ? nil : value
+        // Model ids don't carry across runners, so a switch drops the model.
+        draft.model = nil
+      }
+    case .model:
+      PickerSheet(
+        title: "Model",
+        options: [.init(value: "", label: "Default", hint: "Use the runner's default")]
+          + declaredModels.map {
+            .init(value: $0.value, label: $0.displayName, hint: $0.description)
+          },
+        selected: [draft.model ?? ""]
+      ) { value in
+        draft.model = value.isEmpty ? nil : value
+      }
     }
+  }
+
+  private var selectedRunner: RemoteRunner? {
+    draft.runner.flatMap { id in runners.first { $0.id == id } }
+  }
+
+  private var declaredModels: [RemoteRunner.Model] { selectedRunner?.models ?? [] }
+
+  private var runnerLabel: String {
+    selectedRunner?.displayName ?? draft.runner ?? "default"
+  }
+
+  private var modelLabel: String {
+    guard let model = draft.model else { return "default" }
+
+    return declaredModels.first { $0.value == model }?.displayName ?? model
   }
 
   private func toggle(_ value: String, in path: WritableKeyPath<RemoteAutomationDetail, [String]>) {

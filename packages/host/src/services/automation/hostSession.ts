@@ -13,15 +13,29 @@ import fs from "node:fs";
 import { emitHostEvent } from "@argus/host/bus";
 import { info } from "@argus/host/logger";
 import { appState } from "../../state";
+import { loadAppSettings } from "../appSettings/store";
+import { resolveRunnerForSession } from "../llm/resolve";
 import { automationRunDir } from "./paths";
 
 export function createAutomationHostSession(options: {
   automationId: string;
   runId: string;
   displayName: string;
+  /** Runner the automation pinned; null follows the app default. */
+  runner?: string | null;
+  model?: string | null;
 }): Session {
   const dir = automationRunDir(options.automationId, options.runId);
   fs.mkdirSync(dir, { recursive: true });
+
+  // No `.argus.json` level: the run dir is not a repo, so the cascade is the
+  // automation's own pick, then the app default.
+  const appDefault = loadAppSettings().default_llm ?? undefined;
+  const { runner, defaultModel } = resolveRunnerForSession({
+    repoRoot: dir,
+    explicit: { runner: options.runner, model: options.model },
+    appDefault,
+  });
 
   const session: Session = {
     id: crypto.randomUUID(),
@@ -34,6 +48,8 @@ export function createAutomationHostSession(options: {
     status: "ready",
     env_index: null,
     base_branch: null,
+    runner_id: runner.id,
+    model: defaultModel ?? appDefault?.model?.trim() ?? null,
   };
 
   appState.sessions.set(session.id, session);

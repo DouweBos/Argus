@@ -32,7 +32,7 @@ struct AutomationEditorView: View {
         Banner(text: error, tone: .danger)
       }
       if loaded {
-        AutomationFields(draft: $draft, sources: store.sources)
+        AutomationFields(draft: $draft, sources: store.sources, runners: store.runners)
         if !isNew {
           Btn(label: "Delete automation", tone: .danger, small: true) {
             confirmingDelete = true
@@ -61,6 +61,7 @@ struct AutomationEditorView: View {
 
   private func load() async {
     await store.loadSources()
+    await store.loadRunners()
     guard let automationId else {
       loaded = true
       return

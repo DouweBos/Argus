@@ -582,6 +582,24 @@ export const RemoteSignalSource = z.object({
 });
 export type RemoteSignalSource = z.infer<typeof RemoteSignalSource>;
 
+/** A model a runner declares up front. Empty for runners that learn theirs. */
+export const RemoteRunnerModel = z.object({
+  value: z.string(),
+  display_name: z.string(),
+  description: z.string().nullable(),
+});
+export type RemoteRunnerModel = z.infer<typeof RemoteRunnerModel>;
+
+/** An LLM runner an automation can be pinned to. Mirrors `RegisteredRunner`. */
+export const RemoteRunner = z.object({
+  id: z.string(),
+  display_name: z.string(),
+  is_custom: z.boolean(),
+  default_model: z.string().nullable(),
+  models: z.array(RemoteRunnerModel),
+});
+export type RemoteRunner = z.infer<typeof RemoteRunner>;
+
 /**
  * Everything needed to edit one automation. The list shape stays deliberately
  * small; this is only fetched for the automation actually being opened.
@@ -601,6 +619,8 @@ export const RemoteAutomationDetail = z.object({
   playbook: z.string(),
   autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
   model: z.string().nullable(),
+  /** Runner the run's agent is pinned to; null follows the app default. */
+  runner: z.string().nullable(),
   guardrails: RemoteAutomationGuardrails,
 });
 export type RemoteAutomationDetail = z.infer<typeof RemoteAutomationDetail>;

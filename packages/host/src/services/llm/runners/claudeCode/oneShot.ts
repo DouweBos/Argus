@@ -11,7 +11,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { warn } from "@argus/host/logger";
-import { broadcastNotification } from "../../../notifications/broadcast";
+import { broadcastNotification } from "../../../notifications/notify";
 
 const execFileAsync = promisify(execFile);
 

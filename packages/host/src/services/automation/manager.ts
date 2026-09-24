@@ -115,6 +115,7 @@ function buildAutomation(input: CreateAutomationInput): Automation {
     autonomy: input.autonomy ?? null,
     guardrails: normalizeGuardrails(input.guardrails),
     model: input.model ?? null,
+    runner: input.runner ?? null,
     template_id: input.template_id ?? null,
     // Only a built-in has a fingerprint to compare a future release against.
     seeded_playbook_hash: input.template_id
@@ -232,6 +233,8 @@ export function scratchAutomationForRun(run: AutomationRun): Automation | null {
     autonomy: null,
     guardrails: normalizeGuardrails(spec.guardrails),
     model: spec.model,
+    // An ad-hoc run has no runner of its own; it follows the app default.
+    runner: null,
     template_id: null,
     seeded_playbook_hash: null,
     created_at: run.started_at,

@@ -108,6 +108,35 @@ public struct RemoteSignalSource: Codable, Hashable, Sendable, Identifiable {
   public var available: Bool
 }
 
+/// An LLM runner an automation can be pinned to.
+public struct RemoteRunner: Codable, Hashable, Sendable, Identifiable {
+  public struct Model: Codable, Hashable, Sendable {
+    public var value: String
+    public var displayName: String
+    public var description: String?
+
+    enum CodingKeys: String, CodingKey {
+      case value, description
+      case displayName = "display_name"
+    }
+  }
+
+  public var id: String
+  public var displayName: String
+  public var isCustom: Bool
+  /// Model applied when the automation pins none.
+  public var defaultModel: String?
+  /// Empty for runners that only learn their models from a live handshake.
+  public var models: [Model]
+
+  enum CodingKeys: String, CodingKey {
+    case id, models
+    case displayName = "display_name"
+    case isCustom = "is_custom"
+    case defaultModel = "default_model"
+  }
+}
+
 /// Everything needed to edit one automation.
 public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable {
   public var id: String
@@ -124,6 +153,8 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
   public var playbook: String
   public var autonomy: RemoteAutonomy?
   public var model: String?
+  /// Runner the run's agent is pinned to; nil follows the app default.
+  public var runner: String?
   public var guardrails: RemoteAutomationGuardrails
 
   public init(
@@ -132,6 +163,7 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     cron: String? = "0 9 * * 1-5", timezone: String? = TimeZone.current.identifier,
     catchUp: Bool = true, repoRoots: [String] = [], sourceIds: [String] = [],
     playbook: String = "", autonomy: RemoteAutonomy? = nil, model: String? = nil,
+    runner: String? = nil,
     guardrails: RemoteAutomationGuardrails = .init()
   ) {
     self.id = id
@@ -147,11 +179,13 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     self.playbook = playbook
     self.autonomy = autonomy
     self.model = model
+    self.runner = runner
     self.guardrails = guardrails
   }
 
   enum CodingKeys: String, CodingKey {
-    case id, name, description, enabled, cron, timezone, playbook, autonomy, model, guardrails
+    case id, name, description, enabled, cron, timezone, playbook, autonomy, model, runner
+    case guardrails
     case triggerKind = "trigger_kind"
     case catchUp = "catch_up"
     case repoRoots = "repo_roots"
@@ -174,6 +208,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
   public var playbook: String
   public var autonomy: RemoteAutonomy?
   public var model: String?
+  public var runner: String?
   public var guardrails: RemoteAutomationGuardrails
 
   public init(_ detail: RemoteAutomationDetail) {
@@ -189,11 +224,13 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     playbook = detail.playbook
     autonomy = detail.autonomy
     model = detail.model
+    runner = detail.runner
     guardrails = detail.guardrails
   }
 
   enum CodingKeys: String, CodingKey {
-    case name, description, enabled, cron, timezone, playbook, autonomy, model, guardrails
+    case name, description, enabled, cron, timezone, playbook, autonomy, model, runner
+    case guardrails
     case triggerKind = "trigger_kind"
     case catchUp = "catch_up"
     case repoRoots = "repo_roots"

@@ -195,6 +195,7 @@ export const REMOTE_METHODS = {
   /** The editor's reads. Writing one is control: a playbook is code. */
   "automations.get": "monitor",
   "automations.sources": "monitor",
+  "automations.runners": "monitor",
   "automations.create": "control",
   "automations.update": "control",
   "automations.delete": "control",
