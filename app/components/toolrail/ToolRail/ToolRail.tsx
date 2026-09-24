@@ -1,6 +1,7 @@
 import { useMemo, useState, type SVGProps } from "react";
 import { FeedbackDialog, Icons } from "@argus/peacock";
 import { createLogger } from "../../../lib/logger";
+import { appNavigate } from "../../../lib/router";
 import {
   captureFeedback,
   getFeedbackUnavailableReason,
@@ -85,6 +86,18 @@ export function ToolRail() {
   const hasEntries = notifications.length > 0;
   const hasError = notifications.some((n) => n.level === "error");
 
+  // Tool panels are keyed by session, so there is nothing to toggle on the
+  // home screen. Notifications is the one tool that is global — send it to its
+  // own screen instead of dropping the click.
+  const openTool = (id: ToolRailId) => {
+    if (selectedSessionId === null) {
+      appNavigate({ view: "notifications" });
+
+      return;
+    }
+    toggleTool(id);
+  };
+
   const renderTool = ({ id, label, icon: Icon }: ToolDef) => {
     const active =
       TOOL_PLACEMENT[id] === "right"
@@ -97,7 +110,7 @@ export function ToolRail() {
         aria-label={label}
         className={`${styles.tool} ${active ? styles.active : ""}`}
         title={label}
-        onClick={() => toggleTool(id)}
+        onClick={() => openTool(id)}
       >
         <Icon size={18} />
         {id === "notifications" && hasEntries && (
