@@ -60,12 +60,15 @@ struct AgentRow: View {
 
 struct StoppedAgentRow: View {
   let agent: RemoteStoppedAgent
+  /// Off when the row already sits under the session that names the branch.
+  var showBranch = true
 
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
       Label(agent.title, systemImage: Icon.history).lineLimit(1)
       Text(
-        "\(Labels.timeAgo(agent.endedAt)) · \(agent.messageCount) messages · \(agent.branch)"
+        "\(Labels.timeAgo(agent.endedAt)) · \(agent.messageCount) messages"
+          + (showBranch ? " · \(agent.branch)" : "")
       )
       .font(.footnote)
       .foregroundStyle(.secondary)
