@@ -19,6 +19,7 @@ pnpm monorepo. Three-panel layout: workspace sidebar / agent control / runtime &
 - `packages/peacock` → `@argus/peacock` design system (tokens, icons, components)
 - `packages/host` → `@argus/host` host core — sessions, agents, git, terminals, simulators, the command registry. **Plain Node, never imports `electron`** (enforced by `packages/host/src/noElectron.test.ts` and a `no-restricted-imports` rule)
 - `app/` + `electron/` → desktop app, consumes both via `workspace:*`
+- `clients/argus-ios` → native Swift/SwiftUI remote client (`ArgusKit` protocol package + `ArgusRemote` app), talks to the host's Noise/WS gateway
 
 ### Frontend (`app/`, also `src/`)
 
@@ -99,6 +100,18 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 2. Register in `electron/ipc.ts` via `handle('command_name', handler)`
 3. Typed wrapper in `src/lib/ipc.ts`
 4. Types in `src/lib/types.ts` if new
+
+**The iOS client is a first-class citizen.** Every feature you add or change on the desktop also lands in `clients/argus-ios` in the same PR. The only excuses are that it genuinely makes no sense on a phone (window management, tray, simulator HID injection) or that exposing it over the gateway is a real security risk — say which, don't just skip it. "Desktop first, phone later" is how the phone falls behind.
+
+Adding one (worked example: `automations.revise_playbook`):
+
+1. Method + params/results in `packages/remote-protocol/src/messages.ts`
+2. Tier in `packages/remote-protocol/src/capabilities.ts` (`monitor` reads, `control` anything that acts or spends), scope rule in `scope.ts` — `Record<RemoteMethod, …>` means both fail to compile until decided
+3. Handler in `packages/host/src/services/remote/capabilities.ts`, reusing the same host service the IPC command calls. Wrap in `control()` only when host state actually changes
+4. `RemoteMethod` case in `ArgusKit/Sources/ArgusKit/Protocol/Envelopes.swift`, then a store method in `ArgusRemote/Stores/`
+5. UI in `ArgusRemote/Views/` or `Screens/`, gated on `app.hasControl` when the method is control-tier
+6. A new Swift file needs four `project.pbxproj` entries by hand (build file, file reference, group child, sources phase) — the project has no file-system-synchronized groups
+7. Verify with `xcodebuild -project clients/argus-ios/ArgusRemote.xcodeproj -scheme ArgusRemote -destination 'generic/platform=iOS Simulator' build` — `pnpm lint` does not see Swift
 
 **Worktrees:** `~/.argus/worktrees/{RepoName}-argus-worktrees/{branch}/`. Post-`git worktree add` setup (copy dirs, symlink files, run commands) configured in `.argus.json`.
 
