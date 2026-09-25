@@ -19,6 +19,8 @@ struct RootView: View {
   /// The project a new session is being named for, and the name being typed.
   @State private var newSessionProject: RemoteProject?
 
+  @Environment(\.scenePhase) private var scenePhase
+  @State private var askingConsent = false
   @State private var unlocked = false
   @State private var canAuthenticate = false
   @State private var biometryLabel: String?
@@ -55,6 +57,13 @@ struct RootView: View {
       NotificationRouter.shared.open(handoff)
     }
     .preferredColorScheme(app.themePreference.colorScheme)
+    // Asked before pairing, so nothing is sent on a choice not yet made.
+    .sheet(isPresented: $askingConsent) { TelemetryConsentSheet() }
+    // Sending is per-event, but the app going away is the last chance to get
+    // the tail of them off the device.
+    .onChange(of: scenePhase) { _, phase in
+      if phase == .background { Telemetry.flush() }
+    }
     .task { await bootstrap() }
     // Rotating an iPad, or resizing it in Split View, changes the column
     // count; carry the open destinations across rather than losing them.
@@ -361,8 +370,14 @@ struct RootView: View {
     }
   }
 
-  @ViewBuilder
   private func destination(_ route: Route) -> some View {
+    // Every push funnels through here, so this is the one place a screen
+    // event has to be sent from.
+    screen(for: route).onAppear { Telemetry.screen(route) }
+  }
+
+  @ViewBuilder
+  private func screen(for route: Route) -> some View {
     switch route {
     case .pair:
       PairView()
@@ -412,6 +427,7 @@ struct RootView: View {
   }
 
   private func bootstrap() async {
+    askingConsent = !Telemetry.hasAnsweredConsent
     if automations == nil { automations = AutomationsStore(app: app) }
     if proposals == nil { proposals = ProposalsStore(app: app) }
     if pullRequests == nil { pullRequests = PullRequestsStore(app: app) }
