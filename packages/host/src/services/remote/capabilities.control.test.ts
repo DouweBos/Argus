@@ -160,11 +160,13 @@ describe("control capability gating", () => {
       base_branch: "main",
     } as never);
     appState.agentQueues.clear();
+    appState.agentPendingPermissions.clear();
     appState.agents.clear();
     appState.agents.set("a1", {
       agentId: "a1",
       sessionId: "s1",
       status: "idle",
+      inflightPrompts: 0,
       model: "m",
       permissionMode: "auto",
       parentAgentId: null,
@@ -209,6 +211,47 @@ describe("control capability gating", () => {
     );
 
     expect(res).toMatchObject({ queued: true });
+    expect(sendAgentMessage).not.toHaveBeenCalled();
+    expect(appState.agentQueues.get("a1")).toHaveLength(1);
+  });
+
+  it("queues a send while a prompt is in flight, whatever the CLI reports", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    // The CLI flips to idle between tool calls, so status alone says nothing.
+    appState.agents.get("a1")!.inflightPrompts = 1;
+
+    const res = await dispatch(
+      "agents.send",
+      { agent_id: "a1", message: "wait for me" },
+      ctx,
+    );
+
+    expect(res).toMatchObject({ queued: true });
+    expect(sendAgentMessage).not.toHaveBeenCalled();
+  });
+
+  it("still queues while the agent waits on a question", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    appState.agents.get("a1")!.status = "running";
+    appState.agents.get("a1")!.inflightPrompts = 1;
+    appState.agentPendingPermissions.set(
+      "a1",
+      new Map([
+        [
+          "t1",
+          { tool_use_id: "t1", tool_name: "AskUserQuestion", tool_input: {} },
+        ],
+      ]) as never,
+    );
+
+    await dispatch(
+      "agents.send",
+      { agent_id: "a1", message: "the red one" },
+      ctx,
+    );
+
+    // The question has its own form; typing here is a message for the turn
+    // after this one, not the answer.
     expect(sendAgentMessage).not.toHaveBeenCalled();
     expect(appState.agentQueues.get("a1")).toHaveLength(1);
   });

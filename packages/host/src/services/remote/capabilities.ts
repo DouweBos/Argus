@@ -884,6 +884,19 @@ function requireAgent(agentId: string): AgentSession {
   return agent;
 }
 
+/**
+ * Whether a turn is still in flight. Status alone understates it: the CLI
+ * flips `session_state_changed` to idle between tool calls, so a message sent
+ * on that reading lands mid-turn instead of waiting its place in the queue.
+ */
+function isWorking(agent: AgentSession): boolean {
+  return (
+    agent.status === "running" ||
+    agent.status === "requires_action" ||
+    agent.inflightPrompts > 0
+  );
+}
+
 /** Ensure a session exists or throw a gateway not_found. */
 function requireSession(id: string): void {
   if (!appState.sessions.has(id)) {
@@ -1201,7 +1214,9 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     // agent's status can lag a turn that started a moment ago, and in a huddle
     // several people send against the same agent. Anything already waiting also
     // has to keep its place, so a send never jumps the queue.
-    if (agent.status === "running" || listQueue(agent_id).length > 0) {
+    // A question or a plan prompt is answered through its own form, never by
+    // typing, so those turns keep waiting here like any other.
+    if (isWorking(agent) || listQueue(agent_id).length > 0) {
       await control(() =>
         enqueueMessage(agent_id, {
           text: message,
