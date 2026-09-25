@@ -186,6 +186,8 @@ export const MethodParams = {
     permission_mode: RemotePermissionMode.optional(),
     /** Resume a stopped agent's conversation instead of starting empty. */
     resume_session_id: z.string().optional(),
+    /** Optional so a client built before runners could be picked still spawns. */
+    runner_id: z.string().optional(),
   }),
   "agents.queue_list": z.object({ agent_id: z.string() }),
   "agents.queue_add": z.object({

@@ -109,6 +109,11 @@ vi.mock("../session/sessionOps", () => ({
   getSessionBranchDiff: vi.fn(async () => "diff --git a b"),
   getSessionFullDiff: vi.fn(async () => "diff --git HEAD"),
 }));
+vi.mock("../llm/registry", () => ({
+  getRunnerById: vi.fn((id: string) =>
+    id === "codex" ? { id: "codex" } : null,
+  ),
+}));
 
 const { appState } = await import("../../state");
 const { dispatch } = await import("./capabilities");
@@ -121,6 +126,9 @@ const { getSessionFullDiff, getSessionBranchDiff } = vi.mocked(
 const { gitCheckout, gitCreateBranch, gitDeleteBranch, gitStashAndCheckout } =
   vi.mocked(await import("../session/gitBranchOps"));
 const { GitError } = await import("../session/gitError");
+
+/** Every `startAgent` override past the session id, left unset. */
+const SPAWN_DEFAULTS = Array<undefined>(9).fill(undefined);
 
 function makeCtx(capabilities: PairedDevice["capabilities"]): GatewayContext {
   return {
@@ -290,13 +298,30 @@ describe("control capability gating", () => {
     const res = (await dispatch("agents.spawn", { session_id: "s1" }, ctx)) as {
       agent: { agent_id: string };
     };
+    expect(startAgent).toHaveBeenCalledWith("s1", ...SPAWN_DEFAULTS);
+    expect(res.agent.agent_id).toBe("a1");
+  });
+
+  it("spawns on the runner the client picked", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    await dispatch(
+      "agents.spawn",
+      { session_id: "s1", runner_id: "codex" },
+      ctx,
+    );
     expect(startAgent).toHaveBeenCalledWith(
       "s1",
-      undefined,
-      undefined,
-      undefined,
+      ...SPAWN_DEFAULTS.slice(1),
+      "codex",
     );
-    expect(res.agent.agent_id).toBe("a1");
+  });
+
+  it("refuses a runner this computer no longer has", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    await expect(
+      dispatch("agents.spawn", { session_id: "s1", runner_id: "gone" }, ctx),
+    ).rejects.toThrow(/unknown runner gone/);
+    expect(startAgent).not.toHaveBeenCalled();
   });
 
   it("lists every stopped agent the history kept, like the desktop does", async () => {
