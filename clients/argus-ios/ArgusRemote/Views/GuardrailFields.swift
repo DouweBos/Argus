@@ -19,6 +19,9 @@ struct GuardrailFields: View {
         "Files changed", caption: "A bigger branch is never pushed.",
         value: $guardrails.maxFilesChanged, fallback: 25)
       number(
+        "Time limit (minutes)", caption: "A run past this is stopped and marked failed.",
+        value: $guardrails.maxRunMinutes, fallback: 20)
+      number(
         "Spend ceiling (USD)",
         caption: guardrails.maxCostUsdPerRun > 0
           ? "A run crossing this finishes its turn, then stops."
