@@ -82,3 +82,40 @@ export async function forkClaudeSessionFile(args: {
 
   return newSessionId;
 }
+
+/**
+ * The session id of the newest transcript the CLI wrote for a cwd, or null
+ * when it has never run there. This is what `--resume` takes to pick a
+ * finished conversation back up.
+ */
+export function latestClaudeSessionId(cwd: string): string | null {
+  const dir = path.join(
+    os.homedir(),
+    ".claude",
+    "projects",
+    claudeProjectSlug(cwd),
+  );
+
+  let newest: { id: string; mtimeMs: number } | null = null;
+  let names: string[];
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    return null;
+  }
+  for (const name of names) {
+    if (!name.endsWith(".jsonl")) {
+      continue;
+    }
+    try {
+      const { mtimeMs } = fs.statSync(path.join(dir, name));
+      if (!newest || mtimeMs > newest.mtimeMs) {
+        newest = { id: name.slice(0, -".jsonl".length), mtimeMs };
+      }
+    } catch {
+      // Raced with a delete; the other files still stand.
+    }
+  }
+
+  return newest?.id ?? null;
+}

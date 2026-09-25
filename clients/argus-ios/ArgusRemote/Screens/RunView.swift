@@ -17,6 +17,7 @@ struct RunView: View {
 
   /// The name being typed while promoting a quick run; nil when not saving.
   @State private var savingName: String?
+  @State private var givingFeedback = false
 
   private var detail: RemoteAutomationRunDetail? { store.detailByRun[runId] }
   private var run: RemoteAutomationRun? {
@@ -28,6 +29,7 @@ struct RunView: View {
       if let run {
         summary(run)
         report
+        feedbackLog
       } else {
         Loading(label: "Reading the run…")
       }
@@ -42,6 +44,9 @@ struct RunView: View {
     // A settled run's report never changes, so stop asking.
     .liveRefresh(enabled: app.connection == .ready && (run?.isActive ?? true)) {
       await store.loadRun(id: runId)
+    }
+    .sheet(isPresented: $givingFeedback) {
+      RunFeedbackSheet(runId: runId)
     }
     .alert(
       "Save as automation",
@@ -90,6 +95,12 @@ struct RunView: View {
             Task { await store.cancelRun(id: runId) }
           }
         }
+        // Nothing to resume once the run's session is gone.
+        if app.hasControl, !run.isActive, run.hostSessionId != nil {
+          Btn(label: "Give feedback", tone: .secondary, small: true, icon: Icon.chat) {
+            givingFeedback = true
+          }
+        }
         // A one-off that turned out to be worth keeping.
         if app.hasControl, run.isQuick, !run.isActive {
           Btn(label: "Save as automation", tone: .secondary, small: true) {
@@ -127,6 +138,27 @@ struct RunView: View {
       MarkdownView(text: markdown)
     } else if detail != nil {
       MutedText("This run wrote no report.")
+    }
+  }
+
+  /// What was argued with, in the user's own words. A corrected report that
+  /// does not say what corrected it reads like the run just changed its mind.
+  @ViewBuilder
+  private var feedbackLog: some View {
+    if let notes = detail?.feedback, !notes.isEmpty {
+      SectionHeader(title: "Feedback")
+      ForEach(notes) { entry in
+        Card {
+          HStack(spacing: 8) {
+            MonoText(text: Labels.timeAgo(entry.createdAt), size: 11, color: theme.textMuted)
+            if entry.allowClearing {
+              Badge(label: "could remove proposals", tone: .warning)
+            }
+            Spacer(minLength: 0)
+          }
+          MarkdownView(text: entry.note)
+        }
+      }
     }
   }
 }

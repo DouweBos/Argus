@@ -45,6 +45,7 @@ vi.mock("../lib/ipc", () => ({
   getAutomationRun: vi.fn(),
   startScratchRun: vi.fn(),
   saveScratchRunAsAutomation: vi.fn(),
+  sendAutomationRunFeedback: vi.fn(),
   listScratchRuns: vi.fn(),
 }));
 

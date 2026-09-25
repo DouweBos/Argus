@@ -116,6 +116,7 @@ import {
   createRemoteAutomation,
   deleteRemoteAutomation,
   markRemoteRunRead,
+  submitRemoteRunFeedback,
   remoteAutomation,
   remoteAutomationRun,
   remoteAutomationRuns,
@@ -1801,6 +1802,16 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
 
     return marked;
+  },
+  "automations.run_feedback": async (params) => {
+    const { run_id, note, allow_clearing } = parse(
+      "automations.run_feedback",
+      params,
+    );
+
+    return await control(() =>
+      submitRemoteRunFeedback({ run_id, note, allow_clearing }),
+    );
   },
   "devices.list": async () => {
     // A missing toolchain (no Xcode / no Android SDK) contributes an empty

@@ -356,6 +356,8 @@ describe("the typed automations methods", () => {
     expect(tier("automations.set_enabled")).toBe("control");
     // Rewriting writes nothing, but it spends the host's LLM on request.
     expect(tier("automations.revise_playbook")).toBe("control");
+    // Feedback resumes the run's agent, so it spends and can act.
+    expect(tier("automations.run_feedback")).toBe("control");
   });
 
   /** A guest is handed one agent, never the clock that could start more. */

@@ -31,6 +31,7 @@ vi.mock("../../../lib/ipc", () => ({
   markAutomationRunRead: (runId: string) => markAutomationRunRead(runId),
   startScratchRun: vi.fn(),
   saveScratchRunAsAutomation: vi.fn(),
+  sendAutomationRunFeedback: vi.fn(),
   listScratchRuns: vi.fn(),
 }));
 

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   EmptyState,
@@ -28,8 +28,10 @@ import {
   DeleteRunButton,
   RunStatusBadge,
 } from "../RunControls";
+import { RunFeedbackDialog } from "../RunFeedbackDialog";
 import { SaveQuickRunButton } from "../SaveQuickRunButton";
 import styles from "./AutomationRunScreen.module.css";
+import { RunFeedbackLog } from "./RunFeedbackLog";
 import { RunReport } from "./RunReport";
 import { useReportRefResolvers } from "./reportRefs";
 
@@ -44,6 +46,7 @@ export function AutomationRunScreen() {
   const run = useAutomationRun(automationRunId);
   const sessions = useSessions();
   const { resolveProposal, resolveSession } = useReportRefResolvers();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Opening the run is reading its report, so home stops flagging it.
   const unread = run !== null && isUnreadReport(run);
@@ -81,11 +84,24 @@ export function AutomationRunScreen() {
     : null;
   const active = isRunActive(run);
   const scratch = run.scratch;
+  const feedback = run.feedback ?? [];
+  // Nothing to resume once the session is gone — a deleted run takes it with it.
+  const canGiveFeedback = !active && run.host_session_id !== null;
 
   return (
     <div className={styles.screen}>
       <header className={styles.head}>
         <span className={styles.spacer} />
+        {canGiveFeedback && (
+          <Button
+            size="sm"
+            variant="secondary"
+            leading={<Icons.ChatIcon size={11} />}
+            onClick={() => setFeedbackOpen(true)}
+          >
+            Give feedback
+          </Button>
+        )}
         {scratch && !active && <SaveQuickRunButton runId={run.id} />}
         {hostSession && (
           <Button
@@ -146,6 +162,19 @@ export function AutomationRunScreen() {
           resolveSession={resolveSession}
         />
       </SectionPanel>
+
+      {feedback.length > 0 && (
+        <SectionPanel title="Feedback">
+          <RunFeedbackLog notes={feedback} />
+        </SectionPanel>
+      )}
+
+      {feedbackOpen && (
+        <RunFeedbackDialog
+          runId={run.id}
+          onClose={() => setFeedbackOpen(false)}
+        />
+      )}
     </div>
   );
 }

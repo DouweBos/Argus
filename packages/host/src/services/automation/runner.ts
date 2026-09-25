@@ -8,7 +8,12 @@
  * final message is the report.
  */
 
-import type { Automation, AutomationRun, AutonomyLevel } from "./models";
+import type {
+  Automation,
+  AutomationGuardrails,
+  AutomationRun,
+  AutonomyLevel,
+} from "./models";
 import type { GatheredSignals } from "../signals/registry";
 import { emitHostEvent } from "@argus/host/bus";
 import { error, info } from "@argus/host/logger";
@@ -41,6 +46,9 @@ import {
 } from "./scopeAvailability";
 import { dailyBudgetBlock, runBudgetBlock, runSpendUsd } from "./spend";
 
+/** How often a run's spend is compared against its ceiling. */
+const COST_POLL_MS = 15 * 1000;
+
 /**
  * How long a run may take before it is abandoned, from its `max_run_minutes`
  * guardrail. Nobody is watching an automation, so an agent that stalls on a
@@ -50,9 +58,6 @@ import { dailyBudgetBlock, runBudgetBlock, runSpendUsd } from "./spend";
 function runTimeoutMs(maxRunMinutes: number): number {
   return maxRunMinutes * 60 * 1000;
 }
-
-/** How often a run's spend is compared against its ceiling. */
-const COST_POLL_MS = 15 * 1000;
 
 /**
  * A `propose` run goes back into plan mode, so the CLI refuses edits itself
@@ -130,20 +135,8 @@ export function executeRun(automation: Automation, runId: string): void {
     error(
       `automation run ${runId} failed: ${e instanceof Error ? (e.stack ?? message) : message}`,
     );
-    finish(runId, "failed", { error: message });
+    finishRun(runId, "failed", { error: message });
   });
-}
-
-function finish(
-  runId: string,
-  status: AutomationRun["status"],
-  patch: Partial<AutomationRun> = {},
-): void {
-  const existing = getAutomationRun(runId);
-  if (!existing || existing.finished_at !== null) {
-    return;
-  }
-  updateRun(runId, { status, finished_at: Date.now(), ...patch });
 }
 
 async function execute(automation: Automation, runId: string): Promise<void> {
@@ -207,90 +200,12 @@ async function execute(automation: Automation, runId: string): Promise<void> {
     model: agentInfo.model,
   });
 
-  sendAgentMessage(agentInfo.agent_id, prompt);
-
-  const costWatch = watchRunCost(runId, guardrails.max_cost_usd_per_run, () =>
-    stopAgentQuietly(agentInfo.agent_id),
-  );
-
-  let outcome: Awaited<ReturnType<typeof waitForAgent>>;
-  try {
-    outcome = await waitForAgent(
-      agentInfo.agent_id,
-      runTimeoutMs(guardrails.max_run_minutes),
-    );
-  } catch {
-    clearInterval(costWatch);
-    await stopAgentQuietly(agentInfo.agent_id);
-    // The agent id means nothing to whoever reads the run; the limit it hit,
-    // and where to raise it, is the only actionable part.
-    finish(runId, "failed", {
-      error: `Stopped after ${guardrails.max_run_minutes} minutes — the run hit its time limit. Raise it in the automation's guardrails if this playbook needs longer.`,
-      cost_usd: runSpendUsd(runId),
-    });
-
-    return;
-  }
-  clearInterval(costWatch);
-
-  const spent = runSpendUsd(runId);
-  const overRunBudget = runBudgetBlock(runId, guardrails.max_cost_usd_per_run);
-  if (overRunBudget) {
-    await stopAgentQuietly(agentInfo.agent_id);
-    finish(runId, "failed", {
-      cost_usd: spent,
-      report_markdown: outcome.result?.result ?? null,
-      error: `Stopped — ${overRunBudget}.`,
-    });
-
-    return;
-  }
-
-  const result = outcome.result;
-  const failed = outcome.status === "error" || result?.subtype === "error";
-  finish(runId, failed ? "failed" : "succeeded", {
-    cost_usd: spent || (result?.total_cost_usd ?? null),
-    report_markdown: result?.result ?? null,
-    error: failed
-      ? (result?.result ?? "The run's agent exited with an error.")
-      : null,
+  await driveRunAgent({
+    agentId: agentInfo.agent_id,
+    guardrails,
+    prompt,
+    runId,
   });
-
-  await stopAgentQuietly(agentInfo.agent_id);
-}
-
-/**
- * Poll the run's spend while its agent works. The ceiling has to be enforced
- * mid-flight: a fan-out's cost is only knowable as its children finish, and by
- * the time the host's own turn ends the money is gone.
- */
-function watchRunCost(
-  runId: string,
-  maxCostUsdPerRun: number,
-  stop: () => Promise<void>,
-): NodeJS.Timeout {
-  const timer = setInterval(() => {
-    if (!runBudgetBlock(runId, maxCostUsdPerRun)) {
-      return;
-    }
-    clearInterval(timer);
-    info(`automation run ${runId}: cost ceiling reached, stopping the agent`);
-    stop().catch(() => {});
-  }, COST_POLL_MS);
-
-  return timer;
-}
-
-async function stopAgentQuietly(agentId: string): Promise<void> {
-  const agent = appState.agents.get(agentId);
-  if (!agent || agent.status === "stopped" || agent.status === "error") {
-    return;
-  }
-  try {
-    await stopAgent(agentId);
-  } catch (e) {
-    info(`automation: stopping agent ${agentId} failed: ${String(e)}`);
-  }
 }
 
 function buildPrompt(
@@ -427,6 +342,117 @@ function signalSections(
   return lines;
 }
 
+export function finishRun(
+  runId: string,
+  status: AutomationRun["status"],
+  patch: Partial<AutomationRun> = {},
+): void {
+  const existing = getAutomationRun(runId);
+  if (!existing || existing.finished_at !== null) {
+    return;
+  }
+  updateRun(runId, { status, finished_at: Date.now(), ...patch });
+}
+
+/**
+ * Poll the run's spend while its agent works. The ceiling has to be enforced
+ * mid-flight: a fan-out's cost is only knowable as its children finish, and by
+ * the time the host's own turn ends the money is gone.
+ */
+function watchRunCost(
+  runId: string,
+  maxCostUsdPerRun: number,
+  stop: () => Promise<void>,
+): NodeJS.Timeout {
+  const timer = setInterval(() => {
+    if (!runBudgetBlock(runId, maxCostUsdPerRun)) {
+      return;
+    }
+    clearInterval(timer);
+    info(`automation run ${runId}: cost ceiling reached, stopping the agent`);
+    stop().catch(() => {});
+  }, COST_POLL_MS);
+
+  return timer;
+}
+
+export async function stopAgentQuietly(agentId: string): Promise<void> {
+  const agent = appState.agents.get(agentId);
+  if (!agent || agent.status === "stopped" || agent.status === "error") {
+    return;
+  }
+  try {
+    await stopAgent(agentId);
+  } catch (e) {
+    info(`automation: stopping agent ${agentId} failed: ${String(e)}`);
+  }
+}
+
+/**
+ * Send one prompt to the run's agent, wait it out, and settle the run record.
+ * Shared with the feedback turn, which picks the same agent back up on a run
+ * that already finished once. Always leaves the agent stopped.
+ */
+export async function driveRunAgent(args: {
+  agentId: string;
+  guardrails: AutomationGuardrails;
+  prompt: string;
+  runId: string;
+}): Promise<void> {
+  const { agentId, guardrails, prompt, runId } = args;
+
+  sendAgentMessage(agentId, prompt);
+
+  const costWatch = watchRunCost(runId, guardrails.max_cost_usd_per_run, () =>
+    stopAgentQuietly(agentId),
+  );
+
+  let outcome: Awaited<ReturnType<typeof waitForAgent>>;
+  try {
+    outcome = await waitForAgent(
+      agentId,
+      runTimeoutMs(guardrails.max_run_minutes),
+    );
+  } catch {
+    clearInterval(costWatch);
+    await stopAgentQuietly(agentId);
+    // The agent id means nothing to whoever reads the run; the limit it hit,
+    // and where to raise it, is the only actionable part.
+    finishRun(runId, "failed", {
+      error: `Stopped after ${guardrails.max_run_minutes} minutes — the run hit its time limit. Raise it in the automation's guardrails if this playbook needs longer.`,
+      cost_usd: runSpendUsd(runId),
+    });
+
+    return;
+  }
+  clearInterval(costWatch);
+
+  const spent = runSpendUsd(runId);
+  const overRunBudget = runBudgetBlock(runId, guardrails.max_cost_usd_per_run);
+  if (overRunBudget) {
+    await stopAgentQuietly(agentId);
+    finishRun(runId, "failed", {
+      cost_usd: spent,
+      report_markdown: outcome.result?.result ?? null,
+      error: `Stopped — ${overRunBudget}.`,
+    });
+
+    return;
+  }
+
+  const result = outcome.result;
+  const failed = outcome.status === "error" || result?.subtype === "error";
+  finishRun(runId, failed ? "failed" : "succeeded", {
+    cost_usd: spent || (result?.total_cost_usd ?? null),
+    report_markdown: result?.result ?? null,
+    error: failed
+      ? (result?.result ?? "The run's agent exited with an error.")
+      : null,
+  });
+
+  await stopAgentQuietly(agentId);
+}
+
 /** Stop a run that is still in flight. */
 export async function cancelAutomationRun(
   runId: string,
@@ -441,7 +467,7 @@ export async function cancelAutomationRun(
   if (run.host_agent_id) {
     await stopAgentQuietly(run.host_agent_id);
   }
-  finish(runId, "cancelled", { error: null });
+  finishRun(runId, "cancelled", { error: null });
 
   return getAutomationRun(runId) ?? run;
 }

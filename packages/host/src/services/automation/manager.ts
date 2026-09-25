@@ -66,6 +66,7 @@ function runCache(): AutomationRun[] {
     // lived through — it must not light the home screen up on first launch.
     for (const run of runs) {
       run.report_read ??= true;
+      run.feedback ??= [];
     }
   }
 
@@ -395,6 +396,7 @@ export function createRun(
     report_blocks: null,
     error,
     report_read: false,
+    feedback: [],
   };
 
   runCache().push(run);

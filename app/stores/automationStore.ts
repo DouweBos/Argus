@@ -24,6 +24,7 @@ import {
   markAutomationRunRead as markAutomationRunReadIpc,
   runAutomationNow as runAutomationNowIpc,
   saveScratchRunAsAutomation as saveScratchRunAsAutomationIpc,
+  sendAutomationRunFeedback as sendAutomationRunFeedbackIpc,
   setAutomationEnabled as setAutomationEnabledIpc,
   startScratchRun as startScratchRunIpc,
   updateAutomation as updateAutomationIpc,
@@ -209,6 +210,9 @@ export const cancelAutomationRun = cancelAutomationRunIpc;
 export const startScratchRun = startScratchRunIpc;
 
 export const saveScratchRunAsAutomation = saveScratchRunAsAutomationIpc;
+
+/** Push back on a report. The run goes active again and rewrites it. */
+export const sendAutomationRunFeedback = sendAutomationRunFeedbackIpc;
 
 /** Reading a report is opening it — the run screen calls this on view. */
 export const markRunRead = (runId: string): void => {

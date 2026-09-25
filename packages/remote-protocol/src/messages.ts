@@ -33,6 +33,7 @@ import {
   RemotePullRequest,
   RemotePullRequestDetail,
   RemoteQueuedMessage,
+  RemoteRunFeedback,
   RemoteRunner,
   RemoteSession,
   RemoteSignalSource,
@@ -365,6 +366,12 @@ export const MethodParams = {
   }),
   "automations.cancel_run": z.object({ run_id: z.string() }),
   "automations.mark_run_read": z.object({ run_id: z.string() }),
+  "automations.run_feedback": z.object({
+    run_id: z.string(),
+    note: z.string(),
+    /** Let the turn withdraw or supersede proposals. Off adds only. */
+    allow_clearing: z.boolean().optional(),
+  }),
   "github.pull_requests": z.object({
     /** Omit for every registered project. */
     repo_roots: z.array(z.string()).optional(),
@@ -558,6 +565,8 @@ export const MethodResult = {
     report_blocks: z.array(ReportBlock).nullable(),
     /** The agent's final message. Null while the run is still going. */
     report_markdown: z.string().nullable(),
+    /** What the user pushed back on after reading it, oldest first. */
+    feedback: z.array(RemoteRunFeedback),
   }),
   "automations.get": z.object({ automation: RemoteAutomationDetail }),
   "automations.sources": z.object({ sources: z.array(RemoteSignalSource) }),
@@ -581,6 +590,7 @@ export const MethodResult = {
   "automations.cancel_run": z.object({ accepted: z.boolean() }),
   /** The run as it now stands — read. */
   "automations.mark_run_read": z.object({ run: RemoteAutomationRun }),
+  "automations.run_feedback": z.object({ run: RemoteAutomationRun }),
   "github.pull_requests": z.object({
     pull_requests: z.array(RemotePullRequest),
   }),

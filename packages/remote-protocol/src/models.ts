@@ -661,6 +661,17 @@ export const RemoteAutomationRun = z.object({
 });
 export type RemoteAutomationRun = z.infer<typeof RemoteAutomationRun>;
 
+/** A note the user left on a run's report, and what it was allowed to do. */
+export const RemoteRunFeedback = z.object({
+  id: z.string(),
+  /** The user's words, verbatim. */
+  note: z.string(),
+  /** The turn could withdraw or supersede proposals while answering this. */
+  allow_clearing: z.boolean(),
+  created_at: z.number(),
+});
+export type RemoteRunFeedback = z.infer<typeof RemoteRunFeedback>;
+
 // --- Proposals -------------------------------------------------------------
 
 /** The one action a proposal asks for. The `delete_` kinds are destructive. */

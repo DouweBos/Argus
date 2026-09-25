@@ -307,6 +307,32 @@ final class AutomationsStore {
     }
   }
 
+  /// Argue with a finished report. The run's own agent is picked back up and
+  /// rewrites it; unless `allowClearing` is set it may only add proposals.
+  /// False means the computer refused and `error` says why.
+  func sendRunFeedback(id: String, note: String, allowClearing: Bool) async -> Bool {
+    guard let transport = app.transport else { return false }
+    struct Params: Encodable {
+      let run_id: String
+      let note: String
+      let allow_clearing: Bool
+    }
+    do {
+      _ = try await transport.request(
+        .automationsRunFeedback,
+        Params(run_id: id, note: note, allow_clearing: allowClearing),
+        as: IgnoredResult.self)
+      error = nil
+      await loadRun(id: id)
+
+      return true
+    } catch {
+      self.error = "Couldn't send that feedback — \(AppStore.describe(error))"
+
+      return false
+    }
+  }
+
   func cancelRun(id: String) async {
     guard let transport = app.transport else { return }
     struct Params: Encodable { let run_id: String }

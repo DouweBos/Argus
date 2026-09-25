@@ -127,6 +127,22 @@ export type RunStatus =
   | "skipped"
   | "succeeded";
 
+/**
+ * A note the user left on a finished run's report, and what it was allowed to
+ * do about it. Kept on the run so the report says what was argued with.
+ */
+export interface RunFeedbackNote {
+  id: string;
+  /** The user's words, verbatim. */
+  note: string;
+  /**
+   * The user let this turn withdraw or supersede proposals. False — the
+   * default — means the run may only add to the inbox, never take from it.
+   */
+  allow_clearing: boolean;
+  created_at: number;
+}
+
 /** One firing of an automation. */
 export interface AutomationRun {
   id: string;
@@ -154,6 +170,8 @@ export interface AutomationRun {
    * report superseding it, or the run dismissed from the inbox.
    */
   report_read: boolean;
+  /** What the user pushed back on after reading the report, oldest first. */
+  feedback: RunFeedbackNote[];
 }
 
 /** Fields accepted when creating an automation. */
