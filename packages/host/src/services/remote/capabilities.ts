@@ -63,6 +63,7 @@ import { cancelAutomationRun } from "../automation/runner";
 import { startAutomationRun } from "../automation/runner";
 import { getCommand, invokeCommand } from "../command/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
+import { getRunnerById } from "../llm/registry";
 import { collectAllProjects } from "../mcp/projectDiscovery";
 import {
   gitCheckout,
@@ -924,6 +925,16 @@ function requireKnownRepoRoots(repoRoots: string[]): void {
   repoRoots.forEach(requireKnownRepoRoot);
 }
 
+/**
+ * Reject a runner the host no longer has. `startAgent` would quietly fall back
+ * to the default, which is the wrong answer for a deliberate pick.
+ */
+function requireKnownRunner(runnerId: string | undefined): void {
+  if (runnerId && !getRunnerById(runnerId)) {
+    throw new GatewayError("not_found", `unknown runner ${runnerId}`);
+  }
+}
+
 function requireRemotePermissionMode(mode: string | undefined): void {
   if (mode && !["ask", "auto", "plan", "review"].includes(mode)) {
     throw new GatewayError("capability_denied", `permission mode ${mode}`);
@@ -1287,13 +1298,23 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
 
   "agents.spawn": async (params) => {
-    const { session_id, model, permission_mode, resume_session_id } = parse(
-      "agents.spawn",
-      params,
-    );
+    const { session_id, model, permission_mode, resume_session_id, runner_id } =
+      parse("agents.spawn", params);
     requireRemotePermissionMode(permission_mode);
+    requireKnownRunner(runner_id);
     const info = await control(() =>
-      startAgent(session_id, model, permission_mode, resume_session_id),
+      startAgent(
+        session_id,
+        model,
+        permission_mode,
+        resume_session_id,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        runner_id,
+      ),
     );
     // Announce the agent exactly like the start_agent IPC does — the desktop
     // renderer listens for this to track the agent, subscribe to its event

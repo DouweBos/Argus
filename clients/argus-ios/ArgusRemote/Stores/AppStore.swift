@@ -55,6 +55,8 @@ final class AppStore {
   var agentsByRepo: [String: [RemoteAgentStatus]] = [:]
   /// Every agent across every project, for the home "Recent agents" section.
   var recentAgents: [RemoteAgentStatus] = []
+  /// LLM runners this computer has registered, for the spawn sheet's picker.
+  var runners: [RemoteRunner] = []
   var stoppedByRepo: [String: [RemoteStoppedAgent]] = [:]
   var messagesByAgent: [String: [RemoteMessage]] = [:]
   /// Locally-appended user messages awaiting confirmation in the next snapshot.

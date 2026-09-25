@@ -30,6 +30,17 @@ extension AppStore {
     }
   }
 
+  /// Runners an agent can be started on. Host-wide, so it is loaded once and
+  /// shared by every spawn sheet. Older computers don't answer, which leaves
+  /// the list empty and the picker hidden.
+  func loadRunners() async {
+    guard let transport, runners.isEmpty else { return }
+    struct Result: Decodable { let runners: [RemoteRunner] }
+    guard let result = try? await transport.request(
+      .automationsRunners, EmptyParams(), as: Result.self) else { return }
+    runners = result.runners
+  }
+
   /// Answer a `sessions.changed` event. A named repo reloads just that one;
   /// a nil repo means the computer couldn't say which, so everything the app
   /// is already holding gets refetched.

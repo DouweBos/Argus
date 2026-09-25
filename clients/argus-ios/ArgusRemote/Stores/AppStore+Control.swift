@@ -299,7 +299,7 @@ extension AppStore {
   @discardableResult
   func spawnAgent(
     sessionId: String, model: String? = nil, permissionMode: RemotePermissionMode? = nil,
-    resumeSessionId: String? = nil
+    resumeSessionId: String? = nil, runnerId: String? = nil
   ) async -> RemoteAgentStatus? {
     guard let transport else { return nil }
     struct Params: Encodable {
@@ -307,6 +307,7 @@ extension AppStore {
       let model: String?
       let permission_mode: String?
       let resume_session_id: String?
+      let runner_id: String?
     }
     struct Result: Decodable { let agent: RemoteAgentStatus }
     do {
@@ -314,7 +315,7 @@ extension AppStore {
         .agentsSpawn,
         Params(
           session_id: sessionId, model: model, permission_mode: permissionMode?.rawValue,
-          resume_session_id: resumeSessionId),
+          resume_session_id: resumeSessionId, runner_id: runnerId),
         as: Result.self
       ).agent
       statusByAgent[agent.agentId] = agent
