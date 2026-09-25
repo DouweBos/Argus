@@ -10,14 +10,14 @@ extension AppStore {
 
   func sendMessage(
     agentId: String, message: String, images: [RemoteImageAttachment] = [],
-    displayText: String? = nil
+    displayText: String? = nil, isRetry: Bool = false
   ) async {
     let localId = appendOptimistic(agentId: agentId, text: displayText ?? message, images: images)
     // No socket at all still has to land somewhere the user can see and retry,
     // or the message is gone the moment the lock screen took the connection.
     guard let transport else {
       markFailed(agentId: agentId, localId: localId, message: message, displayText: displayText,
-        images: images)
+        images: images, isRetry: isRetry)
       return
     }
 
@@ -35,6 +35,9 @@ extension AppStore {
           agent_id: agentId, message: message, display_text: displayText,
           images: images.isEmpty ? nil : images),
         as: Result.self)
+      Telemetry.capture(
+        .messageSent(
+          queued: result.queued == true, hasImages: !images.isEmpty, length: message.count))
       // The computer queues a send that arrived mid-turn. Drop the bubble and
       // let the queue show it, or it reads as already delivered.
       if result.queued == true {
@@ -45,9 +48,9 @@ extension AppStore {
       }
       await loadTranscript(agentId: agentId)
     } catch {
-      report(error)
+      report(error, scope: "agent:send")
       markFailed(agentId: agentId, localId: localId, message: message, displayText: displayText,
-        images: images)
+        images: images, isRetry: isRetry)
     }
   }
 
@@ -56,8 +59,9 @@ extension AppStore {
   /// nothing retries, and nothing ever echoes it back to reconcile against.
   private func markFailed(
     agentId: String, localId: String, message: String, displayText: String?,
-    images: [RemoteImageAttachment]
+    images: [RemoteImageAttachment], isRetry: Bool = false
   ) {
+    Telemetry.capture(.messageSendFailed(retried: isRetry))
     optimisticByAgent[agentId]?.removeAll { $0.id == localId }
     if optimisticByAgent[agentId]?.isEmpty == true {
       optimisticByAgent[agentId] = nil
@@ -74,7 +78,7 @@ extension AppStore {
     discardFailed(agentId: agentId, id: id)
     await sendMessage(
       agentId: agentId, message: pending.body, images: pending.images,
-      displayText: pending.displayText)
+      displayText: pending.displayText, isRetry: true)
   }
 
   func discardFailed(agentId: String, id: String) {
@@ -137,9 +141,12 @@ extension AppStore {
           agent_id: agentId, message: message, display_text: displayText,
           images: images.isEmpty ? nil : images),
         as: IgnoredResult.self)
+      Telemetry.capture(
+        .messageSent(queued: true, hasImages: !images.isEmpty, length: message.count))
       await loadQueue(agentId: agentId)
     } catch {
-      report(error)
+      report(error, scope: "agent:queue")
+      Telemetry.capture(.messageSendFailed(retried: false))
       // A queue add that never landed is as invisible as a send that didn't:
       // the computer's queue is the only record, and it has no row for this.
       failedByAgent[agentId, default: []].append(
@@ -189,8 +196,11 @@ extension AppStore {
   // MARK: Permissions
 
   func respond(
-    agentId: String, toolUseId: String, decision: String, message: String? = nil
+    agentId: String, toolUseId: String, decision: String, message: String? = nil,
+    fromNotification: Bool = false
   ) async {
+    Telemetry.capture(
+      .permissionAnswered(approved: decision == "allow", fromNotification: fromNotification))
     // Clear the inline form at once; the round trip only confirms it.
     answered.insert(promptKey(agentId, toolUseId))
     prompts.removeValue(forKey: promptKey(agentId, toolUseId))
@@ -221,6 +231,7 @@ extension AppStore {
 
   func interrupt(agentId: String) async {
     guard let transport else { return }
+    Telemetry.capture(.agentControlled(action: .interrupt))
     struct Params: Encodable { let agent_id: String }
     try? await transport.request(
       .agentsInterrupt, Params(agent_id: agentId), as: IgnoredResult.self)
@@ -228,6 +239,7 @@ extension AppStore {
 
   func stopAgent(agentId: String) async {
     guard let transport else { return }
+    Telemetry.capture(.agentControlled(action: .stop))
     struct Params: Encodable { let agent_id: String }
     do {
       try await transport.request(
@@ -247,6 +259,7 @@ extension AppStore {
 
   func setModel(agentId: String, model: String) async {
     guard let transport else { return }
+    Telemetry.capture(.agentControlled(action: .model))
     struct Params: Encodable {
       let agent_id: String
       let model: String
@@ -260,6 +273,7 @@ extension AppStore {
 
   func setPermissionMode(agentId: String, mode: RemotePermissionMode) async {
     guard let transport else { return }
+    Telemetry.capture(.agentControlled(action: .permissionMode))
     struct Params: Encodable {
       let agent_id: String
       let mode: String
@@ -284,6 +298,7 @@ extension AppStore {
 
   func setEffort(agentId: String, level: String?) async {
     guard let transport else { return }
+    Telemetry.capture(.agentControlled(action: .effort))
     struct Params: Encodable {
       let agent_id: String
       let level: String?
@@ -405,11 +420,13 @@ extension AppStore {
         .sessionsCommit, Params(session_id: sessionId, message: message),
         as: Result.self
       ).output
+      Telemetry.capture(.workLanded(action: .commit, success: true))
       await loadGitStatus(sessionId: sessionId)
 
       return output
     } catch {
-      report(error)
+      report(error, scope: "session:commit")
+      Telemetry.capture(.workLanded(action: .commit, success: false))
 
       return nil
     }
@@ -429,11 +446,13 @@ extension AppStore {
     do {
       let result = try await transport.request(
         .sessionsPush, Params(session_id: sessionId), as: PushResult.self)
+      Telemetry.capture(.workLanded(action: .push, success: true))
       await loadGitStatus(sessionId: sessionId)
 
       return result
     } catch {
-      report(error)
+      report(error, scope: "session:push")
+      Telemetry.capture(.workLanded(action: .push, success: false))
 
       return nil
     }
@@ -457,11 +476,13 @@ extension AppStore {
     do {
       try await transport.request(
         .sessionsMergeBase, Params(session_id: sessionId), as: IgnoredResult.self)
+      Telemetry.capture(.workLanded(action: .merge, success: true))
       await loadGitStatus(sessionId: sessionId)
 
       return true
     } catch {
-      report(error)
+      report(error, scope: "session:merge")
+      Telemetry.capture(.workLanded(action: .merge, success: false))
 
       return false
     }

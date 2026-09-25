@@ -97,6 +97,7 @@ struct PairView: View {
             await app.pairCompleted(identity)
             router.popToRoot()
           case .failed(let failure):
+            Telemetry.capture(.pairFailed(reason: reason(for: failure)))
             self.error = message(for: failure)
             self.client = nil
             phase = .scan
@@ -104,6 +105,7 @@ struct PairView: View {
         }
       }
     } catch {
+      Telemetry.capture(.pairFailed(reason: "invalidCode"))
       self.error = "That doesn't look like a valid pairing code."
     }
   }
@@ -114,6 +116,17 @@ struct PairView: View {
     let current = client
     client = nil
     Task { await current?.cancel() }
+  }
+
+  /// The case name alone — the message behind it is written for a person and
+  /// says more about the computer than a funnel needs.
+  private func reason(for error: PairingError) -> String {
+    switch error {
+    case .invalidCode: "invalidCode"
+    case .handshakeFailed: "handshakeFailed"
+    case .unreadableGrant: "unreadableGrant"
+    case .cancelled: "cancelled"
+    }
   }
 
   private func message(for error: PairingError) -> String {

@@ -146,7 +146,8 @@ extension NotificationRouter: UNUserNotificationCenterDelegate {
           app.queueOfflineDecision(
             agentId: agentId, toolUseId: toolUseId, decision: decision)
           Task { await app.respond(
-            agentId: agentId, toolUseId: toolUseId, decision: decision) }
+            agentId: agentId, toolUseId: toolUseId, decision: decision,
+            fromNotification: true) }
         }
         return
       }

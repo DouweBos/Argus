@@ -40,6 +40,8 @@ final class AppStore {
   var connection: Transport.State = .offline
   var deviceName: String = UIDeviceName.current
   var themePreference: ThemePreference = .system
+  /// Mirrored from `Telemetry` so the Settings toggle has something to bind to.
+  var telemetryMode: TelemetryMode = .presence
 
   /// This device's grants, seeded from pairing and refreshed on every connect.
   var capabilities: [String] = []
@@ -130,6 +132,7 @@ final class AppStore {
   // MARK: Lifecycle
 
   func initialize() async {
+    telemetryMode = Telemetry.currentMode
     pushEnabled = preferences.string(PreferenceKey.pushEnabled) != "off"
     deviceName = preferences.string(PreferenceKey.deviceName) ?? UIDeviceName.current
     themePreference =
@@ -157,6 +160,7 @@ final class AppStore {
   func selectHost(_ deviceId: String) async {
     guard let identity = hosts.first(where: { $0.deviceId == deviceId }) else { return }
     if deviceId == activeHostId, transport != nil, connection != .offline { return }
+    Telemetry.capture(.hostSwitched(hostCount: hosts.count))
 
     // Adopt the target before any awaiting, so a screen pushed on the same
     // tap can name it and show its own connecting state instead of "Argus".
@@ -171,6 +175,10 @@ final class AppStore {
   }
 
   func pairCompleted(_ identity: DeviceIdentity) async {
+    Telemetry.capture(
+      .paired(
+        endpointKind: identity.endpoints?.first?.kind.rawValue ?? "unknown",
+        hasControl: identity.capabilities.contains("control")))
     await disconnect()
     clearHostData()
     let state = await keystore.add(identity)
@@ -507,8 +515,10 @@ final class AppStore {
 
   // MARK: Error surface
 
-  func report(_ error: Error) {
+  func report(_ error: Error, scope: String = "app") {
     lastError = AppStore.describe(error)
+    Telemetry.capture(.appError(scope: scope, message: AppStore.describe(error)))
+    Telemetry.captureException(error, source: "app_error", extra: ["scope": scope])
   }
 
   /// A description worth putting in front of someone.
@@ -544,6 +554,11 @@ final class AppStore {
   }
 
   func clearError() { lastError = nil }
+
+  func setTelemetryMode(_ mode: TelemetryMode) {
+    telemetryMode = mode
+    Telemetry.setMode(mode)
+  }
 
   func setThemePreference(_ preference: ThemePreference) {
     themePreference = preference
