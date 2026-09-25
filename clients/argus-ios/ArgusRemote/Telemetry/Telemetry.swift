@@ -31,6 +31,7 @@ enum Telemetry {
   private static var client: PostHogSDK?
   private static var mode: TelemetryMode = .presence
   private static var distinctId = ""
+  private static let crashes = CrashDiagnostics()
 
   static var currentMode: TelemetryMode { mode }
 
@@ -70,6 +71,8 @@ enum Telemetry {
     client = sdk
 
     captureHeartbeat()
+    installExceptionHandler()
+    crashes.subscribe()
     capture(.launched)
   }
 
@@ -199,6 +202,23 @@ enum Telemetry {
   }
 
   // MARK: Errors
+
+  /// ObjC exceptions only — Swift runtime traps and signals go through
+  /// MetricKit on the next launch instead.
+  private static func installExceptionHandler() {
+    NSSetUncaughtExceptionHandler { exception in
+      MainActor.assumeIsolated {
+        Telemetry.captureException(
+          type: exception.name.rawValue,
+          message: exception.reason ?? "",
+          source: "uncaughtException",
+          extra: [
+            "$exception_stack_trace_raw": Telemetry.scrub(exception.callStackSymbols.joined(separator: "\n"))
+          ])
+        Telemetry.flush()
+      }
+    }
+  }
 
   /// Strip anything that looks like a file path. The phone displays host-side
   /// paths — repo roots, branch names — and they otherwise ride along inside
