@@ -59,6 +59,7 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../agent/messageQueue";
+import { revisePlaybook } from "../automation/authoring";
 import { cancelAutomationRun } from "../automation/runner";
 import { startAutomationRun } from "../automation/runner";
 import { getCommand, invokeCommand } from "../command/registry";
@@ -1658,6 +1659,16 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
 
     return await control(() => updateRemoteAutomation(automation_id, patch));
+  },
+  "automations.revise_playbook": async (params) => {
+    const { playbook, instruction, name } = parse(
+      "automations.revise_playbook",
+      params,
+    );
+
+    // Not wrapped in `control()`: nothing on the host changes. The rewrite
+    // goes back to the phone, and only an `automations.update` saves it.
+    return await revisePlaybook({ playbook, instruction, name });
   },
   "automations.delete": async (params) => {
     const { automation_id } = parse("automations.delete", params);

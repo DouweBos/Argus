@@ -134,6 +134,32 @@ final class AutomationsStore {
     }
   }
 
+  /// Ask the computer to rewrite a playbook to an instruction. Nothing is
+  /// saved by this — the new text goes back to the editor, which still needs a
+  /// save. Nil means the computer refused or is too old to answer.
+  func revisePlaybook(playbook: String, instruction: String, name: String?) async -> String? {
+    guard let transport = app.transport else { return nil }
+    struct Params: Encodable {
+      let playbook: String
+      let instruction: String
+      let name: String?
+    }
+    struct Result: Decodable { let playbook: String }
+    do {
+      let result = try await transport.request(
+        .automationsRevisePlaybook,
+        Params(playbook: playbook, instruction: instruction, name: name),
+        as: Result.self)
+      error = nil
+
+      return result.playbook
+    } catch {
+      self.error = "Couldn't rewrite that playbook — \(AppStore.describe(error))"
+
+      return nil
+    }
+  }
+
   func setEnabled(id: String, enabled: Bool) async {
     guard let transport = app.transport else { return }
     struct Params: Encodable {

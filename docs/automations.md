@@ -420,6 +420,10 @@ What comes back is shown next to what you have, and stays editable. Applying it
 replaces the playbook in the editor; it reaches the host only when you press
 save, so an automation is never rewritten underneath a run.
 
+The same button is in the iOS app's automation editor, for devices granted
+control. The rewrite runs on the computer either way — the phone only sends the
+instruction and shows what came back.
+
 ---
 
 ## The calibration loop

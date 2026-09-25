@@ -198,6 +198,9 @@ export const REMOTE_METHODS = {
   "automations.runners": "monitor",
   "automations.create": "control",
   "automations.update": "control",
+  /** No playbook is written by this — it hands text back for the editor — but
+   *  it spends the host's LLM, so it sits with the writes rather than the reads. */
+  "automations.revise_playbook": "control",
   "automations.delete": "control",
   "automations.set_enabled": "control",
   "automations.run_now": "control",
