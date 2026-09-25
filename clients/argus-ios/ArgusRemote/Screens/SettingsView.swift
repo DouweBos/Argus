@@ -80,6 +80,16 @@ struct SettingsView: View {
       }
 
       Section {
+        Toggle("Anonymous usage & crash reports", isOn: telemetryBinding)
+      } header: {
+        Text("Privacy")
+      } footer: {
+        Text(
+          "Off, Argus sends one anonymous heartbeat per launch so we can count installs. On, it also sends which screens you open, which actions you take, and crash reports — never prompts, project names, branches or paths."
+        )
+      }
+
+      Section {
         if let identity = app.identity {
           LabeledContent("Connected to", value: identity.label)
         }
@@ -101,6 +111,12 @@ struct SettingsView: View {
 
   private var appearance: Binding<ThemePreference> {
     Binding(get: { app.themePreference }, set: { app.setThemePreference($0) })
+  }
+
+  private var telemetryBinding: Binding<Bool> {
+    Binding(
+      get: { app.telemetryMode == .full },
+      set: { app.setTelemetryMode($0 ? .full : .presence) })
   }
 
   private var pushBinding: Binding<Bool> {
