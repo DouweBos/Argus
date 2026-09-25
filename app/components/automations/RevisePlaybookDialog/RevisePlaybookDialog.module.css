@@ -1,0 +1,31 @@
+.instruction {
+  min-height: 72px;
+  line-height: 1.55;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.hint {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-muted);
+}
+
+.playbook {
+  min-height: 240px;
+  line-height: 1.55;
+}
+
+.error {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--error);
+}

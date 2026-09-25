@@ -408,6 +408,18 @@ call rather than the model's:
 A project the draft names that is not open, and a signal source that does not
 exist, are dropped rather than saved.
 
+### Rewriting a playbook you already have
+
+An automation you have been running for a while usually needs editing, not
+drafting. **Rewrite with Claude**, above the playbook in the automation's
+configuration, takes an instruction — "before calling a branch unshipped, check
+whether a merged PR already covers it" — and rewrites the playbook around it,
+keeping the rest.
+
+What comes back is shown next to what you have, and stays editable. Applying it
+replaces the playbook in the editor; it reaches the host only when you press
+save, so an automation is never rewritten underneath a run.
+
 ---
 
 ## The calibration loop
