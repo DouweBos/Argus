@@ -170,7 +170,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     didFinishLaunchingWithOptions launchOptions:
       [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
-    MainActor.assumeIsolated { NotificationRouter.shared.attach() }
+    MainActor.assumeIsolated {
+      NotificationRouter.shared.attach()
+      Telemetry.start()
+    }
     return true
   }
 

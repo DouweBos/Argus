@@ -27,6 +27,35 @@ enum Route: Hashable {
   case settings
   case computers
   case claudeAccounts
+
+  /// The pattern only — never a project, branch, agent or device name. The
+  /// desktop's `routePattern()` does the same thing for the same reason: a
+  /// screen name is useful, the thing being looked at is not ours to send.
+  var telemetryName: String {
+    switch self {
+    case .pair: "pair"
+    case .computer: "computer"
+    case .projects: "projects"
+    case .project: "project"
+    case .agent: "agent"
+    case .stoppedAgent: "stopped_agent"
+    case .changes: "changes"
+    case .branches: "branches"
+    case .devices: "devices"
+    case .device: "device"
+    case .inbox: "inbox"
+    case .pullRequests: "pull_requests"
+    case .pullRequest: "pull_request"
+    case .automations: "automations"
+    case .automation: "automation"
+    case .quickRun: "quick_run"
+    case .automationEditor: "automation_editor"
+    case .run: "run"
+    case .settings: "settings"
+    case .computers: "computers"
+    case .claudeAccounts: "claude_accounts"
+    }
+  }
 }
 
 /// The top-level sections. These are tabs on a phone and a sidebar on an
