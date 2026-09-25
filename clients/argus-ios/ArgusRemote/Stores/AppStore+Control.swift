@@ -27,13 +27,22 @@ extension AppStore {
       let display_text: String?
       let images: [RemoteImageAttachment]?
     }
+    struct Result: Decodable { let queued: Bool? }
     do {
-      try await transport.request(
+      let result = try await transport.request(
         .agentsSend,
         Params(
           agent_id: agentId, message: message, display_text: displayText,
           images: images.isEmpty ? nil : images),
-        as: IgnoredResult.self)
+        as: Result.self)
+      // The computer queues a send that arrived mid-turn. Drop the bubble and
+      // let the queue show it, or it reads as already delivered.
+      if result.queued == true {
+        optimisticByAgent[agentId]?.removeAll { $0.id == localId }
+        await loadQueue(agentId: agentId)
+
+        return
+      }
       await loadTranscript(agentId: agentId)
     } catch {
       report(error)
