@@ -123,6 +123,11 @@ For each project:
 4. Find the work that is finished and waiting on a decision. A session qualifies when its agent is idle and \`list_session_changes\` shows its branch is committed with nothing dirty left behind. For each one, work out which of the two it needs:
    - **Open a PR** — the branch has no PR yet. Check with \`gh pr list --head <branch> --state all --json number,url,state\`.
    - **Merge** — a PR exists and is green, or the branch is a local one you would merge straight back. Use \`merge_status\` and \`check_conflicts\` to say whether it would go in cleanly.
+5. Prove the work is actually unshipped before you say so. Squash and rebase merges rewrite history, so the original commits live on the local branch forever and \`git log <base>..<branch>\` keeps counting them as ahead — an ahead count is not evidence of anything. A branch only qualifies as unshipped when all three agree:
+   - \`gh pr list --head <branch> --state all --json number,title,state,mergedAt\` finds no MERGED PR. A merged PR means shipped, whatever the ahead count says, and a missing remote branch means merged-and-cleaned-up, not "never pushed".
+   - \`git cherry -v <base> <branch>\` still lists the commits with \`+\`. A \`-\` means that patch is already upstream under a different SHA.
+   - \`git diff $(git merge-base <base> <branch>) <branch>\` does not match the diff of the merge commit in <base>. Identical diffs mean it is already in.
+   Never infer what a PR contained from its subject line in \`git log\` — GitHub truncates the squash subject, so half a title reads like half the work landed. Read \`gh pr view <n>\` instead. The same goes for issue trackers: an issue left In Progress after its PR merged is a follow-up, not proof the code is unshipped.
 
 Then write the digest as your final message, in markdown:
 
