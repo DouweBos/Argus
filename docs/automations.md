@@ -343,6 +343,29 @@ automation, so only the latest one ever chases you.
 Home also carries a **Needs you** section: the pending proposals and the runs
 that failed, with the same Start and Dismiss buttons the Inbox has.
 
+### Arguing with one
+
+A report that calls something "not important enough for today" is a judgement,
+and sometimes it is wrong. **Give feedback** on a finished run takes a note in
+your own words and hands it back to that run's own agent — the same
+conversation, picked up where it stopped, rather than a fresh firing that
+re-reads every signal from scratch. It re-checks what it claimed, publishes a
+corrected report over the old one, and the run goes back to `running` while it
+does.
+
+Feedback **adds**. The proposals already waiting in your inbox stay, whatever
+the corrected report now says about them — a run answering feedback may emit
+new proposals and nothing else. `withdraw_proposal` and `supersedes` are
+refused at the tool for the length of that turn, not merely discouraged in the
+prompt. Disagreeing about one item can never quietly empty the inbox of
+everything else.
+
+When you _do_ want something taken out, the dialog has a **Let it remove
+proposals** switch. Turning it on is you saying so explicitly, and it lifts the
+refusal for that one turn only. Every note you send is kept on the run, under
+**Feedback**, with a badge when it was allowed to clear — a corrected report
+that does not say what corrected it reads like the run simply changed its mind.
+
 ---
 
 ## Built-in templates
@@ -492,7 +515,8 @@ Two things to know when the host is headless:
 [Argus Remote](../clients/argus-ios/README.md) reaches the connected
 computer's automations from the Automations button on its projects screen: the
 automations themselves, the recent runs across all of them, and one run with
-its report — structured blocks included.
+its report — structured blocks included. **Give feedback** on a finished run
+works there too, switch and all.
 
 The Inbox button next to it opens the decisions: every pending proposal, with
 the run's own button to start the work, a Mark as done for what you already

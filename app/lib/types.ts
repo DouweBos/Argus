@@ -865,12 +865,24 @@ export interface GateLogEntry {
   tool_name: string;
 }
 
+/** A note the user left on a run's report, and what it was allowed to do. */
+export interface AutomationRunFeedback {
+  /** The run could withdraw or supersede proposals while answering this. */
+  allow_clearing: boolean;
+  created_at: number;
+  id: string;
+  /** The user's words, verbatim. */
+  note: string;
+}
+
 export interface AutomationRun {
   /** For an ad-hoc run, the synthetic id of its `scratch` spec. */
   automation_id: string;
   cost_usd: number | null;
   /** Failure message, or — for a `skipped` run — why it did not fire. */
   error: string | null;
+  /** What the user pushed back on after reading the report, oldest first. */
+  feedback?: AutomationRunFeedback[];
   finished_at: number | null;
   host_agent_id: string | null;
   /** The `automation_host` session the run's agent lives in. */

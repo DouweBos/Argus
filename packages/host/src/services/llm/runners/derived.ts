@@ -88,6 +88,10 @@ export class DerivedRunner implements LlmRunner {
     return this.base.forkTranscript(args);
   }
 
+  async latestTranscriptRef(cwd: string): Promise<string | null> {
+    return (await this.base.latestTranscriptRef?.(cwd)) ?? null;
+  }
+
   /** Overrides win over inherited vars; an empty value unsets one. */
   private applyEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     const env = { ...base };

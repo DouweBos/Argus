@@ -1569,6 +1569,16 @@ export const getAutomationRun = (
 export const deleteAutomationRun = (runId: string): Promise<void> =>
   invoke("automation_run_delete", { runId });
 
+/**
+ * Argue with a finished run's report. Resumes the run's own agent so it can
+ * publish a corrected one; resolves as soon as the run is back in flight.
+ */
+export const sendAutomationRunFeedback = (args: {
+  allowClearing?: boolean;
+  note: string;
+  runId: string;
+}): Promise<AutomationRun> => invoke("automation_run_feedback", args);
+
 /** Mark a run's report as read. Idempotent. */
 export const markAutomationRunRead = (runId: string): Promise<AutomationRun> =>
   invoke("automation_run_mark_read", { runId });

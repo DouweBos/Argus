@@ -9,6 +9,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { proposalClearingBlock } from "../automation/feedbackGuard";
 import { getProposal, withdrawProposal } from "../automation/proposals/manager";
 import {
   outstandingProposals,
@@ -82,6 +83,11 @@ export function registerAutomationInboxTools(
           "withdraw_proposal is only available to automation runs.",
           true,
         );
+      }
+
+      const clearingBlock = proposalClearingBlock(context.runId);
+      if (clearingBlock) {
+        return textResult(clearingBlock, true);
       }
 
       const proposal = getProposal(proposal_id);

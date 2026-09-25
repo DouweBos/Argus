@@ -23,10 +23,12 @@ import type {
   RemoteAutomationGuardrails,
   RemoteAutomationDetail,
   RemoteAutomationRun,
+  RemoteRunFeedback,
   RemoteRunner,
   RemoteSignalSource,
 } from "@argus/remote-protocol";
 import path from "node:path";
+import { submitRunFeedback } from "../automation/feedback";
 import {
   createAutomation,
   deleteAutomation,
@@ -314,6 +316,7 @@ export function remoteAutomationRuns(params: {
 
 /** One run with its report. Null when the run id is unknown. */
 export function remoteAutomationRun(runId: string): {
+  feedback: RemoteRunFeedback[];
   report_blocks: AutomationRun["report_blocks"];
   report_markdown: string | null;
   run: RemoteAutomationRun;
@@ -327,7 +330,27 @@ export function remoteAutomationRun(runId: string): {
     run: toRemoteAutomationRun(run),
     report_blocks: run.report_blocks ?? null,
     report_markdown: run.report_markdown,
+    feedback: run.feedback ?? [],
   };
+}
+
+/**
+ * Argue with a report from the phone. Same deal as on the desktop: the run's
+ * own agent is picked back up, and unless `allow_clearing` was asked for it
+ * may only add to the inbox.
+ */
+export async function submitRemoteRunFeedback(params: {
+  allow_clearing?: boolean;
+  note: string;
+  run_id: string;
+}): Promise<{ run: RemoteAutomationRun }> {
+  const run = await submitRunFeedback({
+    runId: params.run_id,
+    note: params.note,
+    allowClearing: params.allow_clearing,
+  });
+
+  return { run: toRemoteAutomationRun(run) };
 }
 
 /**

@@ -43,6 +43,7 @@ enum Icon {
   static let lock = "lock"
   static let clock = "clock"
   static let envelope = "tray"
+  static let chat = "bubble.left"
   static let play = "play.fill"
   static let link = "link"
   static let warning = "exclamationmark.triangle"

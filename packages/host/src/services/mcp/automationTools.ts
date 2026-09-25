@@ -13,6 +13,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { autoStartIfAllowed } from "../automation/autoStart";
+import { proposalClearingBlock } from "../automation/feedbackGuard";
 import {
   createProposal,
   supersedeProposals,
@@ -159,6 +160,18 @@ export function registerAutomationTools(
               text: "emit_proposal is only available to automation runs.",
             },
           ],
+          isError: true,
+        };
+      }
+
+      // A feedback turn may only add. Refused before anything is written, so
+      // the run retries with the supersede dropped rather than half-applied.
+      const clearingBlock = supersedes?.length
+        ? proposalClearingBlock(context.runId)
+        : null;
+      if (clearingBlock) {
+        return {
+          content: [{ type: "text" as const, text: clearingBlock }],
           isError: true,
         };
       }

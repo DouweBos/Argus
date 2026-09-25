@@ -1,0 +1,32 @@
+.list {
+  margin: 0;
+  padding: 4px 2px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item {
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.when {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.note {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}

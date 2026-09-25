@@ -69,6 +69,7 @@ function run(
     report_blocks: null,
     report_read: false,
     error: null,
+    feedback: [],
   };
 }
 

@@ -269,4 +269,10 @@ export interface LlmRunner {
   forkTranscript?: (
     args: ForkTranscriptArgs,
   ) => Promise<{ resumeRef: string | null }>;
+  /**
+   * Optional: the resume ref of the newest conversation this runner left in a
+   * cwd. Lets a finished agent be picked back up without the renderer having
+   * been there to remember its id.
+   */
+  latestTranscriptRef?: (cwd: string) => Promise<string | null>;
 }

@@ -22,7 +22,7 @@ import { info } from "@argus/host/logger";
 import { ClaudeCodeHandle } from "./handle";
 import { runClaudePrint } from "./oneShot";
 import { toClaudePermissionMode } from "./permissionModes";
-import { forkClaudeSessionFile } from "./transcriptFork";
+import { forkClaudeSessionFile, latestClaudeSessionId } from "./transcriptFork";
 
 const execFileAsync = promisify(execFile);
 
@@ -135,5 +135,9 @@ export class ClaudeCodeRunner implements LlmRunner {
     });
 
     return { resumeRef: newSessionId };
+  }
+
+  async latestTranscriptRef(cwd: string): Promise<string | null> {
+    return latestClaudeSessionId(cwd);
   }
 }

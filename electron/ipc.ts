@@ -85,6 +85,7 @@ import {
   draftAutomation,
   revisePlaybook,
 } from "@argus/host/services/automation/authoring";
+import { submitRunFeedback } from "@argus/host/services/automation/feedback";
 import {
   clearGateLog,
   dismissGateLogEntry,
@@ -1132,6 +1133,14 @@ export function registerIpcHandlers(): void {
     markRunReportRead(a.runId as string),
   );
   handle("automation_run_delete", "admin", (a) => deleteRun(a.runId as string));
+  // Picks the run's own agent back up rather than firing the automation again.
+  handle("automation_run_feedback", "admin", (a) =>
+    submitRunFeedback({
+      runId: a.runId as string,
+      note: a.note as string,
+      allowClearing: a.allowClearing as boolean | undefined,
+    }),
+  );
   handle("signal_sources_list", "admin", () => describeSignalSources());
   handle("automation_gate_log_list", "admin", () => listGateLog());
   handle("automation_gate_log_dismiss", "admin", (a) =>

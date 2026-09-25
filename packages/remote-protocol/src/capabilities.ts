@@ -211,6 +211,7 @@ export const REMOTE_METHODS = {
   /** Reading a report on the phone is reading it — it clears nowhere else.
    *  Monitor, not control: it records that you looked, and can do nothing else. */
   "automations.mark_run_read": "monitor",
+  "automations.run_feedback": "control",
   /** Pull requests, through the `gh` CLI on the computer. Reading is monitor;
    *  opening, merging or commenting speaks for you on GitHub, so it is not. */
   "github.pull_requests": "monitor",

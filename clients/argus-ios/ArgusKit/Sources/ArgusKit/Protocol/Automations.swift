@@ -405,15 +405,35 @@ public enum RemoteReportBlock: Codable, Hashable, Sendable {
   }
 }
 
+/// A note the user left on a run's report, and what it was allowed to do.
+public struct RemoteRunFeedback: Codable, Hashable, Sendable, Identifiable {
+  public var id: String
+  /// The user's words, verbatim.
+  public var note: String
+  /// The turn could withdraw or supersede proposals while answering this.
+  public var allowClearing: Bool
+  public var createdAt: Double
+
+  enum CodingKeys: String, CodingKey {
+    case id
+    case note
+    case allowClearing = "allow_clearing"
+    case createdAt = "created_at"
+  }
+}
+
 public struct RemoteAutomationRunDetail: Codable, Sendable {
   public var run: RemoteAutomationRun
   public var reportBlocks: [RemoteReportBlock]?
   public var reportMarkdown: String?
+  /// What the user pushed back on after reading the report, oldest first.
+  public var feedback: [RemoteRunFeedback]?
 
   enum CodingKeys: String, CodingKey {
     case run
     case reportBlocks = "report_blocks"
     case reportMarkdown = "report_markdown"
+    case feedback
   }
 }
 
