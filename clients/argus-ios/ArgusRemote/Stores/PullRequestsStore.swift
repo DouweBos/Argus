@@ -39,7 +39,7 @@ final class PullRequestsStore {
     } catch {
       // `gh` missing or unauthenticated is the usual cause, and it is worth
       // saying so rather than showing an empty list.
-      self.error = "Couldn't read pull requests — \(AppStore.describe(error))"
+      fail("Couldn't read pull requests", error)
     }
     loaded = true
   }
@@ -60,7 +60,7 @@ final class PullRequestsStore {
 
       return detail
     } catch {
-      self.error = "Couldn't read that pull request — \(AppStore.describe(error))"
+      fail("Couldn't read that pull request", error)
 
       return nil
     }
@@ -89,7 +89,7 @@ final class PullRequestsStore {
 
       return result.url
     } catch {
-      self.error = "Couldn't open that pull request — \(AppStore.describe(error))"
+      fail("Couldn't open that pull request", error)
 
       return nil
     }
@@ -113,7 +113,7 @@ final class PullRequestsStore {
 
       return true
     } catch {
-      self.error = "Couldn't merge that pull request — \(AppStore.describe(error))"
+      fail("Couldn't merge that pull request", error)
 
       return false
     }
@@ -135,9 +135,17 @@ final class PullRequestsStore {
 
       return true
     } catch {
-      self.error = "Couldn't post that comment — \(AppStore.describe(error))"
+      fail("Couldn't post that comment", error)
 
       return false
     }
+  }
+
+  /// Show it, and send it — a failure the user sees is one worth knowing
+  /// about, scrubbed of anything from their work.
+  private func fail(_ summary: String, _ error: Error) {
+    self.error = "\(summary) — \(AppStore.describe(error))"
+    Telemetry.capture(.appError(scope: "pull_requests", message: AppStore.describe(error)))
+    Telemetry.captureException(error, source: "app_error", extra: ["scope": "pull_requests"])
   }
 }

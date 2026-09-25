@@ -23,6 +23,10 @@ struct DeviceView: View {
   @State private var unregister: (() -> Void)?
   @State private var lastDragPoint: CGPoint?
   @State private var busy = false
+  /// When this screen started watching, and whether anything was driven from
+  /// it — a glance and a working session are worth telling apart.
+  @State private var watchStart: Date?
+  @State private var interacted = false
 
   /// Booted but producing nothing decodable — worth saying so rather than
   /// spinning forever.
@@ -188,12 +192,14 @@ struct DeviceView: View {
 
   private func send(_ point: CGPoint, phase: Int) {
     guard let normalized = normalize(point) else { return }
+    interacted = true
     app.deviceTouch(
       deviceId: deviceId, platform: platform,
       x: normalized.x, y: normalized.y, eventType: phase)
   }
 
   private func sendButton(_ button: String) {
+    interacted = true
     app.deviceButton(deviceId: deviceId, platform: platform, button: button)
   }
 
@@ -273,6 +279,7 @@ struct DeviceView: View {
 
   private func sendKey(_ character: String) {
     guard let key = KeyMap.nativeKey(platform: platform, character: character) else { return }
+    interacted = true
     app.deviceKeyboard(
       deviceId: deviceId, platform: platform, keyCode: key.keyCode,
       modifiers: key.modifiers, isDown: true)
@@ -286,6 +293,7 @@ struct DeviceView: View {
   private func subscribe() async {
     guard app.connection == .ready else { return }
     status = .connecting
+    if watchStart == nil { watchStart = Date() }
 
     guard let streamId = await app.watchDevice(deviceId: deviceId, platform: platform) else {
       status = .error
@@ -331,6 +339,11 @@ struct DeviceView: View {
   }
 
   private func teardown() {
+    if let watchStart {
+      Telemetry.capture(
+        .deviceWatched(
+          durationMs: Int(Date().timeIntervalSince(watchStart) * 1000), interacted: interacted))
+    }
     unregister?()
     unregister = nil
     Task {

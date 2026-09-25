@@ -130,7 +130,7 @@ final class AutomationsStore {
 
       return result.detail.id
     } catch {
-      self.error = "Couldn't save that automation — \(AppStore.describe(error))"
+      fail("Couldn't save that automation", error)
 
       return nil
     }
@@ -156,7 +156,7 @@ final class AutomationsStore {
 
       return result.playbook
     } catch {
-      self.error = "Couldn't rewrite that playbook — \(AppStore.describe(error))"
+      fail("Couldn't rewrite that playbook", error)
 
       return nil
     }
@@ -179,7 +179,7 @@ final class AutomationsStore {
       }
       detailById[id]?.enabled = updated.enabled
     } catch {
-      self.error = "Couldn't change that automation — \(AppStore.describe(error))"
+      fail("Couldn't change that automation", error)
     }
   }
 
@@ -266,7 +266,7 @@ final class AutomationsStore {
 
       return true
     } catch {
-      self.error = "Couldn't delete that automation — \(AppStore.describe(error))"
+      fail("Couldn't delete that automation", error)
 
       return false
     }
@@ -312,7 +312,7 @@ final class AutomationsStore {
       ).run
       runs.insert(run, at: 0)
     } catch {
-      self.error = "Couldn't start that automation — \(AppStore.describe(error))"
+      fail("Couldn't start that automation", error)
       triggering.remove(automationId)
     }
     await refresh()
@@ -347,7 +347,7 @@ final class AutomationsStore {
 
       return run.id
     } catch {
-      self.error = "Couldn't start that run — \(AppStore.describe(error))"
+      fail("Couldn't start that run", error)
 
       return nil
     }
@@ -374,7 +374,7 @@ final class AutomationsStore {
 
       return automation.id
     } catch {
-      self.error = "Couldn't save that run — \(AppStore.describe(error))"
+      fail("Couldn't save that run", error)
 
       return nil
     }
@@ -400,7 +400,7 @@ final class AutomationsStore {
 
       return true
     } catch {
-      self.error = "Couldn't send that feedback — \(AppStore.describe(error))"
+      fail("Couldn't send that feedback", error)
 
       return false
     }
@@ -416,5 +416,13 @@ final class AutomationsStore {
 
   func runs(for automationId: String) -> [RemoteAutomationRun] {
     runs.filter { $0.automationId == automationId }
+  }
+
+  /// Show it, and send it — a failure the user sees is one worth knowing
+  /// about, scrubbed of anything from their work.
+  private func fail(_ summary: String, _ error: Error) {
+    self.error = "\(summary) — \(AppStore.describe(error))"
+    Telemetry.capture(.appError(scope: "automations", message: AppStore.describe(error)))
+    Telemetry.captureException(error, source: "app_error", extra: ["scope": "automations"])
   }
 }

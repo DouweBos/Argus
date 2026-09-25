@@ -38,7 +38,7 @@ final class ProposalsStore {
       proposals = result.proposals
       error = nil
     } catch {
-      self.error = "Couldn't read the inbox — \(AppStore.describe(error))"
+      fail("Couldn't read the inbox", error)
     }
     loaded = true
   }
@@ -59,7 +59,7 @@ final class ProposalsStore {
       proposals.removeAll { $0.id == id }
       return result.agent_id
     } catch {
-      self.error = "Couldn't start that proposal — \(AppStore.describe(error))"
+      fail("Couldn't start that proposal", error)
       return nil
     }
   }
@@ -77,7 +77,7 @@ final class ProposalsStore {
       try await transport.request(
         .proposalsDismiss, Params(proposal_id: id, reason: reason), as: IgnoredResult.self)
     } catch {
-      self.error = "Couldn't dismiss that proposal — \(AppStore.describe(error))"
+      fail("Couldn't dismiss that proposal", error)
     }
     await refresh()
   }
@@ -96,7 +96,7 @@ final class ProposalsStore {
       try await transport.request(
         .proposalsResolve, Params(proposal_id: id, note: note), as: IgnoredResult.self)
     } catch {
-      self.error = "Couldn't mark that proposal done — \(AppStore.describe(error))"
+      fail("Couldn't mark that proposal done", error)
     }
     await refresh()
   }
@@ -111,8 +111,16 @@ final class ProposalsStore {
       try await transport.request(
         .proposalsPerformCleanup, Params(proposal_id: id), as: IgnoredResult.self)
     } catch {
-      self.error = "Couldn't run that cleanup — \(AppStore.describe(error))"
+      fail("Couldn't run that cleanup", error)
     }
     await refresh()
+  }
+
+  /// Show it, and send it — a failure the user sees is one worth knowing
+  /// about, scrubbed of anything from their work.
+  private func fail(_ summary: String, _ error: Error) {
+    self.error = "\(summary) — \(AppStore.describe(error))"
+    Telemetry.capture(.appError(scope: "proposals", message: AppStore.describe(error)))
+    Telemetry.captureException(error, source: "app_error", extra: ["scope": "proposals"])
   }
 }
