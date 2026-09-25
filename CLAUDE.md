@@ -117,6 +117,8 @@ Adding one (worked example: `automations.revise_playbook`):
 
 **Plan files:** write to `plan/` in the repo root, never `docs/` (which is published to the website).
 
+**Commit when a thing is done.** Every feature, fix or refactor gets its own commit the moment it works — don't leave finished work sitting in the tree waiting for the end of the session. One commit per feature/fix, with its tests, docs and changeset in it, so each one stands alone and is revertable. Several unrelated changes already piled up in the tree → split them by hunk rather than committing one lump. Committing is not pushing: push only when asked.
+
 **Commit messages:** one short single-sentence subject line. No body paragraphs, no bullet lists, no `Co-Authored-By` trailer.
 
 **Changesets:** every user-visible change gets one in `.changeset/`. Written for end users: 1–2 short sentences, present tense, no internals/file paths/type names. Bump `argus` for app changes, `@argus/peacock` for public design-system changes. `patch` for fixes, `minor` for new behavior. Skip for pure refactors/tests/tooling.
