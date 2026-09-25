@@ -1055,22 +1055,26 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     // The index is already newest-first. Chat history is also written while an
     // agent is still running, so drop anything still live — those belong to
     // `agents.list`, and listing them here would double them up.
-    const agents = loadHistoryIndex(repo_root)
-      .filter((e) => !e.agentId || !appState.agents.has(e.agentId))
-      .slice(0, limit ?? 20)
-      .map(
-        (e): RemoteStoppedAgent => ({
-          history_id: e.id,
-          runner_session_id: e.sessionId,
-          title: e.title,
-          branch: e.sessionBranch,
-          description: e.sessionDescription,
-          model: e.model ?? null,
-          message_count: e.messageCount,
-          started_at: e.createdAt,
-          ended_at: e.endedAt,
-        }),
-      );
+    //
+    // Unasked, serve the whole index, as the desktop does: it is already
+    // capped by the history's own retention, and a client that files these
+    // under the session they ran in needs all of them to file.
+    const index = loadHistoryIndex(repo_root).filter(
+      (e) => !e.agentId || !appState.agents.has(e.agentId),
+    );
+    const agents = (limit === undefined ? index : index.slice(0, limit)).map(
+      (e): RemoteStoppedAgent => ({
+        history_id: e.id,
+        runner_session_id: e.sessionId,
+        title: e.title,
+        branch: e.sessionBranch,
+        description: e.sessionDescription,
+        model: e.model ?? null,
+        message_count: e.messageCount,
+        started_at: e.createdAt,
+        ended_at: e.endedAt,
+      }),
+    );
 
     return { agents };
   },

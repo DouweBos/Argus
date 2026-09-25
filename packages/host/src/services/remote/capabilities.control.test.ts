@@ -35,7 +35,22 @@ vi.mock("../file/operations", () => ({
   resolveMentionPath: vi.fn(async () => ({ entries: [], resolvedPath: "" })),
 }));
 vi.mock("../mcp/projectDiscovery", () => ({
-  collectAllProjects: vi.fn(() => []),
+  collectAllProjects: vi.fn(() => [{ path: "/repo" }]),
+}));
+vi.mock("../agent/chatHistory", () => ({
+  loadConversation: vi.fn(() => null),
+  loadHistoryIndex: vi.fn(() =>
+    Array.from({ length: 25 }, (_, i) => ({
+      id: `h${i}`,
+      sessionId: `r${i}`,
+      title: `old ${i}`,
+      sessionBranch: "feature/x",
+      sessionDescription: "",
+      messageCount: 2,
+      createdAt: 0,
+      endedAt: 0,
+    })),
+  ),
 }));
 vi.mock("../session/manager", () => ({
   listSessions: vi.fn(async () => []),
@@ -282,6 +297,23 @@ describe("control capability gating", () => {
       undefined,
     );
     expect(res.agent.agent_id).toBe("a1");
+  });
+
+  it("lists every stopped agent the history kept, like the desktop does", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    const all = (await dispatch(
+      "agents.stopped",
+      { repo_root: "/repo" },
+      ctx,
+    )) as { agents: unknown[] };
+    const capped = (await dispatch(
+      "agents.stopped",
+      { repo_root: "/repo", limit: 5 },
+      ctx,
+    )) as { agents: unknown[] };
+
+    expect(all.agents).toHaveLength(25);
+    expect(capped.agents).toHaveLength(5);
   });
 
   it("allows a control device to stop an agent", async () => {
