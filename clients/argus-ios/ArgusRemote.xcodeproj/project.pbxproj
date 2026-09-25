@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FEED000100000000000000A3 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = FEED000100000000000000A2 /* PostHog */; };
+		FEED000100000000000000C1 /* Telemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEED000100000000000000B1 /* Telemetry.swift */; };
+		FEED000100000000000000C2 /* TelemetryEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEED000100000000000000B2 /* TelemetryEvent.swift */; };
 		A1C0FFEE000000000000AA02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE000000000000AA01 /* Assets.xcassets */; };
 		0C2CEA8B85053A238EB47BA7 /* AutomationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4510F50B6943CA7B6707AABE /* AutomationsView.swift */; };
 		0DAAD89A3BF90D72CFF2E3A9 /* ArgusNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4B819AF7F05F8000A0B5D08A /* ArgusNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -101,6 +104,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FEED000100000000000000A4 /* Argus.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Argus.xcconfig; sourceTree = "<group>"; };
+		FEED000100000000000000B1 /* Telemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Telemetry.swift; sourceTree = "<group>"; };
+		FEED000100000000000000B2 /* TelemetryEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryEvent.swift; sourceTree = "<group>"; };
 		A1C0FFEE000000000000AA01 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Push.swift"; sourceTree = "<group>"; };
 		0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRouter.swift; sourceTree = "<group>"; };
@@ -187,6 +193,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FEED000100000000000000A3 /* PostHog in Frameworks */,
 				792DC62433CAABA830D81267 /* ArgusKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -194,6 +201,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		FEED000100000000000000A5 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				FEED000100000000000000A4 /* Argus.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		FEED000100000000000000A6 /* Telemetry */ = {
+			isa = PBXGroup;
+			children = (
+				FEED000100000000000000B1 /* Telemetry.swift */,
+				FEED000100000000000000B2 /* TelemetryEvent.swift */,
+			);
+			path = Telemetry;
+			sourceTree = "<group>";
+		};
 		A1C0FFEE000000000000AA04 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -206,6 +230,7 @@
 			isa = PBXGroup;
 			children = (
 				A1C0FFEE000000000000AA04 /* Resources */,
+				FEED000100000000000000A5 /* Config */,
 				554FDC8717D9CC35677B42B3 /* ArgusRemote */,
 				664BEF247131A39B00FDFB6F /* NotificationService */,
 				2542E15A24347C94BC63C98B /* Packages */,
@@ -308,6 +333,7 @@
 				26C51FB4782FB6B8B8DC3671 /* Screens */,
 				38AF2122DBE897D9F8A04315 /* Stores */,
 				51086224F685027B0138C994 /* Views */,
+				FEED000100000000000000A6 /* Telemetry */,
 				8346E6C1D03B823ABD7DCA02 /* ArgusRemote.entitlements */,
 				95ACC76BC6E417BE6A706B18 /* Info.plist */,
 			);
@@ -390,6 +416,7 @@
 			name = ArgusRemote;
 			packageProductDependencies = (
 				7C60136A1C7D698866F581E8 /* ArgusKit */,
+				FEED000100000000000000A2 /* PostHog */,
 			);
 			productName = ArgusRemote;
 			productReference = 22BC770CA5DFEDFB0344DB2D /* ArgusRemote.app */;
@@ -425,6 +452,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				B68ECC6C3B58529FD4EC56FE /* XCLocalSwiftPackageReference "ArgusKit" */,
+				FEED000100000000000000A1 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2367FD0131C0CDC27F4B7B30 /* Products */;
@@ -514,6 +542,8 @@
 				A508D8619967FC0AFC236F9C /* Rows.swift in Sources */,
 				55304875735519F780DBE883 /* RunView.swift in Sources */,
 				85B885DE197E4591E333C07D /* SettingsView.swift in Sources */,
+				FEED000100000000000000C1 /* Telemetry.swift in Sources */,
+				FEED000100000000000000C2 /* TelemetryEvent.swift in Sources */,
 				3C1C0796FCE5D8AA678463BF /* StoppedAgentView.swift in Sources */,
 				61C10B6C7968E2DD39CBFDC4 /* Theme.swift in Sources */,
 				AC7A4FE03EB3A80E8D83B5C5 /* ToolCallCard.swift in Sources */,
@@ -539,6 +569,7 @@
 /* Begin XCBuildConfiguration section */
 		541EB4B835D17021CA770FDD /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FEED000100000000000000A4 /* Argus.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -676,6 +707,7 @@
 		};
 		BE0C5AD133C8B0B1A2870B6B /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = FEED000100000000000000A4 /* Argus.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -775,6 +807,17 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		FEED000100000000000000A1 /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		6625E1D6BCC577429BF7B696 /* ArgusKit */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -783,6 +826,11 @@
 		7C60136A1C7D698866F581E8 /* ArgusKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ArgusKit;
+		};
+		FEED000100000000000000A2 /* PostHog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEED000100000000000000A1 /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

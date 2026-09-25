@@ -71,3 +71,6 @@ build/icon.iconset/
 
 # Headless server app build output
 release-server
+
+# Local iOS build settings (PostHog key et al)
+clients/argus-ios/Config/Argus.local.xcconfig

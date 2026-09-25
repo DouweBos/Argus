@@ -9,6 +9,9 @@ public enum PreferenceKey {
   public static let pushToken = "push.token"
   public static let agentHosts = "agent.hosts"
   public static let pendingDecisions = "permission.pending"
+  public static let telemetryId = "telemetry.id"
+  public static let telemetryMode = "telemetry.mode"
+  public static let telemetryConsentSeen = "telemetry.consent.seen"
 
   public static func draft(agentId: String) -> String { "argus.draft.\(agentId)" }
   public static func linkedProjects(agentId: String) -> String { "argus.linked.\(agentId)" }
