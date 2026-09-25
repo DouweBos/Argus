@@ -10,6 +10,7 @@
 		FEED000100000000000000A3 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = FEED000100000000000000A2 /* PostHog */; };
 		FEED000100000000000000C1 /* Telemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEED000100000000000000B1 /* Telemetry.swift */; };
 		FEED000100000000000000C2 /* TelemetryEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEED000100000000000000B2 /* TelemetryEvent.swift */; };
+		FEED000100000000000000C3 /* CrashDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEED000100000000000000B3 /* CrashDiagnostics.swift */; };
 		A1C0FFEE000000000000AA02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE000000000000AA01 /* Assets.xcassets */; };
 		0C2CEA8B85053A238EB47BA7 /* AutomationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4510F50B6943CA7B6707AABE /* AutomationsView.swift */; };
 		0DAAD89A3BF90D72CFF2E3A9 /* ArgusNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4B819AF7F05F8000A0B5D08A /* ArgusNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -107,6 +108,7 @@
 		FEED000100000000000000A4 /* Argus.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Argus.xcconfig; sourceTree = "<group>"; };
 		FEED000100000000000000B1 /* Telemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Telemetry.swift; sourceTree = "<group>"; };
 		FEED000100000000000000B2 /* TelemetryEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryEvent.swift; sourceTree = "<group>"; };
+		FEED000100000000000000B3 /* CrashDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashDiagnostics.swift; sourceTree = "<group>"; };
 		A1C0FFEE000000000000AA01 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Push.swift"; sourceTree = "<group>"; };
 		0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRouter.swift; sourceTree = "<group>"; };
@@ -212,6 +214,7 @@
 		FEED000100000000000000A6 /* Telemetry */ = {
 			isa = PBXGroup;
 			children = (
+				FEED000100000000000000B3 /* CrashDiagnostics.swift */,
 				FEED000100000000000000B1 /* Telemetry.swift */,
 				FEED000100000000000000B2 /* TelemetryEvent.swift */,
 			);
@@ -544,6 +547,7 @@
 				85B885DE197E4591E333C07D /* SettingsView.swift in Sources */,
 				FEED000100000000000000C1 /* Telemetry.swift in Sources */,
 				FEED000100000000000000C2 /* TelemetryEvent.swift in Sources */,
+				FEED000100000000000000C3 /* CrashDiagnostics.swift in Sources */,
 				3C1C0796FCE5D8AA678463BF /* StoppedAgentView.swift in Sources */,
 				61C10B6C7968E2DD39CBFDC4 /* Theme.swift in Sources */,
 				AC7A4FE03EB3A80E8D83B5C5 /* ToolCallCard.swift in Sources */,
