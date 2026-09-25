@@ -68,18 +68,21 @@ public struct RemoteAutomationGuardrails: Codable, Hashable, Sendable {
   public var maxConcurrentSessions: Double
   public var maxFilesChanged: Double
   public var maxCostUsdPerRun: Double
+  public var maxRunMinutes: Double
   public var pathDenylist: [String]
   public var requireCleanCi: Bool
 
   public init(
     confidenceThreshold: Double = 0.8, maxConcurrentSessions: Double = 2,
     maxFilesChanged: Double = 25, maxCostUsdPerRun: Double = 0,
-    pathDenylist: [String] = [], requireCleanCi: Bool = true
+    maxRunMinutes: Double = 20, pathDenylist: [String] = [],
+    requireCleanCi: Bool = true
   ) {
     self.confidenceThreshold = confidenceThreshold
     self.maxConcurrentSessions = maxConcurrentSessions
     self.maxFilesChanged = maxFilesChanged
     self.maxCostUsdPerRun = maxCostUsdPerRun
+    self.maxRunMinutes = maxRunMinutes
     self.pathDenylist = pathDenylist
     self.requireCleanCi = requireCleanCi
   }
@@ -89,6 +92,7 @@ public struct RemoteAutomationGuardrails: Codable, Hashable, Sendable {
     case maxConcurrentSessions = "max_concurrent_sessions"
     case maxFilesChanged = "max_files_changed"
     case maxCostUsdPerRun = "max_cost_usd_per_run"
+    case maxRunMinutes = "max_run_minutes"
     case pathDenylist = "path_denylist"
     case requireCleanCi = "require_clean_ci"
   }
