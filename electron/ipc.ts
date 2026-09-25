@@ -81,7 +81,10 @@ import {
   saveAppSettings,
   type AppSettings,
 } from "@argus/host/services/appSettings/store";
-import { draftAutomation } from "@argus/host/services/automation/authoring";
+import {
+  draftAutomation,
+  revisePlaybook,
+} from "@argus/host/services/automation/authoring";
 import {
   clearGateLog,
   dismissGateLogEntry,
@@ -1141,6 +1144,15 @@ export function registerIpcHandlers(): void {
     draftAutomation({
       description: a.description as string,
       timezone: a.timezone as string | undefined,
+    }),
+  );
+  // Same rule as drafting: the rewrite comes back as text for the editor, and
+  // only a save puts it anywhere near a scheduled run.
+  handle("automation_playbook_revise", "admin", (a) =>
+    revisePlaybook({
+      playbook: a.playbook as string,
+      instruction: a.instruction as string,
+      name: a.name as string | undefined,
     }),
   );
   handle("automation_calibration", "admin", (a) =>

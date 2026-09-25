@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildRevisionPrompt,
   clampGeneratedAutonomy,
   extractJsonObject,
   repairCron,
   sanitizeDraft,
+  sanitizeRevisedPlaybook,
   type DraftContext,
 } from "./authoring";
 import { computeNextRun } from "./cron";
@@ -173,5 +175,47 @@ describe("extractJsonObject", () => {
     expect(extractJsonObject('```json\n{"a":1}\n```')).toEqual({ a: 1 });
     expect(extractJsonObject('here you go: {"a":1}')).toEqual({ a: 1 });
     expect(extractJsonObject("no json at all")).toBeNull();
+  });
+});
+
+describe("sanitizeRevisedPlaybook", () => {
+  it("unwraps a fenced reply and keeps the markdown inside", () => {
+    expect(sanitizeRevisedPlaybook("```markdown\n# Title\n\nBody\n```")).toBe(
+      "# Title\n\nBody",
+    );
+    expect(sanitizeRevisedPlaybook("# Title\n\nBody\n")).toBe(
+      "# Title\n\nBody",
+    );
+  });
+
+  it("leaves a fence that is part of the playbook alone", () => {
+    const playbook = "# Title\n\nRun:\n\n```sh\ngit log\n```\n\nThen report.";
+    expect(sanitizeRevisedPlaybook(playbook)).toBe(playbook);
+  });
+
+  it("returns null for an empty reply", () => {
+    expect(sanitizeRevisedPlaybook("   \n  ")).toBeNull();
+    expect(sanitizeRevisedPlaybook("```\n\n```")).toBeNull();
+  });
+});
+
+describe("buildRevisionPrompt", () => {
+  it("carries the instruction, the playbook and the name", () => {
+    const prompt = buildRevisionPrompt({
+      playbook: "# Standup\n\nSummarise.",
+      instruction: "Check merged PRs first.",
+      name: "Standup digest",
+    });
+    expect(prompt).toContain("Check merged PRs first.");
+    expect(prompt).toContain("# Standup\n\nSummarise.");
+    expect(prompt).toContain("Standup digest");
+    // The whole playbook comes back, so the model is told not to trim it.
+    expect(prompt).toContain("anything you leave out is lost");
+  });
+
+  it("omits the automation heading when there is no name", () => {
+    expect(
+      buildRevisionPrompt({ playbook: "# P", instruction: "do it" }),
+    ).not.toContain("## The automation");
   });
 });

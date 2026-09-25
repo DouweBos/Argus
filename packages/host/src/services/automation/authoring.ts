@@ -435,3 +435,92 @@ export async function draftAutomation(
 
   return draft;
 }
+
+const MAX_INSTRUCTION_INPUT_CHARS = 2000;
+
+const REVISE_SYSTEM_PROMPT =
+  "You rewrite playbooks for Argus automations. You reply with the complete revised playbook as markdown and nothing else — no preamble, no explanation of what you changed.";
+
+export interface RevisePlaybookOptions {
+  playbook: string;
+  /** What the user wants changed, in their own words. */
+  instruction: string;
+  /** Context so the rewrite knows what the automation is for. */
+  name?: string;
+}
+
+/**
+ * Strip the fence a model wraps markdown in and cap the length. Pure, so the
+ * rules are testable without an LLM.
+ */
+export function sanitizeRevisedPlaybook(raw: string): string | null {
+  const fenced = raw.match(/^\s*```(?:markdown|md)?\s*\n([\s\S]*?)\n?```\s*$/);
+  const body = (fenced?.[1] ?? raw).trim();
+
+  return body ? body.slice(0, MAX_PLAYBOOK_CHARS) : null;
+}
+
+export function buildRevisionPrompt(opts: RevisePlaybookOptions): string {
+  return [
+    "Rewrite the playbook below to do what the instruction asks.",
+    "",
+    "A playbook is the markdown handed to the agent an automation starts. It says",
+    "what to read, how to decide, what to `emit_proposal`, and what the final report",
+    "should contain.",
+    "",
+    opts.name ? `## The automation\n${opts.name}\n` : "",
+    "## The instruction",
+    opts.instruction,
+    "",
+    "## The current playbook",
+    "",
+    opts.playbook,
+    "",
+    "## Reply with",
+    "The complete revised playbook, as markdown, ready to paste back in. Keep",
+    "everything the instruction did not ask you to change — this replaces the file,",
+    "so anything you leave out is lost. Do not wrap it in a code fence.",
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+}
+
+/**
+ * Ask Claude to rewrite one playbook. Throws a string on anything unusable so
+ * the IPC layer can surface it verbatim. Returns the text only — saving it is
+ * the user's press, exactly as with a draft.
+ */
+export async function revisePlaybook(
+  opts: RevisePlaybookOptions,
+): Promise<{ playbook: string }> {
+  const instruction = opts.instruction
+    .trim()
+    .slice(0, MAX_INSTRUCTION_INPUT_CHARS);
+  if (!instruction) {
+    throw "Say what you want changed about the playbook first.";
+  }
+  const playbook = opts.playbook.trim();
+  if (!playbook) {
+    throw "There is no playbook to rewrite yet. Write a first pass, then ask for a revision.";
+  }
+
+  const result = await runClaudePrint({
+    prompt: buildRevisionPrompt({ ...opts, instruction, playbook }),
+    cwd: tmpdir(),
+    model: "sonnet",
+    source: "automation_authoring",
+    systemPrompt: REVISE_SYSTEM_PROMPT,
+    timeoutMs: DRAFT_TIMEOUT_MS,
+  });
+  if (!result) {
+    throw "Claude could not be reached to rewrite the playbook. Check that `claude` is on your PATH and logged in, then try again.";
+  }
+
+  const revised = sanitizeRevisedPlaybook(result);
+  if (!revised) {
+    warn("automation authoring: empty playbook revision");
+    throw "Claude did not return a usable playbook. Try again, with more detail about what should change.";
+  }
+
+  return { playbook: revised };
+}

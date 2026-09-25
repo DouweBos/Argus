@@ -33,6 +33,7 @@ import {
   useDefaultLlm,
 } from "../../../stores/settingsStore";
 import { ModelPicker, type RunnerSelection } from "../../agent/ModelPicker";
+import { RevisePlaybookDialog } from "../RevisePlaybookDialog";
 import styles from "./AutomationEditor.module.css";
 import { AutonomyFields } from "./AutonomyFields";
 
@@ -110,6 +111,7 @@ function toTrigger(draft: Draft): AutomationTrigger {
 export function AutomationEditor({ automation }: { automation: Automation }) {
   const [draft, setDraft] = useState<Draft>(() => toDraft(automation));
   const [saving, setSaving] = useState(false);
+  const [revising, setRevising] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const projects = useSessionProjects();
   const sources = useSignalSources();
@@ -393,6 +395,16 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
           label="Playbook"
           helper="Markdown instructions handed to the run's agent."
         >
+          <div className={styles.playbookActions}>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={draft.playbook.trim().length === 0}
+              onClick={() => setRevising(true)}
+            >
+              Rewrite with Claude
+            </Button>
+          </div>
           <TextArea
             mono
             className={styles.playbook}
@@ -400,6 +412,15 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
             onChange={(e) => patch("playbook", e.target.value)}
           />
         </FormField>
+
+        {revising && (
+          <RevisePlaybookDialog
+            playbook={draft.playbook}
+            name={draft.name}
+            onApply={(playbook) => patch("playbook", playbook)}
+            onClose={() => setRevising(false)}
+          />
+        )}
 
         {error && <p className={styles.error}>{error}</p>}
       </div>

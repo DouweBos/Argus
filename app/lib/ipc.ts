@@ -1621,6 +1621,16 @@ export const draftAutomation = (
 ): Promise<AutomationDraft> =>
   invoke("automation_draft", { description, timezone });
 
+/**
+ * Rewrite an existing playbook to an instruction. Returns the new text for the
+ * editor to show — the user still has to save it.
+ */
+export const revisePlaybook = (args: {
+  instruction: string;
+  name?: string;
+  playbook: string;
+}): Promise<{ playbook: string }> => invoke("automation_playbook_revise", args);
+
 // Proposals — the inbox. Same host-state reasoning as the automations above.
 export const listProposals = (filter?: {
   automationId?: string;
