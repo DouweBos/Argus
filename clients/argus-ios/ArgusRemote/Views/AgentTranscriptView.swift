@@ -294,37 +294,35 @@ struct QueuedMessageCard: View {
 
   var body: some View {
     Card {
-      if editing {
-        ThemedTextField(placeholder: "Message", text: $draft, multiline: true)
-        HStack(spacing: 8) {
-          Btn(label: "Save", small: true) { save() }
-          Btn(label: "Cancel", tone: .ghost, small: true) { editing = false }
+      HStack(alignment: .top, spacing: 8) {
+        Badge(label: "Queued")
+        BodyText(displayText)
+        Spacer(minLength: 4)
+        IconBtn(systemName: Icon.pencil, label: "Edit queued message", size: 13) {
+          draft = displayText
+          editing = true
         }
-      } else {
-        HStack(alignment: .top, spacing: 8) {
-          Badge(label: "Queued")
-          BodyText(displayText)
-          Spacer(minLength: 4)
-          IconBtn(systemName: Icon.pencil, label: "Edit queued message", size: 13) {
-            draft = displayText
-            editing = true
-          }
-          IconBtn(systemName: Icon.close, label: "Remove queued message", size: 13) {
-            confirmingRemove = true
-          }
+        IconBtn(systemName: Icon.close, label: "Remove queued message", size: 13) {
+          confirmingRemove = true
         }
-        if !attachmentIds.isEmpty {
-          HStack(spacing: 6) {
-            ForEach(attachmentIds, id: \.self) { imageId in
-              TranscriptImage(
-                agentKey: agentKey, imageId: imageId,
-                siblings: attachmentIds, maxHeight: 56)
-            }
+      }
+      if !attachmentIds.isEmpty {
+        HStack(spacing: 6) {
+          ForEach(attachmentIds, id: \.self) { imageId in
+            TranscriptImage(
+              agentKey: agentKey, imageId: imageId,
+              siblings: attachmentIds, maxHeight: 56)
           }
         }
       }
     }
     .task(id: message.id) { seedAttachments() }
+    // A sheet, not an inline field: the transcript scrolls itself to the
+    // newest message and dismisses the keyboard on any scroll, so an editor
+    // living inside it loses both its place and the cursor.
+    .sheet(isPresented: $editing) {
+      QueuedMessageEditor(text: $draft, onSave: save)
+    }
     .confirmationDialog(
       "Remove this queued message?", isPresented: $confirmingRemove, titleVisibility: .visible
     ) {
@@ -340,7 +338,6 @@ struct QueuedMessageCard: View {
   private func save() {
     let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
     let paths = parsed?.paths ?? []
-    editing = false
     Task {
       // Cleared to nothing with no projects attached is a delete — there
       // would be no message left to send.
@@ -352,5 +349,41 @@ struct QueuedMessageCard: View {
           message: LinkedProjects.buildPreamble(paths: paths, message: trimmed))
       }
     }
+  }
+}
+
+/// Editing one queued message, over the transcript rather than inside it.
+struct QueuedMessageEditor: View {
+  @Environment(\.dismiss) private var dismiss
+
+  @Binding var text: String
+  let onSave: () -> Void
+
+  @FocusState private var focused: Bool
+
+  var body: some View {
+    NavigationStack {
+      Screen {
+        Field(label: "MESSAGE", caption: "Sent when the agent finishes its turn.") {
+          ThemedTextField(placeholder: "Message", text: $text, multiline: true, lines: 4...16)
+            .focused($focused)
+        }
+      }
+      .navigationTitle("Edit queued message")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") { dismiss() }
+        }
+        ToolbarItem(placement: .confirmationAction) {
+          Button("Save") {
+            onSave()
+            dismiss()
+          }
+        }
+      }
+      .task { focused = true }
+    }
+    .presentationDetents([.medium, .large])
   }
 }
