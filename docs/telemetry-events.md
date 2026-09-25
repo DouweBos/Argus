@@ -13,12 +13,15 @@ changeable any time under Settings → Privacy:
 anonymous DAU heartbeat is suppressed. It carries nothing but a random
 install id and the app version.
 
-Events come from two channels: **main** (the Argus app process,
-covering lifecycle, sessions, merges, agents, org tasks) and
-**renderer** (the UI, covering renderer lifecycle and feedback). Both
-funnel into the same PostHog project. In `presence` mode the renderer
-SDK is initialised but emits nothing — the heartbeat is sent from main
-only.
+Events come from three channels: **main** (the Argus app process,
+covering lifecycle, sessions, merges, agents, org tasks), **renderer**
+(the UI, covering renderer lifecycle and feedback), and **ios** (the
+iOS client — see [iOS client](#ios-client)). Desktop has one PostHog
+client, in the main process: the renderer sends its events over IPC and
+main does the talking, so there is no browser SDK in the app. The iOS
+client talks to PostHog directly, because it has to work unpaired and
+offline. In `presence` mode the renderer emits nothing — the heartbeat
+is sent from main only.
 
 ## What's attached to every event
 
@@ -35,8 +38,9 @@ from the request IP. We list all three so the picture is complete.
 **Identifiers** — anonymous, but stable across launches:
 
 - `distinct_id` / `$device_id` — random UUID generated locally and stored
-  at `~/.argus/telemetry-id` (main) or `localStorage` (renderer). Wipe
-  the file or clear browser storage to rotate it. We never call
+  at `~/.argus/telemetry-id`. Renderer events go out under the same id,
+  because the renderer has no PostHog client of its own. Delete the file
+  to rotate it. We never call
   `posthog.identify(...)` — there is no person profile, no email, and no
   account linked to it (`$is_identified: false`,
   `$process_person_profile: false`).
@@ -47,50 +51,19 @@ from the request IP. We list all three so the picture is complete.
   `electron_version`, `node_version`.
 - Renderer: `app_version`, `platform`, `process: "renderer"`.
 
-**PostHog SDK auto-properties (renderer only — `posthog-js`):**
+**PostHog SDK bookkeeping:**
 
-- `$browser`, `$browser_version`, `$browser_language`, `$raw_user_agent`
-- `$os`, `$os_version` (derived from the user agent)
-- `$device_type` (e.g. `Desktop`)
-- `$screen_width` / `$screen_height` and `$viewport_width` / `$viewport_height`
-- `$timezone`, `$timezone_offset`
-- `$current_url`, `$pathname`, `$host` — the in-app URL of the renderer
-  window (always under `localhost:1420` or the bundled file URL; never
-  external sites)
-- `$referrer`, `$referring_domain` — almost always `$direct` because
-  the renderer is local
-- `$session_id`, `$window_id`, `$session_entry_*` — rotating per
-  PostHog SDK session (30-min idle timeout); used by PostHog to group
-  events into sessions on its end
-- `$insert_id`, `$sent_at`, `$time`, `$lib`, `$lib_version` — SDK
-  bookkeeping
+- `$insert_id`, `$sent_at`, `$time`, `$lib`, `$lib_version`.
 
-These come from PostHog's `posthog-js` and are not configured by us. If
-you want to know what each one means, the
-[PostHog autocapture docs](https://posthog.com/docs/data/autocapture)
-list them in full.
+There is no browser SDK, so none of the `posthog-js` auto-properties —
+browser, user agent, screen size, referrer, session id — exist on any
+desktop event.
 
-**GeoIP enrichment (server-side at PostHog):**
+**GeoIP:**
 
-We have **Discard client IP data** turned on for our PostHog project.
-This means PostHog does **not** store the request IP alongside the
-event. However, the IP is still used at ingestion time — before it is
-discarded — to derive coarse geographic properties. Each event in
-PostHog therefore includes:
-
-- `$geoip_country_code`, `$geoip_country_name`, `$geoip_continent_code`,
-  `$geoip_continent_name`
-- `$geoip_subdivision_1_code`, `$geoip_subdivision_1_name` (state /
-  province)
-- `$geoip_city_name`
-- `$geoip_postal_code`
-- `$geoip_latitude`, `$geoip_longitude`, `$geoip_accuracy_radius`
-- `$geoip_time_zone`
-
-The accuracy is roughly city-level. The raw IP is **not** retained.
-PostHog only supports discarding the IP after enrichment — they don't
-offer an option to skip GeoIP enrichment entirely. `presence` mode keeps
-that exposure to one request per launch.
+Disabled. Desktop sets `disableGeoip: true` on the PostHog client, so no
+`$geoip_*` properties are derived and the request IP is neither enriched
+nor stored.
 
 **What is _not_ sent, even when telemetry is on:**
 
@@ -112,8 +85,8 @@ that exposure to one request per launch.
 
 **When telemetry is hard-disabled, regardless of the mode:**
 
-- Development builds. Our own development sessions never appear in
-  PostHog.
+- Builds with no PostHog key configured. On iOS that is every checkout
+  without a local `Config/Argus.local.xcconfig`, which is the default.
 
 ## Presence
 
@@ -219,3 +192,59 @@ Two channels:
 
 Error messages and stack traces are scrubbed of user home directory
 paths before sending.
+
+## iOS client
+
+`clients/argus-ios` talks to PostHog directly with the `posthog-ios`
+SDK, rather than relaying through a paired computer — the interesting
+crashes are exactly the ones that happen unpaired or offline. Same two
+modes, same consent wording, asked once on first launch and changeable
+under Settings → Privacy.
+
+The phone has its **own install id**, so one person using both clients
+counts as two users in PostHog. That is accepted: the alternative means
+shipping an identifier between the two, which is more identifying than
+the number it would fix.
+
+Every event here is something the computer cannot already see. When the
+phone sends a message, creates a session or merges one, the **host**
+captures `agent_started` / `session_created` / `session_merged` itself —
+so those names are deliberately absent below, and the desktop funnels
+stay honest.
+
+| Event                                      | When                                            | Extra props                                                                             |
+| ------------------------------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `$pageview`                                | Once per launch, in every mode                  | `$current_url: "argus-ios:///"`, `$pathname: "/"`, `app_version`, `source: "heartbeat"` |
+| `$screen`                                  | A screen is pushed                              | `$screen_name` — the route pattern only, e.g. `agent`, never a project or branch name   |
+| `ios_launched`                             | Telemetry is in full mode at launch, or opts up | —                                                                                       |
+| `ios_paired`                               | A computer was paired                           | `endpoint_kind`, `has_control`                                                          |
+| `ios_pair_failed`                          | Pairing failed                                  | `reason` (the failure case name, no detail)                                             |
+| `ios_host_switched`                        | A different paired computer was selected        | `host_count`                                                                            |
+| `ios_message_sent`                         | A message reached the computer, or its queue    | `queued`, `has_images`, `length_bucket`                                                 |
+| `ios_message_send_failed`                  | A message never left the phone                  | `retried`                                                                               |
+| `ios_permission_answered`                  | A permission prompt was answered                | `approved`, `from_notification`                                                         |
+| `ios_agent_controlled`                     | An agent was steered from the phone             | `action` (`interrupt`, `stop`, `model`, `effort`, `permission_mode`)                    |
+| `ios_work_landed`                          | Work was committed, pushed or merged            | `action`, `success`                                                                     |
+| `ios_device_watched`                       | A mirrored device screen was closed             | `duration_ms`, `interacted`                                                             |
+| `ios_app_error`                            | A failure the user was shown                    | `scope`, scrubbed `message` (≤2000 chars)                                               |
+| `telemetry_enabled` / `telemetry_disabled` | The privacy toggle moved                        | — (shared with desktop on purpose: same signal)                                         |
+
+`baseProps` in full mode: `app_version`, `build_number`,
+`platform: "ios"`, `os_version`, `device_model` (the hardware
+identifier, e.g. `iPhone16,1` — never the name the user gave their
+phone), `is_testflight`, `client: "ios"`. The heartbeat skips all of it
+and carries `app_version` alone, exactly as on desktop.
+
+**Crashes.** `posthog-ios` has no crash reporter wired up here, so
+crashes come from **MetricKit**: `MXCrashDiagnostic` and
+`MXHangDiagnostic` are forwarded as `$exception` with
+`source: "metrickit"`, a scrubbed call-stack tree, and
+`crashed_app_version`. MetricKit delivers on the **next** launch, so a
+crash is always reported by the build after the one that crashed —
+hence the separate version prop. ObjC exceptions are caught
+synchronously via `NSSetUncaughtExceptionHandler`
+(`source: "uncaughtException"`); Swift runtime traps and signals are
+MetricKit's job. Nothing is delivered in the simulator.
+
+All of it is gated on `full` mode. In `presence` the heartbeat is the
+only thing that leaves the phone.
