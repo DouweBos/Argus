@@ -7,10 +7,13 @@ import UIKit
 /// most of what you send an agent from a phone — so the input is a real
 /// `UITextView` with `paste(_:)` intercepted.
 struct PastingTextView: UIViewRepresentable {
+  /// One empty line. The composer starts here and returns here on send.
+  static let collapsedHeight: CGFloat = 36
+
   @Binding var text: String
   @Binding var height: CGFloat
   var placeholder: String
-  var minHeight: CGFloat = 36
+  var minHeight: CGFloat = Self.collapsedHeight
   var maxHeight: CGFloat = 120
   var onPasteImages: ([UIImage]) -> Void
 
@@ -26,8 +29,15 @@ struct PastingTextView: UIViewRepresentable {
     view.backgroundColor = .clear
     view.textContainerInset = UIEdgeInsets(top: 8, left: 6, bottom: 8, right: 6)
     view.textContainer.lineFragmentPadding = 0
-    view.autocapitalizationType = .none
-    view.autocorrectionType = .no
+    // Prose, not code: this is where you talk to the agent, so it gets the
+    // ordinary keyboard behaviour — QuickType, autocorrect, capitals. Smart
+    // punctuation stays off; it mangles the quotes and dashes in a pasted
+    // command or path.
+    view.autocapitalizationType = .sentences
+    view.autocorrectionType = .yes
+    view.spellCheckingType = .yes
+    view.smartQuotesType = .no
+    view.smartDashesType = .no
     view.isScrollEnabled = false
     // The field lives in a stack that already scrolls; let it grow instead.
     view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
@@ -60,6 +70,7 @@ struct PastingTextView: UIViewRepresentable {
     private let height: Binding<CGFloat>
     private let minHeight: CGFloat
     private let maxHeight: CGFloat
+    private var pendingHeight: Task<Void, Never>?
 
     init(text: Binding<String>, height: Binding<CGFloat>, minHeight: CGFloat, maxHeight: CGFloat) {
       self.text = text
@@ -100,9 +111,18 @@ struct PastingTextView: UIViewRepresentable {
 
     /// Writing straight from `updateUIView` would mutate state mid-update, so
     /// the new height lands on the next turn of the loop.
+    ///
+    /// Cancelling first — before the no-op guard — is what keeps a send from
+    /// springing back: the measurement from the last keystroke is still in
+    /// flight when the field is cleared, and landing afterwards it would
+    /// restore the height of a message that is already gone.
     private func apply(_ newHeight: CGFloat) {
+      pendingHeight?.cancel()
       guard abs(newHeight - height.wrappedValue) > 0.5 else { return }
-      Task { @MainActor in height.wrappedValue = newHeight }
+      pendingHeight = Task { @MainActor in
+        guard !Task.isCancelled else { return }
+        height.wrappedValue = newHeight
+      }
     }
   }
 }

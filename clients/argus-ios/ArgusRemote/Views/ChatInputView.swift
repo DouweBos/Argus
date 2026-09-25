@@ -34,7 +34,7 @@ struct ChatInputView: View {
   /// Browse lookups are async and the user keeps typing; only the newest
   /// response is allowed to land.
   @State private var browseRequest = 0
-  @State private var inputHeight: CGFloat = 36
+  @State private var inputHeight = PastingTextView.collapsedHeight
   @FocusState private var focused: Bool
 
   private var status: RemoteAgentStatus? { app.statusByAgent[agentId] }
@@ -438,6 +438,9 @@ struct ChatInputView: View {
     text = ""
     attachments = []
     previews = []
+    // Collapse outright. Re-measuring an emptied text view has proved too
+    // easy to get wrong, and the answer for no text is never in doubt.
+    inputHeight = PastingTextView.collapsedHeight
     app.preferences.remove(PreferenceKey.draft(agentId: agentId))
 
     Task {
