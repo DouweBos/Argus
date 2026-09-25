@@ -14,6 +14,7 @@ struct ProjectView: View {
   @State private var creatingSession = false
   @State private var spawningIn: SpawnTarget?
   @State private var showingStopped = false
+  @State private var expandedStopped: Set<String> = []
   @State private var renameTarget: Group?
   @State private var renameKind: RenameKind?
   @State private var renameValue = ""
@@ -52,6 +53,10 @@ struct ProjectView: View {
                 model: agent.model,
                 meta: Labels.metaLabel(agent.status))
             }
+          }
+
+          if !group.stopped.isEmpty {
+            stoppedDisclosure(group.stopped, isExpanded: expansion(group.sessionId))
           }
 
           // Changes, branches and new agents all need the session's files.
@@ -245,26 +250,49 @@ struct ProjectView: View {
     }
   }
 
+  /// The ones whose session is gone — every other stopped agent is listed
+  /// under the session it ran in, the way the desktop sidebar files them.
   @ViewBuilder
   private var stoppedSection: some View {
-    let stopped = app.stoppedByRepo[repoRoot] ?? []
-    if !stopped.isEmpty {
+    if !orphanedStopped.isEmpty {
       Section {
-        DisclosureGroup(isExpanded: $showingStopped) {
-          ForEach(stopped) { agent in
-            NavigationLink(
-              value: Route.stoppedAgent(
-                historyId: agent.historyId, repoRoot: repoRoot, label: agent.title,
-                branch: agent.branch, runnerSessionId: agent.runnerSessionId)
-            ) {
-              StoppedAgentRow(agent: agent)
-            }
-          }
-        } label: {
-          Label("\(stopped.count) recently stopped", systemImage: Icon.history)
-        }
+        stoppedDisclosure(
+          orphanedStopped, isExpanded: $showingStopped, label: "from deleted sessions")
       }
     }
+  }
+
+  private func stoppedDisclosure(
+    _ stopped: [RemoteStoppedAgent], isExpanded: Binding<Bool>, label: String? = nil
+  ) -> some View {
+    DisclosureGroup(isExpanded: isExpanded) {
+      ForEach(stopped) { agent in
+        NavigationLink(
+          value: Route.stoppedAgent(
+            historyId: agent.historyId, repoRoot: repoRoot, label: agent.title,
+            branch: agent.branch, runnerSessionId: agent.runnerSessionId)
+        ) {
+          StoppedAgentRow(agent: agent, showBranch: label != nil)
+        }
+      }
+    } label: {
+      Label(
+        label.map { "\(stopped.count) recently stopped \($0)" }
+          ?? "\(stopped.count) recently stopped",
+        systemImage: Icon.history)
+    }
+  }
+
+  private func expansion(_ sessionId: String) -> Binding<Bool> {
+    Binding(
+      get: { expandedStopped.contains(sessionId) },
+      set: { open in
+        if open {
+          expandedStopped.insert(sessionId)
+        } else {
+          expandedStopped.remove(sessionId)
+        }
+      })
   }
 
   private func canManageBranches(_ session: RemoteSession?) -> Bool {
@@ -280,6 +308,8 @@ struct ProjectView: View {
     var label: String
     var session: RemoteSession?
     var agents: [RemoteAgentStatus]
+    /// Ended conversations from this session's branch, newest first.
+    var stopped: [RemoteStoppedAgent] = []
   }
 
   /// Agents grouped by session, project root first — the order the desktop
@@ -306,6 +336,9 @@ struct ProjectView: View {
       } else {
         byId[session.id]?.session = session
       }
+      // A stopped agent only records the branch it ran on, so that is the
+      // join back to the session — the same one the desktop makes.
+      byId[session.id]?.stopped = stoppedByBranch[session.branch] ?? []
     }
     return ordered.compactMap { byId[$0] }.enumerated()
       .sorted { left, right in
@@ -315,6 +348,17 @@ struct ProjectView: View {
         return left.offset < right.offset
       }
       .map(\.element)
+  }
+
+  private var stoppedByBranch: [String: [RemoteStoppedAgent]] {
+    Dictionary(grouping: app.stoppedByRepo[repoRoot] ?? [], by: \.branch)
+  }
+
+  /// Stopped agents whose branch no longer has a session here.
+  private var orphanedStopped: [RemoteStoppedAgent] {
+    let live = Set(sessions.map(\.branch))
+
+    return (app.stoppedByRepo[repoRoot] ?? []).filter { !live.contains($0.branch) }
   }
 
   /// Branches are addressed by session; the project root is the one that is
