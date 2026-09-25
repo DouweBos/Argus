@@ -27,6 +27,7 @@
 		537F1ADEAD50351B8B16F53D /* AppStore+Data.swift in Sources */ = {isa = PBXBuildFile; fileRef = 481431411DDC5E55EA30D7BD /* AppStore+Data.swift */; };
 		55304875735519F780DBE883 /* RunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6502F79F862A2272184C48C6 /* RunView.swift */; };
 		5DA37A387097310627848D08 /* PastingTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82EFACA3CB48542C70620670 /* PastingTextView.swift */; };
+		5DA37A387097310627848D09 /* RevisePlaybookSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82EFACA3CB48542C70620671 /* RevisePlaybookSheet.swift */; };
 		61C10B6C7968E2DD39CBFDC4 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F0BACB5B899C018843EAC8 /* Theme.swift */; };
 		62E03119A15A5081356F0C0E /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6625E1D6BCC577429BF7B696 /* ArgusKit */; };
 		64FE76CEEDF39BCA4BD104E6 /* ReportBlocksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C0246BC72131C6D235C946 /* ReportBlocksView.swift */; };
@@ -138,6 +139,7 @@
 		1265698E1D6CC83192C84CEA /* PullRequestsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestsStore.swift; sourceTree = "<group>"; };
 		7B760406B1B2B956C52E89F9 /* DeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceView.swift; sourceTree = "<group>"; };
 		82EFACA3CB48542C70620670 /* PastingTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PastingTextView.swift; sourceTree = "<group>"; };
+		82EFACA3CB48542C70620671 /* RevisePlaybookSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevisePlaybookSheet.swift; sourceTree = "<group>"; };
 		8346E6C1D03B823ABD7DCA02 /* ArgusRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ArgusRemote.entitlements; sourceTree = "<group>"; };
 		8501B834EC04B6A657B28A71 /* AgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentView.swift; sourceTree = "<group>"; };
 		8CC4111D014B48BB329971BE /* ToolCallCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolCallCard.swift; sourceTree = "<group>"; };
@@ -272,6 +274,7 @@
 				195DBDEBD1CDBCE511CAA5C8 /* HardwareKeyCatcher.swift */,
 				F68517AC0A4A5246D5734125 /* TVRemoteView.swift */,
 				82EFACA3CB48542C70620670 /* PastingTextView.swift */,
+				82EFACA3CB48542C70620671 /* RevisePlaybookSheet.swift */,
 				A80D3688BF3DDFD90F4E6F55 /* PermissionForms.swift */,
 				E7C0246BC72131C6D235C946 /* ReportBlocksView.swift */,
 				8CC4111D014B48BB329971BE /* ToolCallCard.swift */,
@@ -482,6 +485,7 @@
 				1346FB8C6E0119391A82DC4B /* NotificationRouter.swift in Sources */,
 				C230860282D4938F66D435CF /* PairView.swift in Sources */,
 				5DA37A387097310627848D08 /* PastingTextView.swift in Sources */,
+				5DA37A387097310627848D09 /* RevisePlaybookSheet.swift in Sources */,
 				2EE744D7FAD18A7F942920DA /* PermissionForms.swift in Sources */,
 				78D4FE1094D45E9E13B8CFD7 /* Primitives.swift in Sources */,
 				6897D3167EEB3794CED55DDA /* ProjectView.swift in Sources */,

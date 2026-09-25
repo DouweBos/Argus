@@ -143,6 +143,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "automations.runners": DENIED,
   "automations.create": DENIED,
   "automations.update": DENIED,
+  "automations.revise_playbook": DENIED,
   "automations.delete": DENIED,
   "automations.set_enabled": DENIED,
   "automations.run_now": DENIED,

@@ -22,6 +22,7 @@ struct AutomationFields: View {
   var runners: [RemoteRunner] = []
 
   @State private var sheet: Sheet?
+  @State private var revising = false
 
   var body: some View {
     basics
@@ -110,6 +111,15 @@ struct AutomationFields: View {
       ThemedTextField(
         placeholder: "What should this run do?", text: $draft.playbook,
         multiline: true, lines: 6...24, mono: true)
+      if app.hasControl {
+        Btn(label: "Rewrite with Claude", tone: .secondary, small: true) { revising = true }
+          .disabled(draft.playbook.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+      }
+    }
+    .sheet(isPresented: $revising) {
+      RevisePlaybookSheet(playbook: draft.playbook, name: draft.name) { rewritten in
+        draft.playbook = rewritten
+      }
     }
   }
 

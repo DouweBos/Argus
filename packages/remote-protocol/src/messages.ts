@@ -335,6 +335,12 @@ export const MethodParams = {
     automation_id: z.string(),
     patch: AutomationInput.partial(),
   }),
+  /** Rewrite a playbook to an instruction. Returns text; saving is separate. */
+  "automations.revise_playbook": z.object({
+    playbook: z.string(),
+    instruction: z.string(),
+    name: z.string().optional(),
+  }),
   "automations.delete": z.object({ automation_id: z.string() }),
   "automations.set_enabled": z.object({
     automation_id: z.string(),
@@ -565,6 +571,7 @@ export const MethodResult = {
     automation: RemoteAutomation,
     detail: RemoteAutomationDetail,
   }),
+  "automations.revise_playbook": z.object({ playbook: z.string() }),
   "automations.delete": z.object({ accepted: z.boolean() }),
   "automations.set_enabled": z.object({ automation: RemoteAutomation }),
   /** The run record as created — it is still queued when this returns. */
