@@ -74,6 +74,7 @@ export const DEFAULT_GUARDRAILS: AutomationGuardrails = {
   max_run_minutes: 20,
   path_denylist: [],
   require_clean_ci: true,
+  retry_other_accounts: true,
 };
 
 /**
@@ -157,6 +158,10 @@ export function normalizeGuardrails(input: unknown): AutomationGuardrails {
       typeof raw.require_clean_ci === "boolean"
         ? raw.require_clean_ci
         : DEFAULT_GUARDRAILS.require_clean_ci,
+    retry_other_accounts:
+      typeof raw.retry_other_accounts === "boolean"
+        ? raw.retry_other_accounts
+        : DEFAULT_GUARDRAILS.retry_other_accounts,
   };
 }
 

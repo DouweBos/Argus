@@ -54,6 +54,8 @@ export interface AutomationGuardrails {
   path_denylist: string[];
   /** Gates `auto_merge`: CI must be green before the merge is allowed. */
   require_clean_ci: boolean;
+  /** Rerun on the next signed-in Claude account when a plan limit is hit. */
+  retry_other_accounts: boolean;
 }
 
 /** A persisted automation. */

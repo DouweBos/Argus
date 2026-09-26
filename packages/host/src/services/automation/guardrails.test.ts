@@ -74,6 +74,13 @@ describe("normalizeGuardrails", () => {
     // Off is not on offer: an unlimited run holds its schedule forever.
     expect(normalizeGuardrails({ max_run_minutes: 0 }).max_run_minutes).toBe(1);
   });
+
+  it("retries on other accounts unless opted out", () => {
+    expect(normalizeGuardrails({}).retry_other_accounts).toBe(true);
+    expect(
+      normalizeGuardrails({ retry_other_accounts: false }).retry_other_accounts,
+    ).toBe(false);
+  });
 });
 
 describe("evaluateAutoStart", () => {

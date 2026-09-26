@@ -13,6 +13,7 @@ const GUARDRAILS = {
   max_run_minutes: 20,
   path_denylist: ["fastlane/**", "**/*.pbxproj"],
   require_clean_ci: true,
+  retry_other_accounts: true,
 };
 
 function automation(

@@ -222,7 +222,10 @@ export function updateRemoteAutomation(
     ...(patch.autonomy !== undefined && { autonomy: patch.autonomy }),
     ...(patch.model !== undefined && { model: patch.model }),
     ...(patch.runner !== undefined && { runner: patch.runner ?? null }),
-    ...(patch.guardrails !== undefined && { guardrails: patch.guardrails }),
+    // Merged, so a guardrail an older phone doesn't know about survives its save.
+    ...(patch.guardrails !== undefined && {
+      guardrails: { ...current.guardrails, ...patch.guardrails },
+    }),
   };
 
   // The trigger is four wire fields; rebuild it from the current one so a
