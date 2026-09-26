@@ -107,8 +107,29 @@ let loginAccountIsNew = false;
 // Set while we're deliberately tearing a login down (cancel / restart) so its
 // exit doesn't surface as a spurious login-result event.
 let loginSuppressed = false;
+// Whether the live child has asked for a pasted code. Kept at module scope, not
+// per-attempt, so a remote client can poll it — the browser callback lands on
+// this machine, so pasting a code is the only path a phone has.
+let loginNeedsCode = false;
+
+/** The shape of the `claude-auth:login-result` / `login-needs-code` pair, so a
+ *  client polling it and one listening for the events render one thing. */
+export interface ClaudeLoginState {
+  pending: boolean;
+  needs_code: boolean;
+  ok?: boolean;
+  error?: string;
+}
+
+export function getClaudeLoginState(): ClaudeLoginState {
+  return {
+    pending: loginChild !== null,
+    needs_code: loginNeedsCode,
+  };
+}
 
 function emitLoginResult(ok: boolean, error?: string): void {
+  loginNeedsCode = false;
   emitHostEvent("claude-auth:login-result", { ok, error });
 }
 
@@ -175,6 +196,7 @@ export async function claudeLoginStart(args: {
   const accountId = args.accountId ?? getActiveAccountId();
   loginAccountId = accountId;
   loginAccountIsNew = args.isNewAccount ?? false;
+  loginNeedsCode = false;
   if (accountId !== DEFAULT_ACCOUNT_ID) {
     fs.mkdirSync(accountCredentialDir(accountId), { recursive: true });
   }
@@ -203,6 +225,7 @@ export async function claudeLoginStart(args: {
       /paste|authorization code|enter the code/i.test(output)
     ) {
       needsCodeEmitted = true;
+      loginNeedsCode = true;
       emitHostEvent("claude-auth:login-needs-code", {});
     }
   };

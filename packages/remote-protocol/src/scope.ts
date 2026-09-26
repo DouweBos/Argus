@@ -63,6 +63,19 @@ const DENIED: ScopeRule = { kind: "denied" };
 export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "host.endpoints": OPEN,
 
+  // The host owner's Claude sign-ins: the list names their email and org, and
+  // switching one silently changes what every new agent spends. Nothing a
+  // huddle guest has a claim on.
+  "claude_accounts.list": DENIED,
+  "claude_accounts.set_active": DENIED,
+  "claude_accounts.add": DENIED,
+  "claude_accounts.remove": DENIED,
+  "claude_accounts.rename": DENIED,
+  "claude_accounts.login_start": DENIED,
+  "claude_accounts.login_cancel": DENIED,
+  "claude_accounts.login_submit_code": DENIED,
+  "claude_accounts.login_status": DENIED,
+
   "projects.list": FILTER,
   "sessions.list": FILTER,
   "agents.list": FILTER,

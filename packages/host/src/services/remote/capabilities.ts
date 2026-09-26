@@ -24,6 +24,7 @@ import {
   type GrantScope,
   type RemoteAgentCapabilities,
   type RemoteAgentStatus,
+  type RemoteClaudeAccount,
   type RemoteGitStatus,
   type RemoteMessage,
   type RemoteDevice,
@@ -62,6 +63,21 @@ import {
 import { revisePlaybook } from "../automation/authoring";
 import { cancelAutomationRun } from "../automation/runner";
 import { startAutomationRun } from "../automation/runner";
+import {
+  getActiveAccountId,
+  refreshAllAccountIdentities,
+  removeClaudeAccount,
+  renameClaudeAccount,
+  setActiveAccount,
+} from "../claudeAuth/accounts";
+import {
+  claudeAddAccount,
+  claudeLoginCancel,
+  claudeLoginStart,
+  claudeLoginSubmitCode,
+  emitAccountsChanged,
+  getClaudeLoginState,
+} from "../claudeAuth/claudeAuth";
 import { getCommand, invokeCommand } from "../command/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
 import { getRunnerById } from "../llm/registry";
@@ -941,6 +957,26 @@ function requireRemotePermissionMode(mode: string | undefined): void {
   if (mode && !["ask", "auto", "plan", "review"].includes(mode)) {
     throw new GatewayError("capability_denied", `permission mode ${mode}`);
   }
+}
+
+/** The account list in wire shape — shared with the accounts-changed bridge. */
+export function remoteClaudeAccounts(): {
+  accounts: RemoteClaudeAccount[];
+  active_id: string;
+} {
+  return {
+    accounts: refreshAllAccountIdentities().map((a) => ({
+      id: a.id,
+      label: a.label ?? null,
+      email: a.email ?? null,
+      org_name: a.org_name ?? null,
+      subscription_type: a.subscription_type ?? null,
+      needs_reauth: a.needs_reauth === true,
+      rate_limited: a.rate_limited === true,
+      account_type: a.account_type,
+    })),
+    active_id: getActiveAccountId(),
+  };
 }
 
 /** Run a control-service call, mapping its string throws to gateway errors. */
@@ -1952,6 +1988,76 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
     return { accepted: true };
   },
+
+  // --- Claude accounts ------------------------------------------------------
+  // Reused by the accounts-changed bridge in gateway.ts, so the client gets the
+  // new list rather than a nudge to refetch.
+  "claude_accounts.list": async () => remoteClaudeAccounts(),
+
+  "claude_accounts.set_active": async (params) => {
+    const { id } = parse("claude_accounts.set_active", params);
+    await control(() => {
+      setActiveAccount(id);
+      emitAccountsChanged();
+    });
+
+    return { accepted: true };
+  },
+
+  "claude_accounts.add": async (params) => {
+    const { use_console } = parse("claude_accounts.add", params);
+    const { url } = await control(() =>
+      claudeAddAccount({ useConsole: use_console }),
+    );
+
+    return { url };
+  },
+
+  "claude_accounts.remove": async (params) => {
+    const { id } = parse("claude_accounts.remove", params);
+    await control(async () => {
+      await removeClaudeAccount(id);
+      emitAccountsChanged();
+    });
+
+    return { accepted: true };
+  },
+
+  "claude_accounts.rename": async (params) => {
+    const { id, label } = parse("claude_accounts.rename", params);
+    await control(() => {
+      renameClaudeAccount(id, label);
+      emitAccountsChanged();
+    });
+
+    return { accepted: true };
+  },
+
+  "claude_accounts.login_start": async (params) => {
+    const { account_id, use_console } = parse(
+      "claude_accounts.login_start",
+      params,
+    );
+    const { url } = await control(() =>
+      claudeLoginStart({ accountId: account_id, useConsole: use_console }),
+    );
+
+    return { url };
+  },
+
+  "claude_accounts.login_cancel": async () => {
+    await control(() => claudeLoginCancel());
+
+    return { accepted: true };
+  },
+
+  "claude_accounts.login_submit_code": async (params) => {
+    const { code } = parse("claude_accounts.login_submit_code", params);
+
+    return await control(() => claudeLoginSubmitCode({ code }));
+  },
+
+  "claude_accounts.login_status": async () => getClaudeLoginState(),
 };
 
 /**

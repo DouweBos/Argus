@@ -229,6 +229,23 @@ export const REMOTE_METHODS = {
   "proposals.perform_cleanup": "control",
   /** Every address this desktop is reachable on, so a client can pick one. */
   "host.endpoints": "monitor",
+  /** Claude accounts. Reading which plans the host owner signed into is
+   *  monitor; anything that switches, adds or forgets one changes what every
+   *  new agent authenticates as and spends that account's quota, so control. */
+  "claude_accounts.list": "monitor",
+  "claude_accounts.set_active": "control",
+  "claude_accounts.add": "control",
+  "claude_accounts.remove": "control",
+  "claude_accounts.rename": "control",
+  /** Sign an existing account back in. The browser opens on the host and the
+   *  login completes there; the client just drives it and reads the result. */
+  "claude_accounts.login_start": "control",
+  "claude_accounts.login_cancel": "control",
+  "claude_accounts.login_submit_code": "control",
+  /** Whether a sign-in is waiting for a pasted code. The browser callback
+   *  lands on the host, so a phone can only finish a login by code — without
+   *  this it has no way to know one is wanted. */
+  "claude_accounts.login_status": "control",
 } as const satisfies Record<string, Capability>;
 
 export type RemoteMethod = keyof typeof REMOTE_METHODS;
@@ -255,6 +272,10 @@ export const REMOTE_EVENTS = [
   "device.state",
   "sessions.changed",
   "projects.changed",
+  /** The signed-in Claude accounts or the active one changed. */
+  "claude_accounts.changed",
+  /** An in-flight Claude sign-in needs a pasted code, or has finished. */
+  "claude_accounts.login",
   /** A user-facing notification (agent finished, needs approval, MCP push). */
   "notification",
   /** The desktop's reachable addresses changed (a tunnel came up or died). */

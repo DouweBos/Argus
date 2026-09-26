@@ -601,6 +601,40 @@ export const RemoteRunner = z.object({
 export type RemoteRunner = z.infer<typeof RemoteRunner>;
 
 /**
+ * A signed-in Claude account on the host. Mirrors the host's `ClaudeAccount`.
+ * `rate_limited` and `needs_reauth` are two different problems: the first means
+ * the plan's quota is spent and the credentials are fine, the second that the
+ * stored token is dead. Collapsing them would send users to re-login for free.
+ */
+export const RemoteClaudeAccount = z.object({
+  id: z.string(),
+  /** User-editable display name; falls back to `email`. */
+  label: z.string().nullable(),
+  email: z.string().nullable(),
+  org_name: z.string().nullable(),
+  subscription_type: z.string().nullable(),
+  needs_reauth: z.boolean(),
+  rate_limited: z.boolean(),
+  account_type: z.enum(["claudeai", "console"]),
+});
+export type RemoteClaudeAccount = z.infer<typeof RemoteClaudeAccount>;
+
+/**
+ * Where an interactive Claude sign-in has got to. The browser opens on the
+ * host, so a remote client can only follow along — and can only finish at all
+ * over the paste-a-code path, which is what `needs_code` says is available.
+ */
+export const RemoteClaudeLoginState = z.object({
+  /** A `claude auth login` child is alive and unfinished. */
+  pending: z.boolean(),
+  needs_code: z.boolean(),
+  /** Set once the attempt is over: how it ended. */
+  ok: z.boolean().optional(),
+  error: z.string().optional(),
+});
+export type RemoteClaudeLoginState = z.infer<typeof RemoteClaudeLoginState>;
+
+/**
  * Everything needed to edit one automation. The list shape stays deliberately
  * small; this is only fetched for the automation actually being opened.
  */
