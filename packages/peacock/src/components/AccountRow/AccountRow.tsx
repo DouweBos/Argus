@@ -22,6 +22,9 @@ export interface AccountRowProps {
   onSelect?: () => void;
   /** Short trailing tag, e.g. the subscription plan. */
   plan?: string;
+  /** The plan's quota is spent. The credentials work, so unlike
+   *  {@link needsReauth} this offers no re-login — waiting is the fix. */
+  rateLimited?: boolean;
 }
 
 /**
@@ -35,6 +38,7 @@ export function AccountRow({
   active = false,
   busy = false,
   needsReauth = false,
+  rateLimited = false,
   onReauth,
   onSelect,
   onRename,
@@ -66,7 +70,7 @@ export function AccountRow({
     <div
       className={styles.row}
       data-active={active || undefined}
-      data-stale={needsReauth || undefined}
+      data-stale={needsReauth || rateLimited || undefined}
       data-selectable={onSelect && !active ? true : undefined}
       onClick={active || busy || editing ? undefined : onSelect}
     >
@@ -99,6 +103,7 @@ export function AccountRow({
       </div>
 
       {needsReauth ? <Badge tone="warning">Signed out</Badge> : null}
+      {rateLimited ? <Badge tone="warning">Limit reached</Badge> : null}
       {plan ? <Badge tone="neutral">{plan}</Badge> : null}
 
       <div className={styles.actions}>

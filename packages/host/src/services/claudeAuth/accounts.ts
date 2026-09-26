@@ -54,6 +54,8 @@ export interface ClaudeAccount {
   auth_method?: string;
   /** Set when a run failed to authenticate — the row offers a re-login. */
   needs_reauth?: boolean;
+  /** Set when a run hit the plan's usage limit — credentials are fine. */
+  rate_limited?: boolean;
   account_type: "claudeai" | "console";
   created_at: number;
 }
@@ -130,6 +132,14 @@ function sharedClaudeDir(): string {
 }
 
 /**
+ * Entries that must stay per-account even though `~/.claude` has them. Sharing
+ * `.credentials.json` would hand every account the same token — the keychain
+ * fallback for a namespaced store — and `.oauth_refresh.lock` would make two
+ * accounts skip each other's token refresh.
+ */
+const NEVER_SHARED = new Set([".credentials.json", ".oauth_refresh.lock"]);
+
+/**
  * Create the account's config dir and keep it linked to the shared `~/.claude`.
  * `.claude.json` is seeded from the user's own (minus the identity) so the
  * account doesn't start at onboarding; the CLI refills `oauthAccount` from the
@@ -154,6 +164,14 @@ export function ensureAccountConfigDir(id: string): string {
   }
   for (const entry of entries) {
     const target = path.join(dir, entry);
+    // Drop links an older Argus left behind, so an account that had its token
+    // or refresh lock shared stops sharing it.
+    if (NEVER_SHARED.has(entry)) {
+      if (isSymlink(target)) {
+        fs.rmSync(target, { force: true });
+      }
+      continue;
+    }
     if (fs.existsSync(target) || isSymlink(target)) {
       continue;
     }
@@ -236,25 +254,73 @@ export function envForAccount(
 const AUTH_FAILURE =
   /OAuth (?:token|session) expired|(?:token|credentials) (?:has|have) been revoked|could not be refreshed|Failed to authenticate|invalid_grant|invalid_api_key|authentication_error|Could not resolve authentication method|Please run [`"]?\/login/i;
 
-/** Clear the flag once the account signs in again. */
+/**
+ * CLI output meaning the plan's usage limit is spent. Distinct from an auth
+ * failure: the credentials work, the quota doesn't. Some CLIs append a
+ * "run /login" hint to this text, which is why the rate limit is matched first.
+ * The 429 alternatives stay contextual — bare `429` would match a port or a
+ * byte count on the debug output this runs against.
+ */
+const RATE_LIMIT =
+  /weekly limit|usage limit|rate.?limit exceeded|hit your (?:weekly|hourly|daily|monthly) limit|too many requests|(?:status|error|code)[ ="-]*429\b/i;
+
+/** Clear both run-failure flags once the account works again. */
 export function clearAuthFailure(id: string): void {
-  if (getClaudeAccount(id)?.needs_reauth) {
-    upsertClaudeAccount({ id, needs_reauth: false });
+  const account = getClaudeAccount(id);
+  if (account?.needs_reauth || account?.rate_limited) {
+    upsertClaudeAccount({ id, needs_reauth: false, rate_limited: false });
   }
 }
 
-/** Flag an account whose run just failed to authenticate. Idempotent. */
-export function noteAuthFailure(id: string, text: string): boolean {
-  if (!AUTH_FAILURE.test(text) || getClaudeAccount(id)?.needs_reauth) {
-    return false;
-  }
-  upsertClaudeAccount({ id, needs_reauth: true });
+/** Which badge a run just earned the account, if a new one. */
+export type RunFailure = "rate_limit" | "reauth";
 
-  return true;
+/**
+ * Record what a failing run said about the account. Rate limit wins when text
+ * matches both: the quota error often carries a "run /login" hint, and sending
+ * the user to re-login for a full quota would be a wild goose chase.
+ */
+export function noteAuthFailure(id: string, text: string): RunFailure | null {
+  const account = getClaudeAccount(id);
+  const rateLimited = RATE_LIMIT.test(text);
+
+  if (rateLimited && !account?.rate_limited) {
+    upsertClaudeAccount({ id, rate_limited: true });
+
+    return "rate_limit";
+  }
+  if (!rateLimited && AUTH_FAILURE.test(text) && !account?.needs_reauth) {
+    upsertClaudeAccount({ id, needs_reauth: true });
+
+    return "reauth";
+  }
+
+  return null;
 }
 
 export function listClaudeAccounts(): ClaudeAccount[] {
   return readFile().accounts;
+}
+
+/**
+ * Re-read every account's identity from its own config before listing. Reading
+ * a local file is cheap enough to do on every fetch, which keeps the switcher
+ * honest when something outside Argus — a plain `claude` login in a terminal —
+ * rewrites the default account's identity underneath us.
+ */
+export function refreshAllAccountIdentities(): ClaudeAccount[] {
+  for (const account of readFile().accounts) {
+    const fields = identityFromConfig(account.id);
+    const changed = Object.entries(fields).some(
+      ([key, value]) =>
+        value !== undefined && account[key as keyof ClaudeAccount] !== value,
+    );
+    if (changed) {
+      upsertClaudeAccount({ id: account.id, ...fields });
+    }
+  }
+
+  return listClaudeAccounts();
 }
 
 export function getActiveAccountId(): string {
@@ -327,14 +393,53 @@ export function renameClaudeAccount(id: string, label: string): ClaudeAccount {
 }
 
 /**
- * Read an account's identity from the CLI and persist it on the entry. The
- * shared `~/.claude.json` can name a different account, so Argus keeps its own
- * copy captured at login rather than re-shelling for display.
+ * Identity as the CLI itself records it, in the account's own `.claude.json`.
+ * Preferred over `auth status`, which on recent CLIs reports no identity at all
+ * — leaving a row showing whatever email was captured at seed time even after
+ * the account became someone else.
+ */
+function identityFromConfig(id: string): Partial<ClaudeAccount> {
+  const file =
+    id === DEFAULT_ACCOUNT_ID
+      ? path.join(os.homedir(), ".claude.json")
+      : path.join(accountConfigDir(id), ".claude.json");
+
+  let account: Record<string, unknown>;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    account = (parsed.oauthAccount ?? {}) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+
+  const str = (key: string): string | undefined =>
+    typeof account[key] === "string" ? (account[key] as string) : undefined;
+
+  const subscription = str("organizationType");
+
+  return {
+    email: str("emailAddress"),
+    org_id: str("organizationUuid"),
+    org_name: str("organizationName"),
+    // `claude_team`/`claude_max` → `team`/`max`, matching the CLI's own values.
+    subscription_type: subscription?.replace(/^claude_/, ""),
+  };
+}
+
+/**
+ * Read an account's identity and persist it on the entry, so the switcher shows
+ * who the account is *now* rather than who was first seen in it. Falls back to
+ * `auth status` only for fields the config doesn't carry.
  */
 export async function syncAccountIdentity(
   id: string,
 ): Promise<ClaudeAccount | null> {
-  let parsed: Record<string, unknown>;
+  const fromConfig = identityFromConfig(id);
+
+  let parsed: Record<string, unknown> | null = null;
   try {
     const { stdout } = await execFileAsync(
       CLAUDE_BIN,
@@ -343,24 +448,24 @@ export async function syncAccountIdentity(
     );
     parsed = JSON.parse(stdout) as Record<string, unknown>;
   } catch {
+    // CLI missing or errored — the config file still tells us who it is.
+  }
+
+  const loggedIn = parsed?.loggedIn === true || Boolean(fromConfig.email);
+  if (!loggedIn) {
     return null;
   }
 
-  if (parsed.loggedIn !== true) {
-    return null;
-  }
+  const statusStr = (key: string): string | undefined => {
+    const value = parsed?.[key];
 
-  const str = (key: string): string | undefined =>
-    typeof parsed[key] === "string" ? (parsed[key] as string) : undefined;
+    return typeof value === "string" ? value : undefined;
+  };
 
-  // Keep what we already know for fields the CLI leaves null — an account that
-  // hasn't run since its config dir was created has no identity cached yet.
-  const fields = {
-    email: str("email"),
-    org_id: str("orgId"),
-    org_name: str("orgName"),
-    subscription_type: str("subscriptionType"),
-    auth_method: str("authMethod"),
+  // Keep what we already know for fields neither source has yet.
+  const fields: Partial<ClaudeAccount> = {
+    ...fromConfig,
+    auth_method: statusStr("authMethod"),
   };
 
   return upsertClaudeAccount({

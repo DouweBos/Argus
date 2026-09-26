@@ -1254,6 +1254,8 @@ export interface ClaudeAccount {
   needs_reauth?: boolean;
   org_id?: string;
   org_name?: string;
+  /** A run hit the plan's usage limit — credentials are fine, the quota isn't. */
+  rate_limited?: boolean;
   subscription_type?: string;
 }
 

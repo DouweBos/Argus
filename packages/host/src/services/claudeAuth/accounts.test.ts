@@ -9,11 +9,13 @@ import {
   claudeAccountEnv,
   clearAuthFailure,
   DEFAULT_ACCOUNT_ID,
+  ensureAccountConfigDir,
   envForAccount,
   getActiveAccountId,
   getClaudeAccount,
   listClaudeAccounts,
   noteAuthFailure,
+  refreshAllAccountIdentities,
   resolveAccountForSession,
   setActiveAccount,
   upsertClaudeAccount,
@@ -84,6 +86,75 @@ describe("claude accounts", () => {
     it("falls back to the CLI's store for a removed account", () => {
       expect(claudeAccountEnv("gone")).toEqual({});
       expect(fs.existsSync(accountCredentialDir("gone"))).toBe(false);
+    });
+  });
+
+  // `os.homedir()` reads $HOME on POSIX, so redirecting it lets the sharing rule
+  // be tested against a throwaway ~/.claude instead of the developer's own.
+  describe("ensureAccountConfigDir sharing", () => {
+    let fakeHome: string;
+    let originalFakeHome: string | undefined;
+
+    beforeEach(() => {
+      fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), "argus-home-"));
+      originalFakeHome = process.env.HOME;
+      process.env.HOME = fakeHome;
+      fs.mkdirSync(path.join(fakeHome, ".claude"), { recursive: true });
+      for (const entry of [
+        ".claude.json",
+        ".credentials.json",
+        ".oauth_refresh.lock",
+        "settings.json",
+      ]) {
+        fs.writeFileSync(path.join(fakeHome, ".claude", entry), "{}");
+      }
+    });
+
+    afterEach(() => {
+      if (originalFakeHome === undefined) {
+        Reflect.deleteProperty(process.env, "HOME");
+      } else {
+        process.env.HOME = originalFakeHome;
+      }
+      fs.rmSync(fakeHome, { force: true, recursive: true });
+    });
+
+    it("links shared config but never the token or the refresh lock", () => {
+      upsertClaudeAccount({ id: "abc" });
+      const dir = ensureAccountConfigDir("abc");
+
+      expect(
+        fs.lstatSync(path.join(dir, "settings.json")).isSymbolicLink(),
+      ).toBe(true);
+      for (const entry of [".credentials.json", ".oauth_refresh.lock"]) {
+        expect(fs.existsSync(path.join(dir, entry))).toBe(false);
+      }
+    });
+
+    it("drops a token link an older Argus created", () => {
+      upsertClaudeAccount({ id: "abc" });
+      const dir = accountConfigDir("abc");
+      fs.mkdirSync(dir, { recursive: true });
+      fs.symlinkSync(
+        path.join(fakeHome, ".claude", ".credentials.json"),
+        path.join(dir, ".credentials.json"),
+      );
+
+      ensureAccountConfigDir("abc");
+
+      expect(fs.existsSync(path.join(dir, ".credentials.json"))).toBe(false);
+    });
+
+    it("keeps a token the account minted itself", () => {
+      upsertClaudeAccount({ id: "abc" });
+      const dir = accountConfigDir("abc");
+      fs.mkdirSync(dir, { recursive: true });
+      const own = path.join(dir, ".credentials.json");
+      fs.writeFileSync(own, "{}");
+
+      ensureAccountConfigDir("abc");
+
+      expect(fs.existsSync(own)).toBe(true);
     });
   });
 
@@ -177,19 +248,103 @@ describe("claude accounts", () => {
           "one",
           "OAuth session expired and could not be refreshed",
         ),
-      ).toBe(true);
+      ).toBe("reauth");
       expect(getClaudeAccount("one")?.needs_reauth).toBe(true);
-      expect(noteAuthFailure("one", "OAuth session expired")).toBe(false);
+      expect(noteAuthFailure("one", "OAuth session expired")).toBeNull();
     });
 
     it("ignores ordinary output and clears on a fresh sign-in", () => {
       upsertClaudeAccount({ id: "one" });
 
-      expect(noteAuthFailure("one", "npm warn deprecated")).toBe(false);
+      expect(noteAuthFailure("one", "npm warn deprecated")).toBeNull();
       noteAuthFailure("one", "Failed to authenticate");
       clearAuthFailure("one");
 
       expect(getClaudeAccount("one")?.needs_reauth).toBe(false);
+    });
+
+    it("flags a spent quota as rate_limited, not needs_reauth", () => {
+      upsertClaudeAccount({ id: "one" });
+
+      expect(
+        noteAuthFailure(
+          "one",
+          "You've hit your weekly limit · resets 6pm (Europe/Amsterdam)",
+        ),
+      ).toBe("rate_limit");
+      const account = getClaudeAccount("one");
+      expect(account?.rate_limited).toBe(true);
+      expect(account?.needs_reauth).toBeUndefined();
+    });
+
+    it("prefers the quota reading when a limit error also says to log in", () => {
+      upsertClaudeAccount({ id: "one" });
+
+      expect(
+        noteAuthFailure(
+          "one",
+          "429 Too Many Requests: usage limit exceeded. Please run `/login`",
+        ),
+      ).toBe("rate_limit");
+      const account = getClaudeAccount("one");
+      expect(account?.rate_limited).toBe(true);
+      expect(account?.needs_reauth).toBeUndefined();
+    });
+
+    it("does not read a bare number as a status code", () => {
+      upsertClaudeAccount({ id: "one" });
+
+      expect(
+        noteAuthFailure("one", "watching 4291 files, server on port 4290"),
+      ).toBeNull();
+      expect(getClaudeAccount("one")?.rate_limited).toBeUndefined();
+    });
+
+    it("clears both flags together once the account works", () => {
+      upsertClaudeAccount({ id: "one" });
+      noteAuthFailure("one", "Failed to authenticate");
+      noteAuthFailure("one", "usage limit exceeded");
+
+      clearAuthFailure("one");
+      const account = getClaudeAccount("one");
+      expect(account?.needs_reauth).toBe(false);
+      expect(account?.rate_limited).toBe(false);
+    });
+  });
+
+  describe("identityFromConfig", () => {
+    it("reads who the account is from its own config", () => {
+      upsertClaudeAccount({ id: "one" });
+      const dir = accountConfigDir("one");
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(
+        path.join(dir, ".claude.json"),
+        JSON.stringify({
+          oauthAccount: {
+            emailAddress: "someone@example.com",
+            organizationName: "Acme Inc",
+            organizationType: "claude_team",
+            organizationUuid: "org-1",
+          },
+        }),
+      );
+
+      expect(refreshAllAccountIdentities()).toEqual([
+        expect.objectContaining({
+          email: "someone@example.com",
+          id: "one",
+          org_name: "Acme Inc",
+          subscription_type: "team",
+        }),
+      ]);
+    });
+
+    it("leaves a row alone when its config has no identity", () => {
+      upsertClaudeAccount({ email: "stale@example.com", id: "one" });
+
+      refreshAllAccountIdentities();
+
+      expect(listClaudeAccounts()[0]?.email).toBe("stale@example.com");
     });
   });
 
