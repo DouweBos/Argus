@@ -1297,7 +1297,18 @@ export type PrereqId =
 
 export type PrereqStatus = "fail" | "pass" | "running" | "skipped" | "warn";
 
+/** Why the Claude auth check is unhappy; mirrors `@argus/host`. */
+export type ClaudeAuthReason =
+  | "all_rate_limited"
+  | "no_accounts"
+  | "selected_rate_limited"
+  | "selected_signed_out"
+  | "unauthenticated"
+  | "unverifiable";
+
 export interface PrereqResult {
+  /** Set on `claude_auth` when it isn't passing. */
+  auth_reason?: ClaudeAuthReason;
   detail?: string;
   fixable?: boolean;
   id: PrereqId;

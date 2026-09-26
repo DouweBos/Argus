@@ -46,22 +46,39 @@ export const setupChecksStore = create<SetupChecksState>(() => ({
 
 export const useSetupChecks = setupChecksStore;
 
-export async function runSetupChecks(force = false): Promise<void> {
-  const { ran, running } = setupChecksStore.getState();
-  if (running || (ran && !force)) {
+export async function runSetupChecks(
+  force = false,
+  ids: PrereqId[] = SETUP_PREREQS,
+): Promise<void> {
+  const { running, results } = setupChecksStore.getState();
+  if (running || (setupChecksStore.getState().ran && !force)) {
     return;
   }
   setupChecksStore.setState({ running: true });
   try {
-    const results = await checkPrereqs(SETUP_PREREQS);
-    setupChecksStore.setState({
-      results: Object.fromEntries(results.map((r) => [r.id, r])),
+    // A targeted run must not leave a never-checked id with no verdict, or that
+    // banner stays hidden until the app reloads — fill the holes in.
+    const missing = SETUP_PREREQS.filter((id) => !results[id]);
+    const found = await checkPrereqs([...new Set([...ids, ...missing])]);
+    setupChecksStore.setState((s) => ({
+      results: {
+        ...s.results,
+        ...Object.fromEntries(found.map((r) => [r.id, r])),
+      },
       ran: true,
-    });
+    }));
   } finally {
     setupChecksStore.setState({ running: false });
   }
 }
+
+/**
+ * Re-run only the auth check. Unlike the others it depends on state that moves
+ * during a session — signing in, switching or exhausting an account — so the
+ * home banner re-checks when the account list says it changed.
+ */
+export const runAuthCheck = (): Promise<void> =>
+  runSetupChecks(true, ["claude_auth"]);
 
 export function dismissSetupCard(id: string): void {
   setupChecksStore.setState((s) => {
