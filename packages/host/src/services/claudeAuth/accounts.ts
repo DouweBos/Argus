@@ -264,38 +264,65 @@ const AUTH_FAILURE =
 const RATE_LIMIT =
   /weekly limit|usage limit|rate.?limit exceeded|hit your (?:weekly|hourly|daily|monthly) limit|too many requests|(?:status|error|code)[ ="-]*429\b/i;
 
-/** Clear both run-failure flags once the account works again. */
-export function clearAuthFailure(id: string): void {
-  const account = getClaudeAccount(id);
-  if (account?.needs_reauth || account?.rate_limited) {
-    upsertClaudeAccount({ id, needs_reauth: false, rate_limited: false });
-  }
-}
-
-/** Which badge a run just earned the account, if a new one. */
-export type RunFailure = "rate_limit" | "reauth";
+/**
+ * What one CLI run with an account's credentials says about it. `unknown` means
+ * the output said nothing about auth — offline, a crash, an unrelated error — so
+ * it must not move any flags either way.
+ */
+export type AuthOutcome = "ok" | "rate_limited" | "reauth" | "unknown";
 
 /**
- * Record what a failing run said about the account. Rate limit wins when text
- * matches both: the quota error often carries a "run /login" hint, and sending
- * the user to re-login for a full quota would be a wild goose chase.
+ * Read a failing run's output. Rate limit wins when text matches both: the
+ * quota error often carries a "run /login" hint, and sending the user to
+ * re-login for a full quota would be a wild goose chase.
  */
-export function noteAuthFailure(id: string, text: string): RunFailure | null {
-  const account = getClaudeAccount(id);
-  const rateLimited = RATE_LIMIT.test(text);
-
-  if (rateLimited && !account?.rate_limited) {
-    upsertClaudeAccount({ id, rate_limited: true });
-
-    return "rate_limit";
+export function classifyRunFailure(text: string): AuthOutcome {
+  if (RATE_LIMIT.test(text)) {
+    return "rate_limited";
   }
-  if (!rateLimited && AUTH_FAILURE.test(text) && !account?.needs_reauth) {
-    upsertClaudeAccount({ id, needs_reauth: true });
-
+  if (AUTH_FAILURE.test(text)) {
     return "reauth";
   }
 
-  return null;
+  return "unknown";
+}
+
+/**
+ * Record what a run or probe found, so the switcher badges and the auth prereq
+ * can't disagree about an account. `ok` clears stale badges — a limit from
+ * yesterday's run shouldn't outlive the quota reset — while `unknown` changes
+ * nothing. Returns true when a badge actually moved, so callers only notify the
+ * UI when there's something new to see.
+ */
+export function recordAuthOutcome(id: string, outcome: AuthOutcome): boolean {
+  if (outcome === "unknown") {
+    return false;
+  }
+
+  const account = getClaudeAccount(id);
+  if (!account) {
+    return false;
+  }
+
+  const flags = {
+    needs_reauth: outcome === "reauth",
+    rate_limited: outcome === "rate_limited",
+  };
+  if (
+    account.needs_reauth === flags.needs_reauth &&
+    account.rate_limited === flags.rate_limited
+  ) {
+    return false;
+  }
+
+  upsertClaudeAccount({ id, ...flags });
+
+  return true;
+}
+
+/** Clear both run-failure flags once the account works again. */
+export function clearAuthFailure(id: string): void {
+  recordAuthOutcome(id, "ok");
 }
 
 export function listClaudeAccounts(): ClaudeAccount[] {
