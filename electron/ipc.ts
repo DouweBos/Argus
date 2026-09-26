@@ -142,7 +142,7 @@ import { getMjpegPort } from "@argus/host/services/browser/mjpegServer";
 import { webBrowserPool } from "@argus/host/services/browser/pool";
 import {
   getActiveAccountId,
-  listClaudeAccounts,
+  refreshAllAccountIdentities,
   removeClaudeAccount,
   renameClaudeAccount,
   setActiveAccount,
@@ -2520,7 +2520,7 @@ export function registerIpcHandlers(): void {
     }),
   );
   handle("claude_accounts_list", "admin", () => ({
-    accounts: listClaudeAccounts(),
+    accounts: refreshAllAccountIdentities(),
     activeId: getActiveAccountId(),
   }));
   handle("claude_accounts_set_active", "admin", (a) => {

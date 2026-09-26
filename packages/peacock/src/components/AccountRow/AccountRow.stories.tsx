@@ -62,6 +62,18 @@ export const NeedsReauth: Story = {
   },
 };
 
+export const RateLimited: Story = {
+  args: {
+    label: "douwe@douwebos.nl",
+    detail: "Personal",
+    plan: "Max",
+    rateLimited: true,
+    onSelect: () => {},
+    onRename: () => {},
+    onRemove: () => {},
+  },
+};
+
 export const List: Story = {
   render: () => (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

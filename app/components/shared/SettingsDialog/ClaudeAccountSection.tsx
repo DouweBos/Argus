@@ -198,7 +198,7 @@ export function ClaudeAccountSection() {
           caption={
             empty
               ? undefined
-              : "Agents and terminals use the selected account. Sessions pinned to another account keep theirs, and running agents are never interrupted by a switch. An account marked Signed out has expired credentials — sign in again to renew them."
+              : "Agents and terminals use the selected account. Sessions pinned to another account keep theirs, and running agents are never interrupted by a switch. An account marked Signed out has expired credentials — sign in again to renew them. Limit reached means the plan's quota is spent: nothing to fix, it clears on its own."
           }
         >
           {empty ? (
@@ -214,6 +214,7 @@ export function ClaudeAccountSection() {
                   label={accountDisplayName(account)}
                   needsReauth={account.needs_reauth}
                   plan={planLabel(account)}
+                  rateLimited={account.rate_limited}
                   onReauth={() => startLogin(account.id)}
                   onRemove={() => run(() => removeClaudeAccount(account.id))}
                   onRename={(label) =>

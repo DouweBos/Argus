@@ -52,6 +52,7 @@ import {
 } from "../automation/shellGuard";
 import { webBrowserPool } from "../browser/pool";
 import {
+  clearAuthFailure,
   envForAccount,
   noteAuthFailure,
   resolveAccountForSession,
@@ -539,13 +540,23 @@ export async function startAgent(
   // Wire the runner's events to the existing IPC channels & vitals
   // -------------------------------------------------------------------------
 
+  const noteRunFailure = (line: string): void => {
+    const failure = noteAuthFailure(accountId, line);
+    if (!failure) {
+      return;
+    }
+    warn(
+      failure === "rate_limit"
+        ? `[agent:${agentId}] account ${accountId} hit its plan limit`
+        : `[agent:${agentId}] account ${accountId} needs re-authentication`,
+    );
+    emitAccountsChanged();
+  };
+
   handle.on("stderr", (line: string) => {
     // A dead refresh token only shows up here — surface it on the account so
     // Settings can offer a re-login instead of claiming it's signed in.
-    if (noteAuthFailure(accountId, line)) {
-      warn(`[agent:${agentId}] account ${accountId} needs re-authentication`);
-      emitAccountsChanged();
-    }
+    noteRunFailure(line);
     emitHostEvent(`agent:stderr:${agentId}`, line);
   });
 
@@ -576,11 +587,15 @@ export async function startAgent(
 
   handle.on("stream-event", (line: string) => {
     // A revoked token reaches us as an API error in the stream, not on stderr.
-    if (line.includes("authentication_error") || line.includes("api_key")) {
-      if (noteAuthFailure(accountId, line)) {
-        warn(`[agent:${agentId}] account ${accountId} needs re-authentication`);
-        emitAccountsChanged();
-      }
+    // The cheap pre-gate covers quota text too — a weekly-limit error looks
+    // like an auth failure to `noteAuthFailure`, which is why it checks limits
+    // first, and gating on auth words alone would never let it through.
+    if (
+      line.includes("authentication_error") ||
+      line.includes("api_key") ||
+      line.includes("limit")
+    ) {
+      noteRunFailure(line);
     }
     onStreamLine(agentId, line);
     emitHostEvent(eventChannel, line);
@@ -628,6 +643,12 @@ export async function startAgent(
 
     emitHostEvent(`agent:exit:${agentId}`, exitCode);
     info(`[agent:${agentId}] process exited with code ${exitCode}`);
+
+    // A clean exit proves the account works again, so a limit or re-auth badge
+    // from an earlier run has to go — nothing else would lift it.
+    if (exitCode === 0) {
+      clearAuthFailure(accountId);
+    }
 
     if (agentEntry) {
       telemetryCapture("agent_exited", {
