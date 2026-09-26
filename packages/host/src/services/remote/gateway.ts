@@ -54,6 +54,7 @@ import {
   dispatch,
   GatewayError,
   permissionKey,
+  remoteClaudeAccounts,
   scopeSafeCapabilities,
   toRemoteAgentCapabilities,
   toRemoteAgentStatus,
@@ -815,6 +816,44 @@ export class DeviceConnection implements DeviceMediaController {
     if (channel === "project:added" || channel === "project:removed") {
       if (!this.scope) {
         this.pushEvent("projects.changed", null, {});
+      }
+
+      return;
+    }
+
+    // A rate limit landing, a login finishing in the host's browser, or the
+    // active account moving all show up here. Push the new list rather than a
+    // bare "it changed" — the account screen should update, not refetch.
+    if (channel === "claude-auth:accounts-changed") {
+      if (!this.scope) {
+        this.pushEvent("claude_accounts.changed", null, remoteClaudeAccounts());
+      }
+
+      return;
+    }
+
+    // The browser callback fires on this machine, so a phone can only finish a
+    // sign-in by pasting a code — it has to be told one is wanted, and told
+    // when the attempt is over rather than left staring at a spinner.
+    if (channel === "claude-auth:login-needs-code") {
+      if (!this.scope) {
+        this.pushEvent("claude_accounts.login", null, {
+          pending: true,
+          needs_code: true,
+        });
+      }
+
+      return;
+    }
+    if (channel === "claude-auth:login-result") {
+      if (!this.scope) {
+        const p = args[0] as { ok?: boolean; error?: string } | undefined;
+        this.pushEvent("claude_accounts.login", null, {
+          pending: false,
+          needs_code: false,
+          ok: Boolean(p?.ok),
+          ...(p?.error ? { error: p.error } : {}),
+        });
       }
 
       return;

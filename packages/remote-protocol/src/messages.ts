@@ -15,6 +15,8 @@ import {
   RemoteAutomationGuardrails,
   RemoteAutomationRun,
   RemoteAgentVitals,
+  RemoteClaudeAccount,
+  RemoteClaudeLoginState,
   RemoteDevice,
   RemoteDeviceClaim,
   RemoteDeviceClaimState,
@@ -417,6 +419,21 @@ export const MethodParams = {
     /** What they did, kept verbatim. */
     note: z.string().optional(),
   }),
+  "claude_accounts.list": z.object({}),
+  "claude_accounts.set_active": z.object({ id: z.string() }),
+  "claude_accounts.add": z.object({
+    use_console: z.boolean().optional(),
+  }),
+  "claude_accounts.remove": z.object({ id: z.string() }),
+  "claude_accounts.rename": z.object({ id: z.string(), label: z.string() }),
+  /** Re-authenticate an account already in the list, instead of adding one. */
+  "claude_accounts.login_start": z.object({
+    account_id: z.string().optional(),
+    use_console: z.boolean().optional(),
+  }),
+  "claude_accounts.login_cancel": z.object({}),
+  "claude_accounts.login_submit_code": z.object({ code: z.string() }),
+  "claude_accounts.login_status": z.object({}),
 } as const;
 
 // --- Result payloads per method --------------------------------------------
@@ -612,6 +629,23 @@ export const MethodResult = {
   "proposals.perform_cleanup": z.object({ proposal_id: z.string() }),
   "proposals.dismiss": z.object({ proposal: RemoteProposal }),
   "proposals.resolve": z.object({ proposal: RemoteProposal }),
+  "claude_accounts.list": z.object({
+    accounts: z.array(RemoteClaudeAccount),
+    active_id: z.string(),
+  }),
+  "claude_accounts.set_active": z.object({ accepted: z.boolean() }),
+  /** The sign-in URL. It opens in the host owner's browser; the code still has
+   *  to be pasted back here for the browser callback to be seen. */
+  "claude_accounts.add": z.object({ url: z.string() }),
+  "claude_accounts.remove": z.object({ accepted: z.boolean() }),
+  "claude_accounts.rename": z.object({ accepted: z.boolean() }),
+  "claude_accounts.login_start": z.object({ url: z.string() }),
+  "claude_accounts.login_cancel": z.object({ accepted: z.boolean() }),
+  "claude_accounts.login_submit_code": z.object({
+    ok: z.boolean(),
+    error: z.string().optional(),
+  }),
+  "claude_accounts.login_status": RemoteClaudeLoginState,
 } as const;
 
 // --- Envelopes -------------------------------------------------------------
@@ -703,6 +737,15 @@ export const EventPayloads = {
    *  a client that cares refetches whatever it holds. */
   "sessions.changed": z.object({ repo_root: z.string().nullable() }),
   "projects.changed": z.object({}),
+  /** Carries the new state outright — the list is small, and a rate limit or a
+   *  finished login landing on the account screen should not need a refetch. */
+  "claude_accounts.changed": z.object({
+    accounts: z.array(RemoteClaudeAccount),
+    active_id: z.string(),
+  }),
+  /** Pushed when a sign-in starts needing a code, and again when it ends — the
+   *  same shape `login_status` returns, so a client has one thing to render. */
+  "claude_accounts.login": RemoteClaudeLoginState,
   notification: z.object({
     agent_id: z.string().nullable(),
     session_id: z.string().nullable(),
