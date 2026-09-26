@@ -6,6 +6,7 @@ import {
   accountConfigDir,
   accountCredentialDir,
   applyActiveAccountToProcessEnv,
+  classifyRunFailure,
   claudeAccountEnv,
   clearAuthFailure,
   DEFAULT_ACCOUNT_ID,
@@ -14,7 +15,7 @@ import {
   getActiveAccountId,
   getClaudeAccount,
   listClaudeAccounts,
-  noteAuthFailure,
+  recordAuthOutcome,
   refreshAllAccountIdentities,
   resolveAccountForSession,
   setActiveAccount,
@@ -239,76 +240,77 @@ describe("claude accounts", () => {
     });
   });
 
-  describe("noteAuthFailure", () => {
-    it("flags the account once on an expired-session message", () => {
-      upsertClaudeAccount({ id: "one" });
-
+  describe("classifyRunFailure", () => {
+    it("reads an expired-session message as needing re-auth", () => {
       expect(
-        noteAuthFailure(
-          "one",
-          "OAuth session expired and could not be refreshed",
-        ),
+        classifyRunFailure("OAuth session expired and could not be refreshed"),
       ).toBe("reauth");
-      expect(getClaudeAccount("one")?.needs_reauth).toBe(true);
-      expect(noteAuthFailure("one", "OAuth session expired")).toBeNull();
     });
 
-    it("ignores ordinary output and clears on a fresh sign-in", () => {
-      upsertClaudeAccount({ id: "one" });
-
-      expect(noteAuthFailure("one", "npm warn deprecated")).toBeNull();
-      noteAuthFailure("one", "Failed to authenticate");
-      clearAuthFailure("one");
-
-      expect(getClaudeAccount("one")?.needs_reauth).toBe(false);
+    it("ignores ordinary output", () => {
+      expect(classifyRunFailure("npm warn deprecated")).toBe("unknown");
     });
 
-    it("flags a spent quota as rate_limited, not needs_reauth", () => {
-      upsertClaudeAccount({ id: "one" });
-
+    it("reads a spent quota as rate_limited, not reauth", () => {
       expect(
-        noteAuthFailure(
-          "one",
+        classifyRunFailure(
           "You've hit your weekly limit · resets 6pm (Europe/Amsterdam)",
         ),
-      ).toBe("rate_limit");
-      const account = getClaudeAccount("one");
-      expect(account?.rate_limited).toBe(true);
-      expect(account?.needs_reauth).toBeUndefined();
+      ).toBe("rate_limited");
     });
 
     it("prefers the quota reading when a limit error also says to log in", () => {
-      upsertClaudeAccount({ id: "one" });
-
       expect(
-        noteAuthFailure(
-          "one",
+        classifyRunFailure(
           "429 Too Many Requests: usage limit exceeded. Please run `/login`",
         ),
-      ).toBe("rate_limit");
-      const account = getClaudeAccount("one");
-      expect(account?.rate_limited).toBe(true);
-      expect(account?.needs_reauth).toBeUndefined();
+      ).toBe("rate_limited");
     });
 
     it("does not read a bare number as a status code", () => {
+      expect(
+        classifyRunFailure("watching 4291 files, server on port 4290"),
+      ).toBe("unknown");
+    });
+  });
+
+  describe("recordAuthOutcome", () => {
+    it("says when a badge moved, so a repeated failure stays quiet", () => {
       upsertClaudeAccount({ id: "one" });
 
-      expect(
-        noteAuthFailure("one", "watching 4291 files, server on port 4290"),
-      ).toBeNull();
-      expect(getClaudeAccount("one")?.rate_limited).toBeUndefined();
+      expect(recordAuthOutcome("one", "reauth")).toBe(true);
+      expect(getClaudeAccount("one")?.needs_reauth).toBe(true);
+      expect(recordAuthOutcome("one", "reauth")).toBe(false);
+    });
+
+    it("keeps a spent quota separate from a dead token", () => {
+      upsertClaudeAccount({ id: "one" });
+      recordAuthOutcome("one", "reauth");
+      recordAuthOutcome("one", "rate_limited");
+
+      const account = getClaudeAccount("one");
+      expect(account?.rate_limited).toBe(true);
+      // A working credential under a spent quota — the reauth badge was wrong.
+      expect(account?.needs_reauth).toBe(false);
     });
 
     it("clears both flags together once the account works", () => {
       upsertClaudeAccount({ id: "one" });
-      noteAuthFailure("one", "Failed to authenticate");
-      noteAuthFailure("one", "usage limit exceeded");
-
+      recordAuthOutcome("one", "reauth");
+      recordAuthOutcome("one", "rate_limited");
       clearAuthFailure("one");
+
       const account = getClaudeAccount("one");
       expect(account?.needs_reauth).toBe(false);
       expect(account?.rate_limited).toBe(false);
+    });
+
+    it("leaves the flags alone on an unrecognisable outcome", () => {
+      upsertClaudeAccount({ id: "one" });
+      recordAuthOutcome("one", "reauth");
+
+      expect(recordAuthOutcome("one", "unknown")).toBe(false);
+      expect(getClaudeAccount("one")?.needs_reauth).toBe(true);
     });
   });
 

@@ -52,9 +52,10 @@ import {
 } from "../automation/shellGuard";
 import { webBrowserPool } from "../browser/pool";
 import {
+  classifyRunFailure,
   clearAuthFailure,
   envForAccount,
-  noteAuthFailure,
+  recordAuthOutcome,
   resolveAccountForSession,
 } from "../claudeAuth/accounts";
 import { emitAccountsChanged } from "../claudeAuth/claudeAuth";
@@ -541,12 +542,17 @@ export async function startAgent(
   // -------------------------------------------------------------------------
 
   const noteRunFailure = (line: string): void => {
-    const failure = noteAuthFailure(accountId, line);
-    if (!failure) {
+    const outcome = classifyRunFailure(line);
+    if (outcome !== "rate_limited" && outcome !== "reauth") {
+      return;
+    }
+    // Only the badge moving is worth a UI event — a spent quota repeats on
+    // every retried line, and re-announcing it would re-run the auth prereq.
+    if (!recordAuthOutcome(accountId, outcome)) {
       return;
     }
     warn(
-      failure === "rate_limit"
+      outcome === "rate_limited"
         ? `[agent:${agentId}] account ${accountId} hit its plan limit`
         : `[agent:${agentId}] account ${accountId} needs re-authentication`,
     );
@@ -588,8 +594,8 @@ export async function startAgent(
   handle.on("stream-event", (line: string) => {
     // A revoked token reaches us as an API error in the stream, not on stderr.
     // The cheap pre-gate covers quota text too — a weekly-limit error looks
-    // like an auth failure to `noteAuthFailure`, which is why it checks limits
-    // first, and gating on auth words alone would never let it through.
+    // like an auth failure to `classifyRunFailure`, which is why it checks
+    // limits first, and auth words alone would never let it through.
     if (
       line.includes("authentication_error") ||
       line.includes("api_key") ||
