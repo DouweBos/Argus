@@ -26,6 +26,7 @@ enum Route: Hashable {
   case run(id: String, label: String)
   case settings
   case computers
+  case claudeAccounts
 }
 
 /// The top-level sections. These are tabs on a phone and a sidebar on an

@@ -71,6 +71,15 @@ struct SettingsView: View {
       }
 
       Section {
+        Button("Claude accounts") { router.push(.claudeAccounts) }
+      } header: {
+        Text("Claude")
+      } footer: {
+        Text("Choose which account new agents run as, and add or remove the ones "
+          + "signed in on this computer.")
+      }
+
+      Section {
         if let identity = app.identity {
           LabeledContent("Connected to", value: identity.label)
         }

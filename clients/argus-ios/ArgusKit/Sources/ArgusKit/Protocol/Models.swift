@@ -784,3 +784,69 @@ public struct RemoteNotification: Codable, Hashable, Sendable {
     }
   }
 }
+
+// MARK: - Claude accounts
+
+/// A signed-in Claude account on the computer, and which of its two problems is
+/// currently blocking it. `rateLimited` and `needsReauth` are deliberately not
+/// one flag: a spent quota has healthy credentials and fixes itself, an expired
+/// sign-in needs the user to sign in again.
+public struct RemoteClaudeAccount: Codable, Hashable, Sendable, Identifiable {
+  public enum AccountType: String, Codable, Sendable {
+    case claudeai, console
+  }
+
+  public var id: String
+  public var label: String?
+  public var email: String?
+  public var orgName: String?
+  public var subscriptionType: String?
+  public var needsReauth: Bool
+  public var rateLimited: Bool
+  public var accountType: AccountType
+
+  /// What the list shows as its primary line.
+  public var displayName: String { label ?? email ?? id }
+
+  /// "Max · Acme" — the plan and org, whichever are known.
+  public var subtitle: String {
+    [subscriptionType, orgName]
+      .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
+      .filter { !$0.isEmpty }
+      .joined(separator: " · ")
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case id, label, email
+    case orgName = "org_name"
+    case subscriptionType = "subscription_type"
+    case needsReauth = "needs_reauth"
+    case rateLimited = "rate_limited"
+    case accountType = "account_type"
+  }
+}
+
+/// Where an interactive sign-in has got to. The browser opens on the computer,
+/// so a phone can only finish over the paste-a-code path — `needsCode` is what
+/// tells it that path is the one available.
+public struct RemoteClaudeLoginState: Codable, Hashable, Sendable {
+  public var pending: Bool
+  public var needsCode: Bool
+  /// Set once the attempt is over: how it ended.
+  public var ok: Bool?
+  public var error: String?
+
+  public init(
+    pending: Bool, needsCode: Bool, ok: Bool? = nil, error: String? = nil
+  ) {
+    self.pending = pending
+    self.needsCode = needsCode
+    self.ok = ok
+    self.error = error
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case pending, ok, error
+    case needsCode = "needs_code"
+  }
+}
