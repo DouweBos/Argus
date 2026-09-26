@@ -84,6 +84,13 @@ final class AppStore {
   /// Locally-chosen effort per agent; the monitor snapshot doesn't carry it.
   var effortByAgent: [String: String] = [:]
   var devices: [RemoteDevice] = []
+  /// Claude accounts signed in on the computer, and which one new agents run
+  /// as. `nil` until the first load — an empty list would look like "signed
+  /// out everywhere" rather than "not fetched yet".
+  var claudeAccounts: [RemoteClaudeAccount]?
+  var activeClaudeAccountId: String?
+  /// The computer's in-flight Claude sign-in, if any.
+  var claudeLogin: RemoteClaudeLoginState?
   /// Fold and orientation for watched devices, keyed by device id.
   var deviceStates: [String: RemoteDeviceState] = [:]
   /// Who is driving each watched device, and this connection's own id so the
@@ -302,6 +309,9 @@ final class AppStore {
     statusByAgent = [:]
     effortByAgent = [:]
     devices = []
+    claudeAccounts = nil
+    activeClaudeAccountId = nil
+    claudeLogin = nil
     deviceStates = [:]
     deviceClaims = [:]
     connectionId = nil
@@ -395,6 +405,21 @@ final class AppStore {
 
     case .projectsChanged:
       Task { await refreshProjects() }
+
+    case .claudeAccountsChanged:
+      struct Payload: Decodable {
+        let accounts: [RemoteClaudeAccount]
+        let active_id: String
+      }
+      guard let payload = try? ProtocolCodec.convert(envelope.payload, to: Payload.self)
+      else { return }
+      claudeAccounts = payload.accounts
+      activeClaudeAccountId = payload.active_id
+
+    case .claudeAccountsLogin:
+      guard let state = try? ProtocolCodec.convert(
+        envelope.payload, to: RemoteClaudeLoginState.self) else { return }
+      claudeLogin = state
 
     case .notification:
       guard let notification = try? ProtocolCodec.convert(

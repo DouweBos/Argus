@@ -67,6 +67,8 @@
 		DB3CB7A94B9F37E5A9E28251 /* DeviceVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCD8CDED00DE55F5C4FE1C4E /* DeviceVideoView.swift */; };
 		DF3A5B1A8FDA279FDAA8D8FF /* ArgusRemoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20BFB66C676863B8775FDB91 /* ArgusRemoteApp.swift */; };
 		E79376838450019576305370 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A254961B044F508401BE46 /* AppStore.swift */; };
+		AA1000000000000000000001 /* ClaudeAccountsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000002 /* ClaudeAccountsView.swift */; };
+		AA1000000000000000000003 /* AppStore+ClaudeAccounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000004 /* AppStore+ClaudeAccounts.swift */; };
 		EE06026353BBE58BEA99D675 /* AutomationsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7641C7D13FE7BC5C8A6D9FF8 /* AutomationsStore.swift */; };
 		CC805340A6CF9143774C7E01 /* PullRequestsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1265698E1D6CC83192C84CEA /* PullRequestsStore.swift */; };
 		EFFBE7FDF2A9E08BA38A75C2 /* LiveRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98B20E2749E785C2B43D9006 /* LiveRefresh.swift */; };
@@ -136,6 +138,8 @@
 		FE93AA6EE40909D7AC27CDA4 /* NewSessionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSessionSheet.swift; sourceTree = "<group>"; };
 		4A1C0E5B9D2F41A7B8C30002 /* ToolInputViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolInputViews.swift; sourceTree = "<group>"; };
 		71C88AD86DD08D257E315A5C /* Rows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rows.swift; sourceTree = "<group>"; };
+		AA1000000000000000000002 /* ClaudeAccountsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeAccountsView.swift; sourceTree = "<group>"; };
+		AA1000000000000000000004 /* AppStore+ClaudeAccounts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+ClaudeAccounts.swift"; sourceTree = "<group>"; };
 		7641C7D13FE7BC5C8A6D9FF8 /* AutomationsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationsStore.swift; sourceTree = "<group>"; };
 		1265698E1D6CC83192C84CEA /* PullRequestsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestsStore.swift; sourceTree = "<group>"; };
 		7B760406B1B2B956C52E89F9 /* DeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceView.swift; sourceTree = "<group>"; };
@@ -238,6 +242,7 @@
 				EC699CB84E030428A8060A13 /* ChangesView.swift */,
 				46E305D96C871BB99B7DB468 /* ComputerView.swift */,
 				57ADDE446C44DCB7D8E5AA3C /* DevicesView.swift */,
+				AA1000000000000000000002 /* ClaudeAccountsView.swift */,
 				7B760406B1B2B956C52E89F9 /* DeviceView.swift */,
 				B6C14566E26586DC89C61830 /* HomeView.swift */,
 				2AA1C76CC7A23652BD96252A /* InboxView.swift */,
@@ -258,6 +263,7 @@
 				29DE2042E4C73E7833B0914E /* AppStore+Control.swift */,
 				481431411DDC5E55EA30D7BD /* AppStore+Data.swift */,
 				000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */,
+				AA1000000000000000000004 /* AppStore+ClaudeAccounts.swift */,
 				7641C7D13FE7BC5C8A6D9FF8 /* AutomationsStore.swift */,
 				1265698E1D6CC83192C84CEA /* PullRequestsStore.swift */,
 				EA0081824BC6F0B57CD618D8 /* ProposalsStore.swift */,
@@ -464,6 +470,8 @@
 				5891A5D53C0F0C7CEF4DE90D /* QuickRunView.swift in Sources */,
 				97AF0DF41C25983BAD9692C1 /* PullRequestView.swift in Sources */,
 				EB002C96DC172A3D1C7BDEFF /* PullRequestsView.swift in Sources */,
+				AA1000000000000000000001 /* ClaudeAccountsView.swift in Sources */,
+				AA1000000000000000000003 /* AppStore+ClaudeAccounts.swift in Sources */,
 				EE06026353BBE58BEA99D675 /* AutomationsStore.swift in Sources */,
 				CC805340A6CF9143774C7E01 /* PullRequestsStore.swift in Sources */,
 				0C2CEA8B85053A238EB47BA7 /* AutomationsView.swift in Sources */,

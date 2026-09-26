@@ -99,6 +99,16 @@ public enum RemoteMethod: String, Codable, Sendable {
   case proposalsDismiss = "proposals.dismiss"
   case proposalsResolve = "proposals.resolve"
   case proposalsPerformCleanup = "proposals.perform_cleanup"
+
+  case claudeAccountsList = "claude_accounts.list"
+  case claudeAccountsSetActive = "claude_accounts.set_active"
+  case claudeAccountsAdd = "claude_accounts.add"
+  case claudeAccountsRemove = "claude_accounts.remove"
+  case claudeAccountsRename = "claude_accounts.rename"
+  case claudeAccountsLoginStart = "claude_accounts.login_start"
+  case claudeAccountsLoginCancel = "claude_accounts.login_cancel"
+  case claudeAccountsLoginSubmitCode = "claude_accounts.login_submit_code"
+  case claudeAccountsLoginStatus = "claude_accounts.login_status"
 }
 
 /// Events the gateway pushes. Only those this client acts on are modelled;
@@ -116,6 +126,8 @@ public enum RemoteEventName: String, Sendable {
   case deviceClaim = "device.claim"
   case sessionsChanged = "sessions.changed"
   case projectsChanged = "projects.changed"
+  case claudeAccountsChanged = "claude_accounts.changed"
+  case claudeAccountsLogin = "claude_accounts.login"
   case notification = "notification"
 }
 

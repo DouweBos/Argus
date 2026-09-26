@@ -406,6 +406,8 @@ struct RootView: View {
       SettingsView()
     case .computers:
       HomeView()
+    case .claudeAccounts:
+      ClaudeAccountsView()
     }
   }
 

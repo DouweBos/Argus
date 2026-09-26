@@ -53,6 +53,7 @@ enum Icon {
   static let playPause = "playpause"
   static let menu = "line.3.horizontal"
   static let expand = "arrow.up.left.and.arrow.down.right"
+  static let person = "person.crop.circle"
   static let androidBack = "arrow.left"
   static let androidRecents = "square.on.square"
 }
