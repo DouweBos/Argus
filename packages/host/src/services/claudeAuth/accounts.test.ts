@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   accountConfigDir,
+  accountFallbackOrder,
   accountCredentialDir,
   applyActiveAccountToProcessEnv,
   classifyRunFailure,
@@ -372,6 +373,28 @@ describe("claude accounts", () => {
       expect(resolveAccountForSession({ claude_account_id: "gone" })).toBe(
         "one",
       );
+    });
+  });
+
+  describe("accountFallbackOrder", () => {
+    it("starts with the preferred account and pushes limited ones last", () => {
+      upsertClaudeAccount({ id: "a", rate_limited: true });
+      upsertClaudeAccount({ id: "b" });
+      upsertClaudeAccount({ id: "c" });
+      expect(accountFallbackOrder("c")).toEqual(["c", "b", "a"]);
+      expect(accountFallbackOrder("a")).toEqual(["b", "c", "a"]);
+    });
+
+    it("skips accounts that need a re-login", () => {
+      upsertClaudeAccount({ id: "a" });
+      upsertClaudeAccount({ id: "b", needs_reauth: true });
+      expect(accountFallbackOrder("a")).toEqual(["a"]);
+    });
+
+    it("falls back to the preferred id with no stored accounts", () => {
+      expect(accountFallbackOrder(DEFAULT_ACCOUNT_ID)).toEqual([
+        DEFAULT_ACCOUNT_ID,
+      ]);
     });
   });
 });
