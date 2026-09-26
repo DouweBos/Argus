@@ -8,12 +8,22 @@
  * dependency probing lives in `services/dependencies/check.ts`.
  */
 
-import type { PrereqId, PrereqResult } from "./types";
+import type { ClaudeAuthReason, PrereqId, PrereqResult } from "./types";
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
+import {
+  classifyRunFailure,
+  envForAccount,
+  getActiveAccountId,
+  listClaudeAccounts,
+  recordAuthOutcome,
+  type AuthOutcome,
+  type ClaudeAccount,
+} from "../claudeAuth/accounts";
+import { emitAccountsChanged } from "../claudeAuth/claudeAuth";
 import { resolveBinary } from "../dependencies/check";
 
 const execFileAsync = promisify(execFile);
@@ -51,33 +61,166 @@ async function checkClaudeCli(): Promise<PrereqResult> {
   };
 }
 
-async function checkClaudeAuth(): Promise<PrereqResult> {
+/**
+ * Ask one account's CLI to do the smallest possible thing. The output matters
+ * as much as the exit code: a spent quota and a dead token both fail, and only
+ * the text says which — otherwise every limit reads as "not authenticated".
+ */
+async function probeAccountAuth(id: string): Promise<AuthOutcome> {
+  const collect = (err: unknown): string => {
+    const e = err as { message?: string; stderr?: string; stdout?: string };
+
+    return [e.stdout, e.stderr, e.message].filter(Boolean).join("\n");
+  };
+
   try {
-    const { stdout } = await runTimeout(
-      execFileAsync("claude", [
-        "--print",
-        "--model",
-        "haiku",
-        "--output-format",
-        "json",
-        "ping",
-      ]),
-      12_000,
-    );
-    if (!stdout.trim()) {
-      throw new Error("empty response");
+    const { stdout } = await runTimeout(execClaudePing(id), 12_000);
+    const found = classifyRunFailure(stdout);
+    if (found !== "unknown") {
+      return found;
     }
 
-    return { id: "claude_auth", status: "pass", message: "authenticated" };
-  } catch {
-    return {
-      id: "claude_auth",
-      status: "warn",
-      message: "Claude CLI is not authenticated (or offline)",
-      detail: "Run `claude login` in a terminal.",
-      fixable: true,
-    };
+    // The CLI can exit 0 with the failure inside the JSON envelope, so an
+    // errored reply proves nothing about the credentials either way.
+    return stdout.includes('"is_error":true') ? "unknown" : "ok";
+  } catch (err) {
+    return classifyRunFailure(collect(err));
   }
+}
+
+/**
+ * Gateway credentials, which outrank the account's own sign-in when the CLI
+ * sees them. Argus can inherit them from the shell that launched it, and then
+ * the ping would report on the gateway rather than the account it names.
+ */
+const GATEWAY_ENV = ["ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN"];
+
+function execClaudePing(id: string): Promise<{ stdout: string }> {
+  const env = envForAccount(id);
+  for (const key of GATEWAY_ENV) {
+    Reflect.deleteProperty(env, key);
+  }
+
+  return execFileAsync(
+    "claude",
+    ["--print", "--model", "haiku", "--output-format", "json", "ping"],
+    { env, maxBuffer: 4 * 1024 * 1024, timeout: 12_000 },
+  );
+}
+
+/** Name an account by, for a message that says which one to act on. */
+function accountName(account: ClaudeAccount | undefined): string {
+  return account?.label || account?.email || "The selected account";
+}
+
+/**
+ * Auth check over *every* signed-in account, not just the selected one: the
+ * selected account being out of quota is a different problem from having no way
+ * to run agents at all. The selected one is probed alone first, so the healthy
+ * common case stays a single API call.
+ */
+async function checkClaudeAuth(): Promise<PrereqResult> {
+  const warn = (
+    reason: ClaudeAuthReason,
+    message: string,
+    detail: string,
+  ): PrereqResult => ({
+    id: "claude_auth",
+    status: "warn",
+    message,
+    detail,
+    fixable: true,
+    auth_reason: reason,
+  });
+
+  const accounts = listClaudeAccounts();
+  if (accounts.length === 0) {
+    return warn(
+      "no_accounts",
+      "No Claude account authenticated",
+      "Sign in so Argus can spawn agents.",
+    );
+  }
+
+  const activeId = getActiveAccountId();
+  const active = accounts.find((a) => a.id === activeId);
+  const outcomes = new Map<string, AuthOutcome>([
+    [activeId, await probeAccountAuth(activeId)],
+  ]);
+
+  // Only pay for the rest when the selected account can't run anything.
+  if (outcomes.get(activeId) !== "ok") {
+    const others = accounts.filter((a) => a.id !== activeId);
+    const found = await Promise.all(
+      others.map(
+        async (account) =>
+          [account.id, await probeAccountAuth(account.id)] as const,
+      ),
+    );
+    for (const [id, outcome] of found) {
+      outcomes.set(id, outcome);
+    }
+  }
+  // Badges a probe just moved would otherwise sit stale until something re-read
+  // the list, so push the change rather than waiting for the next fetch.
+  if (
+    accounts.some((account) =>
+      recordAuthOutcome(account.id, outcomes.get(account.id) ?? "unknown"),
+    )
+  ) {
+    emitAccountsChanged();
+  }
+
+  // A probe that said nothing — offline, a hung CLI — falls back to the badge
+  // the last real run left behind rather than guessing.
+  const stands = (account: ClaudeAccount | undefined): AuthOutcome => {
+    const probed = account && outcomes.get(account.id);
+    if (probed && probed !== "unknown") {
+      return probed;
+    }
+    if (account?.rate_limited) {
+      return "rate_limited";
+    }
+
+    return account?.needs_reauth ? "reauth" : "unknown";
+  };
+  // The selected account may have no row at all (the CLI's own sign-in), in
+  // which case only the probe says anything about it.
+  const selected = stands(active);
+  const usable = accounts.filter((a) => stands(a) === "ok").length;
+  if (selected === "ok") {
+    return { id: "claude_auth", status: "pass", message: "authenticated" };
+  }
+  if (selected === "unknown") {
+    return warn(
+      "unverifiable",
+      "Could not verify the Claude account",
+      "Re-check once you have network — the credentials may be fine.",
+    );
+  }
+
+  const limited = selected === "rate_limited";
+
+  // Another account works, so the selected one is the whole problem.
+  if (usable > 0) {
+    return warn(
+      limited ? "selected_rate_limited" : "selected_signed_out",
+      `${accountName(active)} is ${limited ? "out of usage" : "signed out"}`,
+      "Another account is ready — switch to it to keep spawning agents.",
+    );
+  }
+
+  return limited
+    ? warn(
+        "all_rate_limited",
+        "Every Claude account has hit its usage limit",
+        "Limits clear on their own, or add another account.",
+      )
+    : warn(
+        "unauthenticated",
+        "No Claude account can authenticate",
+        "Sign in again to renew the credentials.",
+      );
 }
 
 async function checkGitCli(): Promise<PrereqResult> {

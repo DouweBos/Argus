@@ -31,6 +31,15 @@ export type PrereqId = (typeof PREREQ_IDS)[number];
 
 export type PrereqStatus = "fail" | "pass" | "running" | "skipped" | "warn";
 
+/** Why the Claude auth check is unhappy — the home banner words itself off this. */
+export type ClaudeAuthReason =
+  | "all_rate_limited"
+  | "no_accounts"
+  | "selected_rate_limited"
+  | "selected_signed_out"
+  | "unauthenticated"
+  | "unverifiable";
+
 export interface PrereqResult {
   id: PrereqId;
   status: PrereqStatus;
@@ -40,6 +49,8 @@ export interface PrereqResult {
   fixable?: boolean;
   /** True when a missing soft check only blocks mobile previews. */
   mobileOnly?: boolean;
+  /** Set on `claude_auth` when it isn't passing. */
+  auth_reason?: ClaudeAuthReason;
 }
 
 export interface PrereqUpdateEvent {

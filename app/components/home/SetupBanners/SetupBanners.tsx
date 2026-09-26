@@ -7,10 +7,12 @@
 import type { DependencyStatus, PrereqResult } from "../../../lib/types";
 import { useEffect, useState } from "react";
 import { Banner, Button } from "@argus/peacock";
+import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import { checkDependencies, runPrereqFixer } from "../../../lib/ipc";
 import { showSettingsDialog } from "../../../stores/settingsStore";
 import {
   dismissSetupCard,
+  runAuthCheck,
   runSetupChecks,
   useSetupChecks,
 } from "../../../stores/setupChecksStore";
@@ -19,8 +21,85 @@ import { useNotificationPermission } from "./useNotificationPermission";
 /** Covered by the prereq checks below — skip them in the dependency list. */
 const DEPS_COVERED_BY_PREREQS = new Set(["claude", "git"]);
 
-function needsAttention(result: PrereqResult | undefined): boolean {
+/** A guard so callers can render the result it just checked. */
+function needsAttention(
+  result: PrereqResult | undefined,
+): result is PrereqResult {
   return result !== undefined && result.status !== "pass";
+}
+
+/** What the auth banner says, per the reason the check found. */
+const AUTH_MESSAGES: Record<
+  NonNullable<PrereqResult["auth_reason"]>,
+  { body: string; cta: string; headline: string }
+> = {
+  no_accounts: {
+    headline: "No Claude account authenticated.",
+    body: "Sign in so Argus can spawn agents.",
+    cta: "Sign in",
+  },
+  unauthenticated: {
+    headline: "No Claude account can authenticate.",
+    body: "Sign in again to renew the credentials.",
+    cta: "Sign in",
+  },
+  selected_rate_limited: {
+    headline: "Rate-limited account selected.",
+    body: "Another account has quota — switch to it to keep spawning agents.",
+    cta: "Switch account",
+  },
+  selected_signed_out: {
+    headline: "Signed-out account selected.",
+    body: "Another account is ready — switch to it to spawn agents.",
+    cta: "Switch account",
+  },
+  all_rate_limited: {
+    headline: "Every Claude account is out of usage.",
+    body: "Limits clear on their own, or add another account.",
+    cta: "Manage accounts",
+  },
+  unverifiable: {
+    headline: "Could not verify your Claude account.",
+    body: "Re-check once you have network — the credentials may be fine.",
+    cta: "Manage accounts",
+  },
+};
+
+/**
+ * Claude auth card. The check probes every signed-in account, so a spent quota
+ * on the selected one reads as "switch account" rather than "you aren't signed
+ * in" — the two need different fixes and shouldn't share a message.
+ */
+function ClaudeAuthBanner({ result }: { result: PrereqResult }) {
+  const { running } = useSetupChecks();
+  const copy = AUTH_MESSAGES[result.auth_reason ?? "no_accounts"];
+
+  return (
+    <Banner
+      tone="warning"
+      trailing={
+        <>
+          <Button
+            variant="secondary"
+            disabled={running}
+            onClick={() => {
+              runAuthCheck().catch(() => {});
+            }}
+          >
+            {running ? "Checking…" : "Re-check"}
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => showSettingsDialog("claude-account")}
+          >
+            {copy.cta}
+          </Button>
+        </>
+      }
+    >
+      <strong>{copy.headline}</strong> {copy.body}
+    </Banner>
+  );
 }
 
 export function SetupBanners() {
@@ -33,6 +112,12 @@ export function SetupBanners() {
   useEffect(() => {
     runSetupChecks().catch(() => {});
   }, []);
+
+  // Signing in, switching or exhausting an account all move the auth card, and
+  // the check re-probes accounts rather than trusting the previous verdict.
+  useIpcEvent("claude-auth:accounts-changed", () => {
+    runAuthCheck().catch(() => {});
+  });
 
   useEffect(() => {
     checkDependencies()
@@ -93,25 +178,7 @@ export function SetupBanners() {
         </Banner>
       )}
       {!needsAttention(claudeCli) && needsAttention(claudeAuth) && (
-        <Banner
-          tone="warning"
-          trailing={
-            <>
-              <Button variant="secondary" disabled={running} onClick={recheck}>
-                {running ? "Checking…" : "Re-check"}
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => showSettingsDialog("claude-account")}
-              >
-                Sign in
-              </Button>
-            </>
-          }
-        >
-          <strong>No Claude account authenticated.</strong> Sign in so Argus can
-          spawn agents.
-        </Banner>
+        <ClaudeAuthBanner result={claudeAuth} />
       )}
       {needsAttention(gitCli) && (
         <Banner tone="error">
