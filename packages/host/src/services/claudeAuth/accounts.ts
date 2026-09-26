@@ -325,6 +325,22 @@ export function clearAuthFailure(id: string): void {
   recordAuthOutcome(id, "ok");
 }
 
+/**
+ * Accounts to run on, in order, starting from `preferredId`. Already
+ * rate-limited ones go last rather than out — the flag may predate the reset —
+ * while ones needing a re-login can't run at all.
+ */
+export function accountFallbackOrder(preferredId: string): string[] {
+  const rank = (a: ClaudeAccount): number =>
+    (a.rate_limited ? 2 : 0) + (a.id === preferredId ? 0 : 1);
+  const usable = listClaudeAccounts()
+    .filter((a) => !a.needs_reauth)
+    .sort((a, b) => rank(a) - rank(b))
+    .map((a) => a.id);
+
+  return usable.length > 0 ? usable : [preferredId];
+}
+
 export function listClaudeAccounts(): ClaudeAccount[] {
   return readFile().accounts;
 }

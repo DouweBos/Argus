@@ -24,7 +24,13 @@ import {
   stopAgent,
   waitForAgent,
 } from "../agent/agentService";
+import {
+  accountFallbackOrder,
+  classifyRunFailure,
+  resolveAccountForSession,
+} from "../claudeAuth/accounts";
 import { ensureRepoRegistered } from "../mcp/projects";
+import { DEFAULT_RUNNER_ID } from "../session/models";
 import { gatherSignals, serializeWorkItems } from "../signals/registry";
 import { resolveHostAutonomy } from "./autonomy";
 import { normalizeGuardrails } from "./guardrails";
@@ -177,35 +183,57 @@ async function execute(automation: Automation, runId: string): Promise<void> {
   const autonomy = resolveHostAutonomy(automation);
   const guardrails = normalizeGuardrails(automation.guardrails);
   const permissionMode = permissionModeFor(autonomy);
-  const agentInfo = await startAgent(
-    session.id,
-    automation.model ?? undefined,
-    permissionMode,
-  );
-  updateRun(runId, { host_agent_id: agentInfo.agent_id });
-
   const prompt = buildPrompt(automation, signals, autonomy, scope);
 
-  // Without this the renderer never registers the agent or subscribes to its
-  // event channels, and the session view falls back to the "Start agent"
-  // panel — a backend-initiated spawn is invisible to the UI otherwise.
-  emitHostEvent("agent:started", {
-    agent_id: agentInfo.agent_id,
-    session_id: agentInfo.session_id,
-    status: agentInfo.status,
-    permission_mode: permissionMode,
-    parent_agent_id: agentInfo.parent_agent_id,
-    created_at: agentInfo.created_at,
-    initial_prompt: prompt,
-    model: agentInfo.model,
-  });
+  // A spent plan limit on one Claude account says nothing about the others, so
+  // the run moves on to the next one before giving up. Custom runners bring
+  // their own credentials.
+  const accounts: (string | null)[] =
+    session.runner_id === DEFAULT_RUNNER_ID
+      ? accountFallbackOrder(resolveAccountForSession(session))
+      : [null];
 
-  await driveRunAgent({
-    agentId: agentInfo.agent_id,
-    guardrails,
-    prompt,
-    runId,
-  });
+  for (const [attempt, accountId] of accounts.entries()) {
+    const live = appState.sessions.get(session.id);
+    if (accountId && live) {
+      live.claude_account_id = accountId;
+    }
+
+    const agentInfo = await startAgent(
+      session.id,
+      automation.model ?? undefined,
+      permissionMode,
+    );
+    updateRun(runId, { host_agent_id: agentInfo.agent_id });
+
+    // Without this the renderer never registers the agent or subscribes to its
+    // event channels, and the session view falls back to the "Start agent"
+    // panel — a backend-initiated spawn is invisible to the UI otherwise.
+    emitHostEvent("agent:started", {
+      agent_id: agentInfo.agent_id,
+      session_id: agentInfo.session_id,
+      status: agentInfo.status,
+      permission_mode: permissionMode,
+      parent_agent_id: agentInfo.parent_agent_id,
+      created_at: agentInfo.created_at,
+      initial_prompt: prompt,
+      model: agentInfo.model,
+    });
+
+    const settled = await driveRunAgent({
+      agentId: agentInfo.agent_id,
+      guardrails,
+      prompt,
+      runId,
+      retryOnRateLimit: attempt < accounts.length - 1,
+    });
+    if (settled !== "rate_limited") {
+      return;
+    }
+    info(
+      `automation run ${runId}: account ${accountId} hit its plan limit, retrying on ${accounts[attempt + 1]}`,
+    );
+  }
 }
 
 function buildPrompt(
@@ -398,7 +426,9 @@ export async function driveRunAgent(args: {
   guardrails: AutomationGuardrails;
   prompt: string;
   runId: string;
-}): Promise<void> {
+  /** Leave the run open when the account's plan limit is spent. */
+  retryOnRateLimit?: boolean;
+}): Promise<"rate_limited" | "settled"> {
   const { agentId, guardrails, prompt, runId } = args;
 
   sendAgentMessage(agentId, prompt);
@@ -423,7 +453,7 @@ export async function driveRunAgent(args: {
       cost_usd: runSpendUsd(runId),
     });
 
-    return;
+    return "settled";
   }
   clearInterval(costWatch);
 
@@ -437,11 +467,20 @@ export async function driveRunAgent(args: {
       error: `Stopped — ${overRunBudget}.`,
     });
 
-    return;
+    return "settled";
   }
 
   const result = outcome.result;
   const failed = outcome.status === "error" || result?.subtype === "error";
+  if (
+    failed &&
+    args.retryOnRateLimit &&
+    classifyRunFailure(result?.result ?? "") === "rate_limited"
+  ) {
+    await stopAgentQuietly(agentId);
+
+    return "rate_limited";
+  }
   finishRun(runId, failed ? "failed" : "succeeded", {
     cost_usd: spent || (result?.total_cost_usd ?? null),
     report_markdown: result?.result ?? null,
@@ -451,6 +490,8 @@ export async function driveRunAgent(args: {
   });
 
   await stopAgentQuietly(agentId);
+
+  return "settled";
 }
 
 /** Stop a run that is still in flight. */
