@@ -73,6 +73,7 @@ import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { loadConversationByRunnerSession } from "./chatHistory";
 import { injectDeviceFlag, isConductorInvocation } from "./conductorInjection";
 import { clearQueue } from "./messageQueue";
+import { resultSubtype } from "./models";
 
 // ---------------------------------------------------------------------------
 // Lazy device helpers
@@ -829,13 +830,14 @@ function onStreamLine(agentId: string, line: string): void {
       const parsed = JSON.parse(line) as {
         type?: string;
         subtype?: string;
+        is_error?: boolean;
         result?: string;
         total_cost_usd?: number;
         duration_ms?: number;
       };
       if (parsed.type === "result") {
         session.resultSummary = {
-          subtype: (parsed.subtype as "error" | "success") ?? "success",
+          subtype: resultSubtype(parsed),
           result: parsed.result,
           total_cost_usd: parsed.total_cost_usd ?? 0,
           duration_ms: parsed.duration_ms ?? 0,

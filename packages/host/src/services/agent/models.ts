@@ -30,6 +30,20 @@ export interface AgentResult {
 }
 
 /**
+ * The CLI reports API failures like a spent usage limit as `subtype: "success"`
+ * with `is_error: true`, and real failures as `error_max_turns`,
+ * `error_during_execution`, … — so the subtype alone can't be trusted.
+ */
+export function resultSubtype(event: {
+  subtype?: string;
+  is_error?: boolean;
+}): AgentResult["subtype"] {
+  return event.is_error === true || event.subtype?.startsWith("error")
+    ? "error"
+    : "success";
+}
+
+/**
  * A live session wrapping an LLM runner subprocess (Claude Code today).
  *
  * The runner-specific child process, stdin pipe, and control protocol live
