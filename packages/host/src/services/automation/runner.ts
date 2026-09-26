@@ -186,10 +186,10 @@ async function execute(automation: Automation, runId: string): Promise<void> {
   const prompt = buildPrompt(automation, signals, autonomy, scope);
 
   // A spent plan limit on one Claude account says nothing about the others, so
-  // the run moves on to the next one before giving up. Custom runners bring
-  // their own credentials.
+  // the run moves on to the next one before giving up, unless opted out.
+  // Custom runners bring their own credentials.
   const accounts: (string | null)[] =
-    session.runner_id === DEFAULT_RUNNER_ID
+    guardrails.retry_other_accounts && session.runner_id === DEFAULT_RUNNER_ID
       ? accountFallbackOrder(resolveAccountForSession(session))
       : [null];
 

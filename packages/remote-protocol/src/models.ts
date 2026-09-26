@@ -566,6 +566,8 @@ export const RemoteAutomationGuardrails = z.object({
   max_run_minutes: z.number(),
   path_denylist: z.array(z.string()),
   require_clean_ci: z.boolean(),
+  // Optional so a phone that predates it can still save; the host defaults it.
+  retry_other_accounts: z.boolean().optional(),
 });
 export type RemoteAutomationGuardrails = z.infer<
   typeof RemoteAutomationGuardrails

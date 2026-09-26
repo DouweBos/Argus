@@ -168,6 +168,14 @@ export function AutonomyFields({
         />
         <span>Require green CI before an auto-merge.</span>
       </label>
+
+      <label className={styles.catchUp}>
+        <Toggle
+          checked={guardrails.retry_other_accounts}
+          onChange={(checked) => patch({ retry_other_accounts: checked })}
+        />
+        <span>Retry on another Claude account when a usage limit is hit.</span>
+      </label>
     </>
   );
 }

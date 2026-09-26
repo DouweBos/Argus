@@ -71,12 +71,13 @@ public struct RemoteAutomationGuardrails: Codable, Hashable, Sendable {
   public var maxRunMinutes: Double
   public var pathDenylist: [String]
   public var requireCleanCi: Bool
+  public var retryOtherAccounts: Bool
 
   public init(
     confidenceThreshold: Double = 0.8, maxConcurrentSessions: Double = 2,
     maxFilesChanged: Double = 25, maxCostUsdPerRun: Double = 0,
     maxRunMinutes: Double = 20, pathDenylist: [String] = [],
-    requireCleanCi: Bool = true
+    requireCleanCi: Bool = true, retryOtherAccounts: Bool = true
   ) {
     self.confidenceThreshold = confidenceThreshold
     self.maxConcurrentSessions = maxConcurrentSessions
@@ -85,6 +86,20 @@ public struct RemoteAutomationGuardrails: Codable, Hashable, Sendable {
     self.maxRunMinutes = maxRunMinutes
     self.pathDenylist = pathDenylist
     self.requireCleanCi = requireCleanCi
+    self.retryOtherAccounts = retryOtherAccounts
+  }
+
+  // Hand-written so a host that predates `retry_other_accounts` still decodes.
+  public init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    confidenceThreshold = try c.decode(Double.self, forKey: .confidenceThreshold)
+    maxConcurrentSessions = try c.decode(Double.self, forKey: .maxConcurrentSessions)
+    maxFilesChanged = try c.decode(Double.self, forKey: .maxFilesChanged)
+    maxCostUsdPerRun = try c.decode(Double.self, forKey: .maxCostUsdPerRun)
+    maxRunMinutes = try c.decode(Double.self, forKey: .maxRunMinutes)
+    pathDenylist = try c.decode([String].self, forKey: .pathDenylist)
+    requireCleanCi = try c.decode(Bool.self, forKey: .requireCleanCi)
+    retryOtherAccounts = try c.decodeIfPresent(Bool.self, forKey: .retryOtherAccounts) ?? true
   }
 
   enum CodingKeys: String, CodingKey {
@@ -95,6 +110,7 @@ public struct RemoteAutomationGuardrails: Codable, Hashable, Sendable {
     case maxRunMinutes = "max_run_minutes"
     case pathDenylist = "path_denylist"
     case requireCleanCi = "require_clean_ci"
+    case retryOtherAccounts = "retry_other_accounts"
   }
 }
 
