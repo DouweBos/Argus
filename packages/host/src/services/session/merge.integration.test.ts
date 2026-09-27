@@ -9,7 +9,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { checkMergeConflicts } from "./merge";
+import { checkMergeConflicts, mergeSessionIntoBase } from "./merge";
 
 let repoRoot: string;
 
@@ -108,5 +108,59 @@ describe("checkMergeConflicts (integration)", () => {
       repoRoot,
     );
     expect(withStaged).toContain("README.md");
+  });
+});
+
+describe("mergeSessionIntoBase (integration)", () => {
+  /** A worktree on `feat` with two commits ahead of `main`. */
+  function twoCommitsAhead(): void {
+    repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "argus-merge-test-"));
+    git(repoRoot, ["init", "-q", "-b", "main"]);
+    write("README.md", "hello\n");
+    git(repoRoot, ["add", "-A"]);
+    git(repoRoot, ["commit", "-q", "-m", "initial"]);
+    git(repoRoot, ["checkout", "-q", "-b", "feat"]);
+    write("a.txt", "a\n");
+    git(repoRoot, ["add", "-A"]);
+    git(repoRoot, ["commit", "-q", "-m", "feat: add a"]);
+    write("b.txt", "b\n");
+    git(repoRoot, ["add", "-A"]);
+    git(repoRoot, ["commit", "-q", "-m", "feat: add b"]);
+  }
+
+  function subjects(range: string): string[] {
+    return git(repoRoot, ["log", range, "--pretty=%s"])
+      .split("\n")
+      .filter((line) => line.trim().length > 0);
+  }
+
+  beforeEach(twoCommitsAhead);
+
+  it("keeps every commit when the strategy is keep", async () => {
+    await mergeSessionIntoBase(repoRoot, repoRoot, "feat", "main", "keep");
+
+    expect(subjects("main~2..main")).toEqual(["feat: add b", "feat: add a"]);
+  });
+
+  it("collapses the session into one commit when the strategy is squash", async () => {
+    await mergeSessionIntoBase(repoRoot, repoRoot, "feat", "main", "squash");
+
+    expect(subjects("main~1..main")).toHaveLength(1);
+  });
+
+  it("refuses a remote-tracking base before it rewrites anything", async () => {
+    // The shape that ate a branch: a session created with `origin/main` as
+    // its base, which git happily resolves but cannot fast-forward.
+    git(repoRoot, ["update-ref", "refs/remotes/origin/main", "main"]);
+    const before = git(repoRoot, ["rev-parse", "HEAD"]).trim();
+
+    await expect(
+      mergeSessionIntoBase(repoRoot, repoRoot, "feat", "origin/main", "squash"),
+    ).rejects.toContain("remote-tracking ref");
+
+    // The bug this covers: the squash ran first and the failure left the
+    // session's commits already collapsed onto the wrong base.
+    expect(git(repoRoot, ["rev-parse", "HEAD"]).trim()).toBe(before);
+    expect(subjects("main..feat")).toEqual(["feat: add b", "feat: add a"]);
   });
 });
