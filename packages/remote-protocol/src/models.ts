@@ -20,6 +20,8 @@ export const RemoteSession = z.object({
   kind: z.enum(["automation_host", "project_root", "worktree"]),
   branch: z.string(),
   display_name: z.string().nullable().optional(),
+  /** The branch a merge lands on. Absent on older hosts. */
+  base_branch: z.string().nullable().optional(),
   status: z.enum(["deleting", "initializing", "ready", "error"]),
   /**
    * Whether the session's files are reachable. Orthogonal to `status`: the

@@ -266,6 +266,11 @@ describe("readyToMergeCard", () => {
     await act(async () => {
       fireEvent.click(mergeBtn);
     });
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Keep every commit" }),
+      );
+    });
 
     expect(handleMerge).toHaveBeenCalled();
     // Regression: on failure we must NOT offer "Delete session".
@@ -293,6 +298,11 @@ describe("readyToMergeCard", () => {
 
     await act(async () => {
       fireEvent.click(mergeBtn);
+    });
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Keep every commit" }),
+      );
     });
 
     await waitFor(() =>

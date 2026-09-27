@@ -21,6 +21,7 @@
 type SessionKind = "automation_host" | "project_root" | "worktree";
 type MergePhase = "attempt" | "continue";
 type MergeAbortKind = "merge" | "rebase";
+type MergeStrategy = "keep" | "squash";
 
 /**
  * Events are alphabetized (lint enforces this). Group by prefix when adding:
@@ -65,7 +66,7 @@ export interface EventMap {
   };
   session_merge_aborted: { kind: MergeAbortKind };
   session_merge_conflict: { conflicting_files: number; phase: MergePhase };
-  session_merged: { phase: MergePhase };
+  session_merged: { phase: MergePhase; strategy: MergeStrategy };
   telemetry_disabled: undefined;
   telemetry_enabled: undefined;
 }

@@ -1,3 +1,4 @@
+import type { SessionMergeStrategy } from "../../../lib/ipc";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Icons } from "@argus/peacock";
 import { useArgusConfigVersion } from "../../../hooks/useArgusConfigVersion";
@@ -12,6 +13,7 @@ import {
 } from "../../../lib/ipc";
 import { useSessions } from "../../../stores/sessionStore";
 import { CreatePullRequestDialog } from "../../pullRequests/CreatePullRequestDialog";
+import { MergeStrategyDialog } from "../../shared/MergeStrategyDialog";
 import styles from "./MergeBar.module.css";
 
 interface MergeBarProps {
@@ -35,6 +37,7 @@ export function MergeBar({ sessionId }: MergeBarProps) {
   const [mergeError, setMergeError] = useState<string | null>(null);
   const [isProtectedBase, setIsProtectedBase] = useState(false);
   const [createPrOpen, setCreatePrOpen] = useState(false);
+  const [askingStrategy, setAskingStrategy] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     if (!sessionId) {
@@ -99,20 +102,24 @@ export function MergeBar({ sessionId }: MergeBarProps) {
     fetchStatus,
   );
 
-  const handleMerge = useCallback(async () => {
-    if (!sessionId) {
-      return;
-    }
-    setIsMerging(true);
-    setMergeError(null);
-    try {
-      await mergeSessionIntoBase(sessionId);
-    } catch (err) {
-      setMergeError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsMerging(false);
-    }
-  }, [sessionId]);
+  const handleMerge = useCallback(
+    async (strategy: SessionMergeStrategy) => {
+      if (!sessionId) {
+        return;
+      }
+      setAskingStrategy(false);
+      setIsMerging(true);
+      setMergeError(null);
+      try {
+        await mergeSessionIntoBase(sessionId, strategy);
+      } catch (err) {
+        setMergeError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIsMerging(false);
+      }
+    },
+    [sessionId],
+  );
 
   if (!session || session.kind !== "worktree" || !session.base_branch) {
     return null;
@@ -209,6 +216,15 @@ export function MergeBar({ sessionId }: MergeBarProps) {
 
   return (
     <>
+      {askingStrategy && session.base_branch && (
+        <MergeStrategyDialog
+          baseBranch={session.base_branch}
+          commitsAhead={commitsAhead}
+          sessionBranch={session.branch}
+          onCancel={() => setAskingStrategy(false)}
+          onChoose={handleMerge}
+        />
+      )}
       <div className={`${styles.bar} ${barToneClass}`}>
         <span className={`${styles.statusText} ${statusTextToneClass}`}>
           {statusLabel}
@@ -219,7 +235,7 @@ export function MergeBar({ sessionId }: MergeBarProps) {
           size="sm"
           variant="primary"
           title={mergeBtnTitle}
-          onClick={handleMerge}
+          onClick={() => setAskingStrategy(true)}
         >
           {isMerging ? "Merging..." : "Merge"}
         </Button>

@@ -1284,8 +1284,13 @@ export const previewReleaseNotes = (
 export const getSessionCommitsAhead = (id: string): Promise<number> =>
   invoke("get_session_commits_ahead", { id });
 
-export const mergeSessionIntoBase = (id: string): Promise<void> =>
-  invoke("merge_session_into_base", { id });
+/** What a merge does to the session's commits. Never defaulted in the UI. */
+export type SessionMergeStrategy = "keep" | "squash";
+
+export const mergeSessionIntoBase = (
+  id: string,
+  strategy: SessionMergeStrategy,
+): Promise<void> => invoke("merge_session_into_base", { id, strategy });
 
 export const getSessionCommitsBehind = (id: string): Promise<number> =>
   invoke("get_session_commits_behind", { id });

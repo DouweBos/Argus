@@ -5,6 +5,7 @@ import { useFixConflictsInChat } from "../../../../hooks/useFixConflictsInChat";
 import { useMergeStatus } from "../../../../hooks/useMergeStatus";
 import { useSessions } from "../../../../stores/sessionStore";
 import { FileTypeIcon } from "../../../shared/Icons";
+import { MergeStrategyDialog } from "../../../shared/MergeStrategyDialog";
 import styles from "./ChangesSummary.module.css";
 
 type DiffLineType = "add" | "context" | "no-newline" | "remove";
@@ -71,6 +72,7 @@ function ChangesSummaryInner({ sessionId, session }: InnerProps) {
     mergeError,
     handleMerge,
   } = useMergeStatus(sessionId);
+  const [askingStrategy, setAskingStrategy] = useState(false);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const fileRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -204,6 +206,21 @@ function ChangesSummaryInner({ sessionId, session }: InnerProps) {
     </button>
   ) : null;
 
+  // Portalled, so it renders the same from either branch below.
+  const strategyDialog =
+    askingStrategy && session?.base_branch ? (
+      <MergeStrategyDialog
+        baseBranch={session.base_branch}
+        commitsAhead={commitsAhead}
+        sessionBranch={session.branch ?? "this branch"}
+        onCancel={() => setAskingStrategy(false)}
+        onChoose={(strategy) => {
+          setAskingStrategy(false);
+          handleMerge(strategy);
+        }}
+      />
+    ) : null;
+
   if (isLoading && files.length === 0) {
     return (
       <div ref={containerRef} className={styles.container} tabIndex={-1}>
@@ -229,12 +246,13 @@ function ChangesSummaryInner({ sessionId, session }: InnerProps) {
                 className={styles.mergeBtn}
                 disabled={!canMerge}
                 title={mergeBtnTitle}
-                onClick={handleMerge}
+                onClick={() => setAskingStrategy(true)}
               >
                 <Icons.MergeIcon size={12} />
                 {isMerging ? "Merging..." : `Merge into ${baseBranchLabel}`}
               </button>
             )}
+            {strategyDialog}
             {dispatchError && (
               <span className={styles.mergeError}>{dispatchError}</span>
             )}
@@ -385,12 +403,13 @@ function ChangesSummaryInner({ sessionId, session }: InnerProps) {
             className={styles.mergeBtn}
             disabled={!canMerge}
             title={mergeBtnTitle}
-            onClick={handleMerge}
+            onClick={() => setAskingStrategy(true)}
           >
             <Icons.MergeIcon size={12} />
             {isMerging ? "Merging..." : `Merge into ${baseBranchLabel}`}
           </button>
         )}
+        {strategyDialog}
         {mergeError && <span className={styles.mergeError}>{mergeError}</span>}
         {dispatchError && (
           <span className={styles.mergeError}>{dispatchError}</span>

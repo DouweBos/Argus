@@ -126,6 +126,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.delete": DENIED,
   "sessions.rename": DENIED,
   "sessions.rename_branch": DENIED,
+  "sessions.set_base_branch": DENIED,
   "sessions.checkout": DENIED,
   // Landing work is the engineer's call too — a guest reviews, never ships.
   "sessions.commit": DENIED,

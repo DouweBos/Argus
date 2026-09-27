@@ -117,10 +117,10 @@ describe("useMergeStatus", () => {
 
     let ok: boolean | undefined;
     await act(async () => {
-      ok = await result.current.handleMerge();
+      ok = await result.current.handleMerge("keep");
     });
 
-    expect(mockMergeSessionIntoBase).toHaveBeenCalledWith("ws-1");
+    expect(mockMergeSessionIntoBase).toHaveBeenCalledWith("ws-1", "keep");
     expect(ok).toBe(true);
     expect(result.current.isMerging).toBe(false);
   });
@@ -138,7 +138,7 @@ describe("useMergeStatus", () => {
 
     let ok: boolean | undefined;
     await act(async () => {
-      ok = await result.current.handleMerge();
+      ok = await result.current.handleMerge("keep");
     });
 
     expect(ok).toBe(false);
@@ -146,12 +146,22 @@ describe("useMergeStatus", () => {
     expect(result.current.isMerging).toBe(false);
   });
 
+  it("passes the chosen strategy through to the merge command", async () => {
+    const { result } = renderHook(() => useMergeStatus("ws-1"));
+
+    await act(async () => {
+      await result.current.handleMerge("squash");
+    });
+
+    expect(mockMergeSessionIntoBase).toHaveBeenCalledWith("ws-1", "squash");
+  });
+
   it("handleMerge returns false when sessionId is null", async () => {
     const { result } = renderHook(() => useMergeStatus(null));
 
     let ok: boolean | undefined;
     await act(async () => {
-      ok = await result.current.handleMerge();
+      ok = await result.current.handleMerge("keep");
     });
 
     expect(ok).toBe(false);

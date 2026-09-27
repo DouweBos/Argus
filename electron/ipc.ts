@@ -1421,7 +1421,10 @@ export function registerIpcHandlers(): void {
     getSessionCommitsAhead(a.id as string),
   );
   handle("merge_session_into_base", "admin", (a) =>
-    mergeSessionIntoBase(a.id as string),
+    mergeSessionIntoBase(
+      a.id as string,
+      (a.strategy as "keep" | "squash" | undefined) ?? "squash",
+    ),
   );
   handle("get_session_commits_behind", "admin", (a) =>
     getSessionCommitsBehind(a.id as string),
