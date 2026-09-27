@@ -11,6 +11,7 @@
 import type { AgentInfo } from "@argus/host/services/agent/models";
 import type {
   CreateAutomationInput,
+  SaveMemoryInput,
   StartScratchRunInput,
   UpdateAutomationInput,
 } from "@argus/host/services/automation/models";
@@ -103,6 +104,11 @@ import {
   setAutomationEnabled,
   updateAutomation,
 } from "@argus/host/services/automation/manager";
+import {
+  deleteAutomationMemory,
+  listAutomationMemories,
+  saveAutomationMemory,
+} from "@argus/host/services/automation/memory/service";
 import { calibrationFor } from "@argus/host/services/automation/outcomes";
 import { acceptProposal } from "@argus/host/services/automation/proposals/accept";
 import { performProposalCleanup } from "@argus/host/services/automation/proposals/cleanup";
@@ -1164,6 +1170,15 @@ export function registerIpcHandlers(): void {
       name: a.name as string | undefined,
     }),
   );
+  handle("automation_memories_list", "admin", (a) =>
+    listAutomationMemories(a.automationId as string),
+  );
+  handle("automation_memory_save", "admin", (a) =>
+    saveAutomationMemory(a.automationId as string, a.input as SaveMemoryInput),
+  );
+  handle("automation_memory_delete", "admin", (a) => {
+    deleteAutomationMemory(a.automationId as string, a.name as string);
+  });
   handle("automation_calibration", "admin", (a) =>
     calibrationFor(a.automationId as string),
   );

@@ -840,6 +840,30 @@ export interface AutomationScratchSpec {
   source_ids: string[];
 }
 
+export type AutomationMemoryType =
+  | "feedback"
+  | "project"
+  | "reference"
+  | "user";
+
+/** One file in an automation's memory, carried from run to run. */
+export interface AutomationMemory {
+  body: string;
+  description: string;
+  name: string;
+  type: AutomationMemoryType;
+  updated_at: number;
+}
+
+export interface SaveAutomationMemoryInput {
+  body: string;
+  description: string;
+  name: string;
+  /** Set when an edit renamed the memory. */
+  previous_name?: string | null;
+  type: AutomationMemoryType;
+}
+
 /** Fields accepted when starting an ad-hoc run. */
 export interface StartScratchRunInput {
   guardrails?: Partial<AutomationGuardrails>;

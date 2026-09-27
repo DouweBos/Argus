@@ -26,6 +26,7 @@ import {
   useHasActiveRun,
 } from "../../../stores/automationStore";
 import { AutomationEditor } from "../AutomationEditor/AutomationEditor";
+import { AutomationMemories } from "../AutomationMemories/AutomationMemories";
 import { AutomationTrackRecord } from "../AutomationTrackRecord";
 import {
   CancelRunButton,
@@ -138,6 +139,11 @@ export function AutomationDetailScreen() {
       />
 
       <AutomationEditor key={automation.id} automation={automation} />
+
+      <AutomationMemories
+        key={`memories-${automation.id}`}
+        automationId={automation.id}
+      />
 
       <SectionPanel
         title="Run history"

@@ -455,6 +455,29 @@ instruction and shows what came back.
 
 ---
 
+## Memory
+
+Every automation keeps a memory between runs, so it stops re-learning your
+codebase every morning. It is laid out like Claude Code's own: a `MEMORY.md`
+index with one line per memory, and one markdown file per memory with `name`,
+`description` and `metadata.type` (`user`, `feedback`, `project` or
+`reference`) frontmatter.
+
+Each run is handed the index and the folder, opens the memories that bear on
+it, and saves what took real exploration to find — where something is
+implemented, how a project is laid out, a quirk of a source — with
+`save_memory`. It can correct one by saving over it and drop one that turned
+out wrong with `delete_memory`. Feedback on a run that states a lasting
+preference is saved as a `feedback` memory. The tools work at every autonomy
+rung, including propose, because they write nothing but the automation's own
+memory.
+
+**Memories**, under the automation's configuration, lists them: expand one to
+read it, edit it, delete it, or add your own. The index is rebuilt from the
+files on every change, so it can't drift.
+
+---
+
 ## The calibration loop
 
 Argus records how each proposal turned out — started and merged, started and
@@ -477,11 +500,12 @@ All of it under your Argus home (`~/.argus`, or `~/.argus-server` for the
 | `automations.json`                        | The automations themselves.                                                                                      |
 | `automation-runs.json`                    | Run history, with reports. A quick run's playbook and scope live here, on the run — never in `automations.json`. |
 | `automation-runs/<automationId>/<runId>/` | One run's working directory.                                                                                     |
+| `automation-memory/<automationId>/`       | The automation's memory: `MEMORY.md` plus one file per memory.                                                   |
 | `automation-proposals.json`               | Proposals, across every automation.                                                                              |
 | `automation-outcomes.json`                | The calibration record.                                                                                          |
 | `automation-sessions.json`                | Which sessions an automation owns.                                                                               |
 
-Deleting an automation cleans up its run directories. Run records survive a
+Deleting an automation cleans up its run directories and its memory. Run records survive a
 restart; so does the schedule — `next_run_at` is persisted, which is what makes
 catch-up possible at all.
 
@@ -534,7 +558,9 @@ A phone authors them too. Edit on an automation, and + on the automations
 list, open the same fields the desktop editor has: name, description, trigger
 (cron, timezone, catch-up), projects, signal sources, runner and model, autonomy, the
 guardrails and the playbook itself. Saving is explicit, and deleting asks
-first; past runs and their reports survive the automation.
+first; past runs and their reports survive the automation. The automation's
+**Memories** are listed on it too: tap one to read it, and with control, edit
+or delete it.
 
 **Quick run** — the other half of + — runs a playbook once with nothing saved
 behind it, and drops you on the run as it goes. If it turns out to be worth

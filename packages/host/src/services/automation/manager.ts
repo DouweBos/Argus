@@ -22,6 +22,7 @@ import { info, warn } from "@argus/host/logger";
 import { computeNextRun, isValidCron } from "./cron";
 import { migrateSpendCeiling, normalizeGuardrails } from "./guardrails";
 import { disposeAutomationHostSession } from "./hostSession";
+import { deleteAllMemories } from "./memory/store";
 import { automationRunDir, automationRunsDir } from "./paths";
 import {
   deleteProposalsForAutomation,
@@ -311,6 +312,7 @@ export function deleteAutomation(id: string): void {
   runs = runCache().filter((r) => r.automation_id !== id);
   saveAutomationRuns(runs);
   deleteProposalsForAutomation(id);
+  deleteAllMemories(id);
 
   try {
     fs.rmSync(automationRunsDir(id), { force: true, recursive: true });
