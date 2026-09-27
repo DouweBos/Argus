@@ -24,8 +24,8 @@ type MergeAbortKind = "merge" | "rebase";
 
 /**
  * Events are alphabetized (lint enforces this). Group by prefix when adding:
- * `agent_*`, `app_*`, `feedback_*`, `onboarding_*`, `org_task_*`,
- * `renderer_*`, `session_*`, `telemetry_*`.
+ * `agent_*`, `app_*`, `feedback_*`, `onboarding_*`, `renderer_*`,
+ * `session_*`, `telemetry_*`.
  */
 export interface EventMap {
   agent_exited: {
@@ -52,7 +52,6 @@ export interface EventMap {
   app_launched: undefined;
   app_quit: undefined;
   onboarding_completed: undefined;
-  org_task_started: { scope_size: number };
   renderer_started: { popout: string };
   session_created: {
     has_description: boolean;
