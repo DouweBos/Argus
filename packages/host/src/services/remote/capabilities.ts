@@ -61,6 +61,11 @@ import {
   updateQueuedMessage,
 } from "../agent/messageQueue";
 import { revisePlaybook } from "../automation/authoring";
+import {
+  deleteAutomationMemory,
+  listAutomationMemories,
+  saveAutomationMemory,
+} from "../automation/memory/service";
 import { cancelAutomationRun } from "../automation/runner";
 import { startAutomationRun } from "../automation/runner";
 import {
@@ -1706,6 +1711,30 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     // Not wrapped in `control()`: nothing on the host changes. The rewrite
     // goes back to the phone, and only an `automations.update` saves it.
     return await revisePlaybook({ playbook, instruction, name });
+  },
+  "automations.memories": async (params) => {
+    const { automation_id } = parse("automations.memories", params);
+    if (!remoteAutomation(automation_id)) {
+      throw new GatewayError("not_found", `no automation ${automation_id}`);
+    }
+
+    return { memories: listAutomationMemories(automation_id).memories };
+  },
+  "automations.save_memory": async (params) => {
+    const { automation_id, memory } = parse("automations.save_memory", params);
+
+    return await control(() => ({
+      memory: saveAutomationMemory(automation_id, memory),
+    }));
+  },
+  "automations.delete_memory": async (params) => {
+    const { automation_id, name } = parse("automations.delete_memory", params);
+
+    return await control(() => {
+      deleteAutomationMemory(automation_id, name);
+
+      return { accepted: true };
+    });
   },
   "automations.delete": async (params) => {
     const { automation_id } = parse("automations.delete", params);

@@ -12,6 +12,7 @@ import {
   RemoteAgentStatus,
   RemoteAutomation,
   RemoteAutomationDetail,
+  RemoteAutomationMemory,
   RemoteAutomationGuardrails,
   RemoteAutomationRun,
   RemoteAgentVitals,
@@ -345,6 +346,18 @@ export const MethodParams = {
     name: z.string().optional(),
   }),
   "automations.delete": z.object({ automation_id: z.string() }),
+  "automations.memories": z.object({ automation_id: z.string() }),
+  /** Creates or overwrites; `previous_name` renames. */
+  "automations.save_memory": z.object({
+    automation_id: z.string(),
+    memory: RemoteAutomationMemory.omit({ updated_at: true }).extend({
+      previous_name: z.string().nullable().optional(),
+    }),
+  }),
+  "automations.delete_memory": z.object({
+    automation_id: z.string(),
+    name: z.string(),
+  }),
   "automations.set_enabled": z.object({
     automation_id: z.string(),
     enabled: z.boolean(),
@@ -599,6 +612,11 @@ export const MethodResult = {
   }),
   "automations.revise_playbook": z.object({ playbook: z.string() }),
   "automations.delete": z.object({ accepted: z.boolean() }),
+  "automations.memories": z.object({
+    memories: z.array(RemoteAutomationMemory),
+  }),
+  "automations.save_memory": z.object({ memory: RemoteAutomationMemory }),
+  "automations.delete_memory": z.object({ accepted: z.boolean() }),
   "automations.set_enabled": z.object({ automation: RemoteAutomation }),
   /** The run record as created — it is still queued when this returns. */
   "automations.run_now": z.object({ run: RemoteAutomationRun }),
