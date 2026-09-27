@@ -111,7 +111,10 @@ add it to that stash.
   appear in both places.
 - Click a branch to open its history; double-click to checkout.
 - Right-click for: checkout, rename, delete, push, set upstream, merge
-  into current, rebase current onto, compare with current.
+  into current, rebase current onto, compare with current, open a PR on
+  GitHub.
+- Deleting a branch whose commits aren't on any other branch asks a
+  second time before it throws them away.
 - **Project-scope ahead/behind** counts are refreshed in the background
   whenever the working tree changes.
 - **Default branches** (`main`, `master`, project-configured) sort to

@@ -26,7 +26,7 @@ import {
   Input,
   type GitErrorKind,
 } from "@argus/peacock";
-import { GitError } from "../../../../lib/gitError";
+import { GitError, isUnmergedBranchError } from "../../../../lib/gitError";
 import {
   gitCheckout,
   gitCherryPick,
@@ -80,6 +80,8 @@ interface BannerState {
 
 interface DeleteState {
   branchName: string;
+  /** Set once `-d` refused, so the second confirm is for `-D`. */
+  unmerged?: boolean;
 }
 
 export interface QuickActionsProps {
@@ -193,7 +195,7 @@ function BranchRow({
             }}
           >
             <Icons.HistoryIcon size={10} />
-            Rebase onto
+            Rebase current onto
           </li>
           <li
             className={styles.altItem}
@@ -977,14 +979,36 @@ export function QuickActions({
       {deleteState && (
         <DestructiveConfirm
           open
-          confirmLabel="Delete"
-          description={`"${deleteState.branchName}" will be permanently deleted. This cannot be undone.`}
-          title={`Delete branch "${deleteState.branchName}"?`}
+          confirmLabel={deleteState.unmerged ? "Delete anyway" : "Delete"}
+          description={
+            deleteState.unmerged
+              ? `"${deleteState.branchName}" has commits that aren't on any other branch. Deleting it loses them.`
+              : `"${deleteState.branchName}" will be permanently deleted. This cannot be undone.`
+          }
+          title={
+            deleteState.unmerged
+              ? "Branch isn't fully merged"
+              : `Delete branch "${deleteState.branchName}"?`
+          }
           onCancel={() => setDeleteState(null)}
           onConfirm={() => {
-            const name = deleteState.branchName;
+            const { branchName: name, unmerged } = deleteState;
             setDeleteState(null);
-            runOp(() => gitDeleteBranch(sessionId, { name }));
+            if (unmerged) {
+              runOp(() => gitDeleteBranch(sessionId, { name, force: true }));
+
+              return;
+            }
+            // Ask again rather than fail when `-d` refuses an unmerged branch.
+            gitDeleteBranch(sessionId, { name })
+              .then(() => onClose())
+              .catch((err: unknown) => {
+                if (isUnmergedBranchError(err)) {
+                  setDeleteState({ branchName: name, unmerged: true });
+                } else {
+                  runOp(() => Promise.reject(err));
+                }
+              });
           }}
         />
       )}

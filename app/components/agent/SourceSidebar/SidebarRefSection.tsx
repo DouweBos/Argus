@@ -41,7 +41,10 @@ import {
   useDraggable,
   useDropTarget,
 } from "@argus/peacock";
-import { rehydrateGitError } from "../../../lib/gitError";
+import {
+  isUnmergedBranchError,
+  rehydrateGitError,
+} from "../../../lib/gitError";
 import { GitError } from "../../../lib/gitError";
 import {
   gitArchiveBranch,
@@ -61,6 +64,7 @@ import {
   gitStashAndCheckout,
   gitUnarchiveBranch,
   gitUnpinBranch,
+  gitBranchPullRequestUrl,
   openExternalUrl,
   setSessionBaseBranch,
 } from "../../../lib/ipc";
@@ -306,6 +310,7 @@ interface ContextMenuState {
 }
 
 type DialogState =
+  | { branch: EnrichedBranch; kind: "delete-unmerged" }
   | { branch: EnrichedBranch; kind: "delete" }
   | { branch: EnrichedBranch; kind: "dirty-checkout" }
   | { branch: EnrichedBranch; kind: "push" }
@@ -559,7 +564,7 @@ export function BranchesSection({
         disabled: branch.isCurrent,
       },
       {
-        label: "Rebase onto current",
+        label: `Rebase "${visible.find((b) => b.isCurrent)?.name ?? "current"}" onto "${branch.name}"`,
         onClick: () => {
           setMenu(null);
           gitRebaseOnto(sessionId, { upstream: branch.name }).catch((err) =>
@@ -666,11 +671,17 @@ export function BranchesSection({
         label: "Open PR on GitHub",
         onClick: () => {
           setMenu(null);
-          // Try to infer GitHub URL from upstream. We use a best-effort guess
-          // since we don't have the remote URL readily available here.
-          openExternalUrl(
-            `https://github.com/compare/${branch.name}?expand=1`,
-          ).catch(() => undefined);
+          gitBranchPullRequestUrl(sessionId, branch.name)
+            .then((url) => {
+              if (!url) {
+                pushError("This repo has no GitHub remote.", "Open PR");
+
+                return;
+              }
+
+              return openExternalUrl(url);
+            })
+            .catch((err) => pushError(errorMessage(err), "Open PR"));
         },
       });
     }
@@ -750,6 +761,28 @@ export function BranchesSection({
           title="Delete branch?"
           description={`Delete the local branch "${dialog.branch.name}"? This cannot be undone.`}
           confirmLabel="Delete branch"
+          onConfirm={() => {
+            const target = dialog.branch;
+            setDialog(null);
+            gitDeleteBranch(sessionId, { name: target.name }).catch((err) => {
+              if (isUnmergedBranchError(err)) {
+                setDialog({ kind: "delete-unmerged", branch: target });
+              } else {
+                pushError(errorMessage(err), "Delete branch");
+              }
+            });
+          }}
+          onCancel={() => setDialog(null)}
+        />
+      )}
+
+      {dialog?.kind === "delete-unmerged" && (
+        <DestructiveConfirm
+          open
+          tone="destructive"
+          title="Branch isn't fully merged"
+          description={`"${dialog.branch.name}" has commits that aren't on any other branch. Deleting it loses them.`}
+          confirmLabel="Delete anyway"
           onConfirm={() => {
             const target = dialog.branch;
             setDialog(null);
