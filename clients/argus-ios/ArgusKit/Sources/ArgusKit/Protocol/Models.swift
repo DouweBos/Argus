@@ -38,6 +38,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var kind: RemoteSessionKind
   public var branch: String
   public var displayName: String?
+  /// The branch a merge lands on. Nil on older computers.
+  public var baseBranch: String?
   public var status: RemoteSessionStatus
   /// Whether the computer can currently reach this session's files. Separate
   /// from `status` — the usual cause is an external drive unplugged from the
@@ -54,6 +56,7 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case repoRoot = "repo_root"
     case kind, branch
     case displayName = "display_name"
+    case baseBranch = "base_branch"
     case status, availability
     case unavailableVolume = "unavailable_volume"
   }

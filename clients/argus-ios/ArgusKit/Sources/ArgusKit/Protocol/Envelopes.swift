@@ -16,6 +16,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case sessionsDelete = "sessions.delete"
   case sessionsRename = "sessions.rename"
   case sessionsRenameBranch = "sessions.rename_branch"
+  case sessionsSetBaseBranch = "sessions.set_base_branch"
   case sessionsFiles = "sessions.files"
   case sessionsResolveMentionPath = "sessions.resolve_mention_path"
   case sessionsGitStatus = "sessions.git_status"

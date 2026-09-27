@@ -469,20 +469,40 @@ extension AppStore {
     return result.blockers
   }
 
+  /// What a merge does to the session's commits. Squashing rewrites history
+  /// the agent wrote, so the phone asks rather than assuming.
+  enum MergeStrategy: String {
+    case keep
+    case squash
+
+    var label: String {
+      switch self {
+      case .keep: "Keep every commit"
+      case .squash: "Squash into one commit"
+      }
+    }
+  }
+
   @discardableResult
-  func mergeIntoBase(sessionId: String) async -> Bool {
+  func mergeIntoBase(sessionId: String, strategy: MergeStrategy) async -> Bool {
     guard let transport else { return false }
-    struct Params: Encodable { let session_id: String }
+    struct Params: Encodable {
+      let session_id: String
+      let strategy: String
+    }
     do {
       try await transport.request(
-        .sessionsMergeBase, Params(session_id: sessionId), as: IgnoredResult.self)
-      Telemetry.capture(.workLanded(action: .merge, success: true))
+        .sessionsMergeBase, Params(session_id: sessionId, strategy: strategy.rawValue),
+        as: IgnoredResult.self)
+      Telemetry.capture(
+        .workLanded(action: .merge, success: true, strategy: strategy.rawValue))
       await loadGitStatus(sessionId: sessionId)
 
       return true
     } catch {
       report(error, scope: "session:merge")
-      Telemetry.capture(.workLanded(action: .merge, success: false))
+      Telemetry.capture(
+        .workLanded(action: .merge, success: false, strategy: strategy.rawValue))
 
       return false
     }
@@ -515,6 +535,26 @@ extension AppStore {
       Telemetry.capture(.sessionRenamed(target: "session"))
       await loadSessions(repoRoot: repoRoot)
     } catch { report(error) }
+  }
+
+  /// Point a session at a different base branch. The computer refuses a
+  /// remote-tracking ref like `origin/main` — only a local branch can be
+  /// fast-forwarded onto.
+  func setBaseBranch(id: String, baseBranch: String) async {
+    guard let transport else { return }
+    struct Params: Encodable {
+      let id: String
+      let base_branch: String
+    }
+    do {
+      try await transport.request(
+        .sessionsSetBaseBranch, Params(id: id, base_branch: baseBranch),
+        as: IgnoredResult.self)
+      Telemetry.capture(.sessionRenamed(target: "base"))
+      if let repoRoot = repoRoot(forSessionId: id) {
+        await loadSessions(repoRoot: repoRoot)
+      }
+    } catch { report(error, scope: "session:base_branch") }
   }
 
   func renameSessionBranch(id: String, repoRoot: String, branch: String) async {
