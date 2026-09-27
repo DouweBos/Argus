@@ -512,6 +512,7 @@ extension AppStore {
     do {
       try await transport.request(
         .sessionsRename, Params(id: id, display_name: name), as: IgnoredResult.self)
+      Telemetry.capture(.sessionRenamed(target: "session"))
       await loadSessions(repoRoot: repoRoot)
     } catch { report(error) }
   }
@@ -525,6 +526,7 @@ extension AppStore {
     do {
       try await transport.request(
         .sessionsRenameBranch, Params(id: id, branch: branch), as: IgnoredResult.self)
+      Telemetry.capture(.sessionRenamed(target: "branch"))
       await loadSessions(repoRoot: repoRoot)
     } catch { report(error) }
   }
@@ -551,6 +553,7 @@ extension AppStore {
         .sessionsCheckout, Params(session_id: sessionId, branch: branch, dirty: dirty),
         as: Result.self)
       if result.blocked_by == "dirty" { return .dirty }
+      if result.accepted { Telemetry.capture(.branchActed(action: .checkout)) }
       await loadGitStatus(sessionId: sessionId)
       await loadSessions(repoRoot: repoRoot)
       return result.accepted ? .ok : .failed
@@ -575,6 +578,7 @@ extension AppStore {
         .sessionsCreateBranch,
         Params(session_id: sessionId, name: name, checkout: checkout, start_point: startPoint),
         as: IgnoredResult.self)
+      Telemetry.capture(.branchActed(action: .create))
       await loadGitStatus(sessionId: sessionId)
     } catch { report(error) }
   }
@@ -599,6 +603,7 @@ extension AppStore {
         .sessionsDeleteBranch, Params(session_id: sessionId, name: name, force: force),
         as: Result.self)
       if result.blocked_by == "unmerged" { return .unmerged }
+      if result.accepted { Telemetry.capture(.branchActed(action: .delete)) }
       return result.accepted ? .ok : .failed
     } catch {
       report(error)

@@ -212,25 +212,31 @@ captures `agent_started` / `session_created` / `session_merged` itself —
 so those names are deliberately absent below, and the desktop funnels
 stay honest.
 
-| Event                                      | When                                                   | Extra props                                                                             |
-| ------------------------------------------ | ------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| `$pageview`                                | Once per launch, in every mode                         | `$current_url: "argus-ios:///"`, `$pathname: "/"`, `app_version`, `source: "heartbeat"` |
-| `$screen`                                  | A screen is pushed                                     | `$screen_name` — the route pattern only, e.g. `agent`, never a project or branch name   |
-| `ios_launched`                             | Telemetry is in full mode at launch, or opts up        | —                                                                                       |
-| `ios_paired`                               | A computer was paired                                  | `endpoint_kind`, `has_control`                                                          |
-| `ios_pair_failed`                          | Pairing failed                                         | `reason` (the failure case name, no detail)                                             |
-| `ios_host_switched`                        | A different paired computer was selected               | `host_count`                                                                            |
-| `ios_message_sent`                         | A message reached the computer, or its queue           | `queued`, `has_images`, `length_bucket`                                                 |
-| `ios_message_send_failed`                  | A message never left the phone                         | `retried`                                                                               |
-| `ios_permission_answered`                  | A permission prompt was answered                       | `approved`, `from_notification`                                                         |
-| `ios_agent_controlled`                     | An agent was steered from the phone                    | `action` (`interrupt`, `stop`, `model`, `effort`, `permission_mode`)                    |
-| `ios_work_landed`                          | Work was committed, pushed or merged                   | `action`, `success`                                                                     |
-| `ios_device_watched`                       | A mirrored device screen was closed                    | `duration_ms`, `interacted`                                                             |
-| `ios_claude_account_changed`               | A Claude account was picked, added, removed or renamed | `action` (`select`, `add`, `remove`, `rename`)                                          |
-| `ios_memory_edited`                        | An automation's memory was saved or deleted            | `action` (`save`, `delete`)                                                             |
-| `ios_proposal_opened`                      | The inbox opened the run behind a proposal             | —                                                                                       |
-| `ios_app_error`                            | A failure the user was shown                           | `scope`, scrubbed `message` (≤2000 chars)                                               |
-| `telemetry_enabled` / `telemetry_disabled` | The privacy toggle moved                               | — (shared with desktop on purpose: same signal)                                         |
+| Event                                      | When                                                                                    | Extra props                                                                             |
+| ------------------------------------------ | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `$pageview`                                | Once per launch, in every mode                                                          | `$current_url: "argus-ios:///"`, `$pathname: "/"`, `app_version`, `source: "heartbeat"` |
+| `$screen`                                  | A screen is pushed                                                                      | `$screen_name` — the route pattern only, e.g. `agent`, never a project or branch name   |
+| `ios_launched`                             | Telemetry is in full mode at launch, or opts up                                         | —                                                                                       |
+| `ios_paired`                               | A computer was paired                                                                   | `endpoint_kind`, `has_control`                                                          |
+| `ios_pair_failed`                          | Pairing failed                                                                          | `reason` (the failure case name, no detail)                                             |
+| `ios_host_switched`                        | A different paired computer was selected                                                | `host_count`                                                                            |
+| `ios_message_sent`                         | A message reached the computer, or its queue                                            | `queued`, `has_images`, `length_bucket`                                                 |
+| `ios_message_send_failed`                  | A message never left the phone                                                          | `retried`                                                                               |
+| `ios_permission_answered`                  | A permission prompt was answered                                                        | `approved`, `from_notification`                                                         |
+| `ios_agent_controlled`                     | An agent was steered from the phone                                                     | `action` (`interrupt`, `stop`, `model`, `effort`, `permission_mode`)                    |
+| `ios_work_landed`                          | Work was committed, pushed or merged                                                    | `action`, `success`                                                                     |
+| `ios_device_watched`                       | A mirrored device screen was closed                                                     | `duration_ms`, `interacted`                                                             |
+| `ios_claude_account_changed`               | A Claude account was picked, added, removed or renamed                                  | `action` (`select`, `add`, `remove`, `rename`)                                          |
+| `ios_memory_edited`                        | An automation's memory was saved or deleted                                             | `action` (`save`, `delete`)                                                             |
+| `ios_proposal_opened`                      | The inbox opened the run behind a proposal                                              | —                                                                                       |
+| `ios_automation_edited`                    | An automation was created, saved, deleted, paused or resumed, or its playbook rewritten | `action` (`create`, `save`, `delete`, `enable`, `disable`, `revise_playbook`)           |
+| `ios_run_acted`                            | A run was started, cancelled, argued with, or kept as an automation                     | `action` (`start`, `start_scratch`, `cancel`, `feedback`, `save_scratch`)               |
+| `ios_proposal_handled`                     | An inbox proposal was answered                                                          | `action` (`accept`, `dismiss`, `resolve`, `cleanup`)                                    |
+| `ios_pull_request_acted`                   | A pull request was opened, merged or commented on                                       | `action` (`open`, `merge`, `comment`)                                                   |
+| `ios_branch_acted`                         | A branch was checked out, created or deleted                                            | `action` (`checkout`, `create`, `delete`)                                               |
+| `ios_session_renamed`                      | A session's name or its branch was renamed                                              | `target` (`session`, `branch`)                                                          |
+| `ios_app_error`                            | A failure the user was shown                                                            | `scope`, scrubbed `message` (≤2000 chars)                                               |
+| `telemetry_enabled` / `telemetry_disabled` | The privacy toggle moved                                                                | — (shared with desktop on purpose: same signal)                                         |
 
 `baseProps` in full mode: `app_version`, `build_number`,
 `platform: "ios"`, `os_version`, `device_model` (the hardware

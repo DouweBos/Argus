@@ -85,6 +85,7 @@ final class PullRequestsStore {
         .githubCreatePullRequest,
         Params(session_id: sessionId, title: title, body: body, draft: draft),
         as: Result.self)
+      Telemetry.capture(.pullRequestActed(action: .open))
       await refresh()
 
       return result.url
@@ -108,6 +109,7 @@ final class PullRequestsStore {
         .githubMergePullRequest,
         Params(repo: repo, number: number, strategy: strategy.rawValue),
         as: IgnoredResult.self)
+      Telemetry.capture(.pullRequestActed(action: .merge))
       await loadDetail(repo: repo, number: number)
       await refresh()
 
@@ -131,6 +133,7 @@ final class PullRequestsStore {
       try await transport.request(
         .githubCommentPullRequest, Params(repo: repo, number: number, body: body),
         as: IgnoredResult.self)
+      Telemetry.capture(.pullRequestActed(action: .comment))
       await loadDetail(repo: repo, number: number)
 
       return true
