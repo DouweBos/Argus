@@ -44,3 +44,8 @@ export function gateLogFilePath(): string {
 export function proposalsFilePath(): string {
   return path.join(argusHomeDir(), "automation-proposals.json");
 }
+
+/** One automation's memory: `MEMORY.md` plus a file per memory. */
+export function automationMemoryDir(automationId: string): string {
+  return path.join(argusHomeDir(), "automation-memory", automationId);
+}

@@ -8,7 +8,9 @@ import type { ScopeAvailability } from "./scopeAvailability";
 import type { GatheredSignals } from "../signals/registry";
 import { serializeWorkItems } from "../signals/registry";
 import { normalizeGuardrails } from "./guardrails";
+import { readMemoryIndex } from "./memory/store";
 import { calibrationBlock } from "./outcomes";
+import { automationMemoryDir } from "./paths";
 import { outstandingBlock } from "./proposals/outstanding";
 
 export function buildPrompt(
@@ -48,6 +50,7 @@ export function buildPrompt(
             )}. Note this in the report; do not treat it as "there is no work" in those projects.`,
         ]
       : []),
+    ...memorySection(automation.id),
     ...autonomySection(automation, autonomy),
     ...signalSections(automation, signals),
     ...(outstandingBlock(automation.id)?.split("\n") ?? []),
@@ -59,6 +62,25 @@ export function buildPrompt(
     "",
     "Whatever you write, no preamble, no offer to do more, no request for approval. If `emit_report` is not available to you, write the report as your final message in markdown instead.",
   ].join("\n");
+}
+
+/**
+ * What earlier runs learned, so this one doesn't re-explore the same code.
+ * Only the index is inlined; the run opens the files it needs.
+ */
+export function memorySection(automationId: string): string[] {
+  const index = readMemoryIndex(automationId);
+
+  return [
+    "",
+    "## Memory",
+    "",
+    `This automation keeps a memory across runs in \`${automationMemoryDir(automationId)}\`: \`MEMORY.md\` indexes one file per memory. Read the ones that bear on this run with \`Read\` before you explore — they exist so you don't re-learn the same code every day.`,
+    "",
+    index ? `Current \`MEMORY.md\`:\n\n${index}` : "No memories yet.",
+    "",
+    "Save with `save_memory` whatever took real exploration to find and will hold next run: where things are implemented, how the projects are laid out, quirks of the sources, what the user wants. Update an existing memory instead of adding a near-duplicate; `delete_memory` one that turned out wrong. A memory reflects when it was written — verify a file or function still exists before relying on it. Don't save this run's findings; those belong in the report.",
+  ];
 }
 
 /**

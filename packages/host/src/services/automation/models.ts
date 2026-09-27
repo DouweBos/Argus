@@ -200,3 +200,32 @@ export interface CreateAutomationInput {
 export type UpdateAutomationInput = Partial<
   Omit<Automation, "created_at" | "id" | "seeded_playbook_hash" | "updated_at">
 >;
+
+/** Same kinds Claude Code's own memory uses. */
+export const MEMORY_TYPES = [
+  "user",
+  "feedback",
+  "project",
+  "reference",
+] as const;
+export type MemoryType = (typeof MEMORY_TYPES)[number];
+
+/** One file in an automation's memory directory, carried across runs. */
+export interface AutomationMemory {
+  /** Kebab-case slug; also the file name without `.md`. */
+  name: string;
+  /** One line, shown in `MEMORY.md` so a run can tell whether to open it. */
+  description: string;
+  type: MemoryType;
+  body: string;
+  updated_at: number;
+}
+
+export interface SaveMemoryInput {
+  name: string;
+  description: string;
+  type: MemoryType;
+  body: string;
+  /** Set when an edit renamed the memory, so the old file goes away. */
+  previous_name?: string | null;
+}

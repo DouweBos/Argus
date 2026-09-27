@@ -21,11 +21,13 @@ import type {
   Automation,
   AutomationCalibration,
   AutomationDraft,
+  AutomationMemory,
   AutomationRun,
   GateLogEntry,
   CreateAutomationInput,
   Proposal,
   ProposalStatus,
+  SaveAutomationMemoryInput,
   SignalSourceInfo,
   StartScratchRunInput,
   UpdateAutomationInput,
@@ -1640,6 +1642,22 @@ export const revisePlaybook = (args: {
   name?: string;
   playbook: string;
 }): Promise<{ playbook: string }> => invoke("automation_playbook_revise", args);
+
+export const listAutomationMemories = (
+  automationId: string,
+): Promise<{ index: string | null; memories: AutomationMemory[] }> =>
+  invoke("automation_memories_list", { automationId });
+
+export const saveAutomationMemory = (
+  automationId: string,
+  input: SaveAutomationMemoryInput,
+): Promise<AutomationMemory> =>
+  invoke("automation_memory_save", { automationId, input });
+
+export const deleteAutomationMemory = (
+  automationId: string,
+  name: string,
+): Promise<void> => invoke("automation_memory_delete", { automationId, name });
 
 // Proposals — the inbox. Same host-state reasoning as the automations above.
 export const listProposals = (filter?: {
