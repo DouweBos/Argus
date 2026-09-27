@@ -231,6 +231,10 @@ export const MethodParams = {
     id: z.string(),
     branch: z.string().trim().min(1),
   }),
+  "sessions.set_base_branch": z.object({
+    id: z.string(),
+    base_branch: z.string().trim().min(1),
+  }),
   "sessions.git_status": z.object({ session_id: z.string() }),
   "sessions.branches": z.object({ session_id: z.string() }),
   "sessions.checkout": z.object({
@@ -267,7 +271,11 @@ export const MethodParams = {
   }),
   "sessions.push": z.object({ session_id: z.string() }),
   "sessions.merge_blockers": z.object({ session_id: z.string() }),
-  "sessions.merge_base": z.object({ session_id: z.string() }),
+  "sessions.merge_base": z.object({
+    session_id: z.string(),
+    /** Squashing rewrites history, so the client always says which it wants. */
+    strategy: z.enum(["keep", "squash"]),
+  }),
   "devices.list": z.object({}),
   /** Begin streaming a device's screen; returns a stream id for binary frames. */
   "devices.watch": z.object({
@@ -537,6 +545,7 @@ export const MethodResult = {
   "sessions.delete": z.object({ accepted: z.boolean() }),
   "sessions.rename": z.object({ accepted: z.boolean() }),
   "sessions.rename_branch": z.object({ accepted: z.boolean() }),
+  "sessions.set_base_branch": z.object({ accepted: z.boolean() }),
   "sessions.git_status": z.object({ status: RemoteGitStatus }),
   "sessions.branches": z.object({ branches: z.array(RemoteGitBranch) }),
   "sessions.checkout": z.object({

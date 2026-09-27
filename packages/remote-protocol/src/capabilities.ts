@@ -139,6 +139,7 @@ export const REMOTE_METHODS = {
   "sessions.rename": "control",
   /** Rename the git branch backing a session. */
   "sessions.rename_branch": "control",
+  "sessions.set_base_branch": "control",
   /** List a session's files for the @-mention picker. */
   "sessions.files": "control",
   /** Resolve a directory path for the @-mention browse mode. */

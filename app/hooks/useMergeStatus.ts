@@ -1,3 +1,4 @@
+import type { SessionMergeStrategy } from "../lib/ipc";
 import { useCallback, useEffect, useState } from "react";
 import {
   getSessionCommitsAhead,
@@ -15,7 +16,7 @@ interface UseMergeStatusResult {
   commitsBehind: number;
   conflicts: string[];
   /** Returns `true` when the merge completed successfully, `false` otherwise. */
-  handleMerge: () => Promise<boolean>;
+  handleMerge: (strategy: SessionMergeStrategy) => Promise<boolean>;
   handleRebase: () => Promise<void>;
   hasStaged: boolean;
   isMerging: boolean;
@@ -63,28 +64,31 @@ export function useMergeStatus(sessionId: string | null): UseMergeStatusResult {
     fetchStatus,
   );
 
-  const handleMerge = useCallback(async (): Promise<boolean> => {
-    if (!sessionId) {
-      return false;
-    }
-    setIsMerging(true);
-    setMergeError(null);
-    try {
-      await mergeSessionIntoBase(sessionId);
+  const handleMerge = useCallback(
+    async (strategy: SessionMergeStrategy): Promise<boolean> => {
+      if (!sessionId) {
+        return false;
+      }
+      setIsMerging(true);
+      setMergeError(null);
+      try {
+        await mergeSessionIntoBase(sessionId, strategy);
 
-      return true;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      setMergeError(message);
-      pushError(message, "Merge failed");
-      // Refresh conflict list so the UI can surface "Fix in chat".
-      await fetchStatus();
+        return true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        setMergeError(message);
+        pushError(message, "Merge failed");
+        // Refresh conflict list so the UI can surface "Fix in chat".
+        await fetchStatus();
 
-      return false;
-    } finally {
-      setIsMerging(false);
-    }
-  }, [sessionId, fetchStatus]);
+        return false;
+      } finally {
+        setIsMerging(false);
+      }
+    },
+    [sessionId, fetchStatus],
+  );
 
   const handleRebase = useCallback(async () => {
     if (!sessionId) {

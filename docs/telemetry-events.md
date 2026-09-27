@@ -150,11 +150,11 @@ is a fixed literal, not the user's machine or any external origin.
 `session_merge_*` covers the merge flow. `phase` distinguishes the
 initial attempt from a `continue` after the user resolved conflicts.
 
-| Event                    | Source | When                             | Extra props                                     |
-| ------------------------ | ------ | -------------------------------- | ----------------------------------------------- |
-| `session_merged`         | main   | Merge completed cleanly          | `phase: "attempt" \| "continue"`                |
-| `session_merge_conflict` | main   | Merge stopped on conflicts       | `phase`, `conflicting_files` (count, not paths) |
-| `session_merge_aborted`  | main   | An in-progress merge was aborted | `kind: "rebase" \| "merge"`                     |
+| Event                    | Source | When                             | Extra props                                                      |
+| ------------------------ | ------ | -------------------------------- | ---------------------------------------------------------------- |
+| `session_merged`         | main   | Merge completed cleanly          | `phase: "attempt" \| "continue"`, `strategy: "keep" \| "squash"` |
+| `session_merge_conflict` | main   | Merge stopped on conflicts       | `phase`, `conflicting_files` (count, not paths)                  |
+| `session_merge_aborted`  | main   | An in-progress merge was aborted | `kind: "rebase" \| "merge"`                                      |
 
 ## Agents
 
@@ -224,7 +224,7 @@ stay honest.
 | `ios_message_send_failed`                  | A message never left the phone                                                          | `retried`                                                                               |
 | `ios_permission_answered`                  | A permission prompt was answered                                                        | `approved`, `from_notification`                                                         |
 | `ios_agent_controlled`                     | An agent was steered from the phone                                                     | `action` (`interrupt`, `stop`, `model`, `effort`, `permission_mode`)                    |
-| `ios_work_landed`                          | Work was committed, pushed or merged                                                    | `action`, `success`                                                                     |
+| `ios_work_landed`                          | Work was committed, pushed or merged                                                    | `action`, `success`, `strategy` (`keep`, `squash`, or `none` outside a merge)           |
 | `ios_device_watched`                       | A mirrored device screen was closed                                                     | `duration_ms`, `interacted`                                                             |
 | `ios_claude_account_changed`               | A Claude account was picked, added, removed or renamed                                  | `action` (`select`, `add`, `remove`, `rename`)                                          |
 | `ios_memory_edited`                        | An automation's memory was saved or deleted                                             | `action` (`save`, `delete`)                                                             |
@@ -234,7 +234,7 @@ stay honest.
 | `ios_proposal_handled`                     | An inbox proposal was answered                                                          | `action` (`accept`, `dismiss`, `resolve`, `cleanup`)                                    |
 | `ios_pull_request_acted`                   | A pull request was opened, merged or commented on                                       | `action` (`open`, `merge`, `comment`)                                                   |
 | `ios_branch_acted`                         | A branch was checked out, created or deleted                                            | `action` (`checkout`, `create`, `delete`)                                               |
-| `ios_session_renamed`                      | A session's name or its branch was renamed                                              | `target` (`session`, `branch`)                                                          |
+| `ios_session_renamed`                      | A session's name, branch or base branch was changed                                     | `target` (`session`, `branch`, `base`)                                                  |
 | `ios_app_error`                            | A failure the user was shown                                                            | `scope`, scrubbed `message` (≤2000 chars)                                               |
 | `telemetry_enabled` / `telemetry_disabled` | The privacy toggle moved                                                                | — (shared with desktop on purpose: same signal)                                         |
 

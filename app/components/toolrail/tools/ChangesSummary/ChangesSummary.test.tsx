@@ -272,7 +272,7 @@ describe("changesSummary", () => {
     expect(screen.queryByText("Merge into main")).toBeNull();
   });
 
-  it("merge button calls handleMerge on click", () => {
+  it("merge button asks for a strategy, then merges with the one chosen", () => {
     const handleMerge = vi.fn();
     setupDefaults({
       files: [makeFile("a.ts", 1, 0)],
@@ -288,6 +288,12 @@ describe("changesSummary", () => {
     render(<ChangesSummary sessionId="ws-1" />);
 
     fireEvent.click(screen.getByText("Merge into main"));
-    expect(handleMerge).toHaveBeenCalledTimes(1);
+    // Nothing merges on the button alone — a squash is never implied.
+    expect(handleMerge).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Squash into one commit" }),
+    );
+    expect(handleMerge).toHaveBeenCalledWith("squash");
   });
 });

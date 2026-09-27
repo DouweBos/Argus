@@ -1,3 +1,4 @@
+import type { SessionMergeStrategy } from "../../../lib/ipc";
 import { useCallback, useEffect, useState } from "react";
 import { CalloutCard, DiffStat, IconBadge, Icons } from "@argus/peacock";
 import { useArgusConfigVersion } from "../../../hooks/useArgusConfigVersion";
@@ -15,6 +16,7 @@ import {
 import { setActiveTool } from "../../../stores/layoutStore";
 import { usePrsByBranch } from "../../../stores/pullRequestStore";
 import { CreatePullRequestDialog } from "../../pullRequests/CreatePullRequestDialog";
+import { MergeStrategyDialog } from "../../shared/MergeStrategyDialog";
 import { SessionReleaseNotesList } from "../SessionReleaseNotesCard/SessionReleaseNotesCard";
 import styles from "./ReadyToMergeCard.module.css";
 
@@ -95,6 +97,7 @@ export function ReadyToMergeCard({
   } = useMergeStatus(sessionId);
   const [diffStats, setDiffStats] = useState<DiffStats | null>(null);
   const [justMerged, setJustMerged] = useState(false);
+  const [askingStrategy, setAskingStrategy] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isProtectedBase, setIsProtectedBase] = useState(false);
   const configVersion = useArgusConfigVersion(repoRoot ?? null);
@@ -174,15 +177,19 @@ export function ReadyToMergeCard({
     };
   }, [repoRoot, baseBranch, configVersion]);
 
-  const handleMerge = useCallback(async () => {
-    const ok = await performMerge();
-    // Only flip to the "Merged" state when the backend actually reports
-    // success — otherwise the failure leaves the merge button visible so the
-    // user can try again (or resolve conflicts).
-    if (ok) {
-      setJustMerged(true);
-    }
-  }, [performMerge]);
+  const handleMerge = useCallback(
+    async (strategy: SessionMergeStrategy) => {
+      setAskingStrategy(false);
+      const ok = await performMerge(strategy);
+      // Only flip to the "Merged" state when the backend actually reports
+      // success — otherwise the failure leaves the merge button visible so the
+      // user can try again (or resolve conflicts).
+      if (ok) {
+        setJustMerged(true);
+      }
+    },
+    [performMerge],
+  );
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -370,13 +377,22 @@ export function ReadyToMergeCard({
             Open PR
           </button>
         ))}
+      {askingStrategy && baseBranch && (
+        <MergeStrategyDialog
+          baseBranch={baseBranch}
+          commitsAhead={commitsAhead}
+          sessionBranch={sessionBranch ?? "this branch"}
+          onCancel={() => setAskingStrategy(false)}
+          onChoose={handleMerge}
+        />
+      )}
       {baseBranch && !hasConflicts && hasWork && !isProtectedBase && (
         <button
           className={`${styles.actionBtn} ${styles.merge}`}
           disabled={!canMerge}
           title={`Merge into ${baseBranch}`}
           type="button"
-          onClick={handleMerge}
+          onClick={() => setAskingStrategy(true)}
         >
           <Icons.MergeIcon size={11} />
           {isMerging ? "Merging…" : "Merge"}

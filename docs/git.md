@@ -117,6 +117,28 @@ add it to that stash.
 - **Default branches** (`main`, `master`, project-configured) sort to
   the top.
 
+### Landing a session on its base branch
+
+The merge button (in the runtime bar, the changes panel, and the home
+screen's "Ready to merge" card) always asks how the session's commits
+should land:
+
+- **Keep every commit** — history lands exactly as the agent wrote it.
+- **Squash into one commit** — the whole session becomes a single
+  conventional commit.
+
+Neither is a default, and nothing is remembered between merges: a squash
+rewrites history, so it is only ever done when asked for. From the
+command palette the two are separate entries. Either way the base branch
+fast-forwards onto the result, so history stays linear.
+
+The base a session merges into is set when the session is created and
+can be changed later — on desktop from the session's home screen, on the
+phone from **Land this work → Base branch → Change**. It must be a local
+branch: a remote-tracking ref like `origin/main` cannot be
+fast-forwarded, and a session pointed at one is repaired automatically
+to the local branch behind it.
+
 ### Renaming the session branch
 
 In session scope, the toolbar offers **Rename branch**. Argus renames

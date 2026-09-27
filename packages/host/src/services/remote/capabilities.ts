@@ -113,6 +113,7 @@ import {
   gitCommit,
   mergeSessionIntoBase,
   pushSessionBranch,
+  setSessionBaseBranch,
   stageAll,
 } from "../session/sessionOps";
 import { computeSessionDiffStats } from "../session/watcher";
@@ -343,6 +344,7 @@ function toRemoteSession(s: Session): RemoteSession {
     kind: s.kind,
     branch: s.branch,
     display_name: s.display_name ?? null,
+    base_branch: s.base_branch ?? null,
     status: sessionStatus(s.status),
     availability: s.availability ?? "available",
     // The drive's name, not its mount point — this schema keeps host paths
@@ -1480,6 +1482,14 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { accepted: true };
   },
 
+  "sessions.set_base_branch": async (params) => {
+    const { id, base_branch } = parse("sessions.set_base_branch", params);
+    requireSession(id);
+    await control(() => setSessionBaseBranch(id, base_branch));
+
+    return { accepted: true };
+  },
+
   "sessions.git_status": async (params) => {
     const { session_id } = parse("sessions.git_status", params);
     requireSession(session_id);
@@ -1659,11 +1669,11 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { blockers };
   },
   "sessions.merge_base": async (params) => {
-    const { session_id } = parse("sessions.merge_base", params);
+    const { session_id, strategy } = parse("sessions.merge_base", params);
     requireSession(session_id);
     // The host refuses a protected base branch and pre-checks for conflicts,
     // so nothing extra is gated here.
-    await control(() => mergeSessionIntoBase(session_id));
+    await control(() => mergeSessionIntoBase(session_id, strategy));
 
     return { accepted: true };
   },

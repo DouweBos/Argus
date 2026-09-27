@@ -391,18 +391,34 @@ function CommandPaletteContent() {
       );
 
       if (selectedSession.kind === "worktree") {
-        out.push({
-          group: "session",
-          id: "ws:merge",
-          title: "Merge into base branch",
-          sublabel: `${selectedSession.branch} → ${selectedSession.base_branch ?? "base"}`,
-          icon: <Icons.ArgusLogo size={13} />,
-          keywords: "merge base branch worktree",
-          run: () => {
-            closeCommandPalette();
-            mergeSessionIntoBase(wsId).catch(() => {});
+        // Two entries rather than one: the palette has nowhere to ask, and
+        // squashing someone's history without being told to is not on.
+        out.push(
+          {
+            group: "session",
+            id: "ws:merge-keep",
+            title: "Merge into base branch (keep commits)",
+            sublabel: `${selectedSession.branch} → ${selectedSession.base_branch ?? "base"}`,
+            icon: <Icons.ArgusLogo size={13} />,
+            keywords: "merge base branch worktree keep commits",
+            run: () => {
+              closeCommandPalette();
+              mergeSessionIntoBase(wsId, "keep").catch(() => {});
+            },
           },
-        });
+          {
+            group: "session",
+            id: "ws:merge-squash",
+            title: "Merge into base branch (squash)",
+            sublabel: `${selectedSession.branch} → ${selectedSession.base_branch ?? "base"}`,
+            icon: <Icons.ArgusLogo size={13} />,
+            keywords: "merge base branch worktree squash",
+            run: () => {
+              closeCommandPalette();
+              mergeSessionIntoBase(wsId, "squash").catch(() => {});
+            },
+          },
+        );
       }
 
       out.push(

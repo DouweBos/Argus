@@ -4,6 +4,7 @@ import { useArgusConfigVersion } from "../../../hooks/useArgusConfigVersion";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { readArgusConfig } from "../../../lib/ipc";
 import { useSessions } from "../../../stores/sessionStore";
+import { MergeStrategyDialog } from "../../shared/MergeStrategyDialog";
 import styles from "./MergeAction.module.css";
 
 interface MergeActionProps {
@@ -18,6 +19,7 @@ export function MergeAction({ sessionId }: MergeActionProps) {
   );
   const { conflicts, hasStaged, commitsAhead, isMerging, handleMerge } =
     useMergeStatus(sessionId);
+  const [asking, setAsking] = useState(false);
 
   const [isProtectedBase, setIsProtectedBase] = useState(false);
   const configVersion = useArgusConfigVersion(session?.repo_root ?? null);
@@ -100,20 +102,32 @@ export function MergeAction({ sessionId }: MergeActionProps) {
     : `Merge ${session.branch} into ${session.base_branch}`;
 
   return (
-    <div className={styles.row} data-tone={tone}>
-      <span className={styles.status}>{label}</span>
-      <Button
-        disabled={!canMerge}
-        leading={<Icons.MergeIcon size={11} />}
-        size="sm"
-        variant="primary"
-        title={title}
-        onClick={() => {
-          handleMerge();
-        }}
-      >
-        {isMerging ? "Merging..." : `Merge → ${session.base_branch}`}
-      </Button>
-    </div>
+    <>
+      {asking && (
+        <MergeStrategyDialog
+          baseBranch={session.base_branch}
+          commitsAhead={commitsAhead}
+          sessionBranch={session.branch}
+          onCancel={() => setAsking(false)}
+          onChoose={(strategy) => {
+            setAsking(false);
+            handleMerge(strategy);
+          }}
+        />
+      )}
+      <div className={styles.row} data-tone={tone}>
+        <span className={styles.status}>{label}</span>
+        <Button
+          disabled={!canMerge}
+          leading={<Icons.MergeIcon size={11} />}
+          size="sm"
+          variant="primary"
+          title={title}
+          onClick={() => setAsking(true)}
+        >
+          {isMerging ? "Merging..." : `Merge → ${session.base_branch}`}
+        </Button>
+      </div>
+    </>
   );
 }
