@@ -19,7 +19,7 @@ import {
 import { useRouteProposalId } from "../../../lib/routeHooks";
 import {
   openAutomation,
-  openAutomationRun,
+  openRunFor,
   useAutomations,
 } from "../../../stores/automationStore";
 import {
@@ -160,9 +160,7 @@ export function ProposalDetailScreen() {
       <div className={styles.provenance}>
         <span className={styles.label}>Came from</span>
         <Button
-          onClick={() =>
-            openAutomationRun(proposal.automation_id, proposal.run_id)
-          }
+          onClick={() => openRunFor(proposal.automation_id, proposal.run_id)}
           size="sm"
           variant="ghost"
         >

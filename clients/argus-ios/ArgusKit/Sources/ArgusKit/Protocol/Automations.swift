@@ -499,6 +499,8 @@ public struct RemoteProposal: Codable, Hashable, Sendable, Identifiable {
   public var id: String
   public var automationId: String
   public var automationName: String
+  /// The run that raised it. Absent from computers older than this field.
+  public var runId: String?
   public var title: String
   /// What the work is, in markdown.
   public var summary: String
@@ -519,6 +521,7 @@ public struct RemoteProposal: Codable, Hashable, Sendable, Identifiable {
     case id, title, summary, rationale, confidence, cta, status, project
     case automationId = "automation_id"
     case automationName = "automation_name"
+    case runId = "run_id"
     case sourceLabel = "source_label"
     case sourceUrl = "source_url"
     case sessionId = "session_id"

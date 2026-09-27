@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   ArrowUpRightIcon,
   CheckIcon,
+  HistoryIcon,
   PlayIcon,
   TrashIcon,
 } from "../../icons/Icons";
@@ -39,6 +40,8 @@ export interface ProposalCardProps {
   onDismiss: (reason: string) => void;
   /** Absent when the proposal came from no external work item. */
   onOpenSource?: () => void;
+  /** Open the run that raised it — where its report and feedback live. */
+  onOpenRun?: () => void;
   /**
    * Hand the note back to the automation instead of to an agent: the proposal
    * is close but not right, and the next run should do better. Omit and the
@@ -99,6 +102,7 @@ export function ProposalCard({
   decided,
   meta,
   onDismiss,
+  onOpenRun,
   onOpenSource,
   onRequestRevision,
   onResolve,
@@ -401,6 +405,17 @@ export function ProposalCard({
               Dismiss
             </Button>
             <span className={styles.spacer} />
+            {onOpenRun && (
+              <Button
+                disabled={busy}
+                leading={<HistoryIcon size={11} />}
+                onClick={onOpenRun}
+                size="sm"
+                variant="ghost"
+              >
+                View run
+              </Button>
+            )}
             {onOpenSource && (
               <Button
                 disabled={busy}

@@ -6,7 +6,7 @@ import {
   PROPOSAL_ACTION_TONES,
   proposalProjectName,
 } from "../../../lib/proposals";
-import { useAutomations } from "../../../stores/automationStore";
+import { openRunFor, useAutomations } from "../../../stores/automationStore";
 import { renderProposalMarkdown } from "../proposalMarkdown";
 import { useProposalActions } from "../useProposalActions";
 import styles from "./InboxScreen.module.css";
@@ -48,6 +48,9 @@ export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
               </>
             }
             onDismiss={(reason) => dismiss(proposal, reason)}
+            onOpenRun={() =>
+              openRunFor(proposal.automation_id, proposal.run_id)
+            }
             onOpenSource={
               source
                 ? () => {

@@ -51,8 +51,12 @@ vi.mock("../lib/ipc", () => ({
 
 vi.mock("../lib/routeHooks", () => ({ useRouteHostId: () => "local" }));
 
+const appNavigate = vi.fn();
+vi.mock("../lib/router", () => ({ appNavigate }));
+
 const {
   getAutomationState,
+  openRunFor,
   setAutomationState,
   useAutomationRuns,
   useAutomationsSync,
@@ -201,5 +205,32 @@ describe("automation store", () => {
     const firstScratch = scratch.result.current;
     scratch.rerender();
     expect(scratch.result.current).toBe(firstScratch);
+  });
+
+  it("opens a proposal's run on the route its kind lives at", () => {
+    setAutomationState({
+      runs: [
+        run("r-saved", "succeeded"),
+        {
+          ...run("r-quick", "succeeded"),
+          automation_id: "scratch-r-quick",
+          scratch: { name: "One-off" } as AutomationRun["scratch"],
+        },
+      ],
+    });
+
+    openRunFor("a-1", "r-saved");
+    expect(appNavigate).toHaveBeenLastCalledWith({
+      view: "automations",
+      automationId: "a-1",
+      automationRunId: "r-saved",
+    });
+
+    openRunFor("scratch-r-quick", "r-quick");
+    expect(appNavigate).toHaveBeenLastCalledWith({
+      view: "automations",
+      automationQuick: true,
+      automationRunId: "r-quick",
+    });
   });
 });

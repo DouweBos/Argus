@@ -251,6 +251,19 @@ export function openQuickRun(runId: string): void {
   });
 }
 
+/**
+ * Open a run from something that only knows its ids, like a proposal. A quick
+ * run's automation id is synthetic, so it has to land on the quick-run route.
+ */
+export function openRunFor(automationId: string, runId: string): void {
+  const run = store.getState().runs.find((r) => r.id === runId);
+  if (run?.scratch) {
+    openQuickRun(runId);
+  } else {
+    openAutomationRun(automationId, runId);
+  }
+}
+
 export function openAutomationRun(automationId: string, runId: string): void {
   appNavigate({
     view: "automations",

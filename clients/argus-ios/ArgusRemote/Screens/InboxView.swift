@@ -55,6 +55,9 @@ struct InboxView: View {
               },
               onResolve: { note in
                 Task { await proposals.resolve(id: proposal.id, note: note) }
+              },
+              onOpenRun: proposal.runId.map { runId in
+                { router.push(.run(id: runId, label: proposal.automationName)) }
               })
           }
         }
@@ -92,6 +95,8 @@ struct ProposalCard: View {
   let onCleanup: () -> Void
   let onDismiss: (String?) -> Void
   let onResolve: (String?) -> Void
+  /// Nil when the computer didn't say which run raised it.
+  var onOpenRun: (() -> Void)?
 
   @State private var dismissing = false
   @State private var resolving = false
@@ -163,10 +168,18 @@ struct ProposalCard: View {
           Btn(label: "Dismiss", tone: .ghost, small: true) { dismissing = true }
         }
       }
-      if let source = proposal.sourceUrl, let url = URL(string: source) {
-        Link(proposal.sourceLabel ?? "Source", destination: url)
-          .font(.system(size: 12))
-          .foregroundStyle(theme.accent)
+      HStack(spacing: 14) {
+        if let onOpenRun {
+          Button("View run", action: onOpenRun)
+            .buttonStyle(.plain)
+            .font(.system(size: 12))
+            .foregroundStyle(theme.accent)
+        }
+        if let source = proposal.sourceUrl, let url = URL(string: source) {
+          Link(proposal.sourceLabel ?? "Source", destination: url)
+            .font(.system(size: 12))
+            .foregroundStyle(theme.accent)
+        }
       }
     }
   }
