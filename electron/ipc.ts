@@ -197,6 +197,7 @@ import {
   listPath,
 } from "@argus/host/services/file/operations";
 import { uploadSessionAttachment } from "@argus/host/services/file/uploads";
+import { branchPullRequestUrl } from "@argus/host/services/github/branchPrUrl";
 import { listGhIssues } from "@argus/host/services/github/issues";
 import {
   ghPrClose,
@@ -938,6 +939,9 @@ export function registerIpcHandlers(): void {
       startPoint: a.startPoint as string | undefined,
       checkout: a.checkout as boolean | undefined,
     }),
+  );
+  handle("git_branch_pr_url", "admin", (a) =>
+    branchPullRequestUrl(a.id as string, a.branch as string),
   );
   handle("git_delete_branch", "admin", (a) =>
     gitDeleteBranch(a.id as string, {

@@ -14,6 +14,7 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { githubSlugFromUrl } from "./slug";
 
 const execFileAsync = promisify(execFile);
 
@@ -72,11 +73,9 @@ export async function getGithubSlugs(repoRoot: string): Promise<string[]> {
       if (!url) {
         continue;
       }
-      const match = url.match(
-        /github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?\/?$/i,
-      );
-      if (match) {
-        slugs.add(`${match[1]}/${match[2]}`);
+      const slug = githubSlugFromUrl(url);
+      if (slug) {
+        slugs.add(slug);
       }
     }
 

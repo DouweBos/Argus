@@ -310,6 +310,13 @@ export const gitCreateBranch = (
   opts: { checkout?: boolean; name: string; startPoint?: string },
 ): Promise<void> => invoke("git_create_branch", { id: sessionId, ...opts });
 
+/** GitHub's "open a PR" page for a branch, or null without a GitHub remote. */
+export const gitBranchPullRequestUrl = (
+  sessionId: string,
+  branch: string,
+): Promise<string | null> =>
+  invoke("git_branch_pr_url", { id: sessionId, branch });
+
 export const gitDeleteBranch = (
   sessionId: string,
   opts: { force?: boolean; name: string },

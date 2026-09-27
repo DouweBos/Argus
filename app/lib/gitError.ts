@@ -81,3 +81,15 @@ export function rehydrateGitError(err: unknown): GitError | null {
     recovery: typeof e.recovery === "string" ? e.recovery : undefined,
   });
 }
+
+/** `git branch -d` refused because the branch has commits nowhere else. */
+export function isUnmergedBranchError(err: unknown): boolean {
+  const git = rehydrateGitError(err);
+  if (git) {
+    return /not fully merged/i.test(`${git.message} ${git.stderr ?? ""}`);
+  }
+
+  return /not fully merged/i.test(
+    err instanceof Error ? err.message : String(err),
+  );
+}
