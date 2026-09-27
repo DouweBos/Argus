@@ -35,7 +35,7 @@ extension AppStore {
       activeClaudeAccountId = id
       await refreshClaudeAccounts()
     } catch {
-      report(error)
+      report(error, scope: "claude_accounts")
     }
   }
 
@@ -56,7 +56,7 @@ extension AppStore {
       await refreshClaudeAccounts()
     } catch {
       claudeLogin = nil
-      report(error)
+      report(error, scope: "claude_accounts")
     }
   }
 
@@ -69,7 +69,7 @@ extension AppStore {
       claudeAccounts?.removeAll { $0.id == id }
       await refreshClaudeAccounts()
     } catch {
-      report(error)
+      report(error, scope: "claude_accounts")
     }
   }
 
@@ -92,7 +92,7 @@ extension AppStore {
         as: IgnoredResult.self)
     } catch {
       await refreshClaudeAccounts()
-      report(error)
+      report(error, scope: "claude_accounts")
     }
   }
 
@@ -116,7 +116,7 @@ extension AppStore {
       openLoginURL(result.url)
     } catch {
       claudeLogin = nil
-      report(error)
+      report(error, scope: "claude_accounts")
     }
   }
 
@@ -154,7 +154,7 @@ extension AppStore {
           pending: false, needsCode: false, ok: false, error: result.error)
       }
     } catch {
-      report(error)
+      report(error, scope: "claude_accounts")
     }
   }
 
