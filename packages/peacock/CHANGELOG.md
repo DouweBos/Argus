@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.21.0
+
+### Minor Changes
+
+- 719f4be: Proposals in the inbox have a View run button that opens the automation run that raised them, so you can read its report or leave feedback without hunting for it — on desktop and on your phone.
+
 ## 0.20.0
 
 ### Minor Changes
