@@ -18,6 +18,20 @@ enum TelemetryEvent {
     case permissionMode = "permission_mode"
   }
 
+  /// What was done to the Claude accounts this computer has signed in.
+  enum AccountAction: String {
+    case select
+    case add
+    case remove
+    case rename
+  }
+
+  /// What happened to an automation's memory.
+  enum MemoryAction: String {
+    case save
+    case delete
+  }
+
   /// How work leaves a session.
   enum LandAction: String {
     case commit
@@ -36,6 +50,10 @@ enum TelemetryEvent {
   case agentControlled(action: AgentAction)
   case workLanded(action: LandAction, success: Bool)
   case deviceWatched(durationMs: Int, interacted: Bool)
+  case claudeAccountChanged(action: AccountAction)
+  case memoryEdited(action: MemoryAction)
+  /// The inbox's shortcut into the run a proposal came out of.
+  case proposalOpenedAsRun
   /// `message` is scrubbed and truncated by `Telemetry` before it is sent.
   case appError(scope: String, message: String)
   /// Shared with the desktop on purpose: it is the same consent signal.
@@ -54,6 +72,9 @@ enum TelemetryEvent {
     case .agentControlled: "ios_agent_controlled"
     case .workLanded: "ios_work_landed"
     case .deviceWatched: "ios_device_watched"
+    case .claudeAccountChanged: "ios_claude_account_changed"
+    case .memoryEdited: "ios_memory_edited"
+    case .proposalOpenedAsRun: "ios_proposal_opened"
     case .appError: "ios_app_error"
     case .telemetryEnabled: "telemetry_enabled"
     case .telemetryDisabled: "telemetry_disabled"
@@ -62,7 +83,7 @@ enum TelemetryEvent {
 
   var properties: [String: Any] {
     switch self {
-    case .launched, .telemetryEnabled, .telemetryDisabled:
+    case .launched, .telemetryEnabled, .telemetryDisabled, .proposalOpenedAsRun:
       [:]
     case .paired(let endpointKind, let hasControl):
       ["endpoint_kind": endpointKind, "has_control": hasControl]
@@ -82,6 +103,10 @@ enum TelemetryEvent {
       ["action": action.rawValue, "success": success]
     case .deviceWatched(let durationMs, let interacted):
       ["duration_ms": durationMs, "interacted": interacted]
+    case .claudeAccountChanged(let action):
+      ["action": action.rawValue]
+    case .memoryEdited(let action):
+      ["action": action.rawValue]
     case .appError(let scope, let message):
       ["scope": scope, "message": String(Telemetry.scrub(message).prefix(2000))]
     }

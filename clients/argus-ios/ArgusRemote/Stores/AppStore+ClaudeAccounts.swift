@@ -27,6 +27,7 @@ extension AppStore {
   /// Make this the account every new agent authenticates as. Running agents
   /// keep theirs — the switch only takes effect on the next spawn.
   func setActiveClaudeAccount(id: String) async {
+    Telemetry.capture(.claudeAccountChanged(action: .select))
     guard let transport else { return }
     struct Params: Encodable { let id: String }
     do {
@@ -45,6 +46,7 @@ extension AppStore {
   /// lands on isn't known until the refresh arrives, so the list simply fills
   /// in — `claude_accounts.add` is the branch for a brand new one.
   func addClaudeAccount(useConsole: Bool) async {
+    Telemetry.capture(.claudeAccountChanged(action: .add))
     guard let transport else { return }
     struct Params: Encodable { let use_console: Bool }
     struct Result: Decodable { let url: String }
@@ -61,6 +63,7 @@ extension AppStore {
   }
 
   func removeClaudeAccount(id: String) async {
+    Telemetry.capture(.claudeAccountChanged(action: .remove))
     guard let transport else { return }
     struct Params: Encodable { let id: String }
     do {
@@ -74,6 +77,7 @@ extension AppStore {
   }
 
   func renameClaudeAccount(id: String, label: String) async {
+    Telemetry.capture(.claudeAccountChanged(action: .rename))
     guard let transport else { return }
     let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return }

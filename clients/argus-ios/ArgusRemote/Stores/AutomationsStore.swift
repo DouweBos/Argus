@@ -222,6 +222,7 @@ final class AutomationsStore {
             name: memory.name, description: memory.description, type: memory.type,
             body: memory.body, previous_name: previousName)),
         as: IgnoredResult.self)
+      Telemetry.capture(.memoryEdited(action: .save))
       error = nil
       await loadMemories(automationId: automationId)
 
@@ -244,6 +245,7 @@ final class AutomationsStore {
       try await transport.request(
         .automationsDeleteMemory, Params(automation_id: automationId, name: name),
         as: IgnoredResult.self)
+      Telemetry.capture(.memoryEdited(action: .delete))
       memoriesById[automationId]?.removeAll { $0.name == name }
 
       return true
