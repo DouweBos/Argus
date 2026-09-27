@@ -54,6 +54,7 @@ final class ProposalsStore {
     do {
       let result = try await transport.request(
         .proposalsAccept, Params(proposal_id: id), as: Result.self)
+      Telemetry.capture(.proposalHandled(action: .accept))
       // Building the worktree is slow; drop the card now rather than leaving
       // it sitting there looking undecided.
       proposals.removeAll { $0.id == id }
@@ -76,6 +77,7 @@ final class ProposalsStore {
     do {
       try await transport.request(
         .proposalsDismiss, Params(proposal_id: id, reason: reason), as: IgnoredResult.self)
+      Telemetry.capture(.proposalHandled(action: .dismiss))
     } catch {
       fail("Couldn't dismiss that proposal", error)
     }
@@ -95,6 +97,7 @@ final class ProposalsStore {
     do {
       try await transport.request(
         .proposalsResolve, Params(proposal_id: id, note: note), as: IgnoredResult.self)
+      Telemetry.capture(.proposalHandled(action: .resolve))
     } catch {
       fail("Couldn't mark that proposal done", error)
     }
@@ -110,6 +113,7 @@ final class ProposalsStore {
     do {
       try await transport.request(
         .proposalsPerformCleanup, Params(proposal_id: id), as: IgnoredResult.self)
+      Telemetry.capture(.proposalHandled(action: .cleanup))
     } catch {
       fail("Couldn't run that cleanup", error)
     }

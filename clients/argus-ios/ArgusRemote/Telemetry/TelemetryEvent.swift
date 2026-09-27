@@ -32,6 +32,47 @@ enum TelemetryEvent {
     case delete
   }
 
+  /// What was done to an automation's definition.
+  enum AutomationAction: String {
+    case create
+    case save
+    case delete
+    case enable
+    case disable
+    case revisePlaybook = "revise_playbook"
+  }
+
+  /// What was done to a run.
+  enum RunAction: String {
+    case start
+    case startScratch = "start_scratch"
+    case cancel
+    case feedback
+    case saveScratch = "save_scratch"
+  }
+
+  /// How an inbox proposal was answered.
+  enum ProposalAction: String {
+    case accept
+    case dismiss
+    case resolve
+    case cleanup
+  }
+
+  /// What was done to a pull request.
+  enum PullRequestAction: String {
+    case open
+    case merge
+    case comment
+  }
+
+  /// What was done to a branch.
+  enum BranchAction: String {
+    case checkout
+    case create
+    case delete
+  }
+
   /// How work leaves a session.
   enum LandAction: String {
     case commit
@@ -51,6 +92,13 @@ enum TelemetryEvent {
   case workLanded(action: LandAction, success: Bool)
   case deviceWatched(durationMs: Int, interacted: Bool)
   case claudeAccountChanged(action: AccountAction)
+  case automationEdited(action: AutomationAction)
+  case runActed(action: RunAction)
+  case proposalHandled(action: ProposalAction)
+  case pullRequestActed(action: PullRequestAction)
+  case branchActed(action: BranchAction)
+  /// `target` says whether the session's display name or its branch moved.
+  case sessionRenamed(target: String)
   case memoryEdited(action: MemoryAction)
   /// The inbox's shortcut into the run a proposal came out of.
   case proposalOpenedAsRun
@@ -73,6 +121,12 @@ enum TelemetryEvent {
     case .workLanded: "ios_work_landed"
     case .deviceWatched: "ios_device_watched"
     case .claudeAccountChanged: "ios_claude_account_changed"
+    case .automationEdited: "ios_automation_edited"
+    case .runActed: "ios_run_acted"
+    case .proposalHandled: "ios_proposal_handled"
+    case .pullRequestActed: "ios_pull_request_acted"
+    case .branchActed: "ios_branch_acted"
+    case .sessionRenamed: "ios_session_renamed"
     case .memoryEdited: "ios_memory_edited"
     case .proposalOpenedAsRun: "ios_proposal_opened"
     case .appError: "ios_app_error"
@@ -105,6 +159,18 @@ enum TelemetryEvent {
       ["duration_ms": durationMs, "interacted": interacted]
     case .claudeAccountChanged(let action):
       ["action": action.rawValue]
+    case .automationEdited(let action):
+      ["action": action.rawValue]
+    case .runActed(let action):
+      ["action": action.rawValue]
+    case .proposalHandled(let action):
+      ["action": action.rawValue]
+    case .pullRequestActed(let action):
+      ["action": action.rawValue]
+    case .branchActed(let action):
+      ["action": action.rawValue]
+    case .sessionRenamed(let target):
+      ["target": target]
     case .memoryEdited(let action):
       ["action": action.rawValue]
     case .appError(let scope, let message):

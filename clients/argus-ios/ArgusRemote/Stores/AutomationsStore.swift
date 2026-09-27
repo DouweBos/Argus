@@ -125,6 +125,7 @@ final class AutomationsStore {
           try await transport.request(
             .automationsCreate, CreateParams(input: input), as: SaveResult.self)
         }
+      Telemetry.capture(.automationEdited(action: id == nil ? .create : .save))
       detailById[result.detail.id] = result.detail
       await refresh()
 
@@ -152,6 +153,7 @@ final class AutomationsStore {
         .automationsRevisePlaybook,
         Params(playbook: playbook, instruction: instruction, name: name),
         as: Result.self)
+      Telemetry.capture(.automationEdited(action: .revisePlaybook))
       error = nil
 
       return result.playbook
@@ -174,6 +176,7 @@ final class AutomationsStore {
         .automationsSetEnabled, Params(automation_id: id, enabled: enabled),
         as: Result.self
       ).automation
+      Telemetry.capture(.automationEdited(action: enabled ? .enable : .disable))
       if let index = automations.firstIndex(where: { $0.id == id }) {
         automations[index] = updated
       }
@@ -263,6 +266,7 @@ final class AutomationsStore {
     do {
       try await transport.request(
         .automationsDelete, Params(automation_id: id), as: IgnoredResult.self)
+      Telemetry.capture(.automationEdited(action: .delete))
       automations.removeAll { $0.id == id }
       detailById.removeValue(forKey: id)
 
@@ -312,6 +316,7 @@ final class AutomationsStore {
         .automationsRunNow, Params(automation_id: automationId),
         as: Result.self
       ).run
+      Telemetry.capture(.runActed(action: .start))
       runs.insert(run, at: 0)
     } catch {
       fail("Couldn't start that automation", error)
@@ -344,6 +349,7 @@ final class AutomationsStore {
           source_ids: sourceIds, model: model, guardrails: guardrails),
         as: Result.self
       ).run
+      Telemetry.capture(.runActed(action: .startScratch))
       runs.insert(run, at: 0)
       await refresh()
 
@@ -372,6 +378,7 @@ final class AutomationsStore {
         Params(run_id: runId, name: name, enabled: false),
         as: Result.self
       ).automation
+      Telemetry.capture(.runActed(action: .saveScratch))
       await refresh()
 
       return automation.id
@@ -397,6 +404,7 @@ final class AutomationsStore {
         .automationsRunFeedback,
         Params(run_id: id, note: note, allow_clearing: allowClearing),
         as: IgnoredResult.self)
+      Telemetry.capture(.runActed(action: .feedback))
       error = nil
       await loadRun(id: id)
 
@@ -411,6 +419,7 @@ final class AutomationsStore {
   func cancelRun(id: String) async {
     guard let transport = app.transport else { return }
     struct Params: Encodable { let run_id: String }
+    Telemetry.capture(.runActed(action: .cancel))
     try? await transport.request(
       .automationsCancelRun, Params(run_id: id), as: IgnoredResult.self)
     await refresh()
