@@ -9,6 +9,14 @@ import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { git } from "./git";
 import { assertWorktreePresent } from "./volumeAvailability";
 
+/**
+ * What a merge does to the session's commits before the base fast-forwards
+ * onto them. `squash` folds them into one conventional commit; `keep` lands
+ * them as they were written. The caller always decides — a silent squash
+ * rewrites history nobody asked it to.
+ */
+export type MergeStrategy = "keep" | "squash";
+
 // ---------------------------------------------------------------------------
 // check_merge_conflicts
 // ---------------------------------------------------------------------------
@@ -120,8 +128,12 @@ export async function mergeSessionIntoBase(
   wsPath: string,
   sessionBranch: string,
   baseBranch: string,
+  strategy: MergeStrategy = "squash",
 ): Promise<void> {
   assertWorktreePresent(wsPath);
+  // Before anything mutates the branch: a base that can't be fast-forwarded
+  // used to be discovered after the squash had already rewritten history.
+  await assertLocalBranch(repoRoot, baseBranch);
 
   await commitStagedChanges(wsPath, sessionBranch);
 
@@ -159,8 +171,9 @@ export async function mergeSessionIntoBase(
     }
   }
 
-  // Squash all session commits into a single conventional commit.
-  await squashSessionCommits(wsPath, sessionBranch, baseBranch);
+  if (strategy === "squash") {
+    await squashSessionCommits(wsPath, sessionBranch, baseBranch);
+  }
 
   await fastForwardBase(repoRoot, sessionBranch, baseBranch);
 }
@@ -297,10 +310,12 @@ export async function attemptMergeSession(
   wsPath: string,
   sessionBranch: string,
   baseBranch: string,
+  strategy: MergeStrategy = "squash",
 ): Promise<
   { state: "conflicted"; conflicting_files: string[] } | { state: "merged" }
 > {
   assertWorktreePresent(wsPath);
+  await assertLocalBranch(repoRoot, baseBranch);
 
   // Refuse to start a new attempt while another is in progress.
   const existing = await detectInProgressMerge(wsPath);
@@ -326,10 +341,12 @@ export async function attemptMergeSession(
     }
   }
 
-  await squashSessionCommits(wsPath, sessionBranch, baseBranch);
+  if (strategy === "squash") {
+    await squashSessionCommits(wsPath, sessionBranch, baseBranch);
+  }
   await fastForwardBase(repoRoot, sessionBranch, baseBranch);
 
-  telemetryCapture("session_merged", { phase: "attempt" });
+  telemetryCapture("session_merged", { phase: "attempt", strategy });
 
   return { state: "merged" };
 }
@@ -345,6 +362,7 @@ export async function continueSessionMerge(
   wsPath: string,
   sessionBranch: string,
   baseBranch: string,
+  strategy: MergeStrategy = "squash",
 ): Promise<
   | { state: "conflicted"; conflicting_files: string[] }
   | { state: "merged" }
@@ -354,6 +372,7 @@ export async function continueSessionMerge(
   if (!inProgress) {
     return { state: "no-merge-in-progress" };
   }
+  await assertLocalBranch(repoRoot, baseBranch);
 
   // Stage everything in the worktree so the resolution lands on the rebase
   // commit. Untracked files are left alone — the orchestrator can git-add
@@ -390,10 +409,12 @@ export async function continueSessionMerge(
     }
   }
 
-  await squashSessionCommits(wsPath, sessionBranch, baseBranch);
+  if (strategy === "squash") {
+    await squashSessionCommits(wsPath, sessionBranch, baseBranch);
+  }
   await fastForwardBase(repoRoot, sessionBranch, baseBranch);
 
-  telemetryCapture("session_merged", { phase: "continue" });
+  telemetryCapture("session_merged", { phase: "continue", strategy });
 
   return { state: "merged" };
 }

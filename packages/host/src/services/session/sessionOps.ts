@@ -26,6 +26,7 @@ import {
   getSessionMergeStatus as doGetSessionMergeStatus,
   mergeSessionIntoBase as doMergeSessionIntoBase,
   rebaseSessionOnBase as doRebaseSessionOnBase,
+  type MergeStrategy,
 } from "./merge";
 import { loadMetadata, saveMetadata } from "./metadata";
 import { defaultArgusConfig, type ArgusConfig } from "./models";
@@ -56,6 +57,29 @@ function isRemoteOnlyRef(repoRoot: string, name: string): Promise<boolean> {
     check(`refs/heads/${name}`),
     check(`refs/remotes/${name}`),
   ]).then(([local, remote]) => !local && remote);
+}
+
+/**
+ * A base of `origin/main` can't be fast-forwarded — `git branch -f origin/main`
+ * would invent a local branch with a slash in it. Sessions created with one
+ * (the create call took it verbatim) are repaired here, in place, rather than
+ * failing forever: the local branch it tracks is what was meant.
+ *
+ * Returns the base to merge into, or throws when nothing local matches.
+ */
+async function healBaseBranch(id: string, baseBranch: string): Promise<string> {
+  const ws = appState.sessions.get(id);
+  if (!ws || !(await isRemoteOnlyRef(ws.repo_root, baseBranch))) {
+    return baseBranch;
+  }
+  const local = baseBranch.split("/").slice(1).join("/");
+  if (!local) {
+    throw `"${baseBranch}" is a remote-tracking ref with no local branch behind it.`;
+  }
+  await setSessionBaseBranch(id, local);
+  info(`healBaseBranch: ${id} ${baseBranch} -> ${local}`);
+
+  return local;
 }
 
 /** Look up a session's path by ID, or throw. */
@@ -1045,7 +1069,10 @@ export async function getSessionMergeBlockers(id: string): Promise<string[]> {
 }
 
 /** Merge session's branch into its base branch. */
-export async function mergeSessionIntoBase(id: string): Promise<void> {
+export async function mergeSessionIntoBase(
+  id: string,
+  strategy: MergeStrategy = "squash",
+): Promise<void> {
   const ws = appState.sessions.get(id);
   if (!ws) {
     throw `Session not found: ${id}`;
@@ -1059,20 +1086,24 @@ export async function mergeSessionIntoBase(id: string): Promise<void> {
       `Push this workspace's branch and open a pull request instead.`
     );
   }
+  const base = await healBaseBranch(id, ws.base_branch);
 
   await withGitLock(ws.path, () =>
-    doMergeSessionIntoBase(ws.repo_root, ws.path, ws.branch, ws.base_branch!),
+    doMergeSessionIntoBase(ws.repo_root, ws.path, ws.branch, base, strategy),
   );
 
   emitHostEvent("session:merged", {
     sessionId: id,
     branch: ws.branch,
-    baseBranch: ws.base_branch,
+    baseBranch: base,
   });
 }
 
 /** Resumable-merge entrypoint: attempt rebase, leaving worktree paused on conflict. */
-export async function attemptSessionMerge(id: string) {
+export async function attemptSessionMerge(
+  id: string,
+  strategy: MergeStrategy = "squash",
+) {
   const ws = appState.sessions.get(id);
   if (!ws) {
     throw `Session not found: ${id}`;
@@ -1091,7 +1122,8 @@ export async function attemptSessionMerge(id: string) {
     ws.repo_root,
     ws.path,
     ws.branch,
-    ws.base_branch,
+    await healBaseBranch(id, ws.base_branch),
+    strategy,
   );
 
   if (result.state === "merged") {
@@ -1106,7 +1138,10 @@ export async function attemptSessionMerge(id: string) {
 }
 
 /** Continue an in-progress session merge after the orchestrator wrote resolutions. */
-export async function continueSessionMerge(id: string) {
+export async function continueSessionMerge(
+  id: string,
+  strategy: MergeStrategy = "squash",
+) {
   const ws = appState.sessions.get(id);
   if (!ws) {
     throw `Session not found: ${id}`;
@@ -1118,7 +1153,8 @@ export async function continueSessionMerge(id: string) {
     ws.repo_root,
     ws.path,
     ws.branch,
-    ws.base_branch,
+    await healBaseBranch(id, ws.base_branch),
+    strategy,
   );
 
   if (result.state === "merged") {
