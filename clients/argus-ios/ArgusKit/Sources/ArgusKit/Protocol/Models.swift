@@ -82,6 +82,8 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
   public var title: String?
   public var status: RemoteAgentState
   public var model: String?
+  /// Context window the CLI last reported, in tokens.
+  public var contextWindow: Int?
   public var permissionMode: String?
   public var parentAgentId: String?
   public var createdAt: Double?
@@ -96,6 +98,7 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
     case sessionLabel = "session_label"
     case projectName = "project_name"
     case title, status, model
+    case contextWindow = "context_window"
     case permissionMode = "permission_mode"
     case parentAgentId = "parent_agent_id"
     case createdAt = "created_at"

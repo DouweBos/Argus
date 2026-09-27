@@ -54,6 +54,7 @@ import {
   stopAgent,
 } from "../agent/agentService";
 import { loadConversation, loadHistoryIndex } from "../agent/chatHistory";
+import { knownContextWindow } from "../agent/contextWindow";
 import {
   enqueueMessage,
   listQueue,
@@ -442,6 +443,7 @@ export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
     title: agentTitle(a.agentId),
     status: a.status,
     model: a.model,
+    context_window: a.contextWindow ?? knownContextWindow(a.resolvedModel),
     permission_mode: a.permissionMode ?? null,
     parent_agent_id: a.parentAgentId,
     created_at: a.createdAt,

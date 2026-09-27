@@ -44,6 +44,8 @@ export const RemoteAgentStatus = z.object({
   title: z.string().nullable().optional(),
   status: z.enum(["error", "idle", "requires_action", "running", "stopped"]),
   model: z.string().nullable().optional(),
+  /** Context window in tokens as the CLI last reported it; null before the first turn ends. */
+  context_window: z.number().nullable().optional(),
   /** Current permission mode, so a control client can show/cycle it. */
   permission_mode: z.string().nullable().optional(),
   parent_agent_id: z.string().nullable().optional(),

@@ -1137,6 +1137,8 @@ export type LlmStreamEvent =
     }
   | {
       duration_ms: number;
+      /** Per-model usage; each entry carries the CLI's `contextWindow`. */
+      modelUsage?: Record<string, { contextWindow?: number }>;
       result?: string;
       subtype: "error" | "success";
       total_cost_usd: number;

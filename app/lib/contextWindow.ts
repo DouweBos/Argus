@@ -1,6 +1,7 @@
 import type { TokenUsage } from "./types";
 
 const DEFAULT_CONTEXT = 200_000;
+const KNOWN_WINDOWS_KEY = "argus:context-windows";
 const ONE_MILLION_CONTEXT = 1_000_000;
 
 /** Matches a 1M-context advertisement in model id or capability metadata. */
@@ -13,7 +14,8 @@ interface ModelMeta {
 }
 
 /**
- * Best-effort max context-window size (in tokens) for a Claude model.
+ * Best-effort max context-window size (in tokens) for a Claude model, for
+ * before the CLI has reported the real one — see `resolveContextLimit`.
  *
  * Older Claude Code releases marked 1M-context variants with a `[1m]` suffix
  * on the model id (e.g. `claude-opus-4-7[1m]`). Newer models (e.g. Opus 4.8)
@@ -55,6 +57,65 @@ export function contextLimitForModel(
   }
 
   return DEFAULT_CONTEXT;
+}
+
+function readKnownWindows(): Record<string, number> {
+  if (typeof localStorage === "undefined") {
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(KNOWN_WINDOWS_KEY) ?? "{}",
+    ) as unknown;
+
+    return parsed && typeof parsed === "object"
+      ? (parsed as Record<string, number>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Remember what the CLI reported for a model, so the next agent on it shows
+ * the right window before its own first turn ends — across launches too.
+ */
+export function rememberContextWindow(model: string, size: number): void {
+  const known = readKnownWindows();
+  if (known[model] === size || typeof localStorage === "undefined") {
+    return;
+  }
+  try {
+    localStorage.setItem(
+      KNOWN_WINDOWS_KEY,
+      JSON.stringify({ ...known, [model]: size }),
+    );
+  } catch {
+    // Quota / unavailable — the guess still works.
+  }
+}
+
+/**
+ * The window to show: what this agent's CLI reported, else what it last
+ * reported for the same model, else the guess from model metadata.
+ */
+export function resolveContextLimit(opts: {
+  models?: ModelMeta[] | null;
+  reported?: number | null;
+  resolvedModel?: string | null;
+  selectedModel?: string | null;
+}): number {
+  if (opts.reported) {
+    return opts.reported;
+  }
+  const known = opts.resolvedModel
+    ? readKnownWindows()[opts.resolvedModel]
+    : undefined;
+  if (typeof known === "number" && known > 0) {
+    return known;
+  }
+
+  return contextLimitForModel(opts.selectedModel, opts.models);
 }
 
 /**

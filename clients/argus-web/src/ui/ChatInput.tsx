@@ -89,6 +89,7 @@ function ContextMeterChip({
   models: RemoteModelInfo[];
 }) {
   const messages = useAppStore((s) => s.messagesByAgent[agentId]);
+  const reported = useAppStore((s) => s.statusByAgent[agentId]?.context_window);
   const contextTokens = useMemo(() => {
     if (!messages) {
       return 0;
@@ -106,7 +107,8 @@ function ContextMeterChip({
   if (contextTokens <= 0) {
     return null;
   }
-  const contextLimit = contextLimitForModel(modelValue, models);
+  // The host relays what the CLI reported; the guess covers the first turn.
+  const contextLimit = reported ?? contextLimitForModel(modelValue, models);
   const pct = contextLimit > 0 ? (contextTokens / contextLimit) * 100 : 0;
 
   return (

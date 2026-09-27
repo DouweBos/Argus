@@ -22,7 +22,7 @@ import {
   notifyMessageSent,
 } from "../../../lib/agentEventService";
 import {
-  contextLimitForModel,
+  resolveContextLimit,
   tokensInContext,
 } from "../../../lib/contextWindow";
 import { editAndRestoreFromMessage } from "../../../lib/editRestoreChat";
@@ -207,17 +207,28 @@ export function AgentChat({
   // usage payload. Each assistant turn reports cumulative input-side tokens
   // (input + cache_read + cache_creation) plus the output tokens it emitted,
   // which together approximate the tokens now resident in context.
+  const reportedWindow = conversation?.contextWindow;
   const contextLimit = useMemo(() => {
     // Prefer the agent's selected variant (e.g. `opus[1m]`, preserved across
-    // restarts) over the resolved id from stream events (`claude-opus-4-8`),
-    // which loses the variant suffix — notably on resume. Capabilities fall
-    // back to the last-known set so resumed agents (whose live capabilities
-    // may not have arrived yet) still resolve their window.
+    // restarts) over the resolved id from stream events, which loses the
+    // variant suffix. Capabilities fall back to the last-known set so resumed
+    // agents still resolve before their live capabilities arrive.
     const selectedModel = agentSnapshot?.model ?? modelValue;
     const models = capabilitiesModels ?? getLastKnownCapabilities().models;
 
-    return contextLimitForModel(selectedModel, models);
-  }, [capabilitiesModels, modelValue, agentSnapshot?.model]);
+    return resolveContextLimit({
+      models,
+      reported: reportedWindow,
+      resolvedModel: conversation?.model,
+      selectedModel,
+    });
+  }, [
+    capabilitiesModels,
+    modelValue,
+    agentSnapshot?.model,
+    reportedWindow,
+    conversation?.model,
+  ]);
   const lastUsage = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const m = messages[i];
