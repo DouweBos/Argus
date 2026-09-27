@@ -72,6 +72,10 @@ import { simulatorPool } from "../simulator/pool";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { loadConversationByRunnerSession } from "./chatHistory";
 import { injectDeviceFlag, isConductorInvocation } from "./conductorInjection";
+import {
+  contextWindowFromModelUsage,
+  rememberContextWindow,
+} from "./contextWindow";
 import { clearQueue } from "./messageQueue";
 import { resultSubtype } from "./models";
 
@@ -714,6 +718,17 @@ function onStreamLine(agentId: string, line: string): void {
   // Heartbeat: bump last-activity on every non-blank event.
   session.lastEventAt = Date.now();
 
+  if (line.includes('"subtype":"init"')) {
+    try {
+      const parsed = JSON.parse(line) as { type?: string; model?: string };
+      if (parsed.type === "system" && parsed.model) {
+        session.resolvedModel = parsed.model;
+      }
+    } catch {
+      // Non-fatal.
+    }
+  }
+
   // Tool-use heartbeat: cheap substring gate first.
   if (line.includes('"type":"tool_use"')) {
     try {
@@ -834,8 +849,20 @@ function onStreamLine(agentId: string, line: string): void {
         result?: string;
         total_cost_usd?: number;
         duration_ms?: number;
+        modelUsage?: unknown;
       };
       if (parsed.type === "result") {
+        // Before the status change below, so the idle push carries it.
+        const reported = contextWindowFromModelUsage(
+          parsed.modelUsage,
+          session.resolvedModel,
+        );
+        if (reported) {
+          session.contextWindow = reported;
+          if (session.resolvedModel) {
+            rememberContextWindow(session.resolvedModel, reported);
+          }
+        }
         session.resultSummary = {
           subtype: resultSubtype(parsed),
           result: parsed.result,

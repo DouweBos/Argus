@@ -91,7 +91,8 @@ struct ChatInputView: View {
         if contextTokens > 0 {
           ContextMeter(
             tokens: contextTokens,
-            limit: ContextWindow.limit(forModel: status?.model, capabilities: capabilities))
+            limit: status?.contextWindow
+              ?? ContextWindow.limit(forModel: status?.model, capabilities: capabilities))
         }
         Chip(label: modelLabel, icon: Icon.agent) { picker = .model }
         Chip(

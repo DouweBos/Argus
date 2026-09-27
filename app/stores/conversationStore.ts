@@ -8,6 +8,8 @@ import type {
   TokenUsage,
 } from "../lib/types";
 import { create } from "zustand";
+import { contextWindowFromModelUsage } from "@argus/host/services/agent/contextWindow";
+import { rememberContextWindow } from "../lib/contextWindow";
 import { persistLastKnownCapabilities } from "../lib/lastKnownCapabilities";
 
 export interface TodoItem {
@@ -106,6 +108,8 @@ export interface ConversationMessage {
 export interface AgentConversation {
   /** Rich capabilities from the initialize control_request response. */
   capabilities?: AgentCapabilities | null;
+  /** Context window the CLI reported on its last `result`, in tokens. */
+  contextWindow?: number;
   /** Tracks the type of the most recent Claude CLI event for thinking-state derivation. */
   lastEventType?: string;
   messages: ConversationMessage[];
@@ -838,6 +842,21 @@ export function addUserMessage(
   });
 }
 
+function reportedContextWindow(
+  event: Extract<LlmStreamEvent, { type: "result" }>,
+  existing: AgentConversation,
+): number | undefined {
+  const size = contextWindowFromModelUsage(event.modelUsage, existing.model);
+  if (!size) {
+    return existing.contextWindow;
+  }
+  if (existing.model) {
+    rememberContextWindow(existing.model, size);
+  }
+
+  return size;
+}
+
 export function appendEvent(agentId: string, event: LlmStreamEvent) {
   conversationStore.setState((state) => {
     const existing = state.conversations[agentId] ?? emptyConversation();
@@ -850,7 +869,11 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
         return {
           conversations: {
             ...state.conversations,
-            [agentId]: { ...existing, resuming: false },
+            [agentId]: {
+              ...existing,
+              contextWindow: reportedContextWindow(event, existing),
+              resuming: false,
+            },
           },
         };
       }
@@ -1189,6 +1212,7 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
             lastEventType: event.type,
             pendingToolName: null,
             pendingToolInput: null,
+            contextWindow: reportedContextWindow(event, existing),
             totalCost: newTotal,
             totalDuration: newDuration,
           },

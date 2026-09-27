@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { contextLimitForModel } from "./contextWindow";
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+  contextLimitForModel,
+  rememberContextWindow,
+  resolveContextLimit,
+} from "./contextWindow";
 
 // Mirrors the capability list the Claude Code CLI reports in its initialize
 // handshake (values + descriptions taken verbatim).
@@ -49,5 +54,29 @@ describe("contextLimitForModel", () => {
   it("defaults to 200k when nothing is known", () => {
     expect(contextLimitForModel("claude-opus-4-8", null)).toBe(200_000);
     expect(contextLimitForModel(undefined, [])).toBe(200_000);
+  });
+});
+
+describe("resolveContextLimit", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("prefers what the CLI reported over the guess", () => {
+    expect(
+      resolveContextLimit({ reported: 1_000_000, selectedModel: "opus" }),
+    ).toBe(1_000_000);
+  });
+
+  it("falls back to what the CLI last reported for the same model", () => {
+    rememberContextWindow("claude-opus-5-5", 1_000_000);
+    expect(
+      resolveContextLimit({
+        resolvedModel: "claude-opus-5-5",
+        selectedModel: "default",
+      }),
+    ).toBe(1_000_000);
+  });
+
+  it("guesses when nothing was reported", () => {
+    expect(resolveContextLimit({ resolvedModel: "claude-x" })).toBe(200_000);
   });
 });

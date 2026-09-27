@@ -105,6 +105,10 @@ export interface AgentSession {
   lastToolName: string | null;
   /** Captured when the agent emits its final `type: "result"` event. */
   resultSummary: AgentResult | null;
+  /** Resolved model id from the CLI's `init` event, e.g. `claude-opus-5-5`. */
+  resolvedModel?: string | null;
+  /** Context window in tokens, as the CLI reported it on the last `result`. */
+  contextWindow?: number | null;
   /**
    * Resolvers for callers waiting on this agent to exit (e.g. `wait_for_agent`).
    * Each entry is called with the exit code when the process closes.

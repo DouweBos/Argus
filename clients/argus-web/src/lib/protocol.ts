@@ -257,6 +257,8 @@ export interface RemoteAgentStatus {
   title?: string | null;
   status: string;
   model?: string | null;
+  /** Context window the CLI last reported, in tokens. */
+  context_window?: number | null;
   permission_mode?: string | null;
   parent_agent_id?: string | null;
   created_at?: number;
