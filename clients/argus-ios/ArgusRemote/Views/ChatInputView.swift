@@ -443,6 +443,9 @@ struct ChatInputView: View {
     // easy to get wrong, and the answer for no text is never in doubt.
     inputHeight = PastingTextView.collapsedHeight
     app.preferences.remove(PreferenceKey.draft(agentId: agentId))
+    // A link rides one message, like the desktop — not every one after it.
+    linkedProjects = []
+    app.preferences.remove(PreferenceKey.linkedProjects(agentId: agentId))
 
     Task {
       if isRunning {
