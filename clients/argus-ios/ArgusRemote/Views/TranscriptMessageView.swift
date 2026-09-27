@@ -99,6 +99,10 @@ struct TranscriptMessageView: View {
           }
         }
       }
+      // The scroll view takes the full width, so without an anchor the chips
+      // hug the leading edge even above a trailing user bubble.
+      .defaultScrollAnchor(isUser ? .trailing : .leading)
+      .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
     }
   }
 
