@@ -11,6 +11,8 @@ import Observation
 final class AutomationsStore {
   var automations: [RemoteAutomation] = []
   var detailById: [String: RemoteAutomationDetail] = [:]
+  /// Keyed by automation id; loaded when an automation is opened.
+  var memoriesById: [String: [RemoteAutomationMemory]] = [:]
   var sources: [RemoteSignalSource] = []
   var runners: [RemoteRunner] = []
   /// Newest first, across every automation.
@@ -178,6 +180,77 @@ final class AutomationsStore {
       detailById[id]?.enabled = updated.enabled
     } catch {
       self.error = "Couldn't change that automation — \(AppStore.describe(error))"
+    }
+  }
+
+  func loadMemories(automationId: String) async {
+    guard let transport = app.transport else { return }
+    struct Params: Encodable { let automation_id: String }
+    struct Result: Decodable { let memories: [RemoteAutomationMemory] }
+    do {
+      memoriesById[automationId] = try await transport.request(
+        .automationsMemories, Params(automation_id: automationId), as: Result.self
+      ).memories
+    } catch {
+      self.error = "Couldn't read that automation's memories — \(AppStore.describe(error))"
+    }
+  }
+
+  /// Create or overwrite; `previousName` renames the memory it was opened as.
+  @discardableResult
+  func saveMemory(
+    automationId: String, memory: RemoteAutomationMemory, previousName: String?
+  ) async -> Bool {
+    guard let transport = app.transport else { return false }
+    struct Memory: Encodable {
+      let name: String
+      let description: String
+      let type: RemoteAutomationMemory.Kind
+      let body: String
+      let previous_name: String?
+    }
+    struct Params: Encodable {
+      let automation_id: String
+      let memory: Memory
+    }
+    do {
+      try await transport.request(
+        .automationsSaveMemory,
+        Params(
+          automation_id: automationId,
+          memory: Memory(
+            name: memory.name, description: memory.description, type: memory.type,
+            body: memory.body, previous_name: previousName)),
+        as: IgnoredResult.self)
+      error = nil
+      await loadMemories(automationId: automationId)
+
+      return true
+    } catch {
+      self.error = "Couldn't save that memory — \(AppStore.describe(error))"
+
+      return false
+    }
+  }
+
+  @discardableResult
+  func deleteMemory(automationId: String, name: String) async -> Bool {
+    guard let transport = app.transport else { return false }
+    struct Params: Encodable {
+      let automation_id: String
+      let name: String
+    }
+    do {
+      try await transport.request(
+        .automationsDeleteMemory, Params(automation_id: automationId, name: name),
+        as: IgnoredResult.self)
+      memoriesById[automationId]?.removeAll { $0.name == name }
+
+      return true
+    } catch {
+      self.error = "Couldn't delete that memory — \(AppStore.describe(error))"
+
+      return false
     }
   }
 

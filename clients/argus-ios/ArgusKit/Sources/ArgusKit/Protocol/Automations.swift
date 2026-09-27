@@ -525,3 +525,34 @@ public struct RemoteProposal: Codable, Hashable, Sendable, Identifiable {
     case createdAt = "created_at"
   }
 }
+
+/// One file in an automation's memory: what a run carried forward for the next.
+public struct RemoteAutomationMemory: Codable, Hashable, Sendable, Identifiable {
+  public enum Kind: String, Codable, Hashable, Sendable, CaseIterable {
+    case project, feedback, user, reference
+  }
+
+  public var name: String
+  public var description: String
+  public var type: Kind
+  public var body: String
+  public var updatedAt: Double
+
+  public var id: String { name }
+
+  public init(
+    name: String = "", description: String = "", type: Kind = .project, body: String = "",
+    updatedAt: Double = 0
+  ) {
+    self.name = name
+    self.description = description
+    self.type = type
+    self.body = body
+    self.updatedAt = updatedAt
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case name, description, type, body
+    case updatedAt = "updated_at"
+  }
+}

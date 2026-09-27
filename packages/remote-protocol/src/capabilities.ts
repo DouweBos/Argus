@@ -202,6 +202,10 @@ export const REMOTE_METHODS = {
    *  it spends the host's LLM, so it sits with the writes rather than the reads. */
   "automations.revise_playbook": "control",
   "automations.delete": "control",
+  /** What runs carry forward. Editing one steers every future run, like a playbook. */
+  "automations.memories": "monitor",
+  "automations.save_memory": "control",
+  "automations.delete_memory": "control",
   "automations.set_enabled": "control",
   "automations.run_now": "control",
   /** An ad-hoc run is an agent on the host, same as any other run. */

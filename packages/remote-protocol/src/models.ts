@@ -592,6 +592,16 @@ export const RemoteRunnerModel = z.object({
 });
 export type RemoteRunnerModel = z.infer<typeof RemoteRunnerModel>;
 
+/** One file in an automation's memory. Mirrors the host's `AutomationMemory`. */
+export const RemoteAutomationMemory = z.object({
+  name: z.string(),
+  description: z.string(),
+  type: z.enum(["user", "feedback", "project", "reference"]),
+  body: z.string(),
+  updated_at: z.number(),
+});
+export type RemoteAutomationMemory = z.infer<typeof RemoteAutomationMemory>;
+
 /** An LLM runner an automation can be pinned to. Mirrors `RegisteredRunner`. */
 export const RemoteRunner = z.object({
   id: z.string(),

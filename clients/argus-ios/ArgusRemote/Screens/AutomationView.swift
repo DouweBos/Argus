@@ -16,6 +16,14 @@ struct AutomationView: View {
   let automationId: String
   let label: String
 
+  /// The memory sheet: `.some(nil)` adds one, `nil` is closed.
+  @State private var openMemory: MemorySelection?
+
+  private struct MemorySelection: Identifiable {
+    let memory: RemoteAutomationMemory?
+    var id: String { memory?.name ?? "+new" }
+  }
+
   private var automation: RemoteAutomation? {
     store.automations.first { $0.id == automationId }
   }
@@ -27,6 +35,7 @@ struct AutomationView: View {
       }
       if let automation {
         detail(automation)
+        memories
         runs(automation)
       } else {
         Loading(label: "Reading the automation…")
@@ -45,7 +54,39 @@ struct AutomationView: View {
         }
       }
     }
-    .liveRefresh(enabled: app.connection == .ready) { await store.refresh() }
+    .liveRefresh(enabled: app.connection == .ready) {
+      await store.refresh()
+      await store.loadMemories(automationId: automationId)
+    }
+    .sheet(item: $openMemory) { selection in
+      MemoryEditorSheet(automationId: automationId, memory: selection.memory)
+    }
+  }
+
+  @ViewBuilder
+  private var memories: some View {
+    let items = store.memoriesById[automationId] ?? []
+    SectionHeader(title: "Memories", count: items.count)
+    if items.isEmpty {
+      MutedText("Nothing yet. Runs save what they learn here so the next one doesn't start from scratch.")
+    }
+    ForEach(items) { memory in
+      Card(onTap: { openMemory = MemorySelection(memory: memory) }) {
+        HStack(spacing: 8) {
+          Text(memory.name)
+            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+            .foregroundStyle(theme.text)
+          Spacer(minLength: 6)
+          Badge(label: memory.type.rawValue)
+        }
+        MutedText(memory.description, lineLimit: 2)
+      }
+    }
+    if app.hasControl {
+      Btn(label: "Add memory", tone: .secondary, small: true, icon: Icon.plus) {
+        openMemory = MemorySelection(memory: nil)
+      }
+    }
   }
 
   @ViewBuilder

@@ -358,6 +358,10 @@ describe("the typed automations methods", () => {
     expect(tier("automations.revise_playbook")).toBe("control");
     // Feedback resumes the run's agent, so it spends and can act.
     expect(tier("automations.run_feedback")).toBe("control");
+    // A memory steers every future run, so writing one is control.
+    expect(tier("automations.memories")).toBe("monitor");
+    expect(tier("automations.save_memory")).toBe("control");
+    expect(tier("automations.delete_memory")).toBe("control");
   });
 
   /** A guest is handed one agent, never the clock that could start more. */
