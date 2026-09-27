@@ -451,8 +451,44 @@ export const RemoteGitBranch = z.object({
   behind: z.number().int().nonnegative(),
   last_commit_subject: z.string().optional(),
   last_commit_at: z.number().optional(),
+  /** Pinned in this project on the computer; absent from older hosts. */
+  pinned: z.boolean().optional(),
 });
 export type RemoteGitBranch = z.infer<typeof RemoteGitBranch>;
+
+/** One commit in a branch's history. */
+export const RemoteCommit = z.object({
+  hash: z.string(),
+  short_hash: z.string(),
+  subject: z.string(),
+  body: z.string(),
+  author: z.string(),
+  /** ISO 8601 author date. */
+  date: z.string(),
+  /** Decorations, as `git log --decorate=short` prints them. */
+  refs: z.string(),
+});
+export type RemoteCommit = z.infer<typeof RemoteCommit>;
+
+/** A commit on only one side of a comparison. */
+export const RemoteCommitSummary = z.object({
+  hash: z.string(),
+  subject: z.string(),
+  author: z.string(),
+  /** Unix ms. */
+  timestamp: z.number(),
+});
+export type RemoteCommitSummary = z.infer<typeof RemoteCommitSummary>;
+
+/** How two branches diverged. */
+export const RemoteBranchCompare = z.object({
+  left_only: z.array(RemoteCommitSummary),
+  right_only: z.array(RemoteCommitSummary),
+  merge_base: z.string().nullable(),
+  /** Best-effort: `git merge-tree` saw conflicts. */
+  would_conflict: z.boolean(),
+});
+export type RemoteBranchCompare = z.infer<typeof RemoteBranchCompare>;
 
 /**
  * One address a phone can reach this desktop on. Desktops expose several at

@@ -134,6 +134,18 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.merge_base": DENIED,
   "sessions.create_branch": DENIED,
   "sessions.delete_branch": DENIED,
+  // Branch history and branch ops are project-root only — a guest's grant is
+  // one agent's session, never the repo behind it.
+  "sessions.branch_log": DENIED,
+  "sessions.commit_diff": DENIED,
+  "sessions.compare_branches": DENIED,
+  "sessions.branch_pr_url": DENIED,
+  "sessions.merge_branch": DENIED,
+  "sessions.rebase_current": DENIED,
+  "sessions.push_branch": DENIED,
+  "sessions.pull": DENIED,
+  "sessions.rename_local_branch": DENIED,
+  "sessions.pin_branch": DENIED,
 
   "devices.watch": device(),
   "devices.unwatch": device(),

@@ -13,6 +13,9 @@ enum Route: Hashable {
   case stoppedAgent(historyId: String, repoRoot: String, label: String, branch: String, runnerSessionId: String)
   case changes(sessionId: String, label: String)
   case branches(sessionId: String, repoRoot: String, label: String)
+  case branch(sessionId: String, repoRoot: String, branch: RemoteGitBranch)
+  case commit(sessionId: String, hash: String, subject: String)
+  case branchCompare(sessionId: String, left: String, right: String)
   case devices
   case device(id: String, platform: RemotePlatform, name: String, isTv: Bool)
   case inbox
@@ -41,6 +44,9 @@ enum Route: Hashable {
     case .stoppedAgent: "stopped_agent"
     case .changes: "changes"
     case .branches: "branches"
+    case .branch: "branch"
+    case .commit: "commit"
+    case .branchCompare: "branch_compare"
     case .devices: "devices"
     case .device: "device"
     case .inbox: "inbox"

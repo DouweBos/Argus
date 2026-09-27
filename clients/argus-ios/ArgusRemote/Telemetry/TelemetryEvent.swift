@@ -71,6 +71,12 @@ enum TelemetryEvent {
     case checkout
     case create
     case delete
+    case merge
+    case rebase
+    case push
+    case pull
+    case rename
+    case pin
   }
 
   /// How work leaves a session.

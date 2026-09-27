@@ -24,6 +24,8 @@ import {
   RemoteDeviceOrientation,
   RemoteDeviceState,
   RemoteEndpoint,
+  RemoteBranchCompare,
+  RemoteCommit,
   RemoteGitBranch,
   RemoteGitStatus,
   RemoteImageAttachment,
@@ -258,6 +260,58 @@ export const MethodParams = {
     name: z.string().trim().min(1),
     /** `git branch -D` — needed for a branch that isn't fully merged. */
     force: z.boolean().optional(),
+  }),
+  /** `branch` is any ref: a local name, or `origin/x` for a remote-only one. */
+  "sessions.branch_log": z.object({
+    session_id: z.string(),
+    branch: z.string().trim().min(1),
+    count: z.number().int().positive().max(500).optional(),
+  }),
+  "sessions.commit_diff": z.object({
+    session_id: z.string(),
+    hash: z.string().regex(/^[0-9a-f]{4,64}$/i),
+  }),
+  "sessions.compare_branches": z.object({
+    session_id: z.string(),
+    left: z.string().trim().min(1),
+    right: z.string().trim().min(1),
+  }),
+  "sessions.branch_pr_url": z.object({
+    session_id: z.string(),
+    branch: z.string().trim().min(1),
+  }),
+  /** Merge `from` into whatever is checked out. */
+  "sessions.merge_branch": z.object({
+    session_id: z.string(),
+    from: z.string().trim().min(1),
+    squash: z.boolean().optional(),
+  }),
+  /** Rebase whatever is checked out onto `onto`. */
+  "sessions.rebase_current": z.object({
+    session_id: z.string(),
+    onto: z.string().trim().min(1),
+  }),
+  "sessions.push_branch": z.object({
+    session_id: z.string(),
+    branch: z.string().trim().min(1),
+    remote: z.string().trim().min(1).optional(),
+    set_upstream: z.boolean().optional(),
+    force_with_lease: z.boolean().optional(),
+  }),
+  /** Pull into the checked-out branch. */
+  "sessions.pull": z.object({
+    session_id: z.string(),
+    strategy: z.enum(["ff-only", "merge", "rebase"]),
+  }),
+  "sessions.rename_local_branch": z.object({
+    session_id: z.string(),
+    from: z.string().trim().min(1),
+    to: z.string().trim().min(1),
+  }),
+  "sessions.pin_branch": z.object({
+    session_id: z.string(),
+    branch: z.string().trim().min(1),
+    pinned: z.boolean(),
   }),
   "sessions.diff": z.object({
     session_id: z.string(),
@@ -559,6 +613,17 @@ export const MethodResult = {
     /** Set when the branch has commits that aren't merged anywhere. */
     blocked_by: z.literal("unmerged").optional(),
   }),
+  "sessions.branch_log": z.object({ commits: z.array(RemoteCommit) }),
+  "sessions.commit_diff": z.object({ diff: z.string() }),
+  "sessions.compare_branches": RemoteBranchCompare,
+  "sessions.branch_pr_url": z.object({ url: z.string().nullable() }),
+  "sessions.merge_branch": z.object({ accepted: z.boolean() }),
+  "sessions.rebase_current": z.object({ accepted: z.boolean() }),
+  /** Git's own output, for the phone to show. */
+  "sessions.push_branch": z.object({ output: z.string() }),
+  "sessions.pull": z.object({ output: z.string() }),
+  "sessions.rename_local_branch": z.object({ accepted: z.boolean() }),
+  "sessions.pin_branch": z.object({ pinned: z.array(z.string()) }),
   "sessions.diff": z.object({
     diff: z.string(),
     base_branch: z.string().nullable().optional(),

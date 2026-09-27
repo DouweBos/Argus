@@ -115,6 +115,12 @@ add it to that stash.
   GitHub.
 - Deleting a branch whose commits aren't on any other branch asks a
   second time before it throws them away.
+- **From your phone**, Branches on a project opens the same list. Tap a
+  branch to see its history and each commit's diff, compare it with the
+  checked-out branch, and — with the `control` grant — switch to it,
+  branch from it, merge or squash it in, rebase onto it, push or publish
+  it, pull, rename, pin, open a PR or delete it. A merge or rebase that
+  stops on conflicts is left for you to resolve on the computer.
 - **Project-scope ahead/behind** counts are refreshed in the background
   whenever the working tree changes.
 - **Default branches** (`main`, `master`, project-configured) sort to

@@ -38,6 +38,7 @@ enum Icon {
   static let search = "magnifyingglass"
   static let terminal = "terminal"
   static let pencil = "pencil"
+  static let pin = "pin"
   static let web = "globe"
   static let eye = "eye"
   static let lock = "lock"

@@ -135,6 +135,7 @@ import {
   simulatorTouch,
 } from "../simulator/ios";
 import { getVideoDims } from "../simulator/videoForward";
+import { listPinnedBranches } from "../userProjectSettings/store";
 import {
   createRemoteAutomation,
   deleteRemoteAutomation,
@@ -166,6 +167,18 @@ import {
   type PairedDevice,
 } from "./deviceStore";
 import { getEndpoints } from "./endpoints";
+import {
+  branchLog,
+  branchPrUrl,
+  commitDiff,
+  compareBranches,
+  mergeIntoCurrent,
+  pullCurrent,
+  pushBranch,
+  rebaseCurrent,
+  renameLocalBranch,
+  setBranchPinned,
+} from "./gitRemote";
 import {
   commentOnRemotePullRequest,
   createRemotePullRequest,
@@ -1531,11 +1544,14 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       ]),
     );
     const localNames = new Set(local.map((b) => b.name));
+    const repoRoot = appState.sessions.get(session_id)?.repo_root;
+    const pinned = new Set(repoRoot ? listPinnedBranches(repoRoot) : []);
     const branches: RemoteGitBranch[] = [
       ...local.map((b) => ({
         name: b.name,
         scope: "local" as const,
         is_current: b.isCurrent,
+        pinned: pinned.has(b.name),
         upstream: b.upstream,
         ahead: b.ahead,
         behind: b.behind,
@@ -1621,6 +1637,101 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
 
     return { accepted: true };
+  },
+
+  "sessions.branch_log": async (params) => {
+    const { session_id, branch, count } = parse("sessions.branch_log", params);
+    requireSession(session_id);
+
+    return {
+      commits: await control(() => branchLog(session_id, branch, count)),
+    };
+  },
+
+  "sessions.commit_diff": async (params) => {
+    const { session_id, hash } = parse("sessions.commit_diff", params);
+    requireSession(session_id);
+
+    return { diff: await control(() => commitDiff(session_id, hash)) };
+  },
+
+  "sessions.compare_branches": async (params) => {
+    const { session_id, left, right } = parse(
+      "sessions.compare_branches",
+      params,
+    );
+    requireSession(session_id);
+
+    return await control(() => compareBranches(session_id, left, right));
+  },
+
+  "sessions.branch_pr_url": async (params) => {
+    const { session_id, branch } = parse("sessions.branch_pr_url", params);
+    requireSession(session_id);
+
+    return { url: await control(() => branchPrUrl(session_id, branch)) };
+  },
+
+  // A merge or rebase that stops on conflicts comes back as git's message;
+  // resolving it is a desktop job.
+  "sessions.merge_branch": async (params) => {
+    const { session_id, from, squash } = parse("sessions.merge_branch", params);
+    requireSession(session_id);
+    await control(() => mergeIntoCurrent(session_id, from, squash ?? false));
+
+    return { accepted: true };
+  },
+
+  "sessions.rebase_current": async (params) => {
+    const { session_id, onto } = parse("sessions.rebase_current", params);
+    requireSession(session_id);
+    await control(() => rebaseCurrent(session_id, onto));
+
+    return { accepted: true };
+  },
+
+  "sessions.push_branch": async (params) => {
+    const { session_id, branch, remote, set_upstream, force_with_lease } =
+      parse("sessions.push_branch", params);
+    requireSession(session_id);
+
+    return {
+      output: await control(() =>
+        pushBranch(session_id, {
+          branch,
+          remote,
+          setUpstream: set_upstream,
+          forceWithLease: force_with_lease,
+        }),
+      ),
+    };
+  },
+
+  "sessions.pull": async (params) => {
+    const { session_id, strategy } = parse("sessions.pull", params);
+    requireSession(session_id);
+
+    return { output: await control(() => pullCurrent(session_id, strategy)) };
+  },
+
+  "sessions.rename_local_branch": async (params) => {
+    const { session_id, from, to } = parse(
+      "sessions.rename_local_branch",
+      params,
+    );
+    requireSession(session_id);
+    await control(() => renameLocalBranch(session_id, from, to));
+
+    return { accepted: true };
+  },
+
+  "sessions.pin_branch": async (params) => {
+    const { session_id, branch, pinned } = parse("sessions.pin_branch", params);
+    requireSession(session_id);
+
+    return {
+      pinned: await control(() => setBranchPinned(session_id, branch, pinned)),
+    };
   },
 
   "sessions.diff": async (params) => {

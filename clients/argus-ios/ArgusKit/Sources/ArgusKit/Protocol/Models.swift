@@ -683,6 +683,8 @@ public struct RemoteGitBranch: Codable, Hashable, Sendable, Identifiable {
   public var behind: Int
   public var lastCommitSubject: String?
   public var lastCommitAt: Double?
+  /// Nil from computers older than the field.
+  public var pinned: Bool?
 
   public enum Scope: String, Codable, Sendable {
     case local, remote
@@ -690,11 +692,61 @@ public struct RemoteGitBranch: Codable, Hashable, Sendable, Identifiable {
 
   public var id: String { "\(scope.rawValue):\(name)" }
 
+  /// The ref git resolves: `origin/x` for a branch that only exists remotely.
+  public var ref: String {
+    scope == .remote ? "\(remote ?? "origin")/\(name)" : name
+  }
+
   enum CodingKeys: String, CodingKey {
-    case name, scope, remote, upstream, ahead, behind
+    case name, scope, remote, upstream, ahead, behind, pinned
     case isCurrent = "is_current"
     case lastCommitSubject = "last_commit_subject"
     case lastCommitAt = "last_commit_at"
+  }
+}
+
+/// One commit in a branch's history.
+public struct RemoteCommit: Codable, Hashable, Sendable, Identifiable {
+  public var hash: String
+  public var shortHash: String
+  public var subject: String
+  public var body: String
+  public var author: String
+  /// ISO 8601.
+  public var date: String
+  public var refs: String
+
+  public var id: String { hash }
+
+  enum CodingKeys: String, CodingKey {
+    case hash, subject, body, author, date, refs
+    case shortHash = "short_hash"
+  }
+}
+
+/// A commit on only one side of a branch comparison.
+public struct RemoteCommitSummary: Codable, Hashable, Sendable, Identifiable {
+  public var hash: String
+  public var subject: String
+  public var author: String
+  /// Epoch ms.
+  public var timestamp: Double
+
+  public var id: String { hash }
+}
+
+/// How two branches diverged.
+public struct RemoteBranchCompare: Codable, Hashable, Sendable {
+  public var leftOnly: [RemoteCommitSummary]
+  public var rightOnly: [RemoteCommitSummary]
+  public var mergeBase: String?
+  public var wouldConflict: Bool
+
+  enum CodingKeys: String, CodingKey {
+    case leftOnly = "left_only"
+    case rightOnly = "right_only"
+    case mergeBase = "merge_base"
+    case wouldConflict = "would_conflict"
   }
 }
 

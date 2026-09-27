@@ -397,6 +397,12 @@ struct RootView: View {
       ChangesView(sessionId: sessionId, label: label)
     case .branches(let sessionId, let repoRoot, let label):
       BranchesView(sessionId: sessionId, repoRoot: repoRoot, label: label)
+    case .branch(let sessionId, let repoRoot, let branch):
+      BranchView(sessionId: sessionId, repoRoot: repoRoot, branch: branch)
+    case .commit(let sessionId, let hash, let subject):
+      CommitView(sessionId: sessionId, hash: hash, subject: subject)
+    case .branchCompare(let sessionId, let left, let right):
+      BranchCompareView(sessionId: sessionId, left: left, right: right)
     case .devices:
       DevicesView()
     case .device(let id, let platform, let name, let isTv):

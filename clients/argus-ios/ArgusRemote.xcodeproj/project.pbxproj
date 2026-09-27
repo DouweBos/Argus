@@ -28,11 +28,13 @@
 		3B4F2C2914843FAE0FF0A249 /* ImageViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12FD4EE5D9C994C062F2455A /* ImageViewer.swift */; };
 		3C1C0796FCE5D8AA678463BF /* StoppedAgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13099DE3A6A5F9047693B53C /* StoppedAgentView.swift */; };
 		48CC138E7D34EAA49C6BE7DF /* AppStore+Control.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29DE2042E4C73E7833B0914E /* AppStore+Control.swift */; };
+		B77F53C9E21DC1CC139ECE2F /* AppStore+Branches.swift in Sources */ = {isa = PBXBuildFile; fileRef = F753C9E21DC1CC139ECE2FD1 /* AppStore+Branches.swift */; };
 		5094B5F4DB527FD61509F340 /* ProposalsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0081824BC6F0B57CD618D8 /* ProposalsStore.swift */; };
 		537F1ADEAD50351B8B16F53D /* AppStore+Data.swift in Sources */ = {isa = PBXBuildFile; fileRef = 481431411DDC5E55EA30D7BD /* AppStore+Data.swift */; };
 		55304875735519F780DBE883 /* RunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6502F79F862A2272184C48C6 /* RunView.swift */; };
 		5DA37A387097310627848D08 /* PastingTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82EFACA3CB48542C70620670 /* PastingTextView.swift */; };
 		5DA37A387097310627848D09 /* RevisePlaybookSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82EFACA3CB48542C70620671 /* RevisePlaybookSheet.swift */; };
+		B7AE2AE8FB119D20ADD849A9 /* BranchActionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F72AE8FB119D20ADD849A9B5 /* BranchActionsView.swift */; };
 		A1C0DE0000000000000000B1 /* MemoryEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C0DE0000000000000000F1 /* MemoryEditorSheet.swift */; };
 		6B1A0C2D4E7F8A9B0C1D2E3F /* RunFeedbackSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C2B1D3E5F8A9B0C1D2E3F4A /* RunFeedbackSheet.swift */; };
 		61C10B6C7968E2DD39CBFDC4 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F0BACB5B899C018843EAC8 /* Theme.swift */; };
@@ -47,6 +49,9 @@
 		7AA1037BBC567AD386AFFF03 /* AgentTranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52033C720665E0E6497370F2 /* AgentTranscriptView.swift */; };
 		85B885DE197E4591E333C07D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6939D496D536368D99A574 /* SettingsView.swift */; };
 		8B82B5637BDFB9252A8D9AD0 /* BranchesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01FFCA8035ABC8A01D2C6CF /* BranchesView.swift */; };
+		B77C1EA73DE9EF93E59424EF /* BranchCompareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71EA73DE9EF93E59424EF83 /* BranchCompareView.swift */; };
+		B7241A133F6BBFBAFFDDBDE2 /* CommitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71A133F6BBFBAFFDDBDE2AD /* CommitView.swift */; };
+		B739591B2E634B37E1941AC9 /* BranchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7591B2E634B37E1941AC94D /* BranchView.swift */; };
 		9649E2679831459D3DE191FD /* TranscriptMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70547DEE3CB7476148D6FCEE /* TranscriptMessageView.swift */; };
 		5FB08CA29434143A32134492 /* GuardrailFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = A02F5F60D0F01C5B7F16C445 /* GuardrailFields.swift */; };
 		AE590CD49BD08C4F6FAF2096 /* AutomationFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32B758744DEEF9A8D04305D7 /* AutomationFields.swift */; };
@@ -126,6 +131,7 @@
 		DC876CC2111BA8BDFB115904 /* PullRequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestsView.swift; sourceTree = "<group>"; };
 		22BC770CA5DFEDFB0344DB2D /* ArgusRemote.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ArgusRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		29DE2042E4C73E7833B0914E /* AppStore+Control.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Control.swift"; sourceTree = "<group>"; };
+		F753C9E21DC1CC139ECE2FD1 /* AppStore+Branches.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Branches.swift"; sourceTree = "<group>"; };
 		2AA1C76CC7A23652BD96252A /* InboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxView.swift; sourceTree = "<group>"; };
 		3E4CF7C9E04D0A1D6F57EDA5 /* LockScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen.swift; sourceTree = "<group>"; };
 		4510F50B6943CA7B6707AABE /* AutomationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationsView.swift; sourceTree = "<group>"; };
@@ -156,6 +162,7 @@
 		7B760406B1B2B956C52E89F9 /* DeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceView.swift; sourceTree = "<group>"; };
 		82EFACA3CB48542C70620670 /* PastingTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PastingTextView.swift; sourceTree = "<group>"; };
 		82EFACA3CB48542C70620671 /* RevisePlaybookSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevisePlaybookSheet.swift; sourceTree = "<group>"; };
+		F72AE8FB119D20ADD849A9B5 /* BranchActionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchActionsView.swift; sourceTree = "<group>"; };
 		A1C0DE0000000000000000F1 /* MemoryEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryEditorSheet.swift; sourceTree = "<group>"; };
 		7C2B1D3E5F8A9B0C1D2E3F4A /* RunFeedbackSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunFeedbackSheet.swift; sourceTree = "<group>"; };
 		8346E6C1D03B823ABD7DCA02 /* ArgusRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ArgusRemote.entitlements; sourceTree = "<group>"; };
@@ -174,6 +181,9 @@
 		B33859C3DC1F6B2FE094BDF8 /* PushTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushTokens.swift; sourceTree = "<group>"; };
 		B6C14566E26586DC89C61830 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		C01FFCA8035ABC8A01D2C6CF /* BranchesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchesView.swift; sourceTree = "<group>"; };
+		F71EA73DE9EF93E59424EF83 /* BranchCompareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchCompareView.swift; sourceTree = "<group>"; };
+		F71A133F6BBFBAFFDDBDE2AD /* CommitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommitView.swift; sourceTree = "<group>"; };
+		F7591B2E634B37E1941AC94D /* BranchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchView.swift; sourceTree = "<group>"; };
 		D2978877FCC50AC76553762A /* PairView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairView.swift; sourceTree = "<group>"; };
 		DCD8CDED00DE55F5C4FE1C4E /* DeviceVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceVideoView.swift; sourceTree = "<group>"; };
 		E3E0EB550BA6630F2052ABE5 /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
@@ -272,6 +282,9 @@
 				74103E5844EC73EB127B8F8A /* PullRequestView.swift */,
 				DC876CC2111BA8BDFB115904 /* PullRequestsView.swift */,
 				C01FFCA8035ABC8A01D2C6CF /* BranchesView.swift */,
+				F71EA73DE9EF93E59424EF83 /* BranchCompareView.swift */,
+				F71A133F6BBFBAFFDDBDE2AD /* CommitView.swift */,
+				F7591B2E634B37E1941AC94D /* BranchView.swift */,
 				EC699CB84E030428A8060A13 /* ChangesView.swift */,
 				46E305D96C871BB99B7DB468 /* ComputerView.swift */,
 				57ADDE446C44DCB7D8E5AA3C /* DevicesView.swift */,
@@ -294,6 +307,7 @@
 			children = (
 				63A254961B044F508401BE46 /* AppStore.swift */,
 				29DE2042E4C73E7833B0914E /* AppStore+Control.swift */,
+				F753C9E21DC1CC139ECE2FD1 /* AppStore+Branches.swift */,
 				481431411DDC5E55EA30D7BD /* AppStore+Data.swift */,
 				000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */,
 				AA1000000000000000000004 /* AppStore+ClaudeAccounts.swift */,
@@ -316,6 +330,7 @@
 				F68517AC0A4A5246D5734125 /* TVRemoteView.swift */,
 				82EFACA3CB48542C70620670 /* PastingTextView.swift */,
 				82EFACA3CB48542C70620671 /* RevisePlaybookSheet.swift */,
+				F72AE8FB119D20ADD849A9B5 /* BranchActionsView.swift */,
 				A1C0DE0000000000000000F1 /* MemoryEditorSheet.swift */,
 				7C2B1D3E5F8A9B0C1D2E3F4A /* RunFeedbackSheet.swift */,
 				A80D3688BF3DDFD90F4E6F55 /* PermissionForms.swift */,
@@ -498,6 +513,7 @@
 				7AA1037BBC567AD386AFFF03 /* AgentTranscriptView.swift in Sources */,
 				79ABC516E0AC2C4AE453BB1A /* AgentView.swift in Sources */,
 				48CC138E7D34EAA49C6BE7DF /* AppStore+Control.swift in Sources */,
+				B77F53C9E21DC1CC139ECE2F /* AppStore+Branches.swift in Sources */,
 				537F1ADEAD50351B8B16F53D /* AppStore+Data.swift in Sources */,
 				FAEB2F8A18B2B7EEA189693B /* AppStore+Push.swift in Sources */,
 				E79376838450019576305370 /* AppStore.swift in Sources */,
@@ -513,6 +529,9 @@
 				CC805340A6CF9143774C7E01 /* PullRequestsStore.swift in Sources */,
 				0C2CEA8B85053A238EB47BA7 /* AutomationsView.swift in Sources */,
 				8B82B5637BDFB9252A8D9AD0 /* BranchesView.swift in Sources */,
+				B77C1EA73DE9EF93E59424EF /* BranchCompareView.swift in Sources */,
+				B7241A133F6BBFBAFFDDBDE2 /* CommitView.swift in Sources */,
+				B739591B2E634B37E1941AC9 /* BranchView.swift in Sources */,
 				C8A9E8FF4A15285665BCF2F8 /* ChangesView.swift in Sources */,
 				343F631DC088AF54631A9834 /* ChatInputView.swift in Sources */,
 				71F924F0B3BDE15E0083BDEE /* ComputerView.swift in Sources */,
@@ -534,6 +553,7 @@
 				C230860282D4938F66D435CF /* PairView.swift in Sources */,
 				5DA37A387097310627848D08 /* PastingTextView.swift in Sources */,
 				5DA37A387097310627848D09 /* RevisePlaybookSheet.swift in Sources */,
+				B7AE2AE8FB119D20ADD849A9 /* BranchActionsView.swift in Sources */,
 				A1C0DE0000000000000000B1 /* MemoryEditorSheet.swift in Sources */,
 				6B1A0C2D4E7F8A9B0C1D2E3F /* RunFeedbackSheet.swift in Sources */,
 				2EE744D7FAD18A7F942920DA /* PermissionForms.swift in Sources */,

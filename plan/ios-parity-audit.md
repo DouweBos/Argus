@@ -37,7 +37,7 @@ Ordered by how central they are to the phone's own story.
 
 **Ad-hoc automation runs** — `automation_run_scratch`, `automation_scratch_runs_list`. The desktop's Quick Run has no wire equivalent, which is now the obvious hole next to the editor the phone just gained.
 
-**Reading code** — `read_file`, `git_read_blob_at_ref`, `git_file_history`, `git_blame_file`, `git_log`/`git_show_commit`. `sessions.files` lists paths for @-mentions; nothing returns contents, so the phone can't open a file or a commit.
+**Reading code** — `read_file`, `git_read_blob_at_ref`, `git_file_history`, `git_blame_file`. `sessions.files` lists paths for @-mentions; nothing returns contents, so the phone can't open a file. (Commits are covered: `sessions.branch_log` / `sessions.commit_diff`.)
 
 **App and project settings** — `get_app_settings` / `set_app_settings`, `get_user_project_settings`, `read_argus_config` / `write_argus_config`, `llm_list_runners`, MCP config. Includes the automations master switch and the default autonomy rung, which now gates automations the phone can author.
 
@@ -97,8 +97,8 @@ Each line is scoped by what it actually costs: new gateway methods + iOS UI.
 
 ### 7. Read a file or a commit
 
-**Impact: medium-high.** Reviewing a diff without being able to open the surrounding file, or look at what a commit did, is the main reason review moves back to the Mac.
-**Cost: medium.** One `sessions.read_file` method (path-confined the way `resolve_mention_path` already is) plus `sessions.commits`/`show`; a file viewer on iOS reusing the existing diff renderer.
+**Impact: medium-high.** Reviewing a diff without being able to open the surrounding file is the main reason review moves back to the Mac.
+**Cost: medium.** One `sessions.read_file` method (path-confined the way `resolve_mention_path` already is) and a file viewer on iOS. The commit half is done: branch history, commit diffs, compare and the branch menu's actions shipped on the phone's branch screen.
 
 ### 8. Agent vitals
 

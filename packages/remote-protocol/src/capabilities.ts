@@ -153,6 +153,18 @@ export const REMOTE_METHODS = {
   "sessions.checkout": "control",
   "sessions.create_branch": "control",
   "sessions.delete_branch": "control",
+  /** A branch's history and a commit's diff are reads, like the diff above. */
+  "sessions.branch_log": "monitor",
+  "sessions.commit_diff": "monitor",
+  "sessions.compare_branches": "monitor",
+  "sessions.branch_pr_url": "monitor",
+  /** Everything that moves a ref, touches the tree or talks to the remote. */
+  "sessions.merge_branch": "control",
+  "sessions.rebase_current": "control",
+  "sessions.push_branch": "control",
+  "sessions.pull": "control",
+  "sessions.rename_local_branch": "control",
+  "sessions.pin_branch": "control",
   /** Read a session's diff (what the agent changed) as unified-diff text. */
   "sessions.diff": "monitor",
   "sessions.merge_blockers": "monitor",
