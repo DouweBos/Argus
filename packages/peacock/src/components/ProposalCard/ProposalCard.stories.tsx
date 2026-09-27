@@ -17,6 +17,7 @@ const meta: Meta<typeof ProposalCard> = {
     onDismiss: () => undefined,
     onResolve: () => undefined,
     onOpenSource: () => undefined,
+    onOpenRun: () => undefined,
     meta: (
       <>
         <Badge tone="neutral">Argus</Badge>

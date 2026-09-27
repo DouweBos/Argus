@@ -550,7 +550,8 @@ works there too, switch and all.
 
 The Inbox button next to it opens the decisions: every pending proposal, with
 the run's own button to start the work, a Mark as done for what you already
-handled, and a Dismiss that takes a reason. A
+handled, a Dismiss that takes a reason, and View run to jump to the run that
+raised it — its report, and where to leave feedback. A
 report you have not read yet is dotted in the run list, and opening it on the
 phone clears it on the computer too — there is one inbox, not two.
 

@@ -34,6 +34,7 @@ export function toRemoteProposal(proposal: Proposal): RemoteProposal {
   return {
     id: proposal.id,
     automation_id: proposal.automation_id,
+    run_id: proposal.run_id,
     automation_name:
       getAutomation(proposal.automation_id)?.name ?? "Automation",
     title: proposal.title,

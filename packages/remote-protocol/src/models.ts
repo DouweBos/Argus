@@ -767,6 +767,8 @@ export const RemoteProposal = z.object({
   id: z.string(),
   automation_id: z.string(),
   automation_name: z.string(),
+  /** The run that raised it, for its report and feedback. */
+  run_id: z.string().optional(),
   title: z.string(),
   /** What the work is, in markdown. */
   summary: z.string(),
