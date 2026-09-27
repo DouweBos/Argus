@@ -89,7 +89,8 @@ enum TelemetryEvent {
   case messageSendFailed(retried: Bool)
   case permissionAnswered(approved: Bool, fromNotification: Bool)
   case agentControlled(action: AgentAction)
-  case workLanded(action: LandAction, success: Bool)
+  /// `strategy` is only meaningful for a merge — nil elsewhere.
+  case workLanded(action: LandAction, success: Bool, strategy: String? = nil)
   case deviceWatched(durationMs: Int, interacted: Bool)
   case claudeAccountChanged(action: AccountAction)
   case automationEdited(action: AutomationAction)
@@ -153,8 +154,11 @@ enum TelemetryEvent {
       ["approved": approved, "from_notification": fromNotification]
     case .agentControlled(let action):
       ["action": action.rawValue]
-    case .workLanded(let action, let success):
-      ["action": action.rawValue, "success": success]
+    case .workLanded(let action, let success, let strategy):
+      [
+        "action": action.rawValue, "success": success,
+        "strategy": strategy ?? "none",
+      ]
     case .deviceWatched(let durationMs, let interacted):
       ["duration_ms": durationMs, "interacted": interacted]
     case .claudeAccountChanged(let action):

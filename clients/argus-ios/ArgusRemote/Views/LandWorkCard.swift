@@ -19,6 +19,7 @@ struct LandWorkCard: View {
   @State private var blockers: [String] = []
   @State private var confirmingMerge = false
   @State private var openingPullRequest = false
+  @State private var changingBase = false
   @State private var note: String?
 
   private var status: RemoteGitStatus? { app.gitStatusBySession[sessionId] }
@@ -57,6 +58,15 @@ struct LandWorkCard: View {
       }
       .disabled(busy != nil)
 
+      // The base is what a merge lands on, and a session created against a
+      // remote ref can't merge at all until it points somewhere local.
+      HStack {
+        MutedText("Base branch: \(baseLabel)")
+        Spacer()
+        Btn(label: "Change", tone: .ghost, small: true) { changingBase = true }
+          .disabled(busy != nil)
+      }
+
       if !blockers.isEmpty {
         // The computer would refuse anyway; saying why beats a failed tap.
         ForEach(blockers, id: \.self) { blocker in
@@ -69,11 +79,25 @@ struct LandWorkCard: View {
       ) { confirmingMerge = true }
         .disabled(busy != nil || !blockers.isEmpty)
     }
-    .alert("Merge into the base branch?", isPresented: $confirmingMerge) {
+    // Two buttons, no default: a squash rewrites the commits the agent
+    // wrote, which is not something to do on someone's behalf.
+    .confirmationDialog(
+      "Merge into \(baseLabel)?", isPresented: $confirmingMerge, titleVisibility: .visible
+    ) {
+      Button(AppStore.MergeStrategy.keep.label) { merge(.keep) }
+      Button(AppStore.MergeStrategy.squash.label) { merge(.squash) }
       Button("Cancel", role: .cancel) {}
-      Button("Merge") { merge() }
     } message: {
       Text("Uncommitted changes are committed first. A conflict stops the merge.")
+    }
+    .sheet(isPresented: $changingBase) {
+      BaseBranchSheet(sessionId: sessionId, current: session?.baseBranch) { branch in
+        Task {
+          await app.setBaseBranch(id: sessionId, baseBranch: branch)
+          note = "Base branch is now \(branch)."
+          await finish()
+        }
+      }
     }
     .sheet(isPresented: $openingPullRequest) {
       OpenPullRequestSheet(sessionId: sessionId, defaultTitle: status?.branch ?? "") { url in
@@ -114,16 +138,26 @@ struct LandWorkCard: View {
     }
   }
 
-  private func merge() {
+  private func merge(_ strategy: AppStore.MergeStrategy) {
     busy = "merge"
     Task {
-      let merged = await app.mergeIntoBase(sessionId: sessionId)
+      let merged = await app.mergeIntoBase(sessionId: sessionId, strategy: strategy)
       busy = nil
       guard merged else { return }
-      note = "Merged into the base branch."
+      note = strategy == .squash
+        ? "Squashed and merged into \(baseLabel)."
+        : "Merged into \(baseLabel)."
       await finish()
     }
   }
+
+  private var session: RemoteSession? {
+    app.sessionsByRepo.values.flatMap { $0 }.first { $0.id == sessionId }
+  }
+
+  /// The session's base branch, or a neutral word when the computer hasn't
+  /// said which it is yet.
+  private var baseLabel: String { session?.baseBranch ?? "the base branch" }
 
   private func finish() async {
     blockers = await app.mergeBlockers(sessionId: sessionId)
@@ -181,6 +215,60 @@ struct OpenPullRequestSheet: View {
       guard let url else { return }
       onOpened(url)
       dismiss()
+    }
+  }
+}
+
+
+/// Pick the branch a merge lands on. Only local branches: the computer can't
+/// fast-forward a remote-tracking ref like `origin/main`, which is exactly the
+/// state that used to make a merge fail halfway.
+private struct BaseBranchSheet: View {
+  @Environment(AppStore.self) private var app
+  @Environment(\.dismiss) private var dismiss
+
+  let sessionId: String
+  let current: String?
+  let onPick: (String) -> Void
+
+  @State private var branches: [RemoteGitBranch] = []
+  @State private var loaded = false
+
+  var body: some View {
+    NavigationStack {
+      Screen {
+        if !loaded {
+          Loading(label: "Reading branches…")
+        } else if branches.isEmpty {
+          EmptyState(
+            icon: Icon.branch, title: "No local branches",
+            body: "Check one out on the computer first.")
+        } else {
+          ForEach(branches, id: \.name) { branch in
+            Card(onTap: {
+              onPick(branch.name)
+              dismiss()
+            }) {
+              HStack {
+                BodyText(branch.name)
+                Spacer()
+                if branch.name == current { Image(systemName: Icon.check) }
+              }
+            }
+          }
+        }
+      }
+      .navigationTitle("Base branch")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") { dismiss() }
+        }
+      }
+    }
+    .task {
+      branches = await app.listBranches(sessionId: sessionId).filter { $0.scope == .local }
+      loaded = true
     }
   }
 }
