@@ -127,6 +127,17 @@ Adding one (worked example: `automations.revise_playbook`):
 
 **Changesets:** every user-visible change gets one in `.changeset/`. Written for end users: 1–2 short sentences, present tense, no internals/file paths/type names. Bump `argus` for app changes, `@argus/peacock` for public design-system changes. `patch` for fixes, `minor` for new behavior. Skip for pure refactors/tests/tooling.
 
+**Telemetry: a feature ships with the events that measure it.** Every user-facing behaviour you add or change gets events in the same commit — "there is no event for it yet" is a gap to close, not a reason to skip it. Ask what question the event answers ("is this used?", "does it fail?") and send the smallest thing that answers it.
+
+1. Host/desktop → add the name and prop shape to `EventMap` in `packages/host/src/telemetryEvents.ts`, capture from the host service that does the work.
+2. iOS → add a case to `TelemetryEvent` in `clients/argus-ios/ArgusRemote/Telemetry/TelemetryEvent.swift` and capture at the call site. Enum-with-payload there, `EventMap` here: wrong props must fail to compile.
+3. **Never double-count.** If the host already captures something when the phone asks for it (`agent_started`, `session_created`, `session_merged`), the phone sends nothing. iOS events cover what the host cannot see: app lifecycle, navigation, pairing, and phone-local actions.
+4. Group by verb rather than minting a name per button — one event with an `action` enum (`ios_work_landed`, `ios_agent_controlled`) keeps the catalog readable.
+5. **Document it in [`docs/telemetry-events.md`](docs/telemetry-events.md)** — name, when it fires, every prop. That file is published to the website and is the overview people are owed; an event that isn't in it doesn't exist.
+6. **Privacy is the hard constraint.** Never send prompts, file contents, agent output, project / repo / branch / session / automation names, host or device names, paths, URLs, or anything the user typed. Send booleans, counts, enums and buckets instead (`has_images`, `length_bucket`, `success`). Screen names are route patterns, never identifiers. Messages and stack traces go through the scrubbers.
+7. Errors ride the existing sinks — `log.error` / `setErrorSink` on the host, `AppStore.report` / a store's `fail(_:_:)` on iOS. Don't open a second error path.
+8. Consent gates everything: `presence` sends only the launch heartbeat, the catalog is `full`-only, and no key configured means nothing is sent at all.
+
 **Configurability of new features:** when adding a feature, ask whether the user might reasonably want to customize it. If yes, expose it as a setting:
 
 - **App-level** (per developer, machine-local) → add to `app/stores/settingsStore.ts`, surface in the Settings dialog (`app/components/shared/SettingsDialog/`), and document in [`docs/app-settings.md`](docs/app-settings.md). Use `SettingsScreenField` from Peacock for layout consistency. Per-project personal prefs (e.g. branch prefix) go in `~/.argus/user-project-settings.json` instead — see `packages/host/src/services/userProjectSettings/store.ts`.
