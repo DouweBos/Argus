@@ -57,7 +57,10 @@ struct InboxView: View {
                 Task { await proposals.resolve(id: proposal.id, note: note) }
               },
               onOpenRun: proposal.runId.map { runId in
-                { router.push(.run(id: runId, label: proposal.automationName)) }
+                {
+                  Telemetry.capture(.proposalOpenedAsRun)
+                  router.push(.run(id: runId, label: proposal.automationName))
+                }
               })
           }
         }
