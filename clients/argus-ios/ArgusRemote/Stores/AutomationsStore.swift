@@ -192,7 +192,7 @@ final class AutomationsStore {
         .automationsMemories, Params(automation_id: automationId), as: Result.self
       ).memories
     } catch {
-      self.error = "Couldn't read that automation's memories — \(AppStore.describe(error))"
+      fail("Couldn't read that automation's memories", error)
     }
   }
 
@@ -227,7 +227,7 @@ final class AutomationsStore {
 
       return true
     } catch {
-      self.error = "Couldn't save that memory — \(AppStore.describe(error))"
+      fail("Couldn't save that memory", error)
 
       return false
     }
@@ -248,7 +248,7 @@ final class AutomationsStore {
 
       return true
     } catch {
-      self.error = "Couldn't delete that memory — \(AppStore.describe(error))"
+      fail("Couldn't delete that memory", error)
 
       return false
     }
