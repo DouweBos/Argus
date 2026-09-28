@@ -52,7 +52,9 @@ import {
 } from "../automation/shellGuard";
 import { webBrowserPool } from "../browser/pool";
 import {
+  type AuthOutcome,
   classifyRunFailure,
+  classifyStreamLine,
   clearAuthFailure,
   envForAccount,
   recordAuthOutcome,
@@ -556,8 +558,7 @@ export async function startAgent(
   // Wire the runner's events to the existing IPC channels & vitals
   // -------------------------------------------------------------------------
 
-  const noteRunFailure = (line: string): void => {
-    const outcome = classifyRunFailure(line);
+  const noteRunFailure = (outcome: AuthOutcome): void => {
     if (outcome !== "rate_limited" && outcome !== "reauth") {
       return;
     }
@@ -577,7 +578,7 @@ export async function startAgent(
   handle.on("stderr", (line: string) => {
     // A dead refresh token only shows up here — surface it on the account so
     // Settings can offer a re-login instead of claiming it's signed in.
-    noteRunFailure(line);
+    noteRunFailure(classifyRunFailure(line));
     emitHostEvent(`agent:stderr:${agentId}`, line);
   });
 
@@ -607,16 +608,10 @@ export async function startAgent(
   });
 
   handle.on("stream-event", (line: string) => {
-    // A revoked token reaches us as an API error in the stream, not on stderr.
-    // The cheap pre-gate covers quota text too — a weekly-limit error looks
-    // like an auth failure to `classifyRunFailure`, which is why it checks
-    // limits first, and auth words alone would never let it through.
-    if (
-      line.includes("authentication_error") ||
-      line.includes("api_key") ||
-      line.includes("limit")
-    ) {
-      noteRunFailure(line);
+    // A revoked token or spent quota reaches us as an API error in the stream,
+    // not on stderr. The cheap pre-gate skips parsing ordinary lines.
+    if (line.includes('"error"') || line.includes('"is_error":true')) {
+      noteRunFailure(classifyStreamLine(line));
     }
     onStreamLine(agentId, line);
     emitHostEvent(eventChannel, line);

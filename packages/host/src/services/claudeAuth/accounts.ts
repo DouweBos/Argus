@@ -262,7 +262,7 @@ const AUTH_FAILURE =
  * byte count on the debug output this runs against.
  */
 const RATE_LIMIT =
-  /weekly limit|usage limit|rate.?limit exceeded|hit your (?:weekly|hourly|daily|monthly) limit|too many requests|(?:status|error|code)[ ="-]*429\b/i;
+  /weekly limit|usage limit|rate.?limit exceeded|hit your (?:weekly|hourly|daily|monthly|session) limit|too many requests|(?:status|error|code)[ ="-]*429\b/i;
 
 /**
  * What one CLI run with an account's credentials says about it. `unknown` means
@@ -282,6 +282,37 @@ export function classifyRunFailure(text: string): AuthOutcome {
   }
   if (AUTH_FAILURE.test(text)) {
     return "reauth";
+  }
+
+  return "unknown";
+}
+
+/**
+ * Read one stream-json line, trusting only the CLI's own error envelopes. Tool
+ * results and assistant text quote arbitrary content — an agent grepping this
+ * file would otherwise flag its own account as limited.
+ */
+export function classifyStreamLine(line: string): AuthOutcome {
+  let msg: {
+    type?: unknown;
+    error?: unknown;
+    is_error?: unknown;
+    result?: unknown;
+  };
+  try {
+    msg = JSON.parse(line) as typeof msg;
+  } catch {
+    return "unknown";
+  }
+  if (msg.type === "assistant") {
+    if (msg.error === "rate_limit") {
+      return "rate_limited";
+    }
+
+    return msg.error === "authentication_failed" ? "reauth" : "unknown";
+  }
+  if (msg.type === "result" && msg.is_error === true) {
+    return classifyRunFailure(typeof msg.result === "string" ? msg.result : "");
   }
 
   return "unknown";
