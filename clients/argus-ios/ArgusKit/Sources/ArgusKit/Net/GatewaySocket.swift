@@ -23,6 +23,8 @@ public actor GatewaySocket {
   private var reconnectTask: Task<Void, Never>?
 
   private static let maxBackoff: Duration = .seconds(30)
+  /// `MAX_PAYLOAD` in the host's `localGatewayServer.ts`.
+  private static let maxMessageSize = 16 * 1024 * 1024
 
   public init(url: URL, session: URLSession = .shared) {
     self.url = url
@@ -65,6 +67,9 @@ public actor GatewaySocket {
   private func open() {
     guard !closedByUs else { return }
     let task = session.webSocketTask(with: url)
+    // URLSession's 1 MiB default drops the socket on a long transcript page;
+    // match the gateway's own frame ceiling instead.
+    task.maximumMessageSize = Self.maxMessageSize
     self.task = task
     task.resume()
     // URLSession has no "did open" callback without a delegate, and the first
