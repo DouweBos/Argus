@@ -69,6 +69,8 @@ module.exports = {
   mac: {
     // Distribution build — signed with Developer ID, notarized, stapled.
     identity: "Douwe Bos (CKZT75PN5T)",
+    // Icon Composer bundle: follows light/dark on macOS 26+; actool renders the older-macOS .icns from it.
+    icon: "build/AppIcon.icon",
     target: [
       { target: "dmg", arch: ["arm64"] },
       { target: "zip", arch: ["arm64"] },
