@@ -56,6 +56,10 @@ export interface EventMap {
   app_error: { message: string; scope: string };
   app_launched: undefined;
   app_quit: undefined;
+  claude_account_rechecked: {
+    badge_cleared: boolean;
+    outcome: "ok" | "rate_limited" | "reauth" | "unknown";
+  };
   onboarding_completed: undefined;
   renderer_started: { popout: string };
   scratch_pad_created: { has_name: boolean };

@@ -15,8 +15,6 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import {
-  classifyRunFailure,
-  envForAccount,
   getActiveAccountId,
   listClaudeAccounts,
   recordAuthOutcome,
@@ -24,6 +22,7 @@ import {
   type ClaudeAccount,
 } from "../claudeAuth/accounts";
 import { emitAccountsChanged } from "../claudeAuth/claudeAuth";
+import { probeAccountAuth } from "../claudeAuth/probe";
 import { resolveBinary } from "../dependencies/check";
 
 const execFileAsync = promisify(execFile);
@@ -59,53 +58,6 @@ async function checkClaudeCli(): Promise<PrereqResult> {
     status: "pass",
     message: resolved,
   };
-}
-
-/**
- * Ask one account's CLI to do the smallest possible thing. The output matters
- * as much as the exit code: a spent quota and a dead token both fail, and only
- * the text says which — otherwise every limit reads as "not authenticated".
- */
-async function probeAccountAuth(id: string): Promise<AuthOutcome> {
-  const collect = (err: unknown): string => {
-    const e = err as { message?: string; stderr?: string; stdout?: string };
-
-    return [e.stdout, e.stderr, e.message].filter(Boolean).join("\n");
-  };
-
-  try {
-    const { stdout } = await runTimeout(execClaudePing(id), 12_000);
-    const found = classifyRunFailure(stdout);
-    if (found !== "unknown") {
-      return found;
-    }
-
-    // The CLI can exit 0 with the failure inside the JSON envelope, so an
-    // errored reply proves nothing about the credentials either way.
-    return stdout.includes('"is_error":true') ? "unknown" : "ok";
-  } catch (err) {
-    return classifyRunFailure(collect(err));
-  }
-}
-
-/**
- * Gateway credentials, which outrank the account's own sign-in when the CLI
- * sees them. Argus can inherit them from the shell that launched it, and then
- * the ping would report on the gateway rather than the account it names.
- */
-const GATEWAY_ENV = ["ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN"];
-
-function execClaudePing(id: string): Promise<{ stdout: string }> {
-  const env = envForAccount(id);
-  for (const key of GATEWAY_ENV) {
-    Reflect.deleteProperty(env, key);
-  }
-
-  return execFileAsync(
-    "claude",
-    ["--print", "--model", "haiku", "--output-format", "json", "ping"],
-    { env, maxBuffer: 4 * 1024 * 1024, timeout: 12_000 },
-  );
 }
 
 /** Name an account by, for a message that says which one to act on. */
