@@ -100,7 +100,12 @@ export class ClaudeCodeRunner implements LlmRunner {
     const child = spawn(CLAUDE_BIN, cliArgs, {
       cwd: args.cwd,
       stdio: ["pipe", "pipe", "pipe"],
-      env: args.env,
+      // Opt in to `session_state_changed` — the CLI's own busy/idle signal,
+      // which stays `running` through background work after a `result`.
+      env: {
+        ...(args.env ?? process.env),
+        CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS: "1",
+      },
     });
 
     info(`[agent:${args.agentId}] debug log: ${args.debugLogPath}`);

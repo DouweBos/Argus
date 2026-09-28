@@ -716,6 +716,7 @@ describe("agent_status", () => {
       resultSummary: null,
       exitWaiters: [],
       turnWaiters: [],
+      emitsSessionState: true,
       turnsCompleted: 0,
       createdAt: 1_700_000_000_000,
       lastEventAt: 1_700_000_000_000,
