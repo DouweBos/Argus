@@ -39,7 +39,7 @@ struct GuardrailFields: View {
               .map { $0.trimmingCharacters(in: .whitespaces) }
               .filter { !$0.isEmpty }
           }),
-        mono: true)
+        mono: true, input: .code)
 
       Toggle("Require green CI before an auto-merge", isOn: $guardrails.requireCleanCi)
         .font(.system(size: 14))
@@ -69,7 +69,7 @@ struct GuardrailFields: View {
             let parsed = Double(typed.replacingOccurrences(of: ",", with: "."))
             value.wrappedValue = (parsed.map { $0 >= 0 ? $0 : fallback }) ?? fallback
           }),
-        keyboard: .decimalPad, mono: true)
+        keyboard: .decimalPad, mono: true, input: .code)
     }
   }
 

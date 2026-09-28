@@ -69,6 +69,10 @@ struct SegmentedControl<Value: Hashable>: View {
 }
 
 struct ThemedTextField: View {
+  /// Drives keyboard assistance: prose gets autocorrect and predictions,
+  /// code (branches, globs, pairing codes) must be typed verbatim.
+  enum Input { case prose, name, code }
+
   @Environment(\.theme) private var theme
   let placeholder: String
   @Binding var text: String
@@ -76,6 +80,7 @@ struct ThemedTextField: View {
   var lines: ClosedRange<Int> = 2...6
   var keyboard: UIKeyboardType = .default
   var mono = false
+  var input: Input = .prose
   var onSubmit: (() -> Void)?
 
   var body: some View {
@@ -89,8 +94,8 @@ struct ThemedTextField: View {
     .font(mono ? .system(size: 14, design: .monospaced) : .system(size: 15))
     .foregroundStyle(theme.text)
     .keyboardType(keyboard)
-    .textInputAutocapitalization(.never)
-    .autocorrectionDisabled()
+    .textInputAutocapitalization(autocapitalization)
+    .autocorrectionDisabled(input == .code)
     .padding(.horizontal, 10)
     .padding(.vertical, 9)
     .background(theme.bgTertiary)
@@ -99,6 +104,14 @@ struct ThemedTextField: View {
       RoundedRectangle(cornerRadius: theme.radiusSmall).stroke(theme.border, lineWidth: 1)
     )
     .onSubmit { onSubmit?() }
+  }
+
+  private var autocapitalization: TextInputAutocapitalization {
+    switch input {
+    case .prose: .sentences
+    case .name: .words
+    case .code: .never
+    }
   }
 }
 

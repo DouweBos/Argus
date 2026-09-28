@@ -235,7 +235,7 @@ struct BranchNameSheet: View {
     NavigationStack {
       Screen {
         Field(label: "BRANCH NAME") {
-          ThemedTextField(placeholder: "new-branch-name", text: $name, mono: true)
+          ThemedTextField(placeholder: "new-branch-name", text: $name, mono: true, input: .code)
         }
         if offerCheckout {
           Toggle(isOn: $checkout) { MutedText("Check out after creating") }
