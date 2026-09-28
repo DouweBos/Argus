@@ -42,6 +42,7 @@ import {
 } from "@argus/remote-protocol";
 import type { z } from "zod";
 import { emitHostEvent } from "@argus/host/bus";
+import { error as logError, info as logInfo } from "@argus/host/logger";
 import { appState } from "../../state";
 import {
   interruptAgent,
@@ -117,6 +118,7 @@ import {
   setSessionBaseBranch,
   stageAll,
 } from "../session/sessionOps";
+import { waitForSessionReady } from "../session/waitForReady";
 import { computeSessionDiffStats } from "../session/watcher";
 import {
   androidButton,
@@ -136,6 +138,7 @@ import {
   simulatorTouch,
 } from "../simulator/ios";
 import { getVideoDims } from "../simulator/videoForward";
+import { capture } from "../telemetry/telemetry";
 import { listPinnedBranches } from "../userProjectSettings/store";
 import {
   createRemoteAutomation,
@@ -346,6 +349,42 @@ function androidToRemoteDevice(d: {
 }
 
 // --- Mappers (desktop model → monitor-scoped remote model) -----------------
+
+/**
+ * Start an agent in a session that was just created and hand it `prompt`
+ * once setup finishes. Runs on the host so the client that asked can go away
+ * — a backgrounded phone or a reloaded window must not strand the prompt.
+ */
+export async function startAgentWhenReady(
+  sessionId: string,
+  prompt: string,
+): Promise<void> {
+  try {
+    await waitForSessionReady(sessionId);
+    const agent = await startAgent(sessionId);
+    // Backend-initiated spawns are invisible to the UI without this.
+    emitHostEvent("agent:started", {
+      agent_id: agent.agent_id,
+      session_id: agent.session_id,
+      status: agent.status,
+      parent_agent_id: agent.parent_agent_id,
+      created_at: agent.created_at,
+      initial_prompt: prompt,
+      model: agent.model,
+    });
+    sendAgentMessage(agent.agent_id, prompt);
+    // The renderer only draws user bubbles for sends it made itself.
+    emitHostEvent(`agent:remote-message:${agent.agent_id}`, {
+      message: prompt,
+      author: null,
+    });
+    logInfo(`Started agent ${agent.agent_id} with its prompt in ${sessionId}`);
+    capture("session_prompt_dispatched", { success: true });
+  } catch (e) {
+    logError(`Couldn't start the prompted agent in ${sessionId}: ${String(e)}`);
+    capture("session_prompt_dispatched", { success: false });
+  }
+}
 
 function sessionStatus(status: Session["status"]): RemoteSession["status"] {
   return typeof status === "string" ? status : "error";
@@ -1441,8 +1480,14 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
 
   "sessions.create": async (params) => {
-    const { repo_root, branch, description, use_existing_branch, base_branch } =
-      parse("sessions.create", params);
+    const {
+      repo_root,
+      branch,
+      description,
+      use_existing_branch,
+      base_branch,
+      prompt,
+    } = parse("sessions.create", params);
     requireKnownRepoRoot(repo_root);
     const session = await control(() =>
       createSession(
@@ -1453,6 +1498,9 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         base_branch,
       ),
     );
+    if (prompt?.trim()) {
+      startAgentWhenReady(session.id, prompt).catch(() => {});
+    }
 
     return { session: toRemoteSession(session) };
   },

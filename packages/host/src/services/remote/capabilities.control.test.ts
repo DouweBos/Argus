@@ -499,3 +499,33 @@ describe("read-only changes review (monitor scope)", () => {
     expect(getSessionFullDiff).toHaveBeenCalledWith("s1");
   });
 });
+
+describe("sessions.create with a prompt", () => {
+  it("starts the agent on the host once setup finishes", async () => {
+    const { createSession } = vi.mocked(await import("../session/manager"));
+    createSession.mockResolvedValueOnce({
+      id: "s2",
+      status: "initializing",
+    } as never);
+    appState.sessions.set("s2", { id: "s2", status: "initializing" } as never);
+
+    await dispatch(
+      "sessions.create",
+      {
+        repo_root: "/repo",
+        branch: "",
+        description: "Implement the plan",
+        prompt: "Implement the plan",
+      },
+      makeCtx(["monitor", "control"]),
+    );
+    // The client is gone by now; the host must not need it to finish.
+    expect(startAgent).not.toHaveBeenCalled();
+
+    appState.sessions.set("s2", { id: "s2", status: "ready" } as never);
+    await vi.waitFor(() =>
+      expect(sendAgentMessage).toHaveBeenCalledWith("a1", "Implement the plan"),
+    );
+    expect(startAgent).toHaveBeenCalledWith("s2");
+  });
+});
