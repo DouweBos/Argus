@@ -124,42 +124,58 @@ private enum PendingOpen {
   case handoff(Handoff)
 }
 
+/// UIKit asserts its completion handlers run on the main thread; the `async`
+/// delegate variants call them from the cooperative pool and abort the app.
+private struct MainThreadCompletion<T>: @unchecked Sendable {
+  let call: (T) -> Void
+}
+
 extension NotificationRouter: UNUserNotificationCenterDelegate {
   nonisolated func userNotificationCenter(
     _ center: UNUserNotificationCenter,
-    didReceive response: UNNotificationResponse
-  ) async {
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
     let info = response.notification.request.content.userInfo
     let agentId = info[NotificationUserInfoKey.agentId] as? String
     let toolUseId = info[NotificationUserInfoKey.toolUseId] as? String
     let label = info[NotificationUserInfoKey.label] as? String ?? "Agent"
     let action = response.actionIdentifier
+    let completion = MainThreadCompletion<Void> { _ in completionHandler() }
 
-    await MainActor.run {
-      guard let agentId else { return }
-      if action == NotificationAction.approve || action == NotificationAction.deny {
-        guard let toolUseId else { return }
-        let decision = action == NotificationAction.approve ? "allow" : "deny"
-        // Persisted first, then sent — an answer given on a train has to
-        // survive until there is a connection to send it on.
-        if let app = self.app {
-          app.queueOfflineDecision(
-            agentId: agentId, toolUseId: toolUseId, decision: decision)
-          Task { await app.respond(
-            agentId: agentId, toolUseId: toolUseId, decision: decision,
-            fromNotification: true) }
-        }
-        return
-      }
-      self.open(agentId: agentId, label: label)
+    Task { @MainActor in
+      handle(agentId: agentId, toolUseId: toolUseId, label: label, action: action)
+      completion.call(())
     }
   }
 
   nonisolated func userNotificationCenter(
     _ center: UNUserNotificationCenter,
-    willPresent notification: UNNotification
-  ) async -> UNNotificationPresentationOptions {
-    [.banner, .list]
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler:
+      @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    let completion = MainThreadCompletion(call: completionHandler)
+    Task { @MainActor in completion.call([.banner, .list]) }
+  }
+
+  private func handle(agentId: String?, toolUseId: String?, label: String, action: String) {
+    guard let agentId else { return }
+    if action == NotificationAction.approve || action == NotificationAction.deny {
+      guard let toolUseId else { return }
+      let decision = action == NotificationAction.approve ? "allow" : "deny"
+      // Persisted first, then sent — an answer given on a train has to
+      // survive until there is a connection to send it on.
+      if let app {
+        app.queueOfflineDecision(
+          agentId: agentId, toolUseId: toolUseId, decision: decision)
+        Task { await app.respond(
+          agentId: agentId, toolUseId: toolUseId, decision: decision,
+          fromNotification: true) }
+      }
+      return
+    }
+    open(agentId: agentId, label: label)
   }
 }
 
