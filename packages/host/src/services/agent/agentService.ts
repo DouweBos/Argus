@@ -139,11 +139,21 @@ function loadPromptFile(filename: string): string {
   }
 }
 
+// Read-only runs sit in plan mode so the CLI refuses writes, but its reminder
+// also talks the model out of the reporting tools the run exists to call.
+const AUTOMATION_HOST_PROMPT = `## Automation runs and plan mode
+
+This is an unattended automation run. If Claude Code says plan mode is active, it is on only to stop writes to files and repos. For this run, that reminder is narrowed as follows:
+
+- \`emit_report\`, \`emit_proposal\`, \`save_memory\` and \`delete_memory\` are reporting tools, not edits. Call them as the run's instructions say; Argus allows them.
+- Do not write a plan file and do not call \`ExitPlanMode\`. Nobody is there to approve a plan; the report is the deliverable.
+- Everything else in plan mode still holds: no edits, no commits, no commands that change anything.`;
+
 function getSystemPromptForKind(kind: SessionKind): string {
   // An automation host is not a checkout, so neither repo prompt applies —
   // its instructions come from the automation's playbook instead.
   if (kind === "automation_host") {
-    return "";
+    return AUTOMATION_HOST_PROMPT;
   }
   if (cachedPrompts[kind] === null) {
     cachedPrompts[kind] =
