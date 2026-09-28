@@ -8,3 +8,4 @@ clients
 dist-electron
 release
 release-server
+build/*.icon
