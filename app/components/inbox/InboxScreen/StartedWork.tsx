@@ -56,9 +56,7 @@ export function StartedWork({ proposals }: { proposals: Proposal[] }) {
               )
             }
             onOpen={() => selectSession(sessionId)}
-            subtitle={
-              session ? `${project} · ${session.branch}` : "Session is gone"
-            }
+            subtitle={session && `${project} · ${session.branch}`}
             title={proposal.title}
           />
         );
