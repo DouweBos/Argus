@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.22.0
+
+### Minor Changes
+
+- a2215da: Scratch pads let you start an agent that belongs to no project, in its own folder, from the sidebar, the command palette or the iOS app.
+
 ## 0.21.0
 
 ### Minor Changes
