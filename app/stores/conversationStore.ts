@@ -11,6 +11,7 @@ import { create } from "zustand";
 import { contextWindowFromModelUsage } from "@argus/host/services/agent/contextWindow";
 import { rememberContextWindow } from "../lib/contextWindow";
 import { persistLastKnownCapabilities } from "../lib/lastKnownCapabilities";
+import { toToolResult } from "../lib/toolResult";
 
 export interface TodoItem {
   activeForm?: string;
@@ -1075,15 +1076,7 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
             messages,
             match.tool_use_id,
             (tc) => {
-              const raw = match.content;
-              let result: ToolResultBlock[] | string;
-              if (typeof raw === "string") {
-                result = raw;
-              } else if (Array.isArray(raw)) {
-                result = raw as ToolResultBlock[];
-              } else {
-                result = JSON.stringify(raw, null, 2);
-              }
+              const result = toToolResult(match.content);
               const isDenyAnswerFlow =
                 tc.name === "AskUserQuestion" || tc.name === "ExitPlanMode";
               const nextTc: ToolCallInfo = {
@@ -1138,15 +1131,7 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
           messages,
           match.tool_use_id,
           (tc) => {
-            const raw = match.content;
-            let result: ToolResultBlock[] | string;
-            if (typeof raw === "string") {
-              result = raw;
-            } else if (Array.isArray(raw)) {
-              result = raw as ToolResultBlock[];
-            } else {
-              result = JSON.stringify(raw, null, 2);
-            }
+            const result = toToolResult(match.content);
 
             // AskUserQuestion and ExitPlanMode use a deny-with-message pattern to
             // pass the user's answer back — the CLI marks the tool_result as
