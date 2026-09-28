@@ -43,7 +43,9 @@ vi.mock("../../../lib/transport", () => ({ subscribe: () => () => undefined }));
 
 vi.mock("../../../stores/sessionStore", () => ({
   selectSession: vi.fn(),
-  useSessions: () => [],
+  useSessions: () => [
+    { id: "s-1", repo_root: "/work/app", branch: "fix-flake" },
+  ],
 }));
 
 const { setProposalState } = await import("../../../stores/proposalStore");
@@ -235,6 +237,19 @@ describe("inboxScreen", () => {
     ).map((h) => h.textContent);
     expect(headings[0]).toContain("Decide");
     expect(headings[1]).toContain("Argus is on it");
+  });
+
+  it("drops started work whose session was merged or deleted", () => {
+    setProposalState({
+      proposals: [
+        proposal({ id: "p-2", status: "auto_started", session_id: "gone" }),
+      ],
+      loading: false,
+      error: null,
+    });
+    render(<InboxScreen />);
+
+    expect(screen.queryByText("Argus is on it")).toBeNull();
   });
 
   it("lists an unread report so nobody has to hunt for it in Automations", () => {

@@ -12,6 +12,7 @@ import {
   usePendingProposals,
   useStartedProposals,
 } from "../../stores/proposalStore";
+import { useSessions } from "../../stores/sessionStore";
 
 /** A run that failed days ago is history, not an inbox item. */
 const FAILED_RUN_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -32,7 +33,11 @@ export interface InboxItems {
 
 export function useInboxItems(): InboxItems {
   const pending = usePendingProposals();
-  const started = useStartedProposals();
+  const sessions = useSessions();
+  // A merged or deleted session leaves its proposal started; there is nothing left to open.
+  const started = useStartedProposals().filter((p) =>
+    sessions.some((s) => s.id === p.session_id),
+  );
   const cleared = useClearedProposals();
   const runs = useAllRuns();
   // The cut-off below is relative to now, so it has to move while the screen
