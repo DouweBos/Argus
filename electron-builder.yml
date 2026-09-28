@@ -44,6 +44,8 @@ extraResources:
 afterPack: scripts/electron-after-pack.cjs
 mac:
   identity: null
+  # Icon Composer bundle: follows light/dark on macOS 26+; actool renders the older-macOS .icns from it.
+  icon: build/AppIcon.icon
   target:
     - target: dir
       arch:
