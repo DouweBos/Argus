@@ -219,6 +219,8 @@ export const MethodParams = {
     description: z.string(),
     use_existing_branch: z.boolean().optional(),
     base_branch: z.string().optional(),
+    /** Start an agent on this once setup finishes — the host waits, not the client. */
+    prompt: z.string().max(100_000).optional(),
   }),
   "sessions.files": z.object({ session_id: z.string() }),
   "sessions.resolve_mention_path": z.object({

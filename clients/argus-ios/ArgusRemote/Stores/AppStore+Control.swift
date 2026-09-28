@@ -346,7 +346,7 @@ extension AppStore {
   @discardableResult
   func createSession(
     repoRoot: String, branch: String, description: String,
-    useExistingBranch: Bool? = nil, baseBranch: String? = nil
+    useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil
   ) async -> RemoteSession? {
     guard let transport else { return nil }
     struct Params: Encodable {
@@ -355,6 +355,7 @@ extension AppStore {
       let description: String
       let use_existing_branch: Bool?
       let base_branch: String?
+      let prompt: String?
     }
     struct Result: Decodable { let session: RemoteSession }
     do {
@@ -362,7 +363,7 @@ extension AppStore {
         .sessionsCreate,
         Params(
           repo_root: repoRoot, branch: branch, description: description,
-          use_existing_branch: useExistingBranch, base_branch: baseBranch),
+          use_existing_branch: useExistingBranch, base_branch: baseBranch, prompt: prompt),
         as: Result.self
       ).session
     } catch {
@@ -371,37 +372,15 @@ extension AppStore {
     }
   }
 
-  /// Hand a plan to a fresh session: create it, wait for its worktree, then
-  /// start an agent on the plan. The desktop seeds the prompt renderer-side
-  /// once the session turns ready; there is no host-side equivalent, so the
-  /// wait happens here.
+  /// Hand a plan to a fresh session. The computer starts the agent once the
+  /// worktree is ready, so backgrounding the phone can't strand the plan.
   func handOffPlan(repoRoot: String, plan: String) async {
     let prompt = "Implement the following plan:\n\n\(plan)"
-    guard let session = await createSession(repoRoot: repoRoot, branch: "", description: prompt)
+    guard
+      await createSession(repoRoot: repoRoot, branch: "", description: prompt, prompt: prompt)
+        != nil
     else { return }
-
-    // Spawning before the worktree exists would give the agent the wrong cwd.
-    var ready = session.status == .ready
-    for _ in 0..<60 where !ready {
-      try? await Task.sleep(for: .seconds(2))
-      await loadSessions(repoRoot: repoRoot)
-      guard let current = sessionsByRepo[repoRoot]?.first(where: { $0.id == session.id }) else {
-        break
-      }
-      if current.status == .error {
-        lastError = "The new session failed to set up, so the plan wasn't handed off."
-        return
-      }
-      ready = current.status == .ready
-    }
-    guard ready else {
-      lastError = "The new session is still setting up — start the plan from it once it's ready."
-      return
-    }
-
-    guard let agent = await spawnAgent(sessionId: session.id) else { return }
-    await sendMessage(agentId: agent.agentId, message: prompt)
-    await loadAgents(repoRoot: repoRoot)
+    await loadSessions(repoRoot: repoRoot)
   }
 
   // MARK: Landing work

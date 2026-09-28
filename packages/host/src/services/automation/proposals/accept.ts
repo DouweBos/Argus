@@ -12,16 +12,13 @@ import type { Proposal } from "./models";
 import type { Session } from "../../session/models";
 import { emitHostEvent } from "@argus/host/bus";
 import { info } from "@argus/host/logger";
-import { appState } from "../../../state";
 import { sendAgentMessage, startAgent } from "../../agent/agentService";
 import { ensureRepoRegistered } from "../../mcp/projects";
 import { createSession } from "../../session/manager";
+import { waitForSessionReady } from "../../session/waitForReady";
 import { getAutomation } from "../manager";
 import { recordAutomationSession } from "../ownedSessions";
 import { requireProposal, updateProposal } from "./manager";
-
-/** Setup pipelines can install dependencies, so give them room. */
-const SESSION_READY_TIMEOUT_MS = 15 * 60 * 1000;
 
 export interface AcceptProposalResult {
   proposal: Proposal;
@@ -124,24 +121,6 @@ export async function acceptProposal(
 
 function emitSessionCreated(session: Session): void {
   emitHostEvent("session:created", { ...session });
-}
-
-async function waitForSessionReady(sessionId: string): Promise<void> {
-  const start = Date.now();
-  while (Date.now() - start < SESSION_READY_TIMEOUT_MS) {
-    const session = appState.sessions.get(sessionId);
-    if (!session) {
-      throw `Session ${sessionId} was deleted before it became ready`;
-    }
-    if (session.status === "ready") {
-      return;
-    }
-    if (typeof session.status !== "string") {
-      throw `Session ${sessionId} failed to initialize: ${session.status.error}`;
-    }
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  throw `Timed out waiting for session ${sessionId} to become ready`;
 }
 
 /** The proposal, restated as the agent's brief. */
