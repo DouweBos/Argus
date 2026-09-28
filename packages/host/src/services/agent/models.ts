@@ -117,9 +117,15 @@ export interface AgentSession {
   /**
    * Resolvers for callers waiting on the current turn to finish (status
    * transitioning to `idle`). Fired when the CLI emits a
-   * `session_state_changed` event with `state: "idle"`.
+   * `session_state_changed` event with `state: "idle"`, or on `result` for
+   * CLIs that don't emit state events.
    */
   turnWaiters: ((status: AgentStatusValue) => void)[];
+  /**
+   * The CLI has sent a `session_state_changed`, so it owns `status`. Until
+   * then (older CLIs) a `result` stands in for the idle transition.
+   */
+  emitsSessionState: boolean;
   /**
    * Number of turns that have transitioned running → idle. Used by
    * `wait_for_agent` to distinguish a freshly spawned agent (idle but

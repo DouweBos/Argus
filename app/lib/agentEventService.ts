@@ -428,46 +428,13 @@ export function startAgentListening(agentId: string): void {
         }
       }
 
-      // A "result" event means Claude finished processing the current prompt.
-      // Clear the in-flight flag and drain queued messages. If nothing is
-      // queued, transition to idle — we cannot rely solely on a subsequent
-      // session_state_changed(idle) because it may arrive before result
-      // (creating a race where trySetIdle is blocked by inflight) or not
-      // arrive at all for text-only responses.
+      // A `result` is not the agent going idle — background work can follow
+      // it. Hold the outcome until the backend's `idle` ends the turn.
       if (parsed.type === "result") {
-        inflight.delete(agentId);
-        const drained = trySendNextQueued(agentId);
-        if (!drained) {
-          trySetIdle(agentId);
-          notifyAgentFinished(
-            agentId,
-            parsed.duration_ms,
-            parsed.subtype === "error" ? "error" : "success",
-          );
-        }
-      }
-
-      // A "system" init event means the CLI just started and is ready for
-      // input.  Try to drain queued messages; set idle only if nothing is
-      // in-flight.
-      if (parsed.type === "system" && parsed.subtype === "init") {
-        if (!trySendNextQueued(agentId)) {
-          trySetIdle(agentId);
-        }
-      }
-
-      // Authoritative idle/running signal from the CLI.
-      if (
-        parsed.type === "system" &&
-        parsed.subtype === "session_state_changed"
-      ) {
-        if (parsed.state === "idle") {
-          if (!trySendNextQueued(agentId)) {
-            trySetIdle(agentId);
-          }
-        } else if (parsed.state === "running") {
-          updateAgent(agentId, { status: "running" });
-        }
+        finishedTurns.set(agentId, {
+          durationMs: parsed.duration_ms,
+          subtype: parsed.subtype === "error" ? "error" : "success",
+        });
       }
     } catch {
       // Ignore malformed or non-JSON events (e.g. unknown system subtypes)
@@ -504,14 +471,14 @@ export function startAgentListening(agentId: string): void {
     exitListeners.set(agentId, unlisten);
   });
 
-  // Reflect the backend's authoritative "running" transition — set when a
-  // prompt is injected from anywhere (remote web client, MCP), which the
-  // renderer would otherwise miss since it only marks running on its own sends.
-  // Running-only on purpose: idle/stopped stay with the queue-aware handlers.
+  // The backend's status is the CLI's own busy/idle state. Stopped/error stay
+  // with the exit listener, which saves the conversation first.
   statusListeners.set(agentId, () => {});
   listen<string>(`agent:status:${agentId}`, (event) => {
-    if (event.payload === "running") {
-      updateAgent(agentId, { status: "running" });
+    if (event.payload === "running" || event.payload === "requires_action") {
+      updateAgent(agentId, { status: event.payload });
+    } else if (event.payload === "idle") {
+      onTurnOver(agentId);
     }
   }).then((unlisten) => {
     if (!statusListeners.has(agentId)) {
@@ -775,11 +742,30 @@ export function startAgentListening(agentId: string): void {
 }
 
 /**
- * Tracks agent IDs that have an outstanding message (sent, no result yet).
- * Guards against stale `session_state_changed(idle)` signals setting the
- * agent to idle while it's still processing.
+ * Agents with a message sent but no idle back yet. Keeps overlapping drains
+ * from dispatching two queued messages into one turn.
  */
 const inflight = new Set<string>();
+
+/** Outcome of each agent's last `result`, announced once the turn is over. */
+const finishedTurns = new Map<
+  string,
+  { durationMs: number; subtype: "error" | "success" }
+>();
+
+/** The backend reports the turn over: send the next queued message or settle. */
+function onTurnOver(agentId: string): void {
+  inflight.delete(agentId);
+  const finished = finishedTurns.get(agentId);
+  finishedTurns.delete(agentId);
+  if (trySendNextQueued(agentId)) {
+    return;
+  }
+  trySetIdle(agentId);
+  if (finished) {
+    notifyAgentFinished(agentId, finished.durationMs, finished.subtype);
+  }
+}
 
 /**
  * Mark an agent as having an in-flight message.  Call this whenever a
@@ -873,6 +859,7 @@ function trySetIdle(agentId: string): void {
 /** Unsubscribe all listeners for an agent and clean up tracking state. */
 export function stopAgentListening(agentId: string): void {
   inflight.delete(agentId);
+  finishedTurns.delete(agentId);
   unwatchQueue(agentId);
   const unlisten = listeners.get(agentId);
   if (unlisten) {

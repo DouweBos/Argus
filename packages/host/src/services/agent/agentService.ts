@@ -538,6 +538,7 @@ export async function startAgent(
     resultSummary: null,
     exitWaiters: [],
     turnWaiters: [],
+    emitsSessionState: false,
     turnsCompleted: previous?.turnsCompleted ?? 0,
     suppressStatus: previous?.suppressStatus ?? false,
     createdAt: previous?.createdAt ?? Date.now(),
@@ -622,8 +623,10 @@ export async function startAgent(
     if (line.includes('"error"') || line.includes('"is_error":true')) {
       noteRunFailure(classifyStreamLine(line));
     }
-    onStreamLine(agentId, line);
+    // The line goes out first so a `result` reaches clients before the idle
+    // it can trigger.
     emitHostEvent(eventChannel, line);
+    onStreamLine(agentId, line);
   });
 
   handle.on("exit", (exitCode: number) => {
@@ -724,7 +727,7 @@ export async function startAgent(
 // Per-line vitals + status tracking (was inline in claude.ts readline loop)
 // ---------------------------------------------------------------------------
 
-function onStreamLine(agentId: string, line: string): void {
+export function onStreamLine(agentId: string, line: string): void {
   const session = appState.agents.get(agentId);
   if (!session) {
     return;
@@ -794,15 +797,12 @@ function onStreamLine(agentId: string, line: string): void {
       ) {
         const prev = session.status;
         session.status = parsed.state;
+        session.emitsSessionState = true;
         if (prev !== parsed.state) {
           emitAgentStatus(agentId, parsed.state);
         }
-        // Don't increment turnsCompleted here: the CLI can flip to `idle`
-        // multiple times within a single turn (between tool calls), so this
-        // signal is unreliable as a turn counter. Authoritative increment
-        // happens in the `result` handler below. We still wake waiters on
-        // any idle transition so callers blocking purely on "is the agent
-        // idle right now" don't have to wait for the result event.
+        // `result` counts turns; `idle` is the turn really being over — it
+        // only lands once held-back results and background work have drained.
         if (parsed.state === "idle" && prev !== "idle") {
           for (const resolve of session.turnWaiters) {
             resolve("idle");
@@ -887,17 +887,16 @@ function onStreamLine(agentId: string, line: string): void {
         if (session.inflightPrompts > 0) {
           session.inflightPrompts -= 1;
         }
-        // The `result` event is the authoritative signal that the turn
-        // finished. We cannot rely solely on `session_state_changed(idle)`:
-        // it may arrive before `result` (so we'd race), or not arrive at
-        // all for text-only responses. The renderer applies the same
-        // workaround in `agentEventService.ts`. Without this, waiters and
-        // turn counters can stall on a finished agent — wait_for_agent /
-        // wait_for_any_agent would never resolve.
-        if (session.status !== "stopped" && session.status !== "error") {
+        session.turnsCompleted += 1;
+        // A `result` is not the agent going idle: background tasks can keep
+        // it working afterwards. Only CLIs without state events fall back here.
+        if (
+          !session.emitsSessionState &&
+          session.status !== "stopped" &&
+          session.status !== "error"
+        ) {
           const prev = session.status;
           session.status = "idle";
-          session.turnsCompleted += 1;
           if (prev !== "idle") {
             emitAgentStatus(agentId, "idle");
           }
@@ -1361,10 +1360,8 @@ export function sendAgentMessage(
 
   agentEntry.inflightPrompts += 1;
 
-  // Mark the agent busy as soon as the prompt is injected. The CLI's
-  // `session_state_changed(running)` is unreliable (often absent), so without
-  // this the backend status — and every remote client reading it — stays
-  // "idle" through the whole turn. The `result` handler flips it back to idle.
+  // Busy from the moment the prompt is injected, ahead of the CLI's own
+  // `session_state_changed(running)`; its `idle` flips it back.
   if (agentEntry.status !== "running") {
     agentEntry.status = "running";
     emitAgentStatus(agentId, "running");
