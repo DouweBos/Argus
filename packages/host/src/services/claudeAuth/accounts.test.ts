@@ -8,6 +8,7 @@ import {
   accountCredentialDir,
   applyActiveAccountToProcessEnv,
   classifyRunFailure,
+  classifyStreamLine,
   claudeAccountEnv,
   clearAuthFailure,
   DEFAULT_ACCOUNT_ID,
@@ -272,6 +273,59 @@ describe("claude accounts", () => {
       expect(
         classifyRunFailure("watching 4291 files, server on port 4290"),
       ).toBe("unknown");
+    });
+  });
+
+  describe("classifyStreamLine", () => {
+    it("reads the CLI's rate-limit envelope", () => {
+      const line = JSON.stringify({
+        type: "assistant",
+        error: "rate_limit",
+        message: {
+          content: [{ type: "text", text: "You've hit your session limit" }],
+        },
+      });
+      expect(classifyStreamLine(line)).toBe("rate_limited");
+    });
+
+    it("reads a failed auth envelope as needing re-auth", () => {
+      const line = JSON.stringify({
+        type: "assistant",
+        error: "authentication_failed",
+      });
+      expect(classifyStreamLine(line)).toBe("reauth");
+    });
+
+    it("reads an errored result by its text", () => {
+      const line = JSON.stringify({
+        type: "result",
+        is_error: true,
+        result: "You've hit your weekly limit · resets 6pm",
+      });
+      expect(classifyStreamLine(line)).toBe("rate_limited");
+    });
+
+    it("ignores limit text quoted in tool output or assistant prose", () => {
+      const tool = JSON.stringify({
+        type: "user",
+        message: {
+          content: [
+            {
+              type: "tool_result",
+              is_error: true,
+              content: "usage limit authentication_error",
+            },
+          ],
+        },
+      });
+      const prose = JSON.stringify({
+        type: "assistant",
+        message: {
+          content: [{ type: "text", text: "You've hit your weekly limit" }],
+        },
+      });
+      expect(classifyStreamLine(tool)).toBe("unknown");
+      expect(classifyStreamLine(prose)).toBe("unknown");
     });
   });
 
