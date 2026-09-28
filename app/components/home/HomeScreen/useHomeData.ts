@@ -123,8 +123,8 @@ export function useHomeData(): HomeData & {
     });
 
     sessions.forEach((ws) => {
-      // An automation run's directory is scratch space, not a project.
-      if (ws.kind === "automation_host") {
+      // Automation runs and scratch pads live in plain directories, not projects.
+      if (ws.kind === "automation_host" || ws.kind === "scratch_pad") {
         return;
       }
       const hostId = sessionHostId(ws.id);

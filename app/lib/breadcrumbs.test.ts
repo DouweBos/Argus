@@ -76,6 +76,18 @@ describe("breadcrumbTrail", () => {
     ]);
   });
 
+  it("puts a scratch pad under scratch pads", () => {
+    expect(
+      trail({
+        view: "session",
+        sessionId: "p1",
+        sessions: [
+          { id: "p1", kind: "scratch_pad", display_name: "Notes" } as Session,
+        ],
+      }),
+    ).toEqual(["Argus", "Scratch pads", "Notes"]);
+  });
+
   it("leaves a worktree session to the branch line", () => {
     expect(
       trail({

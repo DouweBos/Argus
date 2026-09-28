@@ -151,11 +151,20 @@ This is an unattended automation run. If Claude Code says plan mode is active, i
 - Do not write a plan file and do not call \`ExitPlanMode\`. Nobody is there to approve a plan; the report is the deliverable.
 - Everything else in plan mode still holds: no edits, no commits, no commands that change anything.`;
 
+const SCRATCH_PAD_PROMPT = `## Scratch pad
+
+You are working in an Argus scratch pad: a standalone directory for one-off work that belongs to no project and is not a git repository. Files you create here stay until the user deletes the scratch pad.
+
+The user's projects are readable at their absolute paths. When a task needs changes in one of them, prefer creating a session there with the Argus MCP tools over editing its checkout directly.`;
+
 function getSystemPromptForKind(kind: SessionKind): string {
   // An automation host is not a checkout, so neither repo prompt applies —
   // its instructions come from the automation's playbook instead.
   if (kind === "automation_host") {
     return AUTOMATION_HOST_PROMPT;
+  }
+  if (kind === "scratch_pad") {
+    return SCRATCH_PAD_PROMPT;
   }
   if (cachedPrompts[kind] === null) {
     cachedPrompts[kind] =

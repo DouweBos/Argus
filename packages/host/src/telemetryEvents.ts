@@ -18,7 +18,11 @@
 // Inlined rather than imported so this module stays usable from both the
 // renderer (`app/`) and the main process (`electron/`) without dragging in
 // electron-side type imports.
-type SessionKind = "automation_host" | "project_root" | "worktree";
+type SessionKind =
+  | "automation_host"
+  | "project_root"
+  | "scratch_pad"
+  | "worktree";
 type MergePhase = "attempt" | "continue";
 type MergeAbortKind = "merge" | "rebase";
 type MergeStrategy = "keep" | "squash";
@@ -54,6 +58,7 @@ export interface EventMap {
   app_quit: undefined;
   onboarding_completed: undefined;
   renderer_started: { popout: string };
+  scratch_pad_created: { has_name: boolean };
   session_created: {
     has_description: boolean;
     has_explicit_base_branch: boolean;

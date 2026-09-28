@@ -304,6 +304,10 @@ import {
   diagnoseTailscale,
   type TailscaleFixKind,
 } from "@argus/host/services/remote/tailscaleSetup";
+import {
+  createScratchPad,
+  listScratchPads,
+} from "@argus/host/services/scratchPad/manager";
 import { reconfigureAutoFetchForRepo } from "@argus/host/services/session/autoFetch";
 import { loadCommandMetrics } from "@argus/host/services/session/commandMetrics";
 import { gitAmendTip } from "@argus/host/services/session/gitAmend";
@@ -862,9 +866,18 @@ export function registerIpcHandlers(): void {
       }
     }
 
+    for (const pad of listScratchPads()) {
+      sessions.push(pad);
+      agents.push(...listAgents(pad.id));
+    }
+
     return { projects, sessions, agents };
   });
   handle("list_sessions", "admin", (a) => listSessions(a.repoRoot as string));
+  handle("list_scratch_pads", "admin", () => listScratchPads());
+  handle("create_scratch_pad", "admin", (a) =>
+    createScratchPad({ name: a.name as string | null | undefined }),
+  );
   handle("create_session", "admin", (a) =>
     createSession(
       a.repoRoot as string,

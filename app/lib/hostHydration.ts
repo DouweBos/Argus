@@ -17,6 +17,7 @@ import type { HostSnapshot } from "./types";
 import { setHostConnection } from "../stores/connectionStore";
 import { dropHostProjects as dropHostRecents } from "../stores/recentProjectsStore";
 import {
+  addSession,
   dropHostSessions,
   sessionHostId,
   getSessionState,
@@ -73,6 +74,10 @@ export async function hydrateHost(hostId: HostId): Promise<void> {
     } catch {
       // A project the host can no longer open shouldn't stop the rest.
     }
+  }
+  // Scratch pads belong to no project, so opening projects never lists them.
+  for (const pad of snapshot.sessions.filter((s) => s.kind === "scratch_pad")) {
+    addSession(pad, hostId);
   }
   setHostConnection(hostId, { hydrated: true, lastError: null });
 }

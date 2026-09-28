@@ -508,6 +508,53 @@ extension AppStore {
     }
   }
 
+  // MARK: Scratch pads
+
+  /// Create a scratch pad and start its agent, so there is a chat to land in.
+  func createScratchPad() async -> RemoteAgentStatus? {
+    guard let transport else { return nil }
+    struct Params: Encodable { let name: String? }
+    struct Result: Decodable { let session: RemoteSession }
+    do {
+      let pad = try await transport.request(
+        .scratchPadsCreate, Params(name: nil), as: Result.self
+      ).session
+      await loadScratchPads()
+      return await spawnAgent(sessionId: pad.id)
+    } catch {
+      report(error)
+      return nil
+    }
+  }
+
+  /// The pad's agent to open: its newest live one, else a fresh one when this
+  /// phone may start agents.
+  func scratchPadAgent(_ pad: RemoteSession) async -> RemoteAgentStatus? {
+    guard let transport else { return nil }
+    struct Params: Encodable { let session_id: String }
+    struct Result: Decodable { let agents: [RemoteAgentStatus] }
+    let agents = (try? await transport.request(
+      .agentsList, Params(session_id: pad.id), as: Result.self))?.agents ?? []
+    for agent in agents { statusByAgent[agent.agentId] = agent }
+    if let live = agents
+      .filter({ $0.status != .stopped })
+      .max(by: { ($0.createdAt ?? 0) < ($1.createdAt ?? 0) })
+    {
+      return live
+    }
+    return hasControl ? await spawnAgent(sessionId: pad.id) : nil
+  }
+
+  /// Deleting a pad removes its folder too — there is no branch to keep.
+  func deleteScratchPad(id: String) async {
+    guard let transport else { return }
+    struct Params: Encodable { let id: String }
+    do {
+      try await transport.request(.sessionsDelete, Params(id: id), as: IgnoredResult.self)
+      await loadScratchPads()
+    } catch { report(error) }
+  }
+
   func deleteSession(id: String, repoRoot: String, deleteBranch: Bool = false) async {
     guard let transport else { return }
     struct Params: Encodable {

@@ -85,6 +85,8 @@ export const HOST_ONLY_COMMANDS = new Set([
 export const REMOTE_METHODS = {
   "projects.list": "monitor",
   "sessions.list": "monitor",
+  /** Sessions that belong to no project — delete/rename go through `sessions.*`. */
+  "scratch_pads.list": "monitor",
   "agents.list": "monitor",
   "agents.status": "monitor",
   "agents.vitals": "monitor",
@@ -133,6 +135,8 @@ export const REMOTE_METHODS = {
   "agents.queue_update": "control",
   /** Create a new session inside an existing project (never a new project). */
   "sessions.create": "control",
+  /** Create a scratch pad: a session in its own directory, outside any project. */
+  "scratch_pads.create": "control",
   /** Delete a session (optionally its branch). */
   "sessions.delete": "control",
   /** Rename a session's display name. */

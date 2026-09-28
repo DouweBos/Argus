@@ -46,7 +46,7 @@ export interface SessionMeta {
    */
   branch?: string;
   /** Last known session kind, for the same reason. */
-  kind?: "automation_host" | "project_root" | "worktree";
+  kind?: "automation_host" | "project_root" | "scratch_pad" | "worktree";
   /** Epoch ms the worktree was last confirmed present on disk. */
   last_seen_at?: number;
 }

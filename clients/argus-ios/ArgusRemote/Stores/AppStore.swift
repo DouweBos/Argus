@@ -57,6 +57,8 @@ final class AppStore {
   var agentsByRepo: [String: [RemoteAgentStatus]] = [:]
   /// Every agent across every project, for the home "Recent agents" section.
   var recentAgents: [RemoteAgentStatus] = []
+  /// Sessions that belong to no project, each in its own directory.
+  var scratchPads: [RemoteSession] = []
   /// LLM runners this computer has registered, for the spawn sheet's picker.
   var runners: [RemoteRunner] = []
   var stoppedByRepo: [String: [RemoteStoppedAgent]] = [:]
@@ -300,6 +302,7 @@ final class AppStore {
     sessionsByRepo = [:]
     agentsByRepo = [:]
     recentAgents = []
+    scratchPads = []
     stoppedByRepo = [:]
     messagesByAgent = [:]
     optimisticByAgent = [:]

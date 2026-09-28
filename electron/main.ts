@@ -54,6 +54,7 @@ import {
   setWebClientDir,
   stopRemote,
 } from "@argus/host/services/remote/remoteService";
+import { restoreScratchPads } from "@argus/host/services/scratchPad/manager";
 import { restoreRepoRoots } from "@argus/host/services/session/manager";
 import { refreshAllBranches } from "@argus/host/services/session/watcher";
 import { stopAndroidCapture } from "@argus/host/services/simulator/android";
@@ -955,6 +956,7 @@ app.whenReady().then(() => {
   // accepts anyone: a client hydrates from this set the moment it attaches,
   // and on the headless server nothing else would ever fill it.
   restoreRepoRoots();
+  restoreScratchPads();
 
   // Automations. Nothing else starts the clock — the scheduler has no
   // neighbours since organizations were removed.

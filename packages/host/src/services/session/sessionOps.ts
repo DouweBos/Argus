@@ -14,6 +14,7 @@ import { emitHostEvent } from "@argus/host/bus";
 import { info } from "@argus/host/logger";
 import { appState } from "../../state";
 import { listClaudeAccounts } from "../claudeAuth/accounts";
+import { updateScratchPadRecord } from "../scratchPad/store";
 import { isBranchProtected, loadArgusConfig } from "./argusConfig";
 import { git } from "./git";
 import { withGitLock } from "./gitLock";
@@ -943,6 +944,12 @@ export function setSessionClaudeAccount(
 
   ws.claude_account_id = accountId;
   appState.sessions.set(id, ws);
+
+  if (ws.kind === "scratch_pad") {
+    updateScratchPadRecord(id, { claude_account_id: accountId });
+
+    return;
+  }
 
   const meta = loadMetadata(ws.repo_root);
   const m = meta.get(ws.path);

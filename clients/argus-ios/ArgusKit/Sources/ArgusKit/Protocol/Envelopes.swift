@@ -12,6 +12,8 @@ public enum RemoteMethod: String, Codable, Sendable {
 
   case projectsList = "projects.list"
   case sessionsList = "sessions.list"
+  case scratchPadsList = "scratch_pads.list"
+  case scratchPadsCreate = "scratch_pads.create"
   case sessionsCreate = "sessions.create"
   case sessionsDelete = "sessions.delete"
   case sessionsRename = "sessions.rename"

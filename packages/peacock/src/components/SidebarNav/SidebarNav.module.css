@@ -140,6 +140,12 @@
   padding-top: 10px;
 }
 
+.sectionTrail {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .sectionCount {
   background: var(--surface-3);
   padding: 1px 5px;

@@ -18,6 +18,8 @@ import {
   humanizeBranchName,
 } from "../llm/titleGenerator";
 import { collectAllProjects } from "../mcp/projectDiscovery";
+import { disposeScratchPad } from "../scratchPad/manager";
+import { updateScratchPadRecord } from "../scratchPad/store";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { createTerminal, setupShellCommand } from "../terminal/multiplexer";
 import {
@@ -1331,6 +1333,13 @@ export function renameSession(id: string, displayName: string): void {
   session.display_name = trimmed;
   appState.sessions.set(id, session);
 
+  if (session.kind === "scratch_pad") {
+    updateScratchPadRecord(id, { display_name: trimmed });
+    emitHostEvent("session:updated", { id, display_name: trimmed });
+
+    return;
+  }
+
   try {
     const meta = loadMetadata(session.repo_root);
     const existing = meta.get(session.path) ?? {
@@ -1464,9 +1473,11 @@ export async function deleteSession(
     emitHostEvent(`agent:exit:${agentId}`, 0);
   }
 
-  if (session.kind === "project_root") {
-    // Repo-root sessions don't have a worktree to remove on disk — delete
-    // immediately.
+  if (session.kind === "project_root" || session.kind === "scratch_pad") {
+    // Neither has a worktree to remove on disk — delete immediately.
+    if (session.kind === "scratch_pad") {
+      disposeScratchPad(id);
+    }
     appState.sessions.delete(id);
     emitHostEvent("session:deleted", id);
     info(`Deleted session ${id}`);

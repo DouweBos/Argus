@@ -9,6 +9,7 @@
  */
 
 import type { CreateSessionLlm } from "./ipc";
+import type { Session } from "./types";
 import { getAgentState, removeAgent } from "../stores/agentStore";
 import { pushError } from "../stores/notificationsStore";
 import {
@@ -32,10 +33,12 @@ import { stopAgentListening } from "./agentEventService";
 import {
   addRepoRoot as apiAddRepoRoot,
   createHeadSession as apiCreateHeadSession,
+  createScratchPad as apiCreateScratchPad,
   createSession as apiCreateSession,
   deleteSession as apiDeleteSession,
   removeRepoRoot as apiRemoveRepoRoot,
   listProjects,
+  listScratchPads,
   listSessions,
 } from "./ipc";
 import { refreshRepoBranch } from "./repoBranchSync";
@@ -198,12 +201,39 @@ export async function bootstrapProjects(): Promise<void> {
     // Backend not answering yet — the saved list alone is still worth opening.
   }
 
+  try {
+    const pads = await runOnHost(LOCAL_HOST_ID, () => listScratchPads());
+    for (const pad of pads) {
+      addSession(pad, LOCAL_HOST_ID);
+    }
+  } catch {
+    // An older host without scratch pads.
+  }
+
   for (const path of new Set([...saved, ...registered])) {
     try {
       await openProject(path, { autoSelect: false, skipRecent: true });
     } catch {
       removeOpenProject(path);
     }
+  }
+}
+
+export async function createScratchPadSession(
+  hostId: HostId = LOCAL_HOST_ID,
+): Promise<Session> {
+  try {
+    const pad = await runOnHost(hostId, () => apiCreateScratchPad());
+    addSession(pad, hostId);
+    selectSession(pad.id);
+
+    return pad;
+  } catch (err) {
+    pushError(
+      err instanceof Error ? err.message : String(err),
+      "create_scratch_pad",
+    );
+    throw err;
   }
 }
 

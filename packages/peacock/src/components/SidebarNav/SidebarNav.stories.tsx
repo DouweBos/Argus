@@ -163,6 +163,31 @@ export const FramedHome: Story = {
   ),
 };
 
+export const SectionWithAction: Story = {
+  name: "Framed · Section with action",
+  render: () => (
+    <div
+      style={{ height: 240, display: "flex", background: "var(--bg-primary)" }}
+    >
+      <SidebarNav framed aria-label="Section with action">
+        <SidebarScroll>
+          <SidebarSection
+            count={2}
+            action={
+              <SidebarRepoAction title="New scratch pad">
+                <PlusIcon size={10} />
+              </SidebarRepoAction>
+            }
+          >
+            Scratch pads
+          </SidebarSection>
+        </SidebarScroll>
+      </SidebarNav>
+      <div style={{ flex: 1 }} />
+    </div>
+  ),
+};
+
 export const FramedRepoAsHeader: Story = {
   name: "Framed · Repo as unified header",
   render: () => (

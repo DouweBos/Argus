@@ -17,7 +17,7 @@ export type RemoteProject = z.infer<typeof RemoteProject>;
 export const RemoteSession = z.object({
   id: z.string(),
   repo_root: z.string(),
-  kind: z.enum(["automation_host", "project_root", "worktree"]),
+  kind: z.enum(["automation_host", "project_root", "scratch_pad", "worktree"]),
   branch: z.string(),
   display_name: z.string().nullable().optional(),
   /** The branch a merge lands on. Absent on older hosts. */

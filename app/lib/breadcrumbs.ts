@@ -82,6 +82,14 @@ function buildTrail(input: BreadcrumbInput): Crumb[] {
       ? (input.runs.find((r) => r.host_session_id === session.id) ?? null)
       : null;
 
+  if (session?.kind === "scratch_pad") {
+    return [
+      { id: "app", label: "Argus" },
+      { id: "scratch-pads", label: "Scratch pads" },
+      { id: session.id, label: session.display_name ?? "Scratch pad" },
+    ];
+  }
+
   if (session && hostRun) {
     const crumbs = automationTrail(
       hostRun.scratch ? null : hostRun.automation_id,
