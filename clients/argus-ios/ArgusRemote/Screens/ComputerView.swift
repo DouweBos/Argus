@@ -70,7 +70,7 @@ struct ComputerView: View {
     }
 
     Field(label: "Name", caption: "Only shown on this phone.") {
-      ThemedTextField(placeholder: "Computer name", text: $name) { save(host) }
+      ThemedTextField(placeholder: "Computer name", text: $name, input: .name) { save(host) }
       Btn(label: saved ? "Saved" : "Save", tone: .secondary, small: true) { save(host) }
         .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || name == host.label)
     }

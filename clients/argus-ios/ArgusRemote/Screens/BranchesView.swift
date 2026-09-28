@@ -33,7 +33,7 @@ struct BranchesView: View {
     Screen {
       createForm
 
-      ThemedTextField(placeholder: "Filter branches", text: $filter)
+      ThemedTextField(placeholder: "Filter branches", text: $filter, input: .code)
 
       if !loaded {
         Loading(label: "Reading branches…")
@@ -53,7 +53,7 @@ struct BranchesView: View {
   @ViewBuilder
   private var createForm: some View {
     Card {
-      ThemedTextField(placeholder: "new-branch-name", text: $newBranchName)
+      ThemedTextField(placeholder: "new-branch-name", text: $newBranchName, input: .code)
       Toggle(isOn: $checkoutAfterCreate) {
         MutedText("Check out after creating")
       }

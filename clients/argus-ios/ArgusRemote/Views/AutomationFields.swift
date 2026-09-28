@@ -34,7 +34,7 @@ struct AutomationFields: View {
 
   private var basics: some View {
     Field(label: "BASICS") {
-      ThemedTextField(placeholder: "Name", text: $draft.name)
+      ThemedTextField(placeholder: "Name", text: $draft.name, input: .name)
       if showsSchedule {
         ThemedTextField(placeholder: "What it does", text: $draft.description, multiline: true)
         Toggle("Enabled", isOn: $draft.enabled)
@@ -62,10 +62,11 @@ struct AutomationFields: View {
         ThemedTextField(
           placeholder: "0 9 * * 1-5",
           text: Binding(get: { draft.cron ?? "" }, set: { draft.cron = $0 }),
-          mono: true)
+          mono: true, input: .code)
         ThemedTextField(
           placeholder: TimeZone.current.identifier,
-          text: Binding(get: { draft.timezone ?? "" }, set: { draft.timezone = $0 }))
+          text: Binding(get: { draft.timezone ?? "" }, set: { draft.timezone = $0 }),
+          input: .code)
         Toggle("Catch up after the computer was asleep", isOn: $draft.catchUp)
           .font(.system(size: 14))
           .tint(theme.accent)
@@ -98,7 +99,7 @@ struct AutomationFields: View {
         ThemedTextField(
           placeholder: "Model — blank uses the default",
           text: Binding(get: { draft.model ?? "" }, set: { draft.model = $0.isEmpty ? nil : $0 }),
-          mono: true)
+          mono: true, input: .code)
       } else {
         Btn(label: "Model: \(modelLabel)", tone: .secondary, small: true) { sheet = .model }
       }

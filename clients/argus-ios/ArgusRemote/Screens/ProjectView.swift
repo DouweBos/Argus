@@ -119,6 +119,8 @@ struct ProjectView: View {
         set: { if !$0 { renameTarget = nil } })
     ) {
       TextField(renameKind == .branch ? "new-branch-name" : "Session name", text: $renameValue)
+        .textInputAutocapitalization(renameKind == .branch ? .never : .sentences)
+        .autocorrectionDisabled(renameKind == .branch)
       Button("Cancel", role: .cancel) { renameTarget = nil }
       Button("Save", action: submitRename)
     }

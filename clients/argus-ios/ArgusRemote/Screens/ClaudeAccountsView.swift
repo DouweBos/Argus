@@ -200,10 +200,8 @@ private struct ClaudeLoginSheet: View {
             tone: .accent
           )
           Field(label: "PASTE THE CODE") {
-            ThemedTextField(placeholder: "Code from your computer", text: $code)
+            ThemedTextField(placeholder: "Code from your computer", text: $code, input: .code)
               .focused($codeFocused)
-              .textInputAutocapitalization(.never)
-              .autocorrectionDisabled()
           }
           Btn(label: "Submit code", icon: Icon.check, action: submit)
             .disabled(code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || working)
@@ -325,7 +323,7 @@ private struct RenameSheet: View {
           Banner(text: error, tone: .danger)
         }
         Field(label: "NAME") {
-          ThemedTextField(placeholder: account.email ?? account.id, text: $draft)
+          ThemedTextField(placeholder: account.email ?? account.id, text: $draft, input: .name)
         }
       }
       .navigationTitle("Rename")

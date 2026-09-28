@@ -46,7 +46,8 @@ struct PairView: View {
 
     Card {
       MutedText("Or paste the pairing code")
-      ThemedTextField(placeholder: "paste code", text: $manualCode, multiline: true)
+      ThemedTextField(
+        placeholder: "paste code", text: $manualCode, multiline: true, input: .code)
       Btn(label: "Pair", small: true) { begin(manualCode) }
         .disabled(manualCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
