@@ -123,6 +123,10 @@ export function useHomeData(): HomeData & {
     });
 
     sessions.forEach((ws) => {
+      // An automation run's directory is scratch space, not a project.
+      if (ws.kind === "automation_host") {
+        return;
+      }
       const hostId = sessionHostId(ws.id);
       if (!showsEveryHost && hostId !== routeHostId) {
         return;
