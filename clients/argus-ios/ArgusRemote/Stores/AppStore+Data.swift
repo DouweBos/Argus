@@ -30,6 +30,15 @@ extension AppStore {
     }
   }
 
+  /// Older computers don't know the method, which leaves the list empty.
+  func loadScratchPads() async {
+    guard let transport else { return }
+    struct Result: Decodable { let sessions: [RemoteSession] }
+    guard let result = try? await transport.request(
+      .scratchPadsList, EmptyParams(), as: Result.self) else { return }
+    scratchPads = result.sessions
+  }
+
   /// Runners an agent can be started on. Host-wide, so it is loaded once and
   /// shared by every spawn sheet. Older computers don't answer, which leaves
   /// the list empty and the picker hidden.

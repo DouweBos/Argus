@@ -9,9 +9,14 @@ import type { AutonomyLevel } from "../automation/models";
 
 /**
  * What a session is backed by: a git worktree, the repo root itself, or — for
- * an automation run — a neutral directory that is not a checkout at all.
+ * an automation run or a scratch pad — a neutral directory that is not a
+ * checkout at all.
  */
-export type SessionKind = "automation_host" | "project_root" | "worktree";
+export type SessionKind =
+  | "automation_host"
+  | "project_root"
+  | "scratch_pad"
+  | "worktree";
 
 /**
  * Lifecycle state of a session.

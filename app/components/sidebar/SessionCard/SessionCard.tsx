@@ -57,6 +57,17 @@ interface SessionCardProps {
   session: Session;
 }
 
+function kindIcon(kind: Session["kind"]): ReactNode {
+  if (kind === "project_root") {
+    return <Icons.RepoIcon size={13} />;
+  }
+  if (kind === "scratch_pad") {
+    return <Icons.ScratchPadIcon size={13} />;
+  }
+
+  return <Icons.BranchIcon size={13} />;
+}
+
 /** Pick the icon node + whether it pulses green (Peacock wraps the pulse). */
 function resolveSessionIcon(
   kind: Session["kind"],
@@ -65,13 +76,7 @@ function resolveSessionIcon(
   runningCount: number,
   iconOverride?: ReactNode,
 ): { node: ReactNode; pulse: boolean; title?: string } {
-  const base =
-    iconOverride ??
-    (kind === "project_root" ? (
-      <Icons.RepoIcon size={13} />
-    ) : (
-      <Icons.BranchIcon size={13} />
-    ));
+  const base = iconOverride ?? kindIcon(kind);
   const agentTitle = `${runningCount} agent${runningCount > 1 ? "s" : ""} running`;
 
   if (kind === "project_root") {
@@ -108,6 +113,9 @@ export function SessionCard({
   iconOverride,
 }: SessionCardProps) {
   const isProject = session.kind === "project_root";
+  // Not a checkout: nothing to diff, no branch to copy.
+  const isScratchPad = session.kind === "scratch_pad";
+  const noun = isScratchPad ? "Scratch Pad" : "Session";
   const [isDeleting, setIsDeleting] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{
     x: number;
@@ -146,7 +154,7 @@ export function SessionCard({
   } isn't connected — showing the last known state`;
 
   const { diffStats } = useGitObservation(session.id, {
-    enabled: isSessionReady(session.status) && !isUnavailable,
+    enabled: isSessionReady(session.status) && !isUnavailable && !isScratchPad,
   });
   const isRunning = useSessionIsRunning(session.id);
   const closeMenu = useCallback(() => setMenuPosition(null), []);
@@ -254,11 +262,15 @@ export function SessionCard({
       label: "Copy Relative Path",
       onClick: () => navigator.clipboard.writeText(toTildePath(session.path)),
     },
-    {
-      icon: <Icons.BranchIcon size={12} />,
-      label: "Copy Branch Name",
-      onClick: () => navigator.clipboard.writeText(branchName),
-    },
+    ...(isScratchPad
+      ? []
+      : [
+          {
+            icon: <Icons.BranchIcon size={12} />,
+            label: "Copy Branch Name",
+            onClick: () => navigator.clipboard.writeText(branchName),
+          },
+        ]),
     ...(isUnavailable
       ? []
       : [
@@ -286,14 +298,14 @@ export function SessionCard({
           ? [
               {
                 icon: <Icons.PencilIcon size={12} />,
-                label: "Rename Session",
+                label: `Rename ${noun}`,
                 onClick: onRename,
               },
             ]
           : []),
         {
           icon: <Icons.TrashIcon size={12} />,
-          label: isDeleting ? "Deleting..." : "Delete Session",
+          label: isDeleting ? "Deleting..." : `Delete ${noun}`,
           onClick: handleDelete,
           danger: true,
           // Removing a worktree git cannot reach leaves its registration

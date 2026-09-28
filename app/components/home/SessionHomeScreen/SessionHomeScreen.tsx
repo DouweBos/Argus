@@ -87,6 +87,7 @@ export function SessionHomeScreen({
   );
 
   const displayName = session?.display_name ?? session?.branch ?? "Session";
+  const isScratchPad = session?.kind === "scratch_pad";
   const branch = session?.branch ?? "";
   const baseBranch = session?.base_branch ?? null;
 
@@ -99,53 +100,63 @@ export function SessionHomeScreen({
             style={{ ["--project-accent" as string]: accent }}
           >
             <IconBadge size="lg" tone="project">
-              <Icons.BranchIcon size={18} />
+              {isScratchPad ? (
+                <Icons.ScratchPadIcon size={18} />
+              ) : (
+                <Icons.BranchIcon size={18} />
+              )}
             </IconBadge>
             <div>
               <h1 className={styles.title}>{displayName}</h1>
-              <div className={styles.sub}>
-                <span className={styles.branchChip}>
-                  <Icons.BranchIcon size={10} />
-                  {branch}
-                  {session?.kind === "worktree" && (
-                    <button
-                      type="button"
-                      className={styles.branchEditBtn}
-                      onClick={() => setIsRenamingBranch(true)}
-                      title="Rename branch"
-                      aria-label="Rename branch"
-                    >
-                      <Icons.PencilIcon size={10} />
-                    </button>
+              {isScratchPad ? (
+                <div className={styles.sub}>
+                  Scratch pad — not tied to any project
+                </div>
+              ) : (
+                <div className={styles.sub}>
+                  <span className={styles.branchChip}>
+                    <Icons.BranchIcon size={10} />
+                    {branch}
+                    {session?.kind === "worktree" && (
+                      <button
+                        type="button"
+                        className={styles.branchEditBtn}
+                        onClick={() => setIsRenamingBranch(true)}
+                        title="Rename branch"
+                        aria-label="Rename branch"
+                      >
+                        <Icons.PencilIcon size={10} />
+                      </button>
+                    )}
+                  </span>
+                  {(baseBranch || session?.kind === "worktree") && (
+                    <>
+                      <span className={styles.dot}>·</span>
+                      <span className={styles.branchChip}>
+                        <Icons.BranchIcon size={10} />
+                        from {baseBranch ?? "—"}
+                        {session?.kind === "worktree" && (
+                          <button
+                            type="button"
+                            className={styles.branchEditBtn}
+                            onClick={() => setIsChangingBaseBranch(true)}
+                            title="Change source branch"
+                            aria-label="Change source branch"
+                          >
+                            <Icons.PencilIcon size={10} />
+                          </button>
+                        )}
+                      </span>
+                    </>
                   )}
-                </span>
-                {(baseBranch || session?.kind === "worktree") && (
-                  <>
-                    <span className={styles.dot}>·</span>
-                    <span className={styles.branchChip}>
-                      <Icons.BranchIcon size={10} />
-                      from {baseBranch ?? "—"}
-                      {session?.kind === "worktree" && (
-                        <button
-                          type="button"
-                          className={styles.branchEditBtn}
-                          onClick={() => setIsChangingBaseBranch(true)}
-                          title="Change source branch"
-                          aria-label="Change source branch"
-                        >
-                          <Icons.PencilIcon size={10} />
-                        </button>
-                      )}
-                    </span>
-                  </>
-                )}
-                {projectName && (
-                  <>
-                    <span className={styles.dot}>·</span>
-                    <span>in {projectName}</span>
-                  </>
-                )}
-              </div>
+                  {projectName && (
+                    <>
+                      <span className={styles.dot}>·</span>
+                      <span>in {projectName}</span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <div className={styles.heroSpacer} />

@@ -38,7 +38,13 @@ export function RenameSessionDialog({
   };
 
   return (
-    <Dialog title="Rename Session" titleId="rename-ws-title" onClose={onClose}>
+    <Dialog
+      title={
+        session.kind === "scratch_pad" ? "Rename Scratch Pad" : "Rename Session"
+      }
+      titleId="rename-ws-title"
+      onClose={onClose}
+    >
       <DialogBody as="form" id="rename-ws-form" onSubmit={handleSubmit}>
         <div className={styles.field}>
           <label className={styles.label} htmlFor="rename-ws-name">

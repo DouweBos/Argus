@@ -181,6 +181,18 @@ See [Automations](/argus/docs/automations) for the full story.
 
 ---
 
+## Scratch pads
+
+An agent for one-off work that belongs to no project — a quick script, a
+question about several repos at once, a throwaway experiment. Each scratch pad
+gets its own folder under `~/.argus/scratch-pads/`, outside every repo, and
+stays in the sidebar until you delete it. Deleting one removes its folder.
+
+Create one with the **+** next to **Scratch pads** in the sidebar, from the
+command palette, or from the Projects screen on the iOS app.
+
+---
+
 ## MCP server
 
 Argus exposes its own primitives — sessions, agents, files, projects,

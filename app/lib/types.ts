@@ -21,7 +21,7 @@ export interface Session {
   /** Original display name (e.g. "Testing Conductor"). Shown in UI when present. */
   display_name?: string | null;
   id: string;
-  kind: "automation_host" | "project_root" | "worktree";
+  kind: "automation_host" | "project_root" | "scratch_pad" | "worktree";
   /**
    * Default model id (runner-specific) for agents spawned in this session.
    * `null` lets the cascade fall through to project / app / runner defaults.

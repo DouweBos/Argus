@@ -35,6 +35,7 @@ import { showSettingsDialog } from "../../../stores/settingsStore";
 import { useTotalRunningTerminals } from "../../../stores/terminalStore";
 import { OpenProjectDialog } from "../OpenProjectDialog";
 import { ProjectSegment } from "../ProjectSegment";
+import { ScratchPadSection } from "../ScratchPadSection";
 import styles from "./SessionSidebar.module.css";
 import { SidebarNavItem } from "./SidebarNavItem";
 
@@ -275,6 +276,7 @@ export function SessionSidebar() {
             );
           })
         )}
+        <ScratchPadSection />
       </SidebarScroll>
 
       <SidebarFooter leading={<Icons.PlusIcon size={11} />} onClick={handleAdd}>

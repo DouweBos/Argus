@@ -68,7 +68,9 @@ export function TitleBar() {
 
   // An automation's host session belongs under its run, not beside your own
   // worktrees, so it gets the trail instead of the branch line.
-  const automationHosted = session?.kind === "automation_host";
+  // A scratch pad has no branch either, so it takes the trail too.
+  const automationHosted =
+    session?.kind === "automation_host" || session?.kind === "scratch_pad";
   const canEditBase = session?.kind === "worktree";
   const projectName = session?.repo_root
     ? (session.repo_root.split("/").filter(Boolean).pop() ?? null)

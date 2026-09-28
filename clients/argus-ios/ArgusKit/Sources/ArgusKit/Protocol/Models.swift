@@ -25,6 +25,7 @@ public struct RemoteProject: Codable, Hashable, Sendable, Identifiable {
 public enum RemoteSessionKind: String, Codable, Sendable {
   case automationHost = "automation_host"
   case projectRoot = "project_root"
+  case scratchPad = "scratch_pad"
   case worktree
 }
 

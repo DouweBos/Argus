@@ -88,6 +88,7 @@ import { getCommand, invokeCommand } from "../command/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
 import { getRunnerById } from "../llm/registry";
 import { collectAllProjects } from "../mcp/projectDiscovery";
+import { createScratchPad, listScratchPads } from "../scratchPad/manager";
 import {
   gitCheckout,
   gitCreateBranch,
@@ -382,7 +383,12 @@ function sessionLabel(sessionId: string): string {
 
 /** Repository the session lives in, named the way `projects.list` names it. */
 function sessionProjectName(sessionId: string): string | undefined {
-  const repoRoot = appState.sessions.get(sessionId)?.repo_root;
+  const session = appState.sessions.get(sessionId);
+  // A scratch pad's directory is not a project; its name is the session label.
+  if (session?.kind === "scratch_pad") {
+    return undefined;
+  }
+  const repoRoot = session?.repo_root;
 
   return repoRoot ? (repoRoot.split("/").pop() ?? repoRoot) : undefined;
 }
@@ -1040,6 +1046,12 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { sessions };
   },
 
+  "scratch_pads.list": async (params) => {
+    parse("scratch_pads.list", params);
+
+    return { sessions: listScratchPads().map(toRemoteSession) };
+  },
+
   "agents.list": async (params) => {
     const { session_id, repo_root } = parse("agents.list", params);
     if (repo_root) {
@@ -1441,6 +1453,13 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         base_branch,
       ),
     );
+
+    return { session: toRemoteSession(session) };
+  },
+
+  "scratch_pads.create": async (params) => {
+    const { name } = parse("scratch_pads.create", params);
+    const session = await control(() => createScratchPad({ name }));
 
     return { session: toRemoteSession(session) };
   },
@@ -2327,7 +2346,8 @@ function filterForScope(
         ),
       };
     }
-    case "sessions.list": {
+    case "sessions.list":
+    case "scratch_pads.list": {
       const ids = scopedSessionIds(scope);
 
       return {

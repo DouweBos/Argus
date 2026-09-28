@@ -7,6 +7,9 @@ struct ProjectsView: View {
   @Environment(AppStore.self) private var app
   @Environment(Router.self) private var router
 
+  @State private var openingPad = false
+  @State private var padToDelete: RemoteSession?
+
   private var hostName: String { app.identity?.label ?? "Argus" }
 
   var body: some View {
@@ -44,9 +47,23 @@ struct ProjectsView: View {
             }
           }
         }
+        scratchPads
       }
     }
     .navigationTitle(hostName)
+    .confirmationDialog(
+      "Delete \(padToDelete?.displayName ?? "scratch pad")?",
+      isPresented: Binding(
+        get: { padToDelete != nil }, set: { if !$0 { padToDelete = nil } }),
+      titleVisibility: .visible
+    ) {
+      Button("Delete", role: .destructive) {
+        guard let pad = padToDelete else { return }
+        Task { await app.deleteScratchPad(id: pad.id) }
+      }
+    } message: {
+      Text("Its agents are stopped and every file in its folder is removed.")
+    }
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) { computerMenu }
     }
@@ -110,6 +127,46 @@ struct ProjectsView: View {
     }
   }
 
+  /// One-off agents that belong to no project. Opening one lands in its chat.
+  @ViewBuilder
+  private var scratchPads: some View {
+    if !app.scratchPads.isEmpty || app.hasControl {
+      Section("Scratch pads") {
+        ForEach(app.scratchPads) { pad in
+          Button {
+            open { await app.scratchPadAgent(pad) }
+          } label: {
+            Label(pad.displayName ?? "Scratch pad", systemImage: Icon.scratchPad)
+              .lineLimit(1)
+          }
+          .disabled(openingPad)
+          .swipeActions {
+            if app.hasControl {
+              Button("Delete", systemImage: Icon.trash, role: .destructive) {
+                padToDelete = pad
+              }
+            }
+          }
+        }
+        if app.hasControl {
+          Button("New scratch pad", systemImage: Icon.plus) {
+            open { await app.createScratchPad() }
+          }
+          .disabled(openingPad)
+        }
+      }
+    }
+  }
+
+  private func open(_ agent: @escaping () async -> RemoteAgentStatus?) {
+    openingPad = true
+    Task {
+      defer { openingPad = false }
+      guard let agent = await agent() else { return }
+      router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
+    }
+  }
+
   /// Where the agent is working — the list spans projects, so "Argus · main"
   /// is what tells them apart.
   private func location(_ agent: RemoteAgentStatus) -> String? {
@@ -127,5 +184,6 @@ struct ProjectsView: View {
   private func refresh() async {
     await app.refreshProjects()
     await app.loadRecentAgents()
+    await app.loadScratchPads()
   }
 }

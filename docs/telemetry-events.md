@@ -140,10 +140,11 @@ is a fixed literal, not the user's machine or any external origin.
 
 ## Sessions
 
-| Event             | Source | When                     | Extra props                                                                                 |
-| ----------------- | ------ | ------------------------ | ------------------------------------------------------------------------------------------- |
-| `session_created` | main   | A new session is created | `has_explicit_branch`, `has_description`, `use_existing_branch`, `has_explicit_base_branch` |
-| `session_deleted` | main   | A session is deleted     | `kind` (`worktree` \| `project_root`), `delete_branch`                                      |
+| Event                 | Source | When                     | Extra props                                                                                 |
+| --------------------- | ------ | ------------------------ | ------------------------------------------------------------------------------------------- |
+| `session_created`     | main   | A new session is created | `has_explicit_branch`, `has_description`, `use_existing_branch`, `has_explicit_base_branch` |
+| `session_deleted`     | main   | A session is deleted     | `kind` (`worktree` \| `project_root` \| `scratch_pad`), `delete_branch`                     |
+| `scratch_pad_created` | main   | A scratch pad is created | `has_name` — whether a name was given rather than the default                               |
 
 ## Merges
 

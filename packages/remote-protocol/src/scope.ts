@@ -78,6 +78,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
 
   "projects.list": FILTER,
   "sessions.list": FILTER,
+  "scratch_pads.list": FILTER,
   "agents.list": FILTER,
   "agents.stopped": FILTER,
   "devices.list": FILTER,
@@ -123,6 +124,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   // Creating, destroying or re-pointing a session/branch is the engineer's
   // call, never a guest's — even for the session their agent runs in.
   "sessions.create": DENIED,
+  "scratch_pads.create": DENIED,
   "sessions.delete": DENIED,
   "sessions.rename": DENIED,
   "sessions.rename_branch": DENIED,

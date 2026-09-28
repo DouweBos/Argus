@@ -11,6 +11,7 @@ import {
   mergeSessionIntoBase,
   revealInFinder,
 } from "../../../lib/ipc";
+import { createScratchPadSession } from "../../../lib/projectsService";
 import { shortcutKeys } from "../../../lib/shortcuts";
 import {
   cycleActiveAgent,
@@ -171,6 +172,18 @@ function CommandPaletteContent() {
           triggerNewSession();
         },
       },
+      {
+        group: "action",
+        id: "action:new-scratch-pad",
+        title: "New scratch pad",
+        sublabel: "Start an agent that belongs to no project",
+        icon: <Icons.ScratchPadIcon size={13} />,
+        keywords: "new scratch pad one-off agent standalone",
+        run: () => {
+          closeCommandPalette();
+          createScratchPadSession().catch(() => {});
+        },
+      },
     );
 
     out.push(
@@ -286,18 +299,25 @@ function CommandPaletteContent() {
         })),
       );
 
-      out.push({
-        group: "session",
-        id: "ws:switch-branch",
-        title: "Switch branch…",
-        sublabel: `current: ${selectedSession.branch}`,
-        icon: <Icons.ArgusLogo size={13} />,
-        keywords: "switch checkout branch change head",
-        run: () => {
-          closeCommandPalette();
-          showBranchPicker(selectedSession.repo_root, wsId);
-        },
-      });
+      // Automation runs and scratch pads are plain directories — no git.
+      const isCheckout =
+        selectedSession.kind === "worktree" ||
+        selectedSession.kind === "project_root";
+
+      if (isCheckout) {
+        out.push({
+          group: "session",
+          id: "ws:switch-branch",
+          title: "Switch branch…",
+          sublabel: `current: ${selectedSession.branch}`,
+          icon: <Icons.ArgusLogo size={13} />,
+          keywords: "switch checkout branch change head",
+          run: () => {
+            closeCommandPalette();
+            showBranchPicker(selectedSession.repo_root, wsId);
+          },
+        });
+      }
 
       out.push({
         group: "session",
@@ -421,52 +441,54 @@ function CommandPaletteContent() {
         );
       }
 
-      out.push(
-        {
-          group: "git",
-          id: "git:pull",
-          title: "Git pull",
-          icon: <Icons.FolderIcon size={13} />,
-          keywords: "git pull fetch merge upstream",
-          run: () => {
-            closeCommandPalette();
-            gitPull(wsId).catch(() => {});
+      if (isCheckout) {
+        out.push(
+          {
+            group: "git",
+            id: "git:pull",
+            title: "Git pull",
+            icon: <Icons.FolderIcon size={13} />,
+            keywords: "git pull fetch merge upstream",
+            run: () => {
+              closeCommandPalette();
+              gitPull(wsId).catch(() => {});
+            },
           },
-        },
-        {
-          group: "git",
-          id: "git:push",
-          title: "Git push",
-          icon: <Icons.FolderIcon size={13} />,
-          keywords: "git push upstream remote",
-          run: () => {
-            closeCommandPalette();
-            gitPush(wsId).catch(() => {});
+          {
+            group: "git",
+            id: "git:push",
+            title: "Git push",
+            icon: <Icons.FolderIcon size={13} />,
+            keywords: "git push upstream remote",
+            run: () => {
+              closeCommandPalette();
+              gitPush(wsId).catch(() => {});
+            },
           },
-        },
-        {
-          group: "git",
-          id: "git:fetch",
-          title: "Git fetch",
-          icon: <Icons.FolderIcon size={13} />,
-          keywords: "git fetch remote",
-          run: () => {
-            closeCommandPalette();
-            gitFetch(wsId).catch(() => {});
+          {
+            group: "git",
+            id: "git:fetch",
+            title: "Git fetch",
+            icon: <Icons.FolderIcon size={13} />,
+            keywords: "git fetch remote",
+            run: () => {
+              closeCommandPalette();
+              gitFetch(wsId).catch(() => {});
+            },
           },
-        },
-        {
-          group: "git",
-          id: "git:stash",
-          title: "Git stash",
-          icon: <Icons.FolderIcon size={13} />,
-          keywords: "git stash save shelve",
-          run: () => {
-            closeCommandPalette();
-            gitStash(wsId).catch(() => {});
+          {
+            group: "git",
+            id: "git:stash",
+            title: "Git stash",
+            icon: <Icons.FolderIcon size={13} />,
+            keywords: "git stash save shelve",
+            run: () => {
+              closeCommandPalette();
+              gitStash(wsId).catch(() => {});
+            },
           },
-        },
-      );
+        );
+      }
     }
 
     recent.forEach((p) => {

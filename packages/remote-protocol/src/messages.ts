@@ -93,6 +93,7 @@ export const MethodParams = {
   "host.endpoints": z.object({}),
   "projects.list": z.object({}),
   "sessions.list": z.object({ repo_root: z.string() }),
+  "scratch_pads.list": z.object({}),
   "agents.list": z.object({
     session_id: z.string().optional(),
     /** List all agents across a project's sessions (incl. the project root). */
@@ -208,6 +209,9 @@ export const MethodParams = {
     agent_id: z.string(),
     id: z.string(),
     message: z.string().max(100_000),
+  }),
+  "scratch_pads.create": z.object({
+    name: z.string().trim().max(80).optional(),
   }),
   "sessions.create": z.object({
     repo_root: z.string(),
@@ -517,6 +521,7 @@ export const MethodResult = {
   "host.endpoints": z.object({ endpoints: z.array(RemoteEndpoint) }),
   "projects.list": z.object({ projects: z.array(RemoteProject) }),
   "sessions.list": z.object({ sessions: z.array(RemoteSession) }),
+  "scratch_pads.list": z.object({ sessions: z.array(RemoteSession) }),
   "agents.list": z.object({ agents: z.array(RemoteAgentStatus) }),
   "agents.status": z.object({ agent: RemoteAgentStatus }),
   "agents.vitals": z.object({ vitals: RemoteAgentVitals }),
@@ -594,6 +599,7 @@ export const MethodResult = {
   "agents.queue_remove": z.object({ accepted: z.boolean() }),
   "agents.queue_update": z.object({ accepted: z.boolean() }),
   "sessions.create": z.object({ session: RemoteSession }),
+  "scratch_pads.create": z.object({ session: RemoteSession }),
   "sessions.files": z.object({ files: z.array(z.string()) }),
   "sessions.resolve_mention_path": RemoteMentionPathResult,
   "sessions.delete": z.object({ accepted: z.boolean() }),

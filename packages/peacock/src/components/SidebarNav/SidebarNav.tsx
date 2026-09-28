@@ -68,10 +68,13 @@ export function SidebarItem({
 
 export interface SidebarSectionProps extends HTMLAttributes<HTMLDivElement> {
   count?: ReactNode;
+  /** Trailing control, e.g. a `SidebarRepoAction` that adds to the section. */
+  action?: ReactNode;
 }
 
 export function SidebarSection({
   count,
+  action,
   children,
   className,
   ...rest
@@ -82,7 +85,10 @@ export function SidebarSection({
       {...rest}
     >
       <span>{children}</span>
-      {count != null && <span className={styles.sectionCount}>{count}</span>}
+      <span className={styles.sectionTrail}>
+        {count != null && <span className={styles.sectionCount}>{count}</span>}
+        {action}
+      </span>
     </div>
   );
 }

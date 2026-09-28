@@ -724,6 +724,12 @@ export const createSession = (
     llm,
   });
 
+export const listScratchPads = (): Promise<Session[]> =>
+  invoke("list_scratch_pads", {});
+
+export const createScratchPad = (name?: string | null): Promise<Session> =>
+  invoke("create_scratch_pad", { name });
+
 export const createHeadSession = (repoRoot: string): Promise<Session> =>
   invoke("create_project_root_session", { repoRoot });
 
