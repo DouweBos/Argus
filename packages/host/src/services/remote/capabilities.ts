@@ -85,6 +85,7 @@ import {
   emitAccountsChanged,
   getClaudeLoginState,
 } from "../claudeAuth/claudeAuth";
+import { recheckFlaggedAccounts } from "../claudeAuth/probe";
 import { getCommand, invokeCommand } from "../command/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
 import { getRunnerById } from "../llm/registry";
@@ -2211,7 +2212,11 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   // --- Claude accounts ------------------------------------------------------
   // Reused by the accounts-changed bridge in gateway.ts, so the client gets the
   // new list rather than a nudge to refetch.
-  "claude_accounts.list": async () => remoteClaudeAccounts(),
+  "claude_accounts.list": async () => {
+    recheckFlaggedAccounts();
+
+    return remoteClaudeAccounts();
+  },
 
   "claude_accounts.set_active": async (params) => {
     const { id } = parse("claude_accounts.set_active", params);

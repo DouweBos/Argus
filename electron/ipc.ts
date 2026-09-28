@@ -163,6 +163,7 @@ import {
   emitAccountsChanged,
   getClaudeAuthStatus,
 } from "@argus/host/services/claudeAuth/claudeAuth";
+import { recheckFlaggedAccounts } from "@argus/host/services/claudeAuth/probe";
 import { defineCommand } from "@argus/host/services/command/registry";
 import {
   listDebugStreams,
@@ -2554,10 +2555,14 @@ export function registerIpcHandlers(): void {
       accountId: a.accountId as string | undefined,
     }),
   );
-  handle("claude_accounts_list", "admin", () => ({
-    accounts: refreshAllAccountIdentities(),
-    activeId: getActiveAccountId(),
-  }));
+  handle("claude_accounts_list", "admin", () => {
+    recheckFlaggedAccounts();
+
+    return {
+      accounts: refreshAllAccountIdentities(),
+      activeId: getActiveAccountId(),
+    };
+  });
   handle("claude_accounts_set_active", "admin", (a) => {
     setActiveAccount(a.id as string);
     emitAccountsChanged();
