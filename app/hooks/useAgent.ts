@@ -273,7 +273,9 @@ export function useSessionAgents(
     sendMessage,
     setActive,
     isRunning:
-      activeAgent?.status === "running" || activeAgent?.status === "idle",
+      activeAgent?.status === "running" ||
+      activeAgent?.status === "idle" ||
+      activeAgent?.status === "requires_action",
     hasAgents: agents.length > 0,
     isStarting,
   };

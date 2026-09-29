@@ -351,7 +351,9 @@ function AgentNodeRow({
   const sessionLabel =
     node.displayName ?? node.branch ?? node.agent.session_id.slice(0, 8);
   const isAlive =
-    node.agent.status === "running" || node.agent.status === "idle";
+    node.agent.status === "running" ||
+    node.agent.status === "idle" ||
+    node.agent.status === "requires_action";
 
   return (
     <>
