@@ -23,6 +23,7 @@ import {
 } from "../userProjectSettings/store";
 import { git, worktreesRoot } from "./git";
 import { loadMetadata, normalizeMetaKey, saveMetadata } from "./metadata";
+import { moveSidecars } from "./sidecars";
 import {
   mountRootFor,
   pathAvailability,
@@ -30,9 +31,6 @@ import {
 } from "./volumeAvailability";
 import { isInsideRoot, worktreeDirName } from "./worktreeLocation";
 import { invalidateWorktreeLocationCache } from "./worktreeRootCache";
-
-/** Files and directories Argus keeps beside the worktrees themselves. */
-const SIDECARS = [".argus-chat-history", ".argus-command-metrics.json"];
 
 export type MoveBlockerKind =
   | "agent_running"
@@ -319,21 +317,6 @@ function durationBucket(ms: number): "<1m" | "<10m" | "<10s" | ">=10m" {
   }
 
   return ms < 600_000 ? "<10m" : ">=10m";
-}
-
-function moveSidecars(fromRoot: string, toRoot: string): void {
-  for (const name of SIDECARS) {
-    const from = path.join(fromRoot, name);
-    if (!fs.existsSync(from)) {
-      continue;
-    }
-    try {
-      fs.cpSync(from, path.join(toRoot, name), { recursive: true });
-      fs.rmSync(from, { recursive: true, force: true });
-    } catch (e) {
-      warn(`moveWorktrees: could not move ${name}: ${String(e)}`);
-    }
-  }
 }
 
 export async function executeWorktreeMove(

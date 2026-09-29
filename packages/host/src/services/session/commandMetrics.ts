@@ -10,9 +10,8 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { worktreesRoot } from "./git";
+import { COMMAND_METRICS_FILE, sidecarPath } from "./sidecars";
 
-const METRICS_FILENAME = ".argus-command-metrics.json";
 const SCHEMA_VERSION = 1;
 
 interface MetricsFile {
@@ -21,7 +20,7 @@ interface MetricsFile {
 }
 
 function metricsPath(repoRoot: string): string {
-  return path.join(worktreesRoot(repoRoot, "user"), METRICS_FILENAME);
+  return sidecarPath(repoRoot, COMMAND_METRICS_FILE);
 }
 
 /**
@@ -57,14 +56,10 @@ function saveCommandMetrics(
   counts: Record<string, number>,
 ): void {
   const file: MetricsFile = { version: SCHEMA_VERSION, counts };
-  const dir = worktreesRoot(repoRoot, "user");
+  const target = metricsPath(repoRoot);
   try {
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(
-      metricsPath(repoRoot),
-      JSON.stringify(file, null, 2),
-      "utf8",
-    );
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, JSON.stringify(file, null, 2), "utf8");
   } catch {
     // Non-fatal — metrics are best-effort.
   }

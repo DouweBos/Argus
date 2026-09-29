@@ -14,9 +14,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
 import { loadArgusConfig } from "../session/argusConfig";
-import { worktreesRoot } from "../session/git";
+import { CHAT_HISTORY_DIR, sidecarPath } from "../session/sidecars";
 
-const HISTORY_DIR_NAME = ".argus-chat-history";
 const INDEX_FILENAME = "index.json";
 const SCHEMA_VERSION = 1;
 const MAX_ENTRIES = 100;
@@ -59,7 +58,7 @@ interface IndexFile {
 
 function historyDir(repoRoot: string): string {
   // Per project, not per purpose — automations must not get a second history.
-  return path.join(worktreesRoot(repoRoot, "user"), HISTORY_DIR_NAME);
+  return sidecarPath(repoRoot, CHAT_HISTORY_DIR);
 }
 
 function indexPath(repoRoot: string): string {
