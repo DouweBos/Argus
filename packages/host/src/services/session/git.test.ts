@@ -1,6 +1,6 @@
-import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { argusHomeDir } from "../../lib/argusHome";
 import { branchToDir, titleToBranchSlug, worktreesRoot } from "./git";
 
 describe("branchToDir", () => {
@@ -75,14 +75,14 @@ describe("worktreesRoot", () => {
   it("computes correct path for a repo", () => {
     const result = worktreesRoot("/home/user/Projects/MyApp");
     expect(result).toBe(
-      path.join(os.homedir(), ".argus", "worktrees", "MyApp-argus-worktrees"),
+      path.join(argusHomeDir(), "worktrees", "MyApp-argus-worktrees"),
     );
   });
 
   it("uses 'repo' as fallback for root path", () => {
     const result = worktreesRoot("/");
     expect(result).toBe(
-      path.join(os.homedir(), ".argus", "worktrees", "repo-argus-worktrees"),
+      path.join(argusHomeDir(), "worktrees", "repo-argus-worktrees"),
     );
   });
 });
