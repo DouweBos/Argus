@@ -668,6 +668,7 @@ const READ_ONLY_ARGUS_TOOLS = new Set([
   "mcp__argus__get_agent_result",
   "mcp__argus__github_get",
   "mcp__argus__list_agents",
+  "mcp__argus__list_past_agents",
   "mcp__argus__list_projects",
   "mcp__argus__list_run_commands",
   "mcp__argus__list_session_changes",

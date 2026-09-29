@@ -11,11 +11,15 @@ import type { ConversationMessage } from "../stores/conversationStore";
 export interface ChatHistoryEntry {
   /** Agent that produced this conversation — absent on older records. */
   agentId?: string;
+  /** Argus session the agent ran in — absent on older records. */
+  argusSessionId?: string;
   createdAt: number;
   endedAt: number;
   id: string;
   messageCount: number;
   model?: string;
+  /** Agent that spawned this one — absent on older records. */
+  parentAgentId?: string;
   /** Runner that produced the conversation — absent on older records. */
   runnerId?: string;
   sessionBranch: string;
