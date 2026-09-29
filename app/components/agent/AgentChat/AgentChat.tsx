@@ -609,7 +609,10 @@ export function AgentChat({
   const activityDescription = isThinking ? spinnerVerb : activity.description;
 
   const isAlive =
-    !readOnly && (agentStatus === "running" || agentStatus === "idle");
+    !readOnly &&
+    (agentStatus === "running" ||
+      agentStatus === "idle" ||
+      agentStatus === "requires_action");
 
   const handleModelSelect = useCallback(
     async (selectedModel: string) => {
