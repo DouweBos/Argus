@@ -1,18 +1,13 @@
 
 ### Minor Changes
 
-- a2215da: Argus has a new peacock-eye app icon. On macOS 26 it follows light and dark mode, and the iPhone app gets dark and tinted versions.
-- a2215da: Scratch pads let you start an agent that belongs to no project, in its own folder, from the sidebar, the command palette or the iOS app.
+- 549741c: Automation runs can now read GitHub CI logs, artifact lists and the contents of test artifacts, including read-only runs.
 
 ### Patch Changes
 
-- a2215da: Accounts are no longer marked as signed out or out of usage just because an agent read or wrote text about limits, and session limits are now recognised as a spent quota.
-- a2215da: Agent status now follows Claude Code's own busy state, so an agent that keeps working after a reply, such as while background tasks finish, no longer shows as idle.
-- a2215da: Read-only automation runs now file their report and save memories instead of skipping them because plan mode is on.
-- a2215da: Automation runs no longer show up as projects under Recent projects on the home screen.
-- a2215da: The iOS app opens agents with long transcripts instead of dropping the connection and showing an empty conversation.
-- a2215da: Tapping a notification while the iOS app is locked no longer crashes it; the app asks you to unlock, then opens the agent.
-- c9f6c34: Tool search calls now list the tools they loaded instead of showing empty result rows.
-- Updated dependencies [a2215da]
-  - @argus/peacock@0.22.0
+- 4f7dfbd: Read-only automation runs can now withdraw their own proposals once the branch, PR or issue behind them is gone.
+- e5419f6: The inbox no longer lists started work under "Argus is on it" once its session has been merged or deleted.
+- c723676: Text fields in the iOS app now offer autocorrect, predictive text and capitalization for written input like plan feedback and messages, while branch names, codes and paths stay verbatim.
+- 5c981f1: Handing a plan off to a new session from the iOS app now starts the agent on your computer, even if the phone is locked or the app is closed while the session sets up.
+- fcd6564: An account marked Limit reached is re-checked in the background, so the badge clears once its quota resets instead of lingering until an agent runs on it.
 
