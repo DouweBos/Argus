@@ -119,7 +119,7 @@ describe("executeWorktreeMove (integration)", () => {
     // And the session now points at where it actually is.
     expect(appState.sessions.get("feature")?.path).toBe(to);
     // Clients learn the new path without a restart.
-    expect(updates).toEqual([{ id: "feature", path: to }]);
+    expect(updates).toEqual([{ id: "feature", path: to, volume: null }]);
   });
 
   it("reports what is holding a worktree rather than moving it anyway", async () => {

@@ -23,7 +23,11 @@ import {
 } from "../userProjectSettings/store";
 import { git, worktreesRoot } from "./git";
 import { loadMetadata, normalizeMetaKey, saveMetadata } from "./metadata";
-import { pathAvailability, volumeLabel } from "./volumeAvailability";
+import {
+  mountRootFor,
+  pathAvailability,
+  volumeLabel,
+} from "./volumeAvailability";
 import { isInsideRoot, worktreeDirName } from "./worktreeLocation";
 import { invalidateWorktreeLocationCache } from "./worktreeRootCache";
 
@@ -409,11 +413,17 @@ export async function executeWorktreeMove(
         meta.delete(normalizeMetaKey(session.from));
         meta.set(normalizeMetaKey(session.to), entry);
       }
+      const volume = mountRootFor(session.to, process.platform);
       const live = appState.sessions.get(session.id);
       if (live) {
         live.path = session.to;
+        live.volume = volume;
       }
-      emitHostEvent("session:updated", { id: session.id, path: session.to });
+      emitHostEvent("session:updated", {
+        id: session.id,
+        path: session.to,
+        volume,
+      });
     } catch (e) {
       failed.push({ id: session.id, error: String(e) });
       warn(`moveWorktrees: ${session.from} failed: ${String(e)}`);

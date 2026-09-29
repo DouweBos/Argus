@@ -49,6 +49,7 @@ export function initSessionEventListeners(): void {
     path?: string;
     runner_id?: string | null;
     status?: Session["status"];
+    volume?: string | null;
   }>("session:updated", (event) => {
     const {
       id,
@@ -59,6 +60,7 @@ export function initSessionEventListeners(): void {
       status,
       runner_id,
       model,
+      volume,
     } = event.payload;
     if (!getSessionState().sessions.some((w) => w.id === id)) {
       return;
@@ -84,6 +86,9 @@ export function initSessionEventListeners(): void {
     }
     if (model !== undefined) {
       patch.model = model;
+    }
+    if (volume !== undefined) {
+      patch.volume = volume;
     }
     updateSession(id, patch);
   });

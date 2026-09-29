@@ -151,6 +151,12 @@ struct ProjectView: View {
           .foregroundStyle(.primary)
           .textCase(nil)
           .lineLimit(1)
+        if let volume = group.session?.volume {
+          Image(systemName: Icon.drive)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("On \(volume)")
+        }
         if group.session?.kind == .projectRoot {
           Badge(label: "root")
         }

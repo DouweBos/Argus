@@ -369,6 +369,7 @@ export function SessionCard({
       onContextMenu={handleContextMenu}
       unavailable={isUnavailable}
       unavailableTitle={unavailableTitle}
+      drive={session.volume?.split(/[/\\]/).filter(Boolean).pop()}
       status={statusBadge}
       diff={
         showDiff

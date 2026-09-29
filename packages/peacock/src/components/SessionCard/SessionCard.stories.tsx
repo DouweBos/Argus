@@ -143,6 +143,19 @@ export const Framed: Story = {
   },
 };
 
+/** Lives on an external drive — marked whether or not it is connected. */
+export const OnExternalDrive: Story = {
+  args: {
+    icon: <BranchIcon size={13} />,
+    title: "CarPlay external video routing",
+    drive: "Blackbox",
+    interactive: true,
+    actionReveal: "hover",
+    diff: { added: 42, removed: 7 },
+    actions: ellipsis,
+  },
+};
+
 /**
  * The drive holding this session is disconnected. It keeps its last known
  * branch and name — that is the whole point, the row is a reminder of what is
@@ -154,6 +167,7 @@ export const Unavailable: Story = {
     title: "Fix the login redirect",
     interactive: true,
     unavailable: true,
+    drive: "Blackbox",
     unavailableTitle: "Blackbox isn't connected — showing the last known state",
     status: { label: "unavailable", tone: "neutral" },
     subtitle: "douwe/fix-login-redirect",

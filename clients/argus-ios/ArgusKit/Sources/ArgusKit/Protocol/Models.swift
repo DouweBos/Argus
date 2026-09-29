@@ -52,6 +52,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var availability: RemoteSessionAvailability?
   /// The drive to reconnect, by name.
   public var unavailableVolume: String?
+  /// The external drive holding the session, by name; nil on the boot volume.
+  public var volume: String?
 
   public var isUnavailable: Bool { availability == .unavailable }
 
@@ -64,6 +66,7 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case claudeAccountId = "claude_account_id"
     case status, availability
     case unavailableVolume = "unavailable_volume"
+    case volume
   }
 }
 

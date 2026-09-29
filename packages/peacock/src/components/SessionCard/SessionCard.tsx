@@ -5,6 +5,7 @@ import type {
   MouseEvent,
   ReactNode,
 } from "react";
+import { DriveIcon } from "../../icons/Icons";
 import { Badge } from "../Badge/Badge";
 import { BranchDivergence } from "../BranchDivergence/BranchDivergence";
 import { DiffStat } from "../DiffStat/DiffStat";
@@ -23,6 +24,8 @@ export interface SessionCardProps extends Omit<
   title: ReactNode;
   /** Small accent dot after the title (unread agent messages). */
   showUnread?: boolean;
+  /** Name of the external drive the session lives on; shows a drive icon. */
+  drive?: string;
 
   /** Kind pill ("root" / "worktree"); web only. */
   kind?: { label: string; tone: BadgeTone };
@@ -78,6 +81,7 @@ export function SessionCard({
   iconTitle,
   title,
   showUnread,
+  drive,
   kind,
   status,
   diff,
@@ -148,6 +152,15 @@ export function SessionCard({
           </span>
         )}
         <span className={styles.title}>{title}</span>
+        {drive && (
+          <span
+            className={styles.drive}
+            aria-label={`On ${drive}`}
+            title={`On ${drive}`}
+          >
+            <DriveIcon size={11} />
+          </span>
+        )}
         {showUnread && (
           <span
             className={styles.unreadDot}
