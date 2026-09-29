@@ -978,13 +978,15 @@ export function automationDisallowedTools(sessionId: string): string[] {
 /**
  * The tools a run reports through, allowed outright whatever the mode says —
  * nobody is watching at 07:30 to answer a prompt for the one call the run
- * exists to make. The memory tools write only the automation's own memory.
+ * exists to make. The memory and withdraw tools touch only the automation's
+ * own memory and proposals.
  */
 const RUN_REPORTING_TOOLS = new Set([
   "mcp__argus__delete_memory",
   "mcp__argus__emit_proposal",
   "mcp__argus__emit_report",
   "mcp__argus__save_memory",
+  "mcp__argus__withdraw_proposal",
 ]);
 
 /** Whether `sessionId` is an automation run's own neutral host session. */
