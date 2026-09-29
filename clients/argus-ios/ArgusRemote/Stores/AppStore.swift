@@ -40,6 +40,8 @@ final class AppStore {
   var connection: Transport.State = .offline
   var deviceName: String = UIDeviceName.current
   var themePreference: ThemePreference = .system
+  /// Opens Read calls that returned an image, so screenshots show without a tap.
+  var autoExpandImageReads = false
   /// Mirrored from `Telemetry` so the Settings toggle has something to bind to.
   var telemetryMode: TelemetryMode = .presence
 
@@ -139,6 +141,7 @@ final class AppStore {
     deviceName = preferences.string(PreferenceKey.deviceName) ?? UIDeviceName.current
     themePreference =
       ThemePreference(rawValue: preferences.string(PreferenceKey.theme) ?? "") ?? .system
+    autoExpandImageReads = preferences.string(PreferenceKey.autoExpandImageReads) == "on"
 
     let stored = await keystore.load()
     hosts = stored.hosts
@@ -566,5 +569,11 @@ final class AppStore {
   func setThemePreference(_ preference: ThemePreference) {
     themePreference = preference
     preferences.set(preference.rawValue, for: PreferenceKey.theme)
+  }
+
+  func setAutoExpandImageReads(_ enabled: Bool) {
+    autoExpandImageReads = enabled
+    preferences.set(enabled ? "on" : "off", for: PreferenceKey.autoExpandImageReads)
+    Telemetry.capture(.settingChanged(setting: .autoExpandImageReads, enabled: enabled))
   }
 }

@@ -526,6 +526,13 @@ it on the phone. Unpairing there removes the phone's copy of that computer's
 key — to cut a lost phone off for good, **Revoke** it under **Paired devices**
 on the computer as well.
 
+### Phone settings
+
+The phone app's own **Settings** screen holds preferences that stay on that
+phone. Under **Transcript**, **Expand image reads** (off by default) opens every
+Read tool call that returned an image, so screenshots an agent looks at show in
+the chat without a tap. You can still collapse any of them.
+
 ### Granting admin to another Mac
 
 **Control** is the phone's grant: watch agents, answer prompts, send messages,
