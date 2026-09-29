@@ -2,7 +2,7 @@
  * Per-project slash command usage metrics.
  *
  * Tracks how often each command is used so the autocomplete can sort by
- * popularity. Stored at `{user worktrees root}/.argus-command-metrics.json` —
+ * popularity. Stored at `~/.argus/projects/{key}/.argus-command-metrics.json` —
  * per project, not per purpose, so automations share the same counts.
  *
  * The file is a simple `{ version, counts: { [commandName]: number } }` map.
@@ -19,8 +19,27 @@ interface MetricsFile {
   counts: Record<string, number>;
 }
 
+function readCountsAt(filePath: string): Record<string, number> {
+  try {
+    const file = JSON.parse(fs.readFileSync(filePath, "utf8")) as MetricsFile;
+
+    return file.version === SCHEMA_VERSION ? (file.counts ?? {}) : {};
+  } catch {
+    return {};
+  }
+}
+
+function mergeMetrics(from: string, to: string): void {
+  const counts = readCountsAt(to);
+  for (const [name, n] of Object.entries(readCountsAt(from))) {
+    counts[name] = (counts[name] ?? 0) + n;
+  }
+  const file: MetricsFile = { version: SCHEMA_VERSION, counts };
+  fs.writeFileSync(to, JSON.stringify(file, null, 2), "utf8");
+}
+
 function metricsPath(repoRoot: string): string {
-  return sidecarPath(repoRoot, COMMAND_METRICS_FILE);
+  return sidecarPath(repoRoot, COMMAND_METRICS_FILE, mergeMetrics);
 }
 
 /**
@@ -28,24 +47,7 @@ function metricsPath(repoRoot: string): string {
  * file is missing or invalid.
  */
 export function loadCommandMetrics(repoRoot: string): Record<string, number> {
-  const filePath = metricsPath(repoRoot);
-  let raw: string;
-  try {
-    raw = fs.readFileSync(filePath, "utf8");
-  } catch {
-    return {};
-  }
-
-  try {
-    const file = JSON.parse(raw) as MetricsFile;
-    if (file.version !== SCHEMA_VERSION) {
-      return {};
-    }
-
-    return file.counts ?? {};
-  } catch {
-    return {};
-  }
+  return readCountsAt(metricsPath(repoRoot));
 }
 
 /**

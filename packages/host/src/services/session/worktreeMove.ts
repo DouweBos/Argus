@@ -23,7 +23,6 @@ import {
 } from "../userProjectSettings/store";
 import { git, worktreesRoot } from "./git";
 import { loadMetadata, normalizeMetaKey, saveMetadata } from "./metadata";
-import { moveSidecars } from "./sidecars";
 import {
   mountRootFor,
   pathAvailability,
@@ -414,11 +413,6 @@ export async function executeWorktreeMove(
   }
 
   if (moved.length > 0) {
-    // Chat history and command metrics are per project and pinned to the user
-    // root; an automation move must not drag them somewhere nothing reads.
-    if (purpose !== "automation") {
-      moveSidecars(plan.from_root, plan.to_root);
-    }
     saveMetadata(repoRoot, meta);
   }
 
