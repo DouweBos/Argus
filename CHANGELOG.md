@@ -1,5 +1,11 @@
 # argus
 
+## 0.63.0
+
+### Minor Changes
+
+- 678fe4b: Orchestrating agents can now find agents that stopped or were lost to a crash and resume them with their full conversation.
+
 ## 0.62.1
 
 ### Patch Changes
