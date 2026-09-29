@@ -17,12 +17,10 @@ import { deviceKeyFor, useDevicePoller } from "../../../stores/deviceStore";
 import {
   showCreateSessionDialog,
   showOpenProjectDialog,
-  triggerNewSession,
 } from "../../../stores/dialogStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
 import { removeRecentProject } from "../../../stores/recentProjectsStore";
 import { selectSession } from "../../../stores/sessionStore";
-import { showSettingsDialog } from "../../../stores/settingsStore";
 import {
   openChangelogDialog,
   useUpdaterState,
@@ -107,7 +105,6 @@ export function HomeScreen() {
   };
 
   const handleAddRepository = () => showOpenProjectDialog();
-  const handleNewSession = () => triggerNewSession();
 
   const openDevices = () => {
     setCenterView("devices");
@@ -185,30 +182,6 @@ export function HomeScreen() {
                 <div className={styles.brandMark}>
                   <Icons.ArgusLogo size={28} />
                   <h1 className={styles.title}>Argus</h1>
-                </div>
-                <div className={styles.heroSpacer} />
-                <div className={styles.ctas}>
-                  <Button
-                    variant="ghost"
-                    leading={<Icons.SimulatorIcon size={12} />}
-                    onClick={() => showSettingsDialog("remote-access")}
-                  >
-                    Remote access
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    leading={<Icons.FolderIcon size={12} />}
-                    onClick={handleAddRepository}
-                  >
-                    Open repo
-                  </Button>
-                  <Button
-                    variant="primary"
-                    leading={<Icons.PlusIcon size={12} />}
-                    onClick={handleNewSession}
-                  >
-                    New session
-                  </Button>
                 </div>
               </div>
 
