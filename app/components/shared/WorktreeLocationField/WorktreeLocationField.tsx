@@ -74,20 +74,28 @@ export function WorktreeLocationField({
     return () => clearTimeout(timer);
   }, [trimmed, repoRoot]);
 
-  const save = useCallback(async () => {
+  const commit = useCallback(async () => {
     setSaving(true);
     try {
       await onCommit(trimmed);
-      // Only a project can be relocated — the app-wide setting spans several,
-      // each of which has its own worktrees and its own blockers. Clearing the
-      // field is offered too: the worktrees are just as stranded either way.
-      if (repoRoot) {
-        setOfferMove(trimmed || defaultPath);
-      }
     } finally {
       setSaving(false);
     }
-  }, [defaultPath, onCommit, repoRoot, trimmed]);
+  }, [onCommit, trimmed]);
+
+  const save = useCallback(async () => {
+    // Only a project can be relocated — the app-wide setting spans several,
+    // each of which has its own worktrees and its own blockers. Clearing the
+    // field is offered too: the worktrees are just as stranded either way.
+    // The move is planned before committing, while the old root still resolves.
+    if (repoRoot) {
+      setSaving(true);
+      setOfferMove(trimmed || defaultPath);
+
+      return;
+    }
+    await commit();
+  }, [commit, defaultPath, repoRoot, trimmed]);
 
   const blocked = probe?.reason != null;
 
@@ -145,7 +153,10 @@ export function WorktreeLocationField({
           purpose={purpose}
           repoRoot={repoRoot}
           toBaseDir={offerMove}
-          onClose={() => setOfferMove(null)}
+          onClose={() => {
+            setOfferMove(null);
+            commit().catch(() => undefined);
+          }}
         />
       )}
 
