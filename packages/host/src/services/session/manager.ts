@@ -55,6 +55,7 @@ import { runSetupPipeline } from "./setup";
 import {
   assertWorktreeBaseAvailable,
   isOnMissingVolume,
+  mountRootFor,
   pathAvailability,
 } from "./volumeAvailability";
 import { startBranchWatcher } from "./watcher";
@@ -185,6 +186,7 @@ export function removeRepoRoot(dirPath: string): void {
  * show it greyed out rather than having it silently disappear.
  */
 function stampAvailability(ws: Session): void {
+  ws.volume = ws.path ? mountRootFor(ws.path, process.platform) : null;
   const availability = pathAvailability(ws.path);
   if (availability.state === "volume_missing") {
     ws.availability = "unavailable";
@@ -306,6 +308,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       availability: "unavailable",
       unavailable_reason: "volume_missing",
       unavailable_volume: availability.volume,
+      volume: availability.volume,
     });
   }
 
@@ -668,6 +671,7 @@ async function finalizeSession(
     }
     ws.branch = worktreeInfo.branch;
     ws.path = worktreeInfo.path;
+    ws.volume = mountRootFor(ws.path, process.platform);
     ws.base_branch = baseBranch ?? null;
     ws.display_name = displayName;
     ws.status = "initializing";
@@ -677,6 +681,7 @@ async function finalizeSession(
       id,
       branch: ws.branch,
       path: ws.path,
+      volume: ws.volume,
       base_branch: ws.base_branch,
       display_name: ws.display_name,
       status: ws.status,

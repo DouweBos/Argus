@@ -95,6 +95,8 @@ export interface Session {
   unavailable_reason?: "volume_missing";
   /** Mount point the session lives on, for the message naming the drive. */
   unavailable_volume?: string | null;
+  /** Mount point of the external drive holding the session; null on the boot volume. */
+  volume?: string | null;
 }
 
 /**

@@ -34,6 +34,8 @@ export const RemoteSession = z.object({
   availability: z.enum(["available", "unavailable"]).optional(),
   /** Name of the drive to reconnect, e.g. "Blackbox". Not its mount path. */
   unavailable_volume: z.string().nullable().optional(),
+  /** Name of the external drive holding the session; null on the boot volume. */
+  volume: z.string().nullable().optional(),
 });
 export type RemoteSession = z.infer<typeof RemoteSession>;
 

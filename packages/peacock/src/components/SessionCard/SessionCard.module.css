@@ -95,6 +95,12 @@
   font-weight: 600;
 }
 
+.drive {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
 .unreadDot {
   display: inline-block;
   width: 7px;

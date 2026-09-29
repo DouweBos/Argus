@@ -408,6 +408,7 @@ function toRemoteSession(s: Session): RemoteSession {
     unavailable_volume: s.unavailable_volume
       ? (s.unavailable_volume.split("/").pop() ?? null)
       : null,
+    volume: s.volume ? (s.volume.split("/").pop() ?? null) : null,
   };
 }
 
