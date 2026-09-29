@@ -168,6 +168,12 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `agent_stopped`     | main   | The agent was stopped                 | —                                                                             |
 | `agent_interrupted` | main   | The agent was interrupted             | —                                                                             |
 
+## Automations
+
+| Event                    | Source | When                                                | Extra props                                   |
+| ------------------------ | ------ | --------------------------------------------------- | --------------------------------------------- |
+| `automation_github_read` | main   | An automation run read GitHub through an Argus tool | `tool: "get" \| "artifact_search"`, `success` |
+
 ## Claude accounts
 
 | Event                      | Source | When                                                    | Extra props                                                                 |

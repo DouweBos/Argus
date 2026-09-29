@@ -95,7 +95,7 @@ function autonomySection(
   const guardrails = normalizeGuardrails(automation.guardrails);
   const allowed = {
     propose:
-      "You may only emit proposals. Any attempt to create a session, spawn an agent or merge anything will be refused. Plan mode is on to keep this run from writing, but `emit_report`, `emit_proposal`, `save_memory` and `delete_memory` are still yours to call; skip the plan file and `ExitPlanMode`.",
+      "You may only emit proposals. Any attempt to create a session, spawn an agent or merge anything will be refused. Plan mode is on to keep this run from writing, but `emit_report`, `emit_proposal`, `save_memory` and `delete_memory` are still yours to call; skip the plan file and `ExitPlanMode`. The shell refuses `gh api` and `gh run download`; read GitHub through `github_get` and `search_github_artifact` instead.",
     draft:
       "You may start sessions for proposals that clear the guardrails, and those sessions may implement and commit. Pushing and merging will be refused.",
     pr: "You may start sessions and, once a branch is ready, call `open_session_pr`. Merging will be refused.",

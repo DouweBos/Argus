@@ -342,6 +342,8 @@ describe("the shell guard", () => {
       "mcp__argus__list_sessions",
       "mcp__argus__list_agents",
       "mcp__argus__session_diff",
+      "mcp__argus__github_get",
+      "mcp__argus__search_github_artifact",
       "Read",
       "Grep",
     ]) {
