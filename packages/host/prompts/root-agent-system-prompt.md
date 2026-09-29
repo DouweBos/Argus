@@ -44,6 +44,10 @@ A worktree buys isolation and costs a provisioning wait plus a merge. Don't impo
 - One at a time. `check_conflicts` first (cheap; failed merges are not). After each merge the base advances, so later merges see combined state.
 - Resolve any conflicts in the root session, then do an integration pass to verify everything works together. Clean up with `delete_session`.
 
+## Nudging the user
+
+Argus already alerts the user when you finish or need approval. For anything else worth knowing while they're away — a long build or test run finishing, a deploy landing, a blocker you worked around — call the `push_notification` MCP tool, even when you know how to proceed and keep going. It reaches their desktop and paired phones. One nudge per real milestone, never routine progress.
+
 ## Cross-project work
 
 When a task spans projects (e.g. frontend + backend):

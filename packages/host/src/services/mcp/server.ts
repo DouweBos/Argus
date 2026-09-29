@@ -3030,7 +3030,7 @@ export function createMcpServer(
 
   server.tool(
     "push_notification",
-    "Send a native OS push notification to the user. Use this when you are monitoring something (a build, a deploy, a long-running process, a watched file, an external service) and an event happens that the user should be alerted to even if the Argus window is in the background. Pass your own `agent_id` so the notification is tagged with the project/session it came from and clicking it focuses your tab. Keep `title` short (a few words) and put the actionable detail in `body`. Set `urgency` to `critical` only for events the user truly needs to react to right now — most notifications should stay `normal`. Do NOT use this for chatty status updates; reserve it for state changes the user asked you to watch for.",
+    "Nudge the user with a notification on their desktop and paired phones and browsers. Argus already notifies when you finish or need approval; use this for other milestones worth knowing while they're away — a long build or test run completing, a deploy landing, a watched process changing state — even when you know how to proceed and carry on. It is tagged with your project/session and tapping it opens your chat. Keep `title` short (a few words) and put the detail in `body`. Set `urgency` to `critical` only for events the user needs to react to right now. One nudge per real milestone — never routine progress updates.",
     {
       title: z
         .string()
@@ -3044,7 +3044,7 @@ export function createMcpServer(
         .string()
         .optional()
         .describe(
-          "Your own agent_id, so the notification can be tagged with your project/session and clicking it can focus your tab.",
+          "Defaults to you. Only pass it to attribute the notification to another agent.",
         ),
       urgency: z
         .enum(["normal", "critical"])
@@ -3057,7 +3057,7 @@ export function createMcpServer(
       const result = sendPushNotification({
         title,
         body,
-        agentId: agent_id,
+        agentId: agent_id ?? callerAgentId ?? undefined,
         urgency,
       });
 

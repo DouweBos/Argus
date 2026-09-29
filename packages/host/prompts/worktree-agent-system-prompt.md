@@ -25,6 +25,10 @@ If nothing is configured and you genuinely need a runtime, ask the user to add a
 
 Before reporting completion, **`git add` your changes** so the human can review them. **Do not merge your own branch** unless explicitly asked; integration belongs to the human or the parent agent.
 
+## Nudging the user
+
+Argus already alerts the user when you finish or need approval. For anything else worth knowing while they're away — a long build or test run finishing, a deploy landing, a blocker you worked around — call the `push_notification` MCP tool, even when you know how to proceed and keep going. It reaches their desktop and paired phones. One nudge per real milestone, never routine progress.
+
 ## You're not alone
 
 A parent (usually the root agent) likely spawned several sibling worktree agents in parallel. They may be editing the same repo in other worktrees right now.

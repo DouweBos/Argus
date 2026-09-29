@@ -1,14 +1,13 @@
 /**
- * Native OS push notifications fired from the main process.
+ * Agent-initiated nudges fired from the main process.
  *
  * Used by the MCP `push_notification` tool so an agent can alert the user
- * about something it is monitoring (a build that failed, a long-running
- * process that finished, etc.). Unlike the in-app `broadcastNotification`
- * toast channel, these surface in the OS notification center.
+ * about a milestone (a build that finished, a deploy that landed, etc.). They
+ * reach the OS notification center and paired phones and browsers.
  */
 
-import { hostPlatform } from "@argus/host/platform";
 import { appState } from "../../state";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { showAgentNotification } from "./osNotification";
 
 export type PushNotificationUrgency = "critical" | "normal";
@@ -53,10 +52,6 @@ function resolveAgentContext(agentId: string | undefined): {
 export function sendPushNotification(
   input: PushNotificationInput,
 ): PushNotificationResult {
-  if (!hostPlatform().notificationsSupported()) {
-    return { delivered: false, reason: "OS notifications are not supported" };
-  }
-
   const ctx = resolveAgentContext(input.agentId);
   const title = ctx.resolvedTitle
     ? `${ctx.resolvedTitle} — ${input.title}`
@@ -74,6 +69,10 @@ export function sendPushNotification(
     },
     { showLocal: true, urgency: input.urgency },
   );
+  telemetryCapture("agent_nudged", {
+    critical: input.urgency === "critical",
+    tagged: ctx.sessionId !== null,
+  });
 
   return { delivered: true };
 }
