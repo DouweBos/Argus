@@ -13,14 +13,19 @@ struct ToolCallCard: View {
   let call: RemoteToolCall
   let depth: Int
 
-  @State private var userExpanded = false
+  /// Nil until tapped, so the auto-expand setting decides the starting state.
+  @State private var userExpanded: Bool?
   @State private var showingFullPlan = false
 
   private var isPending: Bool {
     app.isToolCallPending(agentKey: agentKey, call: call)
   }
 
-  private var expanded: Bool { isPending || userExpanded }
+  private var autoExpanded: Bool {
+    app.autoExpandImageReads && call.name == "Read" && !resultImageIds.isEmpty
+  }
+
+  private var expanded: Bool { isPending || (userExpanded ?? autoExpanded) }
 
   private var borderColor: Color {
     if isPending { return theme.warning.opacity(0.6) }
@@ -57,7 +62,7 @@ struct ToolCallCard: View {
   private var header: some View {
     Button {
       guard !isPending else { return }
-      userExpanded.toggle()
+      userExpanded = !expanded
     } label: {
       HStack(spacing: 6) {
         if call.status == .running && (call.name == "Agent" || call.name == "Task") {

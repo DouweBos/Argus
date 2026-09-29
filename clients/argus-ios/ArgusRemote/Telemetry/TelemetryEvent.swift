@@ -82,6 +82,10 @@ enum TelemetryEvent {
   }
 
   /// How work leaves a session.
+  enum Setting: String {
+    case autoExpandImageReads = "auto_expand_image_reads"
+  }
+
   enum LandAction: String {
     case commit
     case push
@@ -111,6 +115,7 @@ enum TelemetryEvent {
   case memoryEdited(action: MemoryAction)
   /// The inbox's shortcut into the run a proposal came out of.
   case proposalOpenedAsRun
+  case settingChanged(setting: Setting, enabled: Bool)
   /// `message` is scrubbed and truncated by `Telemetry` before it is sent.
   case appError(scope: String, message: String)
   /// Shared with the desktop on purpose: it is the same consent signal.
@@ -138,6 +143,7 @@ enum TelemetryEvent {
     case .sessionRenamed: "ios_session_renamed"
     case .memoryEdited: "ios_memory_edited"
     case .proposalOpenedAsRun: "ios_proposal_opened"
+    case .settingChanged: "ios_setting_changed"
     case .appError: "ios_app_error"
     case .telemetryEnabled: "telemetry_enabled"
     case .telemetryDisabled: "telemetry_disabled"
@@ -185,6 +191,8 @@ enum TelemetryEvent {
       ["target": target]
     case .memoryEdited(let action):
       ["action": action.rawValue]
+    case .settingChanged(let setting, let enabled):
+      ["setting": setting.rawValue, "enabled": enabled]
     case .appError(let scope, let message):
       ["scope": scope, "message": String(Telemetry.scrub(message).prefix(2000))]
     }

@@ -47,6 +47,14 @@ struct SettingsView: View {
       }
 
       Section {
+        Toggle("Expand image reads", isOn: autoExpandImageReadsBinding)
+      } header: {
+        Text("Transcript")
+      } footer: {
+        Text("Open Read tool calls that returned an image, so screenshots show without a tap.")
+      }
+
+      Section {
         LabeledContent("Notifications", value: notificationLabel)
         if notificationStatus == .denied {
           // Only iOS can undo a denial, so send them there rather than
@@ -111,6 +119,10 @@ struct SettingsView: View {
 
   private var appearance: Binding<ThemePreference> {
     Binding(get: { app.themePreference }, set: { app.setThemePreference($0) })
+  }
+
+  private var autoExpandImageReadsBinding: Binding<Bool> {
+    Binding(get: { app.autoExpandImageReads }, set: { app.setAutoExpandImageReads($0) })
   }
 
   private var telemetryBinding: Binding<Bool> {

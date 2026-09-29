@@ -6,6 +6,7 @@ public enum PreferenceKey {
   public static let deviceName = "device.name"
   public static let theme = "argus.theme"
   public static let pushEnabled = "push.enabled"
+  public static let autoExpandImageReads = "transcript.autoExpandImageReads"
   public static let pushToken = "push.token"
   public static let agentHosts = "agent.hosts"
   public static let pendingDecisions = "permission.pending"
