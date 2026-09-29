@@ -538,6 +538,13 @@ describe("the shell guard", () => {
     expect(
       attemptTool(HOST_SESSION_ID, "mcp__argus__emit_report").behavior,
     ).toBe("allow");
+    // Clearing its own stale proposal is housekeeping the inbox tools ask for.
+    expect(
+      attemptTool(HOST_SESSION_ID, "mcp__argus__withdraw_proposal").behavior,
+    ).toBe("allow");
+    expect(
+      attemptTool(HOST_SESSION_ID, "mcp__argus__list_open_proposals").behavior,
+    ).toBe("allow");
 
     // A worktree session an automation started gets no such pass.
     registerWorkSession();
