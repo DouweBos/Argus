@@ -167,6 +167,7 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `agent_restored`    | main   | Conversation restored at a prior turn | `keep_turn_number`, `is_fresh_start`                                          |
 | `agent_exited`      | main   | The agent process exited              | `exit_code`, `success`, `turns_completed`, `tool_uses`, `duration_ms`         |
 | `agent_stopped`     | main   | The agent was stopped                 | —                                                                             |
+| `agent_nudged`      | main   | An agent sent a `push_notification`   | `critical` (urgency), `tagged` (tied to a session)                            |
 | `agent_interrupted` | main   | The agent was interrupted             | —                                                                             |
 
 ## Automations

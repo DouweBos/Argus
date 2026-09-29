@@ -52,6 +52,7 @@ export interface EventMap {
     permission_mode: string;
     session_kind: SessionKind;
   };
+  agent_nudged: { critical: boolean; tagged: boolean };
   agent_stopped: undefined;
   app_error: { message: string; scope: string };
   app_launched: undefined;
