@@ -22,6 +22,7 @@ import {
   automationRunForAgent,
   isAutomationHostAgent,
 } from "./automationCaller";
+import { registerAutomationGithubTools } from "./automationGithubTools";
 import { registerAutomationInboxTools } from "./automationInboxTools";
 import { registerAutomationMemoryTools } from "./automationMemoryTools";
 import { registerAutomationPrTool } from "./automationPrTool";
@@ -39,6 +40,7 @@ export function registerAutomationTools(
   registerAutomationReportTool(server, callerAgentId);
   registerAutomationInboxTools(server, callerAgentId);
   registerAutomationMemoryTools(server, callerAgentId);
+  registerAutomationGithubTools(server, callerAgentId);
 
   server.tool(
     "emit_proposal",

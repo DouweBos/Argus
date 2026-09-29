@@ -56,6 +56,10 @@ export interface EventMap {
   app_error: { message: string; scope: string };
   app_launched: undefined;
   app_quit: undefined;
+  automation_github_read: {
+    success: boolean;
+    tool: "artifact_search" | "get";
+  };
   claude_account_rechecked: {
     badge_cleared: boolean;
     outcome: "ok" | "rate_limited" | "reauth" | "unknown";
