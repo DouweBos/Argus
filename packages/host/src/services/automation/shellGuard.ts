@@ -138,6 +138,29 @@ function ghWords(words: string[]): string[] {
   return words.slice(1).filter((w) => !w.startsWith("-"));
 }
 
+/** `gh api` flags that send a request body, which turns the call into a POST. */
+const GH_API_BODY_FLAG = /^(-[fF]|--field|--raw-field|--input)(=|$)|^-[fF]./;
+
+/**
+ * Whether a `gh api` call can change anything. Only an unmistakable GET
+ * reads: an explicit non-GET method, or a body without `--method GET`, writes.
+ */
+function ghApiWrites(words: string[]): boolean {
+  let method: string | null = null;
+  let hasBody = false;
+  for (let i = 1; i < words.length; i += 1) {
+    const word = words[i]!;
+    const inline = /^(?:-X|--method=?)(.*)$/.exec(word);
+    if (inline) {
+      method = (inline[1] || words[i + 1] || "").toUpperCase();
+    } else if (GH_API_BODY_FLAG.test(word)) {
+      hasBody = true;
+    }
+  }
+
+  return method !== null ? method !== "GET" : hasBody;
+}
+
 function inspectWords(raw: string[]): PublishingAction | null {
   const words = stripAssignments(raw);
   if (words.length === 0) {
@@ -877,7 +900,10 @@ function segmentReads(raw: string[]): boolean {
   }
 
   if (head === "gh") {
-    const [, action] = ghWords(words);
+    const [group, action] = ghWords(words);
+    if (group === "api") {
+      return !ghApiWrites(words);
+    }
 
     return action !== undefined && READ_ONLY_GH.has(action);
   }
@@ -951,8 +977,19 @@ export function automationDisallowedTools(sessionId: string): string[] {
     return [];
   }
   const rules: string[] = [];
+  // The CLI enforces these before the pre-hook runs, so a prefix the user
+  // allowed has to be left out here or the allowance never takes effect.
+  const allowed = configuredAllowances().commands.map((entry) =>
+    entry.trim().split(/\s+/),
+  );
   const deny = (prefix: string) => {
-    rules.push(`Bash(${prefix}:*)`, `Bash(${prefix}*)`);
+    const words = prefix.split(" ");
+    const overlaps = allowed.some((entry) =>
+      words.every((word, i) => entry[i] === word),
+    );
+    if (!overlaps) {
+      rules.push(`Bash(${prefix}:*)`, `Bash(${prefix}*)`);
+    }
   };
 
   if (!atLeastAutonomy(owner.autonomy, "draft")) {
@@ -964,7 +1001,6 @@ export function automationDisallowedTools(sessionId: string): string[] {
     deny("gh pr ready");
     deny("gh pr reopen");
     deny("gh release create");
-    deny("gh api");
   }
   if (!atLeastAutonomy(owner.autonomy, "auto_merge")) {
     deny("gh pr merge");

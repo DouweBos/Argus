@@ -140,6 +140,8 @@ Node:
    own agent and each session it started — has its publishing commands checked
    on the permission request itself. Below `pr`, `git push` and `gh pr create`
    are denied outright, in any spelling, whatever the permission mode says.
+   A read-only run may still `GET` through `gh api` (logs, artifacts, search);
+   any other method, or a request body, is refused.
 3. **The permission mode.** A `propose` run is started in plan mode, so the CLI
    refuses edits before Argus is even asked. Its own `emit_proposal` and
    `emit_report` are allowed through, so an unattended run never stops to ask
