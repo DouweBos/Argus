@@ -16,6 +16,7 @@ import { emitHostEvent } from "../../bus";
 import { info, warn } from "../../logger";
 import { appState } from "../../state";
 import { liveOwnedSessions } from "../automation/ownedSessions";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import {
   loadUserProjectSettings,
   saveUserProjectSettings,
@@ -48,6 +49,26 @@ export interface MoveWorktreesPlan {
   sessions: { branch: string; from: string; id: string; to: string }[];
   to_root: string;
 }
+
+export type MoveStep = "copying" | "counting" | "moving" | "removing";
+
+/** Emitted on `session:worktrees-move-progress` while a move runs. */
+export interface MoveWorktreesProgress {
+  branch: string;
+  /** Entries copied so far in the current worktree; 0 outside `copying`. */
+  done_entries: number;
+  /** 0-based position of the worktree being moved. */
+  index: number;
+  repo_root: string;
+  session_id: string;
+  step: MoveStep;
+  total: number;
+  /** Entries in the current worktree; 0 while unknown. */
+  total_entries: number;
+}
+
+/** Progress events are throttled so a big `node_modules` isn't a firehose. */
+const PROGRESS_INTERVAL_MS = 200;
 
 export interface MoveWorktreesResult {
   failed: { error: string; id: string }[];
@@ -228,24 +249,50 @@ function quiesce(sessionIds: string[]): void {
   }
 }
 
+type StepReporter = (step: MoveStep, done?: number, total?: number) => void;
+
+async function countEntries(dir: string): Promise<number> {
+  try {
+    return (await fs.promises.readdir(dir, { recursive: true })).length;
+  } catch {
+    return 0;
+  }
+}
+
 /**
  * Move one worktree. Tries the atomic rename first, because when it works it
- * is exactly right; falls back to copy + repair across filesystems.
+ * is exactly right; falls back to copy + repair across filesystems. Async
+ * throughout — a sync copy of a multi-GB tree freezes the whole host.
  */
 async function moveOne(
   repoRoot: string,
   from: string,
   to: string,
-): Promise<void> {
+  report: StepReporter,
+): Promise<"copied" | "renamed"> {
+  report("moving");
   try {
     await git(repoRoot, ["worktree", "move", from, to]);
 
-    return;
+    return "renamed";
   } catch (e) {
     info(`moveWorktrees: rename failed, copying instead: ${String(e)}`);
   }
 
-  fs.cpSync(from, to, { recursive: true, verbatimSymlinks: true });
+  report("counting");
+  const total = await countEntries(from);
+  let done = 0;
+  report("copying", 0, total);
+  await fs.promises.cp(from, to, {
+    recursive: true,
+    verbatimSymlinks: true,
+    filter: () => {
+      done += 1;
+      report("copying", done, total);
+
+      return true;
+    },
+  });
   // Rewrites both the worktree's `.git` file and git's back-reference.
   await git(repoRoot, ["worktree", "repair", to]);
   // Only destroy the original once the copy is demonstrably a working tree.
@@ -253,7 +300,21 @@ async function moveOne(
   if (!top) {
     throw `Copied worktree at ${to} is not usable; left the original in place.`;
   }
-  fs.rmSync(from, { recursive: true, force: true });
+  report("removing");
+  await fs.promises.rm(from, { recursive: true, force: true });
+
+  return "copied";
+}
+
+function durationBucket(ms: number): "<1m" | "<10m" | "<10s" | ">=10m" {
+  if (ms < 10_000) {
+    return "<10s";
+  }
+  if (ms < 60_000) {
+    return "<1m";
+  }
+
+  return ms < 600_000 ? "<10m" : ">=10m";
 }
 
 function moveSidecars(fromRoot: string, toRoot: string): void {
@@ -308,12 +369,39 @@ export async function executeWorktreeMove(
   const moved: string[] = [];
   const failed: MoveWorktreesResult["failed"] = [];
   const meta = loadMetadata(repoRoot);
+  const startedAt = Date.now();
+  let copied = false;
 
   // Sequential: git serialises on the repo anyway, and a partial failure in
   // parallel is far harder to describe afterwards.
-  for (const session of plan.sessions) {
+  for (const [index, session] of plan.sessions.entries()) {
+    let lastStep: MoveStep | null = null;
+    let lastEmit = 0;
+    const report: StepReporter = (step, done = 0, total = 0) => {
+      const now = Date.now();
+      if (step === lastStep && now - lastEmit < PROGRESS_INTERVAL_MS) {
+        return;
+      }
+      lastStep = step;
+      lastEmit = now;
+      const progress: MoveWorktreesProgress = {
+        branch: session.branch,
+        done_entries: done,
+        index,
+        repo_root: repoRoot,
+        session_id: session.id,
+        step,
+        total: plan.sessions.length,
+        total_entries: total,
+      };
+      emitHostEvent("session:worktrees-move-progress", progress);
+    };
     try {
-      await moveOne(repoRoot, session.from, session.to);
+      if (
+        (await moveOne(repoRoot, session.from, session.to, report)) === "copied"
+      ) {
+        copied = true;
+      }
       moved.push(session.id);
 
       const entry = meta.get(normalizeMetaKey(session.from));
@@ -354,6 +442,14 @@ export async function executeWorktreeMove(
     });
     invalidateWorktreeLocationCache(repoRoot);
   }
+
+  telemetryCapture("worktrees_moved", {
+    copied,
+    duration_bucket: durationBucket(Date.now() - startedAt),
+    failed: failed.length,
+    moved: moved.length,
+    purpose,
+  });
 
   emitHostEvent("session:worktrees-moved", {
     repoRoot,

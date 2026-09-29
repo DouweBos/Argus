@@ -146,6 +146,7 @@ is a fixed literal, not the user's machine or any external origin.
 | `session_prompt_dispatched` | main   | The host starts the agent for a session created with a prompt (e.g. a plan handed off from the phone) | `success`                                                                                   |
 | `session_deleted`           | main   | A session is deleted                                                                                  | `kind` (`worktree` \| `project_root` \| `scratch_pad`), `delete_branch`                     |
 | `scratch_pad_created`       | main   | A scratch pad is created                                                                              | `has_name` — whether a name was given rather than the default                               |
+| `worktrees_moved`           | main   | A project's worktrees were moved to a new location                                                    | `moved`, `failed` (counts), `copied` (crossed drives), `duration_bucket`, `purpose`         |
 
 ## Merges
 

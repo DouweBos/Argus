@@ -1,5 +1,6 @@
 import type {
   MoveWorktreesPlan,
+  MoveWorktreesProgress,
   MoveWorktreesResult,
   WorktreePurpose,
 } from "../../../lib/types";
@@ -10,8 +11,10 @@ import {
   Dialog,
   DialogBody,
   DialogFooter,
+  ProgressBar,
   Spinner,
 } from "@argus/peacock";
+import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import { moveWorktrees, planWorktreesMove } from "../../../lib/ipc";
 import styles from "./MoveWorktreesDialog.module.css";
 
@@ -25,6 +28,33 @@ interface MoveWorktreesDialogProps {
 }
 
 type Phase = "confirm" | "done" | "loading" | "moving";
+
+/** Overall fraction: finished worktrees plus how far into the current one. */
+function overallProgress(p: MoveWorktreesProgress): number {
+  let current = 0;
+  if (p.step === "removing") {
+    current = 1;
+  } else if (p.step === "copying" && p.total_entries > 0) {
+    current = p.done_entries / p.total_entries;
+  }
+
+  return (p.index + current) / p.total;
+}
+
+function stepLabel(p: MoveWorktreesProgress): string {
+  switch (p.step) {
+    case "moving":
+      return "Moving…";
+    case "counting":
+      return "Counting files…";
+    case "copying":
+      return p.total_entries > 0
+        ? `Copying ${p.done_entries.toLocaleString()} of ${p.total_entries.toLocaleString()} files`
+        : "Copying…";
+    case "removing":
+      return "Removing the old copy…";
+  }
+}
 
 /**
  * Offered before a new worktree location is committed. Moving is optional —
@@ -42,6 +72,16 @@ export function MoveWorktreesDialog({
   const [plan, setPlan] = useState<MoveWorktreesPlan | null>(null);
   const [result, setResult] = useState<MoveWorktreesResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<MoveWorktreesProgress | null>(null);
+
+  useIpcEvent<MoveWorktreesProgress>(
+    "session:worktrees-move-progress",
+    (next) => {
+      if (next.repo_root === repoRoot) {
+        setProgress(next);
+      }
+    },
+  );
 
   useEffect(() => {
     planWorktreesMove({ purpose, repoRoot, toBaseDir })
@@ -57,6 +97,7 @@ export function MoveWorktreesDialog({
 
   const start = () => {
     setPhase("moving");
+    setProgress(null);
     moveWorktrees({ purpose, repoRoot, toBaseDir })
       .then((next) => {
         setResult(next);
@@ -110,9 +151,23 @@ export function MoveWorktreesDialog({
         )}
 
         {phase === "moving" && (
-          <p className={styles.body}>
-            <Spinner /> Moving {count} worktree{count === 1 ? "" : "s"}…
-          </p>
+          <div className={styles.progress}>
+            <p className={styles.body}>
+              {progress
+                ? `Moving ${progress.index + 1} of ${progress.total}: `
+                : `Moving ${count} worktree${count === 1 ? "" : "s"}…`}
+              {progress && (
+                <span className={styles.branch}>{progress.branch}</span>
+              )}
+            </p>
+            <ProgressBar
+              aria-label="Worktree move progress"
+              indeterminate={progress == null}
+              progress={progress ? overallProgress(progress) : 0}
+              size="md"
+            />
+            {progress && <p className={styles.step}>{stepLabel(progress)}</p>}
+          </div>
         )}
 
         {phase === "done" && result != null && (

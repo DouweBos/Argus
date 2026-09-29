@@ -1776,6 +1776,18 @@ export interface MoveWorktreesPlan {
   to_root: string;
 }
 
+/** Payload of `session:worktrees-move-progress`. */
+export interface MoveWorktreesProgress {
+  branch: string;
+  done_entries: number;
+  index: number;
+  repo_root: string;
+  session_id: string;
+  step: "copying" | "counting" | "moving" | "removing";
+  total: number;
+  total_entries: number;
+}
+
 export interface MoveWorktreesResult {
   failed: { error: string; id: string }[];
   moved: string[];
