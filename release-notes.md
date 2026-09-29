@@ -1,13 +1,7 @@
 
-### Minor Changes
-
-- 549741c: Automation runs can now read GitHub CI logs, artifact lists and the contents of test artifacts, including read-only runs.
-
 ### Patch Changes
 
-- 4f7dfbd: Read-only automation runs can now withdraw their own proposals once the branch, PR or issue behind them is gone.
-- e5419f6: The inbox no longer lists started work under "Argus is on it" once its session has been merged or deleted.
-- c723676: Text fields in the iOS app now offer autocorrect, predictive text and capitalization for written input like plan feedback and messages, while branch names, codes and paths stay verbatim.
-- 5c981f1: Handing a plan off to a new session from the iOS app now starts the agent on your computer, even if the phone is locked or the app is closed while the session sets up.
-- fcd6564: An account marked Limit reached is re-checked in the background, so the badge clears once its quota resets instead of lingering until an agent runs on it.
+- 8fcdcee: Changing a project's worktree location now offers to move its existing worktrees instead of reporting that there are none.
+- 977bb03: Agents waiting on a question or permission no longer show as stopped.
+- 3511d86: Picking a different Claude account for a new agent that hasn't been messaged yet now runs it on that account, and the phone app's chat input can switch accounts too. A switch that fails now shows an error instead of claiming the new account.
 
