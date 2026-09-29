@@ -3,10 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   addUserMessage,
   appendEvent,
+  appendInjectedPrompt,
   cancelPermission,
   clearConversation,
   getConversationState,
   hasRunningSubagents,
+  loadSavedMessages,
   migrateConversation,
   setCapabilities,
   setConversationState,
@@ -27,6 +29,28 @@ describe("conversationStore", () => {
     expect(conv.messages).toHaveLength(1);
     expect(conv.messages[0].role).toBe("user");
     expect(conv.messages[0].textBlocks).toEqual(["hello"]);
+  });
+
+  it("keeps the turn a resumed agent runs for an injected prompt", () => {
+    loadSavedMessages("agent-1", [], undefined, "claude-session", true);
+    appendInjectedPrompt("agent-1", {
+      id: "prompt",
+      role: "system",
+      textBlocks: ["continue"],
+      toolCalls: [],
+      timestamp: 0,
+    });
+    appendEvent("agent-1", {
+      type: "assistant",
+      message: { content: [{ type: "text", text: "On it" }] },
+    } as Parameters<typeof appendEvent>[1]);
+
+    const conv = getConversationState().conversations["agent-1"];
+    expect(conv.resuming).toBe(false);
+    expect(conv.messages.map((m) => m.textBlocks)).toEqual([
+      ["continue"],
+      ["On it"],
+    ]);
   });
 
   it("clears a conversation", () => {
