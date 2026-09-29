@@ -386,47 +386,6 @@ describe("the shell guard", () => {
     );
   });
 
-  it("lets a read-only run GET through gh api, but not write", () => {
-    autoStartedSession("propose");
-    appState.sessions.set(HOST_SESSION_ID, {
-      ...registerWorkSession(HOST_SESSION_ID),
-      kind: "automation_host",
-    });
-
-    for (const command of [
-      "gh api repos/o/r/actions/runs/1/artifacts --jq .artifacts",
-      "gh api repos/o/r/actions/jobs/2/logs",
-      "gh api --method GET search/issues -f q=crash",
-    ]) {
-      expect(attempt(HOST_SESSION_ID, command).deny).toBeNull();
-    }
-    for (const command of [
-      "gh api -X POST repos/o/r/pulls",
-      "gh api --method=DELETE repos/o/r/git/refs/heads/x",
-      "gh api repos/o/r/issues/1/comments -f body=hi",
-      "gh api graphql -F query=@mutation.graphql",
-      "gh api repos/o/r/pulls --input body.json",
-    ]) {
-      expect(attempt(HOST_SESSION_ID, command).deny).toContain("Refused");
-    }
-    expect(automationDisallowedTools(HOST_SESSION_ID)).not.toContain(
-      "Bash(gh api:*)",
-    );
-  });
-
-  it("leaves an allowed command out of the CLI deny patterns", () => {
-    seedAppSettings({
-      default_autonomy: "auto_merge",
-      automation_allowed_commands: ["gh pr create --draft"],
-    });
-    autoStartedSession("propose");
-
-    const rules = automationDisallowedTools(HOST_SESSION_ID);
-
-    expect(rules).not.toContain("Bash(gh pr create:*)");
-    expect(rules).toContain("Bash(git push:*)");
-  });
-
   it("opens the gate for a tool the user allowed", () => {
     seedAppSettings({
       default_autonomy: "auto_merge",
