@@ -73,12 +73,13 @@ function projectKey(repoRoot: string): string {
   return `${path.basename(repoRoot) || "repo"}-${digest.slice(0, 8)}`;
 }
 
-function indexDir(repoRoot: string): string {
+/** Per-project state on the boot disk, reachable whatever drive holds the worktrees. */
+export function projectDataDir(repoRoot: string): string {
   return path.join(argusHomeDir(), "projects", projectKey(repoRoot));
 }
 
 function indexPath(repoRoot: string): string {
-  return path.join(indexDir(repoRoot), "sessions.json");
+  return path.join(projectDataDir(repoRoot), "sessions.json");
 }
 
 /** Normalize path for consistent lookup (handles trailing slashes, separators). */
@@ -203,7 +204,7 @@ export function saveMetadata(
 
   const target = indexPath(repoRoot);
   const tmp = `${target}.tmp`;
-  fs.mkdirSync(indexDir(repoRoot), { recursive: true });
+  fs.mkdirSync(projectDataDir(repoRoot), { recursive: true });
   fs.writeFileSync(tmp, JSON.stringify(file, null, 2), "utf8");
   fs.renameSync(tmp, target);
 }

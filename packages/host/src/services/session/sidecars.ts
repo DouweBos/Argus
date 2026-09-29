@@ -1,68 +1,62 @@
 /**
- * Per-project files Argus keeps beside the worktrees — chat history and
- * command metrics. They sit under the user worktree root, so changing that
- * root without moving the worktrees would orphan them; `sidecarPath` adopts a
- * copy stranded at an earlier root instead.
+ * Per-project files that used to sit beside the worktrees — chat history and
+ * command metrics. They cover the whole project, root session included, so
+ * they live on the boot disk: an unplugged worktree drive must not take them
+ * with it. Copies left under any worktree root are folded in on first use.
  */
 
 import fs from "node:fs";
 import path from "node:path";
 import { warn } from "../../logger";
-import { worktreesRoot } from "./git";
+import { projectDataDir } from "./metadata";
 import { isOnMissingVolume } from "./volumeAvailability";
 import { worktreeRootsForRepo } from "./worktreeLocation";
 
 export const CHAT_HISTORY_DIR = ".argus-chat-history";
 export const COMMAND_METRICS_FILE = ".argus-command-metrics.json";
 
-const SIDECARS = [CHAT_HISTORY_DIR, COMMAND_METRICS_FILE];
+/** Folds a stray copy into one that already exists at the target. */
+export type SidecarMerge = (from: string, to: string) => void;
 
-function moveSidecar(from: string, to: string): void {
-  fs.mkdirSync(path.dirname(to), { recursive: true });
-  fs.cpSync(from, to, { recursive: true });
-  fs.rmSync(from, { recursive: true, force: true });
-}
+const adopted = new Set<string>();
 
-/** Where a sidecar lives now, pulling it over from an earlier root if needed. */
-export function sidecarPath(repoRoot: string, name: string): string {
-  const current = path.join(worktreesRoot(repoRoot, "user"), name);
-  if (fs.existsSync(current)) {
-    return current;
+export function sidecarPath(
+  repoRoot: string,
+  name: string,
+  merge: SidecarMerge,
+): string {
+  const target = path.join(projectDataDir(repoRoot), name);
+  const key = `${repoRoot}\0${name}`;
+  if (adopted.has(key)) {
+    return target;
   }
 
+  // Unreachable strays are retried on a later call, once the drive is back.
+  let complete = true;
   for (const root of worktreeRootsForRepo(repoRoot)) {
-    const stranded = path.join(root, name);
-    if (stranded === current || !fs.existsSync(stranded)) {
-      continue;
-    }
-    // Drive unplugged: keep using the old copy rather than lose it.
-    if (isOnMissingVolume(current)) {
-      return stranded;
-    }
-    try {
-      moveSidecar(stranded, current);
-
-      return current;
-    } catch (e) {
-      warn(`sidecars: could not adopt ${stranded}: ${String(e)}`);
-
-      return stranded;
-    }
-  }
-
-  return current;
-}
-
-export function moveSidecars(fromRoot: string, toRoot: string): void {
-  for (const name of SIDECARS) {
-    const from = path.join(fromRoot, name);
-    if (!fs.existsSync(from)) {
+    const stray = path.join(root, name);
+    if (!fs.existsSync(stray)) {
+      if (isOnMissingVolume(stray)) {
+        complete = false;
+      }
       continue;
     }
     try {
-      moveSidecar(from, path.join(toRoot, name));
+      if (fs.existsSync(target)) {
+        merge(stray, target);
+      } else {
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.cpSync(stray, target, { recursive: true });
+      }
+      fs.rmSync(stray, { recursive: true, force: true });
     } catch (e) {
-      warn(`moveWorktrees: could not move ${name}: ${String(e)}`);
+      complete = false;
+      warn(`sidecars: could not adopt ${stray}: ${String(e)}`);
     }
   }
+  if (complete) {
+    adopted.add(key);
+  }
+
+  return target;
 }
