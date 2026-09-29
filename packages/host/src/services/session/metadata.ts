@@ -166,9 +166,8 @@ function loadFromVolume(repoRoot: string): Map<string, SessionMeta> {
 /**
  * Load persisted session metadata for a repo. Empty when there is none.
  *
- * Migrates the pre-v2 file that lived beside the worktrees, leaving the
- * original in place for rollback safety — the same courtesy the earlier
- * `.argus-workspaces.json` rename got.
+ * Migrates the pre-v2 file that lived beside the worktrees;
+ * `dropVolumeMetadata` removes the original afterwards.
  */
 export function loadMetadata(repoRoot: string): Map<string, SessionMeta> {
   try {
@@ -187,6 +186,21 @@ export function loadMetadata(repoRoot: string): Map<string, SessionMeta> {
   }
 
   return migrated;
+}
+
+/**
+ * Delete the pre-v2 files beside the worktrees once the internal copy exists.
+ * Only worktrees belong under a worktree root.
+ */
+export function dropVolumeMetadata(repoRoot: string): void {
+  if (!fs.existsSync(indexPath(repoRoot))) {
+    return;
+  }
+  for (const root of worktreeRootsForRepo(repoRoot)) {
+    for (const name of [METADATA_FILENAME, LEGACY_METADATA_FILENAME]) {
+      fs.rmSync(path.join(root, name), { force: true });
+    }
+  }
 }
 
 /**
