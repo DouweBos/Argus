@@ -70,6 +70,9 @@ vi.mock("../session/argusConfig", () => ({
   loadArgusConfig: vi.fn(),
 }));
 
+vi.mock("../agent/chatHistory", () => ({
+  loadHistoryIndex: vi.fn(() => []),
+}));
 vi.mock("./projects", () => ({
   ensureRepoRegistered: vi.fn(),
 }));
@@ -95,6 +98,7 @@ const { startAgent, sendAgentMessage, listAgents } =
 const { createRunTerminal, startTerminal } =
   await import("../terminal/multiplexer");
 const { ensureRepoRegistered } = await import("./projects");
+const { loadHistoryIndex } = await import("../agent/chatHistory");
 const { isGitRepo, collectAllProjects } = await import("./projectDiscovery");
 
 const mockExistsSync = vi.mocked(fs.existsSync);
@@ -107,6 +111,7 @@ const mockReadArgusConfig = vi.mocked(readArgusConfig);
 const mockWriteArgusConfig = vi.mocked(writeArgusConfig);
 const mockStartAgent = vi.mocked(startAgent);
 const mockSendAgentMessage = vi.mocked(sendAgentMessage);
+const mockLoadHistoryIndex = vi.mocked(loadHistoryIndex);
 const mockListAgents = vi.mocked(listAgents);
 const mockCreateRunTerminal = vi.mocked(createRunTerminal);
 const mockStartTerminal = vi.mocked(startTerminal);
@@ -541,6 +546,9 @@ describe("spawn_agent", () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+      undefined,
+      undefined,
     );
     expect(mockSendAgentMessage).toHaveBeenCalledWith(
       "agent-42",
@@ -579,7 +587,75 @@ describe("spawn_agent", () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+      undefined,
+      undefined,
     );
+  });
+
+  it("resumes a past agent on its runner session and runner", async () => {
+    mockLoadHistoryIndex.mockReturnValue([
+      {
+        id: "h1",
+        agentId: "old-child",
+        sessionId: "cli-sess",
+        runnerId: "claude-code",
+        title: "t",
+        sessionBranch: "b",
+        sessionDescription: "",
+        messageCount: 2,
+        createdAt: 0,
+        endedAt: 0,
+      },
+    ]);
+    appState.sessions.set("ws-1", mockSession());
+    mockStartAgent.mockResolvedValue({
+      agent_id: "agent-43",
+      session_id: "ws-1",
+      status: "idle",
+      parent_agent_id: null,
+      created_at: 1_700_000_000_000,
+      model: null,
+      runner_id: "claude-code",
+    });
+
+    const result = await client.callTool({
+      name: "spawn_agent",
+      arguments: {
+        session: "ws-1",
+        project_path: "/projects/frontend",
+        prompt: "carry on",
+        resume: "old-child",
+      },
+    });
+    expect(jsonOf(result)).toMatchObject({ resumed_from: "old-child" });
+    expect(mockStartAgent).toHaveBeenCalledWith(
+      "ws-1",
+      undefined,
+      undefined,
+      "cli-sess",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      "claude-code",
+    );
+  });
+
+  it("refuses to resume an unknown agent", async () => {
+    mockLoadHistoryIndex.mockReturnValue([]);
+    appState.sessions.set("ws-1", mockSession());
+    const result = await client.callTool({
+      name: "spawn_agent",
+      arguments: {
+        session: "ws-1",
+        project_path: "/projects/frontend",
+        prompt: "carry on",
+        resume: "ghost",
+      },
+    });
+    expect(result.isError).toBe(true);
   });
 
   it("requires `session` to be present", async () => {

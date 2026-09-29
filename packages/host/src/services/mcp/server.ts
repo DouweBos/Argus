@@ -70,6 +70,7 @@ import {
   recordAutomationSessionForCaller,
 } from "./automationGuards";
 import { registerAutomationTools } from "./automationTools";
+import { findPastAgent, registerPastAgentTools } from "./pastAgentTools";
 import { isGitRepo, collectAllProjects } from "./projectDiscovery";
 import { ensureRepoRegistered } from "./projects";
 
@@ -254,6 +255,8 @@ async function spawnAgentInSession(
       | "plan";
     platforms?: ("android" | "ios" | "web")[];
     parentAgentId?: string;
+    resumeSessionId?: string;
+    runnerId?: string;
     sourceTool: "create_session" | "spawn_agent" | "spawn_agents_batch";
   },
 ): Promise<{
@@ -268,10 +271,13 @@ async function spawnAgentInSession(
     sessionId,
     opts.model,
     opts.permission_mode,
-    undefined,
+    opts.resumeSessionId,
     undefined,
     opts.platforms,
     opts.parentAgentId,
+    undefined,
+    undefined,
+    opts.runnerId,
   );
 
   emitHostEvent("agent:started", {
@@ -884,7 +890,15 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
       prompt: z
         .string()
-        .describe("Initial message/instructions to send to the agent"),
+        .describe(
+          "Initial message/instructions to send to the agent. When resuming, this is the next message in its restored conversation — e.g. tell it to carry on where it stopped.",
+        ),
+      resume: z
+        .string()
+        .optional()
+        .describe(
+          "Continue a past agent instead of starting a fresh one: the `resume` value from `list_past_agents`. The new agent gets the old one's full conversation, runs on the same runner, and is attributed to you. Run it in the session it worked in.",
+        ),
       permission_mode: z
         .enum(["default", "auto", "acceptEdits", "bypassPermissions", "plan"])
         .optional()
@@ -920,6 +934,7 @@ export function createMcpServer(
       session,
       project_path,
       prompt,
+      resume,
       permission_mode,
       model,
       platforms,
@@ -957,6 +972,37 @@ export function createMcpServer(
         };
       }
 
+      const past = resume ? findPastAgent(ws.repo_root, resume) : null;
+      if (resume && !past) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `No past agent found for "${resume}". Use a \`resume\` value from list_past_agents.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+      const liveAgent = past?.agentId
+        ? appState.agents.get(past.agentId)
+        : undefined;
+      if (
+        liveAgent &&
+        liveAgent.status !== "stopped" &&
+        liveAgent.status !== "error"
+      ) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Agent ${past?.agentId} is still running — use send_agent_message instead.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
       let agentResult;
       try {
         agentResult = await spawnAgentInSession(ws.id, prompt, {
@@ -965,6 +1011,8 @@ export function createMcpServer(
           permission_mode,
           platforms,
           parentAgentId: parent_agent_id ?? callerAgentId ?? undefined,
+          resumeSessionId: past?.sessionId,
+          runnerId: past?.runnerId,
           sourceTool: "spawn_agent",
         });
       } catch (e) {
@@ -985,6 +1033,7 @@ export function createMcpServer(
                 branch: ws.branch,
                 status: agentResult.status,
                 parent_agent_id: agentResult.parent_agent_id,
+                ...(past ? { resumed_from: past.agentId ?? resume } : {}),
               },
               null,
               2,
@@ -1242,7 +1291,7 @@ export function createMcpServer(
 
   server.tool(
     "list_agents",
-    "List all running agents across the project's sessions, or for a specific session. Note: an agent only appears here once its session has finished initializing and the agent process has actually started. If you just called `create_session` or `spawn_agents_batch`, the worktree may still be running setup (`git worktree add`, dependency installs, etc.) — during that window the session exists but `list_agents` will show nothing for it. Empty results immediately after a spawn do **not** mean the spawn failed; cross-check with `list_sessions` and look at each session's `status`. Sessions in `initializing` will spawn their queued agent automatically once ready.",
+    "List all running agents across the project's sessions, or for a specific session. Agents that stopped or were lost to an app restart are not here — use `list_past_agents` to find and resume those. Note: an agent only appears here once its session has finished initializing and the agent process has actually started. If you just called `create_session` or `spawn_agents_batch`, the worktree may still be running setup (`git worktree add`, dependency installs, etc.) — during that window the session exists but `list_agents` will show nothing for it. Empty results immediately after a spawn do **not** mean the spawn failed; cross-check with `list_sessions` and look at each session's `status`. Sessions in `initializing` will spawn their queued agent automatically once ready.",
     {
       project_path: sessionProjectPathArg,
       session: z
@@ -3027,6 +3076,7 @@ export function createMcpServer(
   // Automation-only tools, registered against caller identity rather than
   // advertised to everyone and refused later.
   registerAutomationTools(server, callerAgentId);
+  registerPastAgentTools(server);
 
   return server;
 }

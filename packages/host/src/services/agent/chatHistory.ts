@@ -28,6 +28,10 @@ export interface ChatHistoryEntry {
   /** Agent that produced this conversation — absent on records saved before
    *  the field existed. Lets callers tell a finished chat from a live one. */
   agentId?: string;
+  /** Agent that spawned this one, and the Argus session it ran in — absent
+   *  on older records. Lets an orchestrator find its children after a crash. */
+  parentAgentId?: string;
+  argusSessionId?: string;
   title: string;
   sessionBranch: string;
   sessionDescription: string;
@@ -164,6 +168,8 @@ export function saveConversation(
     id: conversation.id,
     sessionId: conversation.sessionId,
     agentId: conversation.agentId,
+    parentAgentId: conversation.parentAgentId,
+    argusSessionId: conversation.argusSessionId,
     title: conversation.title,
     sessionBranch: conversation.sessionBranch,
     sessionDescription: conversation.sessionDescription,

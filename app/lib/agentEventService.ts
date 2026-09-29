@@ -175,6 +175,8 @@ export function saveAgentConversation(agentId: string): void {
     id: crypto.randomUUID(),
     sessionId: conv.sessionId,
     agentId,
+    parentAgentId: agent.parent_agent_id ?? undefined,
+    argusSessionId: agent.session_id,
     title: conv.title ?? deriveTitle(conv.messages),
     sessionBranch: session.branch ?? "",
     sessionDescription: session.description ?? "",
