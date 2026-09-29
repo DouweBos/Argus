@@ -184,6 +184,8 @@ export interface AgentSession {
    * exit-plan-restore falls back to the system default.
    */
   prePlanPermissionMode?: string | null;
+  /** Claude account the subprocess was spawned with. */
+  accountId?: string;
 }
 
 // ---------------------------------------------------------------------------

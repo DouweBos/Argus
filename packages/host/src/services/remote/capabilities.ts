@@ -53,6 +53,7 @@ import {
   setAgentPermissionMode,
   startAgent,
   stopAgent,
+  switchSessionClaudeAccount,
 } from "../agent/agentService";
 import { loadConversation, loadHistoryIndex } from "../agent/chatHistory";
 import { knownContextWindow } from "../agent/contextWindow";
@@ -399,6 +400,7 @@ function toRemoteSession(s: Session): RemoteSession {
     branch: s.branch,
     display_name: s.display_name ?? null,
     base_branch: s.base_branch ?? null,
+    claude_account_id: s.claude_account_id ?? null,
     status: sessionStatus(s.status),
     availability: s.availability ?? "available",
     // The drive's name, not its mount point — this schema keeps host paths
@@ -1390,6 +1392,16 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "agents.set_model": async (params) => {
     const { agent_id, model } = parse("agents.set_model", params);
     await control(() => setAgentModel(agent_id, model));
+
+    return { accepted: true };
+  },
+
+  "agents.set_claude_account": async (params) => {
+    const { agent_id, account_id } = parse("agents.set_claude_account", params);
+    const agent = requireAgent(agent_id);
+    await control(() =>
+      switchSessionClaudeAccount(agent.sessionId, account_id, agent_id),
+    );
 
     return { accepted: true };
   },

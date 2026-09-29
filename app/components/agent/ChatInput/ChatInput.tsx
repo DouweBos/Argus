@@ -224,8 +224,15 @@ export function ChatInput({
           })),
           onSelect: (accountId) => {
             // Optimistic: nothing re-broadcasts the session list on this write.
+            // Rolled back on failure — the host restores the old pin too.
+            const previousId = currentSession?.claude_account_id ?? null;
             updateSession(sessionId, { claude_account_id: accountId });
-            setSessionClaudeAccount(sessionId, accountId).catch(() => {});
+            setSessionClaudeAccount(sessionId, accountId, agentId).catch(
+              (err) => {
+                updateSession(sessionId, { claude_account_id: previousId });
+                pushError(String(err), "set_session_claude_account");
+              },
+            );
           },
         }
       : undefined;

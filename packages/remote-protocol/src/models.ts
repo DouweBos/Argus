@@ -22,6 +22,8 @@ export const RemoteSession = z.object({
   display_name: z.string().nullable().optional(),
   /** The branch a merge lands on. Absent on older hosts. */
   base_branch: z.string().nullable().optional(),
+  /** Claude account the session is pinned to; null follows the active one. */
+  claude_account_id: z.string().nullable().optional(),
   status: z.enum(["deleting", "initializing", "ready", "error"]),
   /**
    * Whether the session's files are reachable. Orthogonal to `status`: the
