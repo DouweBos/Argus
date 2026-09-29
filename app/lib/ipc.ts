@@ -2567,12 +2567,16 @@ export const renameClaudeAccount = (id: string, label: string): Promise<void> =>
 export const refreshClaudeAccount = (id: string): Promise<void> =>
   invoke("claude_accounts_refresh", { id });
 
-/** Pin a session to an account, or pass `null` to follow the active account. */
+/**
+ * Pin a session to an account, or pass `null` to follow the active account.
+ * `agentId` restarts that agent on it while it has no conversation yet.
+ */
 export const setSessionClaudeAccount = (
   sessionId: string,
   accountId: string | null,
+  agentId?: string | null,
 ): Promise<void> =>
-  invoke("set_session_claude_account", { sessionId, accountId });
+  invoke("set_session_claude_account", { sessionId, accountId, agentId });
 
 export const claudeAuthLoginSubmitCode = (
   code: string,

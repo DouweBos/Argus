@@ -41,6 +41,9 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var displayName: String?
   /// The branch a merge lands on. Nil on older computers.
   public var baseBranch: String?
+  /// Claude account the session is pinned to; nil follows the computer's
+  /// active one.
+  public var claudeAccountId: String?
   public var status: RemoteSessionStatus
   /// Whether the computer can currently reach this session's files. Separate
   /// from `status` — the usual cause is an external drive unplugged from the
@@ -58,6 +61,7 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case kind, branch
     case displayName = "display_name"
     case baseBranch = "base_branch"
+    case claudeAccountId = "claude_account_id"
     case status, availability
     case unavailableVolume = "unavailable_volume"
   }

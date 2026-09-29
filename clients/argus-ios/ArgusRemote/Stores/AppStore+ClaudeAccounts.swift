@@ -40,6 +40,43 @@ extension AppStore {
     }
   }
 
+  /// Pin the agent's session to an account, or pass nil to follow the
+  /// computer's active one. The agent restarts on it while it hasn't been
+  /// messaged yet — the account is fixed when its process starts.
+  func setSessionClaudeAccount(sessionId: String, accountId: String?, agentId: String) async {
+    Telemetry.capture(.claudeAccountChanged(action: .pin))
+    guard let transport else { return }
+    struct Params: Encodable {
+      let agent_id: String
+      let account_id: String?
+
+      // Encode an explicit null: nil means "follow the active account".
+      func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(agent_id, forKey: .agent_id)
+        try container.encode(account_id, forKey: .account_id)
+      }
+      enum CodingKeys: String, CodingKey { case agent_id, account_id }
+    }
+    do {
+      try await transport.request(
+        .agentsSetClaudeAccount, Params(agent_id: agentId, account_id: accountId),
+        as: IgnoredResult.self)
+      // Nothing re-broadcasts the session list on this write.
+      for (repoRoot, sessions) in sessionsByRepo {
+        guard let index = sessions.firstIndex(where: { $0.id == sessionId }) else { continue }
+        sessionsByRepo[repoRoot]?[index].claudeAccountId = accountId
+      }
+    } catch {
+      report(error, scope: "claude_accounts")
+    }
+  }
+
+  /// The account a session is pinned to, or nil when it follows the default.
+  func claudeAccountId(forSessionId id: String) -> String? {
+    sessionsByRepo.values.lazy.flatMap { $0 }.first { $0.id == id }?.claudeAccountId
+  }
+
   // MARK: Adding and forgetting
 
   /// Open the computer's browser and watch what it reports. The account it

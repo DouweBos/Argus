@@ -123,6 +123,8 @@ export const REMOTE_METHODS = {
   /** Stop (kill) an agent entirely — not just the current turn. */
   "agents.stop": "control",
   "agents.set_model": "control",
+  /** Pin an agent's session to a Claude account; restarts a fresh agent on it. */
+  "agents.set_claude_account": "control",
   "agents.set_permission_mode": "control",
   "agents.set_effort": "control",
   /** Spawn a new agent inside an existing session. */

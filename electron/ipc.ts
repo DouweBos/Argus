@@ -40,6 +40,7 @@ import {
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
+import { switchSessionClaudeAccount } from "@argus/host/services/agent/agentService";
 import {
   saveConversation,
   loadHistoryIndex,
@@ -475,7 +476,6 @@ import {
   readArgusConfig,
   writeArgusConfig,
   setSessionBaseBranch,
-  setSessionClaudeAccount,
   getSessionCommitsAhead,
   getSessionCommitsBehind,
   getSessionConflicts,
@@ -1412,10 +1412,11 @@ export function registerIpcHandlers(): void {
   handle("set_session_base_branch", "admin", (a) =>
     setSessionBaseBranch(a.id as string, a.baseBranch as string),
   );
-  handle("set_session_claude_account", "admin", (a) => {
-    setSessionClaudeAccount(
+  handle("set_session_claude_account", "admin", async (a) => {
+    await switchSessionClaudeAccount(
       a.sessionId as string,
       (a.accountId as string | null) ?? null,
+      (a.agentId as string | null) ?? null,
     );
 
     return null;

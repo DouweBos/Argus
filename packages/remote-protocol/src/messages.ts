@@ -178,6 +178,14 @@ export const MethodParams = {
   "agents.interrupt": z.object({ agent_id: z.string() }),
   "agents.stop": z.object({ agent_id: z.string() }),
   "agents.set_model": z.object({ agent_id: z.string(), model: z.string() }),
+  /**
+   * Pin the agent's session to a Claude account (`null` follows the host's
+   * active one), restarting the agent on it while it has no conversation yet.
+   */
+  "agents.set_claude_account": z.object({
+    agent_id: z.string(),
+    account_id: z.string().nullable(),
+  }),
   "agents.set_permission_mode": z.object({
     agent_id: z.string(),
     mode: RemotePermissionMode,
@@ -591,6 +599,7 @@ export const MethodResult = {
   "agents.interrupt": z.object({ accepted: z.boolean() }),
   "agents.stop": z.object({ accepted: z.boolean() }),
   "agents.set_model": z.object({ accepted: z.boolean() }),
+  "agents.set_claude_account": z.object({ accepted: z.boolean() }),
   "agents.set_permission_mode": z.object({ accepted: z.boolean() }),
   "agents.set_effort": z.object({ accepted: z.boolean() }),
   "agents.spawn": z.object({ agent: RemoteAgentStatus }),

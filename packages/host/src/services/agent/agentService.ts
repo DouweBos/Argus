@@ -70,6 +70,7 @@ import { buildMergedMcpServers } from "../mcp/userConfig";
 import { loadArgusConfig } from "../session/argusConfig";
 import { incrementCommandMetric } from "../session/commandMetrics";
 import { sessionRunnerId } from "../session/models";
+import { setSessionClaudeAccount } from "../session/sessionOps";
 import { simulatorPool } from "../simulator/pool";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { loadConversationByRunnerSession } from "./chatHistory";
@@ -550,6 +551,7 @@ export async function startAgent(
     inflightPrompts: 0,
     model: effectiveModel,
     permissionMode: effectivePermissionMode,
+    accountId,
   };
   appState.agents.set(agentId, agentSession);
 
@@ -1339,6 +1341,17 @@ export function sendAgentMessage(
   if (agentEntry.status === "stopped" || agentEntry.status === "error") {
     throw `Agent is not running: ${agentId}`;
   }
+  // The old child is being killed; stdin written now would be lost.
+  const pendingRespawn = respawning.get(agentId);
+  if (pendingRespawn) {
+    pendingRespawn
+      .then(() => sendAgentMessage(agentId, message, images))
+      .catch((e) => {
+        warn(`[agent:${agentId}] message after respawn failed: ${String(e)}`);
+      });
+
+    return;
+  }
 
   // Track slash command usage for autocomplete sorting.
   const trimmed = message.trim();
@@ -1528,13 +1541,20 @@ export function listAgents(sessionId: string): AgentInfo[] {
   return result;
 }
 
+/** Agents between kill and respawn; messages for them wait for the new child. */
+const respawning = new Map<string, Promise<void>>();
+
 /**
  * Restart a message-free agent in place so it picks up new spawn-time
- * settings — today only a runner switch. The agent id is reused so the tab
- * and conversation slot survive the swap, and the runner already stamped on
- * the slot is what the new subprocess spawns under.
+ * settings — a runner or Claude account switch. The agent id is reused so the
+ * tab and conversation slot survive the swap, and the runner already stamped
+ * on the slot is what the new subprocess spawns under. `keepModel` holds on to
+ * the model, which only a runner switch invalidates.
  */
-export async function respawnAgent(agentId: string): Promise<void> {
+export async function respawnAgent(
+  agentId: string,
+  opts: { keepModel?: boolean } = {},
+): Promise<void> {
   const session = appState.agents.get(agentId);
   if (!session) {
     return;
@@ -1543,30 +1563,84 @@ export async function respawnAgent(agentId: string): Promise<void> {
 
   // Silence the kill → spawn status flicker in the UI.
   session.suppressStatus = true;
-  // The old runner's model id means nothing to the new one; drop it so the
-  // spawn cascade falls through to the runner default.
-  session.model = null;
+  if (!opts.keepModel) {
+    // The old runner's model id means nothing to the new one; drop it so the
+    // spawn cascade falls through to the runner default.
+    session.model = null;
+  }
 
-  await session.handle.kill();
-  session.handle.cleanup();
+  const done = (async () => {
+    await session.handle.kill();
+    session.handle.cleanup();
 
-  await startAgent(
-    sessionId,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    parentAgentId ?? undefined,
-    agentId,
-  );
+    await startAgent(
+      sessionId,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      parentAgentId ?? undefined,
+      agentId,
+    );
+  })();
+  respawning.set(agentId, done);
+  try {
+    await done;
+  } catch (e) {
+    // The old child is gone and its exit was suppressed — don't leave the
+    // slot looking alive.
+    if (appState.agents.get(agentId) === session) {
+      session.status = "error";
+      session.suppressStatus = false;
+      emitAgentStatus(agentId, "error");
+    }
+    throw e;
+  } finally {
+    respawning.delete(agentId);
+    const fresh = appState.agents.get(agentId);
+    if (fresh) {
+      fresh.suppressStatus = false;
+      // A warm slot stays warm across the swap — the renderer's prewarm slot
+      // still points at this id.
+      fresh.prewarmed = prewarmed;
+    }
+  }
+}
 
-  const fresh = appState.agents.get(agentId);
-  if (fresh) {
-    fresh.suppressStatus = false;
-    // A warm slot stays warm across the swap — the renderer's prewarm slot
-    // still points at this id.
-    fresh.prewarmed = prewarmed;
+/**
+ * The model picker's account switch. Pins the session, and restarts the
+ * picker's own agent on the new account while that agent has no conversation
+ * yet — the account is baked into the subprocess env at spawn.
+ */
+export async function switchSessionClaudeAccount(
+  sessionId: string,
+  accountId: string | null,
+  agentId?: string | null,
+): Promise<void> {
+  const previous = appState.sessions.get(sessionId)?.claude_account_id ?? null;
+  setSessionClaudeAccount(sessionId, accountId);
+
+  const agent = agentId ? appState.agents.get(agentId) : undefined;
+  if (
+    !agent ||
+    agent.sessionId !== sessionId ||
+    agent.status === "stopped" ||
+    agent.status === "error" ||
+    agent.turnsCompleted > 0 ||
+    agent.inflightPrompts > 0 ||
+    agent.accountId ===
+      resolveAccountForSession(appState.sessions.get(sessionId))
+  ) {
+    return;
+  }
+
+  try {
+    await respawnAgent(agent.agentId, { keepModel: true });
+  } catch (e) {
+    // Don't leave the picker claiming an account the agent never got onto.
+    setSessionClaudeAccount(sessionId, previous);
+    throw e;
   }
 }
 

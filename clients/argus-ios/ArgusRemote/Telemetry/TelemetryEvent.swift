@@ -24,6 +24,8 @@ enum TelemetryEvent {
     case add
     case remove
     case rename
+    /// A session pinned to one account from the chat input.
+    case pin
   }
 
   /// What happened to an automation's memory.

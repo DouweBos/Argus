@@ -3,13 +3,13 @@ import PhotosUI
 import SwiftUI
 
 /// The chat input: send or queue a message, attach images, switch model,
-/// permission mode and effort, and link other projects.
+/// Claude account, permission mode and effort, and link other projects.
 ///
 /// Only rendered for a device holding the control grant — the gateway refuses
 /// every one of these otherwise.
 struct ChatInputView: View {
   private enum Picker: String, Identifiable {
-    case model, mode, effort, project
+    case model, account, mode, effort, project
     var id: String { rawValue }
   }
 
@@ -95,6 +95,10 @@ struct ChatInputView: View {
               ?? ContextWindow.limit(forModel: status?.model, capabilities: capabilities))
         }
         Chip(label: modelLabel, icon: Icon.agent) { picker = .model }
+        // With one account there's nothing to switch between.
+        if sessionId != nil, (app.claudeAccounts?.count ?? 0) > 1 {
+          Chip(label: accountLabel, icon: Icon.person) { picker = .account }
+        }
         Chip(
           label: mode.label, icon: Icon.lock,
           tone: mode == .auto ? nil : .accent
@@ -364,6 +368,21 @@ struct ChatInputView: View {
     return capabilities.models.first { $0.value == value }?.displayName ?? value
   }
 
+  /// Sentinel picker value for "follow the computer's active account".
+  private static let followDefaultAccount = ""
+
+  private var pinnedAccountId: String? {
+    sessionId.flatMap { app.claudeAccountId(forSessionId: $0) }
+  }
+
+  private func accountName(_ id: String?) -> String? {
+    app.claudeAccounts?.first { $0.id == id }?.displayName
+  }
+
+  private var accountLabel: String {
+    accountName(pinnedAccountId) ?? "Default account"
+  }
+
   private var currentModelSupportsEffort: Bool {
     capabilities.models.first { $0.value == status?.model }?.supportsEffort == true
   }
@@ -381,6 +400,28 @@ struct ChatInputView: View {
         emptyMessage: "This agent hasn't reported its models yet."
       ) { value in
         Task { await app.setModel(agentId: agentId, model: value) }
+      }
+    case .account:
+      PickerSheet(
+        title: "Account",
+        options: [
+          .init(
+            value: Self.followDefaultAccount, label: "Follow computer default",
+            hint: accountName(app.activeClaudeAccountId))
+        ]
+          + (app.claudeAccounts ?? []).map {
+            .init(
+              value: $0.id, label: $0.displayName,
+              hint: $0.subtitle.isEmpty ? nil : $0.subtitle)
+          },
+        selected: [pinnedAccountId ?? Self.followDefaultAccount]
+      ) { value in
+        guard let sessionId else { return }
+        let accountId = value == Self.followDefaultAccount ? nil : value
+        Task {
+          await app.setSessionClaudeAccount(
+            sessionId: sessionId, accountId: accountId, agentId: agentId)
+        }
       }
     case .mode:
       PickerSheet(
@@ -466,6 +507,14 @@ struct ChatInputView: View {
     await app.loadCapabilities(agentId: agentId)
     if let sessionId {
       mentionFiles = await app.listFiles(sessionId: sessionId)
+      // The account chip reads the session's pin and the account list.
+      if app.claudeAccounts == nil { await app.refreshClaudeAccounts() }
+      if app.claudeAccountId(forSessionId: sessionId) == nil,
+        let repoRoot = app.repoRoot(forSessionId: sessionId),
+        app.sessionsByRepo[repoRoot] == nil
+      {
+        await app.loadSessions(repoRoot: repoRoot)
+      }
     }
   }
 
