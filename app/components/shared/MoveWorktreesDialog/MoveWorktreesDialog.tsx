@@ -27,9 +27,9 @@ interface MoveWorktreesDialogProps {
 type Phase = "confirm" | "done" | "loading" | "moving";
 
 /**
- * Offered after the worktree location changes. Moving is optional — leaving
- * the existing worktrees where they are is a perfectly good answer, and they
- * keep working from the old location either way.
+ * Offered before a new worktree location is committed. Moving is optional —
+ * leaving the existing worktrees where they are is a perfectly good answer,
+ * and they keep working from the old location either way.
  */
 export function MoveWorktreesDialog({
   purpose = "user",
