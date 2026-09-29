@@ -83,6 +83,7 @@ const baseImportRules = {
         "build-electron.mjs",
         "scripts/**",
         "vite.config.ts",
+        "vitest.setup.ts",
         "electron/**",
       ],
     },

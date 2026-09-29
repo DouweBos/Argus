@@ -10,6 +10,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    setupFiles: ["./vitest.setup.ts"],
     include: [
       "app/**/*.test.{ts,tsx}",
       "electron/**/*.test.ts",
