@@ -83,6 +83,13 @@ export interface EventMap {
   session_prompt_dispatched: { success: boolean };
   telemetry_disabled: undefined;
   telemetry_enabled: undefined;
+  worktrees_moved: {
+    copied: boolean;
+    duration_bucket: "<1m" | "<10m" | "<10s" | ">=10m";
+    failed: number;
+    moved: number;
+    purpose: "automation" | "user";
+  };
 }
 
 export type EventName = keyof EventMap;

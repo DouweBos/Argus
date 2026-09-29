@@ -10,3 +10,25 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
 }
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.progress .body {
+  margin: 0;
+}
+
+.branch {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.step {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
