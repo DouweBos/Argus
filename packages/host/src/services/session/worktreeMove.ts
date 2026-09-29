@@ -413,6 +413,7 @@ export async function executeWorktreeMove(
       if (live) {
         live.path = session.to;
       }
+      emitHostEvent("session:updated", { id: session.id, path: session.to });
     } catch (e) {
       failed.push({ id: session.id, error: String(e) });
       warn(`moveWorktrees: ${session.from} failed: ${String(e)}`);

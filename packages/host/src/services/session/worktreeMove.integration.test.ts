@@ -13,6 +13,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { addHostEventSink } from "../../bus";
 import { appState } from "../../state";
 import {
   forgetAutomationSession,
@@ -94,7 +95,15 @@ describe("executeWorktreeMove (integration)", () => {
     // Uncommitted work must survive — that is the whole risk of moving.
     fs.writeFileSync(path.join(from, "scratch.txt"), "wip", "utf8");
 
+    const updates: unknown[] = [];
+    const stop = addHostEventSink((channel, args) => {
+      if (channel === "session:updated") {
+        updates.push(args[0]);
+      }
+    });
+
     const result = await executeWorktreeMove(repoRoot, path.join(tmp, "new"));
+    stop();
 
     expect(result.failed).toEqual([]);
     expect(result.moved).toEqual(["feature"]);
@@ -109,6 +118,8 @@ describe("executeWorktreeMove (integration)", () => {
     );
     // And the session now points at where it actually is.
     expect(appState.sessions.get("feature")?.path).toBe(to);
+    // Clients learn the new path without a restart.
+    expect(updates).toEqual([{ id: "feature", path: to }]);
   });
 
   it("reports what is holding a worktree rather than moving it anyway", async () => {
