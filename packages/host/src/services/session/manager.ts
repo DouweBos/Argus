@@ -52,6 +52,7 @@ import {
 import { defaultArgusConfig, type Session, type SessionStatus } from "./models";
 import { loadPersistedRepoRoots, persistRepoRoots } from "./repoRootsStore";
 import { runSetupPipeline } from "./setup";
+import { evacuateWorktreeRoots } from "./sidecars";
 import {
   assertWorktreeBaseAvailable,
   isOnMissingVolume,
@@ -213,6 +214,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
   // Load persisted metadata and migrate away orphaned entries.
   const rawMeta = loadMetadata(repoRoot);
   const [meta] = migrateOrphaned(repoRoot, rawMeta);
+  evacuateWorktreeRoots(repoRoot);
 
   // Remove from in-memory state any sessions whose paths no longer exist on
   // disk. We only drop a session if the directory is genuinely gone — if git

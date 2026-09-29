@@ -54,44 +54,9 @@ interface IndexFile {
   entries: ChatHistoryEntry[];
 }
 
-function readIndexAt(dir: string): ChatHistoryEntry[] {
-  try {
-    const file = JSON.parse(
-      fs.readFileSync(path.join(dir, INDEX_FILENAME), "utf8"),
-    ) as IndexFile;
-
-    return file.version === SCHEMA_VERSION ? (file.entries ?? []) : [];
-  } catch {
-    return [];
-  }
-}
-
-/** Both copies are kept — the target's entry wins where ids collide. */
-function mergeHistoryDirs(from: string, to: string): void {
-  const entries = readIndexAt(to);
-  const known = new Set(entries.map((e) => e.id));
-  for (const entry of readIndexAt(from)) {
-    if (known.has(entry.id)) {
-      continue;
-    }
-    fs.copyFileSync(
-      path.join(from, `${entry.id}.json`),
-      path.join(to, `${entry.id}.json`),
-    );
-    entries.push(entry);
-  }
-  entries.sort((a, b) => b.endedAt - a.endedAt);
-  const file: IndexFile = { version: SCHEMA_VERSION, entries };
-  fs.writeFileSync(
-    path.join(to, INDEX_FILENAME),
-    JSON.stringify(file, null, 2),
-    "utf8",
-  );
-}
-
 function historyDir(repoRoot: string): string {
   // Per project, not per purpose — automations must not get a second history.
-  return sidecarPath(repoRoot, CHAT_HISTORY_DIR, mergeHistoryDirs);
+  return sidecarPath(repoRoot, CHAT_HISTORY_DIR);
 }
 
 function indexPath(repoRoot: string): string {

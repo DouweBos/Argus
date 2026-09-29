@@ -29,17 +29,8 @@ function readCountsAt(filePath: string): Record<string, number> {
   }
 }
 
-function mergeMetrics(from: string, to: string): void {
-  const counts = readCountsAt(to);
-  for (const [name, n] of Object.entries(readCountsAt(from))) {
-    counts[name] = (counts[name] ?? 0) + n;
-  }
-  const file: MetricsFile = { version: SCHEMA_VERSION, counts };
-  fs.writeFileSync(to, JSON.stringify(file, null, 2), "utf8");
-}
-
 function metricsPath(repoRoot: string): string {
-  return sidecarPath(repoRoot, COMMAND_METRICS_FILE, mergeMetrics);
+  return sidecarPath(repoRoot, COMMAND_METRICS_FILE);
 }
 
 /**
