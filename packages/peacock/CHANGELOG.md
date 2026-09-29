@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.23.0
+
+### Minor Changes
+
+- 3b042ae: Sessions stored on an external drive show a small drive icon in the sidebar and in the iOS app.
+
 ## 0.22.0
 
 ### Minor Changes
