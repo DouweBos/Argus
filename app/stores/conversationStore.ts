@@ -780,6 +780,30 @@ export function appendSystemMessage(agentId: string, msg: ConversationMessage) {
   });
 }
 
+/**
+ * A prompt sent on the agent's behalf (spawn_agent, send_agent_message). Like a
+ * typed message it starts a new turn, so nothing after it is a --resume replay.
+ */
+export function appendInjectedPrompt(
+  agentId: string,
+  msg: ConversationMessage,
+) {
+  conversationStore.setState((state) => {
+    const existing = state.conversations[agentId] ?? emptyConversation();
+
+    return {
+      conversations: {
+        ...state.conversations,
+        [agentId]: {
+          ...existing,
+          resuming: false,
+          messages: [...existing.messages, msg],
+        },
+      },
+    };
+  });
+}
+
 export function migrateConversation(oldAgentId: string, newAgentId: string) {
   conversationStore.setState((state) => {
     const existing = state.conversations[oldAgentId];

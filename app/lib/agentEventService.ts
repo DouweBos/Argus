@@ -18,6 +18,7 @@ import {
 import {
   addUserMessage,
   appendEvent,
+  appendInjectedPrompt,
   appendSystemMessage,
   cancelPermission,
   clearConversation,
@@ -665,7 +666,7 @@ export function startAgentListening(agentId: string): void {
 
   listen<McpSystemMessagePayload>(`agent:mcp-message:${agentId}`, (event) => {
     const payload = event.payload;
-    appendSystemMessage(agentId, {
+    appendInjectedPrompt(agentId, {
       id: crypto.randomUUID(),
       role: "system",
       textBlocks: [payload.message],
