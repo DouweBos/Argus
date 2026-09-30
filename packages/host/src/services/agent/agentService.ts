@@ -1644,6 +1644,17 @@ export async function switchSessionClaudeAccount(
   }
 }
 
+/** `switchSessionClaudeAccount` for the command surface, which answers `null`. */
+export async function pinSessionClaudeAccount(
+  sessionId: string,
+  accountId: string | null,
+  agentId: string | null,
+): Promise<null> {
+  await switchSessionClaudeAccount(sessionId, accountId, agentId);
+
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // prewarm_agent / claim_prewarm_agent / discard_prewarm_agent
 // ---------------------------------------------------------------------------

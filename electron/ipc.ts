@@ -8,7 +8,6 @@
  * (errors are thrown as plain strings).
  */
 
-import type { AgentInfo } from "@argus/host/services/agent/models";
 import type {
   CreateAutomationInput,
   SaveMemoryInput,
@@ -22,7 +21,6 @@ import type {
   PrereqId,
   PrereqResult,
 } from "@argus/host/services/onboarding/types";
-import type { Session } from "@argus/host/services/session/models";
 import type {
   DeviceOrientation,
   FoldPose,
@@ -39,7 +37,6 @@ import {
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
-import { switchSessionClaudeAccount } from "@argus/host/services/agent/agentService";
 import {
   saveConversation,
   loadHistoryIndex,
@@ -229,7 +226,6 @@ import {
   signOut,
 } from "@argus/host/services/mcp/oauth";
 import { listAuthorized, loadToken } from "@argus/host/services/mcp/oauthStore";
-import { collectAllProjects } from "@argus/host/services/mcp/projectDiscovery";
 import { listInheritedMcpServers } from "@argus/host/services/mcp/userConfig";
 import {
   showAgentNotification,
@@ -294,24 +290,6 @@ import {
   diagnoseTailscale,
   type TailscaleFixKind,
 } from "@argus/host/services/remote/tailscaleSetup";
-import {
-  createScratchPad,
-  listScratchPads,
-} from "@argus/host/services/scratchPad/manager";
-import {
-  addRepoRoot,
-  removeRepoRoot,
-  listSessions,
-  createSession,
-  createHeadSession,
-  deleteSession,
-  forkSession,
-  forkChatInSession,
-  renameSession,
-  renameSessionBranch,
-  clearSessionSetupError,
-  retrySessionSetup,
-} from "@argus/host/services/session/manager";
 import { autofillPullRequestBody } from "@argus/host/services/session/prAutofill";
 import { readPullRequestTemplate } from "@argus/host/services/session/pullRequest";
 import {
@@ -612,84 +590,6 @@ export function registerIpcHandlers(): void {
 
   handle("gh_list_issues", "admin", (a) => listGhIssues(a.repoRoot as string));
 
-  handle("add_repo_root", "admin", (a) => addRepoRoot(a.path as string));
-  handle("remove_repo_root", "admin", (a) => removeRepoRoot(a.path as string));
-  handle("list_projects", "admin", () => collectAllProjects());
-
-  // One snapshot of everything this backend is running. Local IPC never drops
-  // so the desktop never needs it; a client attaching over the gateway does —
-  // on connect and after every reconnect (§3.5).
-  handle("state_hydrate", "admin", async () => {
-    const projects = await collectAllProjects();
-    const sessions: Session[] = [];
-    const agents: AgentInfo[] = [];
-    for (const project of projects.filter((p) => p.registered)) {
-      const projectSessions = await listSessions(project.path);
-      sessions.push(...projectSessions);
-      for (const session of projectSessions) {
-        agents.push(...listAgents(session.id));
-      }
-    }
-
-    for (const pad of listScratchPads()) {
-      sessions.push(pad);
-      agents.push(...listAgents(pad.id));
-    }
-
-    return { projects, sessions, agents };
-  });
-  handle("list_sessions", "admin", (a) => listSessions(a.repoRoot as string));
-  handle("list_scratch_pads", "admin", () => listScratchPads());
-  handle("create_scratch_pad", "admin", (a) =>
-    createScratchPad({ name: a.name as string | null | undefined }),
-  );
-  handle("create_session", "admin", (a) =>
-    createSession(
-      a.repoRoot as string,
-      a.branch as string,
-      a.description as string,
-      a.useExistingBranch as boolean | undefined,
-      a.baseBranch as string | undefined,
-      a.llm as { runner?: string | null; model?: string | null } | undefined,
-    ),
-  );
-  handle("create_project_root_session", "admin", (a) =>
-    createHeadSession(a.repoRoot as string),
-  );
-  handle("delete_session", "admin", (a) =>
-    deleteSession(a.id as string, a.shouldDeleteBranch as boolean | undefined),
-  );
-  handle("rename_session", "admin", (a) =>
-    renameSession(a.id as string, a.displayName as string),
-  );
-  handle("rename_session_branch", "admin", (a) =>
-    renameSessionBranch(a.id as string, a.branch as string),
-  );
-  handle("clear_session_setup_error", "admin", (a) =>
-    clearSessionSetupError(a.id as string),
-  );
-  handle("retry_session_setup", "admin", (a) =>
-    retrySessionSetup(a.id as string),
-  );
-  handle("fork_session", "admin", (a) =>
-    forkSession(
-      a.sourceSessionId as string,
-      a.branch as string,
-      a.description as string,
-      a.forkTimestampMs as number,
-      a.forkTurnNumber as number,
-      a.sourceClaudeSessionId as string | null | undefined,
-      a.replayOps as Parameters<typeof forkSession>[6],
-    ),
-  );
-  handle("fork_chat_in_session", "admin", (a) =>
-    forkChatInSession(
-      a.sourceSessionId as string,
-      a.sourceClaudeSessionId as string,
-      a.forkTimestampMs as number,
-      a.forkTurnNumber as number,
-    ),
-  );
   // Automations — host state, deliberately remotable so a desktop driving a
   // headless mini manages the mini's automations as if they were its own.
   handle("automations_list", "admin", () => listAutomations());
@@ -970,15 +870,6 @@ export function registerIpcHandlers(): void {
     };
   });
   handle("mcp_oauth_list_authorized", "admin", () => listAuthorized());
-  handle("set_session_claude_account", "admin", async (a) => {
-    await switchSessionClaudeAccount(
-      a.sessionId as string,
-      (a.accountId as string | null) ?? null,
-      (a.agentId as string | null) ?? null,
-    );
-
-    return null;
-  });
 
   // Dependency / system probes
   handle("check_dependencies", "admin", () => checkDependencies());
@@ -1344,11 +1235,6 @@ export function registerIpcHandlers(): void {
     const agentId = a.agentId as string;
 
     return Promise.resolve(appState.agentSnapshots.get(agentId) ?? null);
-  });
-  handle("get_session", "admin", (a) => {
-    const id = a.id as string;
-
-    return Promise.resolve(appState.sessions.get(id) ?? null);
   });
 
   // Video-input viewer — ensure macOS camera (capture-card) access is granted.

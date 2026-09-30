@@ -1,5 +1,5 @@
 import type { ShareErrorPayload } from "./shareError";
-import type { ReportBlock } from "@argus/remote-protocol";
+import type { ReportBlock, Session } from "@argus/remote-protocol";
 
 export type {
   DirEntry,
@@ -11,50 +11,7 @@ export type {
   UploadedAttachment,
 } from "@argus/remote-protocol";
 
-export interface Session {
-  /**
-   * Whether the session's files are reachable right now. Orthogonal to
-   * `status`: a session can be mid-setup *and* on a drive that just got
-   * unplugged, and it has to come back as whatever it was. Absent means
-   * available, so anything that predates this field reads correctly.
-   */
-  availability?: "available" | "unavailable";
-  /** The branch this session was created from (e.g. "main"). */
-  base_branch?: string | null;
-  branch: string;
-  /**
-   * Claude account this session's agents and terminals authenticate as.
-   * `null`/absent follows the app-wide active account.
-   */
-  claude_account_id?: string | null;
-  description: string;
-  /** Original display name (e.g. "Testing Conductor"). Shown in UI when present. */
-  display_name?: string | null;
-  id: string;
-  kind: "automation_host" | "project_root" | "scratch_pad" | "worktree";
-  /**
-   * Default model id (runner-specific) for agents spawned in this session.
-   * `null` lets the cascade fall through to project / app / runner defaults.
-   */
-  model?: string | null;
-  path: string;
-  repo_root: string;
-  /**
-   * LLM runner this session is bound to (e.g. `"claude-code"`). Stamped at
-   * create-time and immutable for the session's lifetime. Legacy sessions
-   * persisted before this field existed default to `"claude-code"` on read.
-   */
-  runner_id?: string | null;
-  /** Transient terminal id for the setup PTY; only present on create_session. */
-  setup_terminal_id?: string | null;
-  status: "deleting" | "initializing" | "ready" | { error: string };
-  /** Why it is unreachable. Only set when `availability` is "unavailable". */
-  unavailable_reason?: "volume_missing";
-  /** Mount point the session lives on, for the message naming the drive. */
-  unavailable_volume?: string | null;
-  /** Mount point of the external drive holding the session; null on the boot volume. */
-  volume?: string | null;
-}
+export type { Session } from "@argus/remote-protocol";
 
 /** Normalise session status to a simple display string. */
 export function sessionStatusLabel(status: Session["status"]): string {
@@ -1094,12 +1051,7 @@ export interface ArgusConfigSuggestion {
   signals: DetectedSignal[];
 }
 
-export interface ProjectEntry {
-  description: string;
-  path: string;
-  registered: boolean;
-  source: string;
-}
+export type { ProjectEntry } from "@argus/remote-protocol";
 
 export interface ExampleProject {
   description: string;
@@ -1220,15 +1172,7 @@ export interface PullRequestDetail {
 // Remote access (phone/web control)
 // ---------------------------------------------------------------------------
 
-/**
- * One snapshot of everything the backend is running. Remote mode rebuilds from
- * this on connect; local mode never drops, so it never needs it.
- */
-export interface HostSnapshot {
-  agents: AgentStatus[];
-  projects: ProjectEntry[];
-  sessions: Session[];
-}
+export type { HostSnapshot } from "@argus/remote-protocol";
 
 export interface RemoteDevicePush {
   environment?: "production" | "sandbox";
