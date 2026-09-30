@@ -13,11 +13,10 @@
 
 import type { AgentSession } from "@argus/host/services/agent/models";
 import type { Session } from "@argus/host/services/session/models";
-import { Menu, Tray, app, nativeImage } from "electron";
+import { Menu, Tray, app, clipboard, nativeImage } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import { isServerMode } from "@argus/host/serverMode";
-import { appState } from "@argus/host/state";
 import {
   cancelServerPairing,
   confirmServerPairing,
@@ -25,7 +24,8 @@ import {
   getServerPairingState,
   setServerPairingListener,
   startServerPairing,
-} from "../../serverPairing";
+} from "@argus/host/services/remote/serverPairing";
+import { appState } from "@argus/host/state";
 import {
   canInstallServerUpdate,
   checkServerUpdates,
@@ -304,7 +304,9 @@ function buildPairingItems(): Electron.MenuItemConstructorOptions[] {
         {
           label: "Pair a device…",
           click: () => {
-            startServerPairing().catch(() => undefined);
+            startServerPairing({
+              publishCode: (code) => clipboard.writeText(code),
+            }).catch(() => undefined);
           },
         },
       ];

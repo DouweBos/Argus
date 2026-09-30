@@ -6,6 +6,7 @@ release-notes.md
 .claude/worktrees
 clients
 dist-electron
+dist-host
 release
 release-server
 build/*.icon

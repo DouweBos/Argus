@@ -1,17 +1,16 @@
 /**
- * Tray-driven pairing for the headless server.
+ * Console pairing for a host with no window.
  *
  * Pairing is the root of trust, so `remote_start_pairing` is host-tier and
  * never crosses the wire — it needs a human at the host's console. The desktop
- * has a window for that; the server has a menu bar and nothing else, which
- * previously left a packaged server with no way to accept its first device.
+ * has a window for that; a headless host has a menu bar (Argus Server.app) or
+ * a terminal (`argus-host`) and nothing else.
  *
- * The whole flow therefore lives in the tray: arm, read the SAS off the menu,
- * confirm or reject. The anti-MITM comparison is preserved — this is a second
- * surface for it, not a bypass like `ARGUS_DEV_TRUST`.
+ * Either surface drives this one state machine: arm, read the SAS, confirm or
+ * reject. The anti-MITM comparison is preserved — this is a second surface for
+ * it, not a bypass like `ARGUS_DEV_TRUST`.
  */
 
-import { clipboard } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import { argusHomeDir } from "@argus/host/lib/argusHome";
@@ -51,7 +50,7 @@ function transition(next: ServerPairingState): void {
 }
 
 /**
- * Where the pairing code lands for a mini you only reach over SSH. The clipboard
+ * Where the pairing code lands for a mini you only reach over SSH. A clipboard
  * is useless there, and the code is too long to read off a menu item.
  *
  * It holds a short-lived secret that is still gated by the SAS comparison, so
@@ -65,7 +64,7 @@ function writeCodeFile(code: string): void {
   try {
     fs.writeFileSync(codeFilePath(), `${code}\n`, { mode: 0o600 });
   } catch {
-    // Best-effort: the clipboard copy is the primary path.
+    // Best-effort: the surface's own `publishCode` is the primary path.
   }
 }
 
@@ -82,7 +81,12 @@ function clearCodeFile(): void {
  * tunnel is up — a server on your desk is the common case, and `getPublicUrl()`
  * only reports the LAN when `remote_lan_web` happens to be on.
  */
-export async function startServerPairing(): Promise<void> {
+export async function startServerPairing(
+  options: {
+    /** Show the code on the surface driving pairing (clipboard, terminal). */
+    publishCode?: (code: string) => void;
+  } = {},
+): Promise<void> {
   // Only offer the LAN address if the gateway is actually listening on it —
   // otherwise the code carries a URL that can never be dialled.
   const url = getPublicUrl() ?? (isGatewayOnLan() ? getLanUrl() : null);
@@ -107,7 +111,7 @@ export async function startServerPairing(): Promise<void> {
         transition({ kind: "error", message });
       },
     });
-    clipboard.writeText(pairingCode);
+    options.publishCode?.(pairingCode);
     writeCodeFile(pairingCode);
     transition({ kind: "armed" });
   } catch (err) {

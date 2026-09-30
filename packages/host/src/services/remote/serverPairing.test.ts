@@ -1,5 +1,5 @@
 /**
- * Tray pairing is the packaged server's only way to accept a first device, so
+ * Console pairing is a headless host's only way to accept a first device, so
  * the state machine and the grant choice are worth pinning down — especially
  * that "view only" cannot hand out admin.
  */
@@ -7,9 +7,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const clipboardText: string[] = [];
-vi.mock("electron", () => ({
-  clipboard: { writeText: (t: string) => clipboardText.push(t) },
-}));
+const publishCode = (code: string) => clipboardText.push(code);
 
 const written = new Map<string, string>();
 vi.mock("node:fs", () => ({
@@ -87,7 +85,7 @@ describe("server tray pairing", () => {
     urls.lanUrl = "ws://192.168.1.10:47617";
     armWith();
 
-    await startServerPairing();
+    await startServerPairing({ publishCode });
 
     expect(pairing.startPairing.mock.calls[0][0]).toBe(
       "ws://192.168.1.10:47617",
@@ -100,7 +98,7 @@ describe("server tray pairing", () => {
     urls.lanUrl = "ws://192.168.1.10:47617";
     armWith();
 
-    await startServerPairing();
+    await startServerPairing({ publishCode });
 
     expect(pairing.startPairing.mock.calls[0][0]).toBe(
       "wss://mini.example.ts.net",
@@ -111,7 +109,7 @@ describe("server tray pairing", () => {
     urls.lanUrl = "ws://192.168.1.79:47617";
     urls.onLan = false;
 
-    await startServerPairing();
+    await startServerPairing({ publishCode });
 
     // Advertising it would hand out a code that can never be dialled.
     expect(pairing.startPairing).not.toHaveBeenCalled();
@@ -119,7 +117,7 @@ describe("server tray pairing", () => {
   });
 
   it("errors instead of arming when nothing is reachable", async () => {
-    await startServerPairing();
+    await startServerPairing({ publishCode });
 
     expect(pairing.startPairing).not.toHaveBeenCalled();
     expect(getServerPairingState().kind).toBe("error");
@@ -129,7 +127,7 @@ describe("server tray pairing", () => {
     urls.lanUrl = "ws://10.0.0.2:47617";
     armWith("THECODE");
 
-    await startServerPairing();
+    await startServerPairing({ publishCode });
 
     expect(clipboardText).toEqual(["THECODE"]);
     expect(written.get("/tmp/argus-server-test/pairing-code.txt")).toBe(
@@ -140,7 +138,7 @@ describe("server tray pairing", () => {
   it("surfaces the SAS so a human can compare it", async () => {
     urls.lanUrl = "ws://10.0.0.2:47617";
     const cb = armWith();
-    await startServerPairing();
+    await startServerPairing({ publishCode });
 
     cb()?.onSas("482913");
 
@@ -153,7 +151,7 @@ describe("server tray pairing", () => {
   it("can grant control without admin", async () => {
     urls.lanUrl = "ws://10.0.0.2:47617";
     const cb = armWith();
-    await startServerPairing();
+    await startServerPairing({ publishCode });
     cb()?.onSas("482913");
 
     await confirmServerPairing({ admin: false, control: true });
@@ -168,7 +166,7 @@ describe("server tray pairing", () => {
   it("never grants admin from the view-only choice", async () => {
     urls.lanUrl = "ws://10.0.0.2:47617";
     const cb = armWith();
-    await startServerPairing();
+    await startServerPairing({ publishCode });
     cb()?.onSas("482913");
 
     await confirmServerPairing({ admin: false, control: false });
@@ -182,7 +180,7 @@ describe("server tray pairing", () => {
   it("passes admin through when full control is chosen", async () => {
     urls.lanUrl = "ws://10.0.0.2:47617";
     const cb = armWith();
-    await startServerPairing();
+    await startServerPairing({ publishCode });
     cb()?.onSas("482913");
 
     await confirmServerPairing({ admin: true, control: true });
@@ -196,7 +194,7 @@ describe("server tray pairing", () => {
   it("clears the code file once pairing settles", async () => {
     urls.lanUrl = "ws://10.0.0.2:47617";
     const cb = armWith();
-    await startServerPairing();
+    await startServerPairing({ publishCode });
     expect(written.size).toBe(1);
 
     cb()?.onPaired({ label: "Douwe's MacBook" });
@@ -211,7 +209,7 @@ describe("server tray pairing", () => {
   it("clears the code file when pairing fails", async () => {
     urls.lanUrl = "ws://10.0.0.2:47617";
     const cb = armWith();
-    await startServerPairing();
+    await startServerPairing({ publishCode });
 
     cb()?.onError("sas mismatch");
 
@@ -225,7 +223,7 @@ describe("server tray pairing", () => {
   it("cancelling cancels the real session and clears the code", async () => {
     urls.lanUrl = "ws://10.0.0.2:47617";
     armWith();
-    await startServerPairing();
+    await startServerPairing({ publishCode });
 
     cancelServerPairing();
 
@@ -237,7 +235,7 @@ describe("server tray pairing", () => {
   it("only dismisses settled states", async () => {
     urls.lanUrl = "ws://10.0.0.2:47617";
     armWith();
-    await startServerPairing();
+    await startServerPairing({ publishCode });
 
     dismissServerPairing();
 
@@ -250,7 +248,7 @@ describe("server tray pairing", () => {
     const seen: string[] = [];
     setServerPairingListener(() => seen.push(getServerPairingState().kind));
 
-    await startServerPairing();
+    await startServerPairing({ publishCode });
     cb()?.onSas("123456");
     setServerPairingListener(null);
 
