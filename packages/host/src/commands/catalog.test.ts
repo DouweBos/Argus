@@ -3,7 +3,11 @@
  * internally sound: one entry per name, and the host registers against it.
  */
 
-import { COMMAND_DOMAINS, COMMANDS } from "@argus/remote-protocol";
+import {
+  COMMAND_DOMAINS,
+  COMMANDS,
+  SHELL_COMMANDS,
+} from "@argus/remote-protocol";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   listCommands,
@@ -31,5 +35,13 @@ describe("registerHostCommands", () => {
       .filter((c) => catalog[c.name]?.tier !== c.tier)
       .map((c) => c.name);
     expect(drift).toEqual([]);
+  });
+
+  it("leaves the shell's commands to the desktop", () => {
+    registerHostCommands();
+    const shell = listCommands()
+      .map((c) => c.name)
+      .filter((name) => Object.hasOwn(SHELL_COMMANDS, name));
+    expect(shell).toEqual([]);
   });
 });
