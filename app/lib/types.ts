@@ -177,47 +177,12 @@ export type {
 } from "@argus/remote-protocol";
 
 /** A single MCP server Argus inherits from outside its own settings. */
-export interface InheritedMcpServer {
-  config: Record<string, unknown>;
-  name: string;
-  /** e.g. "plugin:team-tools", "~/.claude.json", ".mcp.json". */
-  source: string;
-}
-
-/** Result of a connectivity probe against an MCP server. */
-export interface McpTool {
-  description?: string;
-  name: string;
-}
-
-export interface McpTestResult {
-  /** Truncated response body for diagnosis. */
-  bodySnippet?: string;
-  error?: string;
-  /** Short, human-friendly next-step suggestion. */
-  hint?: string;
-  latencyMs?: number;
-  ok: boolean;
-  protocolVersion?: string;
-  /** OAuth protected-resource metadata URL parsed from `WWW-Authenticate`. */
-  resourceMetadataUrl?: string;
-  serverInfo?: { name?: string; version?: string };
-  /** HTTP status code, when the failure came from the transport layer. */
-  status?: number;
-  /** Tools advertised by the server (best-effort, HTTP only). */
-  tools?: McpTool[];
-  transport: "http" | "stdio" | "unknown";
-  /** Raw `WWW-Authenticate` header from a 401/403, if any. */
-  wwwAuthenticate?: string;
-}
-
-/** OAuth status for a single MCP server (returned by `mcp_oauth_status`). */
-export interface McpOAuthStatus {
-  expiresAt: number | null;
-  hasRefreshToken: boolean;
-  resource: string;
-  scope: string | null;
-}
+export type {
+  InheritedMcpServer,
+  McpOAuthStatus,
+  McpTestResult,
+  McpTool,
+} from "@argus/remote-protocol";
 
 export type { AppSettings } from "@argus/remote-protocol";
 

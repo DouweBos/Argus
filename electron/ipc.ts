@@ -36,14 +36,6 @@ import {
   getPullRequestDiff,
 } from "@argus/host/services/github/prDetail";
 import { listInterestingPullRequests } from "@argus/host/services/github/pullRequests";
-import { testMcpServer } from "@argus/host/services/mcp/connectivity";
-import {
-  authenticate,
-  cancelAuthentication,
-  signOut,
-} from "@argus/host/services/mcp/oauth";
-import { listAuthorized, loadToken } from "@argus/host/services/mcp/oauthStore";
-import { listInheritedMcpServers } from "@argus/host/services/mcp/userConfig";
 import { claimState } from "@argus/host/services/remote/deviceClaims";
 import {
   listDevices as listRemoteDevices,
@@ -447,41 +439,6 @@ export function registerIpcHandlers(): void {
       .then((status) => emitHostEvent("remote:status", status))
       .catch(() => {});
   });
-  handle("list_inherited_mcp_servers", "admin", (a) =>
-    listInheritedMcpServers((a.worktreePath as string | null) ?? null),
-  );
-  handle("test_mcp_server", "admin", (a) =>
-    testMcpServer(a.config as Record<string, unknown>),
-  );
-  handle("mcp_oauth_sign_in", "admin", (a) =>
-    authenticate({
-      serverUrl: a.serverUrl as string,
-      resourceMetadataUrl: (a.resourceMetadataUrl as string | null) ?? null,
-    }).then((t) => ({
-      resource: t.resource,
-      hasRefreshToken: Boolean(t.refreshToken),
-      expiresAt: t.expiresAt ?? null,
-      scope: t.scope ?? null,
-    })),
-  );
-  handle("mcp_oauth_sign_out", "admin", (a) => signOut(a.serverUrl as string));
-  handle("mcp_oauth_cancel_sign_in", "admin", (a) =>
-    Promise.resolve(cancelAuthentication(a.serverUrl as string)),
-  );
-  handle("mcp_oauth_status", "admin", async (a) => {
-    const t = await loadToken(a.serverUrl as string);
-    if (!t) {
-      return null;
-    }
-
-    return {
-      resource: t.resource,
-      hasRefreshToken: Boolean(t.refreshToken),
-      expiresAt: t.expiresAt ?? null,
-      scope: t.scope ?? null,
-    };
-  });
-  handle("mcp_oauth_list_authorized", "admin", () => listAuthorized());
 
   toolHandle("open_device_popout", "admin", "device-recording", async (a) => {
     const platform = a.platform as "android" | "ios" | "video";
