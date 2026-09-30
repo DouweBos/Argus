@@ -205,6 +205,36 @@ async function hasDisconnectedWorktree(repoRoot: string): Promise<boolean> {
     .some(isOnMissingVolume);
 }
 
+/**
+ * `git worktree add` that survives a failing post-checkout hook. By the time a
+ * hook runs the worktree is registered and checked out, so its exit code alone
+ * must not throw the worktree away.
+ */
+export async function addWorktree(
+  repoRoot: string,
+  worktreePath: string,
+  args: string[],
+): Promise<void> {
+  try {
+    await git(repoRoot, ["worktree", "add", ...args]);
+  } catch (e) {
+    const listed = await git(repoRoot, [
+      "worktree",
+      "list",
+      "--porcelain",
+    ]).catch(() => "");
+    const registered = listed
+      .split("\n")
+      .some((l) => l === `worktree ${worktreePath}`);
+    if (!registered || !fs.existsSync(path.join(worktreePath, ".git"))) {
+      throw e;
+    }
+    warn(
+      `git worktree add succeeded for ${worktreePath} but exited with an error (likely a hook): ${String(e)}`,
+    );
+  }
+}
+
 export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
   // An unmounted drive looks exactly like a deleted worktree to git, and
   // pruning it is unrecoverable: prune removes `.git/worktrees/<name>`, after
