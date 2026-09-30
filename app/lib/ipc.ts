@@ -250,7 +250,7 @@ export const getPullRequestDiff = (
 ): Promise<string> => invoke("get_pull_request_diff", { owner, repo, number });
 
 // GitHub PR write actions
-export type MergeStrategy = "merge" | "rebase" | "squash";
+export type { PullRequestMergeStrategy as MergeStrategy } from "@argus/remote-protocol";
 
 export const readPrTemplate = (repoRoot: string): Promise<string | null> =>
   invoke("read_pr_template", { repoRoot });
@@ -281,7 +281,7 @@ export const ghPrMerge = (params: {
   number: number;
   owner: string;
   repo: string;
-  strategy: MergeStrategy;
+  strategy: ParamsIn<"gh_pr_merge">["strategy"];
 }): Promise<void> => invoke("gh_pr_merge", params);
 
 export const ghPrClose = (params: {
@@ -2482,16 +2482,15 @@ export const telemetryCaptureFeedback = (message: string): Promise<void> =>
   invoke("telemetry_capture_feedback", { message });
 
 // GitHub issues (Phase 9 — commit message autocomplete)
-export interface GhIssue {
-  number: number;
-  title: string;
-}
+export type { GhIssue } from "@argus/remote-protocol";
 
 /**
  * List open GitHub issues for the repo root.
  * Returns an empty array when `gh` is not installed or not authenticated.
  */
-export const ghListIssues = (repoRoot: string): Promise<GhIssue[]> =>
+export const ghListIssues = (
+  repoRoot: string,
+): Promise<ResultOf<"gh_list_issues">> =>
   invoke("gh_list_issues", { repoRoot });
 
 // Phase 10 — auto-fetch
