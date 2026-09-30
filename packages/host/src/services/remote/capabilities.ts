@@ -87,7 +87,11 @@ import {
   getClaudeLoginState,
 } from "../claudeAuth/claudeAuth";
 import { recheckFlaggedAccounts } from "../claudeAuth/probe";
-import { getCommand, invokeCommand } from "../command/registry";
+import {
+  CommandParamsError,
+  getCommand,
+  invokeCommand,
+} from "../command/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
 import { getRunnerById } from "../llm/registry";
 import { collectAllProjects } from "../mcp/projectDiscovery";
@@ -2573,6 +2577,11 @@ async function dispatchAdmin(
         err.message,
         serializeGitError(err),
       );
+    }
+    if (err instanceof CommandParamsError) {
+      throw new GatewayError("bad_request", err.message, {
+        issues: err.issues,
+      });
     }
     throw new GatewayError(
       "bad_request",

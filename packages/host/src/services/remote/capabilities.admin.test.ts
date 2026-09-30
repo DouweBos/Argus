@@ -12,6 +12,7 @@ import { HOST_ONLY_COMMANDS, REMOTE_METHODS } from "@argus/remote-protocol";
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 vi.mock("electron", () => ({
   ipcMain: { handle: vi.fn() },
@@ -67,7 +68,12 @@ const { collectAllProjects } = await import("../mcp/projectDiscovery");
 const { GitError } = await import("../session/gitError");
 
 /** Stand-in for the real registrations made by `registerIpcHandlers()`. */
-const FIXTURES: [string, CommandTier, (args: CommandArgs) => unknown][] = [
+const FIXTURES: [
+  string,
+  CommandTier,
+  (args: CommandArgs) => unknown,
+  z.ZodType?,
+][] = [
   ["list_projects", "admin", (args) => ({ args, ok: true })],
   ["show_open_dialog", "host", () => ({ paths: [] })],
   [
@@ -86,6 +92,12 @@ const FIXTURES: [string, CommandTier, (args: CommandArgs) => unknown][] = [
     }),
   ],
   ["simulator_touch", "admin", () => null],
+  [
+    "typed_rename",
+    "admin",
+    () => null,
+    z.object({ id: z.string(), name: z.string() }),
+  ],
   ["browser_mouse_event", "admin", () => null],
   [
     "git_boom",
@@ -98,8 +110,8 @@ const FIXTURES: [string, CommandTier, (args: CommandArgs) => unknown][] = [
   ],
 ];
 
-const fixtureNames = FIXTURES.map(([name, tier, handler]) => {
-  defineCommand(name, { tier, handler });
+const fixtureNames = FIXTURES.map(([name, tier, handler, params]) => {
+  defineCommand(name, { tier, handler, params });
 
   return name;
 });
@@ -238,6 +250,16 @@ describe("admin passthrough dispatch", () => {
         kind: "merge-conflict",
         recovery: "resolve it",
       },
+    });
+  });
+
+  it("refuses malformed params with the structured issues", async () => {
+    await expect(
+      dispatch("typed_rename", { id: "s1" }, makeCtx(["monitor", "admin"])),
+    ).rejects.toMatchObject({
+      code: "bad_request",
+      message: expect.stringMatching(/invalid params for typed_rename/),
+      data: { issues: [{ path: "name" }] },
     });
   });
 

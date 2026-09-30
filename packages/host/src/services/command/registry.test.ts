@@ -12,8 +12,10 @@ import { HOST_ONLY_COMMANDS } from "@argus/remote-protocol";
 import fs from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { GitError } from "../session/gitError";
 import {
+  CommandParamsError,
   commandNamesForTier,
   defineCommand,
   dispatchCommand,
@@ -25,6 +27,10 @@ import {
   resetCommandRegistry,
   setCommandBinder,
 } from "./registry";
+
+vi.mock("../tools/state", () => ({
+  toolEnabled: (id: string) => id !== "device-debug",
+}));
 
 /** Stands in for `ipcMain.handle` — the desktop's binder. */
 const bindMock = vi.fn();
@@ -157,6 +163,68 @@ describe("dispatchCommand", () => {
 
   it("rejects an unknown command", async () => {
     await expect(dispatchCommand("no_such")).rejects.toThrow(/unknown command/);
+  });
+});
+
+describe("schema'd commands", () => {
+  const params = z.object({ id: z.string(), count: z.number().default(3) });
+
+  beforeEach(() => {
+    resetCommandRegistry();
+  });
+
+  it("hands the handler parsed params with defaults applied", async () => {
+    defineCommand("typed_echo", {
+      tier: "admin",
+      params,
+      handler: (args) => args,
+    });
+    await expect(
+      invokeCommand("typed_echo", { id: "a", extra: true }),
+    ).resolves.toEqual({ id: "a", count: 3 });
+  });
+
+  it("rejects malformed params over the gateway path", async () => {
+    defineCommand("typed_echo", { tier: "admin", params, handler: () => 1 });
+    const err = await invokeCommand("typed_echo", { id: 7 }).catch(
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(CommandParamsError);
+    expect((err as CommandParamsError).issues[0]?.path).toBe("id");
+  });
+
+  it("flattens a params error for local IPC", async () => {
+    const handler = vi.fn();
+    defineCommand("typed_echo", { tier: "admin", params, handler });
+    const err = await dispatchCommand("typed_echo", {}).catch((e: Error) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(err).not.toBeInstanceOf(CommandParamsError);
+    expect((err as Error).message).toMatch(/invalid params for typed_echo/);
+    expect({ ...(err as object) }).toMatchObject({
+      code: "bad_request",
+      issues: [{ path: "id" }],
+    });
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("refuses to run a command whose tool is disabled", async () => {
+    const handler = vi.fn();
+    defineCommand("gated", { tier: "admin", tool: "device-debug", handler });
+    await expect(invokeCommand("gated", {})).rejects.toBe(
+      "tool disabled: device-debug",
+    );
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("fails a test run when the result drifts from its schema", async () => {
+    defineCommand("drifted", {
+      tier: "admin",
+      result: z.object({ ok: z.boolean() }),
+      handler: () => ({ ok: "yes" }),
+    });
+    await expect(invokeCommand("drifted", {})).rejects.toThrow(
+      /does not match its schema/,
+    );
   });
 });
 

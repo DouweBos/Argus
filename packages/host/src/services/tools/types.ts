@@ -7,23 +7,9 @@
  * and imports these from here.
  */
 
-/**
- * Closed union of every tool id Argus ships. Adding a tool = adding an entry
- * here AND a manifest in `app/tools/registry.ts`. We never load arbitrary
- * code, so the union stays exhaustive.
- */
-export type ToolId =
-  | "device-control"
-  | "device-debug"
-  | "device-inspector"
-  | "device-recording";
+import type { ToolId } from "@argus/remote-protocol";
 
-export const TOOL_IDS: readonly ToolId[] = [
-  "device-control",
-  "device-debug",
-  "device-inspector",
-  "device-recording",
-] as const;
+export { TOOL_IDS, type ToolId } from "@argus/remote-protocol";
 
 /**
  * Project-level mask read from `.argus.json`. A project can disable tools for
