@@ -117,7 +117,9 @@ import type {
   RecentIssue,
   ReflogEntry,
   ResultOf,
+  RunTerminalResult,
   SshKey,
+  TerminalSummary,
   EnrichedBranch,
   GitRemoteBranch as RemoteBranch,
   RebasePlanCommit,
@@ -1815,14 +1817,7 @@ export const createTerminal = (
     ...(title != null && title !== "" && { title }),
   });
 
-export interface TerminalSummary {
-  exitCode: number | null;
-  exited: boolean;
-  id: string;
-  runTitle: string | null;
-  sessionId: string;
-  title: string | null;
-}
+export type { TerminalSummary };
 
 export const listTerminals = (sessionId: string): Promise<TerminalSummary[]> =>
   invoke("list_terminals", { sessionId });
@@ -1832,17 +1827,7 @@ export const updateTerminalTitle = (
   title: string,
 ): Promise<void> => invoke("update_terminal_title", { terminalId, title });
 
-export interface CreateRunTerminalResult {
-  /**
-   * Newly-spawned dependency terminals (from the entry's `requires` chain)
-   * that the renderer also needs to register as tabs and attach buffer
-   * listeners to. Empty when no dependencies were started.
-   */
-  dependencies: { sessionId: string; title: string }[];
-  sessionId: string;
-  started: boolean;
-  title: string;
-}
+export type CreateRunTerminalResult = RunTerminalResult;
 
 export const createRunTerminal = (
   sessionId: string,
