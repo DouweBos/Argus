@@ -10,7 +10,7 @@
  * agent id, and agents don't outlive the app, so a queue written to disk could
  * only ever be reloaded as an orphan.
  *
- * Clients read and mutate through IPC (`electron/ipc.ts`) or the remote
+ * Clients read and mutate through the queue commands (`commands/agents.ts`) or the remote
  * gateway; both funnel here, and every change broadcasts `agent:queue:<id>`.
  */
 

@@ -9,7 +9,6 @@ import {
   type CommandSpec,
   COMMANDS,
   HOST_ONLY_COMMANDS,
-  isCommandName,
 } from "@argus/remote-protocol";
 
 vi.mock("electron", () => ({
@@ -22,7 +21,6 @@ vi.mock("electron", () => ({
   safeStorage: { isEncryptionAvailable: () => false },
   systemPreferences: {},
 }));
-vi.mock("./main", () => ({}));
 vi.mock("./popouts", () => ({ agentPopouts: new Map() }));
 vi.mock("./services/continuity", () => ({ publishActivity: vi.fn() }));
 vi.mock("./services/updater", () => ({}));
@@ -30,7 +28,7 @@ vi.mock("./services/updater", () => ({}));
 const { getCommandTier, listCommands, resetCommandRegistry } =
   await import("@argus/host/services/command/registry");
 const { registerHostCommands } = await import("@argus/host/commands/index");
-const { registerIpcHandlers } = await import("./ipc");
+const { registerShellCommands } = await import("./shellCommands");
 
 const tiers = new Map<string, string>();
 
@@ -40,7 +38,13 @@ describe("the desktop command surface", () => {
     // Registration throws on a duplicate name, so this alone proves every
     // command is registered exactly once across the two halves.
     registerHostCommands();
-    registerIpcHandlers();
+    registerShellCommands({
+      createFloatingDeviceWindow: vi.fn(),
+      closeFloatingDeviceWindow: vi.fn(),
+      createFloatingAgentWindow: vi.fn(),
+      closeFloatingAgentWindow: vi.fn(),
+      markQuitConfirmedDespiteAgents: vi.fn(),
+    });
     for (const { name, tier } of listCommands()) {
       tiers.set(name, tier);
     }
@@ -116,12 +120,7 @@ describe("the desktop command surface", () => {
     expect(family.filter((name) => HOST_ONLY_COMMANDS.has(name))).toEqual([]);
   });
 
-  it("types every host-core command through the catalog", () => {
-    resetCommandRegistry();
-    registerHostCommands();
-    const untyped = listCommands()
-      .map((c) => c.name)
-      .filter((name) => !isCommandName(name));
-    expect(untyped).toEqual([]);
+  it("registers exactly the catalog, every command typed", () => {
+    expect([...tiers.keys()].sort()).toEqual(Object.keys(COMMANDS).sort());
   });
 });

@@ -4070,6 +4070,40 @@ extension ArgusProtocol {
     }
   }
 
+  public struct SessionsMarkReadyParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct SessionsMarkReadyResult: Codable, Sendable {
+    public var accepted: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case accepted = "accepted"
+    }
+
+    public init(accepted: Bool) {
+      self.accepted = accepted
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(accepted, forKey: .accepted)
+    }
+  }
+
   public struct SessionsMergeBaseParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -4561,6 +4595,40 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(sessionId, forKey: .sessionId)
       try c.encode(query, forKey: .query)
+    }
+  }
+
+  public struct SessionsRetrySetupParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct SessionsRetrySetupResult: Codable, Sendable {
+    public var accepted: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case accepted = "accepted"
+    }
+
+    public init(accepted: Bool) {
+      self.accepted = accepted
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(accepted, forKey: .accepted)
     }
   }
 
@@ -5200,6 +5268,12 @@ extension ArgusProtocol {
       public static let name = "sessions.list"
     }
 
+    public enum SessionsMarkReady: RemoteCommand {
+      public typealias Params = ArgusProtocol.SessionsMarkReadyParams
+      public typealias Result = ArgusProtocol.SessionsMarkReadyResult
+      public static let name = "sessions.mark_ready"
+    }
+
     public enum SessionsMergeBase: RemoteCommand {
       public typealias Params = ArgusProtocol.SessionsMergeBaseParams
       public typealias Result = ArgusProtocol.SessionsMergeBaseResult
@@ -5270,6 +5344,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.SessionsResolveMentionPathParams
       public typealias Result = ArgusProtocol.RemoteMentionPathResult
       public static let name = "sessions.resolve_mention_path"
+    }
+
+    public enum SessionsRetrySetup: RemoteCommand {
+      public typealias Params = ArgusProtocol.SessionsRetrySetupParams
+      public typealias Result = ArgusProtocol.SessionsRetrySetupResult
+      public static let name = "sessions.retry_setup"
     }
 
     public enum SessionsSetBaseBranch: RemoteCommand {

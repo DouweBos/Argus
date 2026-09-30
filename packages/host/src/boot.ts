@@ -28,6 +28,7 @@ import {
 import { stopAllDebugStreams } from "./services/conductor/debug";
 import { initConductorOverride } from "./services/conductor/override";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
+import { installRemoteStatusBroadcast } from "./services/remote/remoteAdmin";
 import {
   applyRemoteSettings,
   setRemoteConfig,
@@ -125,6 +126,10 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   ).catch((err) => {
     log.error("Failed to start remote access:", err);
   });
+
+  // Push status to every client whenever the tunnel state changes (e.g. a
+  // quick tunnel finishing startup and revealing its URL).
+  installRemoteStatusBroadcast();
 
   startMjpegServer().catch((err) => {
     log.error("Failed to start MJPEG server:", err);

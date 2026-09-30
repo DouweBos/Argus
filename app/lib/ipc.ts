@@ -38,7 +38,6 @@ import type {
   ConductorStatus,
   DependencyReport,
   DeviceInfo,
-  DevicePlatform,
   HostDevicePlatform,
   DirEntry,
   ExampleProject,
@@ -98,6 +97,8 @@ import type {
   BrowserPreset,
   Checkpoint,
   CommandName,
+  PopoutPlatform,
+  UpdaterState,
   ConflictBlobs,
   DebugCommandResult,
   DeviceInputEndpoint,
@@ -1854,12 +1855,12 @@ export const createRunTerminal = (
 export const openDevicePopout = (args: {
   deviceKey: string;
   name?: string;
-  platform: DevicePlatform;
+  platform: PopoutPlatform;
 }): Promise<void> => invoke("open_device_popout", args);
 
 export const closeDevicePopout = (args: {
   deviceKey: string;
-  platform: DevicePlatform;
+  platform: PopoutPlatform;
 }): Promise<void> => invoke("close_device_popout", args);
 
 // Agent popout — detach an agent into its own window. The backend creates a
@@ -2431,25 +2432,7 @@ export const completeOnboarding = (): Promise<void> =>
 export const resetOnboarding = (): Promise<void> => invoke("onboarding_reset");
 
 // Auto-updater
-export type UpdaterPhase =
-  | "available"
-  | "checking"
-  | "downloaded"
-  | "downloading"
-  | "error"
-  | "idle"
-  | "not-available";
-
-export interface UpdaterState {
-  currentVersion: string;
-  error: string | null;
-  lastCheckedAt: number | null;
-  phase: UpdaterPhase;
-  progressPercent: number;
-  releaseDate: string | null;
-  releaseNotes: string | null;
-  updateVersion: string | null;
-}
+export type { UpdaterPhase, UpdaterState } from "@argus/remote-protocol";
 
 export const updaterGetState = (): Promise<UpdaterState> =>
   invoke("updater_get_state");

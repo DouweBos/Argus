@@ -65,7 +65,7 @@ const { resolveMentionPath } = await import("../file/operations");
 const { collectAllProjects } = await import("../mcp/projectDiscovery");
 const { GitError } = await import("../session/gitError");
 
-/** Stand-in for the real registrations made by `registerIpcHandlers()`. */
+/** Stand-in for the real registrations made by `registerHostCommands()`. */
 const FIXTURES: [
   string,
   CommandTier,

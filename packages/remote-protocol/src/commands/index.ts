@@ -23,6 +23,7 @@ import { TERMINAL_COMMANDS } from "./terminals";
 export * from "./spec";
 export { SHELL_COMMANDS } from "./shell";
 export * from "../models/files";
+export * from "../models/shell";
 export * from "../models/git";
 export * from "../models/sessions";
 export * from "../models/agents";
