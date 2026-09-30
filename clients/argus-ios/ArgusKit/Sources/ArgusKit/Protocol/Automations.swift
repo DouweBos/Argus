@@ -496,6 +496,13 @@ public enum RemoteProposalStatus: String, Codable, Sendable {
 }
 
 public struct RemoteProposal: Codable, Hashable, Sendable, Identifiable {
+  /// How far a start has got; the host only reports it while one is in flight.
+  public enum StartStage: String, Codable, Hashable, Sendable {
+    case creatingWorktree = "creating_worktree"
+    case settingUp = "setting_up"
+    case startingAgent = "starting_agent"
+  }
+
   public var id: String
   public var automationId: String
   public var automationName: String
@@ -515,6 +522,13 @@ public struct RemoteProposal: Codable, Hashable, Sendable, Identifiable {
   public var sourceLabel: String?
   public var sourceUrl: String?
   public var sessionId: String?
+  /// The agent working it, once running. The start fields below are absent
+  /// from computers older than them, so all three decode as optional.
+  public var agentId: String?
+  /// Non-nil only while a start is in flight.
+  public var startStage: StartStage?
+  /// Why the last start failed, readable. Cleared when a new start begins.
+  public var startError: String?
   public var createdAt: Double
 
   enum CodingKeys: String, CodingKey {
@@ -525,6 +539,9 @@ public struct RemoteProposal: Codable, Hashable, Sendable, Identifiable {
     case sourceLabel = "source_label"
     case sourceUrl = "source_url"
     case sessionId = "session_id"
+    case agentId = "agent_id"
+    case startStage = "start_stage"
+    case startError = "start_error"
     case createdAt = "created_at"
   }
 }

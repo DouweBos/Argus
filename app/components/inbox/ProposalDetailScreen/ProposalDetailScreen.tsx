@@ -74,6 +74,7 @@ export function ProposalDetailScreen() {
     primaryAction,
     requestRevision,
     resolve,
+    startState,
     startWithNote,
   } = useProposalActions();
 
@@ -99,6 +100,7 @@ export function ProposalDetailScreen() {
   const source = proposal.source_ref;
   const decided = decidedNote(proposal, automation?.name);
   const markDone = resolve(proposal);
+  const { error, progress } = startState(proposal);
 
   return (
     <div className={styles.screen}>
@@ -117,6 +119,7 @@ export function ProposalDetailScreen() {
         busy={busyId === proposal.id}
         confidence={proposal.confidence}
         decided={decided}
+        error={error}
         meta={
           <>
             <Badge tone={PROPOSAL_ACTION_TONES[proposal.recommended_action]}>
@@ -149,6 +152,7 @@ export function ProposalDetailScreen() {
         }
         onStartWithNote={startWithNote(proposal)}
         primary={decided ? undefined : primaryAction(proposal)}
+        progress={progress}
         rationale={proposal.rationale || undefined}
         renderMarkdown={renderProposalMarkdown}
         revisionRequest={proposal.revision_request || undefined}

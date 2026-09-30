@@ -728,11 +728,15 @@ export const MethodResult = {
   "github.merge_pull_request": z.object({ accepted: z.boolean() }),
   "github.comment_pull_request": z.object({ accepted: z.boolean() }),
   "proposals.list": z.object({ proposals: z.array(RemoteProposal) }),
-  /** The session the accepted proposal is now being worked in. */
+  /**
+   * Answers once the start is under way, not when it is done: building the
+   * session can outlast a request. Follow `start_stage` / `start_error` on the
+   * proposal; the ids are set only when it finished inside the window.
+   */
   "proposals.accept": z.object({
     proposal: RemoteProposal,
-    session_id: z.string(),
-    agent_id: z.string(),
+    session_id: z.string().nullable(),
+    agent_id: z.string().nullable(),
   }),
   /** Carry out a cleanup proposal's button. Destructive, so `control`-gated. */
   "proposals.perform_cleanup": z.object({ proposal_id: z.string() }),

@@ -9,6 +9,7 @@ import type { Proposal } from "../../lib/types";
 import type { ProposalCardAction } from "@argus/peacock";
 import { useState } from "react";
 import { openExternalUrl, performProposalCleanup } from "../../lib/ipc";
+import { PROPOSAL_START_STAGE_LABELS } from "../../lib/proposals";
 import {
   acceptProposal,
   dismissProposal,
@@ -26,26 +27,49 @@ export interface ProposalActions {
   requestRevision: (proposal: Proposal) => ((note: string) => void) | undefined;
   /** Mark it done by hand. Undefined once it has already been decided. */
   resolve: (proposal: Proposal) => ((note: string) => void) | undefined;
+  /** Where a start is, or why the last one failed — for the card to show. */
+  startState: (proposal: Proposal) => {
+    error?: { detail: string; title: string };
+    progress?: string;
+  };
   /** Start it with a note. Undefined when the proposal starts nothing. */
   startWithNote: (proposal: Proposal) => ((note: string) => void) | undefined;
 }
 
 export function useProposalActions(): ProposalActions {
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [startingId, setStartingId] = useState<string | null>(null);
+  // Refusals that never reached the proposal (it was already starting, say).
+  const [refusals, setRefusals] = useState<Record<string, string>>({});
 
   const start = async (proposal: Proposal, note?: string) => {
     setBusyId(proposal.id);
+    setStartingId(proposal.id);
+    setRefusals(({ [proposal.id]: _cleared, ...rest }) => rest);
     try {
       // The backend creates the session and spawns the agent; all that is
       // left is to take the user to the work it just started.
       const result = await acceptProposal(proposal.id, note);
       selectSession(result.session_id);
-    } catch {
-      // The list refreshes from `proposals:changed`; a failed accept leaves
-      // the card exactly where it was.
+    } catch (e) {
+      setRefusals((prev) => ({ ...prev, [proposal.id]: String(e) }));
     } finally {
       setBusyId(null);
+      setStartingId(null);
     }
+  };
+
+  const startState = (proposal: Proposal) => {
+    if (proposal.start_stage) {
+      return { progress: PROPOSAL_START_STAGE_LABELS[proposal.start_stage] };
+    }
+    if (startingId === proposal.id) {
+      return { progress: "Starting…" };
+    }
+    // The host's reason is already trimmed to the part that matters.
+    const detail = proposal.start_error ?? refusals[proposal.id];
+
+    return detail ? { error: { title: "Couldn't start.", detail } } : {};
   };
 
   // Deleting is the backend's to do and the inbox's to reflect: the card goes
@@ -104,9 +128,11 @@ export function useProposalActions(): ProposalActions {
       return undefined;
     }
     if (cta.kind === "start_session") {
+      const failed = proposal.start_error ?? refusals[proposal.id];
+
       return {
         kind: "start",
-        label: cta.label,
+        label: failed ? "Try again" : cta.label,
         onClick: () => {
           start(proposal).catch(() => undefined);
         },
@@ -143,6 +169,7 @@ export function useProposalActions(): ProposalActions {
     primaryAction,
     requestRevision,
     resolve,
+    startState,
     startWithNote,
   };
 }

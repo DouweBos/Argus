@@ -84,6 +84,21 @@ export const WithoutSource: Story = {
 
 export const Busy: Story = { args: { busy: true } };
 
+/** A start in flight: the actions give way to where it has got to. */
+export const Starting: Story = { args: { progress: "Running setup…" } };
+
+/** The last start failed; the reason sits above actions that can try again. */
+export const StartFailed: Story = {
+  args: {
+    error: {
+      title: "Couldn't start.",
+      detail:
+        "mise ERROR Config files in /Volumes/External/wt/mise.toml are not trusted. Trust them with `mise trust`.",
+    },
+    primary: { kind: "start", label: "Try again", onClick: () => undefined },
+  },
+};
+
 /** Cleared by a later run of the same automation — readable, not actionable. */
 export const Cleared: Story = {
   args: {

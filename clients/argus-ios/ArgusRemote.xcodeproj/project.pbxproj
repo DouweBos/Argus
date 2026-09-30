@@ -65,6 +65,7 @@
 		A7CA00EFEA917C9540802DFC /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C7B226438808577288DF012 /* NotificationService.swift */; };
 		AAC53DE55E408A8C4899520D /* DeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B760406B1B2B956C52E89F9 /* DeviceView.swift */; };
 		AC7A4FE03EB3A80E8D83B5C5 /* ToolCallCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4111D014B48BB329971BE /* ToolCallCard.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* ProposalCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E1D0C9B8A7F6E5D4C3B2A1 /* ProposalCard.swift */; };
 		AD0D5B2D0F246BA5D6CAF9F2 /* AutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */; };
 		613A936BB70479302327501E /* AutomationEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */; };
 		5891A5D53C0F0C7CEF4DE90D /* QuickRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */; };
@@ -168,6 +169,7 @@
 		8346E6C1D03B823ABD7DCA02 /* ArgusRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ArgusRemote.entitlements; sourceTree = "<group>"; };
 		8501B834EC04B6A657B28A71 /* AgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentView.swift; sourceTree = "<group>"; };
 		8CC4111D014B48BB329971BE /* ToolCallCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolCallCard.swift; sourceTree = "<group>"; };
+		F2E1D0C9B8A7F6E5D4C3B2A1 /* ProposalCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProposalCard.swift; sourceTree = "<group>"; };
 		95ACC76BC6E417BE6A706B18 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9798D9FC585435B89959E156 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		98B20E2749E785C2B43D9006 /* LiveRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveRefresh.swift; sourceTree = "<group>"; };
@@ -336,6 +338,7 @@
 				A80D3688BF3DDFD90F4E6F55 /* PermissionForms.swift */,
 				E7C0246BC72131C6D235C946 /* ReportBlocksView.swift */,
 				8CC4111D014B48BB329971BE /* ToolCallCard.swift */,
+				F2E1D0C9B8A7F6E5D4C3B2A1 /* ProposalCard.swift */,
 				70547DEE3CB7476148D6FCEE /* TranscriptMessageView.swift */,
 				A02F5F60D0F01C5B7F16C445 /* GuardrailFields.swift */,
 				32B758744DEEF9A8D04305D7 /* AutomationFields.swift */,
@@ -575,6 +578,7 @@
 				3C1C0796FCE5D8AA678463BF /* StoppedAgentView.swift in Sources */,
 				61C10B6C7968E2DD39CBFDC4 /* Theme.swift in Sources */,
 				AC7A4FE03EB3A80E8D83B5C5 /* ToolCallCard.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* ProposalCard.swift in Sources */,
 				9649E2679831459D3DE191FD /* TranscriptMessageView.swift in Sources */,
 				5FB08CA29434143A32134492 /* GuardrailFields.swift in Sources */,
 				AE590CD49BD08C4F6FAF2096 /* AutomationFields.swift in Sources */,

@@ -16,6 +16,7 @@ vi.mock("../../session/waitForReady", () => ({
   }),
 }));
 vi.mock("../manager", () => ({ getAutomation: () => null }));
+vi.mock("../../telemetry/telemetry", () => ({ capture: vi.fn() }));
 
 const { createProposal, requireProposal, resetProposalCache } =
   await import("./manager");
@@ -44,5 +45,7 @@ describe("acceptProposal", () => {
     expect(startAgent).not.toHaveBeenCalled();
     expect(requireProposal(proposal.id).session_id).toBeNull();
     expect(requireProposal(proposal.id).status).toBe("pending");
+    expect(requireProposal(proposal.id).start_stage).toBeNull();
+    expect(requireProposal(proposal.id).start_error).toContain("not trusted");
   });
 });

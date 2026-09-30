@@ -113,3 +113,13 @@
   border-left: 2px solid var(--accent);
   border-radius: var(--border-radius-xs);
 }
+
+/* Work started from the card, in place of the actions it replaces. */
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 2px 0 0;
+}

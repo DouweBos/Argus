@@ -296,22 +296,27 @@ struct Banner: View {
   @Environment(\.theme) private var theme
   let text: String
   var tone: Tone = .warning
+  /// A bold lead line, for when the banner says what happened and why.
+  var title: String?
 
   var body: some View {
     // The accent stripe is an overlay, not a row in an HStack: a bare
     // Rectangle there takes whatever height it is offered, which stretches the
     // banner to fill any container that proposes one (an overlay, say).
-    Text(text)
-      .font(.system(size: 13))
-      .foregroundStyle(theme.text)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(10)
-      .padding(.leading, 3)
-      .background(tone.soft(theme))
-      .overlay(alignment: .leading) {
-        Rectangle().fill(tone.color(theme)).frame(width: 3)
+    VStack(alignment: .leading, spacing: 3) {
+      if let title {
+        Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(tone.color(theme))
       }
-      .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
+      Text(text).font(.system(size: 13)).foregroundStyle(theme.text)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(10)
+    .padding(.leading, 3)
+    .background(tone.soft(theme))
+    .overlay(alignment: .leading) {
+      Rectangle().fill(tone.color(theme)).frame(width: 3)
+    }
+    .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
   }
 }
 

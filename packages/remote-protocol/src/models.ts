@@ -827,6 +827,14 @@ export const RemoteProposal = z.object({
   source_url: z.string().nullable(),
   /** Set once it has been started — the session doing the work. */
   session_id: z.string().nullable(),
+  /** The agent working it, once it is running. */
+  agent_id: z.string().nullable(),
+  /** Non-null only while a start is in flight. */
+  start_stage: z
+    .enum(["creating_worktree", "setting_up", "starting_agent"])
+    .nullable(),
+  /** Why the last start failed, readable. Cleared when a start begins. */
+  start_error: z.string().nullable(),
   created_at: z.number(),
 });
 export type RemoteProposal = z.infer<typeof RemoteProposal>;

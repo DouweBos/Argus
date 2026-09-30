@@ -1055,9 +1055,17 @@ export interface ProposalCta {
 }
 
 /** One thing an automation run wants you to do. */
+/** Where a start is while it builds the session, in order. */
+export type ProposalStartStage =
+  | "creating_worktree"
+  | "setting_up"
+  | "starting_agent";
+
 export interface Proposal {
   /** What the user added when they started it — part of the agent's brief. */
   accepted_note: string | null;
+  /** The agent working it, once it is running. */
+  agent_id: string | null;
   automation_id: string;
   /** When a later run cleared it. Null while nobody has. */
   cleared_at: number | null;
@@ -1089,6 +1097,10 @@ export interface Proposal {
   /** Session doing the work, once the proposal was started. */
   session_id: string | null;
   source_ref: ProposalSourceRef | null;
+  /** Why the last start failed, readable. Cleared when a start begins. */
+  start_error: string | null;
+  /** Non-null only while a start is in flight. */
+  start_stage: ProposalStartStage | null;
   status: ProposalStatus;
   /** What the work is, in markdown. */
   summary: string;

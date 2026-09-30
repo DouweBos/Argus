@@ -173,4 +173,26 @@ struct ProposalDecodingTests {
   func noCta() throws {
     #expect(try decode(proposal(cta: "null")).cta == nil)
   }
+
+  @Test("a computer older than the start fields leaves them unset")
+  func noStartFields() throws {
+    let parsed = try decode(proposal(cta: "null"))
+    #expect(parsed.agentId == nil)
+    #expect(parsed.startStage == nil)
+    #expect(parsed.startError == nil)
+  }
+
+  @Test("a start in flight and a failed one both come through")
+  func startFields() throws {
+    let json = proposal(cta: "null").replacingOccurrences(
+      of: "\"created_at\":1",
+      with: """
+        "created_at":1,"agent_id":"ag1","start_stage":"setting_up",
+        "start_error":"Setup failed"
+        """)
+    let parsed = try decode(json)
+    #expect(parsed.agentId == "ag1")
+    #expect(parsed.startStage == .settingUp)
+    #expect(parsed.startError == "Setup failed")
+  }
 }
