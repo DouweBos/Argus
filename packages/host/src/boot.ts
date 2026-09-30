@@ -11,7 +11,10 @@ import { destroyAllAgents } from "./services/agent/agentService";
 import { reapOrphanedAgentProcesses } from "./services/agent/reapOrphans";
 import { initAutomations } from "./services/automation/manager";
 import { initAutomationOutcomes } from "./services/automation/outcomes";
-import { startAutomationScheduler } from "./services/automation/scheduler";
+import {
+  startAutomationScheduler,
+  stopAutomationScheduler,
+} from "./services/automation/scheduler";
 import { stopAllScreencasts } from "./services/browser/cdpScreencast";
 import {
   startMjpegServer,
@@ -138,6 +141,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
 export function stopHostServices(): void {
   telemetryCapture("app_quit");
   shutdownTelemetry().catch(() => undefined);
+  stopAutomationScheduler();
   stopMcpServer();
   stopRemote();
   stopMjpegServer();

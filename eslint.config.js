@@ -81,6 +81,7 @@ const baseImportRules = {
         "**/*.test.{ts,tsx}",
         "**/*.config.{js,mjs,cjs,ts,mts}",
         "build-electron.mjs",
+        "build-host.mjs",
         "scripts/**",
         "vite.config.ts",
         "vitest.setup.ts",
@@ -178,6 +179,7 @@ export default tseslint.config(
     ignores: [
       "dist",
       "dist-electron",
+      "dist-host",
       // Packaged app output — bundled vendor JS, never ours to lint.
       "release",
       "release-server",
@@ -321,6 +323,7 @@ export default tseslint.config(
       "**/preload.ts",
       "**/*.config.{js,mjs,cjs,ts,mts}",
       "build-electron.mjs",
+      "build-host.mjs",
     ],
     rules: {
       "import/no-anonymous-default-export": "off",
@@ -347,7 +350,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["build-electron.mjs"],
+    files: ["build-electron.mjs", "build-host.mjs"],
     languageOptions: {
       globals: globals.node,
     },

@@ -8,7 +8,12 @@
  * throwing. This is what a Linux host or `argus-cli` process would do.
  */
 
-import { afterEach, describe, expect, it } from "vitest";
+import { COMMANDS, SHELL_COMMANDS } from "@argus/remote-protocol";
+import fs from "node:fs";
+import net from "node:net";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { addHostEventSink, emitHostEvent, resetHostEventSinks } from "./bus";
 import { hostPlatform, nodeHostPlatform, setHostPlatform } from "./platform";
 import {
@@ -91,4 +96,71 @@ describe("headless host", () => {
       platform.focusUi();
     }).not.toThrow();
   });
+
+  /**
+   * The real boot, in-process: state restore, automations, MCP, the gateway
+   * and every host command — with a throwaway home so nothing touches yours.
+   */
+  it("boots and shuts down the whole host", async () => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "argus-headless-"));
+    const port = await freePort();
+    vi.stubEnv("ARGUS_HOME", home);
+    vi.stubEnv("ARGUS_REMOTE_PORT", String(port));
+    vi.resetModules();
+    // Don't let the test sweep up processes belonging to a running Argus.
+    vi.doMock("./services/agent/reapOrphans", () => ({
+      reapOrphanedAgentProcesses: async () => undefined,
+    }));
+    vi.doMock("./services/terminal/reapOrphans", () => ({
+      reapOrphanedSpawnHelpers: async () => undefined,
+    }));
+    const platform = await import("./platform");
+    platform.setHostPlatform(platform.nodeHostPlatform());
+    const boot = await import("./boot");
+    const registry = await import("./services/command/registry");
+
+    try {
+      await boot.startHost({ forceRemote: true }).remoteReady;
+
+      const registered = registry
+        .listCommands()
+        .map((c) => c.name)
+        .sort();
+      const hostCatalog = Object.keys(COMMANDS)
+        .filter((name) => !Object.hasOwn(SHELL_COMMANDS, name))
+        .sort();
+      expect(registered).toEqual(hostCatalog);
+      await expect(canConnect(port)).resolves.toBe(true);
+    } finally {
+      await boot.shutdownHost();
+      vi.unstubAllEnvs();
+      fs.rmSync(home, { recursive: true, force: true });
+    }
+    await expect(canConnect(port)).resolves.toBe(false);
+  }, 30_000);
 });
+
+function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      server.close(() =>
+        typeof address === "object" && address
+          ? resolve(address.port)
+          : reject(new Error("no port")),
+      );
+    });
+  });
+}
+
+function canConnect(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = net.connect(port, "127.0.0.1");
+    socket.once("connect", () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once("error", () => resolve(false));
+  });
+}

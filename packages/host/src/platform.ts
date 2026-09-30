@@ -8,6 +8,8 @@
  * `ElectronHostPlatform`; a headless host installs `nodeHostPlatform`.
  */
 
+import { argusHomeDir } from "./lib/argusHome";
+
 /** OS-backed encryption for tokens at rest (Electron's `safeStorage`). */
 export interface SecretStorage {
   /** Whether encryption is actually backed by the OS keychain. */
@@ -78,10 +80,13 @@ export function nodeHostPlatform(
   const base: HostPlatform = {
     name: "node",
     hasUi: false,
-    appVersion: () => process.env.ARGUS_VERSION ?? "0.0.0",
-    isPackaged: () => false,
-    resourcesPath: () => process.cwd(),
-    userDataPath: () => process.cwd(),
+    appVersion: () =>
+      process.env.ARGUS_VERSION ?? process.env.npm_package_version ?? "0.0.0",
+    // A packaged Node host points ARGUS_RESOURCES at its bundled assets; a
+    // checkout resolves them from the repo root instead.
+    isPackaged: () => Boolean(process.env.ARGUS_RESOURCES),
+    resourcesPath: () => process.env.ARGUS_RESOURCES ?? process.cwd(),
+    userDataPath: () => argusHomeDir(),
     openExternal: async () => undefined,
     openPath: async () => "",
     revealInFinder: () => undefined,
