@@ -1,4 +1,3 @@
-import type { ShareErrorPayload } from "./shareError";
 import type {
   AgentInfo,
   DeviceInfo as HostDeviceInfo,
@@ -396,15 +395,7 @@ export type {
 
 export type { HostSnapshot } from "@argus/remote-protocol";
 
-export interface RemoteDevicePush {
-  environment?: "production" | "sandbox";
-  /** Web Push only — the subscription's encryption keys. */
-  keys?: { auth: string; p256dh: string };
-  service: "apns" | "fcm" | "webpush";
-  /** Native device token, or the Web Push endpoint URL. */
-  token: string;
-  updated_at: number;
-}
+export type { DevicePushToken as RemoteDevicePush } from "@argus/remote-protocol";
 
 /**
  * What a device says it is while pairing, for the confirm screen. Its own
@@ -420,112 +411,25 @@ export interface PairingClient {
   version?: string;
 }
 
-export interface RemoteDevice {
-  capabilities: string[];
-  created_at: number;
-  dev_static_pub: string;
-  device_id: string;
-  label: string;
-  last_seen: number | null;
-  /** Set once the phone registered a native push token. */
-  push?: RemoteDevicePush | null;
-}
-
-/** Push settings — presence flags only, never the keys. */
-export interface RemotePushConfig {
-  enabled: boolean;
-  /** Where phones register their relay auth key. */
-  relayUrl: string;
-  /** VAPID contact claim sent to the browser's push service. */
-  vapidSubject: string;
-  /** True once the browser signing key has been minted. */
-  webPushConfigured: boolean;
-}
-
-export interface RemotePushConfigPatch {
-  enabled?: boolean;
-  /** `mailto:`/`https:` contact the browser's push service can reach you at. */
-  vapidSubject?: string;
-}
-
-export interface RemotePushTestResult {
-  delivered: boolean;
-  reason?: string;
-}
-
-export type RemoteTunnelMode = "quick" | "token";
-export type RemoteTunnelProvider = "cloudflare" | "tailscale";
-export type RemoteEndpointKind = RemoteTunnelProvider | "lan";
-export type RemoteTunnelStatus = "error" | "running" | "starting" | "stopped";
-
-export interface RemoteTunnelState {
-  error: string | null;
-  publicUrl: string | null;
-  /** Whether that URL was last seen to reach the gateway; null until probed. */
-  reachable: boolean | null;
-  status: RemoteTunnelStatus;
-}
-
-/** One address a phone can reach this desktop on. Lower priority wins. */
-export interface RemoteEndpoint {
-  kind: RemoteEndpointKind;
-  priority: number;
-  url: string;
-}
-
-export interface RemoteStatus {
-  cloudflareEnabled: boolean;
-  connectedDeviceIds: string[];
-  devices: RemoteDevice[];
-  enabled: boolean;
-  endpoints: RemoteEndpoint[];
-  hasTunnelToken: boolean;
-  lanUrl: string | null;
-  lanWebEnabled: boolean;
-  /** Mirror notifications to devices even while the desktop window is focused. */
-  notifyWhenFocused: boolean;
-  publicUrl: string | null;
-  tailscaleEnabled: boolean;
-  tunnelMode: RemoteTunnelMode;
-  tunnels: Record<RemoteTunnelProvider, RemoteTunnelState>;
-}
-
-export type TailscaleStepId = "cli" | "daemon" | "funnel" | "login";
-export type TailscaleStepState = "blocked" | "fail" | "ok";
-export type TailscaleFixKind =
-  | "install-cli"
-  | "open-url"
-  | "sign-in"
-  | "start-daemon";
-
-export interface TailscaleStep {
-  detail: string | null;
-  fix: TailscaleFixKind | null;
-  fixLabel: string | null;
-  id: TailscaleStepId;
-  message: string;
-  state: TailscaleStepState;
-  title: string;
-  url: string | null;
-}
-
-export interface TailscaleDiagnosis {
-  bin: string | null;
-  dnsName: string | null;
-  ready: boolean;
-  steps: TailscaleStep[];
-}
-
-export interface TailscaleFixResult {
-  diagnosis: TailscaleDiagnosis;
-  error: string | null;
-  openUrl: string | null;
-}
-
-export interface RemotePairingStart {
-  pairingCode: string;
-  qrPayload: string;
-}
+export type {
+  PairedDevice as RemoteDevice,
+  RemoteEndpoint,
+  RemotePairingStart,
+  RemotePushConfig,
+  RemotePushConfigPatch,
+  RemotePushTestResult,
+  RemoteStatus,
+  RemoteTunnelMode,
+  RemoteTunnelProvider,
+  RemoteTunnelState,
+  RemoteTunnelStatus,
+  TailscaleDiagnosis,
+  TailscaleFixKind,
+  TailscaleFixResult,
+  TailscaleStep,
+  TailscaleStepId,
+  TailscaleStepState,
+} from "@argus/remote-protocol";
 
 /**
  * Huddle rooms — a temporary link that lets a guest talk to one agent and
@@ -538,11 +442,7 @@ export type {
   HuddleRoom,
 } from "@argus/remote-protocol";
 
-/** Whether sharing can mint a link, and what's in the way when it can't. */
-export interface ShareReadiness {
-  blocker?: ShareErrorPayload;
-  ready: boolean;
-}
+export type { ShareReadiness } from "@argus/remote-protocol";
 
 export type {
   DeviceOrientation,

@@ -6,23 +6,9 @@
  * through the fix instead of printing a sentence.
  */
 
-export type ShareErrorKind =
-  | "cloudflared-missing"
-  | "quick-tunnel-failed"
-  | "tailscale-not-ready"
-  | "tunnel-unreachable"
-  | "unknown";
+import type { ShareErrorKind, ShareErrorPayload } from "@argus/remote-protocol";
 
-export interface ShareErrorPayload {
-  __shareError: true;
-  alternative?: string;
-  command?: string;
-  detail?: string;
-  explanation: string;
-  kind: ShareErrorKind;
-  message: string;
-  steps: string[];
-}
+export type { ShareErrorKind, ShareErrorPayload };
 
 export class ShareError extends Error {
   public readonly kind: ShareErrorKind;
