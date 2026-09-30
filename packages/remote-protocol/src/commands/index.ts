@@ -4,13 +4,19 @@
 
 import type { CommandSpec } from "./spec";
 import type { z } from "zod";
+import { FILE_COMMANDS } from "./files";
 
 export * from "./spec";
+export * from "../models/files";
 
 /** Each domain's entries, kept apart so a test can prove no name repeats. */
-export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {};
+export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
+  files: FILE_COMMANDS,
+};
 
-export const COMMANDS = {} as const;
+export const COMMANDS = {
+  ...FILE_COMMANDS,
+} as const;
 
 export type Commands = typeof COMMANDS;
 export type CommandName = string & keyof Commands;

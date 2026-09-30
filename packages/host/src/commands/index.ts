@@ -4,4 +4,8 @@
  * dialog-bound commands on top; a headless host runs with these alone.
  */
 
-export function registerHostCommands(): void {}
+import { registerFileCommands } from "./files";
+
+export function registerHostCommands(): void {
+  registerFileCommands();
+}

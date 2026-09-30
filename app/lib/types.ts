@@ -1,6 +1,16 @@
 import type { ShareErrorPayload } from "./shareError";
 import type { ReportBlock } from "@argus/remote-protocol";
 
+export type {
+  DirEntry,
+  FileStat,
+  HostDirectoryEntry,
+  HostDirectoryListing,
+  MentionDirEntry,
+  MentionPathResult,
+  UploadedAttachment,
+} from "@argus/remote-protocol";
+
 export interface Session {
   /**
    * Whether the session's files are reachable right now. Orthogonal to
@@ -344,28 +354,6 @@ export interface DependencyReport {
   missingOptional: number;
   missingRequired: number;
   platform: string;
-}
-
-export interface DirEntry {
-  is_dir: boolean;
-  name: string;
-  size: number;
-}
-
-export interface MentionDirEntry {
-  is_dir: boolean;
-  name: string;
-}
-
-export interface MentionPathResult {
-  entries: MentionDirEntry[];
-  resolvedPath: string;
-}
-
-export interface FileStat {
-  is_dir: boolean;
-  mtime: number;
-  size: number;
 }
 
 /** A single entry in `.argus.json` `run` — a labelled shell command. */
@@ -1516,31 +1504,6 @@ export interface HostSnapshot {
   agents: AgentStatus[];
   projects: ProjectEntry[];
   sessions: Session[];
-}
-
-/** A directory on the host, for the remote project picker. */
-export interface HostDirectoryEntry {
-  /** True when the directory looks like a git repo — a candidate project root. */
-  is_repo: boolean;
-  name: string;
-  path: string;
-}
-
-export interface HostDirectoryListing {
-  entries: HostDirectoryEntry[];
-  /** The host's home directory, for a "start over" affordance. */
-  home: string;
-  /** Absolute parent path, or null at the filesystem root. */
-  parent: string | null;
-  path: string;
-}
-
-/** Where a client-side file landed after being uploaded to the host. */
-export interface UploadedAttachment {
-  name: string;
-  /** Absolute path on the host. */
-  path: string;
-  size: number;
 }
 
 export interface RemoteDevicePush {

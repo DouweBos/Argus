@@ -189,16 +189,6 @@ import {
 } from "@argus/host/services/conductor/override";
 import { listConductorVersions } from "@argus/host/services/conductor/registry";
 import { checkDependencies } from "@argus/host/services/dependencies/check";
-import { listHostDirectory } from "@argus/host/services/file/hostBrowse";
-import {
-  listSessionFiles,
-  resolveMentionPath,
-  readFile,
-  writeFile,
-  statFile,
-  listPath,
-} from "@argus/host/services/file/operations";
-import { uploadSessionAttachment } from "@argus/host/services/file/uploads";
 import { branchPullRequestUrl } from "@argus/host/services/github/branchPrUrl";
 import { listGhIssues } from "@argus/host/services/github/issues";
 import {
@@ -693,38 +683,6 @@ function handle(
 }
 
 export function registerIpcHandlers(): void {
-  // File commands
-  handle("read_file", "admin", (a) =>
-    readFile(a.id as string, a.relativePath as string),
-  );
-  handle("write_file", "admin", (a) =>
-    writeFile(a.id as string, a.relativePath as string, a.content as string),
-  );
-  handle("stat_file", "admin", (a) =>
-    statFile(a.id as string, a.relativePath as string),
-  );
-  handle("list_session_files", "admin", (a) =>
-    listSessionFiles(a.id as string),
-  );
-  handle("resolve_mention_path", "admin", (a) =>
-    resolveMentionPath(a.id as string, a.query as string),
-  );
-
-  // Attachment upload — a file dropped on a client whose disk the host does not
-  // share arrives as bytes and lands in the session's staging directory.
-  handle("upload_session_attachment", "admin", (a) =>
-    uploadSessionAttachment(a.id as string, a.name as string, a.data as string),
-  );
-
-  // Absolute-path directory listing (used by the project-settings glob input).
-  handle("list_path", "admin", (a) => listPath(a.path as string));
-
-  // Host-side directory browser — how a remote client picks a project root,
-  // since a native open dialog would draw on the wrong machine.
-  handle("list_host_directory", "admin", (a) =>
-    listHostDirectory(a.path as string | undefined),
-  );
-
   // Window
   handle("close_window", "host", () => {
     getMainWindow()?.close();
