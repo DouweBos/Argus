@@ -382,6 +382,9 @@ describe("conversationStore", () => {
         },
       ],
       agents: [{ name: "Explore", description: "Explore codebase" }],
+      account: {},
+      output_style: "default",
+      available_output_styles: ["default"],
     };
 
     setCapabilities("agent-1", capabilities);

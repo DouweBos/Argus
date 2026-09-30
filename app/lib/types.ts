@@ -1,5 +1,5 @@
 import type { ShareErrorPayload } from "./shareError";
-import type { ReportBlock, Session } from "@argus/remote-protocol";
+import type { AgentInfo, ReportBlock, Session } from "@argus/remote-protocol";
 
 export type {
   DirEntry,
@@ -69,74 +69,36 @@ export interface TerminalSession {
   title: string;
 }
 
-/** An image attached to a queued message, as the backend stores it. */
-export interface QueuedImage {
-  data: string;
-  media_type: string;
-}
+export type { QueuedImage, QueuedMessage } from "@argus/remote-protocol";
 
 /**
- * A message waiting for an agent's current turn to end. Owned by the backend
- * (`electron/services/agent/messageQueue.ts`) so the queue survives restarts
- * and is shared with the web and phone clients.
+ * An agent as the renderer's store holds it: the host's `AgentInfo`, with the
+ * fields an optimistic entry can't know yet made optional, plus state only the
+ * renderer tracks.
  */
-export interface QueuedMessage {
-  /** Who queued it, when a huddle guest rather than the local user did. */
-  author?: string;
-  /** What the clients show, when it differs from `text` (e.g. a preamble). */
-  display_text?: string;
-  id: string;
-  images?: QueuedImage[];
-  queued_at: number;
-  text: string;
-}
-
-export interface AgentStatus {
-  agent_id: string;
-  /**
-   * Initialize-response capabilities returned inline on `start_agent` so the
-   * renderer has them before the async `agent:capabilities` event would
-   * otherwise race with listener setup.
-   */
-  capabilities?: AgentCapabilities | null;
-  /**
-   * Unix ms timestamp when the agent session was created on the backend.
-   * Optional because optimistic renderer-side entries and synthetic device-nav
-   * placeholders don't know the authoritative value until the backend reports.
-   */
-  created_at?: number;
-  /**
-   * Reasoning-effort level (e.g. "low", "medium", "high", "xhigh", "max").
-   * `null` / undefined means the model's default. Frontend-only field; the
-   * runner's `apply_flag_settings` control message is the source of truth.
-   */
-  effort?: string | null;
-  /**
-   * Prompt sent to an externally-spawned agent (e.g. via the MCP `spawn_agent`
-   * tool). Present only on the `agent:started` event — used by the renderer
-   * to derive a session title, since the UI never sees the first user
-   * message for MCP-spawned agents.
-   */
-  initial_prompt?: string;
-  /**
-   * Model id this agent was spawned with (variant suffixes like `[1m]`
-   * preserved), or null/undefined if the CLI default was used. Carried
-   * across restore-at-turn and restartAgent so the next spawn re-passes
-   * `--model` and the 1M-context variant doesn't silently revert to 200K.
-   */
-  model?: string | null;
-  /** Agent that spawned this one (null for user-initiated agents). */
-  parent_agent_id?: string | null;
-  /** Claude Code permission mode (e.g. "plan", "default"). Frontend-only field. */
-  permission_mode?: string;
-  /**
-   * Runner this agent is bound to. Inherited from the session at spawn, then
-   * switchable per agent until its first prompt.
-   */
-  runner_id?: string;
-  session_id: string;
-  status: "error" | "idle" | "requires_action" | "running" | "stopped";
-}
+export type AgentStatus = Omit<
+  AgentInfo,
+  "created_at" | "model" | "parent_agent_id" | "runner_id"
+> &
+  Partial<
+    Pick<AgentInfo, "created_at" | "model" | "parent_agent_id" | "runner_id">
+  > & {
+    /**
+     * Reasoning-effort level (e.g. "low", "medium", "high", "xhigh", "max").
+     * `null` / undefined means the model's default. The runner's
+     * `apply_flag_settings` control message is the source of truth.
+     */
+    effort?: string | null;
+    /**
+     * Prompt sent to an externally-spawned agent (e.g. via the MCP
+     * `spawn_agent` tool). Present only on the `agent:started` event — used to
+     * derive a session title, since the UI never sees the first user message
+     * for MCP-spawned agents.
+     */
+    initial_prompt?: string;
+    /** Claude Code permission mode (e.g. "plan", "default"). */
+    permission_mode?: string;
+  };
 
 export interface SimulatorDevice {
   booted: boolean;
@@ -913,29 +875,11 @@ export interface PermissionCancellation {
 // Capabilities (from initialize control_request response)
 // ---------------------------------------------------------------------------
 
-export interface SlashCommand {
-  /** Hint for arguments (e.g. "<file>", ""). */
-  argumentHint: string;
-  /** Description of what the command does. */
-  description: string;
-  /** Command name without leading slash. */
-  name: string;
-}
-
-export interface ModelInfo {
-  description: string;
-  displayName: string;
-  supportedEffortLevels?: string[];
-  supportsEffort?: boolean;
-  supportsFastMode?: boolean;
-  value: string;
-}
-
-export interface AgentCapabilities {
-  agents: { description: string; model?: string; name: string }[];
-  commands: SlashCommand[];
-  models: ModelInfo[];
-}
+export type {
+  AgentCapabilities,
+  AgentModelInfo as ModelInfo,
+  AgentSlashCommand as SlashCommand,
+} from "@argus/remote-protocol";
 
 // ---------------------------------------------------------------------------
 // Claude account

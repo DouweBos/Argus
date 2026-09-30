@@ -1055,6 +1055,36 @@ export async function restoreAgentAtTurn(args: {
   return { claude_session_id: newClaudeSessionId };
 }
 
+/**
+ * A client's fresh start under its own optimistic id, announced as
+ * `agent:started` so every window and paired device picks it up.
+ */
+export async function launchAgent(opts: {
+  sessionId: string;
+  model?: string;
+  permissionMode?: string;
+  resumeSessionId?: string;
+  appendSystemPrompt?: string;
+  agentId?: string;
+  runnerId?: string;
+}): Promise<AgentInfo> {
+  const agent = await startAgent(
+    opts.sessionId,
+    opts.model,
+    opts.permissionMode,
+    opts.resumeSessionId,
+    opts.appendSystemPrompt,
+    undefined,
+    undefined,
+    undefined,
+    opts.agentId,
+    opts.runnerId,
+  );
+  emitHostEvent("agent:started", agent);
+
+  return agent;
+}
+
 // ---------------------------------------------------------------------------
 // stop_agent
 // ---------------------------------------------------------------------------

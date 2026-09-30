@@ -1,3 +1,187 @@
-import type { CommandSpec } from "./spec";
+import { z } from "zod";
+import {
+  AgentInfo,
+  AgentNotificationInput,
+  ChatHistoryEntry,
+  ChatHistorySearchResult,
+  Checkpoint,
+  ImageAttachment,
+  QueuedImage,
+  QueuedMessage,
+  SavedConversation,
+} from "../models/agents";
+import { ForkChatResult } from "../models/sessions";
+import { type CommandSpec, NoParams, Void } from "./spec";
 
-export const AGENT_COMMANDS = {} as const satisfies Record<string, CommandSpec>;
+const AgentId = z.object({ agentId: z.string() });
+const SessionId = z.object({ sessionId: z.string() });
+const CheckpointRef = SessionId.extend({ checkpointId: z.string() });
+const RepoRoot = z.object({ repoRoot: z.string() });
+const HistoryRef = RepoRoot.extend({ historyId: z.string() });
+const QueuedRef = AgentId.extend({ id: z.string() });
+
+export const AGENT_COMMANDS = {
+  /** The installed Claude CLI's version string. */
+  check_claude_cli: { tier: "admin", params: NoParams, result: z.string() },
+  /** A fresh start, announced as `agent:started` so every client picks it up. */
+  start_agent: {
+    tier: "admin",
+    params: SessionId.extend({
+      model: z.string().optional(),
+      permissionMode: z.string().optional(),
+      resumeSessionId: z.string().optional(),
+      appendSystemPrompt: z.string().optional(),
+      /** Client-minted id, so an optimistic entry can land before the spawn. */
+      agentId: z.string().optional(),
+      runnerId: z.string().optional(),
+    }),
+    result: AgentInfo,
+  },
+  stop_agent: { tier: "admin", params: AgentId, result: Void },
+  /**
+   * Restore an agent's conversation in place — kills and respawns the child
+   * under the same id. Null session id for a fresh start at turn 0.
+   */
+  restore_agent_at_turn: {
+    tier: "admin",
+    params: AgentId.extend({
+      sourceClaudeSessionId: z.string(),
+      keepTurnNumber: z.number(),
+      cutoffTimestampMs: z.number(),
+    }),
+    result: ForkChatResult,
+  },
+  interrupt_agent: { tier: "admin", params: AgentId, result: Void },
+  send_agent_message: {
+    tier: "admin",
+    params: AgentId.extend({
+      message: z.string(),
+      images: z.array(ImageAttachment).nullish(),
+    }),
+    result: Void,
+  },
+  list_agents: { tier: "admin", params: SessionId, result: z.array(AgentInfo) },
+  respond_to_permission: {
+    tier: "admin",
+    params: AgentId.extend({
+      toolUseId: z.string(),
+      decision: z.enum(["allow", "deny"]),
+      allowRule: z.string().nullish(),
+      allowAll: z.boolean().nullish(),
+      denyMessage: z.string().nullish(),
+    }),
+    result: Void,
+  },
+  set_agent_model: {
+    tier: "admin",
+    params: AgentId.extend({ model: z.string() }),
+    result: Void,
+  },
+  set_agent_permission_mode: {
+    tier: "admin",
+    params: AgentId.extend({ mode: z.string() }),
+    result: Void,
+  },
+  /** `null` falls back to the model's default effort. */
+  set_agent_effort: {
+    tier: "admin",
+    params: AgentId.extend({ level: z.string().nullish() }),
+    result: Void,
+  },
+  /** Spawn a hidden agent ahead of need, so the next start skips the handshake. */
+  prewarm_agent: { tier: "admin", params: SessionId, result: AgentInfo },
+  claim_prewarm_agent: {
+    tier: "admin",
+    params: AgentId.extend({
+      model: z.string().optional(),
+      permissionMode: z.string().optional(),
+    }),
+    result: AgentInfo,
+  },
+  discard_prewarm_agent: { tier: "admin", params: AgentId, result: Void },
+  /** Snapshot the session worktree before a prompt, to restore it later. */
+  create_checkpoint: { tier: "admin", params: SessionId, result: Checkpoint },
+  restore_checkpoint: { tier: "admin", params: CheckpointRef, result: Void },
+  delete_checkpoint: { tier: "admin", params: CheckpointRef, result: Void },
+  save_chat_history: {
+    tier: "admin",
+    params: RepoRoot.extend({ conversation: SavedConversation }),
+    result: Void,
+  },
+  list_chat_history: {
+    tier: "admin",
+    params: RepoRoot,
+    result: z.array(ChatHistoryEntry),
+  },
+  search_chat_history: {
+    tier: "admin",
+    params: RepoRoot.extend({ query: z.string() }),
+    result: z.array(ChatHistorySearchResult),
+  },
+  load_chat_history: {
+    tier: "admin",
+    params: HistoryRef,
+    result: SavedConversation.nullable(),
+  },
+  delete_chat_history: { tier: "admin", params: HistoryRef, result: Void },
+  /** A short title for a chat from its first message; null on any failure. */
+  generate_session_title: {
+    tier: "admin",
+    params: z.object({ firstMessage: z.string() }),
+    result: z.string().nullable(),
+  },
+  list_queued_messages: {
+    tier: "admin",
+    params: AgentId,
+    result: z.array(QueuedMessage),
+  },
+  queue_message: {
+    tier: "admin",
+    params: AgentId.extend({
+      text: z.string(),
+      displayText: z.string().optional(),
+      images: z.array(QueuedImage).optional(),
+      author: z.string().optional(),
+    }),
+    result: QueuedMessage,
+  },
+  remove_queued_message: { tier: "admin", params: QueuedRef, result: Void },
+  update_queued_message: {
+    tier: "admin",
+    params: QueuedRef.extend({ text: z.string() }),
+    result: Void,
+  },
+  clear_queued_messages: { tier: "admin", params: AgentId, result: Void },
+  dequeue_message: {
+    tier: "admin",
+    params: AgentId,
+    result: QueuedMessage.nullable(),
+  },
+  /**
+   * Cross-window conversation snapshot sharing, so a new popout or a reloaded
+   * window can hydrate an agent without waiting for its next event. An empty
+   * snapshot drops the stored one.
+   */
+  publish_agent_snapshot: {
+    tier: "admin",
+    params: AgentId.extend({ snapshot: z.string().nullish() }),
+    result: Void,
+  },
+  get_agent_snapshot: {
+    tier: "admin",
+    params: AgentId,
+    result: z.string().nullable(),
+  },
+  /**
+   * The client decides what a notification says; the host shows it (only there
+   * can quick-action buttons render) and fans it out to paired devices.
+   */
+  notify_agent: {
+    tier: "admin",
+    params: z.object({
+      payload: AgentNotificationInput,
+      showLocal: z.boolean(),
+    }),
+    result: Void,
+  },
+} as const satisfies Record<string, CommandSpec>;

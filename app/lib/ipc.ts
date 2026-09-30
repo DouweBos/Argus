@@ -90,9 +90,11 @@ import type {
   MoveWorktreesResult,
 } from "./types";
 import type {
+  AgentNotificationInput,
   BisectStatus,
   BisectStep,
   BlameChunk,
+  Checkpoint,
   CommandName,
   ConflictBlobs,
   ForkReplayOp,
@@ -107,6 +109,7 @@ import type {
   GitSubmodule,
   GitTag,
   GitWorktree,
+  ImageAttachment,
   LfsFiles,
   ParamsIn,
   PullV2Opts,
@@ -734,14 +737,8 @@ export const forkChatInSession = (
  * a fresh-start when `keepTurnNumber === 0`).
  */
 /** Snapshot the session worktree's files. Returned id is what `restoreCheckpoint` accepts. */
-export const createCheckpoint = (
-  sessionId: string,
-): Promise<{
-  createdAt: number;
-  hasChanges: boolean;
-  id: string;
-  sha: string;
-}> => invoke("create_checkpoint", { sessionId });
+export const createCheckpoint = (sessionId: string): Promise<Checkpoint> =>
+  invoke("create_checkpoint", { sessionId });
 
 /** Revert the session worktree to a previously created checkpoint. */
 export const restoreCheckpoint = (
@@ -1229,12 +1226,7 @@ export const stopAgent = (agentId: string): Promise<void> =>
 export const interruptAgent = (agentId: string): Promise<void> =>
   invoke("interrupt_agent", { agentId });
 
-export interface ImageAttachment {
-  /** Base64-encoded image data (no data-URL prefix). */
-  data: string;
-  /** MIME type, e.g. "image/png", "image/jpeg". */
-  media_type: string;
-}
+export type { ImageAttachment };
 
 export const sendAgentMessage = (
   agentId: string,
@@ -1773,7 +1765,7 @@ export const saveChatHistory = (
 ): Promise<void> =>
   invoke("save_chat_history", {
     repoRoot,
-    conversation: conversation as unknown as Record<string, unknown>,
+    conversation,
   });
 
 export const listChatHistory = (
@@ -1790,7 +1782,11 @@ export const loadChatHistory = (
   repoRoot: string,
   historyId: string,
 ): Promise<SavedConversation | null> =>
-  invoke("load_chat_history", { repoRoot, historyId });
+  // The host stores the renderer's messages opaquely; they come back as saved.
+  invoke("load_chat_history", {
+    repoRoot,
+    historyId,
+  }) as Promise<SavedConversation | null>;
 
 export const deleteChatHistory = (
   repoRoot: string,
@@ -2279,17 +2275,7 @@ export const debugRunCommand = (
 export const revealInFinder = (path: string): Promise<void> =>
   invoke("reveal_in_finder", { path });
 
-export interface NotifyAgentPayload {
-  agent_id: string | null;
-  body: string;
-  kind: "failed" | "finished" | "permission" | "push";
-  session_id: string | null;
-  title: string;
-  /** The requested tool — the main process derives the quick actions from it. */
-  tool_name: string | null;
-  /** The prompt a quick action answers; only set for "permission". */
-  tool_use_id: string | null;
-}
+export type NotifyAgentPayload = AgentNotificationInput;
 
 /**
  * Show a notification on this Mac (when `showLocal`) and mirror it to every
@@ -2302,7 +2288,7 @@ export const notifyAgent = (
   showLocal: boolean,
 ): Promise<void> =>
   invoke("notify_agent", {
-    payload: payload as unknown as Record<string, unknown>,
+    payload,
     showLocal,
   });
 
