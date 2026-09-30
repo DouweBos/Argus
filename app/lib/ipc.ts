@@ -95,15 +95,12 @@ import type {
   BlameChunk,
   CommandName,
   ConflictBlobs,
-  EnrichedBranch,
+  ForkReplayOp,
+  ForkSessionResult,
   FormatPatchResult,
   GitCommit,
   GitCompareResult as CompareResult,
-  GitDiffRangeResult,
-  GitHook as Hook,
-  GitHookOutput as HookOutput,
   GitRemote,
-  GitRemoteBranch as RemoteBranch,
   GitRemoteRich,
   GitStashEntry,
   GitStashSaveOptions,
@@ -111,17 +108,22 @@ import type {
   GitTag,
   GitWorktree,
   LfsFiles,
-  LogSearchFilters,
-  LogSearchResult,
   ParamsIn,
   PullV2Opts,
   PushV2Opts,
-  RebasePlanCommit,
-  RebasePlanEntry,
   RecentIssue,
   ReflogEntry,
   ResultOf,
   SshKey,
+  EnrichedBranch,
+  GitRemoteBranch as RemoteBranch,
+  RebasePlanCommit,
+  RebasePlanEntry,
+  GitHookOutput as HookOutput,
+  GitHook as Hook,
+  LogSearchFilters,
+  LogSearchResult,
+  GitDiffRangeResult,
 } from "@argus/remote-protocol";
 import { rehydrateGitError } from "./gitError";
 import { rehydrateShareError } from "./shareError";
@@ -692,32 +694,7 @@ export const clearSessionSetupError = (id: string): Promise<void> =>
 export const retrySessionSetup = (id: string): Promise<void> =>
   invoke("retry_session_setup", { id });
 
-export interface ForkSessionResult {
-  claude_session_id: string | null;
-  session: Session;
-}
-
-export type ForkReplayOp =
-  | {
-      content: string;
-      filePath: string;
-      timestampMs: number;
-      type: "write";
-    }
-  | {
-      edits: { newString: string; oldString: string; replaceAll?: boolean }[];
-      filePath: string;
-      timestampMs: number;
-      type: "multiEdit";
-    }
-  | {
-      filePath: string;
-      newString: string;
-      oldString: string;
-      replaceAll?: boolean;
-      timestampMs: number;
-      type: "edit";
-    };
+export type { ForkReplayOp, ForkSessionResult };
 
 export const forkSession = (
   sourceSessionId: string,
@@ -2431,7 +2408,7 @@ export const setSessionClaudeAccount = (
   sessionId: string,
   accountId: string | null,
   agentId?: string | null,
-): Promise<void> =>
+): Promise<null> =>
   invoke("set_session_claude_account", { sessionId, accountId, agentId });
 
 export const claudeAuthLoginSubmitCode = (
