@@ -2,6 +2,8 @@
 
 Snapshot taken at `fdc48a36` (after automation authoring landed on the phone).
 
+> **Stale.** Counts below predate the typed command catalog: the gateway now has 112 typed methods and the host 409 raw commands, all listed in `packages/remote-protocol/src/commands/` (the source for `ArgusKit/Generated/`). `electron/ipc.ts` no longer exists — commands register in `packages/host/src/commands/`.
+
 ## Method
 
 Three lists, compared:
