@@ -836,6 +836,14 @@ async function finalizeSession(
     const errMsg =
       typeof e === "string" ? e : (e as Error).message || String(e);
     error(`finalizeSession failed for ${id}: ${errMsg}`);
+    // Without a terminal status the session sits in `initializing` forever and
+    // anything awaiting it (a proposal accepted from the phone) never hears back.
+    const current = appState.sessions.get(id);
+    if (current) {
+      current.status = { error: errMsg };
+      appState.sessions.set(id, current);
+    }
+    emitHostEvent(`session:status:${id}`, `error:${errMsg}`);
     emitError(errMsg);
   }
 }
