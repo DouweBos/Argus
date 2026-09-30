@@ -757,125 +757,32 @@ export type {
 // Claude account
 // ---------------------------------------------------------------------------
 
-/** Current Claude CLI account, mirrors `claude auth status --json`. */
-export interface ClaudeAuthStatus {
-  apiProvider?: string;
-  authMethod?: string;
-  email?: string;
-  loggedIn: boolean;
-  orgId?: string;
-  orgName?: string;
-  subscriptionType?: string;
-}
-
-/**
- * A Claude account Argus keeps signed in. Each one gets its own CLI config dir,
- * so identity and credentials belong to that account alone.
- */
-export interface ClaudeAccount {
-  account_type: "claudeai" | "console";
-  auth_method?: string;
-  created_at: number;
-  email?: string;
-  id: string;
-  /** User-editable display name; falls back to the email. */
-  label?: string;
-  /** A run failed to authenticate — the credentials need renewing. */
-  needs_reauth?: boolean;
-  org_id?: string;
-  org_name?: string;
-  /** A run hit the plan's usage limit — credentials are fine, the quota isn't. */
-  rate_limited?: boolean;
-  subscription_type?: string;
-}
-
-export interface ClaudeAccountsState {
-  accounts: ClaudeAccount[];
-  activeId: string;
-}
+export type {
+  ClaudeAccount,
+  ClaudeAccountsState,
+  ClaudeAuthStatus,
+} from "@argus/remote-protocol";
 
 // Onboarding
 // ---------------------------------------------------------------------------
 
-export const ONBOARDING_STEPS = ["welcome", "telemetry"] as const;
-
-export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
-
-export interface OnboardingStateData {
-  completed: boolean;
-  completedAt: number | null;
-  lastStep: OnboardingStep;
-  skipped: string[];
-  version: number;
-}
-
-export interface OnboardingConfigFile {
-  onboarding: OnboardingStateData;
-  recentProjects: string[];
-}
-
-export type PrereqId =
-  | "android_avd"
-  | "android_sdk"
-  | "claude_auth"
-  | "claude_cli"
-  | "git_cli"
-  | "git_identity"
-  | "ios_runtimes"
-  | "playwright"
-  | "xcode";
-
-export type PrereqStatus = "fail" | "pass" | "running" | "skipped" | "warn";
-
-/** Why the Claude auth check is unhappy; mirrors `@argus/host`. */
-export type ClaudeAuthReason =
-  | "all_rate_limited"
-  | "no_accounts"
-  | "selected_rate_limited"
-  | "selected_signed_out"
-  | "unauthenticated"
-  | "unverifiable";
-
-export interface PrereqResult {
-  /** Set on `claude_auth` when it isn't passing. */
-  auth_reason?: ClaudeAuthReason;
-  detail?: string;
-  fixable?: boolean;
-  id: PrereqId;
-  message?: string;
-  mobileOnly?: boolean;
-  status: PrereqStatus;
-}
-
-export type DetectedSignalKind =
-  | "framework"
-  | "monorepo"
-  | "native"
-  | "platform"
-  | "project"
-  | "tooling";
-
-export interface DetectedSignal {
-  detail?: string;
-  kind: DetectedSignalKind;
-  label: string;
-}
-
-export interface ArgusConfigSuggestion {
-  config: Record<string, unknown>;
-  inferredFrom: string[];
-  signals: DetectedSignal[];
-}
+export { ONBOARDING_STEPS } from "@argus/remote-protocol";
+export type {
+  ArgusConfigSuggestion,
+  ClaudeAuthReason,
+  DetectedSignal,
+  DetectedSignalKind,
+  OnboardingConfigFile,
+  OnboardingStateData,
+  OnboardingStep,
+  PrereqId,
+  PrereqResult,
+  PrereqStatus,
+} from "@argus/remote-protocol";
 
 export type { ProjectEntry } from "@argus/remote-protocol";
 
-export interface ExampleProject {
-  description: string;
-  name: string;
-  platform: "android" | "ios" | "web";
-  repo: string;
-  slug: string;
-}
+export type { ExampleProject } from "@argus/remote-protocol";
 
 export type PullRequestReason =
   | "author"

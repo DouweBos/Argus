@@ -2353,7 +2353,7 @@ export const claudeAuthLoginStart = (
 export const listClaudeAccounts = (): Promise<ClaudeAccountsState> =>
   invoke("claude_accounts_list");
 
-export const setActiveClaudeAccount = (id: string): Promise<void> =>
+export const setActiveClaudeAccount = (id: string): Promise<null> =>
   invoke("claude_accounts_set_active", { id });
 
 /** Sign in an additional account without disturbing the ones already signed in. */
@@ -2361,13 +2361,13 @@ export const addClaudeAccount = (
   useConsole: boolean,
 ): Promise<{ url: string }> => invoke("claude_accounts_add", { useConsole });
 
-export const removeClaudeAccount = (id: string): Promise<void> =>
+export const removeClaudeAccount = (id: string): Promise<null> =>
   invoke("claude_accounts_remove", { id });
 
-export const renameClaudeAccount = (id: string, label: string): Promise<void> =>
+export const renameClaudeAccount = (id: string, label: string): Promise<null> =>
   invoke("claude_accounts_rename", { id, label });
 
-export const refreshClaudeAccount = (id: string): Promise<void> =>
+export const refreshClaudeAccount = (id: string): Promise<null> =>
   invoke("claude_accounts_refresh", { id });
 
 /**
@@ -2386,7 +2386,7 @@ export const claudeAuthLoginSubmitCode = (
 ): Promise<{ error?: string; ok: boolean }> =>
   invoke("claude_auth_login_submit_code", { code });
 
-export const claudeAuthLoginCancel = (): Promise<void> =>
+export const claudeAuthLoginCancel = (): Promise<null> =>
   invoke("claude_auth_login_cancel");
 
 export const listRegisteredRunners = (): Promise<RegisteredRunner[]> =>

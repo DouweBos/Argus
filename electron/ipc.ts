@@ -17,11 +17,6 @@ import type {
 import type { ProposalStatus } from "@argus/host/services/automation/proposals/models";
 import type { CommandTier } from "@argus/host/services/command/registry";
 import type {
-  OnboardingStep,
-  PrereqId,
-  PrereqResult,
-} from "@argus/host/services/onboarding/types";
-import type {
   DeviceOrientation,
   FoldPose,
 } from "@argus/host/services/simulator/deviceState";
@@ -102,24 +97,6 @@ import {
 } from "@argus/host/services/browser/conductorInput";
 import { getMjpegPort } from "@argus/host/services/browser/mjpegServer";
 import { webBrowserPool } from "@argus/host/services/browser/pool";
-import {
-  getActiveAccountId,
-  refreshAllAccountIdentities,
-  removeClaudeAccount,
-  renameClaudeAccount,
-  setActiveAccount,
-} from "@argus/host/services/claudeAuth/accounts";
-import {
-  claudeAddAccount,
-  claudeLoginCancel,
-  claudeLoginStart,
-  claudeLoginSubmitCode,
-  claudeLogout,
-  claudeRefreshAccount,
-  emitAccountsChanged,
-  getClaudeAuthStatus,
-} from "@argus/host/services/claudeAuth/claudeAuth";
-import { recheckFlaggedAccounts } from "@argus/host/services/claudeAuth/probe";
 import { defineCommand } from "@argus/host/services/command/registry";
 import {
   listDebugStreams,
@@ -166,25 +143,6 @@ import {
 } from "@argus/host/services/mcp/oauth";
 import { listAuthorized, loadToken } from "@argus/host/services/mcp/oauthStore";
 import { listInheritedMcpServers } from "@argus/host/services/mcp/userConfig";
-import {
-  addSkipped as onboardingAddSkipped,
-  argusDirPath,
-  claudePing as onboardingClaudePing,
-  cloneExample as onboardingCloneExample,
-  completeOnboarding as onboardingComplete,
-  ensureArgusDir as onboardingEnsureDir,
-  getOnboardingState,
-  listExamples as onboardingListExamples,
-  readExistingArgusJson,
-  refineArgusJsonWithClaude,
-  registerProject as onboardingRegisterProject,
-  resetOnboarding,
-  runPrereqChecks,
-  runPrereqFixer,
-  setLastStep,
-  suggestArgusJson as onboardingSuggestArgusJson,
-  writeArgusJson as onboardingWriteArgusJson,
-} from "@argus/host/services/onboarding/index";
 import { claimState } from "@argus/host/services/remote/deviceClaims";
 import {
   listDevices as listRemoteDevices,
@@ -1234,123 +1192,5 @@ export function registerIpcHandlers(): void {
 
     return result.filePaths[0];
   });
-
-  // Onboarding
-  handle("onboarding_get_state", "admin", () => getOnboardingState());
-  handle("onboarding_ensure_argus_dir", "admin", () => ({
-    path: onboardingEnsureDir(),
-  }));
-  handle("onboarding_set_last_step", "admin", (a) => {
-    setLastStep(a.step as OnboardingStep);
-  });
-  handle("onboarding_add_skipped", "admin", (a) => {
-    onboardingAddSkipped(a.id as string);
-  });
-  handle("onboarding_check_prereqs", "admin", async (a) => {
-    const ids = a.ids as PrereqId[] | undefined;
-
-    return runPrereqChecks((update: PrereqResult) => {
-      emitHostEvent("onboarding:prereq_update", update);
-    }, ids);
-  });
-  handle("onboarding_run_fixer", "admin", (a) =>
-    runPrereqFixer(
-      a.id as PrereqId,
-      {
-        gitName: a.gitName as string | undefined,
-        gitEmail: a.gitEmail as string | undefined,
-      },
-      (update: PrereqResult) => {
-        emitHostEvent("onboarding:prereq_update", update);
-      },
-    ),
-  );
-  handle("onboarding_claude_ping", "admin", () => onboardingClaudePing());
-  handle("claude_auth_status", "admin", (a) =>
-    getClaudeAuthStatus(a.accountId as string | undefined),
-  );
-  handle("claude_auth_logout", "admin", (a) =>
-    claudeLogout(a.accountId as string | undefined),
-  );
-  handle("claude_auth_login_start", "admin", (a) =>
-    claudeLoginStart({
-      useConsole: a.useConsole as boolean | undefined,
-      accountId: a.accountId as string | undefined,
-    }),
-  );
-  handle("claude_accounts_list", "admin", () => {
-    recheckFlaggedAccounts();
-
-    return {
-      accounts: refreshAllAccountIdentities(),
-      activeId: getActiveAccountId(),
-    };
-  });
-  handle("claude_accounts_set_active", "admin", (a) => {
-    setActiveAccount(a.id as string);
-    emitAccountsChanged();
-
-    return null;
-  });
-  handle("claude_accounts_add", "admin", (a) =>
-    claudeAddAccount({ useConsole: a.useConsole as boolean | undefined }),
-  );
-  handle("claude_accounts_remove", "admin", async (a) => {
-    await removeClaudeAccount(a.id as string);
-    emitAccountsChanged();
-
-    return null;
-  });
-  handle("claude_accounts_rename", "admin", (a) => {
-    renameClaudeAccount(a.id as string, a.label as string);
-    emitAccountsChanged();
-
-    return null;
-  });
-  handle("claude_accounts_refresh", "admin", async (a) => {
-    await claudeRefreshAccount(a.id as string);
-
-    return null;
-  });
-  handle("claude_auth_login_submit_code", "admin", (a) =>
-    claudeLoginSubmitCode({ code: a.code as string }),
-  );
-  handle("claude_auth_login_cancel", "admin", () => {
-    claudeLoginCancel();
-
-    return null;
-  });
-  handle("onboarding_list_examples", "admin", () => onboardingListExamples());
-  handle("onboarding_clone_example", "admin", (a) =>
-    onboardingCloneExample(a.slug as string),
-  );
-  handle("onboarding_register_project", "admin", (a) => {
-    onboardingRegisterProject(a.path as string);
-  });
-  handle("onboarding_suggest_argus_json", "admin", (a) =>
-    onboardingSuggestArgusJson(a.path as string),
-  );
-  handle("onboarding_read_existing_argus_json", "admin", (a) =>
-    readExistingArgusJson(a.path as string),
-  );
-  handle("onboarding_refine_argus_json_with_claude", "admin", (a) =>
-    refineArgusJsonWithClaude(
-      a.path as string,
-      a.config as Record<string, unknown>,
-    ),
-  );
-  handle("onboarding_write_argus_json", "admin", (a) => {
-    onboardingWriteArgusJson(
-      a.path as string,
-      a.config as Record<string, unknown>,
-    );
-  });
-  handle("onboarding_complete", "admin", () => {
-    onboardingComplete();
-  });
-  handle("onboarding_reset", "admin", () => {
-    resetOnboarding();
-  });
-  handle("onboarding_argus_dir_path", "admin", () => argusDirPath());
 
 }
