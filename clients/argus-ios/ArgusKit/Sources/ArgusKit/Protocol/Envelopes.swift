@@ -148,6 +148,8 @@ public enum RemoteEventName: String, Sendable {
   case claudeAccountsChanged = "claude_accounts.changed"
   case claudeAccountsLogin = "claude_accounts.login"
   case notification = "notification"
+  /// A raw host broadcast (`{ channel, args }`), only sent to admin devices.
+  case ipc = "ipc"
 }
 
 public struct GatewayErrorPayload: Codable, Sendable, Error {
@@ -163,7 +165,8 @@ public struct RequestEnvelope<Params: Encodable>: Encodable {
   public var type = "req"
   public var seq: Int
   public var id: String
-  public var method: RemoteMethod
+  /// A `RemoteMethod` raw value, or a raw command name for an admin device.
+  public var method: String
   public var params: Params
 
   enum CodingKeys: String, CodingKey {
