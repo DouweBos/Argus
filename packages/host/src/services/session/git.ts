@@ -235,6 +235,43 @@ export async function addWorktree(
   }
 }
 
+/**
+ * `git worktree remove` that finishes the job when git gives up. Git bails with
+ * "Directory not empty" if anything writes into the worktree mid-removal, and
+ * by then it has dropped its own record, so only a plain delete can recover.
+ */
+export async function removeWorktree(
+  repoRoot: string,
+  worktreePath: string,
+): Promise<void> {
+  if (!worktreePath) {
+    return;
+  }
+  const listed = await git(repoRoot, ["worktree", "list", "--porcelain"]).catch(
+    () => "",
+  );
+  const registered = listed
+    .split("\n")
+    .some((l) => l === `worktree ${worktreePath}`);
+  if (registered) {
+    try {
+      await git(repoRoot, ["worktree", "remove", "--force", worktreePath]);
+    } catch (e) {
+      warn(
+        `git worktree remove failed for ${worktreePath}, deleting the directory directly: ${String(e)}`,
+      );
+    }
+  }
+  // Retries ride out a process that is still writing as it shuts down.
+  await fs.promises.rm(worktreePath, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 200,
+  });
+  await git(repoRoot, ["worktree", "prune"]);
+}
+
 export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
   // An unmounted drive looks exactly like a deleted worktree to git, and
   // pruning it is unrecoverable: prune removes `.git/worktrees/<name>`, after
