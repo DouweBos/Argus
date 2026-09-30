@@ -33,6 +33,7 @@ import {
   stopAutoFetch,
 } from "./autoFetch";
 import {
+  addWorktree,
   branchToDir,
   git,
   repairOrphanedWorktrees,
@@ -1637,9 +1638,7 @@ async function createWorktree(
   assertWorktreeBaseAvailable(path.dirname(worktreesDir));
   fs.mkdirSync(worktreesDir, { recursive: true });
 
-  await git(repoRoot, [
-    "worktree",
-    "add",
+  await addWorktree(repoRoot, worktreePath, [
     "-b",
     branchSlug,
     worktreePath,
@@ -1693,7 +1692,7 @@ async function checkoutBranchIntoWorktree(
   }
 
   if (hasLocal) {
-    await git(repoRoot, ["worktree", "add", worktreePath, branch]);
+    await addWorktree(repoRoot, worktreePath, [worktreePath, branch]);
   } else {
     let remotes: string[] = [];
     try {
@@ -1737,9 +1736,7 @@ async function checkoutBranchIntoWorktree(
       throw `Branch "${branch}" does not exist locally or on any remote. Fetch it first (e.g. \`git fetch\`) and try again.`;
     }
 
-    await git(repoRoot, [
-      "worktree",
-      "add",
+    await addWorktree(repoRoot, worktreePath, [
       "-b",
       branch,
       worktreePath,
