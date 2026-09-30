@@ -88,7 +88,14 @@ export async function acceptProposal(
   }
   updateProposal(proposal.id, { session_id: session.id, accepted_note: note });
 
-  await waitForSessionReady(session.id);
+  try {
+    await waitForSessionReady(session.id);
+  } catch (e) {
+    // Release the proposal so it can be started again once setup is fixed;
+    // the failed session stays behind showing why.
+    updateProposal(proposal.id, { session_id: null, accepted_note: null });
+    throw e;
+  }
 
   const prompt = buildPrompt(proposal, status, note);
   const agent = await startAgent(session.id);
