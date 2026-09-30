@@ -122,6 +122,31 @@ describe("executeWorktreeMove (integration)", () => {
     expect(updates).toEqual([{ id: "feature", path: to, volume: null }]);
   });
 
+  it("repairs submodule links in a copied worktree", async () => {
+    const lib = path.join(tmp, "lib");
+    fs.mkdirSync(lib);
+    git(lib, ["init", "-q", "."]);
+    fs.writeFileSync(path.join(lib, "lib.txt"), "lib", "utf8");
+    git(lib, ["add", "-A"]);
+    git(lib, ["commit", "-qm", "lib"]);
+    const allowFile = ["-c", "protocol.file.allow=always"];
+    git(repoRoot, [...allowFile, "submodule", "add", "-q", lib, "vendor/lib"]);
+    git(repoRoot, ["commit", "-qm", "add lib"]);
+
+    const from = addWorktree("feature");
+    git(from, [...allowFile, "submodule", "update", "-q", "--init"]);
+
+    const result = await executeWorktreeMove(repoRoot, path.join(tmp, "new"));
+
+    expect(result.failed).toEqual([]);
+    const sub = path.join(result.to_root, "feature", "vendor/lib");
+    expect(fs.existsSync(from)).toBe(false);
+    expect(git(sub, ["rev-parse", "--show-toplevel"]).trim()).toBe(sub);
+    expect(
+      git(path.join(result.to_root, "feature"), ["status", "--short"]),
+    ).toBe("");
+  });
+
   it("reports what is holding a worktree rather than moving it anyway", async () => {
     addWorktree("busy");
     // A linked worktree keeps its state under the repo, not in its own tree.
