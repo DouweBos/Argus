@@ -186,6 +186,13 @@ export function removeRepoRoot(dirPath: string): void {
 // ---------------------------------------------------------------------------
 
 /**
+ * Worktrees a pending session is still checking out. Git registers the path
+ * long before `worktree add` returns, and listing must not adopt it as a
+ * second session that then outlives the real one and keeps its branch taken.
+ */
+const creatingWorktreePaths = new Set<string>();
+
+/**
  * Mark a session unreachable when its drive is disconnected, so the UI can
  * show it greyed out rather than having it silently disappear.
  */
@@ -212,7 +219,9 @@ function stampAvailability(ws: Session): void {
  * loaded and migrated to remove orphaned entries.
  */
 export async function listSessions(repoRoot: string): Promise<Session[]> {
-  const diskSessions = await listWorktrees(repoRoot);
+  const diskSessions = (await listWorktrees(repoRoot)).filter(
+    (w) => !creatingWorktreePaths.has(w.path),
+  );
 
   // Load persisted metadata and migrate away orphaned entries.
   const rawMeta = loadMetadata(repoRoot);
@@ -643,6 +652,8 @@ async function finalizeSession(
         info(
           `finalizeSession: cleanup of orphaned worktree failed: ${String(e)}`,
         );
+      } finally {
+        creatingWorktreePaths.delete(worktreeInfo.path);
       }
 
       return;
@@ -666,6 +677,7 @@ async function finalizeSession(
 
     // --- Phase 6: merge into state + notify renderer --------------------
     const ws = appState.sessions.get(id);
+    creatingWorktreePaths.delete(worktreeInfo.path);
     if (!ws) {
       return;
     }
@@ -1573,6 +1585,21 @@ interface WorktreeInfo {
   path: string;
 }
 
+/** `addWorktree` that keeps the path out of the session list until it is owned. */
+async function addPendingWorktree(
+  repoRoot: string,
+  worktreePath: string,
+  args: string[],
+): Promise<void> {
+  creatingWorktreePaths.add(worktreePath);
+  try {
+    await addWorktree(repoRoot, worktreePath, args);
+  } catch (e) {
+    creatingWorktreePaths.delete(worktreePath);
+    throw e;
+  }
+}
+
 /**
  * Create a new worktree for `branch` branching from `baseBranch` (or the
  * current HEAD of the main repo). Returns the final branch slug and on-disk
@@ -1613,7 +1640,7 @@ async function createWorktree(
   assertWorktreeBaseAvailable(path.dirname(worktreesDir));
   fs.mkdirSync(worktreesDir, { recursive: true });
 
-  await addWorktree(repoRoot, worktreePath, [
+  await addPendingWorktree(repoRoot, worktreePath, [
     "-b",
     branchSlug,
     worktreePath,
@@ -1667,7 +1694,7 @@ async function checkoutBranchIntoWorktree(
   }
 
   if (hasLocal) {
-    await addWorktree(repoRoot, worktreePath, [worktreePath, branch]);
+    await addPendingWorktree(repoRoot, worktreePath, [worktreePath, branch]);
   } else {
     let remotes: string[] = [];
     try {
@@ -1711,7 +1738,7 @@ async function checkoutBranchIntoWorktree(
       throw `Branch "${branch}" does not exist locally or on any remote. Fetch it first (e.g. \`git fetch\`) and try again.`;
     }
 
-    await addWorktree(repoRoot, worktreePath, [
+    await addPendingWorktree(repoRoot, worktreePath, [
       "-b",
       branch,
       worktreePath,
