@@ -8,13 +8,6 @@
  * (errors are thrown as plain strings).
  */
 
-import type {
-  CreateAutomationInput,
-  SaveMemoryInput,
-  StartScratchRunInput,
-  UpdateAutomationInput,
-} from "@argus/host/services/automation/models";
-import type { ProposalStatus } from "@argus/host/services/automation/proposals/models";
 import type { CommandTier } from "@argus/host/services/command/registry";
 import type {
   DeviceOrientation,
@@ -33,51 +26,6 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
 import { stopAgent } from "@argus/host/services/agent/claude";
-import {
-  draftAutomation,
-  revisePlaybook,
-} from "@argus/host/services/automation/authoring";
-import { submitRunFeedback } from "@argus/host/services/automation/feedback";
-import {
-  clearGateLog,
-  dismissGateLogEntry,
-  listGateLog,
-} from "@argus/host/services/automation/gateLog";
-import {
-  createAutomation,
-  deleteAutomation,
-  getAutomationRun,
-  listAutomationRuns,
-  listAutomations,
-  listScratchRuns,
-  deleteRun,
-  markRunReportRead,
-  setAutomationEnabled,
-  updateAutomation,
-} from "@argus/host/services/automation/manager";
-import {
-  deleteAutomationMemory,
-  listAutomationMemories,
-  saveAutomationMemory,
-} from "@argus/host/services/automation/memory/service";
-import { calibrationFor } from "@argus/host/services/automation/outcomes";
-import { acceptProposal } from "@argus/host/services/automation/proposals/accept";
-import { performProposalCleanup } from "@argus/host/services/automation/proposals/cleanup";
-import {
-  dismissProposal,
-  getProposal,
-  listProposals,
-  resolveProposal,
-} from "@argus/host/services/automation/proposals/manager";
-import { requestProposalRevision } from "@argus/host/services/automation/proposals/revise";
-import {
-  cancelAutomationRun,
-  startAutomationRun,
-} from "@argus/host/services/automation/runner";
-import {
-  saveScratchRunAsAutomation,
-  startScratchRun,
-} from "@argus/host/services/automation/scratch";
 import {
   startScreencast,
   stopScreencast,
@@ -186,7 +134,6 @@ import {
 import { autofillPullRequestBody } from "@argus/host/services/session/prAutofill";
 import { readPullRequestTemplate } from "@argus/host/services/session/pullRequest";
 import { openExternalUrl } from "@argus/host/services/shell/operations";
-import { describeSignalSources } from "@argus/host/services/signals/registry";
 import {
   checkAndroidTools,
   listAndroidDevices,
@@ -448,119 +395,6 @@ export function registerIpcHandlers(): void {
   );
 
   handle("gh_list_issues", "admin", (a) => listGhIssues(a.repoRoot as string));
-
-  // Automations — host state, deliberately remotable so a desktop driving a
-  // headless mini manages the mini's automations as if they were its own.
-  handle("automations_list", "admin", () => listAutomations());
-  handle("automation_create", "admin", (a) =>
-    createAutomation(a.input as CreateAutomationInput),
-  );
-  handle("automation_update", "admin", (a) =>
-    updateAutomation(a.id as string, a.patch as UpdateAutomationInput),
-  );
-  handle("automation_delete", "admin", (a) => {
-    deleteAutomation(a.id as string);
-  });
-  handle("automation_set_enabled", "admin", (a) =>
-    setAutomationEnabled(a.id as string, a.enabled as boolean),
-  );
-  handle("automation_run_now", "admin", (a) =>
-    startAutomationRun(a.id as string, "manual"),
-  );
-  handle("automation_cancel_run", "admin", (a) =>
-    cancelAutomationRun(a.runId as string),
-  );
-  handle("automation_runs_list", "admin", (a) =>
-    listAutomationRuns(a.automationId as string | undefined),
-  );
-  handle("automation_run_get", "admin", (a) =>
-    getAutomationRun(a.runId as string),
-  );
-  handle("automation_run_mark_read", "admin", (a) =>
-    markRunReportRead(a.runId as string),
-  );
-  handle("automation_run_delete", "admin", (a) => deleteRun(a.runId as string));
-  // Picks the run's own agent back up rather than firing the automation again.
-  handle("automation_run_feedback", "admin", (a) =>
-    submitRunFeedback({
-      runId: a.runId as string,
-      note: a.note as string,
-      allowClearing: a.allowClearing as boolean | undefined,
-    }),
-  );
-  handle("signal_sources_list", "admin", () => describeSignalSources());
-  handle("automation_gate_log_list", "admin", () => listGateLog());
-  handle("automation_gate_log_dismiss", "admin", (a) =>
-    dismissGateLogEntry(a.id as string),
-  );
-  handle("automation_gate_log_clear", "admin", () => clearGateLog());
-  // Drafting is deliberately separate from creating: what comes back is a
-  // draft the user reviews and saves, never a live automation.
-  handle("automation_draft", "admin", (a) =>
-    draftAutomation({
-      description: a.description as string,
-      timezone: a.timezone as string | undefined,
-    }),
-  );
-  // Same rule as drafting: the rewrite comes back as text for the editor, and
-  // only a save puts it anywhere near a scheduled run.
-  handle("automation_playbook_revise", "admin", (a) =>
-    revisePlaybook({
-      playbook: a.playbook as string,
-      instruction: a.instruction as string,
-      name: a.name as string | undefined,
-    }),
-  );
-  handle("automation_memories_list", "admin", (a) =>
-    listAutomationMemories(a.automationId as string),
-  );
-  handle("automation_memory_save", "admin", (a) =>
-    saveAutomationMemory(a.automationId as string, a.input as SaveMemoryInput),
-  );
-  handle("automation_memory_delete", "admin", (a) => {
-    deleteAutomationMemory(a.automationId as string, a.name as string);
-  });
-  handle("automation_calibration", "admin", (a) =>
-    calibrationFor(a.automationId as string),
-  );
-  // Ad-hoc runs: a playbook run once, with no automation persisted for it.
-  // Admin-tier and remotable like the rest — running something one-off on a
-  // headless mini from the desktop is the same act as pressing Run now there.
-  handle("automation_run_scratch", "admin", (a) =>
-    startScratchRun(a.input as StartScratchRunInput),
-  );
-  handle("automation_scratch_save", "admin", (a) =>
-    saveScratchRunAsAutomation(a.runId as string, {
-      name: a.name as string | undefined,
-      description: a.description as string | undefined,
-    }),
-  );
-  handle("automation_scratch_runs_list", "admin", () => listScratchRuns());
-  // Proposals — what a run wants you to do. Remotable for the same reason the
-  // automations are: the inbox belongs to whichever machine runs the clock.
-  handle("proposals_list", "admin", (a) =>
-    listProposals({
-      automationId: a.automationId as string | undefined,
-      runId: a.runId as string | undefined,
-      status: a.status as ProposalStatus | undefined,
-    }),
-  );
-  handle("proposal_get", "admin", (a) => getProposal(a.id as string));
-  handle("proposal_accept", "admin", (a) =>
-    acceptProposal(a.id as string, { note: a.note as string | undefined }),
-  );
-  handle("proposal_request_revision", "admin", (a) =>
-    requestProposalRevision(a.id as string, a.note as string),
-  );
-  handle("proposal_perform_cleanup", "admin", (a) =>
-    performProposalCleanup(a.id as string),
-  );
-  handle("proposal_dismiss", "admin", (a) =>
-    dismissProposal(a.id as string, a.reason as string | undefined),
-  );
-  handle("proposal_resolve", "admin", (a) =>
-    resolveProposal(a.id as string, a.note as string | undefined),
-  );
 
   // Remote access (phone/web control).
   handle("remote_get_status", "admin", () => getRemoteStatus());

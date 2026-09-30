@@ -105,6 +105,7 @@ function failedRun(id: string): AutomationRun {
     report_markdown: null,
     report_blocks: null,
     report_read: false,
+    feedback: [],
     error: "The run's agent exited.",
   };
 }

@@ -111,6 +111,7 @@ function run(patch: Partial<AutomationRun> = {}): AutomationRun {
     report_blocks: null,
     error: null,
     report_read: false,
+    feedback: [],
     ...patch,
   };
 }
