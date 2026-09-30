@@ -1,54 +1,22 @@
 /**
  * Shared types for chat history persistence.
  *
- * Used by both the frontend (IPC wrappers, components) and the backend
- * (chatHistory service). Keep in sync with the backend service's file format.
+ * The index shapes come from the command catalog; `SavedConversation` narrows
+ * the host's opaque messages to the renderer's own.
  */
 
 import type { ConversationMessage } from "../stores/conversationStore";
+import type { ChatHistoryEntry } from "@argus/remote-protocol";
 
-/** Lightweight summary stored in the index file — enough for list rendering. */
-export interface ChatHistoryEntry {
-  /** Agent that produced this conversation — absent on older records. */
-  agentId?: string;
-  /** Argus session the agent ran in — absent on older records. */
-  argusSessionId?: string;
-  createdAt: number;
-  endedAt: number;
-  id: string;
-  messageCount: number;
-  model?: string;
-  /** Agent that spawned this one — absent on older records. */
-  parentAgentId?: string;
-  /** Runner that produced the conversation — absent on older records. */
-  runnerId?: string;
-  sessionBranch: string;
-  sessionDescription: string;
-  sessionId: string;
-  title: string;
-  totalCost?: number;
-  totalDuration?: number;
-}
+export type {
+  ChatHistoryEntry,
+  ChatHistoryMessageMatch,
+  ChatHistorySearchResult,
+} from "@argus/remote-protocol";
 
-/** Full saved conversation — index entry + all messages. */
+/** Full saved conversation — index entry + the renderer's messages. */
 export interface SavedConversation extends ChatHistoryEntry {
   messages: ConversationMessage[];
-}
-
-/** A single snippet from a message that matched a search query. */
-export interface ChatHistoryMessageMatch {
-  matchEnd: number;
-  matchStart: number;
-  messageIndex: number;
-  role: "assistant" | "system" | "user";
-  snippet: string;
-}
-
-/** Entry + any matching message snippets for a search query. */
-export interface ChatHistorySearchResult {
-  entry: ChatHistoryEntry;
-  messageMatches: ChatHistoryMessageMatch[];
-  metaMatch: boolean;
 }
 
 /** Derive a short title from the first user message in a conversation. */

@@ -37,43 +37,7 @@ import {
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
-import {
-  saveConversation,
-  loadHistoryIndex,
-  loadConversation,
-  deleteHistoryEntry,
-  searchChatHistory,
-} from "@argus/host/services/agent/chatHistory";
-import {
-  createCheckpoint,
-  deleteCheckpoint,
-  restoreCheckpoint,
-} from "@argus/host/services/agent/checkpoints";
-import {
-  checkClaudeCli,
-  claimPrewarmAgent,
-  discardPrewarmAgent,
-  prewarmAgent,
-  restoreAgentAtTurn,
-  startAgent,
-  stopAgent,
-  interruptAgent,
-  sendAgentMessage,
-  listAgents,
-  respondToPermission,
-  setAgentEffort,
-  setAgentModel,
-  setAgentPermissionMode,
-} from "@argus/host/services/agent/claude";
-import {
-  clearQueue,
-  dequeueMessage,
-  enqueueMessage,
-  listQueue,
-  removeQueuedMessage,
-  updateQueuedMessage,
-  type QueuedImage,
-} from "@argus/host/services/agent/messageQueue";
+import { stopAgent } from "@argus/host/services/agent/claude";
 import {
   loadAppSettings,
   saveAppSettings,
@@ -218,7 +182,6 @@ import {
   listRunners as listLlmRunners,
   syncCustomRunners,
 } from "@argus/host/services/llm/registry";
-import { generateChatTitle } from "@argus/host/services/llm/titleGenerator";
 import { testMcpServer } from "@argus/host/services/mcp/connectivity";
 import {
   authenticate,
@@ -227,10 +190,6 @@ import {
 } from "@argus/host/services/mcp/oauth";
 import { listAuthorized, loadToken } from "@argus/host/services/mcp/oauthStore";
 import { listInheritedMcpServers } from "@argus/host/services/mcp/userConfig";
-import {
-  showAgentNotification,
-  type AgentNotificationInput,
-} from "@argus/host/services/notifications/osNotification";
 import {
   addSkipped as onboardingAddSkipped,
   argusDirPath,
@@ -882,110 +841,6 @@ export function registerIpcHandlers(): void {
     return null;
   });
 
-  // Agent commands
-  handle("check_claude_cli", "admin", () => checkClaudeCli());
-  handle("start_agent", "admin", async (a) => {
-    const info = await startAgent(
-      a.sessionId as string,
-      a.model as string | undefined,
-      a.permissionMode as string | undefined,
-      a.resumeSessionId as string | undefined,
-      a.appendSystemPrompt as string | undefined,
-      undefined,
-      undefined,
-      undefined, // reuseAgentId — IPC callers are always fresh starts
-      a.agentId as string | undefined, // presetAgentId — renderer-minted optimistic id
-      a.runnerId as string | undefined,
-    );
-    emitHostEvent("agent:started", info);
-
-    return info;
-  });
-  handle("stop_agent", "admin", (a) => stopAgent(a.agentId as string));
-  handle("restore_agent_at_turn", "admin", (a) =>
-    restoreAgentAtTurn({
-      agentId: a.agentId as string,
-      sourceClaudeSessionId: a.sourceClaudeSessionId as string,
-      keepTurnNumber: a.keepTurnNumber as number,
-      cutoffTimestampMs: a.cutoffTimestampMs as number,
-    }),
-  );
-  handle("interrupt_agent", "admin", (a) =>
-    interruptAgent(a.agentId as string),
-  );
-  handle("send_agent_message", "admin", (a) =>
-    sendAgentMessage(
-      a.agentId as string,
-      a.message as string,
-      a.images as { data: string; media_type: string }[] | undefined,
-    ),
-  );
-  handle("list_agents", "admin", (a) => listAgents(a.sessionId as string));
-  handle("respond_to_permission", "admin", (a) =>
-    respondToPermission(
-      a.agentId as string,
-      a.toolUseId as string,
-      a.decision as "allow" | "deny",
-      a.allowRule as string | undefined,
-      a.allowAll as boolean | undefined,
-      a.denyMessage as string | undefined,
-    ),
-  );
-  handle("set_agent_model", "admin", (a) =>
-    setAgentModel(a.agentId as string, a.model as string),
-  );
-  handle("set_agent_permission_mode", "admin", (a) =>
-    setAgentPermissionMode(a.agentId as string, a.mode as string),
-  );
-  handle("set_agent_effort", "admin", (a) =>
-    setAgentEffort(a.agentId as string, (a.level as string | null) ?? null),
-  );
-  handle("prewarm_agent", "admin", (a) => prewarmAgent(a.sessionId as string));
-  handle("claim_prewarm_agent", "admin", (a) =>
-    claimPrewarmAgent(a.agentId as string, {
-      model: a.model as string | undefined,
-      permissionMode: a.permissionMode as string | undefined,
-    }),
-  );
-  handle("discard_prewarm_agent", "admin", (a) =>
-    discardPrewarmAgent(a.agentId as string),
-  );
-
-  // Checkpoint commands — snapshot the worktree before each user prompt so
-  // it can later be restored from a chat message.
-  handle("create_checkpoint", "admin", (a) =>
-    createCheckpoint(a.sessionId as string),
-  );
-  handle("restore_checkpoint", "admin", (a) =>
-    restoreCheckpoint(a.sessionId as string, a.checkpointId as string),
-  );
-  handle("delete_checkpoint", "admin", (a) =>
-    deleteCheckpoint(a.sessionId as string, a.checkpointId as string),
-  );
-
-  // Chat history commands
-  handle("save_chat_history", "admin", (a) =>
-    saveConversation(
-      a.repoRoot as string,
-      a.conversation as Parameters<typeof saveConversation>[1],
-    ),
-  );
-  handle("list_chat_history", "admin", (a) =>
-    loadHistoryIndex(a.repoRoot as string),
-  );
-  handle("search_chat_history", "admin", (a) =>
-    searchChatHistory(a.repoRoot as string, a.query as string),
-  );
-  handle("load_chat_history", "admin", (a) =>
-    loadConversation(a.repoRoot as string, a.historyId as string),
-  );
-  handle("delete_chat_history", "admin", (a) =>
-    deleteHistoryEntry(a.repoRoot as string, a.historyId as string),
-  );
-  handle("generate_session_title", "admin", (a) =>
-    generateChatTitle(a.firstMessage as string),
-  );
-
   // Terminal commands.
   //
   // `create_terminal` deliberately does NOT accept a free-form `command`
@@ -1184,58 +1039,6 @@ export function registerIpcHandlers(): void {
   handle("list_popped_out_agents", "admin", () =>
     Promise.resolve(Array.from(agentPopouts.keys())),
   );
-
-  handle("list_queued_messages", "admin", (a) =>
-    Promise.resolve(listQueue(a.agentId as string)),
-  );
-  handle("queue_message", "admin", (a) =>
-    Promise.resolve(
-      enqueueMessage(a.agentId as string, {
-        text: a.text as string,
-        displayText: a.displayText as string | undefined,
-        images: a.images as QueuedImage[] | undefined,
-        author: a.author as string | undefined,
-      }),
-    ),
-  );
-  handle("remove_queued_message", "admin", (a) => {
-    removeQueuedMessage(a.agentId as string, a.id as string);
-
-    return Promise.resolve();
-  });
-  handle("update_queued_message", "admin", (a) => {
-    updateQueuedMessage(a.agentId as string, a.id as string, a.text as string);
-
-    return Promise.resolve();
-  });
-  handle("clear_queued_messages", "admin", (a) => {
-    clearQueue(a.agentId as string);
-
-    return Promise.resolve();
-  });
-  handle("dequeue_message", "admin", (a) =>
-    Promise.resolve(dequeueMessage(a.agentId as string) ?? null),
-  );
-
-  handle("publish_agent_snapshot", "admin", (a) => {
-    const agentId = a.agentId as string;
-    const snapshot = a.snapshot as string;
-    if (!agentId) {
-      return Promise.resolve();
-    }
-    if (typeof snapshot !== "string" || snapshot.length === 0) {
-      appState.agentSnapshots.delete(agentId);
-    } else {
-      appState.agentSnapshots.set(agentId, snapshot);
-    }
-
-    return Promise.resolve();
-  });
-  handle("get_agent_snapshot", "admin", (a) => {
-    const agentId = a.agentId as string;
-
-    return Promise.resolve(appState.agentSnapshots.get(agentId) ?? null);
-  });
 
   // Video-input viewer — ensure macOS camera (capture-card) access is granted.
   // Returns the resulting TCC status so the renderer can surface it.
@@ -1480,15 +1283,6 @@ export function registerIpcHandlers(): void {
   toolHandle("debug_run_command", "admin", "device-debug", (a) =>
     runDebugCommand(a.deviceKey as string, a.args as string[]),
   );
-
-  // The renderer decides *what* a notification says (it holds the session and
-  // conversation state); the main process shows it, because only there can
-  // Electron render quick-action buttons, and fans it out to remote devices.
-  handle("notify_agent", "admin", (a) => {
-    showAgentNotification(a.payload as AgentNotificationInput, {
-      showLocal: a.showLocal as boolean,
-    });
-  });
 
   // Shell
   handle("reveal_in_finder", "host", (a) => revealInFinder(a.path as string));

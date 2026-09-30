@@ -1,5 +1,4 @@
 import type { Equal, Expect } from "./typeEquality";
-import type { AgentInfo as HostAgentInfo } from "../services/agent/models";
 import type { ProjectEntry as HostProjectEntry } from "../services/mcp/projectDiscovery";
 import type { HostSnapshot as HostHostSnapshot } from "../services/session/hostState";
 import type {
@@ -12,7 +11,6 @@ import type {
   SessionStatus as HostSessionStatus,
 } from "../services/session/models";
 import type {
-  AgentInfo,
   ForkReplayOp,
   ForkSessionResult,
   HostSnapshot,
@@ -27,7 +25,6 @@ export type SessionModelChecks = [
   Expect<Equal<SessionStatus, HostSessionStatus>>,
   Expect<Equal<Session, HostSession>>,
   Expect<Equal<ProjectEntry, HostProjectEntry>>,
-  Expect<Equal<AgentInfo, HostAgentInfo>>,
   Expect<Equal<HostSnapshot, HostHostSnapshot>>,
   Expect<Equal<ForkReplayOp, HostForkReplayOp>>,
   Expect<Equal<ForkSessionResult, HostForkSessionResult>>,
