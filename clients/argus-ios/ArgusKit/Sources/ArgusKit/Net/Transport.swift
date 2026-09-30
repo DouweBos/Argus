@@ -195,6 +195,23 @@ public actor Transport {
     _ params: Params,
     as _: Result.Type = Result.self
   ) async throws -> Result {
+    try await send(method.rawValue, params, as: Result.self)
+  }
+
+  /// A generated command: params and result are typed by the host's catalog.
+  @discardableResult
+  public func request<C: RemoteCommand>(
+    _ command: C.Type,
+    _ params: C.Params
+  ) async throws -> C.Result {
+    try await send(C.name, params, as: C.Result.self)
+  }
+
+  private func send<Params: Encodable, Result: Decodable>(
+    _ method: String,
+    _ params: Params,
+    as _: Result.Type
+  ) async throws -> Result {
     guard session != nil else { throw TransportError.notReady }
     let id = "r\(sendSeq)"
     let envelope = RequestEnvelope(seq: sendSeq, id: id, method: method, params: params)

@@ -439,6 +439,10 @@ final class AppStore {
       guard let notification = try? ProtocolCodec.convert(
         envelope.payload, to: RemoteNotification.self) else { return }
       NotificationPresenter.present(notification)
+
+    case .ipc:
+      // Raw broadcasts only reach admin devices, which a phone never is.
+      break
     }
   }
 
