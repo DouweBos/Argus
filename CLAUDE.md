@@ -8,7 +8,9 @@ Electron agentic IDE for mobile development. Multiple Claude Code agents work in
 - `pnpm build` — type-check + Vite + electron TS compile
 - `pnpm build:app` — build + electron-builder (.app/.dmg)
 - `pnpm hotswap` — build, splice into the installed `/Applications/Argus.app`, re-sign, and relaunch it (`--no-restart`, `--no-build`, `--web`; `ARGUS_APP`/`ARGUS_SIGN_IDENTITY` to retarget). Needs the Developer ID cert in the keychain — writing to the asar breaks the sealed-resource hash and macOS rejects the app as damaged without a re-sign. Agents can run this to ship their own change into the live app; the relaunch is detached, so it survives the app going down.
-- `pnpm lint` — `tsc --noEmit && eslint && prettier --check`
+- `pnpm lint` — `tsc --noEmit && eslint && prettier --check`, plus `pnpm gen:protocol --check`
+- `pnpm gen:protocol` — regenerate ArgusKit's Swift wire types (`ArgusKit/Sources/ArgusKit/Generated/`) from the command catalog
+- `pnpm dev:host` / `pnpm start:host` — the host core as a plain Node process (`dist-host/argus-host.js`, no Electron). Prints the gateway address; type `pair` to pair a device from the terminal
 - `pnpm storybook` — Peacock design system at :6006
 - Tooling via `mise.toml` (node 24, pnpm 10)
 
@@ -25,9 +27,9 @@ pnpm monorepo. Three-panel layout: workspace sidebar / agent control / runtime &
 
 React 19 + TypeScript + Vite 7. Zustand stores in `src/stores/`. CSS Modules colocated with components; globals in `src/styles/global.css`.
 
-- IPC: typed wrappers in `src/lib/ipc.ts` — always add new commands here, never call `window.argus.invoke()` directly
+- IPC: typed wrappers in `src/lib/ipc.ts` — always add new commands here, never call `window.argus.invoke()` directly. `invoke` is typed from the command catalog, so a wrapper's params and result must match it
 - Events: `src/lib/events.ts` `listen()`; subscribe via `src/hooks/useIpcEvent.ts`
-- Shared types: `src/lib/types.ts` (keep in sync with backend manually)
+- Shared types: `src/lib/types.ts`. Anything a command returns is a re-export from `@argus/remote-protocol`; only renderer-only types are defined here
 - Components organized by panel: `layout/`, `sidebar/`, `agent/`, `runtime/`, `home/`
 
 ### Host core (`packages/host`)
@@ -36,6 +38,8 @@ Node.js + TypeScript. No Electron — a Linux box or a CLI can run it.
 
 - `src/state.ts` — `AppState` singleton with `Map`s (no locking; Node is single-threaded)
 - `src/platform.ts` — `HostPlatform`: the seam for everything plain Node can't do (`openExternal`, `openPath`, `revealInFinder`, `secretStorage`, `appVersion`, `isPackaged`, `resourcesPath`, `userDataPath`, `notify`, `isForeground`, `focusUi`, `closeDevicePopout`). `nodeHostPlatform()` is the headless implementation; every capability degrades to a documented no-op
+- `src/boot.ts` — `startHost()` / `shutdownHost()`: everything the core runs, shared by the desktop and `src/bin/argus-host.ts`
+- `src/commands/<domain>.ts` — every host command, registered with `defineTypedCommand` against the catalog in `packages/remote-protocol/src/commands/`
 - `src/bus.ts` — transport-agnostic event fan-out. Services call `emitHostEvent(channel, payload)`; transports register an `addHostEventSink`
 - `src/services/` — one dir per domain: `session/` (git worktree + setup + merge), `agent/` (Claude Code subprocess, stream-json), `terminal/` (node-pty), `simulator/` (simctl + native bridge), `file/`, `command/` (the registry), `remote/` (the Noise/WS gateway)
 - `native/argus-sim-bridge/` — standalone Swift/ObjC binary for simulator capture + HID injection, JSON-over-stdio
@@ -44,9 +48,9 @@ Node.js + TypeScript. No Electron — a Linux box or a CLI can run it.
 
 Thin. Window lifecycle and the bridges into the core.
 
-- `main.ts` — BrowserWindow, lifecycle, PATH fixup
+- `main.ts` — BrowserWindow, lifecycle, protocol/CSP, tray/menu/updater; the host itself comes up through `startHost()`
 - `preload.ts` — exposes `window.argus` via `contextBridge`
-- `ipc.ts` — `defineCommand` registrations, routes to host services
+- `shellCommands.ts` — the only commands the shell registers itself: windows, popouts, dialogs, the updater, Handoff
 - `hostPlatform.ts` — the Electron `HostPlatform` implementation
 - `broadcast.ts` — forwards host bus events to every live renderer
 - `ipcBridge.ts` — publishes every registry command on `ipcMain`
@@ -94,12 +98,13 @@ Thin. Window lifecycle and the bridges into the core.
 
 Every Peacock component ships with a Storybook story covering meaningful states.
 
-**IPC contract (adding a command):**
+**Command contract (adding a command):**
 
 1. Handler in `packages/host/src/services/<domain>/`
-2. Register in `electron/ipc.ts` via `handle('command_name', handler)`
-3. Typed wrapper in `src/lib/ipc.ts`
-4. Types in `src/lib/types.ts` if new
+2. Catalog entry in `packages/remote-protocol/src/commands/<domain>.ts` — `{ tier, params, result, tool? }` zod schemas; result models in `models/<domain>.ts`. Params keep the wire keys the sender uses (camelCase args stay camelCase). A model mirroring a host interface gets an `Expect<Equal<…>>` check in `packages/host/src/commands/<domain>.typetest.ts`
+3. Register in `packages/host/src/commands/<domain>.ts` via `defineTypedCommand("command_name", (p) => …)` — params are validated at dispatch, results checked in dev and tests. Window/dialog-bound commands register in `electron/shellCommands.ts` instead (catalog domain `shell`)
+4. Typed wrapper in `src/lib/ipc.ts`; re-export any new result type from `src/lib/types.ts`
+5. `pnpm gen:protocol` to regenerate the Swift types
 
 **The iOS client is a first-class citizen.** Every feature you add or change on the desktop also lands in `clients/argus-ios` in the same PR. The only excuses are that it genuinely makes no sense on a phone (window management, tray, simulator HID injection) or that exposing it over the gateway is a real security risk — say which, don't just skip it. "Desktop first, phone later" is how the phone falls behind.
 
