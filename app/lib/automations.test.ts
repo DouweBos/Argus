@@ -64,6 +64,7 @@ describe("labels", () => {
         model: null,
         runner: null,
         template_id: null,
+        seeded_playbook_hash: null,
         trigger: {
           kind: "schedule",
           cron: "0 9 * * *",
@@ -92,6 +93,8 @@ describe("labels", () => {
       host_agent_id: null,
       cost_usd: null,
       report_markdown: null,
+      report_blocks: null,
+      feedback: [],
       scratch: null,
       error: null,
       report_read: true,
