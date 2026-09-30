@@ -39,11 +39,6 @@ import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
 import { stopAgent } from "@argus/host/services/agent/claude";
 import {
-  loadAppSettings,
-  saveAppSettings,
-  type AppSettings,
-} from "@argus/host/services/appSettings/store";
-import {
   draftAutomation,
   revisePlaybook,
 } from "@argus/host/services/automation/authoring";
@@ -142,13 +137,6 @@ import {
   execConductor,
 } from "@argus/host/services/conductor/logger";
 import { openDeepLink } from "@argus/host/services/conductor/openLink";
-import {
-  getConductorStatus,
-  readBundledVersion,
-  setConductorOverrideVersion,
-} from "@argus/host/services/conductor/override";
-import { listConductorVersions } from "@argus/host/services/conductor/registry";
-import { checkDependencies } from "@argus/host/services/dependencies/check";
 import { listGhIssues } from "@argus/host/services/github/issues";
 import {
   ghPrClose,
@@ -239,16 +227,7 @@ import {
 } from "@argus/host/services/remote/tailscaleSetup";
 import { autofillPullRequestBody } from "@argus/host/services/session/prAutofill";
 import { readPullRequestTemplate } from "@argus/host/services/session/pullRequest";
-import {
-  listEditors,
-  openInCustomEditor,
-  openInEditor,
-} from "@argus/host/services/shell/editors";
-import {
-  openExternalUrl,
-  openPath,
-  revealInFinder,
-} from "@argus/host/services/shell/operations";
+import { openExternalUrl } from "@argus/host/services/shell/operations";
 import { describeSignalSources } from "@argus/host/services/signals/registry";
 import {
   checkAndroidTools,
@@ -278,21 +257,7 @@ import {
   simulatorSetFold,
   simulatorSetOrientation,
 } from "@argus/host/services/simulator/ios";
-import { getAnonymousId } from "@argus/host/services/telemetry/anonymousId";
-import {
-  capture as telemetryCapture,
-  captureException as telemetryCaptureException,
-  captureFeedback as telemetryCaptureFeedback,
-  getTelemetryMode,
-  isTelemetryConfigured,
-  setTelemetryMode,
-} from "@argus/host/services/telemetry/telemetry";
-import {
-  getEnabledToolsForRenderer,
-  toolEnabled,
-  setEnabledToolsFromRenderer,
-} from "@argus/host/services/tools/state";
-import { getUiState, setUiState } from "@argus/host/services/uiState";
+import { toolEnabled } from "@argus/host/services/tools/state";
 import { appState } from "@argus/host/state";
 import { createLogger } from "../app/lib/logger";
 import {
@@ -639,11 +604,6 @@ export function registerIpcHandlers(): void {
     resolveProposal(a.id as string, a.note as string | undefined),
   );
 
-  handle("get_app_settings", "admin", () => loadAppSettings());
-  handle("set_app_settings", "admin", (a) =>
-    saveAppSettings(a.settings as AppSettings),
-  );
-
   // Remote access (phone/web control).
   handle("remote_get_status", "admin", () => getRemoteStatus());
   handle("remote_set_config", "host", (a) =>
@@ -806,17 +766,6 @@ export function registerIpcHandlers(): void {
     };
   });
   handle("mcp_oauth_list_authorized", "admin", () => listAuthorized());
-
-  // Dependency / system probes
-  handle("check_dependencies", "admin", () => checkDependencies());
-
-  // UI state
-  handle("ui_state_get", "admin", (a) => getUiState(a.key as string));
-  handle("ui_state_set", "admin", (a) => {
-    setUiState(a.key as string, a.value as string);
-
-    return null;
-  });
 
   // Simulator commands. The picker (`list_simulators`) and Xcode probe stay
   // ungated — they're cheap, and the renderer uses them to show "Install
@@ -1221,32 +1170,6 @@ export function registerIpcHandlers(): void {
     runDebugCommand(a.deviceKey as string, a.args as string[]),
   );
 
-  // Shell
-  handle("reveal_in_finder", "host", (a) => revealInFinder(a.path as string));
-  handle("open_path", "host", (a) => openPath(a.path as string));
-  handle("open_external_url", "host", (a) => openExternalUrl(a.url as string));
-  handle("list_editors", "admin", () => listEditors());
-  handle("open_in_editor", "host", (a) =>
-    openInEditor(a.editorId as string, a.path as string),
-  );
-  handle("open_in_custom_editor", "host", (a) =>
-    openInCustomEditor(a.command as string, a.path as string),
-  );
-
-  // Tools — backend mirror of the renderer's enable map.
-  handle("get_enabled_tools", "admin", () => getEnabledToolsForRenderer());
-  handle("set_enabled_tools", "admin", (a) => {
-    setEnabledToolsFromRenderer(
-      (a.userEnabled ?? {}) as Partial<Record<string, boolean>>,
-    );
-  });
-  handle("get_conductor_status", "admin", () => getConductorStatus());
-  handle("list_conductor_versions", "admin", () =>
-    listConductorVersions(readBundledVersion()),
-  );
-  handle("set_conductor_version", "admin", (a) =>
-    setConductorOverrideVersion((a.version ?? null) as string | null),
-  );
   // Image context menu
   handle("show_image_context_menu", "host", async (a) => {
     const win = getMainWindow();
@@ -1430,41 +1353,4 @@ export function registerIpcHandlers(): void {
   });
   handle("onboarding_argus_dir_path", "admin", () => argusDirPath());
 
-  // Telemetry — anonymous PostHog. Renderer asks for the install id + current
-  // enable state at boot, and pushes opt-in/opt-out toggles back here.
-  handle("get_app_version", "admin", () => app.getVersion());
-  handle("telemetry_get_init", "admin", () => ({
-    distinctId: getAnonymousId(),
-    mode: getTelemetryMode(),
-    configured: isTelemetryConfigured(),
-    appVersion: app.getVersion(),
-  }));
-  handle("telemetry_set_mode", "admin", (a) => {
-    const next = a.mode;
-    if (next === "presence" || next === "full") {
-      setTelemetryMode(next);
-    }
-  });
-  handle("telemetry_capture", "admin", (a) => {
-    // The renderer is responsible for matching the event catalog (typed on
-    // its side via app/lib/telemetryEvents.ts). At the IPC boundary it
-    // arrives as opaque strings; we trust the renderer's type-checked call
-    // sites and forward as-is.
-    telemetryCapture(
-      String(a.event) as Parameters<typeof telemetryCapture>[0],
-      (a.props ?? {}) as never,
-    );
-  });
-  handle("telemetry_capture_exception", "admin", (a) => {
-    const message = String(a.message ?? "renderer error");
-    const stack = typeof a.stack === "string" ? a.stack : undefined;
-    const err = new Error(message);
-    if (stack) {
-      err.stack = stack;
-    }
-    telemetryCaptureException(err, (a.props as Record<string, unknown>) ?? {});
-  });
-  handle("telemetry_capture_feedback", "admin", (a) => {
-    telemetryCaptureFeedback(String(a.message ?? ""));
-  });
 }

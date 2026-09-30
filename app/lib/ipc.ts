@@ -97,6 +97,7 @@ import type {
   Checkpoint,
   CommandName,
   ConflictBlobs,
+  EditorDescriptor,
   ForkReplayOp,
   ForkSessionResult,
   FormatPatchResult,
@@ -119,6 +120,8 @@ import type {
   ResultOf,
   RunTerminalResult,
   SshKey,
+  TelemetryInit,
+  TelemetryMode,
   TerminalSummary,
   EnrichedBranch,
   GitRemoteBranch as RemoteBranch,
@@ -2284,11 +2287,7 @@ export const openPath = (path: string): Promise<void> =>
 export const openExternalUrl = (url: string): Promise<void> =>
   invoke("open_external_url", { url });
 
-export interface EditorDescriptor {
-  available: boolean;
-  id: string;
-  name: string;
-}
+export type { EditorDescriptor } from "@argus/remote-protocol";
 
 export const listEditors = (): Promise<EditorDescriptor[]> =>
   invoke("list_editors");
@@ -2310,7 +2309,7 @@ export const showImageContextMenu = (
 export const getUiState = (key: string): Promise<string | null> =>
   invoke("ui_state_get", { key });
 
-export const setUiState = (key: string, value: string): Promise<void> =>
+export const setUiState = (key: string, value: string): Promise<null> =>
   invoke("ui_state_set", { key, value });
 
 // Onboarding
@@ -2488,13 +2487,7 @@ export const updaterQuitAndInstall = (): Promise<void> =>
   invoke("updater_quit_and_install");
 
 // Telemetry
-export type TelemetryMode = "full" | "presence";
-export interface TelemetryInit {
-  appVersion: string;
-  configured: boolean;
-  distinctId: string;
-  mode: TelemetryMode;
-}
+export type { TelemetryInit, TelemetryMode } from "@argus/remote-protocol";
 export const getTelemetryInit = (): Promise<TelemetryInit> =>
   invoke("telemetry_get_init");
 export const setTelemetryModeOnMain = (mode: TelemetryMode): Promise<void> =>

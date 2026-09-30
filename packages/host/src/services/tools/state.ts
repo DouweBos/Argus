@@ -138,7 +138,7 @@ export function toolEnabled(id: ToolId): boolean {
 
 /** Bulk update — called by the renderer's IPC sync after the user toggles. */
 export function setEnabledToolsFromRenderer(
-  next: Partial<Record<ToolId, boolean>>,
+  next: Partial<Record<string, boolean>>,
 ): void {
   const sanitized: Partial<Record<ToolId, boolean>> = {};
   for (const [id, value] of Object.entries(next)) {
