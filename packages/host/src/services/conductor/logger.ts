@@ -83,6 +83,21 @@ function truncate(s: string, max = 2000): string {
   return `${s.slice(0, max)}… (+${s.length - max} bytes)`;
 }
 
+/** Target `deviceKey` unless the args already name a device. */
+export function ensureDeviceFlag(deviceKey: string, args: string[]): string[] {
+  return args.some((a) => a === "--device" || a === "-d")
+    ? args
+    : [...args, "--device", deviceKey];
+}
+
+/** Run a user-typed conductor command against a device, for the device log. */
+export async function runConductorCommand(
+  deviceKey: string,
+  args: string[],
+): Promise<void> {
+  await execConductor(deviceKey, ensureDeviceFlag(deviceKey, args));
+}
+
 /**
  * Execute the conductor CLI with logging. The `deviceKey` should be the value
  * that shows up after `--device` (or a best-effort identifier if the call is

@@ -39,6 +39,7 @@ import type {
   DependencyReport,
   DeviceInfo,
   DevicePlatform,
+  HostDevicePlatform,
   DirEntry,
   ExampleProject,
   FileStat,
@@ -97,6 +98,8 @@ import type {
   Checkpoint,
   CommandName,
   ConflictBlobs,
+  DebugCommandResult,
+  DeviceInputEndpoint,
   EditorDescriptor,
   ForkReplayOp,
   ForkSessionResult,
@@ -111,7 +114,10 @@ import type {
   GitTag,
   GitWorktree,
   ImageAttachment,
+  InjectionProbe,
+  InstalledApp,
   LfsFiles,
+  NodeProps,
   ParamsIn,
   PullV2Opts,
   PushV2Opts,
@@ -2030,12 +2036,7 @@ export const simulatorSetOrientation = (
 ): Promise<SimulatorDeviceState> =>
   invoke("simulator_set_orientation", { udid, orientation });
 
-export interface DeviceInputEndpoint {
-  device: string;
-  inputPort: number;
-  platform: string;
-  url: string;
-}
+export type { DeviceInputEndpoint } from "@argus/remote-protocol";
 
 /**
  * Resolve conductor's streaming-input WebSocket for a device (starting it if
@@ -2172,7 +2173,7 @@ export const browserGetMjpegPort = (): Promise<number> =>
 export const listDevices = (): Promise<DeviceInfo[]> => invoke("list_devices");
 
 export const stopDevice = (
-  platform: DevicePlatform,
+  platform: HostDevicePlatform,
   deviceKey: string,
 ): Promise<void> => invoke("stop_device", { platform, deviceKey });
 
@@ -2186,21 +2187,14 @@ export const runConductorCommand = (
 ): Promise<void> => invoke("run_conductor_command", { deviceKey, args });
 
 export const inspectionCapture = <T = unknown>(deviceKey: string): Promise<T> =>
-  invoke("inspection_capture", { deviceKey });
+  invoke("inspection_capture", { deviceKey }) as Promise<T>;
 
-export interface InjectionProbe {
-  foregroundApp: string | null;
-  injected: boolean;
-  isSpringboard: boolean;
-}
+export type { InjectionProbe } from "@argus/remote-protocol";
 
 export const inspectionProbe = (deviceKey: string): Promise<InjectionProbe> =>
   invoke("inspection_probe", { deviceKey });
 
-export interface InstalledApp {
-  bundleId: string;
-  name: string;
-}
+export type { InstalledApp } from "@argus/remote-protocol";
 
 export const inspectionListApps = (
   deviceKey: string,
@@ -2220,15 +2214,7 @@ export const inspectionSetProperty = (
 ): Promise<{ ok: boolean }> =>
   invoke("inspection_set_property", { deviceKey, nodeId, key, value });
 
-export interface NodeProps {
-  class?: string;
-  id?: string;
-  isFabric?: boolean;
-  note?: string;
-  props?: Record<string, unknown> | null;
-  rawProps?: Record<string, unknown> | null;
-  status?: string;
-}
+export type { NodeProps } from "@argus/remote-protocol";
 
 export const inspectionNodeProps = (
   deviceKey: string,
@@ -2236,21 +2222,15 @@ export const inspectionNodeProps = (
 ): Promise<NodeProps> => invoke("inspection_node_props", { deviceKey, nodeId });
 
 // Debug panel
-export interface DebugCommandResult {
-  durationMs: number;
-  error?: string;
-  ok: boolean;
-  stderr?: string;
-  stdout: string;
-}
+export type { DebugCommandResult } from "@argus/remote-protocol";
 
 export const debugStartStream = (
   streamId: string,
   deviceKey: string,
   args: string[],
-): Promise<void> => invoke("debug_start_stream", { streamId, deviceKey, args });
+): Promise<null> => invoke("debug_start_stream", { streamId, deviceKey, args });
 
-export const debugStopStream = (streamId: string): Promise<void> =>
+export const debugStopStream = (streamId: string): Promise<null> =>
   invoke("debug_stop_stream", { streamId });
 
 export const debugRunCommand = (
