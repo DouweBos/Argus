@@ -1492,6 +1492,7 @@ export async function deleteSession(
     appState.watchers.delete(id);
   }
   detachGitWatcher(id);
+  stopAutoFetch(id);
 
   // Notify the renderer that agents were killed.
   for (const agentId of killedAgentIds) {
