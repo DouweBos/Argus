@@ -797,6 +797,8 @@ export interface Automation {
   created_at: number;
   description: string;
   enabled: boolean;
+  /** The user's additions, appended after the playbook on every run. */
+  extra_instructions: string;
   /** The limits it is held to. */
   guardrails: AutomationGuardrails;
   id: string;
@@ -974,6 +976,7 @@ export interface CreateAutomationInput {
   autonomy?: AutonomyLevel | null;
   description?: string;
   enabled?: boolean;
+  extra_instructions?: string;
   guardrails?: Partial<AutomationGuardrails>;
   model?: string | null;
   name: string;

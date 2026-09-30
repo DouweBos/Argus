@@ -26,6 +26,7 @@ export function buildPrompt(
 
   return [
     automation.playbook.trim(),
+    ...extraInstructionsSection(automation),
     "",
     "---",
     "",
@@ -62,6 +63,26 @@ export function buildPrompt(
     "",
     "Whatever you write, no preamble, no offer to do more, no request for approval. If `emit_report` is not available to you, write the report as your final message in markdown instead.",
   ].join("\n");
+}
+
+/**
+ * The user's additions to the playbook. They come last and win a conflict, so
+ * a built-in can be bent without its playbook being edited.
+ */
+function extraInstructionsSection(automation: Automation): string[] {
+  const extra = automation.extra_instructions.trim();
+  if (!extra) {
+    return [];
+  }
+
+  return [
+    "",
+    "## Extra instructions",
+    "",
+    "The user added these on top of the playbook above. Follow both; where they disagree, these win.",
+    "",
+    extra,
+  ];
 }
 
 /**

@@ -57,6 +57,7 @@ export interface EventMap {
   app_error: { message: string; scope: string };
   app_launched: undefined;
   app_quit: undefined;
+  automation_extra_instructions_changed: { has_instructions: boolean };
   automation_github_read: {
     success: boolean;
     tool: "artifact_search" | "get";

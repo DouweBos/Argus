@@ -456,6 +456,22 @@ The same button is in the iOS app's automation editor, for devices granted
 control. The rewrite runs on the computer either way — the phone only sends the
 instruction and shows what came back.
 
+### Adding to a playbook without editing it
+
+**Extra instructions**, under the playbook, is for the rule you want on top of
+what is already there — "skip anything labelled `needs-design`", "only look at
+the mobile team's issues". Every run gets them straight after the playbook, and
+where the two disagree the extra instructions win.
+
+This is the way to bend a built-in. Once you edit a built-in's playbook it is
+yours, and new releases stop improving it; extra instructions leave the
+playbook stock, so it keeps taking those updates while your additions stay.
+
+They change what a run is told, not what it is allowed: autonomy and guardrails
+are enforced in Argus whatever the instructions say. A quick run has none — its
+playbook is written for the one run anyway. The field is in the iOS app's
+automation editor too.
+
 ---
 
 ## Memory

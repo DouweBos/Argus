@@ -30,6 +30,7 @@ function automation(
     created_at: NOW - 30 * 24 * HOURS,
     description,
     enabled: true,
+    extra_instructions: "",
     guardrails: GUARDRAILS,
     id,
     last_run_at: NOW - lastRunHoursAgo * HOURS,

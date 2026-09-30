@@ -35,6 +35,7 @@ function automation(overrides: Partial<Automation> = {}): Automation {
     scope: { repo_roots: ["/repo"] },
     source_ids: [],
     playbook: "do the thing",
+    extra_instructions: "",
     autonomy: null,
     guardrails: DEFAULT_GUARDRAILS,
     model: null,

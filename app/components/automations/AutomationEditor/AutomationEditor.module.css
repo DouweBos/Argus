@@ -73,6 +73,11 @@
   line-height: 1.55;
 }
 
+.extraInstructions {
+  min-height: 96px;
+  line-height: 1.55;
+}
+
 .error {
   margin: 0;
   font-size: 12px;

@@ -30,6 +30,8 @@ struct AutomationFields: View {
     scope
     behaviour
     playbook
+    // Nil means the computer is too old to keep them, so don't offer the field.
+    if showsSchedule, draft.extraInstructions != nil { extraInstructions }
   }
 
   private var basics: some View {
@@ -121,6 +123,19 @@ struct AutomationFields: View {
       RevisePlaybookSheet(playbook: draft.playbook, name: draft.name) { rewritten in
         draft.playbook = rewritten
       }
+    }
+  }
+
+  private var extraInstructions: some View {
+    Field(
+      label: "EXTRA INSTRUCTIONS",
+      caption: "Added after the playbook on every run; they win where the two disagree."
+    ) {
+      ThemedTextField(
+        placeholder: "Skip anything labelled needs-design.",
+        text: Binding(
+          get: { draft.extraInstructions ?? "" }, set: { draft.extraInstructions = $0 }),
+        multiline: true, lines: 3...12, mono: true)
     }
   }
 
