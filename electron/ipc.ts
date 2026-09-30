@@ -170,18 +170,6 @@ import {
   probeInjection,
 } from "@argus/host/services/inspection/launcher";
 import { getNodeProps } from "@argus/host/services/inspection/props";
-import { setAgentRunner } from "@argus/host/services/llm/agentRunner";
-import { CUSTOM_RUNNER_PRESETS } from "@argus/host/services/llm/customRunners/presets";
-import {
-  deleteCustomRunner,
-  listCustomRunners,
-  saveCustomRunner,
-  type CustomRunner,
-} from "@argus/host/services/llm/customRunners/store";
-import {
-  listRunners as listLlmRunners,
-  syncCustomRunners,
-} from "@argus/host/services/llm/registry";
 import { testMcpServer } from "@argus/host/services/mcp/connectivity";
 import {
   authenticate,
@@ -1441,43 +1429,6 @@ export function registerIpcHandlers(): void {
     resetOnboarding();
   });
   handle("onboarding_argus_dir_path", "admin", () => argusDirPath());
-
-  handle("llm_list_runners", "admin", () =>
-    listLlmRunners().map((r) => ({
-      id: r.id,
-      displayName: r.displayName,
-      capabilities: r.capabilities(),
-      isCustom: r.isCustom ?? false,
-      baseRunnerId: r.baseRunnerId ?? null,
-      models: r.models?.() ?? [],
-      defaultModel: r.defaultModel?.() ?? null,
-    })),
-  );
-
-  // Custom runners — official runners re-pointed at another endpoint. Every
-  // mutation re-syncs the registry so the picker and resolver see the change
-  // without an app restart.
-  // Re-binding one agent to another runner. Only legal while that agent has
-  // no conversation yet — the handler enforces it.
-  handle("set_agent_runner", "admin", (a) =>
-    setAgentRunner(a.agentId as string, a.runnerId as string).then(() => null),
-  );
-  handle("llm_list_custom_runners", "admin", () => listCustomRunners());
-  handle(
-    "llm_list_custom_runner_presets",
-    "admin",
-    () => CUSTOM_RUNNER_PRESETS,
-  );
-  handle("llm_save_custom_runner", "admin", (a) => {
-    const saved = saveCustomRunner(a.runner as Partial<CustomRunner>);
-    syncCustomRunners();
-
-    return saved;
-  });
-  handle("llm_delete_custom_runner", "admin", (a) => {
-    deleteCustomRunner(a.id as string);
-    syncCustomRunners();
-  });
 
   // Telemetry — anonymous PostHog. Renderer asks for the install id + current
   // enable state at boot, and pushes opt-in/opt-out toggles back here.
