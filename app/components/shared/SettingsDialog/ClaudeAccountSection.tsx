@@ -171,7 +171,7 @@ export function ClaudeAccountSection() {
   };
 
   /** Wrap a mutation so failures surface and the list always re-reads. */
-  const run = async (action: () => Promise<void>) => {
+  const run = async (action: () => Promise<unknown>) => {
     setBusy(true);
     setError(null);
     try {
