@@ -300,17 +300,6 @@ import {
   setTelemetryMode,
 } from "@argus/host/services/telemetry/telemetry";
 import {
-  createTerminal,
-  createRunTerminal,
-  listTerminals,
-  startTerminal,
-  destroyTerminal,
-  stopTerminal,
-  terminalWrite,
-  terminalResize,
-  updateTerminalTitle,
-} from "@argus/host/services/terminal/multiplexer";
-import {
   getEnabledToolsForRenderer,
   toolEnabled,
   setEnabledToolsFromRenderer,
@@ -840,46 +829,6 @@ export function registerIpcHandlers(): void {
 
     return null;
   });
-
-  // Terminal commands.
-  //
-  // `create_terminal` deliberately does NOT accept a free-form `command`
-  // parameter. Allowing the renderer (or any caller transitively reaching this
-  // IPC) to inject an arbitrary `sh -c <command>` would turn any renderer
-  // compromise (XSS via agent/file/MCP-controlled markdown) into full RCE.
-  // Callers that need to start the session's configured run command must
-  // use `create_run_terminal`, which resolves the command server-side from
-  // `.argus.json`.
-  handle("create_terminal", "admin", (a) =>
-    createTerminal(
-      a.sessionId as string,
-      a.subDir as string | undefined,
-      undefined,
-      a.title as string | undefined,
-    ),
-  );
-  handle("create_run_terminal", "admin", (a) =>
-    createRunTerminal(a.sessionId as string, a.title as string | undefined),
-  );
-  handle("list_terminals", "admin", (a) =>
-    listTerminals(a.sessionId as string),
-  );
-  handle("update_terminal_title", "admin", (a) =>
-    updateTerminalTitle(a.terminalId as string, a.title as string),
-  );
-  handle("start_terminal", "admin", (a) =>
-    startTerminal(a.sessionId as string, a.cols as number, a.rows as number),
-  );
-  handle("destroy_terminal", "admin", (a) =>
-    destroyTerminal(a.sessionId as string),
-  );
-  handle("stop_terminal", "admin", (a) => stopTerminal(a.sessionId as string));
-  handle("terminal_write", "admin", (a) =>
-    terminalWrite(a.sessionId as string, a.data as string),
-  );
-  handle("terminal_resize", "admin", (a) =>
-    terminalResize(a.sessionId as string, a.cols as number, a.rows as number),
-  );
 
   // Simulator commands. The picker (`list_simulators`) and Xcode probe stay
   // ungated — they're cheap, and the renderer uses them to show "Install
