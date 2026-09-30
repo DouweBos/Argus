@@ -16,6 +16,7 @@ import type { Session } from "./models";
 import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "@argus/host/logger";
 import { appState } from "../../state";
+import { loadArgusConfig } from "./argusConfig";
 import { git } from "./git";
 
 /**
@@ -132,6 +133,23 @@ export function reconfigureAutoFetchForRepo(
       );
     }
   }
+}
+
+/**
+ * Apply a new `auto_fetch_minutes` to every session in `repoRoot`, honouring
+ * the project's protected branches as they stand in `.argus.json`.
+ */
+export function reconfigureRepoAutoFetch(
+  repoRoot: string,
+  minutes: number | null,
+): void {
+  let protectedBranches: string[] = [];
+  try {
+    protectedBranches = loadArgusConfig(repoRoot).protected_branches;
+  } catch {
+    // Config unreadable — fall back to no protected branches.
+  }
+  reconfigureAutoFetchForRepo(repoRoot, minutes, protectedBranches);
 }
 
 /**

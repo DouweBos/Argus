@@ -89,7 +89,40 @@ import type {
   MoveWorktreesPlan,
   MoveWorktreesResult,
 } from "./types";
-import type { CommandName, ParamsIn, ResultOf } from "@argus/remote-protocol";
+import type {
+  BisectStatus,
+  BisectStep,
+  BlameChunk,
+  CommandName,
+  ConflictBlobs,
+  EnrichedBranch,
+  FormatPatchResult,
+  GitCommit,
+  GitCompareResult as CompareResult,
+  GitDiffRangeResult,
+  GitHook as Hook,
+  GitHookOutput as HookOutput,
+  GitRemote,
+  GitRemoteBranch as RemoteBranch,
+  GitRemoteRich,
+  GitStashEntry,
+  GitStashSaveOptions,
+  GitSubmodule,
+  GitTag,
+  GitWorktree,
+  LfsFiles,
+  LogSearchFilters,
+  LogSearchResult,
+  ParamsIn,
+  PullV2Opts,
+  PushV2Opts,
+  RebasePlanCommit,
+  RebasePlanEntry,
+  RecentIssue,
+  ReflogEntry,
+  ResultOf,
+  SshKey,
+} from "@argus/remote-protocol";
 import { rehydrateGitError } from "./gitError";
 import { rehydrateShareError } from "./shareError";
 import { getTransportForCommand } from "./transport";
@@ -288,29 +321,11 @@ export const checkoutBranch = (
 // Phase 6 P2 / P5 — project-root branch listing + ops
 // ---------------------------------------------------------------------------
 
-export interface BranchCommitSummary {
-  author: string;
-  hash: string;
-  subject: string;
-  timestamp: number;
-}
-
-export interface EnrichedBranch {
-  ahead: number;
-  behind: number;
-  fullName: string;
-  isCurrent: boolean;
-  lastCommit: BranchCommitSummary | null;
-  name: string;
-  upstream: string | null;
-}
-
-export interface RemoteBranch {
-  branchName: string;
-  lastCommit: BranchCommitSummary | null;
-  name: string;
-  remote: string;
-}
+export type {
+  BranchCommitSummary,
+  EnrichedBranch,
+  GitRemoteBranch as RemoteBranch,
+} from "@argus/remote-protocol";
 
 export const gitListLocalBranches = (
   sessionId: string,
@@ -368,18 +383,7 @@ export const gitRebaseOnto = (
 // Phase 6B P7 — tags
 // ---------------------------------------------------------------------------
 
-export interface GitTag {
-  commitHash: string;
-  /** ISO-strict date the tag was created (annotated tag date or, for
-   * lightweight tags, the target commit's committer date). */
-  creatorDate: string;
-  isAnnotated: boolean;
-  message?: string;
-  name: string;
-  pushed: boolean | null;
-  subject: string;
-  tagger?: { date: string; email: string; name: string };
-}
+export type { GitTag } from "@argus/remote-protocol";
 
 export const gitListTags = (sessionId: string): Promise<GitTag[]> =>
   invoke("git_list_tags", { id: sessionId });
@@ -409,16 +413,7 @@ export const gitPushTag = (
 // Phase 6B P8 — rich remotes
 // ---------------------------------------------------------------------------
 
-export type RemoteScheme = "https" | "other" | "ssh";
-
-export interface GitRemoteRich {
-  fetchUrl: string;
-  host: string;
-  name: string;
-  pushUrl?: string;
-  refs: number;
-  scheme: RemoteScheme;
-}
+export type { RemoteScheme, GitRemoteRich } from "@argus/remote-protocol";
 
 export const gitListRemotes = (sessionId: string): Promise<GitRemoteRich[]> =>
   invoke("git_list_remotes", { id: sessionId });
@@ -452,28 +447,14 @@ export const gitPruneRemote = (
 // Phase 6B P11 — push/pull v2
 // ---------------------------------------------------------------------------
 
-export interface PushV2Opts {
-  branch?: string;
-  force?: boolean;
-  forceWithLease?: boolean;
-  ref?: string;
-  remote?: string;
-  setUpstream?: boolean;
-  tags?: "all" | "follow" | "none";
-}
+export type { PushV2Opts } from "@argus/remote-protocol";
 
 export const gitPushV2 = (
   sessionId: string,
   opts: PushV2Opts,
 ): Promise<string> => invoke("git_push_v2", { id: sessionId, ...opts });
 
-export interface PullV2Opts {
-  branch?: string;
-  prune?: boolean;
-  remote?: string;
-  strategy: "ff-only" | "merge" | "rebase";
-  tags?: boolean;
-}
+export type { PullV2Opts } from "@argus/remote-protocol";
 
 export const gitPullV2 = (
   sessionId: string,
@@ -505,15 +486,7 @@ export const gitCherryPick = (
 // Phase 6B P9 — submodules
 // ---------------------------------------------------------------------------
 
-export type SubmoduleStatus = "clean" | "modified" | "uninitialized";
-
-export interface GitSubmodule {
-  commitHash: string;
-  name: string;
-  path: string;
-  status: SubmoduleStatus;
-  url: string;
-}
+export type { SubmoduleStatus, GitSubmodule } from "@argus/remote-protocol";
 
 export const gitSubmoduleList = (sessionId: string): Promise<GitSubmodule[]> =>
   invoke("git_submodule_list", { id: sessionId });
@@ -537,15 +510,7 @@ export const gitSubmoduleDeinit = (
 // Phase 6B P10 — worktrees (read-only)
 // ---------------------------------------------------------------------------
 
-export interface GitWorktree {
-  branch: string | null;
-  head: string;
-  isDetached: boolean;
-  isLocked: boolean;
-  isMain: boolean;
-  lockReason?: string;
-  path: string;
-}
+export type { GitWorktree } from "@argus/remote-protocol";
 
 export const gitWorktreeList = (sessionId: string): Promise<GitWorktree[]> =>
   invoke("git_worktree_list", { id: sessionId });
@@ -554,25 +519,11 @@ export const gitWorktreeList = (sessionId: string): Promise<GitWorktree[]> =>
 // Phase 7 T1/T2 — interactive rebase
 // ---------------------------------------------------------------------------
 
-export type RebaseAction =
-  | "drop"
-  | "edit"
-  | "fixup"
-  | "pick"
-  | "reword"
-  | "squash";
-
-export interface RebasePlanCommit {
-  author: string;
-  hash: string;
-  subject: string;
-}
-
-export interface RebasePlanEntry {
-  action: RebaseAction;
-  hash: string;
-  newSubject?: string;
-}
+export type {
+  RebaseAction,
+  RebasePlanCommit,
+  RebasePlanEntry,
+} from "@argus/remote-protocol";
 
 export const gitRebaseInteractivePlan = (
   sessionId: string,
@@ -595,17 +546,7 @@ export const gitRebaseAutosquash = (
 // Phase 7 T3 — bisect
 // ---------------------------------------------------------------------------
 
-export interface BisectStep {
-  currentRef: string | null;
-  currentSubject: string | null;
-  finished: boolean;
-  firstBadCommit?: { hash: string; subject: string };
-  remaining: number | null;
-}
-
-export interface BisectStatus extends BisectStep {
-  active: boolean;
-}
+export type { BisectStep, BisectStatus } from "@argus/remote-protocol";
 
 export const gitBisectStart = (
   sessionId: string,
@@ -632,12 +573,7 @@ export const gitBisectStatus = (sessionId: string): Promise<BisectStatus> =>
 // Phase 7 T5 — credential helpers
 // ---------------------------------------------------------------------------
 
-export type SshKeyType = "dsa" | "ecdsa" | "ed25519" | "other" | "rsa";
-
-export interface SshKey {
-  name: string;
-  type: SshKeyType;
-}
+export type { SshKeyType, SshKey } from "@argus/remote-protocol";
 
 export const checkSshKeys = (): Promise<{ keys: SshKey[] }> =>
   invoke("check_ssh_keys");
@@ -653,12 +589,7 @@ export const setGlobalCredentialHelper = (
 // Phase 7 T6 — LFS
 // ---------------------------------------------------------------------------
 
-export interface LfsFiles {
-  lfsInstalled: boolean;
-  /** True when the repo has tracked files matching `filter=lfs` attributes. */
-  repoUsesLfs: boolean;
-  tracked: string[];
-}
+export type { LfsFiles } from "@argus/remote-protocol";
 
 export const gitLfsFiles = (sessionId: string): Promise<LfsFiles> =>
   invoke("git_lfs_files", { id: sessionId });
@@ -672,9 +603,7 @@ export const gitLfsPull = (
 // Phase 7 T7 — patches
 // ---------------------------------------------------------------------------
 
-export interface FormatPatchResult {
-  patchPaths: string[];
-}
+export type { FormatPatchResult } from "@argus/remote-protocol";
 
 export const gitFormatPatch = (
   sessionId: string,
@@ -691,20 +620,10 @@ export const gitAm = (
 // Phase 7 T8 — hooks
 // ---------------------------------------------------------------------------
 
-export interface HookOutput {
-  exitCode: number;
-  ranAt: number;
-  stderr: string;
-  stdout: string;
-}
-
-export interface Hook {
-  executable: boolean;
-  lastModified: number;
-  lastOutput: HookOutput | null;
-  name: string;
-  path: string;
-}
+export type {
+  GitHookOutput as HookOutput,
+  GitHook as Hook,
+} from "@argus/remote-protocol";
 
 export const gitListHooks = (sessionId: string): Promise<Hook[]> =>
   invoke("git_list_hooks", { id: sessionId });
@@ -981,13 +900,7 @@ export const gitFetch = (id: string): Promise<string> =>
 export const gitStash = (id: string): Promise<string> =>
   invoke("git_stash", { id });
 
-export interface GitStashSaveOptions {
-  includeUntracked?: boolean;
-  keepIndex?: boolean;
-  message?: string;
-  /** Restrict the stash to these pathspecs (relative to repo root). */
-  paths?: string[];
-}
+export type { GitStashSaveOptions } from "@argus/remote-protocol";
 
 export const gitStashSave = (
   id: string,
@@ -1010,31 +923,7 @@ export const gitStashBranch = (
 export const gitStashPop = (id: string): Promise<string> =>
   invoke("git_stash_pop", { id });
 
-export interface GitCommit {
-  abbreviatedHash: string;
-  author: string;
-  authorEmail: string;
-  body: string;
-  committer: string;
-  committerDate: string;
-  committerEmail: string;
-  date: string;
-  hash: string;
-  parentHash: string;
-  refs: string;
-  subject: string;
-  treeHash: string;
-}
-
-export interface GitStashEntry {
-  author: string;
-  authorEmail: string;
-  date: string;
-  hash: string;
-  index: number;
-  message: string;
-  parentHash: string;
-}
+export type { GitCommit, GitStashEntry } from "@argus/remote-protocol";
 
 export const gitLog = (
   id: string,
@@ -1121,12 +1010,7 @@ export const gitContinueCherryPick = (id: string): Promise<void> =>
 export const gitAbortCherryPick = (id: string): Promise<void> =>
   invoke("git_abort_cherry_pick", { id });
 
-export interface ConflictBlobs {
-  base: string;
-  merged: string;
-  ours: string;
-  theirs: string;
-}
+export type { ConflictBlobs } from "@argus/remote-protocol";
 
 export const gitGetConflict = (
   id: string,
@@ -1154,19 +1038,12 @@ export const gitSetConfig = (
 ): Promise<void> => invoke("git_set_config", { id, key, value });
 
 // Phase 2 W10 — remotes + issue autocomplete scaffold
-export interface GitRemote {
-  name: string;
-  url: string;
-}
+export type { GitRemote } from "@argus/remote-protocol";
 
 export const gitGetRemotes = (id: string): Promise<GitRemote[]> =>
   invoke("git_get_remotes", { id });
 
-export interface RecentIssue {
-  number: number;
-  state: "closed" | "open";
-  title: string;
-}
+export type { RecentIssue } from "@argus/remote-protocol";
 
 export const gitListRecentIssues = (
   id: string,
@@ -1183,44 +1060,21 @@ export const gitAmendTip = (
 // Phase 4 — History depth (search, compare, blame, file history, reflog)
 // ---------------------------------------------------------------------------
 
-export interface LogSearchCursor {
-  lastCommitHash: string;
-  lastCommitTimestamp: string;
-}
-
-export interface LogSearchFilters {
-  author?: string;
-  branch?: string;
-  cursor?: LogSearchCursor | null;
-  limit?: number;
-  paths?: string[];
-  query?: string;
-  refType?: "all" | "locals" | "remotes" | "tags";
-  regex?: boolean;
-  since?: string;
-  until?: string;
-}
-
-export interface LogSearchResult {
-  commits: GitCommit[];
-  nextCursor: LogSearchCursor | null;
-}
+export type {
+  LogSearchCursor,
+  LogSearchFilters,
+  LogSearchResult,
+} from "@argus/remote-protocol";
 
 export const gitSearchLog = (
   id: string,
   filters: LogSearchFilters = {},
 ): Promise<LogSearchResult> => invoke("git_search_log", { id, ...filters });
 
-export interface GitDiffRangeFile {
-  newPath: string;
-  oldPath: string;
-  patch: string;
-  status: string;
-}
-
-export interface GitDiffRangeResult {
-  files: GitDiffRangeFile[];
-}
+export type {
+  GitDiffRangeFile,
+  GitDiffRangeResult,
+} from "@argus/remote-protocol";
 
 export const gitDiffRange = (
   id: string,
@@ -1234,16 +1088,7 @@ export const gitFileHistory = (
   path: string,
 ): Promise<GitCommit[]> => invoke("git_file_history", { id, path });
 
-export interface BlameChunk {
-  author: string;
-  authorEmail: string;
-  authorTime: number;
-  commitHash: string;
-  content?: string[];
-  lineCount: number;
-  lineStart: number;
-  summary: string;
-}
+export type { BlameChunk } from "@argus/remote-protocol";
 
 export const gitBlameFile = (
   id: string,
@@ -1263,13 +1108,7 @@ export const gitReadBlobAtRef = (
   ref: string,
 ): Promise<string> => invoke("git_read_blob_at_ref", { id, path, ref });
 
-export interface ReflogEntry {
-  action: string;
-  hash: string;
-  refName: string;
-  subject: string;
-  timestamp: string;
-}
+export type { ReflogEntry } from "@argus/remote-protocol";
 
 export const gitReflog = (
   id: string,
@@ -2749,12 +2588,7 @@ export const gitReconfigureAutoFetch = (
 ): Promise<void> => invoke("git_reconfigure_auto_fetch", { repoRoot, minutes });
 
 // Phase 5 — compare-branches view.
-export interface CompareResult {
-  leftOnly: BranchCommitSummary[];
-  mergeBase: string | null;
-  rightOnly: BranchCommitSummary[];
-  wouldConflict: boolean;
-}
+export type { GitCompareResult as CompareResult } from "@argus/remote-protocol";
 
 /**
  * Return the diverging commit lists, merge-base SHA, and a best-effort
