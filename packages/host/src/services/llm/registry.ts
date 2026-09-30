@@ -7,9 +7,18 @@
  * runner-specific modules.
  */
 
-import type { LlmRunner } from "./runners/types";
+import type {
+  LlmRunner,
+  RunnerCapabilities,
+  RunnerModelOption,
+} from "./runners/types";
 import { warn } from "@argus/host/logger";
-import { listCustomRunners } from "./customRunners/store";
+import {
+  type CustomRunner,
+  deleteCustomRunner,
+  listCustomRunners,
+  saveCustomRunner,
+} from "./customRunners/store";
 import { ClaudeCodeRunner } from "./runners/claudeCode/runner";
 import { DerivedRunner } from "./runners/derived";
 
@@ -70,6 +79,44 @@ export function syncCustomRunners(): void {
     }
     registerRunner(new DerivedRunner(config, base));
   }
+}
+
+/** The subset of a runner the UI needs, flattened for the wire. */
+export interface RegisteredRunner {
+  id: string;
+  displayName: string;
+  capabilities: RunnerCapabilities;
+  isCustom: boolean;
+  baseRunnerId: string | null;
+  models: RunnerModelOption[];
+  defaultModel: string | null;
+}
+
+export function describeRunners(): RegisteredRunner[] {
+  return listRunners().map((r) => ({
+    id: r.id,
+    displayName: r.displayName,
+    capabilities: r.capabilities(),
+    isCustom: r.isCustom ?? false,
+    baseRunnerId: r.baseRunnerId ?? null,
+    models: r.models?.() ?? [],
+    defaultModel: r.defaultModel?.() ?? null,
+  }));
+}
+
+/** Save a custom runner and re-sync so the picker sees it without a restart. */
+export function saveCustomRunnerAndSync(
+  input: Partial<CustomRunner>,
+): CustomRunner {
+  const saved = saveCustomRunner(input);
+  syncCustomRunners();
+
+  return saved;
+}
+
+export function deleteCustomRunnerAndSync(id: string): void {
+  deleteCustomRunner(id);
+  syncCustomRunners();
 }
 
 // Register built-in runners on module load, then layer the user's on top.

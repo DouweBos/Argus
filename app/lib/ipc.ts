@@ -2400,7 +2400,7 @@ export const listRegisteredRunners = (): Promise<RegisteredRunner[]> =>
 export const setAgentRunner = (
   agentId: string,
   runnerId: string,
-): Promise<void> => invoke("set_agent_runner", { agentId, runnerId });
+): Promise<null> => invoke("set_agent_runner", { agentId, runnerId });
 
 export const listCustomRunners = (): Promise<CustomRunnerConfig[]> =>
   invoke("llm_list_custom_runners");
