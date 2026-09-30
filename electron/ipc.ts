@@ -22,25 +22,6 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
 import { stopAgent } from "@argus/host/services/agent/claude";
-import {
-  startScreencast,
-  stopScreencast,
-  restartScreencast,
-} from "@argus/host/services/browser/cdpScreencast";
-import {
-  type BrowserPreset,
-  type NavState,
-  mouseEvent as conductorMouseEvent,
-  keyboardEvent as conductorKeyboardEvent,
-  wheelEvent as conductorWheelEvent,
-  navigate as conductorNavigate,
-  goBack as conductorGoBack,
-  goForward as conductorGoForward,
-  reload as conductorReload,
-  setViewport as conductorSetViewport,
-} from "@argus/host/services/browser/conductorInput";
-import { getMjpegPort } from "@argus/host/services/browser/mjpegServer";
-import { webBrowserPool } from "@argus/host/services/browser/pool";
 import { defineCommand } from "@argus/host/services/command/registry";
 import { listGhIssues } from "@argus/host/services/github/issues";
 import {
@@ -135,15 +116,6 @@ import {
 } from "./services/updater";
 
 type Args = Record<string, unknown>;
-
-function emitNavState(sessionId: string, nav: NavState): void {
-  emitHostEvent("browser_view:nav", {
-    sessionId,
-    url: nav.url,
-    canGoBack: nav.canGoBack,
-    canGoForward: nav.canGoForward,
-  });
-}
 
 async function resolveNativeImage(
   src: string,
@@ -636,133 +608,6 @@ export function registerIpcHandlers(): void {
 
     return granted ? "granted" : "denied";
   });
-
-  // Browser — Conductor-backed Chromium per session. Pool manages daemons;
-  // screencast via raw CDP WebSocket; input forwarded through Conductor HTTP.
-  handle("browser_view_ensure", "admin", async (a) => {
-    const sessionId = a.sessionId as string;
-    let reservation = webBrowserPool.getReservation(sessionId);
-    if (!reservation) {
-      reservation = await webBrowserPool.acquireBrowser(sessionId);
-    }
-    appState.browserSessions.set(sessionId, {
-      id: sessionId,
-      url: "",
-      webContentsId: null,
-    });
-    await startScreencast(
-      sessionId,
-      reservation.cdpPort,
-      reservation.cdpTargetId,
-      {
-        maxWidth: 1440,
-        maxHeight: 900,
-      },
-    );
-    emitHostEvent("browser:ensure_mounted", { sessionId });
-  });
-  handle("browser_view_navigate", "admin", async (a) => {
-    const sessionId = a.sessionId as string;
-    const reservation = webBrowserPool.getReservation(sessionId);
-    if (!reservation) {
-      return;
-    }
-    const nav = await conductorNavigate(reservation, a.url as string);
-    emitNavState(sessionId, nav);
-  });
-  handle("browser_view_back", "admin", async (a) => {
-    const sessionId = a.sessionId as string;
-    const reservation = webBrowserPool.getReservation(sessionId);
-    if (!reservation) {
-      return;
-    }
-    const nav = await conductorGoBack(reservation);
-    emitNavState(sessionId, nav);
-  });
-  handle("browser_view_forward", "admin", async (a) => {
-    const sessionId = a.sessionId as string;
-    const reservation = webBrowserPool.getReservation(sessionId);
-    if (!reservation) {
-      return;
-    }
-    const nav = await conductorGoForward(reservation);
-    emitNavState(sessionId, nav);
-  });
-  handle("browser_view_reload", "admin", async (a) => {
-    const sessionId = a.sessionId as string;
-    const reservation = webBrowserPool.getReservation(sessionId);
-    if (!reservation) {
-      return;
-    }
-    const nav = await conductorReload(reservation);
-    emitNavState(sessionId, nav);
-  });
-  handle("browser_view_destroy", "admin", async (a) => {
-    const sessionId = a.sessionId as string;
-    await stopScreencast(sessionId);
-    appState.browserSessions.delete(sessionId);
-    await webBrowserPool.releaseBrowser(sessionId);
-  });
-  toolHandle("browser_mouse_event", "admin", "device-control", async (a) => {
-    const reservation = webBrowserPool.getReservation(a.sessionId as string);
-    if (reservation) {
-      await conductorMouseEvent(
-        reservation,
-        a.type as "click" | "down" | "move" | "up",
-        a.x as number,
-        a.y as number,
-        a.button as "left" | "middle" | "right" | undefined,
-      );
-    }
-  });
-  toolHandle("browser_keyboard_event", "admin", "device-control", async (a) => {
-    const reservation = webBrowserPool.getReservation(a.sessionId as string);
-    if (reservation) {
-      await conductorKeyboardEvent(
-        reservation,
-        a.type as "down" | "press" | "up",
-        a.key as string,
-      );
-    }
-  });
-  toolHandle("browser_wheel_event", "admin", "device-control", async (a) => {
-    const reservation = webBrowserPool.getReservation(a.sessionId as string);
-    if (reservation) {
-      await conductorWheelEvent(
-        reservation,
-        a.x as number,
-        a.y as number,
-        a.deltaX as number,
-        a.deltaY as number,
-      );
-    }
-  });
-  handle("browser_update_preset", "admin", async (a) => {
-    const sessionId = a.sessionId as string;
-    const preset = a.preset as BrowserPreset;
-    const reservation = webBrowserPool.getReservation(sessionId);
-    if (!reservation) {
-      return;
-    }
-
-    const isMobile = preset.screenPosition === "mobile";
-    const newTargetId = await conductorSetViewport(reservation, {
-      width: preset.internalWidth,
-      height: preset.internalHeight,
-      userAgent: preset.userAgent,
-      isMobile,
-      deviceScaleFactor: isMobile ? 2 : 1,
-    });
-
-    if (newTargetId) {
-      reservation.cdpTargetId = newTargetId;
-      await restartScreencast(sessionId, reservation.cdpPort, newTargetId, {
-        maxWidth: preset.internalWidth,
-        maxHeight: preset.internalHeight,
-      });
-    }
-  });
-  handle("browser_get_mjpeg_port", "admin", () => getMjpegPort());
 
   // Image context menu
   handle("show_image_context_menu", "host", async (a) => {

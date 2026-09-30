@@ -95,6 +95,7 @@ import type {
   BisectStatus,
   BisectStep,
   BlameChunk,
+  BrowserPreset,
   Checkpoint,
   CommandName,
   ConflictBlobs,
@@ -2154,16 +2155,11 @@ export const browserWheelEvent = (
 ): Promise<void> =>
   invoke("browser_wheel_event", { sessionId, x, y, deltaX, deltaY });
 
-export interface BrowserPresetConfig {
-  internalHeight: number;
-  internalWidth: number;
-  screenPosition?: "desktop" | "mobile";
-  userAgent?: string;
-}
+export type { BrowserPreset as BrowserPresetConfig } from "@argus/remote-protocol";
 
 export const browserUpdatePreset = (
   sessionId: string,
-  preset: BrowserPresetConfig,
+  preset: BrowserPreset,
 ): Promise<void> => invoke("browser_update_preset", { sessionId, preset });
 
 export const browserGetMjpegPort = (): Promise<number> =>
