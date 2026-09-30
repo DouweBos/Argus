@@ -297,6 +297,47 @@ export function captureFeedback(message: string): void {
   }
 }
 
+export interface TelemetryInit {
+  distinctId: string;
+  mode: TelemetryMode;
+  configured: boolean;
+  appVersion: string;
+}
+
+/** What a client needs at boot to mirror the host's telemetry state. */
+export function getTelemetryInit(): TelemetryInit {
+  return {
+    distinctId: getAnonymousId(),
+    mode,
+    configured: isTelemetryConfigured(),
+    appVersion: hostPlatform().appVersion(),
+  };
+}
+
+/**
+ * Forward an event a client captured. The client type-checks it against the
+ * event catalog; on the wire it is opaque, so it is trusted as-is.
+ */
+export function captureFromClient(
+  event: string,
+  props: Record<string, unknown>,
+): void {
+  capture(event as EventName, props as never);
+}
+
+/** Report an error a client caught, rebuilt from its message and stack. */
+export function captureClientException(
+  message: string,
+  stack: string | undefined,
+  props: Record<string, unknown>,
+): void {
+  const err = new Error(message);
+  if (stack) {
+    err.stack = stack;
+  }
+  captureException(err, props);
+}
+
 export async function shutdownTelemetry(): Promise<void> {
   if (!client) {
     return;

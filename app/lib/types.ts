@@ -138,17 +138,7 @@ export interface ConductorLogEntry {
   ts: number;
 }
 
-/** Status of the runtime conductor-version override (Settings → Tools). */
-export interface ConductorStatus {
-  /** Version resolved for invocations right now (override when ready, else bundled). */
-  activeVersion: string | null;
-  /** Version baked into this app build. */
-  bundledVersion: string | null;
-  error: string | null;
-  /** User-pinned version, or null when using the bundled default. */
-  overrideVersion: string | null;
-  state: "error" | "idle" | "installing" | "ready";
-}
+export type { ConductorStatus } from "@argus/remote-protocol";
 
 export interface AndroidDevice {
   /** AVD name (emulators only — used to boot). Null for physical devices. */
@@ -180,25 +170,11 @@ export type {
   WorkspaceEnvConfig,
 } from "@argus/remote-protocol";
 
-export type DependencySeverity = "optional" | "required";
-
-export interface DependencyStatus {
-  hint: string;
-  id: string;
-  installed: boolean;
-  name: string;
-  platforms: string[];
-  purpose: string;
-  resolvedPath?: string;
-  severity: DependencySeverity;
-}
-
-export interface DependencyReport {
-  dependencies: DependencyStatus[];
-  missingOptional: number;
-  missingRequired: number;
-  platform: string;
-}
+export type {
+  DependencyReport,
+  DependencySeverity,
+  DependencyStatus,
+} from "@argus/remote-protocol";
 
 export type {
   ArgusRunCommand as RunCommand,
@@ -267,53 +243,7 @@ export interface McpOAuthStatus {
   scope: string | null;
 }
 
-/** Machine-local app settings persisted in `~/.argus/app-settings.json`. */
-export interface AppSettings {
-  /**
-   * Extra shell commands a read-only automation may run, beyond the built-in
-   * reads. A bare command or a prefix. Machine-local: a project cannot widen
-   * it, or a repo could authorise itself.
-   */
-  automation_allowed_commands?: string[];
-  /** Extra tools a read-only automation may call, by exact name. */
-  automation_allowed_tools?: string[];
-  /** Spend automations may reach in a day, in USD. 0 or unset = no budget. */
-  automation_daily_budget_usd?: number;
-  /**
-   * Base directory worktrees opened by automations are created in. Absent
-   * falls through to `worktrees_base_dir`.
-   */
-  automation_worktrees_base_dir?: string;
-  /**
-   * Master switch for the automation scheduler. Defaults to true; manual runs
-   * work regardless.
-   */
-  automations_enabled?: boolean;
-  /**
-   * App-wide cap on how far any automation may go. Unset or null means no
-   * cap — the automation's own level stands. A project can cap it lower,
-   * never higher.
-   */
-  default_autonomy?: AutonomyLevel | null;
-  /** App-level default LLM picked in Settings, mirrored for the main process. */
-  default_llm?: { model?: string | null; runner?: string | null };
-  /** Screen Argus opens on: the project picker, or the inbox. Defaults to home. */
-  launch_route?: "home" | "inbox";
-  /** Auto-started automation sessions allowed at once. Defaults to 3. */
-  max_concurrent_automation_sessions?: number;
-  /** User-defined MCP servers merged into every spawned agent. */
-  mcp_servers?: Record<string, Record<string, unknown>>;
-  /**
-   * Auto-updater feed channel. `latest` is stable; `alpha` and `beta` are
-   * pre-release feeds for internal testing. Defaults to `latest`.
-   */
-  updater_channel?: "alpha" | "beta" | "latest";
-  /**
-   * Base directory new worktrees are created in, for every project that does
-   * not set its own. Absent means `<argusHome>/worktrees`.
-   */
-  worktrees_base_dir?: string;
-}
+export type { AppSettings } from "@argus/remote-protocol";
 
 export type { UserProjectSettings } from "@argus/remote-protocol";
 
