@@ -172,10 +172,11 @@ initial attempt from a `continue` after the user resolved conflicts.
 
 ## Automations
 
-| Event                    | Source | When                                                | Extra props                                                   |
-| ------------------------ | ------ | --------------------------------------------------- | ------------------------------------------------------------- |
-| `automation_github_read` | main   | An automation run read GitHub through an Argus tool | `tool: "get" \| "artifact_search"`, `success`                 |
-| `proposal_start_failed`  | main   | Starting a proposal failed before its agent ran     | `stage` (`creating_worktree`, `setting_up`, `starting_agent`) |
+| Event                                   | Source | When                                                     | Extra props                                                   |
+| --------------------------------------- | ------ | -------------------------------------------------------- | ------------------------------------------------------------- |
+| `automation_extra_instructions_changed` | main   | An automation's extra instructions were added or cleared | `has_instructions`                                            |
+| `automation_github_read`                | main   | An automation run read GitHub through an Argus tool      | `tool: "get" \| "artifact_search"`, `success`                 |
+| `proposal_start_failed`                 | main   | Starting a proposal failed before its agent ran          | `stage` (`creating_worktree`, `setting_up`, `starting_agent`) |
 
 ## Claude accounts
 

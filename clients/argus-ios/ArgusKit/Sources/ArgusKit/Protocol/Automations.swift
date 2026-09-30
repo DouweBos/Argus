@@ -171,6 +171,9 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
   public var repoRoots: [String]
   public var sourceIds: [String]
   public var playbook: String
+  /// The user's additions, appended after the playbook on every run. Nil from
+  /// a computer too old to have them.
+  public var extraInstructions: String?
   public var autonomy: RemoteAutonomy?
   public var model: String?
   /// Runner the run's agent is pinned to; nil follows the app default.
@@ -182,7 +185,8 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     enabled: Bool = true, triggerKind: RemoteAutomation.TriggerKind = .schedule,
     cron: String? = "0 9 * * 1-5", timezone: String? = TimeZone.current.identifier,
     catchUp: Bool = true, repoRoots: [String] = [], sourceIds: [String] = [],
-    playbook: String = "", autonomy: RemoteAutonomy? = nil, model: String? = nil,
+    playbook: String = "", extraInstructions: String? = nil,
+    autonomy: RemoteAutonomy? = nil, model: String? = nil,
     runner: String? = nil,
     guardrails: RemoteAutomationGuardrails = .init()
   ) {
@@ -197,6 +201,7 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     self.repoRoots = repoRoots
     self.sourceIds = sourceIds
     self.playbook = playbook
+    self.extraInstructions = extraInstructions
     self.autonomy = autonomy
     self.model = model
     self.runner = runner
@@ -210,6 +215,7 @@ public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable 
     case catchUp = "catch_up"
     case repoRoots = "repo_roots"
     case sourceIds = "source_ids"
+    case extraInstructions = "extra_instructions"
   }
 }
 
@@ -226,6 +232,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
   public var repoRoots: [String]
   public var sourceIds: [String]
   public var playbook: String
+  public var extraInstructions: String?
   public var autonomy: RemoteAutonomy?
   public var model: String?
   public var runner: String?
@@ -242,6 +249,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     repoRoots = detail.repoRoots
     sourceIds = detail.sourceIds
     playbook = detail.playbook
+    extraInstructions = detail.extraInstructions
     autonomy = detail.autonomy
     model = detail.model
     runner = detail.runner
@@ -255,6 +263,7 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     case catchUp = "catch_up"
     case repoRoots = "repo_roots"
     case sourceIds = "source_ids"
+    case extraInstructions = "extra_instructions"
   }
 }
 

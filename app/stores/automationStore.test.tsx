@@ -73,6 +73,7 @@ function automation(id: string, name: string): Automation {
     autonomy: null,
     guardrails: DEFAULT_GUARDRAILS,
     playbook: "do the thing",
+    extra_instructions: "",
     model: null,
     runner: null,
     template_id: null,

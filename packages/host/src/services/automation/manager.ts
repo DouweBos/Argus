@@ -19,6 +19,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "@argus/host/logger";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { computeNextRun, isValidCron } from "./cron";
 import { migrateSpendCeiling, normalizeGuardrails } from "./guardrails";
 import { disposeAutomationHostSession } from "./hostSession";
@@ -53,6 +54,7 @@ function automationCache(): Automation[] {
       automation.guardrails = normalizeGuardrails(automation.guardrails);
       migrated = migrateSpendCeiling(automation.guardrails) || migrated;
       automation.seeded_playbook_hash ??= null;
+      automation.extra_instructions ??= "";
     }
     seedBuiltIns(automations, migrated);
   }
@@ -114,6 +116,7 @@ function buildAutomation(input: CreateAutomationInput): Automation {
     scope: { repo_roots: input.scope?.repo_roots ?? [] },
     source_ids: input.source_ids ?? [],
     playbook: input.playbook,
+    extra_instructions: input.extra_instructions ?? "",
     autonomy: input.autonomy ?? null,
     guardrails: normalizeGuardrails(input.guardrails),
     model: input.model ?? null,
@@ -230,6 +233,7 @@ export function scratchAutomationForRun(run: AutomationRun): Automation | null {
     scope: { repo_roots: [...spec.scope.repo_roots] },
     source_ids: [...spec.source_ids],
     playbook: spec.playbook,
+    extra_instructions: "",
     // Never a level of its own: an ad-hoc run must not be a way to ask for a
     // higher rung than the app default allows.
     autonomy: null,
@@ -266,6 +270,11 @@ export function createAutomation(input: CreateAutomationInput): Automation {
   const automation = buildAutomation(input);
   automationCache().push(automation);
   persistAutomations();
+  if (automation.extra_instructions.trim()) {
+    telemetryCapture("automation_extra_instructions_changed", {
+      has_instructions: true,
+    });
+  }
   info(`Created automation ${automation.id} (${automation.name})`);
 
   return { ...automation };
@@ -281,6 +290,11 @@ export function updateAutomation(
     throw `Invalid cron expression: ${trigger.cron}`;
   }
 
+  const hadInstructions = automation.extra_instructions.trim() !== "";
+  const instructionsChanged =
+    patch.extra_instructions !== undefined &&
+    patch.extra_instructions.trim() !== automation.extra_instructions.trim();
+
   Object.assign(automation, patch, { trigger, updated_at: Date.now() });
   automation.guardrails = normalizeGuardrails(automation.guardrails);
   if (patch.next_run_at === undefined) {
@@ -288,6 +302,15 @@ export function updateAutomation(
     automation.next_run_at = nextRunFor(automation, Date.now());
   }
   persistAutomations();
+  if (instructionsChanged) {
+    const hasInstructions = automation.extra_instructions.trim() !== "";
+    // An edit to existing text is not news; adding or clearing it is.
+    if (hasInstructions !== hadInstructions) {
+      telemetryCapture("automation_extra_instructions_changed", {
+        has_instructions: hasInstructions,
+      });
+    }
+  }
 
   return { ...automation };
 }

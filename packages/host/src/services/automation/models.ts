@@ -71,6 +71,11 @@ export interface Automation {
   source_ids: string[];
   /** The instructions handed to the run's agent. Markdown. */
   playbook: string;
+  /**
+   * The user's own additions, appended after the playbook on every run. Kept
+   * apart so a built-in's playbook stays stock and keeps taking updates.
+   */
+  extra_instructions: string;
   /** How far a run may go on its own. Null inherits the app-wide default. */
   autonomy: AutonomyLevel | null;
   /** Limits enforced in Node, never in the prompt. */
@@ -185,6 +190,7 @@ export interface CreateAutomationInput {
   scope?: { repo_roots: string[] };
   source_ids?: string[];
   playbook: string;
+  extra_instructions?: string;
   autonomy?: AutonomyLevel | null;
   guardrails?: Partial<AutomationGuardrails>;
   model?: string | null;

@@ -58,6 +58,7 @@ describe("labels", () => {
         description: "",
         enabled: false,
         playbook: "",
+        extra_instructions: "",
         autonomy: null,
         guardrails: DEFAULT_GUARDRAILS,
         model: null,

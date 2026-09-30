@@ -715,6 +715,8 @@ export const RemoteAutomationDetail = z.object({
   repo_roots: z.array(z.string()),
   source_ids: z.array(z.string()),
   playbook: z.string(),
+  /** The user's additions, appended after the playbook on every run. */
+  extra_instructions: z.string(),
   autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
   model: z.string().nullable(),
   /** Runner the run's agent is pinned to; null follows the app default. */

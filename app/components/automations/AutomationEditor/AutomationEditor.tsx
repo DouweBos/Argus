@@ -64,6 +64,7 @@ interface Draft {
   catchUp: boolean;
   cron: string;
   description: string;
+  extraInstructions: string;
   guardrails: AutomationGuardrails;
   kind: AutomationTrigger["kind"];
   model: string;
@@ -83,6 +84,7 @@ function toDraft(automation: Automation): Draft {
     name: automation.name,
     description: automation.description,
     playbook: automation.playbook,
+    extraInstructions: automation.extra_instructions,
     model: automation.model ?? "",
     runner: automation.runner ?? "",
     kind: automation.trigger.kind,
@@ -200,6 +202,7 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
         name: draft.name.trim(),
         description: draft.description.trim(),
         playbook: draft.playbook,
+        extra_instructions: draft.extraInstructions.trim(),
         model: draft.model.trim() || null,
         runner: draft.runner.trim() || null,
         trigger: toTrigger(draft),
@@ -410,6 +413,23 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
             className={styles.playbook}
             value={draft.playbook}
             onChange={(e) => patch("playbook", e.target.value)}
+          />
+        </FormField>
+
+        <FormField
+          label="Extra instructions"
+          helper={
+            automation.template_id
+              ? "Added after the playbook on every run, and they win where the two disagree. Put your changes here to keep the built-in playbook receiving updates."
+              : "Added after the playbook on every run, and they win where the two disagree."
+          }
+        >
+          <TextArea
+            mono
+            className={styles.extraInstructions}
+            placeholder="Skip anything labelled needs-design."
+            value={draft.extraInstructions}
+            onChange={(e) => patch("extraInstructions", e.target.value)}
           />
         </FormField>
 

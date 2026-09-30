@@ -79,6 +79,8 @@ export const AutomationInput = z.object({
   repo_roots: z.array(z.string()),
   source_ids: z.array(z.string()),
   playbook: z.string(),
+  /** Optional so a client built before it existed still creates and saves. */
+  extra_instructions: z.string().optional(),
   autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
   model: z.string().nullable(),
   /** Optional so a client built before runners could be picked still creates. */
