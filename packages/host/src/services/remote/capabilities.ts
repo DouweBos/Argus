@@ -110,6 +110,7 @@ import {
   renameSession,
   renameSessionBranch,
 } from "../session/manager";
+import { getSessionProgress } from "../session/progress";
 import {
   getSessionBranchDiff,
   getSessionFullDiff,
@@ -402,6 +403,10 @@ function toRemoteSession(s: Session): RemoteSession {
     base_branch: s.base_branch ?? null,
     claude_account_id: s.claude_account_id ?? null,
     status: sessionStatus(s.status),
+    progress:
+      s.status === "initializing" || s.status === "deleting"
+        ? getSessionProgress(s.id)
+        : null,
     availability: s.availability ?? "available",
     // The drive's name, not its mount point — this schema keeps host paths
     // off the wire, and the name is what the user has to go and plug in.

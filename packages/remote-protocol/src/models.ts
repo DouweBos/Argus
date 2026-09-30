@@ -26,6 +26,14 @@ export const RemoteSession = z.object({
   claude_account_id: z.string().nullable().optional(),
   status: z.enum(["deleting", "initializing", "ready", "error"]),
   /**
+   * How far setup or removal has got while `status` is `initializing` or
+   * `deleting`. Absent before the first count, and on older hosts.
+   */
+  progress: z
+    .object({ current: z.number(), total: z.number() })
+    .nullable()
+    .optional(),
+  /**
    * Whether the session's files are reachable. Orthogonal to `status`: the
    * usual cause is the external drive holding its worktree being unplugged
    * from the host, which a phone can do nothing about but should still show.

@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import { CalloutCard, ProgressBar, Spinner } from "@argus/peacock";
+import { setupFraction } from "../../../lib/sessionProgress";
 import { useSetupProgressBySessionId } from "../../../stores/sessionStore";
 import styles from "./InitializationStatus.module.css";
 
@@ -25,14 +25,6 @@ export function InitializationStatus({ sessionId }: InitializationStatusProps) {
   const setupProgressById = useSetupProgressBySessionId();
   const setupProgress = setupProgressById[sessionId];
 
-  const fraction = useMemo(() => {
-    if (!setupProgress || setupProgress.total <= 0) {
-      return 0;
-    }
-
-    return setupProgress.current / setupProgress.total;
-  }, [setupProgress]);
-
   if (!setupProgress) {
     return (
       <CalloutCard
@@ -46,8 +38,9 @@ export function InitializationStatus({ sessionId }: InitializationStatusProps) {
     );
   }
 
-  const { current, total, item, phase } = setupProgress;
-  const knownTotal = total > 0;
+  const { current, total, item, phase, detail } = setupProgress;
+  const fraction = setupFraction(setupProgress);
+  const knownTotal = fraction !== null;
   const remaining = knownTotal ? Math.max(total - current, 0) : 0;
   const phaseLabel = phase ? PHASE_LABEL[phase] : "Initializing";
   const stepLine = knownTotal
@@ -63,13 +56,18 @@ export function InitializationStatus({ sessionId }: InitializationStatusProps) {
     >
       <div className={styles.body}>
         <ProgressBar
-          progress={fraction}
+          progress={fraction ?? 0}
           indeterminate={!knownTotal}
           aria-label="Initialization progress"
         />
         <p className={styles.item} title={item}>
           <span className={styles.itemText}>{item}</span>
         </p>
+        {detail && (
+          <p className={styles.item} title={detail}>
+            <span className={styles.itemText}>{detail}</span>
+          </p>
+        )}
       </div>
     </CalloutCard>
   );

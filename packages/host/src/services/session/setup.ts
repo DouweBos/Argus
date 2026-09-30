@@ -20,11 +20,15 @@ import {
   stripAnsi,
 } from "../terminal/multiplexer";
 import { type ArgusConfig, setupEntryExcludes, setupEntryPath } from "./models";
+import { lastOutputLine, setSessionProgress } from "./progress";
 
 const execFileAsync = promisify(execFile);
 
 /** Give up on a setup command that has been silent this long (ms). */
 const SETUP_IDLE_TIMEOUT_MS = 20 * 60 * 1000;
+
+/** At most this often does a command's latest output line reach the UI (ms). */
+const SETUP_DETAIL_INTERVAL_MS = 500;
 
 // ---------------------------------------------------------------------------
 // Glob / path helpers
@@ -145,18 +149,42 @@ export async function runSetupPipeline(
     emitHostEvent(`terminal:data:${terminalId}`, encoded);
   };
 
+  interface SetupProgress {
+    current: number;
+    item: string;
+    phase: "command" | "copy" | "matching" | "symlink";
+    total: number;
+  }
+  let lastProgress: SetupProgress | null = null;
   const emitProgressItem = (
     item: string,
     current: number,
     total: number,
-    phase: "command" | "copy" | "matching" | "symlink",
+    phase: SetupProgress["phase"],
   ) => {
-    emitHostEvent(progressEvent, {
-      item,
-      current,
-      total,
-      phase,
-    });
+    lastProgress = { item, current, total, phase };
+    emitHostEvent(progressEvent, lastProgress);
+    if (total > 0) {
+      // The running step isn't done yet, so it doesn't count.
+      setSessionProgress(sessionId, { current: current - 1, total });
+    }
+  };
+
+  // A long command would otherwise sit on one step with nothing moving,
+  // which is indistinguishable from a hang.
+  let lastDetailAt = 0;
+  const emitProgressDetail = (output: string) => {
+    const now = Date.now();
+    if (!lastProgress || now - lastDetailAt < SETUP_DETAIL_INTERVAL_MS) {
+      return;
+    }
+    const detail = lastOutputLine(output);
+    // The shell echoes the command line, sentinel and all.
+    if (!detail || detail.includes("__ARGUS_DONE_")) {
+      return;
+    }
+    lastDetailAt = now;
+    emitHostEvent(progressEvent, { ...lastProgress, detail });
   };
 
   // Run a single setup command inside the PTY and resolve with its exit code.
@@ -193,6 +221,7 @@ export async function runSetupPipeline(
 
           return;
         }
+        emitProgressDetail(stripAnsi(data));
         if (buffer.length > 64 * 1024) {
           buffer = buffer.slice(-32 * 1024);
         }

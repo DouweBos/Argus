@@ -52,6 +52,7 @@ import {
   type SessionMeta,
 } from "./metadata";
 import { defaultArgusConfig, type Session, type SessionStatus } from "./models";
+import { clearSessionProgress, trackDeleteProgress } from "./progress";
 import { loadPersistedRepoRoots, persistRepoRoots } from "./repoRootsStore";
 import { runSetupPipeline } from "./setup";
 import { evacuateWorktreeRoots } from "./sidecars";
@@ -1512,9 +1513,14 @@ export async function deleteSession(
 
   // Run the heavy work in the background.
   (async () => {
+    // git removes the files in one opaque call; counting what is left is the
+    // only way to tell a slow removal from a stuck one.
+    const stopTracking = await trackDeleteProgress(taskId, taskSessionPath);
     try {
       await removeWorktree(taskRepoRoot, taskSessionPath);
     } catch (e) {
+      stopTracking();
+      clearSessionProgress(taskId);
       const errMsg = typeof e === "string" ? e : String(e);
       error(`Background delete failed for session ${taskId}: ${errMsg}`);
       // Restore the session's status so the user can retry.
@@ -1531,6 +1537,8 @@ export async function deleteSession(
 
       return;
     }
+    stopTracking();
+    clearSessionProgress(taskId);
 
     if (taskDeleteBranch) {
       try {

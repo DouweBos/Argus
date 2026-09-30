@@ -44,37 +44,6 @@
   padding-left: 22px;
 }
 
-/* Setup progress — gradient bar */
-.setupProgressWrap {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding-left: 22px;
-}
-
-.progressBar {
-  height: 2px;
-  background: var(--surface-3);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progressBarFill {
-  height: 100%;
-  background: var(--accent-gradient);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-.setupProgress {
-  font-size: 10px;
-  color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  opacity: 0.6;
-}
-
 /* Error state — failed step + message */
 .errorWrap {
   display: flex;
