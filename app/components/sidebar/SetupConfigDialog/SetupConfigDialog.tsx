@@ -57,6 +57,13 @@ import {
   useReleaseNotesListState,
 } from "./releaseNotesFieldState";
 
+/** `.argus.json` as written: keys are optional, the host fills defaults on read. */
+type ArgusConfigFile = Omit<Partial<ArgusConfig>, "setup" | "workspace_env"> & {
+  setup: Partial<ArgusConfig["setup"]>;
+  workspace_env?: (Partial<WorkspaceEnvConfig> &
+    Pick<WorkspaceEnvConfig, "base_value" | "name">)[];
+};
+
 interface SetupConfigDialogProps {
   onClose: () => void;
   onSaved?: () => void;
@@ -1985,8 +1992,8 @@ export function SetupConfigDialog({
     setReleaseNotes,
   ]);
 
-  const buildConfig = (): ArgusConfig => {
-    const config: ArgusConfig = { setup: {} };
+  const buildConfig = (): ArgusConfigFile => {
+    const config: ArgusConfigFile = { setup: {} };
     const copies = copyList.items.filter(Boolean);
     const symlinks = symlinkList.items.filter(Boolean);
     const commands = commandList.items.filter(Boolean);

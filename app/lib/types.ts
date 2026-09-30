@@ -65,48 +65,17 @@ export function sessionStatusLabel(status: Session["status"]): string {
   return "error";
 }
 
-export interface BranchList {
-  local: string[];
-  /**
-   * All origin-tracking refs as `origin/<name>`, including those whose name
-   * also exists locally. Use this when you need to distinguish a local branch
-   * from its origin counterpart (e.g. picking a base branch).
-   */
-  originRefs: string[];
-  remote: string[];
-}
-
-export type ReleaseNoteLabelTone = "accent" | "neutral" | "success" | "warning";
-
-export interface ReleaseNoteLabel {
-  name: string;
-  tone?: ReleaseNoteLabelTone;
-  value: string;
-}
+export type {
+  BranchList,
+  ReleaseNoteLabelTone,
+  ReleaseNoteLabel,
+} from "@argus/remote-protocol";
 
 // ---------------------------------------------------------------------------
 // Git status (shared with `electron/services/session/gitStatus.ts`)
 // ---------------------------------------------------------------------------
 
-export interface GitInProgress {
-  head: string;
-  kind: "bisect" | "cherry-pick" | "merge" | "rebase";
-  onto?: string;
-}
-
-export interface GitStatus {
-  ahead: number;
-  behind: number;
-  branch: string;
-  conflictCount: number;
-  detached: boolean;
-  dirtyCount: number;
-  inProgress: GitInProgress | null;
-  /** Unix ms timestamp of `.git/FETCH_HEAD` mtime, or null if never fetched. */
-  lastFetchAt: number | null;
-  stashCount: number;
-  upstream: string | null;
-}
+export type { GitInProgress, GitStatus } from "@argus/remote-protocol";
 
 /** Channel name for the FS-watcher push event (debounced). */
 export const GIT_STATUS_CHANGED_EVENT = "git_status_changed";
@@ -124,45 +93,13 @@ export interface ChangesetEntry {
   summary: string;
 }
 
-export interface ReleaseNoteEntry {
-  /** Full text content of the file as it lives on this branch (trimmed). */
-  content: string;
-  /** Path relative to the repo root, e.g. `apps/foo/release-notes/next/PLAY-27.txt`. */
-  filename: string;
-  /** Format used to parse this entry — surfaces format-specific UI affordances. */
-  format: ReleaseNoteFormat;
-  /** Labels extracted via the matching pattern's `labels` config. */
-  labels: ReleaseNoteLabel[];
-  /** "added" if the file is new on this branch, "modified" if it existed at the merge-base. */
-  status: "added" | "modified";
-}
-
-export type ReleaseNoteFormat =
-  | "changesets"
-  | "json"
-  | "regex"
-  | "xml"
-  | "yaml";
-
-export interface ReleaseNoteLabelConfig {
-  name: string;
-  selector: string;
-  tone?: ReleaseNoteLabelTone | null;
-}
-
-export interface ReleaseNotePatternConfig {
-  format: ReleaseNoteFormat;
-  glob: string;
-  labels: ReleaseNoteLabelConfig[];
-}
-
-export interface SessionReleaseNotesResult {
-  entries: ReleaseNoteEntry[];
-  /** Patterns the project configured in `.argus.json#release_note_patterns`. */
-  patterns: ReleaseNotePatternConfig[];
-  /** True when the project declares any patterns. False = fall back to changesets. */
-  usesReleaseNotes: boolean;
-}
+export type {
+  ReleaseNoteEntry,
+  ReleaseNoteFormat,
+  ReleaseNoteLabelConfig,
+  ReleaseNotePatternConfig,
+  SessionReleaseNotesResult,
+} from "@argus/remote-protocol";
 
 /** Check if session is ready. */
 export function isSessionReady(status: Session["status"]): boolean {
@@ -318,23 +255,11 @@ export interface AndroidVideoFrame {
   timestamp: number;
 }
 
-export interface TerminalConfigEntry {
-  dir?: string;
-  name?: string;
-}
-
-export type WorkspaceEnvStrategy = "hash" | "sequential";
-
-export interface WorkspaceEnvConfig {
-  /** Starting integer. Final value is base_value + offset. */
-  base_value?: number;
-  /** Env var name (e.g. ARGUS_PORT, RCT_METRO_PORT). */
-  name: string;
-  /** Modulus for the hash strategy (default 1000). */
-  range?: number;
-  /** How to compute the per-session offset (default: hash). */
-  strategy?: WorkspaceEnvStrategy;
-}
+export type {
+  ArgusTerminalConfig as TerminalConfigEntry,
+  WorkspaceEnvStrategy,
+  WorkspaceEnvConfig,
+} from "@argus/remote-protocol";
 
 export type DependencySeverity = "optional" | "required";
 
@@ -356,48 +281,13 @@ export interface DependencyReport {
   platform: string;
 }
 
-/** A single entry in `.argus.json` `run` — a labelled shell command. */
-export interface RunCommand {
-  command: string;
-  cwd?: string;
-  /** Titles of other run commands that must already be running first. */
-  requires?: string[];
-  restartOnRerun: boolean;
-  title: string;
-}
-
-/** A related project that agents can spawn worktrees in. */
-export interface RelatedProject {
-  /** Human-readable description shown to spawned agents. */
-  description: string;
-  /** Relative path from this repo's root to the related project's root. */
-  path: string;
-}
-
-/**
- * A deep link entry surfaced by the runtime toolbar's "Link" dropdown.
- * Either a leaf link fired via `conductor open-link <url>` or a folder
- * grouping nested entries — folders may themselves contain folders.
- */
-export interface SimulatorDeeplinkConfig {
-  /** Nested entries when this is a folder. Mutually exclusive with `url`. */
-  children?: SimulatorDeeplinkConfig[];
-  /** Display name shown in the dropdown. */
-  label: string;
-  /** URL or custom-scheme deep link (leaf entries only). */
-  url?: string;
-}
-
-/** JSON-facing shape for custom browser device presets in `.argus.json`. */
-export interface BrowserPresetConfig {
-  height: number;
-  id: string;
-  label?: string;
-  user_agent?: string;
-  width: number;
-}
-
-export type RuntimePlatform = "android" | "ios" | "tvos" | "web";
+export type {
+  ArgusRunCommand as RunCommand,
+  RelatedProject,
+  SimulatorDeeplinkConfig,
+  BrowserPresetConfig,
+  RuntimePlatform,
+} from "@argus/remote-protocol";
 
 /**
  * A registered LLM runner surfaced to the renderer via `list_runners`.
@@ -466,137 +356,12 @@ export interface CustomRunnerPreset {
   secretEnvKey: string;
 }
 
-/**
- * Project-level default LLM runner + model. Either field may be absent —
- * the resolver cascade fills in whichever isn't pinned here. Mirrors the
- * `LlmConfig` shape in `electron/services/session/models.ts`.
- */
-export interface LlmConfig {
-  /** Default model id for this project. */
-  model?: string | null;
-  /** Runner id, e.g. "claude-code". */
-  runner?: string | null;
-}
-
-/**
- * A `setup.copy` / `setup.symlink` entry: either a bare path/glob string or
- * `{ path, exclude? }` to prune subdirectories from the copy/symlink
- * expansion. Mirrors `SetupCopyEntry` in
- * `electron/services/session/models.ts`.
- */
-export type SetupCopyEntry = string | { exclude?: string[]; path: string };
-
-/** The `automations` block of `.argus.json`. */
-export interface ProjectAutomationConfig {
-  /** Highest rung any automation may reach here. Never raises the app default. */
-  autonomy_ceiling?: AutonomyLevel;
-  /** Automation ids or template ids this repo opts out of entirely. */
-  disabled?: string[];
-  /** Globs no automation-started branch may touch. Added to the automation's own list. */
-  path_denylist?: string[];
-}
-
-export interface ArgusConfig {
-  /** Optional prompt appended to the Claude agent's system prompt. */
-  agent_prompt?: string;
-  /**
-   * How often (in minutes) Argus should automatically run `git fetch --prune`
-   * in the background. Set to 0 or omit to disable.
-   */
-  auto_fetch_minutes?: number;
-  /** How far Argus automations may go in this repo. Caps the app default. */
-  automations?: ProjectAutomationConfig;
-  /** Custom browser device presets for the web browser panel. */
-  browser_presets?: BrowserPresetConfig[];
-  /** Default URL to load in the embedded web browser (e.g. "http://localhost:3000"). */
-  browser_url?: string;
-  /**
-   * Preferred default source branch for new sessions (e.g. `"staging"`,
-   * `"develop"`). When set and the branch exists locally, the
-   * Create-Session dialog preselects it. Falls back to a
-   * staging/develop/dev/main/master probe otherwise.
-   */
-  default_base_branch?: string | null;
-  /**
-   * Project-level default LLM runner + model. Used as the cascade step
-   * between agent/session overrides and the app-level default.
-   */
-  llm?: LlmConfig | null;
-  /**
-   * Project-level MCP servers, merged into every spawned agent. Map of
-   * server name to its `.mcp.json`-style config. Use `.mcp.json` for the
-   * Claude Code standard discovery path; this field keeps entries
-   * co-located with the rest of `.argus.json`.
-   */
-  mcp_servers?: Record<string, Record<string, unknown>>;
-  /**
-   * Minimum Argus app version required for this project. Semver string
-   * (e.g. "0.10.0"). Surfaces a warning on the project home screen when
-   * the app version is lower.
-   */
-  min_argus_version?: string | null;
-  /**
-   * Runtime platforms this project targets. Used to narrow the runtime
-   * sections injected into the agent system prompt; omitted or empty →
-   * iOS, Android, and Web are all described. Does not gate device
-   * allocation — simulators, emulators, and browsers are acquired
-   * lazily when agents run `conductor` commands.
-   */
-  platforms?: RuntimePlatform[];
-  /**
-   * Branch names that cannot be merged into directly from the app — the UI
-   * shows a "Push & open PR" flow instead. Typical values: `["main"]`.
-   */
-  protected_branches?: string[];
-  /**
-   * Filename of the preferred pull-request template — used by the
-   * "Push & open PR" flow when the repo has multiple templates in
-   * `.github/PULL_REQUEST_TEMPLATE/`. Without this, Argus uses the first
-   * template alphabetically.
-   */
-  pull_request_template?: string;
-  /**
-   * Other repos that agents in this project may spawn worktrees in.
-   * Surfaced via the `list_projects` MCP tool.
-   */
-  related_projects?: RelatedProject[];
-  /**
-   * Glob-driven release-note patterns surfaced on the session home screen
-   * as an alternative to `@changesets/cli`. Each entry can be either a
-   * bare glob string or a `{ glob, format, labels }` object that also
-   * tells Argus how to parse the file (regex / json / yaml / xml) and
-   * which fields to render as Badges next to the filename.
-   */
-  release_note_patterns?: ReleaseNotePatternConfig[];
-  /** Ordered list of run commands shown in the app's run menu. */
-  run?: RunCommand[];
-  /** Whether to save chat history when agents stop. Defaults to true. */
-  save_chat_history?: boolean;
-  setup?: {
-    commands?: string[];
-    copy?: SetupCopyEntry[];
-    symlink?: SetupCopyEntry[];
-  };
-  /**
-   * Deep links surfaced as a dropdown on the runtime toolbar's "Link"
-   * button. Each entry fires `conductor open-link <url>` against the
-   * currently connected simulator/emulator.
-   */
-  simulator_deeplinks?: SimulatorDeeplinkConfig[];
-  /**
-   * When true, only one runtime may be active across all sessions of this
-   * project. The run button prompts before starting a second runtime.
-   */
-  single_runtime?: boolean;
-  terminals?: TerminalConfigEntry[];
-  /**
-   * Tools disabled for everyone working on this project. Strings — see
-   * `app/tools/types.ts` for valid `ToolId`s. Unknown ids are ignored.
-   */
-  tools?: { disabled?: string[] } | null;
-  /** Env vars set in each session's terminals with a unique integer per session. */
-  workspace_env?: WorkspaceEnvConfig[];
-}
+export type {
+  ArgusLlmConfig as LlmConfig,
+  SetupCopyEntry,
+  ProjectAutomationConfig,
+  ArgusConfig,
+} from "@argus/remote-protocol";
 
 /** A single MCP server Argus inherits from outside its own settings. */
 export interface InheritedMcpServer {
@@ -689,48 +454,7 @@ export interface AppSettings {
   worktrees_base_dir?: string;
 }
 
-/**
- * Per-developer, per-project preferences. Stored in the user's home directory
- * (not the repo), so every developer keeps their own values.
- */
-export interface UserProjectSettings {
-  /**
-   * Branch names hidden from the main sidebar Branches list and surfaced
-   * under "Archived Branches". Pure UI filter — git is untouched.
-   */
-  archived_branches?: string[];
-  /**
-   * Base directory worktrees opened by automations are created in for this
-   * project. Absent falls through to `worktrees_base_dir`.
-   */
-  automation_worktrees_base_dir?: string;
-  /**
-   * Required prefix prepended to newly created branches (e.g. "douwe/"). Empty
-   * or undefined disables the prefix.
-   */
-  branch_prefix?: string;
-  /**
-   * Branch names pinned for quick access. Shown in the "Pinned" sidebar
-   * section and also inline in the main Branches list.
-   */
-  pinned_branches?: string[];
-  /**
-   * Roots this project's worktrees used to live under, so worktrees left
-   * behind by a location change stay visible until they are moved.
-   */
-  previous_worktrees_roots?: string[];
-  /**
-   * When true, the git-lfs "not installed" and "tracked files" banners are
-   * hidden for this project regardless of auto-detection. Personal preference;
-   * never written into the repo.
-   */
-  suppress_lfs_warning?: boolean;
-  /**
-   * Base directory this project's worktrees are created in, overriding the
-   * app-wide setting. Personal and machine-local — never in `.argus.json`.
-   */
-  worktrees_base_dir?: string;
-}
+export type { UserProjectSettings } from "@argus/remote-protocol";
 
 // ---------------------------------------------------------------------------
 // Automations
@@ -1692,69 +1416,13 @@ export interface SimulatorDeviceState {
   udid: string;
 }
 
-/** Which level of the cascade decided a worktree location. */
-export type WorktreeRootSource =
-  | "app"
-  | "automation_app"
-  | "automation_project"
-  | "default"
-  | "project";
-
-/** Who a worktree is for. Automations can be pointed at a separate drive. */
-export type WorktreePurpose = "automation" | "user";
-
-/** Where a project's worktrees live, and whether that drive is connected. */
-export interface WorktreeStorage {
-  /** Base dir set app-wide, if any. */
-  app_base: string | null;
-  /** Automation base dir set app-wide, if any. */
-  automation_app_base: string | null;
-  /** Automation base dir set for this project, if any. */
-  automation_project_base: string | null;
-  /** The same, for worktrees automations open. Equal to the above when no
-   * automation base is set. */
-  automation_root: string;
-  automation_source: WorktreeRootSource;
-  automation_state: "available" | "unavailable";
-  automation_volume: string | null;
-  automation_volume_label: string | null;
-  /** The base dir used when neither is set. */
-  default_base: string;
-  /** Base dir set for this project, if any. Personal, never checked in. */
-  project_base: string | null;
-  /** Absolute dir holding this project's worktrees right now. */
-  root: string;
-  source: WorktreeRootSource;
-  state: "available" | "unavailable";
-  /** Mount point the root depends on; null when it is on the internal disk. */
-  volume: string | null;
-  volume_label: string | null;
-}
-
-/** Result of checking a candidate worktree location before saving it. */
-export interface WorktreeLocationProbe {
-  exists: boolean;
-  /** Set when the path can't be used, phrased for the user. */
-  reason: string | null;
-  /** True when the path is on a drive that can be disconnected. */
-  removable: boolean;
-  volume: string | null;
-  volume_label: string | null;
-  writable: boolean;
-}
-
-/** What a worktree relocation would do, and what is standing in its way. */
-export interface MoveWorktreesPlan {
-  blockers: {
-    detail: string;
-    kind: "agent_running" | "locked" | "mid_operation" | "terminal_open";
-    session_id: string;
-    session_label: string;
-  }[];
-  from_root: string;
-  sessions: { branch: string; from: string; id: string; to: string }[];
-  to_root: string;
-}
+export type {
+  WorktreeRootSource,
+  WorktreePurpose,
+  WorktreeStorage,
+  WorktreeLocationProbe,
+  MoveWorktreesPlan,
+} from "@argus/remote-protocol";
 
 /** Payload of `session:worktrees-move-progress`. */
 export interface MoveWorktreesProgress {
@@ -1768,8 +1436,4 @@ export interface MoveWorktreesProgress {
   total_entries: number;
 }
 
-export interface MoveWorktreesResult {
-  failed: { error: string; id: string }[];
-  moved: string[];
-  to_root: string;
-}
+export type { MoveWorktreesResult } from "@argus/remote-protocol";
