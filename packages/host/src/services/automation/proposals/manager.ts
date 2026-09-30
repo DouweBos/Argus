@@ -23,6 +23,13 @@ function cache(): Proposal[] {
     // have to render a button and answer to the same shape.
     proposals = loadProposals().map((p) => ({
       ...p,
+      agent_id: p.agent_id ?? null,
+      // A start is in-process work, so one still marked in flight on load was
+      // cut off by Argus stopping.
+      start_stage: null,
+      start_error: p.start_stage
+        ? "Argus stopped before the session was ready. Start it again."
+        : (p.start_error ?? null),
       cta: resolveCta(p.cta, p),
       cleared_reason: p.cleared_reason ?? null,
       cleared_at: p.cleared_at ?? null,
@@ -109,6 +116,9 @@ export function createProposal(input: CreateProposalInput): Proposal {
     // P2 has no autonomy ladder, so every proposal waits for a human.
     status: "pending",
     session_id: null,
+    agent_id: null,
+    start_stage: null,
+    start_error: null,
     dismissed_reason: null,
     resolved_note: null,
     resolved_at: null,

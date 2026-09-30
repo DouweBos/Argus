@@ -8,7 +8,7 @@
  * the time we are here the decision has been made.
  */
 
-import type { Proposal } from "./models";
+import type { Proposal, ProposalStartStage } from "./models";
 import type { Session } from "../../session/models";
 import { emitHostEvent } from "@argus/host/bus";
 import { info } from "@argus/host/logger";
@@ -16,9 +16,11 @@ import { sendAgentMessage, startAgent } from "../../agent/agentService";
 import { ensureRepoRegistered } from "../../mcp/projects";
 import { createSession } from "../../session/manager";
 import { waitForSessionReady } from "../../session/waitForReady";
+import { capture as telemetryCapture } from "../../telemetry/telemetry";
 import { getAutomation } from "../manager";
 import { recordAutomationSession } from "../ownedSessions";
 import { requireProposal, updateProposal } from "./manager";
+import { readableStartError } from "./startError";
 
 export interface AcceptProposalResult {
   proposal: Proposal;
@@ -46,6 +48,9 @@ export async function acceptProposal(
   if (proposal.session_id) {
     throw `Proposal already started in session ${proposal.session_id}`;
   }
+  if (proposal.start_stage) {
+    throw "This proposal is already starting.";
+  }
   if (proposal.cta && proposal.cta.kind !== "start_session") {
     throw `This proposal asks you to "${proposal.cta.label}", not to start a session.`;
   }
@@ -60,70 +65,89 @@ export async function acceptProposal(
   // carried on here too — for the human-Accept path as much as the gated one.
   const automation = getAutomation(proposal.automation_id);
 
-  const session = await createSession(
-    repoRoot,
-    proposal.title || "Proposal",
-    proposal.summary,
-    false,
-    undefined,
-    { runner: automation?.runner ?? null, model: automation?.model ?? null },
-    {
-      awaitWorktreeReady: true,
-      // A human clicking Accept started this session themselves, so it belongs
-      // on the normal drive; only the unattended path is automation traffic.
-      worktreePurpose: status === "auto_started" ? "automation" : "user",
-    },
-  );
-  emitSessionCreated(session);
-
-  // Claim the session before its agent can run: the shell guard resolves the
-  // automation through this link, so a gap here is a window in which an
-  // auto-started agent is unconstrained.
-  if (status === "auto_started") {
-    recordAutomationSession(
-      proposal.automation_id,
-      proposal.run_id,
-      session.id,
-    );
-  }
-  updateProposal(proposal.id, { session_id: session.id, accepted_note: note });
+  let stage: ProposalStartStage = "creating_worktree";
+  updateProposal(proposal.id, { start_stage: stage, start_error: null });
 
   try {
+    const session = await createSession(
+      repoRoot,
+      proposal.title || "Proposal",
+      proposal.summary,
+      false,
+      undefined,
+      { runner: automation?.runner ?? null, model: automation?.model ?? null },
+      {
+        awaitWorktreeReady: true,
+        // A human clicking Accept started this session themselves, so it
+        // belongs on the normal drive; only the unattended path is automation
+        // traffic.
+        worktreePurpose: status === "auto_started" ? "automation" : "user",
+      },
+    );
+    emitSessionCreated(session);
+
+    // Claim the session before its agent can run: the shell guard resolves
+    // the automation through this link, so a gap here is a window in which an
+    // auto-started agent is unconstrained.
+    if (status === "auto_started") {
+      recordAutomationSession(
+        proposal.automation_id,
+        proposal.run_id,
+        session.id,
+      );
+    }
+    stage = "setting_up";
+    updateProposal(proposal.id, {
+      session_id: session.id,
+      accepted_note: note,
+      start_stage: stage,
+    });
+
     await waitForSessionReady(session.id);
+
+    stage = "starting_agent";
+    updateProposal(proposal.id, { start_stage: stage });
+    const prompt = buildPrompt(proposal, status, note);
+    const agent = await startAgent(session.id);
+
+    // Backend-initiated spawns are invisible to the UI without this — the
+    // renderer never subscribes to the agent's channels otherwise.
+    emitHostEvent("agent:started", {
+      agent_id: agent.agent_id,
+      session_id: agent.session_id,
+      status: agent.status,
+      parent_agent_id: agent.parent_agent_id,
+      created_at: agent.created_at,
+      initial_prompt: prompt,
+      model: agent.model,
+    });
+    sendAgentMessage(agent.agent_id, prompt);
+
+    const updated = updateProposal(proposal.id, {
+      status,
+      session_id: session.id,
+      agent_id: agent.agent_id,
+      start_stage: null,
+    });
+    info(`Proposal ${proposal.id} ${status} into session ${session.id}`);
+
+    return {
+      proposal: updated,
+      session_id: session.id,
+      agent_id: agent.agent_id,
+    };
   } catch (e) {
-    // Release the proposal so it can be started again once setup is fixed;
-    // the failed session stays behind showing why.
-    updateProposal(proposal.id, { session_id: null, accepted_note: null });
+    // Release the proposal so it can be started again once the cause is
+    // fixed; a session that got as far as existing stays behind showing why.
+    updateProposal(proposal.id, {
+      session_id: null,
+      accepted_note: null,
+      start_stage: null,
+      start_error: readableStartError(e),
+    });
+    telemetryCapture("proposal_start_failed", { stage });
     throw e;
   }
-
-  const prompt = buildPrompt(proposal, status, note);
-  const agent = await startAgent(session.id);
-
-  // Backend-initiated spawns are invisible to the UI without this — the
-  // renderer never subscribes to the agent's channels otherwise.
-  emitHostEvent("agent:started", {
-    agent_id: agent.agent_id,
-    session_id: agent.session_id,
-    status: agent.status,
-    parent_agent_id: agent.parent_agent_id,
-    created_at: agent.created_at,
-    initial_prompt: prompt,
-    model: agent.model,
-  });
-  sendAgentMessage(agent.agent_id, prompt);
-
-  const updated = updateProposal(proposal.id, {
-    status,
-    session_id: session.id,
-  });
-  info(`Proposal ${proposal.id} ${status} into session ${session.id}`);
-
-  return {
-    proposal: updated,
-    session_id: session.id,
-    agent_id: agent.agent_id,
-  };
 }
 
 function emitSessionCreated(session: Session): void {

@@ -78,6 +78,9 @@ function proposal(patch: Partial<Proposal> = {}): Proposal {
     repo_root: "/Users/me/Work/argus",
     status: "pending",
     session_id: null,
+    agent_id: null,
+    start_stage: null,
+    start_error: null,
     dismissed_reason: null,
     resolved_note: null,
     resolved_at: null,
@@ -157,6 +160,32 @@ describe("inboxScreen", () => {
     expect(openExternalUrl).toHaveBeenCalledWith(
       "https://github.com/x/argus/issues/412",
     );
+  });
+
+  it("shows where a start has got to instead of its actions", () => {
+    setProposalState({
+      proposals: [proposal({ start_stage: "setting_up" })],
+      loading: false,
+      error: null,
+    });
+    render(<InboxScreen />);
+
+    expect(screen.getByText("Running setup…")).toBeDefined();
+    expect(screen.queryByRole("button", { name: /Start/ })).toBeNull();
+  });
+
+  it("says why the last start failed and offers to try again", () => {
+    setProposalState({
+      proposals: [proposal({ start_error: "mise.toml is not trusted." })],
+      loading: false,
+      error: null,
+    });
+    render(<InboxScreen />);
+
+    expect(screen.getByRole("alert").textContent).toContain(
+      "mise.toml is not trusted.",
+    );
+    expect(screen.getByRole("button", { name: /Try again/ })).toBeDefined();
   });
 
   it("carries the dismiss reason to the backend", () => {

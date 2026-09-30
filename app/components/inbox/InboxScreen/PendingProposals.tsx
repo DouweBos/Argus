@@ -19,6 +19,7 @@ export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
     primaryAction,
     requestRevision,
     resolve,
+    startState,
     startWithNote,
   } = useProposalActions();
 
@@ -31,9 +32,12 @@ export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
         );
         const source = proposal.source_ref;
 
+        const { error, progress } = startState(proposal);
+
         return (
           <ProposalCard
             busy={busyId === proposal.id}
+            error={error}
             confidence={proposal.confidence}
             key={proposal.id}
             meta={
@@ -64,6 +68,7 @@ export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
             onResolve={resolve(proposal)}
             onStartWithNote={startWithNote(proposal)}
             primary={primaryAction(proposal)}
+            progress={progress}
             rationale={proposal.rationale || undefined}
             renderMarkdown={renderProposalMarkdown}
             revisionRequest={proposal.revision_request || undefined}

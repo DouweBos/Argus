@@ -68,6 +68,12 @@ export interface ProposalSourceRef {
   url: string;
 }
 
+/** Where a start is while it builds the session, in order. */
+export type ProposalStartStage =
+  | "creating_worktree"
+  | "setting_up"
+  | "starting_agent";
+
 export interface Proposal {
   id: string;
   run_id: string;
@@ -85,6 +91,12 @@ export interface Proposal {
   status: ProposalStatus;
   /** Set once the proposal is started — the session doing the work. */
   session_id: string | null;
+  /** The agent working it, once it is running. */
+  agent_id: string | null;
+  /** Non-null only while a start is in flight. */
+  start_stage: ProposalStartStage | null;
+  /** Why the last start failed, readable. Cleared when a start begins. */
+  start_error: string | null;
   /** Why it was dismissed. The training signal; kept verbatim. */
   dismissed_reason: string | null;
   /** What the user said when they marked it done. Kept verbatim. */

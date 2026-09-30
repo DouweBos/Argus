@@ -66,6 +66,9 @@ export interface EventMap {
     outcome: "ok" | "rate_limited" | "reauth" | "unknown";
   };
   onboarding_completed: undefined;
+  proposal_start_failed: {
+    stage: "creating_worktree" | "setting_up" | "starting_agent";
+  };
   renderer_started: { popout: string };
   scratch_pad_created: { has_name: boolean };
   session_created: {
