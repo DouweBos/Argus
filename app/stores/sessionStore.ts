@@ -1,4 +1,5 @@
 import type { ImageAttachment } from "../lib/ipc";
+import type { DeleteProgress, SetupProgress } from "../lib/sessionProgress";
 import type { HostId } from "../lib/transport/hostId";
 import type { Session } from "../lib/types";
 import { create } from "zustand";
@@ -31,6 +32,8 @@ const ownedBy = (session: Session, repoRoot: string, hostId: HostId) =>
   session.repo_root === repoRoot && sessionHostId(session.id) === hostId;
 
 interface SessionStoreData {
+  /** How much of a session's worktree is gone while it is being deleted. */
+  deleteProgressBySessionId: Record<string, DeleteProgress>;
   isLoading: boolean;
   /**
    * Prompts that should be dispatched to a freshly-spawned agent once the
@@ -54,15 +57,7 @@ interface SessionStoreData {
   projects: Project[];
   sessions: Session[];
   /** Current item and progress during setup. Cleared when setup completes. */
-  setupProgressBySessionId: Record<
-    string,
-    {
-      current: number;
-      item: string;
-      phase?: "command" | "copy" | "matching" | "symlink";
-      total: number;
-    }
-  >;
+  setupProgressBySessionId: Record<string, SetupProgress>;
 }
 
 const sessionStore = create<SessionStoreData>(() => ({
@@ -70,6 +65,7 @@ const sessionStore = create<SessionStoreData>(() => ({
   sessions: [],
   isLoading: false,
   setupProgressBySessionId: {},
+  deleteProgressBySessionId: {},
   pendingPromptBySessionId: {},
 }));
 
@@ -319,10 +315,13 @@ export const removeSession = (id: string) => {
   }
   sessionStore.setState((state) => {
     const { [id]: _removed, ...pending } = state.pendingPromptBySessionId;
+    const { [id]: _deleted, ...deleteProgress } =
+      state.deleteProgressBySessionId;
 
     return {
       sessions: state.sessions.filter((w) => w.id !== id),
       pendingPromptBySessionId: pending,
+      deleteProgressBySessionId: deleteProgress,
     };
   });
   forgetSessionTools(id);
@@ -356,12 +355,7 @@ export const setLoading = (isLoading: boolean) => {
 
 export const setSetupProgress = (
   sessionId: string,
-  progress: {
-    current: number;
-    item: string;
-    phase?: "command" | "copy" | "matching" | "symlink";
-    total: number;
-  } | null,
+  progress: SetupProgress | null,
 ) => {
   sessionStore.setState((state) => {
     if (progress == null) {
@@ -375,6 +369,21 @@ export const setSetupProgress = (
         ...state.setupProgressBySessionId,
         [sessionId]: progress,
       },
+    };
+  });
+};
+
+export const setDeleteProgress = (
+  sessionId: string,
+  progress: DeleteProgress | null,
+) => {
+  sessionStore.setState((state) => {
+    const { [sessionId]: _removed, ...next } = state.deleteProgressBySessionId;
+
+    return {
+      deleteProgressBySessionId: progress
+        ? { ...next, [sessionId]: progress }
+        : next,
     };
   });
 };
@@ -447,6 +456,9 @@ export const useSessions = () => useSessionStore((s) => s.sessions);
 
 export const useSetupProgressBySessionId = () =>
   useSessionStore((s) => s.setupProgressBySessionId);
+
+export const useDeleteProgressBySessionId = () =>
+  useSessionStore((s) => s.deleteProgressBySessionId);
 
 /** Non-hook accessor for the currently selected session id (from URL). */
 export const getSelectedSessionId = (): string | null =>

@@ -187,6 +187,11 @@ struct ProjectView: View {
             .lineLimit(1)
         }
         if let git { gitSummary(git) }
+        if let session = group.session,
+          session.status == .initializing || session.status == .deleting
+        {
+          sessionProgress(session)
+        }
       }
     }
     .opacity(group.session?.isUnavailable == true ? 0.55 : 1)
@@ -194,6 +199,21 @@ struct ProjectView: View {
     .task {
       guard group.session?.isUnavailable != true else { return }
       await app.loadGitStatus(sessionId: group.sessionId)
+    }
+  }
+
+  /// A bar that moves while the computer sets a session up or removes it, so
+  /// a slow one doesn't look stuck. A spinner until there is a count.
+  @ViewBuilder
+  private func sessionProgress(_ session: RemoteSession) -> some View {
+    let label = session.status == .deleting ? "Removing files" : "Setting up"
+    if let fraction = session.progress?.fraction {
+      ProgressView(value: fraction)
+        .accessibilityLabel(label)
+    } else {
+      ProgressView()
+        .controlSize(.small)
+        .accessibilityLabel(label)
     }
   }
 

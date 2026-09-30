@@ -1,4 +1,5 @@
 import type { CreateSessionLlm } from "../lib/ipc";
+import type { DeleteProgress, SetupProgress } from "../lib/sessionProgress";
 import type { HostId } from "../lib/transport/hostId";
 import type { Session } from "../lib/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -17,6 +18,7 @@ import {
   getSessionState,
   mergeSessionsForProject,
   selectSession,
+  setDeleteProgress,
   setProjectBranch,
   setSetupProgress,
   updateSession,
@@ -49,6 +51,7 @@ function setupSessionStatusListener(sessionId: string): Promise<() => void> {
     } else if (payload.startsWith("error:")) {
       status = { error: payload.slice(6) };
       // Keep the last setup progress so the UI can show which step failed.
+      setDeleteProgress(sessionId, null);
     } else {
       status = "initializing";
     }
@@ -76,23 +79,37 @@ function setupSessionTerminalListener(sessionId: string): Promise<() => void> {
   );
 }
 
-function setupSessionProgressListener(sessionId: string): Promise<() => void> {
-  return listen<{
-    current: number;
-    item: string;
-    phase?: "command" | "copy" | "matching" | "symlink";
-    total: number;
-  }>(`session:setup_progress:${sessionId}`, (event) => {
-    const data = event.payload;
-    if (
-      data &&
-      typeof data.item === "string" &&
-      typeof data.current === "number" &&
-      typeof data.total === "number"
-    ) {
-      setSetupProgress(sessionId, data);
-    }
-  });
+async function setupSessionProgressListener(
+  sessionId: string,
+): Promise<() => void> {
+  const [unlistenSetup, unlistenDelete] = await Promise.all([
+    listen<SetupProgress>(`session:setup_progress:${sessionId}`, (event) => {
+      const data = event.payload;
+      if (
+        data &&
+        typeof data.item === "string" &&
+        typeof data.current === "number" &&
+        typeof data.total === "number"
+      ) {
+        setSetupProgress(sessionId, data);
+      }
+    }),
+    listen<DeleteProgress>(`session:delete_progress:${sessionId}`, (event) => {
+      const data = event.payload;
+      if (
+        data &&
+        typeof data.current === "number" &&
+        typeof data.total === "number"
+      ) {
+        setDeleteProgress(sessionId, data);
+      }
+    }),
+  ]);
+
+  return () => {
+    unlistenSetup();
+    unlistenDelete();
+  };
 }
 
 // ---------------------------------------------------------------------------

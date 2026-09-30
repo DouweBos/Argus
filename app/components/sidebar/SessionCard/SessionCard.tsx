@@ -9,6 +9,7 @@ import {
 } from "@argus/peacock";
 import { useGitObservation } from "../../../hooks/useGitObservation";
 import { createTerminal, revealInFinder } from "../../../lib/ipc";
+import { truncateStart } from "../../../lib/sessionProgress";
 import { openSessionTab } from "../../../lib/tabActions";
 import {
   isSessionReady,
@@ -21,17 +22,10 @@ import { useSetupProgressBySessionId } from "../../../stores/sessionStore";
 import { useSessionIsRunning } from "../../../stores/terminalStore";
 import { BranchSwitcher } from "../BranchSwitcher";
 import styles from "./SessionCard.module.css";
+import { SessionProgress } from "./SessionProgress";
 
 const MAX_SUBTITLE_LEN = 36;
 const EMPTY_CLAIMED_BRANCHES: ReadonlySet<string> = new Set();
-
-function truncateStart(str: string, maxLen: number): string {
-  if (str.length <= maxLen) {
-    return str;
-  }
-
-  return `…${str.slice(-(maxLen - 1))}`;
-}
 
 function repoBasenameFromPath(path: string): string {
   return path.split(/[/\\]/).filter(Boolean).pop() ?? path;
@@ -406,32 +400,7 @@ export function SessionCard({
           />
         </div>
       )}
-      {session.status === "initializing" && setupProgress && (
-        <div className={styles.setupProgressWrap}>
-          {setupProgress.total > 0 && (
-            <div
-              aria-label="Setup progress"
-              aria-valuemax={setupProgress.total}
-              aria-valuemin={0}
-              aria-valuenow={setupProgress.current}
-              className={styles.progressBar}
-              role="progressbar"
-            >
-              <div
-                className={styles.progressBarFill}
-                style={{
-                  width: `${
-                    (100 * setupProgress.current) / setupProgress.total
-                  }%`,
-                }}
-              />
-            </div>
-          )}
-          <p className={styles.setupProgress} title={setupProgress.item}>
-            {truncateStart(setupProgress.item, MAX_SUBTITLE_LEN)}
-          </p>
-        </div>
-      )}
+      <SessionProgress session={session} />
       {errorMessage && (
         <div className={styles.errorWrap}>
           {setupProgress?.item && (

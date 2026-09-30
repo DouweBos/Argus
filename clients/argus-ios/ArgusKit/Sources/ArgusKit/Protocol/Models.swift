@@ -45,6 +45,9 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   /// active one.
   public var claudeAccountId: String?
   public var status: RemoteSessionStatus
+  /// How far setup or removal has got. Nil before the first count, and on
+  /// older computers.
+  public var progress: RemoteSessionProgress?
   /// Whether the computer can currently reach this session's files. Separate
   /// from `status` — the usual cause is an external drive unplugged from the
   /// computer, which the phone can only report, not fix. Absent on older
@@ -64,9 +67,19 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case displayName = "display_name"
     case baseBranch = "base_branch"
     case claudeAccountId = "claude_account_id"
-    case status, availability
+    case status, progress, availability
     case unavailableVolume = "unavailable_volume"
     case volume
+  }
+}
+
+public struct RemoteSessionProgress: Codable, Hashable, Sendable {
+  public var current: Double
+  public var total: Double
+
+  /// 0...1, or nil when there is nothing to measure against.
+  public var fraction: Double? {
+    total > 0 ? min(max(current / total, 0), 1) : nil
   }
 }
 
