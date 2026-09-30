@@ -89,6 +89,7 @@ import type {
   MoveWorktreesPlan,
   MoveWorktreesResult,
 } from "./types";
+import type { CommandName, ParamsIn, ResultOf } from "@argus/remote-protocol";
 import { rehydrateGitError } from "./gitError";
 import { rehydrateShareError } from "./shareError";
 import { getTransportForCommand } from "./transport";
@@ -109,12 +110,28 @@ declare global {
   }
 }
 
+type InvokeArgs<N extends CommandName> =
+  Record<string, never> extends ParamsIn<N>
+    ? [params?: ParamsIn<N>]
+    : [params: ParamsIn<N>];
+
 /**
  * Send a command to the machine that owns its subject. Several hosts are
  * attached at once, so the target is resolved per call from the session,
  * agent, terminal or repo root in `args` — never from ambient "current host"
  * state. See `transport/hostRouting.ts`.
+ *
+ * Catalog commands are typed end to end by `@argus/remote-protocol`; the
+ * untyped overload only admits names the catalog does not know yet.
  */
+function invoke<N extends CommandName>(
+  channel: N,
+  ...args: InvokeArgs<N>
+): Promise<ResultOf<N>>;
+function invoke<T, C extends string = string>(
+  channel: C extends CommandName ? never : C,
+  args?: Record<string, unknown>,
+): Promise<T>;
 function invoke<T>(
   channel: string,
   args?: Record<string, unknown>,
