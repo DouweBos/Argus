@@ -20,58 +20,22 @@ import {
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import {
+  startHost,
+  stopHostServices,
+  syncHostCleanup,
+  terminateHostProcesses,
+} from "@argus/host/boot";
 import { emitHostEvent } from "@argus/host/bus";
-import { registerHostCommands } from "@argus/host/commands/index";
 import { argusHomeDir } from "@argus/host/lib/argusHome";
 import { writeLogLine } from "@argus/host/lib/logFile";
-import {
-  isServerMode,
-  startPowerAssertion,
-  stopPowerAssertion,
-} from "@argus/host/serverMode";
-import { destroyAllAgents } from "@argus/host/services/agent/agentService";
-import { reapOrphanedAgentProcesses } from "@argus/host/services/agent/reapOrphans";
-import { initAutomations } from "@argus/host/services/automation/manager";
-import { initAutomationOutcomes } from "@argus/host/services/automation/outcomes";
-import { startAutomationScheduler } from "@argus/host/services/automation/scheduler";
-import { stopAllScreencasts } from "@argus/host/services/browser/cdpScreencast";
+import { isServerMode, startPowerAssertion } from "@argus/host/serverMode";
 import { setColorScheme } from "@argus/host/services/browser/conductorInput";
-import {
-  startMjpegServer,
-  stopMjpegServer,
-} from "@argus/host/services/browser/mjpegServer";
-import { webBrowserPool } from "@argus/host/services/browser/pool";
-import {
-  applyActiveAccountToProcessEnv,
-  ensureDefaultAccountSeeded,
-} from "@argus/host/services/claudeAuth/accounts";
-import { stopAllDebugStreams } from "@argus/host/services/conductor/debug";
-import { initConductorOverride } from "@argus/host/services/conductor/override";
-import { startMcpServer, stopMcpServer } from "@argus/host/services/mcp/server";
-import {
-  LOCAL_GATEWAY_PORT,
-  applyRemoteSettings,
-  setRemoteConfig,
-  setWebClientDir,
-  stopRemote,
-} from "@argus/host/services/remote/remoteService";
-import { restoreScratchPads } from "@argus/host/services/scratchPad/manager";
-import { restoreRepoRoots } from "@argus/host/services/session/manager";
+import { LOCAL_GATEWAY_PORT } from "@argus/host/services/remote/remoteService";
 import { refreshAllBranches } from "@argus/host/services/session/watcher";
 import { stopAndroidCapture } from "@argus/host/services/simulator/android";
 import { stopSimulatorCapture } from "@argus/host/services/simulator/ios";
 import { getVideoDims } from "@argus/host/services/simulator/videoForward";
-import {
-  initTelemetry,
-  shutdownTelemetry,
-  capture as telemetryCapture,
-} from "@argus/host/services/telemetry/telemetry";
-import {
-  destroyAllTerminals,
-  destroyAllTerminalsAndWait,
-} from "@argus/host/services/terminal/multiplexer";
-import { reapOrphanedSpawnHelpers } from "@argus/host/services/terminal/reapOrphans";
-import { fixProcessPath } from "@argus/host/services/terminal/shellEnv";
 import { appState } from "@argus/host/state";
 import { log as emitLog } from "../app/lib/logger";
 import { installRendererEventSink } from "./broadcast";
@@ -790,19 +754,9 @@ app.on("before-quit", (e) => {
   bypassRunningAgentsGuard = false;
   log("before-quit fired, setting isQuitting=true");
   isQuitting = true;
-  telemetryCapture("app_quit");
-  shutdownTelemetry().catch(() => undefined);
-  stopMcpServer();
-  stopRemote();
-  stopMjpegServer();
-  stopAllScreencasts();
-  stopAllDebugStreams();
+  stopHostServices();
   destroyTray();
   stopDevTrust();
-  stopPowerAssertion();
-  webBrowserPool.releaseAll().catch((err) => {
-    log("webBrowserPool.releaseAll failed: %s", err);
-  });
   // Give the renderer a moment to save active conversations before destroying
   // the window. The renderer listens for `app:will-quit` and persists chat
   // history synchronously via IPC.
@@ -815,12 +769,7 @@ app.on("before-quit", (e) => {
   // Await the kill→onExit cycle so node-pty's spawn-helper shims actually
   // get reaped before we call app.quit() — otherwise they reparent to
   // launchd and accumulate over restarts.
-  Promise.allSettled([
-    destroyAllTerminalsAndWait(1500),
-    // Kill claude agent subprocesses too — handle.kill() escalates to
-    // SIGKILL on a 2 s timeout for any child that ignored SIGTERM.
-    destroyAllAgents(),
-  ]).finally(() => {
+  terminateHostProcesses().finally(() => {
     // Destroy the window directly to bypass any beforeunload handler — we
     // handle our own save state.
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -831,28 +780,12 @@ app.on("before-quit", (e) => {
 });
 
 // Fallback cleanup for shutdown paths that bypass `before-quit`:
-// `window-all-closed` (non-macOS), POSIX signals, and uncaught exits. These
-// run synchronously so they're effective even when the event loop is about
-// to be torn down.
-function syncShutdownCleanup(): void {
-  try {
-    destroyAllTerminals();
-  } catch {
-    // Best-effort; we're on the way out.
-  }
-  try {
-    // Kill the tunnel child too, else cloudflared/tailscale orphans.
-    stopRemote();
-  } catch {
-    // Best-effort; we're on the way out.
-  }
-  stopPowerAssertion();
-}
-app.on("will-quit", syncShutdownCleanup);
-process.on("exit", syncShutdownCleanup);
+// `window-all-closed` (non-macOS), POSIX signals, and uncaught exits.
+app.on("will-quit", syncHostCleanup);
+process.on("exit", syncHostCleanup);
 for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
   process.on(sig, () => {
-    syncShutdownCleanup();
+    syncHostCleanup();
     // Re-raise default behavior so Electron exits.
     app.quit();
   });
@@ -944,39 +877,7 @@ app.whenReady().then(() => {
   // events in the order they were emitted even once the gateway taps it too.
   installRendererEventSink();
 
-  // Anonymous telemetry. Starts in presence mode (one heartbeat per launch);
-  // the renderer raises it to full if the user opted in during onboarding.
-  initTelemetry();
   installCrashHooks();
-
-  // Restore a user-pinned conductor version, installing it in the background
-  // if it isn't provisioned yet. Falls back to the bundled version meanwhile.
-  initConductorOverride();
-
-  // The projects this host had open last run. Must happen before the gateway
-  // accepts anyone: a client hydrates from this set the moment it attaches,
-  // and on the headless server nothing else would ever fill it.
-  restoreRepoRoots();
-  restoreScratchPads();
-
-  // Automations. Nothing else starts the clock — the scheduler has no
-  // neighbours since organizations were removed.
-  initAutomations();
-  initAutomationOutcomes();
-  startAutomationScheduler();
-
-  // Sweep up node-pty spawn-helpers from prior Argus runs that didn't get a
-  // chance to clean up (SIGKILL'd dev process, OS crash, etc.) — they
-  // reparent to launchd and would otherwise pile up across restarts.
-  reapOrphanedSpawnHelpers().catch((err) => {
-    log("reapOrphanedSpawnHelpers failed: %s", err);
-  });
-
-  // Same idea for claude CLI agent subprocesses — they occasionally ignore
-  // SIGTERM (blocked in MCP HTTP I/O) and outlive the Argus process.
-  reapOrphanedAgentProcesses().catch((err) => {
-    log("reapOrphanedAgentProcesses failed: %s", err);
-  });
 
   if (isServerMode()) {
     // Accessory app: no Dock tile, no window, just the tray. Also keeps the
@@ -993,37 +894,15 @@ app.whenReady().then(() => {
     }
   }
 
-  // Fix PATH for bundled .app builds — ensures PATH includes Homebrew, mise, etc.
-  const pathDiag = fixProcessPath();
-  pathDiag.forEach((d) => log("[shellEnv] %s", d));
-
-  // Point this process (and everything inheriting its env) at the active
-  // Claude account, adopting any pre-existing `claude` login on first run.
-  applyActiveAccountToProcessEnv();
-  ensureDefaultAccountSeeded().catch((e) =>
-    log("Failed to seed the default Claude account: %s", String(e)),
-  );
-
-  // Start the Argus MCP server so agents can orchestrate sessions and
-  // sibling agents via the Model Context Protocol.
-  startMcpServer().catch((e) =>
-    log("Failed to start MCP server: %s", String(e)),
-  );
-
-  // Bring up phone/LAN remote access if the user has enabled it. On the server
-  // the gateway is the only way in, so it is forced on rather than a setting.
-  setWebClientDir(resolveWebClientDir());
-  const remoteReady = isServerMode()
-    ? setRemoteConfig({ enabled: true, lanWeb: true }).then(() => undefined)
-    : applyRemoteSettings();
-  remoteReady
-    .then(() => startDevTrust())
-    .catch((e) => log("Failed to start remote access: %s", String(e)));
-
-  // Start the MJPEG server for streaming browser frames via CDP screencast.
-  startMjpegServer().catch((e) =>
-    log("Failed to start MJPEG server: %s", String(e)),
-  );
+  // Everything the core runs — state restore, automations, MCP, the gateway,
+  // the MJPEG server and every host command. On the server the gateway is the
+  // only way in, so it is forced on rather than a setting.
+  startHost({
+    forceRemote: isServerMode(),
+    webClientDir: resolveWebClientDir(),
+  })
+    .remoteReady.then(() => startDevTrust())
+    .catch((e) => log("Failed to start dev trust: %s", String(e)));
 
   // Sync system dark/light theme to all active Conductor-managed browsers.
   nativeTheme.on("updated", () => {
@@ -1120,7 +999,6 @@ app.whenReady().then(() => {
   // Register all IPC handlers before creating the window.
   // Publish every registry command on ipcMain as it is defined.
   installIpcCommandBridge();
-  registerHostCommands();
   registerIpcHandlers();
 
   if (!isServerMode()) {
