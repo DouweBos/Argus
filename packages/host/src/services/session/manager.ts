@@ -36,6 +36,7 @@ import {
   addWorktree,
   branchToDir,
   git,
+  removeWorktree,
   repairOrphanedWorktrees,
   titleToBranchSlug,
   worktreesRoot,
@@ -636,12 +637,7 @@ async function finalizeSession(
     // the worktree back down instead of leaking the directory.
     if (!appState.sessions.has(id)) {
       try {
-        await git(repoRoot, [
-          "worktree",
-          "remove",
-          "--force",
-          worktreeInfo.path,
-        ]);
+        await removeWorktree(repoRoot, worktreeInfo.path);
       } catch (e) {
         info(
           `finalizeSession: cleanup of orphaned worktree failed: ${String(e)}`,
@@ -1517,36 +1513,7 @@ export async function deleteSession(
   // Run the heavy work in the background.
   (async () => {
     try {
-      // The session may have failed to create its worktree, in which case
-      // git won't know about `taskSessionPath` and `worktree remove` will
-      // fail with "'' is not a working tree". Detect that up front and skip
-      // the remove step — fall back to deleting any leftover directory.
-      let isRegistered = false;
-      try {
-        const raw = await git(taskRepoRoot, [
-          "worktree",
-          "list",
-          "--porcelain",
-        ]);
-        isRegistered = raw
-          .split("\n")
-          .filter((l) => l.startsWith("worktree "))
-          .some((l) => l.slice("worktree ".length).trim() === taskSessionPath);
-      } catch {
-        // Ignore — treat as not registered.
-      }
-
-      if (isRegistered) {
-        await git(taskRepoRoot, [
-          "worktree",
-          "remove",
-          "--force",
-          taskSessionPath,
-        ]);
-      } else if (taskSessionPath && fs.existsSync(taskSessionPath)) {
-        fs.rmSync(taskSessionPath, { recursive: true, force: true });
-      }
-      await git(taskRepoRoot, ["worktree", "prune"]);
+      await removeWorktree(taskRepoRoot, taskSessionPath);
     } catch (e) {
       const errMsg = typeof e === "string" ? e : String(e);
       error(`Background delete failed for session ${taskId}: ${errMsg}`);
