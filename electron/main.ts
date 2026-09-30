@@ -21,6 +21,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { emitHostEvent } from "@argus/host/bus";
+import { registerHostCommands } from "@argus/host/commands/index";
 import { argusHomeDir } from "@argus/host/lib/argusHome";
 import { writeLogLine } from "@argus/host/lib/logFile";
 import {
@@ -1119,6 +1120,7 @@ app.whenReady().then(() => {
   // Register all IPC handlers before creating the window.
   // Publish every registry command on ipcMain as it is defined.
   installIpcCommandBridge();
+  registerHostCommands();
   registerIpcHandlers();
 
   if (!isServerMode()) {
