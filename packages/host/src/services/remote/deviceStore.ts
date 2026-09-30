@@ -106,6 +106,11 @@ function freshState(): RemoteState {
   };
 }
 
+/**
+ * The stored state, or null when there is none yet. A store that exists but
+ * can't be read throws: regenerating over it would silently replace the host's
+ * identity and drop every pairing.
+ */
 async function readState(): Promise<RemoteState | null> {
   let raw: string;
   try {
@@ -114,19 +119,17 @@ async function readState(): Promise<RemoteState | null> {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") {
       return null;
     }
-    warn(`[remote] failed to read device store: ${(err as Error).message}`);
-
-    return null;
+    throw new Error(
+      `failed to read the remote device store: ${(err as Error).message}`,
+    );
   }
 
   const file = JSON.parse(raw) as FileShape;
   if (file.enc) {
     if (!hostPlatform().secretStorage.isAvailable()) {
-      warn(
-        "[remote] encryption unavailable but store is encrypted; cannot read",
+      throw new Error(
+        "the remote device store is encrypted but this host has no secret storage to decrypt it",
       );
-
-      return null;
     }
     try {
       const json = hostPlatform().secretStorage.decrypt(
@@ -135,11 +138,9 @@ async function readState(): Promise<RemoteState | null> {
 
       return JSON.parse(json) as RemoteState;
     } catch (err) {
-      warn(
-        `[remote] failed to decrypt device store: ${(err as Error).message}`,
+      throw new Error(
+        `failed to decrypt the remote device store (was it written by another Argus build?): ${(err as Error).message}`,
       );
-
-      return null;
     }
   }
 
