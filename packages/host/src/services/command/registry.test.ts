@@ -1,16 +1,12 @@
 /**
  * The command registry: one table behind local IPC and the wire.
  *
- * Two things must hold. Structurally, every `defineCommand` reaches the local
- * transport binder under the same name, so the renderer and the gateway can
- * never see different command sets. Statically, every registration in
- * `ipc.ts` carries a tier, and the host-tier ones are exactly the names the
- * shared `HOST_ONLY_COMMANDS` set promises never cross the wire.
+ * Every `defineCommand` reaches the local transport binder under the same
+ * name, so the renderer and the gateway can never see different command sets.
+ * The registered surface as a whole is asserted in
+ * `electron/shellCommands.test.ts`.
  */
 
-import { HOST_ONLY_COMMANDS } from "@argus/remote-protocol";
-import fs from "node:fs";
-import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { GitError } from "../session/gitError";
@@ -225,59 +221,5 @@ describe("schema'd commands", () => {
     await expect(invokeCommand("drifted", {})).rejects.toThrow(
       /does not match its schema/,
     );
-  });
-});
-
-/**
- * `ipc.ts` is migrating into `@argus/host`, so resolve it from either home.
- * Throwing beats defaulting to empty: these guards are the only thing stopping
- * a rename from silently opening a hole, so they must never quietly no-op.
- */
-function readIpcSource(): string {
-  const candidates = [
-    path.resolve(__dirname, "../../ipc.ts"),
-    path.resolve(__dirname, "../../../../../electron/ipc.ts"),
-  ];
-  const found = candidates.find((file) => fs.existsSync(file));
-  if (!found) {
-    throw new Error(`ipc.ts not found; looked in ${candidates.join(", ")}`);
-  }
-
-  return fs.readFileSync(found, "utf-8");
-}
-
-const ipcSource = readIpcSource();
-
-const REGISTRATION_RE = /\b(?:toolHandle|handle)\(\s*"([a-z0-9_]+)"/g;
-const TIERED_RE =
-  /\b(?:toolHandle|handle)\(\s*"([a-z0-9_]+)",\s*"(host|monitor|control|admin)"/g;
-
-describe("ipc.ts tier annotations", () => {
-  const names = [...ipcSource.matchAll(REGISTRATION_RE)].map((m) => m[1]);
-  const tiered = new Map(
-    [...ipcSource.matchAll(TIERED_RE)].map((m) => [m[1], m[2]]),
-  );
-
-  it("registers a non-trivial number of commands", () => {
-    expect(names.length).toBeGreaterThan(300);
-  });
-
-  it("gives every command a tier", () => {
-    const untiered = names.filter((n) => !tiered.has(n));
-    expect(untiered).toEqual([]);
-  });
-
-  it("never registers the same command twice", () => {
-    const seen = new Set<string>();
-    const duplicates = names.filter((n) => (seen.has(n) ? true : !seen.add(n)));
-    expect(duplicates).toEqual([]);
-  });
-
-  it("puts exactly the host-only commands at the host tier", () => {
-    const hostTier = [...tiered]
-      .filter(([, tier]) => tier === "host")
-      .map(([name]) => name)
-      .sort();
-    expect(hostTier).toEqual([...HOST_ONLY_COMMANDS].sort());
   });
 });

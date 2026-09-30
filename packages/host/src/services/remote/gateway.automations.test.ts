@@ -3,10 +3,10 @@
  * clock, so a paired desktop must see the host's automations, runs and
  * proposals as if they were its own — and a huddle guest must see none of it.
  *
- * Three things are asserted, all of them empirically rather than by reading
- * the source: the family's commands are admin-tier and never host-only, their
- * events actually leave the host bus and reach an admin connection, and a
- * scoped grant reaches neither the commands nor the events.
+ * Asserted empirically: the family's events actually leave the host bus and
+ * reach an admin connection, and a scoped grant reaches neither the commands
+ * nor the events. That the commands are admin-tier and never host-only is
+ * asserted in `electron/shellCommands.test.ts`.
  */
 
 import type { PairedDevice } from "./deviceStore";
@@ -17,12 +17,9 @@ import type {
 } from "@argus/remote-protocol";
 import {
   ALL_REMOTE_METHODS,
-  HOST_ONLY_COMMANDS,
   METHOD_SCOPE,
   REMOTE_METHODS,
 } from "@argus/remote-protocol";
-import fs from "node:fs";
-import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generateKeypair, NoiseHandshake, type NoiseSession } from "./noise";
 
@@ -107,32 +104,19 @@ const channels = (sent: Envelope[]): string[] =>
       (e) => (e as unknown as { payload: { channel: string } }).payload.channel,
     );
 
-/** `ipc.ts` is migrating into `@argus/host`; resolve it from either home. */
-function readIpcSource(): string {
-  const candidates = [
-    path.resolve(__dirname, "../../ipc.ts"),
-    path.resolve(__dirname, "../../../../../electron/ipc.ts"),
-  ];
-  const found = candidates.find((file) => fs.existsSync(file));
-  if (!found) {
-    throw new Error(`ipc.ts not found; looked in ${candidates.join(", ")}`);
-  }
-
-  return fs.readFileSync(found, "utf-8");
-}
-
-const declaredTiers = new Map(
-  [
-    ...readIpcSource().matchAll(
-      /\b(?:toolHandle|handle)\(\s*"([a-z0-9_]+)",\s*"(host|monitor|control|admin)"/g,
-    ),
-  ].map((m) => [m[1], m[2]]),
-);
-
-/** Everything the automations family registers, read back from `ipc.ts`. */
-const AUTOMATION_COMMANDS = [...declaredTiers.keys()].filter((name) =>
-  /^(automation|automations|proposal|proposals|signal_sources)_/.test(name),
-);
+/** A sample of the automations family's raw commands. */
+const AUTOMATION_COMMANDS = [
+  "automations_list",
+  "automation_create",
+  "automation_run_now",
+  "automation_runs_list",
+  "automation_calibration",
+  "automation_run_scratch",
+  "automation_scratch_save",
+  "proposals_list",
+  "proposal_accept",
+  "signal_sources_list",
+];
 
 /** Every channel the automation path emits on. */
 const AUTOMATION_CHANNELS = [
@@ -140,44 +124,6 @@ const AUTOMATION_CHANNELS = [
   "automation_run:changed",
   "proposals:changed",
 ];
-
-describe("the automations command family", () => {
-  it("registers the commands the surfaces need", () => {
-    // Guards against the regex quietly matching nothing after a rename.
-    expect(AUTOMATION_COMMANDS).toEqual(
-      expect.arrayContaining([
-        "automations_list",
-        "automation_create",
-        "automation_run_now",
-        "automation_runs_list",
-        "automation_calibration",
-        "automation_run_scratch",
-        "automation_scratch_save",
-        "proposals_list",
-        "proposal_accept",
-        "signal_sources_list",
-      ]),
-    );
-  });
-
-  it("puts every one of them at the admin tier", () => {
-    const wrong = AUTOMATION_COMMANDS.filter(
-      (name) => declaredTiers.get(name) !== "admin",
-    );
-    expect(wrong).toEqual([]);
-  });
-
-  /**
-   * Automations are host state. A desktop driving a headless mini must manage
-   * the mini's automations, so none of these may be host-only.
-   */
-  it("keeps every one of them remotable", () => {
-    const blocked = AUTOMATION_COMMANDS.filter((name) =>
-      HOST_ONLY_COMMANDS.has(name),
-    );
-    expect(blocked).toEqual([]);
-  });
-});
 
 describe("automation events on the wire", () => {
   beforeEach(() => {
