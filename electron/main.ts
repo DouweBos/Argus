@@ -42,7 +42,6 @@ import { installRendererEventSink } from "./broadcast";
 import { installCrashHooks } from "./crashHooks";
 import { startDevTrust, stopDevTrust } from "./devTrust";
 import { installHostPlatform } from "./hostPlatform";
-import { registerIpcHandlers } from "./ipc";
 import { installIpcCommandBridge } from "./ipcBridge";
 import { setMainWindow } from "./mainWindow";
 import { agentPopouts, devicePopouts } from "./popouts";
@@ -55,6 +54,7 @@ import {
   initUpdater,
   setBeforeQuitAndInstallHook,
 } from "./services/updater";
+import { registerShellCommands } from "./shellCommands";
 
 // Remote debugging port is no longer needed — Conductor now owns the browser
 // and Argus connects via CDP to Conductor's Chromium instance.
@@ -711,7 +711,7 @@ let isQuitting = false;
  */
 let bypassRunningAgentsGuard = false;
 
-/** Called by ipc.ts once the renderer has confirmed quit-with-running-agents. */
+/** Called once the renderer has confirmed quit-with-running-agents. */
 export function markQuitConfirmedDespiteAgents(): void {
   bypassRunningAgentsGuard = true;
 }
@@ -999,7 +999,13 @@ app.whenReady().then(() => {
   // Register all IPC handlers before creating the window.
   // Publish every registry command on ipcMain as it is defined.
   installIpcCommandBridge();
-  registerIpcHandlers();
+  registerShellCommands({
+    createFloatingDeviceWindow,
+    closeFloatingDeviceWindow,
+    createFloatingAgentWindow,
+    closeFloatingAgentWindow,
+    markQuitConfirmedDespiteAgents,
+  });
 
   if (!isServerMode()) {
     Menu.setApplicationMenu(buildAppMenu());

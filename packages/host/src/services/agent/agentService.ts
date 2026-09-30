@@ -245,7 +245,7 @@ function seedResumedSnapshot(
 /**
  * Spawn a new agent process for the given session. See claude.ts for the
  * full lifecycle docs — Phase 1 preserves the legacy signature exactly so
- * callers (`ipc.ts`, `mcp/server.ts`) don't change.
+ * callers (`commands/agents.ts`, `mcp/server.ts`) don't change.
  */
 export async function startAgent(
   sessionId: string,

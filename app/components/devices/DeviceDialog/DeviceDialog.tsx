@@ -34,6 +34,9 @@ export function DeviceDialog({ device, onClose }: DeviceDialogProps) {
   const [shuttingDown, setShuttingDown] = useState(false);
 
   const handlePopout = () => {
+    if (device.platform === "web") {
+      return;
+    }
     openDevicePopout({
       platform: device.platform,
       deviceKey: device.deviceKey,

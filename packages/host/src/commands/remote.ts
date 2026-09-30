@@ -20,7 +20,6 @@ import {
 import { sendTestPush } from "../services/remote/push/dispatch";
 import {
   applyTailscaleFixAndOpen,
-  installRemoteStatusBroadcast,
   revokeRemoteDevice,
   setRemoteDeviceGrants,
   startRemotePairing,
@@ -83,6 +82,4 @@ export function registerRemoteCommands(): void {
   defineTypedCommand("huddle_remove_guest", (p) =>
     removeGuest(p.roomId, p.devStaticPub),
   );
-  // Registration is the host's boot for now; the broadcast rides along.
-  installRemoteStatusBroadcast();
 }

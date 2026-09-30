@@ -4,6 +4,4909 @@
 import Foundation
 
 extension ArgusProtocol {
+  public struct AddRepoRootParams: Codable, Sendable {
+    public var path: String
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+    }
+
+    public init(path: String) {
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+    }
+  }
+
+  public struct AddToGitignoreParams: Codable, Sendable {
+    public var id: String
+    public var filePath: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case filePath = "filePath"
+    }
+
+    public init(id: String, filePath: String) {
+      self.id = id
+      self.filePath = filePath
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(filePath, forKey: .filePath)
+    }
+  }
+
+  public struct AndroidButtonParams: Codable, Sendable {
+    public var serial: String
+    public var button: String
+
+    enum CodingKeys: String, CodingKey {
+      case serial = "serial"
+      case button = "button"
+    }
+
+    public init(serial: String, button: String) {
+      self.serial = serial
+      self.button = button
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(serial, forKey: .serial)
+      try c.encode(button, forKey: .button)
+    }
+  }
+
+  public struct AndroidKeyboardParams: Codable, Sendable {
+    public var serial: String
+    public var keyCode: Double
+    public var metaState: Double
+    public var isDown: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case serial = "serial"
+      case keyCode = "keyCode"
+      case metaState = "metaState"
+      case isDown = "isDown"
+    }
+
+    public init(serial: String, keyCode: Double, metaState: Double, isDown: Bool) {
+      self.serial = serial
+      self.keyCode = keyCode
+      self.metaState = metaState
+      self.isDown = isDown
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(serial, forKey: .serial)
+      try c.encode(keyCode, forKey: .keyCode)
+      try c.encode(metaState, forKey: .metaState)
+      try c.encode(isDown, forKey: .isDown)
+    }
+  }
+
+  public struct AndroidTouchParams: Codable, Sendable {
+    public var serial: String
+    public var x: Double
+    public var y: Double
+    public var eventType: Double
+
+    enum CodingKeys: String, CodingKey {
+      case serial = "serial"
+      case x = "x"
+      case y = "y"
+      case eventType = "eventType"
+    }
+
+    public init(serial: String, x: Double, y: Double, eventType: Double) {
+      self.serial = serial
+      self.x = x
+      self.y = y
+      self.eventType = eventType
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(serial, forKey: .serial)
+      try c.encode(x, forKey: .x)
+      try c.encode(y, forKey: .y)
+      try c.encode(eventType, forKey: .eventType)
+    }
+  }
+
+  public struct AutofillPrTemplateParams: Codable, Sendable {
+    public var sessionId: String
+    public var title: String
+    public var baseBranch: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case title = "title"
+      case baseBranch = "baseBranch"
+    }
+
+    public init(sessionId: String, title: String, baseBranch: String) {
+      self.sessionId = sessionId
+      self.title = title
+      self.baseBranch = baseBranch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(title, forKey: .title)
+      try c.encode(baseBranch, forKey: .baseBranch)
+    }
+  }
+
+  public struct AutomationCalibrationParams: Codable, Sendable {
+    public var automationId: String
+
+    enum CodingKeys: String, CodingKey {
+      case automationId = "automationId"
+    }
+
+    public init(automationId: String) {
+      self.automationId = automationId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(automationId, forKey: .automationId)
+    }
+  }
+
+  public struct AutomationCancelRunParams: Codable, Sendable {
+    public var runId: String
+
+    enum CodingKeys: String, CodingKey {
+      case runId = "runId"
+    }
+
+    public init(runId: String) {
+      self.runId = runId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(runId, forKey: .runId)
+    }
+  }
+
+  public struct AutomationCreateParams: Codable, Sendable {
+    public var input: CreateAutomationInput
+
+    enum CodingKeys: String, CodingKey {
+      case input = "input"
+    }
+
+    public init(input: CreateAutomationInput) {
+      self.input = input
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(input, forKey: .input)
+    }
+  }
+
+  public struct AutomationDeleteParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct AutomationDraftParams: Codable, Sendable {
+    public var description: String
+    public var timezone: String?
+
+    enum CodingKeys: String, CodingKey {
+      case description = "description"
+      case timezone = "timezone"
+    }
+
+    public init(description: String, timezone: String? = nil) {
+      self.description = description
+      self.timezone = timezone
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(description, forKey: .description)
+      try c.encodeIfPresent(timezone, forKey: .timezone)
+    }
+  }
+
+  public struct AutomationGateLogDismissParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct AutomationMemoriesListParams: Codable, Sendable {
+    public var automationId: String
+
+    enum CodingKeys: String, CodingKey {
+      case automationId = "automationId"
+    }
+
+    public init(automationId: String) {
+      self.automationId = automationId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(automationId, forKey: .automationId)
+    }
+  }
+
+  public struct AutomationMemoryDeleteParams: Codable, Sendable {
+    public var automationId: String
+    public var name: String
+
+    enum CodingKeys: String, CodingKey {
+      case automationId = "automationId"
+      case name = "name"
+    }
+
+    public init(automationId: String, name: String) {
+      self.automationId = automationId
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(automationId, forKey: .automationId)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
+  public struct AutomationMemorySaveParams: Codable, Sendable {
+    public var automationId: String
+    public var input: SaveAutomationMemoryInput
+
+    enum CodingKeys: String, CodingKey {
+      case automationId = "automationId"
+      case input = "input"
+    }
+
+    public init(automationId: String, input: SaveAutomationMemoryInput) {
+      self.automationId = automationId
+      self.input = input
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(automationId, forKey: .automationId)
+      try c.encode(input, forKey: .input)
+    }
+  }
+
+  public struct AutomationPlaybookReviseParams: Codable, Sendable {
+    public var playbook: String
+    public var instruction: String
+    public var name: String?
+
+    enum CodingKeys: String, CodingKey {
+      case playbook = "playbook"
+      case instruction = "instruction"
+      case name = "name"
+    }
+
+    public init(playbook: String, instruction: String, name: String? = nil) {
+      self.playbook = playbook
+      self.instruction = instruction
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(playbook, forKey: .playbook)
+      try c.encode(instruction, forKey: .instruction)
+      try c.encodeIfPresent(name, forKey: .name)
+    }
+  }
+
+  public struct AutomationPlaybookReviseResult: Codable, Sendable {
+    public var playbook: String
+
+    enum CodingKeys: String, CodingKey {
+      case playbook = "playbook"
+    }
+
+    public init(playbook: String) {
+      self.playbook = playbook
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(playbook, forKey: .playbook)
+    }
+  }
+
+  public struct AutomationRunDeleteParams: Codable, Sendable {
+    public var runId: String
+
+    enum CodingKeys: String, CodingKey {
+      case runId = "runId"
+    }
+
+    public init(runId: String) {
+      self.runId = runId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(runId, forKey: .runId)
+    }
+  }
+
+  public struct AutomationRunFeedbackParams: Codable, Sendable {
+    public var runId: String
+    public var note: String
+    public var allowClearing: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case runId = "runId"
+      case note = "note"
+      case allowClearing = "allowClearing"
+    }
+
+    public init(runId: String, note: String, allowClearing: Bool? = nil) {
+      self.runId = runId
+      self.note = note
+      self.allowClearing = allowClearing
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(runId, forKey: .runId)
+      try c.encode(note, forKey: .note)
+      try c.encodeIfPresent(allowClearing, forKey: .allowClearing)
+    }
+  }
+
+  public struct AutomationRunGetParams: Codable, Sendable {
+    public var runId: String
+
+    enum CodingKeys: String, CodingKey {
+      case runId = "runId"
+    }
+
+    public init(runId: String) {
+      self.runId = runId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(runId, forKey: .runId)
+    }
+  }
+
+  public struct AutomationRunMarkReadParams: Codable, Sendable {
+    public var runId: String
+
+    enum CodingKeys: String, CodingKey {
+      case runId = "runId"
+    }
+
+    public init(runId: String) {
+      self.runId = runId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(runId, forKey: .runId)
+    }
+  }
+
+  public struct AutomationRunNowParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct AutomationRunScratchParams: Codable, Sendable {
+    public var input: StartScratchRunInput
+
+    enum CodingKeys: String, CodingKey {
+      case input = "input"
+    }
+
+    public init(input: StartScratchRunInput) {
+      self.input = input
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(input, forKey: .input)
+    }
+  }
+
+  public struct AutomationRunsListParams: Codable, Sendable {
+    public var automationId: String?
+
+    enum CodingKeys: String, CodingKey {
+      case automationId = "automationId"
+    }
+
+    public init(automationId: String? = nil) {
+      self.automationId = automationId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(automationId, forKey: .automationId)
+    }
+  }
+
+  public struct AutomationScratchSaveParams: Codable, Sendable {
+    public var runId: String
+    public var name: String?
+    public var description: String?
+
+    enum CodingKeys: String, CodingKey {
+      case runId = "runId"
+      case name = "name"
+      case description = "description"
+    }
+
+    public init(runId: String, name: String? = nil, description: String? = nil) {
+      self.runId = runId
+      self.name = name
+      self.description = description
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(runId, forKey: .runId)
+      try c.encodeIfPresent(name, forKey: .name)
+      try c.encodeIfPresent(description, forKey: .description)
+    }
+  }
+
+  public struct AutomationSetEnabledParams: Codable, Sendable {
+    public var id: String
+    public var enabled: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case enabled = "enabled"
+    }
+
+    public init(id: String, enabled: Bool) {
+      self.id = id
+      self.enabled = enabled
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(enabled, forKey: .enabled)
+    }
+  }
+
+  public struct AutomationUpdateParams: Codable, Sendable {
+    public var id: String
+    public var patch: UpdateAutomationInput
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case patch = "patch"
+    }
+
+    public init(id: String, patch: UpdateAutomationInput) {
+      self.id = id
+      self.patch = patch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(patch, forKey: .patch)
+    }
+  }
+
+  public struct BootAndroidEmulatorParams: Codable, Sendable {
+    public var avdName: String
+
+    enum CodingKeys: String, CodingKey {
+      case avdName = "avdName"
+    }
+
+    public init(avdName: String) {
+      self.avdName = avdName
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(avdName, forKey: .avdName)
+    }
+  }
+
+  public struct BootSimulatorParams: Codable, Sendable {
+    public var udid: String
+
+    enum CodingKeys: String, CodingKey {
+      case udid = "udid"
+    }
+
+    public init(udid: String) {
+      self.udid = udid
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(udid, forKey: .udid)
+    }
+  }
+
+  public struct BrowserKeyboardEventParamsType: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let down = BrowserKeyboardEventParamsType(rawValue: "down")
+    public static let press = BrowserKeyboardEventParamsType(rawValue: "press")
+    public static let up = BrowserKeyboardEventParamsType(rawValue: "up")
+  }
+
+  public struct BrowserKeyboardEventParams: Codable, Sendable {
+    public var sessionId: String
+    public var type: BrowserKeyboardEventParamsType
+    public var key: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case type = "type"
+      case key = "key"
+    }
+
+    public init(sessionId: String, type: BrowserKeyboardEventParamsType, key: String) {
+      self.sessionId = sessionId
+      self.type = type
+      self.key = key
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(type, forKey: .type)
+      try c.encode(key, forKey: .key)
+    }
+  }
+
+  public struct BrowserMouseEventParamsType: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let click = BrowserMouseEventParamsType(rawValue: "click")
+    public static let down = BrowserMouseEventParamsType(rawValue: "down")
+    public static let move = BrowserMouseEventParamsType(rawValue: "move")
+    public static let up = BrowserMouseEventParamsType(rawValue: "up")
+  }
+
+  public struct BrowserMouseEventParamsButton: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let left = BrowserMouseEventParamsButton(rawValue: "left")
+    public static let middle = BrowserMouseEventParamsButton(rawValue: "middle")
+    public static let right = BrowserMouseEventParamsButton(rawValue: "right")
+  }
+
+  public struct BrowserMouseEventParams: Codable, Sendable {
+    public var sessionId: String
+    public var type: BrowserMouseEventParamsType
+    public var x: Double
+    public var y: Double
+    public var button: BrowserMouseEventParamsButton?
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case type = "type"
+      case x = "x"
+      case y = "y"
+      case button = "button"
+    }
+
+    public init(sessionId: String, type: BrowserMouseEventParamsType, x: Double, y: Double, button: BrowserMouseEventParamsButton? = nil) {
+      self.sessionId = sessionId
+      self.type = type
+      self.x = x
+      self.y = y
+      self.button = button
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(type, forKey: .type)
+      try c.encode(x, forKey: .x)
+      try c.encode(y, forKey: .y)
+      try c.encodeIfPresent(button, forKey: .button)
+    }
+  }
+
+  public struct BrowserUpdatePresetParams: Codable, Sendable {
+    public var sessionId: String
+    public var preset: BrowserPreset
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case preset = "preset"
+    }
+
+    public init(sessionId: String, preset: BrowserPreset) {
+      self.sessionId = sessionId
+      self.preset = preset
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(preset, forKey: .preset)
+    }
+  }
+
+  public struct BrowserViewBackParams: Codable, Sendable {
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+    }
+
+    public init(sessionId: String) {
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct BrowserViewDestroyParams: Codable, Sendable {
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+    }
+
+    public init(sessionId: String) {
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct BrowserViewEnsureParams: Codable, Sendable {
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+    }
+
+    public init(sessionId: String) {
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct BrowserViewForwardParams: Codable, Sendable {
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+    }
+
+    public init(sessionId: String) {
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct BrowserViewNavigateParams: Codable, Sendable {
+    public var sessionId: String
+    public var url: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case url = "url"
+    }
+
+    public init(sessionId: String, url: String) {
+      self.sessionId = sessionId
+      self.url = url
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(url, forKey: .url)
+    }
+  }
+
+  public struct BrowserViewReloadParams: Codable, Sendable {
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+    }
+
+    public init(sessionId: String) {
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct BrowserWheelEventParams: Codable, Sendable {
+    public var sessionId: String
+    public var x: Double
+    public var y: Double
+    public var deltaX: Double
+    public var deltaY: Double
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case x = "x"
+      case y = "y"
+      case deltaX = "deltaX"
+      case deltaY = "deltaY"
+    }
+
+    public init(sessionId: String, x: Double, y: Double, deltaX: Double, deltaY: Double) {
+      self.sessionId = sessionId
+      self.x = x
+      self.y = y
+      self.deltaX = deltaX
+      self.deltaY = deltaY
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(x, forKey: .x)
+      try c.encode(y, forKey: .y)
+      try c.encode(deltaX, forKey: .deltaX)
+      try c.encode(deltaY, forKey: .deltaY)
+    }
+  }
+
+  public struct CheckSshKeysResult: Codable, Sendable {
+    public var keys: [SshKey]
+
+    enum CodingKeys: String, CodingKey {
+      case keys = "keys"
+    }
+
+    public init(keys: [SshKey]) {
+      self.keys = keys
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(keys, forKey: .keys)
+    }
+  }
+
+  public struct CheckoutBranchParams: Codable, Sendable {
+    public var repoRoot: String
+    public var branch: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case branch = "branch"
+    }
+
+    public init(repoRoot: String, branch: String) {
+      self.repoRoot = repoRoot
+      self.branch = branch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(branch, forKey: .branch)
+    }
+  }
+
+  public struct ClaimPrewarmAgentParams: Codable, Sendable {
+    public var agentId: String
+    public var model: String?
+    public var permissionMode: String?
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case model = "model"
+      case permissionMode = "permissionMode"
+    }
+
+    public init(agentId: String, model: String? = nil, permissionMode: String? = nil) {
+      self.agentId = agentId
+      self.model = model
+      self.permissionMode = permissionMode
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encodeIfPresent(model, forKey: .model)
+      try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
+    }
+  }
+
+  public struct ClaudeAccountsAddParams: Codable, Sendable {
+    public var useConsole: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case useConsole = "useConsole"
+    }
+
+    public init(useConsole: Bool? = nil) {
+      self.useConsole = useConsole
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(useConsole, forKey: .useConsole)
+    }
+  }
+
+  public struct ClaudeAccountsRefreshParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct ClaudeAccountsRemoveParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct ClaudeAccountsRenameParams: Codable, Sendable {
+    public var id: String
+    public var label: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case label = "label"
+    }
+
+    public init(id: String, label: String) {
+      self.id = id
+      self.label = label
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(label, forKey: .label)
+    }
+  }
+
+  public struct ClaudeAccountsSetActiveParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct ClaudeAuthLoginStartParams: Codable, Sendable {
+    public var useConsole: Bool?
+    public var accountId: String?
+
+    enum CodingKeys: String, CodingKey {
+      case useConsole = "useConsole"
+      case accountId = "accountId"
+    }
+
+    public init(useConsole: Bool? = nil, accountId: String? = nil) {
+      self.useConsole = useConsole
+      self.accountId = accountId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(useConsole, forKey: .useConsole)
+      try c.encodeIfPresent(accountId, forKey: .accountId)
+    }
+  }
+
+  public struct ClaudeAuthLoginSubmitCodeParams: Codable, Sendable {
+    public var code: String
+
+    enum CodingKeys: String, CodingKey {
+      case code = "code"
+    }
+
+    public init(code: String) {
+      self.code = code
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(code, forKey: .code)
+    }
+  }
+
+  public struct ClaudeAuthLogoutParams: Codable, Sendable {
+    public var accountId: String?
+
+    enum CodingKeys: String, CodingKey {
+      case accountId = "accountId"
+    }
+
+    public init(accountId: String? = nil) {
+      self.accountId = accountId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(accountId, forKey: .accountId)
+    }
+  }
+
+  public struct ClaudeAuthStatusParams: Codable, Sendable {
+    public var accountId: String?
+
+    enum CodingKeys: String, CodingKey {
+      case accountId = "accountId"
+    }
+
+    public init(accountId: String? = nil) {
+      self.accountId = accountId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(accountId, forKey: .accountId)
+    }
+  }
+
+  public struct ClearQueuedMessagesParams: Codable, Sendable {
+    public var agentId: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+    }
+
+    public init(agentId: String) {
+      self.agentId = agentId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+    }
+  }
+
+  public struct ClearSessionSetupErrorParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct CloseAgentPopoutParams: Codable, Sendable {
+    public var agentId: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+    }
+
+    public init(agentId: String) {
+      self.agentId = agentId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+    }
+  }
+
+  public struct CloseDevicePopoutParams: Codable, Sendable {
+    public var platform: PopoutPlatform
+    public var deviceKey: String
+
+    enum CodingKeys: String, CodingKey {
+      case platform = "platform"
+      case deviceKey = "deviceKey"
+    }
+
+    public init(platform: PopoutPlatform, deviceKey: String) {
+      self.platform = platform
+      self.deviceKey = deviceKey
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(platform, forKey: .platform)
+      try c.encode(deviceKey, forKey: .deviceKey)
+    }
+  }
+
+  public struct CreateCheckpointParams: Codable, Sendable {
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+    }
+
+    public init(sessionId: String) {
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct CreateProjectRootSessionParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct CreateRunTerminalParams: Codable, Sendable {
+    public var sessionId: String
+    public var title: String?
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case title = "title"
+    }
+
+    public init(sessionId: String, title: String? = nil) {
+      self.sessionId = sessionId
+      self.title = title
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encodeIfPresent(title, forKey: .title)
+    }
+  }
+
+  public struct CreateScratchPadParams: Codable, Sendable {
+    public var name: String?
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+    }
+
+    public init(name: String? = nil) {
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(name, forKey: .name)
+    }
+  }
+
+  public struct CreateSessionParamsLlm: Codable, Sendable {
+    public var runner: String?
+    public var model: String?
+
+    enum CodingKeys: String, CodingKey {
+      case runner = "runner"
+      case model = "model"
+    }
+
+    public init(runner: String? = nil, model: String? = nil) {
+      self.runner = runner
+      self.model = model
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(runner, forKey: .runner)
+      try c.encodeIfPresent(model, forKey: .model)
+    }
+  }
+
+  public struct CreateSessionParams: Codable, Sendable {
+    public var repoRoot: String
+    public var branch: String
+    public var description: String
+    public var useExistingBranch: Bool?
+    public var baseBranch: String?
+    public var llm: CreateSessionParamsLlm?
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case branch = "branch"
+      case description = "description"
+      case useExistingBranch = "useExistingBranch"
+      case baseBranch = "baseBranch"
+      case llm = "llm"
+    }
+
+    public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, llm: CreateSessionParamsLlm? = nil) {
+      self.repoRoot = repoRoot
+      self.branch = branch
+      self.description = description
+      self.useExistingBranch = useExistingBranch
+      self.baseBranch = baseBranch
+      self.llm = llm
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(branch, forKey: .branch)
+      try c.encode(description, forKey: .description)
+      try c.encodeIfPresent(useExistingBranch, forKey: .useExistingBranch)
+      try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
+      try c.encodeIfPresent(llm, forKey: .llm)
+    }
+  }
+
+  public struct CreateTerminalParams: Codable, Sendable {
+    public var sessionId: String
+    public var subDir: String?
+    public var title: String?
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case subDir = "subDir"
+      case title = "title"
+    }
+
+    public init(sessionId: String, subDir: String? = nil, title: String? = nil) {
+      self.sessionId = sessionId
+      self.subDir = subDir
+      self.title = title
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encodeIfPresent(subDir, forKey: .subDir)
+      try c.encodeIfPresent(title, forKey: .title)
+    }
+  }
+
+  public struct DebugRunCommandParams: Codable, Sendable {
+    public var deviceKey: String
+    public var args: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+      case args = "args"
+    }
+
+    public init(deviceKey: String, args: [String]) {
+      self.deviceKey = deviceKey
+      self.args = args
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+      try c.encode(args, forKey: .args)
+    }
+  }
+
+  public struct DebugStartStreamParams: Codable, Sendable {
+    public var deviceKey: String
+    public var args: [String]
+    public var streamId: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+      case args = "args"
+      case streamId = "streamId"
+    }
+
+    public init(deviceKey: String, args: [String], streamId: String) {
+      self.deviceKey = deviceKey
+      self.args = args
+      self.streamId = streamId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+      try c.encode(args, forKey: .args)
+      try c.encode(streamId, forKey: .streamId)
+    }
+  }
+
+  public struct DebugStopStreamParams: Codable, Sendable {
+    public var streamId: String
+
+    enum CodingKeys: String, CodingKey {
+      case streamId = "streamId"
+    }
+
+    public init(streamId: String) {
+      self.streamId = streamId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(streamId, forKey: .streamId)
+    }
+  }
+
+  public struct DeleteChatHistoryParams: Codable, Sendable {
+    public var repoRoot: String
+    public var historyId: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case historyId = "historyId"
+    }
+
+    public init(repoRoot: String, historyId: String) {
+      self.repoRoot = repoRoot
+      self.historyId = historyId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(historyId, forKey: .historyId)
+    }
+  }
+
+  public struct DeleteCheckpointParams: Codable, Sendable {
+    public var sessionId: String
+    public var checkpointId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case checkpointId = "checkpointId"
+    }
+
+    public init(sessionId: String, checkpointId: String) {
+      self.sessionId = sessionId
+      self.checkpointId = checkpointId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(checkpointId, forKey: .checkpointId)
+    }
+  }
+
+  public struct DeleteSessionParams: Codable, Sendable {
+    public var id: String
+    public var shouldDeleteBranch: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case shouldDeleteBranch = "shouldDeleteBranch"
+    }
+
+    public init(id: String, shouldDeleteBranch: Bool? = nil) {
+      self.id = id
+      self.shouldDeleteBranch = shouldDeleteBranch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(shouldDeleteBranch, forKey: .shouldDeleteBranch)
+    }
+  }
+
+  public struct DequeueMessageParams: Codable, Sendable {
+    public var agentId: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+    }
+
+    public init(agentId: String) {
+      self.agentId = agentId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+    }
+  }
+
+  public struct DestroyTerminalParams: Codable, Sendable {
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+    }
+
+    public init(sessionId: String) {
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct DeviceClaimStatusParams: Codable, Sendable {
+    public var deviceId: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceId = "deviceId"
+    }
+
+    public init(deviceId: String) {
+      self.deviceId = deviceId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceId, forKey: .deviceId)
+    }
+  }
+
+  public struct DeviceInputEndpointParams: Codable, Sendable {
+    public var deviceKey: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+    }
+
+    public init(deviceKey: String) {
+      self.deviceKey = deviceKey
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+    }
+  }
+
+  public struct DeviceOpenLinkParams: Codable, Sendable {
+    public var deviceKey: String
+    public var url: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+      case url = "url"
+    }
+
+    public init(deviceKey: String, url: String) {
+      self.deviceKey = deviceKey
+      self.url = url
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+      try c.encode(url, forKey: .url)
+    }
+  }
+
+  public struct DiscardFileParams: Codable, Sendable {
+    public var id: String
+    public var filePath: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case filePath = "filePath"
+    }
+
+    public init(id: String, filePath: String) {
+      self.id = id
+      self.filePath = filePath
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(filePath, forKey: .filePath)
+    }
+  }
+
+  public struct DiscardHunkParams: Codable, Sendable {
+    public var id: String
+    public var patch: String
+    public var staged: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case patch = "patch"
+      case staged = "staged"
+    }
+
+    public init(id: String, patch: String, staged: Bool? = nil) {
+      self.id = id
+      self.patch = patch
+      self.staged = staged
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(patch, forKey: .patch)
+      try c.encodeIfPresent(staged, forKey: .staged)
+    }
+  }
+
+  public struct DiscardPrewarmAgentParams: Codable, Sendable {
+    public var agentId: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+    }
+
+    public init(agentId: String) {
+      self.agentId = agentId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+    }
+  }
+
+  public struct DisconnectAndroidDeviceParams: Codable, Sendable {
+    public var serial: String
+
+    enum CodingKeys: String, CodingKey {
+      case serial = "serial"
+    }
+
+    public init(serial: String) {
+      self.serial = serial
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(serial, forKey: .serial)
+    }
+  }
+
+  public struct DisconnectSimulatorParams: Codable, Sendable {
+    public var udid: String
+
+    enum CodingKeys: String, CodingKey {
+      case udid = "udid"
+    }
+
+    public init(udid: String) {
+      self.udid = udid
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(udid, forKey: .udid)
+    }
+  }
+
+  public struct ForkChatInSessionParams: Codable, Sendable {
+    public var sourceSessionId: String
+    public var sourceClaudeSessionId: String
+    public var forkTimestampMs: Double
+    public var forkTurnNumber: Double
+
+    enum CodingKeys: String, CodingKey {
+      case sourceSessionId = "sourceSessionId"
+      case sourceClaudeSessionId = "sourceClaudeSessionId"
+      case forkTimestampMs = "forkTimestampMs"
+      case forkTurnNumber = "forkTurnNumber"
+    }
+
+    public init(sourceSessionId: String, sourceClaudeSessionId: String, forkTimestampMs: Double, forkTurnNumber: Double) {
+      self.sourceSessionId = sourceSessionId
+      self.sourceClaudeSessionId = sourceClaudeSessionId
+      self.forkTimestampMs = forkTimestampMs
+      self.forkTurnNumber = forkTurnNumber
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sourceSessionId, forKey: .sourceSessionId)
+      try c.encode(sourceClaudeSessionId, forKey: .sourceClaudeSessionId)
+      try c.encode(forkTimestampMs, forKey: .forkTimestampMs)
+      try c.encode(forkTurnNumber, forKey: .forkTurnNumber)
+    }
+  }
+
+  public struct ForkSessionParams: Codable, Sendable {
+    public var sourceSessionId: String
+    public var branch: String
+    public var description: String
+    public var forkTimestampMs: Double
+    public var forkTurnNumber: Double
+    public var sourceClaudeSessionId: String?
+    public var replayOps: [ForkReplayOp]?
+
+    enum CodingKeys: String, CodingKey {
+      case sourceSessionId = "sourceSessionId"
+      case branch = "branch"
+      case description = "description"
+      case forkTimestampMs = "forkTimestampMs"
+      case forkTurnNumber = "forkTurnNumber"
+      case sourceClaudeSessionId = "sourceClaudeSessionId"
+      case replayOps = "replayOps"
+    }
+
+    public init(sourceSessionId: String, branch: String, description: String, forkTimestampMs: Double, forkTurnNumber: Double, sourceClaudeSessionId: String? = nil, replayOps: [ForkReplayOp]? = nil) {
+      self.sourceSessionId = sourceSessionId
+      self.branch = branch
+      self.description = description
+      self.forkTimestampMs = forkTimestampMs
+      self.forkTurnNumber = forkTurnNumber
+      self.sourceClaudeSessionId = sourceClaudeSessionId
+      self.replayOps = replayOps
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sourceSessionId, forKey: .sourceSessionId)
+      try c.encode(branch, forKey: .branch)
+      try c.encode(description, forKey: .description)
+      try c.encode(forkTimestampMs, forKey: .forkTimestampMs)
+      try c.encode(forkTurnNumber, forKey: .forkTurnNumber)
+      try c.encodeIfPresent(sourceClaudeSessionId, forKey: .sourceClaudeSessionId)
+      try c.encodeIfPresent(replayOps, forKey: .replayOps)
+    }
+  }
+
+  public struct GenerateSessionTitleParams: Codable, Sendable {
+    public var firstMessage: String
+
+    enum CodingKeys: String, CodingKey {
+      case firstMessage = "firstMessage"
+    }
+
+    public init(firstMessage: String) {
+      self.firstMessage = firstMessage
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(firstMessage, forKey: .firstMessage)
+    }
+  }
+
+  public struct GetAgentSnapshotParams: Codable, Sendable {
+    public var agentId: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+    }
+
+    public init(agentId: String) {
+      self.agentId = agentId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+    }
+  }
+
+  public struct GetCommandMetricsParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct GetGitAuthorParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetLastCommitHashParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetLastCommitMessageParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetPullRequestDetailParams: Codable, Sendable {
+    public var owner: String
+    public var repo: String
+    public var number: Double
+
+    enum CodingKeys: String, CodingKey {
+      case owner = "owner"
+      case repo = "repo"
+      case number = "number"
+    }
+
+    public init(owner: String, repo: String, number: Double) {
+      self.owner = owner
+      self.repo = repo
+      self.number = number
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(owner, forKey: .owner)
+      try c.encode(repo, forKey: .repo)
+      try c.encode(number, forKey: .number)
+    }
+  }
+
+  public struct GetPullRequestDiffParams: Codable, Sendable {
+    public var owner: String
+    public var repo: String
+    public var number: Double
+
+    enum CodingKeys: String, CodingKey {
+      case owner = "owner"
+      case repo = "repo"
+      case number = "number"
+    }
+
+    public init(owner: String, repo: String, number: Double) {
+      self.owner = owner
+      self.repo = repo
+      self.number = number
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(owner, forKey: .owner)
+      try c.encode(repo, forKey: .repo)
+      try c.encode(number, forKey: .number)
+    }
+  }
+
+  public struct GetRepoBranchParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct GetSessionParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetSessionBranchDiffParams: Codable, Sendable {
+    public var id: String
+    public var ignoreWhitespace: Bool?
+    public var wordDiff: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case ignoreWhitespace = "ignoreWhitespace"
+      case wordDiff = "wordDiff"
+    }
+
+    public init(id: String, ignoreWhitespace: Bool? = nil, wordDiff: Bool? = nil) {
+      self.id = id
+      self.ignoreWhitespace = ignoreWhitespace
+      self.wordDiff = wordDiff
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(ignoreWhitespace, forKey: .ignoreWhitespace)
+      try c.encodeIfPresent(wordDiff, forKey: .wordDiff)
+    }
+  }
+
+  public struct GetSessionCommitsAheadParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetSessionCommitsBehindParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetSessionConflictsParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetSessionDiffParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetSessionFullDiffParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetSessionMergeBlockersParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetSessionReleaseNotesParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetSessionStagedDiffParams: Codable, Sendable {
+    public var id: String
+    public var ignoreWhitespace: Bool?
+    public var wordDiff: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case ignoreWhitespace = "ignoreWhitespace"
+      case wordDiff = "wordDiff"
+    }
+
+    public init(id: String, ignoreWhitespace: Bool? = nil, wordDiff: Bool? = nil) {
+      self.id = id
+      self.ignoreWhitespace = ignoreWhitespace
+      self.wordDiff = wordDiff
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(ignoreWhitespace, forKey: .ignoreWhitespace)
+      try c.encodeIfPresent(wordDiff, forKey: .wordDiff)
+    }
+  }
+
+  public struct GetSessionStatusParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetSessionUntrackedDiffParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GetUserProjectSettingsParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct GetWorktreeStorageParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct GhListIssuesParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct GhPrCloseParams: Codable, Sendable {
+    public var owner: String
+    public var repo: String
+    public var number: Double
+
+    enum CodingKeys: String, CodingKey {
+      case owner = "owner"
+      case repo = "repo"
+      case number = "number"
+    }
+
+    public init(owner: String, repo: String, number: Double) {
+      self.owner = owner
+      self.repo = repo
+      self.number = number
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(owner, forKey: .owner)
+      try c.encode(repo, forKey: .repo)
+      try c.encode(number, forKey: .number)
+    }
+  }
+
+  public struct GhPrCommentParams: Codable, Sendable {
+    public var owner: String
+    public var repo: String
+    public var number: Double
+    public var body: String
+
+    enum CodingKeys: String, CodingKey {
+      case owner = "owner"
+      case repo = "repo"
+      case number = "number"
+      case body = "body"
+    }
+
+    public init(owner: String, repo: String, number: Double, body: String) {
+      self.owner = owner
+      self.repo = repo
+      self.number = number
+      self.body = body
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(owner, forKey: .owner)
+      try c.encode(repo, forKey: .repo)
+      try c.encode(number, forKey: .number)
+      try c.encode(body, forKey: .body)
+    }
+  }
+
+  public struct GhPrCreateParams: Codable, Sendable {
+    public var repoRoot: String
+    public var title: String
+    public var body: String
+    public var base: String
+    public var head: String
+    public var draft: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case title = "title"
+      case body = "body"
+      case base = "base"
+      case head = "head"
+      case draft = "draft"
+    }
+
+    public init(repoRoot: String, title: String, body: String, base: String, head: String, draft: Bool? = nil) {
+      self.repoRoot = repoRoot
+      self.title = title
+      self.body = body
+      self.base = base
+      self.head = head
+      self.draft = draft
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(title, forKey: .title)
+      try c.encode(body, forKey: .body)
+      try c.encode(base, forKey: .base)
+      try c.encode(head, forKey: .head)
+      try c.encodeIfPresent(draft, forKey: .draft)
+    }
+  }
+
+  public struct GhPrMergeParams: Codable, Sendable {
+    public var owner: String
+    public var repo: String
+    public var number: Double
+    public var strategy: PullRequestMergeStrategy
+
+    enum CodingKeys: String, CodingKey {
+      case owner = "owner"
+      case repo = "repo"
+      case number = "number"
+      case strategy = "strategy"
+    }
+
+    public init(owner: String, repo: String, number: Double, strategy: PullRequestMergeStrategy) {
+      self.owner = owner
+      self.repo = repo
+      self.number = number
+      self.strategy = strategy
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(owner, forKey: .owner)
+      try c.encode(repo, forKey: .repo)
+      try c.encode(number, forKey: .number)
+      try c.encode(strategy, forKey: .strategy)
+    }
+  }
+
+  public struct GitAbortCherryPickParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitAbortMergeParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitAbortRebaseParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitAddRemoteParams: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var url: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case url = "url"
+    }
+
+    public init(id: String, name: String, url: String) {
+      self.id = id
+      self.name = name
+      self.url = url
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+      try c.encode(url, forKey: .url)
+    }
+  }
+
+  public struct GitAmParams: Codable, Sendable {
+    public var id: String
+    public var patchPaths: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case patchPaths = "patchPaths"
+    }
+
+    public init(id: String, patchPaths: [String]) {
+      self.id = id
+      self.patchPaths = patchPaths
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(patchPaths, forKey: .patchPaths)
+    }
+  }
+
+  public struct GitAmendTipParams: Codable, Sendable {
+    public var id: String
+    public var subject: String
+    public var body: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case subject = "subject"
+      case body = "body"
+    }
+
+    public init(id: String, subject: String, body: String) {
+      self.id = id
+      self.subject = subject
+      self.body = body
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(subject, forKey: .subject)
+      try c.encode(body, forKey: .body)
+    }
+  }
+
+  public struct GitArchiveBranchParams: Codable, Sendable {
+    public var repoRoot: String
+    public var branch: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case branch = "branch"
+    }
+
+    public init(repoRoot: String, branch: String) {
+      self.repoRoot = repoRoot
+      self.branch = branch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(branch, forKey: .branch)
+    }
+  }
+
+  public struct GitBisectBadParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitBisectGoodParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitBisectResetParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitBisectSkipParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitBisectStartParams: Codable, Sendable {
+    public var id: String
+    public var goodRef: String
+    public var badRef: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case goodRef = "goodRef"
+      case badRef = "badRef"
+    }
+
+    public init(id: String, goodRef: String, badRef: String) {
+      self.id = id
+      self.goodRef = goodRef
+      self.badRef = badRef
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(goodRef, forKey: .goodRef)
+      try c.encode(badRef, forKey: .badRef)
+    }
+  }
+
+  public struct GitBisectStatusParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitBlameFileParams: Codable, Sendable {
+    public var id: String
+    public var path: String
+    public var ref: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case path = "path"
+      case ref = "ref"
+    }
+
+    public init(id: String, path: String, ref: String? = nil) {
+      self.id = id
+      self.path = path
+      self.ref = ref
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(path, forKey: .path)
+      try c.encodeIfPresent(ref, forKey: .ref)
+    }
+  }
+
+  public struct GitBranchPrUrlParams: Codable, Sendable {
+    public var id: String
+    public var branch: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case branch = "branch"
+    }
+
+    public init(id: String, branch: String) {
+      self.id = id
+      self.branch = branch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(branch, forKey: .branch)
+    }
+  }
+
+  public struct GitCheckoutParams: Codable, Sendable {
+    public var id: String
+    public var branch: String
+    public var create: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case branch = "branch"
+      case create = "create"
+    }
+
+    public init(id: String, branch: String, create: Bool? = nil) {
+      self.id = id
+      self.branch = branch
+      self.create = create
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(branch, forKey: .branch)
+      try c.encodeIfPresent(create, forKey: .create)
+    }
+  }
+
+  public struct GitCheckoutPathsParams: Codable, Sendable {
+    public var id: String
+    public var ref: String
+    public var paths: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case ref = "ref"
+      case paths = "paths"
+    }
+
+    public init(id: String, ref: String, paths: [String]) {
+      self.id = id
+      self.ref = ref
+      self.paths = paths
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(ref, forKey: .ref)
+      try c.encode(paths, forKey: .paths)
+    }
+  }
+
+  public struct GitCherryPickParams: Codable, Sendable {
+    public var id: String
+    public var hash: JSONValue
+    public var noCommit: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case hash = "hash"
+      case noCommit = "noCommit"
+    }
+
+    public init(id: String, hash: JSONValue, noCommit: Bool? = nil) {
+      self.id = id
+      self.hash = hash
+      self.noCommit = noCommit
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(hash, forKey: .hash)
+      try c.encodeIfPresent(noCommit, forKey: .noCommit)
+    }
+  }
+
+  public struct GitCommitParams: Codable, Sendable {
+    public var id: String
+    public var message: String
+    public var amend: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case message = "message"
+      case amend = "amend"
+    }
+
+    public init(id: String, message: String, amend: Bool? = nil) {
+      self.id = id
+      self.message = message
+      self.amend = amend
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(message, forKey: .message)
+      try c.encodeIfPresent(amend, forKey: .amend)
+    }
+  }
+
+  public struct GitCompareBranchesParams: Codable, Sendable {
+    public var sessionId: String
+    public var left: String
+    public var right: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case left = "left"
+      case right = "right"
+    }
+
+    public init(sessionId: String, left: String, right: String) {
+      self.sessionId = sessionId
+      self.left = left
+      self.right = right
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(left, forKey: .left)
+      try c.encode(right, forKey: .right)
+    }
+  }
+
+  public struct GitContinueCherryPickParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitContinueMergeParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitContinueRebaseParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitCreateBranchParams: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var startPoint: String?
+    public var checkout: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case startPoint = "startPoint"
+      case checkout = "checkout"
+    }
+
+    public init(id: String, name: String, startPoint: String? = nil, checkout: Bool? = nil) {
+      self.id = id
+      self.name = name
+      self.startPoint = startPoint
+      self.checkout = checkout
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+      try c.encodeIfPresent(startPoint, forKey: .startPoint)
+      try c.encodeIfPresent(checkout, forKey: .checkout)
+    }
+  }
+
+  public struct GitCreateTagParams: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var ref: String?
+    public var message: String?
+    public var sign: Bool?
+    public var force: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case ref = "ref"
+      case message = "message"
+      case sign = "sign"
+      case force = "force"
+    }
+
+    public init(id: String, name: String, ref: String? = nil, message: String? = nil, sign: Bool? = nil, force: Bool? = nil) {
+      self.id = id
+      self.name = name
+      self.ref = ref
+      self.message = message
+      self.sign = sign
+      self.force = force
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+      try c.encodeIfPresent(ref, forKey: .ref)
+      try c.encodeIfPresent(message, forKey: .message)
+      try c.encodeIfPresent(sign, forKey: .sign)
+      try c.encodeIfPresent(force, forKey: .force)
+    }
+  }
+
+  public struct GitDeleteBranchParams: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var force: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case force = "force"
+    }
+
+    public init(id: String, name: String, force: Bool? = nil) {
+      self.id = id
+      self.name = name
+      self.force = force
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+      try c.encodeIfPresent(force, forKey: .force)
+    }
+  }
+
+  public struct GitDeleteTagParams: Codable, Sendable {
+    public var id: String
+    public var name: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+    }
+
+    public init(id: String, name: String) {
+      self.id = id
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
+  public struct GitDiffRangeParams: Codable, Sendable {
+    public var id: String
+    public var fromRef: String
+    public var toRef: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case fromRef = "fromRef"
+      case toRef = "toRef"
+    }
+
+    public init(id: String, fromRef: String, toRef: String) {
+      self.id = id
+      self.fromRef = fromRef
+      self.toRef = toRef
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(fromRef, forKey: .fromRef)
+      try c.encode(toRef, forKey: .toRef)
+    }
+  }
+
+  public struct GitDiscardAndCheckoutParams: Codable, Sendable {
+    public var id: String
+    public var branch: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case branch = "branch"
+    }
+
+    public init(id: String, branch: String) {
+      self.id = id
+      self.branch = branch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(branch, forKey: .branch)
+    }
+  }
+
+  public struct GitDiscardFileParams: Codable, Sendable {
+    public var id: String
+    public var filePath: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case filePath = "filePath"
+    }
+
+    public init(id: String, filePath: String) {
+      self.id = id
+      self.filePath = filePath
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(filePath, forKey: .filePath)
+    }
+  }
+
+  public struct GitDiscardHunkParams: Codable, Sendable {
+    public var id: String
+    public var hunkPatch: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case hunkPatch = "hunkPatch"
+    }
+
+    public init(id: String, hunkPatch: String) {
+      self.id = id
+      self.hunkPatch = hunkPatch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(hunkPatch, forKey: .hunkPatch)
+    }
+  }
+
+  public struct GitDiscardLinesParamsSide: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let new = GitDiscardLinesParamsSide(rawValue: "new")
+    public static let old = GitDiscardLinesParamsSide(rawValue: "old")
+  }
+
+  public struct GitDiscardLinesParams: Codable, Sendable {
+    public var id: String
+    public var filePath: String
+    public var lines: [Double]?
+    public var side: GitDiscardLinesParamsSide?
+    public var hunkPatch: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case filePath = "filePath"
+      case lines = "lines"
+      case side = "side"
+      case hunkPatch = "hunkPatch"
+    }
+
+    public init(id: String, filePath: String, lines: [Double]? = nil, side: GitDiscardLinesParamsSide? = nil, hunkPatch: String) {
+      self.id = id
+      self.filePath = filePath
+      self.lines = lines
+      self.side = side
+      self.hunkPatch = hunkPatch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(filePath, forKey: .filePath)
+      try c.encodeIfPresent(lines, forKey: .lines)
+      try c.encodeIfPresent(side, forKey: .side)
+      try c.encode(hunkPatch, forKey: .hunkPatch)
+    }
+  }
+
+  public struct GitFetchParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitFileHistoryParams: Codable, Sendable {
+    public var id: String
+    public var path: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case path = "path"
+    }
+
+    public init(id: String, path: String) {
+      self.id = id
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(path, forKey: .path)
+    }
+  }
+
+  public struct GitFormatPatchParams: Codable, Sendable {
+    public var id: String
+    public var range: String
+    public var outputDir: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case range = "range"
+      case outputDir = "outputDir"
+    }
+
+    public init(id: String, range: String, outputDir: String? = nil) {
+      self.id = id
+      self.range = range
+      self.outputDir = outputDir
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(range, forKey: .range)
+      try c.encodeIfPresent(outputDir, forKey: .outputDir)
+    }
+  }
+
+  public struct GitGetConfigParams: Codable, Sendable {
+    public var id: String
+    public var key: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case key = "key"
+    }
+
+    public init(id: String, key: String) {
+      self.id = id
+      self.key = key
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(key, forKey: .key)
+    }
+  }
+
+  public struct GitGetConflictParams: Codable, Sendable {
+    public var id: String
+    public var filePath: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case filePath = "filePath"
+    }
+
+    public init(id: String, filePath: String) {
+      self.id = id
+      self.filePath = filePath
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(filePath, forKey: .filePath)
+    }
+  }
+
+  public struct GitGetRemotesParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitLfsFilesParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitLfsPullParams: Codable, Sendable {
+    public var id: String
+    public var paths: [String]?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case paths = "paths"
+    }
+
+    public init(id: String, paths: [String]? = nil) {
+      self.id = id
+      self.paths = paths
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(paths, forKey: .paths)
+    }
+  }
+
+  public struct GitListArchivedBranchesParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct GitListAssumeUnchangedFilesParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitListHooksParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitListIgnoredFilesParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitListLocalBranchesParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitListPinnedBranchesParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct GitListRecentIssuesParams: Codable, Sendable {
+    public var id: String
+    public var query: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case query = "query"
+    }
+
+    public init(id: String, query: String? = nil) {
+      self.id = id
+      self.query = query
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(query, forKey: .query)
+    }
+  }
+
+  public struct GitListRemoteBranchesParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitListRemotesParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitListTagsParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitLogParams: Codable, Sendable {
+    public var id: String
+    public var count: Double?
+    public var allBranches: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case count = "count"
+      case allBranches = "allBranches"
+    }
+
+    public init(id: String, count: Double? = nil, allBranches: Bool? = nil) {
+      self.id = id
+      self.count = count
+      self.allBranches = allBranches
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(count, forKey: .count)
+      try c.encodeIfPresent(allBranches, forKey: .allBranches)
+    }
+  }
+
+  public struct GitMarkResolvedParams: Codable, Sendable {
+    public var id: String
+    public var filePath: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case filePath = "filePath"
+    }
+
+    public init(id: String, filePath: String) {
+      self.id = id
+      self.filePath = filePath
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(filePath, forKey: .filePath)
+    }
+  }
+
+  public struct GitMergeBranchParams: Codable, Sendable {
+    public var id: String
+    public var from: String
+    public var into: String?
+    public var squash: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case from = "from"
+      case into = "into"
+      case squash = "squash"
+    }
+
+    public init(id: String, from: String, into: String? = nil, squash: Bool? = nil) {
+      self.id = id
+      self.from = from
+      self.into = into
+      self.squash = squash
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(from, forKey: .from)
+      try c.encodeIfPresent(into, forKey: .into)
+      try c.encodeIfPresent(squash, forKey: .squash)
+    }
+  }
+
+  public struct GitPinBranchParams: Codable, Sendable {
+    public var repoRoot: String
+    public var branch: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case branch = "branch"
+    }
+
+    public init(repoRoot: String, branch: String) {
+      self.repoRoot = repoRoot
+      self.branch = branch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(branch, forKey: .branch)
+    }
+  }
+
+  public struct GitPruneRemoteParams: Codable, Sendable {
+    public var id: String
+    public var name: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+    }
+
+    public init(id: String, name: String) {
+      self.id = id
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
+  public struct GitPullParams: Codable, Sendable {
+    public var id: String
+    public var remoteBranch: String?
+    public var rebase: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case remoteBranch = "remoteBranch"
+      case rebase = "rebase"
+    }
+
+    public init(id: String, remoteBranch: String? = nil, rebase: Bool? = nil) {
+      self.id = id
+      self.remoteBranch = remoteBranch
+      self.rebase = rebase
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(remoteBranch, forKey: .remoteBranch)
+      try c.encodeIfPresent(rebase, forKey: .rebase)
+    }
+  }
+
+  public struct GitPullV2ParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let ffOnly = GitPullV2ParamsStrategy(rawValue: "ff-only")
+    public static let merge = GitPullV2ParamsStrategy(rawValue: "merge")
+    public static let rebase = GitPullV2ParamsStrategy(rawValue: "rebase")
+  }
+
+  public struct GitPullV2Params: Codable, Sendable {
+    public var id: String
+    public var strategy: GitPullV2ParamsStrategy
+    public var prune: Bool?
+    public var tags: Bool?
+    public var remote: String?
+    public var branch: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case strategy = "strategy"
+      case prune = "prune"
+      case tags = "tags"
+      case remote = "remote"
+      case branch = "branch"
+    }
+
+    public init(id: String, strategy: GitPullV2ParamsStrategy, prune: Bool? = nil, tags: Bool? = nil, remote: String? = nil, branch: String? = nil) {
+      self.id = id
+      self.strategy = strategy
+      self.prune = prune
+      self.tags = tags
+      self.remote = remote
+      self.branch = branch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(strategy, forKey: .strategy)
+      try c.encodeIfPresent(prune, forKey: .prune)
+      try c.encodeIfPresent(tags, forKey: .tags)
+      try c.encodeIfPresent(remote, forKey: .remote)
+      try c.encodeIfPresent(branch, forKey: .branch)
+    }
+  }
+
+  public struct GitPushParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitPushTagParams: Codable, Sendable {
+    public var id: String
+    public var name: String?
+    public var all: Bool?
+    public var remote: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case all = "all"
+      case remote = "remote"
+    }
+
+    public init(id: String, name: String? = nil, all: Bool? = nil, remote: String? = nil) {
+      self.id = id
+      self.name = name
+      self.all = all
+      self.remote = remote
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(name, forKey: .name)
+      try c.encodeIfPresent(all, forKey: .all)
+      try c.encodeIfPresent(remote, forKey: .remote)
+    }
+  }
+
+  public struct GitPushV2ParamsTags: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let all = GitPushV2ParamsTags(rawValue: "all")
+    public static let follow = GitPushV2ParamsTags(rawValue: "follow")
+    public static let none = GitPushV2ParamsTags(rawValue: "none")
+  }
+
+  public struct GitPushV2Params: Codable, Sendable {
+    public var id: String
+    public var remote: String?
+    public var branch: String?
+    public var force: Bool?
+    public var forceWithLease: Bool?
+    public var setUpstream: Bool?
+    public var tags: GitPushV2ParamsTags?
+    public var ref: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case remote = "remote"
+      case branch = "branch"
+      case force = "force"
+      case forceWithLease = "forceWithLease"
+      case setUpstream = "setUpstream"
+      case tags = "tags"
+      case ref = "ref"
+    }
+
+    public init(id: String, remote: String? = nil, branch: String? = nil, force: Bool? = nil, forceWithLease: Bool? = nil, setUpstream: Bool? = nil, tags: GitPushV2ParamsTags? = nil, ref: String? = nil) {
+      self.id = id
+      self.remote = remote
+      self.branch = branch
+      self.force = force
+      self.forceWithLease = forceWithLease
+      self.setUpstream = setUpstream
+      self.tags = tags
+      self.ref = ref
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(remote, forKey: .remote)
+      try c.encodeIfPresent(branch, forKey: .branch)
+      try c.encodeIfPresent(force, forKey: .force)
+      try c.encodeIfPresent(forceWithLease, forKey: .forceWithLease)
+      try c.encodeIfPresent(setUpstream, forKey: .setUpstream)
+      try c.encodeIfPresent(tags, forKey: .tags)
+      try c.encodeIfPresent(ref, forKey: .ref)
+    }
+  }
+
+  public struct GitReadBlobAtRefParams: Codable, Sendable {
+    public var id: String
+    public var path: String
+    public var ref: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case path = "path"
+      case ref = "ref"
+    }
+
+    public init(id: String, path: String, ref: String) {
+      self.id = id
+      self.path = path
+      self.ref = ref
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(path, forKey: .path)
+      try c.encode(ref, forKey: .ref)
+    }
+  }
+
+  public struct GitRebaseAutosquashParams: Codable, Sendable {
+    public var id: String
+    public var upstream: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case upstream = "upstream"
+    }
+
+    public init(id: String, upstream: String) {
+      self.id = id
+      self.upstream = upstream
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(upstream, forKey: .upstream)
+    }
+  }
+
+  public struct GitRebaseInteractivePlanParams: Codable, Sendable {
+    public var id: String
+    public var upstream: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case upstream = "upstream"
+    }
+
+    public init(id: String, upstream: String) {
+      self.id = id
+      self.upstream = upstream
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(upstream, forKey: .upstream)
+    }
+  }
+
+  public struct GitRebaseInteractiveRunParams: Codable, Sendable {
+    public var id: String
+    public var upstream: String
+    public var plan: [RebasePlanEntry]
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case upstream = "upstream"
+      case plan = "plan"
+    }
+
+    public init(id: String, upstream: String, plan: [RebasePlanEntry]) {
+      self.id = id
+      self.upstream = upstream
+      self.plan = plan
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(upstream, forKey: .upstream)
+      try c.encode(plan, forKey: .plan)
+    }
+  }
+
+  public struct GitRebaseOntoParams: Codable, Sendable {
+    public var id: String
+    public var upstream: String
+    public var branch: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case upstream = "upstream"
+      case branch = "branch"
+    }
+
+    public init(id: String, upstream: String, branch: String? = nil) {
+      self.id = id
+      self.upstream = upstream
+      self.branch = branch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(upstream, forKey: .upstream)
+      try c.encodeIfPresent(branch, forKey: .branch)
+    }
+  }
+
+  public struct GitReconfigureAutoFetchParams: Codable, Sendable {
+    public var repoRoot: String
+    public var minutes: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case minutes = "minutes"
+    }
+
+    public init(repoRoot: String, minutes: Double? = nil) {
+      self.repoRoot = repoRoot
+      self.minutes = minutes
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(minutes, forKey: .minutes)
+    }
+  }
+
+  public struct GitReflogParams: Codable, Sendable {
+    public var id: String
+    public var limit: Double?
+    public var ref: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case limit = "limit"
+      case ref = "ref"
+    }
+
+    public init(id: String, limit: Double? = nil, ref: String? = nil) {
+      self.id = id
+      self.limit = limit
+      self.ref = ref
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(limit, forKey: .limit)
+      try c.encodeIfPresent(ref, forKey: .ref)
+    }
+  }
+
+  public struct GitRemoveRemoteParams: Codable, Sendable {
+    public var id: String
+    public var name: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+    }
+
+    public init(id: String, name: String) {
+      self.id = id
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
+  public struct GitRenameBranchParams: Codable, Sendable {
+    public var id: String
+    public var from: String
+    public var to: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case from = "from"
+      case to = "to"
+    }
+
+    public init(id: String, from: String, to: String) {
+      self.id = id
+      self.from = from
+      self.to = to
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(from, forKey: .from)
+      try c.encode(to, forKey: .to)
+    }
+  }
+
+  public struct GitRenameRemoteParams: Codable, Sendable {
+    public var id: String
+    public var from: String
+    public var to: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case from = "from"
+      case to = "to"
+    }
+
+    public init(id: String, from: String, to: String) {
+      self.id = id
+      self.from = from
+      self.to = to
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(from, forKey: .from)
+      try c.encode(to, forKey: .to)
+    }
+  }
+
+  public struct GitResetParamsMode: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let hard = GitResetParamsMode(rawValue: "hard")
+    public static let mixed = GitResetParamsMode(rawValue: "mixed")
+    public static let soft = GitResetParamsMode(rawValue: "soft")
+  }
+
+  public struct GitResetParams: Codable, Sendable {
+    public var id: String
+    public var ref: String
+    public var mode: GitResetParamsMode
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case ref = "ref"
+      case mode = "mode"
+    }
+
+    public init(id: String, ref: String, mode: GitResetParamsMode) {
+      self.id = id
+      self.ref = ref
+      self.mode = mode
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(ref, forKey: .ref)
+      try c.encode(mode, forKey: .mode)
+    }
+  }
+
+  public struct GitRevertParams: Codable, Sendable {
+    public var id: String
+    public var hash: String
+    public var noCommit: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case hash = "hash"
+      case noCommit = "noCommit"
+    }
+
+    public init(id: String, hash: String, noCommit: Bool? = nil) {
+      self.id = id
+      self.hash = hash
+      self.noCommit = noCommit
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(hash, forKey: .hash)
+      try c.encodeIfPresent(noCommit, forKey: .noCommit)
+    }
+  }
+
+  public struct GitRunHookParams: Codable, Sendable {
+    public var id: String
+    public var name: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+    }
+
+    public init(id: String, name: String) {
+      self.id = id
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
+  public struct GitSearchLogParamsRefType: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let all = GitSearchLogParamsRefType(rawValue: "all")
+    public static let locals = GitSearchLogParamsRefType(rawValue: "locals")
+    public static let remotes = GitSearchLogParamsRefType(rawValue: "remotes")
+    public static let tags = GitSearchLogParamsRefType(rawValue: "tags")
+  }
+
+  public struct GitSearchLogParams: Codable, Sendable {
+    public var id: String
+    public var author: String?
+    public var branch: String?
+    public var cursor: LogSearchCursor?
+    public var limit: Double?
+    public var paths: [String]?
+    public var query: String?
+    public var refType: GitSearchLogParamsRefType?
+    public var regex: Bool?
+    public var since: String?
+    public var until: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case author = "author"
+      case branch = "branch"
+      case cursor = "cursor"
+      case limit = "limit"
+      case paths = "paths"
+      case query = "query"
+      case refType = "refType"
+      case regex = "regex"
+      case since = "since"
+      case until = "until"
+    }
+
+    public init(id: String, author: String? = nil, branch: String? = nil, cursor: LogSearchCursor? = nil, limit: Double? = nil, paths: [String]? = nil, query: String? = nil, refType: GitSearchLogParamsRefType? = nil, regex: Bool? = nil, since: String? = nil, until: String? = nil) {
+      self.id = id
+      self.author = author
+      self.branch = branch
+      self.cursor = cursor
+      self.limit = limit
+      self.paths = paths
+      self.query = query
+      self.refType = refType
+      self.regex = regex
+      self.since = since
+      self.until = until
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(author, forKey: .author)
+      try c.encodeIfPresent(branch, forKey: .branch)
+      try c.encodeIfPresent(cursor, forKey: .cursor)
+      try c.encodeIfPresent(limit, forKey: .limit)
+      try c.encodeIfPresent(paths, forKey: .paths)
+      try c.encodeIfPresent(query, forKey: .query)
+      try c.encodeIfPresent(refType, forKey: .refType)
+      try c.encodeIfPresent(regex, forKey: .regex)
+      try c.encodeIfPresent(since, forKey: .since)
+      try c.encodeIfPresent(until, forKey: .until)
+    }
+  }
+
+  public struct GitSetConfigParams: Codable, Sendable {
+    public var id: String
+    public var key: String
+    public var value: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case key = "key"
+      case value = "value"
+    }
+
+    public init(id: String, key: String, value: String) {
+      self.id = id
+      self.key = key
+      self.value = value
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(key, forKey: .key)
+      try c.encode(value, forKey: .value)
+    }
+  }
+
+  public struct GitSetRemoteUrlParams: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var url: String
+    public var push: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case url = "url"
+      case push = "push"
+    }
+
+    public init(id: String, name: String, url: String, push: Bool? = nil) {
+      self.id = id
+      self.name = name
+      self.url = url
+      self.push = push
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+      try c.encode(url, forKey: .url)
+      try c.encodeIfPresent(push, forKey: .push)
+    }
+  }
+
+  public struct GitSetUpstreamParams: Codable, Sendable {
+    public var id: String
+    public var branch: String
+    public var upstream: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case branch = "branch"
+      case upstream = "upstream"
+    }
+
+    public init(id: String, branch: String, upstream: String) {
+      self.id = id
+      self.branch = branch
+      self.upstream = upstream
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(branch, forKey: .branch)
+      try c.encode(upstream, forKey: .upstream)
+    }
+  }
+
+  public struct GitShowCommitParams: Codable, Sendable {
+    public var id: String
+    public var commitHash: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case commitHash = "commitHash"
+    }
+
+    public init(id: String, commitHash: String) {
+      self.id = id
+      self.commitHash = commitHash
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(commitHash, forKey: .commitHash)
+    }
+  }
+
+  public struct GitSkipRebaseParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitStashParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitStashAndCheckoutParams: Codable, Sendable {
+    public var id: String
+    public var branch: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case branch = "branch"
+    }
+
+    public init(id: String, branch: String) {
+      self.id = id
+      self.branch = branch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(branch, forKey: .branch)
+    }
+  }
+
+  public struct GitStashApplyParams: Codable, Sendable {
+    public var id: String
+    public var stashIndex: Double
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case stashIndex = "stashIndex"
+    }
+
+    public init(id: String, stashIndex: Double) {
+      self.id = id
+      self.stashIndex = stashIndex
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(stashIndex, forKey: .stashIndex)
+    }
+  }
+
+  public struct GitStashBranchParams: Codable, Sendable {
+    public var id: String
+    public var stashRef: String
+    public var branchName: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case stashRef = "stashRef"
+      case branchName = "branchName"
+    }
+
+    public init(id: String, stashRef: String, branchName: String) {
+      self.id = id
+      self.stashRef = stashRef
+      self.branchName = branchName
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(stashRef, forKey: .stashRef)
+      try c.encode(branchName, forKey: .branchName)
+    }
+  }
+
+  public struct GitStashDropParams: Codable, Sendable {
+    public var id: String
+    public var stashIndex: Double
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case stashIndex = "stashIndex"
+    }
+
+    public init(id: String, stashIndex: Double) {
+      self.id = id
+      self.stashIndex = stashIndex
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(stashIndex, forKey: .stashIndex)
+    }
+  }
+
+  public struct GitStashListParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitStashPopParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitStashSaveParams: Codable, Sendable {
+    public var id: String
+    public var includeUntracked: Bool?
+    public var keepIndex: Bool?
+    public var message: String?
+    public var paths: [String]?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case includeUntracked = "includeUntracked"
+      case keepIndex = "keepIndex"
+      case message = "message"
+      case paths = "paths"
+    }
+
+    public init(id: String, includeUntracked: Bool? = nil, keepIndex: Bool? = nil, message: String? = nil, paths: [String]? = nil) {
+      self.id = id
+      self.includeUntracked = includeUntracked
+      self.keepIndex = keepIndex
+      self.message = message
+      self.paths = paths
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(includeUntracked, forKey: .includeUntracked)
+      try c.encodeIfPresent(keepIndex, forKey: .keepIndex)
+      try c.encodeIfPresent(message, forKey: .message)
+      try c.encodeIfPresent(paths, forKey: .paths)
+    }
+  }
+
+  public struct GitStashShowParams: Codable, Sendable {
+    public var id: String
+    public var stashIndex: Double
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case stashIndex = "stashIndex"
+    }
+
+    public init(id: String, stashIndex: Double) {
+      self.id = id
+      self.stashIndex = stashIndex
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(stashIndex, forKey: .stashIndex)
+    }
+  }
+
+  public struct GitStatusParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitSubmoduleDeinitParams: Codable, Sendable {
+    public var id: String
+    public var path: String
+    public var force: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case path = "path"
+      case force = "force"
+    }
+
+    public init(id: String, path: String, force: Bool? = nil) {
+      self.id = id
+      self.path = path
+      self.force = force
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(path, forKey: .path)
+      try c.encodeIfPresent(force, forKey: .force)
+    }
+  }
+
+  public struct GitSubmoduleInitParams: Codable, Sendable {
+    public var id: String
+    public var path: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case path = "path"
+    }
+
+    public init(id: String, path: String? = nil) {
+      self.id = id
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(path, forKey: .path)
+    }
+  }
+
+  public struct GitSubmoduleListParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitSubmoduleUpdateParams: Codable, Sendable {
+    public var id: String
+    public var path: String?
+    public var remote: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case path = "path"
+      case remote = "remote"
+    }
+
+    public init(id: String, path: String? = nil, remote: Bool? = nil) {
+      self.id = id
+      self.path = path
+      self.remote = remote
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(path, forKey: .path)
+      try c.encodeIfPresent(remote, forKey: .remote)
+    }
+  }
+
+  public struct GitUnarchiveBranchParams: Codable, Sendable {
+    public var repoRoot: String
+    public var branch: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case branch = "branch"
+    }
+
+    public init(repoRoot: String, branch: String) {
+      self.repoRoot = repoRoot
+      self.branch = branch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(branch, forKey: .branch)
+    }
+  }
+
+  public struct GitUnpinBranchParams: Codable, Sendable {
+    public var repoRoot: String
+    public var branch: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case branch = "branch"
+    }
+
+    public init(repoRoot: String, branch: String) {
+      self.repoRoot = repoRoot
+      self.branch = branch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(branch, forKey: .branch)
+    }
+  }
+
+  public struct GitUntrackFileParams: Codable, Sendable {
+    public var id: String
+    public var filePath: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case filePath = "filePath"
+    }
+
+    public init(id: String, filePath: String) {
+      self.id = id
+      self.filePath = filePath
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(filePath, forKey: .filePath)
+    }
+  }
+
+  public struct GitWorktreeListParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct GitWriteConflictMergedParams: Codable, Sendable {
+    public var id: String
+    public var filePath: String
+    public var contents: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case filePath = "filePath"
+      case contents = "contents"
+    }
+
+    public init(id: String, filePath: String, contents: String) {
+      self.id = id
+      self.filePath = filePath
+      self.contents = contents
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(filePath, forKey: .filePath)
+      try c.encode(contents, forKey: .contents)
+    }
+  }
+
+  public struct HuddleApproveGuestParams: Codable, Sendable {
+    public var roomId: String
+    public var devStaticPub: String
+
+    enum CodingKeys: String, CodingKey {
+      case roomId = "roomId"
+      case devStaticPub = "devStaticPub"
+    }
+
+    public init(roomId: String, devStaticPub: String) {
+      self.roomId = roomId
+      self.devStaticPub = devStaticPub
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(roomId, forKey: .roomId)
+      try c.encode(devStaticPub, forKey: .devStaticPub)
+    }
+  }
+
+  public struct HuddleDenyGuestParams: Codable, Sendable {
+    public var roomId: String
+    public var devStaticPub: String
+
+    enum CodingKeys: String, CodingKey {
+      case roomId = "roomId"
+      case devStaticPub = "devStaticPub"
+    }
+
+    public init(roomId: String, devStaticPub: String) {
+      self.roomId = roomId
+      self.devStaticPub = devStaticPub
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(roomId, forKey: .roomId)
+      try c.encode(devStaticPub, forKey: .devStaticPub)
+    }
+  }
+
+  public struct HuddleRemoveGuestParams: Codable, Sendable {
+    public var roomId: String
+    public var devStaticPub: String
+
+    enum CodingKeys: String, CodingKey {
+      case roomId = "roomId"
+      case devStaticPub = "devStaticPub"
+    }
+
+    public init(roomId: String, devStaticPub: String) {
+      self.roomId = roomId
+      self.devStaticPub = devStaticPub
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(roomId, forKey: .roomId)
+      try c.encode(devStaticPub, forKey: .devStaticPub)
+    }
+  }
+
+  public struct HuddleSayParams: Codable, Sendable {
+    public var roomId: String
+    public var text: String
+
+    enum CodingKeys: String, CodingKey {
+      case roomId = "roomId"
+      case text = "text"
+    }
+
+    public init(roomId: String, text: String) {
+      self.roomId = roomId
+      self.text = text
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(roomId, forKey: .roomId)
+      try c.encode(text, forKey: .text)
+    }
+  }
+
+  public struct HuddleSetDeviceParams: Codable, Sendable {
+    public var roomId: String
+    public var deviceKey: String?
+
+    enum CodingKeys: String, CodingKey {
+      case roomId = "roomId"
+      case deviceKey = "deviceKey"
+    }
+
+    public init(roomId: String, deviceKey: String? = nil) {
+      self.roomId = roomId
+      self.deviceKey = deviceKey
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(roomId, forKey: .roomId)
+      try c.encodeIfPresent(deviceKey, forKey: .deviceKey)
+    }
+  }
+
+  public struct HuddleSetTypingParams: Codable, Sendable {
+    public var roomId: String
+    public var typing: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case roomId = "roomId"
+      case typing = "typing"
+    }
+
+    public init(roomId: String, typing: Bool) {
+      self.roomId = roomId
+      self.typing = typing
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(roomId, forKey: .roomId)
+      try c.encode(typing, forKey: .typing)
+    }
+  }
+
+  public struct HuddleStartParams: Codable, Sendable {
+    public var agentId: String
+    public var deviceKey: String?
+    public var hostLabel: String?
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case deviceKey = "deviceKey"
+      case hostLabel = "hostLabel"
+    }
+
+    public init(agentId: String, deviceKey: String? = nil, hostLabel: String? = nil) {
+      self.agentId = agentId
+      self.deviceKey = deviceKey
+      self.hostLabel = hostLabel
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encodeIfPresent(deviceKey, forKey: .deviceKey)
+      try c.encodeIfPresent(hostLabel, forKey: .hostLabel)
+    }
+  }
+
+  public struct HuddleStopParams: Codable, Sendable {
+    public var roomId: String
+
+    enum CodingKeys: String, CodingKey {
+      case roomId = "roomId"
+    }
+
+    public init(roomId: String) {
+      self.roomId = roomId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(roomId, forKey: .roomId)
+    }
+  }
+
+  public struct InspectionCaptureParams: Codable, Sendable {
+    public var deviceKey: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+    }
+
+    public init(deviceKey: String) {
+      self.deviceKey = deviceKey
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+    }
+  }
+
+  public struct InspectionLaunchInjectedParams: Codable, Sendable {
+    public var deviceKey: String
+    public var bundleId: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+      case bundleId = "bundleId"
+    }
+
+    public init(deviceKey: String, bundleId: String) {
+      self.deviceKey = deviceKey
+      self.bundleId = bundleId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+      try c.encode(bundleId, forKey: .bundleId)
+    }
+  }
+
+  public struct InspectionListAppsParams: Codable, Sendable {
+    public var deviceKey: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+    }
+
+    public init(deviceKey: String) {
+      self.deviceKey = deviceKey
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+    }
+  }
+
+  public struct InspectionNodePropsParams: Codable, Sendable {
+    public var deviceKey: String
+    public var nodeId: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+      case nodeId = "nodeId"
+    }
+
+    public init(deviceKey: String, nodeId: String) {
+      self.deviceKey = deviceKey
+      self.nodeId = nodeId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+      try c.encode(nodeId, forKey: .nodeId)
+    }
+  }
+
+  public struct InspectionProbeParams: Codable, Sendable {
+    public var deviceKey: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+    }
+
+    public init(deviceKey: String) {
+      self.deviceKey = deviceKey
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+    }
+  }
+
+  public struct InspectionSetPropertyParams: Codable, Sendable {
+    public var deviceKey: String
+    public var nodeId: String
+    public var key: String
+    public var value: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+      case nodeId = "nodeId"
+      case key = "key"
+      case value = "value"
+    }
+
+    public init(deviceKey: String, nodeId: String, key: String, value: String) {
+      self.deviceKey = deviceKey
+      self.nodeId = nodeId
+      self.key = key
+      self.value = value
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+      try c.encode(nodeId, forKey: .nodeId)
+      try c.encode(key, forKey: .key)
+      try c.encode(value, forKey: .value)
+    }
+  }
+
+  public struct InterruptAgentParams: Codable, Sendable {
+    public var agentId: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+    }
+
+    public init(agentId: String) {
+      self.agentId = agentId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+    }
+  }
+
+  public struct ListAgentsParams: Codable, Sendable {
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+    }
+
+    public init(sessionId: String) {
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct ListAllBranchesParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct ListBranchesParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct ListChatHistoryParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct ListConductorLogsParams: Codable, Sendable {
+    public var deviceKey: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+    }
+
+    public init(deviceKey: String) {
+      self.deviceKey = deviceKey
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+    }
+  }
+
   public struct ListHostDirectoryParams: Codable, Sendable {
     public var path: String?
 
@@ -18,6 +4921,40 @@ extension ArgusProtocol {
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encodeIfPresent(path, forKey: .path)
+    }
+  }
+
+  public struct ListInheritedMcpServersParams: Codable, Sendable {
+    public var worktreePath: String?
+
+    enum CodingKeys: String, CodingKey {
+      case worktreePath = "worktreePath"
+    }
+
+    public init(worktreePath: String? = nil) {
+      self.worktreePath = worktreePath
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(worktreePath, forKey: .worktreePath)
+    }
+  }
+
+  public struct ListInterestingPullRequestsParams: Codable, Sendable {
+    public var repoRoots: [String]?
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoots = "repoRoots"
+    }
+
+    public init(repoRoots: [String]? = nil) {
+      self.repoRoots = repoRoots
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(repoRoots, forKey: .repoRoots)
     }
   }
 
@@ -38,6 +4975,23 @@ extension ArgusProtocol {
     }
   }
 
+  public struct ListQueuedMessagesParams: Codable, Sendable {
+    public var agentId: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+    }
+
+    public init(agentId: String) {
+      self.agentId = agentId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+    }
+  }
+
   public struct ListSessionFilesParams: Codable, Sendable {
     public var id: String
 
@@ -52,6 +5006,988 @@ extension ArgusProtocol {
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct ListSessionsParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct ListTerminalsParams: Codable, Sendable {
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+    }
+
+    public init(sessionId: String) {
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct LlmDeleteCustomRunnerParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct LlmSaveCustomRunnerParamsRunner: Codable, Sendable {
+    public var id: String?
+    public var displayName: String?
+    public var baseRunnerId: String?
+    public var env: [String: String]?
+    public var models: [CustomRunnerModel]?
+    public var defaultModel: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case displayName = "displayName"
+      case baseRunnerId = "baseRunnerId"
+      case env = "env"
+      case models = "models"
+      case defaultModel = "defaultModel"
+    }
+
+    public init(id: String? = nil, displayName: String? = nil, baseRunnerId: String? = nil, env: [String: String]? = nil, models: [CustomRunnerModel]? = nil, defaultModel: String? = nil) {
+      self.id = id
+      self.displayName = displayName
+      self.baseRunnerId = baseRunnerId
+      self.env = env
+      self.models = models
+      self.defaultModel = defaultModel
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(id, forKey: .id)
+      try c.encodeIfPresent(displayName, forKey: .displayName)
+      try c.encodeIfPresent(baseRunnerId, forKey: .baseRunnerId)
+      try c.encodeIfPresent(env, forKey: .env)
+      try c.encodeIfPresent(models, forKey: .models)
+      try c.encodeIfPresent(defaultModel, forKey: .defaultModel)
+    }
+  }
+
+  public struct LlmSaveCustomRunnerParams: Codable, Sendable {
+    public var runner: LlmSaveCustomRunnerParamsRunner
+
+    enum CodingKeys: String, CodingKey {
+      case runner = "runner"
+    }
+
+    public init(runner: LlmSaveCustomRunnerParamsRunner) {
+      self.runner = runner
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(runner, forKey: .runner)
+    }
+  }
+
+  public struct LoadChatHistoryParams: Codable, Sendable {
+    public var repoRoot: String
+    public var historyId: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case historyId = "historyId"
+    }
+
+    public init(repoRoot: String, historyId: String) {
+      self.repoRoot = repoRoot
+      self.historyId = historyId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(historyId, forKey: .historyId)
+    }
+  }
+
+  public struct McpOauthCancelSignInParams: Codable, Sendable {
+    public var serverUrl: String
+
+    enum CodingKeys: String, CodingKey {
+      case serverUrl = "serverUrl"
+    }
+
+    public init(serverUrl: String) {
+      self.serverUrl = serverUrl
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(serverUrl, forKey: .serverUrl)
+    }
+  }
+
+  public struct McpOauthSignInParams: Codable, Sendable {
+    public var serverUrl: String
+    public var resourceMetadataUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+      case serverUrl = "serverUrl"
+      case resourceMetadataUrl = "resourceMetadataUrl"
+    }
+
+    public init(serverUrl: String, resourceMetadataUrl: String? = nil) {
+      self.serverUrl = serverUrl
+      self.resourceMetadataUrl = resourceMetadataUrl
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(serverUrl, forKey: .serverUrl)
+      try c.encodeIfPresent(resourceMetadataUrl, forKey: .resourceMetadataUrl)
+    }
+  }
+
+  public struct McpOauthSignOutParams: Codable, Sendable {
+    public var serverUrl: String
+
+    enum CodingKeys: String, CodingKey {
+      case serverUrl = "serverUrl"
+    }
+
+    public init(serverUrl: String) {
+      self.serverUrl = serverUrl
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(serverUrl, forKey: .serverUrl)
+    }
+  }
+
+  public struct McpOauthStatusParams: Codable, Sendable {
+    public var serverUrl: String
+
+    enum CodingKeys: String, CodingKey {
+      case serverUrl = "serverUrl"
+    }
+
+    public init(serverUrl: String) {
+      self.serverUrl = serverUrl
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(serverUrl, forKey: .serverUrl)
+    }
+  }
+
+  public struct MergeSessionIntoBaseParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let keep = MergeSessionIntoBaseParamsStrategy(rawValue: "keep")
+    public static let squash = MergeSessionIntoBaseParamsStrategy(rawValue: "squash")
+  }
+
+  public struct MergeSessionIntoBaseParams: Codable, Sendable {
+    public var id: String
+    public var strategy: MergeSessionIntoBaseParamsStrategy?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case strategy = "strategy"
+    }
+
+    public init(id: String, strategy: MergeSessionIntoBaseParamsStrategy? = nil) {
+      self.id = id
+      self.strategy = strategy
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(strategy, forKey: .strategy)
+    }
+  }
+
+  public struct MoveWorktreesParams: Codable, Sendable {
+    public var repoRoot: String
+    public var toBaseDir: String
+    public var purpose: WorktreePurpose?
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case toBaseDir = "toBaseDir"
+      case purpose = "purpose"
+    }
+
+    public init(repoRoot: String, toBaseDir: String, purpose: WorktreePurpose? = nil) {
+      self.repoRoot = repoRoot
+      self.toBaseDir = toBaseDir
+      self.purpose = purpose
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(toBaseDir, forKey: .toBaseDir)
+      try c.encodeIfPresent(purpose, forKey: .purpose)
+    }
+  }
+
+  public struct NotifyAgentParams: Codable, Sendable {
+    public var payload: AgentNotificationInput
+    public var showLocal: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case payload = "payload"
+      case showLocal = "showLocal"
+    }
+
+    public init(payload: AgentNotificationInput, showLocal: Bool) {
+      self.payload = payload
+      self.showLocal = showLocal
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(payload, forKey: .payload)
+      try c.encode(showLocal, forKey: .showLocal)
+    }
+  }
+
+  public struct OnboardingAddSkippedParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct OnboardingCheckPrereqsParams: Codable, Sendable {
+    public var ids: [PrereqId]?
+
+    enum CodingKeys: String, CodingKey {
+      case ids = "ids"
+    }
+
+    public init(ids: [PrereqId]? = nil) {
+      self.ids = ids
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(ids, forKey: .ids)
+    }
+  }
+
+  public struct OnboardingCloneExampleParams: Codable, Sendable {
+    public var slug: String
+
+    enum CodingKeys: String, CodingKey {
+      case slug = "slug"
+    }
+
+    public init(slug: String) {
+      self.slug = slug
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(slug, forKey: .slug)
+    }
+  }
+
+  public struct OnboardingCloneExampleResult: Codable, Sendable {
+    public var path: String
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+    }
+
+    public init(path: String) {
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+    }
+  }
+
+  public struct OnboardingEnsureArgusDirResult: Codable, Sendable {
+    public var path: String
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+    }
+
+    public init(path: String) {
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+    }
+  }
+
+  public struct OnboardingReadExistingArgusJsonParams: Codable, Sendable {
+    public var path: String
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+    }
+
+    public init(path: String) {
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+    }
+  }
+
+  public struct OnboardingRefineArgusJsonWithClaudeParams: Codable, Sendable {
+    public var path: String
+    public var config: [String: JSONValue]
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+      case config = "config"
+    }
+
+    public init(path: String, config: [String: JSONValue]) {
+      self.path = path
+      self.config = config
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+      try c.encode(config, forKey: .config)
+    }
+  }
+
+  public struct OnboardingRegisterProjectParams: Codable, Sendable {
+    public var path: String
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+    }
+
+    public init(path: String) {
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+    }
+  }
+
+  public struct OnboardingRunFixerParams: Codable, Sendable {
+    public var id: PrereqId
+    public var gitName: String?
+    public var gitEmail: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case gitName = "gitName"
+      case gitEmail = "gitEmail"
+    }
+
+    public init(id: PrereqId, gitName: String? = nil, gitEmail: String? = nil) {
+      self.id = id
+      self.gitName = gitName
+      self.gitEmail = gitEmail
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(gitName, forKey: .gitName)
+      try c.encodeIfPresent(gitEmail, forKey: .gitEmail)
+    }
+  }
+
+  public struct OnboardingSetLastStepParams: Codable, Sendable {
+    public var step: OnboardingStep
+
+    enum CodingKeys: String, CodingKey {
+      case step = "step"
+    }
+
+    public init(step: OnboardingStep) {
+      self.step = step
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(step, forKey: .step)
+    }
+  }
+
+  public struct OnboardingSuggestArgusJsonParams: Codable, Sendable {
+    public var path: String
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+    }
+
+    public init(path: String) {
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+    }
+  }
+
+  public struct OnboardingWriteArgusJsonParams: Codable, Sendable {
+    public var path: String
+    public var config: [String: JSONValue]
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+      case config = "config"
+    }
+
+    public init(path: String, config: [String: JSONValue]) {
+      self.path = path
+      self.config = config
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+      try c.encode(config, forKey: .config)
+    }
+  }
+
+  public struct OpenAgentPopoutParams: Codable, Sendable {
+    public var agentId: String
+    public var sessionId: String
+    public var title: String?
+    public var cursorX: Double?
+    public var cursorY: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case sessionId = "sessionId"
+      case title = "title"
+      case cursorX = "cursorX"
+      case cursorY = "cursorY"
+    }
+
+    public init(agentId: String, sessionId: String, title: String? = nil, cursorX: Double? = nil, cursorY: Double? = nil) {
+      self.agentId = agentId
+      self.sessionId = sessionId
+      self.title = title
+      self.cursorX = cursorX
+      self.cursorY = cursorY
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encodeIfPresent(title, forKey: .title)
+      try c.encodeIfPresent(cursorX, forKey: .cursorX)
+      try c.encodeIfPresent(cursorY, forKey: .cursorY)
+    }
+  }
+
+  public struct OpenDevicePopoutParams: Codable, Sendable {
+    public var platform: PopoutPlatform
+    public var deviceKey: String
+    public var name: String?
+
+    enum CodingKeys: String, CodingKey {
+      case platform = "platform"
+      case deviceKey = "deviceKey"
+      case name = "name"
+    }
+
+    public init(platform: PopoutPlatform, deviceKey: String, name: String? = nil) {
+      self.platform = platform
+      self.deviceKey = deviceKey
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(platform, forKey: .platform)
+      try c.encode(deviceKey, forKey: .deviceKey)
+      try c.encodeIfPresent(name, forKey: .name)
+    }
+  }
+
+  public struct OpenExternalUrlParams: Codable, Sendable {
+    public var url: String
+
+    enum CodingKeys: String, CodingKey {
+      case url = "url"
+    }
+
+    public init(url: String) {
+      self.url = url
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(url, forKey: .url)
+    }
+  }
+
+  public struct OpenInCustomEditorParams: Codable, Sendable {
+    public var command: String
+    public var path: String
+
+    enum CodingKeys: String, CodingKey {
+      case command = "command"
+      case path = "path"
+    }
+
+    public init(command: String, path: String) {
+      self.command = command
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(command, forKey: .command)
+      try c.encode(path, forKey: .path)
+    }
+  }
+
+  public struct OpenInEditorParams: Codable, Sendable {
+    public var editorId: String
+    public var path: String
+
+    enum CodingKeys: String, CodingKey {
+      case editorId = "editorId"
+      case path = "path"
+    }
+
+    public init(editorId: String, path: String) {
+      self.editorId = editorId
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(editorId, forKey: .editorId)
+      try c.encode(path, forKey: .path)
+    }
+  }
+
+  public struct OpenPathParams: Codable, Sendable {
+    public var path: String
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+    }
+
+    public init(path: String) {
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+    }
+  }
+
+  public struct PlanWorktreesMoveParams: Codable, Sendable {
+    public var repoRoot: String
+    public var toBaseDir: String
+    public var purpose: WorktreePurpose?
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case toBaseDir = "toBaseDir"
+      case purpose = "purpose"
+    }
+
+    public init(repoRoot: String, toBaseDir: String, purpose: WorktreePurpose? = nil) {
+      self.repoRoot = repoRoot
+      self.toBaseDir = toBaseDir
+      self.purpose = purpose
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(toBaseDir, forKey: .toBaseDir)
+      try c.encodeIfPresent(purpose, forKey: .purpose)
+    }
+  }
+
+  public struct PreviewReleaseNotesParams: Codable, Sendable {
+    public var repoRoot: String
+    public var patterns: [ReleaseNotePatternConfig]
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case patterns = "patterns"
+    }
+
+    public init(repoRoot: String, patterns: [ReleaseNotePatternConfig]) {
+      self.repoRoot = repoRoot
+      self.patterns = patterns
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(patterns, forKey: .patterns)
+    }
+  }
+
+  public struct PrewarmAgentParams: Codable, Sendable {
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+    }
+
+    public init(sessionId: String) {
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct ProbeWorktreeLocationParams: Codable, Sendable {
+    public var baseDir: String
+    public var repoRoot: String?
+
+    enum CodingKeys: String, CodingKey {
+      case baseDir = "baseDir"
+      case repoRoot = "repoRoot"
+    }
+
+    public init(baseDir: String, repoRoot: String? = nil) {
+      self.baseDir = baseDir
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(baseDir, forKey: .baseDir)
+      try c.encodeIfPresent(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct ProposalAcceptParams: Codable, Sendable {
+    public var id: String
+    public var note: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case note = "note"
+    }
+
+    public init(id: String, note: String? = nil) {
+      self.id = id
+      self.note = note
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(note, forKey: .note)
+    }
+  }
+
+  public struct ProposalDismissParams: Codable, Sendable {
+    public var id: String
+    public var reason: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case reason = "reason"
+    }
+
+    public init(id: String, reason: String? = nil) {
+      self.id = id
+      self.reason = reason
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(reason, forKey: .reason)
+    }
+  }
+
+  public struct ProposalGetParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct ProposalPerformCleanupParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct ProposalRequestRevisionParams: Codable, Sendable {
+    public var id: String
+    public var note: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case note = "note"
+    }
+
+    public init(id: String, note: String) {
+      self.id = id
+      self.note = note
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(note, forKey: .note)
+    }
+  }
+
+  public struct ProposalResolveParams: Codable, Sendable {
+    public var id: String
+    public var note: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case note = "note"
+    }
+
+    public init(id: String, note: String? = nil) {
+      self.id = id
+      self.note = note
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(note, forKey: .note)
+    }
+  }
+
+  public struct ProposalsListParams: Codable, Sendable {
+    public var automationId: String?
+    public var runId: String?
+    public var status: ProposalStatus?
+
+    enum CodingKeys: String, CodingKey {
+      case automationId = "automationId"
+      case runId = "runId"
+      case status = "status"
+    }
+
+    public init(automationId: String? = nil, runId: String? = nil, status: ProposalStatus? = nil) {
+      self.automationId = automationId
+      self.runId = runId
+      self.status = status
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(automationId, forKey: .automationId)
+      try c.encodeIfPresent(runId, forKey: .runId)
+      try c.encodeIfPresent(status, forKey: .status)
+    }
+  }
+
+  public struct PublishAgentSnapshotParams: Codable, Sendable {
+    public var agentId: String
+    public var snapshot: String?
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case snapshot = "snapshot"
+    }
+
+    public init(agentId: String, snapshot: String? = nil) {
+      self.agentId = agentId
+      self.snapshot = snapshot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encodeIfPresent(snapshot, forKey: .snapshot)
+    }
+  }
+
+  public struct PublishHandoffParams: Codable, Sendable {
+    public var sessionId: String?
+    public var agentId: String?
+    public var label: String?
+    public var projectName: String?
+    public var repoRoot: String?
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case agentId = "agentId"
+      case label = "label"
+      case projectName = "projectName"
+      case repoRoot = "repoRoot"
+    }
+
+    public init(sessionId: String? = nil, agentId: String? = nil, label: String? = nil, projectName: String? = nil, repoRoot: String? = nil) {
+      self.sessionId = sessionId
+      self.agentId = agentId
+      self.label = label
+      self.projectName = projectName
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encodeIfPresent(agentId, forKey: .agentId)
+      try c.encodeIfPresent(label, forKey: .label)
+      try c.encodeIfPresent(projectName, forKey: .projectName)
+      try c.encodeIfPresent(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct PushSessionBranchParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct QueueMessageParams: Codable, Sendable {
+    public var agentId: String
+    public var text: String
+    public var displayText: String?
+    public var images: [ImageAttachment]?
+    public var author: String?
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case text = "text"
+      case displayText = "displayText"
+      case images = "images"
+      case author = "author"
+    }
+
+    public init(agentId: String, text: String, displayText: String? = nil, images: [ImageAttachment]? = nil, author: String? = nil) {
+      self.agentId = agentId
+      self.text = text
+      self.displayText = displayText
+      self.images = images
+      self.author = author
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(text, forKey: .text)
+      try c.encodeIfPresent(displayText, forKey: .displayText)
+      try c.encodeIfPresent(images, forKey: .images)
+      try c.encodeIfPresent(author, forKey: .author)
+    }
+  }
+
+  public struct ReadArgusConfigParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
     }
   }
 
@@ -76,6 +6012,255 @@ extension ArgusProtocol {
     }
   }
 
+  public struct ReadPrTemplateParams: Codable, Sendable {
+    public var repoRoot: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+    }
+
+    public init(repoRoot: String) {
+      self.repoRoot = repoRoot
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+    }
+  }
+
+  public struct RebaseSessionOnBaseParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct RemoteConfirmPairingParams: Codable, Sendable {
+    public var control: Bool?
+    public var admin: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case control = "control"
+      case admin = "admin"
+    }
+
+    public init(control: Bool? = nil, admin: Bool? = nil) {
+      self.control = control
+      self.admin = admin
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(control, forKey: .control)
+      try c.encodeIfPresent(admin, forKey: .admin)
+    }
+  }
+
+  public struct RemoteRevokeDeviceParams: Codable, Sendable {
+    public var deviceId: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceId = "deviceId"
+    }
+
+    public init(deviceId: String) {
+      self.deviceId = deviceId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceId, forKey: .deviceId)
+    }
+  }
+
+  public struct RemoteSetConfigParams: Codable, Sendable {
+    public var config: RemoteConfigPatch
+
+    enum CodingKeys: String, CodingKey {
+      case config = "config"
+    }
+
+    public init(config: RemoteConfigPatch) {
+      self.config = config
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(config, forKey: .config)
+    }
+  }
+
+  public struct RemoteSetDeviceControlParams: Codable, Sendable {
+    public var deviceId: String
+    public var control: Bool?
+    public var admin: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case deviceId = "deviceId"
+      case control = "control"
+      case admin = "admin"
+    }
+
+    public init(deviceId: String, control: Bool? = nil, admin: Bool? = nil) {
+      self.deviceId = deviceId
+      self.control = control
+      self.admin = admin
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceId, forKey: .deviceId)
+      try c.encodeIfPresent(control, forKey: .control)
+      try c.encodeIfPresent(admin, forKey: .admin)
+    }
+  }
+
+  public struct RemoteSetPushConfigParams: Codable, Sendable {
+    public var patch: RemotePushConfigPatch
+
+    enum CodingKeys: String, CodingKey {
+      case patch = "patch"
+    }
+
+    public init(patch: RemotePushConfigPatch) {
+      self.patch = patch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(patch, forKey: .patch)
+    }
+  }
+
+  public struct RemoteTailscaleFixParams: Codable, Sendable {
+    public var fix: TailscaleFixKind
+    public var url: String?
+
+    enum CodingKeys: String, CodingKey {
+      case fix = "fix"
+      case url = "url"
+    }
+
+    public init(fix: TailscaleFixKind, url: String? = nil) {
+      self.fix = fix
+      self.url = url
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(fix, forKey: .fix)
+      try c.encodeIfPresent(url, forKey: .url)
+    }
+  }
+
+  public struct RemoteTestPushParams: Codable, Sendable {
+    public var deviceId: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceId = "deviceId"
+    }
+
+    public init(deviceId: String) {
+      self.deviceId = deviceId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceId, forKey: .deviceId)
+    }
+  }
+
+  public struct RemoveQueuedMessageParams: Codable, Sendable {
+    public var agentId: String
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case id = "id"
+    }
+
+    public init(agentId: String, id: String) {
+      self.agentId = agentId
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct RemoveRepoRootParams: Codable, Sendable {
+    public var path: String
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+    }
+
+    public init(path: String) {
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+    }
+  }
+
+  public struct RenameSessionParams: Codable, Sendable {
+    public var id: String
+    public var displayName: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case displayName = "displayName"
+    }
+
+    public init(id: String, displayName: String) {
+      self.id = id
+      self.displayName = displayName
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(displayName, forKey: .displayName)
+    }
+  }
+
+  public struct RenameSessionBranchParams: Codable, Sendable {
+    public var id: String
+    public var branch: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case branch = "branch"
+    }
+
+    public init(id: String, branch: String) {
+      self.id = id
+      self.branch = branch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(branch, forKey: .branch)
+    }
+  }
+
   public struct ResolveMentionPathParams: Codable, Sendable {
     public var id: String
     public var query: String
@@ -97,6 +6282,799 @@ extension ArgusProtocol {
     }
   }
 
+  public struct RespondToPermissionParamsDecision: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let allow = RespondToPermissionParamsDecision(rawValue: "allow")
+    public static let deny = RespondToPermissionParamsDecision(rawValue: "deny")
+  }
+
+  public struct RespondToPermissionParams: Codable, Sendable {
+    public var agentId: String
+    public var toolUseId: String
+    public var decision: RespondToPermissionParamsDecision
+    public var allowRule: String?
+    public var allowAll: Bool?
+    public var denyMessage: String?
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case toolUseId = "toolUseId"
+      case decision = "decision"
+      case allowRule = "allowRule"
+      case allowAll = "allowAll"
+      case denyMessage = "denyMessage"
+    }
+
+    public init(agentId: String, toolUseId: String, decision: RespondToPermissionParamsDecision, allowRule: String? = nil, allowAll: Bool? = nil, denyMessage: String? = nil) {
+      self.agentId = agentId
+      self.toolUseId = toolUseId
+      self.decision = decision
+      self.allowRule = allowRule
+      self.allowAll = allowAll
+      self.denyMessage = denyMessage
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(toolUseId, forKey: .toolUseId)
+      try c.encode(decision, forKey: .decision)
+      try c.encodeIfPresent(allowRule, forKey: .allowRule)
+      try c.encodeIfPresent(allowAll, forKey: .allowAll)
+      try c.encodeIfPresent(denyMessage, forKey: .denyMessage)
+    }
+  }
+
+  public struct RestoreAgentAtTurnParams: Codable, Sendable {
+    public var agentId: String
+    public var sourceClaudeSessionId: String
+    public var keepTurnNumber: Double
+    public var cutoffTimestampMs: Double
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case sourceClaudeSessionId = "sourceClaudeSessionId"
+      case keepTurnNumber = "keepTurnNumber"
+      case cutoffTimestampMs = "cutoffTimestampMs"
+    }
+
+    public init(agentId: String, sourceClaudeSessionId: String, keepTurnNumber: Double, cutoffTimestampMs: Double) {
+      self.agentId = agentId
+      self.sourceClaudeSessionId = sourceClaudeSessionId
+      self.keepTurnNumber = keepTurnNumber
+      self.cutoffTimestampMs = cutoffTimestampMs
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(sourceClaudeSessionId, forKey: .sourceClaudeSessionId)
+      try c.encode(keepTurnNumber, forKey: .keepTurnNumber)
+      try c.encode(cutoffTimestampMs, forKey: .cutoffTimestampMs)
+    }
+  }
+
+  public struct RestoreCheckpointParams: Codable, Sendable {
+    public var sessionId: String
+    public var checkpointId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case checkpointId = "checkpointId"
+    }
+
+    public init(sessionId: String, checkpointId: String) {
+      self.sessionId = sessionId
+      self.checkpointId = checkpointId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(checkpointId, forKey: .checkpointId)
+    }
+  }
+
+  public struct RetrySessionSetupParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct RevealInFinderParams: Codable, Sendable {
+    public var path: String
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+    }
+
+    public init(path: String) {
+      self.path = path
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+    }
+  }
+
+  public struct RunConductorCommandParams: Codable, Sendable {
+    public var deviceKey: String
+    public var args: [String]
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+      case args = "args"
+    }
+
+    public init(deviceKey: String, args: [String]) {
+      self.deviceKey = deviceKey
+      self.args = args
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+      try c.encode(args, forKey: .args)
+    }
+  }
+
+  public struct SaveChatHistoryParams: Codable, Sendable {
+    public var repoRoot: String
+    public var conversation: SavedConversation
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case conversation = "conversation"
+    }
+
+    public init(repoRoot: String, conversation: SavedConversation) {
+      self.repoRoot = repoRoot
+      self.conversation = conversation
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(conversation, forKey: .conversation)
+    }
+  }
+
+  public struct SearchChatHistoryParams: Codable, Sendable {
+    public var repoRoot: String
+    public var query: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case query = "query"
+    }
+
+    public init(repoRoot: String, query: String) {
+      self.repoRoot = repoRoot
+      self.query = query
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(query, forKey: .query)
+    }
+  }
+
+  public struct SendAgentMessageParams: Codable, Sendable {
+    public var agentId: String
+    public var message: String
+    public var images: [ImageAttachment]?
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case message = "message"
+      case images = "images"
+    }
+
+    public init(agentId: String, message: String, images: [ImageAttachment]? = nil) {
+      self.agentId = agentId
+      self.message = message
+      self.images = images
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(message, forKey: .message)
+      try c.encodeIfPresent(images, forKey: .images)
+    }
+  }
+
+  public struct SetAgentEffortParams: Codable, Sendable {
+    public var agentId: String
+    public var level: String?
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case level = "level"
+    }
+
+    public init(agentId: String, level: String? = nil) {
+      self.agentId = agentId
+      self.level = level
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encodeIfPresent(level, forKey: .level)
+    }
+  }
+
+  public struct SetAgentModelParams: Codable, Sendable {
+    public var agentId: String
+    public var model: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case model = "model"
+    }
+
+    public init(agentId: String, model: String) {
+      self.agentId = agentId
+      self.model = model
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(model, forKey: .model)
+    }
+  }
+
+  public struct SetAgentPermissionModeParams: Codable, Sendable {
+    public var agentId: String
+    public var mode: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case mode = "mode"
+    }
+
+    public init(agentId: String, mode: String) {
+      self.agentId = agentId
+      self.mode = mode
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(mode, forKey: .mode)
+    }
+  }
+
+  public struct SetAgentRunnerParams: Codable, Sendable {
+    public var agentId: String
+    public var runnerId: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case runnerId = "runnerId"
+    }
+
+    public init(agentId: String, runnerId: String) {
+      self.agentId = agentId
+      self.runnerId = runnerId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(runnerId, forKey: .runnerId)
+    }
+  }
+
+  public struct SetAppSettingsParams: Codable, Sendable {
+    public var settings: AppSettings
+
+    enum CodingKeys: String, CodingKey {
+      case settings = "settings"
+    }
+
+    public init(settings: AppSettings) {
+      self.settings = settings
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(settings, forKey: .settings)
+    }
+  }
+
+  public struct SetConductorVersionParams: Codable, Sendable {
+    public var version: String?
+
+    enum CodingKeys: String, CodingKey {
+      case version = "version"
+    }
+
+    public init(version: String? = nil) {
+      self.version = version
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(version, forKey: .version)
+    }
+  }
+
+  public struct SetEnabledToolsParams: Codable, Sendable {
+    public var userEnabled: [String: Bool]?
+
+    enum CodingKeys: String, CodingKey {
+      case userEnabled = "userEnabled"
+    }
+
+    public init(userEnabled: [String: Bool]? = nil) {
+      self.userEnabled = userEnabled
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(userEnabled, forKey: .userEnabled)
+    }
+  }
+
+  public struct SetGlobalCredentialHelperParamsName: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let osxkeychain = SetGlobalCredentialHelperParamsName(rawValue: "osxkeychain")
+    public static let store = SetGlobalCredentialHelperParamsName(rawValue: "store")
+  }
+
+  public struct SetGlobalCredentialHelperParams: Codable, Sendable {
+    public var name: SetGlobalCredentialHelperParamsName
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+    }
+
+    public init(name: SetGlobalCredentialHelperParamsName) {
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
+  public struct SetSessionBaseBranchParams: Codable, Sendable {
+    public var id: String
+    public var baseBranch: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case baseBranch = "baseBranch"
+    }
+
+    public init(id: String, baseBranch: String) {
+      self.id = id
+      self.baseBranch = baseBranch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(baseBranch, forKey: .baseBranch)
+    }
+  }
+
+  public struct SetSessionClaudeAccountParams: Codable, Sendable {
+    public var sessionId: String
+    public var accountId: String?
+    public var agentId: String?
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case accountId = "accountId"
+      case agentId = "agentId"
+    }
+
+    public init(sessionId: String, accountId: String? = nil, agentId: String? = nil) {
+      self.sessionId = sessionId
+      self.accountId = accountId
+      self.agentId = agentId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encodeIfPresent(accountId, forKey: .accountId)
+      try c.encodeIfPresent(agentId, forKey: .agentId)
+    }
+  }
+
+  public struct SetUserProjectSettingsParams: Codable, Sendable {
+    public var repoRoot: String
+    public var settings: UserProjectSettings
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case settings = "settings"
+    }
+
+    public init(repoRoot: String, settings: UserProjectSettings) {
+      self.repoRoot = repoRoot
+      self.settings = settings
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(settings, forKey: .settings)
+    }
+  }
+
+  public struct ShowImageContextMenuParams: Codable, Sendable {
+    public var src: String
+    public var suggestedName: String?
+
+    enum CodingKeys: String, CodingKey {
+      case src = "src"
+      case suggestedName = "suggestedName"
+    }
+
+    public init(src: String, suggestedName: String? = nil) {
+      self.src = src
+      self.suggestedName = suggestedName
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(src, forKey: .src)
+      try c.encodeIfPresent(suggestedName, forKey: .suggestedName)
+    }
+  }
+
+  public struct ShowOpenDialogParams: Codable, Sendable {
+    public var title: String?
+
+    enum CodingKeys: String, CodingKey {
+      case title = "title"
+    }
+
+    public init(title: String? = nil) {
+      self.title = title
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(title, forKey: .title)
+    }
+  }
+
+  public struct SimulatorButtonParams: Codable, Sendable {
+    public var udid: String
+    public var button: String
+
+    enum CodingKeys: String, CodingKey {
+      case udid = "udid"
+      case button = "button"
+    }
+
+    public init(udid: String, button: String) {
+      self.udid = udid
+      self.button = button
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(udid, forKey: .udid)
+      try c.encode(button, forKey: .button)
+    }
+  }
+
+  public struct SimulatorDeviceStateParams: Codable, Sendable {
+    public var udid: String
+
+    enum CodingKeys: String, CodingKey {
+      case udid = "udid"
+    }
+
+    public init(udid: String) {
+      self.udid = udid
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(udid, forKey: .udid)
+    }
+  }
+
+  public struct SimulatorKeyboardParams: Codable, Sendable {
+    public var udid: String
+    public var keyCode: Double
+    public var modifierFlags: Double
+    public var isDown: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case udid = "udid"
+      case keyCode = "keyCode"
+      case modifierFlags = "modifierFlags"
+      case isDown = "isDown"
+    }
+
+    public init(udid: String, keyCode: Double, modifierFlags: Double, isDown: Bool) {
+      self.udid = udid
+      self.keyCode = keyCode
+      self.modifierFlags = modifierFlags
+      self.isDown = isDown
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(udid, forKey: .udid)
+      try c.encode(keyCode, forKey: .keyCode)
+      try c.encode(modifierFlags, forKey: .modifierFlags)
+      try c.encode(isDown, forKey: .isDown)
+    }
+  }
+
+  public struct SimulatorSetFoldParams: Codable, Sendable {
+    public var udid: String
+    public var pose: JSONValue
+
+    enum CodingKeys: String, CodingKey {
+      case udid = "udid"
+      case pose = "pose"
+    }
+
+    public init(udid: String, pose: JSONValue) {
+      self.udid = udid
+      self.pose = pose
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(udid, forKey: .udid)
+      try c.encode(pose, forKey: .pose)
+    }
+  }
+
+  public struct SimulatorSetOrientationParams: Codable, Sendable {
+    public var udid: String
+    public var orientation: DeviceOrientation
+
+    enum CodingKeys: String, CodingKey {
+      case udid = "udid"
+      case orientation = "orientation"
+    }
+
+    public init(udid: String, orientation: DeviceOrientation) {
+      self.udid = udid
+      self.orientation = orientation
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(udid, forKey: .udid)
+      try c.encode(orientation, forKey: .orientation)
+    }
+  }
+
+  public struct SimulatorTouchParams: Codable, Sendable {
+    public var udid: String
+    public var x: Double
+    public var y: Double
+    public var eventType: Double
+
+    enum CodingKeys: String, CodingKey {
+      case udid = "udid"
+      case x = "x"
+      case y = "y"
+      case eventType = "eventType"
+    }
+
+    public init(udid: String, x: Double, y: Double, eventType: Double) {
+      self.udid = udid
+      self.x = x
+      self.y = y
+      self.eventType = eventType
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(udid, forKey: .udid)
+      try c.encode(x, forKey: .x)
+      try c.encode(y, forKey: .y)
+      try c.encode(eventType, forKey: .eventType)
+    }
+  }
+
+  public struct StageAllParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct StageFileParams: Codable, Sendable {
+    public var id: String
+    public var filePath: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case filePath = "filePath"
+    }
+
+    public init(id: String, filePath: String) {
+      self.id = id
+      self.filePath = filePath
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(filePath, forKey: .filePath)
+    }
+  }
+
+  public struct StageHunkParams: Codable, Sendable {
+    public var id: String
+    public var patch: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case patch = "patch"
+    }
+
+    public init(id: String, patch: String) {
+      self.id = id
+      self.patch = patch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(patch, forKey: .patch)
+    }
+  }
+
+  public struct StartAgentParams: Codable, Sendable {
+    public var sessionId: String
+    public var model: String?
+    public var permissionMode: String?
+    public var resumeSessionId: String?
+    public var appendSystemPrompt: String?
+    public var agentId: String?
+    public var runnerId: String?
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case model = "model"
+      case permissionMode = "permissionMode"
+      case resumeSessionId = "resumeSessionId"
+      case appendSystemPrompt = "appendSystemPrompt"
+      case agentId = "agentId"
+      case runnerId = "runnerId"
+    }
+
+    public init(sessionId: String, model: String? = nil, permissionMode: String? = nil, resumeSessionId: String? = nil, appendSystemPrompt: String? = nil, agentId: String? = nil, runnerId: String? = nil) {
+      self.sessionId = sessionId
+      self.model = model
+      self.permissionMode = permissionMode
+      self.resumeSessionId = resumeSessionId
+      self.appendSystemPrompt = appendSystemPrompt
+      self.agentId = agentId
+      self.runnerId = runnerId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encodeIfPresent(model, forKey: .model)
+      try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
+      try c.encodeIfPresent(resumeSessionId, forKey: .resumeSessionId)
+      try c.encodeIfPresent(appendSystemPrompt, forKey: .appendSystemPrompt)
+      try c.encodeIfPresent(agentId, forKey: .agentId)
+      try c.encodeIfPresent(runnerId, forKey: .runnerId)
+    }
+  }
+
+  public struct StartAndroidCaptureParams: Codable, Sendable {
+    public var serial: String
+
+    enum CodingKeys: String, CodingKey {
+      case serial = "serial"
+    }
+
+    public init(serial: String) {
+      self.serial = serial
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(serial, forKey: .serial)
+    }
+  }
+
+  public struct StartSimulatorCaptureParams: Codable, Sendable {
+    public var udid: String
+
+    enum CodingKeys: String, CodingKey {
+      case udid = "udid"
+    }
+
+    public init(udid: String) {
+      self.udid = udid
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(udid, forKey: .udid)
+    }
+  }
+
+  public struct StartTerminalParams: Codable, Sendable {
+    public var sessionId: String
+    public var cols: Double
+    public var rows: Double
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case cols = "cols"
+      case rows = "rows"
+    }
+
+    public init(sessionId: String, cols: Double, rows: Double) {
+      self.sessionId = sessionId
+      self.cols = cols
+      self.rows = rows
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(cols, forKey: .cols)
+      try c.encode(rows, forKey: .rows)
+    }
+  }
+
   public struct StatFileParams: Codable, Sendable {
     public var id: String
     public var relativePath: String
@@ -115,6 +7093,415 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(id, forKey: .id)
       try c.encode(relativePath, forKey: .relativePath)
+    }
+  }
+
+  public struct StopAgentParams: Codable, Sendable {
+    public var agentId: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+    }
+
+    public init(agentId: String) {
+      self.agentId = agentId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+    }
+  }
+
+  public struct StopAndroidCaptureParams: Codable, Sendable {
+    public var serial: String?
+
+    enum CodingKeys: String, CodingKey {
+      case serial = "serial"
+    }
+
+    public init(serial: String? = nil) {
+      self.serial = serial
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(serial, forKey: .serial)
+    }
+  }
+
+  public struct StopDeviceParams: Codable, Sendable {
+    public var deviceKey: String
+    public var platform: DevicePlatform
+
+    enum CodingKeys: String, CodingKey {
+      case deviceKey = "deviceKey"
+      case platform = "platform"
+    }
+
+    public init(deviceKey: String, platform: DevicePlatform) {
+      self.deviceKey = deviceKey
+      self.platform = platform
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceKey, forKey: .deviceKey)
+      try c.encode(platform, forKey: .platform)
+    }
+  }
+
+  public struct StopSimulatorCaptureParams: Codable, Sendable {
+    public var udid: String
+
+    enum CodingKeys: String, CodingKey {
+      case udid = "udid"
+    }
+
+    public init(udid: String) {
+      self.udid = udid
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(udid, forKey: .udid)
+    }
+  }
+
+  public struct StopTerminalParams: Codable, Sendable {
+    public var sessionId: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+    }
+
+    public init(sessionId: String) {
+      self.sessionId = sessionId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+    }
+  }
+
+  public struct TelemetryCaptureParams: Codable, Sendable {
+    public var event: String
+    public var props: [String: JSONValue]?
+
+    enum CodingKeys: String, CodingKey {
+      case event = "event"
+      case props = "props"
+    }
+
+    public init(event: String, props: [String: JSONValue]? = nil) {
+      self.event = event
+      self.props = props
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(event, forKey: .event)
+      try c.encodeIfPresent(props, forKey: .props)
+    }
+  }
+
+  public struct TelemetryCaptureExceptionParams: Codable, Sendable {
+    public var message: String?
+    public var stack: String?
+    public var props: [String: JSONValue]?
+
+    enum CodingKeys: String, CodingKey {
+      case message = "message"
+      case stack = "stack"
+      case props = "props"
+    }
+
+    public init(message: String? = nil, stack: String? = nil, props: [String: JSONValue]? = nil) {
+      self.message = message
+      self.stack = stack
+      self.props = props
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(message, forKey: .message)
+      try c.encodeIfPresent(stack, forKey: .stack)
+      try c.encodeIfPresent(props, forKey: .props)
+    }
+  }
+
+  public struct TelemetryCaptureFeedbackParams: Codable, Sendable {
+    public var message: String?
+
+    enum CodingKeys: String, CodingKey {
+      case message = "message"
+    }
+
+    public init(message: String? = nil) {
+      self.message = message
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(message, forKey: .message)
+    }
+  }
+
+  public struct TelemetrySetModeParams: Codable, Sendable {
+    public var mode: TelemetryMode
+
+    enum CodingKeys: String, CodingKey {
+      case mode = "mode"
+    }
+
+    public init(mode: TelemetryMode) {
+      self.mode = mode
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(mode, forKey: .mode)
+    }
+  }
+
+  public struct TerminalResizeParams: Codable, Sendable {
+    public var sessionId: String
+    public var cols: Double
+    public var rows: Double
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case cols = "cols"
+      case rows = "rows"
+    }
+
+    public init(sessionId: String, cols: Double, rows: Double) {
+      self.sessionId = sessionId
+      self.cols = cols
+      self.rows = rows
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(cols, forKey: .cols)
+      try c.encode(rows, forKey: .rows)
+    }
+  }
+
+  public struct TerminalWriteParams: Codable, Sendable {
+    public var sessionId: String
+    public var data: String
+
+    enum CodingKeys: String, CodingKey {
+      case sessionId = "sessionId"
+      case data = "data"
+    }
+
+    public init(sessionId: String, data: String) {
+      self.sessionId = sessionId
+      self.data = data
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(sessionId, forKey: .sessionId)
+      try c.encode(data, forKey: .data)
+    }
+  }
+
+  public struct TestMcpServerParams: Codable, Sendable {
+    public var config: [String: JSONValue]
+
+    enum CodingKeys: String, CodingKey {
+      case config = "config"
+    }
+
+    public init(config: [String: JSONValue]) {
+      self.config = config
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(config, forKey: .config)
+    }
+  }
+
+  public struct UiStateGetParams: Codable, Sendable {
+    public var key: String
+
+    enum CodingKeys: String, CodingKey {
+      case key = "key"
+    }
+
+    public init(key: String) {
+      self.key = key
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(key, forKey: .key)
+    }
+  }
+
+  public struct UiStateSetParams: Codable, Sendable {
+    public var key: String
+    public var value: String
+
+    enum CodingKeys: String, CodingKey {
+      case key = "key"
+      case value = "value"
+    }
+
+    public init(key: String, value: String) {
+      self.key = key
+      self.value = value
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(key, forKey: .key)
+      try c.encode(value, forKey: .value)
+    }
+  }
+
+  public struct UnstageAllParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct UnstageFileParams: Codable, Sendable {
+    public var id: String
+    public var filePath: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case filePath = "filePath"
+    }
+
+    public init(id: String, filePath: String) {
+      self.id = id
+      self.filePath = filePath
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(filePath, forKey: .filePath)
+    }
+  }
+
+  public struct UnstageHunkParams: Codable, Sendable {
+    public var id: String
+    public var patch: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case patch = "patch"
+    }
+
+    public init(id: String, patch: String) {
+      self.id = id
+      self.patch = patch
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(patch, forKey: .patch)
+    }
+  }
+
+  public struct UnwatchSessionParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct UpdateQueuedMessageParams: Codable, Sendable {
+    public var agentId: String
+    public var id: String
+    public var text: String
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case id = "id"
+      case text = "text"
+    }
+
+    public init(agentId: String, id: String, text: String) {
+      self.agentId = agentId
+      self.id = id
+      self.text = text
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(id, forKey: .id)
+      try c.encode(text, forKey: .text)
+    }
+  }
+
+  public struct UpdateTerminalTitleParams: Codable, Sendable {
+    public var terminalId: String
+    public var title: String
+
+    enum CodingKeys: String, CodingKey {
+      case terminalId = "terminalId"
+      case title = "title"
+    }
+
+    public init(terminalId: String, title: String) {
+      self.terminalId = terminalId
+      self.title = title
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(terminalId, forKey: .terminalId)
+      try c.encode(title, forKey: .title)
+    }
+  }
+
+  public struct UpdaterCheckParams: Codable, Sendable {
+    public var silent: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case silent = "silent"
+    }
+
+    public init(silent: Bool? = nil) {
+      self.silent = silent
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(silent, forKey: .silent)
     }
   }
 
@@ -140,6 +7527,44 @@ extension ArgusProtocol {
       try c.encode(id, forKey: .id)
       try c.encode(name, forKey: .name)
       try c.encode(data, forKey: .data)
+    }
+  }
+
+  public struct WatchSessionParams: Codable, Sendable {
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+    }
+
+    public init(id: String) {
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct WriteArgusConfigParams: Codable, Sendable {
+    public var repoRoot: String
+    public var content: String
+
+    enum CodingKeys: String, CodingKey {
+      case repoRoot = "repoRoot"
+      case content = "content"
+    }
+
+    public init(repoRoot: String, content: String) {
+      self.repoRoot = repoRoot
+      self.content = content
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(repoRoot, forKey: .repoRoot)
+      try c.encode(content, forKey: .content)
     }
   }
 
@@ -172,10 +7597,1795 @@ extension ArgusProtocol {
 extension ArgusProtocol {
   /// Every raw host command, for a client holding the admin tier.
   public enum Commands {
+    public enum ActiveSimulator: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = String?
+      public static let name = "active_simulator"
+      public static let tier = "admin"
+    }
+
+    public enum AddRepoRoot: RemoteCommand {
+      public typealias Params = ArgusProtocol.AddRepoRootParams
+      public typealias Result = IgnoredResult
+      public static let name = "add_repo_root"
+      public static let tier = "admin"
+    }
+
+    public enum AddToGitignore: RemoteCommand {
+      public typealias Params = ArgusProtocol.AddToGitignoreParams
+      public typealias Result = IgnoredResult
+      public static let name = "add_to_gitignore"
+      public static let tier = "admin"
+    }
+
+    public enum AndroidButton: RemoteCommand {
+      public typealias Params = ArgusProtocol.AndroidButtonParams
+      public typealias Result = IgnoredResult
+      public static let name = "android_button"
+      public static let tier = "admin"
+    }
+
+    public enum AndroidKeyboard: RemoteCommand {
+      public typealias Params = ArgusProtocol.AndroidKeyboardParams
+      public typealias Result = IgnoredResult
+      public static let name = "android_keyboard"
+      public static let tier = "admin"
+    }
+
+    public enum AndroidTouch: RemoteCommand {
+      public typealias Params = ArgusProtocol.AndroidTouchParams
+      public typealias Result = IgnoredResult
+      public static let name = "android_touch"
+      public static let tier = "admin"
+    }
+
+    public enum AppCancelQuit: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "app_cancel_quit"
+      public static let tier = "admin"
+    }
+
+    public enum AppConfirmQuit: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "app_confirm_quit"
+      public static let tier = "admin"
+    }
+
+    public enum AutofillPrTemplate: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutofillPrTemplateParams
+      public typealias Result = String?
+      public static let name = "autofill_pr_template"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationCalibration: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationCalibrationParams
+      public typealias Result = ArgusProtocol.AutomationCalibration
+      public static let name = "automation_calibration"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationCancelRun: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationCancelRunParams
+      public typealias Result = ArgusProtocol.AutomationRun
+      public static let name = "automation_cancel_run"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationCreate: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationCreateParams
+      public typealias Result = ArgusProtocol.Automation
+      public static let name = "automation_create"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationDelete: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationDeleteParams
+      public typealias Result = IgnoredResult
+      public static let name = "automation_delete"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationDraft: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationDraftParams
+      public typealias Result = ArgusProtocol.AutomationDraft
+      public static let name = "automation_draft"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationGateLogClear: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "automation_gate_log_clear"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationGateLogDismiss: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationGateLogDismissParams
+      public typealias Result = IgnoredResult
+      public static let name = "automation_gate_log_dismiss"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationGateLogList: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.GateLogEntry]
+      public static let name = "automation_gate_log_list"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationMemoriesList: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationMemoriesListParams
+      public typealias Result = ArgusProtocol.AutomationMemoryListing
+      public static let name = "automation_memories_list"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationMemoryDelete: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationMemoryDeleteParams
+      public typealias Result = IgnoredResult
+      public static let name = "automation_memory_delete"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationMemorySave: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationMemorySaveParams
+      public typealias Result = ArgusProtocol.AutomationMemory
+      public static let name = "automation_memory_save"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationPlaybookRevise: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationPlaybookReviseParams
+      public typealias Result = ArgusProtocol.AutomationPlaybookReviseResult
+      public static let name = "automation_playbook_revise"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationRunDelete: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationRunDeleteParams
+      public typealias Result = IgnoredResult
+      public static let name = "automation_run_delete"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationRunFeedback: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationRunFeedbackParams
+      public typealias Result = ArgusProtocol.AutomationRun
+      public static let name = "automation_run_feedback"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationRunGet: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationRunGetParams
+      public typealias Result = ArgusProtocol.AutomationRun?
+      public static let name = "automation_run_get"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationRunMarkRead: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationRunMarkReadParams
+      public typealias Result = ArgusProtocol.AutomationRun
+      public static let name = "automation_run_mark_read"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationRunNow: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationRunNowParams
+      public typealias Result = ArgusProtocol.AutomationRun
+      public static let name = "automation_run_now"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationRunScratch: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationRunScratchParams
+      public typealias Result = ArgusProtocol.AutomationRun
+      public static let name = "automation_run_scratch"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationRunsList: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationRunsListParams
+      public typealias Result = [ArgusProtocol.AutomationRun]
+      public static let name = "automation_runs_list"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationScratchRunsList: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.AutomationRun]
+      public static let name = "automation_scratch_runs_list"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationScratchSave: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationScratchSaveParams
+      public typealias Result = ArgusProtocol.Automation
+      public static let name = "automation_scratch_save"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationSetEnabled: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationSetEnabledParams
+      public typealias Result = ArgusProtocol.Automation
+      public static let name = "automation_set_enabled"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationUpdate: RemoteCommand {
+      public typealias Params = ArgusProtocol.AutomationUpdateParams
+      public typealias Result = ArgusProtocol.Automation
+      public static let name = "automation_update"
+      public static let tier = "admin"
+    }
+
+    public enum AutomationsList: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.Automation]
+      public static let name = "automations_list"
+      public static let tier = "admin"
+    }
+
+    public enum BootAndroidEmulator: RemoteCommand {
+      public typealias Params = ArgusProtocol.BootAndroidEmulatorParams
+      public typealias Result = String
+      public static let name = "boot_android_emulator"
+      public static let tier = "admin"
+    }
+
+    public enum BootSimulator: RemoteCommand {
+      public typealias Params = ArgusProtocol.BootSimulatorParams
+      public typealias Result = IgnoredResult
+      public static let name = "boot_simulator"
+      public static let tier = "admin"
+    }
+
+    public enum BrowserGetMjpegPort: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = Double
+      public static let name = "browser_get_mjpeg_port"
+      public static let tier = "admin"
+    }
+
+    public enum BrowserKeyboardEvent: RemoteCommand {
+      public typealias Params = ArgusProtocol.BrowserKeyboardEventParams
+      public typealias Result = IgnoredResult
+      public static let name = "browser_keyboard_event"
+      public static let tier = "admin"
+    }
+
+    public enum BrowserMouseEvent: RemoteCommand {
+      public typealias Params = ArgusProtocol.BrowserMouseEventParams
+      public typealias Result = IgnoredResult
+      public static let name = "browser_mouse_event"
+      public static let tier = "admin"
+    }
+
+    public enum BrowserUpdatePreset: RemoteCommand {
+      public typealias Params = ArgusProtocol.BrowserUpdatePresetParams
+      public typealias Result = IgnoredResult
+      public static let name = "browser_update_preset"
+      public static let tier = "admin"
+    }
+
+    public enum BrowserViewBack: RemoteCommand {
+      public typealias Params = ArgusProtocol.BrowserViewBackParams
+      public typealias Result = IgnoredResult
+      public static let name = "browser_view_back"
+      public static let tier = "admin"
+    }
+
+    public enum BrowserViewDestroy: RemoteCommand {
+      public typealias Params = ArgusProtocol.BrowserViewDestroyParams
+      public typealias Result = IgnoredResult
+      public static let name = "browser_view_destroy"
+      public static let tier = "admin"
+    }
+
+    public enum BrowserViewEnsure: RemoteCommand {
+      public typealias Params = ArgusProtocol.BrowserViewEnsureParams
+      public typealias Result = IgnoredResult
+      public static let name = "browser_view_ensure"
+      public static let tier = "admin"
+    }
+
+    public enum BrowserViewForward: RemoteCommand {
+      public typealias Params = ArgusProtocol.BrowserViewForwardParams
+      public typealias Result = IgnoredResult
+      public static let name = "browser_view_forward"
+      public static let tier = "admin"
+    }
+
+    public enum BrowserViewNavigate: RemoteCommand {
+      public typealias Params = ArgusProtocol.BrowserViewNavigateParams
+      public typealias Result = IgnoredResult
+      public static let name = "browser_view_navigate"
+      public static let tier = "admin"
+    }
+
+    public enum BrowserViewReload: RemoteCommand {
+      public typealias Params = ArgusProtocol.BrowserViewReloadParams
+      public typealias Result = IgnoredResult
+      public static let name = "browser_view_reload"
+      public static let tier = "admin"
+    }
+
+    public enum BrowserWheelEvent: RemoteCommand {
+      public typealias Params = ArgusProtocol.BrowserWheelEventParams
+      public typealias Result = IgnoredResult
+      public static let name = "browser_wheel_event"
+      public static let tier = "admin"
+    }
+
+    public enum CheckAndroidTools: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "check_android_tools"
+      public static let tier = "admin"
+    }
+
+    public enum CheckClaudeCli: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = String
+      public static let name = "check_claude_cli"
+      public static let tier = "admin"
+    }
+
+    public enum CheckDependencies: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.DependencyReport
+      public static let name = "check_dependencies"
+      public static let tier = "admin"
+    }
+
+    public enum CheckIosTools: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "check_ios_tools"
+      public static let tier = "admin"
+    }
+
+    public enum CheckSshKeys: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.CheckSshKeysResult
+      public static let name = "check_ssh_keys"
+      public static let tier = "admin"
+    }
+
+    public enum CheckoutBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.CheckoutBranchParams
+      public typealias Result = IgnoredResult
+      public static let name = "checkout_branch"
+      public static let tier = "admin"
+    }
+
+    public enum ClaimPrewarmAgent: RemoteCommand {
+      public typealias Params = ArgusProtocol.ClaimPrewarmAgentParams
+      public typealias Result = ArgusProtocol.AgentInfo
+      public static let name = "claim_prewarm_agent"
+      public static let tier = "admin"
+    }
+
+    public enum ClaudeAccountsAdd: RemoteCommand {
+      public typealias Params = ArgusProtocol.ClaudeAccountsAddParams
+      public typealias Result = ArgusProtocol.ClaudeLoginUrl
+      public static let name = "claude_accounts_add"
+      public static let tier = "admin"
+    }
+
+    public enum ClaudeAccountsList: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.ClaudeAccountsState
+      public static let name = "claude_accounts_list"
+      public static let tier = "admin"
+    }
+
+    public enum ClaudeAccountsRefresh: RemoteCommand {
+      public typealias Params = ArgusProtocol.ClaudeAccountsRefreshParams
+      public typealias Result = JSONValue
+      public static let name = "claude_accounts_refresh"
+      public static let tier = "admin"
+    }
+
+    public enum ClaudeAccountsRemove: RemoteCommand {
+      public typealias Params = ArgusProtocol.ClaudeAccountsRemoveParams
+      public typealias Result = JSONValue
+      public static let name = "claude_accounts_remove"
+      public static let tier = "admin"
+    }
+
+    public enum ClaudeAccountsRename: RemoteCommand {
+      public typealias Params = ArgusProtocol.ClaudeAccountsRenameParams
+      public typealias Result = JSONValue
+      public static let name = "claude_accounts_rename"
+      public static let tier = "admin"
+    }
+
+    public enum ClaudeAccountsSetActive: RemoteCommand {
+      public typealias Params = ArgusProtocol.ClaudeAccountsSetActiveParams
+      public typealias Result = JSONValue
+      public static let name = "claude_accounts_set_active"
+      public static let tier = "admin"
+    }
+
+    public enum ClaudeAuthLoginCancel: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = JSONValue
+      public static let name = "claude_auth_login_cancel"
+      public static let tier = "admin"
+    }
+
+    public enum ClaudeAuthLoginStart: RemoteCommand {
+      public typealias Params = ArgusProtocol.ClaudeAuthLoginStartParams
+      public typealias Result = ArgusProtocol.ClaudeLoginUrl
+      public static let name = "claude_auth_login_start"
+      public static let tier = "admin"
+    }
+
+    public enum ClaudeAuthLoginSubmitCode: RemoteCommand {
+      public typealias Params = ArgusProtocol.ClaudeAuthLoginSubmitCodeParams
+      public typealias Result = ArgusProtocol.OkOrError
+      public static let name = "claude_auth_login_submit_code"
+      public static let tier = "admin"
+    }
+
+    public enum ClaudeAuthLogout: RemoteCommand {
+      public typealias Params = ArgusProtocol.ClaudeAuthLogoutParams
+      public typealias Result = IgnoredResult
+      public static let name = "claude_auth_logout"
+      public static let tier = "admin"
+    }
+
+    public enum ClaudeAuthStatus: RemoteCommand {
+      public typealias Params = ArgusProtocol.ClaudeAuthStatusParams
+      public typealias Result = ArgusProtocol.ClaudeAuthStatus
+      public static let name = "claude_auth_status"
+      public static let tier = "admin"
+    }
+
+    public enum ClearQueuedMessages: RemoteCommand {
+      public typealias Params = ArgusProtocol.ClearQueuedMessagesParams
+      public typealias Result = IgnoredResult
+      public static let name = "clear_queued_messages"
+      public static let tier = "admin"
+    }
+
+    public enum ClearSessionSetupError: RemoteCommand {
+      public typealias Params = ArgusProtocol.ClearSessionSetupErrorParams
+      public typealias Result = IgnoredResult
+      public static let name = "clear_session_setup_error"
+      public static let tier = "admin"
+    }
+
+    public enum CloseAgentPopout: RemoteCommand {
+      public typealias Params = ArgusProtocol.CloseAgentPopoutParams
+      public typealias Result = IgnoredResult
+      public static let name = "close_agent_popout"
+      public static let tier = "host"
+    }
+
+    public enum CloseDevicePopout: RemoteCommand {
+      public typealias Params = ArgusProtocol.CloseDevicePopoutParams
+      public typealias Result = IgnoredResult
+      public static let name = "close_device_popout"
+      public static let tier = "admin"
+    }
+
+    public enum CloseWindow: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "close_window"
+      public static let tier = "host"
+    }
+
+    public enum CreateCheckpoint: RemoteCommand {
+      public typealias Params = ArgusProtocol.CreateCheckpointParams
+      public typealias Result = ArgusProtocol.Checkpoint
+      public static let name = "create_checkpoint"
+      public static let tier = "admin"
+    }
+
+    public enum CreateProjectRootSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.CreateProjectRootSessionParams
+      public typealias Result = ArgusProtocol.Session
+      public static let name = "create_project_root_session"
+      public static let tier = "admin"
+    }
+
+    public enum CreateRunTerminal: RemoteCommand {
+      public typealias Params = ArgusProtocol.CreateRunTerminalParams
+      public typealias Result = ArgusProtocol.RunTerminalResult
+      public static let name = "create_run_terminal"
+      public static let tier = "admin"
+    }
+
+    public enum CreateScratchPad: RemoteCommand {
+      public typealias Params = ArgusProtocol.CreateScratchPadParams
+      public typealias Result = ArgusProtocol.Session
+      public static let name = "create_scratch_pad"
+      public static let tier = "admin"
+    }
+
+    public enum CreateSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.CreateSessionParams
+      public typealias Result = ArgusProtocol.Session
+      public static let name = "create_session"
+      public static let tier = "admin"
+    }
+
+    public enum CreateTerminal: RemoteCommand {
+      public typealias Params = ArgusProtocol.CreateTerminalParams
+      public typealias Result = String
+      public static let name = "create_terminal"
+      public static let tier = "admin"
+    }
+
+    public enum DebugListStreams: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.DebugStreamInfo]
+      public static let name = "debug_list_streams"
+      public static let tier = "admin"
+    }
+
+    public enum DebugRunCommand: RemoteCommand {
+      public typealias Params = ArgusProtocol.DebugRunCommandParams
+      public typealias Result = ArgusProtocol.DebugCommandResult
+      public static let name = "debug_run_command"
+      public static let tier = "admin"
+    }
+
+    public enum DebugStartStream: RemoteCommand {
+      public typealias Params = ArgusProtocol.DebugStartStreamParams
+      public typealias Result = JSONValue
+      public static let name = "debug_start_stream"
+      public static let tier = "admin"
+    }
+
+    public enum DebugStopStream: RemoteCommand {
+      public typealias Params = ArgusProtocol.DebugStopStreamParams
+      public typealias Result = JSONValue
+      public static let name = "debug_stop_stream"
+      public static let tier = "admin"
+    }
+
+    public enum DeleteChatHistory: RemoteCommand {
+      public typealias Params = ArgusProtocol.DeleteChatHistoryParams
+      public typealias Result = IgnoredResult
+      public static let name = "delete_chat_history"
+      public static let tier = "admin"
+    }
+
+    public enum DeleteCheckpoint: RemoteCommand {
+      public typealias Params = ArgusProtocol.DeleteCheckpointParams
+      public typealias Result = IgnoredResult
+      public static let name = "delete_checkpoint"
+      public static let tier = "admin"
+    }
+
+    public enum DeleteSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.DeleteSessionParams
+      public typealias Result = IgnoredResult
+      public static let name = "delete_session"
+      public static let tier = "admin"
+    }
+
+    public enum DequeueMessage: RemoteCommand {
+      public typealias Params = ArgusProtocol.DequeueMessageParams
+      public typealias Result = ArgusProtocol.QueuedMessage?
+      public static let name = "dequeue_message"
+      public static let tier = "admin"
+    }
+
+    public enum DestroyTerminal: RemoteCommand {
+      public typealias Params = ArgusProtocol.DestroyTerminalParams
+      public typealias Result = IgnoredResult
+      public static let name = "destroy_terminal"
+      public static let tier = "admin"
+    }
+
+    public enum DeviceClaimStatus: RemoteCommand {
+      public typealias Params = ArgusProtocol.DeviceClaimStatusParams
+      public typealias Result = ArgusProtocol.RemoteDeviceClaimState
+      public static let name = "device_claim_status"
+      public static let tier = "admin"
+    }
+
+    public enum DeviceInputEndpoint: RemoteCommand {
+      public typealias Params = ArgusProtocol.DeviceInputEndpointParams
+      public typealias Result = ArgusProtocol.DeviceInputEndpoint?
+      public static let name = "device_input_endpoint"
+      public static let tier = "admin"
+    }
+
+    public enum DeviceOpenLink: RemoteCommand {
+      public typealias Params = ArgusProtocol.DeviceOpenLinkParams
+      public typealias Result = IgnoredResult
+      public static let name = "device_open_link"
+      public static let tier = "admin"
+    }
+
+    public enum DiscardFile: RemoteCommand {
+      public typealias Params = ArgusProtocol.DiscardFileParams
+      public typealias Result = IgnoredResult
+      public static let name = "discard_file"
+      public static let tier = "admin"
+    }
+
+    public enum DiscardHunk: RemoteCommand {
+      public typealias Params = ArgusProtocol.DiscardHunkParams
+      public typealias Result = IgnoredResult
+      public static let name = "discard_hunk"
+      public static let tier = "admin"
+    }
+
+    public enum DiscardPrewarmAgent: RemoteCommand {
+      public typealias Params = ArgusProtocol.DiscardPrewarmAgentParams
+      public typealias Result = IgnoredResult
+      public static let name = "discard_prewarm_agent"
+      public static let tier = "admin"
+    }
+
+    public enum DisconnectAndroidDevice: RemoteCommand {
+      public typealias Params = ArgusProtocol.DisconnectAndroidDeviceParams
+      public typealias Result = IgnoredResult
+      public static let name = "disconnect_android_device"
+      public static let tier = "admin"
+    }
+
+    public enum DisconnectSimulator: RemoteCommand {
+      public typealias Params = ArgusProtocol.DisconnectSimulatorParams
+      public typealias Result = IgnoredResult
+      public static let name = "disconnect_simulator"
+      public static let tier = "admin"
+    }
+
+    public enum ForkChatInSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.ForkChatInSessionParams
+      public typealias Result = ArgusProtocol.ForkChatResult
+      public static let name = "fork_chat_in_session"
+      public static let tier = "admin"
+    }
+
+    public enum ForkSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.ForkSessionParams
+      public typealias Result = ArgusProtocol.ForkSessionResult
+      public static let name = "fork_session"
+      public static let tier = "admin"
+    }
+
+    public enum GenerateSessionTitle: RemoteCommand {
+      public typealias Params = ArgusProtocol.GenerateSessionTitleParams
+      public typealias Result = String?
+      public static let name = "generate_session_title"
+      public static let tier = "admin"
+    }
+
+    public enum GetAgentSnapshot: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetAgentSnapshotParams
+      public typealias Result = String?
+      public static let name = "get_agent_snapshot"
+      public static let tier = "admin"
+    }
+
+    public enum GetAppSettings: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.AppSettings
+      public static let name = "get_app_settings"
+      public static let tier = "admin"
+    }
+
+    public enum GetAppVersion: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = String
+      public static let name = "get_app_version"
+      public static let tier = "admin"
+    }
+
+    public enum GetCommandMetrics: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetCommandMetricsParams
+      public typealias Result = [String: Double]
+      public static let name = "get_command_metrics"
+      public static let tier = "admin"
+    }
+
+    public enum GetConductorStatus: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.ConductorStatus
+      public static let name = "get_conductor_status"
+      public static let tier = "admin"
+    }
+
+    public enum GetEnabledTools: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.EnabledTools
+      public static let name = "get_enabled_tools"
+      public static let tier = "admin"
+    }
+
+    public enum GetGitAuthor: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetGitAuthorParams
+      public typealias Result = [JSONValue]
+      public static let name = "get_git_author"
+      public static let tier = "admin"
+    }
+
+    public enum GetGlobalCredentialHelper: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = String?
+      public static let name = "get_global_credential_helper"
+      public static let tier = "admin"
+    }
+
+    public enum GetLastCommitHash: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetLastCommitHashParams
+      public typealias Result = String
+      public static let name = "get_last_commit_hash"
+      public static let tier = "admin"
+    }
+
+    public enum GetLastCommitMessage: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetLastCommitMessageParams
+      public typealias Result = String
+      public static let name = "get_last_commit_message"
+      public static let tier = "admin"
+    }
+
+    public enum GetPullRequestDetail: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetPullRequestDetailParams
+      public typealias Result = ArgusProtocol.PullRequestDetail
+      public static let name = "get_pull_request_detail"
+      public static let tier = "admin"
+    }
+
+    public enum GetPullRequestDiff: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetPullRequestDiffParams
+      public typealias Result = String
+      public static let name = "get_pull_request_diff"
+      public static let tier = "admin"
+    }
+
+    public enum GetRepoBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetRepoBranchParams
+      public typealias Result = String
+      public static let name = "get_repo_branch"
+      public static let tier = "admin"
+    }
+
+    public enum GetSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetSessionParams
+      public typealias Result = ArgusProtocol.Session?
+      public static let name = "get_session"
+      public static let tier = "admin"
+    }
+
+    public enum GetSessionBranchDiff: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetSessionBranchDiffParams
+      public typealias Result = String
+      public static let name = "get_session_branch_diff"
+      public static let tier = "admin"
+    }
+
+    public enum GetSessionCommitsAhead: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetSessionCommitsAheadParams
+      public typealias Result = Double
+      public static let name = "get_session_commits_ahead"
+      public static let tier = "admin"
+    }
+
+    public enum GetSessionCommitsBehind: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetSessionCommitsBehindParams
+      public typealias Result = Double
+      public static let name = "get_session_commits_behind"
+      public static let tier = "admin"
+    }
+
+    public enum GetSessionConflicts: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetSessionConflictsParams
+      public typealias Result = [String]
+      public static let name = "get_session_conflicts"
+      public static let tier = "admin"
+    }
+
+    public enum GetSessionDiff: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetSessionDiffParams
+      public typealias Result = String
+      public static let name = "get_session_diff"
+      public static let tier = "admin"
+    }
+
+    public enum GetSessionFullDiff: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetSessionFullDiffParams
+      public typealias Result = String
+      public static let name = "get_session_full_diff"
+      public static let tier = "admin"
+    }
+
+    public enum GetSessionMergeBlockers: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetSessionMergeBlockersParams
+      public typealias Result = [String]
+      public static let name = "get_session_merge_blockers"
+      public static let tier = "admin"
+    }
+
+    public enum GetSessionReleaseNotes: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetSessionReleaseNotesParams
+      public typealias Result = ArgusProtocol.SessionReleaseNotesResult
+      public static let name = "get_session_release_notes"
+      public static let tier = "admin"
+    }
+
+    public enum GetSessionStagedDiff: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetSessionStagedDiffParams
+      public typealias Result = String
+      public static let name = "get_session_staged_diff"
+      public static let tier = "admin"
+    }
+
+    public enum GetSessionStatus: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetSessionStatusParams
+      public typealias Result = String
+      public static let name = "get_session_status"
+      public static let tier = "admin"
+    }
+
+    public enum GetSessionUntrackedDiff: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetSessionUntrackedDiffParams
+      public typealias Result = String
+      public static let name = "get_session_untracked_diff"
+      public static let tier = "admin"
+    }
+
+    public enum GetUserProjectSettings: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetUserProjectSettingsParams
+      public typealias Result = ArgusProtocol.UserProjectSettings
+      public static let name = "get_user_project_settings"
+      public static let tier = "admin"
+    }
+
+    public enum GetWorktreeStorage: RemoteCommand {
+      public typealias Params = ArgusProtocol.GetWorktreeStorageParams
+      public typealias Result = ArgusProtocol.WorktreeStorage
+      public static let name = "get_worktree_storage"
+      public static let tier = "admin"
+    }
+
+    public enum GetWorktreesDefaultBase: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = String
+      public static let name = "get_worktrees_default_base"
+      public static let tier = "admin"
+    }
+
+    public enum GhListIssues: RemoteCommand {
+      public typealias Params = ArgusProtocol.GhListIssuesParams
+      public typealias Result = [ArgusProtocol.GhIssue]
+      public static let name = "gh_list_issues"
+      public static let tier = "admin"
+    }
+
+    public enum GhPrClose: RemoteCommand {
+      public typealias Params = ArgusProtocol.GhPrCloseParams
+      public typealias Result = IgnoredResult
+      public static let name = "gh_pr_close"
+      public static let tier = "admin"
+    }
+
+    public enum GhPrComment: RemoteCommand {
+      public typealias Params = ArgusProtocol.GhPrCommentParams
+      public typealias Result = IgnoredResult
+      public static let name = "gh_pr_comment"
+      public static let tier = "admin"
+    }
+
+    public enum GhPrCreate: RemoteCommand {
+      public typealias Params = ArgusProtocol.GhPrCreateParams
+      public typealias Result = ArgusProtocol.CreatedPullRequest
+      public static let name = "gh_pr_create"
+      public static let tier = "admin"
+    }
+
+    public enum GhPrMerge: RemoteCommand {
+      public typealias Params = ArgusProtocol.GhPrMergeParams
+      public typealias Result = IgnoredResult
+      public static let name = "gh_pr_merge"
+      public static let tier = "admin"
+    }
+
+    public enum GitAbortCherryPick: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitAbortCherryPickParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_abort_cherry_pick"
+      public static let tier = "admin"
+    }
+
+    public enum GitAbortMerge: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitAbortMergeParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_abort_merge"
+      public static let tier = "admin"
+    }
+
+    public enum GitAbortRebase: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitAbortRebaseParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_abort_rebase"
+      public static let tier = "admin"
+    }
+
+    public enum GitAddRemote: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitAddRemoteParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_add_remote"
+      public static let tier = "admin"
+    }
+
+    public enum GitAm: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitAmParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_am"
+      public static let tier = "admin"
+    }
+
+    public enum GitAmendTip: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitAmendTipParams
+      public typealias Result = String
+      public static let name = "git_amend_tip"
+      public static let tier = "admin"
+    }
+
+    public enum GitArchiveBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitArchiveBranchParams
+      public typealias Result = [String]
+      public static let name = "git_archive_branch"
+      public static let tier = "admin"
+    }
+
+    public enum GitBisectBad: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitBisectBadParams
+      public typealias Result = ArgusProtocol.BisectStep
+      public static let name = "git_bisect_bad"
+      public static let tier = "admin"
+    }
+
+    public enum GitBisectGood: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitBisectGoodParams
+      public typealias Result = ArgusProtocol.BisectStep
+      public static let name = "git_bisect_good"
+      public static let tier = "admin"
+    }
+
+    public enum GitBisectReset: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitBisectResetParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_bisect_reset"
+      public static let tier = "admin"
+    }
+
+    public enum GitBisectSkip: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitBisectSkipParams
+      public typealias Result = ArgusProtocol.BisectStep
+      public static let name = "git_bisect_skip"
+      public static let tier = "admin"
+    }
+
+    public enum GitBisectStart: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitBisectStartParams
+      public typealias Result = ArgusProtocol.BisectStep
+      public static let name = "git_bisect_start"
+      public static let tier = "admin"
+    }
+
+    public enum GitBisectStatus: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitBisectStatusParams
+      public typealias Result = ArgusProtocol.BisectStatus
+      public static let name = "git_bisect_status"
+      public static let tier = "admin"
+    }
+
+    public enum GitBlameFile: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitBlameFileParams
+      public typealias Result = [ArgusProtocol.BlameChunk]
+      public static let name = "git_blame_file"
+      public static let tier = "admin"
+    }
+
+    public enum GitBranchPrUrl: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitBranchPrUrlParams
+      public typealias Result = String?
+      public static let name = "git_branch_pr_url"
+      public static let tier = "admin"
+    }
+
+    public enum GitCheckout: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitCheckoutParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_checkout"
+      public static let tier = "admin"
+    }
+
+    public enum GitCheckoutPaths: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitCheckoutPathsParams
+      public typealias Result = String
+      public static let name = "git_checkout_paths"
+      public static let tier = "admin"
+    }
+
+    public enum GitCherryPick: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitCherryPickParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_cherry_pick"
+      public static let tier = "admin"
+    }
+
+    public enum GitCommit: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitCommitParams
+      public typealias Result = String
+      public static let name = "git_commit"
+      public static let tier = "admin"
+    }
+
+    public enum GitCompareBranches: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitCompareBranchesParams
+      public typealias Result = ArgusProtocol.GitCompareResult
+      public static let name = "git_compare_branches"
+      public static let tier = "admin"
+    }
+
+    public enum GitContinueCherryPick: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitContinueCherryPickParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_continue_cherry_pick"
+      public static let tier = "admin"
+    }
+
+    public enum GitContinueMerge: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitContinueMergeParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_continue_merge"
+      public static let tier = "admin"
+    }
+
+    public enum GitContinueRebase: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitContinueRebaseParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_continue_rebase"
+      public static let tier = "admin"
+    }
+
+    public enum GitCreateBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitCreateBranchParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_create_branch"
+      public static let tier = "admin"
+    }
+
+    public enum GitCreateTag: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitCreateTagParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_create_tag"
+      public static let tier = "admin"
+    }
+
+    public enum GitDeleteBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitDeleteBranchParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_delete_branch"
+      public static let tier = "admin"
+    }
+
+    public enum GitDeleteTag: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitDeleteTagParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_delete_tag"
+      public static let tier = "admin"
+    }
+
+    public enum GitDiffRange: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitDiffRangeParams
+      public typealias Result = ArgusProtocol.GitDiffRangeResult
+      public static let name = "git_diff_range"
+      public static let tier = "admin"
+    }
+
+    public enum GitDiscardAndCheckout: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitDiscardAndCheckoutParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_discard_and_checkout"
+      public static let tier = "admin"
+    }
+
+    public enum GitDiscardFile: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitDiscardFileParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_discard_file"
+      public static let tier = "admin"
+    }
+
+    public enum GitDiscardHunk: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitDiscardHunkParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_discard_hunk"
+      public static let tier = "admin"
+    }
+
+    public enum GitDiscardLines: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitDiscardLinesParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_discard_lines"
+      public static let tier = "admin"
+    }
+
+    public enum GitFetch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitFetchParams
+      public typealias Result = String
+      public static let name = "git_fetch"
+      public static let tier = "admin"
+    }
+
+    public enum GitFileHistory: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitFileHistoryParams
+      public typealias Result = [ArgusProtocol.GitCommit]
+      public static let name = "git_file_history"
+      public static let tier = "admin"
+    }
+
+    public enum GitFormatPatch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitFormatPatchParams
+      public typealias Result = ArgusProtocol.FormatPatchResult
+      public static let name = "git_format_patch"
+      public static let tier = "admin"
+    }
+
+    public enum GitGetConfig: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitGetConfigParams
+      public typealias Result = String?
+      public static let name = "git_get_config"
+      public static let tier = "admin"
+    }
+
+    public enum GitGetConflict: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitGetConflictParams
+      public typealias Result = ArgusProtocol.ConflictBlobs
+      public static let name = "git_get_conflict"
+      public static let tier = "admin"
+    }
+
+    public enum GitGetRemotes: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitGetRemotesParams
+      public typealias Result = [ArgusProtocol.GitRemote]
+      public static let name = "git_get_remotes"
+      public static let tier = "admin"
+    }
+
+    public enum GitLfsFiles: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitLfsFilesParams
+      public typealias Result = ArgusProtocol.LfsFiles
+      public static let name = "git_lfs_files"
+      public static let tier = "admin"
+    }
+
+    public enum GitLfsPull: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitLfsPullParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_lfs_pull"
+      public static let tier = "admin"
+    }
+
+    public enum GitListArchivedBranches: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitListArchivedBranchesParams
+      public typealias Result = [String]
+      public static let name = "git_list_archived_branches"
+      public static let tier = "admin"
+    }
+
+    public enum GitListAssumeUnchangedFiles: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitListAssumeUnchangedFilesParams
+      public typealias Result = [String]
+      public static let name = "git_list_assume_unchanged_files"
+      public static let tier = "admin"
+    }
+
+    public enum GitListHooks: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitListHooksParams
+      public typealias Result = [ArgusProtocol.GitHook]
+      public static let name = "git_list_hooks"
+      public static let tier = "admin"
+    }
+
+    public enum GitListIgnoredFiles: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitListIgnoredFilesParams
+      public typealias Result = [String]
+      public static let name = "git_list_ignored_files"
+      public static let tier = "admin"
+    }
+
+    public enum GitListLocalBranches: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitListLocalBranchesParams
+      public typealias Result = [ArgusProtocol.EnrichedBranch]
+      public static let name = "git_list_local_branches"
+      public static let tier = "admin"
+    }
+
+    public enum GitListPinnedBranches: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitListPinnedBranchesParams
+      public typealias Result = [String]
+      public static let name = "git_list_pinned_branches"
+      public static let tier = "admin"
+    }
+
+    public enum GitListRecentIssues: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitListRecentIssuesParams
+      public typealias Result = [ArgusProtocol.RecentIssue]
+      public static let name = "git_list_recent_issues"
+      public static let tier = "admin"
+    }
+
+    public enum GitListRemoteBranches: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitListRemoteBranchesParams
+      public typealias Result = [ArgusProtocol.GitRemoteBranch]
+      public static let name = "git_list_remote_branches"
+      public static let tier = "admin"
+    }
+
+    public enum GitListRemotes: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitListRemotesParams
+      public typealias Result = [ArgusProtocol.GitRemoteRich]
+      public static let name = "git_list_remotes"
+      public static let tier = "admin"
+    }
+
+    public enum GitListTags: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitListTagsParams
+      public typealias Result = [ArgusProtocol.GitTag]
+      public static let name = "git_list_tags"
+      public static let tier = "admin"
+    }
+
+    public enum GitLog: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitLogParams
+      public typealias Result = [ArgusProtocol.GitCommit]
+      public static let name = "git_log"
+      public static let tier = "admin"
+    }
+
+    public enum GitMarkResolved: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitMarkResolvedParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_mark_resolved"
+      public static let tier = "admin"
+    }
+
+    public enum GitMergeBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitMergeBranchParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_merge_branch"
+      public static let tier = "admin"
+    }
+
+    public enum GitPinBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitPinBranchParams
+      public typealias Result = [String]
+      public static let name = "git_pin_branch"
+      public static let tier = "admin"
+    }
+
+    public enum GitPruneRemote: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitPruneRemoteParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_prune_remote"
+      public static let tier = "admin"
+    }
+
+    public enum GitPull: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitPullParams
+      public typealias Result = String
+      public static let name = "git_pull"
+      public static let tier = "admin"
+    }
+
+    public enum GitPullV2: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitPullV2Params
+      public typealias Result = String
+      public static let name = "git_pull_v2"
+      public static let tier = "admin"
+    }
+
+    public enum GitPush: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitPushParams
+      public typealias Result = String
+      public static let name = "git_push"
+      public static let tier = "admin"
+    }
+
+    public enum GitPushTag: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitPushTagParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_push_tag"
+      public static let tier = "admin"
+    }
+
+    public enum GitPushV2: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitPushV2Params
+      public typealias Result = String
+      public static let name = "git_push_v2"
+      public static let tier = "admin"
+    }
+
+    public enum GitReadBlobAtRef: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitReadBlobAtRefParams
+      public typealias Result = String
+      public static let name = "git_read_blob_at_ref"
+      public static let tier = "admin"
+    }
+
+    public enum GitRebaseAutosquash: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitRebaseAutosquashParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_rebase_autosquash"
+      public static let tier = "admin"
+    }
+
+    public enum GitRebaseInteractivePlan: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitRebaseInteractivePlanParams
+      public typealias Result = [ArgusProtocol.RebasePlanCommit]
+      public static let name = "git_rebase_interactive_plan"
+      public static let tier = "admin"
+    }
+
+    public enum GitRebaseInteractiveRun: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitRebaseInteractiveRunParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_rebase_interactive_run"
+      public static let tier = "admin"
+    }
+
+    public enum GitRebaseOnto: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitRebaseOntoParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_rebase_onto"
+      public static let tier = "admin"
+    }
+
+    public enum GitReconfigureAutoFetch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitReconfigureAutoFetchParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_reconfigure_auto_fetch"
+      public static let tier = "admin"
+    }
+
+    public enum GitReflog: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitReflogParams
+      public typealias Result = [ArgusProtocol.ReflogEntry]
+      public static let name = "git_reflog"
+      public static let tier = "admin"
+    }
+
+    public enum GitRemoveRemote: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitRemoveRemoteParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_remove_remote"
+      public static let tier = "admin"
+    }
+
+    public enum GitRenameBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitRenameBranchParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_rename_branch"
+      public static let tier = "admin"
+    }
+
+    public enum GitRenameRemote: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitRenameRemoteParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_rename_remote"
+      public static let tier = "admin"
+    }
+
+    public enum GitReset: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitResetParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_reset"
+      public static let tier = "admin"
+    }
+
+    public enum GitRevert: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitRevertParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_revert"
+      public static let tier = "admin"
+    }
+
+    public enum GitRunHook: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitRunHookParams
+      public typealias Result = ArgusProtocol.GitHookOutput
+      public static let name = "git_run_hook"
+      public static let tier = "admin"
+    }
+
+    public enum GitSearchLog: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitSearchLogParams
+      public typealias Result = ArgusProtocol.LogSearchResult
+      public static let name = "git_search_log"
+      public static let tier = "admin"
+    }
+
+    public enum GitSetConfig: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitSetConfigParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_set_config"
+      public static let tier = "admin"
+    }
+
+    public enum GitSetRemoteUrl: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitSetRemoteUrlParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_set_remote_url"
+      public static let tier = "admin"
+    }
+
+    public enum GitSetUpstream: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitSetUpstreamParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_set_upstream"
+      public static let tier = "admin"
+    }
+
+    public enum GitShowCommit: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitShowCommitParams
+      public typealias Result = String
+      public static let name = "git_show_commit"
+      public static let tier = "admin"
+    }
+
+    public enum GitSkipRebase: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitSkipRebaseParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_skip_rebase"
+      public static let tier = "admin"
+    }
+
+    public enum GitStash: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitStashParams
+      public typealias Result = String
+      public static let name = "git_stash"
+      public static let tier = "admin"
+    }
+
+    public enum GitStashAndCheckout: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitStashAndCheckoutParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_stash_and_checkout"
+      public static let tier = "admin"
+    }
+
+    public enum GitStashApply: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitStashApplyParams
+      public typealias Result = String
+      public static let name = "git_stash_apply"
+      public static let tier = "admin"
+    }
+
+    public enum GitStashBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitStashBranchParams
+      public typealias Result = String
+      public static let name = "git_stash_branch"
+      public static let tier = "admin"
+    }
+
+    public enum GitStashDrop: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitStashDropParams
+      public typealias Result = String
+      public static let name = "git_stash_drop"
+      public static let tier = "admin"
+    }
+
+    public enum GitStashList: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitStashListParams
+      public typealias Result = [ArgusProtocol.GitStashEntry]
+      public static let name = "git_stash_list"
+      public static let tier = "admin"
+    }
+
+    public enum GitStashPop: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitStashPopParams
+      public typealias Result = String
+      public static let name = "git_stash_pop"
+      public static let tier = "admin"
+    }
+
+    public enum GitStashSave: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitStashSaveParams
+      public typealias Result = String
+      public static let name = "git_stash_save"
+      public static let tier = "admin"
+    }
+
+    public enum GitStashShow: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitStashShowParams
+      public typealias Result = String
+      public static let name = "git_stash_show"
+      public static let tier = "admin"
+    }
+
+    public enum GitStatus: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitStatusParams
+      public typealias Result = ArgusProtocol.GitStatus
+      public static let name = "git_status"
+      public static let tier = "admin"
+    }
+
+    public enum GitSubmoduleDeinit: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitSubmoduleDeinitParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_submodule_deinit"
+      public static let tier = "admin"
+    }
+
+    public enum GitSubmoduleInit: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitSubmoduleInitParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_submodule_init"
+      public static let tier = "admin"
+    }
+
+    public enum GitSubmoduleList: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitSubmoduleListParams
+      public typealias Result = [ArgusProtocol.GitSubmodule]
+      public static let name = "git_submodule_list"
+      public static let tier = "admin"
+    }
+
+    public enum GitSubmoduleUpdate: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitSubmoduleUpdateParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_submodule_update"
+      public static let tier = "admin"
+    }
+
+    public enum GitUnarchiveBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitUnarchiveBranchParams
+      public typealias Result = [String]
+      public static let name = "git_unarchive_branch"
+      public static let tier = "admin"
+    }
+
+    public enum GitUnpinBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitUnpinBranchParams
+      public typealias Result = [String]
+      public static let name = "git_unpin_branch"
+      public static let tier = "admin"
+    }
+
+    public enum GitUntrackFile: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitUntrackFileParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_untrack_file"
+      public static let tier = "admin"
+    }
+
+    public enum GitWorktreeList: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitWorktreeListParams
+      public typealias Result = [ArgusProtocol.GitWorktree]
+      public static let name = "git_worktree_list"
+      public static let tier = "admin"
+    }
+
+    public enum GitWriteConflictMerged: RemoteCommand {
+      public typealias Params = ArgusProtocol.GitWriteConflictMergedParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_write_conflict_merged"
+      public static let tier = "admin"
+    }
+
+    public enum HuddleApproveGuest: RemoteCommand {
+      public typealias Params = ArgusProtocol.HuddleApproveGuestParams
+      public typealias Result = Bool
+      public static let name = "huddle_approve_guest"
+      public static let tier = "host"
+    }
+
+    public enum HuddleDenyGuest: RemoteCommand {
+      public typealias Params = ArgusProtocol.HuddleDenyGuestParams
+      public typealias Result = Bool
+      public static let name = "huddle_deny_guest"
+      public static let tier = "host"
+    }
+
+    public enum HuddleList: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.HuddleRoomModel]
+      public static let name = "huddle_list"
+      public static let tier = "host"
+    }
+
+    public enum HuddleRemoveGuest: RemoteCommand {
+      public typealias Params = ArgusProtocol.HuddleRemoveGuestParams
+      public typealias Result = Bool
+      public static let name = "huddle_remove_guest"
+      public static let tier = "host"
+    }
+
+    public enum HuddleSay: RemoteCommand {
+      public typealias Params = ArgusProtocol.HuddleSayParams
+      public typealias Result = Bool
+      public static let name = "huddle_say"
+      public static let tier = "host"
+    }
+
+    public enum HuddleSetDevice: RemoteCommand {
+      public typealias Params = ArgusProtocol.HuddleSetDeviceParams
+      public typealias Result = Bool
+      public static let name = "huddle_set_device"
+      public static let tier = "host"
+    }
+
+    public enum HuddleSetTyping: RemoteCommand {
+      public typealias Params = ArgusProtocol.HuddleSetTypingParams
+      public typealias Result = Bool
+      public static let name = "huddle_set_typing"
+      public static let tier = "host"
+    }
+
+    public enum HuddleShareReadiness: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.ShareReadiness
+      public static let name = "huddle_share_readiness"
+      public static let tier = "host"
+    }
+
+    public enum HuddleStart: RemoteCommand {
+      public typealias Params = ArgusProtocol.HuddleStartParams
+      public typealias Result = ArgusProtocol.HuddleRoomModel
+      public static let name = "huddle_start"
+      public static let tier = "host"
+    }
+
+    public enum HuddleStop: RemoteCommand {
+      public typealias Params = ArgusProtocol.HuddleStopParams
+      public typealias Result = Bool
+      public static let name = "huddle_stop"
+      public static let tier = "host"
+    }
+
+    public enum InspectionCapture: RemoteCommand {
+      public typealias Params = ArgusProtocol.InspectionCaptureParams
+      public typealias Result = JSONValue
+      public static let name = "inspection_capture"
+      public static let tier = "admin"
+    }
+
+    public enum InspectionLaunchInjected: RemoteCommand {
+      public typealias Params = ArgusProtocol.InspectionLaunchInjectedParams
+      public typealias Result = ArgusProtocol.InspectionAck
+      public static let name = "inspection_launch_injected"
+      public static let tier = "admin"
+    }
+
+    public enum InspectionListApps: RemoteCommand {
+      public typealias Params = ArgusProtocol.InspectionListAppsParams
+      public typealias Result = [ArgusProtocol.InstalledApp]
+      public static let name = "inspection_list_apps"
+      public static let tier = "admin"
+    }
+
+    public enum InspectionNodeProps: RemoteCommand {
+      public typealias Params = ArgusProtocol.InspectionNodePropsParams
+      public typealias Result = ArgusProtocol.NodeProps
+      public static let name = "inspection_node_props"
+      public static let tier = "admin"
+    }
+
+    public enum InspectionProbe: RemoteCommand {
+      public typealias Params = ArgusProtocol.InspectionProbeParams
+      public typealias Result = ArgusProtocol.InjectionProbe
+      public static let name = "inspection_probe"
+      public static let tier = "admin"
+    }
+
+    public enum InspectionSetProperty: RemoteCommand {
+      public typealias Params = ArgusProtocol.InspectionSetPropertyParams
+      public typealias Result = ArgusProtocol.InspectionAck
+      public static let name = "inspection_set_property"
+      public static let tier = "admin"
+    }
+
+    public enum InterruptAgent: RemoteCommand {
+      public typealias Params = ArgusProtocol.InterruptAgentParams
+      public typealias Result = IgnoredResult
+      public static let name = "interrupt_agent"
+      public static let tier = "admin"
+    }
+
+    public enum ListAgents: RemoteCommand {
+      public typealias Params = ArgusProtocol.ListAgentsParams
+      public typealias Result = [ArgusProtocol.AgentInfo]
+      public static let name = "list_agents"
+      public static let tier = "admin"
+    }
+
+    public enum ListAllBranches: RemoteCommand {
+      public typealias Params = ArgusProtocol.ListAllBranchesParams
+      public typealias Result = ArgusProtocol.BranchList
+      public static let name = "list_all_branches"
+      public static let tier = "admin"
+    }
+
+    public enum ListAndroidDevices: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.AndroidDevice]
+      public static let name = "list_android_devices"
+      public static let tier = "admin"
+    }
+
+    public enum ListAvds: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [String]
+      public static let name = "list_avds"
+      public static let tier = "admin"
+    }
+
+    public enum ListBranches: RemoteCommand {
+      public typealias Params = ArgusProtocol.ListBranchesParams
+      public typealias Result = [String]
+      public static let name = "list_branches"
+      public static let tier = "admin"
+    }
+
+    public enum ListChatHistory: RemoteCommand {
+      public typealias Params = ArgusProtocol.ListChatHistoryParams
+      public typealias Result = [ArgusProtocol.ChatHistoryEntry]
+      public static let name = "list_chat_history"
+      public static let tier = "admin"
+    }
+
+    public enum ListConductorLogs: RemoteCommand {
+      public typealias Params = ArgusProtocol.ListConductorLogsParams
+      public typealias Result = [ArgusProtocol.ConductorLogEntry]
+      public static let name = "list_conductor_logs"
+      public static let tier = "admin"
+    }
+
+    public enum ListConductorVersions: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [String]
+      public static let name = "list_conductor_versions"
+      public static let tier = "admin"
+    }
+
+    public enum ListDevices: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.DeviceInfo]
+      public static let name = "list_devices"
+      public static let tier = "admin"
+    }
+
+    public enum ListEditors: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.EditorDescriptor]
+      public static let name = "list_editors"
+      public static let tier = "admin"
+    }
+
     public enum ListHostDirectory: RemoteCommand {
       public typealias Params = ArgusProtocol.ListHostDirectoryParams
       public typealias Result = ArgusProtocol.HostDirectoryListing
       public static let name = "list_host_directory"
+      public static let tier = "admin"
+    }
+
+    public enum ListInheritedMcpServers: RemoteCommand {
+      public typealias Params = ArgusProtocol.ListInheritedMcpServersParams
+      public typealias Result = [ArgusProtocol.InheritedMcpServer]
+      public static let name = "list_inherited_mcp_servers"
+      public static let tier = "admin"
+    }
+
+    public enum ListInterestingPullRequests: RemoteCommand {
+      public typealias Params = ArgusProtocol.ListInterestingPullRequestsParams
+      public typealias Result = [ArgusProtocol.InterestingPullRequest]
+      public static let name = "list_interesting_pull_requests"
       public static let tier = "admin"
     }
 
@@ -186,10 +9396,437 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum ListPoppedOutAgents: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [String]
+      public static let name = "list_popped_out_agents"
+      public static let tier = "admin"
+    }
+
+    public enum ListProjects: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.ProjectEntry]
+      public static let name = "list_projects"
+      public static let tier = "admin"
+    }
+
+    public enum ListQueuedMessages: RemoteCommand {
+      public typealias Params = ArgusProtocol.ListQueuedMessagesParams
+      public typealias Result = [ArgusProtocol.QueuedMessage]
+      public static let name = "list_queued_messages"
+      public static let tier = "admin"
+    }
+
+    public enum ListScratchPads: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.Session]
+      public static let name = "list_scratch_pads"
+      public static let tier = "admin"
+    }
+
     public enum ListSessionFiles: RemoteCommand {
       public typealias Params = ArgusProtocol.ListSessionFilesParams
       public typealias Result = [String]
       public static let name = "list_session_files"
+      public static let tier = "admin"
+    }
+
+    public enum ListSessions: RemoteCommand {
+      public typealias Params = ArgusProtocol.ListSessionsParams
+      public typealias Result = [ArgusProtocol.Session]
+      public static let name = "list_sessions"
+      public static let tier = "admin"
+    }
+
+    public enum ListSimulators: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.SimulatorDevice]
+      public static let name = "list_simulators"
+      public static let tier = "admin"
+    }
+
+    public enum ListTerminals: RemoteCommand {
+      public typealias Params = ArgusProtocol.ListTerminalsParams
+      public typealias Result = [ArgusProtocol.TerminalSummary]
+      public static let name = "list_terminals"
+      public static let tier = "admin"
+    }
+
+    public enum LlmDeleteCustomRunner: RemoteCommand {
+      public typealias Params = ArgusProtocol.LlmDeleteCustomRunnerParams
+      public typealias Result = IgnoredResult
+      public static let name = "llm_delete_custom_runner"
+      public static let tier = "admin"
+    }
+
+    public enum LlmListCustomRunnerPresets: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.CustomRunnerPreset]
+      public static let name = "llm_list_custom_runner_presets"
+      public static let tier = "admin"
+    }
+
+    public enum LlmListCustomRunners: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.CustomRunner]
+      public static let name = "llm_list_custom_runners"
+      public static let tier = "admin"
+    }
+
+    public enum LlmListRunners: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.RegisteredRunner]
+      public static let name = "llm_list_runners"
+      public static let tier = "admin"
+    }
+
+    public enum LlmSaveCustomRunner: RemoteCommand {
+      public typealias Params = ArgusProtocol.LlmSaveCustomRunnerParams
+      public typealias Result = ArgusProtocol.CustomRunner
+      public static let name = "llm_save_custom_runner"
+      public static let tier = "admin"
+    }
+
+    public enum LoadChatHistory: RemoteCommand {
+      public typealias Params = ArgusProtocol.LoadChatHistoryParams
+      public typealias Result = ArgusProtocol.SavedConversation?
+      public static let name = "load_chat_history"
+      public static let tier = "admin"
+    }
+
+    public enum McpOauthCancelSignIn: RemoteCommand {
+      public typealias Params = ArgusProtocol.McpOauthCancelSignInParams
+      public typealias Result = Bool
+      public static let name = "mcp_oauth_cancel_sign_in"
+      public static let tier = "admin"
+    }
+
+    public enum McpOauthListAuthorized: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [String]
+      public static let name = "mcp_oauth_list_authorized"
+      public static let tier = "admin"
+    }
+
+    public enum McpOauthSignIn: RemoteCommand {
+      public typealias Params = ArgusProtocol.McpOauthSignInParams
+      public typealias Result = ArgusProtocol.McpOAuthStatus
+      public static let name = "mcp_oauth_sign_in"
+      public static let tier = "admin"
+    }
+
+    public enum McpOauthSignOut: RemoteCommand {
+      public typealias Params = ArgusProtocol.McpOauthSignOutParams
+      public typealias Result = IgnoredResult
+      public static let name = "mcp_oauth_sign_out"
+      public static let tier = "admin"
+    }
+
+    public enum McpOauthStatus: RemoteCommand {
+      public typealias Params = ArgusProtocol.McpOauthStatusParams
+      public typealias Result = ArgusProtocol.McpOAuthStatus?
+      public static let name = "mcp_oauth_status"
+      public static let tier = "admin"
+    }
+
+    public enum MergeSessionIntoBase: RemoteCommand {
+      public typealias Params = ArgusProtocol.MergeSessionIntoBaseParams
+      public typealias Result = IgnoredResult
+      public static let name = "merge_session_into_base"
+      public static let tier = "admin"
+    }
+
+    public enum MoveWorktrees: RemoteCommand {
+      public typealias Params = ArgusProtocol.MoveWorktreesParams
+      public typealias Result = ArgusProtocol.MoveWorktreesResult
+      public static let name = "move_worktrees"
+      public static let tier = "admin"
+    }
+
+    public enum NotifyAgent: RemoteCommand {
+      public typealias Params = ArgusProtocol.NotifyAgentParams
+      public typealias Result = IgnoredResult
+      public static let name = "notify_agent"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingAddSkipped: RemoteCommand {
+      public typealias Params = ArgusProtocol.OnboardingAddSkippedParams
+      public typealias Result = IgnoredResult
+      public static let name = "onboarding_add_skipped"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingArgusDirPath: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = String
+      public static let name = "onboarding_argus_dir_path"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingCheckPrereqs: RemoteCommand {
+      public typealias Params = ArgusProtocol.OnboardingCheckPrereqsParams
+      public typealias Result = [ArgusProtocol.PrereqResult]
+      public static let name = "onboarding_check_prereqs"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingClaudePing: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.OkOrError
+      public static let name = "onboarding_claude_ping"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingCloneExample: RemoteCommand {
+      public typealias Params = ArgusProtocol.OnboardingCloneExampleParams
+      public typealias Result = ArgusProtocol.OnboardingCloneExampleResult
+      public static let name = "onboarding_clone_example"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingComplete: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "onboarding_complete"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingEnsureArgusDir: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.OnboardingEnsureArgusDirResult
+      public static let name = "onboarding_ensure_argus_dir"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingGetState: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.OnboardingConfigFile
+      public static let name = "onboarding_get_state"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingListExamples: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.ExampleProject]
+      public static let name = "onboarding_list_examples"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingReadExistingArgusJson: RemoteCommand {
+      public typealias Params = ArgusProtocol.OnboardingReadExistingArgusJsonParams
+      public typealias Result = [String: JSONValue]?
+      public static let name = "onboarding_read_existing_argus_json"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingRefineArgusJsonWithClaude: RemoteCommand {
+      public typealias Params = ArgusProtocol.OnboardingRefineArgusJsonWithClaudeParams
+      public typealias Result = [String: JSONValue]
+      public static let name = "onboarding_refine_argus_json_with_claude"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingRegisterProject: RemoteCommand {
+      public typealias Params = ArgusProtocol.OnboardingRegisterProjectParams
+      public typealias Result = IgnoredResult
+      public static let name = "onboarding_register_project"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingReset: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "onboarding_reset"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingRunFixer: RemoteCommand {
+      public typealias Params = ArgusProtocol.OnboardingRunFixerParams
+      public typealias Result = ArgusProtocol.OkOrError
+      public static let name = "onboarding_run_fixer"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingSetLastStep: RemoteCommand {
+      public typealias Params = ArgusProtocol.OnboardingSetLastStepParams
+      public typealias Result = IgnoredResult
+      public static let name = "onboarding_set_last_step"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingSuggestArgusJson: RemoteCommand {
+      public typealias Params = ArgusProtocol.OnboardingSuggestArgusJsonParams
+      public typealias Result = ArgusProtocol.ArgusConfigSuggestion
+      public static let name = "onboarding_suggest_argus_json"
+      public static let tier = "admin"
+    }
+
+    public enum OnboardingWriteArgusJson: RemoteCommand {
+      public typealias Params = ArgusProtocol.OnboardingWriteArgusJsonParams
+      public typealias Result = IgnoredResult
+      public static let name = "onboarding_write_argus_json"
+      public static let tier = "admin"
+    }
+
+    public enum OpenAgentPopout: RemoteCommand {
+      public typealias Params = ArgusProtocol.OpenAgentPopoutParams
+      public typealias Result = IgnoredResult
+      public static let name = "open_agent_popout"
+      public static let tier = "host"
+    }
+
+    public enum OpenDevicePopout: RemoteCommand {
+      public typealias Params = ArgusProtocol.OpenDevicePopoutParams
+      public typealias Result = IgnoredResult
+      public static let name = "open_device_popout"
+      public static let tier = "admin"
+    }
+
+    public enum OpenExternalUrl: RemoteCommand {
+      public typealias Params = ArgusProtocol.OpenExternalUrlParams
+      public typealias Result = IgnoredResult
+      public static let name = "open_external_url"
+      public static let tier = "host"
+    }
+
+    public enum OpenInCustomEditor: RemoteCommand {
+      public typealias Params = ArgusProtocol.OpenInCustomEditorParams
+      public typealias Result = IgnoredResult
+      public static let name = "open_in_custom_editor"
+      public static let tier = "host"
+    }
+
+    public enum OpenInEditor: RemoteCommand {
+      public typealias Params = ArgusProtocol.OpenInEditorParams
+      public typealias Result = IgnoredResult
+      public static let name = "open_in_editor"
+      public static let tier = "host"
+    }
+
+    public enum OpenPath: RemoteCommand {
+      public typealias Params = ArgusProtocol.OpenPathParams
+      public typealias Result = IgnoredResult
+      public static let name = "open_path"
+      public static let tier = "host"
+    }
+
+    public enum PauseAllWatchers: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "pause_all_watchers"
+      public static let tier = "admin"
+    }
+
+    public enum PlanWorktreesMove: RemoteCommand {
+      public typealias Params = ArgusProtocol.PlanWorktreesMoveParams
+      public typealias Result = ArgusProtocol.MoveWorktreesPlan
+      public static let name = "plan_worktrees_move"
+      public static let tier = "admin"
+    }
+
+    public enum PreviewReleaseNotes: RemoteCommand {
+      public typealias Params = ArgusProtocol.PreviewReleaseNotesParams
+      public typealias Result = ArgusProtocol.ReleaseNotesPreview
+      public static let name = "preview_release_notes"
+      public static let tier = "admin"
+    }
+
+    public enum PrewarmAgent: RemoteCommand {
+      public typealias Params = ArgusProtocol.PrewarmAgentParams
+      public typealias Result = ArgusProtocol.AgentInfo
+      public static let name = "prewarm_agent"
+      public static let tier = "admin"
+    }
+
+    public enum ProbeWorktreeLocation: RemoteCommand {
+      public typealias Params = ArgusProtocol.ProbeWorktreeLocationParams
+      public typealias Result = ArgusProtocol.WorktreeLocationProbe
+      public static let name = "probe_worktree_location"
+      public static let tier = "admin"
+    }
+
+    public enum ProposalAccept: RemoteCommand {
+      public typealias Params = ArgusProtocol.ProposalAcceptParams
+      public typealias Result = ArgusProtocol.AcceptProposalResult
+      public static let name = "proposal_accept"
+      public static let tier = "admin"
+    }
+
+    public enum ProposalDismiss: RemoteCommand {
+      public typealias Params = ArgusProtocol.ProposalDismissParams
+      public typealias Result = ArgusProtocol.Proposal
+      public static let name = "proposal_dismiss"
+      public static let tier = "admin"
+    }
+
+    public enum ProposalGet: RemoteCommand {
+      public typealias Params = ArgusProtocol.ProposalGetParams
+      public typealias Result = ArgusProtocol.Proposal?
+      public static let name = "proposal_get"
+      public static let tier = "admin"
+    }
+
+    public enum ProposalPerformCleanup: RemoteCommand {
+      public typealias Params = ArgusProtocol.ProposalPerformCleanupParams
+      public typealias Result = ArgusProtocol.Proposal
+      public static let name = "proposal_perform_cleanup"
+      public static let tier = "admin"
+    }
+
+    public enum ProposalRequestRevision: RemoteCommand {
+      public typealias Params = ArgusProtocol.ProposalRequestRevisionParams
+      public typealias Result = ArgusProtocol.RequestRevisionResult
+      public static let name = "proposal_request_revision"
+      public static let tier = "admin"
+    }
+
+    public enum ProposalResolve: RemoteCommand {
+      public typealias Params = ArgusProtocol.ProposalResolveParams
+      public typealias Result = ArgusProtocol.Proposal
+      public static let name = "proposal_resolve"
+      public static let tier = "admin"
+    }
+
+    public enum ProposalsList: RemoteCommand {
+      public typealias Params = ArgusProtocol.ProposalsListParams
+      public typealias Result = [ArgusProtocol.Proposal]
+      public static let name = "proposals_list"
+      public static let tier = "admin"
+    }
+
+    public enum PublishAgentSnapshot: RemoteCommand {
+      public typealias Params = ArgusProtocol.PublishAgentSnapshotParams
+      public typealias Result = IgnoredResult
+      public static let name = "publish_agent_snapshot"
+      public static let tier = "admin"
+    }
+
+    public enum PublishHandoff: RemoteCommand {
+      public typealias Params = ArgusProtocol.PublishHandoffParams
+      public typealias Result = IgnoredResult
+      public static let name = "publish_handoff"
+      public static let tier = "host"
+    }
+
+    public enum PushSessionBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.PushSessionBranchParams
+      public typealias Result = ArgusProtocol.PushSessionBranchResult
+      public static let name = "push_session_branch"
+      public static let tier = "admin"
+    }
+
+    public enum QueueMessage: RemoteCommand {
+      public typealias Params = ArgusProtocol.QueueMessageParams
+      public typealias Result = ArgusProtocol.QueuedMessage
+      public static let name = "queue_message"
+      public static let tier = "admin"
+    }
+
+    public enum ReadArgusConfig: RemoteCommand {
+      public typealias Params = ArgusProtocol.ReadArgusConfigParams
+      public typealias Result = ArgusProtocol.ArgusConfig
+      public static let name = "read_argus_config"
       public static let tier = "admin"
     }
 
@@ -200,10 +9837,409 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum ReadPrTemplate: RemoteCommand {
+      public typealias Params = ArgusProtocol.ReadPrTemplateParams
+      public typealias Result = String?
+      public static let name = "read_pr_template"
+      public static let tier = "admin"
+    }
+
+    public enum RebaseSessionOnBase: RemoteCommand {
+      public typealias Params = ArgusProtocol.RebaseSessionOnBaseParams
+      public typealias Result = IgnoredResult
+      public static let name = "rebase_session_on_base"
+      public static let tier = "admin"
+    }
+
+    public enum RemoteCancelPairing: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "remote_cancel_pairing"
+      public static let tier = "host"
+    }
+
+    public enum RemoteConfirmPairing: RemoteCommand {
+      public typealias Params = ArgusProtocol.RemoteConfirmPairingParams
+      public typealias Result = IgnoredResult
+      public static let name = "remote_confirm_pairing"
+      public static let tier = "host"
+    }
+
+    public enum RemoteGetPushConfig: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.RemotePushConfig
+      public static let name = "remote_get_push_config"
+      public static let tier = "admin"
+    }
+
+    public enum RemoteGetStatus: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.RemoteStatus
+      public static let name = "remote_get_status"
+      public static let tier = "admin"
+    }
+
+    public enum RemoteListDevices: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.PairedDevice]
+      public static let name = "remote_list_devices"
+      public static let tier = "admin"
+    }
+
+    public enum RemoteRevokeDevice: RemoteCommand {
+      public typealias Params = ArgusProtocol.RemoteRevokeDeviceParams
+      public typealias Result = ArgusProtocol.RemoteStatus
+      public static let name = "remote_revoke_device"
+      public static let tier = "host"
+    }
+
+    public enum RemoteSetConfig: RemoteCommand {
+      public typealias Params = ArgusProtocol.RemoteSetConfigParams
+      public typealias Result = ArgusProtocol.RemoteStatus
+      public static let name = "remote_set_config"
+      public static let tier = "host"
+    }
+
+    public enum RemoteSetDeviceControl: RemoteCommand {
+      public typealias Params = ArgusProtocol.RemoteSetDeviceControlParams
+      public typealias Result = [ArgusProtocol.PairedDevice]
+      public static let name = "remote_set_device_control"
+      public static let tier = "host"
+    }
+
+    public enum RemoteSetPushConfig: RemoteCommand {
+      public typealias Params = ArgusProtocol.RemoteSetPushConfigParams
+      public typealias Result = ArgusProtocol.RemotePushConfig
+      public static let name = "remote_set_push_config"
+      public static let tier = "admin"
+    }
+
+    public enum RemoteStartPairing: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.RemotePairingStart
+      public static let name = "remote_start_pairing"
+      public static let tier = "host"
+    }
+
+    public enum RemoteTailscaleDiagnose: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.TailscaleDiagnosis
+      public static let name = "remote_tailscale_diagnose"
+      public static let tier = "host"
+    }
+
+    public enum RemoteTailscaleFix: RemoteCommand {
+      public typealias Params = ArgusProtocol.RemoteTailscaleFixParams
+      public typealias Result = ArgusProtocol.TailscaleFixResult
+      public static let name = "remote_tailscale_fix"
+      public static let tier = "host"
+    }
+
+    public enum RemoteTestPush: RemoteCommand {
+      public typealias Params = ArgusProtocol.RemoteTestPushParams
+      public typealias Result = ArgusProtocol.RemotePushTestResult
+      public static let name = "remote_test_push"
+      public static let tier = "admin"
+    }
+
+    public enum RemoveQueuedMessage: RemoteCommand {
+      public typealias Params = ArgusProtocol.RemoveQueuedMessageParams
+      public typealias Result = IgnoredResult
+      public static let name = "remove_queued_message"
+      public static let tier = "admin"
+    }
+
+    public enum RemoveRepoRoot: RemoteCommand {
+      public typealias Params = ArgusProtocol.RemoveRepoRootParams
+      public typealias Result = IgnoredResult
+      public static let name = "remove_repo_root"
+      public static let tier = "admin"
+    }
+
+    public enum RenameSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.RenameSessionParams
+      public typealias Result = IgnoredResult
+      public static let name = "rename_session"
+      public static let tier = "admin"
+    }
+
+    public enum RenameSessionBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.RenameSessionBranchParams
+      public typealias Result = IgnoredResult
+      public static let name = "rename_session_branch"
+      public static let tier = "admin"
+    }
+
+    public enum RequestCameraAccess: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.CameraAccessStatus
+      public static let name = "request_camera_access"
+      public static let tier = "admin"
+    }
+
     public enum ResolveMentionPath: RemoteCommand {
       public typealias Params = ArgusProtocol.ResolveMentionPathParams
       public typealias Result = ArgusProtocol.MentionPathResult
       public static let name = "resolve_mention_path"
+      public static let tier = "admin"
+    }
+
+    public enum RespondToPermission: RemoteCommand {
+      public typealias Params = ArgusProtocol.RespondToPermissionParams
+      public typealias Result = IgnoredResult
+      public static let name = "respond_to_permission"
+      public static let tier = "admin"
+    }
+
+    public enum RestoreAgentAtTurn: RemoteCommand {
+      public typealias Params = ArgusProtocol.RestoreAgentAtTurnParams
+      public typealias Result = ArgusProtocol.ForkChatResult
+      public static let name = "restore_agent_at_turn"
+      public static let tier = "admin"
+    }
+
+    public enum RestoreCheckpoint: RemoteCommand {
+      public typealias Params = ArgusProtocol.RestoreCheckpointParams
+      public typealias Result = IgnoredResult
+      public static let name = "restore_checkpoint"
+      public static let tier = "admin"
+    }
+
+    public enum ResumeAllWatchers: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "resume_all_watchers"
+      public static let tier = "admin"
+    }
+
+    public enum RetrySessionSetup: RemoteCommand {
+      public typealias Params = ArgusProtocol.RetrySessionSetupParams
+      public typealias Result = IgnoredResult
+      public static let name = "retry_session_setup"
+      public static let tier = "admin"
+    }
+
+    public enum RevealInFinder: RemoteCommand {
+      public typealias Params = ArgusProtocol.RevealInFinderParams
+      public typealias Result = IgnoredResult
+      public static let name = "reveal_in_finder"
+      public static let tier = "host"
+    }
+
+    public enum RunConductorCommand: RemoteCommand {
+      public typealias Params = ArgusProtocol.RunConductorCommandParams
+      public typealias Result = IgnoredResult
+      public static let name = "run_conductor_command"
+      public static let tier = "admin"
+    }
+
+    public enum SaveChatHistory: RemoteCommand {
+      public typealias Params = ArgusProtocol.SaveChatHistoryParams
+      public typealias Result = IgnoredResult
+      public static let name = "save_chat_history"
+      public static let tier = "admin"
+    }
+
+    public enum SearchChatHistory: RemoteCommand {
+      public typealias Params = ArgusProtocol.SearchChatHistoryParams
+      public typealias Result = [ArgusProtocol.ChatHistorySearchResult]
+      public static let name = "search_chat_history"
+      public static let tier = "admin"
+    }
+
+    public enum SendAgentMessage: RemoteCommand {
+      public typealias Params = ArgusProtocol.SendAgentMessageParams
+      public typealias Result = IgnoredResult
+      public static let name = "send_agent_message"
+      public static let tier = "admin"
+    }
+
+    public enum SetAgentEffort: RemoteCommand {
+      public typealias Params = ArgusProtocol.SetAgentEffortParams
+      public typealias Result = IgnoredResult
+      public static let name = "set_agent_effort"
+      public static let tier = "admin"
+    }
+
+    public enum SetAgentModel: RemoteCommand {
+      public typealias Params = ArgusProtocol.SetAgentModelParams
+      public typealias Result = IgnoredResult
+      public static let name = "set_agent_model"
+      public static let tier = "admin"
+    }
+
+    public enum SetAgentPermissionMode: RemoteCommand {
+      public typealias Params = ArgusProtocol.SetAgentPermissionModeParams
+      public typealias Result = IgnoredResult
+      public static let name = "set_agent_permission_mode"
+      public static let tier = "admin"
+    }
+
+    public enum SetAgentRunner: RemoteCommand {
+      public typealias Params = ArgusProtocol.SetAgentRunnerParams
+      public typealias Result = JSONValue
+      public static let name = "set_agent_runner"
+      public static let tier = "admin"
+    }
+
+    public enum SetAppSettings: RemoteCommand {
+      public typealias Params = ArgusProtocol.SetAppSettingsParams
+      public typealias Result = ArgusProtocol.AppSettings
+      public static let name = "set_app_settings"
+      public static let tier = "admin"
+    }
+
+    public enum SetConductorVersion: RemoteCommand {
+      public typealias Params = ArgusProtocol.SetConductorVersionParams
+      public typealias Result = ArgusProtocol.ConductorStatus
+      public static let name = "set_conductor_version"
+      public static let tier = "admin"
+    }
+
+    public enum SetEnabledTools: RemoteCommand {
+      public typealias Params = ArgusProtocol.SetEnabledToolsParams
+      public typealias Result = IgnoredResult
+      public static let name = "set_enabled_tools"
+      public static let tier = "admin"
+    }
+
+    public enum SetGlobalCredentialHelper: RemoteCommand {
+      public typealias Params = ArgusProtocol.SetGlobalCredentialHelperParams
+      public typealias Result = IgnoredResult
+      public static let name = "set_global_credential_helper"
+      public static let tier = "admin"
+    }
+
+    public enum SetSessionBaseBranch: RemoteCommand {
+      public typealias Params = ArgusProtocol.SetSessionBaseBranchParams
+      public typealias Result = IgnoredResult
+      public static let name = "set_session_base_branch"
+      public static let tier = "admin"
+    }
+
+    public enum SetSessionClaudeAccount: RemoteCommand {
+      public typealias Params = ArgusProtocol.SetSessionClaudeAccountParams
+      public typealias Result = JSONValue
+      public static let name = "set_session_claude_account"
+      public static let tier = "admin"
+    }
+
+    public enum SetUserProjectSettings: RemoteCommand {
+      public typealias Params = ArgusProtocol.SetUserProjectSettingsParams
+      public typealias Result = ArgusProtocol.UserProjectSettings
+      public static let name = "set_user_project_settings"
+      public static let tier = "admin"
+    }
+
+    public enum ShowImageContextMenu: RemoteCommand {
+      public typealias Params = ArgusProtocol.ShowImageContextMenuParams
+      public typealias Result = IgnoredResult
+      public static let name = "show_image_context_menu"
+      public static let tier = "host"
+    }
+
+    public enum ShowOpenDialog: RemoteCommand {
+      public typealias Params = ArgusProtocol.ShowOpenDialogParams
+      public typealias Result = String?
+      public static let name = "show_open_dialog"
+      public static let tier = "host"
+    }
+
+    public enum SignalSourcesList: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.SignalSourceInfo]
+      public static let name = "signal_sources_list"
+      public static let tier = "admin"
+    }
+
+    public enum SimulatorButton: RemoteCommand {
+      public typealias Params = ArgusProtocol.SimulatorButtonParams
+      public typealias Result = IgnoredResult
+      public static let name = "simulator_button"
+      public static let tier = "admin"
+    }
+
+    public enum SimulatorDeviceState: RemoteCommand {
+      public typealias Params = ArgusProtocol.SimulatorDeviceStateParams
+      public typealias Result = ArgusProtocol.SimulatorDeviceState
+      public static let name = "simulator_device_state"
+      public static let tier = "monitor"
+    }
+
+    public enum SimulatorKeyboard: RemoteCommand {
+      public typealias Params = ArgusProtocol.SimulatorKeyboardParams
+      public typealias Result = IgnoredResult
+      public static let name = "simulator_keyboard"
+      public static let tier = "admin"
+    }
+
+    public enum SimulatorSetFold: RemoteCommand {
+      public typealias Params = ArgusProtocol.SimulatorSetFoldParams
+      public typealias Result = ArgusProtocol.SimulatorDeviceState
+      public static let name = "simulator_set_fold"
+      public static let tier = "admin"
+    }
+
+    public enum SimulatorSetOrientation: RemoteCommand {
+      public typealias Params = ArgusProtocol.SimulatorSetOrientationParams
+      public typealias Result = ArgusProtocol.SimulatorDeviceState
+      public static let name = "simulator_set_orientation"
+      public static let tier = "admin"
+    }
+
+    public enum SimulatorTouch: RemoteCommand {
+      public typealias Params = ArgusProtocol.SimulatorTouchParams
+      public typealias Result = IgnoredResult
+      public static let name = "simulator_touch"
+      public static let tier = "admin"
+    }
+
+    public enum StageAll: RemoteCommand {
+      public typealias Params = ArgusProtocol.StageAllParams
+      public typealias Result = IgnoredResult
+      public static let name = "stage_all"
+      public static let tier = "admin"
+    }
+
+    public enum StageFile: RemoteCommand {
+      public typealias Params = ArgusProtocol.StageFileParams
+      public typealias Result = IgnoredResult
+      public static let name = "stage_file"
+      public static let tier = "admin"
+    }
+
+    public enum StageHunk: RemoteCommand {
+      public typealias Params = ArgusProtocol.StageHunkParams
+      public typealias Result = IgnoredResult
+      public static let name = "stage_hunk"
+      public static let tier = "admin"
+    }
+
+    public enum StartAgent: RemoteCommand {
+      public typealias Params = ArgusProtocol.StartAgentParams
+      public typealias Result = ArgusProtocol.AgentInfo
+      public static let name = "start_agent"
+      public static let tier = "admin"
+    }
+
+    public enum StartAndroidCapture: RemoteCommand {
+      public typealias Params = ArgusProtocol.StartAndroidCaptureParams
+      public typealias Result = IgnoredResult
+      public static let name = "start_android_capture"
+      public static let tier = "admin"
+    }
+
+    public enum StartSimulatorCapture: RemoteCommand {
+      public typealias Params = ArgusProtocol.StartSimulatorCaptureParams
+      public typealias Result = Double
+      public static let name = "start_simulator_capture"
+      public static let tier = "admin"
+    }
+
+    public enum StartTerminal: RemoteCommand {
+      public typealias Params = ArgusProtocol.StartTerminalParams
+      public typealias Result = IgnoredResult
+      public static let name = "start_terminal"
       public static let tier = "admin"
     }
 
@@ -214,10 +10250,206 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum StateHydrate: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.HostSnapshot
+      public static let name = "state_hydrate"
+      public static let tier = "admin"
+    }
+
+    public enum StopAgent: RemoteCommand {
+      public typealias Params = ArgusProtocol.StopAgentParams
+      public typealias Result = IgnoredResult
+      public static let name = "stop_agent"
+      public static let tier = "admin"
+    }
+
+    public enum StopAndroidCapture: RemoteCommand {
+      public typealias Params = ArgusProtocol.StopAndroidCaptureParams
+      public typealias Result = IgnoredResult
+      public static let name = "stop_android_capture"
+      public static let tier = "admin"
+    }
+
+    public enum StopDevice: RemoteCommand {
+      public typealias Params = ArgusProtocol.StopDeviceParams
+      public typealias Result = IgnoredResult
+      public static let name = "stop_device"
+      public static let tier = "admin"
+    }
+
+    public enum StopSimulatorCapture: RemoteCommand {
+      public typealias Params = ArgusProtocol.StopSimulatorCaptureParams
+      public typealias Result = IgnoredResult
+      public static let name = "stop_simulator_capture"
+      public static let tier = "admin"
+    }
+
+    public enum StopTerminal: RemoteCommand {
+      public typealias Params = ArgusProtocol.StopTerminalParams
+      public typealias Result = IgnoredResult
+      public static let name = "stop_terminal"
+      public static let tier = "admin"
+    }
+
+    public enum TelemetryCapture: RemoteCommand {
+      public typealias Params = ArgusProtocol.TelemetryCaptureParams
+      public typealias Result = IgnoredResult
+      public static let name = "telemetry_capture"
+      public static let tier = "admin"
+    }
+
+    public enum TelemetryCaptureException: RemoteCommand {
+      public typealias Params = ArgusProtocol.TelemetryCaptureExceptionParams
+      public typealias Result = IgnoredResult
+      public static let name = "telemetry_capture_exception"
+      public static let tier = "admin"
+    }
+
+    public enum TelemetryCaptureFeedback: RemoteCommand {
+      public typealias Params = ArgusProtocol.TelemetryCaptureFeedbackParams
+      public typealias Result = IgnoredResult
+      public static let name = "telemetry_capture_feedback"
+      public static let tier = "admin"
+    }
+
+    public enum TelemetryGetInit: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.TelemetryInit
+      public static let name = "telemetry_get_init"
+      public static let tier = "admin"
+    }
+
+    public enum TelemetrySetMode: RemoteCommand {
+      public typealias Params = ArgusProtocol.TelemetrySetModeParams
+      public typealias Result = IgnoredResult
+      public static let name = "telemetry_set_mode"
+      public static let tier = "admin"
+    }
+
+    public enum TerminalResize: RemoteCommand {
+      public typealias Params = ArgusProtocol.TerminalResizeParams
+      public typealias Result = IgnoredResult
+      public static let name = "terminal_resize"
+      public static let tier = "admin"
+    }
+
+    public enum TerminalWrite: RemoteCommand {
+      public typealias Params = ArgusProtocol.TerminalWriteParams
+      public typealias Result = IgnoredResult
+      public static let name = "terminal_write"
+      public static let tier = "admin"
+    }
+
+    public enum TestMcpServer: RemoteCommand {
+      public typealias Params = ArgusProtocol.TestMcpServerParams
+      public typealias Result = ArgusProtocol.McpTestResult
+      public static let name = "test_mcp_server"
+      public static let tier = "admin"
+    }
+
+    public enum UiStateGet: RemoteCommand {
+      public typealias Params = ArgusProtocol.UiStateGetParams
+      public typealias Result = String?
+      public static let name = "ui_state_get"
+      public static let tier = "admin"
+    }
+
+    public enum UiStateSet: RemoteCommand {
+      public typealias Params = ArgusProtocol.UiStateSetParams
+      public typealias Result = JSONValue
+      public static let name = "ui_state_set"
+      public static let tier = "admin"
+    }
+
+    public enum UnstageAll: RemoteCommand {
+      public typealias Params = ArgusProtocol.UnstageAllParams
+      public typealias Result = IgnoredResult
+      public static let name = "unstage_all"
+      public static let tier = "admin"
+    }
+
+    public enum UnstageFile: RemoteCommand {
+      public typealias Params = ArgusProtocol.UnstageFileParams
+      public typealias Result = IgnoredResult
+      public static let name = "unstage_file"
+      public static let tier = "admin"
+    }
+
+    public enum UnstageHunk: RemoteCommand {
+      public typealias Params = ArgusProtocol.UnstageHunkParams
+      public typealias Result = IgnoredResult
+      public static let name = "unstage_hunk"
+      public static let tier = "admin"
+    }
+
+    public enum UnwatchSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.UnwatchSessionParams
+      public typealias Result = IgnoredResult
+      public static let name = "unwatch_session"
+      public static let tier = "admin"
+    }
+
+    public enum UpdateQueuedMessage: RemoteCommand {
+      public typealias Params = ArgusProtocol.UpdateQueuedMessageParams
+      public typealias Result = IgnoredResult
+      public static let name = "update_queued_message"
+      public static let tier = "admin"
+    }
+
+    public enum UpdateTerminalTitle: RemoteCommand {
+      public typealias Params = ArgusProtocol.UpdateTerminalTitleParams
+      public typealias Result = IgnoredResult
+      public static let name = "update_terminal_title"
+      public static let tier = "admin"
+    }
+
+    public enum UpdaterCheck: RemoteCommand {
+      public typealias Params = ArgusProtocol.UpdaterCheckParams
+      public typealias Result = ArgusProtocol.UpdaterState
+      public static let name = "updater_check"
+      public static let tier = "host"
+    }
+
+    public enum UpdaterDownload: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "updater_download"
+      public static let tier = "host"
+    }
+
+    public enum UpdaterGetState: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.UpdaterState
+      public static let name = "updater_get_state"
+      public static let tier = "admin"
+    }
+
+    public enum UpdaterQuitAndInstall: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "updater_quit_and_install"
+      public static let tier = "host"
+    }
+
     public enum UploadSessionAttachment: RemoteCommand {
       public typealias Params = ArgusProtocol.UploadSessionAttachmentParams
       public typealias Result = ArgusProtocol.UploadedAttachment
       public static let name = "upload_session_attachment"
+      public static let tier = "admin"
+    }
+
+    public enum WatchSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.WatchSessionParams
+      public typealias Result = IgnoredResult
+      public static let name = "watch_session"
+      public static let tier = "admin"
+    }
+
+    public enum WriteArgusConfig: RemoteCommand {
+      public typealias Params = ArgusProtocol.WriteArgusConfigParams
+      public typealias Result = IgnoredResult
+      public static let name = "write_argus_config"
       public static let tier = "admin"
     }
 

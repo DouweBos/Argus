@@ -36,7 +36,6 @@ const SEARCH_ROOTS = [
  */
 const BASELINE: string[][] = [
   ["app/lib/lastKnownCapabilities.ts", "app/stores/conversationStore.ts"],
-  ["electron/ipc.ts", "electron/main.ts"],
   [
     "packages/host/src/services/agent/agentService.ts",
     "packages/host/src/services/mcp/server.ts",

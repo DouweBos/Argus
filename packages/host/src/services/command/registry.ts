@@ -78,7 +78,7 @@ let binder: CommandBinder | null = null;
 
 /**
  * Install the local transport binder. Replays every command defined so far, so
- * import order between `ipc.ts` and the bridge doesn't matter.
+ * the order commands and the bridge are set up in doesn't matter.
  */
 export function setCommandBinder(next: CommandBinder | null): void {
   binder = next;

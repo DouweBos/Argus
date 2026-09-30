@@ -138,6 +138,9 @@ export function DevicesScreen() {
   const handlePopout =
     (d: DeviceInfo) => (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
+      if (d.platform === "web") {
+        return;
+      }
       openDevicePopout({
         platform: d.platform,
         deviceKey: d.deviceKey,
