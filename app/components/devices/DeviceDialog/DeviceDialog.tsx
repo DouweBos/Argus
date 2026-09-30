@@ -57,7 +57,7 @@ export function DeviceDialog({ device, onClose }: DeviceDialogProps) {
   };
 
   const handleShutdown = async () => {
-    if (!canShutdown || shuttingDown) {
+    if (!canShutdown || shuttingDown || device.platform === "video") {
       return;
     }
     setShuttingDown(true);

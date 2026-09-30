@@ -58,6 +58,7 @@ export function seedPopoutStore(target: PopoutTarget): void {
         name: deviceName,
         online,
         avdName: null,
+        isTv: false,
         type: "emulator",
       },
     ]);

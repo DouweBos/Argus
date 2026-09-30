@@ -1,5 +1,10 @@
 import type { ShareErrorPayload } from "./shareError";
-import type { AgentInfo, Session } from "@argus/remote-protocol";
+import type {
+  AgentInfo,
+  DeviceInfo as HostDeviceInfo,
+  DevicePlatform as HostDevicePlatform,
+  Session,
+} from "@argus/remote-protocol";
 
 export type {
   DirEntry,
@@ -100,54 +105,25 @@ export type AgentStatus = Omit<
     permission_mode?: string;
   };
 
-export interface SimulatorDevice {
-  booted: boolean;
-  name: string;
-  runtime: string;
-  udid: string;
-}
+export type {
+  ConductorLogEntry,
+  DevicePlatform as HostDevicePlatform,
+  SimulatorDevice,
+} from "@argus/remote-protocol";
 
-export type DevicePlatform = "android" | "ios" | "video" | "web";
+/** Host platforms plus video inputs, which only the renderer enumerates. */
+export type DevicePlatform = HostDevicePlatform | "video";
 
-export interface DeviceInfo {
-  agentId: string | null;
-  deviceKey: string;
+/** A host's device row, tagged with its host and widened for video inputs. */
+export interface DeviceInfo extends Omit<HostDeviceInfo, "platform"> {
   /** Machine the device is attached to. Unset means this Mac. */
   hostId?: string;
-  name: string;
-  online: boolean;
   platform: DevicePlatform;
-  repoRoot: string | null;
-  reservationKey: string;
-  reserved: boolean;
-  runtime?: string;
-  sessionId: string | null;
-  sessionPath: string | null;
-}
-
-export interface ConductorLogEntry {
-  args: string;
-  command: string;
-  deviceKey: string;
-  durationMs: number;
-  error?: string;
-  id: number;
-  kind: "cli" | "http";
-  ok: boolean;
-  output?: string;
-  ts: number;
 }
 
 export type { ConductorStatus } from "@argus/remote-protocol";
 
-export interface AndroidDevice {
-  /** AVD name (emulators only — used to boot). Null for physical devices. */
-  avdName: string | null;
-  name: string;
-  online: boolean;
-  serial: string;
-  type: "emulator" | "physical";
-}
+export type { AndroidDevice } from "@argus/remote-protocol";
 
 /** Sent once when SPS+PPS are parsed from the H.264 stream. */
 export interface AndroidVideoConfig {
@@ -699,43 +675,13 @@ export interface ShareReadiness {
   ready: boolean;
 }
 
-/** Named hinge poses for a foldable simulator (iPhone Duo). */
-export type FoldPose = "book" | "closed" | "open" | "partial";
-
-/** Orientations an iOS simulator can be rotated to. */
-export type DeviceOrientation =
-  | "landscapeLeft"
-  | "landscapeRight"
-  | "portrait"
-  | "portraitUpsideDown";
-
-export interface FoldState {
-  /** Hinge angle in degrees: 0 is shut, 180 is flat open. */
-  angle: number;
-  pose: FoldPose;
-}
-
-/** The panel being captured, and how its contents are rotated. */
-export interface DisplayInfo {
-  /** Framebuffer height in pixels, before rotation. */
-  height: number;
-  /** Clockwise degrees the view must rotate the stream by to sit upright. */
-  rotation: 0 | 90 | 180 | 270;
-  /** CoreSimulator screen ID — changes when a fold lights the other panel. */
-  screenID: number;
-  /** Framebuffer width in pixels, before rotation. */
-  width: number;
-}
-
-/** How a simulator is currently being held — drives how the view presents it. */
-export interface SimulatorDeviceState {
-  /** Null while nothing is being captured. */
-  display: DisplayInfo | null;
-  /** Null on devices with no hinge. */
-  fold: FoldState | null;
-  orientation: DeviceOrientation;
-  udid: string;
-}
+export type {
+  DeviceOrientation,
+  DisplayInfo,
+  FoldPose,
+  FoldState,
+  SimulatorDeviceState,
+} from "@argus/remote-protocol";
 
 export type {
   WorktreeRootSource,

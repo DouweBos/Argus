@@ -20,7 +20,7 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { emitHostEvent } from "@argus/host/bus";
 import { createLogger } from "@argus/host/logger";
 import { getConductorBinPath } from "../cli/conductor";
-import { conductorLogStore, execConductor } from "./logger";
+import { conductorLogStore, ensureDeviceFlag, execConductor } from "./logger";
 
 const log = createLogger("conductor:debug");
 
@@ -35,12 +35,6 @@ const streams = new Map<string, DebugStream>();
 
 function send(event: string, payload: unknown): void {
   emitHostEvent(event, payload);
-}
-
-function ensureDeviceFlag(deviceKey: string, args: string[]): string[] {
-  return args.some((a) => a === "--device" || a === "-d")
-    ? args
-    : [...args, "--device", deviceKey];
 }
 
 export interface StartDebugStreamInput {

@@ -9,10 +9,6 @@
  */
 
 import type { CommandTier } from "@argus/host/services/command/registry";
-import type {
-  DeviceOrientation,
-  FoldPose,
-} from "@argus/host/services/simulator/deviceState";
 import type { ToolId } from "@argus/host/services/tools/types";
 import {
   Menu,
@@ -46,22 +42,6 @@ import {
 import { getMjpegPort } from "@argus/host/services/browser/mjpegServer";
 import { webBrowserPool } from "@argus/host/services/browser/pool";
 import { defineCommand } from "@argus/host/services/command/registry";
-import {
-  listDebugStreams,
-  runDebugCommand,
-  startDebugStream,
-  stopDebugStream,
-} from "@argus/host/services/conductor/debug";
-import {
-  listDevices,
-  stopDevice,
-  type DevicePlatform,
-} from "@argus/host/services/conductor/devices";
-import {
-  conductorLogStore,
-  execConductor,
-} from "@argus/host/services/conductor/logger";
-import { openDeepLink } from "@argus/host/services/conductor/openLink";
 import { listGhIssues } from "@argus/host/services/github/issues";
 import {
   ghPrClose,
@@ -75,14 +55,6 @@ import {
   getPullRequestDiff,
 } from "@argus/host/services/github/prDetail";
 import { listInterestingPullRequests } from "@argus/host/services/github/pullRequests";
-import { captureUi } from "@argus/host/services/inspection/capture";
-import { setNodeProperty } from "@argus/host/services/inspection/edit";
-import {
-  launchInjected,
-  listInstalledApps,
-  probeInjection,
-} from "@argus/host/services/inspection/launcher";
-import { getNodeProps } from "@argus/host/services/inspection/props";
 import { testMcpServer } from "@argus/host/services/mcp/connectivity";
 import {
   authenticate,
@@ -135,32 +107,12 @@ import { autofillPullRequestBody } from "@argus/host/services/session/prAutofill
 import { readPullRequestTemplate } from "@argus/host/services/session/pullRequest";
 import { openExternalUrl } from "@argus/host/services/shell/operations";
 import {
-  checkAndroidTools,
   listAndroidDevices,
-  listAvds,
-  bootAndroidEmulator,
   startAndroidCapture,
-  stopAndroidCapture,
-  disconnectAndroidDevice,
-  androidTouch,
-  androidKeyboard,
-  androidButton,
 } from "@argus/host/services/simulator/android";
-import { getDeviceInputEndpoint } from "@argus/host/services/simulator/deviceInput";
 import {
-  checkIosTools,
   listSimulators,
-  bootSimulator,
-  disconnectSimulator,
-  activeSimulator,
   startSimulatorCapture,
-  stopSimulatorCapture,
-  simulatorTouch,
-  simulatorButton,
-  simulatorDeviceState,
-  simulatorKeyboard,
-  simulatorSetFold,
-  simulatorSetOrientation,
 } from "@argus/host/services/simulator/ios";
 import { toolEnabled } from "@argus/host/services/tools/state";
 import { appState } from "@argus/host/state";
@@ -559,59 +511,6 @@ export function registerIpcHandlers(): void {
   });
   handle("mcp_oauth_list_authorized", "admin", () => listAuthorized());
 
-  // Simulator commands. The picker (`list_simulators`) and Xcode probe stay
-  // ungated — they're cheap, and the renderer uses them to show "Install
-  // Xcode" hints regardless of tool state. Capture and HID input are gated.
-  handle("check_ios_tools", "admin", () => checkIosTools());
-  handle("list_simulators", "admin", () => listSimulators());
-  handle("boot_simulator", "admin", (a) => bootSimulator(a.udid as string));
-  handle("disconnect_simulator", "admin", (a) =>
-    disconnectSimulator(a.udid as string),
-  );
-  handle("active_simulator", "admin", () => activeSimulator());
-  toolHandle("start_simulator_capture", "admin", "device-recording", (a) =>
-    startSimulatorCapture(a.udid as string),
-  );
-  toolHandle("stop_simulator_capture", "admin", "device-recording", (a) =>
-    Promise.resolve(stopSimulatorCapture(a.udid as string)),
-  );
-  toolHandle("simulator_touch", "admin", "device-control", (a) =>
-    simulatorTouch(
-      a.udid as string,
-      a.x as number,
-      a.y as number,
-      a.eventType as number,
-    ),
-  );
-  toolHandle("simulator_device_state", "monitor", "device-control", (a) =>
-    simulatorDeviceState(a.udid as string),
-  );
-  toolHandle("simulator_set_fold", "admin", "device-control", (a) =>
-    simulatorSetFold(a.udid as string, a.pose as FoldPose),
-  );
-  toolHandle("simulator_set_orientation", "admin", "device-control", (a) =>
-    simulatorSetOrientation(
-      a.udid as string,
-      a.orientation as DeviceOrientation,
-    ),
-  );
-  toolHandle("simulator_button", "admin", "device-control", (a) =>
-    simulatorButton(a.udid as string, a.button as string),
-  );
-  toolHandle("device_input_endpoint", "admin", "device-control", (a) =>
-    getDeviceInputEndpoint(a.deviceKey as string),
-  );
-  toolHandle("device_open_link", "admin", "device-control", (a) =>
-    openDeepLink(a.deviceKey as string, a.url as string),
-  );
-  toolHandle("simulator_keyboard", "admin", "device-control", (a) =>
-    simulatorKeyboard(
-      a.udid as string,
-      a.keyCode as number,
-      a.modifierFlags as number,
-      a.isDown as boolean,
-    ),
-  );
   toolHandle("open_device_popout", "admin", "device-recording", async (a) => {
     const platform = a.platform as "android" | "ios" | "video";
     const deviceKey = a.deviceKey as string;
@@ -737,42 +636,6 @@ export function registerIpcHandlers(): void {
 
     return granted ? "granted" : "denied";
   });
-
-  // Android device commands
-  handle("check_android_tools", "admin", () => checkAndroidTools());
-  handle("list_android_devices", "admin", () => listAndroidDevices());
-  handle("list_avds", "admin", () => listAvds());
-  handle("boot_android_emulator", "admin", (a) =>
-    bootAndroidEmulator(a.avdName as string),
-  );
-  toolHandle("start_android_capture", "admin", "device-recording", (a) =>
-    startAndroidCapture(a.serial as string),
-  );
-  toolHandle("stop_android_capture", "admin", "device-recording", (a) =>
-    stopAndroidCapture(a.serial as string),
-  );
-  toolHandle("disconnect_android_device", "admin", "device-recording", (a) =>
-    disconnectAndroidDevice(a.serial as string),
-  );
-  toolHandle("android_touch", "admin", "device-control", (a) =>
-    androidTouch(
-      a.serial as string,
-      a.x as number,
-      a.y as number,
-      a.eventType as number,
-    ),
-  );
-  toolHandle("android_keyboard", "admin", "device-control", (a) =>
-    androidKeyboard(
-      a.serial as string,
-      a.keyCode as number,
-      a.metaState as number,
-      a.isDown as boolean,
-    ),
-  );
-  toolHandle("android_button", "admin", "device-control", (a) =>
-    androidButton(a.serial as string, a.button as string),
-  );
 
   // Browser — Conductor-backed Chromium per session. Pool manages daemons;
   // screencast via raw CDP WebSocket; input forwarded through Conductor HTTP.
@@ -900,67 +763,6 @@ export function registerIpcHandlers(): void {
     }
   });
   handle("browser_get_mjpeg_port", "admin", () => getMjpegPort());
-
-  // Devices + conductor logs
-  handle("list_devices", "admin", () => listDevices());
-  handle("stop_device", "admin", (a) =>
-    stopDevice(a.platform as DevicePlatform, a.deviceKey as string),
-  );
-  toolHandle("list_conductor_logs", "admin", "device-control", (a) =>
-    conductorLogStore.list(a.deviceKey as string),
-  );
-  toolHandle("inspection_capture", "admin", "device-inspector", (a) =>
-    captureUi({ deviceKey: a.deviceKey as string }),
-  );
-  toolHandle("inspection_probe", "admin", "device-inspector", (a) =>
-    probeInjection(a.deviceKey as string),
-  );
-  toolHandle("inspection_list_apps", "admin", "device-inspector", (a) =>
-    listInstalledApps(a.deviceKey as string),
-  );
-  toolHandle("inspection_launch_injected", "admin", "device-inspector", (a) =>
-    launchInjected(a.deviceKey as string, a.bundleId as string),
-  );
-  toolHandle("inspection_set_property", "admin", "device-inspector", (a) =>
-    setNodeProperty({
-      deviceKey: a.deviceKey as string,
-      nodeId: a.nodeId as string,
-      key: a.key as string,
-      value: a.value as string,
-    }),
-  );
-  toolHandle("inspection_node_props", "admin", "device-inspector", (a) =>
-    getNodeProps(a.deviceKey as string, a.nodeId as string),
-  );
-  toolHandle("run_conductor_command", "admin", "device-control", async (a) => {
-    const deviceKey = a.deviceKey as string;
-    const args = a.args as string[];
-    const hasDeviceFlag = args.some((x) => x === "--device" || x === "-d");
-    const finalArgs = hasDeviceFlag ? args : [...args, "--device", deviceKey];
-    await execConductor(deviceKey, finalArgs);
-  });
-
-  // Debug panel — streaming conductor subprocesses + one-shot probes.
-  toolHandle("debug_start_stream", "admin", "device-debug", (a) => {
-    startDebugStream({
-      streamId: a.streamId as string,
-      deviceKey: a.deviceKey as string,
-      args: a.args as string[],
-    });
-
-    return null;
-  });
-  toolHandle("debug_stop_stream", "admin", "device-debug", (a) => {
-    stopDebugStream(a.streamId as string);
-
-    return null;
-  });
-  toolHandle("debug_list_streams", "admin", "device-debug", () =>
-    listDebugStreams(),
-  );
-  toolHandle("debug_run_command", "admin", "device-debug", (a) =>
-    runDebugCommand(a.deviceKey as string, a.args as string[]),
-  );
 
   // Image context menu
   handle("show_image_context_menu", "host", async (a) => {

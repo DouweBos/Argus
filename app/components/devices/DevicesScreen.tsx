@@ -172,6 +172,10 @@ export function DevicesScreen() {
     };
 
   const handleStop = async (d: DeviceInfo) => {
+    // Video inputs live in the renderer; there is nothing on the host to stop.
+    if (d.platform === "video") {
+      return;
+    }
     try {
       await stopDevice(d.platform, d.deviceKey);
       await refreshDevices();
