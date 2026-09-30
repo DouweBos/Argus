@@ -2,7 +2,7 @@
  * Onboarding prerequisite checks.
  *
  * Runs checks in parallel and streams results back to the renderer via
- * `onboarding:prereq_update` events (emitted by the IPC layer).
+ * `onboarding:prereq_update` events (emitted on the host bus).
  *
  * Each check is intentionally compact — the heavier `resolveBinary`/
  * dependency probing lives in `services/dependencies/check.ts`.

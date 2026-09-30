@@ -605,7 +605,7 @@ import {
 type Args = Record<string, unknown>;
 
 function emitNavState(sessionId: string, nav: NavState): void {
-  getMainWindow()?.webContents.send("browser_view:nav", {
+  emitHostEvent("browser_view:nav", {
     sessionId,
     url: nav.url,
     canGoBack: nav.canGoBack,
@@ -2245,9 +2245,7 @@ export function registerIpcHandlers(): void {
         maxHeight: 900,
       },
     );
-    getMainWindow()?.webContents.send("browser:ensure_mounted", {
-      sessionId,
-    });
+    emitHostEvent("browser:ensure_mounted", { sessionId });
   });
   handle("browser_view_navigate", "admin", async (a) => {
     const sessionId = a.sessionId as string;
@@ -2528,7 +2526,7 @@ export function registerIpcHandlers(): void {
     const ids = a.ids as PrereqId[] | undefined;
 
     return runPrereqChecks((update: PrereqResult) => {
-      getMainWindow()?.webContents.send("onboarding:prereq_update", update);
+      emitHostEvent("onboarding:prereq_update", update);
     }, ids);
   });
   handle("onboarding_run_fixer", "admin", (a) =>
@@ -2539,7 +2537,7 @@ export function registerIpcHandlers(): void {
         gitEmail: a.gitEmail as string | undefined,
       },
       (update: PrereqResult) => {
-        getMainWindow()?.webContents.send("onboarding:prereq_update", update);
+        emitHostEvent("onboarding:prereq_update", update);
       },
     ),
   );
