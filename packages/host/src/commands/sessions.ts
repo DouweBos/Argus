@@ -1,0 +1,1 @@
+export function registerSessionCommands(): void {}
