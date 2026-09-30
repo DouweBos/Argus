@@ -1,7 +1,7 @@
 import type {
   PairingClient,
-  RemoteEndpointKind,
   RemoteDevice,
+  RemoteEndpoint,
   RemoteStatus,
   RemoteTunnelMode,
   RemoteTunnelState,
@@ -75,7 +75,7 @@ function CopyableCode({ value }: { value: string }) {
   );
 }
 
-const ENDPOINT_LABELS: Record<RemoteEndpointKind, string> = {
+const ENDPOINT_LABELS: Record<RemoteEndpoint["kind"], string> = {
   lan: "Local network",
   tailscale: "Tailscale",
   cloudflare: "Cloudflare",

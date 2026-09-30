@@ -72,3 +72,20 @@ export async function setPushConfig(
 
   return getPushConfigStatus();
 }
+
+/** The renderer's camelCase view of the editable push settings. */
+export interface PushConfigPatch {
+  enabled?: boolean;
+  vapidSubject?: string;
+}
+
+export function setPushConfigFromPatch(
+  patch: PushConfigPatch,
+): Promise<PushConfigStatus> {
+  return setPushConfig({
+    ...(patch.enabled !== undefined ? { enabled: patch.enabled } : {}),
+    ...(patch.vapidSubject !== undefined
+      ? { vapid_subject: patch.vapidSubject.trim() }
+      : {}),
+  });
+}
