@@ -1,8 +1,12 @@
 import type * as GitModule from "./git";
 import type { Session } from "./models";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appState } from "../../state";
-import { createSession } from "./manager";
+import { addWorktree, git } from "./git";
+import { createSession, listSessions } from "./manager";
 
 vi.mock("../../main", () => ({
   getMainWindow: () => null,
@@ -14,6 +18,7 @@ vi.mock("./git", async () => {
   return {
     ...actual,
     git: vi.fn(async () => ""),
+    addWorktree: vi.fn(async () => {}),
     repairOrphanedWorktrees: vi.fn(async () => {}),
   };
 });
@@ -134,5 +139,60 @@ describe("createSession — one-session-per-branch enforcement", () => {
         ? ws.status.error
         : "";
     expect(errorMsg).not.toMatch(/already used by session/);
+  });
+});
+
+describe("listSessions — while a worktree is being checked out", () => {
+  let home: string;
+
+  beforeEach(() => {
+    appState.sessions.clear();
+    home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "argus-")));
+    vi.stubEnv("ARGUS_HOME", home);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.mocked(git).mockImplementation(async () => "");
+    fs.rmSync(home, { recursive: true, force: true });
+  });
+
+  it("does not adopt the half-created worktree as a second session", async () => {
+    const repoRoot = path.join(home, "repo");
+    fs.mkdirSync(repoRoot);
+    appState.repoRoots.add(repoRoot);
+
+    // Git registers the worktree and writes `.git` before the checkout ends.
+    let worktreePath = "";
+    let failCheckout: (reason: string) => void = () => {};
+    vi.mocked(addWorktree).mockImplementationOnce((_repo, target) => {
+      worktreePath = target;
+      fs.mkdirSync(target, { recursive: true });
+      fs.writeFileSync(path.join(target, ".git"), "gitdir: elsewhere");
+
+      return new Promise<void>((_resolve, reject) => {
+        failCheckout = reject;
+      });
+    });
+    vi.mocked(git).mockImplementation(async (_cwd, args) =>
+      args[0] === "worktree" && args[1] === "list"
+        ? `worktree ${worktreePath}\nHEAD abc\nbranch refs/heads/feature\n`
+        : "",
+    );
+
+    const session = await createSession(repoRoot, "feature", "");
+    await vi.waitFor(() => expect(worktreePath).not.toBe(""));
+
+    const listed = await listSessions(repoRoot);
+
+    expect(listed).toEqual([]);
+    expect(
+      [...appState.sessions.values()]
+        .filter((s) => s.repo_root === repoRoot)
+        .map((s) => s.id),
+    ).toEqual([session.id]);
+
+    failCheckout("stop");
+    await waitForStatusError(session.id);
   });
 });
