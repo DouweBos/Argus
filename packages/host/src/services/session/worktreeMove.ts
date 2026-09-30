@@ -261,6 +261,51 @@ async function countEntries(dir: string): Promise<number> {
 }
 
 /**
+ * Point every submodule in a copied worktree back at its git dir. Git writes
+ * those links relative to where the worktree was created, so a copy breaks
+ * them, and `git worktree repair` leaves submodules alone.
+ */
+async function repairSubmodules(worktree: string): Promise<void> {
+  const gitDir = (
+    await git(worktree, ["rev-parse", "--absolute-git-dir"])
+  ).trim();
+  let listed: string;
+  try {
+    listed = await git(worktree, [
+      "config",
+      "--file",
+      ".gitmodules",
+      "--get-regexp",
+      "^submodule\\..*\\.path$",
+    ]);
+  } catch {
+    return;
+  }
+  for (const line of listed.split("\n").filter(Boolean)) {
+    const space = line.indexOf(" ");
+    const name = line.slice("submodule.".length, space - ".path".length);
+    const moduleDir = path.join(gitDir, "modules", name);
+    const checkout = path.join(worktree, line.slice(space + 1));
+    const link = path.join(checkout, ".git");
+    if (
+      !fs.existsSync(moduleDir) ||
+      !fs.statSync(link, { throwIfNoEntry: false })?.isFile()
+    ) {
+      continue;
+    }
+    await fs.promises.writeFile(link, `gitdir: ${moduleDir}\n`, "utf8");
+    await git(worktree, [
+      "config",
+      "--file",
+      path.join(moduleDir, "config"),
+      "core.worktree",
+      checkout,
+    ]);
+    await repairSubmodules(checkout);
+  }
+}
+
+/**
  * Move one worktree. Tries the atomic rename first, because when it works it
  * is exactly right; falls back to copy + repair across filesystems. Async
  * throughout — a sync copy of a multi-GB tree freezes the whole host.
@@ -296,6 +341,7 @@ async function moveOne(
   });
   // Rewrites both the worktree's `.git` file and git's back-reference.
   await git(repoRoot, ["worktree", "repair", to]);
+  await repairSubmodules(to);
   // Only destroy the original once the copy is demonstrably a working tree.
   const top = (await git(to, ["rev-parse", "--show-toplevel"])).trim();
   if (!top) {
