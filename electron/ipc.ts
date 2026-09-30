@@ -23,19 +23,6 @@ import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
 import { stopAgent } from "@argus/host/services/agent/claude";
 import { defineCommand } from "@argus/host/services/command/registry";
-import { listGhIssues } from "@argus/host/services/github/issues";
-import {
-  ghPrClose,
-  ghPrComment,
-  ghPrCreate,
-  ghPrMerge,
-  type MergeStrategy,
-} from "@argus/host/services/github/prActions";
-import {
-  getPullRequestDetail,
-  getPullRequestDiff,
-} from "@argus/host/services/github/prDetail";
-import { listInterestingPullRequests } from "@argus/host/services/github/pullRequests";
 import { claimState } from "@argus/host/services/remote/deviceClaims";
 import {
   listDevices as listRemoteDevices,
@@ -76,8 +63,6 @@ import {
   diagnoseTailscale,
   type TailscaleFixKind,
 } from "@argus/host/services/remote/tailscaleSetup";
-import { autofillPullRequestBody } from "@argus/host/services/session/prAutofill";
-import { readPullRequestTemplate } from "@argus/host/services/session/pullRequest";
 import { openExternalUrl } from "@argus/host/services/shell/operations";
 import {
   listAndroidDevices,
@@ -245,73 +230,6 @@ export function registerIpcHandlers(): void {
   });
 
   // Session CRUD
-  handle("list_interesting_pull_requests", "admin", (a) =>
-    listInterestingPullRequests((a.repoRoots as string[]) ?? []),
-  );
-
-  handle("get_pull_request_detail", "admin", (a) =>
-    getPullRequestDetail(
-      a.owner as string,
-      a.repo as string,
-      a.number as number,
-    ),
-  );
-
-  handle("get_pull_request_diff", "admin", (a) =>
-    getPullRequestDiff(a.owner as string, a.repo as string, a.number as number),
-  );
-
-  handle("read_pr_template", "admin", (a) =>
-    Promise.resolve(readPullRequestTemplate(a.repoRoot as string)),
-  );
-
-  handle("autofill_pr_template", "admin", (a) =>
-    autofillPullRequestBody({
-      sessionId: a.sessionId as string,
-      title: a.title as string,
-      baseBranch: a.baseBranch as string,
-    }),
-  );
-
-  handle("gh_pr_create", "admin", (a) =>
-    ghPrCreate({
-      repoRoot: a.repoRoot as string,
-      title: a.title as string,
-      body: a.body as string,
-      base: a.base as string,
-      head: a.head as string,
-      draft: (a.draft as boolean | undefined) ?? false,
-    }),
-  );
-
-  handle("gh_pr_comment", "admin", (a) =>
-    ghPrComment({
-      owner: a.owner as string,
-      repo: a.repo as string,
-      number: a.number as number,
-      body: a.body as string,
-    }),
-  );
-
-  handle("gh_pr_merge", "admin", (a) =>
-    ghPrMerge({
-      owner: a.owner as string,
-      repo: a.repo as string,
-      number: a.number as number,
-      strategy: a.strategy as MergeStrategy,
-    }),
-  );
-
-  handle("gh_pr_close", "admin", (a) =>
-    ghPrClose({
-      owner: a.owner as string,
-      repo: a.repo as string,
-      number: a.number as number,
-    }),
-  );
-
-  handle("gh_list_issues", "admin", (a) => listGhIssues(a.repoRoot as string));
-
   // Remote access (phone/web control).
   handle("remote_get_status", "admin", () => getRemoteStatus());
   handle("remote_set_config", "host", (a) =>
