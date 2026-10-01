@@ -13,6 +13,7 @@ import type { NoiseSession } from "./noise";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
 import type { SimulatorDeviceState } from "../simulator/deviceState";
 import type { H264Config } from "../simulator/h264-parser";
+import type { PlatformRequest } from "@argus/remote-protocol";
 import {
   Envelope,
   EventPayloads,
@@ -233,6 +234,34 @@ function repoRootFromBroadcast(args: unknown[]): string | null {
     : null;
 }
 
+/** The two halves of a session cipher a connection needs. */
+export type FrameCipher = Pick<NoiseSession, "decrypt" | "encrypt">;
+
+export interface DeviceConnectionOptions {
+  /**
+   * The local UI socket's connection: every tier including `host`, and both
+   * the typed events (so the shared client stores work unchanged) and raw
+   * broadcasts for everything the typed dialect doesn't cover.
+   */
+  console?: boolean;
+  /** Methods answered before dispatch (`ui.*` on the local socket). */
+  localRoute?: (method: string, params: unknown) => Promise<unknown> | null;
+}
+
+/**
+ * Agent channels the typed dialect already carries. A console connection gets
+ * those as typed events, so mirroring them raw would send each twice.
+ */
+const TYPED_AGENT_KINDS = new Set([
+  "capabilities",
+  "event",
+  "permission",
+  "permission-cancel",
+  "permission-resolved",
+  "queue",
+  "status",
+]);
+
 export class DeviceConnection implements DeviceMediaController {
   /** Identifies this connection for claims; a reconnect is a new holder. */
   private readonly connectionId = crypto.randomUUID();
@@ -242,6 +271,8 @@ export class DeviceConnection implements DeviceMediaController {
   private readonly ctx: GatewayContext;
   /** Forward raw renderer broadcasts instead of typed events (admin devices). */
   private readonly raw: boolean;
+  private readonly console: boolean;
+  private readonly localRoute: DeviceConnectionOptions["localRoute"];
   private closer: (() => void) | null = null;
   private bufferedProbe: (() => number) | null = null;
   /** Active screen streams for this connection, keyed by device id. */
@@ -271,23 +302,28 @@ export class DeviceConnection implements DeviceMediaController {
 
   constructor(
     readonly device: PairedDevice,
-    private readonly session: NoiseSession,
+    private readonly session: FrameCipher,
     private readonly sink: (bytes: Uint8Array) => void,
     scope?: GrantScope,
+    options: DeviceConnectionOptions = {},
   ) {
     this.scope = scope;
+    this.console = !scope && Boolean(options.console);
+    this.localRoute = options.localRoute;
     this.ctx = {
       device,
       connectionId: this.connectionId,
       outstandingPermissions: new Set(),
       media: this,
       ...(scope ? { scope } : {}),
+      ...(this.console ? { console: true } : {}),
     };
     // An admin device is another desktop: it runs the real UI off the host's
     // own IPC channels, so it gets raw broadcasts rather than the typed mirrors
     // the phone and web clients render — sending both would double the stream.
     // A scoped grant is never admin, and raw broadcasts cannot be scoped.
-    this.raw = !scope && device.capabilities.includes("admin");
+    this.raw =
+      this.console || (!scope && device.capabilities.includes("admin"));
   }
 
   /** Register how to tear down the underlying socket (set by the server). */
@@ -571,6 +607,11 @@ export class DeviceConnection implements DeviceMediaController {
     }
   }
 
+  /** Ask the attached UI to do something only a window can. */
+  pushPlatformRequest(request: PlatformRequest): void {
+    this.pushEvent("platform.request", null, request);
+  }
+
   /** Tell this device every address it could reach the desktop on. */
   pushEndpoints(endpoints: RemoteEndpoint[]): void {
     this.pushEvent("host.endpoints", null, { endpoints });
@@ -578,6 +619,10 @@ export class DeviceConnection implements DeviceMediaController {
 
   /** Pick the dialect a request belongs to: huddle, transfer, or the allowlist. */
   private async route(method: string, params: unknown): Promise<unknown> {
+    const local = this.localRoute?.(method, params);
+    if (local) {
+      return await local;
+    }
     if (isHuddleMethod(method)) {
       return this.handleHuddle(method, params);
     }
@@ -726,6 +771,12 @@ export class DeviceConnection implements DeviceMediaController {
     if (scope !== null && !this.subscriptions.has(scope)) {
       return;
     }
+    if (this.console) {
+      const agent = parseAgentChannel(channel);
+      if (agent && TYPED_AGENT_KINDS.has(agent.kind)) {
+        return;
+      }
+    }
     this.pushEvent("ipc", null, { channel, args });
   }
 
@@ -757,8 +808,9 @@ export class DeviceConnection implements DeviceMediaController {
     if (this.raw) {
       this.trackPermissions(channel, args);
       this.forwardRawBroadcast(channel, args);
-
-      return;
+      if (!this.console) {
+        return;
+      }
     }
 
     // User-facing notifications go to every connected device, regardless of

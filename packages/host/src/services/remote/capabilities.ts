@@ -257,6 +257,11 @@ export interface GatewayContext {
    * Absent — the case for every paired device — means no narrowing at all.
    */
   scope?: GrantScope;
+  /**
+   * The local UI socket: the app on this machine, authenticated by owning the
+   * socket file. The only caller allowed `host`-tier commands.
+   */
+  console?: boolean;
 }
 
 export function permissionKey(agentId: string, toolUseId: string): string {
@@ -2537,9 +2542,13 @@ async function dispatchAdmin(
     throw new GatewayError("not_found", `unknown command ${command}`);
   }
   if (definition.tier === "host") {
-    throw new GatewayError("capability_denied", `host-only command ${command}`);
-  }
-  if (!hasCapability(ctx, definition.tier)) {
+    if (!ctx.console) {
+      throw new GatewayError(
+        "capability_denied",
+        `host-only command ${command}`,
+      );
+    }
+  } else if (!hasCapability(ctx, definition.tier)) {
     throw new GatewayError(
       "capability_denied",
       `device lacks '${definition.tier}' capability`,

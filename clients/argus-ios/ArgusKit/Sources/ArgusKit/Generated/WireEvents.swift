@@ -297,6 +297,9 @@ extension ArgusProtocol {
     /// `permission.request`
     public typealias PermissionRequest = ArgusProtocol.RemotePermissionRequest
 
+    /// `platform.request`
+    public typealias PlatformRequest = ArgusProtocol.PlatformRequest
+
     /// `projects.changed`
     public typealias ProjectsChanged = ArgusProtocol.EventsTypes.ProjectsChangedPayload
 

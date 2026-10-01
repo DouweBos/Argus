@@ -3211,6 +3211,7 @@ extension ArgusProtocol {
     public static let huddleState = EventEnvelopeEvent(rawValue: "huddle.state")
     public static let huddleChat = EventEnvelopeEvent(rawValue: "huddle.chat")
     public static let ipc = EventEnvelopeEvent(rawValue: "ipc")
+    public static let platformRequest = EventEnvelopeEvent(rawValue: "platform.request")
   }
 
   public struct EventEnvelope: Codable, Sendable {
@@ -5665,6 +5666,89 @@ extension ArgusProtocol {
       try c.encode(url, forKey: .url)
       try c.encode(dsPub, forKey: .dsPub)
       try c.encode(pairingSecret, forKey: .pairingSecret)
+    }
+  }
+
+  public struct PlatformRequestKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let notify = PlatformRequestKind(rawValue: "notify")
+    public static let openExternal = PlatformRequestKind(rawValue: "open_external")
+    public static let openPath = PlatformRequestKind(rawValue: "open_path")
+    public static let revealInFinder = PlatformRequestKind(rawValue: "reveal_in_finder")
+    public static let focusUi = PlatformRequestKind(rawValue: "focus_ui")
+    public static let closeDevicePopout = PlatformRequestKind(rawValue: "close_device_popout")
+  }
+
+  public struct PlatformRequestUrgency: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let critical = PlatformRequestUrgency(rawValue: "critical")
+    public static let normal = PlatformRequestUrgency(rawValue: "normal")
+  }
+
+  public struct PlatformRequest: Codable, Sendable {
+    public var kind: PlatformRequestKind
+    public var id: String?
+    public var title: String?
+    public var body: String?
+    public var urgency: PlatformRequestUrgency?
+    public var actions: [String]?
+    public var url: String?
+    public var path: String?
+    public var key: String?
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case id = "id"
+      case title = "title"
+      case body = "body"
+      case urgency = "urgency"
+      case actions = "actions"
+      case url = "url"
+      case path = "path"
+      case key = "key"
+    }
+
+    public init(kind: PlatformRequestKind, id: String? = nil, title: String? = nil, body: String? = nil, urgency: PlatformRequestUrgency? = nil, actions: [String]? = nil, url: String? = nil, path: String? = nil, key: String? = nil) {
+      self.kind = kind
+      self.id = id
+      self.title = title
+      self.body = body
+      self.urgency = urgency
+      self.actions = actions
+      self.url = url
+      self.path = path
+      self.key = key
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encodeIfPresent(id, forKey: .id)
+      try c.encodeIfPresent(title, forKey: .title)
+      try c.encodeIfPresent(body, forKey: .body)
+      try c.encodeIfPresent(urgency, forKey: .urgency)
+      try c.encodeIfPresent(actions, forKey: .actions)
+      try c.encodeIfPresent(url, forKey: .url)
+      try c.encodeIfPresent(path, forKey: .path)
+      try c.encodeIfPresent(key, forKey: .key)
     }
   }
 
