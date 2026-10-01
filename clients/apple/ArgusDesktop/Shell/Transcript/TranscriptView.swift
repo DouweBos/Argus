@@ -16,7 +16,6 @@ struct TranscriptView: View {
 
   @State private var model = TranscriptModel()
   @State private var links: TranscriptLinkHandler?
-  @State private var viewer = ImageViewerState()
   /// Whether the reader is following the tail. Written on every scroll, so it
   /// is observed only by the jump button — the transcript itself re-rendering
   /// on each flip feeds back into the lazy stack's layout.
@@ -93,7 +92,15 @@ struct TranscriptView: View {
       }
       .onChange(of: pending.map(\.id)) { _, ids in
         // A new decision always comes into view — it's what the agent waits on.
-        if !ids.isEmpty { withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(Self.bottom, anchor: .bottom) } }
+        // Again once the card has laid out: the lazy stack measures it late, and
+        // the first scroll stops short of a form taller than its estimate.
+        guard !ids.isEmpty else { return }
+        follow.atBottom = true
+        withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(Self.bottom, anchor: .bottom) }
+        Task { @MainActor in
+          try? await Task.sleep(for: .milliseconds(250))
+          withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(Self.bottom, anchor: .bottom) }
+        }
       }
       .onChange(of: model.revealToken) { _, _ in
         reveal(chunks: chunks, proxy: proxy)
@@ -117,9 +124,7 @@ struct TranscriptView: View {
       guard !Task.isCancelled else { return }
       await model.search(messages)
     }
-    .overlay { ImageViewerOverlay() }
     .environment(model)
-    .environment(viewer)
     .environment(\.transcriptLinks, links)
     .environment(\.toolTextRenderer, toolTextRenderer)
     .task(id: agentKey) { await start() }
