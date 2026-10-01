@@ -58,6 +58,7 @@ the Swift port is asserted against them:
 | `noise-vectors.json` | `packages/host/src/services/remote/noise.ts` | IK and IKpsk1 handshakes, transport frames, SAS, pairing PSK |
 | `diff-sample.json` | `app/lib/diffParser.ts` | unified-diff parsing over a real four-status `git diff` |
 | `linked-projects.json` | `app/lib/linkedProjectsPreamble.ts` | the message preamble, which is also a live instruction to the agent |
+| `ArgusCore/…/Fixtures/conversation/*.json` | `app/stores/conversationStore.ts` + the host's `agents.transcript`, via `pnpm exec vitest run --config clients/argus-ios/Tools/conversation-fixtures.vitest.config.ts` | the agent transcript reducer's snapshot after every event, and the `RemoteMessage` pages built from it |
 
 Regenerate the Noise vectors after any change to the shared crypto:
 
