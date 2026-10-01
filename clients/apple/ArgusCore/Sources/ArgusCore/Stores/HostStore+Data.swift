@@ -70,7 +70,12 @@ extension HostStore {
     struct Result: Decodable { let sessions: [RemoteSession] }
     guard let result = try? await backend.request(
       .sessionsList, Params(repo_root: repoRoot), as: Result.self) else { return }
-    sessionsByRepo[repoRoot] = result.sessions
+    // The host leaves a session out while its worktree is still being made;
+    // one this app just created stays in view, set up, until it is listed.
+    let listed = Set(result.sessions.map(\.id))
+    for id in creatingSessions.keys where listed.contains(id) { creatingSessions[id] = nil }
+    let creating = creatingSessions.values.filter { $0.repoRoot == repoRoot }
+    sessionsByRepo[repoRoot] = creating + result.sessions
   }
 
   public func loadAgents(repoRoot: String) async {

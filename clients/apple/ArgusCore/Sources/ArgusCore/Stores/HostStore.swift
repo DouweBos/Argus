@@ -98,6 +98,8 @@ public final class HostStore {
   @ObservationIgnored var liveEnvironment = ConversationEnvironment.live
 
   @ObservationIgnored private var pump: Task<Void, Never>?
+  /// Sessions created here that the host doesn't list yet (still setting up).
+  @ObservationIgnored var creatingSessions: [String: RemoteSession] = [:]
   /// Debounces transcript refetches: a burst of agent events becomes one call.
   @ObservationIgnored private var refetchTimers: [String: Task<Void, Never>] = [:]
 
@@ -155,6 +157,7 @@ public final class HostStore {
 
   /// Forget everything fetched from the current computer.
   public func reset() {
+    creatingSessions = [:]
     projects = []
     sessionsByRepo = [:]
     agentsByRepo = [:]

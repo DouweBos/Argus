@@ -22,13 +22,16 @@ extension HostStore {
     }
     struct Result: Decodable { let session: RemoteSession }
     do {
-      return try await backend.request(
+      let session = try await backend.request(
         .sessionsCreate,
         Params(
           repo_root: repoRoot, branch: branch, description: description,
           use_existing_branch: useExistingBranch, base_branch: baseBranch, prompt: prompt),
         as: Result.self
       ).session
+      creatingSessions[session.id] = session
+      sessionsByRepo[repoRoot] = [session] + (sessionsByRepo[repoRoot] ?? []).filter { $0.id != session.id }
+      return session
     } catch {
       report(error)
       return nil
