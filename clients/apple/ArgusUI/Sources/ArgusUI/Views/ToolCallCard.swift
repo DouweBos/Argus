@@ -306,16 +306,20 @@ public struct TranscriptImage: View {
   public var body: some View {
     Group {
       if let image = dataURI.flatMap(PlatformImage.fromDataURI) {
-        Image(platformImage: image)
-          .resizable()
-          .scaledToFit()
-          .frame(maxHeight: maxHeight)
-          .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
-          .onTapGesture {
-            viewer.present(
-              agentKey: agentKey, imageIds: group,
-              at: group.firstIndex(of: imageId) ?? 0)
-          }
+        // A button, not a tap gesture: reachable by keyboard and VoiceOver.
+        Button {
+          viewer.present(
+            agentKey: agentKey, imageIds: group,
+            at: group.firstIndex(of: imageId) ?? 0)
+        } label: {
+          Image(platformImage: image)
+            .resizable()
+            .scaledToFit()
+            .frame(maxHeight: maxHeight)
+            .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open image")
       } else {
         RoundedRectangle(cornerRadius: theme.radiusSmall)
           .fill(theme.bgHover)

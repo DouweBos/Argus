@@ -33,6 +33,8 @@ struct MainWindow: View {
         .onExitCommand { imageViewer.dismiss() }
     }
     .environment(imageViewer)
+    // The viewer covers the window; the toolbar would still draw over it.
+    .toolbar(imageViewer.isPresented ? .hidden : .automatic, for: .windowToolbar)
     .environment(\.theme, colorScheme == .dark ? .dark : .light)
     .tint(colorScheme == .dark ? Theme.dark.accent : Theme.light.accent)
     // A project added while we're up arrives as `projects.changed` alone.
