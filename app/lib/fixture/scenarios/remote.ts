@@ -45,7 +45,6 @@ const STATUS = {
   ],
   hasTunnelToken: false,
   lanUrl: "http://192.168.1.24:47615",
-  lanWebEnabled: true,
   notifyWhenFocused: false,
   publicUrl: "https://aurora-mbp.tail9c2f.ts.net",
   tailscaleEnabled: true,

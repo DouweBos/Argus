@@ -78,8 +78,7 @@ function clearCodeFile(): void {
 
 /**
  * Arm a pairing session and publish the code. Falls back to the LAN URL when no
- * tunnel is up — a server on your desk is the common case, and `getPublicUrl()`
- * only reports the LAN when `remote_lan_web` happens to be on.
+ * tunnel is up — a server on your desk is the common case.
  */
 export async function startServerPairing(
   options: {

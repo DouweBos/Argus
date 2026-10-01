@@ -447,17 +447,17 @@ your repo.
 
 ## Remote Access
 
-Pair a phone to monitor your projects and agents from anywhere. Argus runs a
-local, loopback-only gateway and exposes it through a tunnel — no inbound ports
-are opened on your machine. All traffic is end-to-end encrypted (Noise IK); the
+Pair a phone to monitor your projects and agents from anywhere. With remote
+access on, Argus runs a gateway that devices on your network reach directly by
+IP; tunnels add a way in from outside your network. All traffic is end-to-end encrypted (Noise IK); the
 tunnel only ever sees ciphertext. Paired devices are **monitor + approve only** —
 they can view projects/sessions/agents and approve or deny permission prompts,
 but cannot spawn agents, send messages, or run commands.
 
 | Setting                                     | Default | Description                                                                                                                                                                                                                                     |
 | ------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enable remote access**                    | Off     | Master kill-switch. Off ⇒ the gateway + every tunnel stay down and pairing is refused.                                                                                                                                                          |
-| **Ways in**                                 | All off | **Local network**, **Tailscale** (`tailscale funnel`) and **Cloudflare** (`cloudflared`) toggle independently and run side by side. A tunnel needs that provider's CLI on your `PATH`.                                                          |
+| **Enable remote access**                    | Off     | Master kill-switch. On ⇒ the gateway listens on your local network. Off ⇒ the gateway + every tunnel stay down and pairing is refused.                                                                                                          |
+| **Tunnels**                                 | All off | **Tailscale** (`tailscale funnel`) and **Cloudflare** (`cloudflared`) toggle independently and run side by side, for access from outside your network. A tunnel needs that provider's CLI on your `PATH`.                                       |
 | **Addresses**                               | —       | Read-only list of every address that's live right now, in the order phones try them. Synced to paired devices on connect.                                                                                                                       |
 | **Tunnel** (Cloudflare)                     | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                                                                                                                      |
 | **Connector token**                         | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                                                                                                                |
@@ -467,17 +467,15 @@ but cannot spawn agents, send messages, or run commands.
 | **Notify my devices while I'm using Argus** | Off     | Mirror notifications to phones and browsers even when the Argus window is focused. Off ⇒ they stay quiet while you're at the desktop.                                                                                                           |
 | **Your name on a huddle invite**            | `""`    | The name in "… wants you to join". Empty falls back to the git `user.name` of the session you're sharing — set this if you commit under a name you don't go by.                                                                                 |
 
-### Choosing ways in
+### Choosing tunnels
 
-These are not mutually exclusive — enable as many as you like and they run at
-the same time, each in its own process. The phone then picks between them (see
-[Picking a route](#picking-a-route)), so the usual setup is **Local network +
-Tailscale**: fast at home, reachable everywhere else.
+Devices on your network always connect directly by IP — no tunnel and no
+external process. Tunnels are only for access from _off_ your network, and they
+are not mutually exclusive: enable as many as you like and they run at the same
+time, each in its own process. The phone then picks between every address (see
+[Picking a route](#picking-a-route)), so the usual setup is **Tailscale**: fast
+at home over Wi-Fi, reachable everywhere else.
 
-- **Local network**: no tunnel and no external process at all — pair over Wi-Fi
-  with the web client below. Enabling remote access with only this spawns
-  nothing beyond the local gateway. Add a tunnel when you need access from
-  _off_ your network.
 - **Cloudflare — Quick**: zero setup, just the
   [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
   binary. The URL rotates each run, so you re-pair after a restart. Good for a
@@ -661,16 +659,13 @@ focus.
 
 ### Web client on this network
 
-Toggling **Web client on this network** binds the gateway to your Wi-Fi
-interface. Open `http://<your-ip>:47615` on any device on the same network — no
-app install, no tunnel. It still pairs and Noise-authenticates exactly like the
-phone, so being on the LAN grants no access on its own.
+With remote access on, open `http://<your-ip>:47615` on any device on the same
+network — no app install, no tunnel. It still pairs and Noise-authenticates
+exactly like the phone, so being on the LAN grants no access on its own.
 
 The browser client itself is served over **every** way in, not just the LAN: a
-Tailscale or Cloudflare URL opens the same app in a browser. This toggle only
-decides whether the gateway also listens on your Wi-Fi interface — leave it off
-and the gateway stays loopback-only, reachable solely through a tunnel. You can also reach it from the Home screen's **Remote access**
-button. (Build the bundle once with `pnpm --filter argus-web build`.)
+Tailscale or Cloudflare URL opens the same app in a browser. You can also reach
+it from the Home screen's **Remote access** button. (Build the bundle once with `pnpm --filter argus-web build`.)
 
 **Pairing** shows a QR code (and a copy-paste code) plus a 6-digit confirmation
 number. Scan it on the device, confirm the number matches on both screens, and

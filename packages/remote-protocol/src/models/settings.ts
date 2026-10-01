@@ -87,7 +87,6 @@ export const AppSettings = z.object({
    * Serve the web client on the LAN. Access is still gated by Noise pairing;
    * this only changes reachability.
    */
-  remote_lan_web: z.boolean().optional(),
   /**
    * Mirror notifications to paired devices even while the Argus window is
    * focused. Off by default.

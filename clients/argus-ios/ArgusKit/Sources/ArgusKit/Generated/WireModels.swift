@@ -458,7 +458,6 @@ extension ArgusProtocol {
     public var remoteTunnelMode: AppSettingsRemoteTunnelMode?
     public var remoteTunnelToken: String?
     public var remotePublicUrl: String?
-    public var remoteLanWeb: Bool?
     public var remoteNotifyWhenFocused: Bool?
 
     enum CodingKeys: String, CodingKey {
@@ -482,11 +481,10 @@ extension ArgusProtocol {
       case remoteTunnelMode = "remote_tunnel_mode"
       case remoteTunnelToken = "remote_tunnel_token"
       case remotePublicUrl = "remote_public_url"
-      case remoteLanWeb = "remote_lan_web"
       case remoteNotifyWhenFocused = "remote_notify_when_focused"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, launchRoute: AppSettingsLaunchRoute? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteLanWeb: Bool? = nil, remoteNotifyWhenFocused: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, launchRoute: AppSettingsLaunchRoute? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.defaultLlm = defaultLlm
@@ -507,7 +505,6 @@ extension ArgusProtocol {
       self.remoteTunnelMode = remoteTunnelMode
       self.remoteTunnelToken = remoteTunnelToken
       self.remotePublicUrl = remotePublicUrl
-      self.remoteLanWeb = remoteLanWeb
       self.remoteNotifyWhenFocused = remoteNotifyWhenFocused
     }
 
@@ -533,7 +530,6 @@ extension ArgusProtocol {
       try c.encodeIfPresent(remoteTunnelMode, forKey: .remoteTunnelMode)
       try c.encodeIfPresent(remoteTunnelToken, forKey: .remoteTunnelToken)
       try c.encodeIfPresent(remotePublicUrl, forKey: .remotePublicUrl)
-      try c.encodeIfPresent(remoteLanWeb, forKey: .remoteLanWeb)
       try c.encodeIfPresent(remoteNotifyWhenFocused, forKey: .remoteNotifyWhenFocused)
     }
   }
@@ -7724,7 +7720,6 @@ extension ArgusProtocol {
     public var tunnelMode: RemoteTunnelMode?
     public var tunnelToken: String?
     public var publicUrl: String?
-    public var lanWeb: Bool?
     public var notifyWhenFocused: Bool?
 
     enum CodingKeys: String, CodingKey {
@@ -7734,18 +7729,16 @@ extension ArgusProtocol {
       case tunnelMode = "tunnelMode"
       case tunnelToken = "tunnelToken"
       case publicUrl = "publicUrl"
-      case lanWeb = "lanWeb"
       case notifyWhenFocused = "notifyWhenFocused"
     }
 
-    public init(enabled: Bool? = nil, tailscaleEnabled: Bool? = nil, cloudflareEnabled: Bool? = nil, tunnelMode: RemoteTunnelMode? = nil, tunnelToken: String? = nil, publicUrl: String? = nil, lanWeb: Bool? = nil, notifyWhenFocused: Bool? = nil) {
+    public init(enabled: Bool? = nil, tailscaleEnabled: Bool? = nil, cloudflareEnabled: Bool? = nil, tunnelMode: RemoteTunnelMode? = nil, tunnelToken: String? = nil, publicUrl: String? = nil, notifyWhenFocused: Bool? = nil) {
       self.enabled = enabled
       self.tailscaleEnabled = tailscaleEnabled
       self.cloudflareEnabled = cloudflareEnabled
       self.tunnelMode = tunnelMode
       self.tunnelToken = tunnelToken
       self.publicUrl = publicUrl
-      self.lanWeb = lanWeb
       self.notifyWhenFocused = notifyWhenFocused
     }
 
@@ -7757,7 +7750,6 @@ extension ArgusProtocol {
       try c.encodeIfPresent(tunnelMode, forKey: .tunnelMode)
       try c.encodeIfPresent(tunnelToken, forKey: .tunnelToken)
       try c.encodeIfPresent(publicUrl, forKey: .publicUrl)
-      try c.encodeIfPresent(lanWeb, forKey: .lanWeb)
       try c.encodeIfPresent(notifyWhenFocused, forKey: .notifyWhenFocused)
     }
   }
@@ -9395,7 +9387,6 @@ extension ArgusProtocol {
     public var tunnelMode: RemoteTunnelMode
     public var hasTunnelToken: Bool
     public var publicUrl: String?
-    public var lanWebEnabled: Bool
     public var lanUrl: String?
     public var notifyWhenFocused: Bool
     public var devices: [PairedDevice]
@@ -9410,14 +9401,13 @@ extension ArgusProtocol {
       case tunnelMode = "tunnelMode"
       case hasTunnelToken = "hasTunnelToken"
       case publicUrl = "publicUrl"
-      case lanWebEnabled = "lanWebEnabled"
       case lanUrl = "lanUrl"
       case notifyWhenFocused = "notifyWhenFocused"
       case devices = "devices"
       case connectedDeviceIds = "connectedDeviceIds"
     }
 
-    public init(enabled: Bool, tailscaleEnabled: Bool, cloudflareEnabled: Bool, tunnels: [String: RemoteTunnelState], endpoints: [RemoteEndpoint], tunnelMode: RemoteTunnelMode, hasTunnelToken: Bool, publicUrl: String? = nil, lanWebEnabled: Bool, lanUrl: String? = nil, notifyWhenFocused: Bool, devices: [PairedDevice], connectedDeviceIds: [String]) {
+    public init(enabled: Bool, tailscaleEnabled: Bool, cloudflareEnabled: Bool, tunnels: [String: RemoteTunnelState], endpoints: [RemoteEndpoint], tunnelMode: RemoteTunnelMode, hasTunnelToken: Bool, publicUrl: String? = nil, lanUrl: String? = nil, notifyWhenFocused: Bool, devices: [PairedDevice], connectedDeviceIds: [String]) {
       self.enabled = enabled
       self.tailscaleEnabled = tailscaleEnabled
       self.cloudflareEnabled = cloudflareEnabled
@@ -9426,7 +9416,6 @@ extension ArgusProtocol {
       self.tunnelMode = tunnelMode
       self.hasTunnelToken = hasTunnelToken
       self.publicUrl = publicUrl
-      self.lanWebEnabled = lanWebEnabled
       self.lanUrl = lanUrl
       self.notifyWhenFocused = notifyWhenFocused
       self.devices = devices
@@ -9443,7 +9432,6 @@ extension ArgusProtocol {
       try c.encode(tunnelMode, forKey: .tunnelMode)
       try c.encode(hasTunnelToken, forKey: .hasTunnelToken)
       try c.encode(publicUrl, forKey: .publicUrl)
-      try c.encode(lanWebEnabled, forKey: .lanWebEnabled)
       try c.encode(lanUrl, forKey: .lanUrl)
       try c.encode(notifyWhenFocused, forKey: .notifyWhenFocused)
       try c.encode(devices, forKey: .devices)
