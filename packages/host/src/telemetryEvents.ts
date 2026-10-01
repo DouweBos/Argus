@@ -86,6 +86,10 @@ export interface EventMap {
   session_merge_conflict: { conflicting_files: number; phase: MergePhase };
   session_merged: { phase: MergePhase; strategy: MergeStrategy };
   session_prompt_dispatched: { success: boolean };
+  session_setup_recovered: {
+    action: "mark_ready" | "retry";
+    success: boolean;
+  };
   telemetry_disabled: undefined;
   telemetry_enabled: undefined;
   worktrees_moved: {

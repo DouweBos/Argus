@@ -25,6 +25,8 @@ export const RemoteSession = z.object({
   /** Claude account the session is pinned to; null follows the active one. */
   claude_account_id: z.string().nullable().optional(),
   status: z.enum(["deleting", "initializing", "ready", "error"]),
+  /** Why setup failed while `status` is `error`. Absent on older hosts. */
+  setup_error: z.string().nullable().optional(),
   /**
    * How far setup or removal has got while `status` is `initializing` or
    * `deleting`. Absent before the first count, and on older hosts.

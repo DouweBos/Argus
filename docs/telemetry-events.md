@@ -140,13 +140,14 @@ is a fixed literal, not the user's machine or any external origin.
 
 ## Sessions
 
-| Event                       | Source | When                                                                                                  | Extra props                                                                                 |
-| --------------------------- | ------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `session_created`           | main   | A new session is created                                                                              | `has_explicit_branch`, `has_description`, `use_existing_branch`, `has_explicit_base_branch` |
-| `session_prompt_dispatched` | main   | The host starts the agent for a session created with a prompt (e.g. a plan handed off from the phone) | `success`                                                                                   |
-| `session_deleted`           | main   | A session is deleted                                                                                  | `kind` (`worktree` \| `project_root` \| `scratch_pad`), `delete_branch`                     |
-| `scratch_pad_created`       | main   | A scratch pad is created                                                                              | `has_name` — whether a name was given rather than the default                               |
-| `worktrees_moved`           | main   | A project's worktrees were moved to a new location                                                    | `moved`, `failed` (counts), `copied` (crossed drives), `duration_bucket`, `purpose`         |
+| Event                       | Source | When                                                                                                                   | Extra props                                                                                 |
+| --------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `session_created`           | main   | A new session is created                                                                                               | `has_explicit_branch`, `has_description`, `use_existing_branch`, `has_explicit_base_branch` |
+| `session_prompt_dispatched` | main   | The host starts the agent for a session created with a prompt (e.g. a plan handed off from the phone)                  | `success`                                                                                   |
+| `session_deleted`           | main   | A session is deleted                                                                                                   | `kind` (`worktree` \| `project_root` \| `scratch_pad`), `delete_branch`                     |
+| `session_setup_recovered`   | main   | A session whose setup failed is retried (fires when the retry finishes) or marked ready, from the desktop or the phone | `action` (`retry` \| `mark_ready`), `success`                                               |
+| `scratch_pad_created`       | main   | A scratch pad is created                                                                                               | `has_name` — whether a name was given rather than the default                               |
+| `worktrees_moved`           | main   | A project's worktrees were moved to a new location                                                                     | `moved`, `failed` (counts), `copied` (crossed drives), `duration_bucket`, `purpose`         |
 
 ## Merges
 

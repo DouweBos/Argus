@@ -1286,6 +1286,10 @@ export function clearSessionSetupError(id: string): void {
   session.status = "ready";
   appState.sessions.set(id, session);
   emitHostEvent(`session:status:${id}`, "ready");
+  telemetryCapture("session_setup_recovered", {
+    action: "mark_ready",
+    success: true,
+  });
 }
 
 /**
@@ -1323,6 +1327,10 @@ export function retrySessionSetup(id: string): void {
         appState.sessions.set(id, current);
       }
       emitHostEvent(`session:status:${id}`, "ready");
+      telemetryCapture("session_setup_recovered", {
+        action: "retry",
+        success: true,
+      });
       reconfigureAutoFetch(
         id,
         session.repo_root,
@@ -1342,6 +1350,10 @@ export function retrySessionSetup(id: string): void {
         appState.sessions.set(id, current);
       }
       emitHostEvent(`session:status:${id}`, `error:${errMsg}`);
+      telemetryCapture("session_setup_recovered", {
+        action: "retry",
+        success: false,
+      });
     });
 }
 
