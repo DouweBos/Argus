@@ -14,6 +14,9 @@
   final class DevDriver {
     private let dir: URL
     private var timer: Timer?
+    /// The menu being tracked right now, if a click opened one.
+    private var trackedMenu: NSMenu?
+    private var menuObservers: [NSObjectProtocol] = []
 
     static func startIfConfigured() -> DevDriver? {
       guard let path = ProcessInfo.processInfo.environment["ARGUS_DEV_DRIVER"] else { return nil }
@@ -28,6 +31,19 @@
     }
 
     private func start() {
+      let center = NotificationCenter.default
+      menuObservers.append(
+        center.addObserver(forName: NSMenu.didBeginTrackingNotification, object: nil, queue: nil) {
+          [weak self] note in
+          // Posted on the main thread, by the menu that just opened.
+          nonisolated(unsafe) let menu = note.object as? NSMenu
+          MainActor.assumeIsolated { self?.trackedMenu = menu }
+        })
+      menuObservers.append(
+        center.addObserver(forName: NSMenu.didEndTrackingNotification, object: nil, queue: nil) {
+          [weak self] _ in
+          MainActor.assumeIsolated { self?.trackedMenu = nil }
+        })
       let timer = Timer(timeInterval: 0.2, repeats: true) { [weak self] _ in
         MainActor.assumeIsolated { self?.poll() }
       }
@@ -86,6 +102,16 @@
         }
         let point = NSPoint(x: x, y: window.frame.height - y)
         return ["ok": click(at: point, in: window, count: command["count"] as? Int ?? 1)]
+      case "rightClickAt":
+        guard let x = command["x"] as? Double, let y = command["y"] as? Double,
+          let event = NSEvent.mouseEvent(
+            with: .rightMouseDown, location: NSPoint(x: x, y: window.frame.height - y),
+            modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1,
+            pressure: 1)
+        else { return ["error": "x, y?"] }
+        window.sendEvent(event)
+        return ["ok": true]
       case "key":
         return ["ok": key(command["key"] as? String ?? "", mods: command["mods"] as? [String] ?? [], in: window)]
       case "type":
@@ -110,6 +136,48 @@
         else { return ["error": "no link on that text"] }
         let handled = text.delegate?.textView?(text, clickedOnLink: link, at: range.location) ?? false
         return ["ok": handled, "link": "\(link)"]
+      case "menuItems":
+        guard let menu = trackedMenu else { return ["error": "no menu open"] }
+        return ["items": menu.items.map { ($0.state == .on ? "✓ " : "") + $0.title }]
+      case "menuPick", "menuCancel":
+        guard let menu = trackedMenu else { return ["error": "no menu open"] }
+        if command["op"] as? String == "menuCancel" {
+          menu.cancelTracking()
+          return ["ok": true]
+        }
+        guard let title = command["title"] as? String,
+          let index = menu.items.firstIndex(where: { $0.title == title })
+        else { return ["error": "no such item", "items": menu.items.map(\.title)] }
+        menu.cancelTracking()
+        menu.performActionForItem(at: index)
+        return ["ok": true]
+      case "dropFiles":
+        // A drag onto the chat input from a private pasteboard: the general
+        // one belongs to whoever is using this machine.
+        guard let paths = command["paths"] as? [String], let content = window.contentView,
+          let input = textViews(in: content).last(where: { $0.isEditable && !$0.isFieldEditor })
+        else { return ["error": "paths? / no input"] }
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("argus-dev-drop"))
+        pasteboard.clearContents()
+        pasteboard.writeObjects(paths.map { URL(fileURLWithPath: $0) as NSURL })
+        let info = FakeDraggingInfo(pasteboard: pasteboard, window: window)
+        _ = input.draggingEntered(info)
+        return ["ok": input.performDragOperation(info)]
+      case "newSession":
+        // What ⌘N does; SwiftUI only enables menu commands while the app is active.
+        AppDelegate.current?.model.requestNewSession()
+        return ["ok": true]
+      case "state":
+        let model = AppDelegate.current?.model
+        let item = menuItem("New Session…", in: NSApp.mainMenu)
+        item?.menu?.update()
+        return [
+          "projects": model?.store.projects.count ?? -1,
+          "route": "\(model.map { $0.route } as Any)",
+          "newSessionEnabled": item?.isEnabled ?? false,
+          "newSessionTarget": "\(item?.target as Any)",
+          "sheet": window.attachedSheet != nil,
+        ]
       case "focus":
         // The chat input: the one editable text view outside the find bar.
         guard let content = window.contentView,
@@ -132,6 +200,8 @@
       case "menu":
         guard let title = command["title"] as? String, let item = menuItem(title, in: NSApp.mainMenu)
         else { return ["error": "no menu item"] }
+        // Validation normally runs when the menu opens; nothing opened it here.
+        item.menu?.update()
         guard item.isEnabled, let action = item.action else { return ["error": "disabled"] }
         return ["ok": NSApp.sendAction(action, to: item.target, from: item)]
       default:
@@ -255,4 +325,31 @@
   }
 
 
+
+  /// Just enough of a drag for a drop target to read its pasteboard.
+  @MainActor final class FakeDraggingInfo: NSObject, @preconcurrency NSDraggingInfo {
+    let draggingPasteboard: NSPasteboard
+    let draggingDestinationWindow: NSWindow?
+    init(pasteboard: NSPasteboard, window: NSWindow) {
+      draggingPasteboard = pasteboard
+      draggingDestinationWindow = window
+    }
+    var draggingSourceOperationMask: NSDragOperation { .copy }
+    var draggingLocation: NSPoint { .zero }
+    var draggedImageLocation: NSPoint { .zero }
+    var draggedImage: NSImage? { nil }
+    var draggingSource: Any? { nil }
+    var draggingSequenceNumber: Int { 1 }
+    func slideDraggedImage(to screenPoint: NSPoint) {}
+    var draggingFormation: NSDraggingFormation = .default
+    var animatesToDestination = false
+    var numberOfValidItemsForDrop = 1
+    func enumerateDraggingItems(
+      options enumOpts: NSDraggingItemEnumerationOptions = [], for view: NSView?,
+      classes classArray: [AnyClass], searchOptions: [NSPasteboard.ReadingOptionKey: Any] = [:],
+      using block: (NSDraggingItem, Int, UnsafeMutablePointer<ObjCBool>) -> Void
+    ) {}
+    var springLoadingHighlight: NSSpringLoadingHighlight { .none }
+    func resetSpringLoading() {}
+  }
 #endif
