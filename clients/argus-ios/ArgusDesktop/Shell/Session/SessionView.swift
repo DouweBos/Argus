@@ -113,7 +113,9 @@ struct AgentPane: View {
   var body: some View {
     VStack(spacing: 0) {
       TranscriptView(agentKey: agentId, sessionId: sessionId, fixture: TranscriptStress.fixture)
-      ChatInputView(agentId: agentId, sessionId: sessionId)
+      ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
+        MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))
+      }
     }
     .task {
       await store.watchAgent(agentId, on: true)
