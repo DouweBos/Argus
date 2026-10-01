@@ -23,9 +23,10 @@ enum TranscriptStyle {
 
   static let accent = dynamic(light: Theme.light.accent, dark: Theme.dark.accent)
   static let matchBackground = dynamic(
-    light: Theme.light.accent.opacity(0.28), dark: Theme.dark.accent.opacity(0.32))
-  static let currentMatchBackground = dynamic(light: Theme.light.accent, dark: Theme.dark.accent)
-  static let currentMatchText = dynamic(light: Theme.light.onAccent, dark: Theme.dark.onAccent)
+    light: Theme.light.accent.opacity(0.22), dark: Theme.dark.accent.opacity(0.25))
+  /// Strong enough to find at a glance, light enough to keep the text readable.
+  static let currentMatchBackground = dynamic(
+    light: Theme.light.accent.opacity(0.6), dark: Theme.dark.accent.opacity(0.65))
 
   private static func dynamic(light: Color, dark: Color) -> NSColor {
     let light = NSColor(light)
