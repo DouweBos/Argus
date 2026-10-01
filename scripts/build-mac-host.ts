@@ -223,6 +223,9 @@ function isSignedBy(file: string, identity: string): boolean {
   }
   // `codesign -dvv` reports on stderr; ad-hoc signatures carry no authority.
   const info = spawnSync("codesign", ["-dvv", file], { encoding: "utf8" });
+  if (!/flags=0x[0-9a-f]+\(.*runtime.*\)/.test(info.stderr)) {
+    return false;
+  }
 
   return identity === "-"
     ? info.stderr.includes("Signature=adhoc")
