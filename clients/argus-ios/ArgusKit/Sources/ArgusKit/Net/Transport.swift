@@ -207,6 +207,15 @@ public actor Transport {
     try await send(C.name, params, as: C.Result.self)
   }
 
+  /// A request by wire name, for callers that hold the name rather than the
+  /// command type.
+  @discardableResult
+  public func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
+    name: String, _ params: Params, as _: Result.Type = Result.self
+  ) async throws -> Result {
+    try await send(name, params, as: Result.self)
+  }
+
   private func send<Params: Encodable, Result: Decodable>(
     _ method: String,
     _ params: Params,
