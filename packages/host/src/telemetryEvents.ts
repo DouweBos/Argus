@@ -66,6 +66,7 @@ export interface EventMap {
     badge_cleared: boolean;
     outcome: "ok" | "rate_limited" | "reauth" | "unknown";
   };
+  host_lock_handover: { holder: "cli" | "electron" | "mac" };
   onboarding_completed: undefined;
   proposal_start_failed: {
     stage: "creating_worktree" | "setting_up" | "starting_agent";
