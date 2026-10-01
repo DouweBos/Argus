@@ -186,7 +186,11 @@ class Emitter {
   private readonly decls: string[] = [];
   private readonly emitted = new Set<string>();
 
-  constructor(private readonly defs: Record<string, JsonSchema> = {}) {}
+  constructor(
+    private readonly defs: Record<string, JsonSchema> = {},
+    /** What a self-reference (`$ref: "#"`) in a recursive schema names. */
+    private readonly root = "JSONValue",
+  ) {}
 
   output(): string {
     return this.decls.join("\n");
@@ -266,6 +270,9 @@ class Emitter {
   }
 
   private refName(ref: string): string {
+    if (ref === "#") {
+      return this.root;
+    }
     const name = ref.replace(/^#\/\$defs\//, "");
     const def = this.defs[name];
     if (def && !this.emitted.has(name) && !MODEL_NAMES.has(name)) {
@@ -546,7 +553,7 @@ function rootType(
     return named;
   }
   const json = toJson(schema);
-  const scoped = new Emitter(defsOf(json));
+  const scoped = new Emitter(defsOf(json), fallbackName);
   const type = scoped.typeFor(json, fallbackName);
   emitter.append(scoped);
 
@@ -563,7 +570,7 @@ function modelsFile(): string {
     a.localeCompare(b),
   )) {
     const json = toJson(schema);
-    const scoped = new Emitter(defsOf(json));
+    const scoped = new Emitter(defsOf(json), name);
     scoped.declareNamed(name, json);
     emitter.append(scoped);
   }
@@ -572,6 +579,55 @@ function modelsFile(): string {
 extension ${NAMESPACE} {
 ${emitter.output()}}
 `;
+}
+
+/**
+ * Inline params/result types live in their own enum per family, so a raw
+ * command and a typed method that pascal-case alike (`claude_accounts_add`,
+ * `claude_accounts.add`) never collide, and a command enum never shadows a
+ * model of the same name (`git_commit` vs `GitCommit`).
+ */
+function familyFile(
+  family: string,
+  doc: string,
+  body: string[],
+  decls: Emitter,
+): string {
+  return `${HEADER}
+extension ${NAMESPACE} {
+  /// Params and result types for \`${family}\` that no model names.
+  public enum ${family}Types {
+${indentLines(decls.output())}  }
+
+  /// ${doc}
+  public enum ${family} {
+${body.join("\n\n")}
+  }
+}
+`;
+}
+
+function indentLines(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => (line ? `  ${line}` : line))
+    .join("\n");
+}
+
+const BUILTINS =
+  /^(String|Int|Double|Bool|JSONValue|IgnoredResult|EmptyParams)$/;
+
+/** Resolve a type named inside a family to a fully qualified Swift type. */
+function qualify(type: string, family: string): string {
+  return type.replace(/\b([A-Z][A-Za-z0-9_]*)\b/g, (m) => {
+    if (BUILTINS.test(m)) {
+      return m;
+    }
+
+    return MODEL_NAMES.has(m)
+      ? `${NAMESPACE}.${m}`
+      : `${NAMESPACE}.${family}Types.${m}`;
+  });
 }
 
 function commandsFile(): string {
@@ -584,24 +640,19 @@ function commandsFile(): string {
     const params = rootType(emitter, spec.params, `${base}Params`);
     const result = rootType(emitter, spec.result, `${base}Result`);
     entries.push(`    public enum ${base}: RemoteCommand {
-      public typealias Params = ${qualifyNested(stripOptional(params))}
-      public typealias Result = ${resultType(result)}
+      public typealias Params = ${qualify(stripOptional(params), "Commands")}
+      public typealias Result = ${qualify(result, "Commands")}
       public static let name = ${swiftString(name)}
       public static let tier = ${swiftString(spec.tier)}
     }`);
   }
 
-  return `${HEADER}
-extension ${NAMESPACE} {
-${emitter.output()}}
-
-extension ${NAMESPACE} {
-  /// Every raw host command, for a client holding the admin tier.
-  public enum Commands {
-${entries.join("\n\n")}
-  }
-}
-`;
+  return familyFile(
+    "Commands",
+    "Every raw host command, for a client holding the admin tier.",
+    entries,
+    emitter,
+  );
 }
 
 function methodsFile(): string {
@@ -616,23 +667,18 @@ function methodsFile(): string {
       ? rootType(emitter, results[name], `${base}Result`)
       : "IgnoredResult";
     entries.push(`    public enum ${base}: RemoteCommand {
-      public typealias Params = ${qualifyNested(stripOptional(p))}
-      public typealias Result = ${resultType(r)}
+      public typealias Params = ${qualify(stripOptional(p), "Methods")}
+      public typealias Result = ${qualify(r, "Methods")}
       public static let name = ${swiftString(name)}
     }`);
   }
 
-  return `${HEADER}
-extension ${NAMESPACE} {
-${emitter.output()}}
-
-extension ${NAMESPACE} {
-  /// The typed remote methods (\`REMOTE_METHODS\`), monitor and control tier.
-  public enum Methods {
-${entries.join("\n\n")}
-  }
-}
-`;
+  return familyFile(
+    "Methods",
+    "The typed remote methods (`REMOTE_METHODS`), monitor and control tier.",
+    entries,
+    emitter,
+  );
 }
 
 function eventsFile(): string {
@@ -643,39 +689,21 @@ function eventsFile(): string {
     const base = pascal(name);
     const type = rootType(emitter, events[name], `${base}Payload`);
     entries.push(
-      `    /// \`${name}\`\n    public typealias ${base} = ${resultType(type)}`,
+      `    /// \`${name}\`\n    public typealias ${base} = ${qualify(type, "Events")}`,
     );
   }
 
-  return `${HEADER}
-extension ${NAMESPACE} {
-${emitter.output()}}
-
-extension ${NAMESPACE} {
-  /// Payloads of the events the gateway pushes, by event name.
-  public enum Events {
-${entries.join("\n")}
-  }
-}
-`;
+  return familyFile(
+    "Events",
+    "Payloads of the events the gateway pushes, by event name.",
+    entries,
+    emitter,
+  );
 }
 
 /** Params must be a concrete struct; primitives and optionals are wrapped. */
 function stripOptional(type: string): string {
   return type.replace(/\?$/, "");
-}
-
-/** Generated types live in the namespace; Swift and ArgusKit types don't. */
-function resultType(type: string): string {
-  return qualifyNested(type);
-}
-
-function qualifyNested(type: string): string {
-  return type.replace(/\b([A-Z][A-Za-z0-9_]*)\b/g, (m) =>
-    /^(String|Int|Double|Bool|JSONValue|IgnoredResult|EmptyParams)$/.test(m)
-      ? m
-      : `${NAMESPACE}.${m}`,
-  );
 }
 
 function namespaceFile(): string {
