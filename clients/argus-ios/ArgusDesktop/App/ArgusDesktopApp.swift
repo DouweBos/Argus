@@ -13,6 +13,11 @@ struct ArgusDesktopApp: App {
         .frame(minWidth: 960, minHeight: 600)
     }
     .commands {
+      CommandGroup(replacing: .newItem) {
+        Button("New Session…") { delegate.model.requestNewSession() }
+          .keyboardShortcut("n", modifiers: .command)
+          .disabled(delegate.model.store.projects.isEmpty)
+      }
       CommandGroup(after: .sidebar) {
         Button("Back") { delegate.model.goBack() }
           .keyboardShortcut("[", modifiers: .command)
