@@ -92,6 +92,7 @@ that a headless Node host turns into no-ops: `notify`, `isForeground`,
 clients/argus-ios/                     (rename to clients/apple/ at the end of M0)
 ├── ArgusKit/        existing: protocol, Noise, generated types
 │   └── + LocalTransport (UDS, no Noise) behind the same Transport API
+├── ArgusCore/       NEW package, iOS 18 + macOS 15: stores + pure logic, no SwiftUI
 ├── ArgusUI/         NEW package, iOS 18 + macOS 15:
 │                    design system, markdown, transcript rows, tool-call cards,
 │                    permission forms, diff lines, device video view, image viewer
@@ -105,11 +106,16 @@ clients/argus-ios/                     (rename to clients/apple/ at the end of M
   - the layout-neutral 23% moves as-is;
   - the 45% that's neutral content in iOS chrome moves with the chrome stripped;
   - the 32% UIKit-bound part gets `#if canImport(UIKit)` adapters (`UIImage`/`NSImage`, the paste text view, the video layer).
-- **Stores:** iOS stores speak the typed `monitor`/`control` methods and refetch
-  snapshots; the Mac needs admin commands and live `ipc` events. Shared stores
-  sit behind a small `Backend` protocol only where the data is the same
-  (automations, proposals, PRs, Claude accounts). Agent, session, terminal, git
-  and device state are new Mac stores driven by events.
+- **Business logic is shared too, not just views.** A new `ArgusCore` package
+  holds the stores (projects, sessions, agents and transcript merging, queue,
+  permissions, automations, proposals, PRs, Claude accounts, devices) and the
+  pure logic now in `ArgusRemote/Stores` and ArgusKit utilities (tool grouping,
+  markdown blocks, mention search). Stores talk to a `HostBackend` protocol with
+  two implementations: `GatewayBackend` (iOS today: typed `monitor`/`control`
+  methods, snapshot refetch) and `LocalBackend` (Mac: admin commands and live
+  `ipc` events). The iOS app moves onto `ArgusCore` in the same change, so there
+  is one copy of each store. Only phone-only state (push registration, pairing
+  scanner) stays in `ArgusRemote`.
 - **Routing:** one `Route` model mirroring [`docs/routing.md`](../docs/routing.md),
   the single source of "which screen", as on the web side.
 
@@ -124,7 +130,7 @@ Each milestone ends with a usable beta build. Work is committed per feature, as
 - Packaging: `scripts/build-mac-host.ts` stages the Node runtime, `dist-host`, node-pty and resources into `Resources/host/`.
   - Driven by an Xcode build phase.
   - Signed with hardened runtime. Node needs `allow-jit`, `allow-unsigned-executable-memory`, and `disable-library-validation` for `.node` files.
-- Swift side: create the ArgusUI package; add the ArgusDesktop target; add `LocalTransport` and `HostSupervisor`.
+- Swift side: create the ArgusCore and ArgusUI packages and move the iOS app onto them; add the ArgusDesktop target; add `LocalTransport` and `HostSupervisor`.
 - Window: a three-panel `NavigationSplitView` showing projects and sessions from `state_hydrate`, live over `session:*` events.
 - Notarized local build with the host-lock handover.
 
