@@ -69,8 +69,11 @@ struct TranscriptView: View {
         if follow.userScrolling { follow.atBottom = new.isAtBottom }
       }
       .onScrollPhaseChange { _, phase, context in
+        let wasUser = follow.userScrolling
         follow.userScrolling = phase == .interacting || phase == .decelerating || phase == .tracking
-        if phase == .idle {
+        // Settling after our own `scrollTo` while rows are still measuring
+        // says nothing about where the reader wants to be.
+        if phase == .idle, wasUser {
           let geometry = context.geometry
           follow.atBottom =
             geometry.contentOffset.y + geometry.containerSize.height >= geometry.contentSize.height - 40
