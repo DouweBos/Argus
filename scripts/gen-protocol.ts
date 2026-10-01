@@ -19,7 +19,7 @@ import { error, info } from "../app/lib/logger";
 
 const OUT_DIR = path.resolve(
   import.meta.dirname,
-  "../clients/argus-ios/ArgusKit/Sources/ArgusKit/Generated",
+  "../clients/apple/ArgusKit/Sources/ArgusKit/Generated",
 );
 const NAMESPACE = "ArgusProtocol";
 

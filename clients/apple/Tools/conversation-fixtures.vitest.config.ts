@@ -10,6 +10,6 @@ export default defineConfig({
   root: path.resolve(__dirname, "../../.."),
   test: {
     ...root.test,
-    include: ["clients/argus-ios/Tools/gen-conversation-fixtures.ts"],
+    include: ["clients/apple/Tools/gen-conversation-fixtures.ts"],
   },
 });

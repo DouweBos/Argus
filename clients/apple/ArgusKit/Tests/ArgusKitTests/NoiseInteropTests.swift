@@ -6,7 +6,7 @@ import Testing
 /// (`packages/host/src/services/remote/noise.ts`) — the peer this port actually
 /// handshakes with. If any of these fail, no phone will complete a handshake.
 ///
-/// Regenerate with the script documented in `clients/argus-ios/README.md`.
+/// Regenerate with the script documented in `clients/apple/README.md`.
 struct NoiseVectors: Decodable {
   struct Run: Decodable {
     var psk: String?

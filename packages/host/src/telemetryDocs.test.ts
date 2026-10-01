@@ -22,16 +22,16 @@ const DOC = path.join(REPO, "docs/telemetry-events.md");
 const HOST_CATALOG = path.join(REPO, "packages/host/src/telemetryEvents.ts");
 const IOS_CATALOG = path.join(
   REPO,
-  "clients/argus-ios/ArgusRemote/Telemetry/TelemetryEvent.swift",
+  "clients/apple/ArgusRemote/Telemetry/TelemetryEvent.swift",
 );
 const MAC_CATALOG = path.join(
   REPO,
-  "clients/argus-ios/ArgusDesktop/Telemetry/MacTelemetryEvent.swift",
+  "clients/apple/ArgusDesktop/Telemetry/MacTelemetryEvent.swift",
 );
 /** Where a `capture(...)` call can plausibly live. */
 const HOST_SOURCES = ["packages", "app", "electron", "clients/argus-web/src"];
-const IOS_SOURCES = ["clients/argus-ios/ArgusRemote"];
-const MAC_SOURCES = ["clients/argus-ios/ArgusDesktop"];
+const IOS_SOURCES = ["clients/apple/ArgusRemote"];
+const MAC_SOURCES = ["clients/apple/ArgusDesktop"];
 
 /**
  * Events whose prop shape PostHog dictates rather than us. They're documented

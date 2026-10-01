@@ -5,7 +5,7 @@ import Testing
 @testable import ArgusCore
 
 // Replays each fixture generated from the renderer's conversationStore and the
-// host's `agents.transcript` (clients/argus-ios/Tools/gen-conversation-fixtures.ts)
+// host's `agents.transcript` (clients/apple/Tools/gen-conversation-fixtures.ts)
 // and asserts the Swift port produces the same JSON at every step.
 
 private let fixtureNames = [

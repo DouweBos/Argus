@@ -10,7 +10,7 @@ Electron agentic IDE for mobile development. Multiple Claude Code agents work in
 - `pnpm hotswap` — build, splice into the installed `/Applications/Argus.app`, re-sign, and relaunch it (`--no-restart`, `--no-build`, `--web`; `ARGUS_APP`/`ARGUS_SIGN_IDENTITY` to retarget). Needs the Developer ID cert in the keychain — writing to the asar breaks the sealed-resource hash and macOS rejects the app as damaged without a re-sign. Agents can run this to ship their own change into the live app; the relaunch is detached, so it survives the app going down.
 - `pnpm lint` — `tsc --noEmit && eslint && prettier --check`, plus `pnpm gen:protocol --check`
 - `pnpm build:mac-host --out <dir> [--sign <identity>]` — stage Node + `dist-host` + node-pty + resources for the Mac app (its Xcode build phase runs it)
-- `swift test` in `clients/argus-ios/{ArgusKit,ArgusCore,ArgusUI}`; `xcodebuild -project clients/argus-ios/ArgusRemote.xcodeproj -scheme ArgusDesktop -destination 'platform=macOS' build` for the Mac app. Debug Mac builds ("Argus Dev") default to `~/.argus-mac-dev` — never point a dev build at `~/.argus`, and never drive the running Argus with UI scripting
+- `swift test` in `clients/apple/{ArgusKit,ArgusCore,ArgusUI}`; `xcodebuild -project clients/apple/ArgusRemote.xcodeproj -scheme ArgusDesktop -destination 'platform=macOS' build` for the Mac app. Debug Mac builds ("Argus Dev") default to `~/.argus-mac-dev` — never point a dev build at `~/.argus`, and never drive the running Argus with UI scripting
 - `pnpm gen:protocol` — regenerate ArgusKit's Swift wire types (`ArgusKit/Sources/ArgusKit/Generated/`) from the command catalog
 - `pnpm dev:host` / `pnpm start:host` — the host core as a plain Node process (`dist-host/argus-host.js`, no Electron). Prints the gateway address; type `pair` to pair a device from the terminal
 - `pnpm storybook` — Peacock design system at :6006
@@ -23,7 +23,7 @@ pnpm monorepo. Three-panel layout: workspace sidebar / agent control / runtime &
 - `packages/peacock` → `@argus/peacock` design system (tokens, icons, components)
 - `packages/host` → `@argus/host` host core — sessions, agents, git, terminals, simulators, the command registry. **Plain Node, never imports `electron`** (enforced by `packages/host/src/noElectron.test.ts` and a `no-restricted-imports` rule)
 - `app/` + `electron/` → desktop app, consumes both via `workspace:*`
-- `clients/argus-ios` → the native Swift apps, one Xcode project (`ArgusRemote.xcodeproj`):
+- `clients/apple` → the native Swift apps, one Xcode project (`ArgusRemote.xcodeproj`):
   - `ArgusKit` (protocol, Noise, generated wire types, `Transport` for the gateway, `LocalTransport` for the host's UI socket), `ArgusCore` (the shared stores behind a `HostBackend`: `GatewayBackend` for the phone, `LocalBackend` for the Mac; the transcript reducer; `HostSupervisor`; no SwiftUI), `ArgusUI` (design system + shared views, iOS 18 and macOS 15)
   - `ArgusRemote` — the iOS app shell. `ArgusDesktop` — the native Mac app (beta, see `docs/mac-app.md`): bundles and supervises the Node host and talks to it over `$ARGUS_HOME/host.sock`
 
@@ -112,7 +112,7 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 
 **The Mac app is the desktop's successor.** It ships as a beta next to Electron until `plan/swiftui-parity.md` is ticked. Once it is the product, every new desktop feature lands there too, in the same PR — until then, keep new desktop work portable (host commands, not renderer-only logic).
 
-**The iOS client is a first-class citizen.** Every feature you add or change on the desktop also lands in `clients/argus-ios` in the same PR. The only excuses are that it genuinely makes no sense on a phone (window management, tray, simulator HID injection) or that exposing it over the gateway is a real security risk — say which, don't just skip it. "Desktop first, phone later" is how the phone falls behind.
+**The iOS client is a first-class citizen.** Every feature you add or change on the desktop also lands in `clients/apple` in the same PR. The only excuses are that it genuinely makes no sense on a phone (window management, tray, simulator HID injection) or that exposing it over the gateway is a real security risk — say which, don't just skip it. "Desktop first, phone later" is how the phone falls behind.
 
 Adding one (worked example: `automations.revise_playbook`):
 
@@ -122,7 +122,7 @@ Adding one (worked example: `automations.revise_playbook`):
 4. `RemoteMethod` case in `ArgusKit/Sources/ArgusKit/Protocol/Envelopes.swift`, then a store method in `ArgusRemote/Stores/`
 5. UI in `ArgusRemote/Views/` or `Screens/`, gated on `app.hasControl` when the method is control-tier
 6. A new Swift file in `ArgusRemote` needs four `project.pbxproj` entries by hand (build file, file reference, group child, sources phase). Shared code belongs in `ArgusCore`/`ArgusUI` (SPM, no pbxproj edits); `ArgusDesktop` uses a file-system-synchronized group
-7. Verify with `xcodebuild -project clients/argus-ios/ArgusRemote.xcodeproj -scheme ArgusRemote -destination 'generic/platform=iOS Simulator' build` — `pnpm lint` does not see Swift
+7. Verify with `xcodebuild -project clients/apple/ArgusRemote.xcodeproj -scheme ArgusRemote -destination 'generic/platform=iOS Simulator' build` — `pnpm lint` does not see Swift
 
 **Worktrees:** `~/.argus/worktrees/{RepoName}-argus-worktrees/{branch}/`. Post-`git worktree add` setup (copy dirs, symlink files, run commands) configured in `.argus.json`.
 
@@ -141,7 +141,7 @@ Adding one (worked example: `automations.revise_playbook`):
 **Telemetry: a feature ships with the events that measure it.** Every user-facing behaviour you add or change gets events in the same commit — "there is no event for it yet" is a gap to close, not a reason to skip it. Ask what question the event answers ("is this used?", "does it fail?") and send the smallest thing that answers it.
 
 1. Host/desktop → add the name and prop shape to `EventMap` in `packages/host/src/telemetryEvents.ts`, capture from the host service that does the work.
-2. iOS → add a case to `TelemetryEvent` in `clients/argus-ios/ArgusRemote/Telemetry/TelemetryEvent.swift` and capture at the call site. Enum-with-payload there, `EventMap` here: wrong props must fail to compile.
+2. iOS → add a case to `TelemetryEvent` in `clients/apple/ArgusRemote/Telemetry/TelemetryEvent.swift` and capture at the call site. Enum-with-payload there, `EventMap` here: wrong props must fail to compile.
 3. **Never double-count.** If the host already captures something when the phone asks for it (`agent_started`, `session_created`, `session_merged`), the phone sends nothing. iOS events cover what the host cannot see: app lifecycle, navigation, pairing, and phone-local actions.
 4. Group by verb rather than minting a name per button — one event with an `action` enum (`ios_work_landed`, `ios_agent_controlled`) keeps the catalog readable.
 5. **Document it in [`docs/telemetry-events.md`](docs/telemetry-events.md)** — name, when it fires, every prop. That file is published to the website and is the overview people are owed. `packages/host/src/telemetryDocs.test.ts` reads both catalogs and the doc and fails on any disagreement: an undocumented event or prop, a documented event no catalog has, or a catalog entry nothing ever captures. Don't weaken the test to land a change — document the event.

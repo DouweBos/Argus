@@ -1,4 +1,10 @@
-# Argus Remote (iOS)
+# Argus for iPhone, iPad and Mac
+
+Two apps share this Xcode project and its packages: **ArgusRemote**, the iOS
+app described below, and **ArgusDesktop**, the native Mac app (beta) that
+bundles and supervises the Node host — see [`docs/mac-app.md`](../../docs/mac-app.md).
+
+## Argus Remote (iOS)
 
 Drive your Argus agents from an iPhone or iPad. Pairs with one or more
 desktops over an end-to-end-encrypted channel (Noise IK); the home screen
@@ -42,7 +48,7 @@ the repo and CI doesn't depend on Xcode autocreating one.
 ## Build
 
 ```sh
-open clients/argus-ios/ArgusRemote.xcodeproj
+open clients/apple/ArgusRemote.xcodeproj
 ```
 
 From the command line:
@@ -68,12 +74,12 @@ the Swift port is asserted against them:
 | `noise-vectors.json` | `packages/host/src/services/remote/noise.ts` | IK and IKpsk1 handshakes, transport frames, SAS, pairing PSK |
 | `diff-sample.json` | `app/lib/diffParser.ts` | unified-diff parsing over a real four-status `git diff` |
 | `linked-projects.json` | `app/lib/linkedProjectsPreamble.ts` | the message preamble, which is also a live instruction to the agent |
-| `ArgusCore/…/Fixtures/conversation/*.json` | `app/stores/conversationStore.ts` + the host's `agents.transcript`, via `pnpm exec vitest run --config clients/argus-ios/Tools/conversation-fixtures.vitest.config.ts` | the agent transcript reducer's snapshot after every event, and the `RemoteMessage` pages built from it |
+| `ArgusCore/…/Fixtures/conversation/*.json` | `app/stores/conversationStore.ts` + the host's `agents.transcript`, via `pnpm exec vitest run --config clients/apple/Tools/conversation-fixtures.vitest.config.ts` | the agent transcript reducer's snapshot after every event, and the `RemoteMessage` pages built from it |
 
 Regenerate the Noise vectors after any change to the shared crypto:
 
 ```sh
-cd clients/argus-ios
+cd clients/apple
 ../../node_modules/.bin/esbuild Tools/generate-noise-vectors.ts \
   --bundle --platform=node --format=esm --outfile=/tmp/gen.mjs
 node /tmp/gen.mjs > ArgusKit/Tests/ArgusKitTests/Fixtures/noise-vectors.json

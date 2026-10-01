@@ -38,7 +38,7 @@ enum TranscriptStress {
               I read **ArgusDesktop/Shell/Session/SessionView.swift:42** and the `HostStore` — here is what I found about message \(index):
 
               - The transcript renders *markdown* with [links](https://example.com/\(index)).
-              - Paths like ./clients/argus-ios/README.md and /tmp/argus/file\(index).ts:3:9 are links.
+              - Paths like ./clients/apple/README.md and /tmp/argus/file\(index).ts:3:9 are links.
               - A needle hides in here.
 
               ```swift
