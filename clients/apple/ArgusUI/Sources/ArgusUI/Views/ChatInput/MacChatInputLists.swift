@@ -72,7 +72,11 @@
           Text("/\(command.name)")
             .font(.system(size: 13, design: .monospaced))
             .foregroundStyle(theme.text)
-            .fixedSize()
+            // Truncated, not fixed: a plugin's long command name would otherwise
+            // widen the whole column and push the sidebar off the window.
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .layoutPriority(1)
           if !command.argumentHint.isEmpty {
             Text(command.argumentHint)
               .font(.system(size: 12, design: .monospaced))
