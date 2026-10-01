@@ -46,10 +46,12 @@ public final class LocalBackend: HostBackend {
     try await transport.request(method, params, as: Result.self)
   }
 
+  /// By wire name: handing the command's metatype across the actor boundary
+  /// trips Swift 6's sending checks.
   public func request<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws
     -> C.Result
   {
-    try await transport.request(command, params)
+    try await transport.request(method: C.name, params, as: C.Result.self)
   }
 
   /// A local-only `ui.*` method.
