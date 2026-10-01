@@ -17,6 +17,13 @@ final class TranscriptModel {
   private(set) var hitsByUnit: [String: [NSRange]] = [:]
   /// Bumped on every step, so the row holding the match scrolls it into view.
   private(set) var revealToken = 0
+  /// The last token a text view acted on. Unobserved, and kept here rather
+  /// than in the view: the lazy stack recreates rows, and a fresh view must
+  /// not scroll back to a match the reader has since moved away from.
+  @ObservationIgnored var revealedToken = 0
+
+  /// The token for a row holding the current match, or 0 once it's been shown.
+  var pendingReveal: Int { revealedToken >= revealToken ? 0 : revealToken }
   @ObservationIgnored private var navigated = false
 
   // MARK: Rows
@@ -73,11 +80,19 @@ final class TranscriptModel {
 
   /// Re-runs the query over `messages`, keeping the current match where it
   /// still exists so new output doesn't yank the reader to the first hit.
-  func search(_ messages: [RemoteMessage]) {
+  ///
+  /// Messages not rendered yet are rendered in batches with the run loop
+  /// turning between them, so the first search of a long transcript never
+  /// freezes the window. A newer query cancels this one.
+  func search(_ messages: [RemoteMessage]) async {
     var units: [TranscriptSearch.Unit] = []
     units.reserveCapacity(messages.count * 2)
     if !query.trimmingCharacters(in: .whitespaces).isEmpty {
-      for message in messages {
+      for (index, message) in messages.enumerated() {
+        if index % 100 == 99 {
+          try? await Task.sleep(for: .milliseconds(1))
+          if Task.isCancelled { return }
+        }
         if let text = text(for: message) {
           units.append(.init(id: Self.textUnit(message.id), text: text.string))
         }

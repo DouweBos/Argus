@@ -42,7 +42,8 @@ struct TranscriptMessageRow: View {
     let current = model.currentHit.flatMap { $0.unitId == unit ? $0.range : nil }
     return TranscriptText(
       text: text, highlights: model.hitsByUnit[unit] ?? [], current: current,
-      revealToken: current == nil ? 0 : model.revealToken, fills: !isUser
+      revealToken: current == nil ? 0 : model.pendingReveal, fills: !isUser,
+      onRevealed: { model.revealedToken = $0 }
     )
     .padding(.horizontal, isUser ? 12 : 0)
     .padding(.vertical, isUser ? 8 : 0)
