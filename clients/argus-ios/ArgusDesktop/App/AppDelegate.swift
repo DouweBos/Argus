@@ -6,10 +6,14 @@ import ArgusCore
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
   let model = DesktopModel()
+  /// SwiftUI owns the delegate; a signal handler needs a way back to it.
+  private(set) static weak var current: AppDelegate?
   private var terminating = false
+  var skipQuitConfirmation = false
   private var signalSource: DispatchSourceSignal?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
+    Self.current = self
     // Another app taking over this Argus home asks us to quit with SIGTERM;
     // treat it as ⌘Q so the host still shuts down cleanly.
     signal(SIGTERM, SIG_IGN)
@@ -26,7 +30,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private nonisolated static func terminateFromSignal() {
     let main = CFRunLoopGetMain()
     CFRunLoopPerformBlock(main, CFRunLoopMode.commonModes.rawValue) {
-      MainActor.assumeIsolated { NSApp.terminate(nil) }
+      MainActor.assumeIsolated {
+        // Whoever sent it (another Argus taking over) already asked the user.
+        AppDelegate.current?.skipQuitConfirmation = true
+        NSApp.terminate(nil)
+      }
     }
     CFRunLoopWakeUp(main)
   }
@@ -38,7 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     if terminating { return .terminateLater }
     let running = model.runningAgentCount
-    if running > 0, !confirmQuit(runningAgents: running) {
+    if running > 0, !skipQuitConfirmation, !confirmQuit(runningAgents: running) {
       return .terminateCancel
     }
     terminating = true
