@@ -884,7 +884,9 @@ app.whenReady().then(() => {
     // mini awake for as long as the server runs.
     app.dock?.hide();
     startPowerAssertion();
-  } else if (process.platform === "darwin" && app.dock) {
+  } else if (isDev && process.platform === "darwin" && app.dock) {
+    // Packaged builds keep the bundle icon: a runtime icon would pin the light
+    // variant over AppIcon.icon's dark and tinted appearances.
     const iconPath = resolveAppIconPath();
     if (iconPath) {
       const image = nativeImage.createFromPath(iconPath);
