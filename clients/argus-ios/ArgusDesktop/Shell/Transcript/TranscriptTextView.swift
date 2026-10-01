@@ -91,25 +91,30 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
   // MARK: Find highlights
 
   func setHighlights(_ ranges: [NSRange], current: NSRange?) {
-    guard highlighted.0 != ranges || highlighted.1 != current,
-      let layout = textLayoutManager
-    else { return }
+    guard highlighted.0 != ranges || highlighted.1 != current else { return }
     highlighted = (ranges, current)
-    layout.removeRenderingAttribute(.backgroundColor, for: layout.documentRange)
-    layout.removeRenderingAttribute(.foregroundColor, for: layout.documentRange)
-    for range in ranges {
-      guard let textRange = textRange(range) else { continue }
-      let isCurrent = range == current
-      layout.addRenderingAttribute(
-        .backgroundColor,
-        value: isCurrent ? TranscriptStyle.currentMatchBackground : TranscriptStyle.matchBackground,
-        for: textRange)
-      if isCurrent {
-        layout.addRenderingAttribute(
-          .foregroundColor, value: TranscriptStyle.currentMatchText, for: textRange)
+    needsDisplay = true
+  }
+
+  /// Matches are painted under the text from its segment rects. TextKit 2's
+  /// rendering attributes would need a validator pass on every fragment, and
+  /// changing them doesn't reliably redraw fragments already on screen.
+  override func draw(_ dirtyRect: NSRect) {
+    if !highlighted.0.isEmpty, let layout = textLayoutManager {
+      for range in highlighted.0 {
+        guard let textRange = textRange(range) else { continue }
+        let color = range == highlighted.1 ? TranscriptStyle.currentMatchBackground : TranscriptStyle.matchBackground
+        color.setFill()
+        layout.enumerateTextSegments(in: textRange, type: .highlight, options: []) { _, frame, _, _ in
+          let rect = frame.insetBy(dx: -1, dy: 0)
+          if rect.intersects(dirtyRect) {
+            NSBezierPath(roundedRect: rect, xRadius: 3, yRadius: 3).fill()
+          }
+          return true
+        }
       }
     }
-    needsDisplay = true
+    super.draw(dirtyRect)
   }
 
   /// Scrolls the enclosing transcript so `range` is on screen — a long message
