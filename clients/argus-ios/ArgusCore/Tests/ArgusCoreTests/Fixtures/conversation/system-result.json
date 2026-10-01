@@ -1,0 +1,1767 @@
+{
+  "name": "system-result",
+  "description": "system:init merging slash commands, results with usage/cost/modelUsage context windows, api_retry, status, setModel, setCapabilities.",
+  "clockStart": 1760000000000,
+  "ops": [
+    {
+      "op": "setCapabilities",
+      "capabilities": {
+        "commands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          }
+        ],
+        "models": [
+          {
+            "value": "default",
+            "displayName": "Default",
+            "description": "Opus 4.8 with 1M context"
+          }
+        ],
+        "account": {
+          "email": "dev@example.com"
+        },
+        "agents": [],
+        "availableOutputStyles": [
+          "default"
+        ],
+        "outputStyle": "default"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "system",
+        "subtype": "init",
+        "cwd": "/tmp/worktree",
+        "session_id": "cli-session-1",
+        "model": "claude-opus-4-8",
+        "permissionMode": "default",
+        "tools": [
+          {
+            "name": "Read"
+          },
+          {
+            "name": "Edit"
+          },
+          {
+            "name": "Bash"
+          },
+          {
+            "name": "Task"
+          }
+        ],
+        "slash_commands": [
+          "compact",
+          "review",
+          "commit"
+        ],
+        "skills": [
+          "commit",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "system",
+        "subtype": "status",
+        "status": "compacting"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "system",
+        "subtype": "api_retry",
+        "attempt": 1,
+        "max_retries": 10,
+        "retry_delay_ms": 1499,
+        "error_status": 529,
+        "error": "overloaded"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "system",
+        "subtype": "api_retry",
+        "attempt": 2,
+        "max_retries": 10,
+        "retry_delay_ms": 3000,
+        "error_status": null
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "system",
+        "subtype": "hook_response",
+        "hook_name": "x"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "rate_limit_event",
+        "rate_limit_info": {}
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "text",
+              "text": "Working."
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "duration_ms": 4200,
+        "duration_api_ms": 3900,
+        "num_turns": 2,
+        "result": "Done.",
+        "session_id": "cli-session-1",
+        "total_cost_usd": 0.0123,
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 80,
+          "cache_read_input_tokens": 9000
+        },
+        "modelUsage": {
+          "claude-opus-4-8": {
+            "inputTokens": 1200,
+            "outputTokens": 80,
+            "contextWindow": 1000000
+          },
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 300,
+            "contextWindow": 200000
+          }
+        }
+      }
+    },
+    {
+      "op": "setModel",
+      "model": "claude-sonnet-5"
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "duration_ms": 1000,
+        "duration_api_ms": 3900,
+        "num_turns": 2,
+        "result": "Done.",
+        "session_id": "cli-session-1",
+        "total_cost_usd": 0.5,
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 80,
+          "cache_read_input_tokens": 9000
+        },
+        "modelUsage": {
+          "claude-haiku-4-5-20251001": {
+            "contextWindow": 200000
+          },
+          "claude-x": {
+            "contextWindow": 400000
+          },
+          "bad": {
+            "contextWindow": 0
+          }
+        }
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "duration_api_ms": 3900,
+        "num_turns": 2,
+        "result": "Done.",
+        "session_id": "cli-session-1",
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 80,
+          "cache_read_input_tokens": 9000
+        },
+        "modelUsage": {}
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "result",
+        "subtype": "error",
+        "duration_ms": 10,
+        "total_cost_usd": 0,
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 80,
+          "cache_read_input_tokens": 9000
+        },
+        "modelUsage": {
+          "claude-sonnet-5": {
+            "contextWindow": 200000
+          }
+        }
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "system",
+        "subtype": "init",
+        "cwd": "/tmp/worktree",
+        "session_id": "cli-session-1",
+        "model": "claude-sonnet-5",
+        "permissionMode": "default",
+        "tools": [
+          {
+            "name": "Read"
+          }
+        ],
+        "slash_commands": [
+          "review",
+          "new-one"
+        ]
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "system",
+        "subtype": "session_state_changed",
+        "state": "idle"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "snapshot": {
+        "messages": [],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          }
+        ]
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "system",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ]
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "system",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ]
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "textBlocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          }
+        ],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "system:api_retry",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ]
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "textBlocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "textBlocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          }
+        ],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "system:api_retry",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ]
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "textBlocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "textBlocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          }
+        ],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "system:api_retry",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ]
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "textBlocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "textBlocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          }
+        ],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "system:api_retry",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ]
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "textBlocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "textBlocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Working."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "textBlocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "textBlocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Working."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "result",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "contextWindow": 1000000,
+        "totalCost": 0.0123,
+        "totalDuration": 4200
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "textBlocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "textBlocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Working."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "result",
+        "model": "claude-sonnet-5",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "contextWindow": 1000000,
+        "totalCost": 0.0123,
+        "totalDuration": 4200
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "textBlocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "textBlocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Working."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "result",
+        "model": "claude-sonnet-5",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "contextWindow": 400000,
+        "totalCost": 0.5123,
+        "totalDuration": 5200
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "textBlocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "textBlocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Working."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "result",
+        "model": "claude-sonnet-5",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "contextWindow": 400000,
+        "totalCost": 0.5123,
+        "totalDuration": 5200
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "textBlocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "textBlocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Working."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "result",
+        "model": "claude-sonnet-5",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "contextWindow": 200000,
+        "totalCost": 0.5123,
+        "totalDuration": 5210
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "textBlocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "textBlocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Working."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "new-one",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "system",
+        "model": "claude-sonnet-5",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read"
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "contextWindow": 200000,
+        "totalCost": 0.5123,
+        "totalDuration": 5210
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "textBlocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "textBlocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Working."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "capabilities": {
+          "commands": [
+            {
+              "name": "review",
+              "description": "Review the diff",
+              "argumentHint": "[pr]"
+            },
+            {
+              "name": "compact",
+              "description": "Compact context",
+              "argumentHint": ""
+            }
+          ],
+          "models": [
+            {
+              "value": "default",
+              "displayName": "Default",
+              "description": "Opus 4.8 with 1M context"
+            }
+          ],
+          "account": {
+            "email": "dev@example.com"
+          },
+          "agents": [],
+          "availableOutputStyles": [
+            "default"
+          ],
+          "outputStyle": "default"
+        },
+        "slashCommands": [
+          {
+            "name": "review",
+            "description": "Review the diff",
+            "argumentHint": "[pr]"
+          },
+          {
+            "name": "compact",
+            "description": "Compact context",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "new-one",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "lastEventType": "system:session_state_changed:idle",
+        "model": "claude-sonnet-5",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read"
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "contextWindow": 200000,
+        "totalCost": 0.5123,
+        "totalDuration": 5210
+      }
+    }
+  ],
+  "transcripts": [
+    {
+      "params": {},
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "system",
+            "text_blocks": [
+              "API retry 1/10 (HTTP 529) — retrying in 1s"
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "text_blocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [
+              "Working."
+            ],
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          }
+        ],
+        "next_after": null,
+        "prev_before": null,
+        "total": 3,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-sonnet-5",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "text_blocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [
+              "Working."
+            ],
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          }
+        ],
+        "next_after": null,
+        "prev_before": 1,
+        "total": 3,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-sonnet-5",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "after": 1,
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "text_blocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [
+              "Working."
+            ],
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          }
+        ],
+        "next_after": null,
+        "prev_before": 1,
+        "total": 3,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-sonnet-5",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "before": 2,
+        "limit": 1
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "system",
+            "text_blocks": [
+              "API retry 2/10 — retrying in 3s"
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000001000
+          }
+        ],
+        "next_after": 2,
+        "prev_before": 1,
+        "total": 3,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-sonnet-5",
+        "pending_tool_name": null
+      }
+    }
+  ]
+}

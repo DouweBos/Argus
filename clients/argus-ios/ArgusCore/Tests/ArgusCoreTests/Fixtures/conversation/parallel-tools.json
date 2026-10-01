@@ -1,0 +1,686 @@
+{
+  "name": "parallel-tools",
+  "description": "Several tool calls in one assistant message, results out of order.",
+  "clockStart": 1760000000000,
+  "ops": [
+    {
+      "op": "userMessage",
+      "text": "Look around."
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "text",
+              "text": "Running three in parallel."
+            },
+            {
+              "type": "tool_use",
+              "id": "p1",
+              "name": "Glob",
+              "input": {
+                "pattern": "**/*.swift"
+              }
+            },
+            {
+              "type": "tool_use",
+              "id": "p2",
+              "name": "Grep",
+              "input": {
+                "pattern": "TODO"
+              }
+            },
+            {
+              "type": "tool_use",
+              "id": "p3",
+              "name": "Read",
+              "input": {
+                "file_path": "README.md"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "p3",
+              "content": "# Readme"
+            },
+            {
+              "type": "tool_result",
+              "tool_use_id": "p1",
+              "content": "a.swift\nb.swift"
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "p2",
+              "content": "",
+              "is_error": false
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "duration_ms": 4200,
+        "duration_api_ms": 3900,
+        "num_turns": 2,
+        "result": "Done.",
+        "session_id": "cli-session-1",
+        "total_cost_usd": 0.0123,
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 80,
+          "cache_read_input_tokens": 9000
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Look around."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user_sent"
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Look around."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Running three in parallel."
+            ],
+            "toolCalls": [
+              {
+                "id": "p1",
+                "name": "Glob",
+                "input": {
+                  "pattern": "**/*.swift"
+                }
+              },
+              {
+                "id": "p2",
+                "name": "Grep",
+                "input": {
+                  "pattern": "TODO"
+                }
+              },
+              {
+                "id": "p3",
+                "name": "Read",
+                "input": {
+                  "file_path": "README.md"
+                }
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "pendingToolName": "Read",
+        "pendingToolInput": {
+          "file_path": "README.md"
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Look around."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Running three in parallel."
+            ],
+            "toolCalls": [
+              {
+                "id": "p1",
+                "name": "Glob",
+                "input": {
+                  "pattern": "**/*.swift"
+                },
+                "result": "a.swift\nb.swift",
+                "isError": false
+              },
+              {
+                "id": "p2",
+                "name": "Grep",
+                "input": {
+                  "pattern": "TODO"
+                }
+              },
+              {
+                "id": "p3",
+                "name": "Read",
+                "input": {
+                  "file_path": "README.md"
+                },
+                "result": "# Readme",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Look around."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Running three in parallel."
+            ],
+            "toolCalls": [
+              {
+                "id": "p1",
+                "name": "Glob",
+                "input": {
+                  "pattern": "**/*.swift"
+                },
+                "result": "a.swift\nb.swift",
+                "isError": false
+              },
+              {
+                "id": "p2",
+                "name": "Grep",
+                "input": {
+                  "pattern": "TODO"
+                },
+                "result": "",
+                "isError": false
+              },
+              {
+                "id": "p3",
+                "name": "Read",
+                "input": {
+                  "file_path": "README.md"
+                },
+                "result": "# Readme",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Look around."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Running three in parallel."
+            ],
+            "toolCalls": [
+              {
+                "id": "p1",
+                "name": "Glob",
+                "input": {
+                  "pattern": "**/*.swift"
+                },
+                "result": "a.swift\nb.swift",
+                "isError": false
+              },
+              {
+                "id": "p2",
+                "name": "Grep",
+                "input": {
+                  "pattern": "TODO"
+                },
+                "result": "",
+                "isError": false
+              },
+              {
+                "id": "p3",
+                "name": "Read",
+                "input": {
+                  "file_path": "README.md"
+                },
+                "result": "# Readme",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "result",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null,
+        "totalCost": 0.0123,
+        "totalDuration": 4200
+      }
+    }
+  ],
+  "transcripts": [
+    {
+      "params": {},
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "text_blocks": [
+              "Look around."
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "Running three in parallel."
+            ],
+            "tool_calls": [
+              {
+                "id": "p1",
+                "name": "Glob",
+                "input": {
+                  "pattern": "**/*.swift"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "a.swift\nb.swift"
+                  }
+                ],
+                "status": "done"
+              },
+              {
+                "id": "p2",
+                "name": "Grep",
+                "input": {
+                  "pattern": "TODO"
+                },
+                "result_blocks": [],
+                "status": "done"
+              },
+              {
+                "id": "p3",
+                "name": "Read",
+                "input": {
+                  "file_path": "README.md"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "# Readme"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          }
+        ],
+        "next_after": null,
+        "prev_before": null,
+        "total": 2,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "text_blocks": [
+              "Look around."
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "Running three in parallel."
+            ],
+            "tool_calls": [
+              {
+                "id": "p1",
+                "name": "Glob",
+                "input": {
+                  "pattern": "**/*.swift"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "a.swift\nb.swift"
+                  }
+                ],
+                "status": "done"
+              },
+              {
+                "id": "p2",
+                "name": "Grep",
+                "input": {
+                  "pattern": "TODO"
+                },
+                "result_blocks": [],
+                "status": "done"
+              },
+              {
+                "id": "p3",
+                "name": "Read",
+                "input": {
+                  "file_path": "README.md"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "# Readme"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          }
+        ],
+        "next_after": null,
+        "prev_before": null,
+        "total": 2,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "after": 1,
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "Running three in parallel."
+            ],
+            "tool_calls": [
+              {
+                "id": "p1",
+                "name": "Glob",
+                "input": {
+                  "pattern": "**/*.swift"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "a.swift\nb.swift"
+                  }
+                ],
+                "status": "done"
+              },
+              {
+                "id": "p2",
+                "name": "Grep",
+                "input": {
+                  "pattern": "TODO"
+                },
+                "result_blocks": [],
+                "status": "done"
+              },
+              {
+                "id": "p3",
+                "name": "Read",
+                "input": {
+                  "file_path": "README.md"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "# Readme"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          }
+        ],
+        "next_after": null,
+        "prev_before": 1,
+        "total": 2,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "before": 2,
+        "limit": 1
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "Running three in parallel."
+            ],
+            "tool_calls": [
+              {
+                "id": "p1",
+                "name": "Glob",
+                "input": {
+                  "pattern": "**/*.swift"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "a.swift\nb.swift"
+                  }
+                ],
+                "status": "done"
+              },
+              {
+                "id": "p2",
+                "name": "Grep",
+                "input": {
+                  "pattern": "TODO"
+                },
+                "result_blocks": [],
+                "status": "done"
+              },
+              {
+                "id": "p3",
+                "name": "Read",
+                "input": {
+                  "file_path": "README.md"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "# Readme"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          }
+        ],
+        "next_after": null,
+        "prev_before": 1,
+        "total": 2,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,2972 @@
+{
+  "name": "subagent",
+  "description": "A Task sub-agent whose events nest via parent_tool_use_id, a nested Agent, a thinking block, a background result.",
+  "clockStart": 1760000000000,
+  "ops": [
+    {
+      "op": "userMessage",
+      "text": "Investigate the crash."
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "system",
+        "subtype": "init",
+        "cwd": "/tmp/worktree",
+        "session_id": "cli-session-1",
+        "model": "claude-opus-4-8",
+        "permissionMode": "default",
+        "tools": [
+          {
+            "name": "Read"
+          },
+          {
+            "name": "Edit"
+          },
+          {
+            "name": "Bash"
+          },
+          {
+            "name": "Task"
+          }
+        ],
+        "slash_commands": [
+          "compact",
+          "review",
+          "commit"
+        ],
+        "skills": [
+          "commit",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "text",
+              "text": "Spawning an investigator."
+            },
+            {
+              "type": "tool_use",
+              "id": "task_1",
+              "name": "Task",
+              "input": {
+                "description": "Investigate",
+                "prompt": "Find the crash",
+                "subagent_type": "general-purpose"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "Let me look at logs.",
+              "signature": "sig"
+            },
+            {
+              "type": "text",
+              "text": "Looking at logs."
+            },
+            {
+              "type": "tool_use",
+              "id": "sub_1",
+              "name": "Bash",
+              "input": {
+                "command": "tail crash.log"
+              }
+            },
+            {
+              "type": "tool_use",
+              "id": "sub_2",
+              "name": "Agent",
+              "input": {
+                "description": "Deeper",
+                "prompt": "Dig in"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": "task_1",
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "permissionPending",
+      "request": {
+        "request_id": "req-1",
+        "tool_name": "Bash",
+        "tool_input": {
+          "command": "tail crash.log"
+        },
+        "tool_use_id": "sub_1"
+      }
+    },
+    {
+      "op": "clearPermission",
+      "toolUseId": "sub_1"
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "sub_1",
+              "content": "Fatal error: index out of range"
+            }
+          ]
+        },
+        "parent_tool_use_id": "task_1",
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "deep_1",
+              "name": "Read",
+              "input": {
+                "file_path": "Player.swift"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": "sub_2",
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "deep_1",
+              "content": "func play() {}"
+            }
+          ]
+        },
+        "parent_tool_use_id": "sub_2",
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "text",
+              "text": "orphan"
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": "nope",
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "ghost",
+              "content": "x"
+            }
+          ]
+        },
+        "parent_tool_use_id": "task_1",
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "sub_2",
+              "content": "Found it in Player.swift"
+            }
+          ]
+        },
+        "parent_tool_use_id": "task_1",
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "text",
+              "text": "Starting a background agent while I continue."
+            },
+            {
+              "type": "tool_use",
+              "id": "bg_1",
+              "name": "Agent",
+              "input": {
+                "description": "Background",
+                "prompt": "Watch",
+                "run_in_background": true
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "task_1",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "The crash is an index out of range in Player.swift."
+                }
+              ]
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "text",
+              "text": "Fixed."
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "bg_1",
+              "content": "Background done"
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "duration_ms": 4200,
+        "duration_api_ms": 3900,
+        "num_turns": 2,
+        "result": "Done.",
+        "session_id": "cli-session-1",
+        "total_cost_usd": 0.0123,
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 80,
+          "cache_read_input_tokens": 9000
+        },
+        "modelUsage": {
+          "claude-opus-4-8": {
+            "inputTokens": 1200,
+            "outputTokens": 80,
+            "contextWindow": 1000000
+          },
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 300,
+            "contextWindow": 200000
+          }
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user_sent"
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "system",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ]
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                }
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Task",
+        "pendingToolInput": {
+          "description": "Investigate",
+          "prompt": "Find the crash",
+          "subagent_type": "general-purpose"
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      }
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Task",
+        "pendingToolInput": {
+          "description": "Investigate",
+          "prompt": "Find the crash",
+          "subagent_type": "general-purpose"
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": true
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Task",
+        "pendingToolInput": {
+          "description": "Investigate",
+          "prompt": "Find the crash",
+          "subagent_type": "general-purpose"
+        }
+      },
+      "found": true
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Task",
+        "pendingToolInput": {
+          "description": "Investigate",
+          "prompt": "Find the crash",
+          "subagent_type": "general-purpose"
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false,
+                      "result": "Fatal error: index out of range",
+                      "isError": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Task",
+        "pendingToolInput": {
+          "description": "Investigate",
+          "prompt": "Find the crash",
+          "subagent_type": "general-purpose"
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false,
+                      "result": "Fatal error: index out of range",
+                      "isError": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "toolCall": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Task",
+        "pendingToolInput": {
+          "description": "Investigate",
+          "prompt": "Find the crash",
+          "subagent_type": "general-purpose"
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false,
+                      "result": "Fatal error: index out of range",
+                      "isError": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "toolCall": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result": "func play() {}",
+                            "isError": false
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Task",
+        "pendingToolInput": {
+          "description": "Investigate",
+          "prompt": "Find the crash",
+          "subagent_type": "general-purpose"
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false,
+                      "result": "Fatal error: index out of range",
+                      "isError": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "toolCall": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result": "func play() {}",
+                            "isError": false
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Task",
+        "pendingToolInput": {
+          "description": "Investigate",
+          "prompt": "Find the crash",
+          "subagent_type": "general-purpose"
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false,
+                      "result": "Fatal error: index out of range",
+                      "isError": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "toolCall": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result": "func play() {}",
+                            "isError": false
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Task",
+        "pendingToolInput": {
+          "description": "Investigate",
+          "prompt": "Find the crash",
+          "subagent_type": "general-purpose"
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false,
+                      "result": "Fatal error: index out of range",
+                      "isError": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "toolCall": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result": "func play() {}",
+                            "isError": false
+                          }
+                        }
+                      ],
+                      "result": "Found it in Player.swift",
+                      "isError": false
+                    }
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Task",
+        "pendingToolInput": {
+          "description": "Investigate",
+          "prompt": "Find the crash",
+          "subagent_type": "general-purpose"
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false,
+                      "result": "Fatal error: index out of range",
+                      "isError": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "toolCall": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result": "func play() {}",
+                            "isError": false
+                          }
+                        }
+                      ],
+                      "result": "Found it in Player.swift",
+                      "isError": false
+                    }
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Starting a background agent while I continue."
+            ],
+            "toolCalls": [
+              {
+                "id": "bg_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Background",
+                  "prompt": "Watch",
+                  "run_in_background": true
+                }
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Agent",
+        "pendingToolInput": {
+          "description": "Background",
+          "prompt": "Watch",
+          "run_in_background": true
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false,
+                      "result": "Fatal error: index out of range",
+                      "isError": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "toolCall": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result": "func play() {}",
+                            "isError": false
+                          }
+                        }
+                      ],
+                      "result": "Found it in Player.swift",
+                      "isError": false
+                    }
+                  }
+                ],
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "The crash is an index out of range in Player.swift."
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Starting a background agent while I continue."
+            ],
+            "toolCalls": [
+              {
+                "id": "bg_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Background",
+                  "prompt": "Watch",
+                  "run_in_background": true
+                }
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false,
+                      "result": "Fatal error: index out of range",
+                      "isError": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "toolCall": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result": "func play() {}",
+                            "isError": false
+                          }
+                        }
+                      ],
+                      "result": "Found it in Player.swift",
+                      "isError": false
+                    }
+                  }
+                ],
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "The crash is an index out of range in Player.swift."
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Starting a background agent while I continue."
+            ],
+            "toolCalls": [
+              {
+                "id": "bg_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Background",
+                  "prompt": "Watch",
+                  "run_in_background": true
+                }
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [
+              "Fixed."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false,
+                      "result": "Fatal error: index out of range",
+                      "isError": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "toolCall": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result": "func play() {}",
+                            "isError": false
+                          }
+                        }
+                      ],
+                      "result": "Found it in Player.swift",
+                      "isError": false
+                    }
+                  }
+                ],
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "The crash is an index out of range in Player.swift."
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Starting a background agent while I continue."
+            ],
+            "toolCalls": [
+              {
+                "id": "bg_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Background",
+                  "prompt": "Watch",
+                  "run_in_background": true
+                },
+                "result": "Background done",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [
+              "Fixed."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false,
+                      "result": "Fatal error: index out of range",
+                      "isError": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "toolCall": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result": "func play() {}",
+                            "isError": false
+                          }
+                        }
+                      ],
+                      "result": "Found it in Player.swift",
+                      "isError": false
+                    }
+                  }
+                ],
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "The crash is an index out of range in Player.swift."
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [
+              "Starting a background agent while I continue."
+            ],
+            "toolCalls": [
+              {
+                "id": "bg_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Background",
+                  "prompt": "Watch",
+                  "run_in_background": true
+                },
+                "result": "Background done",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [
+              "Fixed."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "result",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null,
+        "contextWindow": 1000000,
+        "totalCost": 0.0123,
+        "totalDuration": 4200
+      }
+    }
+  ],
+  "transcripts": [
+    {
+      "params": {},
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "text_blocks": [
+              "Investigate the crash."
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "Spawning an investigator."
+            ],
+            "tool_calls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "The crash is an index out of range in Player.swift."
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "tool_call": {
+                      "id": "",
+                      "name": "tool",
+                      "input": {},
+                      "result_blocks": [],
+                      "status": "running"
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "tool_call": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "result_blocks": [
+                        {
+                          "type": "text",
+                          "text": "Fatal error: index out of range"
+                        }
+                      ],
+                      "status": "done"
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "tool_call": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "result_blocks": [
+                        {
+                          "type": "text",
+                          "text": "Found it in Player.swift"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "tool_call": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result_blocks": [
+                              {
+                                "type": "text",
+                                "text": "func play() {}"
+                              }
+                            ],
+                            "status": "done"
+                          }
+                        }
+                      ],
+                      "status": "done"
+                    }
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [
+              "Starting a background agent while I continue."
+            ],
+            "tool_calls": [
+              {
+                "id": "bg_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Background",
+                  "prompt": "Watch",
+                  "run_in_background": true
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "Background done"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "text_blocks": [
+              "Fixed."
+            ],
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000003000
+          }
+        ],
+        "next_after": null,
+        "prev_before": null,
+        "total": 4,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [
+              "Starting a background agent while I continue."
+            ],
+            "tool_calls": [
+              {
+                "id": "bg_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Background",
+                  "prompt": "Watch",
+                  "run_in_background": true
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "Background done"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "text_blocks": [
+              "Fixed."
+            ],
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000003000
+          }
+        ],
+        "next_after": null,
+        "prev_before": 2,
+        "total": 4,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "after": 1,
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "Spawning an investigator."
+            ],
+            "tool_calls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "The crash is an index out of range in Player.swift."
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "tool_call": {
+                      "id": "",
+                      "name": "tool",
+                      "input": {},
+                      "result_blocks": [],
+                      "status": "running"
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "tool_call": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "result_blocks": [
+                        {
+                          "type": "text",
+                          "text": "Fatal error: index out of range"
+                        }
+                      ],
+                      "status": "done"
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "tool_call": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "result_blocks": [
+                        {
+                          "type": "text",
+                          "text": "Found it in Player.swift"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "tool_call": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result_blocks": [
+                              {
+                                "type": "text",
+                                "text": "func play() {}"
+                              }
+                            ],
+                            "status": "done"
+                          }
+                        }
+                      ],
+                      "status": "done"
+                    }
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [
+              "Starting a background agent while I continue."
+            ],
+            "tool_calls": [
+              {
+                "id": "bg_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Background",
+                  "prompt": "Watch",
+                  "run_in_background": true
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "Background done"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          }
+        ],
+        "next_after": 3,
+        "prev_before": 1,
+        "total": 4,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "before": 2,
+        "limit": 1
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "Spawning an investigator."
+            ],
+            "tool_calls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "The crash is an index out of range in Player.swift."
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "tool_call": {
+                      "id": "",
+                      "name": "tool",
+                      "input": {},
+                      "result_blocks": [],
+                      "status": "running"
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Looking at logs."
+                  },
+                  {
+                    "kind": "tool_use",
+                    "tool_call": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "result_blocks": [
+                        {
+                          "type": "text",
+                          "text": "Fatal error: index out of range"
+                        }
+                      ],
+                      "status": "done"
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "tool_call": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "result_blocks": [
+                        {
+                          "type": "text",
+                          "text": "Found it in Player.swift"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "tool_call": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result_blocks": [
+                              {
+                                "type": "text",
+                                "text": "func play() {}"
+                              }
+                            ],
+                            "status": "done"
+                          }
+                        }
+                      ],
+                      "status": "done"
+                    }
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          }
+        ],
+        "next_after": 2,
+        "prev_before": 1,
+        "total": 4,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    }
+  ]
+}

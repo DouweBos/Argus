@@ -1,0 +1,1040 @@
+{
+  "name": "user-images-injected",
+  "description": "A user message with images, checkpoint and author, an MCP-injected prompt ending a resume, stderr system messages, title.",
+  "clockStart": 1760000000000,
+  "ops": [
+    {
+      "op": "setTitle",
+      "title": "ignored, no conversation yet"
+    },
+    {
+      "op": "loadSaved",
+      "messages": [],
+      "sessionId": "cli-session-0",
+      "resuming": true
+    },
+    {
+      "op": "injectedPrompt",
+      "message": {
+        "id": "mcp-1",
+        "role": "system",
+        "textBlocks": [
+          "Please run the tests"
+        ],
+        "toolCalls": [],
+        "timestamp": 1750000000000,
+        "images": [
+          {
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+            "media_type": "image/png"
+          }
+        ],
+        "source": {
+          "kind": "mcp",
+          "tool": "send_agent_message",
+          "parentAgentId": "parent-9",
+          "parentLabel": "Root agent"
+        }
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "text",
+              "text": "Running tests."
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "userMessage",
+      "text": "Here's what I see",
+      "images": [
+        {
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+          "media_type": "image/png"
+        },
+        {
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+          "media_type": "image/jpeg"
+        }
+      ],
+      "checkpointId": "cp-42",
+      "author": "Sam"
+    },
+    {
+      "op": "userMessage",
+      "text": "No images",
+      "images": []
+    },
+    {
+      "op": "systemMessage",
+      "message": {
+        "id": "err-1",
+        "role": "system",
+        "textBlocks": [
+          "Error: Invalid API key"
+        ],
+        "toolCalls": [],
+        "timestamp": 1750000000000,
+        "tone": "error"
+      }
+    },
+    {
+      "op": "systemMessage",
+      "message": {
+        "id": "warn-1",
+        "role": "system",
+        "textBlocks": [
+          "Hook failed",
+          "exit code 1"
+        ],
+        "toolCalls": [],
+        "timestamp": 1750000000000,
+        "tone": "warning"
+      }
+    },
+    {
+      "op": "injectedPrompt",
+      "message": {
+        "id": "mcp-2",
+        "role": "system",
+        "textBlocks": [
+          "Spawned"
+        ],
+        "toolCalls": [],
+        "timestamp": 1750000000000,
+        "source": {
+          "kind": "mcp",
+          "tool": "spawn_agent"
+        }
+      }
+    },
+    {
+      "op": "setTitle",
+      "title": "Run the tests"
+    }
+  ],
+  "steps": [
+    {
+      "snapshot": null
+    },
+    {
+      "snapshot": {
+        "messages": [],
+        "sessionId": "cli-session-0",
+        "resuming": true,
+        "todos": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "mcp-1",
+            "role": "system",
+            "textBlocks": [
+              "Please run the tests"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              }
+            ],
+            "source": {
+              "kind": "mcp",
+              "tool": "send_agent_message",
+              "parentAgentId": "parent-9",
+              "parentLabel": "Root agent"
+            }
+          }
+        ],
+        "sessionId": "cli-session-0",
+        "resuming": false,
+        "todos": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "mcp-1",
+            "role": "system",
+            "textBlocks": [
+              "Please run the tests"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              }
+            ],
+            "source": {
+              "kind": "mcp",
+              "tool": "send_agent_message",
+              "parentAgentId": "parent-9",
+              "parentLabel": "Root agent"
+            }
+          },
+          {
+            "id": "uuid-1",
+            "role": "assistant",
+            "textBlocks": [
+              "Running tests."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-0",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "assistant",
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "mcp-1",
+            "role": "system",
+            "textBlocks": [
+              "Please run the tests"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              }
+            ],
+            "source": {
+              "kind": "mcp",
+              "tool": "send_agent_message",
+              "parentAgentId": "parent-9",
+              "parentLabel": "Root agent"
+            }
+          },
+          {
+            "id": "uuid-1",
+            "role": "assistant",
+            "textBlocks": [
+              "Running tests."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-2",
+            "role": "user",
+            "textBlocks": [
+              "Here's what I see"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              },
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/jpeg"
+              }
+            ],
+            "checkpointId": "cp-42",
+            "author": "Sam"
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-0",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "user_sent",
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "mcp-1",
+            "role": "system",
+            "textBlocks": [
+              "Please run the tests"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              }
+            ],
+            "source": {
+              "kind": "mcp",
+              "tool": "send_agent_message",
+              "parentAgentId": "parent-9",
+              "parentLabel": "Root agent"
+            }
+          },
+          {
+            "id": "uuid-1",
+            "role": "assistant",
+            "textBlocks": [
+              "Running tests."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-2",
+            "role": "user",
+            "textBlocks": [
+              "Here's what I see"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              },
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/jpeg"
+              }
+            ],
+            "checkpointId": "cp-42",
+            "author": "Sam"
+          },
+          {
+            "id": "uuid-3",
+            "role": "user",
+            "textBlocks": [
+              "No images"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-0",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "user_sent",
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "mcp-1",
+            "role": "system",
+            "textBlocks": [
+              "Please run the tests"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              }
+            ],
+            "source": {
+              "kind": "mcp",
+              "tool": "send_agent_message",
+              "parentAgentId": "parent-9",
+              "parentLabel": "Root agent"
+            }
+          },
+          {
+            "id": "uuid-1",
+            "role": "assistant",
+            "textBlocks": [
+              "Running tests."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-2",
+            "role": "user",
+            "textBlocks": [
+              "Here's what I see"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              },
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/jpeg"
+              }
+            ],
+            "checkpointId": "cp-42",
+            "author": "Sam"
+          },
+          {
+            "id": "uuid-3",
+            "role": "user",
+            "textBlocks": [
+              "No images"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000
+          },
+          {
+            "id": "err-1",
+            "role": "system",
+            "textBlocks": [
+              "Error: Invalid API key"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "tone": "error"
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-0",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "user_sent",
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "mcp-1",
+            "role": "system",
+            "textBlocks": [
+              "Please run the tests"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              }
+            ],
+            "source": {
+              "kind": "mcp",
+              "tool": "send_agent_message",
+              "parentAgentId": "parent-9",
+              "parentLabel": "Root agent"
+            }
+          },
+          {
+            "id": "uuid-1",
+            "role": "assistant",
+            "textBlocks": [
+              "Running tests."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-2",
+            "role": "user",
+            "textBlocks": [
+              "Here's what I see"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              },
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/jpeg"
+              }
+            ],
+            "checkpointId": "cp-42",
+            "author": "Sam"
+          },
+          {
+            "id": "uuid-3",
+            "role": "user",
+            "textBlocks": [
+              "No images"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000
+          },
+          {
+            "id": "err-1",
+            "role": "system",
+            "textBlocks": [
+              "Error: Invalid API key"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "tone": "error"
+          },
+          {
+            "id": "warn-1",
+            "role": "system",
+            "textBlocks": [
+              "Hook failed",
+              "exit code 1"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "tone": "warning"
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-0",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "user_sent",
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "mcp-1",
+            "role": "system",
+            "textBlocks": [
+              "Please run the tests"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              }
+            ],
+            "source": {
+              "kind": "mcp",
+              "tool": "send_agent_message",
+              "parentAgentId": "parent-9",
+              "parentLabel": "Root agent"
+            }
+          },
+          {
+            "id": "uuid-1",
+            "role": "assistant",
+            "textBlocks": [
+              "Running tests."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-2",
+            "role": "user",
+            "textBlocks": [
+              "Here's what I see"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              },
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/jpeg"
+              }
+            ],
+            "checkpointId": "cp-42",
+            "author": "Sam"
+          },
+          {
+            "id": "uuid-3",
+            "role": "user",
+            "textBlocks": [
+              "No images"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000
+          },
+          {
+            "id": "err-1",
+            "role": "system",
+            "textBlocks": [
+              "Error: Invalid API key"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "tone": "error"
+          },
+          {
+            "id": "warn-1",
+            "role": "system",
+            "textBlocks": [
+              "Hook failed",
+              "exit code 1"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "tone": "warning"
+          },
+          {
+            "id": "mcp-2",
+            "role": "system",
+            "textBlocks": [
+              "Spawned"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "source": {
+              "kind": "mcp",
+              "tool": "spawn_agent"
+            }
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-0",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "user_sent",
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "mcp-1",
+            "role": "system",
+            "textBlocks": [
+              "Please run the tests"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              }
+            ],
+            "source": {
+              "kind": "mcp",
+              "tool": "send_agent_message",
+              "parentAgentId": "parent-9",
+              "parentLabel": "Root agent"
+            }
+          },
+          {
+            "id": "uuid-1",
+            "role": "assistant",
+            "textBlocks": [
+              "Running tests."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-2",
+            "role": "user",
+            "textBlocks": [
+              "Here's what I see"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000,
+            "images": [
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/png"
+              },
+              {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+                "media_type": "image/jpeg"
+              }
+            ],
+            "checkpointId": "cp-42",
+            "author": "Sam"
+          },
+          {
+            "id": "uuid-3",
+            "role": "user",
+            "textBlocks": [
+              "No images"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000002000
+          },
+          {
+            "id": "err-1",
+            "role": "system",
+            "textBlocks": [
+              "Error: Invalid API key"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "tone": "error"
+          },
+          {
+            "id": "warn-1",
+            "role": "system",
+            "textBlocks": [
+              "Hook failed",
+              "exit code 1"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "tone": "warning"
+          },
+          {
+            "id": "mcp-2",
+            "role": "system",
+            "textBlocks": [
+              "Spawned"
+            ],
+            "toolCalls": [],
+            "timestamp": 1750000000000,
+            "source": {
+              "kind": "mcp",
+              "tool": "spawn_agent"
+            }
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-0",
+        "resuming": false,
+        "title": "Run the tests",
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "user_sent",
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    }
+  ],
+  "transcripts": [
+    {
+      "params": {},
+      "result": {
+        "messages": [
+          {
+            "id": "mcp-1",
+            "role": "system",
+            "text_blocks": [
+              "Please run the tests"
+            ],
+            "tool_calls": [],
+            "images": [
+              {
+                "image_id": "mcp-1:msg:0",
+                "media_type": "image/png"
+              }
+            ],
+            "source": {
+              "kind": "mcp",
+              "tool": "send_agent_message",
+              "parent_agent_id": "parent-9",
+              "parent_label": "Root agent"
+            },
+            "timestamp": 1750000000000
+          },
+          {
+            "id": "uuid-1",
+            "role": "assistant",
+            "text_blocks": [
+              "Running tests."
+            ],
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "user",
+            "text_blocks": [
+              "Here's what I see"
+            ],
+            "tool_calls": [],
+            "images": [
+              {
+                "image_id": "uuid-2:msg:0",
+                "media_type": "image/png"
+              },
+              {
+                "image_id": "uuid-2:msg:1",
+                "media_type": "image/jpeg"
+              }
+            ],
+            "author": "Sam",
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "user",
+            "text_blocks": [
+              "No images"
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000002000
+          },
+          {
+            "id": "err-1",
+            "role": "system",
+            "text_blocks": [
+              "Error: Invalid API key"
+            ],
+            "tool_calls": [],
+            "timestamp": 1750000000000
+          },
+          {
+            "id": "warn-1",
+            "role": "system",
+            "text_blocks": [
+              "Hook failed",
+              "exit code 1"
+            ],
+            "tool_calls": [],
+            "timestamp": 1750000000000
+          },
+          {
+            "id": "mcp-2",
+            "role": "system",
+            "text_blocks": [
+              "Spawned"
+            ],
+            "tool_calls": [],
+            "source": {
+              "kind": "mcp",
+              "tool": "spawn_agent",
+              "parent_agent_id": null,
+              "parent_label": null
+            },
+            "timestamp": 1750000000000
+          }
+        ],
+        "next_after": null,
+        "prev_before": null,
+        "total": 7,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "warn-1",
+            "role": "system",
+            "text_blocks": [
+              "Hook failed",
+              "exit code 1"
+            ],
+            "tool_calls": [],
+            "timestamp": 1750000000000
+          },
+          {
+            "id": "mcp-2",
+            "role": "system",
+            "text_blocks": [
+              "Spawned"
+            ],
+            "tool_calls": [],
+            "source": {
+              "kind": "mcp",
+              "tool": "spawn_agent",
+              "parent_agent_id": null,
+              "parent_label": null
+            },
+            "timestamp": 1750000000000
+          }
+        ],
+        "next_after": null,
+        "prev_before": 5,
+        "total": 7,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "after": 1,
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "assistant",
+            "text_blocks": [
+              "Running tests."
+            ],
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "user",
+            "text_blocks": [
+              "Here's what I see"
+            ],
+            "tool_calls": [],
+            "images": [
+              {
+                "image_id": "uuid-2:msg:0",
+                "media_type": "image/png"
+              },
+              {
+                "image_id": "uuid-2:msg:1",
+                "media_type": "image/jpeg"
+              }
+            ],
+            "author": "Sam",
+            "timestamp": 1760000001000
+          }
+        ],
+        "next_after": 3,
+        "prev_before": 1,
+        "total": 7,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "before": 2,
+        "limit": 1
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "assistant",
+            "text_blocks": [
+              "Running tests."
+            ],
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000000000
+          }
+        ],
+        "next_after": 2,
+        "prev_before": 1,
+        "total": 7,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    }
+  ]
+}
