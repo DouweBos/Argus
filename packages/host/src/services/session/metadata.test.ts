@@ -21,12 +21,14 @@ vi.mock("node:fs", async () => {
       writeFileSync: vi.fn(),
       mkdirSync: vi.fn(),
       renameSync: vi.fn(),
+      statSync: vi.fn(),
     },
     existsSync: vi.fn(),
     readFileSync: vi.fn(),
     writeFileSync: vi.fn(),
     mkdirSync: vi.fn(),
     renameSync: vi.fn(),
+    statSync: vi.fn(),
   };
 });
 
@@ -199,6 +201,9 @@ describe("migrateOrphaned", () => {
     // The drive is mounted; the worktree under it is not there.
     vi.mocked(fs.existsSync).mockImplementation(
       (p) => String(p) === "/Volumes/Blackbox",
+    );
+    vi.mocked(fs.statSync).mockImplementation(
+      (p) => ({ dev: String(p) === "/Volumes/Blackbox" ? 2 : 1 }) as fs.Stats,
     );
 
     const meta = new Map([["/Volumes/Blackbox/App/feature", entry("ws-1")]]);

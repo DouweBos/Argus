@@ -18,6 +18,8 @@ export type PathAvailability =
 
 export interface ClassifyDeps {
   exists: (p: string) => boolean;
+  /** Whether a volume is actually mounted, not merely an existing folder. */
+  mounted: (volume: string) => boolean;
   platform: NodeJS.Platform;
 }
 
@@ -75,7 +77,7 @@ export function classifyPath(
   }
 
   const volume = mountRootFor(target, deps.platform);
-  if (!volume || deps.exists(volume)) {
+  if (!volume || deps.mounted(volume)) {
     return { state: "deleted" };
   }
 
@@ -89,14 +91,29 @@ export function classifyPath(
 const CACHE_TTL_MS = 2_000;
 const volumeCache = new Map<string, { at: number; present: boolean }>();
 
-function existsCached(p: string): boolean {
-  const hit = volumeCache.get(p);
+/**
+ * macOS can leave an empty `/Volumes/<name>` behind after an unclean eject, so
+ * existing isn't enough: a real mount sits on a different device than its parent.
+ */
+export function isMounted(volume: string): boolean {
+  if (process.platform === "win32") {
+    return fs.existsSync(volume);
+  }
+  try {
+    return fs.statSync(volume).dev !== fs.statSync(path.dirname(volume)).dev;
+  } catch {
+    return false;
+  }
+}
+
+function mountedCached(volume: string): boolean {
+  const hit = volumeCache.get(volume);
   const now = Date.now();
   if (hit && now - hit.at < CACHE_TTL_MS) {
     return hit.present;
   }
-  const present = fs.existsSync(p);
-  volumeCache.set(p, { at: now, present });
+  const present = isMounted(volume);
+  volumeCache.set(volume, { at: now, present });
 
   return present;
 }
@@ -109,7 +126,7 @@ export function pathAvailability(target: string): PathAvailability {
   }
 
   const volume = mountRootFor(target, process.platform);
-  if (!volume || existsCached(volume)) {
+  if (!volume || mountedCached(volume)) {
     return { state: "deleted" };
   }
 
