@@ -40,6 +40,22 @@ struct SessionView: View {
       ]), to: RemoteAgentStatus.self)
   }
 
+  private func startAgent() {
+    Task {
+      guard let agent = await store.spawnAgent(sessionId: sessionId) else { return }
+      model.navigate(.session(id: sessionId, agentId: agent.agentId))
+    }
+  }
+
+  /// Closing a tab stops its agent, as in the desktop app; its transcript is
+  /// saved first.
+  private func closeAgent(_ agentId: String) {
+    Task {
+      await store.stopAgent(agentId: agentId)
+      await store.live?.forget(agentId)
+    }
+  }
+
   /// The routed agent, else the first — a session always shows something.
   private var focusedAgentId: String? {
     model.route.agentId.flatMap { id in agents.contains { $0.agentId == id } ? id : nil }
@@ -49,19 +65,35 @@ struct SessionView: View {
   var body: some View {
     VStack(spacing: 0) {
       AgentTabBar(
-        agents: agents, focused: focusedAgentId,
-        select: { model.navigate(.session(id: sessionId, agentId: $0)) })
+        agents: agents, focused: focusedAgentId, canStart: session?.status == .ready,
+        select: { model.navigate(.session(id: sessionId, agentId: $0)) },
+        start: startAgent, close: closeAgent)
       Divider()
       if let session, session.status != .ready {
-        SessionSetupView(session: session)
+        SessionSetupView(
+          session: session, progress: store.live?.setupProgress(sessionId: sessionId) ?? session.progress)
       } else if let agentId = focusedAgentId {
         AgentPane(agentId: agentId, sessionId: sessionId)
           .id(agentId)
       } else {
-        ContentUnavailableView(
-          "No agents", systemImage: "sparkles",
-          description: Text("Agents running in this session show here."))
+        ContentUnavailableView {
+          Label("No agents", systemImage: "sparkles")
+        } description: {
+          Text("Start an agent to work in this session.")
+        } actions: {
+          Button("Start Agent", action: startAgent)
+            .buttonStyle(.borderedProminent)
+            .disabled(session?.status != .ready)
+        }
+        .frame(maxHeight: .infinity)
       }
+    }
+    .frame(maxHeight: .infinity, alignment: .top)
+    .background {
+      // ⌘T, as for a new tab.
+      Button("New Agent", action: startAgent)
+        .keyboardShortcut("t", modifiers: .command)
+        .hidden()
     }
     .navigationTitle(session?.displayName ?? session?.branch ?? "Session")
     .navigationSubtitle(session?.branch ?? "")
@@ -74,32 +106,70 @@ struct SessionView: View {
 struct AgentTabBar: View {
   let agents: [RemoteAgentStatus]
   let focused: String?
+  let canStart: Bool
   let select: (String) -> Void
+  let start: () -> Void
+  let close: (String) -> Void
 
   var body: some View {
-    ScrollView(.horizontal, showsIndicators: false) {
-      HStack(spacing: 4) {
-        ForEach(agents) { agent in
-          Button {
-            select(agent.agentId)
-          } label: {
-            HStack(spacing: 6) {
-              StatusDot(
-                tone: agent.awaiting != nil ? .warning : agent.status.tone,
-                pulse: agent.status == .running)
-              Text(agent.title ?? "Agent").lineLimit(1)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(
-              agent.agentId == focused ? AnyShapeStyle(.selection) : AnyShapeStyle(.clear),
-              in: .rect(cornerRadius: 6))
+    HStack(spacing: 4) {
+      ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: 4) {
+          ForEach(agents) { agent in
+            AgentTab(
+              agent: agent, selected: agent.agentId == focused,
+              select: { select(agent.agentId) }, close: { close(agent.agentId) })
           }
-          .buttonStyle(.plain)
         }
       }
-      .padding(.horizontal, 8)
-      .padding(.vertical, 6)
+      Button(action: start) {
+        Image(systemName: "plus")
+      }
+      .buttonStyle(.borderless)
+      .disabled(!canStart)
+      .help("New agent (⌘T)")
+    }
+    .padding(.horizontal, 8)
+    // A scroll view takes all the height it's offered; a tab bar is one row.
+    .frame(height: 38)
+  }
+}
+
+/// One tab: status, title, and a close button that stops the agent, as in
+/// the desktop app.
+struct AgentTab: View {
+  let agent: RemoteAgentStatus
+  let selected: Bool
+  let select: () -> Void
+  let close: () -> Void
+  @State private var hovering = false
+
+  var body: some View {
+    HStack(spacing: 6) {
+      Button(action: select) {
+        HStack(spacing: 6) {
+          StatusDot(
+            tone: agent.awaiting != nil ? .warning : agent.status.tone,
+            pulse: agent.status == .running)
+          Text(agent.title ?? "Agent").lineLimit(1)
+        }
+      }
+      .buttonStyle(.plain)
+      Button(action: close) {
+        Image(systemName: "xmark").font(.system(size: 9, weight: .semibold))
+      }
+      .buttonStyle(.plain)
+      .foregroundStyle(.secondary)
+      .opacity(selected || hovering ? 1 : 0)
+      .help("Close agent")
+    }
+    .padding(.leading, 10)
+    .padding(.trailing, 8)
+    .padding(.vertical, 5)
+    .background(selected ? AnyShapeStyle(.selection) : AnyShapeStyle(.clear), in: .rect(cornerRadius: 6))
+    .onHover { hovering = $0 }
+    .contextMenu {
+      Button("Close Agent", action: close)
     }
   }
 }
@@ -134,6 +204,8 @@ struct AgentPane: View {
 /// A session still being set up (or torn down), or one whose setup failed.
 struct SessionSetupView: View {
   let session: RemoteSession
+  /// The live `session:progress`, which runs ahead of the listed session.
+  let progress: RemoteSessionProgress?
 
   var body: some View {
     VStack(spacing: 16) {
@@ -153,7 +225,7 @@ struct SessionSetupView: View {
   @ViewBuilder
   private func progress(_ title: String) -> some View {
     Text(title).foregroundStyle(.secondary)
-    if let fraction = session.progress?.fraction {
+    if let fraction = progress?.fraction {
       ProgressView(value: fraction).frame(maxWidth: 320)
     } else {
       ProgressView()
