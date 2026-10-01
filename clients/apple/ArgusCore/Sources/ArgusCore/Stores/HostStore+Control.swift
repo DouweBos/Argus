@@ -243,9 +243,11 @@ extension HostStore {
 
   // MARK: Permissions
 
+  /// `alwaysAllow` is an "Always allow" rule for the rest of the session. Only
+  /// a local backend can pass one — the remote method has no field for it.
   public func respond(
     agentId: String, toolUseId: String, decision: String, message: String? = nil,
-    fromNotification: Bool = false
+    alwaysAllow: String? = nil, fromNotification: Bool = false
   ) async {
     hooks.track(
       .permissionAnswered(approved: decision == "allow", fromNotification: fromNotification))
@@ -255,6 +257,18 @@ extension HostStore {
 
     guard let backend else {
       hooks.decisionUndelivered(agentId, toolUseId, decision)
+      return
+    }
+    if let alwaysAllow, backend.kind == .local {
+      do {
+        _ = try await backend.request(
+          ArgusProtocol.Commands.RespondToPermission.self,
+          .init(
+            agentId: agentId, toolUseId: toolUseId, decision: .allow, allowRule: alwaysAllow,
+            allowAll: true))
+      } catch {
+        hooks.decisionUndelivered(agentId, toolUseId, decision)
+      }
       return
     }
     struct Params: Encodable {

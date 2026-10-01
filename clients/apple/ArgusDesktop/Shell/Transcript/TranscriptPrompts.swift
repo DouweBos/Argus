@@ -66,9 +66,13 @@ struct TranscriptPrompts: View {
           }
         })
     case .buttons:
+      let rule = AlwaysAllowRule.rule(name: call.name, input: call.input)
       PermissionButtons(
         onAllow: { respond(call, "allow", nil) },
-        onDeny: { respond(call, "deny", nil) })
+        onDeny: { respond(call, "deny", nil) },
+        alwaysAllow: (rule, {
+          Task { await host.respond(agentId: agentKey, toolUseId: call.id, decision: "allow", alwaysAllow: rule) }
+        }))
     }
   }
 
