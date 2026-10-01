@@ -22,6 +22,7 @@
     "dev:server": "ARGUS_SERVER=1 ARGUS_HOME=\"${ARGUS_HOME:-$HOME/.argus-server-dev}\" ARGUS_REMOTE_PORT=\"${ARGUS_REMOTE_PORT:-47617}\" pnpm build:electron && ARGUS_SERVER=1 ARGUS_HOME=\"${ARGUS_HOME:-$HOME/.argus-server-dev}\" ARGUS_REMOTE_PORT=\"${ARGUS_REMOTE_PORT:-47617}\" electron dist-electron/server.js",
     "build:electron": "node build-electron.mjs",
     "build:host": "node build-host.mjs",
+    "build:mac-host": "tsx scripts/build-mac-host.ts",
     "dev:host": "ARGUS_HOME=\"${ARGUS_HOME:-$HOME/.argus-host-dev}\" ARGUS_REMOTE_PORT=\"${ARGUS_REMOTE_PORT:-47618}\" pnpm build:host && ARGUS_HOME=\"${ARGUS_HOME:-$HOME/.argus-host-dev}\" ARGUS_REMOTE_PORT=\"${ARGUS_REMOTE_PORT:-47618}\" node --enable-source-maps dist-host/argus-host.js",
     "start:host": "node --enable-source-maps dist-host/argus-host.js",
     "build:web-client": "pnpm --filter argus-web build",
