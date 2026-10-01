@@ -76,7 +76,24 @@ final class DesktopModel {
     for project in store.projects {
       await openProject(project.repoRoot)
     }
+    #if DEBUG
+      applyDevRoute()
+    #endif
   }
+
+  #if DEBUG
+    /// `ARGUS_DEV_ROUTE=session:<id>[:<agentId>]` opens a screen at launch, so
+    /// a dev build can be checked without anything clicking on it.
+    private func applyDevRoute() {
+      guard route == .home,
+        let raw = ProcessInfo.processInfo.environment["ARGUS_DEV_ROUTE"]
+      else { return }
+      let parts = raw.split(separator: ":").map(String.init)
+      if parts.first == "session", parts.count >= 2 {
+        navigate(.session(id: parts[1], agentId: parts.count > 2 ? parts[2] : nil))
+      }
+    }
+  #endif
 
   /// What Electron does when a project opens: make sure its project-root
   /// session exists (the host makes it idempotently), then load its lists.
