@@ -58,6 +58,14 @@ final class PlatformBridge: NSObject, UNUserNotificationCenterDelegate {
         envelope.payload, to: ArgusProtocol.PlatformRequest.self)
     else { return }
 
+    #if DEBUG
+      // A dev build being driven shouldn't open editors or Finder windows on
+      // the machine it runs on; it logs what it would have opened.
+      if ProcessInfo.processInfo.environment["ARGUS_DEV_DRY_OPEN"] != nil, request.kind != .notify {
+        NSLog("[argus] dry-open %@ %@", request.kind.rawValue, request.path ?? request.url ?? "")
+        return
+      }
+    #endif
     switch request.kind {
     case .notify:
       notify(request)

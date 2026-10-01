@@ -28,9 +28,12 @@
     }
 
     private func start() {
-      timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+      let timer = Timer(timeInterval: 0.2, repeats: true) { [weak self] _ in
         MainActor.assumeIsolated { self?.poll() }
       }
+      // Common modes, so commands still run while a menu is tracking.
+      RunLoop.main.add(timer, forMode: .common)
+      self.timer = timer
     }
 
     private var window: NSWindow? {
@@ -91,6 +94,41 @@
         else { return ["error": "no text input focused"] }
         input.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
         return ["ok": true]
+      case "link", "select":
+        // By content: SwiftUI positions these text views with layer offsets,
+        // so window coordinates can't find them reliably.
+        guard let needle = command["text"] as? String, let content = window.contentView,
+          let text = textViews(in: content).first(where: { $0.string.contains(needle) })
+        else { return ["error": "no text view shows that text"] }
+        let range = (text.string as NSString).range(of: needle)
+        if command["op"] as? String == "select" {
+          guard text.isSelectable else { return ["error": "not selectable"] }
+          text.setSelectedRange(range)
+          return ["selection": (text.string as NSString).substring(with: text.selectedRange())]
+        }
+        guard let link = text.textStorage?.attribute(.link, at: range.location, effectiveRange: nil)
+        else { return ["error": "no link on that text"] }
+        let handled = text.delegate?.textView?(text, clickedOnLink: link, at: range.location) ?? false
+        return ["ok": handled, "link": "\(link)"]
+      case "focus":
+        // The chat input: the one editable text view outside the find bar.
+        guard let content = window.contentView,
+          let input = textViews(in: content).last(where: { $0.isEditable && !$0.isFieldEditor })
+        else { return ["error": "no editable text view"] }
+        return ["ok": window.makeFirstResponder(input)]
+      case "textViews":
+        guard let content = window.contentView else { return [:] }
+        return ["views": textViews(in: content).map {
+          "\(Int($0.convert($0.bounds, to: nil).minX)),\(Int($0.convert($0.bounds, to: nil).minY)) \(Int($0.bounds.width))x\(Int($0.bounds.height)) vis=\(Int($0.visibleRect.height)) flipped=\($0.isFlipped) \($0.string.prefix(30))"
+        }]
+      case "makeKey":
+        // Key within this app only; the app itself stays inactive.
+        window.makeKey()
+        return ["ok": window.isKeyWindow]
+      case "selection":
+        guard let text = window.firstResponder as? NSTextView else { return ["error": "no text view focused"] }
+        let selected = text.selectedRanges.map { (text.string as NSString).substring(with: $0.rangeValue) }
+        return ["selection": selected.joined(separator: "\n")]
       case "menu":
         guard let title = command["title"] as? String, let item = menuItem(title, in: NSApp.mainMenu)
         else { return ["error": "no menu item"] }
@@ -157,15 +195,17 @@
     }
 
     private func click(at point: NSPoint, in window: NSWindow, count: Int = 1) -> Bool {
-      for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
-        guard
-          let event = NSEvent.mouseEvent(
-            with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
-            windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: count,
-            pressure: type == .leftMouseDown ? 1 : 0)
-        else { return false }
-        window.sendEvent(event)
+      func event(_ type: NSEvent.EventType) -> NSEvent? {
+        NSEvent.mouseEvent(
+          with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+          windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: count,
+          pressure: type == .leftMouseDown ? 1 : 0)
       }
+      guard let down = event(.leftMouseDown), let up = event(.leftMouseUp) else { return false }
+      // Views that track the mouse (text views, buttons) pull the up from the
+      // queue while handling the down, so it has to be waiting there first.
+      NSApp.postEvent(up, atStart: false)
+      window.sendEvent(down)
       return true
     }
 
@@ -176,7 +216,7 @@
       if mods.contains("option") { flags.insert(.option) }
       if mods.contains("control") { flags.insert(.control) }
       let named: [String: (String, UInt16)] = [
-        "return": ("\r", 36), "escape": ("\u{1b}", 53), "tab": ("\t", 48),
+        "return": ("\r", 36), "escape": ("\u{1b}", 53), "tab": ("\t", 48), "delete": ("\u{7f}", 51),
         "down": (String(UnicodeScalar(NSDownArrowFunctionKey)!), 125),
         "up": (String(UnicodeScalar(NSUpArrowFunctionKey)!), 126),
       ]
@@ -201,6 +241,10 @@
       return true
     }
 
+    private func textViews(in view: NSView) -> [NSTextView] {
+      (view as? NSTextView).map { [$0] } ?? view.subviews.flatMap { textViews(in: $0) }
+    }
+
     private func menuItem(_ title: String, in menu: NSMenu?) -> NSMenuItem? {
       for item in menu?.items ?? [] {
         if item.title == title { return item }
@@ -209,4 +253,6 @@
       return nil
     }
   }
+
+
 #endif
