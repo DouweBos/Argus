@@ -19,6 +19,7 @@ public struct ChatInputView: View {
 
   let agentId: String
   let sessionId: String?
+  let onAffordance: ((ChatInputAffordance) -> Void)?
 
   @State private var text = ""
   @State private var linkedProjects: [String] = []
@@ -47,12 +48,26 @@ public struct ChatInputView: View {
     !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !attachments.isEmpty
   }
 
-  public init(agentId: String, sessionId: String? = nil) {
+  /// `onAffordance` reports the input affordances the host can't see (slash
+  /// commands, mentions, image paste/drop). Only the Mac input reports them.
+  public init(
+    agentId: String, sessionId: String? = nil,
+    onAffordance: ((ChatInputAffordance) -> Void)? = nil
+  ) {
     self.agentId = agentId
     self.sessionId = sessionId
+    self.onAffordance = onAffordance
   }
 
   public var body: some View {
+    #if os(macOS)
+      MacChatInputView(agentId: agentId, sessionId: sessionId, onAffordance: onAffordance)
+    #else
+      phoneBody
+    #endif
+  }
+
+  private var phoneBody: some View {
     VStack(alignment: .leading, spacing: 8) {
       if !slashSuggestions.isEmpty {
         suggestionList(slashSuggestions.map(\.name), hint: slashSuggestions.map(\.description))
