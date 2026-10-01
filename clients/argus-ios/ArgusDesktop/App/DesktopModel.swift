@@ -22,10 +22,17 @@ final class DesktopModel {
   init() {
     supervisor = HostSupervisor(configuration: HostLocation.configuration())
     store = HostStore(
-      hooks: HostStoreHooks(errorReported: { error, scope in
-        NSLog("[argus] %@: %@", scope, HostStore.describe(error))
-      }))
+      hooks: HostStoreHooks(
+        errorReported: { error, scope in
+          NSLog("[argus] %@: %@", scope, HostStore.describe(error))
+        },
+        // Banners only when you aren't already looking at the window.
+        isAppFocused: { NSApp.isActive && NSApp.keyWindow != nil }))
     store.capabilities = ["monitor", "control", "admin"]
+    store.hooks.agentNotificationClicked = { [weak self] agentId, sessionId in
+      NSApp.activate()
+      self?.navigate(.session(id: sessionId, agentId: agentId))
+    }
     supervisor.onEvent = { [weak self] event in self?.supervisorEvent(event) }
     platform.focusWindow = { NSApp.activate() }
   }
@@ -159,12 +166,15 @@ final class DesktopModel {
   // MARK: Quit
 
   var runningAgentCount: Int {
-    store.statusByAgent.values.filter { $0.status == .running }.count
+    store.live?.agents.values.filter { $0.status == .running }.count
+      ?? store.statusByAgent.values.filter { $0.status == .running }.count
   }
 
   /// Stop the host cleanly: it lets agents finish stopping before it exits.
   func shutdown() async {
     MacTelemetry.capture(.quit(hadRunningAgents: runningAgentCount > 0))
+    // The renderer's job on quit: every transcript saved before the host goes.
+    await store.live?.saveAll()
     await store.detach()
     platform.detach()
     MacTelemetry.detach()

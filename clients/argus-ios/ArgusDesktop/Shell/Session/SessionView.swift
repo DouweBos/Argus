@@ -12,11 +12,32 @@ struct SessionView: View {
       ?? store.scratchPads.first { $0.id == sessionId }
   }
 
+  /// Live agents first — they appear the moment the host starts them — with
+  /// the host's last status laid over for title and attention.
   private var agents: [RemoteAgentStatus] {
     guard let session else { return [] }
-    return (store.agentsByRepo[session.repoRoot] ?? [])
-      .filter { $0.sessionId == sessionId }
-      .sorted { ($0.createdAt ?? 0) < ($1.createdAt ?? 0) }
+    let listed = (store.agentsByRepo[session.repoRoot] ?? []).filter { $0.sessionId == sessionId }
+    guard let live = store.live else {
+      return listed.sorted { ($0.createdAt ?? 0) < ($1.createdAt ?? 0) }
+    }
+    return live.agents(inSession: sessionId).compactMap { agent in
+      guard
+        var status = store.statusByAgent[agent.id] ?? listed.first(where: { $0.agentId == agent.id })
+          ?? Self.placeholder(agentId: agent.id, sessionId: sessionId)
+      else { return nil }
+      status.status = agent.status
+      status.title = live.conversation(for: agent.id)?.title ?? status.title
+      return status
+    }
+  }
+
+  /// An agent the host hasn't described yet; the wire type has no public init.
+  private static func placeholder(agentId: String, sessionId: String) -> RemoteAgentStatus? {
+    try? ProtocolCodec.convert(
+      .object([
+        "agent_id": .string(agentId), "session_id": .string(sessionId),
+        "status": .string("running"),
+      ]), to: RemoteAgentStatus.self)
   }
 
   /// The routed agent, else the first — a session always shows something.
