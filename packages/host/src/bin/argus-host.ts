@@ -97,6 +97,21 @@ function stop(): void {
 
 process.on("SIGINT", stop);
 process.on("SIGTERM", stop);
+
+// A supervised host goes down with its app: a crashed app would otherwise
+// leave it holding the lock with nobody to stop it.
+if (args.ownerPid) {
+  const ownerPid = args.ownerPid;
+  setInterval(() => {
+    try {
+      process.kill(ownerPid, 0);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ESRCH") {
+        stop();
+      }
+    }
+  }, 2000).unref();
+}
 process.on("exit", () => {
   syncHostCleanup();
   releaseHostLock();
