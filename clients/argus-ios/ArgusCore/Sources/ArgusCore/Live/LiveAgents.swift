@@ -85,6 +85,9 @@ public final class LiveAgents {
   /// so a new one starts with none.
   func resync() async {
     guard let backend else { return }
+    // Only agents known before asking can be judged gone by the answer: one
+    // that starts while the request is in flight isn't in it yet.
+    let knownBefore = Set(agents.keys)
     guard let snapshot = try? await backend.request(ArgusProtocol.Commands.StateHydrate.self, EmptyParams())
     else { return }
     adopt(sessions: snapshot.sessions)
@@ -100,7 +103,7 @@ public final class LiveAgents {
       await track(info.agentId)
     }
     // Gone while the connection was down: its exit was never heard.
-    for (id, agent) in agents where !live.contains(id)
+    for (id, agent) in agents where knownBefore.contains(id) && !live.contains(id)
       && agent.status != .stopped && agent.status != .error
     {
       handleExit(id, code: 0)
