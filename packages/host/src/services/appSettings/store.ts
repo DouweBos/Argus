@@ -116,12 +116,6 @@ export interface AppSettings {
   /** Stable public URL for the named tunnel, configured in Cloudflare. */
   remote_public_url?: string;
   /**
-   * Serve the web client on the LAN — binds the gateway to the network
-   * interface so other devices on your Wi-Fi can open it in a browser. Access
-   * is still gated by Noise pairing; this only changes reachability.
-   */
-  remote_lan_web?: boolean;
-  /**
    * Mirror notifications to paired devices even while the Argus window is
    * focused. Off by default — otherwise your phone buzzes for every agent you
    * are already watching on screen.

@@ -194,7 +194,6 @@ export function RemoteAccessSection() {
   const applyConfig = async (cfg: {
     cloudflareEnabled?: boolean;
     enabled?: boolean;
-    lanWeb?: boolean;
     notifyWhenFocused?: boolean;
     publicUrl?: string;
     tailscaleEnabled?: boolean;
@@ -302,22 +301,10 @@ export function RemoteAccessSection() {
         </SettingsScreenField>
 
         <SettingsScreenField
-          label="Ways in"
-          caption="Enable as many as you like — they run side by side. A paired phone syncs every address and connects over the simplest one that works: Wi-Fi first, then Tailscale, then Cloudflare."
+          label="Tunnels"
+          caption="Devices on this network always connect directly. Tunnels add a way in from anywhere else — enable as many as you like. A paired phone syncs every address and connects over the simplest one that works: Wi-Fi first, then Tailscale, then Cloudflare."
         >
           <div className={styles.providerList}>
-            <div className={styles.providerRow}>
-              <Toggle
-                checked={status?.lanWebEnabled ?? false}
-                disabled={busy}
-                onChange={(next) => applyConfig({ lanWeb: next })}
-              />
-              <span className={styles.providerName}>Local network</span>
-              <StatusDot
-                tone={status?.lanUrl ? "success" : "idle"}
-                label={status?.lanUrl ?? "off"}
-              />
-            </div>
             <div className={styles.providerRow}>
               <Toggle
                 checked={tailscaleOn}
@@ -466,10 +453,10 @@ export function RemoteAccessSection() {
           )}
         </SettingsScreenField>
 
-        {status?.lanWebEnabled && (
+        {enabled && status && (
           <SettingsScreenField
             label="Web client on this network"
-            caption="With Local network on, Argus serves the web client to other devices on your Wi-Fi. Open this in a browser and pair it like any other device."
+            caption="Argus serves the web client to other devices on your Wi-Fi. Open this in a browser and pair it like any other device."
           >
             <span className={styles.deviceMeta}>
               {status.lanUrl

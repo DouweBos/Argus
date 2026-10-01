@@ -17,7 +17,7 @@ import {
   getEndpoints,
   getLanUrl,
   LOCAL_GATEWAY_PORT,
-  setGatewayActive,
+  setGatewayOnLan,
   type EndpointKind,
   type RemoteEndpoint,
 } from "./endpoints";
@@ -115,7 +115,6 @@ export interface RemoteStatus {
   tunnelMode: CloudflareMode;
   hasTunnelToken: boolean;
   publicUrl: string | null;
-  lanWebEnabled: boolean;
   lanUrl: string | null;
   /** Mirror notifications to devices even while the desktop window is focused. */
   notifyWhenFocused: boolean;
@@ -127,7 +126,6 @@ export interface RemoteStatus {
 export async function getRemoteStatus(): Promise<RemoteStatus> {
   const settings = loadAppSettings();
   const enabled = enabledProviders();
-  const lanWebEnabled = Boolean(settings.remote_lan_web);
 
   return {
     enabled: Boolean(settings.remote_enabled),
@@ -138,8 +136,7 @@ export async function getRemoteStatus(): Promise<RemoteStatus> {
     tunnelMode: settings.remote_tunnel_mode ?? "quick",
     hasTunnelToken: Boolean(settings.remote_tunnel_token),
     publicUrl: getPublicUrl(),
-    lanWebEnabled,
-    lanUrl: lanWebEnabled && running ? getLanUrl() : null,
+    lanUrl: getEndpoints().find((e) => e.kind === "lan")?.url ?? null,
     notifyWhenFocused: Boolean(settings.remote_notify_when_focused),
     devices: await listDevices(),
     connectedDeviceIds: getConnectedDeviceIds(),
@@ -153,7 +150,6 @@ export async function setRemoteConfig(cfg: {
   tunnelMode?: CloudflareMode;
   tunnelToken?: string;
   publicUrl?: string;
-  lanWeb?: boolean;
   notifyWhenFocused?: boolean;
 }): Promise<RemoteStatus> {
   const patch: Parameters<typeof saveAppSettings>[0] = {};
@@ -174,9 +170,6 @@ export async function setRemoteConfig(cfg: {
   }
   if (cfg.publicUrl !== undefined) {
     patch.remote_public_url = cfg.publicUrl.trim();
-  }
-  if (cfg.lanWeb !== undefined) {
-    patch.remote_lan_web = cfg.lanWeb;
   }
   if (cfg.notifyWhenFocused !== undefined) {
     patch.remote_notify_when_focused = cfg.notifyWhenFocused;
@@ -214,27 +207,16 @@ export function setRemoteStatusListener(cb: (() => void) | null): void {
 }
 
 /**
- * Bind address and static dir are two separate decisions:
- *
- * | LAN web | tunnel | bind      | bundle |
- * | ------- | ------ | --------- | ------ |
- * | off     | off    | 127.0.0.1 | served |
- * | off     | on     | 127.0.0.1 | served |
- * | on      | off    | 0.0.0.0   | served |
- * | on      | on     | 0.0.0.0   | served |
- *
- * Only LAN web widens the bind — a tunnel reaches the gateway over loopback, so
- * binding 0.0.0.0 for it would expose the host on the Wi-Fi nobody asked to be
- * on. Serving the bundle is unconditional instead: over a tunnel the URL *is*
- * the web client, and on loopback-only it reaches no one but this machine. It
- * also has to be decided up front, since a huddle can raise a tunnel later
- * without restarting the server.
+ * Remote access listens on the local network so devices there connect directly
+ * by IP; tunnels are for everyone else. A huddle shared with remote access off
+ * stays on loopback — its guests only ever arrive through a tunnel. The bundle
+ * is always served: over a tunnel the URL *is* the web client.
  */
-function gatewayOpts(): { host: string; staticDir: string | null } {
-  return {
-    host: loadAppSettings().remote_lan_web ? "0.0.0.0" : "127.0.0.1",
-    staticDir: webClientDir,
-  };
+function gatewayOpts(onLan: boolean): {
+  host: string;
+  staticDir: string | null;
+} {
+  return { host: onLan ? "0.0.0.0" : "127.0.0.1", staticDir: webClientDir };
 }
 
 /** Tear down then, if enabled, bring up the local gateway (+ optional tunnel). */
@@ -247,10 +229,10 @@ export async function applyRemoteSettings(): Promise<void> {
   }
   const identity = await getDesktopIdentity();
 
-  await startLocalGateway(LOCAL_GATEWAY_PORT, identity, gatewayOpts());
+  await startLocalGateway(LOCAL_GATEWAY_PORT, identity, gatewayOpts(true));
 
-  // Tunnels are optional and independent — LAN mode works with none enabled,
-  // and each enabled provider gets its own process.
+  // Tunnels are optional and independent — each enabled provider gets its own
+  // process.
   const cloudflareMode: CloudflareMode = settings.remote_tunnel_mode ?? "quick";
   for (const provider of enabledProviders()) {
     if (!isStartable(provider)) {
@@ -265,7 +247,7 @@ export async function applyRemoteSettings(): Promise<void> {
     });
   }
   running = true;
-  setGatewayActive(true);
+  setGatewayOnLan(true);
   statusListener?.();
 }
 
@@ -278,7 +260,7 @@ export function stopRemote(): void {
   // settings change belongs to the user, not to a huddle.
   huddleOwnsCloudflare = false;
   huddleStartedGateway = false;
-  setGatewayActive(false);
+  setGatewayOnLan(false);
   stopTunnel();
   stopLocalGateway();
   clearConnections();
@@ -407,17 +389,16 @@ async function ensureGatewayUp(): Promise<void> {
     return;
   }
   const identity = await getDesktopIdentity();
-  await startLocalGateway(LOCAL_GATEWAY_PORT, identity, gatewayOpts());
+  await startLocalGateway(LOCAL_GATEWAY_PORT, identity, gatewayOpts(false));
   running = true;
   huddleStartedGateway = true;
-  setGatewayActive(true);
   statusListener?.();
 }
 
 function stopHuddleGateway(): void {
   huddleStartedGateway = false;
   running = false;
-  setGatewayActive(false);
+  setGatewayOnLan(false);
   stopLocalGateway();
   clearConnections();
   statusListener?.();

@@ -12,7 +12,6 @@
 
 import type { TunnelProvider } from "./tunnelManager";
 import { networkInterfaces } from "node:os";
-import { loadAppSettings } from "../appSettings/store";
 import { getTunnelStates, TUNNEL_PROVIDERS } from "./tunnelManager";
 
 /**
@@ -45,11 +44,11 @@ const ENDPOINT_PRIORITY: Record<EndpointKind, number> = {
   cloudflare: 2,
 };
 
-/** Whether the local gateway is actually listening; owned by remoteService. */
-let gatewayActive = false;
+/** Whether the gateway is listening on the local network; owned by remoteService. */
+let gatewayOnLan = false;
 
-export function setGatewayActive(active: boolean): void {
-  gatewayActive = active;
+export function setGatewayOnLan(onLan: boolean): void {
+  gatewayOnLan = onLan;
 }
 
 /** First non-internal IPv4 LAN address as a ws:// URL, or null. */
@@ -72,7 +71,7 @@ export function getLanUrl(): string | null {
 export function getEndpoints(): RemoteEndpoint[] {
   const endpoints: RemoteEndpoint[] = [];
 
-  if (gatewayActive && loadAppSettings().remote_lan_web) {
+  if (gatewayOnLan) {
     const lan = getLanUrl();
     if (lan) {
       endpoints.push({

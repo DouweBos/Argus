@@ -22,19 +22,19 @@ vi.mock("node:os", () => ({
   }),
 }));
 
-const { getEndpoints, setGatewayActive, LOCAL_GATEWAY_PORT } =
+const { getEndpoints, setGatewayOnLan, LOCAL_GATEWAY_PORT } =
   await import("./endpoints");
 
 const LAN_URL = `ws://192.168.1.79:${LOCAL_GATEWAY_PORT}`;
 
 describe("getEndpoints", () => {
   beforeEach(() => {
-    settings.value = { remote_lan_web: true };
+    settings.value = {};
     tunnels.value = {
       cloudflare: { publicUrl: null },
       tailscale: { publicUrl: null },
     };
-    setGatewayActive(true);
+    setGatewayOnLan(true);
   });
 
   it("ranks LAN before Tailscale before Cloudflare", () => {
@@ -65,15 +65,8 @@ describe("getEndpoints", () => {
     expect(getEndpoints().map((e) => e.kind)).toEqual(["lan"]);
   });
 
-  it("omits the LAN address when LAN serving is off", () => {
-    settings.value = { remote_lan_web: false };
-    tunnels.value.tailscale.publicUrl = "wss://mac.tail.ts.net";
-
-    expect(getEndpoints().map((e) => e.kind)).toEqual(["tailscale"]);
-  });
-
   it("omits the LAN address while the gateway is down", () => {
-    setGatewayActive(false);
+    setGatewayOnLan(false);
     tunnels.value.tailscale.publicUrl = "wss://mac.tail.ts.net";
 
     // The tunnel URL is still listed: the daemon holds it independently of
@@ -82,7 +75,7 @@ describe("getEndpoints", () => {
   });
 
   it("returns nothing when there is no way in", () => {
-    settings.value = { remote_lan_web: false };
+    setGatewayOnLan(false);
 
     expect(getEndpoints()).toEqual([]);
   });

@@ -91,9 +91,10 @@ gateway on your Mac; a paired device connects straight to it and the
 traffic is end-to-end encrypted (Noise IK), so a tunnel only ever sees
 ciphertext.
 
-- **Ways in** — **Local network**, **Tailscale** (`tailscale funnel`)
-  and **Cloudflare** (`cloudflared`) toggle independently and run side
-  by side. Phones try the live addresses in order.
+- **Ways in** — devices on your network connect directly by IP;
+  **Tailscale** (`tailscale funnel`) and **Cloudflare** (`cloudflared`)
+  tunnels add access from anywhere and run side by side. Phones try the
+  live addresses in order.
 - **Grants per device** — paired devices are monitor + approve by
   default. **Control** lets a device drive agents and land their work —
   commit, push, merge, open a pull request, author an automation.

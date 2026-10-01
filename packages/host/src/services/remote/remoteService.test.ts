@@ -180,18 +180,7 @@ function reset(): void {
 describe("bind/serve matrix", () => {
   beforeEach(reset);
 
-  it("binds loopback and still serves the bundle without LAN web", async () => {
-    settings.value = { remote_enabled: true, remote_lan_web: false };
-    await applyRemoteSettings();
-
-    expect(gateway.starts.at(-1)).toEqual({
-      host: "127.0.0.1",
-      staticDir: WEB_DIR,
-    });
-  });
-
-  it("binds every interface only when LAN web is on", async () => {
-    settings.value = { remote_enabled: true, remote_lan_web: true };
+  it("binds every interface and serves the bundle when remote access is on", async () => {
     await applyRemoteSettings();
 
     expect(gateway.starts.at(-1)).toEqual({
@@ -200,16 +189,19 @@ describe("bind/serve matrix", () => {
     });
   });
 
-  it("does not widen the bind for a tunnel-only setup", async () => {
-    settings.value = {
-      remote_enabled: true,
-      remote_lan_web: false,
-      remote_cloudflare_enabled: true,
-    };
+  it("keeps the network bind alongside a tunnel", async () => {
+    settings.value = { remote_enabled: true, remote_cloudflare_enabled: true };
     await applyRemoteSettings();
 
-    expect(gateway.starts.at(-1)?.host).toBe("127.0.0.1");
-    expect(gateway.starts.at(-1)?.staticDir).toBe(WEB_DIR);
+    expect(gateway.starts.at(-1)?.host).toBe("0.0.0.0");
+  });
+
+  it("does not listen at all when remote access is off", async () => {
+    settings.value = { remote_enabled: false };
+    const before = gateway.starts.length;
+    await applyRemoteSettings();
+
+    expect(gateway.starts).toHaveLength(before);
   });
 
   it("serves nothing when there is no bundle on disk", async () => {
@@ -236,7 +228,7 @@ describe("acquirePublicUrl", () => {
     });
   });
 
-  it("starts the gateway if remote access is off", async () => {
+  it("starts a loopback-only gateway if remote access is off", async () => {
     settings.value = { remote_enabled: false };
     willPublish("cloudflare", CF_URL);
     await acquirePublicUrl({ timeoutMs: 1000 });

@@ -83,7 +83,6 @@ export const RemoteStatus = z.object({
   tunnelMode: RemoteTunnelMode,
   hasTunnelToken: z.boolean(),
   publicUrl: z.string().nullable(),
-  lanWebEnabled: z.boolean(),
   lanUrl: z.string().nullable(),
   /** Mirror notifications to devices even while the desktop window is focused. */
   notifyWhenFocused: z.boolean(),
@@ -101,7 +100,6 @@ export const RemoteConfigPatch = z.object({
   tunnelMode: RemoteTunnelMode.optional(),
   tunnelToken: z.string().optional(),
   publicUrl: z.string().optional(),
-  lanWeb: z.boolean().optional(),
   notifyWhenFocused: z.boolean().optional(),
 });
 export type RemoteConfigPatch = z.infer<typeof RemoteConfigPatch>;

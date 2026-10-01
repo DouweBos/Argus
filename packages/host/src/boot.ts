@@ -121,7 +121,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   setWebClientDir(options.webClientDir ?? null);
   const remoteReady = (
     options.forceRemote
-      ? setRemoteConfig({ enabled: true, lanWeb: true }).then(() => undefined)
+      ? setRemoteConfig({ enabled: true }).then(() => undefined)
       : applyRemoteSettings()
   ).catch((err) => {
     log.error("Failed to start remote access:", err);
