@@ -1,0 +1,583 @@
+{
+  "name": "quirks",
+  "description": "Shapes the renderer handles by accident: string user content, init without model, assistant without usage, unknown types.",
+  "clockStart": 1760000000000,
+  "ops": [
+    {
+      "op": "userMessage",
+      "text": "hi"
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "system",
+        "subtype": "init",
+        "session_id": "s",
+        "tools": []
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "content": [
+            {
+              "type": "text",
+              "text": "no usage, no model"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "q1",
+              "name": "Bash",
+              "input": {
+                "command": "ls"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": "a replayed user prompt"
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "stream_event",
+        "event": {
+          "type": "content_block_delta"
+        }
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "q1",
+              "content": null
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "hi"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user_sent"
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "hi"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "system",
+        "sessionId": "s",
+        "tools": [],
+        "slashCommands": []
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "hi"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "no usage, no model"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "sessionId": "s",
+        "tools": [],
+        "slashCommands": [],
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "hi"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "no usage, no model"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "q1",
+                "name": "Bash",
+                "input": {
+                  "command": "ls"
+                }
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "s",
+        "tools": [],
+        "slashCommands": [],
+        "pendingToolName": "Bash",
+        "pendingToolInput": {
+          "command": "ls"
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "hi"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "no usage, no model"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "q1",
+                "name": "Bash",
+                "input": {
+                  "command": "ls"
+                }
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "s",
+        "tools": [],
+        "slashCommands": [],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "hi"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "no usage, no model"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "q1",
+                "name": "Bash",
+                "input": {
+                  "command": "ls"
+                }
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "s",
+        "tools": [],
+        "slashCommands": [],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "hi"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "no usage, no model"
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "q1",
+                "name": "Bash",
+                "input": {
+                  "command": "ls"
+                },
+                "result": "null",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "s",
+        "tools": [],
+        "slashCommands": [],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    }
+  ],
+  "transcripts": [
+    {
+      "params": {},
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "text_blocks": [
+              "hi"
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "no usage, no model"
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "q1",
+                "name": "Bash",
+                "input": {
+                  "command": "ls"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "null"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          }
+        ],
+        "next_after": null,
+        "prev_before": null,
+        "total": 3,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "no usage, no model"
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "q1",
+                "name": "Bash",
+                "input": {
+                  "command": "ls"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "null"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          }
+        ],
+        "next_after": null,
+        "prev_before": 1,
+        "total": 3,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "after": 1,
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "no usage, no model"
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "q1",
+                "name": "Bash",
+                "input": {
+                  "command": "ls"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "null"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          }
+        ],
+        "next_after": null,
+        "prev_before": 1,
+        "total": 3,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "before": 2,
+        "limit": 1
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "no usage, no model"
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000001000
+          }
+        ],
+        "next_after": 2,
+        "prev_before": 1,
+        "total": 3,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    }
+  ]
+}

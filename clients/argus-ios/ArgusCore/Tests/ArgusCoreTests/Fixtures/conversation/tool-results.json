@@ -1,0 +1,3642 @@
+{
+  "name": "tool-results",
+  "description": "tool_use + tool_result: text, error, image, tool_reference, object and missing content, deny-answer flow.",
+  "clockStart": 1760000000000,
+  "ops": [
+    {
+      "op": "userMessage",
+      "text": "Check the screenshot and fix the build."
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "system",
+        "subtype": "init",
+        "cwd": "/tmp/worktree",
+        "session_id": "cli-session-1",
+        "model": "claude-opus-4-8",
+        "permissionMode": "default",
+        "tools": [
+          {
+            "name": "Read"
+          },
+          {
+            "name": "Edit"
+          },
+          {
+            "name": "Bash"
+          },
+          {
+            "name": "Task"
+          }
+        ],
+        "slash_commands": [
+          "compact",
+          "review",
+          "commit"
+        ],
+        "skills": [
+          "commit",
+          "pdf"
+        ]
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "text",
+              "text": "Reading the file."
+            },
+            {
+              "type": "tool_use",
+              "id": "tu_read",
+              "name": "Read",
+              "input": {
+                "file_path": "src/a.ts"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_read",
+              "content": "  1\texport const a = 1;"
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tu_bash",
+              "name": "Bash",
+              "input": {
+                "command": "pnpm build",
+                "description": "Build"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_bash",
+              "content": "error TS2304: Cannot find name 'b'.",
+              "is_error": true
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tu_shot",
+              "name": "Read",
+              "input": {
+                "file_path": "shot.png"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_shot",
+              "content": [
+                {
+                  "type": "image",
+                  "source": {
+                    "type": "base64",
+                    "media_type": "image/png",
+                    "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": "Screenshot attached"
+                }
+              ]
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tu_search",
+              "name": "ToolSearch",
+              "input": {
+                "query": "notebook"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_search",
+              "content": [
+                {
+                  "type": "tool_reference",
+                  "tool_name": "NotebookEdit"
+                },
+                {
+                  "type": "tool_reference",
+                  "tool_name": "NotebookRead"
+                },
+                {
+                  "type": "unknown_block",
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tu_obj",
+              "name": "mcp__x__status",
+              "input": {}
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_obj",
+              "content": {
+                "status": {
+                  "count": 3,
+                  "ok": true,
+                  "ratio": 0.5
+                }
+              }
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tu_empty",
+              "name": "Bash",
+              "input": {
+                "command": "true"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_empty"
+            },
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_missing",
+              "content": "no such call"
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tu_ask",
+              "name": "AskUserQuestion",
+              "input": {
+                "questions": [
+                  {
+                    "question": "Which target?",
+                    "options": [
+                      {
+                        "label": "iOS"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_ask",
+              "content": "User answered: iOS",
+              "is_error": true
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": []
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "duration_ms": 4200,
+        "duration_api_ms": 3900,
+        "num_turns": 2,
+        "result": "Done.",
+        "session_id": "cli-session-1",
+        "total_cost_usd": 0.0123,
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 80,
+          "cache_read_input_tokens": 9000
+        },
+        "modelUsage": {
+          "claude-opus-4-8": {
+            "inputTokens": 1200,
+            "outputTokens": 80,
+            "contextWindow": 1000000
+          },
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 300,
+            "contextWindow": 200000
+          }
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user_sent"
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "system",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ]
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                }
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Read",
+        "pendingToolInput": {
+          "file_path": "src/a.ts"
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                }
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Bash",
+        "pendingToolInput": {
+          "command": "pnpm build",
+          "description": "Build"
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                }
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Read",
+        "pendingToolInput": {
+          "file_path": "shot.png"
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                },
+                "result": [
+                  {
+                    "type": "image",
+                    "source": {
+                      "type": "base64",
+                      "media_type": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": "Screenshot attached"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                },
+                "result": [
+                  {
+                    "type": "image",
+                    "source": {
+                      "type": "base64",
+                      "media_type": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": "Screenshot attached"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_search",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "notebook"
+                }
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "ToolSearch",
+        "pendingToolInput": {
+          "query": "notebook"
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                },
+                "result": [
+                  {
+                    "type": "image",
+                    "source": {
+                      "type": "base64",
+                      "media_type": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": "Screenshot attached"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_search",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "notebook"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "NotebookEdit\nNotebookRead"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                },
+                "result": [
+                  {
+                    "type": "image",
+                    "source": {
+                      "type": "base64",
+                      "media_type": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": "Screenshot attached"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_search",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "notebook"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "NotebookEdit\nNotebookRead"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_obj",
+                "name": "mcp__x__status",
+                "input": {}
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "mcp__x__status",
+        "pendingToolInput": {},
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                },
+                "result": [
+                  {
+                    "type": "image",
+                    "source": {
+                      "type": "base64",
+                      "media_type": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": "Screenshot attached"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_search",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "notebook"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "NotebookEdit\nNotebookRead"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_obj",
+                "name": "mcp__x__status",
+                "input": {},
+                "result": "{\n  \"status\": {\n    \"count\": 3,\n    \"ok\": true,\n    \"ratio\": 0.5\n  }\n}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                },
+                "result": [
+                  {
+                    "type": "image",
+                    "source": {
+                      "type": "base64",
+                      "media_type": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": "Screenshot attached"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_search",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "notebook"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "NotebookEdit\nNotebookRead"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_obj",
+                "name": "mcp__x__status",
+                "input": {},
+                "result": "{\n  \"status\": {\n    \"count\": 3,\n    \"ok\": true,\n    \"ratio\": 0.5\n  }\n}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_empty",
+                "name": "Bash",
+                "input": {
+                  "command": "true"
+                }
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Bash",
+        "pendingToolInput": {
+          "command": "true"
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                },
+                "result": [
+                  {
+                    "type": "image",
+                    "source": {
+                      "type": "base64",
+                      "media_type": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": "Screenshot attached"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_search",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "notebook"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "NotebookEdit\nNotebookRead"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_obj",
+                "name": "mcp__x__status",
+                "input": {},
+                "result": "{\n  \"status\": {\n    \"count\": 3,\n    \"ok\": true,\n    \"ratio\": 0.5\n  }\n}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_empty",
+                "name": "Bash",
+                "input": {
+                  "command": "true"
+                },
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                },
+                "result": [
+                  {
+                    "type": "image",
+                    "source": {
+                      "type": "base64",
+                      "media_type": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": "Screenshot attached"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_search",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "notebook"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "NotebookEdit\nNotebookRead"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_obj",
+                "name": "mcp__x__status",
+                "input": {},
+                "result": "{\n  \"status\": {\n    \"count\": 3,\n    \"ok\": true,\n    \"ratio\": 0.5\n  }\n}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_empty",
+                "name": "Bash",
+                "input": {
+                  "command": "true"
+                },
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_ask",
+                "name": "AskUserQuestion",
+                "input": {
+                  "questions": [
+                    {
+                      "question": "Which target?",
+                      "options": [
+                        {
+                          "label": "iOS"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "AskUserQuestion",
+        "pendingToolInput": {
+          "questions": [
+            {
+              "question": "Which target?",
+              "options": [
+                {
+                  "label": "iOS"
+                }
+              ]
+            }
+          ]
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                },
+                "result": [
+                  {
+                    "type": "image",
+                    "source": {
+                      "type": "base64",
+                      "media_type": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": "Screenshot attached"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_search",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "notebook"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "NotebookEdit\nNotebookRead"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_obj",
+                "name": "mcp__x__status",
+                "input": {},
+                "result": "{\n  \"status\": {\n    \"count\": 3,\n    \"ok\": true,\n    \"ratio\": 0.5\n  }\n}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_empty",
+                "name": "Bash",
+                "input": {
+                  "command": "true"
+                },
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_ask",
+                "name": "AskUserQuestion",
+                "input": {
+                  "questions": [
+                    {
+                      "question": "Which target?",
+                      "options": [
+                        {
+                          "label": "iOS"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "result": "User answered: iOS",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                },
+                "result": [
+                  {
+                    "type": "image",
+                    "source": {
+                      "type": "base64",
+                      "media_type": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": "Screenshot attached"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_search",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "notebook"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "NotebookEdit\nNotebookRead"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_obj",
+                "name": "mcp__x__status",
+                "input": {},
+                "result": "{\n  \"status\": {\n    \"count\": 3,\n    \"ok\": true,\n    \"ratio\": 0.5\n  }\n}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_empty",
+                "name": "Bash",
+                "input": {
+                  "command": "true"
+                },
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_ask",
+                "name": "AskUserQuestion",
+                "input": {
+                  "questions": [
+                    {
+                      "question": "Which target?",
+                      "options": [
+                        {
+                          "label": "iOS"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "result": "User answered: iOS",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Reading the file."
+            ],
+            "toolCalls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result": "  1\texport const a = 1;",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result": "error TS2304: Cannot find name 'b'.",
+                "isError": true
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                },
+                "result": [
+                  {
+                    "type": "image",
+                    "source": {
+                      "type": "base64",
+                      "media_type": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": "Screenshot attached"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_search",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "notebook"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "NotebookEdit\nNotebookRead"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_obj",
+                "name": "mcp__x__status",
+                "input": {},
+                "result": "{\n  \"status\": {\n    \"count\": 3,\n    \"ok\": true,\n    \"ratio\": 0.5\n  }\n}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_empty",
+                "name": "Bash",
+                "input": {
+                  "command": "true"
+                },
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_ask",
+                "name": "AskUserQuestion",
+                "input": {
+                  "questions": [
+                    {
+                      "question": "Which target?",
+                      "options": [
+                        {
+                          "label": "iOS"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "result": "User answered: iOS",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "result",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "tasks": null,
+        "contextWindow": 1000000,
+        "totalCost": 0.0123,
+        "totalDuration": 4200
+      }
+    }
+  ],
+  "transcripts": [
+    {
+      "params": {},
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "text_blocks": [
+              "Check the screenshot and fix the build."
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "Reading the file."
+            ],
+            "tool_calls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "  1\texport const a = 1;"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "error TS2304: Cannot find name 'b'."
+                  }
+                ],
+                "is_error": true,
+                "status": "error"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_shot",
+                "name": "Read",
+                "input": {
+                  "file_path": "shot.png"
+                },
+                "result_blocks": [
+                  {
+                    "type": "image",
+                    "image_id": "uuid-4:tu_shot:0",
+                    "media_type": "image/png"
+                  },
+                  {
+                    "type": "text",
+                    "text": "Screenshot attached"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000003000
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_search",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "notebook"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "NotebookEdit\nNotebookRead"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000004000
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_obj",
+                "name": "mcp__x__status",
+                "input": {},
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "{\n  \"status\": {\n    \"count\": 3,\n    \"ok\": true,\n    \"ratio\": 0.5\n  }\n}"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000005000
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_empty",
+                "name": "Bash",
+                "input": {
+                  "command": "true"
+                },
+                "result_blocks": [],
+                "status": "running"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000006000
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_ask",
+                "name": "AskUserQuestion",
+                "input": {
+                  "questions": [
+                    {
+                      "question": "Which target?",
+                      "options": [
+                        {
+                          "label": "iOS"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "User answered: iOS"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000007000
+          }
+        ],
+        "next_after": null,
+        "prev_before": null,
+        "total": 8,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_empty",
+                "name": "Bash",
+                "input": {
+                  "command": "true"
+                },
+                "result_blocks": [],
+                "status": "running"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000006000
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_ask",
+                "name": "AskUserQuestion",
+                "input": {
+                  "questions": [
+                    {
+                      "question": "Which target?",
+                      "options": [
+                        {
+                          "label": "iOS"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "User answered: iOS"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000007000
+          }
+        ],
+        "next_after": null,
+        "prev_before": 6,
+        "total": 8,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "after": 1,
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "Reading the file."
+            ],
+            "tool_calls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "  1\texport const a = 1;"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_bash",
+                "name": "Bash",
+                "input": {
+                  "command": "pnpm build",
+                  "description": "Build"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "error TS2304: Cannot find name 'b'."
+                  }
+                ],
+                "is_error": true,
+                "status": "error"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          }
+        ],
+        "next_after": 3,
+        "prev_before": 1,
+        "total": 8,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "before": 2,
+        "limit": 1
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [
+              "Reading the file."
+            ],
+            "tool_calls": [
+              {
+                "id": "tu_read",
+                "name": "Read",
+                "input": {
+                  "file_path": "src/a.ts"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "  1\texport const a = 1;"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          }
+        ],
+        "next_after": 2,
+        "prev_before": 1,
+        "total": 8,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    }
+  ]
+}

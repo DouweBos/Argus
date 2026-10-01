@@ -1,0 +1,6565 @@
+{
+  "name": "todos-tasks",
+  "description": "TodoWrite overwrite + dismiss, TaskCreate/TaskUpdate/TaskList/TaskGet folding, delete, clear and recovery.",
+  "clockStart": 1760000000000,
+  "ops": [
+    {
+      "op": "userMessage",
+      "text": "Plan the work."
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "todo_1",
+              "name": "TodoWrite",
+              "input": {
+                "todos": [
+                  {
+                    "id": "1",
+                    "content": "Read code",
+                    "status": "in_progress",
+                    "priority": "high"
+                  },
+                  {
+                    "content": "Write fix",
+                    "status": "pending",
+                    "activeForm": "Writing fix"
+                  }
+                ]
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "todo_1",
+              "content": "Todos have been modified successfully."
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "todo_2",
+              "name": "TodoWrite",
+              "input": {
+                "todos": [
+                  {
+                    "content": "Read code",
+                    "status": "completed",
+                    "activeForm": "Reading code"
+                  },
+                  {
+                    "content": "Write fix",
+                    "status": "in_progress",
+                    "activeForm": "Writing fix"
+                  },
+                  {
+                    "content": "",
+                    "status": "pending"
+                  },
+                  {
+                    "content": "Ship",
+                    "status": "blocked"
+                  }
+                ]
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "todo_2",
+              "content": "ok"
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tc_1",
+              "name": "TaskCreate",
+              "input": {
+                "subject": "Reproduce crash",
+                "description": "Run the app",
+                "activeForm": "Reproducing"
+              }
+            },
+            {
+              "type": "tool_use",
+              "id": "tc_2",
+              "name": "TaskCreate",
+              "input": {
+                "subject": "Write regression test"
+              }
+            },
+            {
+              "type": "tool_use",
+              "id": "tc_3",
+              "name": "TaskCreate",
+              "input": {
+                "subject": "Unresolved create"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tc_1",
+              "content": "Task #1 created successfully: Reproduce crash"
+            },
+            {
+              "type": "tool_result",
+              "tool_use_id": "tc_2",
+              "content": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}"
+            },
+            {
+              "type": "tool_result",
+              "tool_use_id": "tc_3",
+              "content": "created"
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tu_1",
+              "name": "TaskUpdate",
+              "input": {
+                "taskId": "1",
+                "status": "in_progress",
+                "addBlocks": [
+                  "2"
+                ],
+                "owner": "agent"
+              }
+            },
+            {
+              "type": "tool_use",
+              "id": "tu_2",
+              "name": "TaskUpdate",
+              "input": {
+                "taskId": "2",
+                "addBlockedBy": [
+                  "1",
+                  7
+                ]
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_1",
+              "content": "Updated task #1"
+            },
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_2",
+              "content": "Updated task #2"
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tl_1",
+              "name": "TaskList",
+              "input": {}
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tl_1",
+              "content": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]"
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tg_1",
+              "name": "TaskGet",
+              "input": {
+                "taskId": "2"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tg_1",
+              "content": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}"
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tu_3",
+              "name": "TaskUpdate",
+              "input": {
+                "taskId": "3",
+                "status": "deleted"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_3",
+              "content": "Deleted"
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "clearTasks"
+    },
+    {
+      "op": "clearTodos"
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tu_4",
+              "name": "TaskUpdate",
+              "input": {
+                "taskId": "1",
+                "status": "completed"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_4",
+              "content": "Updated task #1"
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "tu_5",
+              "name": "TaskUpdate",
+              "input": {
+                "taskId": "99",
+                "status": "completed"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "tu_5",
+              "content": "No such task"
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "todo_3",
+              "name": "TodoWrite",
+              "input": {
+                "todos": [
+                  {
+                    "content": "Again",
+                    "status": "pending"
+                  }
+                ]
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "duration_ms": 4200,
+        "duration_api_ms": 3900,
+        "num_turns": 2,
+        "result": "Done.",
+        "session_id": "cli-session-1",
+        "total_cost_usd": 0.0123,
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 80,
+          "cache_read_input_tokens": 9000
+        },
+        "modelUsage": {
+          "claude-opus-4-8": {
+            "inputTokens": 1200,
+            "outputTokens": 80,
+            "contextWindow": 1000000
+          },
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 300,
+            "contextWindow": 200000
+          }
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user_sent"
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                }
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "pendingToolName": "TodoWrite",
+        "pendingToolInput": {
+          "todos": [
+            {
+              "id": "1",
+              "content": "Read code",
+              "status": "in_progress",
+              "priority": "high"
+            },
+            {
+              "content": "Write fix",
+              "status": "pending",
+              "activeForm": "Writing fix"
+            }
+          ]
+        },
+        "todos": [
+          {
+            "id": "1",
+            "content": "Read code",
+            "status": "in_progress",
+            "priority": "high"
+          },
+          {
+            "content": "Write fix",
+            "status": "pending",
+            "activeForm": "Writing fix"
+          }
+        ]
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "todos": [
+          {
+            "id": "1",
+            "content": "Read code",
+            "status": "in_progress",
+            "priority": "high"
+          },
+          {
+            "content": "Write fix",
+            "status": "pending",
+            "activeForm": "Writing fix"
+          }
+        ],
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                }
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "pendingToolName": "TodoWrite",
+        "pendingToolInput": {
+          "todos": [
+            {
+              "content": "Read code",
+              "status": "completed",
+              "activeForm": "Reading code"
+            },
+            {
+              "content": "Write fix",
+              "status": "in_progress",
+              "activeForm": "Writing fix"
+            },
+            {
+              "content": "",
+              "status": "pending"
+            },
+            {
+              "content": "Ship",
+              "status": "blocked"
+            }
+          ]
+        },
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                }
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                }
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                }
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "pendingToolName": "TaskCreate",
+        "pendingToolInput": {
+          "subject": "Unresolved create"
+        },
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "taskOrder": [
+          "1",
+          "2",
+          "pending:tc_3"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "pending",
+            "description": "Run the app",
+            "activeForm": "Reproducing"
+          },
+          "2": {
+            "id": "2",
+            "subject": "Write regression test",
+            "status": "pending",
+            "owner": "me",
+            "metadata": {
+              "area": "player"
+            }
+          },
+          "pending:tc_3": {
+            "id": "pending:tc_3",
+            "subject": "Unresolved create",
+            "status": "pending"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                }
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                }
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "pendingToolName": "TaskUpdate",
+        "pendingToolInput": {
+          "taskId": "2",
+          "addBlockedBy": [
+            "1",
+            7
+          ]
+        },
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "taskOrder": [
+          "1",
+          "2",
+          "pending:tc_3"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "pending",
+            "description": "Run the app",
+            "activeForm": "Reproducing"
+          },
+          "2": {
+            "id": "2",
+            "subject": "Write regression test",
+            "status": "pending",
+            "owner": "me",
+            "metadata": {
+              "area": "player"
+            }
+          },
+          "pending:tc_3": {
+            "id": "pending:tc_3",
+            "subject": "Unresolved create",
+            "status": "pending"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "taskOrder": [
+          "1",
+          "2",
+          "pending:tc_3"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "in_progress",
+            "description": "Run the app",
+            "activeForm": "Reproducing",
+            "owner": "agent",
+            "blocks": [
+              "2"
+            ]
+          },
+          "2": {
+            "id": "2",
+            "subject": "Write regression test",
+            "status": "pending",
+            "owner": "me",
+            "blockedBy": [
+              "1"
+            ],
+            "metadata": {
+              "area": "player"
+            }
+          },
+          "pending:tc_3": {
+            "id": "pending:tc_3",
+            "subject": "Unresolved create",
+            "status": "pending"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {}
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "pendingToolName": "TaskList",
+        "pendingToolInput": {},
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "taskOrder": [
+          "1",
+          "2",
+          "pending:tc_3"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "in_progress",
+            "description": "Run the app",
+            "activeForm": "Reproducing",
+            "owner": "agent",
+            "blocks": [
+              "2"
+            ]
+          },
+          "2": {
+            "id": "2",
+            "subject": "Write regression test",
+            "status": "pending",
+            "owner": "me",
+            "blockedBy": [
+              "1"
+            ],
+            "metadata": {
+              "area": "player"
+            }
+          },
+          "pending:tc_3": {
+            "id": "pending:tc_3",
+            "subject": "Unresolved create",
+            "status": "pending"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "taskOrder": [
+          "1",
+          "2",
+          "pending:tc_3",
+          "3"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "in_progress"
+          },
+          "2": {
+            "id": "2",
+            "subject": "Write regression test",
+            "status": "pending",
+            "owner": "me",
+            "blockedBy": [
+              "1"
+            ],
+            "metadata": {
+              "area": "player"
+            }
+          },
+          "3": {
+            "id": "3",
+            "subject": "From list",
+            "status": "pending"
+          },
+          "pending:tc_3": {
+            "id": "pending:tc_3",
+            "subject": "Unresolved create",
+            "status": "pending"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                }
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "pendingToolName": "TaskGet",
+        "pendingToolInput": {
+          "taskId": "2"
+        },
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "taskOrder": [
+          "1",
+          "2",
+          "pending:tc_3",
+          "3"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "in_progress"
+          },
+          "2": {
+            "id": "2",
+            "subject": "Write regression test",
+            "status": "pending",
+            "owner": "me",
+            "blockedBy": [
+              "1"
+            ],
+            "metadata": {
+              "area": "player"
+            }
+          },
+          "3": {
+            "id": "3",
+            "subject": "From list",
+            "status": "pending"
+          },
+          "pending:tc_3": {
+            "id": "pending:tc_3",
+            "subject": "Unresolved create",
+            "status": "pending"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "taskOrder": [
+          "1",
+          "2",
+          "pending:tc_3",
+          "3"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "in_progress"
+          },
+          "2": {
+            "id": "2",
+            "subject": "Write regression test (renamed)",
+            "status": "completed",
+            "blocks": []
+          },
+          "3": {
+            "id": "3",
+            "subject": "From list",
+            "status": "pending"
+          },
+          "pending:tc_3": {
+            "id": "pending:tc_3",
+            "subject": "Unresolved create",
+            "status": "pending"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_3",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "3",
+                  "status": "deleted"
+                }
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "pendingToolName": "TaskUpdate",
+        "pendingToolInput": {
+          "taskId": "3",
+          "status": "deleted"
+        },
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "taskOrder": [
+          "1",
+          "2",
+          "pending:tc_3",
+          "3"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "in_progress"
+          },
+          "2": {
+            "id": "2",
+            "subject": "Write regression test (renamed)",
+            "status": "completed",
+            "blocks": []
+          },
+          "3": {
+            "id": "3",
+            "subject": "From list",
+            "status": "pending"
+          },
+          "pending:tc_3": {
+            "id": "pending:tc_3",
+            "subject": "Unresolved create",
+            "status": "pending"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_3",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "3",
+                  "status": "deleted"
+                },
+                "result": "Deleted",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "taskOrder": [
+          "1",
+          "2",
+          "pending:tc_3"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "in_progress"
+          },
+          "2": {
+            "id": "2",
+            "subject": "Write regression test (renamed)",
+            "status": "completed",
+            "blocks": []
+          },
+          "pending:tc_3": {
+            "id": "pending:tc_3",
+            "subject": "Unresolved create",
+            "status": "pending"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_3",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "3",
+                  "status": "deleted"
+                },
+                "result": "Deleted",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "todos": [
+          {
+            "content": "Read code",
+            "status": "completed",
+            "activeForm": "Reading code"
+          },
+          {
+            "content": "Write fix",
+            "status": "in_progress",
+            "activeForm": "Writing fix"
+          },
+          {
+            "content": "",
+            "status": "pending"
+          },
+          {
+            "content": "Ship",
+            "status": "blocked"
+          }
+        ],
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_3",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "3",
+                  "status": "deleted"
+                },
+                "result": "Deleted",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "todos": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_3",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "3",
+                  "status": "deleted"
+                },
+                "result": "Deleted",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-9",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_4",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "completed"
+                }
+              }
+            ],
+            "timestamp": 1760000008000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "pendingToolName": "TaskUpdate",
+        "pendingToolInput": {
+          "taskId": "1",
+          "status": "completed"
+        },
+        "todos": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_3",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "3",
+                  "status": "deleted"
+                },
+                "result": "Deleted",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-9",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_4",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "completed"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000008000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "todos": null,
+        "taskOrder": [
+          "1"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "completed",
+            "description": "Run the app",
+            "activeForm": "Reproducing"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_3",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "3",
+                  "status": "deleted"
+                },
+                "result": "Deleted",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-9",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_4",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "completed"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000008000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-10",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_5",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "99",
+                  "status": "completed"
+                }
+              }
+            ],
+            "timestamp": 1760000009000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "pendingToolName": "TaskUpdate",
+        "pendingToolInput": {
+          "taskId": "99",
+          "status": "completed"
+        },
+        "todos": null,
+        "taskOrder": [
+          "1"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "completed",
+            "description": "Run the app",
+            "activeForm": "Reproducing"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_3",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "3",
+                  "status": "deleted"
+                },
+                "result": "Deleted",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-9",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_4",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "completed"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000008000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-10",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_5",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "99",
+                  "status": "completed"
+                },
+                "result": "No such task",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000009000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "todos": null,
+        "taskOrder": [
+          "1"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "completed",
+            "description": "Run the app",
+            "activeForm": "Reproducing"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_3",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "3",
+                  "status": "deleted"
+                },
+                "result": "Deleted",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-9",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_4",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "completed"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000008000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-10",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_5",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "99",
+                  "status": "completed"
+                },
+                "result": "No such task",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000009000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-11",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_3",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Again",
+                      "status": "pending"
+                    }
+                  ]
+                }
+              }
+            ],
+            "timestamp": 1760000010000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "assistant",
+        "model": "claude-opus-4-8",
+        "pendingToolName": "TodoWrite",
+        "pendingToolInput": {
+          "todos": [
+            {
+              "content": "Again",
+              "status": "pending"
+            }
+          ]
+        },
+        "todos": [
+          {
+            "content": "Again",
+            "status": "pending"
+          }
+        ],
+        "taskOrder": [
+          "1"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "completed",
+            "description": "Run the app",
+            "activeForm": "Reproducing"
+          }
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Plan the work."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result": "Todos have been modified successfully.",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result": "ok",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result": "Task #1 created successfully: Reproduce crash",
+                "isError": false
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}",
+                "isError": false
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result": "created",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result": "Updated task #2",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000004000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000005000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                },
+                "result": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000006000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_3",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "3",
+                  "status": "deleted"
+                },
+                "result": "Deleted",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000007000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-9",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_4",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "completed"
+                },
+                "result": "Updated task #1",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000008000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-10",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "tu_5",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "99",
+                  "status": "completed"
+                },
+                "result": "No such task",
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000009000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-11",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "todo_3",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Again",
+                      "status": "pending"
+                    }
+                  ]
+                }
+              }
+            ],
+            "timestamp": 1760000010000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "result",
+        "model": "claude-opus-4-8",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "todos": [
+          {
+            "content": "Again",
+            "status": "pending"
+          }
+        ],
+        "taskOrder": [
+          "1"
+        ],
+        "tasks": {
+          "1": {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "completed",
+            "description": "Run the app",
+            "activeForm": "Reproducing"
+          }
+        },
+        "contextWindow": 1000000,
+        "totalCost": 0.0123,
+        "totalDuration": 4200
+      }
+    }
+  ],
+  "transcripts": [
+    {
+      "params": {},
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "text_blocks": [
+              "Plan the work."
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "Todos have been modified successfully."
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "ok"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tc_1",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Reproduce crash",
+                  "description": "Run the app",
+                  "activeForm": "Reproducing"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "Task #1 created successfully: Reproduce crash"
+                  }
+                ],
+                "status": "done"
+              },
+              {
+                "id": "tc_2",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Write regression test"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "{\"id\":\"2\",\"subject\":\"Write regression test\",\"status\":\"pending\",\"owner\":\"me\",\"metadata\":{\"area\":\"player\"}}"
+                  }
+                ],
+                "status": "done"
+              },
+              {
+                "id": "tc_3",
+                "name": "TaskCreate",
+                "input": {
+                  "subject": "Unresolved create"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "created"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000003000
+          },
+          {
+            "id": "uuid-5",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_1",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "in_progress",
+                  "addBlocks": [
+                    "2"
+                  ],
+                  "owner": "agent"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "Updated task #1"
+                  }
+                ],
+                "status": "done"
+              },
+              {
+                "id": "tu_2",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "2",
+                  "addBlockedBy": [
+                    "1",
+                    7
+                  ]
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "Updated task #2"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000004000
+          },
+          {
+            "id": "uuid-6",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tl_1",
+                "name": "TaskList",
+                "input": {},
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "[{\"id\":\"1\",\"subject\":\"Reproduce crash\",\"status\":\"in_progress\"},{\"id\":\"3\",\"subject\":\"From list\",\"status\":\"weird\"},{\"id\":\"4\",\"subject\":\"Gone\",\"status\":\"deleted\"},{\"subject\":\"No id\"}]"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000005000
+          },
+          {
+            "id": "uuid-7",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tg_1",
+                "name": "TaskGet",
+                "input": {
+                  "taskId": "2"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "{\"id\":\"2\",\"subject\":\"Write regression test (renamed)\",\"status\":\"completed\",\"blocks\":[]}"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000006000
+          },
+          {
+            "id": "uuid-8",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_3",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "3",
+                  "status": "deleted"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "Deleted"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000007000
+          },
+          {
+            "id": "uuid-9",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_4",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "1",
+                  "status": "completed"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "Updated task #1"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000008000
+          },
+          {
+            "id": "uuid-10",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_5",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "99",
+                  "status": "completed"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "No such task"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000009000
+          },
+          {
+            "id": "uuid-11",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "todo_3",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Again",
+                      "status": "pending"
+                    }
+                  ]
+                },
+                "result_blocks": [],
+                "status": "running"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000010000
+          }
+        ],
+        "next_after": null,
+        "prev_before": null,
+        "total": 11,
+        "tasks": [
+          {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "completed",
+            "description": "Run the app",
+            "activeForm": "Reproducing"
+          }
+        ],
+        "todos": [
+          {
+            "content": "Again",
+            "status": "pending"
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-10",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "tu_5",
+                "name": "TaskUpdate",
+                "input": {
+                  "taskId": "99",
+                  "status": "completed"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "No such task"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000009000
+          },
+          {
+            "id": "uuid-11",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "todo_3",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Again",
+                      "status": "pending"
+                    }
+                  ]
+                },
+                "result_blocks": [],
+                "status": "running"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000010000
+          }
+        ],
+        "next_after": null,
+        "prev_before": 9,
+        "total": 11,
+        "tasks": [
+          {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "completed",
+            "description": "Run the app",
+            "activeForm": "Reproducing"
+          }
+        ],
+        "todos": [
+          {
+            "content": "Again",
+            "status": "pending"
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "after": 1,
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "Todos have been modified successfully."
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "todo_2",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "content": "Read code",
+                      "status": "completed",
+                      "activeForm": "Reading code"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "in_progress",
+                      "activeForm": "Writing fix"
+                    },
+                    {
+                      "content": "",
+                      "status": "pending"
+                    },
+                    {
+                      "content": "Ship",
+                      "status": "blocked"
+                    }
+                  ]
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "ok"
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          }
+        ],
+        "next_after": 3,
+        "prev_before": 1,
+        "total": 11,
+        "tasks": [
+          {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "completed",
+            "description": "Run the app",
+            "activeForm": "Reproducing"
+          }
+        ],
+        "todos": [
+          {
+            "content": "Again",
+            "status": "pending"
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "before": 2,
+        "limit": 1
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "todo_1",
+                "name": "TodoWrite",
+                "input": {
+                  "todos": [
+                    {
+                      "id": "1",
+                      "content": "Read code",
+                      "status": "in_progress",
+                      "priority": "high"
+                    },
+                    {
+                      "content": "Write fix",
+                      "status": "pending",
+                      "activeForm": "Writing fix"
+                    }
+                  ]
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "Todos have been modified successfully."
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000001000
+          }
+        ],
+        "next_after": 2,
+        "prev_before": 1,
+        "total": 11,
+        "tasks": [
+          {
+            "id": "1",
+            "subject": "Reproduce crash",
+            "status": "completed",
+            "description": "Run the app",
+            "activeForm": "Reproducing"
+          }
+        ],
+        "todos": [
+          {
+            "content": "Again",
+            "status": "pending"
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    }
+  ]
+}
