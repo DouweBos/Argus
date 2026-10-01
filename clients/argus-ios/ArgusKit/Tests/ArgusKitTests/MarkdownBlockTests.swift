@@ -120,4 +120,27 @@ struct MarkdownBlockTests {
     #expect(language == nil)
     #expect(body == "still code")
   }
+
+  @Test("a loose ordered list with indented continuations stays one list")
+  func looseOrderedList() {
+    let blocks = MarkdownBlock.parse(
+      """
+      1. **First** thing.
+         It continues here.
+
+      2. Second thing.
+
+      3. Third thing.
+
+      All done.
+      """)
+    #expect(blocks.count == 2)
+    guard case .list(let items, let ordered) = blocks[0] else {
+      Issue.record("expected a list, got \(blocks)")
+      return
+    }
+    #expect(ordered)
+    #expect(items == ["**First** thing.\nIt continues here.", "Second thing.", "Third thing."])
+    #expect(blocks[1] == .paragraph("All done."))
+  }
 }
