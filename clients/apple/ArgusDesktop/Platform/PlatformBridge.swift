@@ -19,7 +19,7 @@ final class PlatformBridge: NSObject, UNUserNotificationCenterDelegate {
     super.init()
     let center = UNUserNotificationCenter.current()
     center.delegate = self
-    center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    requestAuthorizationIfNeeded()
 
     let notifications = NotificationCenter.default
     for (name, foreground) in [
@@ -28,8 +28,21 @@ final class PlatformBridge: NSObject, UNUserNotificationCenterDelegate {
     ] {
       observers.append(
         notifications.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-          MainActor.assumeIsolated { self?.reportForeground(foreground) }
+          MainActor.assumeIsolated {
+            self?.reportForeground(foreground)
+            // macOS only asks while the app is in front; a launch in the
+            // background leaves the question pending until the first activation.
+            if foreground { self?.requestAuthorizationIfNeeded() }
+          }
         })
+    }
+  }
+
+  private func requestAuthorizationIfNeeded() {
+    let center = UNUserNotificationCenter.current()
+    center.getNotificationSettings { settings in
+      guard settings.authorizationStatus == .notDetermined else { return }
+      center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
   }
 
