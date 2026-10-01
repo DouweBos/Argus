@@ -278,3 +278,26 @@ MetricKit's job. Nothing is delivered in the simulator.
 
 All of it is gated on `full` mode. In `presence` the heartbeat is the
 only thing that leaves the phone.
+
+## Mac app (beta)
+
+The native Mac app (`clients/argus-ios/ArgusDesktop`) sends its events
+**through its own host** with `telemetry_capture`, the way the Electron
+renderer does — same install id, same PostHog key, same consent gate.
+Its consent level is kept by the app and pushed to the host on every
+connect; until the user opts up it is `presence`, so none of these
+leave the machine.
+
+Everything the host already sees (`agent_started`, `session_created`,
+`session_merged`, …) is captured there and absent below.
+
+| Event                    | When                                                      | Extra props                                    |
+| ------------------------ | --------------------------------------------------------- | ---------------------------------------------- |
+| `mac_launched`           | The app launched                                          | —                                              |
+| `mac_quit`               | The app is quitting                                       | `had_running_agents`                           |
+| `mac_host_started`       | The bundled host came up                                  | `restarts` (crash restarts so far this launch) |
+| `mac_host_crashed`       | The bundled host exited unexpectedly                      | `exit_code`, `attempt`                         |
+| `mac_host_failed`        | The host crashed too often in a row and the app gave up   | `crashes`                                      |
+| `mac_host_lock_conflict` | Another app's host was already running on this Argus home | `holder` (`electron`, `mac`, `cli`)            |
+| `mac_host_handover`      | The user had the app quit the other host and take over    | `holder`, `success`                            |
+| `mac_screen_viewed`      | The window navigated                                      | `screen` — the route pattern, never an id      |
