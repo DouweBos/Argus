@@ -8,7 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   let model = DesktopModel()
   /// SwiftUI owns the delegate; a signal handler needs a way back to it.
   private(set) static weak var current: AppDelegate?
-  private var terminating = false
+  private(set) var terminating = false
   var skipQuitConfirmation = false
   private var signalSource: DispatchSourceSignal?
 
@@ -31,8 +31,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let main = CFRunLoopGetMain()
     CFRunLoopPerformBlock(main, CFRunLoopMode.commonModes.rawValue) {
       MainActor.assumeIsolated {
+        guard let delegate = AppDelegate.current, !delegate.terminating else { return }
         // Whoever sent it (another Argus taking over) already asked the user.
-        AppDelegate.current?.skipQuitConfirmation = true
+        delegate.skipQuitConfirmation = true
         NSApp.terminate(nil)
       }
     }
@@ -51,7 +52,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     terminating = true
     Task {
-      await model.shutdown()
+      // A host that won't go must not keep the app alive: the supervisor
+      // SIGKILLs it after its own timeout, and this bounds everything else.
+      await withTaskGroup(of: Void.self) { group in
+        group.addTask { await self.model.shutdown() }
+        group.addTask { try? await Task.sleep(for: .seconds(25)) }
+        await group.next()
+        group.cancelAll()
+      }
       NSApp.reply(toApplicationShouldTerminate: true)
     }
     return .terminateLater
