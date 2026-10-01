@@ -8,18 +8,28 @@ import Foundation
 public final class LocalBackend: HostBackend {
   public let kind = HostBackendKind.local
   public let transport: LocalTransport
+  private let onPlatformRequest: @Sendable (EventEnvelope) -> Void
 
-  public init(socketPath: String) {
+  /// `onPlatformRequest` gets the host's `platform.request` events — banners,
+  /// opening URLs, raising the window — which are the app's to answer, not a
+  /// store's.
+  public init(
+    socketPath: String, onPlatformRequest: @escaping @Sendable (EventEnvelope) -> Void = { _ in }
+  ) {
     transport = LocalTransport(path: socketPath)
+    self.onPlatformRequest = onPlatformRequest
   }
 
   public func events() async -> AsyncStream<HostEvent> {
     let upstream = await transport.start()
+    let onPlatformRequest = onPlatformRequest
     return AsyncStream { continuation in
       let pump = Task {
         for await event in upstream {
           switch event {
           case .state(let state): continuation.yield(.state(state))
+          case .event(let envelope) where envelope.event == "platform.request":
+            onPlatformRequest(envelope)
           case .event(let envelope): continuation.yield(.event(envelope))
           case .media(let data): continuation.yield(.media(data))
           }

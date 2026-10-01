@@ -52,6 +52,9 @@
 		E79376838450019576305370 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A254961B044F508401BE46 /* AppStore.swift */; };
 		AA1000000000000000000001 /* ClaudeAccountsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000002 /* ClaudeAccountsView.swift */; };
 		FAEB2F8A18B2B7EEA189693B /* AppStore+Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */; };
+		DE5C0000000000000000000E /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000B /* ArgusKit */; };
+		DE5C0000000000000000000F /* ArgusCore in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000C /* ArgusCore */; };
+		DE5C00000000000000000010 /* ArgusUI in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000D /* ArgusUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -128,7 +131,29 @@
 		D2978877FCC50AC76553762A /* PairView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairView.swift; sourceTree = "<group>"; };
 		E3E0EB550BA6630F2052ABE5 /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
 		EC699CB84E030428A8060A13 /* ChangesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangesView.swift; sourceTree = "<group>"; };
+		DE5C00000000000000000002 /* Argus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Argus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		DE5C00000000000000000011 /* Exceptions for "ArgusDesktop" folder in "ArgusDesktop" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Host.entitlements,
+			);
+			target = DE5C00000000000000000001 /* ArgusDesktop */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		DE5C00000000000000000003 /* ArgusDesktop */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				DE5C00000000000000000011 /* Exceptions for "ArgusDesktop" folder in "ArgusDesktop" target */,
+			);
+			path = ArgusDesktop;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		17A8D1673F0AF65B486FC7B2 /* Frameworks */ = {
@@ -147,6 +172,16 @@
 				792DC62433CAABA830D81267 /* ArgusKit in Frameworks */,
 				A5C0DE0000000000000C0007 /* ArgusCore in Frameworks */,
 				A5C0DE0000000000000C0008 /* ArgusUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DE5C00000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DE5C0000000000000000000E /* ArgusKit in Frameworks */,
+				DE5C0000000000000000000F /* ArgusCore in Frameworks */,
+				DE5C00000000000000000010 /* ArgusUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -186,6 +221,7 @@
 				A1C0FFEE000000000000AA04 /* Resources */,
 				FEED000100000000000000A5 /* Config */,
 				554FDC8717D9CC35677B42B3 /* ArgusRemote */,
+				DE5C00000000000000000003 /* ArgusDesktop */,
 				664BEF247131A39B00FDFB6F /* NotificationService */,
 				2542E15A24347C94BC63C98B /* Packages */,
 				2367FD0131C0CDC27F4B7B30 /* Products */,
@@ -197,6 +233,7 @@
 			children = (
 				4B819AF7F05F8000A0B5D08A /* ArgusNotificationService.appex */,
 				22BC770CA5DFEDFB0344DB2D /* ArgusRemote.app */,
+				DE5C00000000000000000002 /* Argus.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -343,6 +380,32 @@
 			productReference = 22BC770CA5DFEDFB0344DB2D /* ArgusRemote.app */;
 			productType = "com.apple.product-type.application";
 		};
+		DE5C00000000000000000001 /* ArgusDesktop */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DE5C00000000000000000008 /* Build configuration list for PBXNativeTarget "ArgusDesktop" */;
+			buildPhases = (
+				DE5C00000000000000000004 /* Sources */,
+				DE5C00000000000000000005 /* Frameworks */,
+				DE5C00000000000000000006 /* Resources */,
+				DE5C00000000000000000007 /* Stage Node Host */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				DE5C00000000000000000003 /* ArgusDesktop */,
+			);
+			name = ArgusDesktop;
+			packageProductDependencies = (
+				DE5C0000000000000000000B /* ArgusKit */,
+				DE5C0000000000000000000C /* ArgusCore */,
+				DE5C0000000000000000000D /* ArgusUI */,
+			);
+			productName = ArgusDesktop;
+			productReference = DE5C00000000000000000002 /* Argus.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -359,6 +422,9 @@
 					FD27DF58294A7821099F159D = {
 						DevelopmentTeam = CKZT75PN5T;
 						ProvisioningStyle = Automatic;
+					};
+					DE5C00000000000000000001 = {
+						CreatedOnToolsVersion = 26.0;
 					};
 				};
 			};
@@ -384,6 +450,7 @@
 			targets = (
 				8CECFF1D74073176AD704531 /* ArgusNotificationService */,
 				FD27DF58294A7821099F159D /* ArgusRemote */,
+				DE5C00000000000000000001 /* ArgusDesktop */,
 			);
 		};
 /* End PBXProject section */
@@ -397,7 +464,36 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DE5C00000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		DE5C00000000000000000007 /* Stage Node Host */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Stage Node Host";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/zsh;
+			shellScript = "# The bundled Node host: runtime, dist-host, node-pty and resources, signed\n# with the identity Xcode signs the app with (scripts/build-mac-host.ts).\nexport PATH=\"$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/local/bin:$PATH\"\ncd \"$SRCROOT/../..\"\npnpm exec tsx scripts/build-mac-host.ts \\\n  --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/host\" \\\n  --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		8AD6F62C20A6CA9B895F2BFE /* Sources */ = {
@@ -449,6 +545,13 @@
 				FEED000100000000000000C3 /* CrashDiagnostics.swift in Sources */,
 				FEED000100000000000000C4 /* TelemetryConsentSheet.swift in Sources */,
 				3C1C0796FCE5D8AA678463BF /* StoppedAgentView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DE5C00000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -664,6 +767,61 @@
 			};
 			name = Release;
 		};
+		DE5C00000000000000000009 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Argus;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.houwert.argus.mac;
+				PRODUCT_NAME = Argus;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_IDENTITY = "-";
+			};
+			name = Debug;
+		};
+		DE5C0000000000000000000A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Argus;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.houwert.argus.mac;
+				PRODUCT_NAME = Argus;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
+				OTHER_CODE_SIGN_FLAGS = "--timestamp";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -690,6 +848,15 @@
 			buildConfigurations = (
 				A7CBB9619CB6FEAD5B08E003 /* Debug */,
 				746A113C4E08F9BDFDF30077 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DE5C00000000000000000008 /* Build configuration list for PBXNativeTarget "ArgusDesktop" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DE5C00000000000000000009 /* Debug */,
+				DE5C0000000000000000000A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -745,6 +912,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FEED000100000000000000A1 /* XCRemoteSwiftPackageReference "posthog-ios" */;
 			productName = PostHog;
+		};
+		DE5C0000000000000000000B /* ArgusKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B68ECC6C3B58529FD4EC56FE /* XCLocalSwiftPackageReference "ArgusKit" */;
+			productName = ArgusKit;
+		};
+		DE5C0000000000000000000C /* ArgusCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A5C0DE0000000000000C0001 /* XCLocalSwiftPackageReference "ArgusCore" */;
+			productName = ArgusCore;
+		};
+		DE5C0000000000000000000D /* ArgusUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A5C0DE0000000000000C0002 /* XCLocalSwiftPackageReference "ArgusUI" */;
+			productName = ArgusUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
