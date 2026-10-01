@@ -339,15 +339,25 @@ public struct QuestionFormView: View {
 public struct PermissionButtons: View {
   let onAllow: () -> Void
   let onDeny: () -> Void
+  /// The "Always allow" rule and its action, where the client can send one.
+  let alwaysAllow: (rule: String, action: () -> Void)?
 
-  public init(onAllow: @escaping () -> Void, onDeny: @escaping () -> Void) {
+  public init(
+    onAllow: @escaping () -> Void, onDeny: @escaping () -> Void,
+    alwaysAllow: (rule: String, action: () -> Void)? = nil
+  ) {
     self.onAllow = onAllow
     self.onDeny = onDeny
+    self.alwaysAllow = alwaysAllow
   }
 
   public var body: some View {
     HStack(spacing: 8) {
       Btn(label: "Allow", small: true, action: onAllow)
+      if let alwaysAllow {
+        Btn(label: "Always Allow \(alwaysAllow.rule)", tone: .secondary, small: true,
+            action: alwaysAllow.action)
+      }
       Btn(label: "Deny", tone: .danger, small: true, action: onDeny)
     }
   }
