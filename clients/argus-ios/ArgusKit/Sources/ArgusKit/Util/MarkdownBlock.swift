@@ -59,8 +59,31 @@ public enum MarkdownBlock: Equatable, Sendable {
     }
 
     var lines = source.components(separatedBy: "\n")[...]
+    /// A blank line inside a list: the list goes on if an item or an indented
+    /// continuation follows, and ends at anything else.
+    var blankInList = false
     while let line = lines.first {
       lines = lines.dropFirst()
+
+      if !listItems.isEmpty {
+        let isBlank = line.trimmingCharacters(in: .whitespaces).isEmpty
+        let indented = line.hasPrefix("  ") || line.hasPrefix("\t")
+        if isBlank {
+          blankInList = true
+          continue
+        }
+        // An indented line under an item is that item's continuation.
+        if indented, line.firstMatch(of: /^\s*([-*+]|\d+[.)])\s+/) == nil {
+          let text = line.trimmingCharacters(in: .whitespaces)
+          listItems[listItems.count - 1] += (blankInList ? "\n\n" : "\n") + text
+          blankInList = false
+          continue
+        }
+        let isItem = line.trimmingCharacters(in: .whitespaces)
+          .firstMatch(of: /^([-*+]|\d+[.)])\s+/) != nil
+        if blankInList, !isItem { flushList() }
+        blankInList = false
+      }
 
       if line.hasPrefix("```") {
         flushAll()
