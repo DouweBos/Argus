@@ -48,6 +48,7 @@ public enum Icon {
   public static let chat = "bubble.left"
   public static let play = "play.fill"
   public static let link = "link"
+  public static let openExternal = "arrow.up.forward.square"
   public static let warning = "exclamationmark.triangle"
   public static let image = "photo"
   public static let rotate = "rotate.right"

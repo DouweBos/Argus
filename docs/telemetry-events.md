@@ -291,13 +291,15 @@ leave the machine.
 Everything the host already sees (`agent_started`, `session_created`,
 `session_merged`, …) is captured there and absent below.
 
-| Event                    | When                                                      | Extra props                                    |
-| ------------------------ | --------------------------------------------------------- | ---------------------------------------------- |
-| `mac_launched`           | The app launched                                          | —                                              |
-| `mac_quit`               | The app is quitting                                       | `had_running_agents`                           |
-| `mac_host_started`       | The bundled host came up                                  | `restarts` (crash restarts so far this launch) |
-| `mac_host_crashed`       | The bundled host exited unexpectedly                      | `exit_code`, `attempt`                         |
-| `mac_host_failed`        | The host crashed too often in a row and the app gave up   | `crashes`                                      |
-| `mac_host_lock_conflict` | Another app's host was already running on this Argus home | `holder` (`electron`, `mac`, `cli`)            |
-| `mac_host_handover`      | The user had the app quit the other host and take over    | `holder`, `success`                            |
-| `mac_screen_viewed`      | The window navigated                                      | `screen` — the route pattern, never an id      |
+| Event                        | When                                                      | Extra props                                                                                                                              |
+| ---------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `mac_launched`               | The app launched                                          | —                                                                                                                                        |
+| `mac_quit`                   | The app is quitting                                       | `had_running_agents`                                                                                                                     |
+| `mac_host_started`           | The bundled host came up                                  | `restarts` (crash restarts so far this launch)                                                                                           |
+| `mac_host_crashed`           | The bundled host exited unexpectedly                      | `exit_code`, `attempt`                                                                                                                   |
+| `mac_host_failed`            | The host crashed too often in a row and the app gave up   | `crashes`                                                                                                                                |
+| `mac_host_lock_conflict`     | Another app's host was already running on this Argus home | `holder` (`electron`, `mac`, `cli`)                                                                                                      |
+| `mac_host_handover`          | The user had the app quit the other host and take over    | `holder`, `success`                                                                                                                      |
+| `mac_screen_viewed`          | The window navigated                                      | `screen` — the route pattern, never an id                                                                                                |
+| `mac_transcript_link_opened` | A file or URL link in a transcript was used               | `action` (`open`, `open_in_editor`, `reveal`, `copy_path`, `open_url`, `copy_link`), `relative` (the path needed the session's worktree) |
+| `mac_transcript_find_used`   | Find in chat closed after a search                        | `matches_bucket` (`0`, `1-9`, `10-99`, `100+`), `navigated` (stepped between matches)                                                    |

@@ -89,7 +89,7 @@ struct AgentPane: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      AgentTranscriptView(agentKey: agentId)
+      TranscriptView(agentKey: agentId, sessionId: sessionId, fixture: TranscriptStress.fixture)
       ChatInputView(agentId: agentId, sessionId: sessionId)
     }
     .task {

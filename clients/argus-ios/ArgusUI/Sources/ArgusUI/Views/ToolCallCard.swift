@@ -8,6 +8,7 @@ import SwiftUI
 public struct ToolCallCard: View {
   @Environment(\.theme) private var theme
   @Environment(\.autoExpandImageReads) private var autoExpandImageReads
+  @Environment(\.toolTextRenderer) private var toolTextRenderer
   @Environment(HostStore.self) private var host
 
   let agentKey: String
@@ -70,6 +71,17 @@ public struct ToolCallCard: View {
   }
 
   private var header: some View {
+    HStack(spacing: 6) {
+      headerButton
+      if let open = toolTextRenderer?.openPath, ToolCallSummary.isPathTool(call.name),
+        let path = call.input["file_path"]?.stringValue ?? call.input["path"]?.stringValue
+      {
+        IconBtn(systemName: Icon.openExternal, label: "Open \(path)", size: 11) { open(path) }
+      }
+    }
+  }
+
+  private var headerButton: some View {
     Button {
       guard !isPending else { return }
       userExpanded = !expanded
@@ -219,7 +231,11 @@ public struct ToolCallCard: View {
     } else if let answered = answeredQuestions {
       AnsweredQuestionsView(questions: answered.questions, answer: answered.answer)
     } else if call.name == "Bash", let command = call.input["command"]?.stringValue {
-      MonoText(text: command, size: 11)
+      if let toolTextRenderer {
+        toolTextRenderer.render(command, .command)
+      } else {
+        MonoText(text: command, size: 11)
+      }
     } else {
       ToolInputFieldsView(fields: ToolInput.fields(call.input))
     }
@@ -239,6 +255,8 @@ public struct ToolCallCard: View {
   private var resultBlocks: some View {
     ForEach(Array(call.resultBlocks.enumerated()), id: \.offset) { _, block in
       switch block {
+      case .text(let text) where toolTextRenderer != nil:
+        toolTextRenderer?.render(text, call.isError == true ? .error : .output)
       case .text(let text):
         let clipped =
           text.count > Self.resultPreviewChars
@@ -309,4 +327,28 @@ public struct TranscriptImage: View {
       await host.loadImage(agentId: agentKey, imageId: imageId)
     }
   }
+}
+
+/// Lets a platform draw a tool's command and output itself, and open the file
+/// a tool touched. The Mac app sets it for selectable, linkified text; unset,
+/// the card renders as it always has.
+public struct ToolTextRenderer: @unchecked Sendable {
+  public enum Role: Sendable {
+    case command, output, error
+  }
+
+  public var render: @MainActor (String, Role) -> AnyView
+  public var openPath: (@MainActor (String) -> Void)?
+
+  public init(
+    render: @escaping @MainActor (String, Role) -> AnyView,
+    openPath: (@MainActor (String) -> Void)? = nil
+  ) {
+    self.render = render
+    self.openPath = openPath
+  }
+}
+
+extension EnvironmentValues {
+  @Entry public var toolTextRenderer: ToolTextRenderer?
 }
