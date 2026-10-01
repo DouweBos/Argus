@@ -106,6 +106,7 @@ private struct PlanActions: View {
           Btn(label: "Keep planning", tone: .ghost, small: true, action: onKeepPlanning)
         } else {
           Btn(label: "Send feedback", tone: .secondary, small: true) { onFeedback(trimmed) }
+            .commandReturnShortcut()
         }
       }
 
@@ -271,6 +272,7 @@ public struct QuestionFormView: View {
             Questions.formatAnswer(questions: questions, picks: picks, custom: custom))
         }
         .disabled(!allAnswered)
+        .commandReturnShortcut()
         Btn(label: "Cancel", tone: .ghost, small: true, action: onCancel)
       }
     }
@@ -398,5 +400,18 @@ public struct TaskListView: View {
     case .pending:
       StatusDot(tone: .muted).frame(width: 14, height: 18)
     }
+  }
+}
+
+extension View {
+  /// ⌘↵ sends a plan's feedback or a question's answers, as on the desktop.
+  /// macOS only: the phone's keyboard has no such chord to collide with.
+  @ViewBuilder
+  fileprivate func commandReturnShortcut() -> some View {
+    #if os(macOS)
+      keyboardShortcut(.return, modifiers: .command)
+    #else
+      self
+    #endif
   }
 }
