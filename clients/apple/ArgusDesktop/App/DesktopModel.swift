@@ -16,8 +16,8 @@ final class DesktopModel {
   private(set) var route: DesktopRoute = .home
   /// The project the New Session sheet is open for.
   var newSessionProject: RemoteProject?
-  @ObservationIgnored private var back: [DesktopRoute] = []
-  @ObservationIgnored private var forward: [DesktopRoute] = []
+  private var back: [DesktopRoute] = []
+  private var forward: [DesktopRoute] = []
 
   init() {
     supervisor = HostSupervisor(configuration: HostLocation.configuration())

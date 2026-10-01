@@ -14,18 +14,36 @@ struct ArgusDesktopApp: App {
     }
     .commands {
       CommandGroup(replacing: .newItem) {
-        Button("New Session…") { delegate.model.requestNewSession() }
-          .keyboardShortcut("n", modifiers: .command)
-          .disabled(delegate.model.store.projects.isEmpty)
+        NewSessionCommand(model: delegate.model)
       }
       CommandGroup(after: .sidebar) {
-        Button("Back") { delegate.model.goBack() }
-          .keyboardShortcut("[", modifiers: .command)
-          .disabled(!delegate.model.canGoBack)
-        Button("Forward") { delegate.model.goForward() }
-          .keyboardShortcut("]", modifiers: .command)
-          .disabled(!delegate.model.canGoForward)
+        NavigationCommands(model: delegate.model)
       }
     }
+  }
+}
+
+/// Menu items read the model in their own bodies: a scene's `commands` aren't
+/// re-evaluated when the model changes, so a check there would never update.
+private struct NewSessionCommand: View {
+  let model: DesktopModel
+
+  var body: some View {
+    Button("New Session…") { model.requestNewSession() }
+      .keyboardShortcut("n", modifiers: .command)
+      .disabled(model.store.projects.isEmpty)
+  }
+}
+
+private struct NavigationCommands: View {
+  let model: DesktopModel
+
+  var body: some View {
+    Button("Back") { model.goBack() }
+      .keyboardShortcut("[", modifiers: .command)
+      .disabled(!model.canGoBack)
+    Button("Forward") { model.goForward() }
+      .keyboardShortcut("]", modifiers: .command)
+      .disabled(!model.canGoForward)
   }
 }
