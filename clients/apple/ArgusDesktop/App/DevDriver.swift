@@ -163,6 +163,9 @@
         let info = FakeDraggingInfo(pasteboard: pasteboard, window: window)
         _ = input.draggingEntered(info)
         return ["ok": input.performDragOperation(info)]
+      case "deleteSession":
+        AppDelegate.current?.model.requestDeleteSession()
+        return ["ok": AppDelegate.current?.model.deletingSession != nil]
       case "newSession":
         // What ⌘N does; SwiftUI only enables menu commands while the app is active.
         AppDelegate.current?.model.requestNewSession()
@@ -189,10 +192,6 @@
         return ["views": textViews(in: content).map {
           "\(Int($0.convert($0.bounds, to: nil).minX)),\(Int($0.convert($0.bounds, to: nil).minY)) \(Int($0.bounds.width))x\(Int($0.bounds.height)) vis=\(Int($0.visibleRect.height)) flipped=\($0.isFlipped) \($0.string.prefix(30))"
         }]
-      case "makeKey":
-        // Key within this app only; the app itself stays inactive.
-        window.makeKey()
-        return ["ok": window.isKeyWindow]
       case "selection":
         guard let text = window.firstResponder as? NSTextView else { return ["error": "no text view focused"] }
         let selected = text.selectedRanges.map { (text.string as NSString).substring(with: $0.rangeValue) }
@@ -264,6 +263,9 @@
       return click(at: window.convertPoint(fromScreen: screenPoint), in: window)
     }
 
+    /// Through the window, the way AppKit routes a real click — SwiftUI's
+    /// gestures only see events that arrive that way. A window that isn't key
+    /// doesn't activate the app for an in-process event, so focus stays put.
     private func click(at point: NSPoint, in window: NSWindow, count: Int = 1) -> Bool {
       func event(_ type: NSEvent.EventType) -> NSEvent? {
         NSEvent.mouseEvent(

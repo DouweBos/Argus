@@ -64,8 +64,14 @@ struct NewSessionSheet: View {
       }
     }
     .formStyle(.grouped)
+    .safeAreaInset(edge: .top) {
+      // A sheet shows no navigation title; say where the session goes.
+      Text("New Session in \(project.name)")
+        .font(.headline)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding([.top, .horizontal], 20)
+    }
     .frame(width: 480)
-    .navigationTitle("New Session in \(project.name)")
     .toolbar {
       ToolbarItem(placement: .cancellationAction) {
         Button("Cancel") { dismiss() }
