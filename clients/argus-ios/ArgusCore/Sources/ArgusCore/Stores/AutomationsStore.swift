@@ -8,29 +8,29 @@ import Observation
 /// next one.
 @MainActor
 @Observable
-final class AutomationsStore {
-  var automations: [RemoteAutomation] = []
-  var detailById: [String: RemoteAutomationDetail] = [:]
+public final class AutomationsStore {
+  public internal(set) var automations: [RemoteAutomation] = []
+  public internal(set) var detailById: [String: RemoteAutomationDetail] = [:]
   /// Keyed by automation id; loaded when an automation is opened.
-  var memoriesById: [String: [RemoteAutomationMemory]] = [:]
-  var sources: [RemoteSignalSource] = []
-  var runners: [RemoteRunner] = []
+  public internal(set) var memoriesById: [String: [RemoteAutomationMemory]] = [:]
+  public internal(set) var sources: [RemoteSignalSource] = []
+  public internal(set) var runners: [RemoteRunner] = []
   /// Newest first, across every automation.
-  var runs: [RemoteAutomationRun] = []
-  var detailByRun: [String: RemoteAutomationRunDetail] = [:]
-  var triggering: Set<String> = []
-  var loaded = false
-  var error: String?
+  public internal(set) var runs: [RemoteAutomationRun] = []
+  public internal(set) var detailByRun: [String: RemoteAutomationRunDetail] = [:]
+  public internal(set) var triggering: Set<String> = []
+  public internal(set) var loaded = false
+  public internal(set) var error: String?
 
   private static let runLimit = 40
 
-  private unowned let app: AppStore
+  private unowned let host: HostStore
 
-  init(app: AppStore) {
-    self.app = app
+  public init(host: HostStore) {
+    self.host = host
   }
 
-  func clear() {
+  public func clear() {
     automations = []
     detailById = [:]
     sources = []
@@ -42,15 +42,15 @@ final class AutomationsStore {
     error = nil
   }
 
-  func refresh() async {
-    guard let transport = app.transport else { return }
+  public func refresh() async {
+    guard let backend = host.backend else { return }
     struct ListResult: Decodable { let automations: [RemoteAutomation] }
     struct RunsParams: Encodable { let limit: Int }
     struct RunsResult: Decodable { let runs: [RemoteAutomationRun] }
 
-    async let list = try? transport.request(
+    async let list = try? backend.request(
       .automationsList, EmptyParams(), as: ListResult.self)
-    async let recent = try? transport.request(
+    async let recent = try? backend.request(
       .automationsRuns, RunsParams(limit: Self.runLimit), as: RunsResult.self)
 
     let (listed, ran) = await (list, recent)
@@ -72,11 +72,11 @@ final class AutomationsStore {
 
   /// The editable shape, fetched only for the automation being opened.
   @discardableResult
-  func loadDetail(id: String) async -> RemoteAutomationDetail? {
-    guard let transport = app.transport else { return nil }
+  public func loadDetail(id: String) async -> RemoteAutomationDetail? {
+    guard let backend = host.backend else { return nil }
     struct Params: Encodable { let automation_id: String }
     struct Result: Decodable { let automation: RemoteAutomationDetail }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .automationsGet, Params(automation_id: id), as: Result.self) else { return nil }
     detailById[id] = result.automation
 
@@ -84,33 +84,33 @@ final class AutomationsStore {
   }
 
   /// Which signal sources this computer can actually answer with.
-  func loadSources() async {
-    guard let transport = app.transport else { return }
+  public func loadSources() async {
+    guard let backend = host.backend else { return }
     struct Result: Decodable { let sources: [RemoteSignalSource] }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .automationsSources, EmptyParams(), as: Result.self) else { return }
     sources = result.sources
   }
 
   /// Runners an automation can be pinned to. Older hosts don't answer this, so
   /// a failure just leaves the picker showing the automation's current runner.
-  func loadRunners() async {
-    guard let transport = app.transport else { return }
+  public func loadRunners() async {
+    guard let backend = host.backend else { return }
     struct Result: Decodable { let runners: [RemoteRunner] }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .automationsRunners, EmptyParams(), as: Result.self) else { return }
     runners = result.runners
   }
 
-  struct SaveResult: Decodable {
-    let automation: RemoteAutomation
-    let detail: RemoteAutomationDetail
+  public struct SaveResult: Decodable, Sendable {
+    public let automation: RemoteAutomation
+    public let detail: RemoteAutomationDetail
   }
 
   /// Create when `id` is nil, otherwise patch. Returns the saved automation's
   /// id so a new one can be opened straight after.
-  func save(id: String?, input: RemoteAutomationInput) async -> String? {
-    guard let transport = app.transport else { return nil }
+  public func save(id: String?, input: RemoteAutomationInput) async -> String? {
+    guard let backend = host.backend else { return nil }
     struct CreateParams: Encodable { let input: RemoteAutomationInput }
     struct UpdateParams: Encodable {
       let automation_id: String
@@ -119,13 +119,13 @@ final class AutomationsStore {
     do {
       let result: SaveResult =
         if let id {
-          try await transport.request(
+          try await backend.request(
             .automationsUpdate, UpdateParams(automation_id: id, patch: input), as: SaveResult.self)
         } else {
-          try await transport.request(
+          try await backend.request(
             .automationsCreate, CreateParams(input: input), as: SaveResult.self)
         }
-      Telemetry.capture(.automationEdited(action: id == nil ? .create : .save))
+      host.hooks.track(.automationEdited(action: id == nil ? .create : .save))
       detailById[result.detail.id] = result.detail
       await refresh()
 
@@ -140,8 +140,8 @@ final class AutomationsStore {
   /// Ask the computer to rewrite a playbook to an instruction. Nothing is
   /// saved by this — the new text goes back to the editor, which still needs a
   /// save. Nil means the computer refused or is too old to answer.
-  func revisePlaybook(playbook: String, instruction: String, name: String?) async -> String? {
-    guard let transport = app.transport else { return nil }
+  public func revisePlaybook(playbook: String, instruction: String, name: String?) async -> String? {
+    guard let backend = host.backend else { return nil }
     struct Params: Encodable {
       let playbook: String
       let instruction: String
@@ -149,11 +149,11 @@ final class AutomationsStore {
     }
     struct Result: Decodable { let playbook: String }
     do {
-      let result = try await transport.request(
+      let result = try await backend.request(
         .automationsRevisePlaybook,
         Params(playbook: playbook, instruction: instruction, name: name),
         as: Result.self)
-      Telemetry.capture(.automationEdited(action: .revisePlaybook))
+      host.hooks.track(.automationEdited(action: .revisePlaybook))
       error = nil
 
       return result.playbook
@@ -164,19 +164,19 @@ final class AutomationsStore {
     }
   }
 
-  func setEnabled(id: String, enabled: Bool) async {
-    guard let transport = app.transport else { return }
+  public func setEnabled(id: String, enabled: Bool) async {
+    guard let backend = host.backend else { return }
     struct Params: Encodable {
       let automation_id: String
       let enabled: Bool
     }
     struct Result: Decodable { let automation: RemoteAutomation }
     do {
-      let updated = try await transport.request(
+      let updated = try await backend.request(
         .automationsSetEnabled, Params(automation_id: id, enabled: enabled),
         as: Result.self
       ).automation
-      Telemetry.capture(.automationEdited(action: enabled ? .enable : .disable))
+      host.hooks.track(.automationEdited(action: enabled ? .enable : .disable))
       if let index = automations.firstIndex(where: { $0.id == id }) {
         automations[index] = updated
       }
@@ -186,12 +186,12 @@ final class AutomationsStore {
     }
   }
 
-  func loadMemories(automationId: String) async {
-    guard let transport = app.transport else { return }
+  public func loadMemories(automationId: String) async {
+    guard let backend = host.backend else { return }
     struct Params: Encodable { let automation_id: String }
     struct Result: Decodable { let memories: [RemoteAutomationMemory] }
     do {
-      memoriesById[automationId] = try await transport.request(
+      memoriesById[automationId] = try await backend.request(
         .automationsMemories, Params(automation_id: automationId), as: Result.self
       ).memories
     } catch {
@@ -201,10 +201,10 @@ final class AutomationsStore {
 
   /// Create or overwrite; `previousName` renames the memory it was opened as.
   @discardableResult
-  func saveMemory(
+  public func saveMemory(
     automationId: String, memory: RemoteAutomationMemory, previousName: String?
   ) async -> Bool {
-    guard let transport = app.transport else { return false }
+    guard let backend = host.backend else { return false }
     struct Memory: Encodable {
       let name: String
       let description: String
@@ -217,7 +217,7 @@ final class AutomationsStore {
       let memory: Memory
     }
     do {
-      try await transport.request(
+      try await backend.request(
         .automationsSaveMemory,
         Params(
           automation_id: automationId,
@@ -225,7 +225,7 @@ final class AutomationsStore {
             name: memory.name, description: memory.description, type: memory.type,
             body: memory.body, previous_name: previousName)),
         as: IgnoredResult.self)
-      Telemetry.capture(.memoryEdited(action: .save))
+      host.hooks.track(.memoryEdited(action: .save))
       error = nil
       await loadMemories(automationId: automationId)
 
@@ -238,17 +238,17 @@ final class AutomationsStore {
   }
 
   @discardableResult
-  func deleteMemory(automationId: String, name: String) async -> Bool {
-    guard let transport = app.transport else { return false }
+  public func deleteMemory(automationId: String, name: String) async -> Bool {
+    guard let backend = host.backend else { return false }
     struct Params: Encodable {
       let automation_id: String
       let name: String
     }
     do {
-      try await transport.request(
+      try await backend.request(
         .automationsDeleteMemory, Params(automation_id: automationId, name: name),
         as: IgnoredResult.self)
-      Telemetry.capture(.memoryEdited(action: .delete))
+      host.hooks.track(.memoryEdited(action: .delete))
       memoriesById[automationId]?.removeAll { $0.name == name }
 
       return true
@@ -260,13 +260,13 @@ final class AutomationsStore {
   }
 
   @discardableResult
-  func delete(id: String) async -> Bool {
-    guard let transport = app.transport else { return false }
+  public func delete(id: String) async -> Bool {
+    guard let backend = host.backend else { return false }
     struct Params: Encodable { let automation_id: String }
     do {
-      try await transport.request(
+      try await backend.request(
         .automationsDelete, Params(automation_id: id), as: IgnoredResult.self)
-      Telemetry.capture(.automationEdited(action: .delete))
+      host.hooks.track(.automationEdited(action: .delete))
       automations.removeAll { $0.id == id }
       detailById.removeValue(forKey: id)
 
@@ -278,21 +278,21 @@ final class AutomationsStore {
     }
   }
 
-  func loadRun(id: String) async {
-    guard let transport = app.transport else { return }
+  public func loadRun(id: String) async {
+    guard let backend = host.backend else { return }
     struct Params: Encodable { let run_id: String }
-    guard let detail = try? await transport.request(
+    guard let detail = try? await backend.request(
       .automationsRun, Params(run_id: id), as: RemoteAutomationRunDetail.self) else { return }
     detailByRun[id] = detail
   }
 
   /// Opening a report marks it read on the computer too, clearing its dot.
-  func markRunRead(id: String) async {
-    guard let transport = app.transport else { return }
+  public func markRunRead(id: String) async {
+    guard let backend = host.backend else { return }
     struct Params: Encodable { let run_id: String }
     // Failure is deliberately silent: an unread dot that lingers is not worth
     // an error in front of the report the user came to read.
-    try? await transport.request(
+    _ = try? await backend.request(
       .automationsMarkRunRead, Params(run_id: id), as: IgnoredResult.self)
 
     if let index = runs.firstIndex(where: { $0.id == id }) {
@@ -304,19 +304,19 @@ final class AutomationsStore {
     }
   }
 
-  func runNow(automationId: String) async {
-    guard let transport = app.transport else { return }
+  public func runNow(automationId: String) async {
+    guard let backend = host.backend else { return }
     triggering.insert(automationId)
     struct Params: Encodable { let automation_id: String }
     struct Result: Decodable { let run: RemoteAutomationRun }
     do {
       // A refused run comes back as a `skipped` record, which still belongs in
       // the list — that is how the user finds out it was refused.
-      let run = try await transport.request(
+      let run = try await backend.request(
         .automationsRunNow, Params(automation_id: automationId),
         as: Result.self
       ).run
-      Telemetry.capture(.runActed(action: .start))
+      host.hooks.track(.runActed(action: .start))
       runs.insert(run, at: 0)
     } catch {
       fail("Couldn't start that automation", error)
@@ -327,11 +327,11 @@ final class AutomationsStore {
 
   /// Run a playbook once, with nothing saved behind it. Returns the run id so
   /// the caller can go and watch it.
-  func runScratch(
+  public func runScratch(
     name: String, playbook: String, repoRoots: [String], sourceIds: [String],
     model: String?, guardrails: RemoteAutomationGuardrails
   ) async -> String? {
-    guard let transport = app.transport else { return nil }
+    guard let backend = host.backend else { return nil }
     struct Params: Encodable {
       let name: String
       let playbook: String
@@ -342,14 +342,14 @@ final class AutomationsStore {
     }
     struct Result: Decodable { let run: RemoteAutomationRun }
     do {
-      let run = try await transport.request(
+      let run = try await backend.request(
         .automationsRunScratch,
         Params(
           name: name, playbook: playbook, repo_roots: repoRoots,
           source_ids: sourceIds, model: model, guardrails: guardrails),
         as: Result.self
       ).run
-      Telemetry.capture(.runActed(action: .startScratch))
+      host.hooks.track(.runActed(action: .startScratch))
       runs.insert(run, at: 0)
       await refresh()
 
@@ -362,8 +362,8 @@ final class AutomationsStore {
   }
 
   /// Keep a one-off: promote it to an automation, prefilled from the run.
-  func saveScratchRun(runId: String, name: String) async -> String? {
-    guard let transport = app.transport else { return nil }
+  public func saveScratchRun(runId: String, name: String) async -> String? {
+    guard let backend = host.backend else { return nil }
     struct Params: Encodable {
       let run_id: String
       let name: String
@@ -371,14 +371,14 @@ final class AutomationsStore {
     }
     struct Result: Decodable { let automation: RemoteAutomation }
     do {
-      let automation = try await transport.request(
+      let automation = try await backend.request(
         .automationsSaveScratchRun,
         // Saved paused: a playbook that ran once by hand has no schedule the
         // user has thought about yet.
         Params(run_id: runId, name: name, enabled: false),
         as: Result.self
       ).automation
-      Telemetry.capture(.runActed(action: .saveScratch))
+      host.hooks.track(.runActed(action: .saveScratch))
       await refresh()
 
       return automation.id
@@ -392,19 +392,19 @@ final class AutomationsStore {
   /// Argue with a finished report. The run's own agent is picked back up and
   /// rewrites it; unless `allowClearing` is set it may only add proposals.
   /// False means the computer refused and `error` says why.
-  func sendRunFeedback(id: String, note: String, allowClearing: Bool) async -> Bool {
-    guard let transport = app.transport else { return false }
+  public func sendRunFeedback(id: String, note: String, allowClearing: Bool) async -> Bool {
+    guard let backend = host.backend else { return false }
     struct Params: Encodable {
       let run_id: String
       let note: String
       let allow_clearing: Bool
     }
     do {
-      _ = try await transport.request(
+      _ = try await backend.request(
         .automationsRunFeedback,
         Params(run_id: id, note: note, allow_clearing: allowClearing),
         as: IgnoredResult.self)
-      Telemetry.capture(.runActed(action: .feedback))
+      host.hooks.track(.runActed(action: .feedback))
       error = nil
       await loadRun(id: id)
 
@@ -416,24 +416,23 @@ final class AutomationsStore {
     }
   }
 
-  func cancelRun(id: String) async {
-    guard let transport = app.transport else { return }
+  public func cancelRun(id: String) async {
+    guard let backend = host.backend else { return }
     struct Params: Encodable { let run_id: String }
-    Telemetry.capture(.runActed(action: .cancel))
-    try? await transport.request(
+    host.hooks.track(.runActed(action: .cancel))
+    _ = try? await backend.request(
       .automationsCancelRun, Params(run_id: id), as: IgnoredResult.self)
     await refresh()
   }
 
-  func runs(for automationId: String) -> [RemoteAutomationRun] {
+  public func runs(for automationId: String) -> [RemoteAutomationRun] {
     runs.filter { $0.automationId == automationId }
   }
 
   /// Show it, and send it — a failure the user sees is one worth knowing
   /// about, scrubbed of anything from their work.
   private func fail(_ summary: String, _ error: Error) {
-    self.error = "\(summary) — \(AppStore.describe(error))"
-    Telemetry.capture(.appError(scope: "automations", message: AppStore.describe(error)))
-    Telemetry.captureException(error, source: "app_error", extra: ["scope": "automations"])
+    self.error = "\(summary) — \(HostStore.describe(error))"
+    host.hooks.errorReported(error, "automations")
   }
 }

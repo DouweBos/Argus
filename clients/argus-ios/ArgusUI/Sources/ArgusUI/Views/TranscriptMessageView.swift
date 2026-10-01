@@ -1,11 +1,11 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// One message: its text, its images, its tool calls, and whatever decision it
 /// is waiting on.
-struct TranscriptMessageView: View {
+public struct TranscriptMessageView: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
 
   let agentKey: String
   let message: RemoteMessage
@@ -24,7 +24,12 @@ struct TranscriptMessageView: View {
 
   private var isUser: Bool { message.role == .user }
 
-  var body: some View {
+  public init(agentKey: String, message: RemoteMessage) {
+    self.agentKey = agentKey
+    self.message = message
+  }
+
+  public var body: some View {
     HStack {
       if isUser { Spacer(minLength: 40) }
       VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
@@ -35,7 +40,7 @@ struct TranscriptMessageView: View {
         // as part of the message body rather than something sent with it.
         images
         if hasBubbleContent { bubble }
-        if AppStore.isOptimistic(id: message.id) {
+        if HostStore.isOptimistic(id: message.id) {
           SendingLabel()
         } else if let timestamp = message.timestamp {
           Text(
@@ -61,7 +66,7 @@ struct TranscriptMessageView: View {
       }
       ForEach(message.toolCalls) { call in
         ToolCallCard(agentKey: agentKey, call: call, depth: 0)
-        if app.isToolCallPending(agentKey: agentKey, call: call) {
+        if host.isToolCallPending(agentKey: agentKey, call: call) {
           PendingCallForm(agentKey: agentKey, call: call)
         }
       }
@@ -130,7 +135,7 @@ struct TranscriptMessageView: View {
 /// The decision a pending call is waiting on. Shared by top-level calls and
 /// sub-agent calls, which need an answer just the same.
 struct PendingCallForm: View {
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
 
   let agentKey: String
   let call: RemoteToolCall
@@ -139,9 +144,9 @@ struct PendingCallForm: View {
 
   /// The repo behind this agent, for seeding a sibling session from a plan.
   private var planRepoRoot: String? {
-    guard let sessionId = app.statusByAgent[agentKey]?.sessionId else { return nil }
+    guard let sessionId = host.statusByAgent[agentKey]?.sessionId else { return nil }
 
-    return app.repoRoot(forSessionId: sessionId)
+    return host.repoRoot(forSessionId: sessionId)
   }
 
   /// Which form a pending call gets: a question, a plan, or plain allow/deny.
@@ -157,7 +162,7 @@ struct PendingCallForm: View {
       PlanApprovalView(
         plan: plan,
         onApprove: {
-          app.noteLeftPlanMode(agentId: agentKey)
+          host.noteLeftPlanMode(agentId: agentKey)
           respond(call, "allow", nil)
         },
         onKeepPlanning: { respond(call, "deny", CannedReply.keepPlanning) },
@@ -167,7 +172,7 @@ struct PendingCallForm: View {
         // No repo, nowhere to put the session — same rule as the desktop.
         onApproveInNewSession: planRepoRoot.map { repoRoot in
           {
-            Task { await app.handOffPlan(repoRoot: repoRoot, plan: plan) }
+            Task { await host.handOffPlan(repoRoot: repoRoot, plan: plan) }
             respond(call, "deny", CannedReply.planHandoff)
           }
         })
@@ -180,7 +185,7 @@ struct PendingCallForm: View {
 
   private func respond(_ call: RemoteToolCall, _ decision: String, _ message: String?) {
     Task {
-      await app.respond(
+      await host.respond(
         agentId: agentKey, toolUseId: call.id, decision: decision, message: message)
     }
   }
@@ -200,9 +205,9 @@ struct SendingLabel: View {
 }
 
 /// A run of tool-only messages, folded into one row.
-struct CollapsedToolGroupView: View {
+public struct CollapsedToolGroupView: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
 
   let agentKey: String
   let messages: [RemoteMessage]
@@ -212,11 +217,16 @@ struct CollapsedToolGroupView: View {
   /// A pending decision inside can never be hidden behind a summary.
   private var forceExpanded: Bool {
     messages.contains { message in
-      message.toolCalls.contains { app.hasPendingCall(agentKey: agentKey, in: $0) }
+      message.toolCalls.contains { host.hasPendingCall(agentKey: agentKey, in: $0) }
     }
   }
 
-  var body: some View {
+  public init(agentKey: String, messages: [RemoteMessage]) {
+    self.agentKey = agentKey
+    self.messages = messages
+  }
+
+  public var body: some View {
     if expanded || forceExpanded {
       VStack(alignment: .leading, spacing: 10) {
         if !forceExpanded {

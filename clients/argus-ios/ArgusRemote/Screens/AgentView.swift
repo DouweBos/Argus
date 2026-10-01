@@ -1,10 +1,11 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// One agent: its transcript, and the input that drives it.
 struct AgentView: View {
   @Environment(\.theme) private var theme
   @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @Environment(\.dismiss) private var dismiss
 
@@ -13,13 +14,13 @@ struct AgentView: View {
 
   @State private var confirmingStop = false
 
-  private var sessionId: String? { app.statusByAgent[agentId]?.sessionId }
+  private var sessionId: String? { host.statusByAgent[agentId]?.sessionId }
 
   /// Nothing to hand over until the session behind the agent is known — the
   /// desktop addresses screens by session, not by agent.
   private var handoff: Handoff? {
     guard let sessionId, let identity = app.identity else { return nil }
-    let status = app.statusByAgent[agentId]
+    let status = host.statusByAgent[agentId]
 
     return Handoff(
       hostKey: ArgusBase64.encodeURL(identity.desktopStaticKey ?? Data()),
@@ -29,9 +30,9 @@ struct AgentView: View {
       projectName: status?.projectName,
       repoRoot: nil)
   }
-  private var isRunning: Bool { app.statusByAgent[agentId]?.status == .running }
+  private var isRunning: Bool { host.statusByAgent[agentId]?.status == .running }
   private var isGone: Bool {
-    app.goneAgents.contains(agentId) || app.statusByAgent[agentId]?.status == .stopped
+    host.goneAgents.contains(agentId) || host.statusByAgent[agentId]?.status == .stopped
   }
 
   var body: some View {
@@ -43,7 +44,7 @@ struct AgentView: View {
           .padding(theme.space)
           .background(theme.bgSecondary)
           .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
-      } else if app.hasControl {
+      } else if host.hasControl {
         ChatInputView(agentId: agentId, sessionId: sessionId)
       }
     }
@@ -65,7 +66,7 @@ struct AgentView: View {
           }
         }
         IconBtn(systemName: Icon.simulator, label: "Devices") { openDevices() }
-        if app.hasControl, !isGone {
+        if host.hasControl, !isGone {
           IconBtn(systemName: Icon.stop, label: "Shut down agent") {
             confirmingStop = true
           }
@@ -75,16 +76,16 @@ struct AgentView: View {
     .task {
       // Always asked, not only when the session is unknown: a cached status
       // can belong to an agent that has since been shut down.
-      await app.loadAgentStatus(agentId: agentId)
+      await host.loadAgentStatus(agentId: agentId)
       // Fetched once, not polled: this only decides where the device button goes.
-      if app.connection == .ready { await app.refreshDevices() }
+      if host.connection == .ready { await host.refreshDevices() }
     }
     .confirmationDialog(
       "Shut down this agent?", isPresented: $confirmingStop, titleVisibility: .visible
     ) {
       Button("Shut down", role: .destructive) {
         Task {
-          await app.stopAgent(agentId: agentId)
+          await host.stopAgent(agentId: agentId)
           dismiss()
         }
       }
@@ -100,7 +101,7 @@ struct AgentView: View {
   /// Straight to the screen when there is only one device to mean; otherwise
   /// the list, which is also what explains an empty one.
   private func openDevices() {
-    if app.devices.count == 1, let only = app.devices.first {
+    if host.devices.count == 1, let only = host.devices.first {
       router.push(
         .device(id: only.id, platform: only.platform, name: only.name, isTv: only.isTv))
     } else {

@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusUI
 import LocalAuthentication
 import SwiftUI
 
@@ -36,6 +36,8 @@ struct RootView: View {
         // without threading modal state through every view between.
         .overlay { ImageViewerOverlay() }
         .environment(app)
+        .environment(app.host)
+        .environment(\.autoExpandImageReads, app.autoExpandImageReads)
         .environment(router)
         .environment(automations)
         .environment(proposals)
@@ -83,20 +85,20 @@ struct RootView: View {
     // Floated rather than stacked: a transient state should not resize the
     // whole layout on its way in and out.
     .overlay(alignment: .top) {
-      if app.identity != nil, app.connection == .offline {
+      if app.identity != nil, app.host.connection == .offline {
         reconnectingPill
           .transition(.move(edge: .top).combined(with: .opacity))
       }
     }
-    .animation(.easeOut(duration: 0.25), value: app.connection)
+    .animation(.easeOut(duration: 0.25), value: app.host.connection)
     // Not while offline: the reconnecting pill already says that, and better.
     .overlay(alignment: .bottom) {
-      if let error = app.lastError, app.connection != .offline {
+      if let error = app.host.lastError, app.host.connection != .offline {
         errorToast(error)
           .transition(.move(edge: .bottom).combined(with: .opacity))
       }
     }
-    .animation(.easeOut(duration: 0.25), value: app.lastError)
+    .animation(.easeOut(duration: 0.25), value: app.host.lastError)
   }
 
   /// Every failed request already sets `lastError`; without this the app just
@@ -107,10 +109,10 @@ struct RootView: View {
       .shadow(color: .black.opacity(0.25), radius: 10, y: 3)
       .padding(.horizontal, 16)
       .padding(.bottom, 12)
-      .onTapGesture { app.clearError() }
+      .onTapGesture { app.host.clearError() }
       .task(id: message) {
         try? await Task.sleep(for: .seconds(6))
-        app.clearError()
+        app.host.clearError()
       }
       .accessibilityLabel(message)
   }
@@ -161,9 +163,9 @@ struct RootView: View {
         }
       }
 
-      if !app.projects.isEmpty {
+      if !app.host.projects.isEmpty {
         Section("Projects") {
-          ForEach(app.projects) { project in
+          ForEach(app.host.projects) { project in
             DisclosureGroup(isExpanded: projectExpansion(project)) {
               let groups = sessionGroups(in: project)
               if groups.isEmpty {
@@ -191,7 +193,7 @@ struct RootView: View {
                         id: agent.agentId, label: Labels.agentName(agent),
                         repoRoot: project.repoRoot, projectName: project.name))
                   }
-                  if app.hasControl {
+                  if app.host.hasControl {
                     Button {
                       spawnAgent(in: group.id, project: project)
                     } label: {
@@ -205,7 +207,7 @@ struct RootView: View {
                   Label(group.label, systemImage: Icon.branch).lineLimit(1)
                 }
               }
-              if app.hasControl {
+              if app.host.hasControl {
                 Button {
                   newSessionProject = project
                 } label: {
@@ -226,12 +228,12 @@ struct RootView: View {
     .sheet(item: $newSessionProject) { project in
       NewSessionSheet(
         repoRoot: project.repoRoot,
-        branchSessionId: app.sessionsByRepo[project.repoRoot]?
+        branchSessionId: app.host.sessionsByRepo[project.repoRoot]?
           .first { $0.kind == .projectRoot }?.id
       ) { _ in
         Task {
           // Show it straight away rather than waiting for the next poll.
-          await app.loadSessions(repoRoot: project.repoRoot)
+          await app.host.loadSessions(repoRoot: project.repoRoot)
           router.expandedProjects.insert(project.repoRoot)
         }
       }
@@ -240,12 +242,12 @@ struct RootView: View {
 
   private func spawnAgent(in sessionId: String, project: RemoteProject) {
     Task {
-      guard let agent = await app.spawnAgent(sessionId: sessionId) else { return }
+      guard let agent = await app.host.spawnAgent(sessionId: sessionId) else { return }
       router.apply(
         .agent(
           id: agent.agentId, label: Labels.agentName(agent),
           repoRoot: project.repoRoot, projectName: project.name))
-      await app.loadRecentAgents()
+      await app.host.loadRecentAgents()
     }
   }
 
@@ -264,11 +266,11 @@ struct RootView: View {
   /// fetch. Sessions are only listed once a project has been expanded — that
   /// is what makes an idle session with no agents visible at all.
   private func sessionGroups(in project: RemoteProject) -> [SessionGroup] {
-    let agents = app.recentAgents.filter { $0.projectName == project.name }
+    let agents = app.host.recentAgents.filter { $0.projectName == project.name }
     var order: [String] = []
     var byId: [String: SessionGroup] = [:]
 
-    for session in app.sessionsByRepo[project.repoRoot] ?? [] {
+    for session in app.host.sessionsByRepo[project.repoRoot] ?? [] {
       order.append(session.id)
       byId[session.id] = SessionGroup(
         id: session.id, label: session.displayName ?? session.branch, agents: [],
@@ -314,7 +316,7 @@ struct RootView: View {
       set: { open in
         if open {
           router.expandedProjects.insert(project.repoRoot)
-          Task { await app.loadSessions(repoRoot: project.repoRoot) }
+          Task { await app.host.loadSessions(repoRoot: project.repoRoot) }
         } else {
           router.expandedProjects.remove(project.repoRoot)
         }
@@ -434,9 +436,9 @@ struct RootView: View {
 
   private func bootstrap() async {
     askingConsent = !Telemetry.hasAnsweredConsent
-    if automations == nil { automations = AutomationsStore(app: app) }
-    if proposals == nil { proposals = ProposalsStore(app: app) }
-    if pullRequests == nil { pullRequests = PullRequestsStore(app: app) }
+    if automations == nil { automations = AutomationsStore(host: app.host) }
+    if proposals == nil { proposals = ProposalsStore(host: app.host) }
+    if pullRequests == nil { pullRequests = PullRequestsStore(host: app.host) }
     router.adopt(split: sizeClass == .regular)
     NotificationRouter.shared.configure(app: app, router: router)
     await NotificationRouter.shared.registerCategories()

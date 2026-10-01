@@ -1,3 +1,4 @@
+import ArgusUI
 import SwiftUI
 
 /// The one-time consent step, mirroring the desktop's onboarding telemetry

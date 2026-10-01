@@ -1,18 +1,22 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// Why a session's setup failed, with the desktop's two ways out: run setup
 /// again, or mark it ready once the failing step was fixed by hand.
-struct SetupFailedRow: View {
+public struct SetupFailedRow: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
 
   let session: RemoteSession
 
   @State private var expanded = false
   @State private var busy = false
 
-  var body: some View {
+  public init(session: RemoteSession) {
+    self.session = session
+  }
+
+  public var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       Label("Setup failed", systemImage: Icon.warning)
         .font(.subheadline.weight(.semibold))
@@ -27,13 +31,13 @@ struct SetupFailedRow: View {
           .textSelection(.enabled)
           .onTapGesture { expanded.toggle() }
       }
-      if app.hasControl {
+      if host.hasControl {
         FlowRow(spacing: 8) {
           Btn(label: "Retry", small: true, icon: Icon.refresh) {
-            run { await app.retrySessionSetup(id: session.id, repoRoot: session.repoRoot) }
+            run { await host.retrySessionSetup(id: session.id, repoRoot: session.repoRoot) }
           }
           Btn(label: "Mark as ready", tone: .secondary, small: true, icon: Icon.check) {
-            run { await app.markSessionReady(id: session.id, repoRoot: session.repoRoot) }
+            run { await host.markSessionReady(id: session.id, repoRoot: session.repoRoot) }
           }
         }
         .disabled(busy)

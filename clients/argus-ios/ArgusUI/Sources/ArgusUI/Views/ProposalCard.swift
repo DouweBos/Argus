@@ -1,7 +1,7 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
-struct ProposalCard: View {
+public struct ProposalCard: View {
   @Environment(\.theme) private var theme
   @Environment(\.openURL) private var openURL
 
@@ -25,7 +25,31 @@ struct ProposalCard: View {
   @State private var done = ""
   @State private var confirmingCleanup = false
 
-  var body: some View {
+  public init(
+    proposal: RemoteProposal,
+    busy: Bool,
+    starting: Bool,
+    requestError: String? = nil,
+    canDecide: Bool,
+    onAccept: @escaping () -> Void,
+    onCleanup: @escaping () -> Void,
+    onDismiss: @escaping (String?) -> Void,
+    onResolve: @escaping (String?) -> Void,
+    onOpenRun: (() -> Void)? = nil
+  ) {
+    self.proposal = proposal
+    self.busy = busy
+    self.starting = starting
+    self.requestError = requestError
+    self.canDecide = canDecide
+    self.onAccept = onAccept
+    self.onCleanup = onCleanup
+    self.onDismiss = onDismiss
+    self.onResolve = onResolve
+    self.onOpenRun = onOpenRun
+  }
+
+  public var body: some View {
     Card {
       BodyText(proposal.title)
       MarkdownView(text: proposal.summary, baseSize: 14)
@@ -199,14 +223,24 @@ struct ProposalCard: View {
 
 /// A start from this phone that finished after the request answered: the
 /// agent is running, so offer the way to it instead of just vanishing.
-struct StartedProposalCard: View {
+public struct StartedProposalCard: View {
   @Environment(\.theme) private var theme
 
   let proposal: RemoteProposal
   let onOpen: () -> Void
   let onClose: () -> Void
 
-  var body: some View {
+  public init(
+    proposal: RemoteProposal,
+    onOpen: @escaping () -> Void,
+    onClose: @escaping () -> Void
+  ) {
+    self.proposal = proposal
+    self.onOpen = onOpen
+    self.onClose = onClose
+  }
+
+  public var body: some View {
     Card(tone: .success) {
       HStack(spacing: 8) {
         Image(systemName: Icon.check)

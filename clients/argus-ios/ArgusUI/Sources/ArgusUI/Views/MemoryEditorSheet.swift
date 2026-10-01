@@ -1,10 +1,10 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// One automation memory: read it, or with control, edit or delete it.
 /// `memory == nil` adds a new one.
-struct MemoryEditorSheet: View {
-  @Environment(AppStore.self) private var app
+public struct MemoryEditorSheet: View {
+  @Environment(HostStore.self) private var host
   @Environment(AutomationsStore.self) private var store
   @Environment(\.dismiss) private var dismiss
 
@@ -22,7 +22,12 @@ struct MemoryEditorSheet: View {
     } && !saving
   }
 
-  var body: some View {
+  public init(automationId: String, memory: RemoteAutomationMemory? = nil) {
+    self.automationId = automationId
+    self.memory = memory
+  }
+
+  public var body: some View {
     NavigationStack {
       Screen {
         if let error = store.error {
@@ -35,7 +40,7 @@ struct MemoryEditorSheet: View {
         }
       }
       .navigationTitle(memory == nil ? "Add memory" : draft.name)
-      .navigationBarTitleDisplayMode(.inline)
+      .inlineNavigationTitle()
       .toolbar { toolbar }
       .alert("Delete this memory?", isPresented: $confirmingDelete) {
         Button("Cancel", role: .cancel) {}
@@ -60,7 +65,7 @@ struct MemoryEditorSheet: View {
       MutedText(memory.description)
     }
     Card { MarkdownView(text: memory.body, baseSize: 14) }
-    if app.hasControl {
+    if host.hasControl {
       Btn(label: "Delete memory", tone: .danger, small: true) { confirmingDelete = true }
     }
   }
@@ -97,7 +102,7 @@ struct MemoryEditorSheet: View {
         }
       }
     }
-    if app.hasControl {
+    if host.hasControl {
       ToolbarItem(placement: .confirmationAction) {
         if editing {
           Button(saving ? "Saving…" : "Save") { save() }.disabled(!canSave)

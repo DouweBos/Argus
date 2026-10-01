@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// Commit, push and merge a session's branch — the end of the loop that used
@@ -6,9 +6,9 @@ import SwiftUI
 ///
 /// Every button needs the `control` grant, and the computer still refuses a
 /// protected base branch or a conflicting merge; this only asks.
-struct LandWorkCard: View {
+public struct LandWorkCard: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
 
   let sessionId: String
   /// Called after anything that changes the tree, so the diff can reload.
@@ -22,14 +22,19 @@ struct LandWorkCard: View {
   @State private var changingBase = false
   @State private var note: String?
 
-  private var status: RemoteGitStatus? { app.gitStatusBySession[sessionId] }
+  private var status: RemoteGitStatus? { host.gitStatusBySession[sessionId] }
   private var hasUncommitted: Bool { (status?.dirtyCount ?? 0) > 0 }
   private var canCommit: Bool {
     hasUncommitted && !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
       && busy == nil
   }
 
-  var body: some View {
+  public init(sessionId: String, onChanged: @escaping () async -> Void) {
+    self.sessionId = sessionId
+    self.onChanged = onChanged
+  }
+
+  public var body: some View {
     Card {
       SectionHeader(title: "Land this work")
 
@@ -84,8 +89,8 @@ struct LandWorkCard: View {
     .confirmationDialog(
       "Merge into \(baseLabel)?", isPresented: $confirmingMerge, titleVisibility: .visible
     ) {
-      Button(AppStore.MergeStrategy.keep.label) { merge(.keep) }
-      Button(AppStore.MergeStrategy.squash.label) { merge(.squash) }
+      Button(HostStore.MergeStrategy.keep.label) { merge(.keep) }
+      Button(HostStore.MergeStrategy.squash.label) { merge(.squash) }
       Button("Cancel", role: .cancel) {}
     } message: {
       Text("Uncommitted changes are committed first. A conflict stops the merge.")
@@ -93,7 +98,7 @@ struct LandWorkCard: View {
     .sheet(isPresented: $changingBase) {
       BaseBranchSheet(sessionId: sessionId, current: session?.baseBranch) { branch in
         Task {
-          await app.setBaseBranch(id: sessionId, baseBranch: branch)
+          await host.setBaseBranch(id: sessionId, baseBranch: branch)
           note = "Base branch is now \(branch)."
           await finish()
         }
@@ -104,7 +109,7 @@ struct LandWorkCard: View {
         note = "Opened \(url)"
       }
     }
-    .task(id: status?.dirtyCount) { blockers = await app.mergeBlockers(sessionId: sessionId) }
+    .task(id: status?.dirtyCount) { blockers = await host.mergeBlockers(sessionId: sessionId) }
   }
 
   private var pushLabel: String {
@@ -116,7 +121,7 @@ struct LandWorkCard: View {
   private func commit() {
     busy = "commit"
     Task {
-      let output = await app.commit(
+      let output = await host.commit(
         sessionId: sessionId,
         message: message.trimmingCharacters(in: .whitespacesAndNewlines))
       busy = nil
@@ -130,7 +135,7 @@ struct LandWorkCard: View {
   private func push() {
     busy = "push"
     Task {
-      let result = await app.push(sessionId: sessionId)
+      let result = await host.push(sessionId: sessionId)
       busy = nil
       guard let result else { return }
       note = "Pushed \(result.branch) to \(result.remote)."
@@ -138,10 +143,10 @@ struct LandWorkCard: View {
     }
   }
 
-  private func merge(_ strategy: AppStore.MergeStrategy) {
+  private func merge(_ strategy: HostStore.MergeStrategy) {
     busy = "merge"
     Task {
-      let merged = await app.mergeIntoBase(sessionId: sessionId, strategy: strategy)
+      let merged = await host.mergeIntoBase(sessionId: sessionId, strategy: strategy)
       busy = nil
       guard merged else { return }
       note = strategy == .squash
@@ -152,7 +157,7 @@ struct LandWorkCard: View {
   }
 
   private var session: RemoteSession? {
-    app.sessionsByRepo.values.flatMap { $0 }.first { $0.id == sessionId }
+    host.sessionsByRepo.values.flatMap { $0 }.first { $0.id == sessionId }
   }
 
   /// The session's base branch, or a neutral word when the computer hasn't
@@ -160,14 +165,14 @@ struct LandWorkCard: View {
   private var baseLabel: String { session?.baseBranch ?? "the base branch" }
 
   private func finish() async {
-    blockers = await app.mergeBlockers(sessionId: sessionId)
+    blockers = await host.mergeBlockers(sessionId: sessionId)
     await onChanged()
   }
 }
 
 /// Open a pull request for this session's branch. The computer works out the
 /// base and head from the session, so this only asks what to call it.
-struct OpenPullRequestSheet: View {
+public struct OpenPullRequestSheet: View {
   @Environment(PullRequestsStore.self) private var store
   @Environment(\.dismiss) private var dismiss
 
@@ -180,7 +185,13 @@ struct OpenPullRequestSheet: View {
   @State private var draft = true
   @State private var opening = false
 
-  var body: some View {
+  public init(sessionId: String, defaultTitle: String, onOpened: @escaping (String) -> Void) {
+    self.sessionId = sessionId
+    self.defaultTitle = defaultTitle
+    self.onOpened = onOpened
+  }
+
+  public var body: some View {
     NavigationStack {
       Screen {
         Field(label: "PULL REQUEST", caption: "Push the branch first — GitHub needs it.") {
@@ -194,7 +205,7 @@ struct OpenPullRequestSheet: View {
           .disabled(opening || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
       }
       .navigationTitle("New pull request")
-      .navigationBarTitleDisplayMode(.inline)
+      .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") { dismiss() }
@@ -224,7 +235,7 @@ struct OpenPullRequestSheet: View {
 /// fast-forward a remote-tracking ref like `origin/main`, which is exactly the
 /// state that used to make a merge fail halfway.
 private struct BaseBranchSheet: View {
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(\.dismiss) private var dismiss
 
   let sessionId: String
@@ -259,7 +270,7 @@ private struct BaseBranchSheet: View {
         }
       }
       .navigationTitle("Base branch")
-      .navigationBarTitleDisplayMode(.inline)
+      .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") { dismiss() }
@@ -267,7 +278,7 @@ private struct BaseBranchSheet: View {
       }
     }
     .task {
-      branches = await app.listBranches(sessionId: sessionId).filter { $0.scope == .local }
+      branches = await host.listBranches(sessionId: sessionId).filter { $0.scope == .local }
       loaded = true
     }
   }

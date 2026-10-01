@@ -1,10 +1,10 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// What the desktop's branch menu does, for one branch. Anything that rewrites
 /// history or throws commits away asks first.
-struct BranchActionsView: View {
-  @Environment(AppStore.self) private var app
+public struct BranchActionsView: View {
+  @Environment(HostStore.self) private var host
   @Environment(\.openURL) private var openURL
 
   let sessionId: String
@@ -38,12 +38,30 @@ struct BranchActionsView: View {
   @State private var busy = false
   @State private var confirm: Confirm?
   @State private var nameSheet: NameSheet?
-  @State private var pullStrategy: AppStore.PullStrategy = .ffOnly
+  @State private var pullStrategy: HostStore.PullStrategy = .ffOnly
 
   private var target: String { current ?? "the current branch" }
   private var isLocal: Bool { branch.scope == .local }
 
-  var body: some View {
+  public init(
+    sessionId: String,
+    repoRoot: String,
+    branch: RemoteGitBranch,
+    current: String? = nil,
+    onChanged: @escaping () async -> Void,
+    onRenamed: @escaping (String) async -> Void,
+    onDeleted: @escaping () -> Void
+  ) {
+    self.sessionId = sessionId
+    self.repoRoot = repoRoot
+    self.branch = branch
+    self.current = current
+    self.onChanged = onChanged
+    self.onRenamed = onRenamed
+    self.onDeleted = onDeleted
+  }
+
+  public var body: some View {
     Card {
       FlowRow(spacing: 8) {
         if !branch.isCurrent {
@@ -76,7 +94,7 @@ struct BranchActionsView: View {
             nameSheet = .rename
           }
           Btn(label: branch.pinned == true ? "Unpin" : "Pin", tone: .secondary, small: true) {
-            run { await app.setBranchPinned(sessionId: sessionId, branch: branch.name, pinned: branch.pinned != true) }
+            run { await host.setBranchPinned(sessionId: sessionId, branch: branch.name, pinned: branch.pinned != true) }
           }
         }
         if branch.upstream != nil || branch.scope == .remote {
@@ -91,9 +109,9 @@ struct BranchActionsView: View {
       if branch.isCurrent && branch.upstream != nil {
         SegmentedControl(
           value: $pullStrategy,
-          options: AppStore.PullStrategy.allCases.map { ($0, $0.label) })
+          options: HostStore.PullStrategy.allCases.map { ($0, $0.label) })
         Btn(label: "Pull (\(pullStrategy.label.lowercased()))", tone: .secondary, small: true) {
-          run { await app.pullCurrent(sessionId: sessionId, strategy: pullStrategy) }
+          run { await host.pullCurrent(sessionId: sessionId, strategy: pullStrategy) }
         }
       }
     }
@@ -107,11 +125,11 @@ struct BranchActionsView: View {
         offerCheckout: sheet == .create
       ) { name, checkout in
         if sheet == .create {
-          await app.createBranch(
+          await host.createBranch(
             sessionId: sessionId, repoRoot: repoRoot, name: name, checkout: checkout,
             startPoint: branch.ref)
           await onChanged()
-        } else if await app.renameLocalBranch(sessionId: sessionId, from: branch.name, to: name) {
+        } else if await host.renameLocalBranch(sessionId: sessionId, from: branch.name, to: name) {
           await onRenamed(name)
         }
       }
@@ -125,7 +143,7 @@ struct BranchActionsView: View {
         title: Text(squash ? "Squash \(branch.name) into \(target)?" : "Merge \(branch.name) into \(target)?"),
         message: Text("If it stops on conflicts, resolve them on the computer."),
         primaryButton: .default(Text(squash ? "Squash" : "Merge")) {
-          run { await app.mergeIntoCurrent(sessionId: sessionId, from: branch.ref, squash: squash) }
+          run { await host.mergeIntoCurrent(sessionId: sessionId, from: branch.ref, squash: squash) }
         },
         secondaryButton: .cancel())
     case .rebase:
@@ -133,7 +151,7 @@ struct BranchActionsView: View {
         title: Text("Rebase \(target) onto \(branch.name)?"),
         message: Text("This rewrites \(target)'s commits. If it stops on conflicts, resolve them on the computer."),
         primaryButton: .destructive(Text("Rebase")) {
-          run { await app.rebaseCurrent(sessionId: sessionId, onto: branch.ref) }
+          run { await host.rebaseCurrent(sessionId: sessionId, onto: branch.ref) }
         },
         secondaryButton: .cancel())
     case .forcePush:
@@ -172,7 +190,7 @@ struct BranchActionsView: View {
   private func checkout(dirty: String?) {
     busy = true
     Task {
-      let outcome = await app.checkoutBranch(
+      let outcome = await host.checkoutBranch(
         sessionId: sessionId, repoRoot: repoRoot, branch: branch.name, dirty: dirty)
       busy = false
       switch outcome {
@@ -185,7 +203,7 @@ struct BranchActionsView: View {
 
   private func push(forceWithLease: Bool) {
     run {
-      await app.pushBranch(
+      await host.pushBranch(
         sessionId: sessionId, branch: branch.name, remote: nil,
         setUpstream: branch.upstream == nil, forceWithLease: forceWithLease)
     }
@@ -194,7 +212,7 @@ struct BranchActionsView: View {
   private func delete(force: Bool) {
     busy = true
     Task {
-      let outcome = await app.deleteBranch(sessionId: sessionId, name: branch.name, force: force)
+      let outcome = await host.deleteBranch(sessionId: sessionId, name: branch.name, force: force)
       busy = false
       switch outcome {
       case .unmerged: confirm = .delete(unmerged: true)
@@ -206,17 +224,17 @@ struct BranchActionsView: View {
 
   private func openPR() {
     Task {
-      if let url = await app.branchPullRequestURL(sessionId: sessionId, branch: branch.name) {
+      if let url = await host.branchPullRequestURL(sessionId: sessionId, branch: branch.name) {
         openURL(url)
       } else {
-        app.lastError = "This repo has no GitHub remote."
+        host.showError("This repo has no GitHub remote.")
       }
     }
   }
 }
 
 /// A branch name, for creating one or renaming one.
-struct BranchNameSheet: View {
+public struct BranchNameSheet: View {
   @Environment(\.theme) private var theme
   @Environment(\.dismiss) private var dismiss
 
@@ -231,7 +249,19 @@ struct BranchNameSheet: View {
 
   private var trimmed: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-  var body: some View {
+  public init(
+    title: String,
+    initial: String,
+    offerCheckout: Bool,
+    onSubmit: @escaping (String, Bool) async -> Void
+  ) {
+    self.title = title
+    self.initial = initial
+    self.offerCheckout = offerCheckout
+    self.onSubmit = onSubmit
+  }
+
+  public var body: some View {
     NavigationStack {
       Screen {
         Field(label: "BRANCH NAME") {
@@ -243,7 +273,7 @@ struct BranchNameSheet: View {
         }
       }
       .navigationTitle(title)
-      .navigationBarTitleDisplayMode(.inline)
+      .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") { dismiss() }

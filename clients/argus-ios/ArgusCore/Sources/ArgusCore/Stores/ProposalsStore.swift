@@ -9,29 +9,29 @@ import Observation
 /// reason is what calibrates the automation.
 @MainActor
 @Observable
-final class ProposalsStore {
-  var proposals: [RemoteProposal] = []
-  var busy: Set<String> = []
-  var loaded = false
-  var error: String?
+public final class ProposalsStore {
+  public internal(set) var proposals: [RemoteProposal] = []
+  public internal(set) var busy: Set<String> = []
+  public internal(set) var loaded = false
+  public internal(set) var error: String?
   /// Accept requests still waiting on an answer, before any stage is known.
-  var requesting: Set<String> = []
+  public internal(set) var requesting: Set<String> = []
   /// Why an accept request itself failed; the host's `startError` covers
   /// anything that goes wrong after it answered.
-  var requestErrors: [String: String] = [:]
+  public internal(set) var requestErrors: [String: String] = [:]
   /// Started from this phone and now running, kept until opened or closed.
-  var started: [RemoteProposal] = []
+  public internal(set) var started: [RemoteProposal] = []
   /// Started from this phone and still being set up, so a card that leaves the
   /// pending list can be told apart from one dismissed elsewhere.
   private var starting: Set<String> = []
 
-  private unowned let app: AppStore
+  private unowned let host: HostStore
 
-  init(app: AppStore) {
-    self.app = app
+  public init(host: HostStore) {
+    self.host = host
   }
 
-  func clear() {
+  public func clear() {
     proposals = []
     busy = []
     loaded = false
@@ -42,12 +42,12 @@ final class ProposalsStore {
     starting = []
   }
 
-  func refresh() async {
-    guard let transport = app.transport else { return }
+  public func refresh() async {
+    guard let backend = host.backend else { return }
     struct Params: Encodable { let status: String }
     struct Result: Decodable { let proposals: [RemoteProposal] }
     do {
-      let result = try await transport.request(
+      let result = try await backend.request(
         .proposalsList, Params(status: "pending"), as: Result.self)
       proposals = result.proposals
       error = nil
@@ -72,7 +72,7 @@ final class ProposalsStore {
     }
     let pendingIds = Set(proposals.map(\.id))
     let gone = starting.subtracting(pendingIds)
-    guard !gone.isEmpty, let transport = app.transport else { return }
+    guard !gone.isEmpty, let backend = host.backend else { return }
 
     struct Params: Encodable {
       let status: String
@@ -81,7 +81,7 @@ final class ProposalsStore {
     struct Result: Decodable { let proposals: [RemoteProposal] }
     // Best effort: a miss is retried on the next refresh.
     guard
-      let result = try? await transport.request(
+      let result = try? await backend.request(
         .proposalsList, Params(status: "accepted", limit: 100), as: Result.self)
     else { return }
     for id in gone {
@@ -96,19 +96,19 @@ final class ProposalsStore {
 
   /// Whether the card should show progress. A refresh that raced the accept
   /// can hand back the proposal without its stage, so the local record counts.
-  func isStarting(_ proposal: RemoteProposal) -> Bool {
+  public func isStarting(_ proposal: RemoteProposal) -> Bool {
     requesting.contains(proposal.id) || proposal.startStage != nil
       || (starting.contains(proposal.id) && proposal.startError == nil)
   }
 
-  func closeStarted(id: String) {
+  public func closeStarted(id: String) {
     started.removeAll { $0.id == id }
   }
 
   /// The host answers once the start is under way, and only has an agent to
   /// hand back when it finished inside that window; the caller opens it then.
-  func accept(id: String) async -> String? {
-    guard let transport = app.transport else { return nil }
+  public func accept(id: String) async -> String? {
+    guard let backend = host.backend else { return nil }
     requesting.insert(id)
     requestErrors[id] = nil
     defer { requesting.remove(id) }
@@ -119,9 +119,9 @@ final class ProposalsStore {
       let agent_id: String?
     }
     do {
-      let result = try await transport.request(
+      let result = try await backend.request(
         .proposalsAccept, Params(proposal_id: id), as: Result.self)
-      Telemetry.capture(.proposalHandled(action: .accept))
+      host.hooks.track(.proposalHandled(action: .accept))
       if let agentId = result.agent_id {
         proposals.removeAll { $0.id == id }
         return agentId
@@ -134,14 +134,14 @@ final class ProposalsStore {
       return nil
     } catch {
       // Shown on the card rather than the banner: it is about that one.
-      requestErrors[id] = AppStore.describe(error)
+      requestErrors[id] = HostStore.describe(error)
       report(error)
       return nil
     }
   }
 
-  func dismiss(id: String, reason: String?) async {
-    guard let transport = app.transport else { return }
+  public func dismiss(id: String, reason: String?) async {
+    guard let backend = host.backend else { return }
     busy.insert(id)
     defer { busy.remove(id) }
 
@@ -150,9 +150,9 @@ final class ProposalsStore {
       let reason: String?
     }
     do {
-      try await transport.request(
+      try await backend.request(
         .proposalsDismiss, Params(proposal_id: id, reason: reason), as: IgnoredResult.self)
-      Telemetry.capture(.proposalHandled(action: .dismiss))
+      host.hooks.track(.proposalHandled(action: .dismiss))
     } catch {
       fail("Couldn't dismiss that proposal", error)
     }
@@ -160,8 +160,8 @@ final class ProposalsStore {
   }
 
   /// You already did what it asked — the opposite signal from a dismissal.
-  func resolve(id: String, note: String?) async {
-    guard let transport = app.transport else { return }
+  public func resolve(id: String, note: String?) async {
+    guard let backend = host.backend else { return }
     busy.insert(id)
     defer { busy.remove(id) }
 
@@ -170,25 +170,25 @@ final class ProposalsStore {
       let note: String?
     }
     do {
-      try await transport.request(
+      try await backend.request(
         .proposalsResolve, Params(proposal_id: id, note: note), as: IgnoredResult.self)
-      Telemetry.capture(.proposalHandled(action: .resolve))
+      host.hooks.track(.proposalHandled(action: .resolve))
     } catch {
       fail("Couldn't mark that proposal done", error)
     }
     await refresh()
   }
 
-  func performCleanup(id: String) async {
-    guard let transport = app.transport else { return }
+  public func performCleanup(id: String) async {
+    guard let backend = host.backend else { return }
     busy.insert(id)
     defer { busy.remove(id) }
 
     struct Params: Encodable { let proposal_id: String }
     do {
-      try await transport.request(
+      try await backend.request(
         .proposalsPerformCleanup, Params(proposal_id: id), as: IgnoredResult.self)
-      Telemetry.capture(.proposalHandled(action: .cleanup))
+      host.hooks.track(.proposalHandled(action: .cleanup))
     } catch {
       fail("Couldn't run that cleanup", error)
     }
@@ -198,12 +198,11 @@ final class ProposalsStore {
   /// Show it, and send it — a failure the user sees is one worth knowing
   /// about, scrubbed of anything from their work.
   private func fail(_ summary: String, _ error: Error) {
-    self.error = "\(summary) — \(AppStore.describe(error))"
+    self.error = "\(summary) — \(HostStore.describe(error))"
     report(error)
   }
 
   private func report(_ error: Error) {
-    Telemetry.capture(.appError(scope: "proposals", message: AppStore.describe(error)))
-    Telemetry.captureException(error, source: "app_error", extra: ["scope": "proposals"])
+    host.hooks.errorReported(error, "proposals")
   }
 }

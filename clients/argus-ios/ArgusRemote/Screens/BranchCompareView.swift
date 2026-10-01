@@ -1,9 +1,9 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// Where two branches diverged: the commits only one side has.
 struct BranchCompareView: View {
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
 
   let sessionId: String
@@ -39,7 +39,7 @@ struct BranchCompareView: View {
     .navigationTitle("\(left) ↔ \(right)")
     .navigationBarTitleDisplayMode(.inline)
     .task {
-      result = await app.compareBranches(sessionId: sessionId, left: left, right: right)
+      result = await host.compareBranches(sessionId: sessionId, left: left, right: right)
       loaded = true
     }
   }

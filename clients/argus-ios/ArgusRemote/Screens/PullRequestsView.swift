@@ -1,10 +1,10 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// Every pull request the computer thinks is yours to look at — authored by
 /// you, assigned to you, or waiting on your review.
 struct PullRequestsView: View {
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(PullRequestsStore.self) private var store
 
   var body: some View {
@@ -36,7 +36,7 @@ struct PullRequestsView: View {
     }
     .navigationTitle("Pull requests")
     .refreshable { await store.refresh() }
-    .liveRefresh(enabled: app.connection == .ready, every: .seconds(30)) {
+    .liveRefresh(enabled: host.connection == .ready, every: .seconds(30)) {
       await store.refresh()
     }
   }

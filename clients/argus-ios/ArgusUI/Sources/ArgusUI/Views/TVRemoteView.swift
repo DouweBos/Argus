@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The Apple TV clickpad, mirroring the desktop's remote. A TV has no
 /// touchscreen, so the stream is a picture and this is the only way to drive it.
-struct TVRemoteView: View {
+public struct TVRemoteView: View {
   @Environment(\.theme) private var theme
 
   /// Button ids as the host names them.
@@ -14,7 +14,12 @@ struct TVRemoteView: View {
 
   private static let padSize: CGFloat = 220
 
-  var body: some View {
+  public init(press: @escaping (String) -> Void, isAndroid: Bool) {
+    self.press = press
+    self.isAndroid = isAndroid
+  }
+
+  public var body: some View {
     VStack(spacing: 16) {
       clickpad
       HStack(spacing: 12) {

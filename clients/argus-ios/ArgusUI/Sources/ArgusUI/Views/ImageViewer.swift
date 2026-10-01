@@ -1,6 +1,5 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
-import UIKit
 
 /// One full-screen image presenter for the whole app, so any transcript image
 /// can open without threading modal state through every view between.
@@ -10,41 +9,42 @@ import UIKit
 /// its neighbours from the store as you reach them.
 @MainActor
 @Observable
-final class ImageViewerState {
-  private(set) var agentKey = ""
-  private(set) var imageIds: [String] = []
-  var current: String?
+public final class ImageViewerState {
+  public private(set) var agentKey = ""
+  public private(set) var imageIds: [String] = []
+  public var current: String?
 
-  var isPresented: Bool { current != nil }
+  public init() {}
 
-  func present(agentKey: String, imageIds: [String], at index: Int) {
+  public var isPresented: Bool { current != nil }
+
+  public func present(agentKey: String, imageIds: [String], at index: Int) {
     guard imageIds.indices.contains(index) else { return }
     // A keyboard left standing behind a full-screen image is both pointless
     // and in the way of the dismiss gesture.
-    UIApplication.shared.sendAction(
-      #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    dismissKeyboard()
     self.agentKey = agentKey
     self.imageIds = imageIds
     self.current = imageIds[index]
   }
 
-  func dismiss() {
+  public func dismiss() {
     current = nil
     imageIds = []
   }
 
-  var currentIndex: Int? {
+  public var currentIndex: Int? {
     current.flatMap { imageIds.firstIndex(of: $0) }
   }
 }
 
 /// Pinch, double-tap, pan, swipe down to dismiss, and swipe across to page.
-struct ImageViewerOverlay: View {
+public struct ImageViewerOverlay: View {
   @Environment(ImageViewerState.self) private var viewer
   @State private var zoomed = false
   @State private var dismissProgress: CGFloat = 0
 
-  var body: some View {
+  public var body: some View {
     if viewer.isPresented {
       @Bindable var viewer = viewer
 
@@ -102,12 +102,14 @@ struct ImageViewerOverlay: View {
     dismissProgress = 0
     viewer.dismiss()
   }
+
+  public init() {}
 }
 
 /// One page: loads its own bytes, and owns its own zoom so swiping away and
 /// back doesn't inherit the previous page's transform.
 private struct ZoomableImagePage: View {
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
 
   let agentKey: String
   let imageId: String
@@ -129,14 +131,14 @@ private struct ZoomableImagePage: View {
 
   private var isZoomed: Bool { scale > Self.zoomedThreshold }
 
-  private var image: UIImage? {
-    app.cachedImage(agentId: agentKey, imageId: imageId).flatMap(UIImage.fromDataURI)
+  private var image: PlatformImage? {
+    host.cachedImage(agentId: agentKey, imageId: imageId).flatMap(PlatformImage.fromDataURI)
   }
 
   var body: some View {
     ZStack {
       if let image {
-        Image(uiImage: image)
+        Image(platformImage: image)
           .resizable()
           .scaledToFit()
           .scaleEffect(scale)
@@ -150,7 +152,7 @@ private struct ZoomableImagePage: View {
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .task(id: imageId) { await app.loadImage(agentId: agentKey, imageId: imageId) }
+    .task(id: imageId) { await host.loadImage(agentId: agentKey, imageId: imageId) }
     .onChange(of: isCurrent) { _, current in
       // Reset a page the moment it stops being the one on screen, so it isn't
       // still zoomed when the user swipes back to it.

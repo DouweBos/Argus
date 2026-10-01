@@ -1,45 +1,64 @@
-import ArgusKit
+import ArgusCore
 import AVFoundation
 import SwiftUI
 import VideoToolbox
+
+#if canImport(UIKit)
+  import UIKit
+#else
+  import AppKit
+#endif
 
 /// A native H.264 surface.
 ///
 /// Frames are decrypted in-process and handed straight to VideoToolbox as
 /// typed data — no base64, no intermediate image. SwiftUI has no equivalent of
-/// `AVSampleBufferDisplayLayer`, so this stays UIKit.
-struct DeviceVideoView: UIViewRepresentable {
+/// `AVSampleBufferDisplayLayer`, so this wraps a platform view.
+public struct DeviceVideoView {
   /// Handed back so the screen can push frames in as they arrive.
-  final class Handle {
+  @MainActor
+  public final class Handle {
     fileprivate weak var view: VideoView?
 
-    func configure(codec: String, width: Int, height: Int, description: Data) {
+    public init() {}
+
+    public func configure(codec: String, width: Int, height: Int, description: Data) {
       view?.configure(codec: codec, width: width, height: height, description: description)
     }
 
-    func enqueue(_ data: Data, isKeyFrame: Bool, timestampMillis: Double) {
+    public func enqueue(_ data: Data, isKeyFrame: Bool, timestampMillis: Double) {
       view?.enqueue(data, isKeyFrame: isKeyFrame, timestampMillis: timestampMillis)
     }
   }
 
-  let handle: Handle
-  let onFirstFrame: () -> Void
+  public let handle: Handle
+  public let onFirstFrame: () -> Void
 
-  func makeUIView(context: Context) -> VideoView {
+  public init(handle: Handle, onFirstFrame: @escaping () -> Void) {
+    self.handle = handle
+    self.onFirstFrame = onFirstFrame
+  }
+
+  @MainActor
+  fileprivate func makeView() -> VideoView {
     let view = VideoView()
     view.onFirstFrame = onFirstFrame
     handle.view = view
     return view
   }
 
-  func updateUIView(_ view: VideoView, context: Context) {}
+  public final class VideoView: PlatformVideoBaseView {
+    #if canImport(UIKit)
+      public override class var layerClass: AnyClass { AVSampleBufferDisplayLayer.self }
 
-  final class VideoView: UIView {
-    override class var layerClass: AnyClass { AVSampleBufferDisplayLayer.self }
+      private var displayLayer: AVSampleBufferDisplayLayer {
+        layer as! AVSampleBufferDisplayLayer
+      }
+    #else
+      private let displayLayer = AVSampleBufferDisplayLayer()
 
-    private var displayLayer: AVSampleBufferDisplayLayer {
-      layer as! AVSampleBufferDisplayLayer
-    }
+      public override func makeBackingLayer() -> CALayer { displayLayer }
+    #endif
 
     private var formatDescription: CMFormatDescription?
     private var nalUnitLengthSize: Int = 4
@@ -47,17 +66,22 @@ struct DeviceVideoView: UIViewRepresentable {
     /// nothing but artefacts, so wait for one.
     private var awaitingKeyFrame = true
     private var firstFrameSent = false
-    var onFirstFrame: (() -> Void)?
+    public var onFirstFrame: (() -> Void)?
 
-    override init(frame: CGRect) {
+    public override init(frame: CGRect) {
       super.init(frame: frame)
-      backgroundColor = .black
+      #if canImport(UIKit)
+        backgroundColor = .black
+      #else
+        wantsLayer = true
+        displayLayer.backgroundColor = NSColor.black.cgColor
+      #endif
       displayLayer.videoGravity = .resizeAspect
     }
 
-    required init?(coder: NSCoder) { fatalError("init(coder:) is unused") }
+    public required init?(coder: NSCoder) { fatalError("init(coder:) is unused") }
 
-    func configure(codec: String, width: Int, height: Int, description: Data) {
+    public func configure(codec: String, width: Int, height: Int, description: Data) {
       // Only AVC ever comes over this channel; anything else is a desktop bug
       // we shouldn't paper over by guessing.
       guard codec.hasPrefix("avc"), let parsed = AvccDescription.parse(description) else {
@@ -82,7 +106,7 @@ struct DeviceVideoView: UIViewRepresentable {
       displayLayer.flush()
     }
 
-    func enqueue(_ data: Data, isKeyFrame: Bool, timestampMillis: Double) {
+    public func enqueue(_ data: Data, isKeyFrame: Bool, timestampMillis: Double) {
       guard let formatDescription else { return }
       if awaitingKeyFrame {
         guard isKeyFrame else { return }
@@ -155,6 +179,22 @@ struct DeviceVideoView: UIViewRepresentable {
     }
   }
 }
+
+#if canImport(UIKit)
+  public typealias PlatformVideoBaseView = UIView
+
+  extension DeviceVideoView: UIViewRepresentable {
+    public func makeUIView(context: Context) -> VideoView { makeView() }
+    public func updateUIView(_ view: VideoView, context: Context) {}
+  }
+#else
+  public typealias PlatformVideoBaseView = NSView
+
+  extension DeviceVideoView: NSViewRepresentable {
+    public func makeNSView(context: Context) -> VideoView { makeView() }
+    public func updateNSView(_ view: VideoView, context: Context) {}
+  }
+#endif
 
 /// VideoToolbox wants parallel pointer and size arrays that stay valid for the
 /// duration of the call, which Swift arrays of arrays don't give us directly.

@@ -1,13 +1,17 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// The limits a run is held to, whatever its playbook says. Enforced on the
 /// computer, never in the prompt — this only edits the numbers.
-struct GuardrailFields: View {
+public struct GuardrailFields: View {
   @Environment(\.theme) private var theme
   @Binding var guardrails: RemoteAutomationGuardrails
 
-  var body: some View {
+  public init(guardrails: Binding<RemoteAutomationGuardrails>) {
+    self._guardrails = guardrails
+  }
+
+  public var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       number(
         "Confidence threshold", caption: "Below this, a proposal waits for you.",

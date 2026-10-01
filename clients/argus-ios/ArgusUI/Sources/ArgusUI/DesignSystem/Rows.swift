@@ -2,7 +2,7 @@ import ArgusKit
 import SwiftUI
 
 extension RemoteAgentState {
-  var tone: Tone {
+  public var tone: Tone {
     switch self {
     case .running: .accent
     case .requiresAction: .warning
@@ -14,7 +14,7 @@ extension RemoteAgentState {
 }
 
 extension RemoteAutomationRunStatus {
-  var tone: Tone {
+  public var tone: Tone {
     switch self {
     case .running, .queued: .accent
     case .succeeded: .success
@@ -24,7 +24,7 @@ extension RemoteAutomationRunStatus {
   }
 }
 
-struct AgentRow: View {
+public struct AgentRow: View {
   @Environment(\.theme) private var theme
   let name: String
   var status: RemoteAgentState
@@ -32,7 +32,21 @@ struct AgentRow: View {
   var model: String?
   var meta: String?
 
-  var body: some View {
+  public init(
+    name: String,
+    status: RemoteAgentState,
+    attention: String? = nil,
+    model: String? = nil,
+    meta: String? = nil
+  ) {
+    self.name = name
+    self.status = status
+    self.attention = attention
+    self.model = model
+    self.meta = meta
+  }
+
+  public var body: some View {
     HStack(spacing: 10) {
       // An agent waiting on you gets a steady warning dot, not a pulse —
       // the pulse means "busy", and this one is the opposite.
@@ -58,12 +72,17 @@ struct AgentRow: View {
   }
 }
 
-struct StoppedAgentRow: View {
+public struct StoppedAgentRow: View {
   let agent: RemoteStoppedAgent
   /// Off when the row already sits under the session that names the branch.
   var showBranch = true
 
-  var body: some View {
+  public init(agent: RemoteStoppedAgent, showBranch: Bool = true) {
+    self.agent = agent
+    self.showBranch = showBranch
+  }
+
+  public var body: some View {
     VStack(alignment: .leading, spacing: 2) {
       Label(agent.title, systemImage: Icon.history).lineLimit(1)
       Text(
@@ -77,10 +96,14 @@ struct StoppedAgentRow: View {
   }
 }
 
-struct AutomationRow: View {
+public struct AutomationRow: View {
   let automation: RemoteAutomation
 
-  var body: some View {
+  public init(automation: RemoteAutomation) {
+    self.automation = automation
+  }
+
+  public var body: some View {
     HStack(spacing: 10) {
       StatusDot(
         tone: automation.running ? .accent : (automation.enabled ? .success : .muted),
@@ -103,12 +126,17 @@ struct AutomationRow: View {
   }
 }
 
-struct RunRow: View {
+public struct RunRow: View {
   @Environment(\.theme) private var theme
   let run: RemoteAutomationRun
   var showName = false
 
-  var body: some View {
+  public init(run: RemoteAutomationRun, showName: Bool = false) {
+    self.run = run
+    self.showName = showName
+  }
+
+  public var body: some View {
     HStack(spacing: 10) {
       if run.unreadReport {
         Circle().fill(theme.accent).frame(width: 6, height: 6)
@@ -135,5 +163,5 @@ struct RunRow: View {
 }
 
 extension String {
-  var nilIfEmpty: String? { isEmpty ? nil : self }
+  public var nilIfEmpty: String? { isEmpty ? nil : self }
 }

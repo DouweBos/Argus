@@ -1,16 +1,16 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// Simulators and emulators booted on the computer. Polled — there is no push
 /// channel for the set.
 struct DevicesView: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
 
   var body: some View {
     List {
-      if app.devices.isEmpty {
+      if host.devices.isEmpty {
         EmptyState(
           icon: Icon.simulator,
           title: "No devices running",
@@ -18,7 +18,7 @@ struct DevicesView: View {
         .listRowBackground(Color.clear)
       } else {
         Section("Devices") {
-          ForEach(app.devices) { device in
+          ForEach(host.devices) { device in
             NavigationLink(
               value: Route.device(
                 id: device.id, platform: device.platform, name: device.name,
@@ -38,8 +38,8 @@ struct DevicesView: View {
       }
     }
     .navigationTitle("Devices")
-    .refreshable { await app.refreshDevices() }
-    .liveRefresh(enabled: app.connection == .ready) { await app.refreshDevices() }
+    .refreshable { await host.refreshDevices() }
+    .liveRefresh(enabled: host.connection == .ready) { await host.refreshDevices() }
   }
 
   private func platformLabel(_ platform: RemotePlatform) -> String {

@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 import UIKit
 import UserNotifications
@@ -6,6 +6,7 @@ import UserNotifications
 struct SettingsView: View {
   @Environment(\.theme) private var theme
   @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @Environment(\.openURL) private var openURL
 
@@ -17,11 +18,11 @@ struct SettingsView: View {
     Form {
       Section("Connection") {
         LabeledContent("Status") {
-          Text(app.connection.rawValue)
-            .foregroundStyle(app.connection == .ready ? theme.success : theme.warning)
+          Text(host.connection.rawValue)
+            .foregroundStyle(host.connection == .ready ? theme.success : theme.warning)
         }
-        if !app.capabilities.isEmpty {
-          LabeledContent("Grants", value: app.capabilities.joined(separator: ", "))
+        if !host.capabilities.isEmpty {
+          LabeledContent("Grants", value: host.capabilities.joined(separator: ", "))
         }
       }
 

@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// Author one automation: everything the desktop editor holds, including the

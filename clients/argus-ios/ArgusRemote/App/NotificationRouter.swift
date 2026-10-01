@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 import UserNotifications
 
@@ -79,7 +79,7 @@ final class NotificationRouter: NSObject {
     }
     guard let host = app.hosts.first(where: { handoff.names(desktopKey: $0.desktopPubB64) })
     else {
-      app.lastError = "That computer isn't paired with this phone."
+      app.host.showError("That computer isn't paired with this phone.")
       return
     }
     if let agentId = handoff.agentId, router.isShowingAgent(agentId) { return }
@@ -108,7 +108,7 @@ final class NotificationRouter: NSObject {
     Task {
       // The alert may be from a computer we aren't currently connected to —
       // switch to the one that owns the agent before opening it.
-      if let hostId = app.host(forAgent: agentId), hostId != app.activeHostId {
+      if let hostId = app.hostId(forAgent: agentId), hostId != app.activeHostId {
         await app.selectHost(hostId)
       }
       // `open` rather than `push`: an agent belongs under Projects, and a tap
@@ -169,7 +169,7 @@ extension NotificationRouter: UNUserNotificationCenterDelegate {
       if let app {
         app.queueOfflineDecision(
           agentId: agentId, toolUseId: toolUseId, decision: decision)
-        Task { await app.respond(
+        Task { await app.host.respond(
           agentId: agentId, toolUseId: toolUseId, decision: decision,
           fromNotification: true) }
       }

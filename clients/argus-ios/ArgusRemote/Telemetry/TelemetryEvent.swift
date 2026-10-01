@@ -1,3 +1,4 @@
+import ArgusCore
 import Foundation
 
 /// Every event this client sends, with its props attached to the case — the
@@ -10,87 +11,35 @@ import Foundation
 /// re-sending it would inflate those funnels twice over.
 enum TelemetryEvent {
   /// What can be done to a running agent from the phone.
-  enum AgentAction: String {
-    case interrupt
-    case stop
-    case model
-    case effort
-    case permissionMode = "permission_mode"
-  }
+  typealias AgentAction = StoreEvent.AgentAction
 
   /// What was done to the Claude accounts this computer has signed in.
-  enum AccountAction: String {
-    case select
-    case add
-    case remove
-    case rename
-    /// A session pinned to one account from the chat input.
-    case pin
-  }
+  typealias AccountAction = StoreEvent.AccountAction
 
   /// What happened to an automation's memory.
-  enum MemoryAction: String {
-    case save
-    case delete
-  }
+  typealias MemoryAction = StoreEvent.MemoryAction
 
   /// What was done to an automation's definition.
-  enum AutomationAction: String {
-    case create
-    case save
-    case delete
-    case enable
-    case disable
-    case revisePlaybook = "revise_playbook"
-  }
+  typealias AutomationAction = StoreEvent.AutomationAction
 
   /// What was done to a run.
-  enum RunAction: String {
-    case start
-    case startScratch = "start_scratch"
-    case cancel
-    case feedback
-    case saveScratch = "save_scratch"
-  }
+  typealias RunAction = StoreEvent.RunAction
 
   /// How an inbox proposal was answered.
-  enum ProposalAction: String {
-    case accept
-    case dismiss
-    case resolve
-    case cleanup
-  }
+  typealias ProposalAction = StoreEvent.ProposalAction
 
   /// What was done to a pull request.
-  enum PullRequestAction: String {
-    case open
-    case merge
-    case comment
-  }
+  typealias PullRequestAction = StoreEvent.PullRequestAction
 
   /// What was done to a branch.
-  enum BranchAction: String {
-    case checkout
-    case create
-    case delete
-    case merge
-    case rebase
-    case push
-    case pull
-    case rename
-    case pin
-  }
+  typealias BranchAction = StoreEvent.BranchAction
 
-  /// How work leaves a session.
   enum Setting: String {
     case autoExpandImageReads = "auto_expand_image_reads"
   }
 
-  enum LandAction: String {
-    case commit
-    case push
-    case merge
-  }
+  /// How work leaves a session.
+  typealias LandAction = StoreEvent.LandAction
 
   case launched
   case paired(endpointKind: String, hasControl: Bool)

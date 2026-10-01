@@ -1,13 +1,14 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// One tool call, collapsed to a single line until you ask for more.
 ///
 /// A call awaiting a permission decision can never be collapsed away — the
 /// decision is the whole point of the row.
-struct ToolCallCard: View {
+public struct ToolCallCard: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(\.autoExpandImageReads) private var autoExpandImageReads
+  @Environment(HostStore.self) private var host
 
   let agentKey: String
   let call: RemoteToolCall
@@ -18,15 +19,15 @@ struct ToolCallCard: View {
   @State private var showingFullPlan = false
 
   private var isPending: Bool {
-    app.isToolCallPending(agentKey: agentKey, call: call)
+    host.isToolCallPending(agentKey: agentKey, call: call)
   }
 
   private var autoExpanded: Bool {
-    app.autoExpandImageReads && call.name == "Read" && !resultImageIds.isEmpty
+    autoExpandImageReads && call.name == "Read" && !resultImageIds.isEmpty
   }
 
   private var expanded: Bool {
-    isPending || app.hasPendingCall(agentKey: agentKey, in: call)
+    isPending || host.hasPendingCall(agentKey: agentKey, in: call)
       || (userExpanded ?? autoExpanded)
   }
 
@@ -36,7 +37,13 @@ struct ToolCallCard: View {
     return theme.borderSubtle
   }
 
-  var body: some View {
+  public init(agentKey: String, call: RemoteToolCall, depth: Int) {
+    self.agentKey = agentKey
+    self.call = call
+    self.depth = depth
+  }
+
+  public var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       header
       if expanded {
@@ -50,7 +57,7 @@ struct ToolCallCard: View {
     .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
     .overlay(
       RoundedRectangle(cornerRadius: theme.radiusSmall).stroke(borderColor, lineWidth: 1))
-    .fullScreenCover(isPresented: $showingFullPlan) {
+    .coverPresentation(isPresented: $showingFullPlan) {
       PlanFullScreenView(plan: call.input["plan"]?.stringValue ?? "")
     }
   }
@@ -190,7 +197,7 @@ struct ToolCallCard: View {
           MutedText(text)
         case .toolUse(let nested):
           ToolCallCard(agentKey: agentKey, call: nested, depth: depth + 1)
-          if app.isToolCallPending(agentKey: agentKey, call: nested) {
+          if host.isToolCallPending(agentKey: agentKey, call: nested) {
             PendingCallForm(agentKey: agentKey, call: nested)
           }
         }
@@ -252,9 +259,9 @@ struct ToolCallCard: View {
 /// `siblings` is the set this image belongs to — the other attachments on the
 /// same message, or the other blocks in the same tool result — so opening one
 /// gives you a pager over all of them rather than a dead end.
-struct TranscriptImage: View {
+public struct TranscriptImage: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(ImageViewerState.self) private var viewer
 
   let agentKey: String
@@ -264,12 +271,24 @@ struct TranscriptImage: View {
 
   private var group: [String] { siblings ?? [imageId] }
 
-  private var dataURI: String? { app.cachedImage(agentId: agentKey, imageId: imageId) }
+  private var dataURI: String? { host.cachedImage(agentId: agentKey, imageId: imageId) }
 
-  var body: some View {
+  public init(
+    agentKey: String,
+    imageId: String,
+    siblings: [String]? = nil,
+    maxHeight: CGFloat = 220
+  ) {
+    self.agentKey = agentKey
+    self.imageId = imageId
+    self.siblings = siblings
+    self.maxHeight = maxHeight
+  }
+
+  public var body: some View {
     Group {
-      if let image = dataURI.flatMap(UIImage.fromDataURI) {
-        Image(uiImage: image)
+      if let image = dataURI.flatMap(PlatformImage.fromDataURI) {
+        Image(platformImage: image)
           .resizable()
           .scaledToFit()
           .frame(maxHeight: maxHeight)
@@ -287,17 +306,7 @@ struct TranscriptImage: View {
       }
     }
     .task(id: imageId) {
-      await app.loadImage(agentId: agentKey, imageId: imageId)
+      await host.loadImage(agentId: agentKey, imageId: imageId)
     }
-  }
-}
-
-extension UIImage {
-  /// Transcript images arrive as `data:<mime>;base64,…`.
-  static func fromDataURI(_ uri: String) -> UIImage? {
-    guard let comma = uri.firstIndex(of: ","),
-      let data = Data(base64Encoded: String(uri[uri.index(after: comma)...]))
-    else { return nil }
-    return UIImage(data: data)
   }
 }

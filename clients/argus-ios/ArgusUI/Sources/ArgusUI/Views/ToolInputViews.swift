@@ -1,11 +1,11 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// A tool's input, as labelled values.
 ///
 /// Braces and quotes carry nothing — which field and what is in it is the
 /// whole story, so even a tool nobody wrote a view for reads as a list.
-struct ToolInputFieldsView: View {
+public struct ToolInputFieldsView: View {
   @Environment(\.theme) private var theme
 
   let fields: [ToolInputField]
@@ -13,7 +13,11 @@ struct ToolInputFieldsView: View {
   /// Past this a value is cut off; the desktop is where you read a long one.
   private let valueLineLimit = 12
 
-  var body: some View {
+  public init(fields: [ToolInputField]) {
+    self.fields = fields
+  }
+
+  public var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       ForEach(fields) { field in
         if field.isLong {
@@ -39,7 +43,7 @@ struct ToolInputFieldsView: View {
 }
 
 /// An answered AskUserQuestion: what was asked, and what was picked.
-struct AnsweredQuestionsView: View {
+public struct AnsweredQuestionsView: View {
   @Environment(\.theme) private var theme
 
   let questions: [Questions.Question]
@@ -50,7 +54,12 @@ struct AnsweredQuestionsView: View {
     Questions.parseAnswer(answer, questions: questions)
   }
 
-  var body: some View {
+  public init(questions: [Questions.Question], answer: String) {
+    self.questions = questions
+    self.answer = answer
+  }
+
+  public var body: some View {
     let answers = parsed
     VStack(alignment: .leading, spacing: 10) {
       ForEach(Array(questions.enumerated()), id: \.offset) { index, question in

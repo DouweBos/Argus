@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// A finished agent's transcript, read back from the computer's saved history.
@@ -7,7 +7,7 @@ import SwiftUI
 /// conversation back up in a fresh agent.
 struct StoppedAgentView: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
 
   let historyId: String
@@ -19,13 +19,13 @@ struct StoppedAgentView: View {
   @State private var resuming = false
 
   private var key: String {
-    AppStore.stoppedKey(repoRoot: repoRoot, historyId: historyId)
+    HostStore.stoppedKey(repoRoot: repoRoot, historyId: historyId)
   }
 
   /// Resuming needs somewhere to run: the session still on this branch. Once
   /// that worktree is gone there is nothing to resume into.
   private var session: RemoteSession? {
-    (app.sessionsByRepo[repoRoot] ?? []).first { $0.branch == branch }
+    (host.sessionsByRepo[repoRoot] ?? []).first { $0.branch == branch }
   }
 
   var body: some View {
@@ -34,7 +34,7 @@ struct StoppedAgentView: View {
       AgentTranscriptView(agentKey: key, isLive: false)
 
       VStack(alignment: .leading, spacing: 6) {
-        if app.hasControl, let session {
+        if host.hasControl, let session {
           Btn(
             label: resuming ? "Resuming…" : "Resume in a new agent",
             icon: Icon.plus
@@ -44,7 +44,7 @@ struct StoppedAgentView: View {
           .disabled(resuming)
         } else {
           MutedText(
-            app.hasControl
+            host.hasControl
               ? "This agent's session is gone, so there's nothing to resume into."
               : "This agent has stopped. Ask the desktop for control to resume it.")
         }
@@ -66,13 +66,13 @@ struct StoppedAgentView: View {
         }
       }
     }
-    .task { await app.loadSessions(repoRoot: repoRoot) }
+    .task { await host.loadSessions(repoRoot: repoRoot) }
   }
 
   private func resume(_ session: RemoteSession) {
     resuming = true
     Task {
-      let agent = await app.spawnAgent(
+      let agent = await host.spawnAgent(
         sessionId: session.id, resumeSessionId: runnerSessionId)
       resuming = false
       guard let agent else { return }

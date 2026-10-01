@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import Foundation
 import UIKit
 import UserNotifications
@@ -60,11 +60,11 @@ extension AppStore {
   func setPushEnabled(_ enabled: Bool) async {
     pushEnabled = enabled
     preferences.set(enabled ? "on" : "off", for: PreferenceKey.pushEnabled)
-    if let transport {
+    if let backend = host.backend {
       if enabled {
-        await registerPush(transport)
+        await registerPush(backend)
       } else {
-        try? await transport.request(
+        _ = try? await backend.request(
           .deviceUnregisterPush, EmptyParams(), as: IgnoredResult.self)
         pushState = .off
       }
@@ -77,7 +77,7 @@ extension AppStore {
     deviceName = trimmed
     preferences.set(trimmed, for: PreferenceKey.deviceName)
     struct Params: Encodable { let name: String }
-    try? await transport?.request(
+    _ = try? await host.backend?.request(
       .deviceRename, Params(name: trimmed), as: IgnoredResult.self)
   }
 
@@ -86,7 +86,7 @@ extension AppStore {
   /// The relay holds the Apple credentials but is never trusted with content:
   /// one key seals the notification, the other proves to the relay which
   /// computers may push here. Both travel over the already-encrypted gateway.
-  func registerPush(_ transport: Transport) async {
+  func registerPush(_ backend: any HostBackend) async {
     guard pushEnabled else {
       pushState = .off
       return
@@ -113,7 +113,7 @@ extension AppStore {
     }
     let info: PushInfo
     do {
-      info = try await transport.request(.devicePushInfo, EmptyParams(), as: PushInfo.self)
+      info = try await backend.request(.devicePushInfo, EmptyParams(), as: PushInfo.self)
     } catch {
       // An older desktop doesn't know the method at all.
       pushState = .unsupported
@@ -150,7 +150,7 @@ extension AppStore {
       let auth_key: String
     }
     do {
-      try await transport.request(
+      try await backend.request(
         .deviceRegisterPush,
         Params(
           service: "apns", token: token,
@@ -179,11 +179,11 @@ extension AppStore {
   /// The gateway only accepts an answer to a prompt it forwarded to *this*
   /// connection, and it re-forwards pending ones on subscribe — hence the
   /// subscribe, the retries, and the unsubscribe afterwards.
-  func flushPendingDecisions(_ transport: Transport) async {
+  func flushPendingDecisions(_ backend: any HostBackend) async {
     let queued = pendingDecisions.read(hostId: activeHostId)
     for decision in queued {
-      await transport.subscribe(agentId: decision.agentId, on: true)
-      defer { Task { await transport.subscribe(agentId: decision.agentId, on: false) } }
+      await backend.subscribe(agentId: decision.agentId, on: true)
+      defer { Task { await backend.subscribe(agentId: decision.agentId, on: false) } }
 
       struct Params: Encodable {
         let agent_id: String
@@ -192,7 +192,7 @@ extension AppStore {
       }
       for attempt in 0..<5 {
         if attempt > 0 { try? await Task.sleep(for: .milliseconds(400)) }
-        let sent = (try? await transport.request(
+        let sent = (try? await backend.request(
           .permissionRespond,
           Params(
             agent_id: decision.agentId, tool_use_id: decision.toolUseId,

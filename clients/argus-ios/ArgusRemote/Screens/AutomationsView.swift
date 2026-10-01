@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// The connected computer's automations, and what they have been doing.
@@ -6,7 +6,7 @@ import SwiftUI
 /// Automations are the one thing in Argus that happens while nobody is
 /// looking, which is exactly what you want to check from a phone.
 struct AutomationsView: View {
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @Environment(AutomationsStore.self) private var store
 
@@ -54,7 +54,7 @@ struct AutomationsView: View {
     }
     .navigationTitle("Automations")
     .toolbar {
-      if app.hasControl {
+      if host.hasControl {
         ToolbarItem(placement: .topBarTrailing) {
           Menu {
             NavigationLink(value: Route.quickRun) {
@@ -70,6 +70,6 @@ struct AutomationsView: View {
       }
     }
     .refreshable { await store.refresh() }
-    .liveRefresh(enabled: app.connection == .ready) { await store.refresh() }
+    .liveRefresh(enabled: host.connection == .ready) { await store.refresh() }
   }
 }

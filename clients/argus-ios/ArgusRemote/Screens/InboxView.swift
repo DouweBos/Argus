@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// What the computer's automations want you to decide.
@@ -7,7 +7,7 @@ import SwiftUI
 /// arrive while nobody is looking, and answering one is a tap.
 struct InboxView: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @Environment(ProposalsStore.self) private var proposals
   @Environment(PullRequestsStore.self) private var pullRequests
@@ -55,7 +55,7 @@ struct InboxView: View {
               busy: proposals.busy.contains(proposal.id),
               starting: proposals.isStarting(proposal),
               requestError: proposals.requestErrors[proposal.id],
-              canDecide: app.hasControl,
+              canDecide: host.hasControl,
               onAccept: { accept(proposal) },
               onCleanup: { Task { await proposals.performCleanup(id: proposal.id) } },
               onDismiss: { reason in
@@ -79,9 +79,9 @@ struct InboxView: View {
       await proposals.refresh()
       await pullRequests.refresh()
     }
-    .liveRefresh(enabled: app.connection == .ready) { await proposals.refresh() }
-    .task(id: app.connection) {
-      guard app.connection == .ready, !pullRequests.loaded else { return }
+    .liveRefresh(enabled: host.connection == .ready) { await proposals.refresh() }
+    .task(id: host.connection) {
+      guard host.connection == .ready, !pullRequests.loaded else { return }
       await pullRequests.refresh()
     }
   }

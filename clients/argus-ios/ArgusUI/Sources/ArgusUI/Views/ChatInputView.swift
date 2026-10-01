@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import PhotosUI
 import SwiftUI
 
@@ -7,14 +7,15 @@ import SwiftUI
 ///
 /// Only rendered for a device holding the control grant — the gateway refuses
 /// every one of these otherwise.
-struct ChatInputView: View {
+public struct ChatInputView: View {
   private enum Picker: String, Identifiable {
     case model, account, mode, effort, project
     var id: String { rawValue }
   }
 
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
+  private let preferences = Preferences()
 
   let agentId: String
   let sessionId: String?
@@ -22,7 +23,7 @@ struct ChatInputView: View {
   @State private var text = ""
   @State private var linkedProjects: [String] = []
   @State private var attachments: [RemoteImageAttachment] = []
-  @State private var previews: [UIImage] = []
+  @State private var previews: [PlatformImage] = []
   @State private var picker: Picker?
   @State private var photoItems: [PhotosPickerItem] = []
   @State private var showingCamera = false
@@ -37,16 +38,21 @@ struct ChatInputView: View {
   @State private var inputHeight = PastingTextView.collapsedHeight
   @FocusState private var focused: Bool
 
-  private var status: RemoteAgentStatus? { app.statusByAgent[agentId] }
+  private var status: RemoteAgentStatus? { host.statusByAgent[agentId] }
   private var isRunning: Bool { status?.status == .running }
   private var capabilities: RemoteAgentCapabilities {
-    app.capabilitiesByAgent[agentId] ?? .empty
+    host.capabilitiesByAgent[agentId] ?? .empty
   }
   private var hasContent: Bool {
     !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !attachments.isEmpty
   }
 
-  var body: some View {
+  public init(agentId: String, sessionId: String? = nil) {
+    self.agentId = agentId
+    self.sessionId = sessionId
+  }
+
+  public var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       if !slashSuggestions.isEmpty {
         suggestionList(slashSuggestions.map(\.name), hint: slashSuggestions.map(\.description))
@@ -66,7 +72,7 @@ struct ChatInputView: View {
     .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
     .task(id: agentId) { await load() }
     .onChange(of: text) { _, value in
-      app.preferences.set(value, for: PreferenceKey.draft(agentId: agentId))
+      preferences.set(value, for: PreferenceKey.draft(agentId: agentId))
       Task { await refreshBrowse() }
     }
     .sheet(item: $picker) { which in pickerSheet(which) }
@@ -74,12 +80,16 @@ struct ChatInputView: View {
     .onChange(of: photoItems) { _, items in Task { await attach(items) } }
     .confirmationDialog("Attach", isPresented: $showingAttachMenu, titleVisibility: .hidden) {
       Button("Photo Library") { showingPhotoLibrary = true }
-      Button("Take Photo") { showingCamera = true }
+      #if os(iOS)
+        Button("Take Photo") { showingCamera = true }
+      #endif
       Button("Cancel", role: .cancel) {}
     }
-    .fullScreenCover(isPresented: $showingCamera) {
-      CameraPicker { image in append(image) }
-    }
+    #if os(iOS)
+      .fullScreenCover(isPresented: $showingCamera) {
+        CameraPicker { image in append(image) }
+      }
+    #endif
   }
 
   // MARK: Rows
@@ -96,7 +106,7 @@ struct ChatInputView: View {
         }
         Chip(label: modelLabel, icon: Icon.agent) { picker = .model }
         // With one account there's nothing to switch between.
-        if sessionId != nil, (app.claudeAccounts?.count ?? 0) > 1 {
+        if sessionId != nil, (host.claudeAccounts?.count ?? 0) > 1 {
           Chip(label: accountLabel, icon: Icon.person) { picker = .account }
         }
         Chip(
@@ -104,7 +114,7 @@ struct ChatInputView: View {
           tone: mode == .auto ? nil : .accent
         ) { picker = .mode }
         if currentModelSupportsEffort {
-          Chip(label: app.effortByAgent[agentId] ?? "effort", icon: Icon.clock) {
+          Chip(label: host.effortByAgent[agentId] ?? "effort", icon: Icon.clock) {
             picker = .effort
           }
         }
@@ -147,7 +157,7 @@ struct ChatInputView: View {
           }
         }
         IconBtn(systemName: Icon.stop, label: "Interrupt", tint: theme.error) {
-          Task { await app.interrupt(agentId: agentId) }
+          Task { await host.interrupt(agentId: agentId) }
         }
       } else {
         IconBtn(systemName: Icon.send, label: "Send", tint: theme.accent) { submit() }
@@ -161,7 +171,7 @@ struct ChatInputView: View {
     ScrollView(.horizontal, showsIndicators: false) {
       HStack(spacing: 6) {
         ForEach(Array(previews.enumerated()), id: \.offset) { index, image in
-          Image(uiImage: image)
+          Image(platformImage: image)
             .resizable()
             .scaledToFill()
             .frame(width: 56, height: 56)
@@ -350,7 +360,7 @@ struct ChatInputView: View {
     }
     browseRequest += 1
     let request = browseRequest
-    let result = await app.resolveMentionPath(sessionId: sessionId, query: query)
+    let result = await host.resolveMentionPath(sessionId: sessionId, query: query)
     // The user kept typing while this was in flight.
     guard request == browseRequest else { return }
     browseEntries = result?.entries ?? []
@@ -372,11 +382,11 @@ struct ChatInputView: View {
   private static let followDefaultAccount = ""
 
   private var pinnedAccountId: String? {
-    sessionId.flatMap { app.claudeAccountId(forSessionId: $0) }
+    sessionId.flatMap { host.claudeAccountId(forSessionId: $0) }
   }
 
   private func accountName(_ id: String?) -> String? {
-    app.claudeAccounts?.first { $0.id == id }?.displayName
+    host.claudeAccounts?.first { $0.id == id }?.displayName
   }
 
   private var accountLabel: String {
@@ -399,7 +409,7 @@ struct ChatInputView: View {
         selected: Set([status?.model].compactMap { $0 }),
         emptyMessage: "This agent hasn't reported its models yet."
       ) { value in
-        Task { await app.setModel(agentId: agentId, model: value) }
+        Task { await host.setModel(agentId: agentId, model: value) }
       }
     case .account:
       PickerSheet(
@@ -407,9 +417,9 @@ struct ChatInputView: View {
         options: [
           .init(
             value: Self.followDefaultAccount, label: "Follow computer default",
-            hint: accountName(app.activeClaudeAccountId))
+            hint: accountName(host.activeClaudeAccountId))
         ]
-          + (app.claudeAccounts ?? []).map {
+          + (host.claudeAccounts ?? []).map {
             .init(
               value: $0.id, label: $0.displayName,
               hint: $0.subtitle.isEmpty ? nil : $0.subtitle)
@@ -419,7 +429,7 @@ struct ChatInputView: View {
         guard let sessionId else { return }
         let accountId = value == Self.followDefaultAccount ? nil : value
         Task {
-          await app.setSessionClaudeAccount(
+          await host.setSessionClaudeAccount(
             sessionId: sessionId, accountId: accountId, agentId: agentId)
         }
       }
@@ -430,7 +440,7 @@ struct ChatInputView: View {
         selected: [mode.rawValue]
       ) { value in
         guard let picked = RemotePermissionMode(rawValue: value) else { return }
-        Task { await app.setPermissionMode(agentId: agentId, mode: picked) }
+        Task { await host.setPermissionMode(agentId: agentId, mode: picked) }
       }
     case .effort:
       let levels =
@@ -438,14 +448,14 @@ struct ChatInputView: View {
       PickerSheet(
         title: "Effort",
         options: levels.map { .init(value: $0, label: $0.capitalized) },
-        selected: Set([app.effortByAgent[agentId]].compactMap { $0 })
+        selected: Set([host.effortByAgent[agentId]].compactMap { $0 })
       ) { value in
-        Task { await app.setEffort(agentId: agentId, level: value) }
+        Task { await host.setEffort(agentId: agentId, level: value) }
       }
     case .project:
       PickerSheet(
         title: "Linked projects",
-        options: app.projects.map { .init(value: $0.repoRoot, label: $0.name, hint: $0.repoRoot) },
+        options: host.projects.map { .init(value: $0.repoRoot, label: $0.name, hint: $0.repoRoot) },
         selected: Set(linkedProjects),
         multi: true
       ) { value in
@@ -454,7 +464,7 @@ struct ChatInputView: View {
         } else {
           linkedProjects.append(value)
         }
-        app.preferences.encode(
+        preferences.encode(
           linkedProjects, for: PreferenceKey.linkedProjects(agentId: agentId))
       }
     }
@@ -464,7 +474,7 @@ struct ChatInputView: View {
 
   private var contextTokens: Int {
     // The most recent assistant turn carrying usage is the live figure.
-    let messages = app.visibleMessages(for: agentId)
+    let messages = host.visibleMessages(for: agentId)
     guard let usage = messages.reversed().first(where: { $0.usage != nil })?.usage else {
       return 0
     }
@@ -483,37 +493,37 @@ struct ChatInputView: View {
     // Collapse outright. Re-measuring an emptied text view has proved too
     // easy to get wrong, and the answer for no text is never in doubt.
     inputHeight = PastingTextView.collapsedHeight
-    app.preferences.remove(PreferenceKey.draft(agentId: agentId))
+    preferences.remove(PreferenceKey.draft(agentId: agentId))
     // A link rides one message, like the desktop — not every one after it.
     linkedProjects = []
-    app.preferences.remove(PreferenceKey.linkedProjects(agentId: agentId))
+    preferences.remove(PreferenceKey.linkedProjects(agentId: agentId))
 
     Task {
       if isRunning {
-        await app.queueMessage(
+        await host.queueMessage(
           agentId: agentId, message: body, images: images, displayText: display)
       } else {
-        await app.sendMessage(
+        await host.sendMessage(
           agentId: agentId, message: body, images: images, displayText: display)
       }
     }
   }
 
   private func load() async {
-    text = app.preferences.string(PreferenceKey.draft(agentId: agentId)) ?? ""
+    text = preferences.string(PreferenceKey.draft(agentId: agentId)) ?? ""
     linkedProjects =
-      app.preferences.decode(PreferenceKey.linkedProjects(agentId: agentId), as: [String].self)
+      preferences.decode(PreferenceKey.linkedProjects(agentId: agentId), as: [String].self)
       ?? []
-    await app.loadCapabilities(agentId: agentId)
+    await host.loadCapabilities(agentId: agentId)
     if let sessionId {
-      mentionFiles = await app.listFiles(sessionId: sessionId)
+      mentionFiles = await host.listFiles(sessionId: sessionId)
       // The account chip reads the session's pin and the account list.
-      if app.claudeAccounts == nil { await app.refreshClaudeAccounts() }
-      if app.claudeAccountId(forSessionId: sessionId) == nil,
-        let repoRoot = app.repoRoot(forSessionId: sessionId),
-        app.sessionsByRepo[repoRoot] == nil
+      if host.claudeAccounts == nil { await host.refreshClaudeAccounts() }
+      if host.claudeAccountId(forSessionId: sessionId) == nil,
+        let repoRoot = host.repoRoot(forSessionId: sessionId),
+        host.sessionsByRepo[repoRoot] == nil
       {
-        await app.loadSessions(repoRoot: repoRoot)
+        await host.loadSessions(repoRoot: repoRoot)
       }
     }
   }
@@ -521,61 +531,17 @@ struct ChatInputView: View {
   private func attach(_ items: [PhotosPickerItem]) async {
     for item in items {
       guard let data = try? await item.loadTransferable(type: Data.self),
-        let image = UIImage(data: data)
+        let image = PlatformImage(data: data)
       else { continue }
       append(image)
     }
     photoItems = []
   }
 
-  private func append(_ image: UIImage) {
-    guard let jpeg = image.jpegData(compressionQuality: 0.8) else { return }
+  private func append(_ image: PlatformImage) {
+    guard let jpeg = image.jpegData(quality: 0.8) else { return }
     previews.append(image)
     attachments.append(
       RemoteImageAttachment(data: jpeg.base64EncodedString(), mediaType: "image/jpeg"))
-  }
-}
-
-/// A plain camera capture — the photo library picker covers everything else.
-struct CameraPicker: UIViewControllerRepresentable {
-  let onCapture: (UIImage) -> Void
-  @Environment(\.dismiss) private var dismiss
-
-  func makeCoordinator() -> Coordinator {
-    Coordinator(onCapture: onCapture, dismiss: { dismiss() })
-  }
-
-  func makeUIViewController(context: Context) -> UIImagePickerController {
-    let controller = UIImagePickerController()
-    controller.sourceType =
-      UIImagePickerController.isSourceTypeAvailable(.camera) ? .camera : .photoLibrary
-    controller.delegate = context.coordinator
-    return controller
-  }
-
-  func updateUIViewController(_ controller: UIImagePickerController, context: Context) {}
-
-  final class Coordinator: NSObject, UIImagePickerControllerDelegate,
-    UINavigationControllerDelegate
-  {
-    private let onCapture: (UIImage) -> Void
-    private let dismiss: () -> Void
-
-    init(onCapture: @escaping (UIImage) -> Void, dismiss: @escaping () -> Void) {
-      self.onCapture = onCapture
-      self.dismiss = dismiss
-    }
-
-    func imagePickerController(
-      _ picker: UIImagePickerController,
-      didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-    ) {
-      if let image = info[.originalImage] as? UIImage { onCapture(image) }
-      dismiss()
-    }
-
-    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-      dismiss()
-    }
   }
 }

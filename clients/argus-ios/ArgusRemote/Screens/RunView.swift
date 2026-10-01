@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// One firing: how it went, what it cost, and the report it wrote.
@@ -8,7 +8,7 @@ import SwiftUI
 /// answer the question.
 struct RunView: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @Environment(AutomationsStore.self) private var store
 
@@ -42,7 +42,7 @@ struct RunView: View {
       await store.markRunRead(id: runId)
     }
     // A settled run's report never changes, so stop asking.
-    .liveRefresh(enabled: app.connection == .ready && (run?.isActive ?? true)) {
+    .liveRefresh(enabled: host.connection == .ready && (run?.isActive ?? true)) {
       await store.loadRun(id: runId)
     }
     .sheet(isPresented: $givingFeedback) {
@@ -90,19 +90,19 @@ struct RunView: View {
             router.push(.agent(id: agentId, label: run.automationName))
           }
         }
-        if app.hasControl, run.isActive {
+        if host.hasControl, run.isActive {
           Btn(label: "Cancel", tone: .danger, small: true) {
             Task { await store.cancelRun(id: runId) }
           }
         }
         // Nothing to resume once the run's session is gone.
-        if app.hasControl, !run.isActive, run.hostSessionId != nil {
+        if host.hasControl, !run.isActive, run.hostSessionId != nil {
           Btn(label: "Give feedback", tone: .secondary, small: true, icon: Icon.chat) {
             givingFeedback = true
           }
         }
         // A one-off that turned out to be worth keeping.
-        if app.hasControl, run.isQuick, !run.isActive {
+        if host.hasControl, run.isQuick, !run.isActive {
           Btn(label: "Save as automation", tone: .secondary, small: true) {
             savingName = run.automationName
           }
@@ -132,7 +132,7 @@ struct RunView: View {
   private var report: some View {
     if let blocks = detail?.reportBlocks, !blocks.isEmpty {
       SectionHeader(title: "Report")
-      ReportBlocksView(blocks: blocks)
+      ReportBlocksView(blocks: blocks, onOpenInbox: { router.push(.inbox) })
     } else if let markdown = detail?.reportMarkdown, !markdown.isEmpty {
       SectionHeader(title: "Report")
       MarkdownView(text: markdown)

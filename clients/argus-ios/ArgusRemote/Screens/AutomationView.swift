@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// One automation: what it is, when it next fires, and every time it has run.
@@ -9,7 +9,7 @@ import SwiftUI
 /// it by tapping.
 struct AutomationView: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @Environment(AutomationsStore.self) private var store
 
@@ -44,7 +44,7 @@ struct AutomationView: View {
     .navigationTitle(automation?.name ?? label)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
-      if app.hasControl {
+      if host.hasControl {
         ToolbarItem(placement: .topBarTrailing) {
           NavigationLink(
             value: Route.automationEditor(id: automationId, label: automation?.name ?? label)
@@ -54,7 +54,7 @@ struct AutomationView: View {
         }
       }
     }
-    .liveRefresh(enabled: app.connection == .ready) {
+    .liveRefresh(enabled: host.connection == .ready) {
       await store.refresh()
       await store.loadMemories(automationId: automationId)
     }
@@ -82,7 +82,7 @@ struct AutomationView: View {
         MutedText(memory.description, lineLimit: 2)
       }
     }
-    if app.hasControl {
+    if host.hasControl {
       Btn(label: "Add memory", tone: .secondary, small: true, icon: Icon.plus) {
         openMemory = MemorySelection(memory: nil)
       }
@@ -98,7 +98,7 @@ struct AutomationView: View {
           .foregroundStyle(theme.textSecondary)
         BodyText(Labels.triggerLabel(automation))
         Spacer(minLength: 6)
-        if app.hasControl {
+        if host.hasControl {
           // The one dial worth flipping without opening the editor.
           Toggle("", isOn: Binding(
             get: { automation.enabled },
@@ -128,7 +128,7 @@ struct AutomationView: View {
         MutedText("Projects: \(automation.projects.joined(separator: ", "))", lineLimit: 2)
       }
 
-      if app.hasControl {
+      if host.hasControl {
         if let active = store.runs(for: automationId).first(where: \.isActive) {
           Btn(label: "Cancel run", tone: .danger, small: true) {
             Task { await store.cancelRun(id: active.id) }
@@ -140,7 +140,7 @@ struct AutomationView: View {
           ) {
             Task { await store.runNow(automationId: automationId) }
           }
-          .disabled(triggering || app.connection != .ready)
+          .disabled(triggering || host.connection != .ready)
         }
       }
     }
@@ -153,7 +153,7 @@ struct AutomationView: View {
       EmptyState(
         icon: Icon.history,
         title: "Never run",
-        body: app.hasControl
+        body: host.hasControl
           ? "Press Run now to see what it does."
           : "This device can watch automations but not start them.")
     } else {

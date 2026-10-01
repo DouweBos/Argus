@@ -9,30 +9,30 @@ import Observation
 /// answer for another set of repos.
 @MainActor
 @Observable
-final class PullRequestsStore {
-  var pullRequests: [RemotePullRequest] = []
-  var detailById: [String: RemotePullRequestDetail] = [:]
-  var loaded = false
-  var error: String?
+public final class PullRequestsStore {
+  public internal(set) var pullRequests: [RemotePullRequest] = []
+  public internal(set) var detailById: [String: RemotePullRequestDetail] = [:]
+  public internal(set) var loaded = false
+  public internal(set) var error: String?
 
-  private unowned let app: AppStore
+  private unowned let host: HostStore
 
-  init(app: AppStore) {
-    self.app = app
+  public init(host: HostStore) {
+    self.host = host
   }
 
-  func clear() {
+  public func clear() {
     pullRequests = []
     detailById = [:]
     loaded = false
     error = nil
   }
 
-  func refresh() async {
-    guard let transport = app.transport else { return }
+  public func refresh() async {
+    guard let backend = host.backend else { return }
     struct Result: Decodable { let pull_requests: [RemotePullRequest] }
     do {
-      pullRequests = try await transport.request(
+      pullRequests = try await backend.request(
         .githubPullRequests, EmptyParams(), as: Result.self
       ).pull_requests
       error = nil
@@ -45,15 +45,15 @@ final class PullRequestsStore {
   }
 
   @discardableResult
-  func loadDetail(repo: String, number: Int) async -> RemotePullRequestDetail? {
-    guard let transport = app.transport else { return nil }
+  public func loadDetail(repo: String, number: Int) async -> RemotePullRequestDetail? {
+    guard let backend = host.backend else { return nil }
     struct Params: Encodable {
       let repo: String
       let number: Int
     }
     struct Result: Decodable { let pull_request: RemotePullRequestDetail }
     do {
-      let detail = try await transport.request(
+      let detail = try await backend.request(
         .githubPullRequest, Params(repo: repo, number: number), as: Result.self
       ).pull_request
       detailById[detail.id] = detail
@@ -68,8 +68,8 @@ final class PullRequestsStore {
 
   /// Open a PR for a session's branch. The computer works out the base and
   /// head from the session itself.
-  func create(sessionId: String, title: String, body: String, draft: Bool) async -> String? {
-    guard let transport = app.transport else { return nil }
+  public func create(sessionId: String, title: String, body: String, draft: Bool) async -> String? {
+    guard let backend = host.backend else { return nil }
     struct Params: Encodable {
       let session_id: String
       let title: String
@@ -81,11 +81,11 @@ final class PullRequestsStore {
       let url: String
     }
     do {
-      let result = try await transport.request(
+      let result = try await backend.request(
         .githubCreatePullRequest,
         Params(session_id: sessionId, title: title, body: body, draft: draft),
         as: Result.self)
-      Telemetry.capture(.pullRequestActed(action: .open))
+      host.hooks.track(.pullRequestActed(action: .open))
       await refresh()
 
       return result.url
@@ -97,19 +97,19 @@ final class PullRequestsStore {
   }
 
   @discardableResult
-  func merge(repo: String, number: Int, strategy: RemoteMergeStrategy) async -> Bool {
-    guard let transport = app.transport else { return false }
+  public func merge(repo: String, number: Int, strategy: RemoteMergeStrategy) async -> Bool {
+    guard let backend = host.backend else { return false }
     struct Params: Encodable {
       let repo: String
       let number: Int
       let strategy: String
     }
     do {
-      try await transport.request(
+      try await backend.request(
         .githubMergePullRequest,
         Params(repo: repo, number: number, strategy: strategy.rawValue),
         as: IgnoredResult.self)
-      Telemetry.capture(.pullRequestActed(action: .merge))
+      host.hooks.track(.pullRequestActed(action: .merge))
       await loadDetail(repo: repo, number: number)
       await refresh()
 
@@ -122,18 +122,18 @@ final class PullRequestsStore {
   }
 
   @discardableResult
-  func comment(repo: String, number: Int, body: String) async -> Bool {
-    guard let transport = app.transport else { return false }
+  public func comment(repo: String, number: Int, body: String) async -> Bool {
+    guard let backend = host.backend else { return false }
     struct Params: Encodable {
       let repo: String
       let number: Int
       let body: String
     }
     do {
-      try await transport.request(
+      try await backend.request(
         .githubCommentPullRequest, Params(repo: repo, number: number, body: body),
         as: IgnoredResult.self)
-      Telemetry.capture(.pullRequestActed(action: .comment))
+      host.hooks.track(.pullRequestActed(action: .comment))
       await loadDetail(repo: repo, number: number)
 
       return true
@@ -147,8 +147,7 @@ final class PullRequestsStore {
   /// Show it, and send it — a failure the user sees is one worth knowing
   /// about, scrubbed of anything from their work.
   private func fail(_ summary: String, _ error: Error) {
-    self.error = "\(summary) — \(AppStore.describe(error))"
-    Telemetry.capture(.appError(scope: "pull_requests", message: AppStore.describe(error)))
-    Telemetry.captureException(error, source: "app_error", extra: ["scope": "pull_requests"])
+    self.error = "\(summary) — \(HostStore.describe(error))"
+    host.hooks.errorReported(error, "pull_requests")
   }
 }

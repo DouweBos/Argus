@@ -1,11 +1,11 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// Sessions and agents for one repository, grouped the way the desktop
 /// sidebar groups them.
 struct ProjectView: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
 
   let repoRoot: String
@@ -24,8 +24,8 @@ struct ProjectView: View {
   /// A session id, wrapped so it can drive a `sheet(item:)`.
   struct SpawnTarget: Identifiable { let id: String }
 
-  private var sessions: [RemoteSession] { app.sessionsByRepo[repoRoot] ?? [] }
-  private var agents: [RemoteAgentStatus] { app.agentsByRepo[repoRoot] ?? [] }
+  private var sessions: [RemoteSession] { host.sessionsByRepo[repoRoot] ?? [] }
+  private var agents: [RemoteAgentStatus] { host.agentsByRepo[repoRoot] ?? [] }
 
   var body: some View {
     List {
@@ -33,7 +33,7 @@ struct ProjectView: View {
         EmptyState(
           icon: Icon.agent,
           title: "No sessions",
-          body: app.hasControl
+          body: host.hasControl
             ? "Create a session, then start an agent in it."
             : "Start an agent in this project from Argus on your computer and it'll appear here."
         )
@@ -76,7 +76,7 @@ struct ProjectView: View {
                 Label("Branches", systemImage: Icon.repo)
               }
             }
-            if app.hasControl {
+            if host.hasControl {
               Button {
                 spawningIn = SpawnTarget(id: group.sessionId)
               } label: {
@@ -94,7 +94,7 @@ struct ProjectView: View {
     .navigationTitle(name)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
-      if app.hasControl {
+      if host.hasControl {
         ToolbarItem(placement: .topBarTrailing) {
           Button {
             creatingSession = true
@@ -131,15 +131,15 @@ struct ProjectView: View {
       await refresh()
       await refreshGitStatus()
     }
-    .liveRefresh(enabled: app.connection == .ready) { await refresh() }
+    .liveRefresh(enabled: host.connection == .ready) { await refresh() }
     // Git state is fetched per session rather than polled, so it goes stale
     // while the phone is locked.
-    .onResume(connected: app.connection == .ready) { await refreshGitStatus() }
+    .onResume(connected: host.connection == .ready) { await refreshGitStatus() }
   }
 
   private func delete(_ group: Group, branch: Bool) {
     Task {
-      await app.deleteSession(id: group.sessionId, repoRoot: repoRoot, deleteBranch: branch)
+      await host.deleteSession(id: group.sessionId, repoRoot: repoRoot, deleteBranch: branch)
       await refresh()
     }
   }
@@ -169,7 +169,7 @@ struct ProjectView: View {
           Badge(label: status.rawValue, tone: status == .error ? .danger : .warning)
         }
         Spacer(minLength: 4)
-        if app.hasControl { sessionMenu(group) }
+        if host.hasControl { sessionMenu(group) }
       }
       if group.session?.isUnavailable == true {
         Label(
@@ -179,7 +179,7 @@ struct ProjectView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
       } else {
-        let git = app.gitStatusBySession[group.sessionId]
+        let git = host.gitStatusBySession[group.sessionId]
         // The project root is named "Project root", so its branch — the one
         // checked out in the repo itself — shows up nowhere else.
         if let branch = branchLabel(group, git: git) {
@@ -201,7 +201,7 @@ struct ProjectView: View {
     // Nothing to fetch for a session the computer itself can't read.
     .task {
       guard group.session?.isUnavailable != true else { return }
-      await app.loadGitStatus(sessionId: group.sessionId)
+      await host.loadGitStatus(sessionId: group.sessionId)
     }
   }
 
@@ -329,7 +329,7 @@ struct ProjectView: View {
   private func canManageBranches(_ session: RemoteSession?) -> Bool {
     // Session worktrees are pinned to their branch; the computer only accepts
     // branch operations on the project root.
-    app.hasControl && session?.kind == .projectRoot
+    host.hasControl && session?.kind == .projectRoot
   }
 
   struct Group: Identifiable, Equatable {
@@ -382,14 +382,14 @@ struct ProjectView: View {
   }
 
   private var stoppedByBranch: [String: [RemoteStoppedAgent]] {
-    Dictionary(grouping: app.stoppedByRepo[repoRoot] ?? [], by: \.branch)
+    Dictionary(grouping: host.stoppedByRepo[repoRoot] ?? [], by: \.branch)
   }
 
   /// Stopped agents whose branch no longer has a session here.
   private var orphanedStopped: [RemoteStoppedAgent] {
     let live = Set(sessions.map(\.branch))
 
-    return (app.stoppedByRepo[repoRoot] ?? []).filter { !live.contains($0.branch) }
+    return (host.stoppedByRepo[repoRoot] ?? []).filter { !live.contains($0.branch) }
   }
 
   /// Branches are addressed by session; the project root is the one that is
@@ -403,9 +403,9 @@ struct ProjectView: View {
   /// agent has reported at all. Falling back keeps the very first agent in a
   /// project from being the one spawn that cannot pick a model.
   private var knownModels: [RemoteModelInfo] {
-    let mine = agents.compactMap { app.capabilitiesByAgent[$0.agentId] }
+    let mine = agents.compactMap { host.capabilitiesByAgent[$0.agentId] }
       .first { !$0.models.isEmpty }?.models
-    return mine ?? app.capabilitiesByAgent.values.first { !$0.models.isEmpty }?.models ?? []
+    return mine ?? host.capabilitiesByAgent.values.first { !$0.models.isEmpty }?.models ?? []
   }
 
   private func submitRename() {
@@ -417,9 +417,9 @@ struct ProjectView: View {
     Task {
       switch kind {
       case .name:
-        await app.renameSession(id: group.sessionId, repoRoot: repoRoot, name: value)
+        await host.renameSession(id: group.sessionId, repoRoot: repoRoot, name: value)
       case .branch:
-        await app.renameSessionBranch(id: group.sessionId, repoRoot: repoRoot, branch: value)
+        await host.renameSessionBranch(id: group.sessionId, repoRoot: repoRoot, branch: value)
       }
       await refresh()
     }
@@ -427,14 +427,14 @@ struct ProjectView: View {
 
   private func refreshGitStatus() async {
     for group in groups where group.session?.isUnavailable != true {
-      await app.loadGitStatus(sessionId: group.sessionId)
+      await host.loadGitStatus(sessionId: group.sessionId)
     }
   }
 
   private func refresh() async {
-    await app.loadAgents(repoRoot: repoRoot)
-    await app.loadSessions(repoRoot: repoRoot)
-    await app.loadRecentAgents()
-    await app.loadStoppedAgents(repoRoot: repoRoot)
+    await host.loadAgents(repoRoot: repoRoot)
+    await host.loadSessions(repoRoot: repoRoot)
+    await host.loadRecentAgents()
+    await host.loadStoppedAgents(repoRoot: repoRoot)
   }
 }

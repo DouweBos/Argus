@@ -4,14 +4,14 @@ import Foundation
 /// Branches on a project root: history, commits, and everything the desktop's
 /// branch menu does. Reads are monitor-tier; everything that moves a ref needs
 /// `control`, enforced by the gateway.
-extension AppStore {
+extension HostStore {
 
-  enum CheckoutOutcome { case ok, dirty, failed }
+  public enum CheckoutOutcome: Sendable { case ok, dirty, failed }
 
-  func checkoutBranch(
+  public func checkoutBranch(
     sessionId: String, repoRoot: String, branch: String, dirty: String? = nil
   ) async -> CheckoutOutcome {
-    guard let transport else { return .failed }
+    guard let backend else { return .failed }
     struct Params: Encodable {
       let session_id: String
       let branch: String
@@ -22,11 +22,11 @@ extension AppStore {
       let blocked_by: String?
     }
     do {
-      let result = try await transport.request(
+      let result = try await backend.request(
         .sessionsCheckout, Params(session_id: sessionId, branch: branch, dirty: dirty),
         as: Result.self)
       if result.blocked_by == "dirty" { return .dirty }
-      if result.accepted { Telemetry.capture(.branchActed(action: .checkout)) }
+      if result.accepted { hooks.track(.branchActed(action: .checkout)) }
       await loadGitStatus(sessionId: sessionId)
       await loadSessions(repoRoot: repoRoot)
       return result.accepted ? .ok : .failed
@@ -36,10 +36,10 @@ extension AppStore {
     }
   }
 
-  func createBranch(
+  public func createBranch(
     sessionId: String, repoRoot: String, name: String, checkout: Bool, startPoint: String? = nil
   ) async {
-    guard let transport else { return }
+    guard let backend else { return }
     struct Params: Encodable {
       let session_id: String
       let name: String
@@ -47,21 +47,21 @@ extension AppStore {
       let start_point: String?
     }
     do {
-      try await transport.request(
+      try await backend.request(
         .sessionsCreateBranch,
         Params(session_id: sessionId, name: name, checkout: checkout, start_point: startPoint),
         as: IgnoredResult.self)
-      Telemetry.capture(.branchActed(action: .create))
+      hooks.track(.branchActed(action: .create))
       await loadGitStatus(sessionId: sessionId)
     } catch { report(error) }
   }
 
-  enum DeleteBranchOutcome { case ok, unmerged, failed }
+  public enum DeleteBranchOutcome: Sendable { case ok, unmerged, failed }
 
-  func deleteBranch(sessionId: String, name: String, force: Bool = false) async
+  public func deleteBranch(sessionId: String, name: String, force: Bool = false) async
     -> DeleteBranchOutcome
   {
-    guard let transport else { return .failed }
+    guard let backend else { return .failed }
     struct Params: Encodable {
       let session_id: String
       let name: String
@@ -72,11 +72,11 @@ extension AppStore {
       let blocked_by: String?
     }
     do {
-      let result = try await transport.request(
+      let result = try await backend.request(
         .sessionsDeleteBranch, Params(session_id: sessionId, name: name, force: force),
         as: Result.self)
       if result.blocked_by == "unmerged" { return .unmerged }
-      if result.accepted { Telemetry.capture(.branchActed(action: .delete)) }
+      if result.accepted { hooks.track(.branchActed(action: .delete)) }
       return result.accepted ? .ok : .failed
     } catch {
       report(error)
@@ -87,8 +87,8 @@ extension AppStore {
   // MARK: History
 
   /// `ref` is the branch as git knows it: `origin/x` for a remote-only one.
-  func branchLog(sessionId: String, ref: String, count: Int = 100) async -> [RemoteCommit]? {
-    guard let transport else { return nil }
+  public func branchLog(sessionId: String, ref: String, count: Int = 100) async -> [RemoteCommit]? {
+    guard let backend else { return nil }
     struct Params: Encodable {
       let session_id: String
       let branch: String
@@ -96,7 +96,7 @@ extension AppStore {
     }
     struct Result: Decodable { let commits: [RemoteCommit] }
     do {
-      return try await transport.request(
+      return try await backend.request(
         .sessionsBranchLog, Params(session_id: sessionId, branch: ref, count: count),
         as: Result.self
       ).commits
@@ -106,15 +106,15 @@ extension AppStore {
     }
   }
 
-  func commitDiff(sessionId: String, hash: String) async -> String? {
-    guard let transport else { return nil }
+  public func commitDiff(sessionId: String, hash: String) async -> String? {
+    guard let backend else { return nil }
     struct Params: Encodable {
       let session_id: String
       let hash: String
     }
     struct Result: Decodable { let diff: String }
     do {
-      return try await transport.request(
+      return try await backend.request(
         .sessionsCommitDiff, Params(session_id: sessionId, hash: hash), as: Result.self
       ).diff
     } catch {
@@ -123,17 +123,17 @@ extension AppStore {
     }
   }
 
-  func compareBranches(sessionId: String, left: String, right: String) async
+  public func compareBranches(sessionId: String, left: String, right: String) async
     -> RemoteBranchCompare?
   {
-    guard let transport else { return nil }
+    guard let backend else { return nil }
     struct Params: Encodable {
       let session_id: String
       let left: String
       let right: String
     }
     do {
-      return try await transport.request(
+      return try await backend.request(
         .sessionsCompareBranches, Params(session_id: sessionId, left: left, right: right),
         as: RemoteBranchCompare.self)
     } catch {
@@ -143,14 +143,14 @@ extension AppStore {
   }
 
   /// GitHub's "open a PR" page; nil when the repo has no GitHub remote.
-  func branchPullRequestURL(sessionId: String, branch: String) async -> URL? {
-    guard let transport else { return nil }
+  public func branchPullRequestURL(sessionId: String, branch: String) async -> URL? {
+    guard let backend else { return nil }
     struct Params: Encodable {
       let session_id: String
       let branch: String
     }
     struct Result: Decodable { let url: String? }
-    let result = try? await transport.request(
+    let result = try? await backend.request(
       .sessionsBranchPrUrl, Params(session_id: sessionId, branch: branch), as: Result.self)
 
     return result?.url.flatMap(URL.init(string:))
@@ -161,12 +161,12 @@ extension AppStore {
   /// Run one branch action, refresh what it changed, and report a failure —
   /// a merge that stopped on conflicts included — through the app banner.
   private func branchAction<P: Encodable & Sendable>(
-    _ method: RemoteMethod, _ params: P, sessionId: String, action: TelemetryEvent.BranchAction
+    _ method: RemoteMethod, _ params: P, sessionId: String, action: StoreEvent.BranchAction
   ) async -> Bool {
-    guard let transport else { return false }
+    guard let backend else { return false }
     do {
-      try await transport.request(method, params, as: IgnoredResult.self)
-      Telemetry.capture(.branchActed(action: action))
+      try await backend.request(method, params, as: IgnoredResult.self)
+      hooks.track(.branchActed(action: action))
       await loadGitStatus(sessionId: sessionId)
       return true
     } catch {
@@ -175,7 +175,7 @@ extension AppStore {
     }
   }
 
-  func mergeIntoCurrent(sessionId: String, from: String, squash: Bool) async -> Bool {
+  public func mergeIntoCurrent(sessionId: String, from: String, squash: Bool) async -> Bool {
     struct Params: Encodable {
       let session_id: String
       let from: String
@@ -186,7 +186,7 @@ extension AppStore {
       sessionId: sessionId, action: .merge)
   }
 
-  func rebaseCurrent(sessionId: String, onto: String) async -> Bool {
+  public func rebaseCurrent(sessionId: String, onto: String) async -> Bool {
     struct Params: Encodable {
       let session_id: String
       let onto: String
@@ -196,7 +196,7 @@ extension AppStore {
       sessionId: sessionId, action: .rebase)
   }
 
-  func pushBranch(
+  public func pushBranch(
     sessionId: String, branch: String, remote: String?, setUpstream: Bool, forceWithLease: Bool
   ) async -> Bool {
     struct Params: Encodable {
@@ -214,11 +214,11 @@ extension AppStore {
       sessionId: sessionId, action: .push)
   }
 
-  enum PullStrategy: String, CaseIterable {
+  public enum PullStrategy: String, CaseIterable, Sendable {
     case ffOnly = "ff-only"
     case merge, rebase
 
-    var label: String {
+    public var label: String {
       switch self {
       case .ffOnly: "Fast-forward"
       case .merge: "Merge"
@@ -227,7 +227,7 @@ extension AppStore {
     }
   }
 
-  func pullCurrent(sessionId: String, strategy: PullStrategy) async -> Bool {
+  public func pullCurrent(sessionId: String, strategy: PullStrategy) async -> Bool {
     struct Params: Encodable {
       let session_id: String
       let strategy: String
@@ -237,7 +237,7 @@ extension AppStore {
       sessionId: sessionId, action: .pull)
   }
 
-  func renameLocalBranch(sessionId: String, from: String, to: String) async -> Bool {
+  public func renameLocalBranch(sessionId: String, from: String, to: String) async -> Bool {
     struct Params: Encodable {
       let session_id: String
       let from: String
@@ -248,7 +248,7 @@ extension AppStore {
       sessionId: sessionId, action: .rename)
   }
 
-  func setBranchPinned(sessionId: String, branch: String, pinned: Bool) async -> Bool {
+  public func setBranchPinned(sessionId: String, branch: String, pinned: Bool) async -> Bool {
     struct Params: Encodable {
       let session_id: String
       let branch: String

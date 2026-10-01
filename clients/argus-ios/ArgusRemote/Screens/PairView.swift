@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusUI
 import AVFoundation
 import SwiftUI
 

@@ -1,10 +1,11 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// The active computer's projects, plus the agents worth jumping back into.
 struct ProjectsView: View {
   @Environment(\.theme) private var theme
   @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
 
   @State private var openingPad = false
@@ -21,12 +22,12 @@ struct ProjectsView: View {
           body: "Pair with Argus on your Mac to drive its agents from here.")
         .listRowBackground(Color.clear)
         Button("Pair a computer") { router.push(.pair) }
-      } else if !app.loaded || (app.connection != .ready && app.projects.isEmpty) {
+      } else if !app.loaded || (host.connection != .ready && host.projects.isEmpty) {
         Loading(label: "Connecting to \(hostName)…")
           .listRowBackground(Color.clear)
       } else {
         recentAgents
-        if app.projects.isEmpty {
+        if host.projects.isEmpty {
           EmptyState(
             icon: Icon.folder,
             title: "No projects open",
@@ -34,7 +35,7 @@ struct ProjectsView: View {
           .listRowBackground(Color.clear)
         } else {
           Section("Projects") {
-            ForEach(app.projects) { project in
+            ForEach(host.projects) { project in
               NavigationLink(
                 value: Route.project(repoRoot: project.repoRoot, name: project.name)
               ) {
@@ -59,7 +60,7 @@ struct ProjectsView: View {
     ) {
       Button("Delete", role: .destructive) {
         guard let pad = padToDelete else { return }
-        Task { await app.deleteScratchPad(id: pad.id) }
+        Task { await host.deleteScratchPad(id: pad.id) }
       }
     } message: {
       Text("Its agents are stopped and every file in its folder is removed.")
@@ -68,7 +69,7 @@ struct ProjectsView: View {
       ToolbarItem(placement: .topBarTrailing) { computerMenu }
     }
     .refreshable { await refresh() }
-    .liveRefresh(enabled: app.identity != nil && app.connection == .ready) { await refresh() }
+    .liveRefresh(enabled: app.identity != nil && host.connection == .ready) { await refresh() }
   }
 
   /// Which computer this is, and how to get to another — the switcher lives
@@ -101,7 +102,7 @@ struct ProjectsView: View {
   /// before the merely recent.
   @ViewBuilder
   private var recentAgents: some View {
-    let recent = app.recentAgents
+    let recent = host.recentAgents
       .sorted {
         let left = Labels.activityRank($0)
         let right = Labels.activityRank($1)
@@ -130,27 +131,27 @@ struct ProjectsView: View {
   /// One-off agents that belong to no project. Opening one lands in its chat.
   @ViewBuilder
   private var scratchPads: some View {
-    if !app.scratchPads.isEmpty || app.hasControl {
+    if !host.scratchPads.isEmpty || host.hasControl {
       Section("Scratch pads") {
-        ForEach(app.scratchPads) { pad in
+        ForEach(host.scratchPads) { pad in
           Button {
-            open { await app.scratchPadAgent(pad) }
+            open { await host.scratchPadAgent(pad) }
           } label: {
             Label(pad.displayName ?? "Scratch pad", systemImage: Icon.scratchPad)
               .lineLimit(1)
           }
           .disabled(openingPad)
           .swipeActions {
-            if app.hasControl {
+            if host.hasControl {
               Button("Delete", systemImage: Icon.trash, role: .destructive) {
                 padToDelete = pad
               }
             }
           }
         }
-        if app.hasControl {
+        if host.hasControl {
           Button("New scratch pad", systemImage: Icon.plus) {
-            open { await app.createScratchPad() }
+            open { await host.createScratchPad() }
           }
           .disabled(openingPad)
         }
@@ -182,8 +183,8 @@ struct ProjectsView: View {
   }
 
   private func refresh() async {
-    await app.refreshProjects()
-    await app.loadRecentAgents()
-    await app.loadScratchPads()
+    await host.refreshProjects()
+    await host.loadRecentAgents()
+    await host.loadScratchPads()
   }
 }

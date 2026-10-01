@@ -1,3 +1,4 @@
+import ArgusUI
 import SwiftUI
 
 /// The gate shown before biometric unlock.

@@ -1,11 +1,11 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// Every Claude account signed in on the computer, and which one new agents
 /// run as. Each account gets its own Claude config directory, so choosing here
 /// is what decides which subscription an agent burns.
 struct ClaudeAccountsView: View {
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(\.theme) private var theme
 
   @State private var adding = false
@@ -14,13 +14,13 @@ struct ClaudeAccountsView: View {
 
   var body: some View {
     List {
-      if let error = app.lastError {
+      if let error = host.lastError {
         Banner(text: error, tone: .danger).listRowSeparator(.hidden)
       }
-      if let login = app.claudeLogin, login.pending {
+      if let login = host.claudeLogin, login.pending {
         // A sign-in is always about some row; the banner is the way back to it.
         Button {
-          loggingIn = LoginTarget(id: app.activeClaudeAccountId)
+          loggingIn = LoginTarget(id: host.activeClaudeAccountId)
         } label: {
           Banner(text: pendingLoginText(login), tone: .accent)
         }
@@ -28,9 +28,9 @@ struct ClaudeAccountsView: View {
         .listRowSeparator(.hidden)
       }
 
-      if app.claudeAccounts == nil {
+      if host.claudeAccounts == nil {
         Loading(label: "Loading accounts…").listRowSeparator(.hidden)
-      } else if app.claudeAccounts?.isEmpty == true {
+      } else if host.claudeAccounts?.isEmpty == true {
         EmptyState(
           icon: Icon.person,
           title: "No Claude accounts",
@@ -40,13 +40,13 @@ struct ClaudeAccountsView: View {
         .listRowSeparator(.hidden)
       } else {
         Section("Accounts") {
-          ForEach(app.claudeAccounts ?? []) { account in
+          ForEach(host.claudeAccounts ?? []) { account in
             AccountRow(
               account: account,
-              active: account.id == app.activeClaudeAccountId,
-              canManage: app.hasControl
+              active: account.id == host.activeClaudeAccountId,
+              canManage: host.hasControl
             ) {
-              Task { await app.setActiveClaudeAccount(id: account.id) }
+              Task { await host.setActiveClaudeAccount(id: account.id) }
             } onLogin: {
               loggingIn = LoginTarget(id: account.id)
             } onRename: {
@@ -58,7 +58,7 @@ struct ClaudeAccountsView: View {
     }
     .scrollContentBackground(.hidden)
     .safeAreaInset(edge: .bottom, spacing: 0) {
-      if app.hasControl {
+      if host.hasControl {
         Btn(label: "Add account", icon: Icon.plus) { adding = true }
           .padding(theme.space)
           .background(theme.bg)
@@ -67,11 +67,11 @@ struct ClaudeAccountsView: View {
     .navigationTitle("Claude accounts")
     .navigationBarTitleDisplayMode(.inline)
     .task {
-      await app.refreshClaudeAccounts()
-      await app.loadClaudeLoginStatus()
+      await host.refreshClaudeAccounts()
+      await host.loadClaudeLoginStatus()
     }
-    .refreshable { await app.refreshClaudeAccounts() }
-    .liveRefresh(enabled: app.connection == .ready) { await app.refreshClaudeAccounts() }
+    .refreshable { await host.refreshClaudeAccounts() }
+    .liveRefresh(enabled: host.connection == .ready) { await host.refreshClaudeAccounts() }
     .sheet(isPresented: $adding) { AddAccountSheet() }
     .sheet(item: $loggingIn) { target in
       ClaudeLoginSheet(accountId: target.id)
@@ -105,7 +105,7 @@ private struct AccountRow: View {
   let onRename: () -> Void
 
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @State private var confirmingRemove = false
 
   var body: some View {
@@ -158,7 +158,7 @@ private struct AccountRow: View {
       titleVisibility: .visible
     ) {
       Button("Remove", role: .destructive) {
-        Task { await app.removeClaudeAccount(id: account.id) }
+        Task { await host.removeClaudeAccount(id: account.id) }
       }
     } message: {
       Text("This clears the account from Argus; Claude's own credentials are untouched.")
@@ -170,7 +170,7 @@ private struct AccountRow: View {
 /// there, so the phone's only path to finishing is the code the CLI prints
 /// when the browser flow isn't available.
 private struct ClaudeLoginSheet: View {
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(\.dismiss) private var dismiss
 
   let accountId: String?
@@ -179,12 +179,12 @@ private struct ClaudeLoginSheet: View {
   @State private var working = false
   @FocusState private var codeFocused: Bool
 
-  private var state: RemoteClaudeLoginState? { app.claudeLogin }
+  private var state: RemoteClaudeLoginState? { host.claudeLogin }
 
   var body: some View {
     NavigationStack {
       Screen {
-        if let error = app.lastError {
+        if let error = host.lastError {
           Banner(text: error, tone: .danger)
         }
         if state?.ok == true {
@@ -207,7 +207,7 @@ private struct ClaudeLoginSheet: View {
             .disabled(code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || working)
           Btn(label: "Cancel sign-in", tone: .danger) {
             Task {
-              await app.cancelClaudeLogin()
+              await host.cancelClaudeLogin()
               dismiss()
             }
           }
@@ -230,7 +230,7 @@ private struct ClaudeLoginSheet: View {
       }
       .onAppear {
         if state?.pending != true {
-          Task { await app.loadClaudeLoginStatus() }
+          Task { await host.loadClaudeLoginStatus() }
         }
       }
       // The attempt runs on the computer, so react to what the host reports.
@@ -238,7 +238,7 @@ private struct ClaudeLoginSheet: View {
         if needsCode == true { codeFocused = true }
       }
       .onChange(of: state?.pending) { _, pending in
-        if pending == false { Task { await app.refreshClaudeAccounts() } }
+        if pending == false { Task { await host.refreshClaudeAccounts() } }
       }
     }
   }
@@ -246,16 +246,16 @@ private struct ClaudeLoginSheet: View {
   private func start() {
     working = true
     Task {
-      await app.startClaudeLogin(accountId: accountId)
+      await host.startClaudeLogin(accountId: accountId)
       working = false
-      if app.claudeLogin?.needsCode == true { codeFocused = true }
+      if host.claudeLogin?.needsCode == true { codeFocused = true }
     }
   }
 
   private func submit() {
     working = true
     Task {
-      await app.submitClaudeLoginCode(code)
+      await host.submitClaudeLoginCode(code)
       working = false
       code = ""
     }
@@ -263,7 +263,7 @@ private struct ClaudeLoginSheet: View {
 }
 
 private struct AddAccountSheet: View {
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(\.dismiss) private var dismiss
 
   @State private var useConsole = false
@@ -271,7 +271,7 @@ private struct AddAccountSheet: View {
   var body: some View {
     NavigationStack {
       Screen {
-        if let error = app.lastError {
+        if let error = host.lastError {
           Banner(text: error, tone: .danger)
         }
         Field(
@@ -302,7 +302,7 @@ private struct AddAccountSheet: View {
   /// and let the list fill in.
   private func add() {
     Task {
-      await app.addClaudeAccount(useConsole: useConsole)
+      await host.addClaudeAccount(useConsole: useConsole)
       dismiss()
     }
   }
@@ -311,7 +311,7 @@ private struct AddAccountSheet: View {
 private struct RenameSheet: View {
   let account: RemoteClaudeAccount
 
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(\.dismiss) private var dismiss
 
   @State private var draft = ""
@@ -319,7 +319,7 @@ private struct RenameSheet: View {
   var body: some View {
     NavigationStack {
       Screen {
-        if let error = app.lastError {
+        if let error = host.lastError {
           Banner(text: error, tone: .danger)
         }
         Field(label: "NAME") {
@@ -335,7 +335,7 @@ private struct RenameSheet: View {
         ToolbarItem(placement: .confirmationAction) {
           Button("Save") {
             Task {
-              await app.renameClaudeAccount(id: account.id, label: draft)
+              await host.renameClaudeAccount(id: account.id, label: draft)
               dismiss()
             }
           }
