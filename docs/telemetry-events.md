@@ -119,6 +119,7 @@ Sent only in `full` mode.
 | `$pageview`          | renderer | The renderer URL changes (initial mount + every navigation)                | `$pathname`, `$current_url` — both sanitised, see ↓ |
 | `telemetry_enabled`  | main     | User opts up to full                                                       | —                                                   |
 | `telemetry_disabled` | main     | User drops back to presence (sent before the flip + flush)                 | —                                                   |
+| `host_lock_handover` | main     | Another host held this Argus home and the user had Argus quit it to start  | `holder: "cli" \| "electron" \| "mac"`              |
 
 ### `$pageview` sanitisation
 

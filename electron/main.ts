@@ -41,6 +41,7 @@ import { log as emitLog } from "../app/lib/logger";
 import { installRendererEventSink } from "./broadcast";
 import { installCrashHooks } from "./crashHooks";
 import { startDevTrust, stopDevTrust } from "./devTrust";
+import { claimHostLock, reportHostLockHandover } from "./hostLockGate";
 import { installHostPlatform } from "./hostPlatform";
 import { installIpcCommandBridge } from "./ipcBridge";
 import { setMainWindow } from "./mainWindow";
@@ -862,12 +863,19 @@ app.on("web-contents-created", (_e, wc) => {
   attachSpellcheckContextMenu(wc);
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   log(
     "app ready, isPackaged=%s, resourcesPath=%s",
     app.isPackaged,
     process.resourcesPath,
   );
+
+  // One host per ARGUS_HOME: the Mac app or a CLI host may already be on it.
+  if (!(await claimHostLock())) {
+    app.exit(0);
+
+    return;
+  }
 
   // Supply the core with the capabilities it can't reach as plain Node. The
   // headless server app has no window, so its UI-shaped capabilities no-op.
@@ -905,6 +913,7 @@ app.whenReady().then(() => {
   })
     .remoteReady.then(() => startDevTrust())
     .catch((e) => log("Failed to start dev trust: %s", String(e)));
+  reportHostLockHandover();
 
   // Sync system dark/light theme to all active Conductor-managed browsers.
   nativeTheme.on("updated", () => {
