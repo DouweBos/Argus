@@ -72,10 +72,13 @@
           Text("/\(command.name)")
             .font(.system(size: 13, design: .monospaced))
             .foregroundStyle(theme.text)
+            .fixedSize()
           if !command.argumentHint.isEmpty {
             Text(command.argumentHint)
               .font(.system(size: 12, design: .monospaced))
               .foregroundStyle(theme.textMuted)
+              .lineLimit(1)
+              .layoutPriority(-1)
           }
           if !command.description.isEmpty {
             Text(command.description)

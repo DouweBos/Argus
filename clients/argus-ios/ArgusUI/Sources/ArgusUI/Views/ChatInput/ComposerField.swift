@@ -21,9 +21,10 @@
       let range = NSRange(location: 0, length: (view.string as NSString).length)
       guard view.shouldChangeText(in: range, replacementString: text) else { return }
       view.replaceCharacters(in: range, with: text)
-      view.didChangeText()
       let location = min(caret ?? (text as NSString).length, (text as NSString).length)
+      // Before `didChangeText`, so the change reports the new caret.
       view.setSelectedRange(NSRange(location: location, length: 0))
+      view.didChangeText()
     }
 
     /// Start over — after a send, ⌘Z shouldn't resurrect the message.
@@ -148,8 +149,7 @@
       func textViewDidChangeSelection(_ notification: Notification) {
         guard !isUpdating, let view = notification.object as? NSTextView else { return }
         let location = view.selectedRange().location
-        // Selection moves during SwiftUI's own update; land it next turn.
-        Task { @MainActor in if self.parent.caret != location { self.parent.caret = location } }
+        if parent.caret != location { parent.caret = location }
       }
 
       func recalculateHeight(_ view: NSTextView) {
@@ -305,7 +305,14 @@
       ]
       let origin = NSPoint(x: textContainerInset.width, y: textContainerInset.height)
       if string.isEmpty {
-        placeholder.draw(at: origin, withAttributes: attributes)
+        let style = NSMutableParagraphStyle()
+        style.lineBreakMode = .byTruncatingTail
+        var truncating = attributes
+        truncating[.paragraphStyle] = style
+        let width = bounds.width - textContainerInset.width * 2
+        placeholder.draw(
+          in: NSRect(origin: origin, size: NSSize(width: width, height: font?.boundingRectForFont.height ?? 18)),
+          withAttributes: truncating)
       } else if let argumentHint, let end = endOfTextPoint() {
         argumentHint.draw(at: end, withAttributes: attributes)
       }
