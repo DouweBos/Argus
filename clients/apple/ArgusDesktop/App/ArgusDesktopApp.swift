@@ -32,6 +32,9 @@ private struct NewSessionCommand: View {
     Button("New Session…") { model.requestNewSession() }
       .keyboardShortcut("n", modifiers: .command)
       .disabled(model.store.projects.isEmpty)
+    Button("Delete Session…") { model.requestDeleteSession() }
+      .keyboardShortcut(.delete, modifiers: .command)
+      .disabled(model.deletableSession == nil)
   }
 }
 

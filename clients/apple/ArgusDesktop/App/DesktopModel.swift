@@ -16,6 +16,8 @@ final class DesktopModel {
   private(set) var route: DesktopRoute = .home
   /// The project the New Session sheet is open for.
   var newSessionProject: RemoteProject?
+  /// The session the Delete sheet is open for.
+  var deletingSession: RemoteSession?
   private var back: [DesktopRoute] = []
   private var forward: [DesktopRoute] = []
 
@@ -161,6 +163,17 @@ final class DesktopModel {
     }
     newSessionProject =
       store.projects.first { $0.repoRoot == current } ?? store.projects.first
+  }
+
+  /// The session on screen, when it's a worktree (the project root can't go).
+  var deletableSession: RemoteSession? {
+    route.sessionId.flatMap { id in
+      store.sessionsByRepo.values.joined().first { $0.id == id && $0.kind == .worktree }
+    }
+  }
+
+  func requestDeleteSession() {
+    deletingSession = deletableSession
   }
 
   // MARK: Quit

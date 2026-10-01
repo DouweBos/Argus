@@ -5,7 +5,6 @@ import SwiftUI
 struct SidebarView: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
-  @State private var deleting: RemoteSession?
 
   var body: some View {
     List(selection: selection) {
@@ -19,7 +18,7 @@ struct SidebarView: View {
               .tag(session.id)
               .contextMenu {
                 if session.kind == .worktree {
-                  Button("Delete Session…") { deleting = session }
+                  Button("Delete Session…") { model.deletingSession = session }
                 }
               }
           }
@@ -51,7 +50,7 @@ struct SidebarView: View {
         model.navigate(.session(id: session.id, agentId: nil))
       }
     }
-    .sheet(item: $deleting) { session in
+    .sheet(item: deletingSession) { session in
       DeleteSessionSheet(session: session) {
         if model.route.sessionId == session.id { model.navigate(.home) }
       }
@@ -61,6 +60,10 @@ struct SidebarView: View {
         ConnectionBadge(state: store.connection).padding(8)
       }
     }
+  }
+
+  private var deletingSession: Binding<RemoteSession?> {
+    Binding(get: { model.deletingSession }, set: { model.deletingSession = $0 })
   }
 
   private var newSessionProject: Binding<RemoteProject?> {
