@@ -22,7 +22,15 @@ mirrored simulators. That boundary is enforced by the desktop gateway, not this 
 ```
 ArgusKit/             Swift package: crypto, transport, protocol, storage, pure logic.
                       Builds and tests on macOS with no simulator.
-ArgusRemote/          The app — App/, DesignSystem/, Screens/, Stores/, Views/.
+ArgusCore/            Swift package, iOS + macOS: the stores, no SwiftUI. `HostStore`
+                      holds one computer's data and actions over a `HostBackend`;
+                      `GatewayBackend` is the phone's Noise link. Automations,
+                      proposals and pull requests live here too.
+ArgusUI/              Swift package, iOS + macOS: the design system and the shared
+                      views (transcript, tool calls, permission forms, chat input,
+                      diffs, device video, image viewer).
+ArgusRemote/          The phone shell — App/, Screens/, Stores/ (`AppStore`: pairing,
+                      endpoint racing, push, preferences), Telemetry/.
 NotificationService/  Notification Service Extension: opens sealed pushes.
 Tools/                Interop vector generators (run against the TypeScript source).
 ArgusRemote.xcodeproj Checked in. Edit it in Xcode; there is no generator step.
@@ -40,7 +48,9 @@ open clients/argus-ios/ArgusRemote.xcodeproj
 From the command line:
 
 ```sh
-swift test --package-path ArgusKit   # the core, no simulator needed
+swift test --package-path ArgusKit    # protocol and crypto, no simulator needed
+swift test --package-path ArgusCore   # the stores, against a fake backend
+swift test --package-path ArgusUI     # builds the shared views for macOS
 xcodebuild -project ArgusRemote.xcodeproj -scheme ArgusRemote \
   -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build
 ```
@@ -100,7 +110,7 @@ connects to it and drops the previous one's data.
 
 ## Known gaps
 
-- **No UI tests.** `ArgusKit` is covered (46 tests); the views are not.
+- **No UI tests.** `ArgusKit` and the `ArgusCore` stores are covered; the views are not.
 - **Never run against a real desktop.** The crypto, framing and text formats
   are verified against generated vectors, but no live pairing, transcript
   stream, push or device mirror has happened yet.
