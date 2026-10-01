@@ -16,6 +16,7 @@ import { acquireHostLock, releaseHostLock } from "../lib/hostLock";
 import { nodeSecretStorage } from "../lib/nodeSecretStorage";
 import { nodeHostPlatform, setHostPlatform } from "../platform";
 import { startPowerAssertion } from "../serverMode";
+import { stopAgentsForQuit } from "../services/agent/quit";
 import {
   startLocalUiSocket,
   type LocalUiServer,
@@ -83,10 +84,15 @@ function stop(): void {
   }
   stopping = true;
   print("Stopping…");
-  Promise.allSettled([uiServer?.close(), shutdownHost()]).finally(() => {
-    releaseHostLock();
-    process.exit(0);
-  });
+  // The desktop's quit: agents get to stop cleanly (and save) before the
+  // teardown kills whatever is left. A server just goes.
+  const drained = desktopMode ? stopAgentsForQuit() : Promise.resolve();
+  drained
+    .then(() => Promise.allSettled([uiServer?.close(), shutdownHost()]))
+    .finally(() => {
+      releaseHostLock();
+      process.exit(0);
+    });
 }
 
 process.on("SIGINT", stop);
