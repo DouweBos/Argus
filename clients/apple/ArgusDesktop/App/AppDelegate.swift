@@ -40,7 +40,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let delegate = AppDelegate.current, !delegate.terminating else { return }
         // Whoever sent it (another Argus taking over) already asked the user.
         delegate.skipQuitConfirmation = true
-        NSApp.terminate(nil)
+        // An open sheet makes AppKit refuse to quit and bring the app forward
+        // to show it instead; a signal can't answer the sheet, so close it
+        // and quit once it's gone.
+        delegate.model.newSessionProject = nil
+        delegate.model.deletingSession = nil
+        let timer = Timer(timeInterval: 0.3, repeats: false) { _ in
+          MainActor.assumeIsolated { NSApp.terminate(nil) }
+        }
+        RunLoop.main.add(timer, forMode: .common)
       }
     }
     CFRunLoopWakeUp(main)
