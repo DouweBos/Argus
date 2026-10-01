@@ -1,0 +1,156 @@
+import AppKit
+import ArgusUI
+import SwiftUI
+
+/// Opens what a transcript link points at. Files go through the host
+/// (`open_path`, `open_in_editor`, `reveal_in_finder`) like the desktop app;
+/// relative paths resolve against the session's worktree first.
+///
+/// None of the host's open commands take a line, so `:line:col` only narrows
+/// the match — the file opens at its top, as it does in the desktop app.
+@MainActor
+final class TranscriptLinkHandler {
+  private weak var store: HostStore?
+  private let sessionId: String
+  private(set) var worktree: String?
+  private var editors: [ArgusProtocol.EditorDescriptor] = []
+
+  init(store: HostStore, sessionId: String) {
+    self.store = store
+    self.sessionId = sessionId
+  }
+
+  /// The worktree and the installed editors, fetched once per pane.
+  func load() async {
+    guard let backend = store?.backend else { return }
+    if worktree == nil {
+      worktree = (try? await backend.request(
+        ArgusProtocol.Commands.GetSession.self, .init(id: sessionId)))??.path
+    }
+    if editors.isEmpty {
+      editors = (try? await backend.request(ArgusProtocol.Commands.ListEditors.self, EmptyParams()))?
+        .filter { $0.available && !["iterm", "terminal"].contains($0.id) } ?? []
+    }
+  }
+
+  func resolve(_ ref: FileLinks.FileRef) -> String? {
+    FileLinks.resolve(ref.path, worktree: worktree, home: NSHomeDirectory())
+  }
+
+  // MARK: Click
+
+  func open(_ url: URL) {
+    if let ref = TranscriptLink.fileRef(from: url) {
+      openFile(ref)
+    } else {
+      MacTelemetry.capture(.transcriptLinkOpened(action: .openUrl, relative: false))
+      NSWorkspace.shared.open(url)
+    }
+  }
+
+  func openFile(_ ref: FileLinks.FileRef) {
+    guard let path = existingPath(ref) else { return NSSound.beep() }
+    capture(.open, ref)
+    send(ArgusProtocol.Commands.OpenPath.self, .init(path: path))
+  }
+
+  // MARK: Context menu
+
+  func menuItems(for url: URL) -> [NSMenuItem] {
+    guard let ref = TranscriptLink.fileRef(from: url) else {
+      return [
+        item("Open Link") { [weak self] in self?.open(url) },
+        item("Copy Link") {
+          MacTelemetry.capture(.transcriptLinkOpened(action: .copyLink, relative: false))
+          Clipboard.copy(url.absoluteString)
+        },
+      ]
+    }
+    let exists = existingPath(ref) != nil
+    var items = [item("Open", enabled: exists) { [weak self] in self?.openFile(ref) }]
+    if !editors.isEmpty {
+      let submenu = NSMenu()
+      for editor in editors {
+        submenu.addItem(
+          item(editor.name, enabled: exists) { [weak self] in self?.openInEditor(ref, editor.id) })
+      }
+      let open = NSMenuItem(title: "Open In", action: nil, keyEquivalent: "")
+      open.submenu = submenu
+      items.append(open)
+    }
+    items.append(item("Reveal in Finder", enabled: exists) { [weak self] in self?.reveal(ref) })
+    items.append(item("Copy Path") { [weak self] in self?.copyPath(ref) })
+    return items
+  }
+
+  func openInEditor(_ ref: FileLinks.FileRef, _ editorId: String) {
+    guard let path = existingPath(ref) else { return NSSound.beep() }
+    capture(.openInEditor, ref)
+    send(ArgusProtocol.Commands.OpenInEditor.self, .init(editorId: editorId, path: path))
+  }
+
+  func reveal(_ ref: FileLinks.FileRef) {
+    guard let path = existingPath(ref) else { return NSSound.beep() }
+    capture(.reveal, ref)
+    send(ArgusProtocol.Commands.RevealInFinder.self, .init(path: path))
+  }
+
+  func copyPath(_ ref: FileLinks.FileRef) {
+    capture(.copyPath, ref)
+    Clipboard.copy(resolve(ref) ?? ref.path)
+  }
+
+  // MARK: Internals
+
+  /// The local host shares this disk, so a missing file is caught here rather
+  /// than failing silently on the other side.
+  private func existingPath(_ ref: FileLinks.FileRef) -> String? {
+    guard let path = resolve(ref) else { return nil }
+    guard store?.backend?.kind == .local else { return path }
+    return FileManager.default.fileExists(atPath: path) ? path : nil
+  }
+
+  private func capture(_ action: MacTelemetryEvent.LinkAction, _ ref: FileLinks.FileRef) {
+    MacTelemetry.capture(
+      .transcriptLinkOpened(action: action, relative: !ref.path.hasPrefix("/")))
+  }
+
+  private func send<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) {
+    guard let store, let backend = store.backend else { return }
+    Task {
+      do {
+        try await backend.request(command, params)
+      } catch {
+        store.report(error, scope: "transcript.link")
+      }
+    }
+  }
+
+  private func item(_ title: String, enabled: Bool = true, action: @escaping () -> Void) -> NSMenuItem {
+    let item = ClosureMenuItem(title: title, action: action)
+    // Menus auto-enable by action, so a disabled item simply has none.
+    if !enabled { item.action = nil }
+    return item
+  }
+}
+
+/// A menu item that runs a closure, so context menus needn't route through
+/// the responder chain.
+private final class ClosureMenuItem: NSMenuItem {
+  private let handler: () -> Void
+
+  init(title: String, action: @escaping () -> Void) {
+    handler = action
+    super.init(title: title, action: #selector(run), keyEquivalent: "")
+    target = self
+  }
+
+  @available(*, unavailable)
+  required init(coder: NSCoder) { fatalError() }
+
+  @objc private func run() { handler() }
+}
+
+extension EnvironmentValues {
+  @Entry var transcriptLinks: TranscriptLinkHandler?
+}
