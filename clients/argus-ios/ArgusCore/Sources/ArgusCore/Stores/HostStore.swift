@@ -91,6 +91,12 @@ public final class HostStore {
   public private(set) var backend: (any HostBackend)?
   @ObservationIgnored public var hooks: HostStoreHooks
 
+  /// The conversation owner when the backend is local: transcripts are built
+  /// here from live events instead of fetched. Nil for a gateway.
+  public internal(set) var live: LiveAgents?
+  @ObservationIgnored public var liveTiming = LiveAgents.Timing()
+  @ObservationIgnored var liveEnvironment = ConversationEnvironment.live
+
   @ObservationIgnored private var pump: Task<Void, Never>?
   /// Debounces transcript refetches: a burst of agent events becomes one call.
   @ObservationIgnored private var refetchTimers: [String: Task<Void, Never>] = [:]
@@ -126,6 +132,7 @@ public final class HostStore {
         await self?.handle(event)
       }
     }
+    attachLive(backend)
   }
 
   /// Drop the backend. Data stays until `reset()`, so a reconnect to the same
@@ -181,6 +188,7 @@ public final class HostStore {
     lastError = nil
     mediaSinks = [:]
     mediaBuffer = [:]
+    live = nil
   }
 
   // MARK: Events
@@ -188,7 +196,12 @@ public final class HostStore {
   func handle(_ event: HostEvent) async {
     switch event {
     case .state(let state):
+      let reconnected = state == .ready && connection != .ready
       connection = state
+      // Subscriptions belong to a connection; a fresh one starts with none.
+      if reconnected, ownsConversations, let live {
+        Task { await live.resync() }
+      }
     case .media(let bytes):
       guard let message = MediaMessage.parse(bytes) else { return }
       deliver(message)
@@ -199,6 +212,7 @@ public final class HostStore {
 
   func handle(_ envelope: EventEnvelope) {
     guard let name = RemoteEventName(rawValue: envelope.event) else { return }
+    if handleLive(name, envelope) { return }
     switch name {
     case .hostEndpoints:
       struct Payload: Decodable { let endpoints: [RemoteEndpoint] }
@@ -210,18 +224,27 @@ public final class HostStore {
       guard let request = try? ProtocolCodec.convert(
         envelope.payload, to: RemotePermissionRequest.self) else { return }
       prompts[promptKey(request.agentId, request.toolUseId)] = request
-      scheduleTranscriptRefresh(request.agentId)
+      if let live, ownsConversations {
+        live.permissionRequested(request)
+      } else {
+        scheduleTranscriptRefresh(request.agentId)
+      }
 
     case .permissionCancel:
       guard let cancel = try? ProtocolCodec.convert(
         envelope.payload, to: RemotePermissionCancel.self) else { return }
       prompts.removeValue(forKey: promptKey(cancel.agentId, cancel.toolUseId))
-      scheduleTranscriptRefresh(cancel.agentId)
+      if let live, ownsConversations {
+        live.permissionCleared(cancel.agentId, toolUseId: cancel.toolUseId)
+      } else {
+        scheduleTranscriptRefresh(cancel.agentId)
+      }
 
     case .agentStatus:
       guard let status = try? ProtocolCodec.convert(
         envelope.payload, to: RemoteAgentStatus.self) else { return }
       apply(status)
+      if ownsConversations { live?.statusChanged(status) }
 
     case .agentQueue:
       struct Payload: Decodable {
@@ -231,6 +254,7 @@ public final class HostStore {
       guard let payload = try? ProtocolCodec.convert(envelope.payload, to: Payload.self)
       else { return }
       queuedByAgent[payload.agent_id] = payload.messages
+      if ownsConversations { live?.queueChanged(payload.agent_id) }
 
     case .agentCapabilities:
       guard let agentId = envelope.agentId,
@@ -287,7 +311,7 @@ public final class HostStore {
       hooks.notify(notification)
 
     case .ipc:
-      // Raw broadcasts only reach admin devices, which a phone never is.
+      // Raw broadcasts reach admin devices only; a local one is handled above.
       break
     }
   }

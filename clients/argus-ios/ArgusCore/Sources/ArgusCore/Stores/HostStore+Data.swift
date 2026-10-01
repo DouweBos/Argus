@@ -132,6 +132,8 @@ extension HostStore {
 
   public func loadTranscript(agentId key: String, before: Double? = nil) async {
     guard let backend else { return }
+    // A live agent's transcript is already here, whole.
+    if liveTranscript(key) { return }
 
     struct LiveParams: Encodable {
       let agent_id: String
@@ -221,7 +223,7 @@ extension HostStore {
   /// Drop an optimistic bubble once the server echoes it back. The server's
   /// copy may carry the linked-projects preamble the user never typed, so the
   /// match is "contains", not equality.
-  private func reconcileOptimistic(for key: String, against messages: [RemoteMessage]) {
+  func reconcileOptimistic(for key: String, against messages: [RemoteMessage]) {
     guard let pending = optimisticByAgent[key], !pending.isEmpty else { return }
     let serverUserText = messages
       .filter { $0.role == .user }
@@ -265,6 +267,7 @@ extension HostStore {
     guard !Self.isLocallySeeded(imageId: imageId) else { return }
     let cacheKey = imageKey(key, imageId)
     guard imageCache[cacheKey] == nil, let backend else { return }
+    if liveImage(key, imageId: imageId) { return }
 
     struct LiveParams: Encodable {
       let agent_id: String
@@ -304,8 +307,9 @@ extension HostStore {
   // MARK: Subscriptions
 
   public func watchAgent(_ key: String, on: Bool) async {
-    // A stopped agent has no live process to subscribe to.
-    guard Self.parseStoppedKey(key) == nil, let backend else { return }
+    // A stopped agent has no live process to subscribe to, and a live-owned
+    // one stays subscribed whether or not a view is showing it.
+    guard Self.parseStoppedKey(key) == nil, !ownsConversations, let backend else { return }
     await backend.subscribe(agentId: key, on: on)
   }
 

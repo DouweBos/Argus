@@ -19,6 +19,12 @@ public struct HostStoreHooks: Sendable {
   /// next connection.
   public var decisionUndelivered:
     @MainActor @Sendable (_ agentId: String, _ toolUseId: String, _ decision: String) -> Void
+  /// Whether the app's window has focus. A local host raises its own banner
+  /// only when it doesn't — you're already looking at the agent otherwise.
+  public var isAppFocused: @MainActor @Sendable () -> Bool
+  /// A notification for this agent was clicked; navigate to it.
+  public var agentNotificationClicked:
+    @MainActor @Sendable (_ agentId: String, _ sessionId: String) -> Void
 
   public init(
     track: @escaping @MainActor @Sendable (StoreEvent) -> Void = { _ in },
@@ -27,7 +33,9 @@ public struct HostStoreHooks: Sendable {
     agentsSeen: @escaping @MainActor @Sendable ([String]) -> Void = { _ in },
     endpointsChanged: @escaping @MainActor @Sendable ([RemoteEndpoint]) -> Void = { _ in },
     decisionUndelivered:
-      @escaping @MainActor @Sendable (String, String, String) -> Void = { _, _, _ in }
+      @escaping @MainActor @Sendable (String, String, String) -> Void = { _, _, _ in },
+    isAppFocused: @escaping @MainActor @Sendable () -> Bool = { true },
+    agentNotificationClicked: @escaping @MainActor @Sendable (String, String) -> Void = { _, _ in }
   ) {
     self.track = track
     self.errorReported = errorReported
@@ -35,5 +43,7 @@ public struct HostStoreHooks: Sendable {
     self.agentsSeen = agentsSeen
     self.endpointsChanged = endpointsChanged
     self.decisionUndelivered = decisionUndelivered
+    self.isAppFocused = isAppFocused
+    self.agentNotificationClicked = agentNotificationClicked
   }
 }
