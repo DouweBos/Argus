@@ -35,6 +35,8 @@ enum MacTelemetryEvent {
   case transcriptLinkOpened(action: LinkAction, relative: Bool)
   /// Find in chat was closed after a search. Counts are bucketed, never the query.
   case transcriptFindUsed(matches: String, navigated: Bool)
+  /// A chat-input feature the host can't tell from a plain send.
+  case inputUsed(affordance: String)
 
   var name: String {
     switch self {
@@ -48,6 +50,7 @@ enum MacTelemetryEvent {
     case .screenViewed: "mac_screen_viewed"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
+    case .inputUsed: "mac_input_used"
     }
   }
 
@@ -73,6 +76,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "relative": relative]
     case .transcriptFindUsed(let matches, let navigated):
       ["matches_bucket": matches, "navigated": navigated]
+    case .inputUsed(let affordance):
+      ["affordance": affordance]
     }
   }
 }

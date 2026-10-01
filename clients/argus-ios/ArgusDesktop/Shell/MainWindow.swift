@@ -6,6 +6,7 @@ struct MainWindow: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
   @Environment(\.colorScheme) private var colorScheme
+  @State private var imageViewer = ImageViewerState()
 
   var body: some View {
     NavigationSplitView {
@@ -26,6 +27,12 @@ struct MainWindow: View {
       RuntimePlaceholderView()
         .navigationSplitViewColumnWidth(min: 280, ideal: 420)
     }
+    // One image viewer for the window, as on the phone.
+    .overlay {
+      ImageViewerOverlay()
+        .onExitCommand { imageViewer.dismiss() }
+    }
+    .environment(imageViewer)
     .environment(\.theme, colorScheme == .dark ? .dark : .light)
     .tint(colorScheme == .dark ? Theme.dark.accent : Theme.light.accent)
     // A project added while we're up arrives as `projects.changed` alone.
