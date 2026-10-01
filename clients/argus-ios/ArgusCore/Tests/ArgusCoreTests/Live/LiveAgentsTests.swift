@@ -95,6 +95,19 @@ struct LiveAgentsTests {
     #expect(backend.calls("generate_session_title").first?.params["firstMessage"] == .string("fix the build"))
   }
 
+  @Test("a prompted turn that ended before we subscribed settles from its result")
+  func promptedSpawnSettlesFromResult() async throws {
+    let (store, backend) = await Self.attached()
+    backend.reply("generate_session_title", #""Fix the build""#)
+    try backend.ipc(
+      "agent:started",
+      #"{"agent_id":"a3","session_id":"s1","status":"idle","initial_prompt":"fix the build"}"#)
+    #expect(await eventually { store.live?.agents["a3"]?.status == .running })
+    // The host's running→idle came and went unseen; only the result arrives.
+    try backend.streamEvent("a3", Self.result())
+    #expect(await eventually { store.live?.agents["a3"]?.status == .idle })
+  }
+
   @Test("snapshots publish debounced and history saves on exit")
   func publishAndSave() async throws {
     let (store, backend) = await Self.attached(Self.agent("a1", "running"))

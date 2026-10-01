@@ -40,6 +40,7 @@ extension LiveAgents {
       finishedTurns[agentId] = FinishedTurn(
         durationMs: event["duration_ms"]?.numberValue ?? 0,
         failed: event["subtype"]?.stringValue == "error")
+      settleIfHostAlreadyIdle(agentId)
     }
   }
 
@@ -201,5 +202,18 @@ extension LiveAgents {
       store.sessionsByRepo[repoRoot] == nil
     else { return }
     await store.loadSessions(repoRoot: repoRoot)
+  }
+
+  /// A turn whose `running` the host announced before we subscribed never
+  /// gets an idle *transition* — the host already says idle. Settle it from
+  /// the result once the host has had a moment to report otherwise.
+  private func settleIfHostAlreadyIdle(_ agentId: String) {
+    Task { @MainActor [weak self] in
+      try? await Task.sleep(for: .seconds(1))
+      guard let self, self.finishedTurns[agentId] != nil,
+        self.hostStatus[agentId] == .idle, self.agents[agentId]?.status == .running
+      else { return }
+      self.onTurnOver(agentId)
+    }
   }
 }
