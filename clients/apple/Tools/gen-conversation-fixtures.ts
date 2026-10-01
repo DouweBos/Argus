@@ -3,7 +3,7 @@
 // what they produce as fixtures the Swift ConversationReducer is asserted
 // against. Run:
 //
-//   pnpm exec vitest run --config clients/argus-ios/Tools/conversation-fixtures.vitest.config.ts
+//   pnpm exec vitest run --config clients/apple/Tools/conversation-fixtures.vitest.config.ts
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, it, vi } from "vitest";

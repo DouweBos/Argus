@@ -9,7 +9,7 @@ Snapshot taken at `fdc48a36` (after automation authoring landed on the phone).
 Three lists, compared:
 
 - `packages/remote-protocol/src/capabilities.ts` — 84 entries: 73 callable methods + 11 server→client events. This is the phone's hard ceiling.
-- `clients/argus-ios/.../Envelopes.swift` — the 73 methods and 9 events the app actually speaks.
+- `clients/apple/.../Envelopes.swift` — the 73 methods and 9 events the app actually speaks.
 - `electron/ipc.ts` — 367 desktop IPC commands. Anything here without a gateway method is unreachable from a phone by construction.
 
 A paired **desktop** driving a headless host is not affected by any of this: it gets the raw IPC channel through the admin passthrough. Everything below is specifically about the phone.

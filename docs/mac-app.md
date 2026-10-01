@@ -47,7 +47,7 @@ can open, rather than over the network.
 ## Building it
 
 ```sh
-open clients/argus-ios/ArgusRemote.xcodeproj   # scheme: ArgusDesktop
+open clients/apple/ArgusRemote.xcodeproj   # scheme: ArgusDesktop
 ```
 
 A build phase stages the Node host into the app

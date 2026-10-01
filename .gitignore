@@ -74,4 +74,4 @@ build/icon.iconset/
 release-server
 
 # Local iOS build settings (PostHog key et al)
-clients/argus-ios/Config/Argus.local.xcconfig
+clients/apple/Config/Argus.local.xcconfig

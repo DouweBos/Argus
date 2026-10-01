@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ENTITLEMENTS = path.join(
   ROOT,
-  "clients/argus-ios/ArgusDesktop/Host.entitlements",
+  "clients/apple/ArgusDesktop/Host.entitlements",
 );
 
 interface Options {

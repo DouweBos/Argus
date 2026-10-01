@@ -8,7 +8,7 @@ import ImageIO
 
 let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
 let build = root.appendingPathComponent("build")
-let iosIcons = root.appendingPathComponent("clients/argus-ios/Resources/Assets.xcassets/AppIcon.appiconset")
+let iosIcons = root.appendingPathComponent("clients/apple/Resources/Assets.xcassets/AppIcon.appiconset")
 
 // MARK: - Palette (Peacock tokens: --accent, --accent-gradient, --bg-primary)
 

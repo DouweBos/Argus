@@ -215,7 +215,7 @@ paths before sending.
 
 ## iOS client
 
-`clients/argus-ios` talks to PostHog directly with the `posthog-ios`
+`clients/apple` talks to PostHog directly with the `posthog-ios`
 SDK, rather than relaying through a paired computer — the interesting
 crashes are exactly the ones that happen unpaired or offline. Same two
 modes, same consent wording, asked once on first launch and changeable
@@ -281,7 +281,7 @@ only thing that leaves the phone.
 
 ## Mac app (beta)
 
-The native Mac app (`clients/argus-ios/ArgusDesktop`) sends its events
+The native Mac app (`clients/apple/ArgusDesktop`) sends its events
 **through its own host** with `telemetry_capture`, the way the Electron
 renderer does — same install id, same PostHog key, same consent gate.
 Its consent level is kept by the app and pushed to the host on every

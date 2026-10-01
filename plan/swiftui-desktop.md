@@ -4,7 +4,7 @@
 
 The host now boots in plain Node (`packages/host/src/bin/argus-host.ts`), every
 command is in a zod catalog, and ArgusKit has generated Swift types for all of
-them (`clients/argus-ios/ArgusKit/Sources/ArgusKit/Generated/`, typed
+them (`clients/apple/ArgusKit/Sources/ArgusKit/Generated/`, typed
 `Transport.request(_: RemoteCommand.Type, …)`). This phase builds the native Mac
 app on top of that.
 
@@ -89,7 +89,7 @@ that a headless Node host turns into no-ops: `notify`, `isForeground`,
 ### Code layout (Swift)
 
 ```
-clients/argus-ios/                     (rename to clients/apple/ at the end of M0)
+clients/apple/                     (rename to clients/apple/ at the end of M0)
 ├── ArgusKit/        existing: protocol, Noise, generated types
 │   └── + LocalTransport (UDS, no Noise) behind the same Transport API
 ├── ArgusCore/       NEW package, iOS 18 + macOS 15: stores + pure logic, no SwiftUI
