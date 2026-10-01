@@ -157,6 +157,8 @@ const CONTROL_METHODS = [
   "sessions.delete",
   "sessions.rename",
   "sessions.rename_branch",
+  "sessions.retry_setup",
+  "sessions.mark_ready",
   "sessions.checkout",
   "sessions.create_branch",
   "sessions.delete_branch",

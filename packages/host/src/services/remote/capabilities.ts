@@ -104,11 +104,13 @@ import {
 import { GitError, serializeGitError } from "../session/gitError";
 import { gitStatus } from "../session/gitStatus";
 import {
+  clearSessionSetupError,
   createSession,
   deleteSession,
   listSessions,
   renameSession,
   renameSessionBranch,
+  retrySessionSetup,
 } from "../session/manager";
 import { getSessionProgress } from "../session/progress";
 import {
@@ -403,6 +405,10 @@ function toRemoteSession(s: Session): RemoteSession {
     base_branch: s.base_branch ?? null,
     claude_account_id: s.claude_account_id ?? null,
     status: sessionStatus(s.status),
+    setup_error:
+      typeof s.status === "object" && "error" in s.status
+        ? s.status.error
+        : null,
     progress:
       s.status === "initializing" || s.status === "deleting"
         ? getSessionProgress(s.id)
@@ -1585,6 +1591,30 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { id, base_branch } = parse("sessions.set_base_branch", params);
     requireSession(id);
     await control(() => setSessionBaseBranch(id, base_branch));
+
+    return { accepted: true };
+  },
+
+  "sessions.retry_setup": async (params) => {
+    const { id } = parse("sessions.retry_setup", params);
+    requireSession(id);
+    await control(() => retrySessionSetup(id));
+
+    return { accepted: true };
+  },
+
+  "sessions.mark_ready": async (params) => {
+    const { id } = parse("sessions.mark_ready", params);
+    requireSession(id);
+    const session = appState.sessions.get(id)!;
+    const failed = typeof session.status === "object";
+    await control(() => clearSessionSetupError(id));
+    // The session's prompt was dropped when setup failed; hand it to an agent
+    // now, same as the desktop's "Mark as ready".
+    const prompt = session.description.trim();
+    if (failed && prompt) {
+      startAgentWhenReady(id, prompt).catch(() => {});
+    }
 
     return { accepted: true };
   },

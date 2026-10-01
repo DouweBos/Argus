@@ -253,6 +253,10 @@ export const MethodParams = {
     id: z.string(),
     base_branch: z.string().trim().min(1),
   }),
+  /** Re-run setup for a session whose setup failed. */
+  "sessions.retry_setup": z.object({ id: z.string() }),
+  /** Clear a failed setup and mark the session ready. */
+  "sessions.mark_ready": z.object({ id: z.string() }),
   "sessions.git_status": z.object({ session_id: z.string() }),
   "sessions.branches": z.object({ session_id: z.string() }),
   "sessions.checkout": z.object({
@@ -619,6 +623,8 @@ export const MethodResult = {
   "sessions.rename": z.object({ accepted: z.boolean() }),
   "sessions.rename_branch": z.object({ accepted: z.boolean() }),
   "sessions.set_base_branch": z.object({ accepted: z.boolean() }),
+  "sessions.retry_setup": z.object({ accepted: z.boolean() }),
+  "sessions.mark_ready": z.object({ accepted: z.boolean() }),
   "sessions.git_status": z.object({ status: RemoteGitStatus }),
   "sessions.branches": z.object({ branches: z.array(RemoteGitBranch) }),
   "sessions.checkout": z.object({

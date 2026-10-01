@@ -45,6 +45,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   /// active one.
   public var claudeAccountId: String?
   public var status: RemoteSessionStatus
+  /// Why setup failed while `status` is `.error`. Nil on older computers.
+  public var setupError: String?
   /// How far setup or removal has got. Nil before the first count, and on
   /// older computers.
   public var progress: RemoteSessionProgress?
@@ -68,6 +70,7 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case baseBranch = "base_branch"
     case claudeAccountId = "claude_account_id"
     case status, progress, availability
+    case setupError = "setup_error"
     case unavailableVolume = "unavailable_volume"
     case volume
   }

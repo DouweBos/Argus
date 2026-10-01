@@ -56,6 +56,7 @@
 		5FB08CA29434143A32134492 /* GuardrailFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = A02F5F60D0F01C5B7F16C445 /* GuardrailFields.swift */; };
 		AE590CD49BD08C4F6FAF2096 /* AutomationFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32B758744DEEF9A8D04305D7 /* AutomationFields.swift */; };
 		77DF06C75A03A3BE1026983F /* LandWorkCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0508AD322DC4EC62DC4539E /* LandWorkCard.swift */; };
+		5E7A1C0D2F3B4A6D8E9F0A01 /* SetupFailedRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E7A1C0D2F3B4A6D8E9F0A02 /* SetupFailedRow.swift */; };
 		9A29D4DE54EB40AC809561C7 /* NewSessionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE93AA6EE40909D7AC27CDA4 /* NewSessionSheet.swift */; };
 		4A1C0E5B9D2F41A7B8C30001 /* ToolInputViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A1C0E5B9D2F41A7B8C30002 /* ToolInputViews.swift */; };
 		9EC0F026CA4FC53AA74669D9 /* ProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117E737A68AD0170E2CC50F7 /* ProjectsView.swift */; };
@@ -153,6 +154,7 @@
 		A02F5F60D0F01C5B7F16C445 /* GuardrailFields.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuardrailFields.swift; sourceTree = "<group>"; };
 		32B758744DEEF9A8D04305D7 /* AutomationFields.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationFields.swift; sourceTree = "<group>"; };
 		D0508AD322DC4EC62DC4539E /* LandWorkCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LandWorkCard.swift; sourceTree = "<group>"; };
+		5E7A1C0D2F3B4A6D8E9F0A02 /* SetupFailedRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupFailedRow.swift; sourceTree = "<group>"; };
 		FE93AA6EE40909D7AC27CDA4 /* NewSessionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSessionSheet.swift; sourceTree = "<group>"; };
 		4A1C0E5B9D2F41A7B8C30002 /* ToolInputViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolInputViews.swift; sourceTree = "<group>"; };
 		71C88AD86DD08D257E315A5C /* Rows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rows.swift; sourceTree = "<group>"; };
@@ -343,6 +345,7 @@
 				A02F5F60D0F01C5B7F16C445 /* GuardrailFields.swift */,
 				32B758744DEEF9A8D04305D7 /* AutomationFields.swift */,
 				D0508AD322DC4EC62DC4539E /* LandWorkCard.swift */,
+				5E7A1C0D2F3B4A6D8E9F0A02 /* SetupFailedRow.swift */,
 				FE93AA6EE40909D7AC27CDA4 /* NewSessionSheet.swift */,
 				4A1C0E5B9D2F41A7B8C30002 /* ToolInputViews.swift */,
 			);
@@ -583,6 +586,7 @@
 				5FB08CA29434143A32134492 /* GuardrailFields.swift in Sources */,
 				AE590CD49BD08C4F6FAF2096 /* AutomationFields.swift in Sources */,
 				77DF06C75A03A3BE1026983F /* LandWorkCard.swift in Sources */,
+				5E7A1C0D2F3B4A6D8E9F0A01 /* SetupFailedRow.swift in Sources */,
 				9A29D4DE54EB40AC809561C7 /* NewSessionSheet.swift in Sources */,
 				4A1C0E5B9D2F41A7B8C30001 /* ToolInputViews.swift in Sources */,
 			);

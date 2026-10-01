@@ -597,6 +597,27 @@ extension AppStore {
     } catch { report(error) }
   }
 
+  /// Re-run setup for a session whose setup failed. The computer records
+  /// the outcome itself, so the phone sends no telemetry.
+  func retrySessionSetup(id: String, repoRoot: String) async {
+    guard let transport else { return }
+    struct Params: Encodable { let id: String }
+    do {
+      try await transport.request(.sessionsRetrySetup, Params(id: id), as: IgnoredResult.self)
+      await loadSessions(repoRoot: repoRoot)
+    } catch { report(error, scope: "session:retry_setup") }
+  }
+
+  /// Unblock a session after its failed setup step was fixed by hand.
+  func markSessionReady(id: String, repoRoot: String) async {
+    guard let transport else { return }
+    struct Params: Encodable { let id: String }
+    do {
+      try await transport.request(.sessionsMarkReady, Params(id: id), as: IgnoredResult.self)
+      await loadSessions(repoRoot: repoRoot)
+    } catch { report(error, scope: "session:mark_ready") }
+  }
+
   // MARK: Mentions
 
   func listFiles(sessionId: String) async -> [String] {

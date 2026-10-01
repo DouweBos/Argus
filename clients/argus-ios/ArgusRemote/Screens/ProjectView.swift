@@ -42,6 +42,9 @@ struct ProjectView: View {
 
       ForEach(groups, id: \.sessionId) { group in
         Section {
+          if let session = group.session, session.status == .error, !session.isUnavailable {
+            SetupFailedRow(session: session)
+          }
           ForEach(group.agents) { agent in
             NavigationLink(
               value: Route.agent(id: agent.agentId, label: Labels.agentName(agent))
