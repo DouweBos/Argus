@@ -828,6 +828,54 @@ export const Envelope = z.discriminatedUnion("type", [
 ]);
 export type Envelope = z.infer<typeof Envelope>;
 
+// --- Local UI socket ---------------------------------------------------------
+
+/**
+ * What the host asks of the UI attached to its local socket: the
+ * `HostPlatform` capabilities a headless Node process can't do itself. Flat
+ * rather than a union so every client decodes it the same way; `kind` says
+ * which fields are set.
+ */
+export const PlatformRequest = z.object({
+  kind: z.enum([
+    "notify",
+    "open_external",
+    "open_path",
+    "reveal_in_finder",
+    "focus_ui",
+    "close_device_popout",
+  ]),
+  /** `notify`: answer with `ui.notification_action` carrying this id. */
+  id: z.string().optional(),
+  title: z.string().optional(),
+  body: z.string().optional(),
+  urgency: z.enum(["critical", "normal"]).optional(),
+  /** `notify`: button labels, in order. */
+  actions: z.array(z.string()).optional(),
+  /** `open_external`. */
+  url: z.string().optional(),
+  /** `open_path` / `reveal_in_finder`. */
+  path: z.string().optional(),
+  /** `close_device_popout`: `platform:deviceKey`. */
+  key: z.string().optional(),
+});
+export type PlatformRequest = z.infer<typeof PlatformRequest>;
+
+/**
+ * Methods only the local UI socket answers — the UI's half of platform
+ * delegation. Not remote methods: no paired device can reach them.
+ */
+export const LocalUiMethods = {
+  /** The UI's window gained or lost focus. */
+  "ui.state": z.object({ foreground: z.boolean() }),
+  /** A `notify` banner was clicked (`action` null) or one of its buttons pressed. */
+  "ui.notification_action": z.object({
+    id: z.string(),
+    action: z.number().int().nonnegative().nullable(),
+  }),
+} as const;
+export type LocalUiMethod = keyof typeof LocalUiMethods;
+
 // --- Event payload schemas -------------------------------------------------
 
 export const EventPayloads = {
@@ -846,6 +894,7 @@ export const EventPayloads = {
   }),
   /** `channel` is the renderer IPC channel; `args` its broadcast arguments. */
   ipc: z.object({ channel: z.string(), args: z.array(z.unknown()) }),
+  "platform.request": PlatformRequest,
   /** The claim on a device changed — including being stolen from you. */
   "device.claim": RemoteDeviceClaimState,
   /** The hinge or orientation moved — from here, Device Hub, or an agent. */

@@ -313,5 +313,8 @@ export const REMOTE_EVENTS = [
   /** Raw renderer broadcast, forwarded verbatim to "admin" devices only —
    * another desktop wants the host's own IPC channels, not the typed mirrors. */
   "ipc",
+  /** The host asking the UI on its local socket to do something only a window
+   * can (a banner, opening a URL, raising the window). Never sent remotely. */
+  "platform.request",
 ] as const;
 export type RemoteEventType = (typeof REMOTE_EVENTS)[number];
