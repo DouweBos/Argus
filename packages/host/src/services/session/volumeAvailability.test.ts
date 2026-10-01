@@ -35,8 +35,9 @@ describe("mountRootFor", () => {
 });
 
 describe("classifyPath", () => {
-  const deps = (present: string[]) => ({
+  const deps = (present: string[], mounted = present) => ({
     exists: (p: string) => present.includes(p),
+    mounted: (v: string) => mounted.includes(v),
     platform: "darwin" as NodeJS.Platform,
   });
 
@@ -57,6 +58,12 @@ describe("classifyPath", () => {
     expect(
       classifyPath("/Volumes/Blackbox/feat", deps(["/Volumes/Blackbox"])),
     ).toEqual({ state: "deleted" });
+  });
+
+  it("treats a leftover mount-point folder as an unplugged drive", () => {
+    expect(
+      classifyPath("/Volumes/Blackbox/feat", deps(["/Volumes/Blackbox"], [])),
+    ).toEqual({ state: "volume_missing", volume: "/Volumes/Blackbox" });
   });
 
   it("never blames a volume for a path on the boot disk", () => {

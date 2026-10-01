@@ -296,8 +296,8 @@ export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
     // Non-fatal — if prune fails we still attempt the orphan-repair below.
   }
 
-  // Both live roots, not every historical one — the failure branch below
-  // deletes, and roots left behind by a location change are deliberate.
+  // Both live roots, not every historical one — roots left behind by a
+  // location change are deliberate.
   const roots = liveWorktreeRoots(repoRoot).filter((dir) => fs.existsSync(dir));
   if (roots.length === 0) {
     return;
@@ -348,24 +348,9 @@ export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
   try {
     await git(repoRoot, ["worktree", "repair", ...orphanPaths]);
   } catch {
-    // Repair failed — check each orphan individually.
+    // Never delete: a worktree git has forgotten can still hold the only copy
+    // of uncommitted work (e.g. its registration was pruned while the drive was away).
     for (const orphanPath of orphanPaths) {
-      const gitFile = path.join(orphanPath, ".git");
-      try {
-        const content = fs.readFileSync(gitFile, "utf8");
-        if (content.startsWith("gitdir: ")) {
-          const gitdir = content.slice("gitdir: ".length).trim();
-          const resolvedGitdir = path.isAbsolute(gitdir)
-            ? gitdir
-            : path.join(orphanPath, gitdir);
-          if (!fs.existsSync(resolvedGitdir)) {
-            fs.rmSync(orphanPath, { recursive: true, force: true });
-            continue;
-          }
-        }
-      } catch {
-        // Unreadable .git file — leave it alone.
-      }
       warn(`Failed to repair orphaned worktree: ${orphanPath}`);
     }
   }
