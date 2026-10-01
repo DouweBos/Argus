@@ -98,7 +98,11 @@ final class PlatformBridge: NSObject, UNUserNotificationCenterDelegate {
       content.categoryIdentifier = category(for: actions)
     }
     UNUserNotificationCenter.current().add(
-      UNNotificationRequest(identifier: id, content: content, trigger: nil))
+      UNNotificationRequest(identifier: id, content: content, trigger: nil)
+    ) { error in
+      // Never the content: a denied permission is the usual reason for none.
+      NSLog("[argus] banner %@", error.map { "failed: \($0.localizedDescription)" } ?? "shown")
+    }
   }
 
   /// One category per distinct set of buttons; the button index is the action.
