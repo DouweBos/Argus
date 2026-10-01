@@ -14,6 +14,8 @@ final class DesktopModel {
   private(set) var backend: LocalBackend?
 
   private(set) var route: DesktopRoute = .home
+  /// The project the New Session sheet is open for.
+  var newSessionProject: RemoteProject?
   @ObservationIgnored private var back: [DesktopRoute] = []
   @ObservationIgnored private var forward: [DesktopRoute] = []
 
@@ -46,6 +48,24 @@ final class DesktopModel {
     await store.attach(backend)
     platform.attach(backend)
     await MacTelemetry.attach(backend)
+    watchConnection(backend)
+  }
+
+  /// Refetch on every (re)connect — the host may have restarted underneath
+  /// us. The transport's own state is the truth: `attach` reports ready before
+  /// the socket is, and a view can't see a flip it coalesced away.
+  private func watchConnection(_ backend: LocalBackend) {
+    Task { [weak self] in
+      while !Task.isCancelled {
+        while await backend.transport.state != .ready {
+          try? await Task.sleep(for: .milliseconds(200))
+        }
+        await self?.reload()
+        while await backend.transport.state == .ready {
+          try? await Task.sleep(for: .milliseconds(500))
+        }
+      }
+    }
   }
 
   /// Refetch what the window shows; called whenever the connection comes up.
@@ -54,9 +74,19 @@ final class DesktopModel {
     await store.loadScratchPads()
     await store.loadRecentAgents()
     for project in store.projects {
-      await store.loadSessions(repoRoot: project.repoRoot)
-      await store.loadAgents(repoRoot: project.repoRoot)
+      await openProject(project.repoRoot)
     }
+  }
+
+  /// What Electron does when a project opens: make sure its project-root
+  /// session exists (the host makes it idempotently), then load its lists.
+  func openProject(_ repoRoot: String) async {
+    if let backend {
+      _ = try? await backend.request(
+        ArgusProtocol.Commands.CreateProjectRootSession.self, .init(repoRoot: repoRoot))
+    }
+    await store.loadSessions(repoRoot: repoRoot)
+    await store.loadAgents(repoRoot: repoRoot)
   }
 
   private func supervisorEvent(_ event: HostSupervisor.Event) {
@@ -98,6 +128,15 @@ final class DesktopModel {
     guard let next = forward.popLast() else { return }
     back.append(route)
     route = next
+  }
+
+  /// ⌘N: a new session in the project you're looking at, else the first.
+  func requestNewSession() {
+    let current = route.sessionId.flatMap { id in
+      store.sessionsByRepo.values.joined().first { $0.id == id }?.repoRoot
+    }
+    newSessionProject =
+      store.projects.first { $0.repoRoot == current } ?? store.projects.first
   }
 
   // MARK: Quit

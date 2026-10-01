@@ -28,15 +28,10 @@ struct MainWindow: View {
     }
     .environment(\.theme, colorScheme == .dark ? .dark : .light)
     .tint(colorScheme == .dark ? Theme.dark.accent : Theme.light.accent)
-    // Every (re)connect refetches: the host may have restarted underneath us.
-    .task(id: store.connection) {
-      if store.connection == .ready { await model.reload() }
-    }
     // A project added while we're up arrives as `projects.changed` alone.
     .task(id: store.projects.map(\.repoRoot)) {
       for project in store.projects where store.sessionsByRepo[project.repoRoot] == nil {
-        await store.loadSessions(repoRoot: project.repoRoot)
-        await store.loadAgents(repoRoot: project.repoRoot)
+        await model.openProject(project.repoRoot)
       }
     }
   }
