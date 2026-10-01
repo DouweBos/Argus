@@ -81,7 +81,9 @@ extension HostStore {
     if var status = statusByAgent[agentId] {
       status.status = agent.status
       status.model = agent.model ?? status.model
-      status.permissionMode = agent.permissionMode
+      // The live agent only knows a mode once a change was announced; until
+      // then the host's own status is the truth.
+      status.permissionMode = agent.permissionMode ?? status.permissionMode
       if statusByAgent[agentId] != status { statusByAgent[agentId] = status }
     }
   }
