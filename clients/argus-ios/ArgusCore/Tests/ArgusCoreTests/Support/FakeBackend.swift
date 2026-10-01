@@ -1,0 +1,86 @@
+import ArgusCore
+import Foundation
+
+/// A scripted `HostBackend`: canned JSON replies by method, events pushed in
+/// by the test, and every call recorded.
+final class FakeBackend: HostBackend, @unchecked Sendable {
+  struct Failure: Error {}
+
+  private let lock = NSLock()
+  private var replies: [String: String] = [:]
+  private var failing: Set<String> = []
+  private var calls: [String] = []
+  private var subscriptions: [(String, Bool)] = []
+  private let stream: AsyncStream<HostEvent>
+  private let continuation: AsyncStream<HostEvent>.Continuation
+
+  init() {
+    (stream, continuation) = AsyncStream<HostEvent>.makeStream()
+  }
+
+  var kind: HostBackendKind { .local }
+
+  func reply(_ method: RemoteMethod, _ json: String) {
+    lock.withLock { replies[method.rawValue] = json }
+  }
+
+  func fail(_ method: RemoteMethod) {
+    lock.withLock { _ = failing.insert(method.rawValue) }
+  }
+
+  var requested: [String] { lock.withLock { calls } }
+
+  func emit(_ event: String, agentId: String? = nil, payload: String) throws {
+    let agent = agentId.map { #","agent_id":"\#($0)""# } ?? ""
+    let json = #"{"seq":1,"event":"\#(event)"\#(agent),"payload":\#(payload)}"#
+    let envelope = try ProtocolCodec.decoder.decode(EventEnvelope.self, from: Data(json.utf8))
+    continuation.yield(.event(envelope))
+  }
+
+  func emitState(_ state: Transport.State) {
+    continuation.yield(.state(state))
+  }
+
+  func events() async -> AsyncStream<HostEvent> { stream }
+
+  func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
+    _ method: RemoteMethod, _ params: Params, as: Result.Type
+  ) async throws -> Result {
+    try answer(method.rawValue, as: Result.self)
+  }
+
+  func request<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws -> C.Result {
+    try answer(C.name, as: C.Result.self)
+  }
+
+  private func answer<Result: Decodable>(_ name: String, as _: Result.Type) throws -> Result {
+    let (json, fails) = lock.withLock { () -> (String?, Bool) in
+      calls.append(name)
+      return (replies[name], failing.contains(name))
+    }
+    if fails { throw Failure() }
+    return try ProtocolCodec.decoder.decode(Result.self, from: Data((json ?? "{}").utf8))
+  }
+
+  func subscribe(agentId: String, on: Bool) async {
+    lock.withLock { subscriptions.append((agentId, on)) }
+  }
+
+  func disconnect() async {
+    continuation.finish()
+  }
+}
+
+/// Poll until `condition` holds; events reach the store on its own task.
+@MainActor
+func eventually(
+  timeout: Duration = .seconds(2), _ condition: @MainActor () -> Bool
+) async -> Bool {
+  let clock = ContinuousClock()
+  let deadline = clock.now.advanced(by: timeout)
+  while clock.now < deadline {
+    if condition() { return true }
+    try? await Task.sleep(for: .milliseconds(10))
+  }
+  return condition()
+}
