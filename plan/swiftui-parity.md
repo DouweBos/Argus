@@ -23,26 +23,26 @@ How to tick a row:
 
 ### Top-level screens
 
-| Route                                    | Electron | Mac | iOS | Milestone | Notes                                                                                                            |
-| ---------------------------------------- | -------- | --- | --- | --------- | ---------------------------------------------------------------------------------------------------------------- |
-| `/` Home / project picker                | ✅       | ◐   | ✅  | M0        | Mac: sidebar lists projects; no project picker or add-project yet (M5 onboarding). iOS: Projects tab.            |
-| `/agents` Agents overview                | ✅       | ☐   | ◐   | M1        | iOS: agents only per project (iPad sidebar lists them); no cross-session overview.                               |
-| `/automations`                           | ✅       | ☐   | ✅  | M5        |                                                                                                                  |
-| `/automations/quick` Quick run           | ✅       | ☐   | ✅  | M5        |                                                                                                                  |
-| `/automations/quick/runs/:runId`         | ✅       | ☐   | ✅  | M5        | iOS: shared run screen; save-as-automation via `automations.save_scratch_run`.                                   |
-| `/automations/:automationId`             | ✅       | ☐   | ✅  | M5        | iOS: detail plus a separate editor screen, memories editable.                                                    |
-| `/automations/:automationId/runs/:runId` | ✅       | ☐   | ✅  | M5        |                                                                                                                  |
-| `/devices`                               | ✅       | ☐   | ◐   | M3        | iOS: lists booted devices only; no boot/shutdown or AVD lifecycle.                                               |
-| `/inbox`                                 | ✅       | ☐   | ✅  | M5        |                                                                                                                  |
-| `/inbox/proposals/:proposalId`           | ✅       | ☐   | ◐   | M5        | iOS: proposals decided inline on a card; no detail screen, no request-revision.                                  |
-| `/notifications`                         | ✅       | ☐   | ☐   | M5        | Warnings & errors list. OS notifications are a separate M1 row.                                                  |
-| `/pull-requests`                         | ✅       | ☐   | ✅  | M4        |                                                                                                                  |
-| `/pull-requests/:owner/:repo/:number`    | ✅       | ☐   | ✅  | M4        | iOS: view, comment, merge.                                                                                       |
-| `/runtimes` Runtimes overview            | ✅       | ☐   | ☐   | M2        | iOS: no terminal or run-command methods on the gateway.                                                          |
-| `/sessions/:sessionId` (→ home)          | ✅       | ◐   | ◐   | M0        | Mac: opens the agents panel; no session home yet. iOS: sessions live inside the project screen, no session home. |
-| `/sessions/:sessionId/home`              | ✅       | ☐   | ◐   | M1        | iOS: setup state, land-work card and agents on the project screen; no per-session panel.                         |
-| `/sessions/:sessionId/agents`            | ✅       | ✅  | ✅  | M1        | Mac: verified end to end against the bundled host.                                                               |
-| `/sessions/:sessionId/git`               | ✅       | ☐   | ◐   | M4        | iOS: Changes and Branches screens; see sub-views.                                                                |
+| Route                                    | Electron | Mac | iOS | Milestone | Notes                                                                                                                                          |
+| ---------------------------------------- | -------- | --- | --- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/` Home / project picker                | ✅       | ◐   | ✅  | M0        | Mac: sidebar lists projects; no project picker or add-project yet (M5 onboarding). iOS: Projects tab.                                          |
+| `/agents` Agents overview                | ✅       | ☐   | ◐   | M1        | iOS: agents only per project (iPad sidebar lists them); no cross-session overview.                                                             |
+| `/automations`                           | ✅       | ☐   | ✅  | M5        |                                                                                                                                                |
+| `/automations/quick` Quick run           | ✅       | ☐   | ✅  | M5        |                                                                                                                                                |
+| `/automations/quick/runs/:runId`         | ✅       | ☐   | ✅  | M5        | iOS: shared run screen; save-as-automation via `automations.save_scratch_run`.                                                                 |
+| `/automations/:automationId`             | ✅       | ☐   | ✅  | M5        | iOS: detail plus a separate editor screen, memories editable.                                                                                  |
+| `/automations/:automationId/runs/:runId` | ✅       | ☐   | ✅  | M5        |                                                                                                                                                |
+| `/devices`                               | ✅       | ☐   | ◐   | M3        | iOS: lists booted devices only; no boot/shutdown or AVD lifecycle.                                                                             |
+| `/inbox`                                 | ✅       | ☐   | ✅  | M5        |                                                                                                                                                |
+| `/inbox/proposals/:proposalId`           | ✅       | ☐   | ◐   | M5        | iOS: proposals decided inline on a card; no detail screen, no request-revision.                                                                |
+| `/notifications`                         | ✅       | ☐   | ☐   | M5        | Warnings & errors list. OS notifications are a separate M1 row.                                                                                |
+| `/pull-requests`                         | ✅       | ☐   | ✅  | M4        |                                                                                                                                                |
+| `/pull-requests/:owner/:repo/:number`    | ✅       | ☐   | ✅  | M4        | iOS: view, comment, merge.                                                                                                                     |
+| `/runtimes` Runtimes overview            | ✅       | ☐   | ☐   | M2        | iOS: no terminal or run-command methods on the gateway.                                                                                        |
+| `/sessions/:sessionId` (→ home)          | ✅       | ◐   | ◐   | M0        | Mac: opens the agents panel; no session home yet (session home is M4/M5 scope). iOS: sessions live inside the project screen, no session home. |
+| `/sessions/:sessionId/home`              | ✅       | ☐   | ◐   | M1        | iOS: setup state, land-work card and agents on the project screen; no per-session panel.                                                       |
+| `/sessions/:sessionId/agents`            | ✅       | ✅  | ✅  | M1        | Mac: verified end to end against the bundled host.                                                                                             |
+| `/sessions/:sessionId/git`               | ✅       | ☐   | ◐   | M4        | iOS: Changes and Branches screens; see sub-views.                                                                                              |
 
 ### Git sub-views (`/sessions/:sessionId/git/:gitView`)
 
@@ -81,25 +81,25 @@ How to tick a row:
 
 ### Core loop (plan M0/M1, not catalogued in `features.md`)
 
-| Feature                                   | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                    |
-| ----------------------------------------- | -------- | --- | --- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Three-panel window, projects and sessions | ✅       | ✅  | ✅  | M0        | Mac: verified; projects and sessions live over the local socket, restored after a restart. iOS: tabs on a phone, split view on an iPad.                                                                  |
-| Session create / delete, setup progress   | ✅       | ◐   | ✅  | M1        | Mac: create/delete sheets and setup view built; sessions created over the socket appear live. Sheets untested by click; no retry/rename yet. iOS: also retry setup, rename, base branch.                 |
-| Agent tabs                                | ✅       | ✅  | ◐   | M1        | Mac: verified; tabs from live agents, titles generated. iOS: one agent per screen, no tabs.                                                                                                              |
-| Live transcript                           | ✅       | ✅  | ✅  | M1        | Mac: verified; built live from `agent.event` and published as the snapshot the phone reads.                                                                                                              |
-| Chat input: slash commands                | ✅       | ✅  | ✅  | M1        | Mac: verified in the running app (scripted input hook, not committed).                                                                                                                                   |
-| Chat input: mentions                      | ✅       | ✅  | ✅  | M1        | Mac: verified in the running app (scripted input hook).                                                                                                                                                  |
-| Chat input: images                        | ✅       | ◐   | ✅  | M1        | Mac: send with image verified; paste/drag/attach covered by unit tests only.                                                                                                                             |
-| Chat input: model / mode / effort         | ✅       | ◐   | ✅  | M1        | Mac: mode change verified on the host; model/effort menus untested by click.                                                                                                                             |
-| Chat input: message queue                 | ✅       | ◐   | ✅  | M1        | Mac: queueing verified; the drain on idle is covered by tests only.                                                                                                                                      |
-| Permission prompts                        | ✅       | ◐   | ✅  | M1        | Mac: prompt renders inline live; answered via the host in tests. Verified running the app; the click/keyboard path is untested (no UI automation on this machine).                                       |
-| Plan approval                             | ✅       | ◐   | ✅  | M1        | Mac: built on the shared form with ⌘↵; not exercised live. iOS: no draft persistence.                                                                                                                    |
-| Questions                                 | ✅       | ◐   | ✅  | M1        | Mac: question form rendered live. Verified running the app; the click/keyboard path is untested (no UI automation on this machine).                                                                      |
-| Notifications (OS)                        | ✅       | ◐   | ✅  | M1        | Mac: platform delegation verified to `UNUserNotificationCenter`; banners need the user to allow notifications for the app. iOS: background push.                                                         |
-| Find in chat                              | ✅       | ◐   | ☐   | M1        | Mac: find verified on a 2,000-message fixture, driven from code; ⌘F/⌘G untested by keyboard.                                                                                                             |
-| Transcript text selection                 | ✅       | ◐   | ☐   | M1        | Mac: TextKit 2 selection within a message; not across messages. Verified running the app; the click/keyboard path is untested (no UI automation on this machine). iOS: transcript text isn't selectable. |
-| File-path links                           | ✅       | ◐   | ☐   | M1        | Mac: paths and URLs detected and rendered as links live; opening untested by click; line numbers not passed to the editor. iOS: no file viewer (no file-read method).                                    |
-| Scratch pads                              | ✅       | ☐   | ✅  | M1        | Sidebar section; not in the M1 list, assigned with the session sidebar.                                                                                                                                  |
+| Feature                                   | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                                   |
+| ----------------------------------------- | -------- | --- | --- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Three-panel window, projects and sessions | ✅       | ✅  | ✅  | M0        | Mac: verified; projects and sessions live over the local socket, restored after a restart. iOS: tabs on a phone, split view on an iPad.                                                                                 |
+| Session create / delete, setup progress   | ✅       | ✅  | ✅  | M1        | Mac: New Session sheet (⌘N), live setup progress, delete from the context menu. Verified by in-window clicks and keys in a debug build. iOS: also retry setup, rename, base branch.                                     |
+| Agent tabs                                | ✅       | ✅  | ◐   | M1        | Mac: start (+, ⌘T, empty-state button), switch, close (×) — closing stops the agent. Verified by in-window clicks and keys in a debug build. iOS: one agent per screen, no tabs.                                        |
+| Live transcript                           | ✅       | ✅  | ✅  | M1        | Mac: verified; built live from `agent.event` and published as the snapshot the phone reads.                                                                                                                             |
+| Chat input: slash commands                | ✅       | ✅  | ✅  | M1        | Mac: / menu, filtering, ↓/Tab/Return. Verified by in-window clicks and keys in a debug build.                                                                                                                           |
+| Chat input: mentions                      | ✅       | ✅  | ✅  | M1        | Mac: @ file picker over the worktree, keyboard pick. Verified by in-window clicks and keys in a debug build.                                                                                                            |
+| Chat input: images                        | ✅       | ✅  | ✅  | M1        | Mac: drop onto the input and send, image reaches the agent; opens in the viewer. Paste and the attach button share the same path (unit-tested). Verified by in-window clicks and keys in a debug build.                 |
+| Chat input: model / mode / effort         | ✅       | ✅  | ✅  | M1        | Mac: native menus and ⇧Tab change model, mode and effort on the host. Verified by in-window clicks and keys in a debug build.                                                                                           |
+| Chat input: message queue                 | ✅       | ✅  | ✅  | M1        | Mac: queued while running, shown as a card, drained when the turn ends. Verified by in-window clicks and keys in a debug build.                                                                                         |
+| Permission prompts                        | ✅       | ✅  | ✅  | M1        | Mac: Allow, Always Allow (same rule as Electron) and Deny. Verified by in-window clicks and keys in a debug build.                                                                                                      |
+| Plan approval                             | ✅       | ✅  | ✅  | M1        | Mac: Approve / Keep planning / Approve in new session; approving leaves plan mode. Verified by in-window clicks and keys in a debug build. iOS: no draft persistence.                                                   |
+| Questions                                 | ✅       | ✅  | ✅  | M1        | Mac: options + Submit answer the agent. Verified by in-window clicks and keys in a debug build.                                                                                                                         |
+| Notifications (OS)                        | ✅       | ◐   | ✅  | M1        | Mac: the host's banner request reaches `UNUserNotificationCenter`; macOS refuses it until notifications are allowed for the app in System Settings, so the banner and its buttons are unverified. iOS: background push. |
+| Find in chat                              | ✅       | ✅  | ☐   | M1        | Mac: ⌘F, typing, ⌘G stepping with wrap, Esc closes. Verified by in-window clicks and keys in a debug build.                                                                                                             |
+| Transcript text selection                 | ✅       | ✅  | ☐   | M1        | Mac: TextKit 2 selection within a message and code blocks; not across messages (Electron allows that). Verified by in-window clicks and keys in a debug build. iOS: transcript text isn't selectable.                   |
+| File-path links                           | ✅       | ✅  | ☐   | M1        | Mac: link → host `open_path` → app (verified in dry-open mode); context menu adds Open In / Reveal / Copy Path. Line numbers aren't passed to the editor, as in Electron. iOS: no file viewer (no file-read method).    |
+| Scratch pads                              | ✅       | ☐   | ✅  | M1        | Sidebar section; not in the M1 list, assigned with the session sidebar.                                                                                                                                                 |
 
 ### iOS simulators
 
@@ -209,19 +209,19 @@ How to tick a row:
 
 ### Permissions
 
-| Feature                                | Electron | Mac | iOS | Milestone | Notes                                                                                               |
-| -------------------------------------- | -------- | --- | --- | --------- | --------------------------------------------------------------------------------------------------- |
-| Inline approval beside the tool call   | ✅       | ✅  | ✅  | M1        | Mac: verified rendering live at the foot of the transcript.                                         |
-| "Always allow" patterns                | ✅       | ☐   | ☐   | M1        | Mac: no Always-allow button yet (the prompt carries no rule to offer). iOS: allow once / deny only. |
-| Default permission mode (App settings) | ✅       | ☐   | ◐   | M5        | iOS: per-agent mode switch; no default setting.                                                     |
+| Feature                                | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                      |
+| -------------------------------------- | -------- | --- | --- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inline approval beside the tool call   | ✅       | ✅  | ✅  | M1        | Mac: prompts render at the foot of the transcript and scroll into view. Verified by in-window clicks and keys in a debug build.                            |
+| "Always allow" patterns                | ✅       | ✅  | ☐   | M1        | Mac: Always Allow on a prompt adds the Electron rule for the session. Verified by in-window clicks and keys in a debug build. iOS: allow once / deny only. |
+| Default permission mode (App settings) | ✅       | ☐   | ◐   | M5        | iOS: per-agent mode switch; no default setting.                                                                                                            |
 
 ### Orchestration tree
 
-| Feature                               | Electron | Mac | iOS | Milestone | Notes                                                                                |
-| ------------------------------------- | -------- | --- | --- | --------- | ------------------------------------------------------------------------------------ |
-| Subagent tree, live status            | ✅       | ☐   | ◐   | M1        | Not in the M1 list; assigned with agent tabs. iOS: subagents as tool cards, no tree. |
-| Per-agent model swap mid-conversation | ✅       | ◐   | ✅  | M1        | Mac: model menu built; untested by click.                                            |
-| Persisted history, resume             | ✅       | ☐   | ◐   | M1        | iOS: read stopped transcripts; no resume.                                            |
+| Feature                               | Electron | Mac | iOS | Milestone | Notes                                                                                            |
+| ------------------------------------- | -------- | --- | --- | --------- | ------------------------------------------------------------------------------------------------ |
+| Subagent tree, live status            | ✅       | ☐   | ◐   | M1        | Not in the M1 list; assigned with agent tabs. iOS: subagents as tool cards, no tree.             |
+| Per-agent model swap mid-conversation | ✅       | ✅  | ✅  | M1        | Mac: model menu switches the live agent. Verified by in-window clicks and keys in a debug build. |
+| Persisted history, resume             | ✅       | ☐   | ◐   | M1        | iOS: read stopped transcripts; no resume.                                                        |
 
 ### Organisations
 
