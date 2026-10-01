@@ -10850,7 +10850,7 @@ extension ArgusProtocol {
   public struct SimulatorDeeplinkConfig: Codable, Sendable {
     public var label: String
     public var url: String?
-    public var children: [#]?
+    public var children: [SimulatorDeeplinkConfig]?
 
     enum CodingKeys: String, CodingKey {
       case label = "label"
@@ -10858,7 +10858,7 @@ extension ArgusProtocol {
       case children = "children"
     }
 
-    public init(label: String, url: String? = nil, children: [#]? = nil) {
+    public init(label: String, url: String? = nil, children: [SimulatorDeeplinkConfig]? = nil) {
       self.label = label
       self.url = url
       self.children = children

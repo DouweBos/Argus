@@ -4,5357 +4,5358 @@
 import Foundation
 
 extension ArgusProtocol {
-  public struct AgentsCapabilitiesParams: Codable, Sendable {
-    public var agentId: String
+  /// Params and result types for `Methods` that no model names.
+  public enum MethodsTypes {
+    public struct AgentsCapabilitiesParams: Codable, Sendable {
+      public var agentId: String
 
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-    }
-
-    public init(agentId: String) {
-      self.agentId = agentId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-    }
-  }
-
-  public struct AgentsCapabilitiesResult: Codable, Sendable {
-    public var capabilities: RemoteAgentCapabilities
-
-    enum CodingKeys: String, CodingKey {
-      case capabilities = "capabilities"
-    }
-
-    public init(capabilities: RemoteAgentCapabilities) {
-      self.capabilities = capabilities
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(capabilities, forKey: .capabilities)
-    }
-  }
-
-  public struct AgentsImageParams: Codable, Sendable {
-    public var agentId: String
-    public var imageId: String
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-      case imageId = "image_id"
-    }
-
-    public init(agentId: String, imageId: String) {
-      self.agentId = agentId
-      self.imageId = imageId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-      try c.encode(imageId, forKey: .imageId)
-    }
-  }
-
-  public struct AgentsImageResult: Codable, Sendable {
-    public var data: String
-    public var mediaType: String
-
-    enum CodingKeys: String, CodingKey {
-      case data = "data"
-      case mediaType = "media_type"
-    }
-
-    public init(data: String, mediaType: String) {
-      self.data = data
-      self.mediaType = mediaType
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(data, forKey: .data)
-      try c.encode(mediaType, forKey: .mediaType)
-    }
-  }
-
-  public struct AgentsInterruptParams: Codable, Sendable {
-    public var agentId: String
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-    }
-
-    public init(agentId: String) {
-      self.agentId = agentId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-    }
-  }
-
-  public struct AgentsInterruptResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct AgentsListParams: Codable, Sendable {
-    public var sessionId: String?
-    public var repoRoot: String?
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case repoRoot = "repo_root"
-    }
-
-    public init(sessionId: String? = nil, repoRoot: String? = nil) {
-      self.sessionId = sessionId
-      self.repoRoot = repoRoot
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encodeIfPresent(sessionId, forKey: .sessionId)
-      try c.encodeIfPresent(repoRoot, forKey: .repoRoot)
-    }
-  }
-
-  public struct AgentsListResult: Codable, Sendable {
-    public var agents: [RemoteAgentStatus]
-
-    enum CodingKeys: String, CodingKey {
-      case agents = "agents"
-    }
-
-    public init(agents: [RemoteAgentStatus]) {
-      self.agents = agents
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agents, forKey: .agents)
-    }
-  }
-
-  public struct AgentsQueueAddParams: Codable, Sendable {
-    public var agentId: String
-    public var message: String
-    public var displayText: String?
-    public var images: [RemoteImageAttachment]?
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-      case message = "message"
-      case displayText = "display_text"
-      case images = "images"
-    }
-
-    public init(agentId: String, message: String, displayText: String? = nil, images: [RemoteImageAttachment]? = nil) {
-      self.agentId = agentId
-      self.message = message
-      self.displayText = displayText
-      self.images = images
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-      try c.encode(message, forKey: .message)
-      try c.encodeIfPresent(displayText, forKey: .displayText)
-      try c.encodeIfPresent(images, forKey: .images)
-    }
-  }
-
-  public struct AgentsQueueAddResult: Codable, Sendable {
-    public var message: RemoteQueuedMessage
-
-    enum CodingKeys: String, CodingKey {
-      case message = "message"
-    }
-
-    public init(message: RemoteQueuedMessage) {
-      self.message = message
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(message, forKey: .message)
-    }
-  }
-
-  public struct AgentsQueueListParams: Codable, Sendable {
-    public var agentId: String
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-    }
-
-    public init(agentId: String) {
-      self.agentId = agentId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-    }
-  }
-
-  public struct AgentsQueueListResult: Codable, Sendable {
-    public var messages: [RemoteQueuedMessage]
-
-    enum CodingKeys: String, CodingKey {
-      case messages = "messages"
-    }
-
-    public init(messages: [RemoteQueuedMessage]) {
-      self.messages = messages
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(messages, forKey: .messages)
-    }
-  }
-
-  public struct AgentsQueueRemoveParams: Codable, Sendable {
-    public var agentId: String
-    public var id: String
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-      case id = "id"
-    }
-
-    public init(agentId: String, id: String) {
-      self.agentId = agentId
-      self.id = id
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-      try c.encode(id, forKey: .id)
-    }
-  }
-
-  public struct AgentsQueueRemoveResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct AgentsQueueUpdateParams: Codable, Sendable {
-    public var agentId: String
-    public var id: String
-    public var message: String
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-      case id = "id"
-      case message = "message"
-    }
-
-    public init(agentId: String, id: String, message: String) {
-      self.agentId = agentId
-      self.id = id
-      self.message = message
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-      try c.encode(id, forKey: .id)
-      try c.encode(message, forKey: .message)
-    }
-  }
-
-  public struct AgentsQueueUpdateResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct AgentsSendParams: Codable, Sendable {
-    public var agentId: String
-    public var message: String
-    public var displayText: String?
-    public var images: [RemoteImageAttachment]?
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-      case message = "message"
-      case displayText = "display_text"
-      case images = "images"
-    }
-
-    public init(agentId: String, message: String, displayText: String? = nil, images: [RemoteImageAttachment]? = nil) {
-      self.agentId = agentId
-      self.message = message
-      self.displayText = displayText
-      self.images = images
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-      try c.encode(message, forKey: .message)
-      try c.encodeIfPresent(displayText, forKey: .displayText)
-      try c.encodeIfPresent(images, forKey: .images)
-    }
-  }
-
-  public struct AgentsSendResult: Codable, Sendable {
-    public var accepted: Bool
-    public var queued: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-      case queued = "queued"
-    }
-
-    public init(accepted: Bool, queued: Bool? = nil) {
-      self.accepted = accepted
-      self.queued = queued
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-      try c.encodeIfPresent(queued, forKey: .queued)
-    }
-  }
-
-  public struct AgentsSetClaudeAccountParams: Codable, Sendable {
-    public var agentId: String
-    public var accountId: String?
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-      case accountId = "account_id"
-    }
-
-    public init(agentId: String, accountId: String? = nil) {
-      self.agentId = agentId
-      self.accountId = accountId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-      try c.encode(accountId, forKey: .accountId)
-    }
-  }
-
-  public struct AgentsSetClaudeAccountResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct AgentsSetEffortParams: Codable, Sendable {
-    public var agentId: String
-    public var level: String?
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-      case level = "level"
-    }
-
-    public init(agentId: String, level: String? = nil) {
-      self.agentId = agentId
-      self.level = level
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-      try c.encode(level, forKey: .level)
-    }
-  }
-
-  public struct AgentsSetEffortResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct AgentsSetModelParams: Codable, Sendable {
-    public var agentId: String
-    public var model: String
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-      case model = "model"
-    }
-
-    public init(agentId: String, model: String) {
-      self.agentId = agentId
-      self.model = model
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-      try c.encode(model, forKey: .model)
-    }
-  }
-
-  public struct AgentsSetModelResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct AgentsSetPermissionModeParams: Codable, Sendable {
-    public var agentId: String
-    public var mode: RemotePermissionMode
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-      case mode = "mode"
-    }
-
-    public init(agentId: String, mode: RemotePermissionMode) {
-      self.agentId = agentId
-      self.mode = mode
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-      try c.encode(mode, forKey: .mode)
-    }
-  }
-
-  public struct AgentsSetPermissionModeResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct AgentsSpawnParams: Codable, Sendable {
-    public var sessionId: String
-    public var model: String?
-    public var permissionMode: RemotePermissionMode?
-    public var resumeSessionId: String?
-    public var runnerId: String?
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case model = "model"
-      case permissionMode = "permission_mode"
-      case resumeSessionId = "resume_session_id"
-      case runnerId = "runner_id"
-    }
-
-    public init(sessionId: String, model: String? = nil, permissionMode: RemotePermissionMode? = nil, resumeSessionId: String? = nil, runnerId: String? = nil) {
-      self.sessionId = sessionId
-      self.model = model
-      self.permissionMode = permissionMode
-      self.resumeSessionId = resumeSessionId
-      self.runnerId = runnerId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encodeIfPresent(model, forKey: .model)
-      try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
-      try c.encodeIfPresent(resumeSessionId, forKey: .resumeSessionId)
-      try c.encodeIfPresent(runnerId, forKey: .runnerId)
-    }
-  }
-
-  public struct AgentsSpawnResult: Codable, Sendable {
-    public var agent: RemoteAgentStatus
-
-    enum CodingKeys: String, CodingKey {
-      case agent = "agent"
-    }
-
-    public init(agent: RemoteAgentStatus) {
-      self.agent = agent
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agent, forKey: .agent)
-    }
-  }
-
-  public struct AgentsStatusParams: Codable, Sendable {
-    public var agentId: String
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-    }
-
-    public init(agentId: String) {
-      self.agentId = agentId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-    }
-  }
-
-  public struct AgentsStatusResult: Codable, Sendable {
-    public var agent: RemoteAgentStatus
-
-    enum CodingKeys: String, CodingKey {
-      case agent = "agent"
-    }
-
-    public init(agent: RemoteAgentStatus) {
-      self.agent = agent
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agent, forKey: .agent)
-    }
-  }
-
-  public struct AgentsStopParams: Codable, Sendable {
-    public var agentId: String
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-    }
-
-    public init(agentId: String) {
-      self.agentId = agentId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-    }
-  }
-
-  public struct AgentsStopResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct AgentsStoppedParams: Codable, Sendable {
-    public var repoRoot: String
-    public var limit: Int?
-
-    enum CodingKeys: String, CodingKey {
-      case repoRoot = "repo_root"
-      case limit = "limit"
-    }
-
-    public init(repoRoot: String, limit: Int? = nil) {
-      self.repoRoot = repoRoot
-      self.limit = limit
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(repoRoot, forKey: .repoRoot)
-      try c.encodeIfPresent(limit, forKey: .limit)
-    }
-  }
-
-  public struct AgentsStoppedResult: Codable, Sendable {
-    public var agents: [RemoteStoppedAgent]
-
-    enum CodingKeys: String, CodingKey {
-      case agents = "agents"
-    }
-
-    public init(agents: [RemoteStoppedAgent]) {
-      self.agents = agents
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agents, forKey: .agents)
-    }
-  }
-
-  public struct AgentsStoppedImageParams: Codable, Sendable {
-    public var repoRoot: String
-    public var historyId: String
-    public var imageId: String
-
-    enum CodingKeys: String, CodingKey {
-      case repoRoot = "repo_root"
-      case historyId = "history_id"
-      case imageId = "image_id"
-    }
-
-    public init(repoRoot: String, historyId: String, imageId: String) {
-      self.repoRoot = repoRoot
-      self.historyId = historyId
-      self.imageId = imageId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(repoRoot, forKey: .repoRoot)
-      try c.encode(historyId, forKey: .historyId)
-      try c.encode(imageId, forKey: .imageId)
-    }
-  }
-
-  public struct AgentsStoppedImageResult: Codable, Sendable {
-    public var data: String
-    public var mediaType: String
-
-    enum CodingKeys: String, CodingKey {
-      case data = "data"
-      case mediaType = "media_type"
-    }
-
-    public init(data: String, mediaType: String) {
-      self.data = data
-      self.mediaType = mediaType
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(data, forKey: .data)
-      try c.encode(mediaType, forKey: .mediaType)
-    }
-  }
-
-  public struct AgentsStoppedTranscriptParams: Codable, Sendable {
-    public var repoRoot: String
-    public var historyId: String
-    public var after: Int?
-    public var before: Int?
-    public var limit: Int?
-
-    enum CodingKeys: String, CodingKey {
-      case repoRoot = "repo_root"
-      case historyId = "history_id"
-      case after = "after"
-      case before = "before"
-      case limit = "limit"
-    }
-
-    public init(repoRoot: String, historyId: String, after: Int? = nil, before: Int? = nil, limit: Int? = nil) {
-      self.repoRoot = repoRoot
-      self.historyId = historyId
-      self.after = after
-      self.before = before
-      self.limit = limit
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(repoRoot, forKey: .repoRoot)
-      try c.encode(historyId, forKey: .historyId)
-      try c.encodeIfPresent(after, forKey: .after)
-      try c.encodeIfPresent(before, forKey: .before)
-      try c.encodeIfPresent(limit, forKey: .limit)
-    }
-  }
-
-  public struct AgentsStoppedTranscriptResult: Codable, Sendable {
-    public var messages: [RemoteMessage]
-    public var nextAfter: Int?
-    public var prevBefore: Int?
-    public var total: Int?
-    public var model: String?
-
-    enum CodingKeys: String, CodingKey {
-      case messages = "messages"
-      case nextAfter = "next_after"
-      case prevBefore = "prev_before"
-      case total = "total"
-      case model = "model"
-    }
-
-    public init(messages: [RemoteMessage], nextAfter: Int? = nil, prevBefore: Int? = nil, total: Int? = nil, model: String? = nil) {
-      self.messages = messages
-      self.nextAfter = nextAfter
-      self.prevBefore = prevBefore
-      self.total = total
-      self.model = model
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(messages, forKey: .messages)
-      try c.encode(nextAfter, forKey: .nextAfter)
-      try c.encodeIfPresent(prevBefore, forKey: .prevBefore)
-      try c.encodeIfPresent(total, forKey: .total)
-      try c.encodeIfPresent(model, forKey: .model)
-    }
-  }
-
-  public struct AgentsTranscriptParams: Codable, Sendable {
-    public var agentId: String
-    public var after: Int?
-    public var before: Int?
-    public var limit: Int?
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-      case after = "after"
-      case before = "before"
-      case limit = "limit"
-    }
-
-    public init(agentId: String, after: Int? = nil, before: Int? = nil, limit: Int? = nil) {
-      self.agentId = agentId
-      self.after = after
-      self.before = before
-      self.limit = limit
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-      try c.encodeIfPresent(after, forKey: .after)
-      try c.encodeIfPresent(before, forKey: .before)
-      try c.encodeIfPresent(limit, forKey: .limit)
-    }
-  }
-
-  public struct AgentsTranscriptResult: Codable, Sendable {
-    public var messages: [RemoteMessage]
-    public var nextAfter: Int?
-    public var prevBefore: Int?
-    public var total: Int?
-    public var tasks: [RemoteTask]?
-    public var todos: [RemoteTodo]?
-    public var model: String?
-    public var pendingToolName: String?
-
-    enum CodingKeys: String, CodingKey {
-      case messages = "messages"
-      case nextAfter = "next_after"
-      case prevBefore = "prev_before"
-      case total = "total"
-      case tasks = "tasks"
-      case todos = "todos"
-      case model = "model"
-      case pendingToolName = "pending_tool_name"
-    }
-
-    public init(messages: [RemoteMessage], nextAfter: Int? = nil, prevBefore: Int? = nil, total: Int? = nil, tasks: [RemoteTask]? = nil, todos: [RemoteTodo]? = nil, model: String? = nil, pendingToolName: String? = nil) {
-      self.messages = messages
-      self.nextAfter = nextAfter
-      self.prevBefore = prevBefore
-      self.total = total
-      self.tasks = tasks
-      self.todos = todos
-      self.model = model
-      self.pendingToolName = pendingToolName
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(messages, forKey: .messages)
-      try c.encode(nextAfter, forKey: .nextAfter)
-      try c.encodeIfPresent(prevBefore, forKey: .prevBefore)
-      try c.encodeIfPresent(total, forKey: .total)
-      try c.encodeIfPresent(tasks, forKey: .tasks)
-      try c.encodeIfPresent(todos, forKey: .todos)
-      try c.encodeIfPresent(model, forKey: .model)
-      try c.encodeIfPresent(pendingToolName, forKey: .pendingToolName)
-    }
-  }
-
-  public struct AgentsVitalsParams: Codable, Sendable {
-    public var agentId: String
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-    }
-
-    public init(agentId: String) {
-      self.agentId = agentId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-    }
-  }
-
-  public struct AgentsVitalsResult: Codable, Sendable {
-    public var vitals: RemoteAgentVitals
-
-    enum CodingKeys: String, CodingKey {
-      case vitals = "vitals"
-    }
-
-    public init(vitals: RemoteAgentVitals) {
-      self.vitals = vitals
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(vitals, forKey: .vitals)
-    }
-  }
-
-  public struct AutomationsCancelRunParams: Codable, Sendable {
-    public var runId: String
-
-    enum CodingKeys: String, CodingKey {
-      case runId = "run_id"
-    }
-
-    public init(runId: String) {
-      self.runId = runId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(runId, forKey: .runId)
-    }
-  }
-
-  public struct AutomationsCancelRunResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct AutomationsCreateParams: Codable, Sendable {
-    public var input: AutomationInput
-
-    enum CodingKeys: String, CodingKey {
-      case input = "input"
-    }
-
-    public init(input: AutomationInput) {
-      self.input = input
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(input, forKey: .input)
-    }
-  }
-
-  public struct AutomationsCreateResult: Codable, Sendable {
-    public var automation: RemoteAutomation
-    public var detail: RemoteAutomationDetail
-
-    enum CodingKeys: String, CodingKey {
-      case automation = "automation"
-      case detail = "detail"
-    }
-
-    public init(automation: RemoteAutomation, detail: RemoteAutomationDetail) {
-      self.automation = automation
-      self.detail = detail
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automation, forKey: .automation)
-      try c.encode(detail, forKey: .detail)
-    }
-  }
-
-  public struct AutomationsDeleteParams: Codable, Sendable {
-    public var automationId: String
-
-    enum CodingKeys: String, CodingKey {
-      case automationId = "automation_id"
-    }
-
-    public init(automationId: String) {
-      self.automationId = automationId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automationId, forKey: .automationId)
-    }
-  }
-
-  public struct AutomationsDeleteResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct AutomationsDeleteMemoryParams: Codable, Sendable {
-    public var automationId: String
-    public var name: String
-
-    enum CodingKeys: String, CodingKey {
-      case automationId = "automation_id"
-      case name = "name"
-    }
-
-    public init(automationId: String, name: String) {
-      self.automationId = automationId
-      self.name = name
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automationId, forKey: .automationId)
-      try c.encode(name, forKey: .name)
-    }
-  }
-
-  public struct AutomationsDeleteMemoryResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct AutomationsGetParams: Codable, Sendable {
-    public var automationId: String
-
-    enum CodingKeys: String, CodingKey {
-      case automationId = "automation_id"
-    }
-
-    public init(automationId: String) {
-      self.automationId = automationId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automationId, forKey: .automationId)
-    }
-  }
-
-  public struct AutomationsGetResult: Codable, Sendable {
-    public var automation: RemoteAutomationDetail
-
-    enum CodingKeys: String, CodingKey {
-      case automation = "automation"
-    }
-
-    public init(automation: RemoteAutomationDetail) {
-      self.automation = automation
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automation, forKey: .automation)
-    }
-  }
-
-  public struct AutomationsListParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct AutomationsListResult: Codable, Sendable {
-    public var automations: [RemoteAutomation]
-
-    enum CodingKeys: String, CodingKey {
-      case automations = "automations"
-    }
-
-    public init(automations: [RemoteAutomation]) {
-      self.automations = automations
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automations, forKey: .automations)
-    }
-  }
-
-  public struct AutomationsMarkRunReadParams: Codable, Sendable {
-    public var runId: String
-
-    enum CodingKeys: String, CodingKey {
-      case runId = "run_id"
-    }
-
-    public init(runId: String) {
-      self.runId = runId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(runId, forKey: .runId)
-    }
-  }
-
-  public struct AutomationsMarkRunReadResult: Codable, Sendable {
-    public var run: RemoteAutomationRun
-
-    enum CodingKeys: String, CodingKey {
-      case run = "run"
-    }
-
-    public init(run: RemoteAutomationRun) {
-      self.run = run
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(run, forKey: .run)
-    }
-  }
-
-  public struct AutomationsMemoriesParams: Codable, Sendable {
-    public var automationId: String
-
-    enum CodingKeys: String, CodingKey {
-      case automationId = "automation_id"
-    }
-
-    public init(automationId: String) {
-      self.automationId = automationId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automationId, forKey: .automationId)
-    }
-  }
-
-  public struct AutomationsMemoriesResult: Codable, Sendable {
-    public var memories: [RemoteAutomationMemory]
-
-    enum CodingKeys: String, CodingKey {
-      case memories = "memories"
-    }
-
-    public init(memories: [RemoteAutomationMemory]) {
-      self.memories = memories
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(memories, forKey: .memories)
-    }
-  }
-
-  public struct AutomationsRevisePlaybookParams: Codable, Sendable {
-    public var playbook: String
-    public var instruction: String
-    public var name: String?
-
-    enum CodingKeys: String, CodingKey {
-      case playbook = "playbook"
-      case instruction = "instruction"
-      case name = "name"
-    }
-
-    public init(playbook: String, instruction: String, name: String? = nil) {
-      self.playbook = playbook
-      self.instruction = instruction
-      self.name = name
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(playbook, forKey: .playbook)
-      try c.encode(instruction, forKey: .instruction)
-      try c.encodeIfPresent(name, forKey: .name)
-    }
-  }
-
-  public struct AutomationsRevisePlaybookResult: Codable, Sendable {
-    public var playbook: String
-
-    enum CodingKeys: String, CodingKey {
-      case playbook = "playbook"
-    }
-
-    public init(playbook: String) {
-      self.playbook = playbook
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(playbook, forKey: .playbook)
-    }
-  }
-
-  public struct AutomationsRunParams: Codable, Sendable {
-    public var runId: String
-
-    enum CodingKeys: String, CodingKey {
-      case runId = "run_id"
-    }
-
-    public init(runId: String) {
-      self.runId = runId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(runId, forKey: .runId)
-    }
-  }
-
-  public struct AutomationsRunResult: Codable, Sendable {
-    public var run: RemoteAutomationRun
-    public var reportBlocks: [ReportBlock]?
-    public var reportMarkdown: String?
-    public var feedback: [RemoteRunFeedback]
-
-    enum CodingKeys: String, CodingKey {
-      case run = "run"
-      case reportBlocks = "report_blocks"
-      case reportMarkdown = "report_markdown"
-      case feedback = "feedback"
-    }
-
-    public init(run: RemoteAutomationRun, reportBlocks: [ReportBlock]? = nil, reportMarkdown: String? = nil, feedback: [RemoteRunFeedback]) {
-      self.run = run
-      self.reportBlocks = reportBlocks
-      self.reportMarkdown = reportMarkdown
-      self.feedback = feedback
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(run, forKey: .run)
-      try c.encode(reportBlocks, forKey: .reportBlocks)
-      try c.encode(reportMarkdown, forKey: .reportMarkdown)
-      try c.encode(feedback, forKey: .feedback)
-    }
-  }
-
-  public struct AutomationsRunFeedbackParams: Codable, Sendable {
-    public var runId: String
-    public var note: String
-    public var allowClearing: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case runId = "run_id"
-      case note = "note"
-      case allowClearing = "allow_clearing"
-    }
-
-    public init(runId: String, note: String, allowClearing: Bool? = nil) {
-      self.runId = runId
-      self.note = note
-      self.allowClearing = allowClearing
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(runId, forKey: .runId)
-      try c.encode(note, forKey: .note)
-      try c.encodeIfPresent(allowClearing, forKey: .allowClearing)
-    }
-  }
-
-  public struct AutomationsRunFeedbackResult: Codable, Sendable {
-    public var run: RemoteAutomationRun
-
-    enum CodingKeys: String, CodingKey {
-      case run = "run"
-    }
-
-    public init(run: RemoteAutomationRun) {
-      self.run = run
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(run, forKey: .run)
-    }
-  }
-
-  public struct AutomationsRunNowParams: Codable, Sendable {
-    public var automationId: String
-
-    enum CodingKeys: String, CodingKey {
-      case automationId = "automation_id"
-    }
-
-    public init(automationId: String) {
-      self.automationId = automationId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automationId, forKey: .automationId)
-    }
-  }
-
-  public struct AutomationsRunNowResult: Codable, Sendable {
-    public var run: RemoteAutomationRun
-
-    enum CodingKeys: String, CodingKey {
-      case run = "run"
-    }
-
-    public init(run: RemoteAutomationRun) {
-      self.run = run
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(run, forKey: .run)
-    }
-  }
-
-  public struct AutomationsRunScratchParams: Codable, Sendable {
-    public var name: String?
-    public var playbook: String
-    public var repoRoots: [String]
-    public var sourceIds: [String]
-    public var model: String?
-    public var guardrails: RemoteAutomationGuardrails
-
-    enum CodingKeys: String, CodingKey {
-      case name = "name"
-      case playbook = "playbook"
-      case repoRoots = "repo_roots"
-      case sourceIds = "source_ids"
-      case model = "model"
-      case guardrails = "guardrails"
-    }
-
-    public init(name: String? = nil, playbook: String, repoRoots: [String], sourceIds: [String], model: String? = nil, guardrails: RemoteAutomationGuardrails) {
-      self.name = name
-      self.playbook = playbook
-      self.repoRoots = repoRoots
-      self.sourceIds = sourceIds
-      self.model = model
-      self.guardrails = guardrails
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encodeIfPresent(name, forKey: .name)
-      try c.encode(playbook, forKey: .playbook)
-      try c.encode(repoRoots, forKey: .repoRoots)
-      try c.encode(sourceIds, forKey: .sourceIds)
-      try c.encode(model, forKey: .model)
-      try c.encode(guardrails, forKey: .guardrails)
-    }
-  }
-
-  public struct AutomationsRunScratchResult: Codable, Sendable {
-    public var run: RemoteAutomationRun
-
-    enum CodingKeys: String, CodingKey {
-      case run = "run"
-    }
-
-    public init(run: RemoteAutomationRun) {
-      self.run = run
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(run, forKey: .run)
-    }
-  }
-
-  public struct AutomationsRunnersParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct AutomationsRunnersResult: Codable, Sendable {
-    public var runners: [RemoteRunner]
-
-    enum CodingKeys: String, CodingKey {
-      case runners = "runners"
-    }
-
-    public init(runners: [RemoteRunner]) {
-      self.runners = runners
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(runners, forKey: .runners)
-    }
-  }
-
-  public struct AutomationsRunsParams: Codable, Sendable {
-    public var automationId: String?
-    public var limit: Int?
-
-    enum CodingKeys: String, CodingKey {
-      case automationId = "automation_id"
-      case limit = "limit"
-    }
-
-    public init(automationId: String? = nil, limit: Int? = nil) {
-      self.automationId = automationId
-      self.limit = limit
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encodeIfPresent(automationId, forKey: .automationId)
-      try c.encodeIfPresent(limit, forKey: .limit)
-    }
-  }
-
-  public struct AutomationsRunsResult: Codable, Sendable {
-    public var runs: [RemoteAutomationRun]
-
-    enum CodingKeys: String, CodingKey {
-      case runs = "runs"
-    }
-
-    public init(runs: [RemoteAutomationRun]) {
-      self.runs = runs
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(runs, forKey: .runs)
-    }
-  }
-
-  public struct AutomationsSaveMemoryParamsMemoryType: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let user = AutomationsSaveMemoryParamsMemoryType(rawValue: "user")
-    public static let feedback = AutomationsSaveMemoryParamsMemoryType(rawValue: "feedback")
-    public static let project = AutomationsSaveMemoryParamsMemoryType(rawValue: "project")
-    public static let reference = AutomationsSaveMemoryParamsMemoryType(rawValue: "reference")
-  }
-
-  public struct AutomationsSaveMemoryParamsMemory: Codable, Sendable {
-    public var name: String
-    public var description: String
-    public var type: AutomationsSaveMemoryParamsMemoryType
-    public var body: String
-    public var previousName: String?
-
-    enum CodingKeys: String, CodingKey {
-      case name = "name"
-      case description = "description"
-      case type = "type"
-      case body = "body"
-      case previousName = "previous_name"
-    }
-
-    public init(name: String, description: String, type: AutomationsSaveMemoryParamsMemoryType, body: String, previousName: String? = nil) {
-      self.name = name
-      self.description = description
-      self.type = type
-      self.body = body
-      self.previousName = previousName
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(name, forKey: .name)
-      try c.encode(description, forKey: .description)
-      try c.encode(type, forKey: .type)
-      try c.encode(body, forKey: .body)
-      try c.encodeIfPresent(previousName, forKey: .previousName)
-    }
-  }
-
-  public struct AutomationsSaveMemoryParams: Codable, Sendable {
-    public var automationId: String
-    public var memory: AutomationsSaveMemoryParamsMemory
-
-    enum CodingKeys: String, CodingKey {
-      case automationId = "automation_id"
-      case memory = "memory"
-    }
-
-    public init(automationId: String, memory: AutomationsSaveMemoryParamsMemory) {
-      self.automationId = automationId
-      self.memory = memory
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automationId, forKey: .automationId)
-      try c.encode(memory, forKey: .memory)
-    }
-  }
-
-  public struct AutomationsSaveMemoryResult: Codable, Sendable {
-    public var memory: RemoteAutomationMemory
-
-    enum CodingKeys: String, CodingKey {
-      case memory = "memory"
-    }
-
-    public init(memory: RemoteAutomationMemory) {
-      self.memory = memory
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(memory, forKey: .memory)
-    }
-  }
-
-  public struct AutomationsSaveScratchRunParams: Codable, Sendable {
-    public var runId: String
-    public var name: String?
-    public var description: String?
-    public var enabled: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case runId = "run_id"
-      case name = "name"
-      case description = "description"
-      case enabled = "enabled"
-    }
-
-    public init(runId: String, name: String? = nil, description: String? = nil, enabled: Bool? = nil) {
-      self.runId = runId
-      self.name = name
-      self.description = description
-      self.enabled = enabled
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(runId, forKey: .runId)
-      try c.encodeIfPresent(name, forKey: .name)
-      try c.encodeIfPresent(description, forKey: .description)
-      try c.encodeIfPresent(enabled, forKey: .enabled)
-    }
-  }
-
-  public struct AutomationsSaveScratchRunResult: Codable, Sendable {
-    public var automation: RemoteAutomation
-
-    enum CodingKeys: String, CodingKey {
-      case automation = "automation"
-    }
-
-    public init(automation: RemoteAutomation) {
-      self.automation = automation
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automation, forKey: .automation)
-    }
-  }
-
-  public struct AutomationsSetEnabledParams: Codable, Sendable {
-    public var automationId: String
-    public var enabled: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case automationId = "automation_id"
-      case enabled = "enabled"
-    }
-
-    public init(automationId: String, enabled: Bool) {
-      self.automationId = automationId
-      self.enabled = enabled
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automationId, forKey: .automationId)
-      try c.encode(enabled, forKey: .enabled)
-    }
-  }
-
-  public struct AutomationsSetEnabledResult: Codable, Sendable {
-    public var automation: RemoteAutomation
-
-    enum CodingKeys: String, CodingKey {
-      case automation = "automation"
-    }
-
-    public init(automation: RemoteAutomation) {
-      self.automation = automation
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automation, forKey: .automation)
-    }
-  }
-
-  public struct AutomationsSourcesParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct AutomationsSourcesResult: Codable, Sendable {
-    public var sources: [RemoteSignalSource]
-
-    enum CodingKeys: String, CodingKey {
-      case sources = "sources"
-    }
-
-    public init(sources: [RemoteSignalSource]) {
-      self.sources = sources
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sources, forKey: .sources)
-    }
-  }
-
-  public struct AutomationsUpdateParamsPatchTriggerKind: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let manual = AutomationsUpdateParamsPatchTriggerKind(rawValue: "manual")
-    public static let schedule = AutomationsUpdateParamsPatchTriggerKind(rawValue: "schedule")
-  }
-
-  public struct AutomationsUpdateParamsPatchAutonomy: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let autoMerge = AutomationsUpdateParamsPatchAutonomy(rawValue: "auto_merge")
-    public static let draft = AutomationsUpdateParamsPatchAutonomy(rawValue: "draft")
-    public static let pr = AutomationsUpdateParamsPatchAutonomy(rawValue: "pr")
-    public static let propose = AutomationsUpdateParamsPatchAutonomy(rawValue: "propose")
-  }
-
-  public struct AutomationsUpdateParamsPatch: Codable, Sendable {
-    public var name: String?
-    public var description: String?
-    public var enabled: Bool?
-    public var triggerKind: AutomationsUpdateParamsPatchTriggerKind?
-    public var cron: String?
-    public var timezone: String?
-    public var catchUp: Bool?
-    public var repoRoots: [String]?
-    public var sourceIds: [String]?
-    public var playbook: String?
-    public var extraInstructions: String?
-    public var autonomy: AutomationsUpdateParamsPatchAutonomy?
-    public var model: String?
-    public var runner: String?
-    public var guardrails: RemoteAutomationGuardrails?
-
-    enum CodingKeys: String, CodingKey {
-      case name = "name"
-      case description = "description"
-      case enabled = "enabled"
-      case triggerKind = "trigger_kind"
-      case cron = "cron"
-      case timezone = "timezone"
-      case catchUp = "catch_up"
-      case repoRoots = "repo_roots"
-      case sourceIds = "source_ids"
-      case playbook = "playbook"
-      case extraInstructions = "extra_instructions"
-      case autonomy = "autonomy"
-      case model = "model"
-      case runner = "runner"
-      case guardrails = "guardrails"
-    }
-
-    public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, triggerKind: AutomationsUpdateParamsPatchTriggerKind? = nil, cron: String? = nil, timezone: String? = nil, catchUp: Bool? = nil, repoRoots: [String]? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutomationsUpdateParamsPatchAutonomy? = nil, model: String? = nil, runner: String? = nil, guardrails: RemoteAutomationGuardrails? = nil) {
-      self.name = name
-      self.description = description
-      self.enabled = enabled
-      self.triggerKind = triggerKind
-      self.cron = cron
-      self.timezone = timezone
-      self.catchUp = catchUp
-      self.repoRoots = repoRoots
-      self.sourceIds = sourceIds
-      self.playbook = playbook
-      self.extraInstructions = extraInstructions
-      self.autonomy = autonomy
-      self.model = model
-      self.runner = runner
-      self.guardrails = guardrails
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encodeIfPresent(name, forKey: .name)
-      try c.encodeIfPresent(description, forKey: .description)
-      try c.encodeIfPresent(enabled, forKey: .enabled)
-      try c.encodeIfPresent(triggerKind, forKey: .triggerKind)
-      try c.encodeIfPresent(cron, forKey: .cron)
-      try c.encodeIfPresent(timezone, forKey: .timezone)
-      try c.encodeIfPresent(catchUp, forKey: .catchUp)
-      try c.encodeIfPresent(repoRoots, forKey: .repoRoots)
-      try c.encodeIfPresent(sourceIds, forKey: .sourceIds)
-      try c.encodeIfPresent(playbook, forKey: .playbook)
-      try c.encodeIfPresent(extraInstructions, forKey: .extraInstructions)
-      try c.encodeIfPresent(autonomy, forKey: .autonomy)
-      try c.encodeIfPresent(model, forKey: .model)
-      try c.encodeIfPresent(runner, forKey: .runner)
-      try c.encodeIfPresent(guardrails, forKey: .guardrails)
-    }
-  }
-
-  public struct AutomationsUpdateParams: Codable, Sendable {
-    public var automationId: String
-    public var patch: AutomationsUpdateParamsPatch
-
-    enum CodingKeys: String, CodingKey {
-      case automationId = "automation_id"
-      case patch = "patch"
-    }
-
-    public init(automationId: String, patch: AutomationsUpdateParamsPatch) {
-      self.automationId = automationId
-      self.patch = patch
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automationId, forKey: .automationId)
-      try c.encode(patch, forKey: .patch)
-    }
-  }
-
-  public struct AutomationsUpdateResult: Codable, Sendable {
-    public var automation: RemoteAutomation
-    public var detail: RemoteAutomationDetail
-
-    enum CodingKeys: String, CodingKey {
-      case automation = "automation"
-      case detail = "detail"
-    }
-
-    public init(automation: RemoteAutomation, detail: RemoteAutomationDetail) {
-      self.automation = automation
-      self.detail = detail
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(automation, forKey: .automation)
-      try c.encode(detail, forKey: .detail)
-    }
-  }
-
-  public struct BrowserUnwatchParams: Codable, Sendable {
-    public var sessionId: String
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-    }
-
-    public init(sessionId: String) {
-      self.sessionId = sessionId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-    }
-  }
-
-  public struct BrowserUnwatchResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct BrowserWatchParams: Codable, Sendable {
-    public var sessionId: String
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-    }
-
-    public init(sessionId: String) {
-      self.sessionId = sessionId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-    }
-  }
-
-  public struct BrowserWatchResult: Codable, Sendable {
-    public var streamId: Int
-
-    enum CodingKeys: String, CodingKey {
-      case streamId = "stream_id"
-    }
-
-    public init(streamId: Int) {
-      self.streamId = streamId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(streamId, forKey: .streamId)
-    }
-  }
-
-  public struct ClaudeAccountsAddParams: Codable, Sendable {
-    public var useConsole: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case useConsole = "use_console"
-    }
-
-    public init(useConsole: Bool? = nil) {
-      self.useConsole = useConsole
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encodeIfPresent(useConsole, forKey: .useConsole)
-    }
-  }
-
-  public struct ClaudeAccountsAddResult: Codable, Sendable {
-    public var url: String
-
-    enum CodingKeys: String, CodingKey {
-      case url = "url"
-    }
-
-    public init(url: String) {
-      self.url = url
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(url, forKey: .url)
-    }
-  }
-
-  public struct ClaudeAccountsListParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct ClaudeAccountsListResult: Codable, Sendable {
-    public var accounts: [RemoteClaudeAccount]
-    public var activeId: String
-
-    enum CodingKeys: String, CodingKey {
-      case accounts = "accounts"
-      case activeId = "active_id"
-    }
-
-    public init(accounts: [RemoteClaudeAccount], activeId: String) {
-      self.accounts = accounts
-      self.activeId = activeId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accounts, forKey: .accounts)
-      try c.encode(activeId, forKey: .activeId)
-    }
-  }
-
-  public struct ClaudeAccountsLoginCancelParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct ClaudeAccountsLoginCancelResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct ClaudeAccountsLoginStartParams: Codable, Sendable {
-    public var accountId: String?
-    public var useConsole: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case accountId = "account_id"
-      case useConsole = "use_console"
-    }
-
-    public init(accountId: String? = nil, useConsole: Bool? = nil) {
-      self.accountId = accountId
-      self.useConsole = useConsole
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encodeIfPresent(accountId, forKey: .accountId)
-      try c.encodeIfPresent(useConsole, forKey: .useConsole)
-    }
-  }
-
-  public struct ClaudeAccountsLoginStartResult: Codable, Sendable {
-    public var url: String
-
-    enum CodingKeys: String, CodingKey {
-      case url = "url"
-    }
-
-    public init(url: String) {
-      self.url = url
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(url, forKey: .url)
-    }
-  }
-
-  public struct ClaudeAccountsLoginStatusParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct ClaudeAccountsLoginSubmitCodeParams: Codable, Sendable {
-    public var code: String
-
-    enum CodingKeys: String, CodingKey {
-      case code = "code"
-    }
-
-    public init(code: String) {
-      self.code = code
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(code, forKey: .code)
-    }
-  }
-
-  public struct ClaudeAccountsLoginSubmitCodeResult: Codable, Sendable {
-    public var ok: Bool
-    public var error: String?
-
-    enum CodingKeys: String, CodingKey {
-      case ok = "ok"
-      case error = "error"
-    }
-
-    public init(ok: Bool, error: String? = nil) {
-      self.ok = ok
-      self.error = error
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(ok, forKey: .ok)
-      try c.encodeIfPresent(error, forKey: .error)
-    }
-  }
-
-  public struct ClaudeAccountsRemoveParams: Codable, Sendable {
-    public var id: String
-
-    enum CodingKeys: String, CodingKey {
-      case id = "id"
-    }
-
-    public init(id: String) {
-      self.id = id
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(id, forKey: .id)
-    }
-  }
-
-  public struct ClaudeAccountsRemoveResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct ClaudeAccountsRenameParams: Codable, Sendable {
-    public var id: String
-    public var label: String
-
-    enum CodingKeys: String, CodingKey {
-      case id = "id"
-      case label = "label"
-    }
-
-    public init(id: String, label: String) {
-      self.id = id
-      self.label = label
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(id, forKey: .id)
-      try c.encode(label, forKey: .label)
-    }
-  }
-
-  public struct ClaudeAccountsRenameResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct ClaudeAccountsSetActiveParams: Codable, Sendable {
-    public var id: String
-
-    enum CodingKeys: String, CodingKey {
-      case id = "id"
-    }
-
-    public init(id: String) {
-      self.id = id
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(id, forKey: .id)
-    }
-  }
-
-  public struct ClaudeAccountsSetActiveResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct DeviceCapabilitiesParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct DeviceCapabilitiesResult: Codable, Sendable {
-    public var capabilities: [String]
-
-    enum CodingKeys: String, CodingKey {
-      case capabilities = "capabilities"
-    }
-
-    public init(capabilities: [String]) {
-      self.capabilities = capabilities
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(capabilities, forKey: .capabilities)
-    }
-  }
-
-  public struct DevicePushInfoParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct DevicePushInfoResult: Codable, Sendable {
-    public var configured: Bool
-    public var enabled: Bool
-    public var vapidPublicKey: String?
-    public var relayUrl: String?
-
-    enum CodingKeys: String, CodingKey {
-      case configured = "configured"
-      case enabled = "enabled"
-      case vapidPublicKey = "vapid_public_key"
-      case relayUrl = "relay_url"
-    }
-
-    public init(configured: Bool, enabled: Bool, vapidPublicKey: String? = nil, relayUrl: String? = nil) {
-      self.configured = configured
-      self.enabled = enabled
-      self.vapidPublicKey = vapidPublicKey
-      self.relayUrl = relayUrl
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(configured, forKey: .configured)
-      try c.encode(enabled, forKey: .enabled)
-      try c.encode(vapidPublicKey, forKey: .vapidPublicKey)
-      try c.encode(relayUrl, forKey: .relayUrl)
-    }
-  }
-
-  public struct DeviceRegisterPushParamsService: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let apns = DeviceRegisterPushParamsService(rawValue: "apns")
-    public static let fcm = DeviceRegisterPushParamsService(rawValue: "fcm")
-    public static let webpush = DeviceRegisterPushParamsService(rawValue: "webpush")
-  }
-
-  public struct DeviceRegisterPushParamsEnvironment: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let production = DeviceRegisterPushParamsEnvironment(rawValue: "production")
-    public static let sandbox = DeviceRegisterPushParamsEnvironment(rawValue: "sandbox")
-  }
-
-  public struct DeviceRegisterPushParamsKeys: Codable, Sendable {
-    public var p256dh: String
-    public var auth: String
-
-    enum CodingKeys: String, CodingKey {
-      case p256dh = "p256dh"
-      case auth = "auth"
-    }
-
-    public init(p256dh: String, auth: String) {
-      self.p256dh = p256dh
-      self.auth = auth
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(p256dh, forKey: .p256dh)
-      try c.encode(auth, forKey: .auth)
-    }
-  }
-
-  public struct DeviceRegisterPushParams: Codable, Sendable {
-    public var service: DeviceRegisterPushParamsService
-    public var token: String
-    public var environment: DeviceRegisterPushParamsEnvironment?
-    public var keys: DeviceRegisterPushParamsKeys?
-    public var pushKey: String?
-    public var authKey: String?
-
-    enum CodingKeys: String, CodingKey {
-      case service = "service"
-      case token = "token"
-      case environment = "environment"
-      case keys = "keys"
-      case pushKey = "push_key"
-      case authKey = "auth_key"
-    }
-
-    public init(service: DeviceRegisterPushParamsService, token: String, environment: DeviceRegisterPushParamsEnvironment? = nil, keys: DeviceRegisterPushParamsKeys? = nil, pushKey: String? = nil, authKey: String? = nil) {
-      self.service = service
-      self.token = token
-      self.environment = environment
-      self.keys = keys
-      self.pushKey = pushKey
-      self.authKey = authKey
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(service, forKey: .service)
-      try c.encode(token, forKey: .token)
-      try c.encodeIfPresent(environment, forKey: .environment)
-      try c.encodeIfPresent(keys, forKey: .keys)
-      try c.encodeIfPresent(pushKey, forKey: .pushKey)
-      try c.encodeIfPresent(authKey, forKey: .authKey)
-    }
-  }
-
-  public struct DeviceRegisterPushResult: Codable, Sendable {
-    public var accepted: Bool
-    public var configured: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-      case configured = "configured"
-    }
-
-    public init(accepted: Bool, configured: Bool) {
-      self.accepted = accepted
-      self.configured = configured
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-      try c.encode(configured, forKey: .configured)
-    }
-  }
-
-  public struct DeviceRenameParams: Codable, Sendable {
-    public var name: String
-
-    enum CodingKeys: String, CodingKey {
-      case name = "name"
-    }
-
-    public init(name: String) {
-      self.name = name
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(name, forKey: .name)
-    }
-  }
-
-  public struct DeviceRenameResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct DeviceUnregisterPushParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct DeviceUnregisterPushResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct DevicesButtonParams: Codable, Sendable {
-    public var deviceId: String
-    public var platform: RemotePlatform
-    public var button: String
-
-    enum CodingKeys: String, CodingKey {
-      case deviceId = "device_id"
-      case platform = "platform"
-      case button = "button"
-    }
-
-    public init(deviceId: String, platform: RemotePlatform, button: String) {
-      self.deviceId = deviceId
-      self.platform = platform
-      self.button = button
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(deviceId, forKey: .deviceId)
-      try c.encode(platform, forKey: .platform)
-      try c.encode(button, forKey: .button)
-    }
-  }
-
-  public struct DevicesButtonResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct DevicesClaimParams: Codable, Sendable {
-    public var deviceId: String
-    public var force: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case deviceId = "device_id"
-      case force = "force"
-    }
-
-    public init(deviceId: String, force: Bool? = nil) {
-      self.deviceId = deviceId
-      self.force = force
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(deviceId, forKey: .deviceId)
-      try c.encodeIfPresent(force, forKey: .force)
-    }
-  }
-
-  public struct DevicesClaimResult: Codable, Sendable {
-    public var granted: Bool
-    public var holder: RemoteDeviceClaim?
-
-    enum CodingKeys: String, CodingKey {
-      case granted = "granted"
-      case holder = "holder"
-    }
-
-    public init(granted: Bool, holder: RemoteDeviceClaim? = nil) {
-      self.granted = granted
-      self.holder = holder
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(granted, forKey: .granted)
-      try c.encode(holder, forKey: .holder)
-    }
-  }
-
-  public struct DevicesClaimStatusParams: Codable, Sendable {
-    public var deviceId: String
-
-    enum CodingKeys: String, CodingKey {
-      case deviceId = "device_id"
-    }
-
-    public init(deviceId: String) {
-      self.deviceId = deviceId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(deviceId, forKey: .deviceId)
-    }
-  }
-
-  public struct DevicesClaimStatusResult: Codable, Sendable {
-    public var holder: RemoteDeviceClaim?
-    public var connectionId: String
-
-    enum CodingKeys: String, CodingKey {
-      case holder = "holder"
-      case connectionId = "connection_id"
-    }
-
-    public init(holder: RemoteDeviceClaim? = nil, connectionId: String) {
-      self.holder = holder
-      self.connectionId = connectionId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(holder, forKey: .holder)
-      try c.encode(connectionId, forKey: .connectionId)
-    }
-  }
-
-  public struct DevicesKeyboardParams: Codable, Sendable {
-    public var deviceId: String
-    public var platform: RemotePlatform
-    public var keyCode: Double
-    public var modifiers: Double
-    public var isDown: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case deviceId = "device_id"
-      case platform = "platform"
-      case keyCode = "key_code"
-      case modifiers = "modifiers"
-      case isDown = "is_down"
-    }
-
-    public init(deviceId: String, platform: RemotePlatform, keyCode: Double, modifiers: Double, isDown: Bool) {
-      self.deviceId = deviceId
-      self.platform = platform
-      self.keyCode = keyCode
-      self.modifiers = modifiers
-      self.isDown = isDown
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(deviceId, forKey: .deviceId)
-      try c.encode(platform, forKey: .platform)
-      try c.encode(keyCode, forKey: .keyCode)
-      try c.encode(modifiers, forKey: .modifiers)
-      try c.encode(isDown, forKey: .isDown)
-    }
-  }
-
-  public struct DevicesKeyboardResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct DevicesListParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct DevicesListResult: Codable, Sendable {
-    public var devices: [RemoteDevice]
-
-    enum CodingKeys: String, CodingKey {
-      case devices = "devices"
-    }
-
-    public init(devices: [RemoteDevice]) {
-      self.devices = devices
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(devices, forKey: .devices)
-    }
-  }
-
-  public struct DevicesReleaseParams: Codable, Sendable {
-    public var deviceId: String
-
-    enum CodingKeys: String, CodingKey {
-      case deviceId = "device_id"
-    }
-
-    public init(deviceId: String) {
-      self.deviceId = deviceId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(deviceId, forKey: .deviceId)
-    }
-  }
-
-  public struct DevicesReleaseResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct DevicesSetFoldParams: Codable, Sendable {
-    public var deviceId: String
-    public var platform: RemotePlatform
-    public var pose: JSONValue
-
-    enum CodingKeys: String, CodingKey {
-      case deviceId = "device_id"
-      case platform = "platform"
-      case pose = "pose"
-    }
-
-    public init(deviceId: String, platform: RemotePlatform, pose: JSONValue) {
-      self.deviceId = deviceId
-      self.platform = platform
-      self.pose = pose
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(deviceId, forKey: .deviceId)
-      try c.encode(platform, forKey: .platform)
-      try c.encode(pose, forKey: .pose)
-    }
-  }
-
-  public struct DevicesSetFoldResult: Codable, Sendable {
-    public var state: RemoteDeviceState?
-
-    enum CodingKeys: String, CodingKey {
-      case state = "state"
-    }
-
-    public init(state: RemoteDeviceState? = nil) {
-      self.state = state
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(state, forKey: .state)
-    }
-  }
-
-  public struct DevicesSetOrientationParams: Codable, Sendable {
-    public var deviceId: String
-    public var platform: RemotePlatform
-    public var orientation: RemoteDeviceOrientation
-
-    enum CodingKeys: String, CodingKey {
-      case deviceId = "device_id"
-      case platform = "platform"
-      case orientation = "orientation"
-    }
-
-    public init(deviceId: String, platform: RemotePlatform, orientation: RemoteDeviceOrientation) {
-      self.deviceId = deviceId
-      self.platform = platform
-      self.orientation = orientation
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(deviceId, forKey: .deviceId)
-      try c.encode(platform, forKey: .platform)
-      try c.encode(orientation, forKey: .orientation)
-    }
-  }
-
-  public struct DevicesSetOrientationResult: Codable, Sendable {
-    public var state: RemoteDeviceState?
-
-    enum CodingKeys: String, CodingKey {
-      case state = "state"
-    }
-
-    public init(state: RemoteDeviceState? = nil) {
-      self.state = state
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(state, forKey: .state)
-    }
-  }
-
-  public struct DevicesStateParams: Codable, Sendable {
-    public var deviceId: String
-    public var platform: RemotePlatform
-
-    enum CodingKeys: String, CodingKey {
-      case deviceId = "device_id"
-      case platform = "platform"
-    }
-
-    public init(deviceId: String, platform: RemotePlatform) {
-      self.deviceId = deviceId
-      self.platform = platform
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(deviceId, forKey: .deviceId)
-      try c.encode(platform, forKey: .platform)
-    }
-  }
-
-  public struct DevicesStateResult: Codable, Sendable {
-    public var state: RemoteDeviceState?
-
-    enum CodingKeys: String, CodingKey {
-      case state = "state"
-    }
-
-    public init(state: RemoteDeviceState? = nil) {
-      self.state = state
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(state, forKey: .state)
-    }
-  }
-
-  public struct DevicesTouchParams: Codable, Sendable {
-    public var deviceId: String
-    public var platform: RemotePlatform
-    public var x: JSONValue
-    public var y: JSONValue
-    public var eventType: JSONValue
-
-    enum CodingKeys: String, CodingKey {
-      case deviceId = "device_id"
-      case platform = "platform"
-      case x = "x"
-      case y = "y"
-      case eventType = "event_type"
-    }
-
-    public init(deviceId: String, platform: RemotePlatform, x: JSONValue, y: JSONValue, eventType: JSONValue) {
-      self.deviceId = deviceId
-      self.platform = platform
-      self.x = x
-      self.y = y
-      self.eventType = eventType
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(deviceId, forKey: .deviceId)
-      try c.encode(platform, forKey: .platform)
-      try c.encode(x, forKey: .x)
-      try c.encode(y, forKey: .y)
-      try c.encode(eventType, forKey: .eventType)
-    }
-  }
-
-  public struct DevicesTouchResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct DevicesUnwatchParams: Codable, Sendable {
-    public var deviceId: String
-
-    enum CodingKeys: String, CodingKey {
-      case deviceId = "device_id"
-    }
-
-    public init(deviceId: String) {
-      self.deviceId = deviceId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(deviceId, forKey: .deviceId)
-    }
-  }
-
-  public struct DevicesUnwatchResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct DevicesWatchParams: Codable, Sendable {
-    public var deviceId: String
-    public var platform: RemotePlatform
-
-    enum CodingKeys: String, CodingKey {
-      case deviceId = "device_id"
-      case platform = "platform"
-    }
-
-    public init(deviceId: String, platform: RemotePlatform) {
-      self.deviceId = deviceId
-      self.platform = platform
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(deviceId, forKey: .deviceId)
-      try c.encode(platform, forKey: .platform)
-    }
-  }
-
-  public struct DevicesWatchResult: Codable, Sendable {
-    public var streamId: Int
-
-    enum CodingKeys: String, CodingKey {
-      case streamId = "stream_id"
-    }
-
-    public init(streamId: Int) {
-      self.streamId = streamId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(streamId, forKey: .streamId)
-    }
-  }
-
-  public struct GithubCommentPullRequestParams: Codable, Sendable {
-    public var repo: String
-    public var number: Int
-    public var body: String
-
-    enum CodingKeys: String, CodingKey {
-      case repo = "repo"
-      case number = "number"
-      case body = "body"
-    }
-
-    public init(repo: String, number: Int, body: String) {
-      self.repo = repo
-      self.number = number
-      self.body = body
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(repo, forKey: .repo)
-      try c.encode(number, forKey: .number)
-      try c.encode(body, forKey: .body)
-    }
-  }
-
-  public struct GithubCommentPullRequestResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct GithubCreatePullRequestParams: Codable, Sendable {
-    public var sessionId: String
-    public var title: String
-    public var body: String
-    public var draft: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case title = "title"
-      case body = "body"
-      case draft = "draft"
-    }
-
-    public init(sessionId: String, title: String, body: String, draft: Bool? = nil) {
-      self.sessionId = sessionId
-      self.title = title
-      self.body = body
-      self.draft = draft
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(title, forKey: .title)
-      try c.encode(body, forKey: .body)
-      try c.encodeIfPresent(draft, forKey: .draft)
-    }
-  }
-
-  public struct GithubCreatePullRequestResult: Codable, Sendable {
-    public var number: Double
-    public var url: String
-
-    enum CodingKeys: String, CodingKey {
-      case number = "number"
-      case url = "url"
-    }
-
-    public init(number: Double, url: String) {
-      self.number = number
-      self.url = url
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(number, forKey: .number)
-      try c.encode(url, forKey: .url)
-    }
-  }
-
-  public struct GithubMergePullRequestParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let merge = GithubMergePullRequestParamsStrategy(rawValue: "merge")
-    public static let rebase = GithubMergePullRequestParamsStrategy(rawValue: "rebase")
-    public static let squash = GithubMergePullRequestParamsStrategy(rawValue: "squash")
-  }
-
-  public struct GithubMergePullRequestParams: Codable, Sendable {
-    public var repo: String
-    public var number: Int
-    public var strategy: GithubMergePullRequestParamsStrategy
-
-    enum CodingKeys: String, CodingKey {
-      case repo = "repo"
-      case number = "number"
-      case strategy = "strategy"
-    }
-
-    public init(repo: String, number: Int, strategy: GithubMergePullRequestParamsStrategy) {
-      self.repo = repo
-      self.number = number
-      self.strategy = strategy
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(repo, forKey: .repo)
-      try c.encode(number, forKey: .number)
-      try c.encode(strategy, forKey: .strategy)
-    }
-  }
-
-  public struct GithubMergePullRequestResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct GithubPullRequestParams: Codable, Sendable {
-    public var repo: String
-    public var number: Int
-
-    enum CodingKeys: String, CodingKey {
-      case repo = "repo"
-      case number = "number"
-    }
-
-    public init(repo: String, number: Int) {
-      self.repo = repo
-      self.number = number
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(repo, forKey: .repo)
-      try c.encode(number, forKey: .number)
-    }
-  }
-
-  public struct GithubPullRequestResult: Codable, Sendable {
-    public var pullRequest: RemotePullRequestDetail
-
-    enum CodingKeys: String, CodingKey {
-      case pullRequest = "pull_request"
-    }
-
-    public init(pullRequest: RemotePullRequestDetail) {
-      self.pullRequest = pullRequest
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(pullRequest, forKey: .pullRequest)
-    }
-  }
-
-  public struct GithubPullRequestsParams: Codable, Sendable {
-    public var repoRoots: [String]?
-
-    enum CodingKeys: String, CodingKey {
-      case repoRoots = "repo_roots"
-    }
-
-    public init(repoRoots: [String]? = nil) {
-      self.repoRoots = repoRoots
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encodeIfPresent(repoRoots, forKey: .repoRoots)
-    }
-  }
-
-  public struct GithubPullRequestsResult: Codable, Sendable {
-    public var pullRequests: [RemotePullRequest]
-
-    enum CodingKeys: String, CodingKey {
-      case pullRequests = "pull_requests"
-    }
-
-    public init(pullRequests: [RemotePullRequest]) {
-      self.pullRequests = pullRequests
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(pullRequests, forKey: .pullRequests)
-    }
-  }
-
-  public struct HostEndpointsParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct HostEndpointsResult: Codable, Sendable {
-    public var endpoints: [RemoteEndpoint]
-
-    enum CodingKeys: String, CodingKey {
-      case endpoints = "endpoints"
-    }
-
-    public init(endpoints: [RemoteEndpoint]) {
-      self.endpoints = endpoints
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(endpoints, forKey: .endpoints)
-    }
-  }
-
-  public struct PermissionRespondParamsDecision: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let allow = PermissionRespondParamsDecision(rawValue: "allow")
-    public static let deny = PermissionRespondParamsDecision(rawValue: "deny")
-  }
-
-  public struct PermissionRespondParams: Codable, Sendable {
-    public var agentId: String
-    public var toolUseId: String
-    public var decision: PermissionRespondParamsDecision
-    public var message: String?
-
-    enum CodingKeys: String, CodingKey {
-      case agentId = "agent_id"
-      case toolUseId = "tool_use_id"
-      case decision = "decision"
-      case message = "message"
-    }
-
-    public init(agentId: String, toolUseId: String, decision: PermissionRespondParamsDecision, message: String? = nil) {
-      self.agentId = agentId
-      self.toolUseId = toolUseId
-      self.decision = decision
-      self.message = message
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(agentId, forKey: .agentId)
-      try c.encode(toolUseId, forKey: .toolUseId)
-      try c.encode(decision, forKey: .decision)
-      try c.encodeIfPresent(message, forKey: .message)
-    }
-  }
-
-  public struct PermissionRespondResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct ProjectsListParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct ProjectsListResult: Codable, Sendable {
-    public var projects: [RemoteProject]
-
-    enum CodingKeys: String, CodingKey {
-      case projects = "projects"
-    }
-
-    public init(projects: [RemoteProject]) {
-      self.projects = projects
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(projects, forKey: .projects)
-    }
-  }
-
-  public struct ProposalsAcceptParams: Codable, Sendable {
-    public var proposalId: String
-
-    enum CodingKeys: String, CodingKey {
-      case proposalId = "proposal_id"
-    }
-
-    public init(proposalId: String) {
-      self.proposalId = proposalId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(proposalId, forKey: .proposalId)
-    }
-  }
-
-  public struct ProposalsAcceptResult: Codable, Sendable {
-    public var proposal: RemoteProposal
-    public var sessionId: String?
-    public var agentId: String?
-
-    enum CodingKeys: String, CodingKey {
-      case proposal = "proposal"
-      case sessionId = "session_id"
-      case agentId = "agent_id"
-    }
-
-    public init(proposal: RemoteProposal, sessionId: String? = nil, agentId: String? = nil) {
-      self.proposal = proposal
-      self.sessionId = sessionId
-      self.agentId = agentId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(proposal, forKey: .proposal)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(agentId, forKey: .agentId)
-    }
-  }
-
-  public struct ProposalsDismissParams: Codable, Sendable {
-    public var proposalId: String
-    public var reason: String?
-
-    enum CodingKeys: String, CodingKey {
-      case proposalId = "proposal_id"
-      case reason = "reason"
-    }
-
-    public init(proposalId: String, reason: String? = nil) {
-      self.proposalId = proposalId
-      self.reason = reason
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(proposalId, forKey: .proposalId)
-      try c.encodeIfPresent(reason, forKey: .reason)
-    }
-  }
-
-  public struct ProposalsDismissResult: Codable, Sendable {
-    public var proposal: RemoteProposal
-
-    enum CodingKeys: String, CodingKey {
-      case proposal = "proposal"
-    }
-
-    public init(proposal: RemoteProposal) {
-      self.proposal = proposal
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(proposal, forKey: .proposal)
-    }
-  }
-
-  public struct ProposalsListParams: Codable, Sendable {
-    public var status: RemoteProposalStatus?
-    public var limit: Int?
-
-    enum CodingKeys: String, CodingKey {
-      case status = "status"
-      case limit = "limit"
-    }
-
-    public init(status: RemoteProposalStatus? = nil, limit: Int? = nil) {
-      self.status = status
-      self.limit = limit
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encodeIfPresent(status, forKey: .status)
-      try c.encodeIfPresent(limit, forKey: .limit)
-    }
-  }
-
-  public struct ProposalsListResult: Codable, Sendable {
-    public var proposals: [RemoteProposal]
-
-    enum CodingKeys: String, CodingKey {
-      case proposals = "proposals"
-    }
-
-    public init(proposals: [RemoteProposal]) {
-      self.proposals = proposals
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(proposals, forKey: .proposals)
-    }
-  }
-
-  public struct ProposalsPerformCleanupParams: Codable, Sendable {
-    public var proposalId: String
-
-    enum CodingKeys: String, CodingKey {
-      case proposalId = "proposal_id"
-    }
-
-    public init(proposalId: String) {
-      self.proposalId = proposalId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(proposalId, forKey: .proposalId)
-    }
-  }
-
-  public struct ProposalsPerformCleanupResult: Codable, Sendable {
-    public var proposalId: String
-
-    enum CodingKeys: String, CodingKey {
-      case proposalId = "proposal_id"
-    }
-
-    public init(proposalId: String) {
-      self.proposalId = proposalId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(proposalId, forKey: .proposalId)
-    }
-  }
-
-  public struct ProposalsResolveParams: Codable, Sendable {
-    public var proposalId: String
-    public var note: String?
-
-    enum CodingKeys: String, CodingKey {
-      case proposalId = "proposal_id"
-      case note = "note"
-    }
-
-    public init(proposalId: String, note: String? = nil) {
-      self.proposalId = proposalId
-      self.note = note
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(proposalId, forKey: .proposalId)
-      try c.encodeIfPresent(note, forKey: .note)
-    }
-  }
-
-  public struct ProposalsResolveResult: Codable, Sendable {
-    public var proposal: RemoteProposal
-
-    enum CodingKeys: String, CodingKey {
-      case proposal = "proposal"
-    }
-
-    public init(proposal: RemoteProposal) {
-      self.proposal = proposal
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(proposal, forKey: .proposal)
-    }
-  }
-
-  public struct ScratchPadsCreateParams: Codable, Sendable {
-    public var name: String?
-
-    enum CodingKeys: String, CodingKey {
-      case name = "name"
-    }
-
-    public init(name: String? = nil) {
-      self.name = name
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encodeIfPresent(name, forKey: .name)
-    }
-  }
-
-  public struct ScratchPadsCreateResult: Codable, Sendable {
-    public var session: RemoteSession
-
-    enum CodingKeys: String, CodingKey {
-      case session = "session"
-    }
-
-    public init(session: RemoteSession) {
-      self.session = session
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(session, forKey: .session)
-    }
-  }
-
-  public struct ScratchPadsListParams: Codable, Sendable {
-
-    public init() {
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      _ = encoder.container(keyedBy: AnyCodingKey.self)
-    }
-  }
-
-  public struct ScratchPadsListResult: Codable, Sendable {
-    public var sessions: [RemoteSession]
-
-    enum CodingKeys: String, CodingKey {
-      case sessions = "sessions"
-    }
-
-    public init(sessions: [RemoteSession]) {
-      self.sessions = sessions
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessions, forKey: .sessions)
-    }
-  }
-
-  public struct SessionsBranchLogParams: Codable, Sendable {
-    public var sessionId: String
-    public var branch: String
-    public var count: Int?
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case branch = "branch"
-      case count = "count"
-    }
-
-    public init(sessionId: String, branch: String, count: Int? = nil) {
-      self.sessionId = sessionId
-      self.branch = branch
-      self.count = count
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(branch, forKey: .branch)
-      try c.encodeIfPresent(count, forKey: .count)
-    }
-  }
-
-  public struct SessionsBranchLogResult: Codable, Sendable {
-    public var commits: [RemoteCommit]
-
-    enum CodingKeys: String, CodingKey {
-      case commits = "commits"
-    }
-
-    public init(commits: [RemoteCommit]) {
-      self.commits = commits
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(commits, forKey: .commits)
-    }
-  }
-
-  public struct SessionsBranchPrUrlParams: Codable, Sendable {
-    public var sessionId: String
-    public var branch: String
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case branch = "branch"
-    }
-
-    public init(sessionId: String, branch: String) {
-      self.sessionId = sessionId
-      self.branch = branch
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(branch, forKey: .branch)
-    }
-  }
-
-  public struct SessionsBranchPrUrlResult: Codable, Sendable {
-    public var url: String?
-
-    enum CodingKeys: String, CodingKey {
-      case url = "url"
-    }
-
-    public init(url: String? = nil) {
-      self.url = url
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(url, forKey: .url)
-    }
-  }
-
-  public struct SessionsBranchesParams: Codable, Sendable {
-    public var sessionId: String
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-    }
-
-    public init(sessionId: String) {
-      self.sessionId = sessionId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-    }
-  }
-
-  public struct SessionsBranchesResult: Codable, Sendable {
-    public var branches: [RemoteGitBranch]
-
-    enum CodingKeys: String, CodingKey {
-      case branches = "branches"
-    }
-
-    public init(branches: [RemoteGitBranch]) {
-      self.branches = branches
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(branches, forKey: .branches)
-    }
-  }
-
-  public struct SessionsCheckoutParamsDirty: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let fail = SessionsCheckoutParamsDirty(rawValue: "fail")
-    public static let stash = SessionsCheckoutParamsDirty(rawValue: "stash")
-    public static let discard = SessionsCheckoutParamsDirty(rawValue: "discard")
-  }
-
-  public struct SessionsCheckoutParams: Codable, Sendable {
-    public var sessionId: String
-    public var branch: String
-    public var dirty: SessionsCheckoutParamsDirty?
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case branch = "branch"
-      case dirty = "dirty"
-    }
-
-    public init(sessionId: String, branch: String, dirty: SessionsCheckoutParamsDirty? = nil) {
-      self.sessionId = sessionId
-      self.branch = branch
-      self.dirty = dirty
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(branch, forKey: .branch)
-      try c.encodeIfPresent(dirty, forKey: .dirty)
-    }
-  }
-
-  public struct SessionsCheckoutResult: Codable, Sendable {
-    public var accepted: Bool
-    public var blockedBy: String?
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-      case blockedBy = "blocked_by"
-    }
-
-    public init(accepted: Bool, blockedBy: String? = nil) {
-      self.accepted = accepted
-      self.blockedBy = blockedBy
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-      try c.encodeIfPresent(blockedBy, forKey: .blockedBy)
-    }
-  }
-
-  public struct SessionsCommitParams: Codable, Sendable {
-    public var sessionId: String
-    public var message: String
-    public var stageAll: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case message = "message"
-      case stageAll = "stage_all"
-    }
-
-    public init(sessionId: String, message: String, stageAll: Bool? = nil) {
-      self.sessionId = sessionId
-      self.message = message
-      self.stageAll = stageAll
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(message, forKey: .message)
-      try c.encodeIfPresent(stageAll, forKey: .stageAll)
-    }
-  }
-
-  public struct SessionsCommitResult: Codable, Sendable {
-    public var output: String
-
-    enum CodingKeys: String, CodingKey {
-      case output = "output"
-    }
-
-    public init(output: String) {
-      self.output = output
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(output, forKey: .output)
-    }
-  }
-
-  public struct SessionsCommitDiffParams: Codable, Sendable {
-    public var sessionId: String
-    public var hash: String
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case hash = "hash"
-    }
-
-    public init(sessionId: String, hash: String) {
-      self.sessionId = sessionId
-      self.hash = hash
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(hash, forKey: .hash)
-    }
-  }
-
-  public struct SessionsCommitDiffResult: Codable, Sendable {
-    public var diff: String
-
-    enum CodingKeys: String, CodingKey {
-      case diff = "diff"
-    }
-
-    public init(diff: String) {
-      self.diff = diff
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(diff, forKey: .diff)
-    }
-  }
-
-  public struct SessionsCompareBranchesParams: Codable, Sendable {
-    public var sessionId: String
-    public var left: String
-    public var right: String
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case left = "left"
-      case right = "right"
-    }
-
-    public init(sessionId: String, left: String, right: String) {
-      self.sessionId = sessionId
-      self.left = left
-      self.right = right
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(left, forKey: .left)
-      try c.encode(right, forKey: .right)
-    }
-  }
-
-  public struct SessionsCreateParams: Codable, Sendable {
-    public var repoRoot: String
-    public var branch: String
-    public var description: String
-    public var useExistingBranch: Bool?
-    public var baseBranch: String?
-    public var prompt: String?
-
-    enum CodingKeys: String, CodingKey {
-      case repoRoot = "repo_root"
-      case branch = "branch"
-      case description = "description"
-      case useExistingBranch = "use_existing_branch"
-      case baseBranch = "base_branch"
-      case prompt = "prompt"
-    }
-
-    public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil) {
-      self.repoRoot = repoRoot
-      self.branch = branch
-      self.description = description
-      self.useExistingBranch = useExistingBranch
-      self.baseBranch = baseBranch
-      self.prompt = prompt
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(repoRoot, forKey: .repoRoot)
-      try c.encode(branch, forKey: .branch)
-      try c.encode(description, forKey: .description)
-      try c.encodeIfPresent(useExistingBranch, forKey: .useExistingBranch)
-      try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
-      try c.encodeIfPresent(prompt, forKey: .prompt)
-    }
-  }
-
-  public struct SessionsCreateResult: Codable, Sendable {
-    public var session: RemoteSession
-
-    enum CodingKeys: String, CodingKey {
-      case session = "session"
-    }
-
-    public init(session: RemoteSession) {
-      self.session = session
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(session, forKey: .session)
-    }
-  }
-
-  public struct SessionsCreateBranchParams: Codable, Sendable {
-    public var sessionId: String
-    public var name: String
-    public var startPoint: String?
-    public var checkout: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case name = "name"
-      case startPoint = "start_point"
-      case checkout = "checkout"
-    }
-
-    public init(sessionId: String, name: String, startPoint: String? = nil, checkout: Bool? = nil) {
-      self.sessionId = sessionId
-      self.name = name
-      self.startPoint = startPoint
-      self.checkout = checkout
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(name, forKey: .name)
-      try c.encodeIfPresent(startPoint, forKey: .startPoint)
-      try c.encodeIfPresent(checkout, forKey: .checkout)
-    }
-  }
-
-  public struct SessionsCreateBranchResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct SessionsDeleteParams: Codable, Sendable {
-    public var id: String
-    public var deleteBranch: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case id = "id"
-      case deleteBranch = "delete_branch"
-    }
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+      }
 
-    public init(id: String, deleteBranch: Bool? = nil) {
-      self.id = id
-      self.deleteBranch = deleteBranch
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(id, forKey: .id)
-      try c.encodeIfPresent(deleteBranch, forKey: .deleteBranch)
-    }
-  }
-
-  public struct SessionsDeleteResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct SessionsDeleteBranchParams: Codable, Sendable {
-    public var sessionId: String
-    public var name: String
-    public var force: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case name = "name"
-      case force = "force"
-    }
-
-    public init(sessionId: String, name: String, force: Bool? = nil) {
-      self.sessionId = sessionId
-      self.name = name
-      self.force = force
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(name, forKey: .name)
-      try c.encodeIfPresent(force, forKey: .force)
-    }
-  }
-
-  public struct SessionsDeleteBranchResult: Codable, Sendable {
-    public var accepted: Bool
-    public var blockedBy: String?
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-      case blockedBy = "blocked_by"
-    }
-
-    public init(accepted: Bool, blockedBy: String? = nil) {
-      self.accepted = accepted
-      self.blockedBy = blockedBy
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-      try c.encodeIfPresent(blockedBy, forKey: .blockedBy)
-    }
-  }
-
-  public struct SessionsDiffParamsMode: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let branch = SessionsDiffParamsMode(rawValue: "branch")
-    public static let working = SessionsDiffParamsMode(rawValue: "working")
-  }
-
-  public struct SessionsDiffParams: Codable, Sendable {
-    public var sessionId: String
-    public var mode: SessionsDiffParamsMode?
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case mode = "mode"
-    }
-
-    public init(sessionId: String, mode: SessionsDiffParamsMode? = nil) {
-      self.sessionId = sessionId
-      self.mode = mode
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encodeIfPresent(mode, forKey: .mode)
-    }
-  }
-
-  public struct SessionsDiffResult: Codable, Sendable {
-    public var diff: String
-    public var baseBranch: String?
-
-    enum CodingKeys: String, CodingKey {
-      case diff = "diff"
-      case baseBranch = "base_branch"
-    }
-
-    public init(diff: String, baseBranch: String? = nil) {
-      self.diff = diff
-      self.baseBranch = baseBranch
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(diff, forKey: .diff)
-      try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
-    }
-  }
-
-  public struct SessionsFilesParams: Codable, Sendable {
-    public var sessionId: String
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-    }
-
-    public init(sessionId: String) {
-      self.sessionId = sessionId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-    }
-  }
-
-  public struct SessionsFilesResult: Codable, Sendable {
-    public var files: [String]
-
-    enum CodingKeys: String, CodingKey {
-      case files = "files"
-    }
-
-    public init(files: [String]) {
-      self.files = files
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(files, forKey: .files)
-    }
-  }
-
-  public struct SessionsGitStatusParams: Codable, Sendable {
-    public var sessionId: String
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-    }
-
-    public init(sessionId: String) {
-      self.sessionId = sessionId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-    }
-  }
-
-  public struct SessionsGitStatusResult: Codable, Sendable {
-    public var status: RemoteGitStatus
-
-    enum CodingKeys: String, CodingKey {
-      case status = "status"
-    }
-
-    public init(status: RemoteGitStatus) {
-      self.status = status
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(status, forKey: .status)
-    }
-  }
-
-  public struct SessionsListParams: Codable, Sendable {
-    public var repoRoot: String
-
-    enum CodingKeys: String, CodingKey {
-      case repoRoot = "repo_root"
-    }
-
-    public init(repoRoot: String) {
-      self.repoRoot = repoRoot
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(repoRoot, forKey: .repoRoot)
-    }
-  }
-
-  public struct SessionsListResult: Codable, Sendable {
-    public var sessions: [RemoteSession]
-
-    enum CodingKeys: String, CodingKey {
-      case sessions = "sessions"
-    }
-
-    public init(sessions: [RemoteSession]) {
-      self.sessions = sessions
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessions, forKey: .sessions)
-    }
-  }
-
-  public struct SessionsMarkReadyParams: Codable, Sendable {
-    public var id: String
-
-    enum CodingKeys: String, CodingKey {
-      case id = "id"
-    }
-
-    public init(id: String) {
-      self.id = id
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(id, forKey: .id)
-    }
-  }
-
-  public struct SessionsMarkReadyResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct SessionsMergeBaseParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let keep = SessionsMergeBaseParamsStrategy(rawValue: "keep")
-    public static let squash = SessionsMergeBaseParamsStrategy(rawValue: "squash")
-  }
-
-  public struct SessionsMergeBaseParams: Codable, Sendable {
-    public var sessionId: String
-    public var strategy: SessionsMergeBaseParamsStrategy
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case strategy = "strategy"
-    }
-
-    public init(sessionId: String, strategy: SessionsMergeBaseParamsStrategy) {
-      self.sessionId = sessionId
-      self.strategy = strategy
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(strategy, forKey: .strategy)
-    }
-  }
-
-  public struct SessionsMergeBaseResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct SessionsMergeBlockersParams: Codable, Sendable {
-    public var sessionId: String
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-    }
-
-    public init(sessionId: String) {
-      self.sessionId = sessionId
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-    }
-  }
-
-  public struct SessionsMergeBlockersResult: Codable, Sendable {
-    public var blockers: [String]
-
-    enum CodingKeys: String, CodingKey {
-      case blockers = "blockers"
-    }
-
-    public init(blockers: [String]) {
-      self.blockers = blockers
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(blockers, forKey: .blockers)
-    }
-  }
-
-  public struct SessionsMergeBranchParams: Codable, Sendable {
-    public var sessionId: String
-    public var from: String
-    public var squash: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case from = "from"
-      case squash = "squash"
-    }
-
-    public init(sessionId: String, from: String, squash: Bool? = nil) {
-      self.sessionId = sessionId
-      self.from = from
-      self.squash = squash
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(from, forKey: .from)
-      try c.encodeIfPresent(squash, forKey: .squash)
-    }
-  }
-
-  public struct SessionsMergeBranchResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
-
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
-
-  public struct SessionsPinBranchParams: Codable, Sendable {
-    public var sessionId: String
-    public var branch: String
-    public var pinned: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case branch = "branch"
-      case pinned = "pinned"
-    }
-
-    public init(sessionId: String, branch: String, pinned: Bool) {
-      self.sessionId = sessionId
-      self.branch = branch
-      self.pinned = pinned
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(branch, forKey: .branch)
-      try c.encode(pinned, forKey: .pinned)
-    }
-  }
-
-  public struct SessionsPinBranchResult: Codable, Sendable {
-    public var pinned: [String]
-
-    enum CodingKeys: String, CodingKey {
-      case pinned = "pinned"
-    }
-
-    public init(pinned: [String]) {
-      self.pinned = pinned
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(pinned, forKey: .pinned)
-    }
-  }
-
-  public struct SessionsPullParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let ffOnly = SessionsPullParamsStrategy(rawValue: "ff-only")
-    public static let merge = SessionsPullParamsStrategy(rawValue: "merge")
-    public static let rebase = SessionsPullParamsStrategy(rawValue: "rebase")
-  }
-
-  public struct SessionsPullParams: Codable, Sendable {
-    public var sessionId: String
-    public var strategy: SessionsPullParamsStrategy
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case strategy = "strategy"
-    }
-
-    public init(sessionId: String, strategy: SessionsPullParamsStrategy) {
-      self.sessionId = sessionId
-      self.strategy = strategy
-    }
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(strategy, forKey: .strategy)
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
     }
-  }
-
-  public struct SessionsPullResult: Codable, Sendable {
-    public var output: String
-
-    enum CodingKeys: String, CodingKey {
-      case output = "output"
-    }
-
-    public init(output: String) {
-      self.output = output
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(output, forKey: .output)
-    }
-  }
 
-  public struct SessionsPushParams: Codable, Sendable {
-    public var sessionId: String
+    public struct AgentsCapabilitiesResult: Codable, Sendable {
+      public var capabilities: RemoteAgentCapabilities
 
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-    }
+      enum CodingKeys: String, CodingKey {
+        case capabilities = "capabilities"
+      }
 
-    public init(sessionId: String) {
-      self.sessionId = sessionId
-    }
+      public init(capabilities: RemoteAgentCapabilities) {
+        self.capabilities = capabilities
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(capabilities, forKey: .capabilities)
+      }
     }
-  }
 
-  public struct SessionsPushResult: Codable, Sendable {
-    public var branch: String
-    public var remote: String
-    public var prUrl: String?
+    public struct AgentsImageParams: Codable, Sendable {
+      public var agentId: String
+      public var imageId: String
 
-    enum CodingKeys: String, CodingKey {
-      case branch = "branch"
-      case remote = "remote"
-      case prUrl = "pr_url"
-    }
-
-    public init(branch: String, remote: String, prUrl: String? = nil) {
-      self.branch = branch
-      self.remote = remote
-      self.prUrl = prUrl
-    }
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case imageId = "image_id"
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(branch, forKey: .branch)
-      try c.encode(remote, forKey: .remote)
-      try c.encode(prUrl, forKey: .prUrl)
-    }
-  }
+      public init(agentId: String, imageId: String) {
+        self.agentId = agentId
+        self.imageId = imageId
+      }
 
-  public struct SessionsPushBranchParams: Codable, Sendable {
-    public var sessionId: String
-    public var branch: String
-    public var remote: String?
-    public var setUpstream: Bool?
-    public var forceWithLease: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case branch = "branch"
-      case remote = "remote"
-      case setUpstream = "set_upstream"
-      case forceWithLease = "force_with_lease"
-    }
-
-    public init(sessionId: String, branch: String, remote: String? = nil, setUpstream: Bool? = nil, forceWithLease: Bool? = nil) {
-      self.sessionId = sessionId
-      self.branch = branch
-      self.remote = remote
-      self.setUpstream = setUpstream
-      self.forceWithLease = forceWithLease
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(branch, forKey: .branch)
-      try c.encodeIfPresent(remote, forKey: .remote)
-      try c.encodeIfPresent(setUpstream, forKey: .setUpstream)
-      try c.encodeIfPresent(forceWithLease, forKey: .forceWithLease)
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(imageId, forKey: .imageId)
+      }
     }
-  }
 
-  public struct SessionsPushBranchResult: Codable, Sendable {
-    public var output: String
-
-    enum CodingKeys: String, CodingKey {
-      case output = "output"
-    }
+    public struct AgentsImageResult: Codable, Sendable {
+      public var data: String
+      public var mediaType: String
 
-    public init(output: String) {
-      self.output = output
-    }
+      enum CodingKeys: String, CodingKey {
+        case data = "data"
+        case mediaType = "media_type"
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(output, forKey: .output)
-    }
-  }
+      public init(data: String, mediaType: String) {
+        self.data = data
+        self.mediaType = mediaType
+      }
 
-  public struct SessionsRebaseCurrentParams: Codable, Sendable {
-    public var sessionId: String
-    public var onto: String
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(data, forKey: .data)
+        try c.encode(mediaType, forKey: .mediaType)
+      }
+    }
+
+    public struct AgentsInterruptParams: Codable, Sendable {
+      public var agentId: String
 
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case onto = "onto"
-    }
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+      }
 
-    public init(sessionId: String, onto: String) {
-      self.sessionId = sessionId
-      self.onto = onto
-    }
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(onto, forKey: .onto)
-    }
-  }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
+    }
+
+    public struct AgentsInterruptResult: Codable, Sendable {
+      public var accepted: Bool
 
-  public struct SessionsRebaseCurrentResult: Codable, Sendable {
-    public var accepted: Bool
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AgentsListParams: Codable, Sendable {
+      public var sessionId: String?
+      public var repoRoot: String?
 
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case repoRoot = "repo_root"
+      }
 
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
+      public init(sessionId: String? = nil, repoRoot: String? = nil) {
+        self.sessionId = sessionId
+        self.repoRoot = repoRoot
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(repoRoot, forKey: .repoRoot)
+      }
     }
-  }
 
-  public struct SessionsRenameParams: Codable, Sendable {
-    public var id: String
-    public var displayName: String
+    public struct AgentsListResult: Codable, Sendable {
+      public var agents: [RemoteAgentStatus]
 
-    enum CodingKeys: String, CodingKey {
-      case id = "id"
-      case displayName = "display_name"
-    }
+      enum CodingKeys: String, CodingKey {
+        case agents = "agents"
+      }
 
-    public init(id: String, displayName: String) {
-      self.id = id
-      self.displayName = displayName
-    }
+      public init(agents: [RemoteAgentStatus]) {
+        self.agents = agents
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(id, forKey: .id)
-      try c.encode(displayName, forKey: .displayName)
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agents, forKey: .agents)
+      }
     }
-  }
-
-  public struct SessionsRenameResult: Codable, Sendable {
-    public var accepted: Bool
+
+    public struct AgentsQueueAddParams: Codable, Sendable {
+      public var agentId: String
+      public var message: String
+      public var displayText: String?
+      public var images: [RemoteImageAttachment]?
 
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case message = "message"
+        case displayText = "display_text"
+        case images = "images"
+      }
 
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
+      public init(agentId: String, message: String, displayText: String? = nil, images: [RemoteImageAttachment]? = nil) {
+        self.agentId = agentId
+        self.message = message
+        self.displayText = displayText
+        self.images = images
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(message, forKey: .message)
+        try c.encodeIfPresent(displayText, forKey: .displayText)
+        try c.encodeIfPresent(images, forKey: .images)
+      }
     }
-  }
 
-  public struct SessionsRenameBranchParams: Codable, Sendable {
-    public var id: String
-    public var branch: String
+    public struct AgentsQueueAddResult: Codable, Sendable {
+      public var message: RemoteQueuedMessage
 
-    enum CodingKeys: String, CodingKey {
-      case id = "id"
-      case branch = "branch"
-    }
+      enum CodingKeys: String, CodingKey {
+        case message = "message"
+      }
 
-    public init(id: String, branch: String) {
-      self.id = id
-      self.branch = branch
+      public init(message: RemoteQueuedMessage) {
+        self.message = message
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(message, forKey: .message)
+      }
     }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(id, forKey: .id)
-      try c.encode(branch, forKey: .branch)
-    }
-  }
+    public struct AgentsQueueListParams: Codable, Sendable {
+      public var agentId: String
 
-  public struct SessionsRenameBranchResult: Codable, Sendable {
-    public var accepted: Bool
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+      }
 
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
 
-    public init(accepted: Bool) {
-      self.accepted = accepted
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
     }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
+    public struct AgentsQueueListResult: Codable, Sendable {
+      public var messages: [RemoteQueuedMessage]
 
-  public struct SessionsRenameLocalBranchParams: Codable, Sendable {
-    public var sessionId: String
-    public var from: String
-    public var to: String
+      enum CodingKeys: String, CodingKey {
+        case messages = "messages"
+      }
 
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case from = "from"
-      case to = "to"
-    }
+      public init(messages: [RemoteQueuedMessage]) {
+        self.messages = messages
+      }
 
-    public init(sessionId: String, from: String, to: String) {
-      self.sessionId = sessionId
-      self.from = from
-      self.to = to
-    }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(messages, forKey: .messages)
+      }
+    }
+
+    public struct AgentsQueueRemoveParams: Codable, Sendable {
+      public var agentId: String
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case id = "id"
+      }
+
+      public init(agentId: String, id: String) {
+        self.agentId = agentId
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct AgentsQueueRemoveResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AgentsQueueUpdateParams: Codable, Sendable {
+      public var agentId: String
+      public var id: String
+      public var message: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case id = "id"
+        case message = "message"
+      }
+
+      public init(agentId: String, id: String, message: String) {
+        self.agentId = agentId
+        self.id = id
+        self.message = message
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(id, forKey: .id)
+        try c.encode(message, forKey: .message)
+      }
+    }
+
+    public struct AgentsQueueUpdateResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AgentsSendParams: Codable, Sendable {
+      public var agentId: String
+      public var message: String
+      public var displayText: String?
+      public var images: [RemoteImageAttachment]?
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case message = "message"
+        case displayText = "display_text"
+        case images = "images"
+      }
+
+      public init(agentId: String, message: String, displayText: String? = nil, images: [RemoteImageAttachment]? = nil) {
+        self.agentId = agentId
+        self.message = message
+        self.displayText = displayText
+        self.images = images
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(message, forKey: .message)
+        try c.encodeIfPresent(displayText, forKey: .displayText)
+        try c.encodeIfPresent(images, forKey: .images)
+      }
+    }
+
+    public struct AgentsSendResult: Codable, Sendable {
+      public var accepted: Bool
+      public var queued: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+        case queued = "queued"
+      }
+
+      public init(accepted: Bool, queued: Bool? = nil) {
+        self.accepted = accepted
+        self.queued = queued
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+        try c.encodeIfPresent(queued, forKey: .queued)
+      }
+    }
+
+    public struct AgentsSetClaudeAccountParams: Codable, Sendable {
+      public var agentId: String
+      public var accountId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case accountId = "account_id"
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(from, forKey: .from)
-      try c.encode(to, forKey: .to)
+      public init(agentId: String, accountId: String? = nil) {
+        self.agentId = agentId
+        self.accountId = accountId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(accountId, forKey: .accountId)
+      }
     }
-  }
 
-  public struct SessionsRenameLocalBranchResult: Codable, Sendable {
-    public var accepted: Bool
-
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
+    public struct AgentsSetClaudeAccountResult: Codable, Sendable {
+      public var accepted: Bool
 
-    public init(accepted: Bool) {
-      self.accepted = accepted
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
     }
+
+    public struct AgentsSetEffortParams: Codable, Sendable {
+      public var agentId: String
+      public var level: String?
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case level = "level"
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
-    }
-  }
+      public init(agentId: String, level: String? = nil) {
+        self.agentId = agentId
+        self.level = level
+      }
 
-  public struct SessionsResolveMentionPathParams: Codable, Sendable {
-    public var sessionId: String
-    public var query: String
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(level, forKey: .level)
+      }
+    }
+
+    public struct AgentsSetEffortResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AgentsSetModelParams: Codable, Sendable {
+      public var agentId: String
+      public var model: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case model = "model"
+      }
+
+      public init(agentId: String, model: String) {
+        self.agentId = agentId
+        self.model = model
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(model, forKey: .model)
+      }
+    }
+
+    public struct AgentsSetModelResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AgentsSetPermissionModeParams: Codable, Sendable {
+      public var agentId: String
+      public var mode: RemotePermissionMode
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case mode = "mode"
+      }
+
+      public init(agentId: String, mode: RemotePermissionMode) {
+        self.agentId = agentId
+        self.mode = mode
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(mode, forKey: .mode)
+      }
+    }
+
+    public struct AgentsSetPermissionModeResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AgentsSpawnParams: Codable, Sendable {
+      public var sessionId: String
+      public var model: String?
+      public var permissionMode: RemotePermissionMode?
+      public var resumeSessionId: String?
+      public var runnerId: String?
 
-    enum CodingKeys: String, CodingKey {
-      case sessionId = "session_id"
-      case query = "query"
-    }
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case model = "model"
+        case permissionMode = "permission_mode"
+        case resumeSessionId = "resume_session_id"
+        case runnerId = "runner_id"
+      }
 
-    public init(sessionId: String, query: String) {
-      self.sessionId = sessionId
-      self.query = query
-    }
+      public init(sessionId: String, model: String? = nil, permissionMode: RemotePermissionMode? = nil, resumeSessionId: String? = nil, runnerId: String? = nil) {
+        self.sessionId = sessionId
+        self.model = model
+        self.permissionMode = permissionMode
+        self.resumeSessionId = resumeSessionId
+        self.runnerId = runnerId
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(sessionId, forKey: .sessionId)
-      try c.encode(query, forKey: .query)
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(model, forKey: .model)
+        try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
+        try c.encodeIfPresent(resumeSessionId, forKey: .resumeSessionId)
+        try c.encodeIfPresent(runnerId, forKey: .runnerId)
+      }
     }
-  }
 
-  public struct SessionsRetrySetupParams: Codable, Sendable {
-    public var id: String
+    public struct AgentsSpawnResult: Codable, Sendable {
+      public var agent: RemoteAgentStatus
 
-    enum CodingKeys: String, CodingKey {
-      case id = "id"
-    }
+      enum CodingKeys: String, CodingKey {
+        case agent = "agent"
+      }
 
-    public init(id: String) {
-      self.id = id
-    }
+      public init(agent: RemoteAgentStatus) {
+        self.agent = agent
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(id, forKey: .id)
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agent, forKey: .agent)
+      }
     }
-  }
 
-  public struct SessionsRetrySetupResult: Codable, Sendable {
-    public var accepted: Bool
+    public struct AgentsStatusParams: Codable, Sendable {
+      public var agentId: String
 
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+      }
 
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
     }
-  }
-
-  public struct SessionsSetBaseBranchParams: Codable, Sendable {
-    public var id: String
-    public var baseBranch: String
 
-    enum CodingKeys: String, CodingKey {
-      case id = "id"
-      case baseBranch = "base_branch"
-    }
+    public struct AgentsStatusResult: Codable, Sendable {
+      public var agent: RemoteAgentStatus
 
-    public init(id: String, baseBranch: String) {
-      self.id = id
-      self.baseBranch = baseBranch
-    }
+      enum CodingKeys: String, CodingKey {
+        case agent = "agent"
+      }
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(id, forKey: .id)
-      try c.encode(baseBranch, forKey: .baseBranch)
+      public init(agent: RemoteAgentStatus) {
+        self.agent = agent
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agent, forKey: .agent)
+      }
     }
-  }
 
-  public struct SessionsSetBaseBranchResult: Codable, Sendable {
-    public var accepted: Bool
+    public struct AgentsStopParams: Codable, Sendable {
+      public var agentId: String
 
-    enum CodingKeys: String, CodingKey {
-      case accepted = "accepted"
-    }
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+      }
 
-    public init(accepted: Bool) {
-      self.accepted = accepted
-    }
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
+    }
+
+    public struct AgentsStopResult: Codable, Sendable {
+      public var accepted: Bool
 
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(accepted, forKey: .accepted)
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AgentsStoppedParams: Codable, Sendable {
+      public var repoRoot: String
+      public var limit: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repo_root"
+        case limit = "limit"
+      }
+
+      public init(repoRoot: String, limit: Int? = nil) {
+        self.repoRoot = repoRoot
+        self.limit = limit
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+        try c.encodeIfPresent(limit, forKey: .limit)
+      }
+    }
+
+    public struct AgentsStoppedResult: Codable, Sendable {
+      public var agents: [RemoteStoppedAgent]
+
+      enum CodingKeys: String, CodingKey {
+        case agents = "agents"
+      }
+
+      public init(agents: [RemoteStoppedAgent]) {
+        self.agents = agents
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agents, forKey: .agents)
+      }
+    }
+
+    public struct AgentsStoppedImageParams: Codable, Sendable {
+      public var repoRoot: String
+      public var historyId: String
+      public var imageId: String
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repo_root"
+        case historyId = "history_id"
+        case imageId = "image_id"
+      }
+
+      public init(repoRoot: String, historyId: String, imageId: String) {
+        self.repoRoot = repoRoot
+        self.historyId = historyId
+        self.imageId = imageId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+        try c.encode(historyId, forKey: .historyId)
+        try c.encode(imageId, forKey: .imageId)
+      }
+    }
+
+    public struct AgentsStoppedImageResult: Codable, Sendable {
+      public var data: String
+      public var mediaType: String
+
+      enum CodingKeys: String, CodingKey {
+        case data = "data"
+        case mediaType = "media_type"
+      }
+
+      public init(data: String, mediaType: String) {
+        self.data = data
+        self.mediaType = mediaType
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(data, forKey: .data)
+        try c.encode(mediaType, forKey: .mediaType)
+      }
+    }
+
+    public struct AgentsStoppedTranscriptParams: Codable, Sendable {
+      public var repoRoot: String
+      public var historyId: String
+      public var after: Int?
+      public var before: Int?
+      public var limit: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repo_root"
+        case historyId = "history_id"
+        case after = "after"
+        case before = "before"
+        case limit = "limit"
+      }
+
+      public init(repoRoot: String, historyId: String, after: Int? = nil, before: Int? = nil, limit: Int? = nil) {
+        self.repoRoot = repoRoot
+        self.historyId = historyId
+        self.after = after
+        self.before = before
+        self.limit = limit
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+        try c.encode(historyId, forKey: .historyId)
+        try c.encodeIfPresent(after, forKey: .after)
+        try c.encodeIfPresent(before, forKey: .before)
+        try c.encodeIfPresent(limit, forKey: .limit)
+      }
+    }
+
+    public struct AgentsStoppedTranscriptResult: Codable, Sendable {
+      public var messages: [RemoteMessage]
+      public var nextAfter: Int?
+      public var prevBefore: Int?
+      public var total: Int?
+      public var model: String?
+
+      enum CodingKeys: String, CodingKey {
+        case messages = "messages"
+        case nextAfter = "next_after"
+        case prevBefore = "prev_before"
+        case total = "total"
+        case model = "model"
+      }
+
+      public init(messages: [RemoteMessage], nextAfter: Int? = nil, prevBefore: Int? = nil, total: Int? = nil, model: String? = nil) {
+        self.messages = messages
+        self.nextAfter = nextAfter
+        self.prevBefore = prevBefore
+        self.total = total
+        self.model = model
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(messages, forKey: .messages)
+        try c.encode(nextAfter, forKey: .nextAfter)
+        try c.encodeIfPresent(prevBefore, forKey: .prevBefore)
+        try c.encodeIfPresent(total, forKey: .total)
+        try c.encodeIfPresent(model, forKey: .model)
+      }
+    }
+
+    public struct AgentsTranscriptParams: Codable, Sendable {
+      public var agentId: String
+      public var after: Int?
+      public var before: Int?
+      public var limit: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case after = "after"
+        case before = "before"
+        case limit = "limit"
+      }
+
+      public init(agentId: String, after: Int? = nil, before: Int? = nil, limit: Int? = nil) {
+        self.agentId = agentId
+        self.after = after
+        self.before = before
+        self.limit = limit
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encodeIfPresent(after, forKey: .after)
+        try c.encodeIfPresent(before, forKey: .before)
+        try c.encodeIfPresent(limit, forKey: .limit)
+      }
+    }
+
+    public struct AgentsTranscriptResult: Codable, Sendable {
+      public var messages: [RemoteMessage]
+      public var nextAfter: Int?
+      public var prevBefore: Int?
+      public var total: Int?
+      public var tasks: [RemoteTask]?
+      public var todos: [RemoteTodo]?
+      public var model: String?
+      public var pendingToolName: String?
+
+      enum CodingKeys: String, CodingKey {
+        case messages = "messages"
+        case nextAfter = "next_after"
+        case prevBefore = "prev_before"
+        case total = "total"
+        case tasks = "tasks"
+        case todos = "todos"
+        case model = "model"
+        case pendingToolName = "pending_tool_name"
+      }
+
+      public init(messages: [RemoteMessage], nextAfter: Int? = nil, prevBefore: Int? = nil, total: Int? = nil, tasks: [RemoteTask]? = nil, todos: [RemoteTodo]? = nil, model: String? = nil, pendingToolName: String? = nil) {
+        self.messages = messages
+        self.nextAfter = nextAfter
+        self.prevBefore = prevBefore
+        self.total = total
+        self.tasks = tasks
+        self.todos = todos
+        self.model = model
+        self.pendingToolName = pendingToolName
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(messages, forKey: .messages)
+        try c.encode(nextAfter, forKey: .nextAfter)
+        try c.encodeIfPresent(prevBefore, forKey: .prevBefore)
+        try c.encodeIfPresent(total, forKey: .total)
+        try c.encodeIfPresent(tasks, forKey: .tasks)
+        try c.encodeIfPresent(todos, forKey: .todos)
+        try c.encodeIfPresent(model, forKey: .model)
+        try c.encodeIfPresent(pendingToolName, forKey: .pendingToolName)
+      }
+    }
+
+    public struct AgentsVitalsParams: Codable, Sendable {
+      public var agentId: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+      }
+
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
+    }
+
+    public struct AgentsVitalsResult: Codable, Sendable {
+      public var vitals: RemoteAgentVitals
+
+      enum CodingKeys: String, CodingKey {
+        case vitals = "vitals"
+      }
+
+      public init(vitals: RemoteAgentVitals) {
+        self.vitals = vitals
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(vitals, forKey: .vitals)
+      }
+    }
+
+    public struct AutomationsCancelRunParams: Codable, Sendable {
+      public var runId: String
+
+      enum CodingKeys: String, CodingKey {
+        case runId = "run_id"
+      }
+
+      public init(runId: String) {
+        self.runId = runId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runId, forKey: .runId)
+      }
+    }
+
+    public struct AutomationsCancelRunResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AutomationsCreateParams: Codable, Sendable {
+      public var input: AutomationInput
+
+      enum CodingKeys: String, CodingKey {
+        case input = "input"
+      }
+
+      public init(input: AutomationInput) {
+        self.input = input
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(input, forKey: .input)
+      }
+    }
+
+    public struct AutomationsCreateResult: Codable, Sendable {
+      public var automation: RemoteAutomation
+      public var detail: RemoteAutomationDetail
+
+      enum CodingKeys: String, CodingKey {
+        case automation = "automation"
+        case detail = "detail"
+      }
+
+      public init(automation: RemoteAutomation, detail: RemoteAutomationDetail) {
+        self.automation = automation
+        self.detail = detail
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automation, forKey: .automation)
+        try c.encode(detail, forKey: .detail)
+      }
+    }
+
+    public struct AutomationsDeleteParams: Codable, Sendable {
+      public var automationId: String
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+      }
+
+      public init(automationId: String) {
+        self.automationId = automationId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+      }
+    }
+
+    public struct AutomationsDeleteResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AutomationsDeleteMemoryParams: Codable, Sendable {
+      public var automationId: String
+      public var name: String
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+        case name = "name"
+      }
+
+      public init(automationId: String, name: String) {
+        self.automationId = automationId
+        self.name = name
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+        try c.encode(name, forKey: .name)
+      }
+    }
+
+    public struct AutomationsDeleteMemoryResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AutomationsGetParams: Codable, Sendable {
+      public var automationId: String
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+      }
+
+      public init(automationId: String) {
+        self.automationId = automationId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+      }
+    }
+
+    public struct AutomationsGetResult: Codable, Sendable {
+      public var automation: RemoteAutomationDetail
+
+      enum CodingKeys: String, CodingKey {
+        case automation = "automation"
+      }
+
+      public init(automation: RemoteAutomationDetail) {
+        self.automation = automation
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automation, forKey: .automation)
+      }
+    }
+
+    public struct AutomationsListParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct AutomationsListResult: Codable, Sendable {
+      public var automations: [RemoteAutomation]
+
+      enum CodingKeys: String, CodingKey {
+        case automations = "automations"
+      }
+
+      public init(automations: [RemoteAutomation]) {
+        self.automations = automations
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automations, forKey: .automations)
+      }
+    }
+
+    public struct AutomationsMarkRunReadParams: Codable, Sendable {
+      public var runId: String
+
+      enum CodingKeys: String, CodingKey {
+        case runId = "run_id"
+      }
+
+      public init(runId: String) {
+        self.runId = runId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runId, forKey: .runId)
+      }
+    }
+
+    public struct AutomationsMarkRunReadResult: Codable, Sendable {
+      public var run: RemoteAutomationRun
+
+      enum CodingKeys: String, CodingKey {
+        case run = "run"
+      }
+
+      public init(run: RemoteAutomationRun) {
+        self.run = run
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(run, forKey: .run)
+      }
+    }
+
+    public struct AutomationsMemoriesParams: Codable, Sendable {
+      public var automationId: String
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+      }
+
+      public init(automationId: String) {
+        self.automationId = automationId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+      }
+    }
+
+    public struct AutomationsMemoriesResult: Codable, Sendable {
+      public var memories: [RemoteAutomationMemory]
+
+      enum CodingKeys: String, CodingKey {
+        case memories = "memories"
+      }
+
+      public init(memories: [RemoteAutomationMemory]) {
+        self.memories = memories
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(memories, forKey: .memories)
+      }
+    }
+
+    public struct AutomationsRevisePlaybookParams: Codable, Sendable {
+      public var playbook: String
+      public var instruction: String
+      public var name: String?
+
+      enum CodingKeys: String, CodingKey {
+        case playbook = "playbook"
+        case instruction = "instruction"
+        case name = "name"
+      }
+
+      public init(playbook: String, instruction: String, name: String? = nil) {
+        self.playbook = playbook
+        self.instruction = instruction
+        self.name = name
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(playbook, forKey: .playbook)
+        try c.encode(instruction, forKey: .instruction)
+        try c.encodeIfPresent(name, forKey: .name)
+      }
+    }
+
+    public struct AutomationsRevisePlaybookResult: Codable, Sendable {
+      public var playbook: String
+
+      enum CodingKeys: String, CodingKey {
+        case playbook = "playbook"
+      }
+
+      public init(playbook: String) {
+        self.playbook = playbook
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(playbook, forKey: .playbook)
+      }
+    }
+
+    public struct AutomationsRunParams: Codable, Sendable {
+      public var runId: String
+
+      enum CodingKeys: String, CodingKey {
+        case runId = "run_id"
+      }
+
+      public init(runId: String) {
+        self.runId = runId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runId, forKey: .runId)
+      }
+    }
+
+    public struct AutomationsRunResult: Codable, Sendable {
+      public var run: RemoteAutomationRun
+      public var reportBlocks: [ReportBlock]?
+      public var reportMarkdown: String?
+      public var feedback: [RemoteRunFeedback]
+
+      enum CodingKeys: String, CodingKey {
+        case run = "run"
+        case reportBlocks = "report_blocks"
+        case reportMarkdown = "report_markdown"
+        case feedback = "feedback"
+      }
+
+      public init(run: RemoteAutomationRun, reportBlocks: [ReportBlock]? = nil, reportMarkdown: String? = nil, feedback: [RemoteRunFeedback]) {
+        self.run = run
+        self.reportBlocks = reportBlocks
+        self.reportMarkdown = reportMarkdown
+        self.feedback = feedback
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(run, forKey: .run)
+        try c.encode(reportBlocks, forKey: .reportBlocks)
+        try c.encode(reportMarkdown, forKey: .reportMarkdown)
+        try c.encode(feedback, forKey: .feedback)
+      }
+    }
+
+    public struct AutomationsRunFeedbackParams: Codable, Sendable {
+      public var runId: String
+      public var note: String
+      public var allowClearing: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case runId = "run_id"
+        case note = "note"
+        case allowClearing = "allow_clearing"
+      }
+
+      public init(runId: String, note: String, allowClearing: Bool? = nil) {
+        self.runId = runId
+        self.note = note
+        self.allowClearing = allowClearing
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runId, forKey: .runId)
+        try c.encode(note, forKey: .note)
+        try c.encodeIfPresent(allowClearing, forKey: .allowClearing)
+      }
+    }
+
+    public struct AutomationsRunFeedbackResult: Codable, Sendable {
+      public var run: RemoteAutomationRun
+
+      enum CodingKeys: String, CodingKey {
+        case run = "run"
+      }
+
+      public init(run: RemoteAutomationRun) {
+        self.run = run
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(run, forKey: .run)
+      }
+    }
+
+    public struct AutomationsRunNowParams: Codable, Sendable {
+      public var automationId: String
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+      }
+
+      public init(automationId: String) {
+        self.automationId = automationId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+      }
+    }
+
+    public struct AutomationsRunNowResult: Codable, Sendable {
+      public var run: RemoteAutomationRun
+
+      enum CodingKeys: String, CodingKey {
+        case run = "run"
+      }
+
+      public init(run: RemoteAutomationRun) {
+        self.run = run
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(run, forKey: .run)
+      }
+    }
+
+    public struct AutomationsRunScratchParams: Codable, Sendable {
+      public var name: String?
+      public var playbook: String
+      public var repoRoots: [String]
+      public var sourceIds: [String]
+      public var model: String?
+      public var guardrails: RemoteAutomationGuardrails
+
+      enum CodingKeys: String, CodingKey {
+        case name = "name"
+        case playbook = "playbook"
+        case repoRoots = "repo_roots"
+        case sourceIds = "source_ids"
+        case model = "model"
+        case guardrails = "guardrails"
+      }
+
+      public init(name: String? = nil, playbook: String, repoRoots: [String], sourceIds: [String], model: String? = nil, guardrails: RemoteAutomationGuardrails) {
+        self.name = name
+        self.playbook = playbook
+        self.repoRoots = repoRoots
+        self.sourceIds = sourceIds
+        self.model = model
+        self.guardrails = guardrails
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(name, forKey: .name)
+        try c.encode(playbook, forKey: .playbook)
+        try c.encode(repoRoots, forKey: .repoRoots)
+        try c.encode(sourceIds, forKey: .sourceIds)
+        try c.encode(model, forKey: .model)
+        try c.encode(guardrails, forKey: .guardrails)
+      }
+    }
+
+    public struct AutomationsRunScratchResult: Codable, Sendable {
+      public var run: RemoteAutomationRun
+
+      enum CodingKeys: String, CodingKey {
+        case run = "run"
+      }
+
+      public init(run: RemoteAutomationRun) {
+        self.run = run
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(run, forKey: .run)
+      }
+    }
+
+    public struct AutomationsRunnersParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct AutomationsRunnersResult: Codable, Sendable {
+      public var runners: [RemoteRunner]
+
+      enum CodingKeys: String, CodingKey {
+        case runners = "runners"
+      }
+
+      public init(runners: [RemoteRunner]) {
+        self.runners = runners
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runners, forKey: .runners)
+      }
+    }
+
+    public struct AutomationsRunsParams: Codable, Sendable {
+      public var automationId: String?
+      public var limit: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+        case limit = "limit"
+      }
+
+      public init(automationId: String? = nil, limit: Int? = nil) {
+        self.automationId = automationId
+        self.limit = limit
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(automationId, forKey: .automationId)
+        try c.encodeIfPresent(limit, forKey: .limit)
+      }
+    }
+
+    public struct AutomationsRunsResult: Codable, Sendable {
+      public var runs: [RemoteAutomationRun]
+
+      enum CodingKeys: String, CodingKey {
+        case runs = "runs"
+      }
+
+      public init(runs: [RemoteAutomationRun]) {
+        self.runs = runs
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runs, forKey: .runs)
+      }
+    }
+
+    public struct AutomationsSaveMemoryParamsMemoryType: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let user = AutomationsSaveMemoryParamsMemoryType(rawValue: "user")
+      public static let feedback = AutomationsSaveMemoryParamsMemoryType(rawValue: "feedback")
+      public static let project = AutomationsSaveMemoryParamsMemoryType(rawValue: "project")
+      public static let reference = AutomationsSaveMemoryParamsMemoryType(rawValue: "reference")
+    }
+
+    public struct AutomationsSaveMemoryParamsMemory: Codable, Sendable {
+      public var name: String
+      public var description: String
+      public var type: AutomationsSaveMemoryParamsMemoryType
+      public var body: String
+      public var previousName: String?
+
+      enum CodingKeys: String, CodingKey {
+        case name = "name"
+        case description = "description"
+        case type = "type"
+        case body = "body"
+        case previousName = "previous_name"
+      }
+
+      public init(name: String, description: String, type: AutomationsSaveMemoryParamsMemoryType, body: String, previousName: String? = nil) {
+        self.name = name
+        self.description = description
+        self.type = type
+        self.body = body
+        self.previousName = previousName
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(name, forKey: .name)
+        try c.encode(description, forKey: .description)
+        try c.encode(type, forKey: .type)
+        try c.encode(body, forKey: .body)
+        try c.encodeIfPresent(previousName, forKey: .previousName)
+      }
+    }
+
+    public struct AutomationsSaveMemoryParams: Codable, Sendable {
+      public var automationId: String
+      public var memory: AutomationsSaveMemoryParamsMemory
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+        case memory = "memory"
+      }
+
+      public init(automationId: String, memory: AutomationsSaveMemoryParamsMemory) {
+        self.automationId = automationId
+        self.memory = memory
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+        try c.encode(memory, forKey: .memory)
+      }
+    }
+
+    public struct AutomationsSaveMemoryResult: Codable, Sendable {
+      public var memory: RemoteAutomationMemory
+
+      enum CodingKeys: String, CodingKey {
+        case memory = "memory"
+      }
+
+      public init(memory: RemoteAutomationMemory) {
+        self.memory = memory
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(memory, forKey: .memory)
+      }
+    }
+
+    public struct AutomationsSaveScratchRunParams: Codable, Sendable {
+      public var runId: String
+      public var name: String?
+      public var description: String?
+      public var enabled: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case runId = "run_id"
+        case name = "name"
+        case description = "description"
+        case enabled = "enabled"
+      }
+
+      public init(runId: String, name: String? = nil, description: String? = nil, enabled: Bool? = nil) {
+        self.runId = runId
+        self.name = name
+        self.description = description
+        self.enabled = enabled
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runId, forKey: .runId)
+        try c.encodeIfPresent(name, forKey: .name)
+        try c.encodeIfPresent(description, forKey: .description)
+        try c.encodeIfPresent(enabled, forKey: .enabled)
+      }
+    }
+
+    public struct AutomationsSaveScratchRunResult: Codable, Sendable {
+      public var automation: RemoteAutomation
+
+      enum CodingKeys: String, CodingKey {
+        case automation = "automation"
+      }
+
+      public init(automation: RemoteAutomation) {
+        self.automation = automation
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automation, forKey: .automation)
+      }
+    }
+
+    public struct AutomationsSetEnabledParams: Codable, Sendable {
+      public var automationId: String
+      public var enabled: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+        case enabled = "enabled"
+      }
+
+      public init(automationId: String, enabled: Bool) {
+        self.automationId = automationId
+        self.enabled = enabled
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+        try c.encode(enabled, forKey: .enabled)
+      }
+    }
+
+    public struct AutomationsSetEnabledResult: Codable, Sendable {
+      public var automation: RemoteAutomation
+
+      enum CodingKeys: String, CodingKey {
+        case automation = "automation"
+      }
+
+      public init(automation: RemoteAutomation) {
+        self.automation = automation
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automation, forKey: .automation)
+      }
+    }
+
+    public struct AutomationsSourcesParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct AutomationsSourcesResult: Codable, Sendable {
+      public var sources: [RemoteSignalSource]
+
+      enum CodingKeys: String, CodingKey {
+        case sources = "sources"
+      }
+
+      public init(sources: [RemoteSignalSource]) {
+        self.sources = sources
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sources, forKey: .sources)
+      }
+    }
+
+    public struct AutomationsUpdateParamsPatchTriggerKind: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let manual = AutomationsUpdateParamsPatchTriggerKind(rawValue: "manual")
+      public static let schedule = AutomationsUpdateParamsPatchTriggerKind(rawValue: "schedule")
+    }
+
+    public struct AutomationsUpdateParamsPatchAutonomy: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let autoMerge = AutomationsUpdateParamsPatchAutonomy(rawValue: "auto_merge")
+      public static let draft = AutomationsUpdateParamsPatchAutonomy(rawValue: "draft")
+      public static let pr = AutomationsUpdateParamsPatchAutonomy(rawValue: "pr")
+      public static let propose = AutomationsUpdateParamsPatchAutonomy(rawValue: "propose")
+    }
+
+    public struct AutomationsUpdateParamsPatch: Codable, Sendable {
+      public var name: String?
+      public var description: String?
+      public var enabled: Bool?
+      public var triggerKind: AutomationsUpdateParamsPatchTriggerKind?
+      public var cron: String?
+      public var timezone: String?
+      public var catchUp: Bool?
+      public var repoRoots: [String]?
+      public var sourceIds: [String]?
+      public var playbook: String?
+      public var extraInstructions: String?
+      public var autonomy: AutomationsUpdateParamsPatchAutonomy?
+      public var model: String?
+      public var runner: String?
+      public var guardrails: RemoteAutomationGuardrails?
+
+      enum CodingKeys: String, CodingKey {
+        case name = "name"
+        case description = "description"
+        case enabled = "enabled"
+        case triggerKind = "trigger_kind"
+        case cron = "cron"
+        case timezone = "timezone"
+        case catchUp = "catch_up"
+        case repoRoots = "repo_roots"
+        case sourceIds = "source_ids"
+        case playbook = "playbook"
+        case extraInstructions = "extra_instructions"
+        case autonomy = "autonomy"
+        case model = "model"
+        case runner = "runner"
+        case guardrails = "guardrails"
+      }
+
+      public init(name: String? = nil, description: String? = nil, enabled: Bool? = nil, triggerKind: AutomationsUpdateParamsPatchTriggerKind? = nil, cron: String? = nil, timezone: String? = nil, catchUp: Bool? = nil, repoRoots: [String]? = nil, sourceIds: [String]? = nil, playbook: String? = nil, extraInstructions: String? = nil, autonomy: AutomationsUpdateParamsPatchAutonomy? = nil, model: String? = nil, runner: String? = nil, guardrails: RemoteAutomationGuardrails? = nil) {
+        self.name = name
+        self.description = description
+        self.enabled = enabled
+        self.triggerKind = triggerKind
+        self.cron = cron
+        self.timezone = timezone
+        self.catchUp = catchUp
+        self.repoRoots = repoRoots
+        self.sourceIds = sourceIds
+        self.playbook = playbook
+        self.extraInstructions = extraInstructions
+        self.autonomy = autonomy
+        self.model = model
+        self.runner = runner
+        self.guardrails = guardrails
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(name, forKey: .name)
+        try c.encodeIfPresent(description, forKey: .description)
+        try c.encodeIfPresent(enabled, forKey: .enabled)
+        try c.encodeIfPresent(triggerKind, forKey: .triggerKind)
+        try c.encodeIfPresent(cron, forKey: .cron)
+        try c.encodeIfPresent(timezone, forKey: .timezone)
+        try c.encodeIfPresent(catchUp, forKey: .catchUp)
+        try c.encodeIfPresent(repoRoots, forKey: .repoRoots)
+        try c.encodeIfPresent(sourceIds, forKey: .sourceIds)
+        try c.encodeIfPresent(playbook, forKey: .playbook)
+        try c.encodeIfPresent(extraInstructions, forKey: .extraInstructions)
+        try c.encodeIfPresent(autonomy, forKey: .autonomy)
+        try c.encodeIfPresent(model, forKey: .model)
+        try c.encodeIfPresent(runner, forKey: .runner)
+        try c.encodeIfPresent(guardrails, forKey: .guardrails)
+      }
+    }
+
+    public struct AutomationsUpdateParams: Codable, Sendable {
+      public var automationId: String
+      public var patch: AutomationsUpdateParamsPatch
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+        case patch = "patch"
+      }
+
+      public init(automationId: String, patch: AutomationsUpdateParamsPatch) {
+        self.automationId = automationId
+        self.patch = patch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+        try c.encode(patch, forKey: .patch)
+      }
+    }
+
+    public struct AutomationsUpdateResult: Codable, Sendable {
+      public var automation: RemoteAutomation
+      public var detail: RemoteAutomationDetail
+
+      enum CodingKeys: String, CodingKey {
+        case automation = "automation"
+        case detail = "detail"
+      }
+
+      public init(automation: RemoteAutomation, detail: RemoteAutomationDetail) {
+        self.automation = automation
+        self.detail = detail
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automation, forKey: .automation)
+        try c.encode(detail, forKey: .detail)
+      }
+    }
+
+    public struct BrowserUnwatchParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct BrowserUnwatchResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct BrowserWatchParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct BrowserWatchResult: Codable, Sendable {
+      public var streamId: Int
+
+      enum CodingKeys: String, CodingKey {
+        case streamId = "stream_id"
+      }
+
+      public init(streamId: Int) {
+        self.streamId = streamId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(streamId, forKey: .streamId)
+      }
+    }
+
+    public struct ClaudeAccountsAddParams: Codable, Sendable {
+      public var useConsole: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case useConsole = "use_console"
+      }
+
+      public init(useConsole: Bool? = nil) {
+        self.useConsole = useConsole
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(useConsole, forKey: .useConsole)
+      }
+    }
+
+    public struct ClaudeAccountsAddResult: Codable, Sendable {
+      public var url: String
+
+      enum CodingKeys: String, CodingKey {
+        case url = "url"
+      }
+
+      public init(url: String) {
+        self.url = url
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(url, forKey: .url)
+      }
+    }
+
+    public struct ClaudeAccountsListParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct ClaudeAccountsListResult: Codable, Sendable {
+      public var accounts: [RemoteClaudeAccount]
+      public var activeId: String
+
+      enum CodingKeys: String, CodingKey {
+        case accounts = "accounts"
+        case activeId = "active_id"
+      }
+
+      public init(accounts: [RemoteClaudeAccount], activeId: String) {
+        self.accounts = accounts
+        self.activeId = activeId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accounts, forKey: .accounts)
+        try c.encode(activeId, forKey: .activeId)
+      }
+    }
+
+    public struct ClaudeAccountsLoginCancelParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct ClaudeAccountsLoginCancelResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct ClaudeAccountsLoginStartParams: Codable, Sendable {
+      public var accountId: String?
+      public var useConsole: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case accountId = "account_id"
+        case useConsole = "use_console"
+      }
+
+      public init(accountId: String? = nil, useConsole: Bool? = nil) {
+        self.accountId = accountId
+        self.useConsole = useConsole
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(accountId, forKey: .accountId)
+        try c.encodeIfPresent(useConsole, forKey: .useConsole)
+      }
+    }
+
+    public struct ClaudeAccountsLoginStartResult: Codable, Sendable {
+      public var url: String
+
+      enum CodingKeys: String, CodingKey {
+        case url = "url"
+      }
+
+      public init(url: String) {
+        self.url = url
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(url, forKey: .url)
+      }
+    }
+
+    public struct ClaudeAccountsLoginStatusParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct ClaudeAccountsLoginSubmitCodeParams: Codable, Sendable {
+      public var code: String
+
+      enum CodingKeys: String, CodingKey {
+        case code = "code"
+      }
+
+      public init(code: String) {
+        self.code = code
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(code, forKey: .code)
+      }
+    }
+
+    public struct ClaudeAccountsLoginSubmitCodeResult: Codable, Sendable {
+      public var ok: Bool
+      public var error: String?
+
+      enum CodingKeys: String, CodingKey {
+        case ok = "ok"
+        case error = "error"
+      }
+
+      public init(ok: Bool, error: String? = nil) {
+        self.ok = ok
+        self.error = error
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(ok, forKey: .ok)
+        try c.encodeIfPresent(error, forKey: .error)
+      }
+    }
+
+    public struct ClaudeAccountsRemoveParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct ClaudeAccountsRemoveResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct ClaudeAccountsRenameParams: Codable, Sendable {
+      public var id: String
+      public var label: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case label = "label"
+      }
+
+      public init(id: String, label: String) {
+        self.id = id
+        self.label = label
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(label, forKey: .label)
+      }
+    }
+
+    public struct ClaudeAccountsRenameResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct ClaudeAccountsSetActiveParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct ClaudeAccountsSetActiveResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct DeviceCapabilitiesParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct DeviceCapabilitiesResult: Codable, Sendable {
+      public var capabilities: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case capabilities = "capabilities"
+      }
+
+      public init(capabilities: [String]) {
+        self.capabilities = capabilities
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(capabilities, forKey: .capabilities)
+      }
+    }
+
+    public struct DevicePushInfoParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct DevicePushInfoResult: Codable, Sendable {
+      public var configured: Bool
+      public var enabled: Bool
+      public var vapidPublicKey: String?
+      public var relayUrl: String?
+
+      enum CodingKeys: String, CodingKey {
+        case configured = "configured"
+        case enabled = "enabled"
+        case vapidPublicKey = "vapid_public_key"
+        case relayUrl = "relay_url"
+      }
+
+      public init(configured: Bool, enabled: Bool, vapidPublicKey: String? = nil, relayUrl: String? = nil) {
+        self.configured = configured
+        self.enabled = enabled
+        self.vapidPublicKey = vapidPublicKey
+        self.relayUrl = relayUrl
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(configured, forKey: .configured)
+        try c.encode(enabled, forKey: .enabled)
+        try c.encode(vapidPublicKey, forKey: .vapidPublicKey)
+        try c.encode(relayUrl, forKey: .relayUrl)
+      }
+    }
+
+    public struct DeviceRegisterPushParamsService: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let apns = DeviceRegisterPushParamsService(rawValue: "apns")
+      public static let fcm = DeviceRegisterPushParamsService(rawValue: "fcm")
+      public static let webpush = DeviceRegisterPushParamsService(rawValue: "webpush")
+    }
+
+    public struct DeviceRegisterPushParamsEnvironment: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let production = DeviceRegisterPushParamsEnvironment(rawValue: "production")
+      public static let sandbox = DeviceRegisterPushParamsEnvironment(rawValue: "sandbox")
+    }
+
+    public struct DeviceRegisterPushParamsKeys: Codable, Sendable {
+      public var p256dh: String
+      public var auth: String
+
+      enum CodingKeys: String, CodingKey {
+        case p256dh = "p256dh"
+        case auth = "auth"
+      }
+
+      public init(p256dh: String, auth: String) {
+        self.p256dh = p256dh
+        self.auth = auth
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(p256dh, forKey: .p256dh)
+        try c.encode(auth, forKey: .auth)
+      }
+    }
+
+    public struct DeviceRegisterPushParams: Codable, Sendable {
+      public var service: DeviceRegisterPushParamsService
+      public var token: String
+      public var environment: DeviceRegisterPushParamsEnvironment?
+      public var keys: DeviceRegisterPushParamsKeys?
+      public var pushKey: String?
+      public var authKey: String?
+
+      enum CodingKeys: String, CodingKey {
+        case service = "service"
+        case token = "token"
+        case environment = "environment"
+        case keys = "keys"
+        case pushKey = "push_key"
+        case authKey = "auth_key"
+      }
+
+      public init(service: DeviceRegisterPushParamsService, token: String, environment: DeviceRegisterPushParamsEnvironment? = nil, keys: DeviceRegisterPushParamsKeys? = nil, pushKey: String? = nil, authKey: String? = nil) {
+        self.service = service
+        self.token = token
+        self.environment = environment
+        self.keys = keys
+        self.pushKey = pushKey
+        self.authKey = authKey
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(service, forKey: .service)
+        try c.encode(token, forKey: .token)
+        try c.encodeIfPresent(environment, forKey: .environment)
+        try c.encodeIfPresent(keys, forKey: .keys)
+        try c.encodeIfPresent(pushKey, forKey: .pushKey)
+        try c.encodeIfPresent(authKey, forKey: .authKey)
+      }
+    }
+
+    public struct DeviceRegisterPushResult: Codable, Sendable {
+      public var accepted: Bool
+      public var configured: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+        case configured = "configured"
+      }
+
+      public init(accepted: Bool, configured: Bool) {
+        self.accepted = accepted
+        self.configured = configured
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+        try c.encode(configured, forKey: .configured)
+      }
+    }
+
+    public struct DeviceRenameParams: Codable, Sendable {
+      public var name: String
+
+      enum CodingKeys: String, CodingKey {
+        case name = "name"
+      }
+
+      public init(name: String) {
+        self.name = name
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(name, forKey: .name)
+      }
+    }
+
+    public struct DeviceRenameResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct DeviceUnregisterPushParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct DeviceUnregisterPushResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct DevicesButtonParams: Codable, Sendable {
+      public var deviceId: String
+      public var platform: RemotePlatform
+      public var button: String
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+        case platform = "platform"
+        case button = "button"
+      }
+
+      public init(deviceId: String, platform: RemotePlatform, button: String) {
+        self.deviceId = deviceId
+        self.platform = platform
+        self.button = button
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+        try c.encode(platform, forKey: .platform)
+        try c.encode(button, forKey: .button)
+      }
+    }
+
+    public struct DevicesButtonResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct DevicesClaimParams: Codable, Sendable {
+      public var deviceId: String
+      public var force: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+        case force = "force"
+      }
+
+      public init(deviceId: String, force: Bool? = nil) {
+        self.deviceId = deviceId
+        self.force = force
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+        try c.encodeIfPresent(force, forKey: .force)
+      }
+    }
+
+    public struct DevicesClaimResult: Codable, Sendable {
+      public var granted: Bool
+      public var holder: RemoteDeviceClaim?
+
+      enum CodingKeys: String, CodingKey {
+        case granted = "granted"
+        case holder = "holder"
+      }
+
+      public init(granted: Bool, holder: RemoteDeviceClaim? = nil) {
+        self.granted = granted
+        self.holder = holder
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(granted, forKey: .granted)
+        try c.encode(holder, forKey: .holder)
+      }
+    }
+
+    public struct DevicesClaimStatusParams: Codable, Sendable {
+      public var deviceId: String
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+      }
+
+      public init(deviceId: String) {
+        self.deviceId = deviceId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+      }
+    }
+
+    public struct DevicesClaimStatusResult: Codable, Sendable {
+      public var holder: RemoteDeviceClaim?
+      public var connectionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case holder = "holder"
+        case connectionId = "connection_id"
+      }
+
+      public init(holder: RemoteDeviceClaim? = nil, connectionId: String) {
+        self.holder = holder
+        self.connectionId = connectionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(holder, forKey: .holder)
+        try c.encode(connectionId, forKey: .connectionId)
+      }
+    }
+
+    public struct DevicesKeyboardParams: Codable, Sendable {
+      public var deviceId: String
+      public var platform: RemotePlatform
+      public var keyCode: Double
+      public var modifiers: Double
+      public var isDown: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+        case platform = "platform"
+        case keyCode = "key_code"
+        case modifiers = "modifiers"
+        case isDown = "is_down"
+      }
+
+      public init(deviceId: String, platform: RemotePlatform, keyCode: Double, modifiers: Double, isDown: Bool) {
+        self.deviceId = deviceId
+        self.platform = platform
+        self.keyCode = keyCode
+        self.modifiers = modifiers
+        self.isDown = isDown
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+        try c.encode(platform, forKey: .platform)
+        try c.encode(keyCode, forKey: .keyCode)
+        try c.encode(modifiers, forKey: .modifiers)
+        try c.encode(isDown, forKey: .isDown)
+      }
+    }
+
+    public struct DevicesKeyboardResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct DevicesListParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct DevicesListResult: Codable, Sendable {
+      public var devices: [RemoteDevice]
+
+      enum CodingKeys: String, CodingKey {
+        case devices = "devices"
+      }
+
+      public init(devices: [RemoteDevice]) {
+        self.devices = devices
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(devices, forKey: .devices)
+      }
+    }
+
+    public struct DevicesReleaseParams: Codable, Sendable {
+      public var deviceId: String
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+      }
+
+      public init(deviceId: String) {
+        self.deviceId = deviceId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+      }
+    }
+
+    public struct DevicesReleaseResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct DevicesSetFoldParams: Codable, Sendable {
+      public var deviceId: String
+      public var platform: RemotePlatform
+      public var pose: JSONValue
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+        case platform = "platform"
+        case pose = "pose"
+      }
+
+      public init(deviceId: String, platform: RemotePlatform, pose: JSONValue) {
+        self.deviceId = deviceId
+        self.platform = platform
+        self.pose = pose
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+        try c.encode(platform, forKey: .platform)
+        try c.encode(pose, forKey: .pose)
+      }
+    }
+
+    public struct DevicesSetFoldResult: Codable, Sendable {
+      public var state: RemoteDeviceState?
+
+      enum CodingKeys: String, CodingKey {
+        case state = "state"
+      }
+
+      public init(state: RemoteDeviceState? = nil) {
+        self.state = state
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(state, forKey: .state)
+      }
+    }
+
+    public struct DevicesSetOrientationParams: Codable, Sendable {
+      public var deviceId: String
+      public var platform: RemotePlatform
+      public var orientation: RemoteDeviceOrientation
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+        case platform = "platform"
+        case orientation = "orientation"
+      }
+
+      public init(deviceId: String, platform: RemotePlatform, orientation: RemoteDeviceOrientation) {
+        self.deviceId = deviceId
+        self.platform = platform
+        self.orientation = orientation
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+        try c.encode(platform, forKey: .platform)
+        try c.encode(orientation, forKey: .orientation)
+      }
+    }
+
+    public struct DevicesSetOrientationResult: Codable, Sendable {
+      public var state: RemoteDeviceState?
+
+      enum CodingKeys: String, CodingKey {
+        case state = "state"
+      }
+
+      public init(state: RemoteDeviceState? = nil) {
+        self.state = state
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(state, forKey: .state)
+      }
+    }
+
+    public struct DevicesStateParams: Codable, Sendable {
+      public var deviceId: String
+      public var platform: RemotePlatform
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+        case platform = "platform"
+      }
+
+      public init(deviceId: String, platform: RemotePlatform) {
+        self.deviceId = deviceId
+        self.platform = platform
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+        try c.encode(platform, forKey: .platform)
+      }
+    }
+
+    public struct DevicesStateResult: Codable, Sendable {
+      public var state: RemoteDeviceState?
+
+      enum CodingKeys: String, CodingKey {
+        case state = "state"
+      }
+
+      public init(state: RemoteDeviceState? = nil) {
+        self.state = state
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(state, forKey: .state)
+      }
+    }
+
+    public struct DevicesTouchParams: Codable, Sendable {
+      public var deviceId: String
+      public var platform: RemotePlatform
+      public var x: JSONValue
+      public var y: JSONValue
+      public var eventType: JSONValue
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+        case platform = "platform"
+        case x = "x"
+        case y = "y"
+        case eventType = "event_type"
+      }
+
+      public init(deviceId: String, platform: RemotePlatform, x: JSONValue, y: JSONValue, eventType: JSONValue) {
+        self.deviceId = deviceId
+        self.platform = platform
+        self.x = x
+        self.y = y
+        self.eventType = eventType
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+        try c.encode(platform, forKey: .platform)
+        try c.encode(x, forKey: .x)
+        try c.encode(y, forKey: .y)
+        try c.encode(eventType, forKey: .eventType)
+      }
+    }
+
+    public struct DevicesTouchResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct DevicesUnwatchParams: Codable, Sendable {
+      public var deviceId: String
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+      }
+
+      public init(deviceId: String) {
+        self.deviceId = deviceId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+      }
+    }
+
+    public struct DevicesUnwatchResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct DevicesWatchParams: Codable, Sendable {
+      public var deviceId: String
+      public var platform: RemotePlatform
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+        case platform = "platform"
+      }
+
+      public init(deviceId: String, platform: RemotePlatform) {
+        self.deviceId = deviceId
+        self.platform = platform
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+        try c.encode(platform, forKey: .platform)
+      }
+    }
+
+    public struct DevicesWatchResult: Codable, Sendable {
+      public var streamId: Int
+
+      enum CodingKeys: String, CodingKey {
+        case streamId = "stream_id"
+      }
+
+      public init(streamId: Int) {
+        self.streamId = streamId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(streamId, forKey: .streamId)
+      }
+    }
+
+    public struct GithubCommentPullRequestParams: Codable, Sendable {
+      public var repo: String
+      public var number: Int
+      public var body: String
+
+      enum CodingKeys: String, CodingKey {
+        case repo = "repo"
+        case number = "number"
+        case body = "body"
+      }
+
+      public init(repo: String, number: Int, body: String) {
+        self.repo = repo
+        self.number = number
+        self.body = body
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repo, forKey: .repo)
+        try c.encode(number, forKey: .number)
+        try c.encode(body, forKey: .body)
+      }
+    }
+
+    public struct GithubCommentPullRequestResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct GithubCreatePullRequestParams: Codable, Sendable {
+      public var sessionId: String
+      public var title: String
+      public var body: String
+      public var draft: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case title = "title"
+        case body = "body"
+        case draft = "draft"
+      }
+
+      public init(sessionId: String, title: String, body: String, draft: Bool? = nil) {
+        self.sessionId = sessionId
+        self.title = title
+        self.body = body
+        self.draft = draft
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(title, forKey: .title)
+        try c.encode(body, forKey: .body)
+        try c.encodeIfPresent(draft, forKey: .draft)
+      }
+    }
+
+    public struct GithubCreatePullRequestResult: Codable, Sendable {
+      public var number: Double
+      public var url: String
+
+      enum CodingKeys: String, CodingKey {
+        case number = "number"
+        case url = "url"
+      }
+
+      public init(number: Double, url: String) {
+        self.number = number
+        self.url = url
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(number, forKey: .number)
+        try c.encode(url, forKey: .url)
+      }
+    }
+
+    public struct GithubMergePullRequestParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let merge = GithubMergePullRequestParamsStrategy(rawValue: "merge")
+      public static let rebase = GithubMergePullRequestParamsStrategy(rawValue: "rebase")
+      public static let squash = GithubMergePullRequestParamsStrategy(rawValue: "squash")
+    }
+
+    public struct GithubMergePullRequestParams: Codable, Sendable {
+      public var repo: String
+      public var number: Int
+      public var strategy: GithubMergePullRequestParamsStrategy
+
+      enum CodingKeys: String, CodingKey {
+        case repo = "repo"
+        case number = "number"
+        case strategy = "strategy"
+      }
+
+      public init(repo: String, number: Int, strategy: GithubMergePullRequestParamsStrategy) {
+        self.repo = repo
+        self.number = number
+        self.strategy = strategy
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repo, forKey: .repo)
+        try c.encode(number, forKey: .number)
+        try c.encode(strategy, forKey: .strategy)
+      }
+    }
+
+    public struct GithubMergePullRequestResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct GithubPullRequestParams: Codable, Sendable {
+      public var repo: String
+      public var number: Int
+
+      enum CodingKeys: String, CodingKey {
+        case repo = "repo"
+        case number = "number"
+      }
+
+      public init(repo: String, number: Int) {
+        self.repo = repo
+        self.number = number
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repo, forKey: .repo)
+        try c.encode(number, forKey: .number)
+      }
+    }
+
+    public struct GithubPullRequestResult: Codable, Sendable {
+      public var pullRequest: RemotePullRequestDetail
+
+      enum CodingKeys: String, CodingKey {
+        case pullRequest = "pull_request"
+      }
+
+      public init(pullRequest: RemotePullRequestDetail) {
+        self.pullRequest = pullRequest
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(pullRequest, forKey: .pullRequest)
+      }
+    }
+
+    public struct GithubPullRequestsParams: Codable, Sendable {
+      public var repoRoots: [String]?
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoots = "repo_roots"
+      }
+
+      public init(repoRoots: [String]? = nil) {
+        self.repoRoots = repoRoots
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(repoRoots, forKey: .repoRoots)
+      }
+    }
+
+    public struct GithubPullRequestsResult: Codable, Sendable {
+      public var pullRequests: [RemotePullRequest]
+
+      enum CodingKeys: String, CodingKey {
+        case pullRequests = "pull_requests"
+      }
+
+      public init(pullRequests: [RemotePullRequest]) {
+        self.pullRequests = pullRequests
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(pullRequests, forKey: .pullRequests)
+      }
+    }
+
+    public struct HostEndpointsParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct HostEndpointsResult: Codable, Sendable {
+      public var endpoints: [RemoteEndpoint]
+
+      enum CodingKeys: String, CodingKey {
+        case endpoints = "endpoints"
+      }
+
+      public init(endpoints: [RemoteEndpoint]) {
+        self.endpoints = endpoints
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(endpoints, forKey: .endpoints)
+      }
+    }
+
+    public struct PermissionRespondParamsDecision: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let allow = PermissionRespondParamsDecision(rawValue: "allow")
+      public static let deny = PermissionRespondParamsDecision(rawValue: "deny")
+    }
+
+    public struct PermissionRespondParams: Codable, Sendable {
+      public var agentId: String
+      public var toolUseId: String
+      public var decision: PermissionRespondParamsDecision
+      public var message: String?
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case toolUseId = "tool_use_id"
+        case decision = "decision"
+        case message = "message"
+      }
+
+      public init(agentId: String, toolUseId: String, decision: PermissionRespondParamsDecision, message: String? = nil) {
+        self.agentId = agentId
+        self.toolUseId = toolUseId
+        self.decision = decision
+        self.message = message
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(toolUseId, forKey: .toolUseId)
+        try c.encode(decision, forKey: .decision)
+        try c.encodeIfPresent(message, forKey: .message)
+      }
+    }
+
+    public struct PermissionRespondResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct ProjectsListParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct ProjectsListResult: Codable, Sendable {
+      public var projects: [RemoteProject]
+
+      enum CodingKeys: String, CodingKey {
+        case projects = "projects"
+      }
+
+      public init(projects: [RemoteProject]) {
+        self.projects = projects
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(projects, forKey: .projects)
+      }
+    }
+
+    public struct ProposalsAcceptParams: Codable, Sendable {
+      public var proposalId: String
+
+      enum CodingKeys: String, CodingKey {
+        case proposalId = "proposal_id"
+      }
+
+      public init(proposalId: String) {
+        self.proposalId = proposalId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposalId, forKey: .proposalId)
+      }
+    }
+
+    public struct ProposalsAcceptResult: Codable, Sendable {
+      public var proposal: RemoteProposal
+      public var sessionId: String?
+      public var agentId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case proposal = "proposal"
+        case sessionId = "session_id"
+        case agentId = "agent_id"
+      }
+
+      public init(proposal: RemoteProposal, sessionId: String? = nil, agentId: String? = nil) {
+        self.proposal = proposal
+        self.sessionId = sessionId
+        self.agentId = agentId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposal, forKey: .proposal)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(agentId, forKey: .agentId)
+      }
+    }
+
+    public struct ProposalsDismissParams: Codable, Sendable {
+      public var proposalId: String
+      public var reason: String?
+
+      enum CodingKeys: String, CodingKey {
+        case proposalId = "proposal_id"
+        case reason = "reason"
+      }
+
+      public init(proposalId: String, reason: String? = nil) {
+        self.proposalId = proposalId
+        self.reason = reason
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposalId, forKey: .proposalId)
+        try c.encodeIfPresent(reason, forKey: .reason)
+      }
+    }
+
+    public struct ProposalsDismissResult: Codable, Sendable {
+      public var proposal: RemoteProposal
+
+      enum CodingKeys: String, CodingKey {
+        case proposal = "proposal"
+      }
+
+      public init(proposal: RemoteProposal) {
+        self.proposal = proposal
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposal, forKey: .proposal)
+      }
+    }
+
+    public struct ProposalsListParams: Codable, Sendable {
+      public var status: RemoteProposalStatus?
+      public var limit: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case status = "status"
+        case limit = "limit"
+      }
+
+      public init(status: RemoteProposalStatus? = nil, limit: Int? = nil) {
+        self.status = status
+        self.limit = limit
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(status, forKey: .status)
+        try c.encodeIfPresent(limit, forKey: .limit)
+      }
+    }
+
+    public struct ProposalsListResult: Codable, Sendable {
+      public var proposals: [RemoteProposal]
+
+      enum CodingKeys: String, CodingKey {
+        case proposals = "proposals"
+      }
+
+      public init(proposals: [RemoteProposal]) {
+        self.proposals = proposals
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposals, forKey: .proposals)
+      }
+    }
+
+    public struct ProposalsPerformCleanupParams: Codable, Sendable {
+      public var proposalId: String
+
+      enum CodingKeys: String, CodingKey {
+        case proposalId = "proposal_id"
+      }
+
+      public init(proposalId: String) {
+        self.proposalId = proposalId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposalId, forKey: .proposalId)
+      }
+    }
+
+    public struct ProposalsPerformCleanupResult: Codable, Sendable {
+      public var proposalId: String
+
+      enum CodingKeys: String, CodingKey {
+        case proposalId = "proposal_id"
+      }
+
+      public init(proposalId: String) {
+        self.proposalId = proposalId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposalId, forKey: .proposalId)
+      }
+    }
+
+    public struct ProposalsResolveParams: Codable, Sendable {
+      public var proposalId: String
+      public var note: String?
+
+      enum CodingKeys: String, CodingKey {
+        case proposalId = "proposal_id"
+        case note = "note"
+      }
+
+      public init(proposalId: String, note: String? = nil) {
+        self.proposalId = proposalId
+        self.note = note
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposalId, forKey: .proposalId)
+        try c.encodeIfPresent(note, forKey: .note)
+      }
+    }
+
+    public struct ProposalsResolveResult: Codable, Sendable {
+      public var proposal: RemoteProposal
+
+      enum CodingKeys: String, CodingKey {
+        case proposal = "proposal"
+      }
+
+      public init(proposal: RemoteProposal) {
+        self.proposal = proposal
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposal, forKey: .proposal)
+      }
+    }
+
+    public struct ScratchPadsCreateParams: Codable, Sendable {
+      public var name: String?
+
+      enum CodingKeys: String, CodingKey {
+        case name = "name"
+      }
+
+      public init(name: String? = nil) {
+        self.name = name
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(name, forKey: .name)
+      }
+    }
+
+    public struct ScratchPadsCreateResult: Codable, Sendable {
+      public var session: RemoteSession
+
+      enum CodingKeys: String, CodingKey {
+        case session = "session"
+      }
+
+      public init(session: RemoteSession) {
+        self.session = session
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(session, forKey: .session)
+      }
+    }
+
+    public struct ScratchPadsListParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct ScratchPadsListResult: Codable, Sendable {
+      public var sessions: [RemoteSession]
+
+      enum CodingKeys: String, CodingKey {
+        case sessions = "sessions"
+      }
+
+      public init(sessions: [RemoteSession]) {
+        self.sessions = sessions
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessions, forKey: .sessions)
+      }
+    }
+
+    public struct SessionsBranchLogParams: Codable, Sendable {
+      public var sessionId: String
+      public var branch: String
+      public var count: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case branch = "branch"
+        case count = "count"
+      }
+
+      public init(sessionId: String, branch: String, count: Int? = nil) {
+        self.sessionId = sessionId
+        self.branch = branch
+        self.count = count
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(branch, forKey: .branch)
+        try c.encodeIfPresent(count, forKey: .count)
+      }
+    }
+
+    public struct SessionsBranchLogResult: Codable, Sendable {
+      public var commits: [RemoteCommit]
+
+      enum CodingKeys: String, CodingKey {
+        case commits = "commits"
+      }
+
+      public init(commits: [RemoteCommit]) {
+        self.commits = commits
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(commits, forKey: .commits)
+      }
+    }
+
+    public struct SessionsBranchPrUrlParams: Codable, Sendable {
+      public var sessionId: String
+      public var branch: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case branch = "branch"
+      }
+
+      public init(sessionId: String, branch: String) {
+        self.sessionId = sessionId
+        self.branch = branch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(branch, forKey: .branch)
+      }
+    }
+
+    public struct SessionsBranchPrUrlResult: Codable, Sendable {
+      public var url: String?
+
+      enum CodingKeys: String, CodingKey {
+        case url = "url"
+      }
+
+      public init(url: String? = nil) {
+        self.url = url
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(url, forKey: .url)
+      }
+    }
+
+    public struct SessionsBranchesParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsBranchesResult: Codable, Sendable {
+      public var branches: [RemoteGitBranch]
+
+      enum CodingKeys: String, CodingKey {
+        case branches = "branches"
+      }
+
+      public init(branches: [RemoteGitBranch]) {
+        self.branches = branches
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(branches, forKey: .branches)
+      }
+    }
+
+    public struct SessionsCheckoutParamsDirty: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let fail = SessionsCheckoutParamsDirty(rawValue: "fail")
+      public static let stash = SessionsCheckoutParamsDirty(rawValue: "stash")
+      public static let discard = SessionsCheckoutParamsDirty(rawValue: "discard")
+    }
+
+    public struct SessionsCheckoutParams: Codable, Sendable {
+      public var sessionId: String
+      public var branch: String
+      public var dirty: SessionsCheckoutParamsDirty?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case branch = "branch"
+        case dirty = "dirty"
+      }
+
+      public init(sessionId: String, branch: String, dirty: SessionsCheckoutParamsDirty? = nil) {
+        self.sessionId = sessionId
+        self.branch = branch
+        self.dirty = dirty
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(branch, forKey: .branch)
+        try c.encodeIfPresent(dirty, forKey: .dirty)
+      }
+    }
+
+    public struct SessionsCheckoutResult: Codable, Sendable {
+      public var accepted: Bool
+      public var blockedBy: String?
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+        case blockedBy = "blocked_by"
+      }
+
+      public init(accepted: Bool, blockedBy: String? = nil) {
+        self.accepted = accepted
+        self.blockedBy = blockedBy
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+        try c.encodeIfPresent(blockedBy, forKey: .blockedBy)
+      }
+    }
+
+    public struct SessionsCommitParams: Codable, Sendable {
+      public var sessionId: String
+      public var message: String
+      public var stageAll: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case message = "message"
+        case stageAll = "stage_all"
+      }
+
+      public init(sessionId: String, message: String, stageAll: Bool? = nil) {
+        self.sessionId = sessionId
+        self.message = message
+        self.stageAll = stageAll
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(message, forKey: .message)
+        try c.encodeIfPresent(stageAll, forKey: .stageAll)
+      }
+    }
+
+    public struct SessionsCommitResult: Codable, Sendable {
+      public var output: String
+
+      enum CodingKeys: String, CodingKey {
+        case output = "output"
+      }
+
+      public init(output: String) {
+        self.output = output
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(output, forKey: .output)
+      }
+    }
+
+    public struct SessionsCommitDiffParams: Codable, Sendable {
+      public var sessionId: String
+      public var hash: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case hash = "hash"
+      }
+
+      public init(sessionId: String, hash: String) {
+        self.sessionId = sessionId
+        self.hash = hash
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(hash, forKey: .hash)
+      }
+    }
+
+    public struct SessionsCommitDiffResult: Codable, Sendable {
+      public var diff: String
+
+      enum CodingKeys: String, CodingKey {
+        case diff = "diff"
+      }
+
+      public init(diff: String) {
+        self.diff = diff
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(diff, forKey: .diff)
+      }
+    }
+
+    public struct SessionsCompareBranchesParams: Codable, Sendable {
+      public var sessionId: String
+      public var left: String
+      public var right: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case left = "left"
+        case right = "right"
+      }
+
+      public init(sessionId: String, left: String, right: String) {
+        self.sessionId = sessionId
+        self.left = left
+        self.right = right
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(left, forKey: .left)
+        try c.encode(right, forKey: .right)
+      }
+    }
+
+    public struct SessionsCreateParams: Codable, Sendable {
+      public var repoRoot: String
+      public var branch: String
+      public var description: String
+      public var useExistingBranch: Bool?
+      public var baseBranch: String?
+      public var prompt: String?
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repo_root"
+        case branch = "branch"
+        case description = "description"
+        case useExistingBranch = "use_existing_branch"
+        case baseBranch = "base_branch"
+        case prompt = "prompt"
+      }
+
+      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil) {
+        self.repoRoot = repoRoot
+        self.branch = branch
+        self.description = description
+        self.useExistingBranch = useExistingBranch
+        self.baseBranch = baseBranch
+        self.prompt = prompt
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+        try c.encode(branch, forKey: .branch)
+        try c.encode(description, forKey: .description)
+        try c.encodeIfPresent(useExistingBranch, forKey: .useExistingBranch)
+        try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
+        try c.encodeIfPresent(prompt, forKey: .prompt)
+      }
+    }
+
+    public struct SessionsCreateResult: Codable, Sendable {
+      public var session: RemoteSession
+
+      enum CodingKeys: String, CodingKey {
+        case session = "session"
+      }
+
+      public init(session: RemoteSession) {
+        self.session = session
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(session, forKey: .session)
+      }
+    }
+
+    public struct SessionsCreateBranchParams: Codable, Sendable {
+      public var sessionId: String
+      public var name: String
+      public var startPoint: String?
+      public var checkout: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case name = "name"
+        case startPoint = "start_point"
+        case checkout = "checkout"
+      }
+
+      public init(sessionId: String, name: String, startPoint: String? = nil, checkout: Bool? = nil) {
+        self.sessionId = sessionId
+        self.name = name
+        self.startPoint = startPoint
+        self.checkout = checkout
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(name, forKey: .name)
+        try c.encodeIfPresent(startPoint, forKey: .startPoint)
+        try c.encodeIfPresent(checkout, forKey: .checkout)
+      }
+    }
+
+    public struct SessionsCreateBranchResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsDeleteParams: Codable, Sendable {
+      public var id: String
+      public var deleteBranch: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case deleteBranch = "delete_branch"
+      }
+
+      public init(id: String, deleteBranch: Bool? = nil) {
+        self.id = id
+        self.deleteBranch = deleteBranch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encodeIfPresent(deleteBranch, forKey: .deleteBranch)
+      }
+    }
+
+    public struct SessionsDeleteResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsDeleteBranchParams: Codable, Sendable {
+      public var sessionId: String
+      public var name: String
+      public var force: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case name = "name"
+        case force = "force"
+      }
+
+      public init(sessionId: String, name: String, force: Bool? = nil) {
+        self.sessionId = sessionId
+        self.name = name
+        self.force = force
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(name, forKey: .name)
+        try c.encodeIfPresent(force, forKey: .force)
+      }
+    }
+
+    public struct SessionsDeleteBranchResult: Codable, Sendable {
+      public var accepted: Bool
+      public var blockedBy: String?
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+        case blockedBy = "blocked_by"
+      }
+
+      public init(accepted: Bool, blockedBy: String? = nil) {
+        self.accepted = accepted
+        self.blockedBy = blockedBy
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+        try c.encodeIfPresent(blockedBy, forKey: .blockedBy)
+      }
+    }
+
+    public struct SessionsDiffParamsMode: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let branch = SessionsDiffParamsMode(rawValue: "branch")
+      public static let working = SessionsDiffParamsMode(rawValue: "working")
+    }
+
+    public struct SessionsDiffParams: Codable, Sendable {
+      public var sessionId: String
+      public var mode: SessionsDiffParamsMode?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case mode = "mode"
+      }
+
+      public init(sessionId: String, mode: SessionsDiffParamsMode? = nil) {
+        self.sessionId = sessionId
+        self.mode = mode
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(mode, forKey: .mode)
+      }
+    }
+
+    public struct SessionsDiffResult: Codable, Sendable {
+      public var diff: String
+      public var baseBranch: String?
+
+      enum CodingKeys: String, CodingKey {
+        case diff = "diff"
+        case baseBranch = "base_branch"
+      }
+
+      public init(diff: String, baseBranch: String? = nil) {
+        self.diff = diff
+        self.baseBranch = baseBranch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(diff, forKey: .diff)
+        try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
+      }
+    }
+
+    public struct SessionsFilesParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsFilesResult: Codable, Sendable {
+      public var files: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case files = "files"
+      }
+
+      public init(files: [String]) {
+        self.files = files
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(files, forKey: .files)
+      }
+    }
+
+    public struct SessionsGitStatusParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsGitStatusResult: Codable, Sendable {
+      public var status: RemoteGitStatus
+
+      enum CodingKeys: String, CodingKey {
+        case status = "status"
+      }
+
+      public init(status: RemoteGitStatus) {
+        self.status = status
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(status, forKey: .status)
+      }
+    }
+
+    public struct SessionsListParams: Codable, Sendable {
+      public var repoRoot: String
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repo_root"
+      }
+
+      public init(repoRoot: String) {
+        self.repoRoot = repoRoot
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+      }
+    }
+
+    public struct SessionsListResult: Codable, Sendable {
+      public var sessions: [RemoteSession]
+
+      enum CodingKeys: String, CodingKey {
+        case sessions = "sessions"
+      }
+
+      public init(sessions: [RemoteSession]) {
+        self.sessions = sessions
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessions, forKey: .sessions)
+      }
+    }
+
+    public struct SessionsMarkReadyParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct SessionsMarkReadyResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsMergeBaseParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let keep = SessionsMergeBaseParamsStrategy(rawValue: "keep")
+      public static let squash = SessionsMergeBaseParamsStrategy(rawValue: "squash")
+    }
+
+    public struct SessionsMergeBaseParams: Codable, Sendable {
+      public var sessionId: String
+      public var strategy: SessionsMergeBaseParamsStrategy
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case strategy = "strategy"
+      }
+
+      public init(sessionId: String, strategy: SessionsMergeBaseParamsStrategy) {
+        self.sessionId = sessionId
+        self.strategy = strategy
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(strategy, forKey: .strategy)
+      }
+    }
+
+    public struct SessionsMergeBaseResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsMergeBlockersParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsMergeBlockersResult: Codable, Sendable {
+      public var blockers: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case blockers = "blockers"
+      }
+
+      public init(blockers: [String]) {
+        self.blockers = blockers
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(blockers, forKey: .blockers)
+      }
+    }
+
+    public struct SessionsMergeBranchParams: Codable, Sendable {
+      public var sessionId: String
+      public var from: String
+      public var squash: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case from = "from"
+        case squash = "squash"
+      }
+
+      public init(sessionId: String, from: String, squash: Bool? = nil) {
+        self.sessionId = sessionId
+        self.from = from
+        self.squash = squash
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(from, forKey: .from)
+        try c.encodeIfPresent(squash, forKey: .squash)
+      }
+    }
+
+    public struct SessionsMergeBranchResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsPinBranchParams: Codable, Sendable {
+      public var sessionId: String
+      public var branch: String
+      public var pinned: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case branch = "branch"
+        case pinned = "pinned"
+      }
+
+      public init(sessionId: String, branch: String, pinned: Bool) {
+        self.sessionId = sessionId
+        self.branch = branch
+        self.pinned = pinned
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(branch, forKey: .branch)
+        try c.encode(pinned, forKey: .pinned)
+      }
+    }
+
+    public struct SessionsPinBranchResult: Codable, Sendable {
+      public var pinned: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case pinned = "pinned"
+      }
+
+      public init(pinned: [String]) {
+        self.pinned = pinned
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(pinned, forKey: .pinned)
+      }
+    }
+
+    public struct SessionsPullParamsStrategy: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let ffOnly = SessionsPullParamsStrategy(rawValue: "ff-only")
+      public static let merge = SessionsPullParamsStrategy(rawValue: "merge")
+      public static let rebase = SessionsPullParamsStrategy(rawValue: "rebase")
+    }
+
+    public struct SessionsPullParams: Codable, Sendable {
+      public var sessionId: String
+      public var strategy: SessionsPullParamsStrategy
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case strategy = "strategy"
+      }
+
+      public init(sessionId: String, strategy: SessionsPullParamsStrategy) {
+        self.sessionId = sessionId
+        self.strategy = strategy
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(strategy, forKey: .strategy)
+      }
+    }
+
+    public struct SessionsPullResult: Codable, Sendable {
+      public var output: String
+
+      enum CodingKeys: String, CodingKey {
+        case output = "output"
+      }
+
+      public init(output: String) {
+        self.output = output
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(output, forKey: .output)
+      }
+    }
+
+    public struct SessionsPushParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsPushResult: Codable, Sendable {
+      public var branch: String
+      public var remote: String
+      public var prUrl: String?
+
+      enum CodingKeys: String, CodingKey {
+        case branch = "branch"
+        case remote = "remote"
+        case prUrl = "pr_url"
+      }
+
+      public init(branch: String, remote: String, prUrl: String? = nil) {
+        self.branch = branch
+        self.remote = remote
+        self.prUrl = prUrl
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(branch, forKey: .branch)
+        try c.encode(remote, forKey: .remote)
+        try c.encode(prUrl, forKey: .prUrl)
+      }
+    }
+
+    public struct SessionsPushBranchParams: Codable, Sendable {
+      public var sessionId: String
+      public var branch: String
+      public var remote: String?
+      public var setUpstream: Bool?
+      public var forceWithLease: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case branch = "branch"
+        case remote = "remote"
+        case setUpstream = "set_upstream"
+        case forceWithLease = "force_with_lease"
+      }
+
+      public init(sessionId: String, branch: String, remote: String? = nil, setUpstream: Bool? = nil, forceWithLease: Bool? = nil) {
+        self.sessionId = sessionId
+        self.branch = branch
+        self.remote = remote
+        self.setUpstream = setUpstream
+        self.forceWithLease = forceWithLease
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(branch, forKey: .branch)
+        try c.encodeIfPresent(remote, forKey: .remote)
+        try c.encodeIfPresent(setUpstream, forKey: .setUpstream)
+        try c.encodeIfPresent(forceWithLease, forKey: .forceWithLease)
+      }
+    }
+
+    public struct SessionsPushBranchResult: Codable, Sendable {
+      public var output: String
+
+      enum CodingKeys: String, CodingKey {
+        case output = "output"
+      }
+
+      public init(output: String) {
+        self.output = output
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(output, forKey: .output)
+      }
+    }
+
+    public struct SessionsRebaseCurrentParams: Codable, Sendable {
+      public var sessionId: String
+      public var onto: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case onto = "onto"
+      }
+
+      public init(sessionId: String, onto: String) {
+        self.sessionId = sessionId
+        self.onto = onto
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(onto, forKey: .onto)
+      }
+    }
+
+    public struct SessionsRebaseCurrentResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsRenameParams: Codable, Sendable {
+      public var id: String
+      public var displayName: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case displayName = "display_name"
+      }
+
+      public init(id: String, displayName: String) {
+        self.id = id
+        self.displayName = displayName
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(displayName, forKey: .displayName)
+      }
+    }
+
+    public struct SessionsRenameResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsRenameBranchParams: Codable, Sendable {
+      public var id: String
+      public var branch: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case branch = "branch"
+      }
+
+      public init(id: String, branch: String) {
+        self.id = id
+        self.branch = branch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(branch, forKey: .branch)
+      }
+    }
+
+    public struct SessionsRenameBranchResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsRenameLocalBranchParams: Codable, Sendable {
+      public var sessionId: String
+      public var from: String
+      public var to: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case from = "from"
+        case to = "to"
+      }
+
+      public init(sessionId: String, from: String, to: String) {
+        self.sessionId = sessionId
+        self.from = from
+        self.to = to
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(from, forKey: .from)
+        try c.encode(to, forKey: .to)
+      }
+    }
+
+    public struct SessionsRenameLocalBranchResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsResolveMentionPathParams: Codable, Sendable {
+      public var sessionId: String
+      public var query: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case query = "query"
+      }
+
+      public init(sessionId: String, query: String) {
+        self.sessionId = sessionId
+        self.query = query
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(query, forKey: .query)
+      }
+    }
+
+    public struct SessionsRetrySetupParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct SessionsRetrySetupResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct SessionsSetBaseBranchParams: Codable, Sendable {
+      public var id: String
+      public var baseBranch: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case baseBranch = "base_branch"
+      }
+
+      public init(id: String, baseBranch: String) {
+        self.id = id
+        self.baseBranch = baseBranch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(baseBranch, forKey: .baseBranch)
+      }
+    }
+
+    public struct SessionsSetBaseBranchResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
     }
   }
-}
 
-extension ArgusProtocol {
   /// The typed remote methods (`REMOTE_METHODS`), monitor and control tier.
   public enum Methods {
     public enum AgentsCapabilities: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsCapabilitiesParams
-      public typealias Result = ArgusProtocol.AgentsCapabilitiesResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsCapabilitiesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsCapabilitiesResult
       public static let name = "agents.capabilities"
     }
 
     public enum AgentsImage: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsImageParams
-      public typealias Result = ArgusProtocol.AgentsImageResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsImageParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsImageResult
       public static let name = "agents.image"
     }
 
     public enum AgentsInterrupt: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsInterruptParams
-      public typealias Result = ArgusProtocol.AgentsInterruptResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsInterruptParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsInterruptResult
       public static let name = "agents.interrupt"
     }
 
     public enum AgentsList: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsListParams
-      public typealias Result = ArgusProtocol.AgentsListResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsListResult
       public static let name = "agents.list"
     }
 
     public enum AgentsQueueAdd: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsQueueAddParams
-      public typealias Result = ArgusProtocol.AgentsQueueAddResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsQueueAddParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsQueueAddResult
       public static let name = "agents.queue_add"
     }
 
     public enum AgentsQueueList: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsQueueListParams
-      public typealias Result = ArgusProtocol.AgentsQueueListResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsQueueListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsQueueListResult
       public static let name = "agents.queue_list"
     }
 
     public enum AgentsQueueRemove: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsQueueRemoveParams
-      public typealias Result = ArgusProtocol.AgentsQueueRemoveResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsQueueRemoveParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsQueueRemoveResult
       public static let name = "agents.queue_remove"
     }
 
     public enum AgentsQueueUpdate: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsQueueUpdateParams
-      public typealias Result = ArgusProtocol.AgentsQueueUpdateResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsQueueUpdateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsQueueUpdateResult
       public static let name = "agents.queue_update"
     }
 
     public enum AgentsSend: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsSendParams
-      public typealias Result = ArgusProtocol.AgentsSendResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsSendParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsSendResult
       public static let name = "agents.send"
     }
 
     public enum AgentsSetClaudeAccount: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsSetClaudeAccountParams
-      public typealias Result = ArgusProtocol.AgentsSetClaudeAccountResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsSetClaudeAccountParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsSetClaudeAccountResult
       public static let name = "agents.set_claude_account"
     }
 
     public enum AgentsSetEffort: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsSetEffortParams
-      public typealias Result = ArgusProtocol.AgentsSetEffortResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsSetEffortParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsSetEffortResult
       public static let name = "agents.set_effort"
     }
 
     public enum AgentsSetModel: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsSetModelParams
-      public typealias Result = ArgusProtocol.AgentsSetModelResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsSetModelParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsSetModelResult
       public static let name = "agents.set_model"
     }
 
     public enum AgentsSetPermissionMode: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsSetPermissionModeParams
-      public typealias Result = ArgusProtocol.AgentsSetPermissionModeResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsSetPermissionModeParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsSetPermissionModeResult
       public static let name = "agents.set_permission_mode"
     }
 
     public enum AgentsSpawn: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsSpawnParams
-      public typealias Result = ArgusProtocol.AgentsSpawnResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsSpawnParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsSpawnResult
       public static let name = "agents.spawn"
     }
 
     public enum AgentsStatus: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsStatusParams
-      public typealias Result = ArgusProtocol.AgentsStatusResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsStatusParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsStatusResult
       public static let name = "agents.status"
     }
 
     public enum AgentsStop: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsStopParams
-      public typealias Result = ArgusProtocol.AgentsStopResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsStopParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsStopResult
       public static let name = "agents.stop"
     }
 
     public enum AgentsStopped: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsStoppedParams
-      public typealias Result = ArgusProtocol.AgentsStoppedResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsStoppedParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsStoppedResult
       public static let name = "agents.stopped"
     }
 
     public enum AgentsStoppedImage: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsStoppedImageParams
-      public typealias Result = ArgusProtocol.AgentsStoppedImageResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsStoppedImageParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsStoppedImageResult
       public static let name = "agents.stopped_image"
     }
 
     public enum AgentsStoppedTranscript: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsStoppedTranscriptParams
-      public typealias Result = ArgusProtocol.AgentsStoppedTranscriptResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsStoppedTranscriptParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsStoppedTranscriptResult
       public static let name = "agents.stopped_transcript"
     }
 
     public enum AgentsTranscript: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsTranscriptParams
-      public typealias Result = ArgusProtocol.AgentsTranscriptResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsTranscriptParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsTranscriptResult
       public static let name = "agents.transcript"
     }
 
     public enum AgentsVitals: RemoteCommand {
-      public typealias Params = ArgusProtocol.AgentsVitalsParams
-      public typealias Result = ArgusProtocol.AgentsVitalsResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsVitalsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsVitalsResult
       public static let name = "agents.vitals"
     }
 
     public enum AutomationsCancelRun: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsCancelRunParams
-      public typealias Result = ArgusProtocol.AutomationsCancelRunResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsCancelRunParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsCancelRunResult
       public static let name = "automations.cancel_run"
     }
 
     public enum AutomationsCreate: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsCreateParams
-      public typealias Result = ArgusProtocol.AutomationsCreateResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsCreateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsCreateResult
       public static let name = "automations.create"
     }
 
     public enum AutomationsDelete: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsDeleteParams
-      public typealias Result = ArgusProtocol.AutomationsDeleteResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsDeleteParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsDeleteResult
       public static let name = "automations.delete"
     }
 
     public enum AutomationsDeleteMemory: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsDeleteMemoryParams
-      public typealias Result = ArgusProtocol.AutomationsDeleteMemoryResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsDeleteMemoryParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsDeleteMemoryResult
       public static let name = "automations.delete_memory"
     }
 
     public enum AutomationsGet: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsGetParams
-      public typealias Result = ArgusProtocol.AutomationsGetResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsGetParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsGetResult
       public static let name = "automations.get"
     }
 
     public enum AutomationsList: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsListParams
-      public typealias Result = ArgusProtocol.AutomationsListResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsListResult
       public static let name = "automations.list"
     }
 
     public enum AutomationsMarkRunRead: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsMarkRunReadParams
-      public typealias Result = ArgusProtocol.AutomationsMarkRunReadResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsMarkRunReadParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsMarkRunReadResult
       public static let name = "automations.mark_run_read"
     }
 
     public enum AutomationsMemories: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsMemoriesParams
-      public typealias Result = ArgusProtocol.AutomationsMemoriesResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsMemoriesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsMemoriesResult
       public static let name = "automations.memories"
     }
 
     public enum AutomationsRevisePlaybook: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsRevisePlaybookParams
-      public typealias Result = ArgusProtocol.AutomationsRevisePlaybookResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsRevisePlaybookParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsRevisePlaybookResult
       public static let name = "automations.revise_playbook"
     }
 
     public enum AutomationsRun: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsRunParams
-      public typealias Result = ArgusProtocol.AutomationsRunResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsRunParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsRunResult
       public static let name = "automations.run"
     }
 
     public enum AutomationsRunFeedback: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsRunFeedbackParams
-      public typealias Result = ArgusProtocol.AutomationsRunFeedbackResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsRunFeedbackParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsRunFeedbackResult
       public static let name = "automations.run_feedback"
     }
 
     public enum AutomationsRunNow: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsRunNowParams
-      public typealias Result = ArgusProtocol.AutomationsRunNowResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsRunNowParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsRunNowResult
       public static let name = "automations.run_now"
     }
 
     public enum AutomationsRunScratch: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsRunScratchParams
-      public typealias Result = ArgusProtocol.AutomationsRunScratchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsRunScratchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsRunScratchResult
       public static let name = "automations.run_scratch"
     }
 
     public enum AutomationsRunners: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsRunnersParams
-      public typealias Result = ArgusProtocol.AutomationsRunnersResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsRunnersParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsRunnersResult
       public static let name = "automations.runners"
     }
 
     public enum AutomationsRuns: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsRunsParams
-      public typealias Result = ArgusProtocol.AutomationsRunsResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsRunsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsRunsResult
       public static let name = "automations.runs"
     }
 
     public enum AutomationsSaveMemory: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsSaveMemoryParams
-      public typealias Result = ArgusProtocol.AutomationsSaveMemoryResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsSaveMemoryParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsSaveMemoryResult
       public static let name = "automations.save_memory"
     }
 
     public enum AutomationsSaveScratchRun: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsSaveScratchRunParams
-      public typealias Result = ArgusProtocol.AutomationsSaveScratchRunResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsSaveScratchRunParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsSaveScratchRunResult
       public static let name = "automations.save_scratch_run"
     }
 
     public enum AutomationsSetEnabled: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsSetEnabledParams
-      public typealias Result = ArgusProtocol.AutomationsSetEnabledResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsSetEnabledParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsSetEnabledResult
       public static let name = "automations.set_enabled"
     }
 
     public enum AutomationsSources: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsSourcesParams
-      public typealias Result = ArgusProtocol.AutomationsSourcesResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsSourcesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsSourcesResult
       public static let name = "automations.sources"
     }
 
     public enum AutomationsUpdate: RemoteCommand {
-      public typealias Params = ArgusProtocol.AutomationsUpdateParams
-      public typealias Result = ArgusProtocol.AutomationsUpdateResult
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsUpdateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsUpdateResult
       public static let name = "automations.update"
     }
 
     public enum BrowserUnwatch: RemoteCommand {
-      public typealias Params = ArgusProtocol.BrowserUnwatchParams
-      public typealias Result = ArgusProtocol.BrowserUnwatchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.BrowserUnwatchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.BrowserUnwatchResult
       public static let name = "browser.unwatch"
     }
 
     public enum BrowserWatch: RemoteCommand {
-      public typealias Params = ArgusProtocol.BrowserWatchParams
-      public typealias Result = ArgusProtocol.BrowserWatchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.BrowserWatchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.BrowserWatchResult
       public static let name = "browser.watch"
     }
 
     public enum ClaudeAccountsAdd: RemoteCommand {
-      public typealias Params = ArgusProtocol.ClaudeAccountsAddParams
-      public typealias Result = ArgusProtocol.ClaudeAccountsAddResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ClaudeAccountsAddParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ClaudeAccountsAddResult
       public static let name = "claude_accounts.add"
     }
 
     public enum ClaudeAccountsList: RemoteCommand {
-      public typealias Params = ArgusProtocol.ClaudeAccountsListParams
-      public typealias Result = ArgusProtocol.ClaudeAccountsListResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ClaudeAccountsListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ClaudeAccountsListResult
       public static let name = "claude_accounts.list"
     }
 
     public enum ClaudeAccountsLoginCancel: RemoteCommand {
-      public typealias Params = ArgusProtocol.ClaudeAccountsLoginCancelParams
-      public typealias Result = ArgusProtocol.ClaudeAccountsLoginCancelResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ClaudeAccountsLoginCancelParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ClaudeAccountsLoginCancelResult
       public static let name = "claude_accounts.login_cancel"
     }
 
     public enum ClaudeAccountsLoginStart: RemoteCommand {
-      public typealias Params = ArgusProtocol.ClaudeAccountsLoginStartParams
-      public typealias Result = ArgusProtocol.ClaudeAccountsLoginStartResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ClaudeAccountsLoginStartParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ClaudeAccountsLoginStartResult
       public static let name = "claude_accounts.login_start"
     }
 
     public enum ClaudeAccountsLoginStatus: RemoteCommand {
-      public typealias Params = ArgusProtocol.ClaudeAccountsLoginStatusParams
+      public typealias Params = ArgusProtocol.MethodsTypes.ClaudeAccountsLoginStatusParams
       public typealias Result = ArgusProtocol.RemoteClaudeLoginState
       public static let name = "claude_accounts.login_status"
     }
 
     public enum ClaudeAccountsLoginSubmitCode: RemoteCommand {
-      public typealias Params = ArgusProtocol.ClaudeAccountsLoginSubmitCodeParams
-      public typealias Result = ArgusProtocol.ClaudeAccountsLoginSubmitCodeResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ClaudeAccountsLoginSubmitCodeParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ClaudeAccountsLoginSubmitCodeResult
       public static let name = "claude_accounts.login_submit_code"
     }
 
     public enum ClaudeAccountsRemove: RemoteCommand {
-      public typealias Params = ArgusProtocol.ClaudeAccountsRemoveParams
-      public typealias Result = ArgusProtocol.ClaudeAccountsRemoveResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ClaudeAccountsRemoveParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ClaudeAccountsRemoveResult
       public static let name = "claude_accounts.remove"
     }
 
     public enum ClaudeAccountsRename: RemoteCommand {
-      public typealias Params = ArgusProtocol.ClaudeAccountsRenameParams
-      public typealias Result = ArgusProtocol.ClaudeAccountsRenameResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ClaudeAccountsRenameParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ClaudeAccountsRenameResult
       public static let name = "claude_accounts.rename"
     }
 
     public enum ClaudeAccountsSetActive: RemoteCommand {
-      public typealias Params = ArgusProtocol.ClaudeAccountsSetActiveParams
-      public typealias Result = ArgusProtocol.ClaudeAccountsSetActiveResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ClaudeAccountsSetActiveParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ClaudeAccountsSetActiveResult
       public static let name = "claude_accounts.set_active"
     }
 
     public enum DeviceCapabilities: RemoteCommand {
-      public typealias Params = ArgusProtocol.DeviceCapabilitiesParams
-      public typealias Result = ArgusProtocol.DeviceCapabilitiesResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DeviceCapabilitiesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DeviceCapabilitiesResult
       public static let name = "device.capabilities"
     }
 
     public enum DevicePushInfo: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicePushInfoParams
-      public typealias Result = ArgusProtocol.DevicePushInfoResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicePushInfoParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicePushInfoResult
       public static let name = "device.push_info"
     }
 
     public enum DeviceRegisterPush: RemoteCommand {
-      public typealias Params = ArgusProtocol.DeviceRegisterPushParams
-      public typealias Result = ArgusProtocol.DeviceRegisterPushResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DeviceRegisterPushParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DeviceRegisterPushResult
       public static let name = "device.register_push"
     }
 
     public enum DeviceRename: RemoteCommand {
-      public typealias Params = ArgusProtocol.DeviceRenameParams
-      public typealias Result = ArgusProtocol.DeviceRenameResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DeviceRenameParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DeviceRenameResult
       public static let name = "device.rename"
     }
 
     public enum DeviceUnregisterPush: RemoteCommand {
-      public typealias Params = ArgusProtocol.DeviceUnregisterPushParams
-      public typealias Result = ArgusProtocol.DeviceUnregisterPushResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DeviceUnregisterPushParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DeviceUnregisterPushResult
       public static let name = "device.unregister_push"
     }
 
     public enum DevicesButton: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicesButtonParams
-      public typealias Result = ArgusProtocol.DevicesButtonResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicesButtonParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicesButtonResult
       public static let name = "devices.button"
     }
 
     public enum DevicesClaim: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicesClaimParams
-      public typealias Result = ArgusProtocol.DevicesClaimResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicesClaimParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicesClaimResult
       public static let name = "devices.claim"
     }
 
     public enum DevicesClaimStatus: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicesClaimStatusParams
-      public typealias Result = ArgusProtocol.DevicesClaimStatusResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicesClaimStatusParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicesClaimStatusResult
       public static let name = "devices.claim_status"
     }
 
     public enum DevicesKeyboard: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicesKeyboardParams
-      public typealias Result = ArgusProtocol.DevicesKeyboardResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicesKeyboardParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicesKeyboardResult
       public static let name = "devices.keyboard"
     }
 
     public enum DevicesList: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicesListParams
-      public typealias Result = ArgusProtocol.DevicesListResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicesListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicesListResult
       public static let name = "devices.list"
     }
 
     public enum DevicesRelease: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicesReleaseParams
-      public typealias Result = ArgusProtocol.DevicesReleaseResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicesReleaseParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicesReleaseResult
       public static let name = "devices.release"
     }
 
     public enum DevicesSetFold: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicesSetFoldParams
-      public typealias Result = ArgusProtocol.DevicesSetFoldResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicesSetFoldParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicesSetFoldResult
       public static let name = "devices.set_fold"
     }
 
     public enum DevicesSetOrientation: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicesSetOrientationParams
-      public typealias Result = ArgusProtocol.DevicesSetOrientationResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicesSetOrientationParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicesSetOrientationResult
       public static let name = "devices.set_orientation"
     }
 
     public enum DevicesState: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicesStateParams
-      public typealias Result = ArgusProtocol.DevicesStateResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicesStateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicesStateResult
       public static let name = "devices.state"
     }
 
     public enum DevicesTouch: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicesTouchParams
-      public typealias Result = ArgusProtocol.DevicesTouchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicesTouchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicesTouchResult
       public static let name = "devices.touch"
     }
 
     public enum DevicesUnwatch: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicesUnwatchParams
-      public typealias Result = ArgusProtocol.DevicesUnwatchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicesUnwatchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicesUnwatchResult
       public static let name = "devices.unwatch"
     }
 
     public enum DevicesWatch: RemoteCommand {
-      public typealias Params = ArgusProtocol.DevicesWatchParams
-      public typealias Result = ArgusProtocol.DevicesWatchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.DevicesWatchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DevicesWatchResult
       public static let name = "devices.watch"
     }
 
     public enum GithubCommentPullRequest: RemoteCommand {
-      public typealias Params = ArgusProtocol.GithubCommentPullRequestParams
-      public typealias Result = ArgusProtocol.GithubCommentPullRequestResult
+      public typealias Params = ArgusProtocol.MethodsTypes.GithubCommentPullRequestParams
+      public typealias Result = ArgusProtocol.MethodsTypes.GithubCommentPullRequestResult
       public static let name = "github.comment_pull_request"
     }
 
     public enum GithubCreatePullRequest: RemoteCommand {
-      public typealias Params = ArgusProtocol.GithubCreatePullRequestParams
-      public typealias Result = ArgusProtocol.GithubCreatePullRequestResult
+      public typealias Params = ArgusProtocol.MethodsTypes.GithubCreatePullRequestParams
+      public typealias Result = ArgusProtocol.MethodsTypes.GithubCreatePullRequestResult
       public static let name = "github.create_pull_request"
     }
 
     public enum GithubMergePullRequest: RemoteCommand {
-      public typealias Params = ArgusProtocol.GithubMergePullRequestParams
-      public typealias Result = ArgusProtocol.GithubMergePullRequestResult
+      public typealias Params = ArgusProtocol.MethodsTypes.GithubMergePullRequestParams
+      public typealias Result = ArgusProtocol.MethodsTypes.GithubMergePullRequestResult
       public static let name = "github.merge_pull_request"
     }
 
     public enum GithubPullRequest: RemoteCommand {
-      public typealias Params = ArgusProtocol.GithubPullRequestParams
-      public typealias Result = ArgusProtocol.GithubPullRequestResult
+      public typealias Params = ArgusProtocol.MethodsTypes.GithubPullRequestParams
+      public typealias Result = ArgusProtocol.MethodsTypes.GithubPullRequestResult
       public static let name = "github.pull_request"
     }
 
     public enum GithubPullRequests: RemoteCommand {
-      public typealias Params = ArgusProtocol.GithubPullRequestsParams
-      public typealias Result = ArgusProtocol.GithubPullRequestsResult
+      public typealias Params = ArgusProtocol.MethodsTypes.GithubPullRequestsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.GithubPullRequestsResult
       public static let name = "github.pull_requests"
     }
 
     public enum HostEndpoints: RemoteCommand {
-      public typealias Params = ArgusProtocol.HostEndpointsParams
-      public typealias Result = ArgusProtocol.HostEndpointsResult
+      public typealias Params = ArgusProtocol.MethodsTypes.HostEndpointsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.HostEndpointsResult
       public static let name = "host.endpoints"
     }
 
     public enum PermissionRespond: RemoteCommand {
-      public typealias Params = ArgusProtocol.PermissionRespondParams
-      public typealias Result = ArgusProtocol.PermissionRespondResult
+      public typealias Params = ArgusProtocol.MethodsTypes.PermissionRespondParams
+      public typealias Result = ArgusProtocol.MethodsTypes.PermissionRespondResult
       public static let name = "permission.respond"
     }
 
     public enum ProjectsList: RemoteCommand {
-      public typealias Params = ArgusProtocol.ProjectsListParams
-      public typealias Result = ArgusProtocol.ProjectsListResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ProjectsListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProjectsListResult
       public static let name = "projects.list"
     }
 
     public enum ProposalsAccept: RemoteCommand {
-      public typealias Params = ArgusProtocol.ProposalsAcceptParams
-      public typealias Result = ArgusProtocol.ProposalsAcceptResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ProposalsAcceptParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProposalsAcceptResult
       public static let name = "proposals.accept"
     }
 
     public enum ProposalsDismiss: RemoteCommand {
-      public typealias Params = ArgusProtocol.ProposalsDismissParams
-      public typealias Result = ArgusProtocol.ProposalsDismissResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ProposalsDismissParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProposalsDismissResult
       public static let name = "proposals.dismiss"
     }
 
     public enum ProposalsList: RemoteCommand {
-      public typealias Params = ArgusProtocol.ProposalsListParams
-      public typealias Result = ArgusProtocol.ProposalsListResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ProposalsListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProposalsListResult
       public static let name = "proposals.list"
     }
 
     public enum ProposalsPerformCleanup: RemoteCommand {
-      public typealias Params = ArgusProtocol.ProposalsPerformCleanupParams
-      public typealias Result = ArgusProtocol.ProposalsPerformCleanupResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ProposalsPerformCleanupParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProposalsPerformCleanupResult
       public static let name = "proposals.perform_cleanup"
     }
 
     public enum ProposalsResolve: RemoteCommand {
-      public typealias Params = ArgusProtocol.ProposalsResolveParams
-      public typealias Result = ArgusProtocol.ProposalsResolveResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ProposalsResolveParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProposalsResolveResult
       public static let name = "proposals.resolve"
     }
 
     public enum ScratchPadsCreate: RemoteCommand {
-      public typealias Params = ArgusProtocol.ScratchPadsCreateParams
-      public typealias Result = ArgusProtocol.ScratchPadsCreateResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ScratchPadsCreateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ScratchPadsCreateResult
       public static let name = "scratch_pads.create"
     }
 
     public enum ScratchPadsList: RemoteCommand {
-      public typealias Params = ArgusProtocol.ScratchPadsListParams
-      public typealias Result = ArgusProtocol.ScratchPadsListResult
+      public typealias Params = ArgusProtocol.MethodsTypes.ScratchPadsListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ScratchPadsListResult
       public static let name = "scratch_pads.list"
     }
 
     public enum SessionsBranchLog: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsBranchLogParams
-      public typealias Result = ArgusProtocol.SessionsBranchLogResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsBranchLogParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsBranchLogResult
       public static let name = "sessions.branch_log"
     }
 
     public enum SessionsBranchPrUrl: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsBranchPrUrlParams
-      public typealias Result = ArgusProtocol.SessionsBranchPrUrlResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsBranchPrUrlParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsBranchPrUrlResult
       public static let name = "sessions.branch_pr_url"
     }
 
     public enum SessionsBranches: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsBranchesParams
-      public typealias Result = ArgusProtocol.SessionsBranchesResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsBranchesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsBranchesResult
       public static let name = "sessions.branches"
     }
 
     public enum SessionsCheckout: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsCheckoutParams
-      public typealias Result = ArgusProtocol.SessionsCheckoutResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsCheckoutParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsCheckoutResult
       public static let name = "sessions.checkout"
     }
 
     public enum SessionsCommit: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsCommitParams
-      public typealias Result = ArgusProtocol.SessionsCommitResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsCommitParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsCommitResult
       public static let name = "sessions.commit"
     }
 
     public enum SessionsCommitDiff: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsCommitDiffParams
-      public typealias Result = ArgusProtocol.SessionsCommitDiffResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsCommitDiffParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsCommitDiffResult
       public static let name = "sessions.commit_diff"
     }
 
     public enum SessionsCompareBranches: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsCompareBranchesParams
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsCompareBranchesParams
       public typealias Result = ArgusProtocol.RemoteBranchCompare
       public static let name = "sessions.compare_branches"
     }
 
     public enum SessionsCreate: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsCreateParams
-      public typealias Result = ArgusProtocol.SessionsCreateResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsCreateParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsCreateResult
       public static let name = "sessions.create"
     }
 
     public enum SessionsCreateBranch: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsCreateBranchParams
-      public typealias Result = ArgusProtocol.SessionsCreateBranchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsCreateBranchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsCreateBranchResult
       public static let name = "sessions.create_branch"
     }
 
     public enum SessionsDelete: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsDeleteParams
-      public typealias Result = ArgusProtocol.SessionsDeleteResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsDeleteParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsDeleteResult
       public static let name = "sessions.delete"
     }
 
     public enum SessionsDeleteBranch: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsDeleteBranchParams
-      public typealias Result = ArgusProtocol.SessionsDeleteBranchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsDeleteBranchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsDeleteBranchResult
       public static let name = "sessions.delete_branch"
     }
 
     public enum SessionsDiff: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsDiffParams
-      public typealias Result = ArgusProtocol.SessionsDiffResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsDiffParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsDiffResult
       public static let name = "sessions.diff"
     }
 
     public enum SessionsFiles: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsFilesParams
-      public typealias Result = ArgusProtocol.SessionsFilesResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsFilesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsFilesResult
       public static let name = "sessions.files"
     }
 
     public enum SessionsGitStatus: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsGitStatusParams
-      public typealias Result = ArgusProtocol.SessionsGitStatusResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsGitStatusParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsGitStatusResult
       public static let name = "sessions.git_status"
     }
 
     public enum SessionsList: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsListParams
-      public typealias Result = ArgusProtocol.SessionsListResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsListResult
       public static let name = "sessions.list"
     }
 
     public enum SessionsMarkReady: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsMarkReadyParams
-      public typealias Result = ArgusProtocol.SessionsMarkReadyResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsMarkReadyParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsMarkReadyResult
       public static let name = "sessions.mark_ready"
     }
 
     public enum SessionsMergeBase: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsMergeBaseParams
-      public typealias Result = ArgusProtocol.SessionsMergeBaseResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsMergeBaseParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsMergeBaseResult
       public static let name = "sessions.merge_base"
     }
 
     public enum SessionsMergeBlockers: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsMergeBlockersParams
-      public typealias Result = ArgusProtocol.SessionsMergeBlockersResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsMergeBlockersParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsMergeBlockersResult
       public static let name = "sessions.merge_blockers"
     }
 
     public enum SessionsMergeBranch: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsMergeBranchParams
-      public typealias Result = ArgusProtocol.SessionsMergeBranchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsMergeBranchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsMergeBranchResult
       public static let name = "sessions.merge_branch"
     }
 
     public enum SessionsPinBranch: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsPinBranchParams
-      public typealias Result = ArgusProtocol.SessionsPinBranchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsPinBranchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsPinBranchResult
       public static let name = "sessions.pin_branch"
     }
 
     public enum SessionsPull: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsPullParams
-      public typealias Result = ArgusProtocol.SessionsPullResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsPullParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsPullResult
       public static let name = "sessions.pull"
     }
 
     public enum SessionsPush: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsPushParams
-      public typealias Result = ArgusProtocol.SessionsPushResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsPushParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsPushResult
       public static let name = "sessions.push"
     }
 
     public enum SessionsPushBranch: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsPushBranchParams
-      public typealias Result = ArgusProtocol.SessionsPushBranchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsPushBranchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsPushBranchResult
       public static let name = "sessions.push_branch"
     }
 
     public enum SessionsRebaseCurrent: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsRebaseCurrentParams
-      public typealias Result = ArgusProtocol.SessionsRebaseCurrentResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsRebaseCurrentParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsRebaseCurrentResult
       public static let name = "sessions.rebase_current"
     }
 
     public enum SessionsRename: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsRenameParams
-      public typealias Result = ArgusProtocol.SessionsRenameResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsRenameParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsRenameResult
       public static let name = "sessions.rename"
     }
 
     public enum SessionsRenameBranch: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsRenameBranchParams
-      public typealias Result = ArgusProtocol.SessionsRenameBranchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsRenameBranchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsRenameBranchResult
       public static let name = "sessions.rename_branch"
     }
 
     public enum SessionsRenameLocalBranch: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsRenameLocalBranchParams
-      public typealias Result = ArgusProtocol.SessionsRenameLocalBranchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsRenameLocalBranchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsRenameLocalBranchResult
       public static let name = "sessions.rename_local_branch"
     }
 
     public enum SessionsResolveMentionPath: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsResolveMentionPathParams
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsResolveMentionPathParams
       public typealias Result = ArgusProtocol.RemoteMentionPathResult
       public static let name = "sessions.resolve_mention_path"
     }
 
     public enum SessionsRetrySetup: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsRetrySetupParams
-      public typealias Result = ArgusProtocol.SessionsRetrySetupResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsRetrySetupParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsRetrySetupResult
       public static let name = "sessions.retry_setup"
     }
 
     public enum SessionsSetBaseBranch: RemoteCommand {
-      public typealias Params = ArgusProtocol.SessionsSetBaseBranchParams
-      public typealias Result = ArgusProtocol.SessionsSetBaseBranchResult
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsSetBaseBranchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsSetBaseBranchResult
       public static let name = "sessions.set_base_branch"
     }
   }
