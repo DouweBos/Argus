@@ -75,6 +75,21 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
     content = text
     highlighted = ([], nil)
     textStorage?.setAttributedString(text)
+    layoutWholeDocument()
+  }
+
+  /// Each row is its own view sized to all of its text, so lay all of it out.
+  /// TextKit 2 otherwise lays out from the viewport with estimated heights for
+  /// the part scrolled off above, and a long message draws its lines too high.
+  override func setFrameSize(_ newSize: NSSize) {
+    let widthChanged = newSize.width != frame.width
+    super.setFrameSize(newSize)
+    if widthChanged { layoutWholeDocument() }
+  }
+
+  private func layoutWholeDocument() {
+    guard let layout = textLayoutManager else { return }
+    layout.ensureLayout(for: layout.documentRange)
   }
 
   /// The size for a proposed width; nil asks for the natural (unwrapped) width.
