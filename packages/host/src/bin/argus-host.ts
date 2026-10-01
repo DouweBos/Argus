@@ -2,19 +2,32 @@
  * `argus-host` — the Argus host core as a plain Node process. No Electron, no
  * window: sessions, agents, terminals, simulators and the gateway, driven by
  * any paired client.
+ *
+ * `--desktop` runs it as the Mac app's host instead: on `~/.argus`, with the
+ * gateway following Settings, and the app attached over `--ui-socket`.
  */
 
-import "./hostEnv";
 import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
 import { shutdownHost, startHost, syncHostCleanup } from "../boot";
 import { argusHomeDir } from "../lib/argusHome";
+import { acquireHostLock, releaseHostLock } from "../lib/hostLock";
 import { nodeSecretStorage } from "../lib/nodeSecretStorage";
 import { nodeHostPlatform, setHostPlatform } from "../platform";
 import { startPowerAssertion } from "../serverMode";
+import {
+  startLocalUiSocket,
+  type LocalUiServer,
+} from "../services/remote/localUiSocket";
 import { LOCAL_GATEWAY_PORT } from "../services/remote/remoteService";
+import { uiHostPlatform } from "../services/remote/uiHostPlatform";
 import { attachConsolePairing } from "./consolePairing";
+import { parseHostArgs } from "./hostArgs";
+import { desktopMode } from "./hostEnv";
+
+/** Exit code when another host holds this ARGUS_HOME; the Mac app keys on it. */
+const EXIT_LOCKED = 75;
 
 function print(line: string): void {
   process.stdout.write(`${line}\n`);
@@ -29,12 +42,37 @@ function resolveWebClientDir(): string | null {
   return fs.existsSync(path.join(candidate, "index.html")) ? candidate : null;
 }
 
-setHostPlatform(nodeHostPlatform({ secretStorage: nodeSecretStorage() }));
-// A sleeping Mac stops agents mid-run and drops every attached client.
-startPowerAssertion();
+const args = parseHostArgs(process.argv.slice(2));
+
+const lock = acquireHostLock(desktopMode ? "mac" : "cli", {
+  ownerPid: args.ownerPid ?? undefined,
+});
+if (!lock.ok) {
+  // One line of JSON the supervisor can parse, then out.
+  print(JSON.stringify({ host_lock_held: lock.holder }));
+  process.exit(EXIT_LOCKED);
+}
+
+const base = nodeHostPlatform({ secretStorage: nodeSecretStorage() });
+setHostPlatform(base);
+const uiSocketPath =
+  args.uiSocket ??
+  (desktopMode ? path.join(argusHomeDir(), "host.sock") : null);
+let uiServer: LocalUiServer | null = null;
+const uiReady = uiSocketPath
+  ? startLocalUiSocket(uiSocketPath).then((server) => {
+      uiServer = server;
+      setHostPlatform(uiHostPlatform(server.channel, base));
+    })
+  : Promise.resolve();
+
+if (!desktopMode) {
+  // A sleeping Mac stops agents mid-run and drops every attached client.
+  startPowerAssertion();
+}
 
 const { remoteReady } = startHost({
-  forceRemote: true,
+  forceRemote: !desktopMode,
   webClientDir: resolveWebClientDir(),
 });
 
@@ -45,18 +83,30 @@ function stop(): void {
   }
   stopping = true;
   print("Stopping…");
-  shutdownHost().finally(() => process.exit(0));
+  Promise.allSettled([uiServer?.close(), shutdownHost()]).finally(() => {
+    releaseHostLock();
+    process.exit(0);
+  });
 }
 
 process.on("SIGINT", stop);
 process.on("SIGTERM", stop);
-process.on("exit", syncHostCleanup);
+process.on("exit", () => {
+  syncHostCleanup();
+  releaseHostLock();
+});
 
-remoteReady.then(() => {
-  print(`Argus host ${nodeHostPlatform().appVersion()}`);
-  print(`Gateway: ws://127.0.0.1:${LOCAL_GATEWAY_PORT}`);
+Promise.all([remoteReady, uiReady]).then(() => {
+  print(`Argus host ${base.appVersion()}`);
+  if (!desktopMode) {
+    print(`Gateway: ws://127.0.0.1:${LOCAL_GATEWAY_PORT}`);
+  }
   print(`State: ${argusHomeDir()}`);
-  if (process.stdin.isTTY) {
+  if (uiSocketPath) {
+    // The supervisor waits for this line before connecting.
+    print(`UI socket: ${uiSocketPath}`);
+  }
+  if (process.stdin.isTTY && !desktopMode) {
     const rl = readline.createInterface({ input: process.stdin });
     rl.on("SIGINT", stop);
     attachConsolePairing(rl, print);
