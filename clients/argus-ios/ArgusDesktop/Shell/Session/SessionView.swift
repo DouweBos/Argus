@@ -31,7 +31,9 @@ struct SessionView: View {
         agents: agents, focused: focusedAgentId,
         select: { model.navigate(.session(id: sessionId, agentId: $0)) })
       Divider()
-      if let agentId = focusedAgentId {
+      if let session, session.status != .ready {
+        SessionSetupView(session: session)
+      } else if let agentId = focusedAgentId {
         AgentPane(agentId: agentId, sessionId: sessionId)
           .id(agentId)
       } else {
@@ -99,6 +101,36 @@ struct AgentPane: View {
     }
     .onDisappear {
       Task { await store.watchAgent(agentId, on: false) }
+    }
+  }
+}
+
+/// A session still being set up (or torn down), or one whose setup failed.
+struct SessionSetupView: View {
+  let session: RemoteSession
+
+  var body: some View {
+    VStack(spacing: 16) {
+      switch session.status {
+      case .error:
+        SetupFailedRow(session: session).frame(maxWidth: 520)
+      case .deleting:
+        progress("Deleting the worktree…")
+      default:
+        progress("Setting up the worktree…")
+      }
+    }
+    .padding(24)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+
+  @ViewBuilder
+  private func progress(_ title: String) -> some View {
+    Text(title).foregroundStyle(.secondary)
+    if let fraction = session.progress?.fraction {
+      ProgressView(value: fraction).frame(maxWidth: 320)
+    } else {
+      ProgressView()
     }
   }
 }

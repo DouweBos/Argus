@@ -5,6 +5,7 @@ import SwiftUI
 struct SidebarView: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
+  @State private var deleting: RemoteSession?
 
   var body: some View {
     List(selection: selection) {
@@ -12,10 +13,27 @@ struct SidebarView: View {
         Text("No projects yet").foregroundStyle(.secondary)
       }
       ForEach(store.projects) { project in
-        Section(project.name) {
+        Section {
           ForEach(store.sessionsByRepo[project.repoRoot] ?? []) { session in
             SessionRow(session: session, agents: agents(in: session))
               .tag(session.id)
+              .contextMenu {
+                if session.kind == .worktree {
+                  Button("Delete Session…") { deleting = session }
+                }
+              }
+          }
+        } header: {
+          HStack {
+            Text(project.name)
+            Spacer()
+            Button {
+              model.newSessionProject = project
+            } label: {
+              Image(systemName: "plus")
+            }
+            .buttonStyle(.borderless)
+            .help("New session in \(project.name)")
           }
         }
       }
@@ -28,11 +46,25 @@ struct SidebarView: View {
       }
     }
     .listStyle(.sidebar)
+    .sheet(item: newSessionProject) { project in
+      NewSessionSheet(project: project) { session in
+        model.navigate(.session(id: session.id, agentId: nil))
+      }
+    }
+    .sheet(item: $deleting) { session in
+      DeleteSessionSheet(session: session) {
+        if model.route.sessionId == session.id { model.navigate(.home) }
+      }
+    }
     .overlay(alignment: .bottom) {
       if store.connection != .ready {
         ConnectionBadge(state: store.connection).padding(8)
       }
     }
+  }
+
+  private var newSessionProject: Binding<RemoteProject?> {
+    Binding(get: { model.newSessionProject }, set: { model.newSessionProject = $0 })
   }
 
   private var selection: Binding<String?> {
