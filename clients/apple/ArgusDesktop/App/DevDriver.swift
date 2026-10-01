@@ -1,5 +1,6 @@
 #if DEBUG
   import AppKit
+  import UserNotifications
 
   /// Drives this app's own window from JSON files, so a dev build can be
   /// exercised without UI scripting — which would also reach whatever else is
@@ -170,6 +171,20 @@
         // What ⌘N does; SwiftUI only enables menu commands while the app is active.
         AppDelegate.current?.model.requestNewSession()
         return ["ok": true]
+      case "notifications":
+        // Read-only: what macOS allows this app, and what it has delivered.
+        let semaphore = DispatchSemaphore(value: 0)
+        nonisolated(unsafe) var result: [String: Any] = [:]
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+          result["authorization"] = settings.authorizationStatus.rawValue
+          result["alertStyle"] = settings.alertStyle.rawValue
+          UNUserNotificationCenter.current().getDeliveredNotifications { delivered in
+            result["delivered"] = delivered.map { $0.request.content.title }
+            semaphore.signal()
+          }
+        }
+        _ = semaphore.wait(timeout: .now() + 2)
+        return result
       case "state":
         let model = AppDelegate.current?.model
         let item = menuItem("New Session…", in: NSApp.mainMenu)
