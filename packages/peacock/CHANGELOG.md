@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.24.0
+
+### Minor Changes
+
+- 85f3580: Proposal cards on the desktop and phone now show each step of a start — creating the worktree, running setup, starting the agent — and say why a start failed, with a button to try again.
+
 ## 0.23.0
 
 ### Minor Changes
