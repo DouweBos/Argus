@@ -306,12 +306,14 @@
         preferences.decode(PreferenceKey.linkedProjects(agentId: agentId), as: [String].self)
         ?? []
       controller.focus()
-      await host.loadCapabilities(agentId: agentId)
+      // Files first: capabilities wait on the CLI's first turn.
+      if let sessionId {
+        mentionFiles = await host.listFiles(sessionId: sessionId)
+        mentionDirectories = MentionPicker.directories(of: mentionFiles)
+        if host.claudeAccounts == nil { await host.refreshClaudeAccounts() }
+      }
       await host.loadQueue(agentId: agentId)
-      guard let sessionId else { return }
-      mentionFiles = await host.listFiles(sessionId: sessionId)
-      mentionDirectories = MentionPicker.directories(of: mentionFiles)
-      if host.claudeAccounts == nil { await host.refreshClaudeAccounts() }
+      await host.loadCapabilities(agentId: agentId)
     }
   }
 #endif
