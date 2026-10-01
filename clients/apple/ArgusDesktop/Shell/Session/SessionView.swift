@@ -121,6 +121,9 @@ struct AgentPane: View {
       await store.watchAgent(agentId, on: true)
       await store.loadTranscript(agentId: agentId)
       await store.loadCapabilities(agentId: agentId)
+      // A new agent has no status until its first event; the input's mode,
+      // model and effort pills read it.
+      if store.statusByAgent[agentId] == nil { await store.loadAgentStatus(agentId: agentId) }
     }
     .onDisappear {
       Task { await store.watchAgent(agentId, on: false) }

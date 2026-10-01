@@ -75,7 +75,7 @@ extension LiveAgents {
     let agentId = status.agentId
     updateAgent(agentId) {
       $0.model = status.model ?? $0.model
-      $0.permissionMode = status.permissionMode
+      $0.permissionMode = status.permissionMode ?? $0.permissionMode
     }
     let previous = hostStatus[agentId]
     hostStatus[agentId] = status.status
