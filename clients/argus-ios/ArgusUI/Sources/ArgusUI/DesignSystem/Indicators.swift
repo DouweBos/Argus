@@ -5,11 +5,15 @@ import SwiftUI
 ///
 /// It lives in a nav bar, where a label that grows to "Connecting" leaves dead
 /// space behind forever. The words belong in the in-screen banner instead.
-struct ConnectionBadge: View {
+public struct ConnectionBadge: View {
   @Environment(\.theme) private var theme
   let state: Transport.State
 
-  var body: some View {
+  public init(state: Transport.State) {
+    self.state = state
+  }
+
+  public var body: some View {
     StatusDot(tone: tone, pulse: state != .ready)
       .padding(.horizontal, 8)
       .accessibilityLabel(label)
@@ -35,7 +39,7 @@ struct ConnectionBadge: View {
 
 /// Three dots bouncing in sequence — the "still working" tell, shared by the
 /// transcript's thinking row and anything waiting on the network.
-struct ThinkingDots: View {
+public struct ThinkingDots: View {
   @Environment(\.theme) private var theme
   var size: CGFloat = 4
   var tint: Color?
@@ -44,7 +48,12 @@ struct ThinkingDots: View {
 
   private var lift: CGFloat { size * 0.9 }
 
-  var body: some View {
+  public init(size: CGFloat = 4, tint: Color? = nil) {
+    self.size = size
+    self.tint = tint
+  }
+
+  public var body: some View {
     HStack(spacing: size * 0.75) {
       ForEach(0..<3, id: \.self) { index in
         Circle()
@@ -67,7 +76,7 @@ struct ThinkingDots: View {
 }
 
 /// The context-window fill ring.
-struct ContextMeter: View {
+public struct ContextMeter: View {
   @Environment(\.theme) private var theme
   let tokens: Int
   let limit: Int
@@ -85,7 +94,12 @@ struct ContextMeter: View {
     return .accent
   }
 
-  var body: some View {
+  public init(tokens: Int, limit: Int) {
+    self.tokens = tokens
+    self.limit = limit
+  }
+
+  public var body: some View {
     HStack(spacing: 5) {
       ZStack {
         // `strokeBorder` and the matching inset keep the ring inside its
@@ -107,7 +121,7 @@ struct ContextMeter: View {
 }
 
 /// What the agent is doing right now, or nothing at all when it is idle.
-struct WorkingIndicator: View {
+public struct WorkingIndicator: View {
   @Environment(\.theme) private var theme
   let status: RemoteAgentState?
   let pendingToolName: String?
@@ -128,7 +142,19 @@ struct WorkingIndicator: View {
 
   private var isThinking: Bool { description.text == "Thinking" }
 
-  var body: some View {
+  public init(
+    status: RemoteAgentState? = nil,
+    pendingToolName: String? = nil,
+    pendingToolInput: [String: JSONValue]? = nil,
+    hasPendingPermission: Bool
+  ) {
+    self.status = status
+    self.pendingToolName = pendingToolName
+    self.pendingToolInput = pendingToolInput
+    self.hasPendingPermission = hasPendingPermission
+  }
+
+  public var body: some View {
     if description.state == .working || description.state == .blocked {
       HStack(spacing: 8) {
         StatusDot(tone: description.state == .blocked ? .warning : .accent, pulse: true)

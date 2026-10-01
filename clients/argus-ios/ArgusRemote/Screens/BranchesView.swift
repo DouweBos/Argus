@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// A project root's branches. Tap one to open it — history, compare, and the
@@ -9,7 +9,7 @@ import SwiftUI
 /// screen links here from.
 struct BranchesView: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
 
   let sessionId: String
@@ -104,7 +104,7 @@ struct BranchesView: View {
     guard !name.isEmpty else { return }
     creating = true
     Task {
-      await app.createBranch(
+      await host.createBranch(
         sessionId: sessionId, repoRoot: repoRoot, name: name, checkout: checkoutAfterCreate)
       newBranchName = ""
       creating = false
@@ -113,7 +113,7 @@ struct BranchesView: View {
   }
 
   private func refresh() async {
-    branches = await app.listBranches(sessionId: sessionId)
+    branches = await host.listBranches(sessionId: sessionId)
     loaded = true
   }
 }

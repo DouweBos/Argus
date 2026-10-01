@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// Start a session: describe it, and say what it branches from — or adopt a
@@ -6,13 +6,13 @@ import SwiftUI
 ///
 /// The computer derives the branch name from the description, the same as the
 /// desktop's New Session dialog with the branch field left blank.
-struct NewSessionSheet: View {
-  enum Mode: String, CaseIterable {
+public struct NewSessionSheet: View {
+  public enum Mode: String, CaseIterable {
     case branchOff, existing
   }
 
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(\.dismiss) private var dismiss
 
   let repoRoot: String
@@ -37,7 +37,17 @@ struct NewSessionSheet: View {
       : !existingBranch.isEmpty
   }
 
-  var body: some View {
+  public init(
+    repoRoot: String,
+    branchSessionId: String? = nil,
+    onCreated: @escaping (RemoteSession) -> Void
+  ) {
+    self.repoRoot = repoRoot
+    self.branchSessionId = branchSessionId
+    self.onCreated = onCreated
+  }
+
+  public var body: some View {
     NavigationStack {
       Screen {
         Field(
@@ -72,7 +82,7 @@ struct NewSessionSheet: View {
           .disabled(!canCreate)
       }
       .navigationTitle("New session")
-      .navigationBarTitleDisplayMode(.inline)
+      .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") { dismiss() }
@@ -104,13 +114,13 @@ struct NewSessionSheet: View {
 
   private func loadBranches() async {
     guard let branchSessionId else { return }
-    branches = await app.listBranches(sessionId: branchSessionId)
+    branches = await host.listBranches(sessionId: branchSessionId)
   }
 
   private func create() {
     creating = true
     Task {
-      let session = await app.createSession(
+      let session = await host.createSession(
         repoRoot: repoRoot,
         branch: mode == .existing ? existingBranch : "",
         description: description.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -125,18 +135,18 @@ struct NewSessionSheet: View {
 }
 
 extension NewSessionSheet.Mode: Identifiable {
-  var id: String { rawValue }
+  public var id: String { rawValue }
 }
 
 /// Start an agent with the runner, model and permission mode it should begin
 /// on, rather than the computer's defaults.
-struct NewAgentSheet: View {
+public struct NewAgentSheet: View {
   private enum Picker: String, Identifiable {
     case runner, model, mode
     var id: String { rawValue }
   }
 
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(\.dismiss) private var dismiss
 
   let sessionId: String
@@ -151,11 +161,21 @@ struct NewAgentSheet: View {
   @State private var picker: Picker?
   @State private var spawning = false
 
-  var body: some View {
+  public init(
+    sessionId: String,
+    models: [RemoteModelInfo],
+    onSpawned: @escaping (RemoteAgentStatus) -> Void
+  ) {
+    self.sessionId = sessionId
+    self.models = models
+    self.onSpawned = onSpawned
+  }
+
+  public var body: some View {
     NavigationStack {
       Screen {
         Field(label: "START IT ON", caption: "Blank uses the computer's default.") {
-          if !app.runners.isEmpty {
+          if !host.runners.isEmpty {
             Btn(
               label: "Runner: \(runnerLabel)", tone: .secondary, small: true
             ) { picker = .runner }
@@ -174,19 +194,19 @@ struct NewAgentSheet: View {
           .disabled(spawning)
       }
       .navigationTitle("New agent")
-      .navigationBarTitleDisplayMode(.inline)
+      .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") { dismiss() }
         }
       }
       .sheet(item: $picker) { which in picked(which) }
-      .task { await app.loadRunners() }
+      .task { await host.loadRunners() }
     }
   }
 
   private var selectedRunner: RemoteRunner? {
-    runner.flatMap { id in app.runners.first { $0.id == id } }
+    runner.flatMap { id in host.runners.first { $0.id == id } }
   }
 
   private var runnerLabel: String {
@@ -216,7 +236,7 @@ struct NewAgentSheet: View {
       PickerSheet(
         title: "Runner",
         options: [.init(value: "", label: "Default", hint: "Use the computer's default")]
-          + app.runners.map {
+          + host.runners.map {
             .init(value: $0.id, label: $0.displayName, hint: $0.isCustom ? "custom" : nil)
           },
         selected: [runner ?? ""]
@@ -246,7 +266,7 @@ struct NewAgentSheet: View {
   private func spawn() {
     spawning = true
     Task {
-      let agent = await app.spawnAgent(
+      let agent = await host.spawnAgent(
         sessionId: sessionId, model: model, permissionMode: mode, runnerId: runner)
       spawning = false
       guard let agent else { return }

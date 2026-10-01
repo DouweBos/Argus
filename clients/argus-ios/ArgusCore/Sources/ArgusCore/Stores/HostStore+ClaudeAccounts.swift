@@ -7,16 +7,16 @@ import Foundation
 /// A sign-in opens a browser on the computer, so the phone cannot complete it
 /// the way the desktop does — it follows the attempt through
 /// `claude_accounts.login` and finishes by pasting the code the CLI prints.
-extension AppStore {
+extension HostStore {
   // MARK: Reading
 
-  func refreshClaudeAccounts() async {
-    guard let transport else { return }
+  public func refreshClaudeAccounts() async {
+    guard let backend else { return }
     struct Result: Decodable {
       let accounts: [RemoteClaudeAccount]
       let active_id: String
     }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .claudeAccountsList, EmptyParams(), as: Result.self) else { return }
     claudeAccounts = result.accounts
     activeClaudeAccountId = result.active_id
@@ -26,12 +26,12 @@ extension AppStore {
 
   /// Make this the account every new agent authenticates as. Running agents
   /// keep theirs — the switch only takes effect on the next spawn.
-  func setActiveClaudeAccount(id: String) async {
-    Telemetry.capture(.claudeAccountChanged(action: .select))
-    guard let transport else { return }
+  public func setActiveClaudeAccount(id: String) async {
+    hooks.track(.claudeAccountChanged(action: .select))
+    guard let backend else { return }
     struct Params: Encodable { let id: String }
     do {
-      try await transport.request(
+      try await backend.request(
         .claudeAccountsSetActive, Params(id: id), as: IgnoredResult.self)
       activeClaudeAccountId = id
       await refreshClaudeAccounts()
@@ -43,9 +43,9 @@ extension AppStore {
   /// Pin the agent's session to an account, or pass nil to follow the
   /// computer's active one. The agent restarts on it while it hasn't been
   /// messaged yet — the account is fixed when its process starts.
-  func setSessionClaudeAccount(sessionId: String, accountId: String?, agentId: String) async {
-    Telemetry.capture(.claudeAccountChanged(action: .pin))
-    guard let transport else { return }
+  public func setSessionClaudeAccount(sessionId: String, accountId: String?, agentId: String) async {
+    hooks.track(.claudeAccountChanged(action: .pin))
+    guard let backend else { return }
     struct Params: Encodable {
       let agent_id: String
       let account_id: String?
@@ -59,7 +59,7 @@ extension AppStore {
       enum CodingKeys: String, CodingKey { case agent_id, account_id }
     }
     do {
-      try await transport.request(
+      try await backend.request(
         .agentsSetClaudeAccount, Params(agent_id: agentId, account_id: accountId),
         as: IgnoredResult.self)
       // Nothing re-broadcasts the session list on this write.
@@ -73,7 +73,7 @@ extension AppStore {
   }
 
   /// The account a session is pinned to, or nil when it follows the default.
-  func claudeAccountId(forSessionId id: String) -> String? {
+  public func claudeAccountId(forSessionId id: String) -> String? {
     sessionsByRepo.values.lazy.flatMap { $0 }.first { $0.id == id }?.claudeAccountId
   }
 
@@ -82,13 +82,13 @@ extension AppStore {
   /// Open the computer's browser and watch what it reports. The account it
   /// lands on isn't known until the refresh arrives, so the list simply fills
   /// in — `claude_accounts.add` is the branch for a brand new one.
-  func addClaudeAccount(useConsole: Bool) async {
-    Telemetry.capture(.claudeAccountChanged(action: .add))
-    guard let transport else { return }
+  public func addClaudeAccount(useConsole: Bool) async {
+    hooks.track(.claudeAccountChanged(action: .add))
+    guard let backend else { return }
     struct Params: Encodable { let use_console: Bool }
     struct Result: Decodable { let url: String }
     do {
-      let result = try await transport.request(
+      let result = try await backend.request(
         .claudeAccountsAdd, Params(use_console: useConsole), as: Result.self)
       claudeLogin = RemoteClaudeLoginState(pending: true, needsCode: false)
       openLoginURL(result.url)
@@ -99,12 +99,12 @@ extension AppStore {
     }
   }
 
-  func removeClaudeAccount(id: String) async {
-    Telemetry.capture(.claudeAccountChanged(action: .remove))
-    guard let transport else { return }
+  public func removeClaudeAccount(id: String) async {
+    hooks.track(.claudeAccountChanged(action: .remove))
+    guard let backend else { return }
     struct Params: Encodable { let id: String }
     do {
-      try await transport.request(
+      try await backend.request(
         .claudeAccountsRemove, Params(id: id), as: IgnoredResult.self)
       claudeAccounts?.removeAll { $0.id == id }
       await refreshClaudeAccounts()
@@ -113,9 +113,9 @@ extension AppStore {
     }
   }
 
-  func renameClaudeAccount(id: String, label: String) async {
-    Telemetry.capture(.claudeAccountChanged(action: .rename))
-    guard let transport else { return }
+  public func renameClaudeAccount(id: String, label: String) async {
+    hooks.track(.claudeAccountChanged(action: .rename))
+    guard let backend else { return }
     let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return }
     struct Params: Encodable {
@@ -128,7 +128,7 @@ extension AppStore {
       claudeAccounts?[index].label = trimmed
     }
     do {
-      try await transport.request(
+      try await backend.request(
         .claudeAccountsRename, Params(id: id, label: trimmed),
         as: IgnoredResult.self)
     } catch {
@@ -141,15 +141,15 @@ extension AppStore {
 
   /// Re-authenticate an account whose credentials died. Same browser dance as
   /// adding one, onto an entry that already exists.
-  func startClaudeLogin(accountId: String?) async {
-    guard let transport else { return }
+  public func startClaudeLogin(accountId: String?) async {
+    guard let backend else { return }
     struct Params: Encodable {
       let account_id: String?
       let use_console: Bool?
     }
     struct Result: Decodable { let url: String }
     do {
-      let result = try await transport.request(
+      let result = try await backend.request(
         .claudeAccountsLoginStart,
         Params(account_id: accountId, use_console: nil),
         as: Result.self)
@@ -163,9 +163,9 @@ extension AppStore {
 
   /// Give up on the attempt. The computer drops a placeholder account it minted
   /// for it, so nothing dead is left in the list.
-  func cancelClaudeLogin() async {
-    guard let transport else { return }
-    try? await transport.request(
+  public func cancelClaudeLogin() async {
+    guard let backend else { return }
+    _ = try? await backend.request(
       .claudeAccountsLoginCancel, EmptyParams(), as: IgnoredResult.self)
     claudeLogin = nil
     await refreshClaudeAccounts()
@@ -173,15 +173,15 @@ extension AppStore {
 
   /// Finish a sign-in with the code the CLI printed. Nil means it is still
   /// waiting or the code was wrong — `error` on the state says which.
-  func submitClaudeLoginCode(_ code: String) async {
-    guard let transport else { return }
+  public func submitClaudeLoginCode(_ code: String) async {
+    guard let backend else { return }
     struct Params: Encodable { let code: String }
     struct Result: Decodable {
       let ok: Bool
       let error: String?
     }
     do {
-      let result = try await transport.request(
+      let result = try await backend.request(
         .claudeAccountsLoginSubmitCode,
         Params(code: code.trimmingCharacters(in: .whitespacesAndNewlines)),
         as: Result.self)
@@ -201,9 +201,9 @@ extension AppStore {
 
   /// Ask the computer where its sign-in has got to. The push event covers the
   /// normal case; this is for a screen opened mid-attempt.
-  func loadClaudeLoginStatus() async {
-    guard let transport else { return }
-    guard let state = try? await transport.request(
+  public func loadClaudeLoginStatus() async {
+    guard let backend else { return }
+    guard let state = try? await backend.request(
       .claudeAccountsLoginStatus, EmptyParams(), as: RemoteClaudeLoginState.self),
       state.pending
     else { return }

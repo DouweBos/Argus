@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import Foundation
 
 /// Every screen the stack can push. One case per screen, carrying exactly what

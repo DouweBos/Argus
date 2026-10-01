@@ -1,10 +1,11 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// One paired computer: what it granted this phone, and how to leave it.
 struct ComputerView: View {
   @Environment(\.theme) private var theme
   @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @Environment(\.dismiss) private var dismiss
 
@@ -13,25 +14,25 @@ struct ComputerView: View {
   @State private var saved = false
   @State private var confirmingUnpair = false
 
-  private var host: DeviceIdentity? {
+  private var computer: DeviceIdentity? {
     app.hosts.first { $0.deviceId == deviceId }
   }
 
   var body: some View {
     Screen {
-      guard let host else {
+      guard let computer else {
         return AnyView(
           VStack(alignment: .leading, spacing: theme.space) {
             MutedText("This computer is no longer paired.")
             Btn(label: "Back", tone: .secondary) { router.popToRoot() }
           })
       }
-      return AnyView(content(host))
+      return AnyView(content(computer))
     }
-    .navigationTitle(host?.label ?? "Computer")
+    .navigationTitle(computer?.label ?? "Computer")
     .navigationBarTitleDisplayMode(.inline)
-    .task { name = host?.label ?? "" }
-    .alert("Unpair “\(host?.label ?? "")”?", isPresented: $confirmingUnpair) {
+    .task { name = computer?.label ?? "" }
+    .alert("Unpair “\(computer?.label ?? "")”?", isPresented: $confirmingUnpair) {
       Button("Cancel", role: .cancel) {}
       Button("Unpair", role: .destructive) {
         Task {
@@ -47,22 +48,22 @@ struct ComputerView: View {
   }
 
   @ViewBuilder
-  private func content(_ host: DeviceIdentity) -> some View {
-    let active = host.deviceId == app.activeHostId
+  private func content(_ computer: DeviceIdentity) -> some View {
+    let active = computer.deviceId == app.activeHostId
 
     Field(label: "Connection") {
       HStack(spacing: 8) {
         if active {
-          ConnectionBadge(state: app.connection)
+          ConnectionBadge(state: host.connection)
         } else {
           Badge(label: "Not connected")
         }
-        MutedText("Can: \(host.capabilities.joined(separator: ", "))")
+        MutedText("Can: \(computer.capabilities.joined(separator: ", "))")
       }
       if !active {
         Btn(label: "Connect and open projects") {
           Task {
-            await app.selectHost(host.deviceId)
+            await app.selectHost(computer.deviceId)
             router.popToRoot()
           }
         }
@@ -70,9 +71,9 @@ struct ComputerView: View {
     }
 
     Field(label: "Name", caption: "Only shown on this phone.") {
-      ThemedTextField(placeholder: "Computer name", text: $name, input: .name) { save(host) }
-      Btn(label: saved ? "Saved" : "Save", tone: .secondary, small: true) { save(host) }
-        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || name == host.label)
+      ThemedTextField(placeholder: "Computer name", text: $name, input: .name) { save(computer) }
+      Btn(label: saved ? "Saved" : "Save", tone: .secondary, small: true) { save(computer) }
+        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || name == computer.label)
     }
 
     Field(
@@ -80,11 +81,11 @@ struct ComputerView: View {
       caption:
         "Every route this computer advertised. All are dialled at once and the simplest one that answers wins."
     ) {
-      ForEach(host.candidateEndpoints, id: \.url) { endpoint in
+      ForEach(computer.candidateEndpoints, id: \.url) { endpoint in
         HStack(spacing: 8) {
           BodyText(DeviceIdentity.gatewayHost(endpoint.url), lineLimit: 1)
           Spacer(minLength: 6)
-          if endpoint.url == host.url, active, app.connection == .ready {
+          if endpoint.url == computer.url, active, host.connection == .ready {
             Badge(label: "In use", tone: .success)
           }
           Badge(label: endpoint.kind.label)
@@ -93,8 +94,8 @@ struct ComputerView: View {
     }
 
     Field(label: "Gateway") {
-      MutedText("Device \(host.deviceId.prefix(8))")
-      if let pairedAt = host.pairedAt {
+      MutedText("Device \(computer.deviceId.prefix(8))")
+      if let pairedAt = computer.pairedAt {
         MutedText(
           "Paired \(Date(timeIntervalSince1970: pairedAt / 1000).formatted(date: .abbreviated, time: .omitted))"
         )
@@ -110,9 +111,9 @@ struct ComputerView: View {
     }
   }
 
-  private func save(_ host: DeviceIdentity) {
+  private func save(_ computer: DeviceIdentity) {
     Task {
-      await app.renameHost(host.deviceId, to: name)
+      await app.renameHost(computer.deviceId, to: name)
       saved = true
       try? await Task.sleep(for: .milliseconds(1200))
       saved = false

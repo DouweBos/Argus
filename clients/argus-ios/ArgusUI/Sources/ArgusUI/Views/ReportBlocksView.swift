@@ -1,14 +1,20 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// A run's structured report. The computer validates these blocks, so anything
 /// that arrives is well-formed and can be rendered without defensive checks.
-struct ReportBlocksView: View {
+public struct ReportBlocksView: View {
   @Environment(\.theme) private var theme
-  @Environment(Router.self) private var router
   let blocks: [RemoteReportBlock]
+  /// Where the proposals block leads; the app owns navigation.
+  public var onOpenInbox: () -> Void = {}
 
-  var body: some View {
+  public init(blocks: [RemoteReportBlock], onOpenInbox: @escaping () -> Void = {}) {
+    self.blocks = blocks
+    self.onOpenInbox = onOpenInbox
+  }
+
+  public var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
         view(for: block)
@@ -56,7 +62,7 @@ struct ReportBlocksView: View {
       seriesView(labels: labels, values: values, label: label)
 
     case .proposals(let ids):
-      Card(onTap: { router.push(.inbox) }) {
+      Card(onTap: onOpenInbox) {
         HStack {
           Image(systemName: Icon.envelope).foregroundStyle(theme.accent)
           BodyText("\(ids.count) proposal\(ids.count == 1 ? "" : "s") in the inbox")

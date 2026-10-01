@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// Rewrite a playbook by describing what should change.
@@ -6,7 +6,7 @@ import SwiftUI
 /// The rewrite lands in the editor's draft, never on the computer: you read
 /// the new text, keep or edit it, and the automation is only changed by the
 /// save button on the screen underneath.
-struct RevisePlaybookSheet: View {
+public struct RevisePlaybookSheet: View {
   @Environment(AutomationsStore.self) private var store
   @Environment(\.dismiss) private var dismiss
 
@@ -23,7 +23,13 @@ struct RevisePlaybookSheet: View {
     !instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !revising
   }
 
-  var body: some View {
+  public init(playbook: String, name: String, onApply: @escaping (String) -> Void) {
+    self.playbook = playbook
+    self.name = name
+    self.onApply = onApply
+  }
+
+  public var body: some View {
     NavigationStack {
       Screen {
         if let error = store.error {
@@ -55,7 +61,7 @@ struct RevisePlaybookSheet: View {
         }
       }
       .navigationTitle("Rewrite the playbook")
-      .navigationBarTitleDisplayMode(.inline)
+      .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") { dismiss() }

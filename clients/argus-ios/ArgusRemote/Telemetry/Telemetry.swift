@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import Foundation
 import MetricKit
 import PostHog
@@ -113,7 +113,7 @@ enum Telemetry {
     // Stack traces can leak paths even after scrubbing, so they stay behind
     // the full-mode gate.
     guard mode == .full else { return }
-    let described = AppStore.describe(error)
+    let described = HostStore.describe(error)
     captureException(
       type: String(describing: type(of: error)), message: described, source: source, extra: extra)
   }
@@ -236,5 +236,40 @@ enum Telemetry {
     }
 
     return scrubbed
+  }
+}
+
+extension TelemetryEvent {
+  /// The shared stores report what they did; this is where it joins the
+  /// phone's catalog.
+  init(_ event: StoreEvent) {
+    switch event {
+    case .messageSent(let queued, let hasImages, let length):
+      self = .messageSent(queued: queued, hasImages: hasImages, length: length)
+    case .messageSendFailed(let retried):
+      self = .messageSendFailed(retried: retried)
+    case .permissionAnswered(let approved, let fromNotification):
+      self = .permissionAnswered(approved: approved, fromNotification: fromNotification)
+    case .agentControlled(let action):
+      self = .agentControlled(action: action)
+    case .workLanded(let action, let success, let strategy):
+      self = .workLanded(action: action, success: success, strategy: strategy)
+    case .claudeAccountChanged(let action):
+      self = .claudeAccountChanged(action: action)
+    case .automationEdited(let action):
+      self = .automationEdited(action: action)
+    case .runActed(let action):
+      self = .runActed(action: action)
+    case .proposalHandled(let action):
+      self = .proposalHandled(action: action)
+    case .pullRequestActed(let action):
+      self = .pullRequestActed(action: action)
+    case .branchActed(let action):
+      self = .branchActed(action: action)
+    case .sessionRenamed(let target):
+      self = .sessionRenamed(target: target)
+    case .memoryEdited(let action):
+      self = .memoryEdited(action: action)
+    }
   }
 }

@@ -1,8 +1,8 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// Approve a plan, or send it back with feedback.
-struct PlanApprovalView: View {
+public struct PlanApprovalView: View {
   @Environment(\.theme) private var theme
   let plan: String
   let onApprove: () -> Void
@@ -15,7 +15,21 @@ struct PlanApprovalView: View {
   @State private var feedback = ""
   @State private var showingFullScreen = false
 
-  var body: some View {
+  public init(
+    plan: String,
+    onApprove: @escaping () -> Void,
+    onKeepPlanning: @escaping () -> Void,
+    onFeedback: @escaping (String) -> Void,
+    onApproveInNewSession: (() -> Void)? = nil
+  ) {
+    self.plan = plan
+    self.onApprove = onApprove
+    self.onKeepPlanning = onKeepPlanning
+    self.onFeedback = onFeedback
+    self.onApproveInNewSession = onApproveInNewSession
+  }
+
+  public var body: some View {
     VStack(alignment: .leading, spacing: 10) {
       ScrollView {
         MarkdownView(text: plan, baseSize: 14)
@@ -35,7 +49,7 @@ struct PlanApprovalView: View {
         onFeedback: onFeedback,
         onApproveInNewSession: onApproveInNewSession)
     }
-    .fullScreenCover(isPresented: $showingFullScreen) {
+    .coverPresentation(isPresented: $showingFullScreen) {
       PlanFullScreenView(
         plan: plan,
         actions: .init(
@@ -50,11 +64,15 @@ struct PlanApprovalView: View {
 
 /// Opens the plan full screen. Sits over the corner of a clamped plan box, so
 /// it carries its own backing to stay legible on top of text.
-struct PlanExpandButton: View {
+public struct PlanExpandButton: View {
   @Environment(\.theme) private var theme
   let action: () -> Void
 
-  var body: some View {
+  public init(action: @escaping () -> Void) {
+    self.action = action
+  }
+
+  public var body: some View {
     IconBtn(systemName: Icon.expand, label: "View full plan", size: 14, action: action)
       .background(theme.bgSecondary.opacity(0.9), in: Circle())
       .overlay(Circle().stroke(theme.borderSubtle, lineWidth: 1))
@@ -109,14 +127,28 @@ private struct PlanActions: View {
 
 /// The plan at full size. A plan is many screens long on a phone, so reading
 /// it in the transcript's clamped box means dragging a keyhole around.
-struct PlanFullScreenView: View {
+public struct PlanFullScreenView: View {
   /// Absent for a plan that has already been answered — history is read-only.
-  struct Actions {
-    var feedback: Binding<String>
-    var onApprove: () -> Void
-    var onKeepPlanning: () -> Void
-    var onFeedback: (String) -> Void
-    var onApproveInNewSession: (() -> Void)?
+  public struct Actions {
+    public var feedback: Binding<String>
+    public var onApprove: () -> Void
+    public var onKeepPlanning: () -> Void
+    public var onFeedback: (String) -> Void
+    public var onApproveInNewSession: (() -> Void)?
+
+    public init(
+      feedback: Binding<String>,
+      onApprove: @escaping () -> Void,
+      onKeepPlanning: @escaping () -> Void,
+      onFeedback: @escaping (String) -> Void,
+      onApproveInNewSession: (() -> Void)? = nil
+    ) {
+      self.feedback = feedback
+      self.onApprove = onApprove
+      self.onKeepPlanning = onKeepPlanning
+      self.onFeedback = onFeedback
+      self.onApproveInNewSession = onApproveInNewSession
+    }
   }
 
   @Environment(\.theme) private var theme
@@ -124,7 +156,12 @@ struct PlanFullScreenView: View {
   let plan: String
   var actions: Actions?
 
-  var body: some View {
+  public init(plan: String, actions: Actions? = nil) {
+    self.plan = plan
+    self.actions = actions
+  }
+
+  public var body: some View {
     NavigationStack {
       ScrollView {
         MarkdownView(text: plan, baseSize: 15)
@@ -133,9 +170,9 @@ struct PlanFullScreenView: View {
       }
       .background(theme.bg)
       .navigationTitle("Plan")
-      .navigationBarTitleDisplayMode(.inline)
+      .inlineNavigationTitle()
       .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarItem(placement: .trailingBar) {
           IconBtn(systemName: Icon.close, label: "Close") { dismiss() }
         }
       }
@@ -169,7 +206,7 @@ struct PlanFullScreenView: View {
 }
 
 /// The inline AskUserQuestion form.
-struct QuestionFormView: View {
+public struct QuestionFormView: View {
   @Environment(\.theme) private var theme
   let questions: [Questions.Question]
   let onSubmit: (String) -> Void
@@ -191,7 +228,17 @@ struct QuestionFormView: View {
     }
   }
 
-  var body: some View {
+  public init(
+    questions: [Questions.Question],
+    onSubmit: @escaping (String) -> Void,
+    onCancel: @escaping () -> Void
+  ) {
+    self.questions = questions
+    self.onSubmit = onSubmit
+    self.onCancel = onCancel
+  }
+
+  public var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       ForEach(Array(questions.enumerated()), id: \.offset) { index, question in
         VStack(alignment: .leading, spacing: 6) {
@@ -287,11 +334,16 @@ struct QuestionFormView: View {
 }
 
 /// Allow / Deny for an ordinary tool prompt.
-struct PermissionButtons: View {
+public struct PermissionButtons: View {
   let onAllow: () -> Void
   let onDeny: () -> Void
 
-  var body: some View {
+  public init(onAllow: @escaping () -> Void, onDeny: @escaping () -> Void) {
+    self.onAllow = onAllow
+    self.onDeny = onDeny
+  }
+
+  public var body: some View {
     HStack(spacing: 8) {
       Btn(label: "Allow", small: true, action: onAllow)
       Btn(label: "Deny", tone: .danger, small: true, action: onDeny)
@@ -299,12 +351,17 @@ struct PermissionButtons: View {
   }
 }
 
-struct TaskListView: View {
+public struct TaskListView: View {
   @Environment(\.theme) private var theme
   let title: String
   let items: [(text: String, status: RemoteTaskStatus, owner: String?)]
 
-  var body: some View {
+  public init(title: String, items: [(text: String, status: RemoteTaskStatus, owner: String?)]) {
+    self.title = title
+    self.items = items
+  }
+
+  public var body: some View {
     Card {
       HStack {
         Text("\(title) · \(items.count { $0.status == .completed }) done")

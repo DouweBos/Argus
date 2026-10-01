@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// A live mirrored device: H.264 in, touches and keystrokes back out.
@@ -6,7 +6,7 @@ struct DeviceView: View {
   private enum Status { case connecting, error, noVideo, streaming }
 
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
 
   let deviceId: String
   let platform: RemotePlatform
@@ -36,7 +36,7 @@ struct DeviceView: View {
 
   /// The host's own reading, preferred over the reply we last got: the hinge
   /// and orientation move from Device Hub or an agent as easily as from here.
-  private var deviceState: RemoteDeviceState? { app.deviceStates[deviceId] }
+  private var deviceState: RemoteDeviceState? { host.deviceStates[deviceId] }
 
   /// Clockwise degrees the stream has to be turned to sit upright. The
   /// framebuffer is panel-native, so a rotated device arrives sideways.
@@ -47,7 +47,7 @@ struct DeviceView: View {
   var body: some View {
     VStack(spacing: 0) {
       stage
-      if !app.hasControl {
+      if !host.hasControl {
         Banner(
           text:
             "This device can watch but not control. Grant it control in Argus → Settings → Remote Access to tap and type here."
@@ -59,7 +59,7 @@ struct DeviceView: View {
         VStack(alignment: .leading, spacing: 8) {
           Banner(text: "\(holder.label) is controlling this device.", tone: .warning)
           Btn(label: "Take control", tone: .secondary, small: true) {
-            Task { await app.claimDevice(deviceId: deviceId, force: true) }
+            Task { await host.claimDevice(deviceId: deviceId, force: true) }
           }
         }
         .padding(theme.space)
@@ -76,7 +76,7 @@ struct DeviceView: View {
     .background(theme.bg)
     .navigationTitle(name)
     .navigationBarTitleDisplayMode(.inline)
-    .task(id: app.connection) { await subscribe() }
+    .task(id: host.connection) { await subscribe() }
     .onDisappear { teardown() }
   }
 
@@ -96,7 +96,7 @@ struct DeviceView: View {
       .contentShape(Rectangle())
       // A TV is driven by the remote below, not by tapping its picture —
       // a tap there is nothing, not a click of the dpad's centre.
-      .gesture(app.hasControl && !isTv ? touchGesture : nil)
+      .gesture(host.hasControl && !isTv ? touchGesture : nil)
       .onAppear { stageSize = geometry.size }
       .onChange(of: geometry.size) { _, size in stageSize = size }
     }
@@ -193,14 +193,14 @@ struct DeviceView: View {
   private func send(_ point: CGPoint, phase: Int) {
     guard let normalized = normalize(point) else { return }
     interacted = true
-    app.deviceTouch(
+    host.deviceTouch(
       deviceId: deviceId, platform: platform,
       x: normalized.x, y: normalized.y, eventType: phase)
   }
 
   private func sendButton(_ button: String) {
     interacted = true
-    app.deviceButton(deviceId: deviceId, platform: platform, button: button)
+    host.deviceButton(deviceId: deviceId, platform: platform, button: button)
   }
 
   private var buttons: [(id: String, label: String, icon: String)] {
@@ -243,7 +243,7 @@ struct DeviceView: View {
     let next = (deviceState?.orientation ?? .portrait).next
     busy = true
     Task {
-      await app.setDeviceOrientation(
+      await host.setDeviceOrientation(
         deviceId: deviceId, platform: platform, orientation: next)
       busy = false
     }
@@ -252,7 +252,7 @@ struct DeviceView: View {
   private func toggleFold(_ fold: RemoteFoldState) {
     busy = true
     Task {
-      await app.setDeviceFold(
+      await host.setDeviceFold(
         deviceId: deviceId, platform: platform,
         pose: fold.pose == .open ? .closed : .open)
       busy = false
@@ -280,10 +280,10 @@ struct DeviceView: View {
   private func sendKey(_ character: String) {
     guard let key = KeyMap.nativeKey(platform: platform, character: character) else { return }
     interacted = true
-    app.deviceKeyboard(
+    host.deviceKeyboard(
       deviceId: deviceId, platform: platform, keyCode: key.keyCode,
       modifiers: key.modifiers, isDown: true)
-    app.deviceKeyboard(
+    host.deviceKeyboard(
       deviceId: deviceId, platform: platform, keyCode: key.keyCode,
       modifiers: key.modifiers, isDown: false)
   }
@@ -291,15 +291,15 @@ struct DeviceView: View {
   // MARK: Stream
 
   private func subscribe() async {
-    guard app.connection == .ready else { return }
+    guard host.connection == .ready else { return }
     status = .connecting
     if watchStart == nil { watchStart = Date() }
 
-    guard let streamId = await app.watchDevice(deviceId: deviceId, platform: platform) else {
+    guard let streamId = await host.watchDevice(deviceId: deviceId, platform: platform) else {
       status = .error
       return
     }
-    unregister = app.registerMediaSink(streamId: streamId) { message in
+    unregister = host.registerMediaSink(streamId: streamId) { message in
       switch message {
       case .config(_, let codec, let width, let height, let description):
         codedSize = CGSize(width: width, height: height)
@@ -312,18 +312,16 @@ struct DeviceView: View {
 
     // Take the device unless someone else is already driving it; the host
     // pushes `device.claim` from here on.
-    if app.hasControl {
-      await app.loadClaimStatus(deviceId: deviceId)
+    if host.hasControl {
+      await host.loadClaimStatus(deviceId: deviceId)
       if otherHolder == nil {
-        await app.claimDevice(deviceId: deviceId)
+        await host.claimDevice(deviceId: deviceId)
       }
     }
 
     // Seed the pose; the host pushes `device.state` from here on while it is
     // being watched.
-    if let state = await app.deviceState(deviceId: deviceId, platform: platform) {
-      app.deviceStates[deviceId] = state
-    }
+    await host.deviceState(deviceId: deviceId, platform: platform)
 
     Task {
       try? await Task.sleep(for: Self.noVideoTimeout)
@@ -333,9 +331,9 @@ struct DeviceView: View {
 
   /// The claim, when someone other than this phone holds it.
   private var otherHolder: RemoteDeviceClaim? {
-    guard let holder = app.deviceClaims[deviceId]?.holder else { return nil }
+    guard let holder = host.deviceClaims[deviceId]?.holder else { return nil }
 
-    return holder.connectionId == app.connectionId ? nil : holder
+    return holder.connectionId == host.connectionId ? nil : holder
   }
 
   private func teardown() {
@@ -349,8 +347,8 @@ struct DeviceView: View {
     Task {
       // Let go before leaving, so the next client isn't locked out by a screen
       // nobody is looking at.
-      await app.releaseDevice(deviceId: deviceId)
-      await app.unwatchDevice(deviceId: deviceId)
+      await host.releaseDevice(deviceId: deviceId)
+      await host.unwatchDevice(deviceId: deviceId)
     }
   }
 }

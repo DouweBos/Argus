@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// The fields an automation and a quick run share: what it does, what it may
@@ -6,14 +6,14 @@ import SwiftUI
 ///
 /// A quick run is a playbook run once, so it hides the trigger and the enabled
 /// switch — everything else is the same form, because it is the same spec.
-struct AutomationFields: View {
+public struct AutomationFields: View {
   private enum Sheet: String, Identifiable {
     case projects, sources, autonomy, runner, model
     var id: String { rawValue }
   }
 
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
 
   @Binding var draft: RemoteAutomationDetail
   var showsSchedule = true
@@ -24,7 +24,19 @@ struct AutomationFields: View {
   @State private var sheet: Sheet?
   @State private var revising = false
 
-  var body: some View {
+  public init(
+    draft: Binding<RemoteAutomationDetail>,
+    showsSchedule: Bool = true,
+    sources: [RemoteSignalSource],
+    runners: [RemoteRunner] = []
+  ) {
+    self._draft = draft
+    self.showsSchedule = showsSchedule
+    self.sources = sources
+    self.runners = runners
+  }
+
+  public var body: some View {
     basics
     if showsSchedule { trigger }
     scope
@@ -114,7 +126,7 @@ struct AutomationFields: View {
       ThemedTextField(
         placeholder: "What should this run do?", text: $draft.playbook,
         multiline: true, lines: 6...24, mono: true)
-      if app.hasControl {
+      if host.hasControl {
         Btn(label: "Rewrite with Claude", tone: .secondary, small: true) { revising = true }
           .disabled(draft.playbook.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
       }
@@ -145,7 +157,7 @@ struct AutomationFields: View {
     case .projects:
       PickerSheet(
         title: "Projects",
-        options: app.projects.map { .init(value: $0.repoRoot, label: $0.name, hint: $0.repoRoot) },
+        options: host.projects.map { .init(value: $0.repoRoot, label: $0.name, hint: $0.repoRoot) },
         selected: Set(draft.repoRoots),
         multi: true,
         emptyMessage: "This computer has no projects registered."

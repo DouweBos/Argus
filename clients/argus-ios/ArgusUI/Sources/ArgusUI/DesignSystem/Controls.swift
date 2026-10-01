@@ -1,21 +1,31 @@
 import SwiftUI
-import UIKit
 
 /// A labelled option row grid, used instead of nav-bar actions so screen
 /// titles keep their width.
-struct ActionTiles: View {
-  struct Action: Identifiable {
-    let id = UUID()
-    var label: String
-    var icon: String
-    var disabled = false
-    var run: () -> Void
+public struct ActionTiles: View {
+  public struct Action: Identifiable {
+    public let id = UUID()
+    public var label: String
+    public var icon: String
+    public var disabled = false
+    public var run: () -> Void
+
+    public init(label: String, icon: String, disabled: Bool = false, run: @escaping () -> Void) {
+      self.label = label
+      self.icon = icon
+      self.disabled = disabled
+      self.run = run
+    }
   }
 
   @Environment(\.theme) private var theme
   let actions: [Action]
 
-  var body: some View {
+  public init(actions: [Action]) {
+    self.actions = actions
+  }
+
+  public var body: some View {
     HStack(spacing: 6) {
       ForEach(actions) { action in
         Button(action: action.run) {
@@ -40,12 +50,17 @@ struct ActionTiles: View {
   }
 }
 
-struct SegmentedControl<Value: Hashable>: View {
+public struct SegmentedControl<Value: Hashable>: View {
   @Environment(\.theme) private var theme
   @Binding var value: Value
   let options: [(value: Value, label: String)]
 
-  var body: some View {
+  public init(value: Binding<Value>, options: [(value: Value, label: String)]) {
+    self._value = value
+    self.options = options
+  }
+
+  public var body: some View {
     HStack(spacing: 2) {
       ForEach(options, id: \.value) { option in
         Button {
@@ -68,22 +83,45 @@ struct SegmentedControl<Value: Hashable>: View {
   }
 }
 
-struct ThemedTextField: View {
+public struct ThemedTextField: View {
   /// Drives keyboard assistance: prose gets autocorrect and predictions,
   /// code (branches, globs, pairing codes) must be typed verbatim.
-  enum Input { case prose, name, code }
+  public enum Input { case prose, name, code }
+
+  /// The on-screen keyboard to offer; ignored where there is none.
+  public enum Keyboard { case `default`, decimalPad }
 
   @Environment(\.theme) private var theme
   let placeholder: String
   @Binding var text: String
   var multiline = false
   var lines: ClosedRange<Int> = 2...6
-  var keyboard: UIKeyboardType = .default
+  var keyboard: Keyboard = .default
   var mono = false
   var input: Input = .prose
   var onSubmit: (() -> Void)?
 
-  var body: some View {
+  public init(
+    placeholder: String,
+    text: Binding<String>,
+    multiline: Bool = false,
+    lines: ClosedRange<Int> = 2...6,
+    keyboard: Keyboard = .default,
+    mono: Bool = false,
+    input: Input = .prose,
+    onSubmit: (() -> Void)? = nil
+  ) {
+    self.placeholder = placeholder
+    self._text = text
+    self.multiline = multiline
+    self.lines = lines
+    self.keyboard = keyboard
+    self.mono = mono
+    self.input = input
+    self.onSubmit = onSubmit
+  }
+
+  public var body: some View {
     Group {
       if multiline {
         TextField(placeholder, text: $text, axis: .vertical).lineLimit(lines)
@@ -93,8 +131,7 @@ struct ThemedTextField: View {
     }
     .font(mono ? .system(size: 14, design: .monospaced) : .system(size: 15))
     .foregroundStyle(theme.text)
-    .keyboardType(keyboard)
-    .textInputAutocapitalization(autocapitalization)
+    .platformKeyboard(keyboard, input: input)
     .autocorrectionDisabled(input == .code)
     .padding(.horizontal, 10)
     .padding(.vertical, 9)
@@ -106,23 +143,41 @@ struct ThemedTextField: View {
     .onSubmit { onSubmit?() }
   }
 
-  private var autocapitalization: TextInputAutocapitalization {
-    switch input {
-    case .prose: .sentences
-    case .name: .words
-    case .code: .never
-    }
+}
+
+extension View {
+  fileprivate func platformKeyboard(
+    _ keyboard: ThemedTextField.Keyboard, input: ThemedTextField.Input
+  ) -> some View {
+    #if os(iOS)
+      let capitalization: TextInputAutocapitalization =
+        switch input {
+        case .prose: .sentences
+        case .name: .words
+        case .code: .never
+        }
+      return keyboardType(keyboard == .decimalPad ? .decimalPad : .default)
+        .textInputAutocapitalization(capitalization)
+    #else
+      return self
+    #endif
   }
 }
 
 /// A bottom sheet of options. Single-select closes on tap; multi-select stays
 /// open so several can be toggled in one go.
-struct PickerSheet<Value: Hashable>: View {
-  struct Option: Identifiable {
-    var id: Value { value }
-    var value: Value
-    var label: String
-    var hint: String?
+public struct PickerSheet<Value: Hashable>: View {
+  public struct Option: Identifiable {
+    public var id: Value { value }
+    public var value: Value
+    public var label: String
+    public var hint: String?
+
+    public init(value: Value, label: String, hint: String? = nil) {
+      self.value = value
+      self.label = label
+      self.hint = hint
+    }
   }
 
   @Environment(\.theme) private var theme
@@ -135,7 +190,23 @@ struct PickerSheet<Value: Hashable>: View {
   var emptyMessage: String?
   let onPick: (Value) -> Void
 
-  var body: some View {
+  public init(
+    title: String,
+    options: [Option],
+    selected: Set<Value>,
+    multi: Bool = false,
+    emptyMessage: String? = nil,
+    onPick: @escaping (Value) -> Void
+  ) {
+    self.title = title
+    self.options = options
+    self.selected = selected
+    self.multi = multi
+    self.emptyMessage = emptyMessage
+    self.onPick = onPick
+  }
+
+  public var body: some View {
     NavigationStack {
       Group {
         if options.isEmpty {
@@ -183,7 +254,7 @@ struct PickerSheet<Value: Hashable>: View {
       }
       .background(theme.bg)
       .navigationTitle(title)
-      .navigationBarTitleDisplayMode(.inline)
+      .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {
           Button("Done") { dismiss() }.foregroundStyle(theme.accent)

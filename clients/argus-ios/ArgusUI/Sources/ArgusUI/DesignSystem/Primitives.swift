@@ -1,49 +1,49 @@
 import SwiftUI
 
-enum Layout {
+public enum Layout {
   /// Where a full-width control stops growing. Past this a button is just a
   /// long strip of colour, which on an iPad is most of the screen.
-  static let maxControlWidth: CGFloat = 420
+  public static let maxControlWidth: CGFloat = 420
 }
 
 // MARK: - Typography
 
-struct TitleText: View {
+public struct TitleText: View {
   @Environment(\.theme) private var theme
   let text: String
-  init(_ text: String) { self.text = text }
-  var body: some View {
+  public init(_ text: String) { self.text = text }
+  public var body: some View {
     Text(text).font(.system(size: 19, weight: .bold)).foregroundStyle(theme.text)
   }
 }
 
-struct BodyText: View {
+public struct BodyText: View {
   @Environment(\.theme) private var theme
   let text: String
   var lineLimit: Int?
-  init(_ text: String, lineLimit: Int? = nil) {
+  public init(_ text: String, lineLimit: Int? = nil) {
     self.text = text
     self.lineLimit = lineLimit
   }
-  var body: some View {
+  public var body: some View {
     Text(text).font(.system(size: 15)).foregroundStyle(theme.text).lineLimit(lineLimit)
   }
 }
 
-struct MutedText: View {
+public struct MutedText: View {
   @Environment(\.theme) private var theme
   let text: String
   var lineLimit: Int?
-  init(_ text: String, lineLimit: Int? = nil) {
+  public init(_ text: String, lineLimit: Int? = nil) {
     self.text = text
     self.lineLimit = lineLimit
   }
-  var body: some View {
+  public var body: some View {
     Text(text).font(.system(size: 13)).foregroundStyle(theme.textMuted).lineLimit(lineLimit)
   }
 }
 
-struct MonoText: View {
+public struct MonoText: View {
   @Environment(\.theme) private var theme
   let text: String
   var size: CGFloat = 12
@@ -53,7 +53,21 @@ struct MonoText: View {
   /// the part worth keeping.
   var truncateHead = false
 
-  var body: some View {
+  public init(
+    text: String,
+    size: CGFloat = 12,
+    color: Color? = nil,
+    lineLimit: Int? = nil,
+    truncateHead: Bool = false
+  ) {
+    self.text = text
+    self.size = size
+    self.color = color
+    self.lineLimit = lineLimit
+    self.truncateHead = truncateHead
+  }
+
+  public var body: some View {
     Text(text)
       .font(.system(size: size, design: .monospaced))
       .foregroundStyle(color ?? theme.textSecondary)
@@ -65,12 +79,17 @@ struct MonoText: View {
 // MARK: - Containers
 
 /// A scrolling screen body with the standard padding and background.
-struct Screen<Content: View>: View {
+public struct Screen<Content: View>: View {
   @Environment(\.theme) private var theme
   var scroll = true
   @ViewBuilder var content: Content
 
-  var body: some View {
+  public init(scroll: Bool = true, @ViewBuilder content: () -> Content) {
+    self.scroll = scroll
+    self.content = content()
+  }
+
+  public var body: some View {
     Group {
       if scroll {
         ScrollView {
@@ -89,13 +108,19 @@ struct Screen<Content: View>: View {
   }
 }
 
-struct Card<Content: View>: View {
+public struct Card<Content: View>: View {
   @Environment(\.theme) private var theme
   var tone: Tone?
   var onTap: (() -> Void)?
   @ViewBuilder var content: Content
 
-  var body: some View {
+  public init(tone: Tone? = nil, onTap: (() -> Void)? = nil, @ViewBuilder content: () -> Content) {
+    self.tone = tone
+    self.onTap = onTap
+    self.content = content()
+  }
+
+  public var body: some View {
     let card = VStack(alignment: .leading, spacing: 8) { content }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(theme.space)
@@ -114,12 +139,17 @@ struct Card<Content: View>: View {
   }
 }
 
-struct SectionHeader: View {
+public struct SectionHeader: View {
   @Environment(\.theme) private var theme
   let title: String
   var count: Int?
 
-  var body: some View {
+  public init(title: String, count: Int? = nil) {
+    self.title = title
+    self.count = count
+  }
+
+  public var body: some View {
     HStack(spacing: 6) {
       Text(title.uppercased())
         .font(.system(size: 11, weight: .bold))
@@ -136,13 +166,19 @@ struct SectionHeader: View {
 }
 
 /// A labelled settings row with optional explanatory caption.
-struct Field<Content: View>: View {
+public struct Field<Content: View>: View {
   @Environment(\.theme) private var theme
   let label: String
   var caption: String?
   @ViewBuilder var content: Content
 
-  var body: some View {
+  public init(label: String, caption: String? = nil, @ViewBuilder content: () -> Content) {
+    self.label = label
+    self.caption = caption
+    self.content = content()
+  }
+
+  public var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(label)
         .font(.system(size: 11, weight: .bold))
@@ -163,9 +199,9 @@ struct Field<Content: View>: View {
 
 // MARK: - Buttons
 
-enum ButtonTone { case primary, secondary, danger, ghost }
+public enum ButtonTone { case primary, secondary, danger, ghost }
 
-struct Btn: View {
+public struct Btn: View {
   @Environment(\.theme) private var theme
   @Environment(\.isEnabled) private var isEnabled
   let label: String
@@ -174,7 +210,21 @@ struct Btn: View {
   var icon: String?
   let action: () -> Void
 
-  var body: some View {
+  public init(
+    label: String,
+    tone: ButtonTone = .primary,
+    small: Bool = false,
+    icon: String? = nil,
+    action: @escaping () -> Void
+  ) {
+    self.label = label
+    self.tone = tone
+    self.small = small
+    self.icon = icon
+    self.action = action
+  }
+
+  public var body: some View {
     Button(action: action) {
       HStack(spacing: 6) {
         if let icon {
@@ -222,7 +272,7 @@ struct Btn: View {
   }
 }
 
-struct IconBtn: View {
+public struct IconBtn: View {
   @Environment(\.theme) private var theme
   let systemName: String
   var label: String
@@ -230,7 +280,21 @@ struct IconBtn: View {
   var tint: Color?
   let action: () -> Void
 
-  var body: some View {
+  public init(
+    systemName: String,
+    label: String,
+    size: CGFloat = 17,
+    tint: Color? = nil,
+    action: @escaping () -> Void
+  ) {
+    self.systemName = systemName
+    self.label = label
+    self.size = size
+    self.tint = tint
+    self.action = action
+  }
+
+  public var body: some View {
     Button(action: action) {
       Image(systemName: systemName)
         .font(.system(size: size, weight: .medium))
@@ -245,12 +309,17 @@ struct IconBtn: View {
 
 // MARK: - Status and labels
 
-struct Badge: View {
+public struct Badge: View {
   @Environment(\.theme) private var theme
   let label: String
   var tone: Tone = .muted
 
-  var body: some View {
+  public init(label: String, tone: Tone = .muted) {
+    self.label = label
+    self.tone = tone
+  }
+
+  public var body: some View {
     Text(label)
       .font(.system(size: 11, weight: .semibold))
       .foregroundStyle(tone.color(theme))
@@ -261,7 +330,7 @@ struct Badge: View {
   }
 }
 
-struct Chip: View {
+public struct Chip: View {
   @Environment(\.theme) private var theme
   let label: String
   var icon: String?
@@ -269,7 +338,21 @@ struct Chip: View {
   var mono = false
   var action: (() -> Void)?
 
-  var body: some View {
+  public init(
+    label: String,
+    icon: String? = nil,
+    tone: Tone? = nil,
+    mono: Bool = false,
+    action: (() -> Void)? = nil
+  ) {
+    self.label = label
+    self.icon = icon
+    self.tone = tone
+    self.mono = mono
+    self.action = action
+  }
+
+  public var body: some View {
     let content = HStack(spacing: 4) {
       if let icon {
         Image(systemName: icon).font(.system(size: 10, weight: .medium))
@@ -292,14 +375,20 @@ struct Chip: View {
   }
 }
 
-struct Banner: View {
+public struct Banner: View {
   @Environment(\.theme) private var theme
   let text: String
   var tone: Tone = .warning
   /// A bold lead line, for when the banner says what happened and why.
   var title: String?
 
-  var body: some View {
+  public init(text: String, tone: Tone = .warning, title: String? = nil) {
+    self.text = text
+    self.tone = tone
+    self.title = title
+  }
+
+  public var body: some View {
     // The accent stripe is an overlay, not a row in an HStack: a bare
     // Rectangle there takes whatever height it is offered, which stretches the
     // banner to fill any container that proposes one (an overlay, say).
@@ -320,13 +409,18 @@ struct Banner: View {
   }
 }
 
-struct StatusDot: View {
+public struct StatusDot: View {
   @Environment(\.theme) private var theme
   var tone: Tone
   var pulse = false
   @State private var faded = false
 
-  var body: some View {
+  public init(tone: Tone, pulse: Bool = false) {
+    self.tone = tone
+    self.pulse = pulse
+  }
+
+  public var body: some View {
     Circle()
       .fill(tone.color(theme))
       .frame(width: 7, height: 7)
@@ -339,27 +433,31 @@ struct StatusDot: View {
   }
 }
 
-struct EmptyState: View {
+public struct EmptyState: View {
   let icon: String
   let title: String
   let body_: String
 
-  init(icon: String, title: String, body: String) {
+  public init(icon: String, title: String, body: String) {
     self.icon = icon
     self.title = title
     self.body_ = body
   }
 
-  var body: some View {
+  public var body: some View {
     ContentUnavailableView(title, systemImage: icon, description: Text(body_))
   }
 }
 
-struct Loading: View {
+public struct Loading: View {
   @Environment(\.theme) private var theme
   let label: String
 
-  var body: some View {
+  public init(label: String) {
+    self.label = label
+  }
+
+  public var body: some View {
     VStack(spacing: 10) {
       ThinkingDots(size: 8, tint: theme.accent)
       Text(label)
@@ -383,11 +481,16 @@ struct Loading: View {
 /// An `HStack` of buttons does the opposite: it squeezes every label until the
 /// text wraps mid-word, which is how "Mark as done" became three lines on a
 /// phone.
-struct FlowRow: SwiftUI.Layout {
-  var spacing: CGFloat = 8
-  var rowSpacing: CGFloat = 8
+public struct FlowRow: SwiftUI.Layout {
+  public var spacing: CGFloat = 8
+  public var rowSpacing: CGFloat = 8
 
-  func sizeThatFits(proposal: ProposedViewSize, subviews: LayoutSubviews, cache: inout ()) -> CGSize {
+  public init(spacing: CGFloat = 8, rowSpacing: CGFloat = 8) {
+    self.spacing = spacing
+    self.rowSpacing = rowSpacing
+  }
+
+  public func sizeThatFits(proposal: ProposedViewSize, subviews: LayoutSubviews, cache: inout ()) -> CGSize {
     let width = proposal.replacingUnspecifiedDimensions().width
     let rows = rows(subviews, in: width)
     let height = rows.reduce(0) { $0 + rowHeight($1, subviews: subviews) }
@@ -396,7 +499,7 @@ struct FlowRow: SwiftUI.Layout {
     return CGSize(width: width, height: height)
   }
 
-  func placeSubviews(
+  public func placeSubviews(
     in bounds: CGRect, proposal: ProposedViewSize, subviews: LayoutSubviews, cache: inout ()
   ) {
     var y = bounds.minY

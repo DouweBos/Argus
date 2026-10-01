@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import Foundation
 import UIKit
 

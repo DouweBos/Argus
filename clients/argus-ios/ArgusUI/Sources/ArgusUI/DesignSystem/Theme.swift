@@ -35,23 +35,23 @@ public struct Theme: Sendable, Equatable {
   public let radiusSmall: CGFloat = 8
   public let space: CGFloat = 12
 
-    /// Neutral surfaces and text come from the system, so `List`, `Form` and
+  /// Neutral surfaces and text come from the system, so `List`, `Form` and
   /// the sidebar look like themselves and adapt to light, dark, increased
   /// contrast and Liquid Glass without being fought. Peacock keeps the colours
   /// that carry meaning — the accent, and the status palette.
   private static func base(accent: Color, accentSoft: Color, accentBorder: Color, onAccent: Color, scheme: ColorScheme) -> Theme {
     Theme(
       scheme: scheme,
-      bg: Color(.systemGroupedBackground),
-      bgSecondary: Color(.secondarySystemGroupedBackground),
-      bgTertiary: Color(.tertiarySystemFill),
-      bgHover: Color(.quaternarySystemFill),
-      border: Color(.separator),
-      borderSubtle: Color(.separator).opacity(0.5),
-      borderStrong: Color(.opaqueSeparator),
-      text: Color(.label),
-      textSecondary: Color(.secondaryLabel),
-      textMuted: Color(.tertiaryLabel),
+      bg: SystemColor.groupedBackground,
+      bgSecondary: SystemColor.secondaryGroupedBackground,
+      bgTertiary: SystemColor.tertiaryFill,
+      bgHover: SystemColor.quaternaryFill,
+      border: SystemColor.separator,
+      borderSubtle: SystemColor.separator.opacity(0.5),
+      borderStrong: SystemColor.opaqueSeparator,
+      text: SystemColor.label,
+      textSecondary: SystemColor.secondaryLabel,
+      textMuted: SystemColor.tertiaryLabel,
       accent: accent,
       accentSoft: accentSoft,
       accentBorder: accentBorder,
@@ -112,7 +112,7 @@ public enum Tone: Sendable {
 }
 
 extension Color {
-  init(hex: UInt32) {
+  public init(hex: UInt32) {
     self.init(
       .sRGB,
       red: Double((hex >> 16) & 0xFF) / 255,
@@ -153,4 +153,29 @@ public enum ThemePreference: String, CaseIterable, Sendable {
     case .dark: .dark
     }
   }
+}
+
+/// The system's neutral palette, by role, on whichever platform this runs.
+private enum SystemColor {
+  #if canImport(UIKit)
+    static let groupedBackground = Color(uiColor: .systemGroupedBackground)
+    static let secondaryGroupedBackground = Color(uiColor: .secondarySystemGroupedBackground)
+    static let tertiaryFill = Color(uiColor: .tertiarySystemFill)
+    static let quaternaryFill = Color(uiColor: .quaternarySystemFill)
+    static let separator = Color(uiColor: .separator)
+    static let opaqueSeparator = Color(uiColor: .opaqueSeparator)
+    static let label = Color(uiColor: .label)
+    static let secondaryLabel = Color(uiColor: .secondaryLabel)
+    static let tertiaryLabel = Color(uiColor: .tertiaryLabel)
+  #else
+    static let groupedBackground = Color(nsColor: .windowBackgroundColor)
+    static let secondaryGroupedBackground = Color(nsColor: .controlBackgroundColor)
+    static let tertiaryFill = Color(nsColor: .tertiarySystemFill)
+    static let quaternaryFill = Color(nsColor: .quaternarySystemFill)
+    static let separator = Color(nsColor: .separatorColor)
+    static let opaqueSeparator = Color(nsColor: .gridColor)
+    static let label = Color(nsColor: .labelColor)
+    static let secondaryLabel = Color(nsColor: .secondaryLabelColor)
+    static let tertiaryLabel = Color(nsColor: .tertiaryLabelColor)
+  #endif
 }

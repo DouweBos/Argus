@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// The transcript: structured messages with inline tool calls, permission
@@ -6,9 +6,9 @@ import SwiftUI
 ///
 /// Live-refreshes off agent events with a poll as a backstop, and lazily loads
 /// older history when you scroll to the top.
-struct AgentTranscriptView: View {
+public struct AgentTranscriptView: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
 
   let agentKey: String
   /// A stopped agent's transcript is history; there is nothing to subscribe to.
@@ -22,10 +22,15 @@ struct AgentTranscriptView: View {
 
   private static let bottomAnchor = "transcript-bottom"
 
-  private var messages: [RemoteMessage] { app.visibleMessages(for: agentKey) }
+  private var messages: [RemoteMessage] { host.visibleMessages(for: agentKey) }
   private var segments: [ToolGroups.Segment] { ToolGroups.group(messages) }
 
-  var body: some View {
+  public init(agentKey: String, isLive: Bool = true) {
+    self.agentKey = agentKey
+    self.isLive = isLive
+  }
+
+  public var body: some View {
     ScrollViewReader { proxy in
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 10) {
@@ -40,12 +45,12 @@ struct AgentTranscriptView: View {
                 : "This conversation has no saved messages.")
           }
 
-          if let tasks = app.tasksByAgent[agentKey], !tasks.isEmpty {
+          if let tasks = host.tasksByAgent[agentKey], !tasks.isEmpty {
             TaskListView(
               title: "Tasks",
               items: tasks.map { ($0.activeForm ?? $0.subject, $0.status, $0.owner) })
           }
-          if let todos = app.todosByAgent[agentKey], !todos.isEmpty {
+          if let todos = host.todosByAgent[agentKey], !todos.isEmpty {
             TaskListView(
               title: "Todos",
               items: todos.map { ($0.activeForm ?? $0.content, $0.status, nil) })
@@ -61,8 +66,8 @@ struct AgentTranscriptView: View {
           }
 
           WorkingIndicator(
-            status: app.statusByAgent[agentKey]?.status,
-            pendingToolName: app.pendingToolByAgent[agentKey],
+            status: host.statusByAgent[agentKey]?.status,
+            pendingToolName: host.pendingToolByAgent[agentKey],
             pendingToolInput: nil,
             hasPendingPermission: hasPendingPermission)
 
@@ -121,25 +126,25 @@ struct AgentTranscriptView: View {
       }
     }
     .task(id: agentKey) { await start() }
-    .liveRefresh(enabled: app.connection == .ready, every: .seconds(5)) {
-      await app.loadTranscript(agentId: agentKey)
+    .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) {
+      await host.loadTranscript(agentId: agentKey)
     }
     // Queue changes only ever arrive over the agent subscription, which the
     // lock screen takes down with the socket. Re-arm it and re-read the queue.
-    .onResume(enabled: isLive, connected: app.connection == .ready) {
-      await app.loadQueue(agentId: agentKey)
-      await app.watchAgent(agentKey, on: true)
+    .onResume(enabled: isLive, connected: host.connection == .ready) {
+      await host.loadQueue(agentId: agentKey)
+      await host.watchAgent(agentKey, on: true)
     }
     .onDisappear {
       guard isLive else { return }
-      Task { await app.watchAgent(agentKey, on: false) }
+      Task { await host.watchAgent(agentKey, on: false) }
     }
   }
 
   /// Scrolling this into view means the reader wants older history.
   private var topSentinel: some View {
     Group {
-      if app.hasOlderMessages(for: agentKey) {
+      if host.hasOlderMessages(for: agentKey) {
         HStack {
           Spacer()
           if loadingOlder {
@@ -153,7 +158,7 @@ struct AgentTranscriptView: View {
           guard !loadingOlder else { return }
           loadingOlder = true
           Task {
-            await app.loadOlderMessages(agentId: agentKey)
+            await host.loadOlderMessages(agentId: agentKey)
             loadingOlder = false
           }
         }
@@ -163,7 +168,7 @@ struct AgentTranscriptView: View {
 
   private var hasPendingPermission: Bool {
     messages.contains { message in
-      message.toolCalls.contains { app.hasPendingCall(agentKey: agentKey, in: $0) }
+      message.toolCalls.contains { host.hasPendingCall(agentKey: agentKey, in: $0) }
     }
   }
 
@@ -171,7 +176,7 @@ struct AgentTranscriptView: View {
   /// because the queue is the computer's record and this is the absence of one.
   @ViewBuilder
   private var notSent: some View {
-    let items = app.failedByAgent[agentKey] ?? []
+    let items = host.failedByAgent[agentKey] ?? []
     if !items.isEmpty {
       SectionHeader(title: "Not sent", count: items.count)
       ForEach(items) { item in
@@ -182,8 +187,8 @@ struct AgentTranscriptView: View {
 
   @ViewBuilder
   private var queued: some View {
-    let items = app.queuedByAgent[agentKey] ?? []
-    let sending = app.sendingQueuedByAgent[agentKey] ?? []
+    let items = host.queuedByAgent[agentKey] ?? []
+    let sending = host.sendingQueuedByAgent[agentKey] ?? []
     if !items.isEmpty || !sending.isEmpty {
       SectionHeader(title: "Queued", count: items.count + sending.count)
       ForEach(items) { message in
@@ -196,22 +201,22 @@ struct AgentTranscriptView: View {
   }
 
   private func start() async {
-    await app.loadTranscript(agentId: agentKey)
+    await host.loadTranscript(agentId: agentKey)
     guard isLive else { return }
-    await app.loadQueue(agentId: agentKey)
-    await app.watchAgent(agentKey, on: true)
+    await host.loadQueue(agentId: agentKey)
+    await host.watchAgent(agentKey, on: true)
     // Subscriptions are fire-and-forget, so an event emitted before the
     // gateway registered ours is simply lost — the first question being the
     // usual casualty. One catch-up fetch closes that window.
     try? await Task.sleep(for: .milliseconds(600))
-    await app.loadTranscript(agentId: agentKey)
+    await host.loadTranscript(agentId: agentKey)
   }
 }
 
 /// A message the computer never received. Shown as its own card rather than a
 /// transcript bubble: a bubble reads as delivered, and this one was not.
-struct FailedSendCard: View {
-  @Environment(AppStore.self) private var app
+public struct FailedSendCard: View {
+  @Environment(HostStore.self) private var host
 
   let agentKey: String
   let item: FailedSend
@@ -224,24 +229,29 @@ struct FailedSendCard: View {
 
   private func seedAttachments() {
     for (index, image) in item.images.enumerated() {
-      app.seedImage(
+      host.seedImage(
         agentId: agentKey,
         imageId: "failed:\(item.id):img:\(index)",
         dataURI: "data:\(image.mediaType);base64,\(image.data)")
     }
   }
 
-  var body: some View {
+  public init(agentKey: String, item: FailedSend) {
+    self.agentKey = agentKey
+    self.item = item
+  }
+
+  public var body: some View {
     Card {
       HStack(alignment: .top, spacing: 8) {
         Badge(label: "Not sent", tone: .danger)
         BodyText(item.text)
         Spacer(minLength: 4)
         IconBtn(systemName: Icon.refresh, label: "Send again", size: 13) {
-          Task { await app.retryFailed(agentId: agentKey, id: item.id) }
+          Task { await host.retryFailed(agentId: agentKey, id: item.id) }
         }
         IconBtn(systemName: Icon.close, label: "Discard message", size: 13) {
-          app.discardFailed(agentId: agentKey, id: item.id)
+          host.discardFailed(agentId: agentKey, id: item.id)
         }
       }
       if !attachmentIds.isEmpty {
@@ -260,9 +270,9 @@ struct FailedSendCard: View {
 
 /// A message still waiting to be sent — editable in place, because a phone is
 /// usually where you notice the typo.
-struct QueuedMessageCard: View {
+public struct QueuedMessageCard: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
 
   let agentKey: String
   let message: RemoteQueuedMessage
@@ -291,14 +301,20 @@ struct QueuedMessageCard: View {
 
   private func seedAttachments() {
     for (index, image) in (message.images ?? []).enumerated() {
-      app.seedImage(
+      host.seedImage(
         agentId: agentKey,
         imageId: "queued:\(message.id):img:\(index)",
         dataURI: "data:\(image.mediaType);base64,\(image.data)")
     }
   }
 
-  var body: some View {
+  public init(agentKey: String, message: RemoteQueuedMessage, sending: Bool = false) {
+    self.agentKey = agentKey
+    self.message = message
+    self.sending = sending
+  }
+
+  public var body: some View {
     Card {
       HStack(alignment: .top, spacing: 8) {
         Badge(label: sending ? "Sending" : "Queued")
@@ -337,7 +353,7 @@ struct QueuedMessageCard: View {
       "Remove this queued message?", isPresented: $confirmingRemove, titleVisibility: .visible
     ) {
       Button("Remove", role: .destructive) {
-        Task { await app.removeQueued(agentId: agentKey, id: message.id) }
+        Task { await host.removeQueued(agentId: agentKey, id: message.id) }
       }
       Button("Cancel", role: .cancel) {}
     } message: {
@@ -352,9 +368,9 @@ struct QueuedMessageCard: View {
       // Cleared to nothing with no projects attached is a delete — there
       // would be no message left to send.
       if trimmed.isEmpty && paths.isEmpty {
-        await app.removeQueued(agentId: agentKey, id: message.id)
+        await host.removeQueued(agentId: agentKey, id: message.id)
       } else {
-        await app.updateQueued(
+        await host.updateQueued(
           agentId: agentKey, id: message.id,
           message: LinkedProjects.buildPreamble(paths: paths, message: trimmed))
       }
@@ -363,7 +379,7 @@ struct QueuedMessageCard: View {
 }
 
 /// Editing one queued message, over the transcript rather than inside it.
-struct QueuedMessageEditor: View {
+public struct QueuedMessageEditor: View {
   @Environment(\.dismiss) private var dismiss
 
   @Binding var text: String
@@ -371,7 +387,12 @@ struct QueuedMessageEditor: View {
 
   @FocusState private var focused: Bool
 
-  var body: some View {
+  public init(text: Binding<String>, onSave: @escaping () -> Void) {
+    self._text = text
+    self.onSave = onSave
+  }
+
+  public var body: some View {
     NavigationStack {
       Screen {
         Field(label: "MESSAGE", caption: "Sent when the agent finishes its turn.") {
@@ -380,7 +401,7 @@ struct QueuedMessageEditor: View {
         }
       }
       .navigationTitle("Edit queued message")
-      .navigationBarTitleDisplayMode(.inline)
+      .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") { dismiss() }

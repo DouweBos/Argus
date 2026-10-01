@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// Arguing with a report. The note goes to the run's own agent, which is
@@ -7,7 +7,7 @@ import SwiftUI
 /// The toggle is the whole safety story: by default feedback only ever adds
 /// proposals, so disagreeing about one thing cannot quietly empty the inbox of
 /// everything else. Turning it on is the user saying "yes, take that one out".
-struct RunFeedbackSheet: View {
+public struct RunFeedbackSheet: View {
   @Environment(\.theme) private var theme
   @Environment(AutomationsStore.self) private var store
   @Environment(\.dismiss) private var dismiss
@@ -23,7 +23,11 @@ struct RunFeedbackSheet: View {
     !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !sending
   }
 
-  var body: some View {
+  public init(runId: String) {
+    self.runId = runId
+  }
+
+  public var body: some View {
     NavigationStack {
       Screen {
         if let error = store.error {
@@ -53,7 +57,7 @@ struct RunFeedbackSheet: View {
         }
       }
       .navigationTitle("Give feedback")
-      .navigationBarTitleDisplayMode(.inline)
+      .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") { dismiss() }

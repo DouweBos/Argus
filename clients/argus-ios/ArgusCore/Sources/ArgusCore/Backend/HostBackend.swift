@@ -15,11 +15,13 @@ public protocol HostBackend: AnyObject, Sendable {
   func events() async -> AsyncStream<HostEvent>
 
   /// A typed remote method (`agents.list`, `permission.respond`, …).
+  @discardableResult
   func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
     _ method: RemoteMethod, _ params: Params, as: Result.Type
   ) async throws -> Result
 
   /// A generated catalog command; admin-tier ones need an admin or local backend.
+  @discardableResult
   func request<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws -> C.Result
 
   /// Gate `agent.*` / `permission.*` events for one agent.

@@ -1,11 +1,11 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// One pull request: what it says, whether CI is happy, what was said about
 /// it, and — for a device holding `control` — merge and comment.
 struct PullRequestView: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(PullRequestsStore.self) private var store
 
   let repo: String
@@ -32,7 +32,7 @@ struct PullRequestView: View {
           Card { MarkdownView(text: detail.body, baseSize: 14) }
         }
         conversation(detail)
-        if app.hasControl && !detail.merged { actions(detail) }
+        if host.hasControl && !detail.merged { actions(detail) }
       } else {
         Loading(label: "Reading the pull request…")
       }
@@ -47,7 +47,7 @@ struct PullRequestView: View {
       Text(strategy.label + " on GitHub. This can't be undone from here.")
     }
     .task(id: number) { await store.loadDetail(repo: repo, number: number) }
-    .liveRefresh(enabled: app.connection == .ready, every: .seconds(30)) {
+    .liveRefresh(enabled: host.connection == .ready, every: .seconds(30)) {
       await store.loadDetail(repo: repo, number: number)
     }
   }

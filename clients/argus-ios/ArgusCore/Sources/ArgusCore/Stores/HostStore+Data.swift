@@ -6,35 +6,33 @@ import Foundation
 /// Sessions and projects arrive as events (`sessions.changed`,
 /// `projects.changed`) with a slow poll behind them; devices and automations
 /// are polled outright. Transcripts are event-driven with a poll as a backstop.
-extension AppStore {
+extension HostStore {
 
   // MARK: Lists
 
-  func refreshProjects() async {
-    guard let transport else { return }
+  public func refreshProjects() async {
+    guard let backend else { return }
     struct Result: Decodable { let projects: [RemoteProject] }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .projectsList, EmptyParams(), as: Result.self) else { return }
     projects = result.projects
   }
 
-  func loadRecentAgents() async {
-    guard let transport else { return }
+  public func loadRecentAgents() async {
+    guard let backend else { return }
     struct Result: Decodable { let agents: [RemoteAgentStatus] }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .agentsList, EmptyParams(), as: Result.self) else { return }
     recentAgents = result.agents
     for agent in result.agents { statusByAgent[agent.agentId] = agent }
-    if let hostId = activeHostId {
-      agentHosts.remember(agentIds: result.agents.map(\.agentId), hostId: hostId)
-    }
+    hooks.agentsSeen(result.agents.map(\.agentId))
   }
 
   /// Older computers don't know the method, which leaves the list empty.
-  func loadScratchPads() async {
-    guard let transport else { return }
+  public func loadScratchPads() async {
+    guard let backend else { return }
     struct Result: Decodable { let sessions: [RemoteSession] }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .scratchPadsList, EmptyParams(), as: Result.self) else { return }
     scratchPads = result.sessions
   }
@@ -42,10 +40,10 @@ extension AppStore {
   /// Runners an agent can be started on. Host-wide, so it is loaded once and
   /// shared by every spawn sheet. Older computers don't answer, which leaves
   /// the list empty and the picker hidden.
-  func loadRunners() async {
-    guard let transport, runners.isEmpty else { return }
+  public func loadRunners() async {
+    guard let backend, runners.isEmpty else { return }
     struct Result: Decodable { let runners: [RemoteRunner] }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .automationsRunners, EmptyParams(), as: Result.self) else { return }
     runners = result.runners
   }
@@ -53,7 +51,7 @@ extension AppStore {
   /// Answer a `sessions.changed` event. A named repo reloads just that one;
   /// a nil repo means the computer couldn't say which, so everything the app
   /// is already holding gets refetched.
-  func reloadSessions(for repoRoot: String?) async {
+  public func reloadSessions(for repoRoot: String?) async {
     guard let repoRoot else {
       for known in sessionsByRepo.keys {
         await loadSessions(repoRoot: known)
@@ -66,40 +64,40 @@ extension AppStore {
     await loadSessions(repoRoot: repoRoot)
   }
 
-  func loadSessions(repoRoot: String) async {
-    guard let transport else { return }
+  public func loadSessions(repoRoot: String) async {
+    guard let backend else { return }
     struct Params: Encodable { let repo_root: String }
     struct Result: Decodable { let sessions: [RemoteSession] }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .sessionsList, Params(repo_root: repoRoot), as: Result.self) else { return }
     sessionsByRepo[repoRoot] = result.sessions
   }
 
-  func loadAgents(repoRoot: String) async {
-    guard let transport else { return }
+  public func loadAgents(repoRoot: String) async {
+    guard let backend else { return }
     struct Params: Encodable { let repo_root: String }
     struct Result: Decodable { let agents: [RemoteAgentStatus] }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .agentsList, Params(repo_root: repoRoot), as: Result.self) else { return }
     agentsByRepo[repoRoot] = result.agents
     for agent in result.agents { statusByAgent[agent.agentId] = agent }
   }
 
-  func loadStoppedAgents(repoRoot: String) async {
-    guard let transport else { return }
+  public func loadStoppedAgents(repoRoot: String) async {
+    guard let backend else { return }
     struct Params: Encodable { let repo_root: String }
     struct Result: Decodable { let agents: [RemoteStoppedAgent] }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .agentsStopped, Params(repo_root: repoRoot), as: Result.self) else { return }
     stoppedByRepo[repoRoot] = result.agents
   }
 
-  func loadAgentStatus(agentId: String) async {
-    guard let transport else { return }
+  public func loadAgentStatus(agentId: String) async {
+    guard let backend else { return }
     struct Params: Encodable { let agent_id: String }
     struct Result: Decodable { let agent: RemoteAgentStatus }
     do {
-      let result = try await transport.request(
+      let result = try await backend.request(
         .agentsStatus, Params(agent_id: agentId), as: Result.self)
       statusByAgent[agentId] = result.agent
       goneAgents.remove(agentId)
@@ -108,10 +106,10 @@ extension AppStore {
     } catch {}
   }
 
-  func refreshDevices() async {
-    guard let transport else { return }
+  public func refreshDevices() async {
+    guard let backend else { return }
     struct Result: Decodable { let devices: [RemoteDevice] }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .devicesList, EmptyParams(), as: Result.self) else { return }
     devices = result.devices
   }
@@ -121,19 +119,19 @@ extension AppStore {
   /// A stopped agent has no agent id — the process is gone and only the saved
   /// history remains. This mints a stand-in key so one transcript pipeline
   /// serves both live and finished conversations.
-  static func stoppedKey(repoRoot: String, historyId: String) -> String {
+  public static func stoppedKey(repoRoot: String, historyId: String) -> String {
     "stopped:\(historyId)\n\(repoRoot)"
   }
 
-  static func parseStoppedKey(_ key: String) -> (historyId: String, repoRoot: String)? {
+  public static func parseStoppedKey(_ key: String) -> (historyId: String, repoRoot: String)? {
     guard key.hasPrefix("stopped:") else { return nil }
     let parts = key.dropFirst("stopped:".count).components(separatedBy: "\n")
     guard parts.count == 2, !parts[0].isEmpty, !parts[1].isEmpty else { return nil }
     return (parts[0], parts[1])
   }
 
-  func loadTranscript(agentId key: String, before: Double? = nil) async {
-    guard let transport else { return }
+  public func loadTranscript(agentId key: String, before: Double? = nil) async {
+    guard let backend else { return }
 
     struct LiveParams: Encodable {
       let agent_id: String
@@ -152,7 +150,7 @@ extension AppStore {
     let transcript: RemoteTranscript
     if let stopped = Self.parseStoppedKey(key) {
       transcript =
-        (try? await transport.request(
+        (try? await backend.request(
           .agentsStoppedTranscript,
           StoppedParams(
             repo_root: stopped.repoRoot, history_id: stopped.historyId,
@@ -160,7 +158,7 @@ extension AppStore {
           as: RemoteTranscript.self)) ?? Self.emptyTranscript
     } else {
       transcript =
-        (try? await transport.request(
+        (try? await backend.request(
           .agentsTranscript,
           LiveParams(agent_id: key, limit: Self.transcriptPage, before: before),
           as: RemoteTranscript.self)) ?? Self.emptyTranscript
@@ -240,17 +238,17 @@ extension AppStore {
     }
   }
 
-  func loadOlderMessages(agentId key: String) async {
+  public func loadOlderMessages(agentId key: String) async {
     guard let cursor = prevBeforeByAgent[key] else { return }
     await loadTranscript(agentId: key, before: cursor)
   }
 
   /// Messages to render: the server's, then anything still in flight.
-  func visibleMessages(for key: String) -> [RemoteMessage] {
+  public func visibleMessages(for key: String) -> [RemoteMessage] {
     (messagesByAgent[key] ?? []) + (optimisticByAgent[key] ?? [])
   }
 
-  func hasOlderMessages(for key: String) -> Bool {
+  public func hasOlderMessages(for key: String) -> Bool {
     prevBeforeByAgent[key] != nil
   }
 
@@ -259,14 +257,14 @@ extension AppStore {
   /// Locally-seeded attachments — an optimistic send's images, or a queued
   /// message's — carry their bytes with them and have no server-side id.
   /// Asking the computer for one is a request that can only fail.
-  static func isLocallySeeded(imageId: String) -> Bool {
+  public static func isLocallySeeded(imageId: String) -> Bool {
     imageId.contains(":img:")
   }
 
-  func loadImage(agentId key: String, imageId: String) async {
+  public func loadImage(agentId key: String, imageId: String) async {
     guard !Self.isLocallySeeded(imageId: imageId) else { return }
     let cacheKey = imageKey(key, imageId)
-    guard imageCache[cacheKey] == nil, let transport else { return }
+    guard imageCache[cacheKey] == nil, let backend else { return }
 
     struct LiveParams: Encodable {
       let agent_id: String
@@ -280,51 +278,51 @@ extension AppStore {
 
     let image: RemoteImageData?
     if let stopped = Self.parseStoppedKey(key) {
-      image = try? await transport.request(
+      image = try? await backend.request(
         .agentsStoppedImage,
         StoppedParams(
           repo_root: stopped.repoRoot, history_id: stopped.historyId, image_id: imageId),
         as: RemoteImageData.self)
     } else {
-      image = try? await transport.request(
+      image = try? await backend.request(
         .agentsImage, LiveParams(agent_id: key, image_id: imageId), as: RemoteImageData.self)
     }
     guard let image else { return }
     imageCache[cacheKey] = image.dataURI
   }
 
-  func cachedImage(agentId key: String, imageId: String) -> String? {
+  public func cachedImage(agentId key: String, imageId: String) -> String? {
     imageCache[imageKey(key, imageId)]
   }
 
   /// Seed the cache directly — used for locally attached images so an
   /// optimistic bubble shows its attachments before any round trip.
-  func seedImage(agentId key: String, imageId: String, dataURI: String) {
+  public func seedImage(agentId key: String, imageId: String, dataURI: String) {
     imageCache[imageKey(key, imageId)] = dataURI
   }
 
   // MARK: Subscriptions
 
-  func watchAgent(_ key: String, on: Bool) async {
+  public func watchAgent(_ key: String, on: Bool) async {
     // A stopped agent has no live process to subscribe to.
-    guard Self.parseStoppedKey(key) == nil, let transport else { return }
-    await transport.subscribe(agentId: key, on: on)
+    guard Self.parseStoppedKey(key) == nil, let backend else { return }
+    await backend.subscribe(agentId: key, on: on)
   }
 
   // MARK: Git
 
-  func loadGitStatus(sessionId: String) async {
-    guard let transport else { return }
+  public func loadGitStatus(sessionId: String) async {
+    guard let backend else { return }
     struct Params: Encodable { let session_id: String }
     struct Result: Decodable { let status: RemoteGitStatus }
-    guard let result = try? await transport.request(
+    guard let result = try? await backend.request(
       .sessionsGitStatus, Params(session_id: sessionId), as: Result.self)
     else { return }
     gitStatusBySession[sessionId] = result.status
   }
 
-  func loadDiff(sessionId: String, mode: String) async -> String {
-    guard let transport else { return "" }
+  public func loadDiff(sessionId: String, mode: String) async -> String {
+    guard let backend else { return "" }
     struct Params: Encodable {
       let session_id: String
       let mode: String
@@ -333,35 +331,35 @@ extension AppStore {
       let diff: String
       let base_branch: String?
     }
-    let result = try? await transport.request(
+    let result = try? await backend.request(
       .sessionsDiff, Params(session_id: sessionId, mode: mode), as: Result.self)
     return result?.diff ?? ""
   }
 
-  func listBranches(sessionId: String) async -> [RemoteGitBranch] {
-    guard let transport else { return [] }
+  public func listBranches(sessionId: String) async -> [RemoteGitBranch] {
+    guard let backend else { return [] }
     struct Params: Encodable { let session_id: String }
     struct Result: Decodable { let branches: [RemoteGitBranch] }
-    let result = try? await transport.request(
+    let result = try? await backend.request(
       .sessionsBranches, Params(session_id: sessionId), as: Result.self)
     return result?.branches ?? []
   }
 }
 
-extension AppStore {
+extension HostStore {
   /// Whether a tool call is still waiting on a decision.
   ///
   /// The live `permission.request` event is trusted over the snapshot, which
   /// can lag a poll behind; a local answer wins over both, so the form clears
   /// the instant it is tapped.
-  func isToolCallPending(agentKey: String, call: RemoteToolCall) -> Bool {
+  public func isToolCallPending(agentKey: String, call: RemoteToolCall) -> Bool {
     if answered.contains(promptKey(agentKey, call.id)) { return false }
     if prompts[promptKey(agentKey, call.id)] != nil { return true }
     return call.status == .pending || call.pendingPermission == true
   }
 
   /// The call or anything a sub-agent ran under it is waiting on a decision.
-  func hasPendingCall(agentKey: String, in call: RemoteToolCall) -> Bool {
+  public func hasPendingCall(agentKey: String, in call: RemoteToolCall) -> Bool {
     if isToolCallPending(agentKey: agentKey, call: call) { return true }
     return (call.children ?? []).contains { child in
       guard case .toolUse(let nested) = child else { return false }
@@ -370,7 +368,7 @@ extension AppStore {
   }
 
   /// The prompt backing a pending call, when the gateway has forwarded one.
-  func prompt(agentKey: String, toolUseId: String) -> RemotePermissionRequest? {
+  public func prompt(agentKey: String, toolUseId: String) -> RemotePermissionRequest? {
     prompts[promptKey(agentKey, toolUseId)]
   }
 }

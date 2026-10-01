@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// One branch: where it stands, what you can do with it, and its history.
@@ -7,7 +7,7 @@ import SwiftUI
 /// read-only view of the branch and its commits.
 struct BranchView: View {
   @Environment(\.theme) private var theme
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @Environment(\.dismiss) private var dismiss
 
@@ -21,7 +21,7 @@ struct BranchView: View {
   var body: some View {
     Screen {
       header
-      if app.hasControl {
+      if host.hasControl {
         BranchActionsView(
           sessionId: sessionId, repoRoot: repoRoot, branch: branch, current: current,
           onChanged: { await reload() },
@@ -91,12 +91,12 @@ struct BranchView: View {
   }
 
   private func reload() async {
-    let branches = await app.listBranches(sessionId: sessionId)
+    let branches = await host.listBranches(sessionId: sessionId)
     if let fresh = branches.first(where: { $0.id == branch.id }) {
       branch = fresh
     }
     current = branches.first(where: \.isCurrent)?.name
-    commits = await app.branchLog(sessionId: sessionId, ref: branch.ref) ?? commits ?? []
+    commits = await host.branchLog(sessionId: sessionId, ref: branch.ref) ?? commits ?? []
   }
 
   private static let isoFormatter = ISO8601DateFormatter()

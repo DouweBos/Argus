@@ -1,9 +1,9 @@
-import ArgusKit
+import ArgusUI
 import SwiftUI
 
 /// One commit's diff, file by file.
 struct CommitView: View {
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
 
   let sessionId: String
   let hash: String
@@ -32,7 +32,7 @@ struct CommitView: View {
     }
     .navigationTitle(String(hash.prefix(8)))
     .navigationBarTitleDisplayMode(.inline)
-    .task { diff = await app.commitDiff(sessionId: sessionId, hash: hash) ?? "" }
+    .task { diff = await host.commitDiff(sessionId: sessionId, hash: hash) ?? "" }
   }
 }
 

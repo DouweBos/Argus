@@ -1,4 +1,4 @@
-import ArgusKit
+import ArgusCore
 import SwiftUI
 
 /// Markdown, rendered as SwiftUI text.
@@ -6,12 +6,17 @@ import SwiftUI
 /// Block structure is split here; inline formatting and links go through
 /// `AttributedString(markdown:)`, which already handles emphasis, code spans
 /// and autolinks correctly — hand-rolling that again would only add bugs.
-struct MarkdownView: View {
+public struct MarkdownView: View {
   @Environment(\.theme) private var theme
   let text: String
   var baseSize: CGFloat = 15
 
-  var body: some View {
+  public init(text: String, baseSize: CGFloat = 15) {
+    self.text = text
+    self.baseSize = baseSize
+  }
+
+  public var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       ForEach(Array(MarkdownBlock.parse(text).enumerated()), id: \.offset) { _, block in
         view(for: block)
@@ -72,12 +77,17 @@ struct MarkdownView: View {
   }
 }
 
-struct CodeBlockView: View {
+public struct CodeBlockView: View {
   @Environment(\.theme) private var theme
   let language: String?
   let code: String
 
-  var body: some View {
+  public init(language: String? = nil, code: String) {
+    self.language = language
+    self.code = code
+  }
+
+  public var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       if let language, !language.isEmpty {
         Text(language)
