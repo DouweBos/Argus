@@ -106,18 +106,29 @@ enum TranscriptStress {
       try? await Task.sleep(for: .seconds(1))
 
       let bench = ScrollBench(scrollView: scrollView)
-      report["scroll_up"] = await bench.run(seconds: 12, pointsPerSecond: -4000)
-      report["scroll_down"] = await bench.run(seconds: 6, pointsPerSecond: 4000)
+      NSLog("[argus] stress phase: scroll up")
+      report["scroll_up"] = await bench.run(seconds: 30, pointsPerSecond: -4000)
+      NSLog("[argus] stress phase: scroll down")
+      report["scroll_down"] = await bench.run(seconds: 10, pointsPerSecond: 4000)
+      NSLog("[argus] stress phase: find")
       report["content_height_after_scroll"] = scrollView.documentView?.frame.height ?? 0
 
+      // A cold model: every message rendered for the first time, as on the first ⌘F.
+      let cold = TranscriptModel()
+      cold.query = "needle"
       var start = CACurrentMediaTime()
+      let meter = RunLoopBusyMeter()
+      await cold.search(messages)
+      report["find_first_ms"] = ms(CACurrentMediaTime() - start)
+      report["find_first_longest_block_ms"] = meter.stop()
+      start = CACurrentMediaTime()
+      await cold.search(messages)
+      report["find_cached_ms"] = ms(CACurrentMediaTime() - start)
+
       model.openFind()
       model.query = "needle"
-      model.search(messages)
-      report["find_first_ms"] = ms(CACurrentMediaTime() - start)
-      start = CACurrentMediaTime()
-      model.search(messages)
-      report["find_cached_ms"] = ms(CACurrentMediaTime() - start)
+      // Let the bar's own debounced search land, so it can't race the steps below.
+      try? await Task.sleep(for: .milliseconds(400))
       report["find_hits"] = model.hits.count
 
       // Walk back through a few matches the way ⇧⌘G does.
@@ -129,6 +140,7 @@ enum TranscriptStress {
         steps.append(ms(CACurrentMediaTime() - start - 0.5))
       }
       report["find_step_overhead_ms"] = steps
+      report["find_current"] = "\(model.current.map { $0 + 1 } ?? 0) of \(model.hits.count) in \(model.currentHit?.unitId ?? "-")"
 
       let path = "/tmp/argus-transcript-stress-\(ProcessInfo.processInfo.processIdentifier).json"
       if let data = try? JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]) {
@@ -160,8 +172,40 @@ enum TranscriptStress {
     }
   }
 
-  /// Drives the clip view on the display link and records how late each
-  /// frame's callback was — a main thread busy laying out rows shows as gaps.
+  /// The longest single main-thread pass while it's running.
+  @MainActor
+  private final class RunLoopBusyMeter {
+    private var observer: CFRunLoopObserver?
+    private var passStart: CFTimeInterval = 0
+    private var longest: CFTimeInterval = 0
+
+    init() {
+      let observer = CFRunLoopObserverCreateWithHandler(
+        nil, CFRunLoopActivity.afterWaiting.rawValue | CFRunLoopActivity.beforeWaiting.rawValue, true, 0
+      ) { [weak self] _, activity in
+        MainActor.assumeIsolated {
+          guard let self else { return }
+          if activity == .afterWaiting {
+            self.passStart = CACurrentMediaTime()
+          } else if self.passStart > 0 {
+            self.longest = max(self.longest, CACurrentMediaTime() - self.passStart)
+          }
+        }
+      }
+      CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
+      self.observer = observer
+    }
+
+    func stop() -> Double {
+      if let observer { CFRunLoopRemoveObserver(CFRunLoopGetMain(), observer, .commonModes) }
+      observer = nil
+      return (longest * 10_000).rounded() / 10
+    }
+  }
+
+  /// Drives the clip view on the display link and measures the main thread's
+  /// busy time per run-loop pass. Frame intervals alone mislead here: macOS
+  /// throttles the display link of a window that isn't key.
   @MainActor
   private final class ScrollBench: NSObject {
     private let scrollView: NSScrollView
@@ -171,7 +215,10 @@ enum TranscriptStress {
     private var speed: CGFloat = 0
     private var intervals: [Double] = []
     private var travelled: CGFloat = 0
+    private var edgeFrames = 0
     private var done: CheckedContinuation<Void, Never>?
+    private var busy: [Double] = []
+    private var passStart: CFTimeInterval = 0
 
     init(scrollView: NSScrollView) {
       self.scrollView = scrollView
@@ -180,16 +227,37 @@ enum TranscriptStress {
     func run(seconds: Double, pointsPerSecond: CGFloat) async -> [String: Any] {
       intervals = []
       travelled = 0
+      edgeFrames = 0
       last = 0
       speed = pointsPerSecond
       end = CACurrentMediaTime() + seconds
+      busy = []
+      let observer = CFRunLoopObserverCreateWithHandler(
+        nil, CFRunLoopActivity.afterWaiting.rawValue | CFRunLoopActivity.beforeWaiting.rawValue, true, 0
+      ) { [weak self] _, activity in
+        MainActor.assumeIsolated {
+          guard let self else { return }
+          if activity == .afterWaiting {
+            self.passStart = CACurrentMediaTime()
+          } else if self.passStart > 0 {
+            self.busy.append(CACurrentMediaTime() - self.passStart)
+          }
+        }
+      }
+      CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
+      defer { CFRunLoopRemoveObserver(CFRunLoopGetMain(), observer, .commonModes) }
       await withCheckedContinuation { continuation in
         done = continuation
         let link = scrollView.displayLink(target: self, selector: #selector(tick(_:)))
         link.add(to: .main, forMode: .common)
         self.link = link
+        // An occluded window gets no display-link callbacks at all.
+        Task { @MainActor [weak self] in
+          try? await Task.sleep(for: .seconds(seconds + 3))
+          self?.finish()
+        }
       }
-      let frame = link.map { $0.targetTimestamp - $0.timestamp } ?? (1.0 / 60)
+      let frame = link.map { $0.duration > 0 ? $0.duration : $0.targetTimestamp - $0.timestamp } ?? (1.0 / 60)
       link = nil
       let sorted = intervals.sorted()
       func percentile(_ p: Double) -> Double {
@@ -206,7 +274,20 @@ enum TranscriptStress {
         "hitches": hitches.count,
         "hitch_time_ms": (hitches.reduce(0) { $0 + $1 - frame } * 10_000).rounded() / 10,
         "travelled_pt": Int(travelled),
+        "busy_p50_ms": Self.percentile(busy, 0.5),
+        "busy_p95_ms": Self.percentile(busy, 0.95),
+        "busy_p99_ms": Self.percentile(busy, 0.99),
+        "busy_max_ms": Self.percentile(busy, 1),
+        "busy_over_8ms": busy.filter { $0 > 0.0083 }.count,
+        "busy_over_16ms": busy.filter { $0 > 0.0167 }.count,
+        "busy_passes": busy.count,
       ]
+    }
+
+    private static func percentile(_ values: [Double], _ p: Double) -> Double {
+      let sorted = values.sorted()
+      guard !sorted.isEmpty else { return 0 }
+      return (sorted[min(sorted.count - 1, Int(Double(sorted.count) * p))] * 10_000).rounded() / 10
     }
 
     @objc private func tick(_ link: CADisplayLink) {
@@ -227,12 +308,18 @@ enum TranscriptStress {
       clip.scroll(to: origin)
       scrollView.reflectScrolledClipView(clip)
 
+      // The lazy stack re-estimates its height as rows appear, so one frame
+      // at an edge doesn't mean the end of the content.
       let atEdge = (speed < 0) == flipped ? target <= 0 : target >= maxY
-      if now >= end || (atEdge && intervals.count > 10) {
-        link.invalidate()
-        done?.resume()
-        done = nil
-      }
+      edgeFrames = atEdge ? edgeFrames + 1 : 0
+      if now >= end || edgeFrames > 60 { finish() }
+    }
+
+    private func finish() {
+      link?.isPaused = true
+      link?.invalidate()
+      done?.resume()
+      done = nil
     }
   }
 #endif

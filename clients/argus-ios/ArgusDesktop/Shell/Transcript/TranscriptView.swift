@@ -17,7 +17,10 @@ struct TranscriptView: View {
   @State private var model = TranscriptModel()
   @State private var links: TranscriptLinkHandler?
   @State private var viewer = ImageViewerState()
-  @State private var atBottom = true
+  /// Whether the reader is following the tail. Written on every scroll, so it
+  /// is observed only by the jump button — the transcript itself re-rendering
+  /// on each flip feeds back into the lazy stack's layout.
+  @State private var follow = FollowState()
   @State private var landed = false
   @State private var loadingOlder = false
 
@@ -28,18 +31,23 @@ struct TranscriptView: View {
   var body: some View {
     let messages = messages
     let segments = ToolGroups.group(messages)
+    let chunks = Self.chunks(segments)
     let pending = pendingCalls(messages)
     ScrollViewReader { proxy in
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 14) {
-          topSentinel(first: segments.first?.id, proxy: proxy)
+          topSentinel(first: segments.first?.id, chunks: chunks, proxy: proxy)
           if messages.isEmpty, landed || fixture != nil {
             EmptyState(
               icon: Icon.agent, title: "Nothing yet",
               body: "Send this agent a message to get it going.")
           }
-          ForEach(segments) { segment in
-            row(segment).id(segment.id)
+          ForEach(chunks) { chunk in
+            VStack(alignment: .leading, spacing: 14) {
+              ForEach(chunk.segments) { segment in
+                row(segment).id(segment.id)
+              }
+            }
           }
           footer(pending: pending)
           Color.clear.frame(height: 1).id(Self.bottom)
@@ -49,11 +57,24 @@ struct TranscriptView: View {
         .frame(maxWidth: 920)
         .frame(maxWidth: .infinity)
       }
-      .defaultScrollAnchor(.bottom)
-      .onScrollGeometryChange(for: Bool.self) { geometry in
-        geometry.contentOffset.y + geometry.containerSize.height >= geometry.contentSize.height - 40
-      } action: { _, isAtBottom in
-        atBottom = isAtBottom
+      .defaultScrollAnchor(.bottom, for: .initialOffset)
+      .onScrollGeometryChange(for: ScrollState.self) { geometry in
+        ScrollState(
+          offset: geometry.contentOffset.y, content: geometry.contentSize.height,
+          container: geometry.containerSize.height)
+      } action: { _, new in
+        // Only the reader's own scrolling says where they want to be. The
+        // lazy stack shifts the offset as it re-measures rows, and new output
+        // grows the content; neither should end following.
+        if follow.userScrolling { follow.atBottom = new.isAtBottom }
+      }
+      .onScrollPhaseChange { _, phase, context in
+        follow.userScrolling = phase == .interacting || phase == .decelerating || phase == .tracking
+        if phase == .idle {
+          let geometry = context.geometry
+          follow.atBottom =
+            geometry.contentOffset.y + geometry.containerSize.height >= geometry.contentSize.height - 40
+        }
       }
       .onChange(of: tail(messages, pending: pending)) { _, _ in
         guard !messages.isEmpty else { return }
@@ -64,7 +85,7 @@ struct TranscriptView: View {
         }
         // Follow the tail only while the reader is at it; someone reading
         // history shouldn't be yanked down by new output.
-        guard atBottom else { return }
+        guard follow.atBottom else { return }
         proxy.scrollTo(Self.bottom, anchor: .bottom)
       }
       .onChange(of: pending.map(\.id)) { _, ids in
@@ -72,7 +93,7 @@ struct TranscriptView: View {
         if !ids.isEmpty { withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(Self.bottom, anchor: .bottom) } }
       }
       .onChange(of: model.revealToken) { _, _ in
-        reveal(segments: segments, proxy: proxy)
+        reveal(chunks: chunks, proxy: proxy)
       }
       .overlay(alignment: .top) {
         if model.findOpen {
@@ -80,13 +101,9 @@ struct TranscriptView: View {
         }
       }
       .overlay(alignment: .bottomTrailing) {
-        if !atBottom {
-          IconBtn(systemName: Icon.chevronDown, label: "Jump to latest", size: 13) {
-            withAnimation { proxy.scrollTo(Self.bottom, anchor: .bottom) }
-          }
-          .background(theme.bgSecondary, in: Circle())
-          .overlay(Circle().stroke(theme.border, lineWidth: 1))
-          .padding(16)
+        JumpToLatest(follow: follow) {
+          follow.atBottom = true
+          withAnimation { proxy.scrollTo(Self.bottom, anchor: .bottom) }
         }
       }
     }
@@ -95,7 +112,7 @@ struct TranscriptView: View {
       guard model.findOpen else { return }
       try? await Task.sleep(for: .milliseconds(80))
       guard !Task.isCancelled else { return }
-      model.search(messages)
+      await model.search(messages)
     }
     .overlay { ImageViewerOverlay() }
     .environment(model)
@@ -158,7 +175,7 @@ struct TranscriptView: View {
   /// Reaching this means the reader wants older history. Once the page lands,
   /// the row that was first goes back to the top, so the view doesn't jump.
   @ViewBuilder
-  private func topSentinel(first: String?, proxy: ScrollViewProxy) -> some View {
+  private func topSentinel(first: String?, chunks: [Chunk], proxy: ScrollViewProxy) -> some View {
     if fixture == nil, host.hasOlderMessages(for: agentKey) {
       HStack(spacing: 8) {
         Spacer()
@@ -174,7 +191,7 @@ struct TranscriptView: View {
         loadingOlder = true
         Task {
           await host.loadOlderMessages(agentId: agentKey)
-          if let first { proxy.scrollTo(first, anchor: .top) }
+          if let first { scroll(to: first, in: chunks, anchor: .top, proxy: proxy) }
           loadingOlder = false
         }
       }
@@ -200,23 +217,40 @@ struct TranscriptView: View {
   }
 
   /// Scrolls the current match's row into view, opening its tool group first.
-  private func reveal(segments: [ToolGroups.Segment], proxy: ScrollViewProxy) {
+  private func reveal(chunks: [Chunk], proxy: ScrollViewProxy) {
     guard let hit = model.currentHit, let messageId = Self.messageId(of: hit.unitId) else { return }
-    for segment in segments {
+    for segment in chunks.lazy.flatMap(\.segments) {
       switch segment {
       case .single(let message) where message.id == messageId:
-        withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(segment.id, anchor: .center) }
+        scroll(to: segment.id, in: chunks, anchor: .center, proxy: proxy)
         return
       case .collapsed(let group) where group.contains { $0.id == messageId }:
         model.expandedGroups.insert(segment.id)
-        DispatchQueue.main.async {
-          withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(segment.id, anchor: .top) }
-        }
+        scroll(to: segment.id, in: chunks, anchor: .top, proxy: proxy)
         return
       default:
         continue
       }
     }
+  }
+
+  /// A row is only addressable once its chunk exists, so the chunk comes into
+  /// view first and the row is placed on the next pass.
+  private func scroll(to id: String, in chunks: [Chunk], anchor: UnitPoint, proxy: ScrollViewProxy) {
+    if let chunk = chunks.first(where: { $0.segments.contains { $0.id == id } }) {
+      proxy.scrollTo(chunk.id, anchor: anchor)
+    }
+    DispatchQueue.main.async { proxy.scrollTo(id, anchor: anchor) }
+  }
+
+  struct Chunk: Identifiable {
+    let id: String
+    let segments: ArraySlice<ToolGroups.Segment>
+  }
+
+  static func chunks(_ segments: [ToolGroups.Segment]) -> [Chunk] {
+    let ids = segments.map(\.id)
+    return TranscriptChunks.ranges(ids).map { Chunk(id: "chunk-" + ids[$0.lowerBound], segments: segments[$0]) }
   }
 
   private static func messageId(of unit: String) -> String? {
@@ -226,6 +260,14 @@ struct TranscriptView: View {
       return rest.lastIndex(of: ":").map { String(rest[..<$0]) }
     }
     return nil
+  }
+
+  private struct ScrollState: Equatable {
+    let offset: CGFloat
+    let content: CGFloat
+    let container: CGFloat
+
+    var isAtBottom: Bool { offset + container >= content - 40 }
   }
 
   private struct SearchKey: Equatable {
@@ -279,6 +321,31 @@ struct TranscriptView: View {
     try? await Task.sleep(for: .milliseconds(600))
     await host.loadTranscript(agentId: agentKey)
     if !landed, messages.isEmpty { landed = true }
+  }
+}
+
+@MainActor
+@Observable
+final class FollowState {
+  @ObservationIgnored var atBottom = true {
+    didSet { if atBottom != oldValue { showJump = !atBottom } }
+  }
+  @ObservationIgnored var userScrolling = false
+  private(set) var showJump = false
+}
+
+private struct JumpToLatest: View {
+  @Environment(\.theme) private var theme
+  let follow: FollowState
+  let action: () -> Void
+
+  var body: some View {
+    if follow.showJump {
+      IconBtn(systemName: Icon.chevronDown, label: "Jump to latest", size: 13, action: action)
+        .background(theme.bgSecondary, in: Circle())
+        .overlay(Circle().stroke(theme.border, lineWidth: 1))
+        .padding(16)
+    }
   }
 }
 

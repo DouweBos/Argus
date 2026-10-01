@@ -15,6 +15,7 @@ struct TranscriptText: NSViewRepresentable {
   var revealToken = 0
   /// Take the whole proposed width rather than hugging the longest line.
   var fills = true
+  var onRevealed: (Int) -> Void = { _ in }
 
   @Environment(\.transcriptLinks) private var links
 
@@ -26,9 +27,11 @@ struct TranscriptText: NSViewRepresentable {
     view.links = links
     view.setContent(text)
     view.setHighlights(highlights, current: current)
-    if revealToken != view.revealedToken {
-      view.revealedToken = revealToken
-      if let current { view.reveal(current) }
+    if revealToken != 0, revealToken != view.lastReveal, let current {
+      view.lastReveal = revealToken
+      view.reveal(current)
+      let token = revealToken
+      DispatchQueue.main.async { onRevealed(token) }
     }
   }
 
@@ -39,12 +42,10 @@ struct TranscriptText: NSViewRepresentable {
 
 final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
   weak var links: TranscriptLinkHandler?
-  var revealedToken = 0
+  var lastReveal = 0
 
   private var content: NSAttributedString?
   private var highlighted: ([NSRange], NSRange?) = ([], nil)
-  /// Height per laid-out width; a row is measured far more often than it changes.
-  private var sizes: [CGFloat: CGSize] = [:]
   private let blocks = BlockLayoutDelegate()
 
   static func make() -> TranscriptNSTextView {
@@ -72,35 +73,19 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
   func setContent(_ text: NSAttributedString) {
     guard content !== text else { return }
     content = text
-    sizes = [:]
-    usedWidths = [:]
     highlighted = ([], nil)
     textStorage?.setAttributedString(text)
-    invalidateIntrinsicContentSize()
   }
 
   /// The size for a proposed width; nil asks for the natural (unwrapped) width.
+  /// Measured off to the side: resizing this view's own container mid-layout
+  /// invalidates the hosting view and can keep SwiftUI laying out forever.
   func size(forWidth proposed: CGFloat?, fills: Bool) -> CGSize {
-    let width = proposed.map { $0.isFinite ? max($0, 1) : 100_000 } ?? 100_000
-    if let cached = sizes[width] { return fills || width == 100_000 ? cached : hugging(cached) }
-    guard let layout = textLayoutManager, let container = textContainer else { return .zero }
-    let previous = container.size
-    container.size = CGSize(width: width, height: .greatestFiniteMagnitude)
-    layout.ensureLayout(for: layout.documentRange)
-    let used = layout.usageBoundsForTextContainer
-    let size = CGSize(
-      width: width == 100_000 ? ceil(used.width) : width,
-      height: ceil(used.height))
-    if previous.width != width, frame.width > 0 { container.size = previous }
-    sizes[width] = size
-    usedWidths[width] = ceil(used.width)
-    return fills ? size : hugging(size)
-  }
-
-  private var usedWidths: [CGFloat: CGFloat] = [:]
-
-  private func hugging(_ size: CGSize) -> CGSize {
-    CGSize(width: min(size.width, usedWidths[size.width] ?? size.width), height: size.height)
+    guard let content else { return .zero }
+    let width = proposed.map { $0.isFinite ? max(($0 * 2).rounded(.down) / 2, 1) : nil } ?? nil
+    let used = TextMeasurer.size(of: content, width: width)
+    guard let width else { return used }
+    return CGSize(width: fills ? width : min(used.width, width), height: used.height)
   }
 
   // MARK: Find highlights
@@ -192,6 +177,40 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
   }
 }
 
+/// Lays text out on a private TextKit 2 stack. Sizes are cached per string
+/// (by identity — the render cache hands out one instance per message) and
+/// width, so a row the lazy stack recreates is never laid out twice.
+@MainActor
+enum TextMeasurer {
+  private static let storage = NSTextContentStorage()
+  private static let layout: NSTextLayoutManager = {
+    let layout = NSTextLayoutManager()
+    let container = NSTextContainer(size: .zero)
+    container.lineFragmentPadding = 0
+    layout.textContainer = container
+    storage.addTextLayoutManager(layout)
+    return layout
+  }()
+  private static let cache = NSMapTable<NSAttributedString, NSMutableDictionary>(
+    keyOptions: [.weakMemory, .objectPointerPersonality], valueOptions: .strongMemory)
+
+  /// Nil width: one unwrapped line per paragraph, for hugging.
+  static func size(of text: NSAttributedString, width: CGFloat?) -> CGSize {
+    let key = NSNumber(value: Double(width ?? -1))
+    let sizes = cache.object(forKey: text) ?? NSMutableDictionary()
+    if let cached = sizes[key] as? NSValue { return cached.sizeValue }
+    let layout = layout
+    layout.textContainer?.size = CGSize(width: width ?? 100_000, height: 0)
+    storage.textStorage?.setAttributedString(text)
+    layout.ensureLayout(for: layout.documentRange)
+    let used = layout.usageBoundsForTextContainer
+    let size = CGSize(width: ceil(used.width), height: ceil(used.height))
+    sizes[key] = NSValue(size: size)
+    cache.setObject(sizes, forKey: text)
+    return size
+  }
+}
+
 /// Swaps in a fragment that draws a code box, quote bar or rule behind
 /// paragraphs the renderer marked as blocks.
 private final class BlockLayoutDelegate: NSObject, NSTextLayoutManagerDelegate {
@@ -223,8 +242,8 @@ private final class BlockLayoutFragment: NSTextLayoutFragment {
       $0.attributedString.attribute(.paragraphStyle, at: $0.characterRange.location, effectiveRange: nil)
         as? NSParagraphStyle
     }
-    let top = lines.minY + (paragraphStyle?.paragraphSpacingBefore ?? 0) - 5
-    let bottom = lines.minY + lines.height - (paragraphStyle?.paragraphSpacing ?? 0) + 5
+    let top = lines.minY + (paragraphStyle?.paragraphSpacingBefore ?? 0) - 7
+    let bottom = lines.minY + lines.height - (paragraphStyle?.paragraphSpacing ?? 0) + 7
     return CGRect(x: -layoutFragmentFrame.minX, y: top, width: min(width, 100_000), height: bottom - top)
   }
 

@@ -89,8 +89,8 @@ enum TranscriptMarkdown {
     style.headIndent = 10
     style.firstLineHeadIndent = 10
     style.tailIndent = -10
-    style.paragraphSpacingBefore = 6
-    style.paragraphSpacing = 12
+    style.paragraphSpacingBefore = 10
+    style.paragraphSpacing = 14
     return NSAttributedString(
       string: body.replacingOccurrences(of: "\n", with: lineSeparator),
       attributes: [
@@ -117,8 +117,8 @@ enum TranscriptMarkdown {
     style.tabStops = stops.map { NSTextTab(textAlignment: .left, location: $0) }
     style.headIndent = 10
     style.firstLineHeadIndent = 10
-    style.paragraphSpacingBefore = 6
-    style.paragraphSpacing = 12
+    style.paragraphSpacingBefore = 10
+    style.paragraphSpacing = 14
     style.lineSpacing = 3
 
     let out = NSMutableAttributedString()
