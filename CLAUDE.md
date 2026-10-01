@@ -9,6 +9,8 @@ Electron agentic IDE for mobile development. Multiple Claude Code agents work in
 - `pnpm build:app` — build + electron-builder (.app/.dmg)
 - `pnpm hotswap` — build, splice into the installed `/Applications/Argus.app`, re-sign, and relaunch it (`--no-restart`, `--no-build`, `--web`; `ARGUS_APP`/`ARGUS_SIGN_IDENTITY` to retarget). Needs the Developer ID cert in the keychain — writing to the asar breaks the sealed-resource hash and macOS rejects the app as damaged without a re-sign. Agents can run this to ship their own change into the live app; the relaunch is detached, so it survives the app going down.
 - `pnpm lint` — `tsc --noEmit && eslint && prettier --check`, plus `pnpm gen:protocol --check`
+- `pnpm build:mac-host --out <dir> [--sign <identity>]` — stage Node + `dist-host` + node-pty + resources for the Mac app (its Xcode build phase runs it)
+- `swift test` in `clients/argus-ios/{ArgusKit,ArgusCore,ArgusUI}`; `xcodebuild -project clients/argus-ios/ArgusRemote.xcodeproj -scheme ArgusDesktop -destination 'platform=macOS' build` for the Mac app. Debug Mac builds ("Argus Dev") default to `~/.argus-mac-dev` — never point a dev build at `~/.argus`, and never drive the running Argus with UI scripting
 - `pnpm gen:protocol` — regenerate ArgusKit's Swift wire types (`ArgusKit/Sources/ArgusKit/Generated/`) from the command catalog
 - `pnpm dev:host` / `pnpm start:host` — the host core as a plain Node process (`dist-host/argus-host.js`, no Electron). Prints the gateway address; type `pair` to pair a device from the terminal
 - `pnpm storybook` — Peacock design system at :6006
@@ -21,7 +23,9 @@ pnpm monorepo. Three-panel layout: workspace sidebar / agent control / runtime &
 - `packages/peacock` → `@argus/peacock` design system (tokens, icons, components)
 - `packages/host` → `@argus/host` host core — sessions, agents, git, terminals, simulators, the command registry. **Plain Node, never imports `electron`** (enforced by `packages/host/src/noElectron.test.ts` and a `no-restricted-imports` rule)
 - `app/` + `electron/` → desktop app, consumes both via `workspace:*`
-- `clients/argus-ios` → native Swift/SwiftUI remote client (`ArgusKit` protocol package + `ArgusRemote` app), talks to the host's Noise/WS gateway
+- `clients/argus-ios` → the native Swift apps, one Xcode project (`ArgusRemote.xcodeproj`):
+  - `ArgusKit` (protocol, Noise, generated wire types, `Transport` for the gateway, `LocalTransport` for the host's UI socket), `ArgusCore` (the shared stores behind a `HostBackend`: `GatewayBackend` for the phone, `LocalBackend` for the Mac; the transcript reducer; `HostSupervisor`; no SwiftUI), `ArgusUI` (design system + shared views, iOS 18 and macOS 15)
+  - `ArgusRemote` — the iOS app shell. `ArgusDesktop` — the native Mac app (beta, see `docs/mac-app.md`): bundles and supervises the Node host and talks to it over `$ARGUS_HOME/host.sock`
 
 ### Frontend (`app/`, also `src/`)
 
@@ -106,6 +110,8 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 4. Typed wrapper in `src/lib/ipc.ts`; re-export any new result type from `src/lib/types.ts`
 5. `pnpm gen:protocol` to regenerate the Swift types
 
+**The Mac app is the desktop's successor.** It ships as a beta next to Electron until `plan/swiftui-parity.md` is ticked. Once it is the product, every new desktop feature lands there too, in the same PR — until then, keep new desktop work portable (host commands, not renderer-only logic).
+
 **The iOS client is a first-class citizen.** Every feature you add or change on the desktop also lands in `clients/argus-ios` in the same PR. The only excuses are that it genuinely makes no sense on a phone (window management, tray, simulator HID injection) or that exposing it over the gateway is a real security risk — say which, don't just skip it. "Desktop first, phone later" is how the phone falls behind.
 
 Adding one (worked example: `automations.revise_playbook`):
@@ -115,7 +121,7 @@ Adding one (worked example: `automations.revise_playbook`):
 3. Handler in `packages/host/src/services/remote/capabilities.ts`, reusing the same host service the IPC command calls. Wrap in `control()` only when host state actually changes
 4. `RemoteMethod` case in `ArgusKit/Sources/ArgusKit/Protocol/Envelopes.swift`, then a store method in `ArgusRemote/Stores/`
 5. UI in `ArgusRemote/Views/` or `Screens/`, gated on `app.hasControl` when the method is control-tier
-6. A new Swift file needs four `project.pbxproj` entries by hand (build file, file reference, group child, sources phase) — the project has no file-system-synchronized groups
+6. A new Swift file in `ArgusRemote` needs four `project.pbxproj` entries by hand (build file, file reference, group child, sources phase). Shared code belongs in `ArgusCore`/`ArgusUI` (SPM, no pbxproj edits); `ArgusDesktop` uses a file-system-synchronized group
 7. Verify with `xcodebuild -project clients/argus-ios/ArgusRemote.xcodeproj -scheme ArgusRemote -destination 'generic/platform=iOS Simulator' build` — `pnpm lint` does not see Swift
 
 **Worktrees:** `~/.argus/worktrees/{RepoName}-argus-worktrees/{branch}/`. Post-`git worktree add` setup (copy dirs, symlink files, run commands) configured in `.argus.json`.

@@ -47,6 +47,12 @@
           "file": "server-app.md",
           "title": "Argus Server — the headless host",
           "summary": "Run Argus with no window on a Mac mini so agents keep working while your laptop comes and goes."
+        },
+        {
+          "slug": "mac-app",
+          "file": "mac-app.md",
+          "title": "Argus for Mac (beta)",
+          "summary": "The native Mac app that will replace the Electron desktop: what works, and how it shares your projects with the Electron app."
         }
       ]
     },
