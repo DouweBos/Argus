@@ -115,6 +115,7 @@ public struct ContextMeter: View {
       Text(ContextWindow.format(tokens))
         .font(.system(size: 11))
         .foregroundStyle(theme.textMuted)
+        .fixedSize()
     }
     .accessibilityLabel("Context \(Int(fraction * 100)) percent full")
   }
