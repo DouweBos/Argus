@@ -10,6 +10,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private(set) static weak var current: AppDelegate?
   private(set) var terminating = false
   var skipQuitConfirmation = false
+  #if DEBUG
+    private var devDriver: DevDriver?
+  #endif
   private var signalSource: DispatchSourceSignal?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
@@ -23,6 +26,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     signalSource = source
 
     model.start()
+    #if DEBUG
+      devDriver = DevDriver.startIfConfigured()
+    #endif
   }
 
   /// Not from a main-queue block: `terminateLater` waits in a nested run loop,
