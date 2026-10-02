@@ -69,8 +69,10 @@ describe("a client session, through the command surface", () => {
 
   afterAll(() => {
     vi.unstubAllEnvs();
-    fs.rmSync(home, { recursive: true, force: true });
-    fs.rmSync(repo, { recursive: true, force: true });
+    // A git status run the session kicked off can still be writing in here.
+    for (const dir of [home, repo]) {
+      fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5 });
+    }
   });
 
   it("registers a project and sees it hydrate", async () => {
