@@ -122,6 +122,11 @@ export async function acceptProposal(
       model: agent.model,
     });
     sendAgentMessage(agent.agent_id, prompt);
+    // The renderer only draws user bubbles for sends it made itself.
+    emitHostEvent(`agent:remote-message:${agent.agent_id}`, {
+      message: prompt,
+      author: "Automation",
+    });
 
     const updated = updateProposal(proposal.id, {
       status,
