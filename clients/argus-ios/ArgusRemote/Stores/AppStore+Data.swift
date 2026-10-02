@@ -98,9 +98,14 @@ extension AppStore {
     guard let transport else { return }
     struct Params: Encodable { let agent_id: String }
     struct Result: Decodable { let agent: RemoteAgentStatus }
-    guard let result = try? await transport.request(
-      .agentsStatus, Params(agent_id: agentId), as: Result.self) else { return }
-    statusByAgent[agentId] = result.agent
+    do {
+      let result = try await transport.request(
+        .agentsStatus, Params(agent_id: agentId), as: Result.self)
+      statusByAgent[agentId] = result.agent
+      goneAgents.remove(agentId)
+    } catch Transport.TransportError.gateway(let payload) where payload.isNotFound {
+      goneAgents.insert(agentId)
+    } catch {}
   }
 
   func refreshDevices() async {

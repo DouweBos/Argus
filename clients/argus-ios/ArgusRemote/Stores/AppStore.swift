@@ -90,6 +90,9 @@ final class AppStore {
   var imageCache: [String: String] = [:]
   var capabilitiesByAgent: [String: RemoteAgentCapabilities] = [:]
   var statusByAgent: [String: RemoteAgentStatus] = [:]
+  /// Agents the computer no longer has — e.g. a finished automation run's,
+  /// which is shut down when the run settles. Their transcript can outlive them.
+  var goneAgents: Set<String> = []
   /// Locally-chosen effort per agent; the monitor snapshot doesn't carry it.
   var effortByAgent: [String: String] = [:]
   var devices: [RemoteDevice] = []
@@ -325,6 +328,7 @@ final class AppStore {
     imageCache = [:]
     capabilitiesByAgent = [:]
     statusByAgent = [:]
+    goneAgents = []
     effortByAgent = [:]
     devices = []
     claudeAccounts = nil
