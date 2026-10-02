@@ -35,7 +35,9 @@ struct TranscriptMessageView: View {
         // as part of the message body rather than something sent with it.
         images
         if hasBubbleContent { bubble }
-        if let timestamp = message.timestamp {
+        if AppStore.isOptimistic(id: message.id) {
+          SendingLabel()
+        } else if let timestamp = message.timestamp {
           Text(
             Date(timeIntervalSince1970: timestamp / 1000)
               .formatted(date: .omitted, time: .shortened)
@@ -170,6 +172,19 @@ struct TranscriptMessageView: View {
       await app.respond(
         agentId: agentKey, toolUseId: call.id, decision: decision, message: message)
     }
+  }
+}
+
+/// Stands in for the timestamp until the computer has the message.
+struct SendingLabel: View {
+  var body: some View {
+    HStack(spacing: 4) {
+      ProgressView().controlSize(.mini)
+      Text("Sending…")
+    }
+    .font(.caption2)
+    .foregroundStyle(.tertiary)
+    .accessibilityElement(children: .combine)
   }
 }
 

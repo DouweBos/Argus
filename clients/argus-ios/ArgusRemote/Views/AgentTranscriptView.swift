@@ -183,10 +183,14 @@ struct AgentTranscriptView: View {
   @ViewBuilder
   private var queued: some View {
     let items = app.queuedByAgent[agentKey] ?? []
-    if !items.isEmpty {
-      SectionHeader(title: "Queued", count: items.count)
+    let sending = app.sendingQueuedByAgent[agentKey] ?? []
+    if !items.isEmpty || !sending.isEmpty {
+      SectionHeader(title: "Queued", count: items.count + sending.count)
       ForEach(items) { message in
         QueuedMessageCard(agentKey: agentKey, message: message)
+      }
+      ForEach(sending) { message in
+        QueuedMessageCard(agentKey: agentKey, message: message, sending: true)
       }
     }
   }
@@ -262,6 +266,8 @@ struct QueuedMessageCard: View {
 
   let agentKey: String
   let message: RemoteQueuedMessage
+  /// Not on the computer yet, so there is nothing to edit or remove.
+  var sending = false
 
   @State private var editing = false
   @State private var draft = ""
@@ -295,15 +301,19 @@ struct QueuedMessageCard: View {
   var body: some View {
     Card {
       HStack(alignment: .top, spacing: 8) {
-        Badge(label: "Queued")
+        Badge(label: sending ? "Sending" : "Queued")
         BodyText(displayText)
         Spacer(minLength: 4)
-        IconBtn(systemName: Icon.pencil, label: "Edit queued message", size: 13) {
-          draft = displayText
-          editing = true
-        }
-        IconBtn(systemName: Icon.close, label: "Remove queued message", size: 13) {
-          confirmingRemove = true
+        if sending {
+          ProgressView().controlSize(.mini)
+        } else {
+          IconBtn(systemName: Icon.pencil, label: "Edit queued message", size: 13) {
+            draft = displayText
+            editing = true
+          }
+          IconBtn(systemName: Icon.close, label: "Remove queued message", size: 13) {
+            confirmingRemove = true
+          }
         }
       }
       if !attachmentIds.isEmpty {
