@@ -72,6 +72,9 @@ final class AppStore {
   var failedByAgent: [String: [FailedSend]] = [:]
   /// The computer's queue per agent — messages waiting on a busy agent.
   var queuedByAgent: [String: [RemoteQueuedMessage]] = [:]
+  /// Queue adds still in flight. Separate from `queuedByAgent` because a queue
+  /// event can replace that list before the computer has our add.
+  var sendingQueuedByAgent: [String: [RemoteQueuedMessage]] = [:]
   var tasksByAgent: [String: [RemoteTask]] = [:]
   var todosByAgent: [String: [RemoteTodo]] = [:]
   /// Name of the tool currently executing per agent — drives the activity row.
@@ -311,6 +314,7 @@ final class AppStore {
     optimisticByAgent = [:]
     failedByAgent = [:]
     queuedByAgent = [:]
+    sendingQueuedByAgent = [:]
     tasksByAgent = [:]
     todosByAgent = [:]
     pendingToolByAgent = [:]

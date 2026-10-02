@@ -41,8 +41,8 @@ extension AppStore {
       // The computer queues a send that arrived mid-turn. Drop the bubble and
       // let the queue show it, or it reads as already delivered.
       if result.queued == true {
-        optimisticByAgent[agentId]?.removeAll { $0.id == localId }
         await loadQueue(agentId: agentId)
+        optimisticByAgent[agentId]?.removeAll { $0.id == localId }
 
         return
       }
@@ -94,7 +94,7 @@ extension AppStore {
   private func appendOptimistic(
     agentId: String, text: String, images: [RemoteImageAttachment]
   ) -> String {
-    let id = "optimistic-\(Int(Date().timeIntervalSince1970 * 1000))-\(Int.random(in: 0..<10000))"
+    let id = Self.optimisticId()
     var refs: [RemoteImageRef] = []
     for (index, image) in images.enumerated() {
       let imageId = "\(id):img:\(index)"
@@ -110,6 +110,13 @@ extension AppStore {
     optimisticByAgent[agentId, default: []].append(message)
 
     return id
+  }
+
+  /// Bubbles that exist only on this phone so far, drawn as "sending".
+  static func isOptimistic(id: String) -> Bool { id.hasPrefix("optimistic-") }
+
+  private static func optimisticId() -> String {
+    "optimistic-\(Int(Date().timeIntervalSince1970 * 1000))-\(Int.random(in: 0..<10000))"
   }
 
   // MARK: Queue
@@ -133,6 +140,15 @@ extension AppStore {
       let message: String
       let display_text: String
       let images: [RemoteImageAttachment]?
+    }
+    let sending = RemoteQueuedMessage(
+      id: Self.optimisticId(), text: message, displayText: displayText,
+      images: images.isEmpty ? nil : images,
+      queuedAt: Date().timeIntervalSince1970 * 1000)
+    sendingQueuedByAgent[agentId, default: []].append(sending)
+    defer {
+      sendingQueuedByAgent[agentId]?.removeAll { $0.id == sending.id }
+      if sendingQueuedByAgent[agentId]?.isEmpty == true { sendingQueuedByAgent[agentId] = nil }
     }
     do {
       try await transport.request(

@@ -398,6 +398,18 @@ public struct RemoteQueuedMessage: Codable, Hashable, Sendable, Identifiable {
   public var images: [RemoteImageAttachment]?
   public var queuedAt: Double
 
+  public init(
+    id: String, text: String, displayText: String? = nil, author: String? = nil,
+    images: [RemoteImageAttachment]? = nil, queuedAt: Double
+  ) {
+    self.id = id
+    self.text = text
+    self.displayText = displayText
+    self.author = author
+    self.images = images
+    self.queuedAt = queuedAt
+  }
+
   enum CodingKeys: String, CodingKey {
     case id, text, author, images
     case displayText = "display_text"
