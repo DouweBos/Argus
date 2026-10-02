@@ -25,7 +25,10 @@ struct ToolCallCard: View {
     app.autoExpandImageReads && call.name == "Read" && !resultImageIds.isEmpty
   }
 
-  private var expanded: Bool { isPending || (userExpanded ?? autoExpanded) }
+  private var expanded: Bool {
+    isPending || app.hasPendingCall(agentKey: agentKey, in: call)
+      || (userExpanded ?? autoExpanded)
+  }
 
   private var borderColor: Color {
     if isPending { return theme.warning.opacity(0.6) }
@@ -187,6 +190,9 @@ struct ToolCallCard: View {
           MutedText(text)
         case .toolUse(let nested):
           ToolCallCard(agentKey: agentKey, call: nested, depth: depth + 1)
+          if app.isToolCallPending(agentKey: agentKey, call: nested) {
+            PendingCallForm(agentKey: agentKey, call: nested)
+          }
         }
       }
     }

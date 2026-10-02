@@ -62,7 +62,7 @@ struct TranscriptMessageView: View {
       ForEach(message.toolCalls) { call in
         ToolCallCard(agentKey: agentKey, call: call, depth: 0)
         if app.isToolCallPending(agentKey: agentKey, call: call) {
-          pendingForm(for: call)
+          PendingCallForm(agentKey: agentKey, call: call)
         }
       }
     }
@@ -125,6 +125,17 @@ struct TranscriptMessageView: View {
       }
     }
   }
+}
+
+/// The decision a pending call is waiting on. Shared by top-level calls and
+/// sub-agent calls, which need an answer just the same.
+struct PendingCallForm: View {
+  @Environment(AppStore.self) private var app
+
+  let agentKey: String
+  let call: RemoteToolCall
+
+  var body: some View { form(for: call) }
 
   /// The repo behind this agent, for seeding a sibling session from a plan.
   private var planRepoRoot: String? {
@@ -135,7 +146,7 @@ struct TranscriptMessageView: View {
 
   /// Which form a pending call gets: a question, a plan, or plain allow/deny.
   @ViewBuilder
-  private func pendingForm(for call: RemoteToolCall) -> some View {
+  private func form(for call: RemoteToolCall) -> some View {
     switch PendingForm.of(name: call.name, input: call.input) {
     case .question(let questions):
       QuestionFormView(
@@ -201,7 +212,7 @@ struct CollapsedToolGroupView: View {
   /// A pending decision inside can never be hidden behind a summary.
   private var forceExpanded: Bool {
     messages.contains { message in
-      message.toolCalls.contains { app.isToolCallPending(agentKey: agentKey, call: $0) }
+      message.toolCalls.contains { app.hasPendingCall(agentKey: agentKey, in: $0) }
     }
   }
 
