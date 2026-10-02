@@ -292,6 +292,11 @@ export async function driveRunAgent(args: {
   const { agentId, guardrails, prompt, runId } = args;
 
   sendAgentMessage(agentId, prompt);
+  // The renderer only draws user bubbles for sends it made itself.
+  emitHostEvent(`agent:remote-message:${agentId}`, {
+    message: prompt,
+    author: "Automation",
+  });
 
   const costWatch = watchRunCost(runId, guardrails.max_cost_usd_per_run, () =>
     stopAgentQuietly(agentId),
