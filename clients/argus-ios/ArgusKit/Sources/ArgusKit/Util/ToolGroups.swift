@@ -15,7 +15,17 @@ public enum ToolGroups {
     guard message.role == .assistant, !message.toolCalls.isEmpty else { return false }
     guard message.textBlocks.allSatisfy({ $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
     else { return false }
-    return !message.toolCalls.contains { substantive.contains($0.name) }
+    return !message.toolCalls.contains { substantive.contains($0.name) || awaitsDecision($0) }
+  }
+
+  /// A call waiting on approval, here or in a sub-agent under it, must never be
+  /// folded out of sight.
+  public static func awaitsDecision(_ call: RemoteToolCall) -> Bool {
+    if call.status == .pending || call.pendingPermission == true { return true }
+    return (call.children ?? []).contains { child in
+      guard case .toolUse(let nested) = child else { return false }
+      return awaitsDecision(nested)
+    }
   }
 
   /// Thinking- or usage-only messages arrive with nothing to draw; rendering

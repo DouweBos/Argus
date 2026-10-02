@@ -360,6 +360,15 @@ extension AppStore {
     return call.status == .pending || call.pendingPermission == true
   }
 
+  /// The call or anything a sub-agent ran under it is waiting on a decision.
+  func hasPendingCall(agentKey: String, in call: RemoteToolCall) -> Bool {
+    if isToolCallPending(agentKey: agentKey, call: call) { return true }
+    return (call.children ?? []).contains { child in
+      guard case .toolUse(let nested) = child else { return false }
+      return hasPendingCall(agentKey: agentKey, in: nested)
+    }
+  }
+
   /// The prompt backing a pending call, when the gateway has forwarded one.
   func prompt(agentKey: String, toolUseId: String) -> RemotePermissionRequest? {
     prompts[promptKey(agentKey, toolUseId)]

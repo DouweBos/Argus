@@ -163,7 +163,7 @@ struct AgentTranscriptView: View {
 
   private var hasPendingPermission: Bool {
     messages.contains { message in
-      message.toolCalls.contains { app.isToolCallPending(agentKey: agentKey, call: $0) }
+      message.toolCalls.contains { app.hasPendingCall(agentKey: agentKey, in: $0) }
     }
   }
 

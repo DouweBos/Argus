@@ -17,6 +17,16 @@ final class ToolGroupsTests: XCTestCase {
     XCTAssertEqual(segments.map(\.id), ["a"])
   }
 
+  func testNeverFoldsACallAwaitingApproval() {
+    var pending = message("2", tools: ["Bash"])
+    pending.toolCalls[0].status = .pending
+    let segments = ToolGroups.group([
+      message("1", tools: ["Bash"]), pending, message("3", tools: ["Bash"]),
+      message("4", tools: ["Bash"]),
+    ])
+    XCTAssertEqual(segments.map(\.id), ["1", "2", "3", "4"])
+  }
+
   func testEmptyMessagesDoNotSplitAToolRun() {
     let segments = ToolGroups.group([
       message("1", tools: ["Bash"]), message("e1"),
