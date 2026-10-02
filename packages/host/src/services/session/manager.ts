@@ -1211,11 +1211,14 @@ export function createHeadSession(repoRoot: string): Session {
     // Keep "HEAD" on failure.
   }
 
+  // Reuse the persisted id so links and clients survive a host restart.
+  const meta = loadMetadata(repoRoot);
+  const saved = getMeta(meta, repoRoot);
   const ws: Session = {
-    id: crypto.randomUUID(),
+    id: saved?.id ?? crypto.randomUUID(),
     kind: "project_root",
     branch,
-    display_name: null,
+    display_name: saved?.display_name ?? null,
     description: "",
     path: repoRoot,
     repo_root: repoRoot,
@@ -1225,6 +1228,19 @@ export function createHeadSession(repoRoot: string): Session {
   };
 
   appState.sessions.set(ws.id, ws);
+  if (!saved) {
+    try {
+      meta.set(normalizeMetaKey(repoRoot), {
+        id: ws.id,
+        description: "",
+        kind: "project_root",
+        branch,
+      });
+      saveMetadata(repoRoot, meta);
+    } catch (e) {
+      info(`createHeadSession: persist metadata failed for ${repoRoot}:`, e);
+    }
+  }
 
   // Watch .git/HEAD for external branch switches.
   const branchHandle = startBranchWatcher(repoRoot, ws.id);
