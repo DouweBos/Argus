@@ -18,6 +18,15 @@ public enum ToolGroups {
     return !message.toolCalls.contains { substantive.contains($0.name) }
   }
 
+  /// Thinking- or usage-only messages arrive with nothing to draw; rendering
+  /// them leaves a bare timestamp and splits runs that should fold together.
+  public static func hasVisibleContent(_ message: RemoteMessage) -> Bool {
+    !message.toolCalls.isEmpty
+      || !(message.images ?? []).isEmpty
+      || message.isError == true
+      || message.textBlocks.contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+  }
+
   public enum Segment: Identifiable, Sendable {
     case collapsed([RemoteMessage])
     case single(RemoteMessage)
@@ -44,7 +53,7 @@ public enum ToolGroups {
       run = []
     }
 
-    for message in messages {
+    for message in messages where hasVisibleContent(message) {
       if isToolCallOnly(message) {
         run.append(message)
       } else {
