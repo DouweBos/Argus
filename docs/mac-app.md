@@ -53,4 +53,6 @@ open clients/apple/ArgusRemote.xcodeproj   # scheme: ArgusDesktop
 A build phase stages the Node host into the app
 (`pnpm build:mac-host --out <dir>`). Debug builds are called **Argus Dev** and
 never default to `~/.argus` — they use `~/.argus-mac-dev` unless `ARGUS_HOME`
-says otherwise — so a dev build can't collide with the app you use.
+says otherwise — so a dev build can't collide with the app you use. They are
+signed with your Apple Development identity: macOS refuses notifications to an
+ad-hoc signed app, and to one run from `/tmp`.
