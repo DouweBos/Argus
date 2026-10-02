@@ -30,11 +30,20 @@ struct AgentView: View {
       repoRoot: nil)
   }
   private var isRunning: Bool { app.statusByAgent[agentId]?.status == .running }
+  private var isGone: Bool {
+    app.goneAgents.contains(agentId) || app.statusByAgent[agentId]?.status == .stopped
+  }
 
   var body: some View {
     VStack(spacing: 0) {
-      AgentTranscriptView(agentKey: agentId)
-      if app.hasControl {
+      AgentTranscriptView(agentKey: agentId, isLive: !isGone)
+      if isGone {
+        MutedText("This agent has stopped, so it can't take new messages.")
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(theme.space)
+          .background(theme.bgSecondary)
+          .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
+      } else if app.hasControl {
         ChatInputView(agentId: agentId, sessionId: sessionId)
       }
     }
@@ -56,7 +65,7 @@ struct AgentView: View {
           }
         }
         IconBtn(systemName: Icon.simulator, label: "Devices") { openDevices() }
-        if app.hasControl {
+        if app.hasControl, !isGone {
           IconBtn(systemName: Icon.stop, label: "Shut down agent") {
             confirmingStop = true
           }
@@ -64,7 +73,9 @@ struct AgentView: View {
       }
     }
     .task {
-      if sessionId == nil { await app.loadAgentStatus(agentId: agentId) }
+      // Always asked, not only when the session is unknown: a cached status
+      // can belong to an agent that has since been shut down.
+      await app.loadAgentStatus(agentId: agentId)
       // Fetched once, not polled: this only decides where the device button goes.
       if app.connection == .ready { await app.refreshDevices() }
     }

@@ -159,6 +159,7 @@ public struct GatewayErrorPayload: Codable, Sendable, Error {
 
   /// The host refused on capability grounds, not because the call was wrong.
   public var isCapabilityDenied: Bool { code == "capability_denied" }
+  public var isNotFound: Bool { code == "not_found" }
 }
 
 public struct RequestEnvelope<Params: Encodable>: Encodable {
