@@ -68,6 +68,9 @@ struct ProjectView: View {
             NavigationLink(value: Route.changes(sessionId: group.sessionId, label: group.label)) {
               Label("Changes", systemImage: Icon.branch)
             }
+            NavigationLink(value: Route.terminals(sessionId: group.sessionId, label: group.label)) {
+              Label("Terminals", systemImage: Icon.terminal)
+            }
             if canManageBranches(group.session) {
               NavigationLink(
                 value: Route.branches(

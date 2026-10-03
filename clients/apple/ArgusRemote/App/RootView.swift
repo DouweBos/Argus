@@ -399,6 +399,16 @@ struct RootView: View {
         branch: branch, runnerSessionId: runner)
     case .changes(let sessionId, let label):
       ChangesView(sessionId: sessionId, label: label)
+    case .terminals(let sessionId, let label):
+      SessionTerminalsList(sessionId: sessionId) { terminal in
+        router.push(.terminal(id: terminal.id, label: SessionTerminalsList.title(terminal)))
+      }
+      .navigationTitle("Terminals · \(label)")
+      .navigationBarTitleDisplayMode(.inline)
+    case .terminal(let id, let label):
+      TerminalOutputView(terminalId: id)
+        .navigationTitle(label)
+        .navigationBarTitleDisplayMode(.inline)
     case .branches(let sessionId, let repoRoot, let label):
       BranchesView(sessionId: sessionId, repoRoot: repoRoot, label: label)
     case .branch(let sessionId, let repoRoot, let branch):
