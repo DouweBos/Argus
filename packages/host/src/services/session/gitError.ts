@@ -98,7 +98,6 @@ export function classifyGitStderr(
   hint?: ClassifyHint,
 ): GitError {
   const s = stderr || "";
-  const lower = s.toLowerCase();
 
   // Branch is already checked out in another worktree.
   if (/is already (?:used by|checked out at) worktree/i.test(s)) {
@@ -174,7 +173,15 @@ export function classifyGitStderr(
   }
 
   // Conflict states — distinguish by op hint when possible.
-  if (/conflict/i.test(lower) || /merge conflict in/i.test(s)) {
+  // Git's own conflict lines, not the word: a branch or file named
+  // `conflict-b` must not turn every failure into a paused merge.
+  if (
+    /^CONFLICT \(/m.test(s) ||
+    /merge conflict in/i.test(s) ||
+    /after resolving the conflicts/i.test(s) ||
+    /fix conflicts and then commit/i.test(s) ||
+    /resolve all conflicts manually/i.test(s)
+  ) {
     const op = hint?.op ?? "";
     if (op.includes("rebase")) {
       return new GitError("rebase-conflict", "Rebase paused on conflict", {
