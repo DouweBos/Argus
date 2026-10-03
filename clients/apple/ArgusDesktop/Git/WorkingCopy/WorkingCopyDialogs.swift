@@ -36,14 +36,14 @@ struct WorkingCopyDialogs: ViewModifier {
         trashTitle, isPresented: present(trashEntries != nil) { vm.cancelFileAction() },
         titleVisibility: .visible, presenting: trashEntries
       ) { entries in
-        Button("Move to Trash", role: .destructive) { Task { await vm.moveToTrash(entries) } }
+        Button("Move to Trash", role: .destructive) { Task { await actions.moveToTrash(entries) } }
         Button("Cancel", role: .cancel) { vm.cancelFileAction() }
       } message: { entries in
         Text("You can restore \(entries.count == 1 ? "it" : "them") from the Trash in Finder.")
       }
       .sheet(item: renameEntry) { entry in
         RenameFileSheet(entry: entry) { newPath in
-          Task { await vm.rename(entry, to: newPath) }
+          Task { await actions.rename(entry, to: newPath) }
         } onCancel: {
           vm.cancelFileAction()
         }

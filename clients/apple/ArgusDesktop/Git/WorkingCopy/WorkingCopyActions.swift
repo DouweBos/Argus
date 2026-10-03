@@ -30,6 +30,13 @@ struct WorkingCopyActions {
     await toggle(vm.fileSelection.rows.filter { !conflicted.contains($0.path) })
   }
 
+  func ignore(_ target: IgnoreTarget, of entries: [StatusEntry], localOnly: Bool) async {
+    await tracked(.fileAction) { await vm.ignore(target, of: entries, localOnly: localOnly) }
+  }
+  func stopTracking(_ entries: [StatusEntry]) async { await tracked(.fileAction) { await vm.stopTracking(entries) } }
+  func rename(_ entry: StatusEntry, to path: String) async { await tracked(.fileAction) { await vm.rename(entry, to: path) } }
+  func moveToTrash(_ entries: [StatusEntry]) async { await tracked(.fileAction) { await vm.moveToTrash(entries) } }
+
   func discard(_ entries: [StatusEntry]) async { await tracked(.discard) { await vm.discard(entries) } }
 
   /// A discard that needs confirming parks in `pendingHunkDiscard` and is tracked when confirmed.

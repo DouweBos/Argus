@@ -97,6 +97,7 @@ private struct ChangeFileActionsMenu: View {
   let entries: [StatusEntry]
 
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
+  private var actions: WorkingCopyActions { WorkingCopyActions(workspace: workspace) }
   private var untracked: [StatusEntry] { entries.filter { $0.workdirStatus == .untracked } }
 
   var body: some View {
@@ -110,7 +111,7 @@ private struct ChangeFileActionsMenu: View {
     let tracked = vm.trackedEntries(entries)
     if !tracked.isEmpty {
       Button(tracked.count > 1 ? "Stop Tracking \(tracked.count) Files" : "Stop Tracking") {
-        Task { await vm.stopTracking(tracked) }
+        Task { await actions.stopTracking(tracked) }
       }
     }
     let existing = vm.existingEntries(entries)
@@ -127,7 +128,7 @@ private struct ChangeFileActionsMenu: View {
   @ViewBuilder
   private func ignoreItems(localOnly: Bool) -> some View {
     ForEach(vm.ignoreTargets(for: untracked), id: \.self) { target in
-      Button(title(for: target)) { Task { await vm.ignore(target, of: untracked, localOnly: localOnly) } }
+      Button(title(for: target)) { Task { await actions.ignore(target, of: untracked, localOnly: localOnly) } }
     }
   }
 
