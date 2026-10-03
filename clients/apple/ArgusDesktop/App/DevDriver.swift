@@ -111,6 +111,7 @@
         switch command["to"] as? String {
         case "agents": model.navigate(.agents)
         case "runtimes": model.navigate(.runtimes)
+        case "devices": model.navigate(.devices)
         case "back": model.goBack()
         default: return ["error": "to?"]
         }
