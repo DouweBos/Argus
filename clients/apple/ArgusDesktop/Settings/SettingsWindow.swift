@@ -28,7 +28,8 @@ struct SettingsWindow: View {
     }
     .frame(minWidth: 640, idealWidth: 720, minHeight: 480, idealHeight: 620)
     .environment(host)
-    .task(id: model.backend == nil) {
+    .task(id: model.store.connection == .ready) {
+      guard model.store.connection == .ready else { return }
       host.backend = model.backend
       await host.load()
     }

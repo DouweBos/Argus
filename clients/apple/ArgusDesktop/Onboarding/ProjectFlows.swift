@@ -16,8 +16,11 @@ struct ProjectFlows: ViewModifier {
       .sheet(item: $adding) { repo in
         AddProjectSheet(path: repo.path)
       }
-      .task(id: model.backend != nil) {
-        guard let backend = model.backend, !onboarding.loaded else { return }
+      // On a ready connection: the backend exists before its socket does, and
+      // a request made in between fails without a retry.
+      .task(id: model.store.connection == .ready) {
+        guard model.store.connection == .ready, let backend = model.backend, !onboarding.loaded
+        else { return }
         PrereqChecks.shared.listen(model.store)
         await onboarding.load(backend)
       }

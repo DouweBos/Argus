@@ -15,8 +15,8 @@ struct SetupCards: View {
         cardView(card)
       }
     }
-    .task(id: model.backend != nil) {
-      guard let backend = model.backend else { return }
+    .task(id: model.store.connection == .ready) {
+      guard model.store.connection == .ready, let backend = model.backend else { return }
       checks.listen(model.store)
       await checks.run(backend)
     }
