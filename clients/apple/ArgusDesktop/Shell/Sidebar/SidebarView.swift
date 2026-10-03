@@ -11,6 +11,7 @@ struct SidebarView: View {
       Section {
         Label("Agents", systemImage: "sparkles").tag(Self.agentsTag)
         Label("Runtimes", systemImage: "play.rectangle").tag(Self.runtimesTag)
+        Label("Devices", systemImage: "iphone.gen3").tag(Self.devicesTag)
       }
       if store.projects.isEmpty {
         Text("No projects yet").foregroundStyle(.secondary)
@@ -76,6 +77,7 @@ struct SidebarView: View {
 
   private static let agentsTag = "nav:agents"
   private static let runtimesTag = "nav:runtimes"
+  private static let devicesTag = "nav:devices"
 
   private var selection: Binding<String?> {
     Binding(
@@ -83,6 +85,7 @@ struct SidebarView: View {
         switch model.route {
         case .agents: Self.agentsTag
         case .runtimes: Self.runtimesTag
+        case .devices: Self.devicesTag
         default: model.route.sessionId
         }
       },
@@ -90,6 +93,7 @@ struct SidebarView: View {
         switch tag {
         case Self.agentsTag?: model.navigate(.agents)
         case Self.runtimesTag?: model.navigate(.runtimes)
+        case Self.devicesTag?: model.navigate(.devices)
         case let id?: model.open(session: id)
         case nil: break
         }

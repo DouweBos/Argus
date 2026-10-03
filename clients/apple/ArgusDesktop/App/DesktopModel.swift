@@ -110,7 +110,7 @@ final class DesktopModel {
   }
 
   #if DEBUG
-    /// `ARGUS_DEV_ROUTE=session:<id>[:<agentId>]` opens a screen at launch, so
+    /// `ARGUS_DEV_ROUTE=session:<id>[:<agentId>]` or `devices` opens a screen at launch, so
     /// a dev build can be checked without anything clicking on it.
     private func applyDevRoute() {
       guard route == .home,
@@ -122,6 +122,7 @@ final class DesktopModel {
       case ("home", 2...): navigate(.sessionHome(id: parts[1]))
       case ("agents", _): navigate(.agents)
       case ("runtimes", _): navigate(.runtimes)
+      case ("devices", _): navigate(.devices)
       default: break
       }
     }

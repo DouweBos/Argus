@@ -19,6 +19,8 @@ struct MainWindow: View {
           AgentsOverview()
         } else if model.route == .runtimes {
           RuntimesOverview()
+        } else if model.route == .devices {
+          DevicesScreen()
         } else {
           ContentUnavailableView(
             "Pick a session", systemImage: "sidebar.left",
