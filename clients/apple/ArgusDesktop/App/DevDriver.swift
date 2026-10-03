@@ -54,7 +54,8 @@
     }
 
     private var window: NSWindow? {
-      NSApp.windows.first { $0.isVisible && $0.contentView != nil && $0.title == "Argus" }
+      NSApp.windows.first { $0.isVisible && $0.contentView != nil && $0.identifier?.rawValue.hasPrefix("main") == true }
+        ?? NSApp.windows.first { $0.isVisible && $0.contentView != nil && $0.title == "Argus" }
         ?? NSApp.windows.first { $0.isVisible && $0.attachedSheet == nil && $0.contentView != nil }
     }
 
@@ -80,8 +81,41 @@
     }
 
     private func run(_ command: [String: Any]) -> [String: Any] {
-      guard let window = target else { return ["error": "no window"] }
+      if command["op"] as? String == "windows" {
+        return ["windows": NSApp.windows.map { "\($0.windowNumber) \($0.title) visible=\($0.isVisible) \($0.frame)" }]
+      }
+      // `window`: a window number from `windows`, for dialogs that aren't sheets.
+      let chosen = (command["window"] as? Int).flatMap { number in
+        NSApp.windows.first { $0.windowNumber == number }
+      }
+      guard let window = chosen ?? target else { return ["error": "no window"] }
       switch command["op"] as? String {
+      case "navigate":
+        // What a sidebar click does, by session id.
+        guard let model = AppDelegate.current?.model, let id = command["session"] as? String else {
+          return ["error": "session?"]
+        }
+        model.navigate(.session(id: id, agentId: nil))
+        return ["ok": true]
+      case "toggleTerminal":
+        // What ⇧⌘T does; menu commands only enable while the app is active.
+        AppDelegate.current?.model.terminalPanelVisible.toggle()
+        return ["panel": AppDelegate.current?.model.terminalPanelVisible ?? false]
+      case "terminals":
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        let tabs = model.terminals.tabsBySession.values.joined().map {
+          "\($0.sessionId.prefix(8)) \($0.title) run=\($0.runTitle ?? "-") exit=\($0.exitCode.map(String.init) ?? "-")"
+        }
+        return [
+          "tabs": tabs, "panel": model.terminalPanelVisible,
+          "text": terminalText(in: window.contentView), "dryOpen": TerminalLinks.lastDryOpen ?? "",
+        ]
+      case "focusTerminal":
+        guard let model = AppDelegate.current?.model, let sessionId = model.route.sessionId,
+          let active = model.terminals.active(sessionId),
+          let view = terminalViews(in: window.contentView).first(where: { $0.terminalId == active.id })
+        else { return ["error": "no terminal"] }
+        return ["ok": window.makeFirstResponder(view)]
       case "tree":
         return ["tree": describe(window, depth: 0)]
       case "press", "click":
@@ -102,7 +136,14 @@
           return ["error": "x, y?"]
         }
         let point = NSPoint(x: x, y: window.frame.height - y)
-        return ["ok": click(at: point, in: window, count: command["count"] as? Int ?? 1)]
+        let count = command["count"] as? Int ?? 1
+        let flags: NSEvent.ModifierFlags = (command["mods"] as? [String] ?? []).contains("cmd") ? .command : []
+        if command["async"] as? Bool == true {
+          // A click that opens a menu tracks until the menu closes; answer first.
+          DispatchQueue.main.async { _ = self.click(at: point, in: window, count: count, flags: flags) }
+          return ["ok": true]
+        }
+        return ["ok": click(at: point, in: window, count: count, flags: flags)]
       case "rightClickAt":
         guard let x = command["x"] as? Double, let y = command["y"] as? Double,
           let event = NSEvent.mouseEvent(
@@ -111,7 +152,8 @@
             windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1,
             pressure: 1)
         else { return ["error": "x, y?"] }
-        window.sendEvent(event)
+        // A context menu tracks until it closes; answer first.
+        DispatchQueue.main.async { window.sendEvent(event) }
         return ["ok": true]
       case "key":
         return ["ok": key(command["key"] as? String ?? "", mods: command["mods"] as? [String] ?? [], in: window)]
@@ -281,10 +323,12 @@
     /// Through the window, the way AppKit routes a real click — SwiftUI's
     /// gestures only see events that arrive that way. A window that isn't key
     /// doesn't activate the app for an in-process event, so focus stays put.
-    private func click(at point: NSPoint, in window: NSWindow, count: Int = 1) -> Bool {
+    private func click(
+      at point: NSPoint, in window: NSWindow, count: Int = 1, flags: NSEvent.ModifierFlags = []
+    ) -> Bool {
       func event(_ type: NSEvent.EventType) -> NSEvent? {
         NSEvent.mouseEvent(
-          with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+          with: type, location: point, modifierFlags: flags, timestamp: ProcessInfo.processInfo.systemUptime,
           windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: count,
           pressure: type == .leftMouseDown ? 1 : 0)
       }
@@ -316,16 +360,32 @@
             context: nil, characters: characters, charactersIgnoringModifiers: characters,
             isARepeat: false, keyCode: code)
         else { return false }
-        // Key equivalents (⌘F, ⌘G) go through the menu and the view tree
-        // first, the way the app would route them.
+        // Key equivalents (⌘F, ⌘G) go to the view tree, then the menu, the
+        // way AppKit routes them.
         if type == .keyDown, !flags.isEmpty,
-          NSApp.mainMenu?.performKeyEquivalent(with: event) == true || window.performKeyEquivalent(with: event)
+          window.performKeyEquivalent(with: event) || NSApp.mainMenu?.performKeyEquivalent(with: event) == true
         {
           return true
         }
         window.sendEvent(event)
       }
       return true
+    }
+
+    private func terminalViews(in view: NSView?) -> [ArgusTerminalView] {
+      guard let view else { return [] }
+      return (view as? ArgusTerminalView).map { [$0] } ?? view.subviews.flatMap { terminalViews(in: $0) }
+    }
+
+    /// Each terminal's visible screen, so a driven build can check what a shell shows.
+    private func terminalText(in view: NSView?) -> [String] {
+      terminalViews(in: view).map { "[\($0.terminalId.prefix(8))] " + terminalScreen($0) }
+    }
+
+    private func terminalScreen(_ terminal: ArgusTerminalView) -> String {
+      let t = terminal.getTerminal()
+      let rows = (0..<t.rows).compactMap { t.getLine(row: $0)?.translateToString(trimRight: true) }
+      return rows.filter { !$0.isEmpty }.joined(separator: "\n")
     }
 
     private func textViews(in view: NSView) -> [NSTextView] {
