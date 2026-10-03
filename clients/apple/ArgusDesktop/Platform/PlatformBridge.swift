@@ -78,7 +78,8 @@ final class PlatformBridge: NSObject, UNUserNotificationCenterDelegate {
     #if DEBUG
       // A dev build being driven shouldn't open editors or Finder windows on
       // the machine it runs on; it logs what it would have opened.
-      if ProcessInfo.processInfo.environment["ARGUS_DEV_DRY_OPEN"] != nil, request.kind != .notify {
+      let opensOutside = [.openExternal, .openPath, .revealInFinder].contains(request.kind)
+      if ProcessInfo.processInfo.environment["ARGUS_DEV_DRY_OPEN"] != nil, opensOutside {
         NSLog("[argus] dry-open %@ %@", request.kind.rawValue, request.path ?? request.url ?? "")
         return
       }
