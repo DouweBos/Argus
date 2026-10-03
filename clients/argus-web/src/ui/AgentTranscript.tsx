@@ -271,6 +271,8 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
   const watchAgent = useAppStore((s) => s.watchAgent);
   const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
   const queued = useAppStore((s) => s.queuedByAgent[agentId]);
+  const hasControl = useAppStore((s) => s.hasControl());
+  const dismissLimitResume = useAppStore((s) => s.dismissLimitResume);
   const limitResumeAt = useAppStore(
     (s) => s.statusByAgent[agentId]?.limit_resume_at ?? null,
   );
@@ -447,7 +449,18 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
         <Message key={m.id} agentId={agentId} msg={m} />
       ))}
       <WorkingIndicator agentId={agentId} />
-      {limitResumeAt !== null && <LimitResumeBanner resumeAt={limitResumeAt} />}
+      {limitResumeAt !== null && (
+        <LimitResumeBanner
+          resumeAt={limitResumeAt}
+          onCancel={
+            hasControl
+              ? () => {
+                  dismissLimitResume(agentId).catch(() => {});
+                }
+              : undefined
+          }
+        />
+      )}
       {queued && queued.length > 0 && (
         <QueuedMessageList>
           {queued.map((q) => (

@@ -56,6 +56,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case agentsCapabilities = "agents.capabilities"
   case agentsSend = "agents.send"
   case agentsInterrupt = "agents.interrupt"
+  case agentsDismissLimitResume = "agents.dismiss_limit_resume"
   case agentsStop = "agents.stop"
   case agentsSetModel = "agents.set_model"
   case agentsSetClaudeAccount = "agents.set_claude_account"

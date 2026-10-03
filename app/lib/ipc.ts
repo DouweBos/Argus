@@ -1925,6 +1925,9 @@ export const listPoppedOutAgents = (): Promise<string[]> =>
 export const getAgentLimitResume = (agentId: string): Promise<number | null> =>
   invoke("get_agent_limit_resume", { agentId });
 
+export const dismissAgentLimitResume = (agentId: string): Promise<void> =>
+  invoke("dismiss_agent_limit_resume", { agentId });
+
 export const listQueuedMessages = (agentId: string): Promise<QueuedMessage[]> =>
   invoke("list_queued_messages", { agentId });
 

@@ -26,7 +26,10 @@ import {
   deleteCheckpoint,
   restoreCheckpoint,
 } from "../services/agent/checkpoints";
-import { limitResumeAt } from "../services/agent/limitResume";
+import {
+  dismissLimitResume,
+  limitResumeAt,
+} from "../services/agent/limitResume";
 import {
   clearQueue,
   dequeueMessage,
@@ -109,6 +112,9 @@ export function registerAgentCommands(): void {
   );
 
   defineTypedCommand("get_agent_limit_resume", (p) => limitResumeAt(p.agentId));
+  defineTypedCommand("dismiss_agent_limit_resume", (p) =>
+    dismissLimitResume(p.agentId),
+  );
   defineTypedCommand("list_queued_messages", (p) => listQueue(p.agentId));
   defineTypedCommand("queue_message", (p) =>
     enqueueMessage(p.agentId, {

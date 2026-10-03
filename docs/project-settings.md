@@ -374,10 +374,11 @@ remapped via `workspace_env`.
 When `true`, an agent whose turn stops because the Claude plan's usage
 limit is spent is sent `continue` automatically once the limit resets
 (a minute after the reset time Claude Code reports, or an hour later if
-it reports none). Sending the agent anything yourself cancels the
-pending continue. Argus gives up after five continues in a row that
-hit the limit again. While a continue is pending, the agent's chat shows when it
-will fire, on the desktop, web and phone.
+it reports none). While a continue is pending, the agent's chat shows
+when it will fire, with a **Cancel** button that keeps Argus from
+continuing that agent until one of its turns gets through. A message you
+send that goes through replaces the pending continue. Argus gives up
+after five continues in a row that hit the limit again.
 
 ```jsonc
 "auto_continue_on_limit": true

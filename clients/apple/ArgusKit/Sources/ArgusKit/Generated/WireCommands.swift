@@ -1613,6 +1613,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct DismissAgentLimitResumeParams: Codable, Sendable {
+      public var agentId: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agentId"
+      }
+
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
+    }
+
     public struct ForkChatInSessionParams: Codable, Sendable {
       public var sourceSessionId: String
       public var sourceClaudeSessionId: String
@@ -8273,6 +8290,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.DisconnectSimulatorParams
       public typealias Result = IgnoredResult
       public static let name = "disconnect_simulator"
+      public static let tier = "admin"
+    }
+
+    public enum DismissAgentLimitResume: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.DismissAgentLimitResumeParams
+      public typealias Result = IgnoredResult
+      public static let name = "dismiss_agent_limit_resume"
       public static let tier = "admin"
     }
 

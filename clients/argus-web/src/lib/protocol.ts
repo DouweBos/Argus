@@ -34,6 +34,7 @@ export type RemoteMethod =
   | "agents.capabilities"
   | "agents.send"
   | "agents.interrupt"
+  | "agents.dismiss_limit_resume"
   | "agents.stop"
   | "agents.set_model"
   | "agents.set_permission_mode"

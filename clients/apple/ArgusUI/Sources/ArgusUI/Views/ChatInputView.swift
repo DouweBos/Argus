@@ -70,7 +70,9 @@ public struct ChatInputView: View {
   private var phoneBody: some View {
     VStack(alignment: .leading, spacing: 8) {
       if let at = status?.limitResumeAt {
-        Banner(text: Labels.limitResumeBanner(at))
+        Banner(text: Labels.limitResumeBanner(at), actionLabel: "Cancel") {
+          Task { await host.dismissLimitResume(agentId: agentId) }
+        }
       }
       if !slashSuggestions.isEmpty {
         suggestionList(slashSuggestions.map(\.name), hint: slashSuggestions.map(\.description))

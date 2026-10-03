@@ -299,6 +299,14 @@ extension HostStore {
       .agentsInterrupt, Params(agent_id: agentId), as: IgnoredResult.self)
   }
 
+  /// Cancel the continue scheduled after a usage limit; the host captures it.
+  public func dismissLimitResume(agentId: String) async {
+    guard let backend else { return }
+    struct Params: Encodable { let agent_id: String }
+    _ = try? await backend.request(
+      .agentsDismissLimitResume, Params(agent_id: agentId), as: IgnoredResult.self)
+  }
+
   public func stopAgent(agentId: String) async {
     guard let backend else { return }
     hooks.track(.agentControlled(action: .stop))

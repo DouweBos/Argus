@@ -17,6 +17,13 @@ export const LaterToday: Story = {
   args: { resumeAt: new Date("2026-10-03T15:01:00").getTime() },
 };
 
+export const Cancellable: Story = {
+  args: {
+    resumeAt: new Date("2026-10-03T15:01:00").getTime(),
+    onCancel: () => {},
+  },
+};
+
 export const AnotherDay: Story = {
   args: { resumeAt: new Date("2026-10-06T09:00:00").getTime() },
 };

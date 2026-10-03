@@ -120,6 +120,8 @@ export const REMOTE_METHODS = {
   "agents.send": "control",
   /** Interrupt a running agent. */
   "agents.interrupt": "control",
+  /** Cancel the automatic continue scheduled after a usage limit. */
+  "agents.dismiss_limit_resume": "control",
   /** Stop (kill) an agent entirely — not just the current turn. */
   "agents.stop": "control",
   "agents.set_model": "control",

@@ -40,6 +40,40 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AgentsDismissLimitResumeParams: Codable, Sendable {
+      public var agentId: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+      }
+
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
+    }
+
+    public struct AgentsDismissLimitResumeResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct AgentsImageParams: Codable, Sendable {
       public var agentId: String
       public var imageId: String
@@ -4730,6 +4764,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AgentsCapabilitiesParams
       public typealias Result = ArgusProtocol.MethodsTypes.AgentsCapabilitiesResult
       public static let name = "agents.capabilities"
+    }
+
+    public enum AgentsDismissLimitResume: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsDismissLimitResumeParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsDismissLimitResumeResult
+      public static let name = "agents.dismiss_limit_resume"
     }
 
     public enum AgentsImage: RemoteCommand {

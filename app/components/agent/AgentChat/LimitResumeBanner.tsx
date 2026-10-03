@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { LimitResumeBanner as Notice } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
-import { getAgentLimitResume } from "../../../lib/ipc";
+import { dismissAgentLimitResume, getAgentLimitResume } from "../../../lib/ipc";
 import styles from "./AgentChat.module.css";
 
 /** Shown while the host waits for a spent usage limit to reset. */
@@ -25,5 +25,13 @@ export function LimitResumeBanner({ agentId }: { agentId: string }) {
     return null;
   }
 
-  return <Notice className={styles.limitResumeBanner} resumeAt={resumeAt} />;
+  return (
+    <Notice
+      className={styles.limitResumeBanner}
+      resumeAt={resumeAt}
+      onCancel={() => {
+        dismissAgentLimitResume(agentId).catch(() => {});
+      }}
+    />
+  );
 }
