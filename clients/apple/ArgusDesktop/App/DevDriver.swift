@@ -1,5 +1,6 @@
 #if DEBUG
   import AppKit
+  import ArgusCore
   import UserNotifications
 
   /// Drives this app's own window from JSON files, so a dev build can be
@@ -257,6 +258,37 @@
             ["id": $0.id, "kind": $0.kind.rawValue, "branch": $0.branch, "status": $0.status.rawValue]
           }
         ]
+      case "registerProject":
+        // What Add Project does once a folder is picked.
+        guard let model = AppDelegate.current?.model, let backend = model.backend,
+          let path = command["path"] as? String
+        else { return ["error": "path? / no host"] }
+        Task {
+          _ = try? await backend.request(
+            ArgusProtocol.Commands.AddRepoRoot.self, .init(path: path))
+          await model.reload()
+        }
+        return ["ok": true]
+      case "routePath":
+        guard let model = AppDelegate.current?.model, let path = command["path"] as? String,
+          let route = DesktopRoute(path: path)
+        else { return ["error": "path?"] }
+        model.navigate(route)
+        return ["route": "\(model.route)"]
+      case "userActivity":
+        // What Handoff is advertising, wherever SwiftUI attached it.
+        var found: [[String: Any]] = []
+        func scan(_ responder: NSResponder?) {
+          guard let responder else { return }
+          if let activity = responder.userActivity {
+            found.append(["type": activity.activityType, "info": activity.userInfo?.mapValues { "\($0)" } ?? [:]])
+          }
+          if let view = responder as? NSView { view.subviews.forEach(scan) }
+        }
+        scan(window)
+        scan(window.contentViewController)
+        scan(window.contentView)
+        return ["activities": found]
       case "state":
         let model = AppDelegate.current?.model
         let item = menuItem("New Session…", in: NSApp.mainMenu)
