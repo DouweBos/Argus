@@ -22,6 +22,17 @@ enum MacTelemetryEvent {
     case copyLink = "copy_link"
   }
 
+  enum TerminalAction: String {
+    case newShell = "new_shell"
+    case close
+    case rename
+    case run
+    case stop
+    /// A `single_runtime` project's other run was stopped to start this one.
+    case stopOthersAndRun = "stop_others_and_run"
+    case openLink = "open_link"
+  }
+
   case launched
   case quit(hadRunningAgents: Bool)
   case hostStarted(restarts: Int)
@@ -37,6 +48,12 @@ enum MacTelemetryEvent {
   case transcriptFindUsed(matches: String, navigated: Bool)
   /// A chat-input feature the host can't tell from a plain send.
   case inputUsed(affordance: String)
+  /// Something done to a terminal from the panel or the run control.
+  case terminalUsed(action: TerminalAction)
+  /// A terminal view attached and replayed the host's captured output.
+  case terminalReplayed(bytes: String, truncated: Bool)
+  /// Find in a terminal was closed after a search.
+  case terminalFindUsed(matches: String, navigated: Bool)
 
   var name: String {
     switch self {
@@ -51,6 +68,9 @@ enum MacTelemetryEvent {
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
     case .inputUsed: "mac_input_used"
+    case .terminalUsed: "mac_terminal_used"
+    case .terminalReplayed: "mac_terminal_replayed"
+    case .terminalFindUsed: "mac_terminal_find_used"
     }
   }
 
@@ -78,6 +98,31 @@ enum MacTelemetryEvent {
       ["matches_bucket": matches, "navigated": navigated]
     case .inputUsed(let affordance):
       ["affordance": affordance]
+    case .terminalUsed(let action):
+      ["action": action.rawValue]
+    case .terminalReplayed(let bytes, let truncated):
+      ["bytes_bucket": bytes, "truncated": truncated]
+    case .terminalFindUsed(let matches, let navigated):
+      ["matches_bucket": matches, "navigated": navigated]
+    }
+  }
+
+  /// A count as a bucket, never the number itself.
+  static func countBucket(_ count: Int) -> String {
+    switch count {
+    case 0: "0"
+    case 1..<10: "1-9"
+    case 10..<100: "10-99"
+    default: "100+"
+    }
+  }
+
+  static func byteBucket(_ count: Int) -> String {
+    switch count {
+    case 0: "0"
+    case 1..<4096: "<4k"
+    case 4096..<65536: "<64k"
+    default: "64k+"
     }
   }
 }

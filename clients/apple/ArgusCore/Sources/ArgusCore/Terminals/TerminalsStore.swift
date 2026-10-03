@@ -52,6 +52,9 @@ public final class TerminalsStore {
     public let title: String
   }
 
+  /// What the host calls a session's setup PTY.
+  public static let setupTitle = "Setup"
+
   public private(set) var tabsBySession: [String: [Tab]] = [:]
   public private(set) var activeBySession: [String: String] = [:]
   public private(set) var configByRepo: [String: ProjectConfig] = [:]
@@ -59,6 +62,10 @@ public final class TerminalsStore {
   /// `trigger_run`), so the window can bring the terminal panel up.
   public private(set) var revealed: Reveal?
   public private(set) var lastError: String?
+
+  /// A view replayed a terminal's captured output: its size and whether the
+  /// host had already dropped older output.
+  @ObservationIgnored public var replayed: @MainActor (_ bytes: Int, _ truncated: Bool) -> Void = { _, _ in }
 
   @ObservationIgnored private let backend: @MainActor () -> (any HostBackend)?
   @ObservationIgnored private var subscribed: Set<String> = []
@@ -137,12 +144,15 @@ public final class TerminalsStore {
     await refresh(sessionId: sessionId)
     guard !opened.contains(sessionId) else { return }
     opened.insert(sessionId)
-    guard (tabsBySession[sessionId] ?? []).isEmpty else { return }
+    // The setup pipeline's PTY doesn't count: config terminals open beside it.
+    guard !(tabsBySession[sessionId] ?? []).contains(where: { $0.title != Self.setupTitle }) else {
+      return
+    }
     for entry in configByRepo[repoRoot]?.terminals ?? [] {
       let title = entry.name.isEmpty ? (entry.dir.isEmpty ? "Shell" : entry.dir) : entry.name
       _ = await create(sessionId: sessionId, subDir: entry.dir.isEmpty ? nil : entry.dir, title: title)
     }
-    if (tabsBySession[sessionId] ?? []).isEmpty {
+    if !(tabsBySession[sessionId] ?? []).contains(where: { $0.title != Self.setupTitle }) {
       _ = await create(sessionId: sessionId, subDir: nil, title: "Shell 1")
     }
   }
@@ -151,7 +161,7 @@ public final class TerminalsStore {
 
   @discardableResult
   public func newShell(sessionId: String) async -> Tab? {
-    let count = (tabsBySession[sessionId] ?? []).filter { !$0.isRun }.count
+    let count = (tabsBySession[sessionId] ?? []).filter { !$0.isRun && $0.title != Self.setupTitle }.count
     return await create(sessionId: sessionId, subDir: nil, title: "Shell \(count + 1)")
   }
 
@@ -269,6 +279,7 @@ public final class TerminalsStore {
     }
     let data = Data(base64Encoded: scrollback.data) ?? Data()
     let exitCode = scrollback.exited ? Int(scrollback.exitCode ?? -1) : nil
+    replayed(data.count, scrollback.truncated)
     emit(terminalId, feeds[terminalId]?.replay(data: data, exitCode: exitCode, seq: seq) ?? [])
   }
 

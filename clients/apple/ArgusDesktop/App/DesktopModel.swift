@@ -11,6 +11,7 @@ final class DesktopModel {
   let supervisor: HostSupervisor
   let store: HostStore
   let platform = PlatformBridge()
+  let terminals: TerminalsStore
   private(set) var backend: LocalBackend?
 
   private(set) var route: DesktopRoute = .home
@@ -18,6 +19,8 @@ final class DesktopModel {
   var newSessionProject: RemoteProject?
   /// The session the Delete sheet is open for.
   var deletingSession: RemoteSession?
+  /// The bottom terminal panel under a session (⇧⌘T).
+  var terminalPanelVisible = false
   private var back: [DesktopRoute] = []
   private var forward: [DesktopRoute] = []
 
@@ -31,6 +34,14 @@ final class DesktopModel {
         // Banners only when you aren't already looking at the window.
         isAppFocused: { NSApp.isActive && NSApp.keyWindow != nil }))
     store.capabilities = ["monitor", "control", "admin"]
+    terminals = TerminalsStore(backend: { [store] in store.backend })
+    terminals.replayed = { bytes, truncated in
+      MacTelemetry.capture(
+        .terminalReplayed(bytes: MacTelemetryEvent.byteBucket(bytes), truncated: truncated))
+    }
+    _ = store.observeIpc { [terminals] channel, args, seq in
+      terminals.ipc(channel: channel, args: args, seq: seq)
+    }
     store.hooks.agentNotificationClicked = { [weak self] agentId, sessionId in
       NSApp.activate()
       self?.navigate(.session(id: sessionId, agentId: agentId))
@@ -70,6 +81,7 @@ final class DesktopModel {
           try? await Task.sleep(for: .milliseconds(200))
         }
         await self?.reload()
+        await self?.terminals.reconnected()
         while await backend.transport.state == .ready {
           try? await Task.sleep(for: .milliseconds(500))
         }
