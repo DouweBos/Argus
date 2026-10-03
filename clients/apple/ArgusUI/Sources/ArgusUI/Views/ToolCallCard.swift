@@ -45,6 +45,14 @@ public struct ToolCallCard: View {
   }
 
   public var body: some View {
+    if ToolGroups.isPushNotification(call) {
+      PushNotificationCard(call: call)
+    } else {
+      card
+    }
+  }
+
+  private var card: some View {
     VStack(alignment: .leading, spacing: 8) {
       header
       if expanded {

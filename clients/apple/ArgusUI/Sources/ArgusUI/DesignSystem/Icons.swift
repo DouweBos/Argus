@@ -57,6 +57,7 @@ public enum Icon {
   public static let menu = "line.3.horizontal"
   public static let expand = "arrow.up.left.and.arrow.down.right"
   public static let person = "person.crop.circle"
+  public static let notification = "bell.fill"
   public static let androidBack = "arrow.left"
   public static let androidRecents = "square.on.square"
 }
