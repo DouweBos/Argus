@@ -118,7 +118,7 @@ struct BranchSheet: View {
       }
     ) {
       Form {
-        TextField("Name", text: $name)
+        TextField("Name", text: $name).initialFocus()
         TextField("Start point", text: $start)
         Toggle("Check out the new branch", isOn: $checkout)
       }
@@ -146,7 +146,7 @@ struct StashSheet: View {
       }
     ) {
       Form {
-        TextField("Message", text: $message, prompt: Text("Optional"))
+        TextField("Message", text: $message, prompt: Text("Optional")).initialFocus()
         Toggle("Include untracked files", isOn: $includeUntracked)
         Toggle("Keep staged changes", isOn: $keepIndex)
       }
@@ -177,7 +177,7 @@ struct TagSheet: View {
       }
     ) {
       Form {
-        TextField("Name", text: $name)
+        TextField("Name", text: $name).initialFocus()
         TextField("Target", text: $ref)
         TextField("Message", text: $message, prompt: Text("Annotated tag message (optional)"), axis: .vertical)
           .lineLimit(3...6)
@@ -207,7 +207,7 @@ struct RemoteSheet: View {
       }
     ) {
       Form {
-        TextField("Name", text: $name)
+        TextField("Name", text: $name).initialFocus()
         TextField("URL", text: $url)
       }
       .formStyle(.grouped)
