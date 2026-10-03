@@ -46,6 +46,13 @@ describe("repo root persistence", () => {
     expect(loadPersistedRepoRoots()).toEqual([]);
   });
 
+  it("registers a path once however it is spelled", () => {
+    addRepoRoot(repo);
+    addRepoRoot(path.join(repo, "..", path.basename(repo)) + "/");
+
+    expect([...appState.repoRoots]).toEqual([repo]);
+  });
+
   it("re-registers saved roots at startup", () => {
     persistRepoRoots([repo]);
 

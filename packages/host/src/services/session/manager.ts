@@ -74,7 +74,9 @@ import { isKnownWorktreePath } from "./worktreeLocation";
 // ---------------------------------------------------------------------------
 
 /** Add a repository root to the set of open projects. */
-export function addRepoRoot(dirPath: string): void {
+export function addRepoRoot(rawPath: string): void {
+  // `a/../a` and a trailing slash are the same project; keyed raw they'd be two.
+  const dirPath = path.resolve(rawPath);
   if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
     throw `Path is not a directory: ${dirPath}`;
   }
