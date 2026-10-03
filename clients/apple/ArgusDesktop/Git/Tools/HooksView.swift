@@ -20,7 +20,7 @@ struct HooksView: View {
           .disabled(selectedHook?.executable != true || running != nil)
       }
       Divider()
-      content
+      content.frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     .task(id: workspace.generation) { await load() }
   }

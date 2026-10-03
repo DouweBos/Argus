@@ -23,7 +23,7 @@ struct SubmodulesView: View {
         .disabled(submodules?.isEmpty ?? true || workspace.hostBusy != nil)
       }
       Divider()
-      content
+      content.frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     .task(id: workspace.generation) { await load() }
     .confirmationDialog(
