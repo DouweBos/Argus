@@ -137,7 +137,7 @@ struct RefActions {
         Task {
           await workspace.host(
             GitCommands.GitSetUpstream.self, .init(id: id, branch: branch.name, upstream: upstream),
-            label: "Setting upstream…", track: .remote)
+            label: "Setting upstream…", track: .setUpstream)
         }
       }
     }
@@ -147,9 +147,9 @@ struct RefActions {
     let list =
       pinned
       ? await workspace.host(
-        GitCommands.GitPinBranch.self, .init(repoRoot: session.repoRoot, branch: branch), label: "Pinning…")
+        GitCommands.GitPinBranch.self, .init(repoRoot: session.repoRoot, branch: branch), label: "Pinning…", track: .pin)
       : await workspace.host(
-        GitCommands.GitUnpinBranch.self, .init(repoRoot: session.repoRoot, branch: branch), label: "Unpinning…")
+        GitCommands.GitUnpinBranch.self, .init(repoRoot: session.repoRoot, branch: branch), label: "Unpinning…", track: .pin)
     if let list { marks.pinned = list }
   }
 
@@ -157,10 +157,10 @@ struct RefActions {
     let list =
       archived
       ? await workspace.host(
-        GitCommands.GitArchiveBranch.self, .init(repoRoot: session.repoRoot, branch: branch), label: "Archiving…")
+        GitCommands.GitArchiveBranch.self, .init(repoRoot: session.repoRoot, branch: branch), label: "Archiving…", track: .archive)
       : await workspace.host(
         GitCommands.GitUnarchiveBranch.self, .init(repoRoot: session.repoRoot, branch: branch),
-        label: "Unarchiving…")
+        label: "Unarchiving…", track: .archive)
     if let list { marks.archived = list }
   }
 

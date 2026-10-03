@@ -105,6 +105,11 @@ enum MacTelemetryEvent {
     case hook
     /// Repo config, auto-fetch or a per-project git preference changed.
     case config
+    /// Pin or unpin a branch in the sidebar.
+    case pin
+    /// Archive or unarchive a branch in the sidebar.
+    case archive
+    case setUpstream = "set_upstream"
   }
 
   enum PullRequestAction: String {
