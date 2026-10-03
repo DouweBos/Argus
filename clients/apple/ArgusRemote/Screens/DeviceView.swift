@@ -42,7 +42,9 @@ struct DeviceView: View {
   /// framebuffer is panel-native, so a rotated device arrives sideways.
   private var rotation: Double { Double(deviceState?.display?.rotation ?? 0) }
 
-  private var quarterTurn: Bool { rotation == 90 || rotation == 270 }
+  private var geometry: DeviceGeometry {
+    DeviceGeometry(coded: codedSize, stage: stageSize, rotation: rotation)
+  }
 
   var body: some View {
     VStack(spacing: 0) {
@@ -105,28 +107,10 @@ struct DeviceView: View {
   /// Sized in the stream's own axes and then turned, so a landscape device
   /// fills the width instead of being letterboxed into a portrait box.
   private var video: some View {
-    let rendered = renderedVideoSize
+    let rendered = geometry.renderedSize
     return DeviceVideoView(handle: handle) { status = .streaming }
       .frame(width: rendered.width, height: rendered.height)
       .rotationEffect(.degrees(rotation))
-  }
-
-  /// The video's size before rotation. Zero until the first config lands,
-  /// which is fine — there is nothing to show yet.
-  private var renderedVideoSize: CGSize {
-    guard codedSize.width > 0, codedSize.height > 0,
-      stageSize.width > 0, stageSize.height > 0
-    else { return stageSize }
-    let shown = shownSize
-    let scale = min(stageSize.width / shown.width, stageSize.height / shown.height)
-    return CGSize(width: codedSize.width * scale, height: codedSize.height * scale)
-  }
-
-  /// The stream's footprint on screen, with its axes swapped on a quarter turn.
-  private var shownSize: CGSize {
-    quarterTurn
-      ? CGSize(width: codedSize.height, height: codedSize.width)
-      : codedSize
   }
 
   private var placeholder: String {
@@ -162,36 +146,8 @@ struct DeviceView: View {
       }
   }
 
-  /// Normalise to 0–1 within the letterboxed video, not the stage — the video
-  /// rarely fills the whole view and a naive mapping drifts.
-  private func normalize(_ point: CGPoint) -> CGPoint? {
-    guard codedSize.width > 0, codedSize.height > 0,
-      stageSize.width > 0, stageSize.height > 0
-    else { return nil }
-    let shown = shownSize
-    let scale = min(stageSize.width / shown.width, stageSize.height / shown.height)
-    let rendered = CGSize(width: shown.width * scale, height: shown.height * scale)
-    let origin = CGPoint(
-      x: (stageSize.width - rendered.width) / 2,
-      y: (stageSize.height - rendered.height) / 2)
-    let x = min(max(0, (point.x - origin.x) / rendered.width), 0.9999)
-    let y = min(max(0, (point.y - origin.y) / rendered.height), 0.9999)
-    return unrotate(CGPoint(x: x, y: y))
-  }
-
-  /// Undo the presentation rotation: the device wants the point in its own
-  /// panel's coordinates, not in the ones we drew.
-  private func unrotate(_ point: CGPoint) -> CGPoint {
-    switch rotation {
-    case 90: CGPoint(x: point.y, y: 1 - point.x)
-    case 180: CGPoint(x: 1 - point.x, y: 1 - point.y)
-    case 270: CGPoint(x: 1 - point.y, y: point.x)
-    default: point
-    }
-  }
-
   private func send(_ point: CGPoint, phase: Int) {
-    guard let normalized = normalize(point) else { return }
+    guard let normalized = geometry.normalize(point) else { return }
     interacted = true
     host.deviceTouch(
       deviceId: deviceId, platform: platform,
