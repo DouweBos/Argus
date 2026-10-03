@@ -47,18 +47,27 @@ struct SessionView: View {
     Task {
       // Settings' default applies unless the caller picked a mode, as on the desktop.
       let fallback = AppPreferences.shared.defaultPermissionMode
-      let remoteMode = mode ?? RemotePermissionMode(rawValue: fallback.rawValue)
-      guard let agent = await store.spawnAgent(sessionId: sessionId, permissionMode: remoteMode) else {
-        return
+      if let remoteMode = mode ?? RemotePermissionMode(rawValue: fallback.rawValue) {
+        guard let agent = await store.spawnAgent(sessionId: sessionId, permissionMode: remoteMode)
+        else { return }
+        model.navigate(.session(id: sessionId, agentId: agent.agentId))
+      } else {
+        await startTrusted(fallback.rawValue)
       }
-      // The gateway's spawn refuses `trusted`; the admin command doesn't, and
-      // the agent has had no message yet.
-      if remoteMode == nil, let backend = store.backend {
-        _ = try? await backend.request(
-          ArgusProtocol.Commands.SetAgentPermissionMode.self,
-          .init(agentId: agent.agentId, mode: fallback.rawValue))
-      }
-      model.navigate(.session(id: sessionId, agentId: agent.agentId))
+    }
+  }
+
+  /// `trusted` is a CLI flag fixed at launch, and the gateway's spawn refuses
+  /// it; the admin command takes any mode and announces the agent the same way.
+  private func startTrusted(_ mode: String) async {
+    guard let backend = store.backend else { return }
+    do {
+      let info = try await backend.request(
+        ArgusProtocol.Commands.StartAgent.self, .init(sessionId: sessionId, permissionMode: mode))
+      if let repoRoot = session?.repoRoot { await store.loadAgents(repoRoot: repoRoot) }
+      model.navigate(.session(id: sessionId, agentId: info.agentId))
+    } catch {
+      store.report(error)
     }
   }
 
