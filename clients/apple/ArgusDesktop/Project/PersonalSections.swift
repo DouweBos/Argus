@@ -28,12 +28,12 @@ struct WorktreeLocationSection: View {
       title: "Worktree location",
       text: "Where this project's worktrees are created. Stored in ~/.argus/user-project-settings.json — not in .argus.json — so it stays personal: your drives are not the team's."
     )
-    WorktreeLocationField(
+    ProjectWorktreeLocationField(
       settings: settings, purpose: .user, label: "Worktree location", value: settings.worktreeBase,
       defaultPath: settings.worktreeDefault,
       caption: "Argus creates <this folder>/<Repo>-argus-worktrees/ underneath. Leave it empty to use \(settings.worktreeDefault)."
     )
-    WorktreeLocationField(
+    ProjectWorktreeLocationField(
       settings: settings, purpose: .automation, label: "Automation worktree location",
       value: settings.automationWorktreeBase, defaultPath: settings.automationWorktreeDefault,
       caption: "Where automations working on this project create their worktrees. Leave it empty to use the location above."
@@ -43,7 +43,7 @@ struct WorktreeLocationSection: View {
 
 /// One base directory: validated as you type, picked with a native panel, and
 /// on save offered a move of the worktrees already at the old location.
-private struct WorktreeLocationField: View {
+private struct ProjectWorktreeLocationField: View {
   let settings: ProjectSettingsModel
   let purpose: ArgusProtocol.WorktreePurpose
   let label: String

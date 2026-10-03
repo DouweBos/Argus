@@ -79,14 +79,18 @@ struct RepoPath: Identifiable {
   var id: String { path }
 }
 
-/// Peacock's tokens for the system appearance, in any window.
+/// Peacock's tokens for the system appearance, in any window, at the
+/// display size picked in Settings.
 private struct Themed: ViewModifier {
   @Environment(\.colorScheme) private var colorScheme
 
   func body(content: Content) -> some View {
+    let prefs = AppPreferences.shared
     content
       .environment(\.theme, colorScheme == .dark ? .dark : .light)
       .tint(colorScheme == .dark ? Theme.dark.accent : Theme.light.accent)
+      .dynamicTypeSize(prefs.dynamicTypeSize)
+      .controlSize(prefs.controlSize)
   }
 }
 

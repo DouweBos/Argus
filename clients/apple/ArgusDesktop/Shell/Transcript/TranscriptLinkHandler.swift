@@ -68,11 +68,17 @@ final class TranscriptLinkHandler {
     }
     let exists = existingPath(ref) != nil
     var items = [item("Open", enabled: exists) { [weak self] in self?.openFile(ref) }]
-    if !editors.isEmpty {
+    let custom = AppPreferences.shared.customEditors
+    if !editors.isEmpty || !custom.isEmpty {
       let submenu = NSMenu()
       for editor in editors {
         submenu.addItem(
           item(editor.name, enabled: exists) { [weak self] in self?.openInEditor(ref, editor.id) })
+      }
+      if !editors.isEmpty, !custom.isEmpty { submenu.addItem(.separator()) }
+      for editor in custom {
+        submenu.addItem(
+          item(editor.name, enabled: exists) { [weak self] in self?.openInCustomEditor(ref, editor.command) })
       }
       let open = NSMenuItem(title: "Open In", action: nil, keyEquivalent: "")
       open.submenu = submenu
@@ -87,6 +93,12 @@ final class TranscriptLinkHandler {
     guard let path = existingPath(ref) else { return NSSound.beep() }
     capture(.openInEditor, ref)
     send(ArgusProtocol.Commands.OpenInEditor.self, .init(editorId: editorId, path: path))
+  }
+
+  func openInCustomEditor(_ ref: FileLinks.FileRef, _ command: String) {
+    guard let path = existingPath(ref) else { return NSSound.beep() }
+    capture(.openInEditor, ref)
+    send(ArgusProtocol.Commands.OpenInCustomEditor.self, .init(command: command, path: path))
   }
 
   func reveal(_ ref: FileLinks.FileRef) {

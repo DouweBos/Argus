@@ -338,10 +338,23 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_device_power`           | A device was booted, shut down (Devices screen) or disconnected (runtime panel)                                   | `action` (`boot`, `shutdown`, `disconnect`), `platform`                                                                                          |
 | `mac_browser_used`           | The runtime panel's browser was driven from its toolbar                                                           | `action` (`navigate`, `back`, `forward`, `reload`, `preset`)                                                                                     |
 | `mac_inspection_used`        | The device inspector captured a screen, launched an app with inspection, selected an element or edited a property | `action` (`capture`, `launch`, `select`, `edit`), `success`                                                                                      |
-| `mac_palette_command_run`    | A command palette entry was run                                                                                   | `section` (`navigate`, `sessions`, `session`, `project`, `app`, `git`)                                                                           |
+| `mac_palette_command_run`    | A command palette entry was run                                                                                   | `section` (`navigate`, `sessions`, `session`, `project`, `app`, `git`, `settings`)                                                               |
 | `mac_handoff_continued`      | The phone handed a session over through Handoff                                                                   | `matched` (it named this computer, so the session opened)                                                                                        |
 | `mac_onboarding_step`        | A first-run step was finished or skipped                                                                          | `step` (`welcome`, `privacy`, `setup`, `project`), `skipped`                                                                                     |
 | `mac_prereq_fixed`           | A one-click environment fixer ran (first run or a home-screen card)                                               | `prereq` (the check's id, e.g. `claude_cli`, `git_identity`), `success`                                                                          |
 | `mac_project_added`          | A project was added                                                                                               | `source` (`open_panel`, `example`, `recent`)                                                                                                     |
 | `mac_argus_json_generated`   | A proposed `.argus.json` was saved, discarded, or couldn't be generated                                           | `method` (`quick`, `claude`), `outcome` (`saved`, `discarded`, `failed`)                                                                         |
 | `mac_project_settings_saved` | Project Settings was saved                                                                                        | `changed_bucket` (top-level `.argus.json` keys that changed: `0`, `1-9`, `10-99`, `100+`), `personal` (the branch prefix changed too), `success` |
+| `mac_settings_changed`       | A setting was changed in the Settings window — which one, never its value                                         | `section` (the Settings tab), `setting` (listed below)                                                                                           |
+
+`mac_settings_changed`'s `section` is `general`, `accounts`, `agents`, `llm`,
+`mcp`, `tools` or `advanced`, and `setting` is one of `theme`, `display_size`,
+`launch_route`, `worktree_location`, `automation_worktree_location`,
+`custom_editors`, `telemetry_mode`, `account_selected`, `account_added`,
+`account_removed`, `account_renamed`, `account_reauth`, `default_model`,
+`permission_mode`, `automations_enabled`, `default_autonomy`, `concurrency`,
+`daily_budget`, `allowed_commands`, `allowed_tools`, `refusal_allowed`,
+`refusal_dismissed`, `runner`, `llm_model`, `custom_runner_saved`,
+`custom_runner_deleted`, `mcp_servers`, `mcp_tested`, `mcp_signed_in`,
+`mcp_signed_out`, `tool_toggled`, `prereq_fixed`, `conductor_version` or
+`update_channel`.
