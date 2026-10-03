@@ -136,6 +136,32 @@ enum MacTelemetryEvent {
     case failed
   }
 
+  enum RemoteSetting: String {
+    case enabled
+    case tailscale
+    case cloudflare
+    case tunnelMode = "tunnel_mode"
+    case tunnelToken = "tunnel_token"
+    case publicUrl = "public_url"
+    case notifyWhenFocused = "notify_when_focused"
+    case push
+    case pushContact = "push_contact"
+  }
+
+  enum PairingStage: String {
+    case started
+    case confirmed
+    case completed
+    case cancelled
+    case failed
+  }
+
+  enum RemoteDeviceAction: String {
+    case grants
+    case revoke
+    case testPush = "test_push"
+  }
+
   case launched
   case quit(hadRunningAgents: Bool)
   case hostStarted(restarts: Int)
@@ -183,6 +209,13 @@ enum MacTelemetryEvent {
   case projectSettingsSaved(changed: String, personal: Bool, success: Bool)
   /// A setting was changed in the Settings window; never its value.
   case settingsChanged(setting: SettingsField)
+  /// A Remote Access setting was changed; `on` only for toggles.
+  case remoteSettingChanged(setting: RemoteSetting, on: Bool?)
+  /// A pairing moved on; `client` is the kind the device claimed, or `unknown`.
+  case pairing(stage: PairingStage, client: String)
+  case remoteDeviceManaged(action: RemoteDeviceAction, success: Bool)
+  /// The Tailscale checklist ran a check or a one-click fix.
+  case tailscaleChecked(fix: Bool, ready: Bool)
 
   var name: String {
     switch self {
@@ -216,6 +249,10 @@ enum MacTelemetryEvent {
     case .argusJsonGenerated: "mac_argus_json_generated"
     case .projectSettingsSaved: "mac_project_settings_saved"
     case .settingsChanged: "mac_settings_changed"
+    case .remoteSettingChanged: "mac_remote_setting_changed"
+    case .pairing: "mac_pairing"
+    case .remoteDeviceManaged: "mac_remote_device_managed"
+    case .tailscaleChecked: "mac_tailscale_checked"
     }
   }
 
@@ -281,6 +318,14 @@ enum MacTelemetryEvent {
       ["changed_bucket": changed, "personal": personal, "success": success]
     case .settingsChanged(let setting):
       ["section": setting.section.rawValue, "setting": setting.rawValue]
+    case .remoteSettingChanged(let setting, let on):
+      on.map { ["setting": setting.rawValue, "on": $0] } ?? ["setting": setting.rawValue]
+    case .pairing(let stage, let client):
+      ["stage": stage.rawValue, "client": client]
+    case .remoteDeviceManaged(let action, let success):
+      ["action": action.rawValue, "success": success]
+    case .tailscaleChecked(let fix, let ready):
+      ["fix": fix, "ready": ready]
     }
   }
 
