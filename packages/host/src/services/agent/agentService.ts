@@ -79,6 +79,13 @@ import {
   contextWindowFromModelUsage,
   rememberContextWindow,
 } from "./contextWindow";
+import {
+  cancelLimitResume,
+  forgetLimitResume,
+  noteLimitHit,
+  noteRateLimitLine,
+  onTurnResult,
+} from "./limitResume";
 import { clearQueue } from "./messageQueue";
 import { resultSubtype } from "./models";
 
@@ -623,7 +630,14 @@ export async function startAgent(
     // A revoked token or spent quota reaches us as an API error in the stream,
     // not on stderr. The cheap pre-gate skips parsing ordinary lines.
     if (line.includes('"error"') || line.includes('"is_error":true')) {
-      noteRunFailure(classifyStreamLine(line));
+      const outcome = classifyStreamLine(line);
+      noteRunFailure(outcome);
+      if (outcome === "rate_limited") {
+        noteLimitHit(agentId);
+      }
+    }
+    if (line.includes('"rate_limit_event"')) {
+      noteRateLimitLine(agentId, line);
     }
     // The line goes out first so a `result` reaches clients before the idle
     // it can trigger.
@@ -673,6 +687,7 @@ export async function startAgent(
 
     emitHostEvent(`agent:exit:${agentId}`, exitCode);
     info(`[agent:${agentId}] process exited with code ${exitCode}`);
+    forgetLimitResume(agentId);
 
     // A clean exit proves the account works again, so a limit or re-auth badge
     // from an earlier run has to go — nothing else would lift it.
@@ -907,6 +922,7 @@ export function onStreamLine(agentId: string, line: string): void {
           }
           session.turnWaiters.length = 0;
         }
+        onTurnResult(agentId, (message) => sendAgentMessage(agentId, message));
       }
     } catch {
       // Non-fatal.
@@ -1107,6 +1123,7 @@ export async function stopAgent(agentId: string): Promise<void> {
   appState.agentSnapshots.delete(agentId);
   appState.agentPendingPermissions.delete(agentId);
   clearQueue(agentId);
+  forgetLimitResume(agentId);
 
   emitAgentStatus(agentId, "stopped");
   info(`[agent:${agentId}] stopped`);
@@ -1371,6 +1388,7 @@ export function sendAgentMessage(
   if (agentEntry.status === "stopped" || agentEntry.status === "error") {
     throw `Agent is not running: ${agentId}`;
   }
+  cancelLimitResume(agentId);
   // The old child is being killed; stdin written now would be lost.
   const pendingRespawn = respawning.get(agentId);
   if (pendingRespawn) {

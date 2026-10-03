@@ -159,6 +159,8 @@ export const ArgusConfig = z.object({
   pull_request_template: z.string().nullish(),
   /** Only one runtime may be active across all of this project's sessions. */
   single_runtime: z.boolean().nullish(),
+  /** Send "continue" to an agent stalled on a plan limit once it resets. */
+  auto_continue_on_limit: z.boolean().nullish(),
   /** Project-level MCP servers, in `.mcp.json` `mcpServers` shape. */
   mcp_servers: z
     .record(z.string(), z.record(z.string(), z.unknown()))

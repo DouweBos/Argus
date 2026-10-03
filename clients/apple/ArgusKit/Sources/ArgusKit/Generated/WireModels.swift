@@ -567,6 +567,7 @@ extension ArgusProtocol {
     public var defaultBaseBranch: String?
     public var pullRequestTemplate: String?
     public var singleRuntime: Bool?
+    public var autoContinueOnLimit: Bool?
     public var mcpServers: [String: [String: JSONValue]]?
     public var releaseNotePatterns: [ReleaseNotePatternConfig]
     public var simulatorDeeplinks: [SimulatorDeeplinkConfig]
@@ -591,6 +592,7 @@ extension ArgusProtocol {
       case defaultBaseBranch = "default_base_branch"
       case pullRequestTemplate = "pull_request_template"
       case singleRuntime = "single_runtime"
+      case autoContinueOnLimit = "auto_continue_on_limit"
       case mcpServers = "mcp_servers"
       case releaseNotePatterns = "release_note_patterns"
       case simulatorDeeplinks = "simulator_deeplinks"
@@ -600,7 +602,7 @@ extension ArgusProtocol {
       case automations = "automations"
     }
 
-    public init(minArgusVersion: String? = nil, setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], agentPrompt: String? = nil, relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], saveChatHistory: Bool? = nil, platforms: [RuntimePlatform]? = nil, protectedBranches: [String], defaultBaseBranch: String? = nil, pullRequestTemplate: String? = nil, singleRuntime: Bool? = nil, mcpServers: [String: [String: JSONValue]]? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
+    public init(minArgusVersion: String? = nil, setup: ArgusSetupConfig, terminals: [ArgusTerminalConfig], workspaceEnv: [WorkspaceEnvConfig], run: [ArgusRunCommand], agentPrompt: String? = nil, relatedProjects: [RelatedProject]? = nil, browserUrl: String? = nil, browserPresets: [BrowserPresetConfig], saveChatHistory: Bool? = nil, platforms: [RuntimePlatform]? = nil, protectedBranches: [String], defaultBaseBranch: String? = nil, pullRequestTemplate: String? = nil, singleRuntime: Bool? = nil, autoContinueOnLimit: Bool? = nil, mcpServers: [String: [String: JSONValue]]? = nil, releaseNotePatterns: [ReleaseNotePatternConfig], simulatorDeeplinks: [SimulatorDeeplinkConfig], autoFetchMinutes: Double? = nil, llm: ArgusLlmConfig? = nil, tools: ArgusConfigTools? = nil, automations: ProjectAutomationConfig? = nil) {
       self.minArgusVersion = minArgusVersion
       self.setup = setup
       self.terminals = terminals
@@ -616,6 +618,7 @@ extension ArgusProtocol {
       self.defaultBaseBranch = defaultBaseBranch
       self.pullRequestTemplate = pullRequestTemplate
       self.singleRuntime = singleRuntime
+      self.autoContinueOnLimit = autoContinueOnLimit
       self.mcpServers = mcpServers
       self.releaseNotePatterns = releaseNotePatterns
       self.simulatorDeeplinks = simulatorDeeplinks
@@ -642,6 +645,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(defaultBaseBranch, forKey: .defaultBaseBranch)
       try c.encodeIfPresent(pullRequestTemplate, forKey: .pullRequestTemplate)
       try c.encodeIfPresent(singleRuntime, forKey: .singleRuntime)
+      try c.encodeIfPresent(autoContinueOnLimit, forKey: .autoContinueOnLimit)
       try c.encodeIfPresent(mcpServers, forKey: .mcpServers)
       try c.encode(releaseNotePatterns, forKey: .releaseNotePatterns)
       try c.encode(simulatorDeeplinks, forKey: .simulatorDeeplinks)

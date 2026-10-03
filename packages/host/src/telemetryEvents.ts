@@ -52,6 +52,10 @@ export interface EventMap {
     permission_mode: string;
     session_kind: SessionKind;
   };
+  agent_limit_auto_continue: {
+    action: "cancelled" | "gave_up" | "scheduled" | "sent";
+    has_reset_time: boolean;
+  };
   agent_nudged: { critical: boolean; tagged: boolean };
   agent_stopped: undefined;
   app_error: { message: string; scope: string };

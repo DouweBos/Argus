@@ -107,6 +107,10 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
     default_base_branch: normalizeDefaultBaseBranch(parsed.default_base_branch),
     single_runtime:
       parsed.single_runtime != null ? Boolean(parsed.single_runtime) : false,
+    auto_continue_on_limit:
+      parsed.auto_continue_on_limit != null
+        ? Boolean(parsed.auto_continue_on_limit)
+        : null,
     mcp_servers: normalizeMcpServers(parsed.mcp_servers),
     min_argus_version: normalizeMinArgusVersion(
       parsed.min_argus_version,
@@ -189,6 +193,8 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
     default_base_branch:
       local.default_base_branch ?? base.default_base_branch ?? null,
     single_runtime: local.single_runtime ?? base.single_runtime ?? false,
+    auto_continue_on_limit:
+      local.auto_continue_on_limit ?? base.auto_continue_on_limit ?? false,
     mcp_servers:
       local.mcp_servers || base.mcp_servers
         ? { ...(base.mcp_servers ?? {}), ...(local.mcp_servers ?? {}) }

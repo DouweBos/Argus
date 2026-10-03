@@ -335,6 +335,11 @@ export interface ArgusConfig {
    */
   single_runtime?: boolean | null;
   /**
+   * When true, an agent whose turn ends on a spent plan usage limit is sent
+   * "continue" automatically once the limit resets.
+   */
+  auto_continue_on_limit?: boolean | null;
+  /**
    * Project-level MCP servers, merged into every agent spawned for this
    * project. Shape matches Claude Code's `.mcp.json` `mcpServers` map. Use
    * `.mcp.json` for the standard discovery path; this field is for teams who
@@ -468,6 +473,7 @@ export function defaultArgusConfig(): ArgusConfig {
     protected_branches: [],
     default_base_branch: null,
     single_runtime: false,
+    auto_continue_on_limit: false,
     mcp_servers: null,
     min_argus_version: null,
     release_note_patterns: [],
