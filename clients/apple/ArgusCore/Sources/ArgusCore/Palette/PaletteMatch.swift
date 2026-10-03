@@ -2,7 +2,7 @@ import Foundation
 
 /// Fuzzy matching for the command palette: every query character must appear
 /// in order. Word starts and runs score higher, so "ns" ranks "New Session"
-/// above "Agents".
+/// above "Agents" and "set" ranks "Settings" above "Show Terminal".
 public enum PaletteMatch {
   /// Nil when the query doesn't match; higher is better.
   public static func score(_ query: String, in text: String) -> Int? {
@@ -19,6 +19,13 @@ public enum PaletteMatch {
       if let previous, previous + 1 == found { score += 5 }
       previous = found
       index = found + 1
+    }
+    // Typed as one run of the text — above all at a word start — beats the
+    // same letters scattered across words.
+    let text = String(haystack)
+    if let start = text.range(of: String(needle))?.lowerBound {
+      let atWord = start == text.startIndex || !text[text.index(before: start)].isLetter
+      score += atWord ? 60 : 30
     }
     // Shorter titles win ties: the match covers more of them.
     return score * 100 - haystack.count

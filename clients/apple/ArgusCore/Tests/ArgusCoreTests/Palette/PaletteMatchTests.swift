@@ -15,6 +15,11 @@ struct PaletteMatchTests {
     #expect(ranked == ["New Session", "Agents"])
   }
 
+  @Test func contiguousRunsOutrankWordStarts() {
+    let ranked = PaletteMatch.rank(["Session Show Terminal", "App Settings…"], query: "set") { [$0] }
+    #expect(ranked.first == "App Settings…")
+  }
+
   @Test func emptyQueryKeepsOrder() {
     #expect(PaletteMatch.rank(["b", "a"], query: " ") { [$0] } == ["b", "a"])
   }
