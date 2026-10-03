@@ -16,6 +16,10 @@ struct MainWindow: View {
       Group {
         if let sessionId = model.route.sessionId {
           SessionView(sessionId: sessionId)
+        } else if model.route == .agents {
+          AgentsOverview()
+        } else if model.route == .runtimes {
+          RuntimesOverview()
         } else {
           ContentUnavailableView(
             "Pick a session", systemImage: "sidebar.left",

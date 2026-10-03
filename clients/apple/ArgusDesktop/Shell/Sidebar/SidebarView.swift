@@ -8,6 +8,10 @@ struct SidebarView: View {
 
   var body: some View {
     List(selection: selection) {
+      Section {
+        Label("Agents", systemImage: "sparkles").tag(Self.agentsTag)
+        Label("Runtimes", systemImage: "play.rectangle").tag(Self.runtimesTag)
+      }
       if store.projects.isEmpty {
         Text("No projects yet").foregroundStyle(.secondary)
       }
@@ -70,11 +74,25 @@ struct SidebarView: View {
     Binding(get: { model.newSessionProject }, set: { model.newSessionProject = $0 })
   }
 
+  private static let agentsTag = "nav:agents"
+  private static let runtimesTag = "nav:runtimes"
+
   private var selection: Binding<String?> {
     Binding(
-      get: { model.route.sessionId },
-      set: { id in
-        if let id { model.open(session: id) }
+      get: {
+        switch model.route {
+        case .agents: Self.agentsTag
+        case .runtimes: Self.runtimesTag
+        default: model.route.sessionId
+        }
+      },
+      set: { tag in
+        switch tag {
+        case Self.agentsTag?: model.navigate(.agents)
+        case Self.runtimesTag?: model.navigate(.runtimes)
+        case let id?: model.open(session: id)
+        case nil: break
+        }
       })
   }
 

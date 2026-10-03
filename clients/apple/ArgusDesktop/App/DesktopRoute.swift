@@ -4,6 +4,10 @@ import Foundation
 /// `docs/routing.md`. Views read it; navigation goes through `DesktopModel.navigate`.
 enum DesktopRoute: Hashable {
   case home
+  /// `/agents`: every agent across every session.
+  case agents
+  /// `/runtimes`: every run command's terminal across every session.
+  case runtimes
   /// `/sessions/:sessionId/home`: setup state, landing the work, the agents.
   case sessionHome(id: String)
   /// `/sessions/:sessionId/agents`, optionally focused on one agent tab.
@@ -25,6 +29,8 @@ enum DesktopRoute: Hashable {
   var pattern: String {
     switch self {
     case .home: "/"
+    case .agents: "/agents"
+    case .runtimes: "/runtimes"
     case .sessionHome: "/sessions/:sessionId/home"
     case .session: "/sessions/:sessionId/agents"
     }
