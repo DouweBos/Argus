@@ -5,6 +5,7 @@ import SwiftUI
 struct SessionView: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
+  @Environment(TerminalsStore.self) private var terminals
   let sessionId: String
 
   private var session: RemoteSession? {
@@ -63,6 +64,39 @@ struct SessionView: View {
   }
 
   var body: some View {
+    VSplitView {
+      agentsPane
+        .frame(minHeight: 240)
+      if model.terminalPanelVisible, let session, session.status == .ready {
+        TerminalPanel(session: session)
+          .frame(minHeight: 200, idealHeight: 280)
+      }
+    }
+    .toolbar {
+      if let session, session.status == .ready {
+        ToolbarItemGroup {
+          RunControl(session: session) { model.terminalPanelVisible = true }
+          Button {
+            model.terminalPanelVisible.toggle()
+          } label: {
+            Label("Terminal", systemImage: "terminal")
+          }
+          .help(model.terminalPanelVisible ? "Hide terminal (⇧⌘T)" : "Show terminal (⇧⌘T)")
+        }
+      }
+    }
+    // An agent's `trigger_run` shows its output, as the desktop app does.
+    .onChange(of: terminals.revealed) { _, reveal in
+      if reveal?.sessionId == sessionId { model.terminalPanelVisible = true }
+    }
+    .navigationTitle(session?.displayName ?? session?.branch ?? "Session")
+    .navigationSubtitle(session?.branch ?? "")
+    .task(id: session?.repoRoot) {
+      if let repoRoot = session?.repoRoot { await store.loadAgents(repoRoot: repoRoot) }
+    }
+  }
+
+  private var agentsPane: some View {
     VStack(spacing: 0) {
       AgentTabBar(
         agents: agents, focused: focusedAgentId, canStart: session?.status == .ready,
@@ -94,11 +128,6 @@ struct SessionView: View {
       Button("New Agent", action: startAgent)
         .keyboardShortcut("t", modifiers: .command)
         .hidden()
-    }
-    .navigationTitle(session?.displayName ?? session?.branch ?? "Session")
-    .navigationSubtitle(session?.branch ?? "")
-    .task(id: session?.repoRoot) {
-      if let repoRoot = session?.repoRoot { await store.loadAgents(repoRoot: repoRoot) }
     }
   }
 }

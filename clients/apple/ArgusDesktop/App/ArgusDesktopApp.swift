@@ -10,6 +10,7 @@ struct ArgusDesktopApp: App {
       RootView()
         .environment(delegate.model)
         .environment(delegate.model.store)
+        .environment(delegate.model.terminals)
         .frame(minWidth: 960, minHeight: 600)
     }
     .commands {
@@ -48,5 +49,11 @@ private struct NavigationCommands: View {
     Button("Forward") { model.goForward() }
       .keyboardShortcut("]", modifiers: .command)
       .disabled(!model.canGoForward)
+    Divider()
+    Button(model.terminalPanelVisible ? "Hide Terminal" : "Show Terminal") {
+      model.terminalPanelVisible.toggle()
+    }
+    .keyboardShortcut("t", modifiers: [.command, .shift])
+    .disabled(model.route.sessionId == nil)
   }
 }

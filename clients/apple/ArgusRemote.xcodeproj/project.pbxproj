@@ -55,6 +55,7 @@
 		DE5C0000000000000000000E /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000B /* ArgusKit */; };
 		DE5C0000000000000000000F /* ArgusCore in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000C /* ArgusCore */; };
 		DE5C00000000000000000010 /* ArgusUI in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000D /* ArgusUI */; };
+		7E2A00000000000000000003 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 7E2A00000000000000000002 /* SwiftTerm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -182,6 +183,7 @@
 				DE5C0000000000000000000E /* ArgusKit in Frameworks */,
 				DE5C0000000000000000000F /* ArgusCore in Frameworks */,
 				DE5C00000000000000000010 /* ArgusUI in Frameworks */,
+				7E2A00000000000000000003 /* SwiftTerm in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -401,6 +403,7 @@
 				DE5C0000000000000000000B /* ArgusKit */,
 				DE5C0000000000000000000C /* ArgusCore */,
 				DE5C0000000000000000000D /* ArgusUI */,
+				7E2A00000000000000000002 /* SwiftTerm */,
 			);
 			productName = ArgusDesktop;
 			productReference = DE5C00000000000000000002 /* Argus.app */;
@@ -442,6 +445,7 @@
 				A5C0DE0000000000000C0001 /* XCLocalSwiftPackageReference "ArgusCore" */,
 				A5C0DE0000000000000C0002 /* XCLocalSwiftPackageReference "ArgusUI" */,
 				FEED000100000000000000A1 /* XCRemoteSwiftPackageReference "posthog-ios" */,
+				7E2A00000000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2367FD0131C0CDC27F4B7B30 /* Products */;
@@ -888,6 +892,14 @@
 				minimumVersion = 3.0.0;
 			};
 		};
+		7E2A00000000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm";
+			requirement = {
+				kind = exactVersion;
+				version = 1.18.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -913,6 +925,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FEED000100000000000000A1 /* XCRemoteSwiftPackageReference "posthog-ios" */;
 			productName = PostHog;
+		};
+		7E2A00000000000000000002 /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7E2A00000000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
+			productName = SwiftTerm;
 		};
 		DE5C0000000000000000000B /* ArgusKit */ = {
 			isa = XCSwiftPackageProductDependency;

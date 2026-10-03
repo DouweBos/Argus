@@ -132,7 +132,7 @@ final class TranscriptModel {
     guard findOpen else { return }
     if !query.trimmingCharacters(in: .whitespaces).isEmpty {
       MacTelemetry.capture(
-        .transcriptFindUsed(matches: Self.bucket(hits.count), navigated: navigated))
+        .transcriptFindUsed(matches: MacTelemetryEvent.countBucket(hits.count), navigated: navigated))
     }
     findOpen = false
     query = ""
@@ -140,14 +140,5 @@ final class TranscriptModel {
     hitsByUnit = [:]
     current = nil
     navigated = false
-  }
-
-  private static func bucket(_ count: Int) -> String {
-    switch count {
-    case 0: "0"
-    case 1..<10: "1-9"
-    case 10..<100: "10-99"
-    default: "100+"
-    }
   }
 }

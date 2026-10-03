@@ -75,4 +75,15 @@ struct TerminalsStoreTests {
     #expect(store.conflicts(for: "s1", sessionsInRepo: ["s1", "other"]).map(\.terminalId) == ["r1"])
     #expect(store.conflicts(for: "s1", sessionsInRepo: ["s1"]).isEmpty)
   }
+
+  @Test func configTerminalsOpenBesideTheSetupTerminal() async {
+    let backend = RecordingBackend()
+    backend.reply("read_argus_config", #"{"setup":{"copy":[],"symlink":[],"commands":[]},"terminals":[{"name":"Logs","dir":""}],"workspace_env":[],"run":[],"browser_presets":[],"protected_branches":[],"release_note_patterns":[],"simulator_deeplinks":[]}"#)
+    backend.reply("list_terminals", #"[{"id":"setup","sessionId":"s1","title":"Setup","runTitle":null,"exited":false,"exitCode":null}]"#)
+    backend.reply("create_terminal", #""t1""#)
+    let store = makeStore(backend)
+    await store.open(sessionId: "s1", repoRoot: "/repo")
+    #expect(store.tabs("s1").map(\.title) == ["Setup", "Logs"])
+    #expect(store.active("s1")?.id == "t1")
+  }
 }
