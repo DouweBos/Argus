@@ -50,6 +50,19 @@ extension View {
     #endif
   }
 
+  /// A sheet's title. On macOS a sheet's `navigationTitle` lands on the
+  /// window it covers and stays there after it closes, so the title is drawn
+  /// at the top of the sheet instead.
+  public func sheetTitle(_ title: String) -> some View {
+    #if os(iOS)
+      navigationTitle(title).navigationBarTitleDisplayMode(.inline)
+    #else
+      safeAreaInset(edge: .top, spacing: 0) {
+        Text(title).font(.headline).frame(maxWidth: .infinity).padding(.top, 14)
+      }
+    #endif
+  }
+
   /// Full screen on the phone, an ordinary sheet where there is no such thing.
   public func coverPresentation<Content: View>(
     isPresented: Binding<Bool>, @ViewBuilder content: @escaping () -> Content
