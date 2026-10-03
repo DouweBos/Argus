@@ -214,6 +214,7 @@ import {
   getPushConfigStatus,
   isPushConfigured,
 } from "./push/config";
+import { ShareError } from "./shareError";
 
 export class GatewayError extends Error {
   constructor(
@@ -2637,6 +2638,10 @@ async function dispatchAdmin(
       throw new GatewayError("bad_request", err.message, {
         issues: err.issues,
       });
+    }
+    // So a native client can walk the user through the fix, as the desktop does.
+    if (err instanceof ShareError) {
+      throw new GatewayError("bad_request", err.message, err.toPayload());
     }
     throw new GatewayError(
       "bad_request",
