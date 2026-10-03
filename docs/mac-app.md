@@ -23,9 +23,13 @@ lives in the repository (`plan/swiftui-parity.md`).
   reopen replays what it printed so far.
 - Banners for agents that finish or need you, with Approve/Deny buttons on
   permission prompts.
+- The runtime panel: each session's simulator, emulator or browser, live, to
+  tap, type, scroll and rotate; Simulate, Inspect (the iOS UI inspector) and
+  Logs modes; devices in their own floating windows.
+- The Devices screen: every simulator and emulator, with boot, shut down and a
+  live grid.
 
-The runtime panel (simulators, emulators, the browser), the git views and
-the settings screens arrive in later betas.
+The git views and the settings screens arrive in later betas.
 
 ## How it relates to the Electron app
 
