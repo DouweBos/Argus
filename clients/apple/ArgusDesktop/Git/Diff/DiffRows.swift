@@ -31,6 +31,7 @@ struct DiffRow: Equatable {
 }
 
 /// Flattens a diff into rows once, so the table only looks rows up.
+@MainActor
 enum DiffRowBuilder {
   static func rows(for diff: DiffResult, layout: DiffLayout) -> [DiffRow] {
     var rows: [DiffRow] = []
