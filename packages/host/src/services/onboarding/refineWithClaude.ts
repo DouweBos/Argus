@@ -96,6 +96,9 @@ function execWithTimeout(
         resolve(stdout.toString());
       },
     );
+    // The prompt is an argument; an open stdin makes `claude --print` wait 3s
+    // for piped input and report that instead of the real error.
+    child.stdin?.end();
     child.on("error", (e) => reject(e));
   });
 }
