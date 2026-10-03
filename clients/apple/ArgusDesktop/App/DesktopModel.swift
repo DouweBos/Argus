@@ -41,6 +41,7 @@ final class DesktopModel {
   private var gitViews: [String: GitRoute] = [:]
   /// Sessions last left on their git panel.
   private var gitPanelSessions: Set<String> = []
+  private var launchRouteApplied = false
   private var back: [DesktopRoute] = []
   private var forward: [DesktopRoute] = []
 
@@ -89,6 +90,7 @@ final class DesktopModel {
   }
 
   func start() {
+    AppPreferences.shared.applyTheme()
     MacTelemetry.capture(.launched)
     supervisor.start()
   }
@@ -138,6 +140,17 @@ final class DesktopModel {
     #if DEBUG
       applyDevRoute()
     #endif
+    await applyLaunchRoute()
+  }
+
+  /// The Launch screen setting, once per launch and only while nothing else
+  /// has picked a screen — it replaces Home rather than stacking on it.
+  private func applyLaunchRoute() async {
+    guard !launchRouteApplied, let backend else { return }
+    launchRouteApplied = true
+    let settings = try? await backend.request(ArgusProtocol.Commands.GetAppSettings.self, EmptyParams())
+    guard settings?.launchRoute == .inbox, route == .home else { return }
+    route = .inbox
   }
 
   #if DEBUG

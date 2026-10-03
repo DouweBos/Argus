@@ -142,11 +142,18 @@ private struct SessionPathRow: View {
         .textSelection(.enabled)
       Spacer(minLength: 8)
       if let path {
-        if !editors.isEmpty {
+        let custom = AppPreferences.shared.customEditors
+        if !editors.isEmpty || !custom.isEmpty {
           Menu("Open In") {
             ForEach(editors, id: \.id) { editor in
               Button(editor.name) {
                 send(ArgusProtocol.Commands.OpenInEditor.self, .init(editorId: editor.id, path: path))
+              }
+            }
+            if !editors.isEmpty, !custom.isEmpty { Divider() }
+            ForEach(custom) { editor in
+              Button(editor.name) {
+                send(ArgusProtocol.Commands.OpenInCustomEditor.self, .init(command: editor.command, path: path))
               }
             }
           }
