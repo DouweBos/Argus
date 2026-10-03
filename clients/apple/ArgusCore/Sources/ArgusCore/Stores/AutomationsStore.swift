@@ -19,6 +19,8 @@ public final class AutomationsStore {
   public internal(set) var runs: [RemoteAutomationRun] = []
   public internal(set) var detailByRun: [String: RemoteAutomationRunDetail] = [:]
   public internal(set) var triggering: Set<String> = []
+  /// Each automation's track record, keyed by automation id. Catalog-only.
+  public internal(set) var calibrationById: [String: ArgusProtocol.AutomationCalibration] = [:]
   public internal(set) var loaded = false
   public internal(set) var error: String?
 
@@ -38,6 +40,7 @@ public final class AutomationsStore {
     runs = []
     detailByRun = [:]
     triggering = []
+    calibrationById = [:]
     loaded = false
     error = nil
   }
@@ -310,6 +313,15 @@ public final class AutomationsStore {
     struct Params: Encodable { let automation_id: String }
     struct Result: Decodable { let run: RemoteAutomationRun }
     do {
+      // At the machine itself it's the desktop's own run, not a remote one;
+      // the refresh below picks the record up.
+      if backend.kind == .local {
+        _ = try await backend.request(
+          ArgusProtocol.Commands.AutomationRunNow.self, .init(id: automationId))
+        host.hooks.track(.runActed(action: .start))
+        await refresh()
+        return
+      }
       // A refused run comes back as a `skipped` record, which still belongs in
       // the list — that is how the user finds out it was refused.
       let run = try await backend.request(
@@ -437,6 +449,61 @@ public final class AutomationsStore {
     _ = try? await backend.request(
       .automationsCancelRun, Params(run_id: id), as: IgnoredResult.self)
     await refresh()
+  }
+
+  /// Throw a run away for good — its record, report and the proposals it
+  /// raised. Catalog-only; the caller confirms first.
+  @discardableResult
+  public func deleteRun(id: String) async -> Bool {
+    guard let backend = host.backend else { return false }
+    do {
+      _ = try await backend.request(ArgusProtocol.Commands.AutomationRunDelete.self, .init(runId: id))
+      host.hooks.track(.runActed(action: .delete))
+      runs.removeAll { $0.id == id }
+      detailByRun.removeValue(forKey: id)
+      return true
+    } catch {
+      fail("Couldn't delete that run", error)
+      return false
+    }
+  }
+
+  /// How often its proposals were kept versus dismissed. Catalog-only.
+  public func loadCalibration(automationId: String) async {
+    guard let backend = host.backend else { return }
+    calibrationById[automationId] = try? await backend.request(
+      ArgusProtocol.Commands.AutomationCalibration.self, .init(automationId: automationId))
+  }
+
+  /// "Describe it": a draft from a sentence, for review. Nothing is saved.
+  public func draft(description: String) async -> ArgusProtocol.AutomationDraft? {
+    guard let backend = host.backend else { return nil }
+    do {
+      let draft = try await backend.request(
+        ArgusProtocol.Commands.AutomationDraft.self,
+        .init(description: description, timezone: TimeZone.current.identifier))
+      host.hooks.track(.automationEdited(action: .describe))
+      error = nil
+      return draft
+    } catch {
+      fail("Couldn't draft that automation", error)
+      return nil
+    }
+  }
+
+  /// Save a reviewed draft as it stands. Returns the new automation's id.
+  public func create(_ input: ArgusProtocol.CreateAutomationInput) async -> String? {
+    guard let backend = host.backend else { return nil }
+    do {
+      let automation = try await backend.request(
+        ArgusProtocol.Commands.AutomationCreate.self, .init(input: input))
+      host.hooks.track(.automationEdited(action: .create))
+      await refresh()
+      return automation.id
+    } catch {
+      fail("Couldn't create that automation", error)
+      return nil
+    }
   }
 
   public func runs(for automationId: String) -> [RemoteAutomationRun] {
