@@ -307,6 +307,8 @@ struct DeviceView: View {
           codec: codec, width: width, height: height, description: description)
       case .frame(_, let keyFrame, let timestamp, let data):
         handle.enqueue(data, isKeyFrame: keyFrame, timestampMillis: timestamp)
+      case .jpeg:
+        break
       }
     }
 

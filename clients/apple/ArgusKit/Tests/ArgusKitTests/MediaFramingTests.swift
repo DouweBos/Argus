@@ -59,10 +59,23 @@ struct MediaFramingTests {
   func rejects() {
     #expect(MediaMessage.parse(Data([0, 0, 0, 0])) == nil)
     #expect(MediaMessage.parse(Data()) == nil)
-    // msgType 2 is the desktop's JPEG browser stream — not ours to decode.
-    var jpeg = Data(repeating: 0, count: 16)
-    jpeg[0] = 2
-    #expect(MediaMessage.parse(jpeg) == nil)
+    var unknown = Data(repeating: 0, count: 16)
+    unknown[0] = 9
+    #expect(MediaMessage.parse(unknown) == nil)
+  }
+
+  @Test("parses a browser JPEG frame")
+  func jpeg() {
+    var bytes = Data([2, 0, 7, 0])
+    withUnsafeBytes(of: Double(1234.5).bitPattern.littleEndian) { bytes.append(contentsOf: $0) }
+    bytes.append(contentsOf: [0xFF, 0xD8, 0xFF])
+    guard case .jpeg(let streamId, let timestamp, let data) = MediaMessage.parse(bytes) else {
+      Issue.record("expected a jpeg message")
+      return
+    }
+    #expect(streamId == 7)
+    #expect(timestamp == 1234.5)
+    #expect([UInt8](data) == [0xFF, 0xD8, 0xFF])
   }
 }
 

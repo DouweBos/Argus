@@ -5,8 +5,7 @@ import Foundation
 /// `seq` is per connection, per direction, strictly increasing; both sides drop
 /// anything at or below the last one seen.
 
-/// Methods this client sends. A strict subset of the host's `REMOTE_METHODS` —
-/// the phone has no browser-stream view and no device-claim arbitration.
+/// Methods this client sends. A strict subset of the host's `REMOTE_METHODS`.
 public enum RemoteMethod: String, Codable, Sendable {
   case hostEndpoints = "host.endpoints"
 
@@ -94,6 +93,9 @@ public enum RemoteMethod: String, Codable, Sendable {
   case devicesTouch = "devices.touch"
   case devicesButton = "devices.button"
   case devicesKeyboard = "devices.keyboard"
+
+  case browserWatch = "browser.watch"
+  case browserUnwatch = "browser.unwatch"
 
   case automationsList = "automations.list"
   case automationsRuns = "automations.runs"

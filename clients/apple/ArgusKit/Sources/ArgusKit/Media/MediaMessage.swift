@@ -2,8 +2,9 @@ import Foundation
 
 /// Binary media framing shared with the desktop gateway.
 ///
-/// The payload is raw H.264 (an avcC description plus access units); decoding
-/// happens in the native video view, so this layer only parses the envelope.
+/// Device video is raw H.264 (an avcC description plus access units); the
+/// embedded browser sends standalone JPEGs. Decoding happens in the views, so
+/// this layer only parses the envelope.
 /// Every multi-byte field is little-endian, including the timestamp — the
 /// parameter-set lengths *inside* the avcC description are big-endian, but
 /// that is ISO format and not our concern here.
@@ -11,18 +12,18 @@ public enum MediaMessage: Sendable {
   case config(
     streamId: UInt16, codec: String, codedWidth: Int, codedHeight: Int, description: Data)
   case frame(streamId: UInt16, keyFrame: Bool, timestamp: Double, data: Data)
+  /// One browser screencast frame; each stands alone.
+  case jpeg(streamId: UInt16, timestamp: Double, data: Data)
 
   public var streamId: UInt16 {
     switch self {
     case .config(let id, _, _, _, _): id
     case .frame(let id, _, _, _): id
+    case .jpeg(let id, _, _): id
     }
   }
 
   /// Parse a media message — the bytes after the transport's media tag.
-  ///
-  /// `msgType 2` is the desktop's JPEG browser-stream path; a phone never
-  /// subscribes to one, so it is ignored rather than mis-decoded.
   public static func parse(_ bytes: Data) -> MediaMessage? {
     guard bytes.count >= 12 else { return nil }
     let b = [UInt8](bytes)
@@ -54,6 +55,10 @@ public enum MediaMessage: Sendable {
         codedHeight: Int(u16(14)),
         description: Data(b[(17 + codecLen)...])
       )
+    }
+
+    if msgType == 2 {
+      return .jpeg(streamId: streamId, timestamp: timestamp, data: Data(b[12...]))
     }
 
     guard msgType == 1 else { return nil }
