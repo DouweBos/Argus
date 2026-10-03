@@ -248,6 +248,21 @@
       case "deleteSession":
         AppDelegate.current?.model.requestDeleteSession()
         return ["ok": AppDelegate.current?.model.deletingSession != nil]
+      case "panelButton":
+        // An AppKit button by title, e.g. in an alert sheet a synthetic click can't reach.
+        guard let title = command["title"] as? String else { return ["error": "title?"] }
+        func find(_ view: NSView) -> NSButton? {
+          if let button = view as? NSButton, button.title == title { return button }
+          return view.subviews.lazy.compactMap(find).first
+        }
+        guard let button = window.contentView.flatMap(find) else { return ["error": "no button '\(title)'"] }
+        button.performClick(nil)
+        return ["ok": true]
+      case "settingsTab":
+        // The Settings window's tab, by `SettingsTab` raw value.
+        guard let tab = (command["tab"] as? String).flatMap(SettingsTab.init) else { return ["error": "tab?"] }
+        AppDelegate.current?.model.settingsTab = tab
+        return ["ok": true]
       case "newSession":
         // What ⌘N does; SwiftUI only enables menu commands while the app is active.
         AppDelegate.current?.model.requestNewSession()
