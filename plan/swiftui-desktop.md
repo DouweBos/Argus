@@ -204,6 +204,7 @@ explicitly dropped. Known so far:
   - Grove-specific wording and file names (`HostingError` messages, `grove/restack.json`, `grove-` scratch prefix) and shared `UserDefaults` keys.
   - `FileWatcher`, `WorktreeResolver` and view-model file actions still touch the local disk directly instead of going through the runner.
 - Release notes: the next Electron release is the first with the host lock; say so.
+- Electron features added after this plan was written: go through every `feat` commit on `main` since the plan (excluding `feat(mac)` / `feat(ios)`), add a parity row for each one the Mac app (and phone) lacks, and build it. Known so far: agents continuing automatically once a usage limit resets, the chat banner showing when they will, and cancelling it (`7b886845`, `40a54996`, `1da71602`). Re-run this sweep right before cutover, since Electron keeps shipping until then.
 
 **M7 — Ship:**
 
