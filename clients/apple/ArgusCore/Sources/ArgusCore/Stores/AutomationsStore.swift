@@ -339,6 +339,20 @@ public final class AutomationsStore {
       let source_ids: [String]
       let model: String?
       let guardrails: RemoteAutomationGuardrails
+
+      enum CodingKeys: String, CodingKey { case name, playbook, repo_roots, source_ids, model, guardrails }
+
+      // The host wants `model` present, null for the default; synthesized
+      // encoding would drop the key and the request is refused.
+      func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(name, forKey: .name)
+        try c.encode(playbook, forKey: .playbook)
+        try c.encode(repo_roots, forKey: .repo_roots)
+        try c.encode(source_ids, forKey: .source_ids)
+        try c.encode(model, forKey: .model)
+        try c.encode(guardrails, forKey: .guardrails)
+      }
     }
     struct Result: Decodable { let run: RemoteAutomationRun }
     do {
