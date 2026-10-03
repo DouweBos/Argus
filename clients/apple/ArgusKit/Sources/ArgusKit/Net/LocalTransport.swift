@@ -212,9 +212,26 @@ public actor LocalTransport {
     try await send(method, params, as: Result.self)
   }
 
+  /// A command plus the response's place in the host's one sequence of
+  /// events and responses: an event with a lower `seq` was sent before it.
+  /// Lets a client stitch a snapshot onto the live events that follow it.
+  public func sequencedRequest<Params: Encodable, Result: Decodable>(
+    method: String, _ params: Params, as _: Result.Type
+  ) async throws -> (result: Result, seq: Int) {
+    let response = try await exchange(method, params)
+    return (try ProtocolCodec.convert(response.ok ?? .null, to: Result.self), response.seq)
+  }
+
   private func send<Params: Encodable, Result: Decodable>(
     _ method: String, _ params: Params, as _: Result.Type
   ) async throws -> Result {
+    let response = try await exchange(method, params)
+    return try ProtocolCodec.convert(response.ok ?? .null, to: Result.self)
+  }
+
+  private func exchange<Params: Encodable>(_ method: String, _ params: Params) async throws
+    -> ResponseEnvelope
+  {
     guard lastState == .ready else { throw Transport.TransportError.notReady }
     let id = "r\(sendSeq)"
     let data = try ProtocolCodec.encoder.encode(
@@ -235,7 +252,7 @@ public actor LocalTransport {
       return first
     }
     if let error = response.error { throw Transport.TransportError.gateway(error) }
-    return try ProtocolCodec.convert(response.ok ?? .null, to: Result.self)
+    return response
   }
 
   private func awaitResponse(id: String, sending data: Data) async throws -> ResponseEnvelope {

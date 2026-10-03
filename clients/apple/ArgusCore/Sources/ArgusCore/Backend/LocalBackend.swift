@@ -54,6 +54,13 @@ public final class LocalBackend: HostBackend {
     try await transport.request(method: C.name, params, as: C.Result.self)
   }
 
+  /// A command plus where its response falls among the host's events.
+  public func sequencedRequest<C: RemoteCommand>(_ command: C.Type, _ params: C.Params)
+    async throws -> (result: C.Result, seq: Int)
+  {
+    try await transport.sequencedRequest(method: C.name, params, as: C.Result.self)
+  }
+
   /// A local-only `ui.*` method.
   public func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
     method: String, _ params: Params, as: Result.Type
