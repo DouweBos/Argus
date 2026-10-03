@@ -265,6 +265,27 @@ public struct RemoteAutomationInput: Codable, Hashable, Sendable {
     case sourceIds = "source_ids"
     case extraInstructions = "extra_instructions"
   }
+
+  // `autonomy` and `model` go out as null rather than missing: null is
+  // "inherit", which the host requires on create and needs to clear a patch.
+  public func encode(to encoder: Encoder) throws {
+    var c = encoder.container(keyedBy: CodingKeys.self)
+    try c.encode(name, forKey: .name)
+    try c.encode(description, forKey: .description)
+    try c.encode(enabled, forKey: .enabled)
+    try c.encode(triggerKind, forKey: .triggerKind)
+    try c.encode(cron, forKey: .cron)
+    try c.encode(timezone, forKey: .timezone)
+    try c.encode(catchUp, forKey: .catchUp)
+    try c.encode(repoRoots, forKey: .repoRoots)
+    try c.encode(sourceIds, forKey: .sourceIds)
+    try c.encode(playbook, forKey: .playbook)
+    try c.encodeIfPresent(extraInstructions, forKey: .extraInstructions)
+    try c.encode(autonomy, forKey: .autonomy)
+    try c.encode(model, forKey: .model)
+    try c.encode(runner, forKey: .runner)
+    try c.encode(guardrails, forKey: .guardrails)
+  }
 }
 
 public enum RemoteAutomationRunStatus: String, Codable, Sendable {
