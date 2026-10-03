@@ -45,8 +45,18 @@ struct SessionView: View {
 
   private func startAgent(mode: RemotePermissionMode?) {
     Task {
-      guard let agent = await store.spawnAgent(sessionId: sessionId, permissionMode: mode) else {
+      // Settings' default applies unless the caller picked a mode, as on the desktop.
+      let fallback = AppPreferences.shared.defaultPermissionMode
+      let remoteMode = mode ?? RemotePermissionMode(rawValue: fallback.rawValue)
+      guard let agent = await store.spawnAgent(sessionId: sessionId, permissionMode: remoteMode) else {
         return
+      }
+      // The gateway's spawn refuses `trusted`; the admin command doesn't, and
+      // the agent has had no message yet.
+      if remoteMode == nil, let backend = store.backend {
+        _ = try? await backend.request(
+          ArgusProtocol.Commands.SetAgentPermissionMode.self,
+          .init(agentId: agent.agentId, mode: fallback.rawValue))
       }
       model.navigate(.session(id: sessionId, agentId: agent.agentId))
     }
