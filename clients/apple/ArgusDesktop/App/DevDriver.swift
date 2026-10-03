@@ -131,6 +131,10 @@
           return ["error": "path?"]
         }
         model.projectSettingsRepo = path
+        // A sidebar list ignores clicks in a window that isn't key; name the section.
+        if let section = command["section"] as? String {
+          NotificationCenter.default.post(name: .devProjectSection, object: section)
+        }
         return ["ok": true]
       case "toggleTerminal":
         // What ⇧⌘T does; menu commands only enable while the app is active.
