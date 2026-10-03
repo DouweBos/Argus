@@ -24,8 +24,11 @@ enum GitDialogs {
       .environment(\.theme, theme)
       .frame(width: 440)
     let controller = NSHostingController(rootView: root)
-    controller.sizingOptions = .preferredContentSize
+    // Sized once: live content sizing feeds back into the sheet's frame and loops.
+    controller.sizingOptions = []
+    let size = controller.sizeThatFits(in: NSSize(width: 440, height: 10_000))
     let sheet = NSWindow(contentViewController: controller)
+    sheet.setContentSize(NSSize(width: 440, height: ceil(size.height)))
     box.sheet = sheet
     window.beginSheet(sheet)
   }
