@@ -22,7 +22,9 @@ struct RemoteDeviceRow: View {
           meta
         }
         Spacer()
-        Button("Revoke…", role: .destructive) { model.revoking = device }
+        // No destructive role: inside a grouped Form row it stops taking clicks.
+        Button("Revoke…") { model.revoking = device }
+          .foregroundStyle(theme.error)
           .disabled(model.busy)
       }
       HStack(spacing: 16) {
