@@ -23,6 +23,7 @@ enum GitDialogs {
     let root = content { box.close() }
       .environment(\.theme, theme)
       .frame(width: 440)
+      .fixedSize(horizontal: false, vertical: true)
     let controller = NSHostingController(rootView: root)
     // Sized once: live content sizing feeds back into the sheet's frame and loops.
     controller.sizingOptions = []
