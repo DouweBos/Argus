@@ -179,6 +179,8 @@ enum MacTelemetryEvent {
   case prereqFixed(prereq: String, success: Bool)
   case projectAdded(source: ProjectSource)
   case argusJsonGenerated(method: ArgusJsonMethod, outcome: ArgusJsonOutcome)
+  /// Project Settings saved; `changed` buckets how many top-level keys moved.
+  case projectSettingsSaved(changed: String, personal: Bool, success: Bool)
 
   var name: String {
     switch self {
@@ -210,6 +212,7 @@ enum MacTelemetryEvent {
     case .prereqFixed: "mac_prereq_fixed"
     case .projectAdded: "mac_project_added"
     case .argusJsonGenerated: "mac_argus_json_generated"
+    case .projectSettingsSaved: "mac_project_settings_saved"
     }
   }
 
@@ -271,6 +274,8 @@ enum MacTelemetryEvent {
       ["source": source.rawValue]
     case .argusJsonGenerated(let method, let outcome):
       ["method": method.rawValue, "outcome": outcome.rawValue]
+    case .projectSettingsSaved(let changed, let personal, let success):
+      ["changed_bucket": changed, "personal": personal, "success": success]
     }
   }
 
