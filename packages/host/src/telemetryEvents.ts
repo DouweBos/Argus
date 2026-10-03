@@ -53,7 +53,7 @@ export interface EventMap {
     session_kind: SessionKind;
   };
   agent_limit_auto_continue: {
-    action: "cancelled" | "gave_up" | "scheduled" | "sent";
+    action: "cancelled" | "dismissed" | "gave_up" | "scheduled" | "sent";
     has_reset_time: boolean;
   };
   agent_nudged: { critical: boolean; tagged: boolean };

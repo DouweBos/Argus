@@ -51,7 +51,9 @@
     var body: some View {
       VStack(alignment: .leading, spacing: 6) {
         if let at = status?.limitResumeAt {
-          Banner(text: Labels.limitResumeBanner(at))
+          Banner(text: Labels.limitResumeBanner(at), actionLabel: "Cancel") {
+            Task { await host.dismissLimitResume(agentId: agentId) }
+          }
         }
         if !slashItems.isEmpty {
           SlashSuggestionList(items: slashItems, selected: menuIndex) { acceptSlash($0) }

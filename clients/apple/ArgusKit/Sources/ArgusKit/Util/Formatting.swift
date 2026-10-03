@@ -55,7 +55,7 @@ public enum Labels {
     let day =
       Calendar.current.isDate(when, inSameDayAs: now)
       ? "" : "\(when.formatted(.dateTime.weekday(.abbreviated))) "
-    return "Usage limit reached. Continues automatically \(day)at \(time); sending a message cancels it."
+    return "Usage limit reached. Continues automatically \(day)at \(time)."
   }
 
   // MARK: Time

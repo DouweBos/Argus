@@ -216,6 +216,8 @@ interface AppState {
   /** Fetch the computer's queue for an agent (then follow `agent.queue`). */
   loadQueue: (agentId: string) => Promise<void>;
   interrupt: (agentId: string) => Promise<void>;
+  /** Cancel the continue scheduled after a usage limit. */
+  dismissLimitResume: (agentId: string) => Promise<void>;
   setModel: (agentId: string, model: string) => Promise<void>;
   setPermissionMode: (
     agentId: string,
@@ -1189,6 +1191,12 @@ export const useAppStore = create<AppState>((set, get) => {
     interrupt: async (agentId) => {
       await get()
         .transport?.request("agents.interrupt", { agent_id: agentId });
+    },
+
+    dismissLimitResume: async (agentId) => {
+      await get().transport?.request("agents.dismiss_limit_resume", {
+        agent_id: agentId,
+      });
     },
 
     setModel: async (agentId, model) => {

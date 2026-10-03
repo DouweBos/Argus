@@ -16,6 +16,7 @@ vi.mock("../session/argusConfig", () => ({
 const { appState } = await import("../../state");
 const {
   cancelLimitResume,
+  dismissLimitResume,
   forgetLimitResume,
   limitResumeAt,
   noteLimitHit,
@@ -87,6 +88,27 @@ describe("auto-continue after a plan limit", () => {
     expect(
       emitted.filter(([c]) => c === "agent:limit-resume:a1").map(([, p]) => p),
     ).toEqual([due, null]);
+  });
+
+  it("stays dismissed through refused sends until a turn gets through", () => {
+    const send = vi.fn();
+    hitLimit(60_000);
+    onTurnResult("a1", send);
+    dismissLimitResume("a1");
+    expect(limitResumeAt("a1")).toBeNull();
+
+    // A message sent while still limited is refused again.
+    hitLimit(60_000);
+    onTurnResult("a1", send);
+    expect(limitResumeAt("a1")).toBeNull();
+
+    // One that gets through re-enables it for the next stall.
+    onTurnResult("a1", send);
+    hitLimit(60_000);
+    onTurnResult("a1", send);
+    expect(limitResumeAt("a1")).not.toBeNull();
+    vi.advanceTimersByTime(3 * 60_000);
+    expect(send).toHaveBeenCalledOnce();
   });
 
   it("does nothing when the project hasn't opted in", () => {

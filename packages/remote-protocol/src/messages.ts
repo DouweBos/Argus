@@ -180,6 +180,7 @@ export const MethodParams = {
     images: z.array(RemoteImageAttachment).max(20).optional(),
   }),
   "agents.interrupt": z.object({ agent_id: z.string() }),
+  "agents.dismiss_limit_resume": z.object({ agent_id: z.string() }),
   "agents.stop": z.object({ agent_id: z.string() }),
   "agents.set_model": z.object({ agent_id: z.string(), model: z.string() }),
   /**
@@ -607,6 +608,7 @@ export const MethodResult = {
     queued: z.boolean().optional(),
   }),
   "agents.interrupt": z.object({ accepted: z.boolean() }),
+  "agents.dismiss_limit_resume": z.object({ accepted: z.boolean() }),
   "agents.stop": z.object({ accepted: z.boolean() }),
   "agents.set_model": z.object({ accepted: z.boolean() }),
   "agents.set_claude_account": z.object({ accepted: z.boolean() }),

@@ -163,15 +163,15 @@ initial attempt from a `continue` after the user resolved conflicts.
 
 ## Agents
 
-| Event                       | Source | When                                                                                        | Extra props                                                                   |
-| --------------------------- | ------ | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `agent_started`             | main   | A new agent is started                                                                      | `has_model`, `has_resume_id`, `has_parent`, `permission_mode`, `session_kind` |
-| `agent_restored`            | main   | Conversation restored at a prior turn                                                       | `keep_turn_number`, `is_fresh_start`                                          |
-| `agent_exited`              | main   | The agent process exited                                                                    | `exit_code`, `success`, `turns_completed`, `tool_uses`, `duration_ms`         |
-| `agent_stopped`             | main   | The agent was stopped                                                                       | —                                                                             |
-| `agent_nudged`              | main   | An agent sent a `push_notification`                                                         | `critical` (urgency), `tagged` (tied to a session)                            |
-| `agent_interrupted`         | main   | The agent was interrupted                                                                   | —                                                                             |
-| `agent_limit_auto_continue` | main   | An agent stalled on a usage limit got a continue scheduled, sent, cancelled, or given up on | `action` (`scheduled`, `sent`, `cancelled`, `gave_up`), `has_reset_time`      |
+| Event                       | Source | When                                                                                                             | Extra props                                                                           |
+| --------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `agent_started`             | main   | A new agent is started                                                                                           | `has_model`, `has_resume_id`, `has_parent`, `permission_mode`, `session_kind`         |
+| `agent_restored`            | main   | Conversation restored at a prior turn                                                                            | `keep_turn_number`, `is_fresh_start`                                                  |
+| `agent_exited`              | main   | The agent process exited                                                                                         | `exit_code`, `success`, `turns_completed`, `tool_uses`, `duration_ms`                 |
+| `agent_stopped`             | main   | The agent was stopped                                                                                            | —                                                                                     |
+| `agent_nudged`              | main   | An agent sent a `push_notification`                                                                              | `critical` (urgency), `tagged` (tied to a session)                                    |
+| `agent_interrupted`         | main   | The agent was interrupted                                                                                        | —                                                                                     |
+| `agent_limit_auto_continue` | main   | An agent stalled on a usage limit got a continue scheduled, sent, cancelled by a send, dismissed, or given up on | `action` (`scheduled`, `sent`, `cancelled`, `dismissed`, `gave_up`), `has_reset_time` |
 
 ## Automations
 

@@ -3,7 +3,8 @@
  *
  * When a project sets `auto_continue_on_limit`, a turn that ends on a usage
  * limit schedules a "continue" for the moment the CLI says the limit resets.
- * Any other send, a stop or an exit cancels it.
+ * Another send, a stop or an exit cancels it; dismissing it holds off until a
+ * turn gets through, since a send while limited would only re-arm it.
  */
 
 import { emitHostEvent } from "@argus/host/bus";
@@ -30,6 +31,8 @@ interface LimitState {
   limitHit: boolean;
   /** Continues sent since the last turn that got through. */
   attempts: number;
+  /** The user turned it off for this stall. */
+  dismissed: boolean;
   dueAt: number | null;
   timer: NodeJS.Timeout | null;
   send: ((message: string) => void) | null;
@@ -44,6 +47,7 @@ function stateFor(agentId: string): LimitState {
       resetsAt: null,
       limitHit: false,
       attempts: 0,
+      dismissed: false,
       dueAt: null,
       timer: null,
       send: null,
@@ -110,13 +114,14 @@ export function onTurnResult(
   if (!state?.limitHit) {
     if (state) {
       state.attempts = 0;
+      state.dismissed = false;
     }
 
     return;
   }
   state.limitHit = false;
 
-  if (!autoContinueEnabled(agentId)) {
+  if (state.dismissed || !autoContinueEnabled(agentId)) {
     return;
   }
   if (state.attempts >= MAX_ATTEMPTS) {
@@ -218,6 +223,27 @@ export function cancelLimitResume(agentId: string): void {
     action: "cancelled",
     has_reset_time: state.resetsAt !== null,
   });
+}
+
+/** The user cancelled the pending continue from a client. */
+export function dismissLimitResume(agentId: string): void {
+  const state = states.get(agentId);
+  if (!state) {
+    return;
+  }
+  state.dismissed = true;
+  if (state.timer) {
+    clearTimeout(state.timer);
+    state.timer = null;
+  }
+  if (state.dueAt !== null) {
+    state.dueAt = null;
+    announce(agentId);
+    telemetryCapture("agent_limit_auto_continue", {
+      action: "dismissed",
+      has_reset_time: state.resetsAt !== null,
+    });
+  }
 }
 
 /** The agent stopped or exited. */

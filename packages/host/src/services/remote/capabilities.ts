@@ -57,7 +57,7 @@ import {
 } from "../agent/agentService";
 import { loadConversation, loadHistoryIndex } from "../agent/chatHistory";
 import { knownContextWindow } from "../agent/contextWindow";
-import { limitResumeAt } from "../agent/limitResume";
+import { dismissLimitResume, limitResumeAt } from "../agent/limitResume";
 import {
   enqueueMessage,
   listQueue,
@@ -1402,6 +1402,14 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { agent_id } = parse("agents.interrupt", params);
     requireAgent(agent_id);
     await control(() => interruptAgent(agent_id));
+
+    return { accepted: true };
+  },
+
+  "agents.dismiss_limit_resume": async (params) => {
+    const { agent_id } = parse("agents.dismiss_limit_resume", params);
+    requireAgent(agent_id);
+    await control(() => dismissLimitResume(agent_id));
 
     return { accepted: true };
   },

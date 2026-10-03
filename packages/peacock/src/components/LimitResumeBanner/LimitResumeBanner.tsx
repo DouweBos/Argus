@@ -1,5 +1,6 @@
 import { ClockIcon } from "../../icons/Icons";
 import { Banner } from "../Banner/Banner";
+import { Button } from "../Button/Button";
 
 export interface LimitResumeBannerProps {
   /** Unix ms the automatic "continue" is scheduled for. */
@@ -7,6 +8,8 @@ export interface LimitResumeBannerProps {
   className?: string;
   /** Reference time, so "today" vs. a weekday is deterministic in stories. */
   now?: Date;
+  /** Renders a Cancel button; omit for clients that can't control the agent. */
+  onCancel?: () => void;
 }
 
 /** When a scheduled auto-continue fires, as "at 15:02" or "Mon at 15:02". */
@@ -28,15 +31,23 @@ export function LimitResumeBanner({
   resumeAt,
   className,
   now,
+  onCancel,
 }: LimitResumeBannerProps) {
   return (
     <Banner
       className={className}
       leading={<ClockIcon size={12} />}
       tone="warning"
+      trailing={
+        onCancel && (
+          <Button size="sm" variant="secondary" onClick={onCancel}>
+            Cancel
+          </Button>
+        )
+      }
     >
       Usage limit reached. Continues automatically{" "}
-      {formatLimitResume(resumeAt, now)}; sending a message cancels it.
+      {formatLimitResume(resumeAt, now)}.
     </Banner>
   );
 }

@@ -136,6 +136,8 @@ export const AGENT_COMMANDS = {
     params: AgentId,
     result: z.number().nullable(),
   },
+  /** Drop the pending continue and hold off until a turn gets through. */
+  dismiss_agent_limit_resume: { tier: "admin", params: AgentId, result: Void },
   list_queued_messages: {
     tier: "admin",
     params: AgentId,
