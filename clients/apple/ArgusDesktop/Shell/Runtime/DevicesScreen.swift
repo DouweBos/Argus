@@ -97,6 +97,7 @@ struct DevicesScreen: View {
         }
         .contextMenu { menu(row.device) }
       }
+      .width(min: 140, ideal: 200)
       TableColumn("Platform") { (row: Row) in
         Text(row.device.platform.rawValue).foregroundStyle(theme.textMuted)
       }
