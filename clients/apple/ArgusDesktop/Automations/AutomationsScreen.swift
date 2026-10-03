@@ -87,7 +87,7 @@ struct AutomationsScreen: View {
         .accessibilityLabel(automation.name)
       }
       TableColumn("Trigger") { Text(Labels.triggerLabel($0)) }
-      TableColumn("Last run") { LastRunCell(automationId: $0.id) }
+      TableColumn("Last run") { LastRunCell(automationId: $0.id) }.width(min: 150)
       TableColumn("Next run") { Text(AutomationText.nextRun($0)).foregroundStyle(.secondary) }
       TableColumn("") { AutomationRunButton(automationId: $0.id) }.width(90)
     }
@@ -117,7 +117,7 @@ private struct LastRunCell: View {
   var body: some View {
     if let latest = store.runs(for: automationId).first {
       HStack(spacing: 6) {
-        Badge(label: latest.status.rawValue, tone: latest.status.tone)
+        Badge(label: latest.status.rawValue, tone: latest.status.tone).fixedSize()
         Text(Labels.timeAgo(latest.startedAt)).foregroundStyle(.secondary)
       }
     } else {
@@ -134,7 +134,7 @@ struct AutomationRunButton: View {
 
   var body: some View {
     if let active = store.runs(for: automationId).first(where: \.isActive) {
-      Button("Cancel", role: .destructive) { Task { await store.cancelRun(id: active.id) } }
+      Button("Cancel") { Task { await store.cancelRun(id: active.id) } }
     } else {
       let starting = store.triggering.contains(automationId)
       Button(starting ? "Starting…" : "Run Now") {

@@ -168,9 +168,9 @@ struct RunScreen: View {
         .labelStyle(.titleAndIcon)
       }
       if run.isActive {
-        Button("Cancel Run", role: .destructive) { Task { await store.cancelRun(id: runId) } }
+        Button("Cancel Run") { Task { await store.cancelRun(id: runId) } }
       } else {
-        Button("Delete", role: .destructive) { confirmingDelete = true }
+        Button("Delete") { confirmingDelete = true }
       }
     }
   }

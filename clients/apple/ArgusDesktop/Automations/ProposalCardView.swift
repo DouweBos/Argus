@@ -69,10 +69,11 @@ struct ProposalCardView: View {
       if let compose { composer(compose) } else { actions }
     }
     .opacity(inbox.busy.contains(proposal.id) ? 0.5 : 1)
-    .confirmationDialog(cleanupTitle, isPresented: $confirmingCleanup) {
+    .alert(cleanupTitle, isPresented: $confirmingCleanup) {
       Button(proposal.cta?.label ?? "Run Cleanup", role: .destructive) {
         Task { await inbox.cleanup(id: proposal.id) }
       }
+      Button("Cancel", role: .cancel) {}
     } message: {
       Text(cleanupWarning)
     }
@@ -129,7 +130,7 @@ struct ProposalCardView: View {
           .buttonStyle(.borderedProminent)
         Button("Start with Note…") { begin(.startNote) }
       case .deleteBranch, .deleteSession:
-        Button(cta.label, role: .destructive) { confirmingCleanup = true }
+        Button(cta.label) { confirmingCleanup = true }
       default:
         if let url = cta.url.flatMap(URL.init(string:)) {
           Button(cta.label) { openURL(url) }.buttonStyle(.borderedProminent)

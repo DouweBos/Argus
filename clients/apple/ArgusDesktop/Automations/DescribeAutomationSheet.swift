@@ -39,10 +39,14 @@ struct DescribeAutomationSheet: View {
       HStack {
         Button("Cancel", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
         Spacer()
-        Button(working && draft != nil ? "Regenerating…" : draft == nil ? "Draft It" : "Regenerate") {
-          generate()
+        if draft == nil {
+          Button(working ? "Drafting…" : "Draft It") { generate() }
+            .keyboardShortcut(.defaultAction)
+            .disabled(working || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        } else {
+          Button(working ? "Working…" : "Regenerate") { generate() }
+            .disabled(working || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
-        .disabled(working || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         if draft != nil {
           Button("Create Automation") { create() }
             .keyboardShortcut(.defaultAction)

@@ -121,7 +121,7 @@ private struct AutomationDetail: View {
       )
       .toggleStyle(.switch)
       AutomationRunButton(automationId: automationId)
-      Button("Delete", role: .destructive) { confirmingDelete = true }
+      Button("Delete") { confirmingDelete = true }
       Button(saving ? "Saving…" : saved == draft ? "Saved" : "Save Changes") { save() }
         .keyboardShortcut("s", modifiers: .command)
         .disabled(saving || saved == nil || saved == draft || !canSave)
