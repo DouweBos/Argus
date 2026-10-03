@@ -10,6 +10,7 @@ struct OperationBanner: View {
   let workspace: GitWorkspace
   /// Off on the Conflicts view itself.
   var showsConflictsLink = true
+  @State private var confirmingAbort = false
 
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
   private var actions: WorkingCopyActions { WorkingCopyActions(workspace: workspace) }
@@ -27,7 +28,7 @@ struct OperationBanner: View {
       if showsConflictsLink, conflicts > 0 {
         Button("Resolve Conflicts") { model.navigate(.sessionGit(id: workspace.sessionId, view: .conflicts)) }
       }
-      Button("Abort", role: .destructive) { Task { await actions.abortOperation() } }
+      Button("Abort…") { confirmingAbort = true }
         .disabled(vm.isRunningOperation)
       Button("Continue") { Task { await actions.continueOperation() } }
         .buttonStyle(.borderedProminent)
@@ -38,6 +39,12 @@ struct OperationBanner: View {
     .padding(.horizontal, 12)
     .padding(.vertical, 8)
     .background(theme.warningSoft)
+    .confirmationDialog("Abort the \(noun)?", isPresented: $confirmingAbort, titleVisibility: .visible) {
+      Button("Abort", role: .destructive) { Task { await actions.abortOperation() } }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("The repository goes back to how it was before the \(noun) started; resolved files are lost.")
+    }
   }
 
   private var noun: String {
