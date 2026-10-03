@@ -46,6 +46,10 @@ Enable the web platform with `"platforms": ["web", …]` and configure
 - Configurable in `.argus.json` under `terminals[]` — declare a name,
   starting directory, and any auto-launch commands.
 - Both the agent and you can drive the same terminal.
+- Reopen a terminal — or open it in another window — and it shows what
+  it printed so far before carrying on live.
+- Paired phones can follow a session's terminals and dev servers,
+  read-only.
 
 ---
 

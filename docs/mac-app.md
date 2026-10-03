@@ -14,11 +14,18 @@ lives in the repository (`plan/swiftui-parity.md`).
 - The three-panel window: projects and their sessions, live from the host.
 - Creating and deleting sessions, with setup progress.
 - Agents in a session as tabs, with their transcript.
+- A home for each session: its setup progress (or why it failed), the
+  agents working in it, and committing, pushing and merging its branch.
+- **Agents** and **Runtimes** in the sidebar: every agent, and every run
+  command's process, across all your sessions.
+- Terminals under each session (⇧⌘T): tabs, the project's run commands in
+  the toolbar, find (⌘F), and links that open on this Mac. A terminal you
+  reopen replays what it printed so far.
 - Banners for agents that finish or need you, with Approve/Deny buttons on
   permission prompts.
 
-Terminals, the runtime panel (simulators, emulators, the browser), the git
-views and the settings screens arrive in later betas.
+The runtime panel (simulators, emulators, the browser), the git views and
+the settings screens arrive in later betas.
 
 ## How it relates to the Electron app
 
