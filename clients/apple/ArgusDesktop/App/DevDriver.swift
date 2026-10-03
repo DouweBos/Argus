@@ -275,6 +275,15 @@
         else { return ["error": "path?"] }
         model.navigate(route)
         return ["route": "\(model.route)"]
+      case "palette":
+        // What ⇧⌘P does; menu shortcuts only fire while the app is active.
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        model.palette.isPresented = command["open"] as? Bool ?? !model.palette.isPresented
+        let query = command["query"] as? String ?? ""
+        return [
+          "open": model.palette.isPresented,
+          "results": model.palette.matching(query, for: model).prefix(12).map { "\($0.section): \($0.title)" },
+        ]
       case "userActivity":
         // What Handoff is advertising, wherever SwiftUI attached it.
         var found: [[String: Any]] = []
