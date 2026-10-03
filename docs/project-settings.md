@@ -40,7 +40,7 @@ Two ways to change project settings:
 | `platforms`                                                          | yes (Platforms)          |
 | `browser_url`, `browser_presets`                                     | yes (Browser)            |
 | `single_runtime`                                                     | yes (Run commands)       |
-| `agent_prompt`, `save_chat_history`                                  | yes (Agent)              |
+| `agent_prompt`, `save_chat_history`, `auto_continue_on_limit`        | yes (Agent)              |
 | `protected_branches`, `pull_request_template`, `default_base_branch` | yes (Branch protection)  |
 | `mcp_servers`                                                        | yes (MCP servers)        |
 | `release_note_patterns`                                              | yes (Release notes)      |
@@ -67,6 +67,7 @@ Two ways to change project settings:
   "browser_presets":    [{ "id": "...", "label": "...", "width": 390, "height": 844, "user_agent": "..." }],
   "simulator_deeplinks": [{ "label": "Profile", "url": "myapp://profile/123" }],
   "save_chat_history":  true,
+  "auto_continue_on_limit": false,
   "protected_branches": ["main", "master"],
   "pull_request_template": "feature.md",
   "default_base_branch": "staging",
@@ -365,6 +366,21 @@ When `true`, the project may only have one `run` command alive across
 already running prompts you to stop the other runtime or cancel.
 Useful when your run command claims a fixed port that can't be
 remapped via `workspace_env`.
+
+---
+
+## `auto_continue_on_limit` — resume agents after a usage limit
+
+When `true`, an agent whose turn stops because the Claude plan's usage
+limit is spent is sent `continue` automatically once the limit resets
+(a minute after the reset time Claude Code reports, or an hour later if
+it reports none). Sending the agent anything yourself cancels the
+pending continue. Argus gives up after five continues in a row that
+hit the limit again.
+
+```jsonc
+"auto_continue_on_limit": true
+```
 
 ---
 

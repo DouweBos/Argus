@@ -1782,6 +1782,7 @@ export function SetupConfigDialog({
   const [agentPrompt, setAgentPrompt] = useState("");
   const [saveChatHistory, setSaveChatHistory] = useState(true);
   const [singleRuntime, setSingleRuntime] = useState(false);
+  const [autoContinueOnLimit, setAutoContinueOnLimit] = useState(false);
   const [pullRequestTemplate, setPullRequestTemplate] = useState("");
   const [defaultBaseBranch, setDefaultBaseBranch] = useState("");
   const [minArgusVersion, setMinArgusVersion] = useState("");
@@ -1861,6 +1862,9 @@ export function SetupConfigDialog({
         }
         if (config.single_runtime) {
           setSingleRuntime(true);
+        }
+        if (config.auto_continue_on_limit) {
+          setAutoContinueOnLimit(true);
         }
         if (config.browser_url) {
           setBrowserUrl(config.browser_url);
@@ -2047,6 +2051,9 @@ export function SetupConfigDialog({
     if (singleRuntime) {
       config.single_runtime = true;
     }
+    if (autoContinueOnLimit) {
+      config.auto_continue_on_limit = true;
+    }
     const envVars = envList.items
       .filter((e) => e.name.trim())
       .map((e) => {
@@ -2167,6 +2174,7 @@ export function SetupConfigDialog({
       agentPrompt,
       saveChatHistory,
       singleRuntime,
+      autoContinueOnLimit,
       pullRequestTemplate,
       defaultBaseBranch,
       minArgusVersion,
@@ -2574,6 +2582,14 @@ export function SetupConfigDialog({
                     onChange={(e) => setSaveChatHistory(e.target.checked)}
                   />
                   Save chat history when agents stop
+                </label>
+                <label className={sectionStyles.agentCheckboxRow}>
+                  <input
+                    checked={autoContinueOnLimit}
+                    type="checkbox"
+                    onChange={(e) => setAutoContinueOnLimit(e.target.checked)}
+                  />
+                  Continue agents automatically when a usage limit resets
                 </label>
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
