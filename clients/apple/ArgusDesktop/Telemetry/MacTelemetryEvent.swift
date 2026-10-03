@@ -119,6 +119,23 @@ enum MacTelemetryEvent {
     case close
   }
 
+  enum ProjectSource: String {
+    case openPanel = "open_panel"
+    case example
+    case recent
+  }
+
+  enum ArgusJsonMethod: String {
+    case quick
+    case claude
+  }
+
+  enum ArgusJsonOutcome: String {
+    case saved
+    case discarded
+    case failed
+  }
+
   case launched
   case quit(hadRunningAgents: Bool)
   case hostStarted(restarts: Int)
@@ -156,6 +173,12 @@ enum MacTelemetryEvent {
   case paletteCommandRun(section: String)
   /// The phone handed a session over; `matched` is whether it named this computer.
   case handoffContinued(matched: Bool)
+  /// A first-run step was finished or skipped; `step` is the step's id.
+  case onboardingStep(step: String, skipped: Bool)
+  /// A one-click fixer ran; `prereq` is the check's id.
+  case prereqFixed(prereq: String, success: Bool)
+  case projectAdded(source: ProjectSource)
+  case argusJsonGenerated(method: ArgusJsonMethod, outcome: ArgusJsonOutcome)
 
   var name: String {
     switch self {
@@ -183,6 +206,10 @@ enum MacTelemetryEvent {
     case .pullRequestActed: "mac_pull_request_acted"
     case .paletteCommandRun: "mac_palette_command_run"
     case .handoffContinued: "mac_handoff_continued"
+    case .onboardingStep: "mac_onboarding_step"
+    case .prereqFixed: "mac_prereq_fixed"
+    case .projectAdded: "mac_project_added"
+    case .argusJsonGenerated: "mac_argus_json_generated"
     }
   }
 
@@ -236,6 +263,14 @@ enum MacTelemetryEvent {
       ["section": section.lowercased()]
     case .handoffContinued(let matched):
       ["matched": matched]
+    case .onboardingStep(let step, let skipped):
+      ["step": step, "skipped": skipped]
+    case .prereqFixed(let prereq, let success):
+      ["prereq": prereq, "success": success]
+    case .projectAdded(let source):
+      ["source": source.rawValue]
+    case .argusJsonGenerated(let method, let outcome):
+      ["method": method.rawValue, "outcome": outcome.rawValue]
     }
   }
 

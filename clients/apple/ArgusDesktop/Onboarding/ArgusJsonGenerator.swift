@@ -1,0 +1,116 @@
+import ArgusCore
+import ArgusKit
+import Foundation
+import Observation
+
+/// Proposing a `.argus.json` for a project that has none: inferred from the
+/// repo, optionally refined by Claude, reviewed, then written — the desktop's
+/// "Finish setting up this project" flow.
+@MainActor
+@Observable
+final class ArgusJsonGenerator {
+  enum Phase: Equatable {
+    case loading
+    /// The repo already has one; nothing to generate.
+    case existing
+    case choosing
+    case generatingQuick
+    case generatingClaude
+    case reviewing
+    case saving
+    case saved
+  }
+
+  enum Source: String { case quick, claude }
+
+  let repoRoot: String
+  private(set) var phase = Phase.loading
+  private(set) var existing: [String: JSONValue]?
+  private(set) var proposed: [String: JSONValue]?
+  private(set) var source = Source.quick
+  private(set) var signals: [ArgusProtocol.DetectedSignal] = []
+  private(set) var inferredFrom: [String] = []
+  private(set) var error: String?
+
+  init(repoRoot: String) {
+    self.repoRoot = repoRoot
+  }
+
+  var isBusy: Bool { [.generatingQuick, .generatingClaude, .saving].contains(phase) }
+  var proposedText: String { ConfigJSON.string(.object(proposed ?? [:])) }
+
+  func load(_ backend: LocalBackend) async {
+    let found = try? await backend.request(
+      ArgusProtocol.Commands.OnboardingReadExistingArgusJson.self, .init(path: repoRoot))
+    existing = found ?? nil
+    phase = existing == nil ? .choosing : .existing
+  }
+
+  /// Fast, no network: package.json, lockfiles, platform dirs.
+  func quick(_ backend: LocalBackend) async {
+    phase = .generatingQuick
+    error = nil
+    do {
+      try await suggest(backend)
+      source = .quick
+      phase = .reviewing
+    } catch {
+      fail(error, method: .quick)
+    }
+  }
+
+  /// Runs the Claude CLI in the repo over the inferred config (~30–90s).
+  func claude(_ backend: LocalBackend) async {
+    phase = .generatingClaude
+    error = nil
+    do {
+      try await suggest(backend)
+      proposed = try await backend.request(
+        ArgusProtocol.Commands.OnboardingRefineArgusJsonWithClaude.self,
+        .init(path: repoRoot, config: proposed ?? [:]))
+      source = .claude
+      phase = .reviewing
+    } catch {
+      fail(error, method: .claude)
+    }
+  }
+
+  func save(_ backend: LocalBackend) async {
+    guard let proposed else { return }
+    phase = .saving
+    error = nil
+    do {
+      // Written as text so the file keeps the documented key order; a
+      // dictionary on the wire would scramble it. There's no file to back up.
+      try await backend.request(
+        ArgusProtocol.Commands.WriteArgusConfig.self,
+        .init(repoRoot: repoRoot, content: ConfigJSON.string(.object(proposed)) + "\n"))
+      MacTelemetry.capture(.argusJsonGenerated(method: source == .claude ? .claude : .quick, outcome: .saved))
+      phase = .saved
+    } catch {
+      self.error = HostStore.describe(error)
+      phase = .reviewing
+    }
+  }
+
+  func discard() {
+    MacTelemetry.capture(.argusJsonGenerated(method: source == .claude ? .claude : .quick, outcome: .discarded))
+    proposed = nil
+    error = nil
+    phase = .choosing
+  }
+
+  private func suggest(_ backend: LocalBackend) async throws {
+    let suggestion = try await backend.request(
+      ArgusProtocol.Commands.OnboardingSuggestArgusJson.self, .init(path: repoRoot))
+    proposed = suggestion.config
+    signals = suggestion.signals
+    inferredFrom = suggestion.inferredFrom
+  }
+
+  private func fail(_ error: Error, method: MacTelemetryEvent.ArgusJsonMethod) {
+    MacTelemetry.capture(.argusJsonGenerated(method: method, outcome: .failed))
+    self.error = HostStore.describe(error)
+    phase = .choosing
+  }
+}

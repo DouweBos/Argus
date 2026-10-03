@@ -1,0 +1,111 @@
+import ArgusCore
+import ArgusKit
+import Foundation
+import Observation
+
+/// First-run state: whether it shows, which step it's on, and the actions the
+/// steps share. The window shows onboarding until the host says it's complete,
+/// as the desktop decides.
+@MainActor
+@Observable
+final class OnboardingModel {
+  private(set) var loaded = false
+  private(set) var visible = false
+  private(set) var step = OnboardingStepId.welcome
+  private(set) var recentProjects: [String] = []
+  private(set) var examples: [ArgusProtocol.ExampleProject]?
+  private(set) var cloning: String?
+  var error: String?
+  /// The project the last step added, reviewed before onboarding closes.
+  var addedProject: String?
+
+  private static let localStepKey = "onboardingStep"
+
+  func load(_ backend: LocalBackend) async {
+    guard let state = try? await backend.request(ArgusProtocol.Commands.OnboardingGetState.self, .init())
+    else { return }
+    recentProjects = state.recentProjects
+    visible = !state.onboarding.completed
+    step = OnboardingStepId.resume(
+      hostStep: state.onboarding.lastStep, local: UserDefaults.standard.string(forKey: Self.localStepKey))
+    loaded = true
+  }
+
+  func go(to next: OnboardingStepId, _ backend: LocalBackend) async {
+    step = next
+    UserDefaults.standard.set(next.rawValue, forKey: Self.localStepKey)
+    _ = try? await backend.request(ArgusProtocol.Commands.OnboardingSetLastStep.self, .init(step: next.hostStep))
+  }
+
+  /// Leaves a step without doing it; the host keeps the list.
+  func skip(_ backend: LocalBackend) async {
+    MacTelemetry.capture(.onboardingStep(step: step.rawValue, skipped: true))
+    _ = try? await backend.request(ArgusProtocol.Commands.OnboardingAddSkipped.self, .init(id: step.rawValue))
+    await advance(backend)
+  }
+
+  func advance(_ backend: LocalBackend) async {
+    if let next = step.next {
+      await go(to: next, backend)
+    } else {
+      await complete(backend)
+    }
+  }
+
+  func complete(_ backend: LocalBackend) async {
+    _ = try? await backend.request(ArgusProtocol.Commands.OnboardingComplete.self, .init())
+    UserDefaults.standard.removeObject(forKey: Self.localStepKey)
+    visible = false
+  }
+
+  /// The privacy choice: kept by this app, applied to the host.
+  func chooseTelemetry(_ mode: String, _ backend: LocalBackend) async {
+    MacTelemetry.mode = mode
+    _ = try? await backend.request(
+      ArgusProtocol.Commands.TelemetrySetMode.self, .init(mode: ArgusProtocol.TelemetryMode(rawValue: mode)))
+    MacTelemetry.capture(.onboardingStep(step: OnboardingStepId.privacy.rawValue, skipped: false))
+    await advance(backend)
+  }
+
+  func loadExamples(_ backend: LocalBackend) async {
+    guard examples == nil else { return }
+    examples = (try? await backend.request(ArgusProtocol.Commands.OnboardingListExamples.self, .init())) ?? []
+  }
+
+  /// Clones into the Argus home and adds it like any other project.
+  func clone(_ example: ArgusProtocol.ExampleProject, _ backend: LocalBackend) async {
+    cloning = example.slug
+    error = nil
+    defer { cloning = nil }
+    do {
+      let result = try await backend.request(
+        ArgusProtocol.Commands.OnboardingCloneExample.self, .init(slug: example.slug))
+      try await ProjectRegistration.add(result.path, source: .example, backend)
+      addedProject = result.path
+    } catch {
+      self.error = HostStore.describe(error)
+    }
+  }
+
+  func add(_ path: String, source: MacTelemetryEvent.ProjectSource, _ backend: LocalBackend) async {
+    error = nil
+    do {
+      try await ProjectRegistration.add(path, source: source, backend)
+      addedProject = path
+    } catch {
+      self.error = HostStore.describe(error)
+    }
+  }
+}
+
+/// Adding a project the way the desktop's open-repo flow does: register the
+/// root with the host (which persists it and tells every window) and put it on
+/// the recent list. The host's `projects.changed` opens it in the sidebar.
+@MainActor
+enum ProjectRegistration {
+  static func add(_ path: String, source: MacTelemetryEvent.ProjectSource, _ backend: LocalBackend) async throws {
+    try await backend.request(ArgusProtocol.Commands.AddRepoRoot.self, .init(path: path))
+    _ = try? await backend.request(ArgusProtocol.Commands.OnboardingRegisterProject.self, .init(path: path))
+    MacTelemetry.capture(.projectAdded(source: source))
+  }
+}
