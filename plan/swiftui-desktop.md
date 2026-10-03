@@ -180,6 +180,31 @@ handle selection or long transcripts.
 (admin), with per-subject host routing like `app/lib/transport/hostRouting.ts`,
 and switching hosts in the sidebar.
 
+**M6.5 — Close the gaps:** everything an earlier milestone skipped, left
+partial or found broken. Each milestone's report adds its deviations and open
+risks here; M7's cutover waits until this list is empty or each item is
+explicitly dropped. Known so far:
+
+- Host (also affects Electron today):
+  - Android emulator ignores input sent over its gRPC control channel (API 36 AVD); `adb input` works.
+  - A session created over the host socket disappeared after a host restart.
+  - The Conductor browser's debugging port isn't exposed, so there are no DevTools.
+- Mac app:
+  - Session home lacks chat history and branch rename.
+  - Run commands: `restartOnRerun`, `cwd` and `prerequisites` never exercised from the UI.
+  - The chat input's control row is wider than the middle column and squeezes the sidebar.
+  - Device logs: never saw a line arrive from a stock simulator.
+  - Not ported: capture-card video inputs, the inspector's 3D view, the `/devices/:platform/:deviceKey` dialog.
+  - Sidebar and table clicks only verified through driver routes, not real first clicks into a background window.
+- iOS app:
+  - The all-agents list and read-only terminals were never run against a paired computer.
+  - Phone terminals poll every 2 s rather than streaming.
+- GroveKit (fix in Grove, then bump the pin):
+  - Branch actions (checkout, rename, delete, remotes, submodules, worktrees) still live in Grove's app-side `SidebarViewModel`.
+  - Grove-specific wording and file names (`HostingError` messages, `grove/restack.json`, `grove-` scratch prefix) and shared `UserDefaults` keys.
+  - `FileWatcher`, `WorktreeResolver` and view-model file actions still touch the local disk directly instead of going through the runner.
+- Release notes: the next Electron release is the first with the host lock; say so.
+
 **M7 — Ship:**
 
 - Sparkle updates with a release lane modelled on Grove's (fastlane, changesets for the version, appcast on houwert.dev).
