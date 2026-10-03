@@ -24,6 +24,8 @@ struct RuntimeDeviceView: View {
   @State private var interacted = false
 
   private static let noVideoTimeout = Duration.seconds(10)
+  private static let startAttempts = 6
+  private static let retryDelay = Duration.seconds(5)
 
   private var deviceState: RemoteDeviceState? { store.deviceStates[deviceId] }
   private var rotation: Double { Double(deviceState?.display?.rotation ?? 0) }
@@ -152,24 +154,31 @@ struct RuntimeDeviceView: View {
     interacted = false
 
     let handle = handle
-    guard
-      let stop = await runtime.streams.attach(
-        .device(deviceId, platform),
-        { message in
-          switch message {
-          case .config(_, let codec, let width, let height, let description):
-            codedSize = CGSize(width: width, height: height)
-            handle.configure(codec: codec, width: width, height: height, description: description)
-          case .frame(_, let keyFrame, let timestamp, let data):
-            handle.enqueue(data, isKeyFrame: keyFrame, timestampMillis: timestamp)
-          case .jpeg:
-            break
-          }
-        })
-    else {
-      status = .error
+    let sink: (MediaMessage) -> Void = { message in
+      switch message {
+      case .config(_, let codec, let width, let height, let description):
+        codedSize = CGSize(width: width, height: height)
+        handle.configure(codec: codec, width: width, height: height, description: description)
+      case .frame(_, let keyFrame, let timestamp, let data):
+        handle.enqueue(data, isKeyFrame: keyFrame, timestampMillis: timestamp)
+      case .jpeg:
+        break
+      }
+    }
+    // A device that only just booted refuses capture until it has finished
+    // starting up, so a failed start is retried for a while.
+    var attached: (() -> Void)?
+    for attempt in 0..<Self.startAttempts {
+      attached = await runtime.streams.attach(.device(deviceId, platform), sink)
+      if attached != nil || Task.isCancelled { break }
+      if attempt + 1 < Self.startAttempts { try? await Task.sleep(for: Self.retryDelay) }
+    }
+    guard let stop = attached else {
+      if !Task.isCancelled { status = .error }
       return
     }
+    // Superseded while starting: the next subscription owns the view now.
+    guard !Task.isCancelled else { return stop() }
     detach = stop
 
     // Take the device unless someone else is already driving it; the host
