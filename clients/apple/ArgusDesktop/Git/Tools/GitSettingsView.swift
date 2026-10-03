@@ -121,7 +121,7 @@ private struct GitConfigSection: View {
         let value = (draft[key] ?? "").trimmingCharacters(in: .whitespaces)
         await workspace.host(
           ArgusProtocol.Commands.GitSetConfig.self, .init(id: workspace.sessionId, key: key, value: value),
-          label: "Saving \(key)")
+          label: "Saving \(key)", track: .config)
       }
       saving = false
       await load()

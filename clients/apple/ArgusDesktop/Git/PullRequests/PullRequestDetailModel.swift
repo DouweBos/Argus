@@ -87,6 +87,7 @@ final class PullRequestDetailModel {
       try await backend.request(
         ArgusProtocol.Commands.GhPrClose.self, .init(owner: owner, repo: name, number: Double(number)))
       actionError = nil
+      MacTelemetry.capture(.pullRequestActed(action: .close))
       await pullRequests.refresh()
     } catch {
       actionError = "Couldn't close that pull request — \(HostStore.describe(error))"

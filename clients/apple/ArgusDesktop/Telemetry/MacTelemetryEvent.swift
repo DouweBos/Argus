@@ -103,6 +103,15 @@ enum MacTelemetryEvent {
     case submodule
     case remote
     case hook
+    /// Repo config, auto-fetch or a per-project git preference changed.
+    case config
+  }
+
+  enum PullRequestAction: String {
+    case open
+    case merge
+    case comment
+    case close
   }
 
   case launched
@@ -136,6 +145,8 @@ enum MacTelemetryEvent {
   case inspectionUsed(action: InspectionAction, success: Bool)
   /// A git action from the git panel; `scope` is `session` or `project`.
   case gitUsed(action: GitAction, scope: String, success: Bool)
+  /// A pull request was opened, merged, commented on or closed through the host's `gh`.
+  case pullRequestActed(action: PullRequestAction)
 
   var name: String {
     switch self {
@@ -160,6 +171,7 @@ enum MacTelemetryEvent {
     case .browserUsed: "mac_browser_used"
     case .inspectionUsed: "mac_inspection_used"
     case .gitUsed: "mac_git_used"
+    case .pullRequestActed: "mac_pull_request_acted"
     }
   }
 
@@ -207,6 +219,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "success": success]
     case .gitUsed(let action, let scope, let success):
       ["action": action.rawValue, "scope": scope, "success": success]
+    case .pullRequestActed(let action):
+      ["action": action.rawValue]
     }
   }
 
