@@ -117,6 +117,8 @@ final class DesktopModel {
       switch (parts.first, parts.count) {
       case ("session", 2...): navigate(.session(id: parts[1], agentId: parts.count > 2 ? parts[2] : nil))
       case ("home", 2...): navigate(.sessionHome(id: parts[1]))
+      case ("agents", _): navigate(.agents)
+      case ("runtimes", _): navigate(.runtimes)
       default: break
       }
     }
