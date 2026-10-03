@@ -7309,6 +7309,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct TerminalScrollbackParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
     public struct TerminalWriteParams: Codable, Sendable {
       public var sessionId: String
       public var data: String
@@ -10356,6 +10373,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.TerminalResizeParams
       public typealias Result = IgnoredResult
       public static let name = "terminal_resize"
+      public static let tier = "admin"
+    }
+
+    public enum TerminalScrollback: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.TerminalScrollbackParams
+      public typealias Result = ArgusProtocol.TerminalScrollback
+      public static let name = "terminal_scrollback"
       public static let tier = "admin"
     }
 

@@ -11396,6 +11396,35 @@ extension ArgusProtocol {
     public static let presence = TelemetryMode(rawValue: "presence")
   }
 
+  public struct TerminalScrollback: Codable, Sendable {
+    public var data: String
+    public var exitCode: Double?
+    public var exited: Bool
+    public var truncated: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case data = "data"
+      case exitCode = "exitCode"
+      case exited = "exited"
+      case truncated = "truncated"
+    }
+
+    public init(data: String, exitCode: Double? = nil, exited: Bool, truncated: Bool) {
+      self.data = data
+      self.exitCode = exitCode
+      self.exited = exited
+      self.truncated = truncated
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(data, forKey: .data)
+      try c.encode(exitCode, forKey: .exitCode)
+      try c.encode(exited, forKey: .exited)
+      try c.encode(truncated, forKey: .truncated)
+    }
+  }
+
   public struct TerminalSummary: Codable, Sendable {
     public var exitCode: Double?
     public var exited: Bool

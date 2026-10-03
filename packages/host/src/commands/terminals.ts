@@ -7,6 +7,7 @@ import {
   startTerminal,
   stopTerminal,
   terminalResize,
+  terminalScrollback,
   terminalWrite,
   updateTerminalTitle,
 } from "../services/terminal/multiplexer";
@@ -32,5 +33,8 @@ export function registerTerminalCommands(): void {
   );
   defineTypedCommand("terminal_resize", (p) =>
     terminalResize(p.sessionId, p.cols, p.rows),
+  );
+  defineTypedCommand("terminal_scrollback", (p) =>
+    terminalScrollback(p.sessionId),
   );
 }
