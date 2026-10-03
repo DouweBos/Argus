@@ -73,6 +73,13 @@ struct SessionView: View {
         if case .sessionHome = model.route, let session {
           SessionHomeView(session: session, sessionAgents: agents, startAgent: startAgent(mode:))
             .id(session.id)
+        } else if let gitView = model.route.gitView, let session {
+          if session.status == .ready {
+            GitScreen(session: session, view: gitView)
+          } else {
+            SessionSetupView(
+              session: session, progress: store.live?.setupProgress(sessionId: sessionId) ?? session.progress)
+          }
         } else {
           agentsPane
         }
@@ -86,8 +93,9 @@ struct SessionView: View {
     .toolbar {
       ToolbarItem(placement: .navigation) {
         Picker("Panel", selection: panel) {
-          Text("Home").tag(false)
-          Text("Agents").tag(true)
+          Text("Home").tag(SessionPanel.home)
+          Text("Agents").tag(SessionPanel.agents)
+          Text("Git").tag(SessionPanel.git)
         }
         .pickerStyle(.segmented)
         .fixedSize()
@@ -121,12 +129,22 @@ struct SessionView: View {
     }
   }
 
-  /// Home or agents — two routes, one per panel, as in the desktop app.
-  private var panel: Binding<Bool> {
+  /// Home, agents or git — a route per panel, as in the desktop app.
+  private var panel: Binding<SessionPanel> {
     Binding(
-      get: { if case .session = model.route { true } else { false } },
-      set: { agents in
-        model.navigate(agents ? .session(id: sessionId, agentId: nil) : .sessionHome(id: sessionId))
+      get: {
+        switch model.route {
+        case .session: .agents
+        case .sessionGit: .git
+        default: .home
+        }
+      },
+      set: { panel in
+        switch panel {
+        case .home: model.navigate(.sessionHome(id: sessionId))
+        case .agents: model.navigate(.session(id: sessionId, agentId: nil))
+        case .git: model.openGit(session: sessionId)
+        }
       })
   }
 
@@ -164,6 +182,10 @@ struct SessionView: View {
         .hidden()
     }
   }
+}
+
+enum SessionPanel: Hashable {
+  case home, agents, git
 }
 
 struct AgentTabBar: View {

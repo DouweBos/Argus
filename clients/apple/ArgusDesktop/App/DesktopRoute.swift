@@ -14,16 +14,27 @@ enum DesktopRoute: Hashable {
   case devices
   /// `/sessions/:sessionId/agents`, optionally focused on one agent tab.
   case session(id: String, agentId: String?)
+  /// `/sessions/:sessionId/git/:gitView`.
+  case sessionGit(id: String, view: GitRoute)
+  /// `/pull-requests`: the PRs of interest across open projects.
+  case pullRequests
+  /// `/pull-requests/:owner/:repo/:number`; `repo` is `owner/repo`.
+  case pullRequest(repo: String, number: Int)
 
   var sessionId: String? {
     switch self {
-    case .session(let id, _), .sessionHome(let id): id
+    case .session(let id, _), .sessionHome(let id), .sessionGit(let id, _): id
     default: nil
     }
   }
 
   var agentId: String? {
     if case .session(_, let agentId) = self { return agentId }
+    return nil
+  }
+
+  var gitView: GitRoute? {
+    if case .sessionGit(_, let view) = self { return view }
     return nil
   }
 
@@ -36,6 +47,9 @@ enum DesktopRoute: Hashable {
     case .sessionHome: "/sessions/:sessionId/home"
     case .devices: "/devices"
     case .session: "/sessions/:sessionId/agents"
+    case .sessionGit(_, let view): "/sessions/:sessionId/git/\(view.segment)"
+    case .pullRequests: "/pull-requests"
+    case .pullRequest: "/pull-requests/:owner/:repo/:number"
     }
   }
 }

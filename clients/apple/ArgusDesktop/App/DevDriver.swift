@@ -103,6 +103,9 @@
         switch command["panel"] as? String {
         case "agents": model.navigate(.session(id: id, agentId: nil))
         case "home": model.navigate(.sessionHome(id: id))
+        case "git":
+          let view = (command["gitView"] as? String).flatMap(GitRoute.init(devString:)) ?? .working
+          model.navigate(.sessionGit(id: id, view: view))
         default: model.open(session: id)
         }
         return ["ok": true, "route": "\(model.route)"]
@@ -112,6 +115,7 @@
         case "agents": model.navigate(.agents)
         case "runtimes": model.navigate(.runtimes)
         case "devices": model.navigate(.devices)
+        case "pull-requests": model.navigate(.pullRequests)
         case "back": model.goBack()
         default: return ["error": "to?"]
         }
@@ -246,6 +250,13 @@
         }
         _ = semaphore.wait(timeout: .now() + 2)
         return result
+      case "sessions":
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        return [
+          "sessions": model.store.sessionsByRepo.values.joined().map {
+            ["id": $0.id, "kind": $0.kind.rawValue, "branch": $0.branch, "status": $0.status.rawValue]
+          }
+        ]
       case "state":
         let model = AppDelegate.current?.model
         let item = menuItem("New Session…", in: NSApp.mainMenu)

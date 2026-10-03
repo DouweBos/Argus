@@ -54,6 +54,55 @@ enum MacTelemetryEvent {
     case edit
   }
 
+  /// What a git action did, from any git view. GroveKit runs these in the app,
+  /// so the host never sees them; host-run ones (merge into base, PRs) are
+  /// captured there instead.
+  enum GitAction: String {
+    case stage
+    case unstage
+    case stageHunk = "stage_hunk"
+    case unstageHunk = "unstage_hunk"
+    case stageLines = "stage_lines"
+    case unstageLines = "unstage_lines"
+    case discard
+    case discardHunk = "discard_hunk"
+    case discardLines = "discard_lines"
+    case commit
+    case amend
+    case checkout
+    case branchCreate = "branch_create"
+    case branchRename = "branch_rename"
+    case branchDelete = "branch_delete"
+    case merge
+    case rebase
+    case interactiveRebase = "interactive_rebase"
+    case cherryPick = "cherry_pick"
+    case revert
+    case reset
+    case reword
+    case squash
+    case drop
+    case stashCreate = "stash_create"
+    case stashApply = "stash_apply"
+    case stashPop = "stash_pop"
+    case stashDrop = "stash_drop"
+    case tagCreate = "tag_create"
+    case tagDelete = "tag_delete"
+    case fetch
+    case pull
+    case push
+    case resolveConflict = "resolve_conflict"
+    case continueOperation = "continue_operation"
+    case abortOperation = "abort_operation"
+    case restoreFile = "restore_file"
+    case undo
+    case redo
+    case bisect
+    case submodule
+    case remote
+    case hook
+  }
+
   case launched
   case quit(hadRunningAgents: Bool)
   case hostStarted(restarts: Int)
@@ -83,6 +132,8 @@ enum MacTelemetryEvent {
   case devicePower(action: PowerAction, platform: String)
   case browserUsed(action: BrowserAction)
   case inspectionUsed(action: InspectionAction, success: Bool)
+  /// A git action from the git panel; `scope` is `session` or `project`.
+  case gitUsed(action: GitAction, scope: String, success: Bool)
 
   var name: String {
     switch self {
@@ -106,6 +157,7 @@ enum MacTelemetryEvent {
     case .devicePower: "mac_device_power"
     case .browserUsed: "mac_browser_used"
     case .inspectionUsed: "mac_inspection_used"
+    case .gitUsed: "mac_git_used"
     }
   }
 
@@ -151,6 +203,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue]
     case .inspectionUsed(let action, let success):
       ["action": action.rawValue, "success": success]
+    case .gitUsed(let action, let scope, let success):
+      ["action": action.rawValue, "scope": scope, "success": success]
     }
   }
 

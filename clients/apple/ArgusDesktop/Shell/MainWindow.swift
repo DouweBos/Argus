@@ -21,6 +21,11 @@ struct MainWindow: View {
           RuntimesOverview()
         } else if model.route == .devices {
           DevicesScreen()
+        } else if model.route == .pullRequests {
+          PullRequestsScreen()
+        } else if case .pullRequest(let repo, let number) = model.route {
+          PullRequestDetailScreen(repo: repo, number: number)
+            .id("\(repo)#\(number)")
         } else {
           ContentUnavailableView(
             "Pick a session", systemImage: "sidebar.left",
