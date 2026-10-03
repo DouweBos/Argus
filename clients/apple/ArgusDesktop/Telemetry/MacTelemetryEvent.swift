@@ -95,6 +95,8 @@ enum MacTelemetryEvent {
     case continueOperation = "continue_operation"
     case abortOperation = "abort_operation"
     case restoreFile = "restore_file"
+    /// Ignore, stop tracking, rename or move to Trash from the changes list.
+    case fileAction = "file_action"
     case undo
     case redo
     case bisect
