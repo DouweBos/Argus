@@ -204,8 +204,7 @@ public struct OpenPullRequestSheet: View {
         Btn(label: opening ? "Opening…" : "Open pull request") { open() }
           .disabled(opening || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
       }
-      .navigationTitle("New pull request")
-      .inlineNavigationTitle()
+      .sheetTitle("New pull request")
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") { dismiss() }
@@ -269,8 +268,7 @@ private struct BaseBranchSheet: View {
           }
         }
       }
-      .navigationTitle("Base branch")
-      .inlineNavigationTitle()
+      .sheetTitle("Base branch")
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") { dismiss() }
