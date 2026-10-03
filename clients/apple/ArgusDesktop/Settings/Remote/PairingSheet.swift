@@ -49,7 +49,7 @@ struct PairingSheet: View {
   }
 
   @ViewBuilder
-  private func confirm(sas: String, client: PairingClient?) -> some View {
+  private func confirm(sas: String, client: PairingClientInfo?) -> some View {
     let sent = if case .confirmingSent = model.pairing.phase { true } else { false }
     Text(
       client.map { "\($0.label) wants to pair. Confirm this code matches the one on its screen:" }
