@@ -110,8 +110,10 @@ struct GitArgusSettingsSection: View {
         settings = next
         prefixDraft = next.branchPrefix ?? ""
         error = nil
+        workspace.track(.config, success: true)
       case .failure(let failure):
         error = failure.message
+        workspace.track(.config, success: false)
       }
     }
   }
@@ -154,7 +156,7 @@ struct GitArgusSettingsSection: View {
       guard wrote != nil else { return autoFetch = previous }
       await workspace.host(
         ArgusProtocol.Commands.GitReconfigureAutoFetch.self, .init(repoRoot: repoRoot, minutes: minutes),
-        label: "Saving auto-fetch")
+        label: "Saving auto-fetch", track: .config)
     }
   }
 }

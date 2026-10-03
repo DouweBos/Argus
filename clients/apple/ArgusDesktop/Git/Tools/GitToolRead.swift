@@ -6,7 +6,7 @@ import SwiftUI
 @MainActor
 enum GitToolRead {
   static func request<C: RemoteCommand>(
-    _ store: HostStore, _ command: C.Type, _ params: C.Params
+    _ store: HostStore, _ command: sending C.Type, _ params: C.Params
   ) async -> Result<C.Result, ToolError> {
     guard let backend = store.backend else { return .failure(ToolError(message: "Not connected to the host.")) }
     do {

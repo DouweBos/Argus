@@ -38,6 +38,14 @@ final class DesktopModel {
     supervisor = HostSupervisor(configuration: HostLocation.configuration())
     store = HostStore(
       hooks: HostStoreHooks(
+        // Only what the host can't see; the rest of the iOS catalog stays on iOS.
+        track: { event in
+          if case .pullRequestActed(let action) = event,
+            let mac = MacTelemetryEvent.PullRequestAction(rawValue: action.rawValue)
+          {
+            MacTelemetry.capture(.pullRequestActed(action: mac))
+          }
+        },
         errorReported: { error, scope in
           NSLog("[argus] %@: %@", scope, HostStore.describe(error))
         },
