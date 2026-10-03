@@ -152,6 +152,8 @@ enum MacTelemetryEvent {
   case gitUsed(action: GitAction, scope: String, success: Bool)
   /// A pull request was opened, merged, commented on or closed through the host's `gh`.
   case pullRequestActed(action: PullRequestAction)
+  /// A command palette entry was run; `section` is its group, never its title.
+  case paletteCommandRun(section: String)
 
   var name: String {
     switch self {
@@ -177,6 +179,7 @@ enum MacTelemetryEvent {
     case .inspectionUsed: "mac_inspection_used"
     case .gitUsed: "mac_git_used"
     case .pullRequestActed: "mac_pull_request_acted"
+    case .paletteCommandRun: "mac_palette_command_run"
     }
   }
 
@@ -226,6 +229,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "scope": scope, "success": success]
     case .pullRequestActed(let action):
       ["action": action.rawValue]
+    case .paletteCommandRun(let section):
+      ["section": section.lowercased()]
     }
   }
 

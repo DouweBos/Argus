@@ -102,6 +102,7 @@ struct SessionView: View {
       }
       if let session, session.status == .ready {
         ToolbarItemGroup {
+          HuddleToolbarButton(sessionId: session.id)
           RunControl(session: session) { model.terminalPanelVisible = true }
           Button {
             model.terminalPanelVisible.toggle()
