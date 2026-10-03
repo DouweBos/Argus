@@ -82,11 +82,14 @@
 
     private func run(_ command: [String: Any]) -> [String: Any] {
       if command["op"] as? String == "windows" {
-        return ["windows": NSApp.windows.map { "\($0.windowNumber) \($0.title) visible=\($0.isVisible) \($0.frame)" }]
+        return ["windows": NSApp.windows.map { "\($0.windowNumber) \($0.title) visible=\($0.isVisible) level=\($0.level.rawValue) \($0.frame)" }]
       }
-      // `window`: a window number from `windows`, for dialogs that aren't sheets.
+      // `window`: a window number from `windows`, or a visible window's title
+      // (a device popout), for windows that aren't sheets.
       let chosen = (command["window"] as? Int).flatMap { number in
         NSApp.windows.first { $0.windowNumber == number }
+      } ?? (command["window"] as? String).flatMap { title in
+        NSApp.windows.first { $0.isVisible && $0.title == title }
       }
       guard let window = chosen ?? target else { return ["error": "no window"] }
       switch command["op"] as? String {
@@ -171,7 +174,7 @@
         DispatchQueue.main.async { window.sendEvent(event) }
         return ["ok": true]
       case "key":
-        return ["ok": key(command["key"] as? String ?? "", mods: command["mods"] as? [String] ?? [], in: window)]
+        return ["ok": key(command["key"] as? String ?? "", mods: command["mods"] as? [String] ?? [], code: command["code"] as? Int, in: window)]
       case "type":
         guard let text = command["text"] as? String,
           let input = window.firstResponder as? NSTextInputClient
@@ -268,6 +271,52 @@
         guard let text = window.firstResponder as? NSTextView else { return ["error": "no text view focused"] }
         let selected = text.selectedRanges.map { (text.string as NSString).substring(with: $0.rangeValue) }
         return ["selection": selected.joined(separator: "\n")]
+      case "selectAll":
+        // Our window is rarely key, so not through the responder chain.
+        guard let text = window.firstResponder as? NSText else { return ["error": "no text focused"] }
+        text.selectAll(nil)
+        return ["ok": true]
+      case "scrollAt":
+        // A pixel-precise wheel event at top-left window coordinates.
+        guard let x = command["x"] as? Double, let y = command["y"] as? Double,
+          let cg = CGEvent(
+            scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
+            wheel1: Int32(command["dy"] as? Int ?? 0), wheel2: Int32(command["dx"] as? Int ?? 0),
+            wheel3: 0)
+        else { return ["error": "x, y?"] }
+        // An event built from a CGEvent has no window, so AppKit reads its
+        // screen location as the window location: place it there.
+        let screenHeight = NSScreen.screens.first?.frame.height ?? 0
+        cg.location = CGPoint(x: x, y: screenHeight - (window.frame.height - y))
+        guard let event = NSEvent(cgEvent: cg) else { return ["error": "event"] }
+        window.sendEvent(event)
+        return ["ok": true]
+      case "snapshot":
+        // The window's views drawn in-process, written as PNG. Video layers
+        // draw nothing this way; the simulator's own screenshot shows those.
+        guard let path = command["path"] as? String, let view = window.contentView?.superview,
+          let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)
+        else { return ["error": "path? / no view"] }
+        view.cacheDisplay(in: view.bounds, to: rep)
+        guard let png = rep.representation(using: .png, properties: [:]) else { return ["error": "png"] }
+        try? png.write(to: URL(fileURLWithPath: path))
+        return ["ok": true, "size": "\(rep.pixelsWide)x\(rep.pixelsHigh)"]
+      case "runtime":
+        guard let runtime = AppDelegate.current?.model.runtime else { return [:] }
+        return [
+          "platform": runtime.platform.rawValue, "mode": runtime.mode.rawValue,
+          "simulators": runtime.simulators.map { "\($0.name) \($0.udid) booted=\($0.booted)" },
+          "android": runtime.androidDevices.map { "\($0.name) \($0.serial) online=\($0.online)" },
+          "iosToolsError": runtime.iosToolsError ?? "", "androidToolsError": runtime.androidToolsError ?? "",
+        ]
+      case "pickRuntime":
+        // What the target menu does, by id; `device` omitted for the browser.
+        guard let runtime = AppDelegate.current?.model, let raw = command["platform"] as? String,
+          let platform = RuntimeModel.Platform(rawValue: raw)
+        else { return ["error": "platform?"] }
+        runtime.runtime.select(
+          platform: platform, device: command["device"] as? String, session: runtime.route.sessionId)
+        return ["ok": true]
       case "menu":
         guard let title = command["title"] as? String, let item = menuItem(title, in: NSApp.mainMenu)
         else { return ["error": "no menu item"] }
@@ -355,7 +404,7 @@
       return true
     }
 
-    private func key(_ key: String, mods: [String], in window: NSWindow) -> Bool {
+    private func key(_ key: String, mods: [String], code keyCode: Int? = nil, in window: NSWindow) -> Bool {
       var flags: NSEvent.ModifierFlags = []
       if mods.contains("cmd") { flags.insert(.command) }
       if mods.contains("shift") { flags.insert(.shift) }
@@ -366,7 +415,7 @@
         "down": (String(UnicodeScalar(NSDownArrowFunctionKey)!), 125),
         "up": (String(UnicodeScalar(NSUpArrowFunctionKey)!), 126),
       ]
-      let (characters, code) = named[key] ?? (key, 0)
+      let (characters, code) = named[key] ?? (key, UInt16(keyCode ?? 0))
       for type in [NSEvent.EventType.keyDown, .keyUp] {
         guard
           let event = NSEvent.keyEvent(
