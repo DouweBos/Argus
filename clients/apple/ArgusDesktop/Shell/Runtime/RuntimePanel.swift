@@ -32,7 +32,7 @@ struct RuntimePanel: View {
     VStack(spacing: 0) {
       titleBar
       Divider()
-      content
+      content.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
     .background(theme.bg)
     .task {
