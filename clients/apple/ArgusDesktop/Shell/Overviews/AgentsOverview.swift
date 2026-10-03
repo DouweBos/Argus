@@ -30,7 +30,7 @@ struct AgentsOverview: View {
   var body: some View {
     let rows = rows
     VStack(alignment: .leading, spacing: 0) {
-      OverviewHeader(title: "Agents", summary: summary(rows))
+      OverviewHeader(title: "Agents", summary: AgentsOverviewList.summary(rows.map(\.agent)))
       if rows.isEmpty {
         ContentUnavailableView(
           "No agents", systemImage: "sparkles",
@@ -95,11 +95,6 @@ struct AgentsOverview: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .navigationTitle("Agents")
     .task { await store.loadRecentAgents() }
-  }
-
-  private func summary(_ rows: [Row]) -> String {
-    let count = { (state: RemoteAgentState) in rows.filter { $0.agent.status == state }.count }
-    return "\(rows.count) total · \(count(.running)) running · \(count(.idle)) idle · \(count(.error)) errored"
   }
 
   private func statusLabel(_ status: RemoteAgentState) -> String {
