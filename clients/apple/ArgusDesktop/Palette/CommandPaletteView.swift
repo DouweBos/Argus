@@ -66,11 +66,8 @@ struct CommandPaletteView: View {
   private func perform(_ command: PaletteCommand) {
     close()
     MacTelemetry.capture(.paletteCommandRun(section: command.section))
-    if command.id == BuiltinPalette.settingsId {
-      openSettings()
-    } else {
-      command.run()
-    }
+    command.run()
+    if command.opensSettings { openSettings() }
   }
 
   private func close() {

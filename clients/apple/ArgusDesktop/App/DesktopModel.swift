@@ -86,6 +86,7 @@ final class DesktopModel {
     supervisor.onEvent = { [weak self] event in self?.supervisorEvent(event) }
     platform.focusWindow = { NSApp.activate() }
     BuiltinPalette.register(in: palette)
+    SettingsPalette.register(in: palette)
     platform.closeDevicePopout = { [runtime] key in runtime.closePopout(key) }
   }
 
