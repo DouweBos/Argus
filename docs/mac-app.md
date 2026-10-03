@@ -28,8 +28,25 @@ lives in the repository (`plan/swiftui-parity.md`).
   Logs modes; devices in their own floating windows.
 - The Devices screen: every simulator and emulator, with boot, shut down and a
   live grid.
+- **Git** for each session (the Git tab): the working copy with file, hunk
+  and line staging, discard and commit (with amend); the history as a commit
+  graph, with each commit's changes and actions (cherry-pick, revert, reset,
+  reword, squash, drop, interactive rebase); branches, tags, remotes and
+  worktrees; stashes, the reflog, blame, file history, comparing two refs,
+  conflict resolution for merges, rebases and cherry-picks, branches review,
+  submodules, bisect, hooks and git settings. Fetch, pull, push, new branch,
+  stash and tag are in the toolbar, with undo for the last git action.
+- **Pull Requests** in the sidebar: the pull requests that need you across
+  your projects, each with its conversation, checks and changes, and opening
+  a new one for a session's branch.
 
-The git views and the settings screens arrive in later betas.
+The app reads your repositories directly with Grove's git engine, so the git
+views stay current as agents change files and commit — no refresh needed.
+Merging a session into its base branch, pull requests and anything that
+follows your project's rules (protected branches, session branch names) still
+go through the host, exactly as in the Electron app.
+
+The settings screens arrive in a later beta.
 
 ## How it relates to the Electron app
 
