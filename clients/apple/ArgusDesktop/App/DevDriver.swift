@@ -95,8 +95,23 @@
         guard let model = AppDelegate.current?.model, let id = command["session"] as? String else {
           return ["error": "session?"]
         }
-        model.navigate(.session(id: id, agentId: nil))
-        return ["ok": true]
+        // What a sidebar selection does; a list ignores clicks in a window
+        // that isn't key, and a driven window never is.
+        switch command["panel"] as? String {
+        case "agents": model.navigate(.session(id: id, agentId: nil))
+        case "home": model.navigate(.sessionHome(id: id))
+        default: model.open(session: id)
+        }
+        return ["ok": true, "route": "\(model.route)"]
+      case "route":
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        switch command["to"] as? String {
+        case "agents": model.navigate(.agents)
+        case "runtimes": model.navigate(.runtimes)
+        case "back": model.goBack()
+        default: return ["error": "to?"]
+        }
+        return ["route": "\(model.route)"]
       case "toggleTerminal":
         // What ⇧⌘T does; menu commands only enable while the app is active.
         AppDelegate.current?.model.terminalPanelVisible.toggle()
