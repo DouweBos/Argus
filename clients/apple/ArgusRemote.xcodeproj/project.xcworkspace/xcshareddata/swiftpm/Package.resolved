@@ -1,6 +1,14 @@
 {
-  "originHash" : "a216a1da805b9463c9847962347a95619644484d8f164a19e1c706d541203fe0",
+  "originHash" : "576eb1cb72fa8a0de847393f2b344d9a60b2810ae1f1372e616f3347a9b5fa89",
   "pins" : [
+    {
+      "identity" : "grove",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/DouweBos/Grove.git",
+      "state" : {
+        "revision" : "40cbd037735f32324466672e8c15f33ee6daba54"
+      }
+    },
     {
       "identity" : "posthog-ios",
       "kind" : "remoteSourceControl",
