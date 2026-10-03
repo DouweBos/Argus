@@ -162,7 +162,7 @@ struct RuntimeDeviceActions: View {
       }
       RuntimeLinkMenu(deviceId: deviceId)
       Spacer()
-      action("Shut down device", "power") { shutdown() }
+      action("Disconnect device", "xmark.circle") { disconnect() }
     }
     .padding(.horizontal, 8)
     .frame(height: 30)
@@ -199,10 +199,11 @@ struct RuntimeDeviceActions: View {
     }
   }
 
-  private func shutdown() {
+  /// Stops the capture and closes its popouts; the device itself keeps running.
+  private func disconnect() {
     Task {
-      await runtime.shutdown(platform: platform == .ios ? .ios : .android, device: deviceId)
-      MacTelemetry.capture(.devicePower(action: .shutdown, platform: platform.rawValue))
+      await runtime.disconnect(platform: platform == .ios ? .ios : .android, device: deviceId)
+      MacTelemetry.capture(.devicePower(action: .disconnect, platform: platform.rawValue))
       if clearsSelection {
         runtime.select(
           platform: platform == .ios ? .ios : .android, device: nil, session: sessionId)

@@ -36,6 +36,7 @@ enum MacTelemetryEvent {
   enum PowerAction: String {
     case boot
     case shutdown
+    case disconnect
   }
 
   enum BrowserAction: String {

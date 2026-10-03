@@ -204,8 +204,9 @@ final class RuntimeModel {
     return serial
   }
 
-  /// Shuts the device down, as the panel's disconnect button does.
-  func shutdown(platform: Platform, device: String) async {
+  /// Stops capturing the device and closes its popouts, as the panel's
+  /// disconnect button does on the desktop.
+  func disconnect(platform: Platform, device: String) async {
     guard let backend else { return }
     switch platform {
     case .ios:
