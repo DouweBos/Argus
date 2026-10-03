@@ -12,6 +12,8 @@ final class PlatformBridge: NSObject, UNUserNotificationCenterDelegate {
   private var observers: [NSObjectProtocol] = []
   /// Brings the main window forward; set by the app.
   var focusWindow: () -> Void = { NSApp.activate() }
+  /// Closes the device popout keyed `platform:deviceKey`; set by the app.
+  var closeDevicePopout: (String) -> Void = { _ in }
 
   private nonisolated static let idKey = "argus_notification_id"
 
@@ -98,8 +100,9 @@ final class PlatformBridge: NSObject, UNUserNotificationCenterDelegate {
       }
     case .focusUi:
       focusWindow()
+    case .closeDevicePopout:
+      if let key = request.key { closeDevicePopout(key) }
     default:
-      // Device popouts arrive with the runtime panel (M3).
       break
     }
   }

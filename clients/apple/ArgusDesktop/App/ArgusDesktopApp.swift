@@ -12,6 +12,7 @@ struct ArgusDesktopApp: App {
         .environment(delegate.model.store)
         .environment(delegate.model.terminals)
         .environment(delegate.model.pullRequests)
+        .environment(delegate.model.runtime)
         .frame(minWidth: 960, minHeight: 600)
     }
     .commands {
@@ -22,6 +23,20 @@ struct ArgusDesktopApp: App {
         NavigationCommands(model: delegate.model)
       }
     }
+
+    // Device popouts float above everything, as on the desktop.
+    WindowGroup("Device", for: DevicePopoutTarget.self) { $target in
+      if let target {
+        DevicePopoutView(target: target)
+          .themed()
+          .environment(delegate.model.store)
+          .environment(delegate.model.runtime)
+          .frame(minWidth: 240, minHeight: 360)
+      }
+    }
+    .windowLevel(.floating)
+    .defaultSize(width: 380, height: 760)
+    .restorationBehavior(.disabled)
   }
 }
 
