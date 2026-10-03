@@ -4,12 +4,16 @@ import Foundation
 /// `docs/routing.md`. Views read it; navigation goes through `DesktopModel.navigate`.
 enum DesktopRoute: Hashable {
   case home
+  /// `/sessions/:sessionId/home`: setup state, landing the work, the agents.
+  case sessionHome(id: String)
   /// `/sessions/:sessionId/agents`, optionally focused on one agent tab.
   case session(id: String, agentId: String?)
 
   var sessionId: String? {
-    if case .session(let id, _) = self { return id }
-    return nil
+    switch self {
+    case .session(let id, _), .sessionHome(let id): id
+    default: nil
+    }
   }
 
   var agentId: String? {
@@ -21,6 +25,7 @@ enum DesktopRoute: Hashable {
   var pattern: String {
     switch self {
     case .home: "/"
+    case .sessionHome: "/sessions/:sessionId/home"
     case .session: "/sessions/:sessionId/agents"
     }
   }

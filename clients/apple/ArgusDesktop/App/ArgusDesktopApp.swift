@@ -11,6 +11,7 @@ struct ArgusDesktopApp: App {
         .environment(delegate.model)
         .environment(delegate.model.store)
         .environment(delegate.model.terminals)
+        .environment(delegate.model.pullRequests)
         .frame(minWidth: 960, minHeight: 600)
     }
     .commands {

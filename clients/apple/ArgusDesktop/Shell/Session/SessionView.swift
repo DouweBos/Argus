@@ -41,9 +41,13 @@ struct SessionView: View {
       ]), to: RemoteAgentStatus.self)
   }
 
-  private func startAgent() {
+  private func startAgent() { startAgent(mode: nil) }
+
+  private func startAgent(mode: RemotePermissionMode?) {
     Task {
-      guard let agent = await store.spawnAgent(sessionId: sessionId) else { return }
+      guard let agent = await store.spawnAgent(sessionId: sessionId, permissionMode: mode) else {
+        return
+      }
       model.navigate(.session(id: sessionId, agentId: agent.agentId))
     }
   }
@@ -65,14 +69,29 @@ struct SessionView: View {
 
   var body: some View {
     VSplitView {
-      agentsPane
-        .frame(minHeight: 240)
+      Group {
+        if case .sessionHome = model.route, let session {
+          SessionHomeView(session: session, sessionAgents: agents, startAgent: startAgent(mode:))
+            .id(session.id)
+        } else {
+          agentsPane
+        }
+      }
+      .frame(minHeight: 240)
       if model.terminalPanelVisible, let session, session.status == .ready {
         TerminalPanel(session: session)
           .frame(minHeight: 200, idealHeight: 280)
       }
     }
     .toolbar {
+      ToolbarItem(placement: .navigation) {
+        Picker("Panel", selection: panel) {
+          Text("Home").tag(false)
+          Text("Agents").tag(true)
+        }
+        .pickerStyle(.segmented)
+        .fixedSize()
+      }
       if let session, session.status == .ready {
         ToolbarItemGroup {
           RunControl(session: session) { model.terminalPanelVisible = true }
@@ -94,6 +113,21 @@ struct SessionView: View {
     .task(id: session?.repoRoot) {
       if let repoRoot = session?.repoRoot { await store.loadAgents(repoRoot: repoRoot) }
     }
+    // The run control reads the project's run commands and which are going.
+    .task(id: session?.status == .ready ? sessionId : nil) {
+      guard let session, session.status == .ready else { return }
+      await terminals.loadConfig(repoRoot: session.repoRoot)
+      await terminals.refresh(sessionId: sessionId)
+    }
+  }
+
+  /// Home or agents — two routes, one per panel, as in the desktop app.
+  private var panel: Binding<Bool> {
+    Binding(
+      get: { if case .session = model.route { true } else { false } },
+      set: { agents in
+        model.navigate(agents ? .session(id: sessionId, agentId: nil) : .sessionHome(id: sessionId))
+      })
   }
 
   private var agentsPane: some View {
