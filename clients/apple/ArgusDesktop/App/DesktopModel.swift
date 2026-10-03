@@ -12,6 +12,7 @@ final class DesktopModel {
   let store: HostStore
   let platform = PlatformBridge()
   let terminals: TerminalsStore
+  let pullRequests: PullRequestsStore
   private(set) var backend: LocalBackend?
 
   private(set) var route: DesktopRoute = .home
@@ -21,6 +22,8 @@ final class DesktopModel {
   var deletingSession: RemoteSession?
   /// The bottom terminal panel under a session (⇧⌘T).
   var terminalPanelVisible = false
+  /// The panel each session was last left on, as the desktop app remembers.
+  private var agentsPanelSessions: Set<String> = []
   private var back: [DesktopRoute] = []
   private var forward: [DesktopRoute] = []
 
@@ -35,6 +38,7 @@ final class DesktopModel {
         isAppFocused: { NSApp.isActive && NSApp.keyWindow != nil }))
     store.capabilities = ["monitor", "control", "admin"]
     terminals = TerminalsStore(backend: { [store] in store.backend })
+    pullRequests = PullRequestsStore(host: store)
     terminals.replayed = { bytes, truncated in
       MacTelemetry.capture(
         .terminalReplayed(bytes: MacTelemetryEvent.byteBucket(bytes), truncated: truncated))
@@ -110,8 +114,10 @@ final class DesktopModel {
         let raw = ProcessInfo.processInfo.environment["ARGUS_DEV_ROUTE"]
       else { return }
       let parts = raw.split(separator: ":").map(String.init)
-      if parts.first == "session", parts.count >= 2 {
-        navigate(.session(id: parts[1], agentId: parts.count > 2 ? parts[2] : nil))
+      switch (parts.first, parts.count) {
+      case ("session", 2...): navigate(.session(id: parts[1], agentId: parts.count > 2 ? parts[2] : nil))
+      case ("home", 2...): navigate(.sessionHome(id: parts[1]))
+      default: break
       }
     }
   #endif
@@ -145,8 +151,18 @@ final class DesktopModel {
 
   // MARK: Navigation
 
+  /// A session from the sidebar: the panel it was last on, else its home.
+  func open(session id: String) {
+    navigate(agentsPanelSessions.contains(id) ? .session(id: id, agentId: nil) : .sessionHome(id: id))
+  }
+
   func navigate(_ next: DesktopRoute) {
     guard next != route else { return }
+    switch next {
+    case .session(let id, _): agentsPanelSessions.insert(id)
+    case .sessionHome(let id): agentsPanelSessions.remove(id)
+    default: break
+    }
     back.append(route)
     forward = []
     route = next

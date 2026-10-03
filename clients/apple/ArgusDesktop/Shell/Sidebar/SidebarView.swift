@@ -47,7 +47,7 @@ struct SidebarView: View {
     .listStyle(.sidebar)
     .sheet(item: newSessionProject) { project in
       NewSessionSheet(project: project) { session in
-        model.navigate(.session(id: session.id, agentId: nil))
+        model.navigate(.sessionHome(id: session.id))
       }
     }
     .sheet(item: deletingSession) { session in
@@ -74,7 +74,7 @@ struct SidebarView: View {
     Binding(
       get: { model.route.sessionId },
       set: { id in
-        if let id { model.navigate(.session(id: id, agentId: nil)) }
+        if let id { model.open(session: id) }
       })
   }
 

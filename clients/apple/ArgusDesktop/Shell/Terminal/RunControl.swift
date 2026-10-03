@@ -35,10 +35,6 @@ struct RunControl: View {
     }
     .labelStyle(.titleAndIcon)
     .disabled(session.status != .ready)
-    .task(id: session.repoRoot) {
-      await terminals.loadConfig(repoRoot: session.repoRoot)
-      await terminals.refresh(sessionId: session.id)
-    }
     .confirmationDialog(
       "Another runtime is running", isPresented: isConfirming, titleVisibility: .visible
     ) {
