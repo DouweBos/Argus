@@ -245,18 +245,23 @@ export async function startLocalUiSocket(
   });
   const untap = addHostEventSink((name, args) => channel.broadcast(name, args));
 
+  const listening = new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.once("listening", () => {
+      server.off("error", reject);
+      resolve();
+    });
+  });
+  // A path socket binds inside `listen()` itself, so the umask is back before
+  // anything else runs — held across the await, every file the host created
+  // meanwhile came out 0600, directories included.
   const previous = process.umask(0o177);
   try {
-    await new Promise<void>((resolve, reject) => {
-      server.once("error", reject);
-      server.listen(socketPath, () => {
-        server.off("error", reject);
-        resolve();
-      });
-    });
+    server.listen(socketPath);
   } finally {
     process.umask(previous);
   }
+  await listening;
   fs.chmodSync(socketPath, 0o600);
   server.on("error", (err) => warn(`[local-ui] ${String(err)}`));
   log(`[local-ui] listening on ${socketPath}`);

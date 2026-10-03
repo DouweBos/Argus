@@ -116,6 +116,14 @@ describe("local UI socket", () => {
     expect(fs.statSync(socketPath).mode & 0o777).toBe(0o600);
   });
 
+  it("restores the umask before it yields, so other files keep their modes", async () => {
+    await server.close();
+    const before = process.umask();
+    const starting = startLocalUiSocket(socketPath);
+    expect(process.umask()).toBe(before);
+    server = await starting;
+  });
+
   it("replaces a stale socket file left by a crashed host", async () => {
     await server.close();
     fs.writeFileSync(socketPath, "");
