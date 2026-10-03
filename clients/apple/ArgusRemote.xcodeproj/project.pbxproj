@@ -908,8 +908,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/DouweBos/Grove.git";
 			requirement = {
-				kind = revision;
-				revision = 40cbd037735f32324466672e8c15f33ee6daba54;
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.5.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
