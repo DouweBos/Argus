@@ -387,6 +387,8 @@ struct RootView: View {
       ComputerView(deviceId: deviceId)
     case .projects:
       ProjectsView()
+    case .agents:
+      AllAgentsView()
     case .project(let repoRoot, let name):
       ProjectView(repoRoot: repoRoot, name: name)
     case .agent(let id, let label):

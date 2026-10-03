@@ -8,6 +8,8 @@ enum Route: Hashable {
   case pair
   case computer(deviceId: String)
   case projects
+  /// Every agent across projects, as the desktop's `/agents`.
+  case agents
   case project(repoRoot: String, name: String)
   case agent(id: String, label: String)
   case stoppedAgent(historyId: String, repoRoot: String, label: String, branch: String, runnerSessionId: String)
@@ -39,6 +41,7 @@ enum Route: Hashable {
     case .pair: "pair"
     case .computer: "computer"
     case .projects: "projects"
+    case .agents: "agents"
     case .project: "project"
     case .agent: "agent"
     case .stoppedAgent: "stopped_agent"

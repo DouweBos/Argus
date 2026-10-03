@@ -112,7 +112,7 @@ struct ProjectsView: View {
       .prefix(8)
 
     if !recent.isEmpty {
-      Section("Recent agents") {
+      Section {
         ForEach(Array(recent)) { agent in
           NavigationLink(
             value: Route.agent(id: agent.agentId, label: Labels.agentName(agent))
@@ -124,6 +124,12 @@ struct ProjectsView: View {
               meta: location(agent) ?? Labels.metaLabel(agent.status))
           }
         }
+        // The full list, across every project and session.
+        NavigationLink(value: Route.agents) {
+          Label("All agents", systemImage: Icon.agent)
+        }
+      } header: {
+        Text("Recent agents")
       }
     }
   }
@@ -186,5 +192,17 @@ struct ProjectsView: View {
     await host.refreshProjects()
     await host.loadRecentAgents()
     await host.loadScratchPads()
+  }
+}
+
+/// `/agents` on the phone: every agent on the computer.
+struct AllAgentsView: View {
+  @Environment(Router.self) private var router
+
+  var body: some View {
+    AgentsOverviewList { agent in
+      router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
+    }
+    .navigationTitle("Agents")
   }
 }
