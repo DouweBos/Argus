@@ -20,6 +20,10 @@ struct RuntimePanel: View {
     platform == .ios && runtime.toolEnabled("device-inspector")
   }
 
+  private var logsAvailable: Bool {
+    platform != .web && selectedDevice != nil && runtime.toolEnabled("device-debug")
+  }
+
   private var selectedDevice: String? {
     runtime.selectedDevice(platform: platform, session: sessionId)
   }
@@ -40,8 +44,10 @@ struct RuntimePanel: View {
     .task(id: "\(sessionId ?? "")|\(store.connection == .ready)") {
       await runtime.loadProject(repoRoot: sessionId.flatMap { store.repoRoot(forSessionId: $0) })
     }
-    .onChange(of: inspectorAvailable) { _, available in
-      if !available { runtime.mode = .simulate }
+    .onChange(of: "\(inspectorAvailable)|\(logsAvailable)") {
+      if runtime.mode == .inspect && !inspectorAvailable || runtime.mode == .logs && !logsAvailable {
+        runtime.mode = .simulate
+      }
     }
   }
 
@@ -52,23 +58,34 @@ struct RuntimePanel: View {
       RuntimeBrowserView(sessionKey: sessionId ?? RuntimeModel.globalKey)
     case .ios where runtime.mode == .inspect && inspectorAvailable:
       InspectionView(deviceKey: selectedDevice)
+    case .ios where runtime.mode == .logs && logsAvailable,
+      .android where runtime.mode == .logs && logsAvailable:
+      RuntimeLogsView(deviceKey: selectedDevice ?? "")
     case .ios, .android:
       RuntimeNativeView(platform: platform, sessionId: sessionId)
     }
   }
 
+  private var modePicker: some View {
+    @Bindable var runtime = runtime
+    return Picker("Runtime mode", selection: $runtime.mode) {
+      Text("Simulate").tag(RuntimeModel.Mode.simulate)
+      if inspectorAvailable { Text("Inspect").tag(RuntimeModel.Mode.inspect) }
+      if logsAvailable { Text("Logs").tag(RuntimeModel.Mode.logs) }
+    }
+    .labelsHidden()
+  }
+
   private var titleBar: some View {
     HStack(spacing: 8) {
       RuntimeTargetPicker(sessionId: sessionId)
-      if inspectorAvailable {
-        @Bindable var runtime = runtime
-        Picker("Runtime mode", selection: $runtime.mode) {
-          Text("Simulate").tag(RuntimeModel.Mode.simulate)
-          Text("Inspect").tag(RuntimeModel.Mode.inspect)
+      if inspectorAvailable || logsAvailable {
+        // Segments while they fit; a pop-up once the column is narrow.
+        ViewThatFits(in: .horizontal) {
+          modePicker.pickerStyle(.segmented).fixedSize()
+          modePicker.pickerStyle(.menu).fixedSize()
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .fixedSize()
+        .layoutPriority(-1)
       }
       Spacer(minLength: 0)
       // The browser belongs to its session's panel; everything else detaches.
@@ -125,7 +142,8 @@ struct RuntimeTargetPicker: View {
       Label(label, systemImage: runtime.platform == .web ? Icon.web : Icon.simulator)
     }
     .menuStyle(.borderlessButton)
-    .fixedSize()
+    // A long device name truncates rather than push the toolbar out.
+    .frame(maxWidth: 200, alignment: .leading)
     .accessibilityLabel("Runtime target")
   }
 
