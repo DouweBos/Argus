@@ -34,6 +34,26 @@ export interface CompareResult {
 // Internals
 // ---------------------------------------------------------------------------
 
+/**
+ * Whether merging `right` into `left` would conflict. `--write-tree` takes the
+ * two branches and finds their base itself; it exits 1 and lists `CONFLICT`
+ * lines on stdout when the merge isn't clean. Best-effort: other failures
+ * (e.g. a git too old for `--write-tree`) read as no conflict.
+ */
+export async function mergeWouldConflict(
+  cwd: string,
+  left: string,
+  right: string,
+): Promise<boolean> {
+  try {
+    await git(cwd, ["merge-tree", "--write-tree", left, right]);
+
+    return false;
+  } catch (err: unknown) {
+    return err instanceof GitError && err.kind === "merge-conflict";
+  }
+}
+
 const FIELD_SEP = "\x1f";
 const RECORD_SEP = "\x1e";
 
@@ -181,37 +201,9 @@ export async function gitCompareBranches(
   }
 
   // 3. Conflict check via `git merge-tree --write-tree`.
-  let wouldConflict = false;
-  if (mergeBase) {
-    try {
-      // --write-tree mode exits 0 for clean merges, 1 for conflicts. execFile
-      // via our git() helper throws on non-zero; we distinguish by catching
-      // and inspecting the output.
-      await git(cwd, [
-        "merge-tree",
-        "--write-tree",
-        "--",
-        mergeBase,
-        left,
-        right,
-      ]);
-      // Exit 0 → no conflicts.
-    } catch (err: unknown) {
-      // git merge-tree exits 1 and writes conflict info to stdout.
-      // Our git() helper captures stdout in the thrown error object.
-      const e = err as { stdout?: string; message?: string };
-      const output = e.stdout ?? e.message ?? "";
-      if (
-        output.includes("+<<<<<<<") ||
-        output.includes("<<<<<<< ") ||
-        output.includes("CONFLICT")
-      ) {
-        wouldConflict = true;
-      }
-      // If the error is unrelated (e.g. old git without --write-tree), leave
-      // wouldConflict as false (best-effort).
-    }
-  }
+  const wouldConflict = mergeBase
+    ? await mergeWouldConflict(cwd, left, right)
+    : false;
 
   return { leftOnly, rightOnly, mergeBase, wouldConflict };
 }
