@@ -21,7 +21,11 @@ import { collectAllProjects } from "../mcp/projectDiscovery";
 import { disposeScratchPad } from "../scratchPad/manager";
 import { updateScratchPadRecord } from "../scratchPad/store";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
-import { createTerminal, setupShellCommand } from "../terminal/multiplexer";
+import {
+  createTerminal,
+  SETUP_TERMINAL_TITLE,
+  setupShellCommand,
+} from "../terminal/multiplexer";
 import {
   applyBranchPrefix,
   loadUserProjectSettings,
@@ -784,7 +788,12 @@ async function finalizeSession(
     // verbatim; see setupShellCommand().
     let setupTerminalId: string | null = null;
     try {
-      setupTerminalId = createTerminal(id, undefined, setupShellCommand());
+      setupTerminalId = createTerminal(
+        id,
+        undefined,
+        setupShellCommand(),
+        SETUP_TERMINAL_TITLE,
+      );
       const t = appState.terminals.get(setupTerminalId);
       if (t) {
         t.locked = true;
