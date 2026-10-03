@@ -206,12 +206,13 @@ final class AppStore {
     await registerPush(backend)
     await flushPendingDecisions(backend)
 
-    // Re-sync addresses so a phone paired over Wi-Fi learns the tunnels.
+    // Re-sync addresses so a phone paired over Wi-Fi learns the tunnels, without
+    // forgetting one that just isn't up right now.
     if let result = try? await backend.request(
       .hostEndpoints, EmptyParams(), as: EndpointsResult.self)
     {
       let state = await keystore.update(deviceId: identity.deviceId) {
-        $0.endpoints = result.endpoints
+        $0.endpoints = DeviceIdentity.mergedEndpoints(known: $0.endpoints, live: result.endpoints)
         $0.url = winningURL
       }
       hosts = state.hosts
@@ -226,7 +227,9 @@ final class AppStore {
 
   private func endpointsChanged(_ endpoints: [RemoteEndpoint]) async {
     guard let deviceId = identity?.deviceId else { return }
-    let state = await keystore.update(deviceId: deviceId) { $0.endpoints = endpoints }
+    let state = await keystore.update(deviceId: deviceId) {
+      $0.endpoints = DeviceIdentity.mergedEndpoints(known: $0.endpoints, live: endpoints)
+    }
     hosts = state.hosts
   }
 
