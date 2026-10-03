@@ -128,10 +128,14 @@ export async function mouseEvent(
 
 export async function keyboardEvent(
   reservation: WebBrowserReservation,
-  _type: "down" | "press" | "up",
+  type: "down" | "press" | "up",
   key: string,
 ): Promise<void> {
-  // Simplify all key event types to a single press
+  // `/pressKey` is a whole press, so the release that follows a down would
+  // type the key a second time.
+  if (type === "up") {
+    return;
+  }
   await postJson(reservation, "/pressKey", { key });
 }
 
