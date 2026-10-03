@@ -109,6 +109,8 @@ public final class HostStore {
   @ObservationIgnored private var mediaSinks: [UInt16: @MainActor (MediaMessage) -> Void] = [:]
   @ObservationIgnored private var mediaBuffer: [UInt16: [MediaMessage]] = [:]
   private static let mediaBufferCap = 120
+  /// Views listening to raw `ipc` channels; see `observeIpc`.
+  @ObservationIgnored var ipcObservers: [UUID: @MainActor (String, [JSONValue], Int) -> Void] = [:]
 
   public static let transcriptPage = 80
 
@@ -215,6 +217,7 @@ public final class HostStore {
 
   func handle(_ envelope: EventEnvelope) {
     guard let name = RemoteEventName(rawValue: envelope.event) else { return }
+    if name == .ipc { notifyIpcObservers(envelope) }
     if handleLive(name, envelope) { return }
     switch name {
     case .hostEndpoints:
