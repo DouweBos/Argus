@@ -1,25 +1,8 @@
 import Foundation
 
-/// What a client says about itself in the pairing handshake
-/// (`PairingClientInfo`). Its own claim: it decides what is offered, never
-/// what is allowed.
-public struct PairingClient: Codable, Sendable, Equatable {
-  public enum Kind: String, Codable, Sendable {
-    case desktop, mobile, web
-  }
-
-  public var product: String
-  public var kind: Kind
-  public var device: String?
-  public var version: String?
-
-  public init(product: String, kind: Kind, device: String? = nil, version: String? = nil) {
-    self.product = product
-    self.kind = kind
-    self.device = device
-    self.version = version
-  }
-
+/// What a client says about itself in the pairing handshake. Its own claim:
+/// it decides what is offered, never what is allowed.
+extension PairingClientInfo {
   /// "Argus Remote on iPhone", or just the product when it did not say.
   public var label: String {
     device.map { "\(product) on \($0)" } ?? product
@@ -27,8 +10,8 @@ public struct PairingClient: Codable, Sendable, Equatable {
 
   /// Only a desktop can drive another desktop. An unknown client is treated
   /// as one, so a missing field never quietly removes a choice.
-  public static func canDriveArgus(_ client: PairingClient?) -> Bool {
-    (client?.kind ?? .desktop) == .desktop
+  public static func canDriveArgus(_ client: PairingClientInfo?) -> Bool {
+    (client?.kind ?? "desktop") == "desktop"
   }
 }
 
@@ -39,8 +22,8 @@ public struct PairingFlow: Sendable, Equatable {
     case idle
     case starting
     case waitingForDevice(qrPayload: String, pairingCode: String)
-    case confirming(sas: String, client: PairingClient?)
-    case confirmingSent(sas: String, client: PairingClient?)
+    case confirming(sas: String, client: PairingClientInfo?)
+    case confirmingSent(sas: String, client: PairingClientInfo?)
     case paired(label: String)
     case failed(String)
   }
@@ -55,7 +38,7 @@ public struct PairingFlow: Sendable, Equatable {
 
   public var offersAdmin: Bool {
     switch phase {
-    case .confirming(_, let client), .confirmingSent(_, let client): PairingClient.canDriveArgus(client)
+    case .confirming(_, let client), .confirmingSent(_, let client): PairingClientInfo.canDriveArgus(client)
     default: false
     }
   }
@@ -70,9 +53,9 @@ public struct PairingFlow: Sendable, Equatable {
     phase = .waitingForDevice(qrPayload: qrPayload, pairingCode: pairingCode)
   }
 
-  public mutating func sas(_ code: String, client: PairingClient?) {
+  public mutating func sas(_ code: String, client: PairingClientInfo?) {
     // A phone or a browser is never offered the keyboard.
-    if !PairingClient.canDriveArgus(client) { grantAdmin = false }
+    if !PairingClientInfo.canDriveArgus(client) { grantAdmin = false }
     phase = .confirming(sas: code, client: client)
   }
 

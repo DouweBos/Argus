@@ -61,7 +61,7 @@ final class RemoteSettingsModel {
     case "remote:status":
       if let next = try? ProtocolCodec.convert(payload, to: ArgusProtocol.RemoteStatus.self) { status = next }
     case "remote:pairing-sas":
-      let client = payload["client"].flatMap { try? ProtocolCodec.convert($0, to: PairingClient.self) }
+      let client = payload["client"].flatMap { try? ProtocolCodec.convert($0, to: PairingClientInfo.self) }
       pairing.sas(payload["sas"]?.stringValue ?? "", client: client)
     case "remote:pairing-complete":
       let label = payload["device"]?["label"]?.stringValue ?? "Device"
@@ -78,7 +78,7 @@ final class RemoteSettingsModel {
 
   private var clientKind: String {
     switch pairing.phase {
-    case .confirming(_, let client), .confirmingSent(_, let client): client?.kind.rawValue ?? "unknown"
+    case .confirming(_, let client), .confirmingSent(_, let client): client?.kind ?? "unknown"
     default: "unknown"
     }
   }

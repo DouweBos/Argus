@@ -24,7 +24,7 @@ public struct PairingGrant: Codable, Sendable {
 /// The desktop's confirm screen names it and drops the grants a phone cannot
 /// use. Unauthenticated by nature — it decides what is *offered*, never what is
 /// allowed.
-public struct PairingClientInfo: Codable, Sendable {
+public struct PairingClientInfo: Codable, Sendable, Equatable {
   public var product: String
   /// `desktop`, `mobile` or `web`.
   public var kind: String
