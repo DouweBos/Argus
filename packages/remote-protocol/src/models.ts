@@ -451,6 +451,25 @@ export const RemoteGitStatus = z.object({
 });
 export type RemoteGitStatus = z.infer<typeof RemoteGitStatus>;
 
+/** A session's live terminal: a shell, or one of the project's run commands. */
+export const RemoteTerminal = z.object({
+  id: z.string(),
+  title: z.string().nullable(),
+  /** The `.argus.json` run command it runs, if it is one. */
+  run_title: z.string().nullable(),
+});
+export type RemoteTerminal = z.infer<typeof RemoteTerminal>;
+
+/** What a terminal has printed, as plain text with colours stripped. */
+export const RemoteTerminalOutput = z.object({
+  output: z.string(),
+  running: z.boolean(),
+  exit_code: z.number().nullable(),
+  /** Older output was dropped; this is the tail. */
+  truncated: z.boolean(),
+});
+export type RemoteTerminalOutput = z.infer<typeof RemoteTerminalOutput>;
+
 /**
  * A branch offered to a remote client's branch switcher. `name` is always the
  * checkout target: for remote-only branches that's the short name, which git

@@ -14,6 +14,9 @@ enum Route: Hashable {
   case agent(id: String, label: String)
   case stoppedAgent(historyId: String, repoRoot: String, label: String, branch: String, runnerSessionId: String)
   case changes(sessionId: String, label: String)
+  /// A session's terminals, read-only.
+  case terminals(sessionId: String, label: String)
+  case terminal(id: String, label: String)
   case branches(sessionId: String, repoRoot: String, label: String)
   case branch(sessionId: String, repoRoot: String, branch: RemoteGitBranch)
   case commit(sessionId: String, hash: String, subject: String)
@@ -46,6 +49,8 @@ enum Route: Hashable {
     case .agent: "agent"
     case .stoppedAgent: "stopped_agent"
     case .changes: "changes"
+    case .terminals: "terminals"
+    case .terminal: "terminal"
     case .branches: "branches"
     case .branch: "branch"
     case .commit: "commit"

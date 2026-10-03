@@ -4671,6 +4671,57 @@ extension ArgusProtocol {
         try c.encode(accepted, forKey: .accepted)
       }
     }
+
+    public struct TerminalsListParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct TerminalsListResult: Codable, Sendable {
+      public var terminals: [RemoteTerminal]
+
+      enum CodingKeys: String, CodingKey {
+        case terminals = "terminals"
+      }
+
+      public init(terminals: [RemoteTerminal]) {
+        self.terminals = terminals
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(terminals, forKey: .terminals)
+      }
+    }
+
+    public struct TerminalsReadParams: Codable, Sendable {
+      public var terminalId: String
+
+      enum CodingKeys: String, CodingKey {
+        case terminalId = "terminal_id"
+      }
+
+      public init(terminalId: String) {
+        self.terminalId = terminalId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(terminalId, forKey: .terminalId)
+      }
+    }
   }
 
   /// The typed remote methods (`REMOTE_METHODS`), monitor and control tier.
@@ -5357,6 +5408,18 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsSetBaseBranchParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsSetBaseBranchResult
       public static let name = "sessions.set_base_branch"
+    }
+
+    public enum TerminalsList: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TerminalsListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TerminalsListResult
+      public static let name = "terminals.list"
+    }
+
+    public enum TerminalsRead: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TerminalsReadParams
+      public typealias Result = ArgusProtocol.RemoteTerminalOutput
+      public static let name = "terminals.read"
     }
   }
 }

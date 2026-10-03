@@ -118,6 +118,10 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.files": session(),
   "sessions.resolve_mention_path": session(),
   "sessions.git_status": session(),
+  // Terminal output carries whatever the host's shells print — env dumps,
+  // tokens in URLs — which is the owner's, not a huddle guest's.
+  "terminals.list": DENIED,
+  "terminals.read": DENIED,
   "sessions.branches": session(),
   "sessions.diff": session(),
   "sessions.merge_blockers": session(),

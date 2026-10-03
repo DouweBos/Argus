@@ -155,6 +155,13 @@ export const REMOTE_METHODS = {
   "sessions.resolve_mention_path": "control",
   /** Read a session's git status (ahead/behind/dirty/conflicts). */
   "sessions.git_status": "monitor",
+  /**
+   * A session's terminals and their output, read-only: a phone watches a dev
+   * server; typing into a shell stays with the desktop (`terminal_write` is
+   * admin-tier).
+   */
+  "terminals.list": "monitor",
+  "terminals.read": "monitor",
   /** List the branches of a session's repo (local, plus remote-only ones). */
   "sessions.branches": "monitor",
   /** Switch the checked-out branch. Host-side these branch ops only work on a

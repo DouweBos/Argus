@@ -28,6 +28,8 @@ import {
   RemoteCommit,
   RemoteGitBranch,
   RemoteGitStatus,
+  RemoteTerminal,
+  RemoteTerminalOutput,
   RemoteImageAttachment,
   RemoteMentionPathResult,
   RemoteMessage,
@@ -258,6 +260,8 @@ export const MethodParams = {
   /** Clear a failed setup and mark the session ready. */
   "sessions.mark_ready": z.object({ id: z.string() }),
   "sessions.git_status": z.object({ session_id: z.string() }),
+  "terminals.list": z.object({ session_id: z.string() }),
+  "terminals.read": z.object({ terminal_id: z.string() }),
   "sessions.branches": z.object({ session_id: z.string() }),
   "sessions.checkout": z.object({
     session_id: z.string(),
@@ -626,6 +630,8 @@ export const MethodResult = {
   "sessions.retry_setup": z.object({ accepted: z.boolean() }),
   "sessions.mark_ready": z.object({ accepted: z.boolean() }),
   "sessions.git_status": z.object({ status: RemoteGitStatus }),
+  "terminals.list": z.object({ terminals: z.array(RemoteTerminal) }),
+  "terminals.read": RemoteTerminalOutput,
   "sessions.branches": z.object({ branches: z.array(RemoteGitBranch) }),
   "sessions.checkout": z.object({
     accepted: z.boolean(),

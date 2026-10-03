@@ -9666,6 +9666,60 @@ extension ArgusProtocol {
     }
   }
 
+  public struct RemoteTerminal: Codable, Sendable {
+    public var id: String
+    public var title: String?
+    public var runTitle: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case title = "title"
+      case runTitle = "run_title"
+    }
+
+    public init(id: String, title: String? = nil, runTitle: String? = nil) {
+      self.id = id
+      self.title = title
+      self.runTitle = runTitle
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(title, forKey: .title)
+      try c.encode(runTitle, forKey: .runTitle)
+    }
+  }
+
+  public struct RemoteTerminalOutput: Codable, Sendable {
+    public var output: String
+    public var running: Bool
+    public var exitCode: Double?
+    public var truncated: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case output = "output"
+      case running = "running"
+      case exitCode = "exit_code"
+      case truncated = "truncated"
+    }
+
+    public init(output: String, running: Bool, exitCode: Double? = nil, truncated: Bool) {
+      self.output = output
+      self.running = running
+      self.exitCode = exitCode
+      self.truncated = truncated
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(output, forKey: .output)
+      try c.encode(running, forKey: .running)
+      try c.encode(exitCode, forKey: .exitCode)
+      try c.encode(truncated, forKey: .truncated)
+    }
+  }
+
   public struct RemoteTodoStatus: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }

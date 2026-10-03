@@ -149,6 +149,7 @@ import {
 } from "../simulator/ios";
 import { getVideoDims } from "../simulator/videoForward";
 import { capture } from "../telemetry/telemetry";
+import { listTerminals, readTerminalOutput } from "../terminal/multiplexer";
 import { listPinnedBranches } from "../userProjectSettings/store";
 import {
   createRemoteAutomation,
@@ -1010,6 +1011,9 @@ function isWorking(agent: AgentSession): boolean {
 }
 
 /** Ensure a session exists or throw a gateway not_found. */
+/** How much of a terminal a phone reads: enough to follow a dev server. */
+const TERMINAL_READ_TAIL = 64 * 1024;
+
 function requireSession(id: string): void {
   if (!appState.sessions.has(id)) {
     throw new GatewayError("not_found", `no session ${id}`);
@@ -1628,6 +1632,38 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
 
     return { accepted: true };
+  },
+
+  "terminals.list": async (params) => {
+    const { session_id } = parse("terminals.list", params);
+    requireSession(session_id);
+
+    return {
+      terminals: listTerminals(session_id).map((t) => ({
+        id: t.id,
+        title: t.title,
+        run_title: t.runTitle,
+      })),
+    };
+  },
+
+  "terminals.read": async (params) => {
+    const { terminal_id } = parse("terminals.read", params);
+    const terminal = appState.terminals.get(terminal_id);
+    if (!terminal) {
+      throw new GatewayError("not_found", `no terminal ${terminal_id}`);
+    }
+    const read = readTerminalOutput(terminal_id, {
+      tailBytes: TERMINAL_READ_TAIL,
+    });
+
+    return {
+      output: read.output,
+      running: read.running,
+      exit_code: read.exitCode,
+      truncated:
+        terminal.outputLog.length > TERMINAL_READ_TAIL || read.droppedBytes > 0,
+    };
   },
 
   "sessions.git_status": async (params) => {
