@@ -12,6 +12,7 @@ struct SidebarView: View {
         Label("Agents", systemImage: "sparkles").tag(Self.agentsTag)
         Label("Runtimes", systemImage: "play.rectangle").tag(Self.runtimesTag)
         Label("Devices", systemImage: "iphone.gen3").tag(Self.devicesTag)
+        Label("Pull Requests", systemImage: "arrow.triangle.pull").tag(Self.pullRequestsTag)
       }
       if store.projects.isEmpty {
         Text("No projects yet").foregroundStyle(.secondary)
@@ -78,6 +79,7 @@ struct SidebarView: View {
   private static let agentsTag = "nav:agents"
   private static let runtimesTag = "nav:runtimes"
   private static let devicesTag = "nav:devices"
+  private static let pullRequestsTag = "nav:pull-requests"
 
   private var selection: Binding<String?> {
     Binding(
@@ -86,6 +88,7 @@ struct SidebarView: View {
         case .agents: Self.agentsTag
         case .runtimes: Self.runtimesTag
         case .devices: Self.devicesTag
+        case .pullRequests, .pullRequest: Self.pullRequestsTag
         default: model.route.sessionId
         }
       },
@@ -94,6 +97,7 @@ struct SidebarView: View {
         case Self.agentsTag?: model.navigate(.agents)
         case Self.runtimesTag?: model.navigate(.runtimes)
         case Self.devicesTag?: model.navigate(.devices)
+        case Self.pullRequestsTag?: model.navigate(.pullRequests)
         case let id?: model.open(session: id)
         case nil: break
         }

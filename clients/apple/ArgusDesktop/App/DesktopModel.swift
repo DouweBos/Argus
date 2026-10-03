@@ -14,6 +14,8 @@ final class DesktopModel {
   let platform = PlatformBridge()
   let terminals: TerminalsStore
   let pullRequests: PullRequestsStore
+  /// Each session's repository, opened when its git panel first shows.
+  let git: GitWorkspaces
   private(set) var backend: LocalBackend?
 
   private(set) var route: DesktopRoute = .home
@@ -25,6 +27,10 @@ final class DesktopModel {
   var terminalPanelVisible = false
   /// The panel each session was last left on, as the desktop app remembers.
   private var agentsPanelSessions: Set<String> = []
+  /// The git sub-view each session was last left on.
+  private var gitViews: [String: GitRoute] = [:]
+  /// Sessions last left on their git panel.
+  private var gitPanelSessions: Set<String> = []
   private var back: [DesktopRoute] = []
   private var forward: [DesktopRoute] = []
 
@@ -40,6 +46,7 @@ final class DesktopModel {
     store.capabilities = ["monitor", "control", "admin"]
     terminals = TerminalsStore(backend: { [store] in store.backend })
     pullRequests = PullRequestsStore(host: store)
+    git = GitWorkspaces(host: store)
     terminals.replayed = { bytes, truncated in
       MacTelemetry.capture(
         .terminalReplayed(bytes: MacTelemetryEvent.byteBucket(bytes), truncated: truncated))
@@ -120,6 +127,11 @@ final class DesktopModel {
       switch (parts.first, parts.count) {
       case ("session", 2...): navigate(.session(id: parts[1], agentId: parts.count > 2 ? parts[2] : nil))
       case ("home", 2...): navigate(.sessionHome(id: parts[1]))
+      // `git:<sessionId>[:<view>[:<arg>…]]`
+      case ("git", 2...):
+        let view = parts.count > 2 ? GitRoute(devString: parts[2...].joined(separator: ":")) : nil
+        navigate(.sessionGit(id: parts[1], view: view ?? .working))
+      case ("pull-requests", _): navigate(.pullRequests)
       case ("agents", _): navigate(.agents)
       case ("runtimes", _): navigate(.runtimes)
       case ("devices", _): navigate(.devices)
@@ -159,14 +171,27 @@ final class DesktopModel {
 
   /// A session from the sidebar: the panel it was last on, else its home.
   func open(session id: String) {
+    if gitPanelSessions.contains(id) { return openGit(session: id) }
     navigate(agentsPanelSessions.contains(id) ? .session(id: id, agentId: nil) : .sessionHome(id: id))
+  }
+
+  /// A session's git panel, on the sub-view it was last left on.
+  func openGit(session id: String) {
+    navigate(.sessionGit(id: id, view: gitViews[id] ?? .working))
   }
 
   func navigate(_ next: DesktopRoute) {
     guard next != route else { return }
     switch next {
-    case .session(let id, _): agentsPanelSessions.insert(id)
-    case .sessionHome(let id): agentsPanelSessions.remove(id)
+    case .session(let id, _):
+      agentsPanelSessions.insert(id)
+      gitPanelSessions.remove(id)
+    case .sessionHome(let id):
+      agentsPanelSessions.remove(id)
+      gitPanelSessions.remove(id)
+    case .sessionGit(let id, let view):
+      gitPanelSessions.insert(id)
+      gitViews[id] = view
     default: break
     }
     back.append(route)

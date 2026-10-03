@@ -1,0 +1,192 @@
+import AppKit
+import ArgusUI
+import GroveKit
+import SwiftUI
+
+/// Sizes every diff row shares; monospaced, so a line's width is its length.
+@MainActor
+enum DiffMetrics {
+  static let font = NSFont.monospacedSystemFont(ofSize: 11.5, weight: .regular)
+  static let gutterFont = NSFont.monospacedSystemFont(ofSize: 10.5, weight: .regular)
+  static let lineHeight: CGFloat = 17
+  static let headerHeight: CGFloat = 28
+  static let charWidth: CGFloat = ("M" as NSString).size(withAttributes: [.font: font]).width
+  static let gutterWidth: CGFloat = 40
+
+  /// Where a line's text starts: two gutters (inline) or one per side (split).
+  static func textX(layout: DiffLayout) -> CGFloat {
+    layout == .inline ? gutterWidth * 2 + 20 : gutterWidth + 16
+  }
+}
+
+/// Peacock's diff colours, resolved to AppKit for the current appearance.
+struct DiffPalette: Equatable {
+  let text: NSColor
+  let muted: NSColor
+  let added: NSColor
+  let addedBackground: NSColor
+  let removed: NSColor
+  let removedBackground: NSColor
+  let headerBackground: NSColor
+  let empty: NSColor
+
+  init(_ theme: Theme) {
+    text = NSColor(theme.text)
+    muted = NSColor(theme.textMuted)
+    added = NSColor(theme.success)
+    addedBackground = NSColor(theme.successSoft)
+    removed = NSColor(theme.error)
+    removedBackground = NSColor(theme.errorSoft)
+    headerBackground = NSColor(theme.bgTertiary)
+    empty = NSColor(theme.bgHover)
+  }
+}
+
+/// One line, or a side-by-side pair, drawn directly: no subviews per row.
+final class DiffLineView: NSView {
+  static let identifier = NSUserInterfaceItemIdentifier("DiffLineView")
+  private var row: DiffRow?
+  private var lines: [GroveKit.DiffLine] = []
+  private var palette: DiffPalette?
+
+  convenience init() {
+    self.init(frame: .zero)
+    identifier = Self.identifier
+  }
+
+  override var isFlipped: Bool { true }
+
+  func configure(row: DiffRow, hunk: HunkData, palette: DiffPalette) {
+    self.row = row
+    lines = hunk.lines
+    self.palette = palette
+    needsDisplay = true
+  }
+
+  override func draw(_ dirtyRect: NSRect) {
+    guard let row, let palette else { return }
+    switch row.kind {
+    case .header: break
+    case .line(let i):
+      let line = lines[i]
+      draw(line, in: bounds, palette: palette, gutters: [line.oldLineNumber, line.newLineNumber])
+    case .pair(let left, let right):
+      let half = floor(bounds.width / 2)
+      let leftRect = NSRect(x: 0, y: 0, width: half, height: bounds.height)
+      let rightRect = NSRect(x: half, y: 0, width: bounds.width - half, height: bounds.height)
+      drawSide(left.map { lines[$0] }, in: leftRect, number: \.oldLineNumber, palette: palette)
+      drawSide(right.map { lines[$0] }, in: rightRect, number: \.newLineNumber, palette: palette)
+      palette.muted.withAlphaComponent(0.3).setFill()
+      NSRect(x: half, y: 0, width: 1, height: bounds.height).fill()
+    }
+  }
+
+  private func drawSide(
+    _ line: GroveKit.DiffLine?, in rect: NSRect, number: KeyPath<GroveKit.DiffLine, Int?>, palette: DiffPalette
+  ) {
+    guard let line else {
+      palette.empty.setFill()
+      rect.fill()
+      return
+    }
+    NSGraphicsContext.saveGraphicsState()
+    NSBezierPath(rect: rect).addClip()
+    draw(line, in: rect, palette: palette, gutters: [line[keyPath: number]])
+    NSGraphicsContext.restoreGraphicsState()
+  }
+
+  private func draw(_ line: GroveKit.DiffLine, in rect: NSRect, palette: DiffPalette, gutters: [Int?]) {
+    let (background, color, sign): (NSColor?, NSColor, String) =
+      switch line.type {
+      case .addition: (palette.addedBackground, palette.text, "+")
+      case .deletion: (palette.removedBackground, palette.text, "-")
+      case .context: (nil, palette.text, " ")
+      }
+    if let background {
+      background.setFill()
+      rect.fill()
+    }
+    let gutterAttributes: [NSAttributedString.Key: Any] = [.font: DiffMetrics.gutterFont, .foregroundColor: palette.muted]
+    var x = rect.minX
+    for number in gutters {
+      let text = number.map(String.init) ?? ""
+      let size = (text as NSString).size(withAttributes: gutterAttributes)
+      (text as NSString).draw(
+        at: NSPoint(x: x + DiffMetrics.gutterWidth - size.width - 6, y: rect.minY + 2), withAttributes: gutterAttributes)
+      x += DiffMetrics.gutterWidth
+    }
+    let signColor = line.type == .addition ? palette.added : line.type == .deletion ? palette.removed : palette.muted
+    (sign as NSString).draw(
+      at: NSPoint(x: x + 4, y: rect.minY + 1), withAttributes: [.font: DiffMetrics.font, .foregroundColor: signColor])
+    let text = line.content.replacingOccurrences(of: "\t", with: "    ")
+    (text as NSString).draw(
+      at: NSPoint(x: x + 16, y: rect.minY + 1), withAttributes: [.font: DiffMetrics.font, .foregroundColor: color])
+  }
+}
+
+/// A hunk's `@@` line and its staging buttons.
+final class DiffHunkHeaderView: NSView {
+  static let identifier = NSUserInterfaceItemIdentifier("DiffHunkHeaderView")
+  private let label = NSTextField(labelWithString: "")
+  private let buttons = NSStackView()
+  private var perform: ((HunkAction) -> Void)?
+  private var palette: DiffPalette?
+
+  convenience init() {
+    self.init(frame: .zero)
+    identifier = Self.identifier
+    label.font = DiffMetrics.gutterFont
+    label.lineBreakMode = .byTruncatingTail
+    label.translatesAutoresizingMaskIntoConstraints = false
+    buttons.orientation = .horizontal
+    buttons.spacing = 6
+    buttons.translatesAutoresizingMaskIntoConstraints = false
+    addSubview(label)
+    addSubview(buttons)
+    NSLayoutConstraint.activate([
+      label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
+      label.centerYAnchor.constraint(equalTo: centerYAnchor),
+      // Next to the label, not at the far edge: a wide diff scrolls sideways.
+      buttons.leadingAnchor.constraint(equalTo: label.trailingAnchor, constant: 12),
+      buttons.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -8),
+      buttons.centerYAnchor.constraint(equalTo: centerYAnchor),
+    ])
+  }
+
+  func configure(hunk: HunkData, palette: DiffPalette, buttons: [(String, HunkAction)], perform: @escaping (HunkAction) -> Void) {
+    self.palette = palette
+    self.perform = perform
+    label.stringValue = hunk.header
+    label.textColor = palette.muted
+    setButtons(buttons)
+    needsDisplay = true
+  }
+
+  func setButtons(_ items: [(String, HunkAction)]) {
+    buttons.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    for (title, action) in items {
+      let button = ActionButton(title: title, target: nil, action: nil)
+      button.bezelStyle = .push
+      button.controlSize = .small
+      button.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+      button.hunkAction = action
+      button.target = self
+      button.action = #selector(tapped(_:))
+      button.setAccessibilityLabel(title)
+      buttons.addArrangedSubview(button)
+    }
+  }
+
+  @objc private func tapped(_ sender: ActionButton) {
+    if let action = sender.hunkAction { perform?(action) }
+  }
+
+  override func draw(_ dirtyRect: NSRect) {
+    palette?.headerBackground.setFill()
+    bounds.fill()
+  }
+
+  private final class ActionButton: NSButton {
+    var hunkAction: HunkAction?
+  }
+}
