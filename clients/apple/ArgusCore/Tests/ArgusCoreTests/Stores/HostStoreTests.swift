@@ -30,6 +30,27 @@ struct HostStoreTests {
     #expect(store.recentAgents.count == 1)
   }
 
+  @Test("raw ipc channels reach observers with their seq until they stop")
+  func observeIpc() async throws {
+    let store = HostStore()
+    let backend = FakeBackend()
+    await store.attach(backend)
+    var seen: [String] = []
+    let stop = store.observeIpc { channel, args, seq in
+      seen.append("\(channel) \(args.first?.stringValue ?? "") \(seq)")
+    }
+
+    try backend.emit("ipc", payload: #"{"channel":"browser_view:nav","args":["s1"]}"#)
+    #expect(await eventually { seen.count == 1 })
+    #expect(seen.first?.hasPrefix("browser_view:nav s1 ") == true)
+
+    stop()
+    try await Task.sleep(for: .milliseconds(20))
+    try backend.emit("ipc", payload: #"{"channel":"browser_view:nav","args":["s2"]}"#)
+    try await Task.sleep(for: .milliseconds(50))
+    #expect(seen.count == 1)
+  }
+
   @Test("a permission request shows until it is cancelled")
   func permissionRequest() async throws {
     let store = HostStore()
