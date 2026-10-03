@@ -34,9 +34,10 @@ struct DiffPane: View {
           .lineLimit(1)
           .truncationMode(.head)
           .textSelection(.enabled)
+          .layoutPriority(-1)
       }
       if let stats = diff?.stats {
-        DiffStatsLabel(stats: stats)
+        DiffStatsLabel(stats: stats).fixedSize()
       }
       Spacer()
       accessory
@@ -44,6 +45,7 @@ struct DiffPane: View {
         Toggle("Ignore Whitespace", isOn: ignoreWhitespace)
           .toggleStyle(.checkbox)
           .controlSize(.small)
+          .fixedSize()
       }
       Picker("Layout", selection: $layout) {
         ForEach(DiffLayout.allCases) { layout in
