@@ -112,6 +112,14 @@ function stage(options: Options): void {
       cwd: ROOT,
       stdio: "inherit",
     });
+    // The gateway serves the browser client; build it once rather than ship
+    // an app whose web address answers 404.
+    if (!fs.existsSync(path.join(ROOT, "clients/argus-web/dist/index.html"))) {
+      execFileSync("pnpm", ["build:web-client"], {
+        cwd: ROOT,
+        stdio: "inherit",
+      });
+    }
   }
   const out = options.out;
   fs.mkdirSync(out, { recursive: true });
