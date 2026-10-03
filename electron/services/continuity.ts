@@ -13,7 +13,7 @@
  */
 
 import { app } from "electron";
-import { getDesktopIdentity } from "@argus/host/services/remote/deviceStore";
+import { getHostKey } from "@argus/host/services/remote/deviceStore";
 
 export const ACTIVITY_TYPE = "dev.houwert.argus.session";
 
@@ -29,9 +29,7 @@ let cachedHostKey: Promise<string> | null = null;
 
 /** base64url, matching the `ds_pub` the pairing payload hands the phone. */
 function hostKey(): Promise<string> {
-  cachedHostKey ??= getDesktopIdentity().then((id) =>
-    Buffer.from(id.pub).toString("base64url"),
-  );
+  cachedHostKey ??= getHostKey();
 
   return cachedHostKey;
 }

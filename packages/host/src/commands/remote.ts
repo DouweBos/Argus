@@ -1,6 +1,6 @@
 import { defineTypedCommand } from "../services/command/registry";
 import { claimState } from "../services/remote/deviceClaims";
-import { listDevices } from "../services/remote/deviceStore";
+import { getHostKey, listDevices } from "../services/remote/deviceStore";
 import {
   approveGuest,
   denyGuest,
@@ -33,6 +33,7 @@ import { diagnoseTailscale } from "../services/remote/tailscaleSetup";
 
 export function registerRemoteCommands(): void {
   defineTypedCommand("remote_get_status", () => getRemoteStatus());
+  defineTypedCommand("remote_get_host_key", () => getHostKey());
   defineTypedCommand("remote_set_config", (p) => setRemoteConfig(p.config));
   defineTypedCommand("remote_tailscale_diagnose", () => diagnoseTailscale());
   defineTypedCommand("remote_tailscale_fix", (p) =>

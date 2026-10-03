@@ -48,6 +48,7 @@ struct MainWindow: View {
       }
     }
     .modifier(ProjectFlows())
+    .modifier(HandoffActivity())
     .sheet(item: projectSettingsRepo) { repo in
       ProjectSettingsSheet(repoRoot: repo.path)
     }

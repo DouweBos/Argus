@@ -9931,6 +9931,13 @@ extension ArgusProtocol {
       public static let tier = "host"
     }
 
+    public enum RemoteGetHostKey: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = String
+      public static let name = "remote_get_host_key"
+      public static let tier = "admin"
+    }
+
     public enum RemoteGetPushConfig: RemoteCommand {
       public typealias Params = EmptyParams
       public typealias Result = ArgusProtocol.RemotePushConfig

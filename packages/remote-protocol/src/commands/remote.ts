@@ -31,6 +31,8 @@ const Grants = {
  */
 export const REMOTE_COMMANDS = {
   remote_get_status: { tier: "admin", params: NoParams, result: RemoteStatus },
+  /** This computer's public key (base64url), naming it in a Handoff activity. */
+  remote_get_host_key: { tier: "admin", params: NoParams, result: z.string() },
   remote_set_config: {
     tier: "host",
     params: z.object({ config: RemoteConfigPatch }),
