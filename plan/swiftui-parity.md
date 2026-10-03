@@ -18,6 +18,9 @@ How to tick a row:
   throwaway Argus home; ◐ rows say what is still unverified or missing.
 - M3 rows were verified on 2026-10-03 the same way, against a simulator, a tvOS
   simulator and an AVD created for the test, and the Conductor browser.
+- M4 rows were verified on 2026-10-03/04 the same way, against scratch repos
+  under `/tmp` (with a bare `origin`, a linked worktree session and a 20k-commit
+  history); pull requests against a read-only clone of a public repo.
 - The iOS column follows the CLAUDE.md rule: a ☐ there is a gap to close, not a
   decision. A — needs its reason in Notes.
 
@@ -38,36 +41,36 @@ How to tick a row:
 | `/inbox`                                 | ✅       | ☐   | ✅  | M5        |                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `/inbox/proposals/:proposalId`           | ✅       | ☐   | ◐   | M5        | iOS: proposals decided inline on a card; no detail screen, no request-revision.                                                                                                                                                                                                                                                                                                                                              |
 | `/notifications`                         | ✅       | ☐   | ☐   | M5        | Warnings & errors list. OS notifications are a separate M1 row.                                                                                                                                                                                                                                                                                                                                                              |
-| `/pull-requests`                         | ✅       | ☐   | ✅  | M4        |                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `/pull-requests/:owner/:repo/:number`    | ✅       | ☐   | ✅  | M4        | iOS: view, comment, merge.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `/pull-requests`                         | ✅       | ✅  | ✅  | M4        |                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/pull-requests/:owner/:repo/:number`    | ✅       | ◐   | ✅  | M4        | Mac: description, commits, checks and diffs verified on a real PR (read only); close stopped at its confirm; merge and comment not exercised against GitHub. iOS: view, comment, merge.                                                                                                                                                                                                                                      |
 | `/runtimes` Runtimes overview            | ✅       | ✅  | ◐   | M2        | Mac: sidebar → Runtimes; every run terminal across sessions, stop, open its tab (verified 2026-10-03). iOS: per-session terminals, read-only; no cross-session overview.                                                                                                                                                                                                                                                     |
 | `/sessions/:sessionId` (→ home)          | ✅       | ✅  | ◐   | M0        | Mac: a sidebar click opens the panel the session was last on, else its home, as in Electron. iOS: sessions live inside the project screen, no session home.                                                                                                                                                                                                                                                                  |
 | `/sessions/:sessionId/home`              | ✅       | ✅  | ◐   | M1        | Mac: setup progress per step, setup failure with Retry / Mark as ready, active agents, Start / Plan Mode, open in editor / reveal / copy path, and the land-work card (commit, push, PR, base branch, merge) — verified 2026-10-03. Not yet: chat history list (see "Persisted history, resume") and renaming the branch from here. iOS: setup state, land-work card and agents on the project screen; no per-session panel. |
 | `/sessions/:sessionId/agents`            | ✅       | ✅  | ✅  | M1        | Mac: verified end to end against the bundled host.                                                                                                                                                                                                                                                                                                                                                                           |
-| `/sessions/:sessionId/git`               | ✅       | ☐   | ◐   | M4        | iOS: Changes and Branches screens; see sub-views.                                                                                                                                                                                                                                                                                                                                                                            |
+| `/sessions/:sessionId/git`               | ✅       | ✅  | ◐   | M4        | iOS: Changes and Branches screens; see sub-views.                                                                                                                                                                                                                                                                                                                                                                            |
 
 ### Git sub-views (`/sessions/:sessionId/git/:gitView`)
 
-| Sub-view                        | Electron | Mac | iOS | Milestone | Notes                                                                                |
-| ------------------------------- | -------- | --- | --- | --------- | ------------------------------------------------------------------------------------ |
-| `working`                       | ✅       | ☐   | ◐   | M4        | iOS: read-only diff with commit/push/merge; no staging or discard.                   |
-| `branch`                        | ✅       | ☐   | ✅  | M4        |                                                                                      |
-| `history`                       | ✅       | ☐   | ◐   | M4        | iOS: per-branch log and commit diff; no graph.                                       |
-| `stashes`                       | ✅       | ☐   | ☐   | M4        | iOS: only "stash & switch" on checkout.                                              |
-| `reflog`                        | ✅       | ☐   | ☐   | M4        |                                                                                      |
-| `conflicts`                     | ✅       | ☐   | ◐   | M4        | iOS: merge blockers shown; no resolver.                                              |
-| `branches`                      | ✅       | ☐   | ✅  | M4        | iOS: checkout, create, delete, rename, pin, push, pull.                              |
-| `branches/:branchName`          | ✅       | ☐   | ✅  | M4        |                                                                                      |
-| `tags`, `tags/:tagName`         | ✅       | ☐   | ☐   | M4        |                                                                                      |
-| `submodules`                    | ✅       | ☐   | ☐   | M4        | Project-root sessions only.                                                          |
-| `bisect`                        | ✅       | ☐   | ☐   | M4        | Project-root sessions only.                                                          |
-| `hooks`                         | ✅       | ☐   | ☐   | M4        | Project-root sessions only.                                                          |
-| `compare` (`?left=&right=`)     | ✅       | ☐   | ✅  | M4        |                                                                                      |
-| `blame` (`?path=&ref=`)         | ✅       | ☐   | ☐   | M4        | iOS: no file-read method on the gateway.                                             |
-| `settings`                      | ✅       | ☐   | ☐   | M4        |                                                                                      |
-| `pull-requests`                 | ✅       | ☐   | ◐   | M4        | In code, missing from `routing.md`. iOS: covered by the PR screens, not per session. |
-| `branches-review`               | ✅       | ☐   | ☐   | M4        | In code, missing from `routing.md`.                                                  |
-| `interactive-rebase` (`?from=`) | ✅       | ☐   | ☐   | M4        | In code, missing from `routing.md`. iOS: only rebase-on-current.                     |
+| Sub-view                        | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                            |
+| ------------------------------- | -------- | --- | --- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `working`                       | ✅       | ✅  | ◐   | M4        | Mac: file, hunk and line staging, discard, commit, amend; 2,000 files and a 100k-line diff stay responsive. iOS: read-only diff with commit/push/merge; no staging or discard.                                   |
+| `branch`                        | ✅       | ✅  | ✅  | M4        |                                                                                                                                                                                                                  |
+| `history`                       | ✅       | ✅  | ◐   | M4        | Mac: commit graph, verified on 20k commits. iOS: per-branch log and commit diff; no graph.                                                                                                                       |
+| `stashes`                       | ✅       | ✅  | ☐   | M4        | iOS: only "stash & switch" on checkout.                                                                                                                                                                          |
+| `reflog`                        | ✅       | ✅  | ☐   | M4        |                                                                                                                                                                                                                  |
+| `conflicts`                     | ✅       | ✅  | ◐   | M4        | Mac: take a side or edit the merged result; continue and abort. iOS: merge blockers shown; no resolver.                                                                                                          |
+| `branches`                      | ✅       | ✅  | ✅  | M4        | iOS: checkout, create, delete, rename, pin, push, pull.                                                                                                                                                          |
+| `branches/:branchName`          | ✅       | ✅  | ✅  | M4        |                                                                                                                                                                                                                  |
+| `tags`, `tags/:tagName`         | ✅       | ✅  | ☐   | M4        |                                                                                                                                                                                                                  |
+| `submodules`                    | ✅       | ✅  | ☐   | M4        | Project-root sessions only.                                                                                                                                                                                      |
+| `bisect`                        | ✅       | ✅  | ☐   | M4        | Project-root sessions only.                                                                                                                                                                                      |
+| `hooks`                         | ✅       | ✅  | ☐   | M4        | Project-root sessions only.                                                                                                                                                                                      |
+| `compare` (`?left=&right=`)     | ✅       | ✅  | ✅  | M4        |                                                                                                                                                                                                                  |
+| `blame` (`?path=&ref=`)         | ✅       | ◐   | ☐   | M4        | Mac: blames the working tree and steps back through revisions; `ref` only resolves for commits on HEAD's first-parent line (GroveKit can't blame an arbitrary ref yet). iOS: no file-read method on the gateway. |
+| `settings`                      | ✅       | ✅  | ☐   | M4        |                                                                                                                                                                                                                  |
+| `pull-requests`                 | ✅       | ✅  | ◐   | M4        | iOS: covered by the PR screens, not per session.                                                                                                                                                                 |
+| `branches-review`               | ✅       | ✅  | ☐   | M4        |                                                                                                                                                                                                                  |
+| `interactive-rebase` (`?from=`) | ✅       | ✅  | ☐   | M4        | iOS: only rebase-on-current.                                                                                                                                                                                     |
 
 ### Navigation
 
@@ -147,16 +150,16 @@ How to tick a row:
 
 ### Git workflow
 
-| Feature                            | Electron | Mac | iOS | Milestone | Notes                                                              |
-| ---------------------------------- | -------- | --- | --- | --------- | ------------------------------------------------------------------ |
-| Branches: create, switch, delete   | ✅       | ☐   | ✅  | M4        |                                                                    |
-| Worktree per session               | ✅       | ✅  | ✅  | M1        | Mac: verified; sessions created from the app's host get worktrees. |
-| Diff viewer, side-by-side / inline | ✅       | ☐   | ◐   | M4        | iOS: inline only.                                                  |
-| Hunk-level staging                 | ✅       | ☐   | ☐   | M4        |                                                                    |
-| Commit & amend                     | ✅       | ☐   | ◐   | M4        | iOS: commit only, no amend.                                        |
-| Stash: list, apply, drop           | ✅       | ☐   | ☐   | M4        | iOS: only "stash & switch".                                        |
-| Merge & rebase, conflict resolver  | ✅       | ☐   | ◐   | M4        | iOS: merge into base, rebase current; no resolver.                 |
-| Open a draft PR                    | ✅       | ☐   | ✅  | M4        |                                                                    |
+| Feature                            | Electron | Mac | iOS | Milestone | Notes                                                                                       |
+| ---------------------------------- | -------- | --- | --- | --------- | ------------------------------------------------------------------------------------------- |
+| Branches: create, switch, delete   | ✅       | ✅  | ✅  | M4        | Mac: also rename, merge, rebase, pin, archive, stash & switch.                              |
+| Worktree per session               | ✅       | ✅  | ✅  | M1        | Mac: verified; sessions created from the app's host get worktrees.                          |
+| Diff viewer, side-by-side / inline | ✅       | ✅  | ◐   | M4        | iOS: inline only.                                                                           |
+| Hunk-level staging                 | ✅       | ✅  | ☐   | M4        | Mac: and line-level.                                                                        |
+| Commit & amend                     | ✅       | ✅  | ◐   | M4        | iOS: commit only, no amend.                                                                 |
+| Stash: list, apply, drop           | ✅       | ✅  | ☐   | M4        | iOS: only "stash & switch".                                                                 |
+| Merge & rebase, conflict resolver  | ✅       | ✅  | ◐   | M4        | iOS: merge into base, rebase current; no resolver.                                          |
+| Open a draft PR                    | ✅       | ◐   | ✅  | M4        | Mac: the New Pull Request sheet was verified up to its confirm; no PR was opened on GitHub. |
 
 ### Remote access
 
