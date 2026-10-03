@@ -10,6 +10,7 @@ import {
   createTerminal,
   destroyTerminal,
   terminalScrollback,
+  writeTerminalOutput,
 } from "./multiplexer";
 
 // broadcast.ts imports electron at runtime; vitest has no windows.
@@ -267,6 +268,17 @@ describe("terminal events on the broadcast bus", () => {
     const replay = terminalScrollback(id);
     expect(Buffer.from(replay.data, "base64").toString()).toBe("next line\n");
     expect(replay.truncated).toBe(true);
+  });
+
+  it("captures text the host writes into a terminal, so it replays too", async () => {
+    const id = createTerminal(SESSION_ID, undefined, "sleep 30");
+    writeTerminalOutput(id, "banner\r\n");
+    await waitForChannel(`terminal:data:${id}`);
+
+    expect(
+      Buffer.from(terminalScrollback(id).data, "base64").toString(),
+    ).toContain("banner");
+    destroyTerminal(id);
   });
 
   it("rejects an unknown terminal", () => {

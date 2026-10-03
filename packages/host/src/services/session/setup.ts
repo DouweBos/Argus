@@ -16,8 +16,10 @@ import { info } from "@argus/host/logger";
 import { appState } from "../../state";
 import {
   createTerminal,
+  SETUP_TERMINAL_TITLE,
   setupShellCommand,
   stripAnsi,
+  writeTerminalOutput,
 } from "../terminal/multiplexer";
 import { type ArgusConfig, setupEntryExcludes, setupEntryPath } from "./models";
 import { lastOutputLine, setSessionProgress } from "./progress";
@@ -124,7 +126,12 @@ export async function runSetupPipeline(
   // the standard terminal:data / terminal:exit channels.
   let terminalId = preCreatedTerminalId ?? null;
   if (!terminalId || !appState.terminals.has(terminalId)) {
-    terminalId = createTerminal(sessionId, undefined, setupShellCommand());
+    terminalId = createTerminal(
+      sessionId,
+      undefined,
+      setupShellCommand(),
+      SETUP_TERMINAL_TITLE,
+    );
   }
   const terminal = appState.terminals.get(terminalId);
   if (!terminal) {
@@ -141,13 +148,10 @@ export async function runSetupPipeline(
 
   const progressEvent = `session:setup_progress:${sessionId}`;
 
-  // Write decorated log lines directly to the terminal's output channel.
-  // This bypasses the shell's stdin so our banners don't get echoed back by
-  // the line editor and don't interfere with any command in flight.
-  const emit = (msg: string) => {
-    const encoded = Buffer.from(msg).toString("base64");
-    emitHostEvent(`terminal:data:${terminalId}`, encoded);
-  };
+  // Write decorated log lines straight to the terminal's output, not the
+  // shell's stdin, so the line editor doesn't echo our banners or interfere
+  // with a command in flight.
+  const emit = (msg: string) => writeTerminalOutput(terminalId, msg);
 
   interface SetupProgress {
     current: number;

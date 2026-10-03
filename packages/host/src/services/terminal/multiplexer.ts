@@ -96,6 +96,8 @@ export interface TerminalSession {
    * scrollback read hands over exactly what the live events don't.
    */
   unflushedChars: number;
+  /** Feeds text through the same capture and broadcast as the PTY's output. */
+  record: (data: string) => void;
   /**
    * Exit code once the PTY has closed. `null` while the process is still
    * running. We deliberately keep exited entries in the registry so that
@@ -154,6 +156,9 @@ export interface TerminalScrollback {
   exited: boolean;
   exitCode: number | null;
 }
+
+/** The title a session's setup PTY carries, so a client reattaching can tell it apart. */
+export const SETUP_TERMINAL_TITLE = "Setup";
 
 /** Hard cap on per-terminal captured output (bytes). */
 const MAX_OUTPUT_BYTES = 256 * 1024;
@@ -446,6 +451,7 @@ export function createTerminal(
     outputTotalBytes: 0,
     outputDroppedBytes: 0,
     unflushedChars: 0,
+    record: () => {},
     exitCode: null,
     exitedAt: null,
     waiters: [],
@@ -457,7 +463,7 @@ export function createTerminal(
   // to the in-memory capture so MCP `read_terminal` / `wait_for_terminal`
   // can inspect runtime output later. The capture is bounded; older bytes
   // are dropped from the front once {@link MAX_OUTPUT_BYTES} is exceeded.
-  ptyProcess.onData((data: string) => {
+  terminal.record = (data: string) => {
     pendingChunks.push(data);
     terminal.unflushedChars += data.length;
     terminal.outputTotalBytes += data.length;
@@ -476,7 +482,8 @@ export function createTerminal(
       // Keep timer from holding the event loop open on app shutdown.
       flushTimer.unref?.();
     }
-  });
+  };
+  ptyProcess.onData((data: string) => terminal.record(data));
 
   // Forward exit notification to the renderer.
   ptyProcess.onExit(({ exitCode }: { exitCode: number }) => {
@@ -602,6 +609,14 @@ export function readTerminalOutput(
     runTitle: terminal.runTitle ?? null,
     sessionId: terminal.sessionId,
   };
+}
+
+/**
+ * Show text in a terminal without sending it to its process — a banner the
+ * host writes itself. It is captured like PTY output, so a replay includes it.
+ */
+export function writeTerminalOutput(terminalId: string, text: string): void {
+  appState.terminals.get(terminalId)?.record(text);
 }
 
 /**
