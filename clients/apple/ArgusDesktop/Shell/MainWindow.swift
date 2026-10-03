@@ -12,7 +12,9 @@ struct MainWindow: View {
       SidebarView()
         .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
     } content: {
-      Group {
+      VStack(spacing: 0) {
+        HuddleJoinRequests()
+        Group {
         if let sessionId = model.route.sessionId {
           SessionView(sessionId: sessionId)
         } else if model.route == .agents {
@@ -31,6 +33,8 @@ struct MainWindow: View {
         } else {
           HomeScreen()
         }
+        }
+        .frame(maxHeight: .infinity)
       }
       .navigationSplitViewColumnWidth(min: 420, ideal: 640)
     } detail: {

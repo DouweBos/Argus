@@ -258,6 +258,23 @@
         guard let button = window.contentView.flatMap(find) else { return ["error": "no button '\(title)'"] }
         button.performClick(nil)
         return ["ok": true]
+      case "huddleAddRepo":
+        // A scratch repo into the dev host, for exercising huddles on its agent.
+        guard let model = AppDelegate.current?.model, let path = command["path"] as? String else {
+          return ["error": "path?"]
+        }
+        Task {
+          await model.huddles.addRepoForTesting(path)
+          await model.reload()
+        }
+        return ["ok": true]
+      case "huddleFixture":
+        // A live room for `agent` without a tunnel; actions on it reach the host and fail.
+        guard let model = AppDelegate.current?.model, let agent = command["agent"] as? String else {
+          return ["error": "agent?"]
+        }
+        model.huddles.injectFixture(agentId: agent, url: command["url"] as? String)
+        return ["ok": true]
       case "settingsTab":
         // The Settings window's tab, by `SettingsTab` raw value.
         guard let tab = (command["tab"] as? String).flatMap(SettingsTab.init) else { return ["error": "tab?"] }

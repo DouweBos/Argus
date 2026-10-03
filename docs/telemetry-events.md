@@ -350,6 +350,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_pairing`                | A device pairing moved on in the pairing sheet                                                                    | `stage` (`started`, `confirmed`, `completed`, `cancelled`, `failed`), `client` (`desktop`, `mobile`, `web`, `unknown`)                           |
 | `mac_remote_device_managed`  | A paired device's grants were changed, it was revoked, or sent a test push                                        | `action` (`grants`, `revoke`, `test_push`), `success`                                                                                            |
 | `mac_tailscale_checked`      | The Tailscale Funnel checklist re-checked or ran a one-click fix                                                  | `fix` (a fix rather than a check), `ready` (every prerequisite passed)                                                                           |
+| `mac_huddle_used`            | A huddle was started, blocked or ended, a guest let in or out, a chat message sent or the invite copied           | `action` (`start`, `blocked`, `stop`, `approve`, `deny`, `remove`, `say`, `copy_invite`), `has_device`                                           |
 
 `mac_settings_changed`'s `section` is `general`, `accounts`, `agents`, `llm`,
 `mcp`, `tools` or `advanced`, and `setting` is one of `theme`, `display_size`,
