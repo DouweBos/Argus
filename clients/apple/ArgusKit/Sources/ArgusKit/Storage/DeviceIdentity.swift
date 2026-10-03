@@ -90,6 +90,21 @@ public struct DeviceIdentity: Codable, Hashable, Sendable, Identifiable {
     return .lan
   }
 
+  /// Folds what the computer advertises right now into what this phone already
+  /// knows. A live address replaces the remembered one of its kind; a kind that
+  /// isn't live (Tailscale switched off, a tunnel restarting) keeps its last
+  /// address, so connecting once without it doesn't lose the way back in.
+  public static func mergedEndpoints(
+    known: [RemoteEndpoint]?, live: [RemoteEndpoint]
+  ) -> [RemoteEndpoint] {
+    let liveKinds = Set(live.map(\.kind))
+    let kept = (known ?? []).filter { !liveKinds.contains($0.kind) }
+    var seen = Set<RemoteEndpoint.Kind>()
+    return (live + kept)
+      .filter { seen.insert($0.kind).inserted }
+      .sorted { $0.priority < $1.priority }
+  }
+
   /// Addresses to try, best first. Falls back to the single paired URL when the
   /// desktop has never synced its list.
   public var candidateEndpoints: [RemoteEndpoint] {
