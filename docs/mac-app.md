@@ -46,7 +46,19 @@ Merging a session into its base branch, pull requests and anything that
 follows your project's rules (protected branches, session branch names) still
 go through the host, exactly as in the Electron app.
 
-The settings screens arrive in a later beta.
+- A first-run walkthrough (welcome, privacy, checking your Mac, a first
+  project), a Home screen with cards that fix what's missing, and **Add
+  Project…** (⌘O), which can write the project's `.argus.json` for you.
+- **Settings** (⌘,): appearance, Claude accounts, agents and automation
+  defaults, LLM runners including custom ones, MCP servers, tools, the update
+  channel, and remote access — pairing a phone, its grants, push and tunnels.
+- **Project Settings** from a project's menu in the sidebar: every
+  `.argus.json` field, plus your own branch prefix and worktree locations.
+- **Automations**, **Quick Run**, the **Inbox** and its proposals, and
+  **Notifications**, the warnings and errors list.
+- Hosting a huddle from a session, with guest approval and side chat.
+- The command palette (⇧⌘P), and Handoff of the session on screen to your
+  phone.
 
 ## How it relates to the Electron app
 

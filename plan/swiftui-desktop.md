@@ -196,6 +196,16 @@ explicitly dropped. Known so far:
   - Device logs: never saw a line arrive from a stock simulator.
   - Not ported: capture-card video inputs, the inspector's 3D view, the `/devices/:platform/:deviceKey` dialog.
   - Sidebar and table clicks only verified through driver routes, not real first clicks into a background window.
+  - M5 never exercised for real: a live huddle room and its guests (needs `cloudflared`), tunnels, Test push, taking a Handoff over from the phone, Claude sign-in / re-auth / remove, the Tailscale fixes, signal triggers, playbook revision, and moving existing worktrees.
+  - M5 not built: Organisations (settings, org host session, member-repo context); the home screen's notification-permission and missing-dependency cards, update banner, "Needs you" / "Recent runs" sections and removing a project from recents.
+  - M5 partial: guests driving the shared device aren't marked and host huddle messages carry no author; deep links work but the app doesn't claim `argus://` while Electron does; display size scales controls, not text; automations show raw cron with no preview or validation; deep-link presets reorder with buttons, not drag; inherited MCP servers have no test or tool list.
+  - Two `WorktreeLocationField`s (App and Project settings) should become one, with the move-worktrees sheet shared.
+- Host (found in M5):
+  - `security -i` hangs when the host runs with a different `HOME`, blocking the host (only seen with a scratch `HOME` in tests).
+  - A session keyed `/tmp/…` isn't found again after a restart because git reports `/private/tmp/…`.
+  - An automation's host session doesn't list under its project, so its transcript can't be opened from a run.
+  - `gen-protocol` types `huddle_say`'s params as the gateway's `HuddleSayParams`, which lacks `roomId`; the Mac app sends it by wire name.
+  - Phone gaps found while building M5, all admin-only today: proposal request-revision and start-with-note, the full proposal record, deleting a run, an automation's track record, describing an automation, huddles, the app-level default autonomy and permission mode.
 - iOS app:
   - The all-agents list and read-only terminals were never run against a paired computer.
   - Phone terminals poll every 2 s rather than streaming.

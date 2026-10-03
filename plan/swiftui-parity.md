@@ -21,6 +21,9 @@ How to tick a row:
 - M4 rows were verified on 2026-10-03/04 the same way, against scratch repos
   under `/tmp` (with a bare `origin`, a linked worktree session and a 20k-commit
   history); pull requests against a read-only clone of a public repo.
+- M5 rows were verified on 2026-10-04 the same way, with a scratch `HOME` too so
+  account, git and Claude CLI state stayed off the real machine; pairing used a
+  throwaway local client, never a phone.
 - The iOS column follows the CLAUDE.md rule: a ☐ there is a gap to close, not a
   decision. A — needs its reason in Notes.
 
@@ -30,17 +33,17 @@ How to tick a row:
 
 | Route                                    | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ---------------------------------------- | -------- | --- | --- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/` Home / project picker                | ✅       | ◐   | ✅  | M0        | Mac: sidebar lists projects; no project picker or add-project yet (M5 onboarding). iOS: Projects tab.                                                                                                                                                                                                                                                                                                                        |
+| `/` Home / project picker                | ✅       | ✅  | ✅  | M0        | Mac: sidebar lists projects; no project picker or add-project yet (M5 onboarding). iOS: Projects tab. Mac: project grid, setup cards with fixers, Add Project (⌘O) with `.argus.json` inference.                                                                                                                                                                                                                             |
 | `/agents` Agents overview                | ✅       | ✅  | ✅  | M1        | Mac: sidebar → Agents; table with live status, agent / session / project links (verified 2026-10-03 in a debug build). iOS: Projects → Recent agents → All agents (built, not yet run against a host).                                                                                                                                                                                                                       |
-| `/automations`                           | ✅       | ☐   | ✅  | M5        |                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `/automations/quick` Quick run           | ✅       | ☐   | ✅  | M5        |                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `/automations/quick/runs/:runId`         | ✅       | ☐   | ✅  | M5        | iOS: shared run screen; save-as-automation via `automations.save_scratch_run`.                                                                                                                                                                                                                                                                                                                                               |
-| `/automations/:automationId`             | ✅       | ☐   | ✅  | M5        | iOS: detail plus a separate editor screen, memories editable.                                                                                                                                                                                                                                                                                                                                                                |
-| `/automations/:automationId/runs/:runId` | ✅       | ☐   | ✅  | M5        |                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/automations`                           | ✅       | ✅  | ✅  | M5        |                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/automations/quick` Quick run           | ✅       | ✅  | ✅  | M5        |                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/automations/quick/runs/:runId`         | ✅       | ✅  | ✅  | M5        | iOS: shared run screen; save-as-automation via `automations.save_scratch_run`. Mac: save-as-automation verified.                                                                                                                                                                                                                                                                                                             |
+| `/automations/:automationId`             | ✅       | ✅  | ✅  | M5        | iOS: detail plus a separate editor screen, memories editable.                                                                                                                                                                                                                                                                                                                                                                |
+| `/automations/:automationId/runs/:runId` | ✅       | ✅  | ✅  | M5        | Mac: an automation's host session doesn't list under its project, so Open transcript never shows.                                                                                                                                                                                                                                                                                                                            |
 | `/devices`                               | ✅       | ✅  | ◐   | M3        | Mac: table and live grid; boot, shut down, pop out; rows link to their session and agent. No `/devices/:platform/:deviceKey` dialog — rows act inline. iOS: lists booted devices only; no boot/shutdown or AVD lifecycle.                                                                                                                                                                                                    |
-| `/inbox`                                 | ✅       | ☐   | ✅  | M5        |                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `/inbox/proposals/:proposalId`           | ✅       | ☐   | ◐   | M5        | iOS: proposals decided inline on a card; no detail screen, no request-revision.                                                                                                                                                                                                                                                                                                                                              |
-| `/notifications`                         | ✅       | ☐   | ☐   | M5        | Warnings & errors list. OS notifications are a separate M1 row.                                                                                                                                                                                                                                                                                                                                                              |
+| `/inbox`                                 | ✅       | ✅  | ✅  | M5        |                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/inbox/proposals/:proposalId`           | ✅       | ✅  | ◐   | M5        | iOS: proposals decided inline on a card; no detail screen, no request-revision.                                                                                                                                                                                                                                                                                                                                              |
+| `/notifications`                         | ✅       | ✅  | ☐   | M5        | Warnings & errors list. OS notifications are a separate M1 row. Mac: in-memory list fed by every store error, with an unseen badge in the sidebar.                                                                                                                                                                                                                                                                           |
 | `/pull-requests`                         | ✅       | ✅  | ✅  | M4        |                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `/pull-requests/:owner/:repo/:number`    | ✅       | ◐   | ✅  | M4        | Mac: description, commits, checks and diffs verified on a real PR (read only); close stopped at its confirm; merge and comment not exercised against GitHub. iOS: view, comment, merge.                                                                                                                                                                                                                                      |
 | `/runtimes` Runtimes overview            | ✅       | ✅  | ◐   | M2        | Mac: sidebar → Runtimes; every run terminal across sessions, stop, open its tab (verified 2026-10-03). iOS: per-session terminals, read-only; no cross-session overview.                                                                                                                                                                                                                                                     |
@@ -74,13 +77,13 @@ How to tick a row:
 
 ### Navigation
 
-| Item                           | Electron | Mac | iOS | Milestone | Notes                                                                           |
-| ------------------------------ | -------- | --- | --- | --------- | ------------------------------------------------------------------------------- |
-| Settings dialog (overlay)      | ✅       | ☐   | ◐   | M5        | iOS: device name, appearance, push, Claude accounts, telemetry, computers only. |
-| Window tabs                    | ✅       | ☐   | —   | M6        | iOS: window management; a phone switches computers instead.                     |
-| Per-tab back / forward         | ✅       | ☐   | ✅  | M5        | Not owned by a plan milestone; assigned M5. iOS: per-section navigation stacks. |
-| Deep links (`navigation:goto`) | ✅       | ☐   | ✅  | M5        | iOS: notification taps and Handoff open routes.                                 |
-| `?host=` focused host          | ✅       | ☐   | ◐   | M6        | iOS: many paired computers, one connected at a time.                            |
+| Item                           | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                 |
+| ------------------------------ | -------- | --- | --- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Settings dialog (overlay)      | ✅       | ◐   | ◐   | M5        | iOS: device name, appearance, push, Claude accounts, telemetry, computers only. Mac: a Settings window (⌘,). Git and Git signing come with M4's git views, Hosts with M6.                             |
+| Window tabs                    | ✅       | ☐   | —   | M6        | iOS: window management; a phone switches computers instead.                                                                                                                                           |
+| Per-tab back / forward         | ✅       | ◐   | ✅  | M5        | Not owned by a plan milestone; assigned M5. iOS: per-section navigation stacks. Mac: back/forward per window (⌘[ / ⌘]); per tab once window tabs land (M6).                                           |
+| Deep links (`navigation:goto`) | ✅       | ◐   | ✅  | M5        | iOS: notification taps and Handoff open routes. Mac: routes parse from paths (`DesktopRoute(path:)`) and `onOpenURL` handles `argus://`, but the app doesn't claim the scheme while Electron owns it. |
+| `?host=` focused host          | ✅       | ☐   | ◐   | M6        | iOS: many paired computers, one connected at a time.                                                                                                                                                  |
 
 ## Features
 
@@ -163,15 +166,15 @@ How to tick a row:
 
 ### Remote access
 
-| Feature                             | Electron | Mac | iOS | Milestone | Notes                                                                   |
-| ----------------------------------- | -------- | --- | --- | --------- | ----------------------------------------------------------------------- |
-| Gateway on/off, pairing             | ✅       | ☐   | ✅  | M5        | iOS: the pairing client. Mac: host-tier commands over the local socket. |
-| Ways in: LAN, Tailscale, Cloudflare | ✅       | ☐   | ✅  | M5        | iOS: races the live addresses.                                          |
-| Grants per device                   | ✅       | ☐   | —   | M5        | Host-tier; exposing grant changes over the gateway is a security risk.  |
-| Background push                     | ✅       | ☐   | ✅  | M5        | Mac: host-side sending; the Mac UI only configures it.                  |
-| Web client (phone / tablet layouts) | ✅       | ☐   | ✅  | M5        | Mac: the bundled host must serve `argus-web`. iOS: iPad split view.     |
-| Handoff                             | ✅       | ☐   | ✅  | M5        | Not owned by a plan milestone; assigned M5.                             |
-| Revoke a device                     | ✅       | ☐   | —   | M5        | Host-tier, same reason as grants.                                       |
+| Feature                             | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                      |
+| ----------------------------------- | -------- | --- | --- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gateway on/off, pairing             | ✅       | ✅  | ✅  | M5        | iOS: the pairing client. Mac: host-tier commands over the local socket. Mac: paired end to end with a local throwaway client (desktop and phone kinds).    |
+| Ways in: LAN, Tailscale, Cloudflare | ✅       | ◐   | ✅  | M5        | iOS: races the live addresses. Mac: LAN verified; tunnels never started against real accounts, Tailscale checklist rendered only.                          |
+| Grants per device                   | ✅       | ✅  | —   | M5        | Host-tier; exposing grant changes over the gateway is a security risk.                                                                                     |
+| Background push                     | ✅       | ◐   | ✅  | M5        | Mac: host-side sending; the Mac UI only configures it. Mac: config verified; Test push not, no paired device had a token.                                  |
+| Web client (phone / tablet layouts) | ✅       | ✅  | ✅  | M5        | Mac: the bundled host must serve `argus-web`. iOS: iPad split view. Mac: the build stages `argus-web` and the gateway served it.                           |
+| Handoff                             | ✅       | ◐   | ✅  | M5        | Not owned by a plan milestone; assigned M5. Mac: advertises the session on screen (verified); taking one over from the phone not verified without a phone. |
+| Revoke a device                     | ✅       | ✅  | —   | M5        | Host-tier, same reason as grants.                                                                                                                          |
 
 ### Working across several Macs
 
@@ -183,11 +186,11 @@ How to tick a row:
 
 ### Huddles
 
-| Feature                                   | Electron | Mac | iOS | Milestone | Notes                                  |
-| ----------------------------------------- | -------- | --- | --- | --------- | -------------------------------------- |
-| Start / end, approve guests, scoped grant | ✅       | ☐   | ☐   | M5        | iOS: no huddle methods on the gateway. |
-| Typing presence, device driver, refusals  | ✅       | ☐   | ☐   | M5        |                                        |
-| Side chat                                 | ✅       | ☐   | ☐   | M5        |                                        |
+| Feature                                   | Electron | Mac | iOS | Milestone | Notes                                                                                                                       |
+| ----------------------------------------- | -------- | --- | --- | --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Start / end, approve guests, scoped grant | ✅       | ◐   | ☐   | M5        | iOS: no huddle methods on the gateway. Mac: UI verified against an injected room; a real room needs `cloudflared`, not run. |
+| Typing presence, device driver, refusals  | ✅       | ◐   | ☐   | M5        | Mac: typing bar verified on an injected room; who drives the device isn't marked on guests yet.                             |
+| Side chat                                 | ✅       | ◐   | ☐   | M5        | Mac: docked chat verified on an injected room only.                                                                         |
 
 ### Argus Server
 
@@ -197,20 +200,20 @@ How to tick a row:
 
 ### Automations
 
-| Feature                                   | Electron | Mac | iOS | Milestone | Notes                                                 |
-| ----------------------------------------- | -------- | --- | --- | --------- | ----------------------------------------------------- |
-| Triggers: schedule and signals            | ✅       | ☐   | ✅  | M5        |                                                       |
-| Proposals: accept, mark done, dismiss     | ✅       | ☐   | ✅  | M5        |                                                       |
-| Proposal request-revision                 | ✅       | ☐   | ☐   | M5        | No gateway method.                                    |
-| Autonomy ladder                           | ✅       | ☐   | ◐   | M5        | iOS: per-automation guardrails; no app-level default. |
-| Memories, playbook revision, run feedback | ✅       | ☐   | ✅  | M5        |                                                       |
+| Feature                                   | Electron | Mac | iOS | Milestone | Notes                                                                                                       |
+| ----------------------------------------- | -------- | --- | --- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| Triggers: schedule and signals            | ✅       | ◐   | ✅  | M5        | Mac: schedules verified; signal triggers not exercised. No cron preview or validation.                      |
+| Proposals: accept, mark done, dismiss     | ✅       | ✅  | ✅  | M5        |                                                                                                             |
+| Proposal request-revision                 | ✅       | ✅  | ☐   | M5        | No gateway method.                                                                                          |
+| Autonomy ladder                           | ✅       | ✅  | ◐   | M5        | iOS: per-automation guardrails; no app-level default.                                                       |
+| Memories, playbook revision, run feedback | ✅       | ◐   | ✅  | M5        | Mac: memories verified; feedback reached the host (refused: session gone); playbook revision not exercised. |
 
 ### MCP server
 
 | Feature                                     | Electron | Mac | iOS | Milestone | Notes                                                                                                             |
 | ------------------------------------------- | -------- | --- | --- | --------- | ----------------------------------------------------------------------------------------------------------------- |
 | Argus MCP for agents, gated for automations | ✅       | ☐   | —   | M0        | Host-side; verify an agent spawned from the Mac app gets the tools. iOS: agents it spawns get them from the host. |
-| MCP server settings                         | ✅       | ☐   | ☐   | M5        |                                                                                                                   |
+| MCP server settings                         | ✅       | ✅  | ☐   | M5        | Mac: OAuth verified up to the host's metadata request; no real sign-in.                                           |
 
 ### Permissions
 
@@ -218,7 +221,7 @@ How to tick a row:
 | -------------------------------------- | -------- | --- | --- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Inline approval beside the tool call   | ✅       | ✅  | ✅  | M1        | Mac: prompts render at the foot of the transcript and scroll into view. Verified by in-window clicks and keys in a debug build.                            |
 | "Always allow" patterns                | ✅       | ✅  | ☐   | M1        | Mac: Always Allow on a prompt adds the Electron rule for the session. Verified by in-window clicks and keys in a debug build. iOS: allow once / deny only. |
-| Default permission mode (App settings) | ✅       | ☐   | ◐   | M5        | iOS: per-agent mode switch; no default setting.                                                                                                            |
+| Default permission mode (App settings) | ✅       | ✅  | ◐   | M5        | iOS: per-agent mode switch; no default setting.                                                                                                            |
 
 ### Orchestration tree
 
@@ -230,25 +233,25 @@ How to tick a row:
 
 ### Organisations
 
-| Feature                            | Electron | Mac | iOS | Milestone | Notes                         |
-| ---------------------------------- | -------- | --- | --- | --------- | ----------------------------- |
-| Organisations in App settings      | ✅       | ☐   | ☐   | M5        | iOS: no app-settings methods. |
-| Org host session, child sessions   | ✅       | ☐   | ☐   | M5        |                               |
-| Member-repo org context for agents | ✅       | ☐   | —   | M5        | Host-side prompt context.     |
+| Feature                            | Electron | Mac | iOS | Milestone | Notes                                                                       |
+| ---------------------------------- | -------- | --- | --- | --------- | --------------------------------------------------------------------------- |
+| Organisations in App settings      | ✅       | ☐   | ☐   | M5        | iOS: no app-settings methods. Not built in M5; listed under M6.5.           |
+| Org host session, child sessions   | ✅       | ☐   | ☐   | M5        | Not built in M5; listed under M6.5.                                         |
+| Member-repo org context for agents | ✅       | ☐   | —   | M5        | Host-side prompt context. Not verified from the Mac app; listed under M6.5. |
 
 ### Onboarding
 
-| Feature                          | Electron | Mac | iOS | Milestone | Notes                                                           |
-| -------------------------------- | -------- | --- | --- | --------- | --------------------------------------------------------------- |
-| Welcome + telemetry choice       | ✅       | ☐   | ✅  | M5        | iOS: its own consent sheet and pairing flow.                    |
-| Setup cards with one-click fixes | ✅       | ☐   | ◐   | M5        | iOS: Claude account sign-in only; the rest are Mac-local fixes. |
-| `.argus.json` generation         | ✅       | ☐   | ☐   | M5        |                                                                 |
+| Feature                          | Electron | Mac | iOS | Milestone | Notes                                                                                                                                      |
+| -------------------------------- | -------- | --- | --- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Welcome + telemetry choice       | ✅       | ✅  | ✅  | M5        | iOS: its own consent sheet and pairing flow. Mac: also prerequisite checks and a project step.                                             |
+| Setup cards with one-click fixes | ✅       | ✅  | ◐   | M5        | iOS: Claude account sign-in only; the rest are Mac-local fixes. Mac: git identity fixer verified under a scratch HOME; installers not run. |
+| `.argus.json` generation         | ✅       | ✅  | ☐   | M5        | Mac: quick generation verified; the Claude refine needs a signed-in CLI.                                                                   |
 
 ### Tools
 
 | Feature                         | Electron | Mac | iOS | Milestone | Notes                                                                                                                         |
 | ------------------------------- | -------- | --- | --- | --------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Tool toggles (Settings → Tools) | ✅       | ☐   | ☐   | M5        | Also `.argus.json#tools.disabled`.                                                                                            |
+| Tool toggles (Settings → Tools) | ✅       | ✅  | ☐   | M5        | Also `.argus.json#tools.disabled`.                                                                                            |
 | Device recording                | ✅       | ✅  | ✅  | M3        | Mac: the capture behind every mirror.                                                                                         |
 | Device UI inspector             | ✅       | ✅  | ☐   | M3        | Mac: probe, restart with injection, capture, overlay, tree with search, metadata and live property edits. No 3D view.         |
 | Device control                  | ✅       | ✅  | ✅  | M3        | Mac: touch, keys, buttons and deep links. iOS: touch and keys, not deep links.                                                |
