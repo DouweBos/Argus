@@ -10,6 +10,8 @@ enum DesktopRoute: Hashable {
   case runtimes
   /// `/sessions/:sessionId/home`: setup state, landing the work, the agents.
   case sessionHome(id: String)
+  /// `/devices`: every simulator, emulator and browser the host knows.
+  case devices
   /// `/sessions/:sessionId/agents`, optionally focused on one agent tab.
   case session(id: String, agentId: String?)
 
@@ -32,6 +34,7 @@ enum DesktopRoute: Hashable {
     case .agents: "/agents"
     case .runtimes: "/runtimes"
     case .sessionHome: "/sessions/:sessionId/home"
+    case .devices: "/devices"
     case .session: "/sessions/:sessionId/agents"
     }
   }
