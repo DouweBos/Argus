@@ -121,6 +121,17 @@
         default: return ["error": "to?"]
         }
         return ["route": "\(model.route)"]
+      case "cAddProject":
+        // Add Project with the folder named, since an open panel can't be driven.
+        guard let path = command["path"] as? String else { return ["error": "path?"] }
+        NotificationCenter.default.post(name: .devAddProject, object: path)
+        return ["ok": true]
+      case "cProjectSettings":
+        guard let model = AppDelegate.current?.model, let path = command["path"] as? String else {
+          return ["error": "path?"]
+        }
+        model.projectSettingsRepo = path
+        return ["ok": true]
       case "toggleTerminal":
         // What ⇧⌘T does; menu commands only enable while the app is active.
         AppDelegate.current?.model.terminalPanelVisible.toggle()
