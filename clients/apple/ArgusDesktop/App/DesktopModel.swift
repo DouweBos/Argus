@@ -10,6 +10,7 @@ import Observation
 final class DesktopModel {
   let supervisor: HostSupervisor
   let store: HostStore
+  let runtime: RuntimeModel
   let platform = PlatformBridge()
   let terminals: TerminalsStore
   let pullRequests: PullRequestsStore
@@ -46,12 +47,14 @@ final class DesktopModel {
     _ = store.observeIpc { [terminals] channel, args, seq in
       terminals.ipc(channel: channel, args: args, seq: seq)
     }
+    runtime = RuntimeModel(store: store)
     store.hooks.agentNotificationClicked = { [weak self] agentId, sessionId in
       NSApp.activate()
       self?.navigate(.session(id: sessionId, agentId: agentId))
     }
     supervisor.onEvent = { [weak self] event in self?.supervisorEvent(event) }
     platform.focusWindow = { NSApp.activate() }
+    platform.closeDevicePopout = { [runtime] key in runtime.closePopout(key) }
   }
 
   func start() {

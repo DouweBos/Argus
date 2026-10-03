@@ -5,7 +5,6 @@ import SwiftUI
 struct MainWindow: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
-  @Environment(\.colorScheme) private var colorScheme
   @State private var imageViewer = ImageViewerState()
 
   var body: some View {
@@ -28,7 +27,7 @@ struct MainWindow: View {
       }
       .navigationSplitViewColumnWidth(min: 420, ideal: 640)
     } detail: {
-      RuntimePlaceholderView()
+      RuntimePanel(sessionId: model.route.sessionId)
         .navigationSplitViewColumnWidth(min: 280, ideal: 420)
     }
     // One image viewer for the window, as on the phone.
@@ -39,8 +38,7 @@ struct MainWindow: View {
     .environment(imageViewer)
     // The viewer covers the window; the toolbar would still draw over it.
     .toolbar(imageViewer.isPresented ? .hidden : .automatic, for: .windowToolbar)
-    .environment(\.theme, colorScheme == .dark ? .dark : .light)
-    .tint(colorScheme == .dark ? Theme.dark.accent : Theme.light.accent)
+    .themed()
     // A project added while we're up arrives as `projects.changed` alone.
     .task(id: store.projects.map(\.repoRoot)) {
       for project in store.projects where store.sessionsByRepo[project.repoRoot] == nil {
@@ -50,11 +48,17 @@ struct MainWindow: View {
   }
 }
 
-/// The runtime panel — device video and browser — arrives in M3.
-struct RuntimePlaceholderView: View {
-  var body: some View {
-    ContentUnavailableView(
-      "Runtime", systemImage: "iphone",
-      description: Text("Simulators, emulators and the browser show here."))
+/// Peacock's tokens for the system appearance, in any window.
+private struct Themed: ViewModifier {
+  @Environment(\.colorScheme) private var colorScheme
+
+  func body(content: Content) -> some View {
+    content
+      .environment(\.theme, colorScheme == .dark ? .dark : .light)
+      .tint(colorScheme == .dark ? Theme.dark.accent : Theme.light.accent)
   }
+}
+
+extension View {
+  func themed() -> some View { modifier(Themed()) }
 }

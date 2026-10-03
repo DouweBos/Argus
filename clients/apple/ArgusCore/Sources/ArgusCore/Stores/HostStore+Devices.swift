@@ -25,6 +25,23 @@ extension HostStore {
       .devicesUnwatch, Params(device_id: deviceId), as: IgnoredResult.self)
   }
 
+  /// The session's embedded browser as JPEG media frames.
+  public func watchBrowser(sessionId: String) async -> UInt16? {
+    guard let backend else { return nil }
+    struct Params: Encodable { let session_id: String }
+    struct Result: Decodable { let stream_id: Int }
+    let result = try? await backend.request(
+      .browserWatch, Params(session_id: sessionId), as: Result.self)
+    return result.map { UInt16(truncatingIfNeeded: $0.stream_id) }
+  }
+
+  public func unwatchBrowser(sessionId: String) async {
+    guard let backend else { return }
+    struct Params: Encodable { let session_id: String }
+    _ = try? await backend.request(
+      .browserUnwatch, Params(session_id: sessionId), as: IgnoredResult.self)
+  }
+
   /// How the device is being held, recorded in `deviceStates`. Null on
   /// Android, which rotates its own framebuffer and has no hinge to report.
   @discardableResult

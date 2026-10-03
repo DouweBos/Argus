@@ -33,6 +33,19 @@ enum MacTelemetryEvent {
     case openLink = "open_link"
   }
 
+  enum PowerAction: String {
+    case boot
+    case shutdown
+  }
+
+  enum BrowserAction: String {
+    case navigate
+    case back
+    case forward
+    case reload
+    case preset
+  }
+
   case launched
   case quit(hadRunningAgents: Bool)
   case hostStarted(restarts: Int)
@@ -54,6 +67,13 @@ enum MacTelemetryEvent {
   case terminalReplayed(bytes: String, truncated: Bool)
   /// Find in a terminal was closed after a search.
   case terminalFindUsed(matches: String, navigated: Bool)
+  /// A runtime target was picked; `platform` is `ios`, `android` or `web`.
+  case runtimeTargetPicked(platform: String)
+  /// A device picture was closed after being shown.
+  case deviceWatched(platform: String, durationMs: Int, interacted: Bool)
+  case devicePopoutOpened(platform: String)
+  case devicePower(action: PowerAction, platform: String)
+  case browserUsed(action: BrowserAction)
 
   var name: String {
     switch self {
@@ -71,6 +91,11 @@ enum MacTelemetryEvent {
     case .terminalUsed: "mac_terminal_used"
     case .terminalReplayed: "mac_terminal_replayed"
     case .terminalFindUsed: "mac_terminal_find_used"
+    case .runtimeTargetPicked: "mac_runtime_target_picked"
+    case .deviceWatched: "mac_device_watched"
+    case .devicePopoutOpened: "mac_device_popout_opened"
+    case .devicePower: "mac_device_power"
+    case .browserUsed: "mac_browser_used"
     }
   }
 
@@ -104,6 +129,16 @@ enum MacTelemetryEvent {
       ["bytes_bucket": bytes, "truncated": truncated]
     case .terminalFindUsed(let matches, let navigated):
       ["matches_bucket": matches, "navigated": navigated]
+    case .runtimeTargetPicked(let platform):
+      ["platform": platform]
+    case .deviceWatched(let platform, let durationMs, let interacted):
+      ["platform": platform, "duration_ms": durationMs, "interacted": interacted]
+    case .devicePopoutOpened(let platform):
+      ["platform": platform]
+    case .devicePower(let action, let platform):
+      ["action": action.rawValue, "platform": platform]
+    case .browserUsed(let action):
+      ["action": action.rawValue]
     }
   }
 
