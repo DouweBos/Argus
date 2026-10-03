@@ -31,10 +31,13 @@ struct RefActions {
     {
       return
     }
-    guard workspace.workingCopy.changedCount > 0, let failure = workspace.hostError else { return }
+    // The host's message for this is unreliable; a dirty tree is what blocks a checkout.
+    guard workspace.workingCopy.changedCount > 0, workspace.hostError != nil else { return }
     let choice = await GitDialogs.choose(
-      "Uncommitted changes", message: "\(failure)\n\nStash your changes and switch, or discard them?",
+      "Uncommitted changes",
+      message: "Your changes would be overwritten by checking out \(branch). Stash them and switch, or discard them?",
       buttons: ["Stash & Switch", "Discard & Switch"])
+    workspace.hostError = nil
     switch choice {
     case 0:
       await workspace.host(
@@ -96,26 +99,20 @@ struct RefActions {
     }
   }
 
-  /// Deletes after a confirm; an unmerged branch asks again before `-D`.
+  /// Deletes after a confirm; one with commits HEAD lacks warns and goes with `-D`.
   func delete(_ branch: String) async {
+    let unmerged = ((try? await workspace.repository.aheadBehind(branch: branch, base: "HEAD"))?.ahead ?? 0) > 0
     guard
       await GitDialogs.confirm(
-        "Delete \(branch)?", message: "The branch is removed locally.", action: "Delete", destructive: true)
-    else { return }
-    let label = "Deleting \(branch)…"
-    if await workspace.host(GitCommands.GitDeleteBranch.self, .init(id: id, name: branch), label: label) != nil {
-      return workspace.track(.branchDelete, success: true)
-    }
-    guard let failure = workspace.hostError, failure.contains("not fully merged") else {
-      return workspace.track(.branchDelete, success: false)
-    }
-    guard
-      await GitDialogs.confirm(
-        "\(branch) isn't fully merged", message: "Deleting it anyway loses its unmerged commits.",
-        action: "Delete Anyway", destructive: true)
+        unmerged ? "\(branch) isn't fully merged" : "Delete \(branch)?",
+        message: unmerged
+          ? "It has commits \(currentName) doesn't. Deleting it loses them."
+          : "The branch is removed locally.",
+        action: unmerged ? "Delete Anyway" : "Delete", destructive: true)
     else { return }
     await workspace.host(
-      GitCommands.GitDeleteBranch.self, .init(id: id, name: branch, force: true), label: label, track: .branchDelete)
+      GitCommands.GitDeleteBranch.self, .init(id: id, name: branch, force: unmerged), label: "Deleting \(branch)…",
+      track: .branchDelete)
   }
 
   func merge(_ branch: String, squash: Bool = false) async {
