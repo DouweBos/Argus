@@ -92,6 +92,11 @@ export interface TerminalSession {
   /** Bytes that have been dropped from the front of {@link outputLog}. */
   outputDroppedBytes: number;
   /**
+   * Tail of {@link outputLog} not yet broadcast as `terminal:data`, so a
+   * scrollback read hands over exactly what the live events don't.
+   */
+  unflushedChars: number;
+  /**
    * Exit code once the PTY has closed. `null` while the process is still
    * running. We deliberately keep exited entries in the registry so that
    * post-exit reads (e.g. an agent calling `read_terminal` after a quick
@@ -138,6 +143,16 @@ export interface TerminalReadResult {
   droppedBytes: number;
   runTitle: string | null;
   sessionId: string;
+}
+
+/** What a client replays when it reattaches to a terminal. */
+export interface TerminalScrollback {
+  /** Base64 UTF-8 of the output broadcast so far, up to the capture cap. */
+  data: string;
+  /** Whether older output was dropped, so the replay starts mid-stream. */
+  truncated: boolean;
+  exited: boolean;
+  exitCode: number | null;
 }
 
 /** Hard cap on per-terminal captured output (bytes). */
@@ -414,6 +429,7 @@ export function createTerminal(
     }
     const combined = pendingChunks.join("");
     pendingChunks = [];
+    terminal.unflushedChars = 0;
     emitHostEvent(
       `terminal:data:${terminalId}`,
       Buffer.from(combined).toString("base64"),
@@ -429,6 +445,7 @@ export function createTerminal(
     outputLog: "",
     outputTotalBytes: 0,
     outputDroppedBytes: 0,
+    unflushedChars: 0,
     exitCode: null,
     exitedAt: null,
     waiters: [],
@@ -442,6 +459,7 @@ export function createTerminal(
   // are dropped from the front once {@link MAX_OUTPUT_BYTES} is exceeded.
   ptyProcess.onData((data: string) => {
     pendingChunks.push(data);
+    terminal.unflushedChars += data.length;
     terminal.outputTotalBytes += data.length;
     terminal.outputLog += data;
     if (terminal.outputLog.length > MAX_OUTPUT_BYTES) {
@@ -583,6 +601,38 @@ export function readTerminalOutput(
     droppedBytes: terminal.outputDroppedBytes,
     runTitle: terminal.runTitle ?? null,
     sessionId: terminal.sessionId,
+  };
+}
+
+/**
+ * The captured output a reattaching client replays before its live
+ * `terminal:data` events. Output still waiting for the next flush is left out
+ * — that event is on its way — so replay plus events never repeat a byte.
+ * A truncated capture starts at its first full line, not mid escape sequence.
+ *
+ * @throws A plain string if the terminal session is not found.
+ */
+export function terminalScrollback(terminalId: string): TerminalScrollback {
+  const terminal = appState.terminals.get(terminalId);
+  if (!terminal) {
+    throw `Terminal session not found: ${terminalId}`;
+  }
+  const flushed = Math.max(
+    terminal.outputLog.length - terminal.unflushedChars,
+    0,
+  );
+  let output = terminal.outputLog.slice(0, flushed);
+  const truncated = terminal.outputDroppedBytes > 0;
+  if (truncated) {
+    const newline = output.indexOf("\n");
+    output = newline === -1 ? "" : output.slice(newline + 1);
+  }
+
+  return {
+    data: Buffer.from(output).toString("base64"),
+    truncated,
+    exited: terminal.exitCode !== null,
+    exitCode: terminal.exitCode,
   };
 }
 

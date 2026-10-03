@@ -9,6 +9,7 @@ import {
   setupShellCommand,
   createTerminal,
   destroyTerminal,
+  terminalScrollback,
 } from "./multiplexer";
 
 // broadcast.ts imports electron at runtime; vitest has no windows.
@@ -234,5 +235,41 @@ describe("terminal events on the broadcast bus", () => {
     destroyTerminal(id);
 
     await expect(waitForChannel(`terminal:exit:${id}`)).resolves.toEqual([-1]);
+  });
+
+  it("replays what was broadcast, and nothing still waiting to flush", async () => {
+    const id = createTerminal(SESSION_ID, undefined, "printf hello; exit 0");
+    await waitForChannel(`terminal:exit:${id}`);
+
+    const replay = terminalScrollback(id);
+    expect(Buffer.from(replay.data, "base64").toString()).toBe("hello");
+    expect(replay).toMatchObject({
+      exited: true,
+      exitCode: 0,
+      truncated: false,
+    });
+
+    const terminal = appState.terminals.get(id)!;
+    terminal.outputLog += "pending";
+    terminal.unflushedChars = "pending".length;
+    expect(Buffer.from(terminalScrollback(id).data, "base64").toString()).toBe(
+      "hello",
+    );
+  });
+
+  it("starts a truncated replay at a line boundary", async () => {
+    const id = createTerminal(SESSION_ID, undefined, "exit 0");
+    await waitForChannel(`terminal:exit:${id}`);
+    const terminal = appState.terminals.get(id)!;
+    terminal.outputLog = "[31mtail of a line\nnext line\n";
+    terminal.outputDroppedBytes = 10;
+
+    const replay = terminalScrollback(id);
+    expect(Buffer.from(replay.data, "base64").toString()).toBe("next line\n");
+    expect(replay.truncated).toBe(true);
+  });
+
+  it("rejects an unknown terminal", () => {
+    expect(() => terminalScrollback("nope")).toThrow();
   });
 });

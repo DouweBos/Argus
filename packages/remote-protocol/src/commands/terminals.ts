@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { RunTerminalResult, TerminalSummary } from "../models/terminals";
+import {
+  RunTerminalResult,
+  TerminalScrollback,
+  TerminalSummary,
+} from "../models/terminals";
 import { type CommandSpec, Void } from "./spec";
 
 const Terminal = z.object({ sessionId: z.string() });
@@ -48,4 +52,14 @@ export const TERMINAL_COMMANDS = {
     result: Void,
   },
   terminal_resize: { tier: "admin", params: Size, result: Void },
+  /**
+   * Output captured so far, for a client reattaching to a running terminal.
+   * Subscribe to `terminal:data` first; events sequenced after this response
+   * carry exactly what the replay doesn't.
+   */
+  terminal_scrollback: {
+    tier: "admin",
+    params: Terminal,
+    result: TerminalScrollback,
+  },
 } as const satisfies Record<string, CommandSpec>;

@@ -139,6 +139,7 @@ import type {
   SshKey,
   TelemetryInit,
   TelemetryMode,
+  TerminalScrollback,
   TerminalSummary,
 } from "@argus/remote-protocol";
 import { rehydrateGitError } from "./gitError";
@@ -1995,6 +1996,13 @@ export const terminalResize = (
   cols: number,
   rows: number,
 ): Promise<void> => invoke("terminal_resize", { sessionId, cols, rows });
+
+export type { TerminalScrollback };
+
+/** Output captured so far, for replaying a terminal you reattach to. */
+export const terminalScrollback = (
+  sessionId: string,
+): Promise<TerminalScrollback> => invoke("terminal_scrollback", { sessionId });
 
 // Simulator commands
 export const checkIosTools = (): Promise<void> => invoke("check_ios_tools");
