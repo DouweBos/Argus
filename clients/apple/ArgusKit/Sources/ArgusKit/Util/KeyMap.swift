@@ -28,6 +28,16 @@ public enum KeyMap {
     "Semicolon": 41, "Quote": 39, "Comma": 43, "Period": 47, "Slash": 44, "Backquote": 50,
   ]
 
+  /// What a hardware keyboard can send beyond typing: navigation, modifiers
+  /// and function keys, as in the renderer's `keycodeMap.ts`.
+  static let iosHardwareCodes: [String: Int] = iosCodes.merging([
+    "Home": 115, "End": 119, "PageUp": 116, "PageDown": 121,
+    "ShiftLeft": 56, "ShiftRight": 60, "ControlLeft": 59, "ControlRight": 62,
+    "AltLeft": 58, "AltRight": 61, "MetaLeft": 55, "MetaRight": 54, "CapsLock": 57,
+    "F1": 122, "F2": 120, "F3": 99, "F4": 118, "F5": 96, "F6": 97, "F7": 98, "F8": 100,
+    "F9": 101, "F10": 109, "F11": 103, "F12": 111,
+  ]) { current, _ in current }
+
   // Android KEYCODE_* values.
   static let androidCodes: [String: Int] = [
     "KeyA": 29, "KeyB": 30, "KeyC": 31, "KeyD": 32, "KeyE": 33, "KeyF": 34, "KeyG": 35,
@@ -42,6 +52,57 @@ public enum KeyMap {
     "BracketRight": 72, "Backslash": 73, "Semicolon": 74, "Quote": 75, "Slash": 76,
     "Backquote": 68,
   ]
+
+  /// The renderer's `androidKeycodeMap.ts` beyond typing.
+  static let androidHardwareCodes: [String: Int] = androidCodes.merging([
+    "F1": 131, "F2": 132, "F3": 133, "F4": 134, "F5": 135, "F6": 136, "F7": 137,
+    "F8": 138, "F9": 139, "F10": 140, "F11": 141, "F12": 142,
+    "ShiftLeft": 59, "ShiftRight": 60, "ControlLeft": 113, "ControlRight": 114,
+    "AltLeft": 57, "AltRight": 58, "MetaLeft": 117, "MetaRight": 118, "CapsLock": 115,
+    "Home": 3, "End": 123, "PageUp": 92, "PageDown": 93,
+  ]) { current, _ in current }
+
+  /// macOS virtual keycode → physical key name; the simulator's own codes are
+  /// macOS ones, so this is their inverse.
+  static let codeByMacKeyCode: [Int: String] = Dictionary(
+    iosHardwareCodes.map { ($0.value, $0.key) }, uniquingKeysWith: { first, _ in first })
+
+  /// `NSEvent.ModifierFlags` raw values, which are also what the iOS bridge takes.
+  public enum MacModifier {
+    public static let capsLock = 0x10000
+    public static let shift = 0x20000
+    public static let control = 0x40000
+    public static let option = 0x80000
+    public static let command = 0x100000
+  }
+
+  /// The physical key a macOS `NSEvent.keyCode` names, e.g. `KeyH` or `ArrowUp`.
+  public static func code(macKeyCode: Int) -> String? {
+    codeByMacKeyCode[macKeyCode]
+  }
+
+  /// A Mac key event to the device's own key code and modifiers; nil for keys
+  /// the device has no equivalent of.
+  public static func nativeKey(platform: RemotePlatform, macKeyCode: Int, modifierFlags: Int)
+    -> NativeKey?
+  {
+    guard let code = code(macKeyCode: macKeyCode) else { return nil }
+    switch platform {
+    case .ios:
+      let mask =
+        MacModifier.capsLock | MacModifier.shift | MacModifier.control | MacModifier.option
+        | MacModifier.command
+      return NativeKey(keyCode: macKeyCode, modifiers: modifierFlags & mask)
+    case .android:
+      guard let keyCode = androidHardwareCodes[code] else { return nil }
+      var meta = 0
+      if modifierFlags & MacModifier.shift != 0 { meta |= 0x1 }
+      if modifierFlags & MacModifier.option != 0 { meta |= 0x2 }
+      if modifierFlags & MacModifier.control != 0 { meta |= 0x1000 }
+      if modifierFlags & MacModifier.command != 0 { meta |= 0x10000 }
+      return NativeKey(keyCode: keyCode, modifiers: meta)
+    }
+  }
 
   public static func nativeKey(platform: RemotePlatform, code: String, shift: Bool)
     -> NativeKey?
