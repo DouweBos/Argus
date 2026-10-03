@@ -214,6 +214,16 @@ export async function getDesktopIdentity(): Promise<DesktopIdentity> {
   };
 }
 
+/**
+ * The desktop's public key, base64url as the pairing payload's `ds_pub` — what
+ * a Handoff activity names this computer by.
+ */
+export async function getHostKey(): Promise<string> {
+  const { pub } = await getDesktopIdentity();
+
+  return Buffer.from(pub).toString("base64url");
+}
+
 export async function listDevices(): Promise<PairedDevice[]> {
   const state = await ensureState();
 

@@ -154,6 +154,8 @@ enum MacTelemetryEvent {
   case pullRequestActed(action: PullRequestAction)
   /// A command palette entry was run; `section` is its group, never its title.
   case paletteCommandRun(section: String)
+  /// The phone handed a session over; `matched` is whether it named this computer.
+  case handoffContinued(matched: Bool)
 
   var name: String {
     switch self {
@@ -180,6 +182,7 @@ enum MacTelemetryEvent {
     case .gitUsed: "mac_git_used"
     case .pullRequestActed: "mac_pull_request_acted"
     case .paletteCommandRun: "mac_palette_command_run"
+    case .handoffContinued: "mac_handoff_continued"
     }
   }
 
@@ -231,6 +234,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue]
     case .paletteCommandRun(let section):
       ["section": section.lowercased()]
+    case .handoffContinued(let matched):
+      ["matched": matched]
     }
   }
 
