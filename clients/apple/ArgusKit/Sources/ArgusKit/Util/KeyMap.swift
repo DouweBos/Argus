@@ -165,4 +165,30 @@ public enum KeyMap {
     }
     return nil
   }
+
+  /// Named DOM `KeyboardEvent.key` values for keys that type nothing.
+  static let domNamedKeys: [String: String] = [
+    "Enter": "Enter", "Tab": "Tab", "Backspace": "Backspace", "Escape": "Escape",
+    "Delete": "Delete", "ArrowLeft": "ArrowLeft", "ArrowRight": "ArrowRight",
+    "ArrowUp": "ArrowUp", "ArrowDown": "ArrowDown", "Home": "Home", "End": "End",
+    "PageUp": "PageUp", "PageDown": "PageDown", "ShiftLeft": "Shift", "ShiftRight": "Shift",
+    "ControlLeft": "Control", "ControlRight": "Control", "AltLeft": "Alt", "AltRight": "Alt",
+    "MetaLeft": "Meta", "MetaRight": "Meta", "CapsLock": "CapsLock",
+    "F1": "F1", "F2": "F2", "F3": "F3", "F4": "F4", "F5": "F5", "F6": "F6", "F7": "F7",
+    "F8": "F8", "F9": "F9", "F10": "F10", "F11": "F11", "F12": "F12",
+  ]
+
+  /// A Mac key event as the DOM's `KeyboardEvent.key` — what the browser view
+  /// forwards: a named key, else the character it types.
+  public static func domKey(macKeyCode: Int, characters: String?) -> String? {
+    if let code = code(macKeyCode: macKeyCode), let named = domNamedKeys[code] {
+      return named
+    }
+    guard let characters, characters.count == 1, let scalar = characters.unicodeScalars.first,
+      !CharacterSet.controlCharacters.contains(scalar),
+      // AppKit's private-use range for function keys it has no name for.
+      !(0xF700...0xF8FF).contains(scalar.value)
+    else { return nil }
+    return characters
+  }
 }
