@@ -5,7 +5,6 @@ import ArgusCore
 /// Git registers its own source once the git views land.
 @MainActor
 enum BuiltinPalette {
-  /// Settings is a scene; the palette view opens it through `openSettings`.
   static let settingsId = "app.settings"
 
   static func register(in palette: CommandPaletteModel) {
@@ -100,7 +99,7 @@ enum BuiltinPalette {
     [
       PaletteCommand(
         id: settingsId, title: "Settings…", section: "App", keywords: ["preferences"],
-        systemImage: "gearshape", shortcut: "⌘,"
+        systemImage: "gearshape", shortcut: "⌘,", opensSettings: true
       ) {},
       PaletteCommand(
         id: "app.add-project", title: "Add Project…", section: "App", keywords: ["open repo"],

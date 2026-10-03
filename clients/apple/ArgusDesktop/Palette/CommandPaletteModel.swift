@@ -14,6 +14,8 @@ struct PaletteCommand: Identifiable {
   var systemImage: String? = nil
   /// Display only, e.g. "⇧⌘T"; the menu owns the real binding.
   var shortcut: String? = nil
+  /// Runs, then opens the Settings scene — which only a view can open.
+  var opensSettings = false
   let run: @MainActor () -> Void
 }
 
