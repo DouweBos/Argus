@@ -316,6 +316,19 @@
         else { return ["error": "platform?"] }
         runtime.runtime.select(
           platform: platform, device: command["device"] as? String, session: runtime.route.sessionId)
+        if let mode = (command["mode"] as? String).flatMap(RuntimeModel.Mode.init) {
+          runtime.runtime.mode = mode
+        }
+        return ["ok": true]
+      case "makeKey":
+        // Key within this app only: SwiftUI gestures skip a non-key window's
+        // first click, as they would for a real one. The app stays inactive.
+        window.makeKey()
+        return ["ok": window.isKeyWindow]
+      case "resize":
+        guard let width = command["width"] as? Double, let height = command["height"] as? Double
+        else { return ["error": "width, height?"] }
+        window.setFrame(NSRect(x: window.frame.minX, y: window.frame.maxY - height, width: width, height: height), display: true)
         return ["ok": true]
       case "menu":
         guard let title = command["title"] as? String, let item = menuItem(title, in: NSApp.mainMenu)
