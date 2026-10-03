@@ -31,7 +31,7 @@ struct RunHistoryRow: View {
       Text(Labels.runDuration(run)).monospacedDigit().foregroundStyle(.secondary)
       Text(Labels.runCost(run)).monospacedDigit().foregroundStyle(.secondary).frame(width: 56, alignment: .trailing)
       if run.isActive {
-        Button("Cancel", role: .destructive) { Task { await store.cancelRun(id: run.id) } }
+        Button("Cancel") { Task { await store.cancelRun(id: run.id) } }
       } else {
         Button("Delete") { confirmingDelete = true }
       }
