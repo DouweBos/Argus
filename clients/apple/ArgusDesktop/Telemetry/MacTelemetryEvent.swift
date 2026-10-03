@@ -46,6 +46,13 @@ enum MacTelemetryEvent {
     case preset
   }
 
+  enum InspectionAction: String {
+    case capture
+    case launch
+    case select
+    case edit
+  }
+
   case launched
   case quit(hadRunningAgents: Bool)
   case hostStarted(restarts: Int)
@@ -74,6 +81,7 @@ enum MacTelemetryEvent {
   case devicePopoutOpened(platform: String)
   case devicePower(action: PowerAction, platform: String)
   case browserUsed(action: BrowserAction)
+  case inspectionUsed(action: InspectionAction, success: Bool)
 
   var name: String {
     switch self {
@@ -96,6 +104,7 @@ enum MacTelemetryEvent {
     case .devicePopoutOpened: "mac_device_popout_opened"
     case .devicePower: "mac_device_power"
     case .browserUsed: "mac_browser_used"
+    case .inspectionUsed: "mac_inspection_used"
     }
   }
 
@@ -139,6 +148,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "platform": platform]
     case .browserUsed(let action):
       ["action": action.rawValue]
+    case .inspectionUsed(let action, let success):
+      ["action": action.rawValue, "success": success]
     }
   }
 

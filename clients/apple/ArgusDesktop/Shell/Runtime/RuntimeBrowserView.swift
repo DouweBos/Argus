@@ -150,7 +150,7 @@ struct RuntimeBrowserView: View {
     guard otherHolder == nil, let backend = store.backend else { return }
     let sessionId = sessionKey
     switch input {
-    case .pointer(let phase, let point, let secondary):
+    case .pointer(let phase, let point, let secondary, _):
       let at = viewport(point)
       let type: ArgusProtocol.CommandsTypes.BrowserMouseEventParamsType =
         switch phase {
@@ -172,6 +172,8 @@ struct RuntimeBrowserView: View {
           ArgusProtocol.Commands.BrowserWheelEvent.self,
           .init(sessionId: sessionId, x: at.x, y: at.y, deltaX: deltaX, deltaY: deltaY))
       }
+    case .hover:
+      break
     case .key(let down, let keyCode, _, let characters):
       guard let key = KeyMap.domKey(macKeyCode: keyCode, characters: characters) else { return }
       Task {

@@ -10,7 +10,10 @@ enum RuntimeInput {
     case up = 2
   }
 
-  case pointer(Phase, CGPoint, secondary: Bool)
+  /// `clickCount` tells a double-click from a single one.
+  case pointer(Phase, CGPoint, secondary: Bool, clickCount: Int = 1)
+  /// Pointer motion with no button down; nil when it leaves. Only sent when asked for.
+  case hover(CGPoint?)
   case wheel(CGPoint, deltaX: CGFloat, deltaY: CGFloat)
   /// `keyCode` is the macOS virtual keycode; modifier keys arrive as their own
   /// down/up from `flagsChanged`.
@@ -21,16 +24,21 @@ enum RuntimeInput {
 /// the mouse and the keyboard. SwiftUI's gestures can't see key-ups, modifier
 /// keys or the scroll wheel, and a picture has to own focus to type into it.
 struct RuntimeInputView: NSViewRepresentable {
+  var tracksHover = false
+  /// Shown while the pointer rests; SwiftUI's `help` can't see through this view.
+  var toolTip: String?
   let onInput: (RuntimeInput) -> Void
 
   func makeNSView(context: Context) -> InputNSView {
     let view = InputNSView()
     view.onInput = onInput
+    view.tracksHover = tracksHover
     return view
   }
 
   func updateNSView(_ view: InputNSView, context: Context) {
     view.onInput = onInput
+    view.toolTip = toolTip
   }
 
   final class InputNSView: NSView {
@@ -42,7 +50,27 @@ struct RuntimeInputView: NSViewRepresentable {
     /// far end can redraw.
     private static let dragInterval: TimeInterval = 0.017
 
+    var tracksHover = false
+
     override var isFlipped: Bool { true }
+
+    override func updateTrackingAreas() {
+      super.updateTrackingAreas()
+      trackingAreas.forEach(removeTrackingArea)
+      guard tracksHover else { return }
+      addTrackingArea(
+        NSTrackingArea(
+          rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+          owner: self))
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+      onInput?(.hover(location(event)))
+    }
+
+    override func mouseExited(with event: NSEvent) {
+      onInput?(.hover(nil))
+    }
     override var acceptsFirstResponder: Bool { true }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
@@ -52,7 +80,7 @@ struct RuntimeInputView: NSViewRepresentable {
 
     override func mouseDown(with event: NSEvent) {
       window?.makeFirstResponder(self)
-      onInput?(.pointer(.down, location(event), secondary: false))
+      onInput?(.pointer(.down, location(event), secondary: false, clickCount: event.clickCount))
     }
 
     override func mouseDragged(with event: NSEvent) {

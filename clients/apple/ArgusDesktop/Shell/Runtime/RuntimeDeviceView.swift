@@ -101,14 +101,14 @@ struct RuntimeDeviceView: View {
   private func receive(_ input: RuntimeInput) {
     guard otherHolder == nil else { return }
     switch input {
-    case .pointer(let phase, let point, let secondary):
+    case .pointer(let phase, let point, let secondary, _):
       // A TV is driven by its remote, not by clicking its picture.
       guard !secondary, !isTv, let normalized = geometry.normalize(point) else { return }
       interacted = true
       store.deviceTouch(
         deviceId: deviceId, platform: platform, x: normalized.x, y: normalized.y,
         eventType: phase.rawValue)
-    case .wheel:
+    case .wheel, .hover:
       break
     case .key(let down, let keyCode, let modifiers, _):
       sendKey(down: down, keyCode: keyCode, modifiers: modifiers)
