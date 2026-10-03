@@ -24,10 +24,26 @@ public protocol HostBackend: AnyObject, Sendable {
   @discardableResult
   func request<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws -> C.Result
 
+  /// A command plus where its response falls among this backend's events: an
+  /// event with a lower `seq` was sent before it. Lets a snapshot be stitched
+  /// onto the live events that follow it.
+  func sequencedRequest<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws
+    -> (result: C.Result, seq: Int)
+
   /// Gate `agent.*` / `permission.*` events for one agent.
   func subscribe(agentId: String, on: Bool) async
 
   func disconnect() async
+}
+
+extension HostBackend {
+  /// A channel without a shared sequence can't place its response, so every
+  /// event counts as arriving after it.
+  public func sequencedRequest<C: RemoteCommand>(_ command: C.Type, _ params: C.Params)
+    async throws -> (result: C.Result, seq: Int)
+  {
+    (try await request(command, params), Int.min)
+  }
 }
 
 public enum HostBackendKind: String, Sendable {
