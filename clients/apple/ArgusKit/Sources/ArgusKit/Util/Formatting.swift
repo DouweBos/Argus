@@ -48,6 +48,16 @@ public enum Labels {
     return title.isEmpty ? "Agent \(agent.agentId.prefix(8))" : title
   }
 
+  /// The pending auto-continue after a usage limit, phrased as a banner.
+  public static func limitResumeBanner(_ millis: Double, now: Date = Date()) -> String {
+    let when = Date(timeIntervalSince1970: millis / 1000)
+    let time = when.formatted(date: .omitted, time: .shortened)
+    let day =
+      Calendar.current.isDate(when, inSameDayAs: now)
+      ? "" : "\(when.formatted(.dateTime.weekday(.abbreviated))) "
+    return "Usage limit reached. Continues automatically \(day)at \(time); sending a message cancels it."
+  }
+
   // MARK: Time
 
   /// Unix milliseconds to a short relative phrase.

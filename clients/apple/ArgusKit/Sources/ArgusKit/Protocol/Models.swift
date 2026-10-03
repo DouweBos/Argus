@@ -116,6 +116,8 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
   public var createdAt: Double?
   public var lastActivityAt: Double?
   public var awaiting: RemoteAwaiting?
+  /// Unix ms a "continue" is scheduled for once a spent usage limit resets.
+  public var limitResumeAt: Double?
 
   public var id: String { agentId }
 
@@ -131,6 +133,7 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
     case createdAt = "created_at"
     case lastActivityAt = "last_activity_at"
     case awaiting
+    case limitResumeAt = "limit_resume_at"
   }
 }
 

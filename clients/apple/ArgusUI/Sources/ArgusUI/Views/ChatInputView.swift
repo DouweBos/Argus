@@ -69,6 +69,9 @@ public struct ChatInputView: View {
 
   private var phoneBody: some View {
     VStack(alignment: .leading, spacing: 8) {
+      if let at = status?.limitResumeAt {
+        Banner(text: Labels.limitResumeBanner(at))
+      }
       if !slashSuggestions.isEmpty {
         suggestionList(slashSuggestions.map(\.name), hint: slashSuggestions.map(\.description))
       } else if !mentionItems.isEmpty {

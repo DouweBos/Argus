@@ -85,6 +85,9 @@
 .queuedSection {
   padding: 8px 16px;
 }
+.limitResumeBanner {
+  margin: 8px 16px;
+}
 .queuedLinkedProjects {
   display: flex;
   flex-wrap: wrap;

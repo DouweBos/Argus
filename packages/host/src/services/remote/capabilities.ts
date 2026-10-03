@@ -57,6 +57,7 @@ import {
 } from "../agent/agentService";
 import { loadConversation, loadHistoryIndex } from "../agent/chatHistory";
 import { knownContextWindow } from "../agent/contextWindow";
+import { limitResumeAt } from "../agent/limitResume";
 import {
   enqueueMessage,
   listQueue,
@@ -533,6 +534,7 @@ export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
     created_at: a.createdAt,
     last_activity_at: a.lastEventAt,
     awaiting: agentAwaiting(a.agentId),
+    limit_resume_at: limitResumeAt(a.agentId),
   };
 }
 

@@ -92,6 +92,15 @@ function autoContinueEnabled(agentId: string): boolean {
   }
 }
 
+/** Unix ms a continue is scheduled for, or null when none is pending. */
+export function limitResumeAt(agentId: string): number | null {
+  return states.get(agentId)?.dueAt ?? null;
+}
+
+function announce(agentId: string): void {
+  emitHostEvent(`agent:limit-resume:${agentId}`, limitResumeAt(agentId));
+}
+
 /** Called on every `result`: schedule a continue if the turn hit the limit. */
 export function onTurnResult(
   agentId: string,
@@ -134,6 +143,7 @@ export function onTurnResult(
     has_reset_time: hasResetTime,
   });
   arm(agentId, state);
+  announce(agentId);
 }
 
 function arm(agentId: string, state: LimitState): void {
@@ -153,6 +163,7 @@ function arm(agentId: string, state: LimitState): void {
         return;
       }
       state.dueAt = null;
+      announce(agentId);
       fire(agentId, state);
     },
     Math.min(wait, POLL_MS),
@@ -202,6 +213,7 @@ export function cancelLimitResume(agentId: string): void {
   clearTimeout(state.timer);
   state.timer = null;
   state.dueAt = null;
+  announce(agentId);
   telemetryCapture("agent_limit_auto_continue", {
     action: "cancelled",
     has_reset_time: state.resetsAt !== null,
@@ -215,4 +227,7 @@ export function forgetLimitResume(agentId: string): void {
     clearTimeout(state.timer);
   }
   states.delete(agentId);
+  if (state?.dueAt != null) {
+    announce(agentId);
+  }
 }

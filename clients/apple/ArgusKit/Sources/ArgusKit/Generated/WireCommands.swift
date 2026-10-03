@@ -1700,6 +1700,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GetAgentLimitResumeParams: Codable, Sendable {
+      public var agentId: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agentId"
+      }
+
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
+    }
+
     public struct GetAgentSnapshotParams: Codable, Sendable {
       public var agentId: String
 
@@ -8260,6 +8277,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.GenerateSessionTitleParams
       public typealias Result = String?
       public static let name = "generate_session_title"
+      public static let tier = "admin"
+    }
+
+    public enum GetAgentLimitResume: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GetAgentLimitResumeParams
+      public typealias Result = Double?
+      public static let name = "get_agent_limit_resume"
       public static let tier = "admin"
     }
 

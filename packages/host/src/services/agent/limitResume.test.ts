@@ -17,6 +17,7 @@ const { appState } = await import("../../state");
 const {
   cancelLimitResume,
   forgetLimitResume,
+  limitResumeAt,
   noteLimitHit,
   noteRateLimitLine,
   onTurnResult,
@@ -73,6 +74,19 @@ describe("auto-continue after a plan limit", () => {
       "agent:remote-message:a1",
       { message: "continue", author: "Argus" },
     ]);
+  });
+
+  it("announces the pending continue and clears it on cancel", () => {
+    hitLimit(30 * 60_000);
+    onTurnResult("a1", vi.fn());
+    const due = limitResumeAt("a1");
+    expect(due).toBe(Date.now() + 31 * 60_000);
+
+    cancelLimitResume("a1");
+    expect(limitResumeAt("a1")).toBeNull();
+    expect(
+      emitted.filter(([c]) => c === "agent:limit-resume:a1").map(([, p]) => p),
+    ).toEqual([due, null]);
   });
 
   it("does nothing when the project hasn't opted in", () => {

@@ -7140,6 +7140,7 @@ extension ArgusProtocol {
     public var createdAt: Double?
     public var lastActivityAt: Double?
     public var awaiting: RemoteAgentStatusAwaiting?
+    public var limitResumeAt: Double?
 
     enum CodingKeys: String, CodingKey {
       case agentId = "agent_id"
@@ -7155,9 +7156,10 @@ extension ArgusProtocol {
       case createdAt = "created_at"
       case lastActivityAt = "last_activity_at"
       case awaiting = "awaiting"
+      case limitResumeAt = "limit_resume_at"
     }
 
-    public init(agentId: String, sessionId: String, sessionLabel: String? = nil, projectName: String? = nil, title: String? = nil, status: RemoteAgentStatusStatus, model: String? = nil, contextWindow: Double? = nil, permissionMode: String? = nil, parentAgentId: String? = nil, createdAt: Double? = nil, lastActivityAt: Double? = nil, awaiting: RemoteAgentStatusAwaiting? = nil) {
+    public init(agentId: String, sessionId: String, sessionLabel: String? = nil, projectName: String? = nil, title: String? = nil, status: RemoteAgentStatusStatus, model: String? = nil, contextWindow: Double? = nil, permissionMode: String? = nil, parentAgentId: String? = nil, createdAt: Double? = nil, lastActivityAt: Double? = nil, awaiting: RemoteAgentStatusAwaiting? = nil, limitResumeAt: Double? = nil) {
       self.agentId = agentId
       self.sessionId = sessionId
       self.sessionLabel = sessionLabel
@@ -7171,6 +7173,7 @@ extension ArgusProtocol {
       self.createdAt = createdAt
       self.lastActivityAt = lastActivityAt
       self.awaiting = awaiting
+      self.limitResumeAt = limitResumeAt
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -7188,6 +7191,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(createdAt, forKey: .createdAt)
       try c.encodeIfPresent(lastActivityAt, forKey: .lastActivityAt)
       try c.encodeIfPresent(awaiting, forKey: .awaiting)
+      try c.encodeIfPresent(limitResumeAt, forKey: .limitResumeAt)
     }
   }
 

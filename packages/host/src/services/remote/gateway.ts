@@ -255,6 +255,7 @@ export interface DeviceConnectionOptions {
 const TYPED_AGENT_KINDS = new Set([
   "capabilities",
   "event",
+  "limit-resume",
   "permission",
   "permission-cancel",
   "permission-resolved",
@@ -935,6 +936,10 @@ export class DeviceConnection implements DeviceMediaController {
         }
         break;
       }
+      // The pending continue rides on the status, so late joiners see it too.
+      case "limit-resume":
+        this.pushAgentStatus(agentId);
+        break;
       case "queue":
         this.pushEvent("agent.queue", agentId, {
           agent_id: agentId,

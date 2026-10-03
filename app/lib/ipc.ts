@@ -1921,6 +1921,9 @@ export const listPoppedOutAgents = (): Promise<string[]> =>
 
 // Message queue — owned by the backend so it survives an app restart and is
 // shared with the web/phone clients. See electron/services/agent/messageQueue.ts.
+export const getAgentLimitResume = (agentId: string): Promise<number | null> =>
+  invoke("get_agent_limit_resume", { agentId });
+
 export const listQueuedMessages = (agentId: string): Promise<QueuedMessage[]> =>
   invoke("list_queued_messages", { agentId });
 
