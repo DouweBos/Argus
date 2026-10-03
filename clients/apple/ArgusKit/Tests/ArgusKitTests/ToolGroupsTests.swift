@@ -35,6 +35,14 @@ final class ToolGroupsTests: XCTestCase {
     XCTAssertEqual(segments.map(\.id), ["group-1", "t", "3"])
   }
 
+  func testNeverFoldsAPushNotification() {
+    let segments = ToolGroups.group([
+      message("1", tools: ["Bash"]), message("2", tools: ["mcp__argus__push_notification"]),
+      message("3", tools: ["Bash"]),
+    ])
+    XCTAssertEqual(segments.map(\.id), ["1", "2", "3"])
+  }
+
   func testHoistsImageReadsOnlyWhenTheyShowOpen() {
     var image = message("2", tools: ["Read"])
     image.toolCalls[0].resultBlocks = [.image(imageId: "img", mediaType: "image/png")]

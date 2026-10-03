@@ -19,8 +19,14 @@ public enum ToolGroups {
     guard message.textBlocks.allSatisfy({ $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
     else { return false }
     return !message.toolCalls.contains {
-      substantive.contains($0.name) || awaitsDecision($0) || (hoistImageReads && isImageRead($0))
+      substantive.contains($0.name) || isPushNotification($0) || awaitsDecision($0)
+        || (hoistImageReads && isImageRead($0))
     }
+  }
+
+  /// The agent deliberately reached for your phone; never fold that away.
+  public static func isPushNotification(_ call: RemoteToolCall) -> Bool {
+    call.name == "mcp__argus__push_notification"
   }
 
   public static func isImageRead(_ call: RemoteToolCall) -> Bool {
