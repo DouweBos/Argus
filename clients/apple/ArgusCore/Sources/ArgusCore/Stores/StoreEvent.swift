@@ -37,6 +37,8 @@ public enum StoreEvent: Sendable, Equatable {
     case enable
     case disable
     case revisePlaybook = "revise_playbook"
+    /// Drafted from a description; nothing is saved until it is created.
+    case describe
   }
 
   /// What was done to a run.
@@ -46,6 +48,8 @@ public enum StoreEvent: Sendable, Equatable {
     case cancel
     case feedback
     case saveScratch = "save_scratch"
+    case delete
+    case markRead = "mark_read"
   }
 
   /// How an inbox proposal was answered.
@@ -54,6 +58,7 @@ public enum StoreEvent: Sendable, Equatable {
     case dismiss
     case resolve
     case cleanup
+    case requestRevision = "request_revision"
   }
 
   /// What was done to a pull request.

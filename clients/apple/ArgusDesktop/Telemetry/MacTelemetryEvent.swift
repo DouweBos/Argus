@@ -1,3 +1,4 @@
+import ArgusCore
 import Foundation
 
 /// Every event the Mac app sends itself — the Swift analogue of
@@ -229,6 +230,10 @@ enum MacTelemetryEvent {
   case tailscaleChecked(fix: Bool, ready: Bool)
   /// Something done to a huddle from its sheet, chat or join requests.
   case huddleUsed(action: HuddleAction, hasDevice: Bool)
+  case automationEdited(action: StoreEvent.AutomationAction)
+  case runActed(action: StoreEvent.RunAction)
+  case proposalHandled(action: StoreEvent.ProposalAction)
+  case memoryEdited(action: StoreEvent.MemoryAction)
 
   var name: String {
     switch self {
@@ -267,6 +272,10 @@ enum MacTelemetryEvent {
     case .remoteDeviceManaged: "mac_remote_device_managed"
     case .tailscaleChecked: "mac_tailscale_checked"
     case .huddleUsed: "mac_huddle_used"
+    case .automationEdited: "mac_automation_edited"
+    case .runActed: "mac_run_acted"
+    case .proposalHandled: "mac_proposal_handled"
+    case .memoryEdited: "mac_memory_edited"
     }
   }
 
@@ -342,6 +351,14 @@ enum MacTelemetryEvent {
       ["fix": fix, "ready": ready]
     case .huddleUsed(let action, let hasDevice):
       ["action": action.rawValue, "has_device": hasDevice]
+    case .automationEdited(let action):
+      ["action": action.rawValue]
+    case .runActed(let action):
+      ["action": action.rawValue]
+    case .proposalHandled(let action):
+      ["action": action.rawValue]
+    case .memoryEdited(let action):
+      ["action": action.rawValue]
     }
   }
 

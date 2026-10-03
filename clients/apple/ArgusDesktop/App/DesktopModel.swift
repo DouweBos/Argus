@@ -18,6 +18,8 @@ final class DesktopModel {
   let git: GitWorkspaces
   let automations: AutomationsStore
   let proposals: ProposalsStore
+  /// The inbox in full, from the host's catalog — the Mac's inbox and proposal screens.
+  let inbox: InboxStore
   let palette = CommandPaletteModel()
   let notificationsLog: NotificationsLog
   let huddles: HuddleStore
@@ -72,6 +74,7 @@ final class DesktopModel {
     git = GitWorkspaces(host: store)
     automations = AutomationsStore(host: store)
     proposals = ProposalsStore(host: store)
+    inbox = InboxStore(host: store)
     terminals.replayed = { bytes, truncated in
       MacTelemetry.capture(
         .terminalReplayed(bytes: MacTelemetryEvent.byteBucket(bytes), truncated: truncated))
@@ -90,6 +93,7 @@ final class DesktopModel {
     BuiltinPalette.register(in: palette)
     SettingsPalette.register(in: palette)
     platform.closeDevicePopout = { [runtime] key in runtime.closePopout(key) }
+    AutomationsWiring.install(in: self)
   }
 
   func start() {
@@ -138,6 +142,7 @@ final class DesktopModel {
     await store.loadScratchPads()
     await store.loadRecentAgents()
     await huddles.load()
+    await AutomationsWiring.reload(self)
     for project in store.projects {
       await openProject(project.repoRoot)
     }

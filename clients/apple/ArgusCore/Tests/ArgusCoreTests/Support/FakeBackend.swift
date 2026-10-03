@@ -24,6 +24,15 @@ final class FakeBackend: HostBackend, @unchecked Sendable {
     lock.withLock { replies[method.rawValue] = json }
   }
 
+  /// A catalog command, by its wire name (`proposal_accept`).
+  func reply(command name: String, _ json: String) {
+    lock.withLock { replies[name] = json }
+  }
+
+  func fail(command name: String) {
+    lock.withLock { _ = failing.insert(name) }
+  }
+
   func fail(_ method: RemoteMethod) {
     lock.withLock { _ = failing.insert(method.rawValue) }
   }
