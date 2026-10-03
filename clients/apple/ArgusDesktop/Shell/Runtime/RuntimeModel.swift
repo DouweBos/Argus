@@ -17,6 +17,8 @@ final class RuntimeModel {
   enum Mode: String {
     case simulate
     case inspect
+    /// The device's log stream: the desktop's Debug tool.
+    case logs
   }
 
   /// The key a selection is stored under when no session is open.
