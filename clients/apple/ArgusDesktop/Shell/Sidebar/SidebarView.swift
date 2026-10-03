@@ -14,6 +14,11 @@ struct SidebarView: View {
         Label("Devices", systemImage: "iphone.gen3").tag(Self.devicesTag)
         Label("Pull Requests", systemImage: "arrow.triangle.pull").tag(Self.pullRequestsTag)
       }
+      Section {
+        Label("Inbox", systemImage: "tray").tag(Self.inboxTag)
+        Label("Automations", systemImage: "clock.arrow.circlepath").tag(Self.automationsTag)
+        NotificationsSidebarRow().tag(Self.notificationsTag)
+      }
       if store.projects.isEmpty {
         Text("No projects yet").foregroundStyle(.secondary)
       }
@@ -39,6 +44,10 @@ struct SidebarView: View {
             }
             .buttonStyle(.borderless)
             .help("New session in \(project.name)")
+          }
+          .contextMenu {
+            Button("New Session…") { model.newSessionProject = project }
+            Button("Project Settings…") { model.projectSettingsRepo = project.repoRoot }
           }
         }
       }
@@ -80,6 +89,9 @@ struct SidebarView: View {
   private static let runtimesTag = "nav:runtimes"
   private static let devicesTag = "nav:devices"
   private static let pullRequestsTag = "nav:pull-requests"
+  private static let inboxTag = "nav:inbox"
+  private static let automationsTag = "nav:automations"
+  private static let notificationsTag = "nav:notifications"
 
   private var selection: Binding<String?> {
     Binding(
@@ -89,6 +101,9 @@ struct SidebarView: View {
         case .runtimes: Self.runtimesTag
         case .devices: Self.devicesTag
         case .pullRequests, .pullRequest: Self.pullRequestsTag
+        case .inbox, .proposal: Self.inboxTag
+        case .automations, .automation, .quickRun: Self.automationsTag
+        case .notifications: Self.notificationsTag
         default: model.route.sessionId
         }
       },
@@ -98,6 +113,9 @@ struct SidebarView: View {
         case Self.runtimesTag?: model.navigate(.runtimes)
         case Self.devicesTag?: model.navigate(.devices)
         case Self.pullRequestsTag?: model.navigate(.pullRequests)
+        case Self.inboxTag?: model.navigate(.inbox)
+        case Self.automationsTag?: model.navigate(.automations)
+        case Self.notificationsTag?: model.navigate(.notifications)
         case let id?: model.open(session: id)
         case nil: break
         }
@@ -106,6 +124,16 @@ struct SidebarView: View {
 
   private func agents(in session: RemoteSession) -> [RemoteAgentStatus] {
     (store.agentsByRepo[session.repoRoot] ?? []).filter { $0.sessionId == session.id }
+  }
+}
+
+/// Notifications, with a count of what you haven't looked at yet.
+private struct NotificationsSidebarRow: View {
+  @Environment(DesktopModel.self) private var model
+
+  var body: some View {
+    Label("Notifications", systemImage: "exclamationmark.triangle")
+      .badge(model.notificationsLog.unseenCount)
   }
 }
 

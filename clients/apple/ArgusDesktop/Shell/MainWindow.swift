@@ -26,10 +26,10 @@ struct MainWindow: View {
         } else if case .pullRequest(let repo, let number) = model.route {
           PullRequestDetailScreen(repo: repo, number: number)
             .id("\(repo)#\(number)")
+        } else if RouteScreen.handles(model.route) {
+          RouteScreen(route: model.route)
         } else {
-          ContentUnavailableView(
-            "Pick a session", systemImage: "sidebar.left",
-            description: Text("Choose a session in the sidebar, or create one."))
+          HomeScreen()
         }
       }
       .navigationSplitViewColumnWidth(min: 420, ideal: 640)
@@ -42,6 +42,15 @@ struct MainWindow: View {
       ImageViewerOverlay()
         .onExitCommand { imageViewer.dismiss() }
     }
+    .overlay(alignment: .top) {
+      if model.palette.isPresented {
+        CommandPaletteView().padding(.top, 60)
+      }
+    }
+    .modifier(ProjectFlows())
+    .sheet(item: projectSettingsRepo) { repo in
+      ProjectSettingsSheet(repoRoot: repo.path)
+    }
     .environment(imageViewer)
     // The viewer covers the window; the toolbar would still draw over it.
     .toolbar(imageViewer.isPresented ? .hidden : .automatic, for: .windowToolbar)
@@ -53,6 +62,20 @@ struct MainWindow: View {
       }
     }
   }
+}
+
+extension MainWindow {
+  private var projectSettingsRepo: Binding<RepoPath?> {
+    Binding(
+      get: { model.projectSettingsRepo.map(RepoPath.init) },
+      set: { model.projectSettingsRepo = $0?.path })
+  }
+}
+
+/// A repo root as a sheet item.
+struct RepoPath: Identifiable {
+  let path: String
+  var id: String { path }
 }
 
 /// Peacock's tokens for the system appearance, in any window.

@@ -13,15 +13,31 @@ struct ArgusDesktopApp: App {
         .environment(delegate.model.terminals)
         .environment(delegate.model.pullRequests)
         .environment(delegate.model.runtime)
+        .environment(delegate.model.automations)
+        .environment(delegate.model.proposals)
         .frame(minWidth: 960, minHeight: 600)
+        // Deep links, once a build claims `argus://` (see docs/mac-app.md).
+        .onOpenURL { url in
+          if let route = DesktopRoute(deepLink: url) { delegate.model.navigate(route) }
+        }
     }
     .commands {
       CommandGroup(replacing: .newItem) {
         NewSessionCommand(model: delegate.model)
       }
+      CommandGroup(after: .newItem) {
+        ProjectCommands(model: delegate.model)
+      }
       CommandGroup(after: .sidebar) {
         NavigationCommands(model: delegate.model)
       }
+    }
+
+    Settings {
+      SettingsWindow()
+        .environment(delegate.model)
+        .environment(delegate.model.store)
+        .environment(delegate.model.automations)
     }
 
     // Device popouts float above everything, as on the desktop.
@@ -55,6 +71,18 @@ private struct NewSessionCommand: View {
   }
 }
 
+private struct ProjectCommands: View {
+  let model: DesktopModel
+
+  var body: some View {
+    Button("Add Project…") { model.addingProject = true }
+      .keyboardShortcut("o", modifiers: .command)
+    Divider()
+    Button("Command Palette…") { model.palette.isPresented.toggle() }
+      .keyboardShortcut("p", modifiers: [.command, .shift])
+  }
+}
+
 private struct NavigationCommands: View {
   let model: DesktopModel
 
@@ -65,6 +93,11 @@ private struct NavigationCommands: View {
     Button("Forward") { model.goForward() }
       .keyboardShortcut("]", modifiers: .command)
       .disabled(!model.canGoForward)
+    Divider()
+    Button("Inbox") { model.navigate(.inbox) }
+      .keyboardShortcut("i", modifiers: [.command, .shift])
+    Button("Automations") { model.navigate(.automations) }
+    Button("Notifications") { model.navigate(.notifications) }
     Divider()
     Button(model.terminalPanelVisible ? "Hide Terminal" : "Show Terminal") {
       model.terminalPanelVisible.toggle()

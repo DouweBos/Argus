@@ -16,6 +16,10 @@ final class DesktopModel {
   let pullRequests: PullRequestsStore
   /// Each session's repository, opened when its git panel first shows.
   let git: GitWorkspaces
+  let automations: AutomationsStore
+  let proposals: ProposalsStore
+  let palette = CommandPaletteModel()
+  let notificationsLog: NotificationsLog
   private(set) var backend: LocalBackend?
 
   private(set) var route: DesktopRoute = .home
@@ -25,6 +29,12 @@ final class DesktopModel {
   var deletingSession: RemoteSession?
   /// The bottom terminal panel under a session (⇧⌘T).
   var terminalPanelVisible = false
+  /// The tab the Settings window shows.
+  var settingsTab: SettingsTab = .general
+  /// The project the Project Settings sheet is open for.
+  var projectSettingsRepo: String?
+  /// The Add Project flow (⌘O).
+  var addingProject = false
   /// The panel each session was last left on, as the desktop app remembers.
   private var agentsPanelSessions: Set<String> = []
   /// The git sub-view each session was last left on.
@@ -36,6 +46,8 @@ final class DesktopModel {
 
   init() {
     supervisor = HostSupervisor(configuration: HostLocation.configuration())
+    let notificationsLog = NotificationsLog()
+    self.notificationsLog = notificationsLog
     store = HostStore(
       hooks: HostStoreHooks(
         // Only what the host can't see; the rest of the iOS catalog stays on iOS.
@@ -48,6 +60,7 @@ final class DesktopModel {
         },
         errorReported: { error, scope in
           NSLog("[argus] %@: %@", scope, HostStore.describe(error))
+          notificationsLog.push(.error, HostStore.describe(error), source: scope)
         },
         // Banners only when you aren't already looking at the window.
         isAppFocused: { NSApp.isActive && NSApp.keyWindow != nil }))
@@ -55,6 +68,8 @@ final class DesktopModel {
     terminals = TerminalsStore(backend: { [store] in store.backend })
     pullRequests = PullRequestsStore(host: store)
     git = GitWorkspaces(host: store)
+    automations = AutomationsStore(host: store)
+    proposals = ProposalsStore(host: store)
     terminals.replayed = { bytes, truncated in
       MacTelemetry.capture(
         .terminalReplayed(bytes: MacTelemetryEvent.byteBucket(bytes), truncated: truncated))
@@ -69,6 +84,7 @@ final class DesktopModel {
     }
     supervisor.onEvent = { [weak self] event in self?.supervisorEvent(event) }
     platform.focusWindow = { NSApp.activate() }
+    BuiltinPalette.register(in: palette)
     platform.closeDevicePopout = { [runtime] key in runtime.closePopout(key) }
   }
 
@@ -131,6 +147,7 @@ final class DesktopModel {
       guard route == .home,
         let raw = ProcessInfo.processInfo.environment["ARGUS_DEV_ROUTE"]
       else { return }
+      if raw.hasPrefix("/"), let route = DesktopRoute(path: raw) { return navigate(route) }
       let parts = raw.split(separator: ":").map(String.init)
       switch (parts.first, parts.count) {
       case ("session", 2...): navigate(.session(id: parts[1], agentId: parts.count > 2 ? parts[2] : nil))
@@ -176,6 +193,13 @@ final class DesktopModel {
   }
 
   // MARK: Navigation
+
+  /// A deep link or `navigation:goto` path; unknown paths are ignored.
+  func open(path: String) {
+    guard let route = DesktopRoute(path: path) else { return }
+    NSApp.activate()
+    navigate(route)
+  }
 
   /// A session from the sidebar: the panel it was last on, else its home.
   func open(session id: String) {
