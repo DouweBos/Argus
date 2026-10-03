@@ -111,6 +111,31 @@ private struct AccountRow: View {
 
   var body: some View {
     HStack(spacing: 10) {
+      Button {
+        if !active { onSelect() }
+      } label: {
+        identity
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(active ? "Active account" : "Make active")
+      Spacer()
+      if account.needsReauth {
+        Button("Sign In Again", action: onReauth)
+      }
+      Menu {
+        Button("Rename…", action: onRename)
+        Button("Remove…", role: .destructive, action: onRemove)
+      } label: {
+        Image(systemName: "ellipsis")
+      }
+      .menuStyle(.borderlessButton)
+      .fixedSize()
+      .accessibilityLabel("Account actions")
+    }
+  }
+
+  private var identity: some View {
+    HStack(spacing: 10) {
       Image(systemName: active ? "checkmark.circle.fill" : "circle")
         .foregroundStyle(active ? theme.accent : theme.textMuted)
         .accessibilityLabel(active ? "Active" : "Inactive")
@@ -130,24 +155,9 @@ private struct AccountRow: View {
           Text(detail).font(.caption).foregroundStyle(.secondary)
         }
       }
-      Spacer()
-      if account.needsReauth {
-        Button("Sign In Again", action: onReauth)
-      }
-      Menu {
-        Button("Rename…", action: onRename)
-        Button("Remove…", role: .destructive, action: onRemove)
-      } label: {
-        Image(systemName: "ellipsis")
-      }
-      .menuStyle(.borderlessButton)
-      .fixedSize()
-      .accessibilityLabel("Account actions")
+      Spacer(minLength: 0)
     }
     .contentShape(Rectangle())
-    .onTapGesture { if !active { onSelect() } }
-    .accessibilityAddTraits(.isButton)
-    .accessibilityAction(named: "Make active", onSelect)
   }
 
   /// The org, plus the email when the label already took the title.
