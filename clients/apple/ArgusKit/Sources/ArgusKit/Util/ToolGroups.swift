@@ -3,19 +3,31 @@ import Foundation
 /// Folding runs of tool-only messages into one collapsed row, ported from
 /// `toolGroups.ts`.
 public enum ToolGroups {
-  /// Shorter runs are left expanded — collapsing two rows saves nothing and
-  /// costs the reader a tap.
-  public static let minRun = 3
+  /// A lone call is left expanded — folding one row saves nothing.
+  public static let minRun = 2
 
   /// Tool calls that carry the substance of a turn, so a message containing
   /// one is never folded away.
   private static let substantive: Set<String> = ["Agent", "Edit", "MultiEdit", "Write"]
 
-  public static func isToolCallOnly(_ message: RemoteMessage) -> Bool {
+  /// `hoistImageReads`: image reads are shown open (a user setting), and an
+  /// open card inside a folded group is hidden all the same.
+  public static func isToolCallOnly(_ message: RemoteMessage, hoistImageReads: Bool = false)
+    -> Bool
+  {
     guard message.role == .assistant, !message.toolCalls.isEmpty else { return false }
     guard message.textBlocks.allSatisfy({ $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
     else { return false }
-    return !message.toolCalls.contains { substantive.contains($0.name) || awaitsDecision($0) }
+    return !message.toolCalls.contains {
+      substantive.contains($0.name) || awaitsDecision($0) || (hoistImageReads && isImageRead($0))
+    }
+  }
+
+  public static func isImageRead(_ call: RemoteToolCall) -> Bool {
+    call.name == "Read" && call.resultBlocks.contains {
+      if case .image = $0 { return true }
+      return false
+    }
   }
 
   /// A call waiting on approval, here or in a sub-agent under it, must never be
@@ -49,7 +61,9 @@ public enum ToolGroups {
     }
   }
 
-  public static func group(_ messages: [RemoteMessage]) -> [Segment] {
+  public static func group(_ messages: [RemoteMessage], hoistImageReads: Bool = false)
+    -> [Segment]
+  {
     var segments: [Segment] = []
     var run: [RemoteMessage] = []
 
@@ -64,7 +78,7 @@ public enum ToolGroups {
     }
 
     for message in messages where hasVisibleContent(message) {
-      if isToolCallOnly(message) {
+      if isToolCallOnly(message, hoistImageReads: hoistImageReads) {
         run.append(message)
       } else {
         flush()
