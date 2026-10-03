@@ -14,7 +14,7 @@ Decisions already made:
   moves out of `ArgusRemote` into SPM packages; each app keeps its own shell.
 - **Host:** the Mac app bundles and supervises its own Node host from the first
   milestone.
-- **Git:** the engine and view models are shared with Grove through the GitKit
+- **Git:** the engine and view models are shared with Grove through the GroveKit
   package; Argus draws its own views (see M4).
 - **Cutover:** Electron keeps shipping. The Mac app ships as a beta against a
   parity checklist and replaces Electron only when the checklist is done.
@@ -163,8 +163,8 @@ handle selection or long transcripts.
 **M4 — Git:**
 
 - Views: status, staging (file and hunk), commit, diff viewer, log/graph, blame, branches, stash, conflicts, rebase/cherry-pick flows, PRs.
-- **Engine and view models come from the shared GitKit package**, which lives in the Grove repo and is imported by URL pinned to a Grove release tag. It is extracted from Grove's app: git engine, models and Grove's headless view models. Argus draws its own views on them; Grove keeps its own.
-- GitKit runs git through a pluggable runner. The Mac app uses the local runner on the worktree paths, since its host is on the same machine. A runner over the host gateway comes with M6 (remote hosts) and lets the phone use the same engine.
+- **Engine and view models come from the shared GroveKit package**, which lives in the Grove repo and is imported by URL pinned to a Grove release tag. It is extracted from Grove's app: git engine, models and Grove's headless view models. Argus draws its own views on them; Grove keeps its own.
+- GroveKit runs git through a pluggable runner. The Mac app uses the local runner on the worktree paths, since its host is on the same machine. A runner over the host gateway comes with M6 (remote hosts) and lets the phone use the same engine.
 - Argus-specific flows stay host commands: creating and deleting sessions, merging into the base branch, protected branches, auto-fetch.
 - The diff and graph views use AppKit-backed text and table views for large repos.
 
