@@ -20,6 +20,7 @@ final class DesktopModel {
   let proposals: ProposalsStore
   let palette = CommandPaletteModel()
   let notificationsLog: NotificationsLog
+  let huddles: HuddleStore
   private(set) var backend: LocalBackend?
 
   private(set) var route: DesktopRoute = .home
@@ -79,6 +80,7 @@ final class DesktopModel {
       terminals.ipc(channel: channel, args: args, seq: seq)
     }
     runtime = RuntimeModel(store: store)
+    huddles = HuddleStore(store: store, runtime: runtime)
     store.hooks.agentNotificationClicked = { [weak self] agentId, sessionId in
       NSApp.activate()
       self?.navigate(.session(id: sessionId, agentId: agentId))
@@ -135,6 +137,7 @@ final class DesktopModel {
     await store.refreshProjects()
     await store.loadScratchPads()
     await store.loadRecentAgents()
+    await huddles.load()
     for project in store.projects {
       await openProject(project.repoRoot)
     }

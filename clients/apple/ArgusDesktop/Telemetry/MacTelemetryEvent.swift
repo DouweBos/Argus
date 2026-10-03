@@ -162,6 +162,17 @@ enum MacTelemetryEvent {
     case testPush = "test_push"
   }
 
+  enum HuddleAction: String {
+    case start
+    case blocked
+    case stop
+    case approve
+    case deny
+    case remove
+    case say
+    case copyInvite = "copy_invite"
+  }
+
   case launched
   case quit(hadRunningAgents: Bool)
   case hostStarted(restarts: Int)
@@ -216,6 +227,8 @@ enum MacTelemetryEvent {
   case remoteDeviceManaged(action: RemoteDeviceAction, success: Bool)
   /// The Tailscale checklist ran a check or a one-click fix.
   case tailscaleChecked(fix: Bool, ready: Bool)
+  /// Something done to a huddle from its sheet, chat or join requests.
+  case huddleUsed(action: HuddleAction, hasDevice: Bool)
 
   var name: String {
     switch self {
@@ -253,6 +266,7 @@ enum MacTelemetryEvent {
     case .pairing: "mac_pairing"
     case .remoteDeviceManaged: "mac_remote_device_managed"
     case .tailscaleChecked: "mac_tailscale_checked"
+    case .huddleUsed: "mac_huddle_used"
     }
   }
 
@@ -326,6 +340,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "success": success]
     case .tailscaleChecked(let fix, let ready):
       ["fix": fix, "ready": ready]
+    case .huddleUsed(let action, let hasDevice):
+      ["action": action.rawValue, "has_device": hasDevice]
     }
   }
 

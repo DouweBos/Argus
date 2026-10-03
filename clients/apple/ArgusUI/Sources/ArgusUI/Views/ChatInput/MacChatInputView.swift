@@ -11,6 +11,7 @@
   struct MacChatInputView: View {
     @Environment(\.theme) var theme
     @Environment(HostStore.self) var host
+    @Environment(\.composerTyping) var composerTyping
     let preferences = Preferences()
 
     let agentId: String
@@ -77,6 +78,7 @@
         preferences.set(value, for: PreferenceKey.draft(agentId: agentId))
         if dismissedText != value { dismissedText = nil }
         menuIndex = 0
+        composerTyping?(agentId, !value.isEmpty)
       }
       .onChange(of: mentionContext?.query) { _, _ in Task { await refreshBrowse() } }
     }
