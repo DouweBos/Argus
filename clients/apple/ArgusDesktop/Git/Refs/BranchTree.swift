@@ -1,6 +1,7 @@
 import GroveKit
 
 /// Local branches as folders split on `/`, as Electron's `buildLocalTree`.
+@MainActor
 struct BranchTreeNode: Identifiable {
   /// The folder path (`feature/ui`) or the branch's full name.
   let id: String

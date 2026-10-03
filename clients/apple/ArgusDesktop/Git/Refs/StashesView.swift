@@ -38,10 +38,10 @@ struct StashesView: View {
     .task {
       let sessionId = workspace.sessionId
       let isProjectRoot = workspace.isProjectRoot
-      stashes.onRevealInHistory = { [weak workspace, model] sha in
+      // The history model doesn't hold the stashes one, so capturing it keeps no cycle.
+      stashes.onRevealInHistory = { [history = workspace.history, model] sha in
         model.navigate(.sessionGit(id: sessionId, view: isProjectRoot ? .history : .branch))
         Task {
-          guard let history = workspace?.history else { return }
           await history.loadIfNeeded()
           if let commit = history.commit(withID: sha) { history.select(commit) }
         }
