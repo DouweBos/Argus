@@ -64,6 +64,7 @@ const { releaseDevice, resetClaims } = await import("./deviceClaims");
 const { resolveMentionPath } = await import("../file/operations");
 const { collectAllProjects } = await import("../mcp/projectDiscovery");
 const { GitError } = await import("../session/gitError");
+const { ShareError } = await import("./shareError");
 
 /** Stand-in for the real registrations made by `registerHostCommands()`. */
 const FIXTURES: [
@@ -97,6 +98,17 @@ const FIXTURES: [
     z.object({ id: z.string(), name: z.string() }),
   ],
   ["browser_mouse_event", "admin", () => null],
+  [
+    "share_boom",
+    "admin",
+    () => {
+      throw new ShareError("cloudflared-missing", "needs cloudflared", {
+        explanation: "why",
+        steps: ["install it"],
+        command: "brew install cloudflared",
+      });
+    },
+  ],
   [
     "git_boom",
     "admin",
@@ -183,6 +195,21 @@ describe("admin passthrough dispatch", () => {
         __gitError: true,
         kind: "merge-conflict",
         recovery: "resolve it",
+      },
+    });
+  });
+
+  it("carries a ShareError envelope in the wire error's data", async () => {
+    await expect(
+      dispatch("share_boom", {}, makeCtx(["monitor", "admin"])),
+    ).rejects.toMatchObject({
+      code: "bad_request",
+      message: "needs cloudflared",
+      data: {
+        __shareError: true,
+        kind: "cloudflared-missing",
+        steps: ["install it"],
+        command: "brew install cloudflared",
       },
     });
   });
