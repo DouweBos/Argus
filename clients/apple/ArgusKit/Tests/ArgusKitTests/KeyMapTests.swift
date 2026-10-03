@@ -29,4 +29,13 @@ struct KeyMapTests {
     // kVK_JIS_Eisu.
     #expect(KeyMap.nativeKey(platform: .ios, macKeyCode: 102, modifierFlags: 0) == nil)
   }
+
+  @Test("browser keys are DOM key names or the typed character")
+  func dom() {
+    #expect(KeyMap.domKey(macKeyCode: 36, characters: "\r") == "Enter")
+    #expect(KeyMap.domKey(macKeyCode: 56, characters: nil) == "Shift")
+    #expect(KeyMap.domKey(macKeyCode: 0, characters: "A") == "A")
+    #expect(KeyMap.domKey(macKeyCode: 102, characters: "\u{F710}") == nil)
+  }
 }
+
