@@ -376,7 +376,8 @@ limit is spent is sent `continue` automatically once the limit resets
 (a minute after the reset time Claude Code reports, or an hour later if
 it reports none). Sending the agent anything yourself cancels the
 pending continue. Argus gives up after five continues in a row that
-hit the limit again.
+hit the limit again. While a continue is pending, the agent's chat shows when it
+will fire, on the desktop, web and phone.
 
 ```jsonc
 "auto_continue_on_limit": true

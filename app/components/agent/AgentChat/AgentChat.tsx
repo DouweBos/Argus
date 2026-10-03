@@ -87,6 +87,7 @@ import { HuddleTypingBar } from "../HuddleShare";
 import { TaskList } from "../TaskList";
 import { TodoList } from "../TodoList";
 import styles from "./AgentChat.module.css";
+import { LimitResumeBanner } from "./LimitResumeBanner";
 import { QueuedMessages } from "./QueuedMessages";
 
 /**
@@ -1099,6 +1100,8 @@ export function AgentChat({
               {activity.state === "working" && <ThinkingDots />}
             </div>
           )}
+
+        {!readOnly && agentId && <LimitResumeBanner agentId={agentId} />}
 
         {!readOnly && agentId && queuedMessages.length > 0 && (
           <QueuedMessages agentId={agentId} messages={queuedMessages} />

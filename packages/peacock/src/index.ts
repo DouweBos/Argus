@@ -91,6 +91,7 @@ export * from "./components/InboxItemRow/InboxItemRow";
 export * from "./components/Input/Input";
 export * from "./components/InviteMessage/InviteMessage";
 export * from "./components/Kbd/Kbd";
+export * from "./components/LimitResumeBanner/LimitResumeBanner";
 export * from "./components/LogEntry/LogEntry";
 export * from "./components/PalettePill/PalettePill";
 export * from "./components/Planet/Planet";

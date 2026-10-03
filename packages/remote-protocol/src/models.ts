@@ -73,6 +73,8 @@ export const RemoteAgentStatus = z.object({
    * so a client can flag it without holding the transcript.
    */
   awaiting: z.enum(["permission", "question", "plan"]).nullable().optional(),
+  /** Unix ms a "continue" is scheduled for after a spent usage limit resets. */
+  limit_resume_at: z.number().nullable().optional(),
 });
 export type RemoteAgentStatus = z.infer<typeof RemoteAgentStatus>;
 

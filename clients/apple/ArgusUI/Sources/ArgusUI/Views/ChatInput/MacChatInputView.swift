@@ -50,6 +50,9 @@
 
     var body: some View {
       VStack(alignment: .leading, spacing: 6) {
+        if let at = status?.limitResumeAt {
+          Banner(text: Labels.limitResumeBanner(at))
+        }
         if !slashItems.isEmpty {
           SlashSuggestionList(items: slashItems, selected: menuIndex) { acceptSlash($0) }
         } else if let mention = mentionContext, !mentionItems.isEmpty {

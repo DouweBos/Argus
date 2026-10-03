@@ -265,6 +265,8 @@ export interface RemoteAgentStatus {
   last_activity_at?: number;
   /** What the agent is blocked on the user for, if anything. */
   awaiting?: "permission" | "question" | "plan" | null;
+  /** Unix ms a "continue" is scheduled for once a spent usage limit resets. */
+  limit_resume_at?: number | null;
 }
 
 /**

@@ -130,6 +130,12 @@ export const AGENT_COMMANDS = {
     params: z.object({ firstMessage: z.string() }),
     result: z.string().nullable(),
   },
+  /** Unix ms a "continue" is scheduled for after a usage limit; null if none. */
+  get_agent_limit_resume: {
+    tier: "admin",
+    params: AgentId,
+    result: z.number().nullable(),
+  },
   list_queued_messages: {
     tier: "admin",
     params: AgentId,

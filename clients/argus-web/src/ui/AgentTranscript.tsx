@@ -18,6 +18,7 @@ import {
   parseQuestions,
   PlanApproval,
   QuestionForm,
+  LimitResumeBanner,
   QueuedMessage,
   QueuedMessageAction,
   QueuedMessageEditor,
@@ -270,6 +271,9 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
   const watchAgent = useAppStore((s) => s.watchAgent);
   const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
   const queued = useAppStore((s) => s.queuedByAgent[agentId]);
+  const limitResumeAt = useAppStore(
+    (s) => s.statusByAgent[agentId]?.limit_resume_at ?? null,
+  );
   const endRef = useRef<HTMLDivElement>(null);
   const loadingOlderRef = useRef(false);
   // Scroll height captured just before prepending older messages, so we can
@@ -443,6 +447,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
         <Message key={m.id} agentId={agentId} msg={m} />
       ))}
       <WorkingIndicator agentId={agentId} />
+      {limitResumeAt !== null && <LimitResumeBanner resumeAt={limitResumeAt} />}
       {queued && queued.length > 0 && (
         <QueuedMessageList>
           {queued.map((q) => (
