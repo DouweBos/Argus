@@ -7,6 +7,7 @@ import SwiftUI
 /// Live-refreshes off agent events with a poll as a backstop, and lazily loads
 /// older history when you scroll to the top.
 public struct AgentTranscriptView: View {
+  @Environment(\.autoExpandImageReads) private var autoExpandImageReads
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
 
@@ -23,7 +24,9 @@ public struct AgentTranscriptView: View {
   private static let bottomAnchor = "transcript-bottom"
 
   private var messages: [RemoteMessage] { host.visibleMessages(for: agentKey) }
-  private var segments: [ToolGroups.Segment] { ToolGroups.group(messages) }
+  private var segments: [ToolGroups.Segment] {
+    ToolGroups.group(messages, hoistImageReads: autoExpandImageReads)
+  }
 
   public init(agentKey: String, isLive: Bool = true) {
     self.agentKey = agentKey

@@ -24,7 +24,24 @@ final class ToolGroupsTests: XCTestCase {
       message("1", tools: ["Bash"]), pending, message("3", tools: ["Bash"]),
       message("4", tools: ["Bash"]),
     ])
-    XCTAssertEqual(segments.map(\.id), ["1", "2", "3", "4"])
+    XCTAssertEqual(segments.map(\.id), ["1", "2", "group-3"])
+  }
+
+  func testFoldsAPairButLeavesALoneCall() {
+    let segments = ToolGroups.group([
+      message("1", tools: ["Bash"]), message("2", tools: ["Read"]), message("t", text: ["done"]),
+      message("3", tools: ["Bash"]),
+    ])
+    XCTAssertEqual(segments.map(\.id), ["group-1", "t", "3"])
+  }
+
+  func testHoistsImageReadsOnlyWhenTheyShowOpen() {
+    var image = message("2", tools: ["Read"])
+    image.toolCalls[0].resultBlocks = [.image(imageId: "img", mediaType: "image/png")]
+    let run = [message("1", tools: ["Bash"]), image, message("3", tools: ["Bash"])]
+
+    XCTAssertEqual(ToolGroups.group(run).map(\.id), ["group-1"])
+    XCTAssertEqual(ToolGroups.group(run, hoistImageReads: true).map(\.id), ["1", "2", "3"])
   }
 
   func testEmptyMessagesDoNotSplitAToolRun() {
