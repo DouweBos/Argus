@@ -197,7 +197,7 @@ final class GitWorkspace {
   /// there — then refreshes. Nil and a banner on failure.
   @discardableResult
   func host<C: RemoteCommand>(
-    _ command: C.Type, _ params: C.Params, label: String, track action: MacTelemetryEvent.GitAction? = nil
+    _ command: sending C.Type, _ params: C.Params, label: String, track action: MacTelemetryEvent.GitAction? = nil
   ) async -> C.Result? {
     guard let backend = host.backend else { return nil }
     hostBusy = label

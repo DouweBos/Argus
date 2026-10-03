@@ -33,7 +33,7 @@ struct GitSidebar: View {
           row("Hooks", "link", .hooks)
           row("Settings", "gearshape", .settings)
         }
-        if workspace.workingCopy.isInOperation || !workspace.workingCopy.conflictedFiles.isEmpty {
+        if view == .conflicts || workspace.workingCopy.isInOperation || !workspace.workingCopy.conflictedFiles.isEmpty {
           row("Conflicts", "exclamationmark.triangle", .conflicts, count: workspace.workingCopy.conflictedFiles.count)
         }
       }
