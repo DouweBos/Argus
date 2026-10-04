@@ -41,6 +41,7 @@ final class GitWorkspace {
   private var filteredHistoryOrder: [String] = []
   private var tabGenerations: [String: Int] = [:]
   private var watcher: FileWatcher?
+  private var remoteActive = false
   private var isRefreshing = false
   private var needsAnotherRefresh = false
   private let host: HostStore
@@ -79,6 +80,12 @@ final class GitWorkspace {
   /// On screen: watch the worktree (and, for a linked worktree, the shared
   /// git dir its refs live in) and refresh.
   func start() async {
+    if isRemote {
+      // The worktree is on another disk; the host's broadcasts say when it moved.
+      guard !remoteActive else { return }
+      remoteActive = true
+      return await refreshAll()
+    }
     guard watcher == nil else { return }
     var paths = [repository.path.path]
     if let main = WorktreeResolver.mainRepositoryPath(forWorktreeAt: repository.path.path),
@@ -98,9 +105,10 @@ final class GitWorkspace {
   func pause() {
     watcher?.stop()
     watcher = nil
+    remoteActive = false
   }
 
-  var isActive: Bool { watcher != nil }
+  var isActive: Bool { watcher != nil || remoteActive }
 
   // MARK: Refresh
 
