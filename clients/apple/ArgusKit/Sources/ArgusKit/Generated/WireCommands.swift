@@ -583,6 +583,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct BrowserDevtoolsParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
     public struct BrowserKeyboardEventParamsType: RawRepresentable, Codable, Hashable, Sendable {
       public var rawValue: String
       public init(rawValue: String) { self.rawValue = rawValue }
@@ -8143,6 +8160,13 @@ extension ArgusProtocol {
       public typealias Result = IgnoredResult
       public static let name = "boot_simulator"
       public static let tier = "admin"
+    }
+
+    public enum BrowserDevtools: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.BrowserDevtoolsParams
+      public typealias Result = ArgusProtocol.BrowserDevtools?
+      public static let name = "browser_devtools"
+      public static let tier = "host"
     }
 
     public enum BrowserGetMjpegPort: RemoteCommand {

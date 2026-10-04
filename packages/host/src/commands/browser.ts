@@ -1,3 +1,4 @@
+import { browserDevtools } from "../services/browser/devtools";
 import { getMjpegPort } from "../services/browser/mjpegServer";
 import {
   browserKeyboardEvent,
@@ -42,5 +43,6 @@ export function registerBrowserCommands(): void {
   defineTypedCommand("browser_update_preset", (p) =>
     browserUpdatePreset(p.sessionId, p.preset),
   );
+  defineTypedCommand("browser_devtools", (p) => browserDevtools(p.sessionId));
   defineTypedCommand("browser_get_mjpeg_port", () => getMjpegPort());
 }

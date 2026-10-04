@@ -155,6 +155,7 @@ export type {
   ArgusRunCommand as RunCommand,
   RelatedProject,
   SimulatorDeeplinkConfig,
+  BrowserDevtools,
   BrowserPresetConfig,
   RuntimePlatform,
 } from "@argus/remote-protocol";

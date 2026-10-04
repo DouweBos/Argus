@@ -79,6 +79,9 @@ export const HOST_ONLY_COMMANDS = new Set([
   "huddle_approve_guest",
   "huddle_deny_guest",
   "huddle_remove_guest",
+  // Loopback DevTools endpoints: unreachable off this machine, and a debugger
+  // into the session's browser besides.
+  "browser_devtools",
 ]);
 
 /** Every request method the remote client may send, and the grant it needs. */

@@ -66,6 +66,7 @@ export interface EventMap {
     success: boolean;
     tool: "artifact_search" | "get";
   };
+  browser_devtools_requested: { available: boolean };
   claude_account_rechecked: {
     badge_cleared: boolean;
     outcome: "ok" | "rate_limited" | "reauth" | "unknown";
