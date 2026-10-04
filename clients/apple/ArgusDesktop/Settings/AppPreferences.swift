@@ -68,8 +68,9 @@ final class AppPreferences {
 
   // MARK: Display size
 
-  /// macOS ignores Dynamic Type for text, so the control size is what visibly
-  /// changes; views that read `dynamicTypeSize` get the step too.
+  /// macOS ignores Dynamic Type for text, so the step lands three ways: the
+  /// control size, the default font every unstyled text inherits, and
+  /// `dynamicTypeSize` for views that read it.
   var dynamicTypeSize: DynamicTypeSize {
     switch displaySize {
     case .larger: .xxLarge
@@ -77,6 +78,17 @@ final class AppPreferences {
     case .default: .large
     case .small: .medium
     case .smaller: .small
+    }
+  }
+
+  /// The body font at this size; macOS's own body is 13pt.
+  var bodyFont: Font {
+    switch displaySize {
+    case .larger: .system(size: 17)
+    case .large: .system(size: 15)
+    case .default: .body
+    case .small: .system(size: 12)
+    case .smaller: .system(size: 11)
     }
   }
 
