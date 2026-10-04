@@ -1,0 +1,111 @@
+import Foundation
+import Testing
+
+@testable import Argus
+
+struct DesktopRouteTests {
+  @Test(arguments: [
+    ("/", DesktopRoute.home),
+    ("/agents", .agents),
+    ("/runtimes", .runtimes),
+    ("/devices", .devices),
+    ("/inbox", .inbox),
+    ("/inbox/proposals/p1", .proposal(id: "p1")),
+    ("/notifications", .notifications),
+    ("/pull-requests", .pullRequests),
+    ("/pull-requests/houwert/argus/42", .pullRequest(repo: "houwert/argus", number: 42)),
+    ("/automations", .automations),
+    ("/automations/quick", .quickRun(runId: nil)),
+    ("/automations/quick/runs/r1", .quickRun(runId: "r1")),
+    ("/automations/a1", .automation(id: "a1", runId: nil)),
+    ("/automations/a1/runs/r1", .automation(id: "a1", runId: "r1")),
+    ("/sessions/s1", .sessionHome(id: "s1")),
+    ("/sessions/s1/home", .sessionHome(id: "s1")),
+    ("/sessions/s1/agents", .session(id: "s1", agentId: nil)),
+    ("/sessions/s1/agents/a1", .session(id: "s1", agentId: "a1")),
+  ])
+  func parsesTopLevelRoutes(path: String, route: DesktopRoute) {
+    #expect(DesktopRoute(path: path) == route)
+  }
+
+  @Test(arguments: [
+    ("/sessions/s1/git", GitRoute.working),
+    ("/sessions/s1/git/working", .working),
+    ("/sessions/s1/git/branch", .branch),
+    ("/sessions/s1/git/history", .history),
+    ("/sessions/s1/git/stashes", .stashes),
+    ("/sessions/s1/git/reflog", .reflog),
+    ("/sessions/s1/git/conflicts", .conflicts),
+    ("/sessions/s1/git/branches", .branches(nil)),
+    ("/sessions/s1/git/branches/main", .branches("main")),
+    ("/sessions/s1/git/branches/feature%2Ffoo", .branches("feature/foo")),
+    ("/sessions/s1/git/branches/feature/foo", .branches("feature/foo")),
+    ("/sessions/s1/git/tags/v1.0", .tags("v1.0")),
+    ("/sessions/s1/git/tags", .history),
+    ("/sessions/s1/git/submodules", .submodules),
+    ("/sessions/s1/git/bisect", .bisect),
+    ("/sessions/s1/git/hooks", .hooks),
+    ("/sessions/s1/git/compare?left=main&right=feature%2Fx", .compare(left: "main", right: "feature/x")),
+    ("/sessions/s1/git/compare", .compare(left: "", right: "")),
+    ("/sessions/s1/git/blame?path=src/a%20b.ts&ref=HEAD~1", .blame(path: "src/a b.ts", ref: "HEAD~1")),
+    ("/sessions/s1/git/blame?path=README.md", .blame(path: "README.md", ref: nil)),
+    ("/sessions/s1/git/blame", .blame(path: nil, ref: nil)),
+    ("/sessions/s1/git/settings", .settings),
+    ("/sessions/s1/git/pull-requests", .pullRequests),
+    ("/sessions/s1/git/branches-review", .branchesReview),
+    ("/sessions/s1/git/interactive-rebase?from=abc123", .interactiveRebase(from: "abc123")),
+  ])
+  func parsesGitRoutes(path: String, view: GitRoute) {
+    #expect(DesktopRoute(path: path) == .sessionGit(id: "s1", view: view))
+  }
+
+  @Test(arguments: [
+    "/nope", "/sessions", "/sessions/s1/git/nope", "/pull-requests/a/b/notanumber", "/agents/extra",
+  ])
+  func rejectsUnknownPaths(path: String) {
+    #expect(DesktopRoute(path: path) == nil)
+  }
+
+  @Test(arguments: [
+    DesktopRoute.home, .agents, .runtimes, .devices, .inbox, .proposal(id: "p 1"), .notifications,
+    .pullRequests, .pullRequest(repo: "o/r", number: 7), .automations, .quickRun(runId: nil),
+    .quickRun(runId: "r"), .automation(id: "a", runId: nil), .automation(id: "a", runId: "r"),
+    .sessionHome(id: "s"), .session(id: "s", agentId: nil), .session(id: "s", agentId: "a"),
+    .sessionGit(id: "s", view: .working), .sessionGit(id: "s", view: .branches(nil)),
+    .sessionGit(id: "s", view: .branches("feature/a b")), .sessionGit(id: "s", view: .tags("v1+2")),
+    .sessionGit(id: "s", view: .compare(left: "a&b", right: "c=d")),
+    .sessionGit(id: "s", view: .blame(path: "dir/f?.swift", ref: "HEAD")),
+    .sessionGit(id: "s", view: .blame(path: nil, ref: nil)),
+    .sessionGit(id: "s", view: .interactiveRebase(from: "abc")),
+    .sessionGit(id: "s", view: .branchesReview),
+  ])
+  func pathsRoundTrip(route: DesktopRoute) {
+    #expect(DesktopRoute(path: route.path) == route, "\(route.path)")
+  }
+
+  @Test func deepLinksReadTheHostAsThePathsFirstSegment() {
+    let url = URL(string: "argus://sessions/s1/git/compare?left=main&right=dev&host=mini")!
+    #expect(DesktopRoute(deepLink: url) == .sessionGit(id: "s1", view: .compare(left: "main", right: "dev")))
+    #expect(DesktopLocation(deepLink: url)?.host == "mini")
+    #expect(DesktopRoute(deepLink: URL(string: "https://sessions/s1")!) == nil)
+  }
+
+  @Test func locationsCarryTheFocusedHost() {
+    let remote = DesktopLocation(path: "/sessions/s1/agents?host=box")
+    #expect(remote == DesktopLocation(route: .session(id: "s1", agentId: nil), host: "box"))
+    #expect(DesktopLocation(path: "/agents")?.host == nil)
+    #expect(DesktopLocation(path: "/agents?host=")?.host == nil)
+    #expect(DesktopLocation(route: .agents, host: "local").host == nil)
+    #expect(DesktopLocation(route: .agents, host: "box").path == "/agents?host=box")
+    let git = DesktopLocation(route: .sessionGit(id: "s", view: .compare(left: "a", right: "b")), host: "box")
+    #expect(git.path == "/sessions/s/git/compare?left=a&right=b&host=box")
+    #expect(DesktopLocation(path: git.path) == git)
+  }
+
+  @Test func patternsNeverCarryIds() {
+    #expect(DesktopRoute.sessionGit(id: "secret", view: .branches("secret-branch")).pattern
+      == "/sessions/:sessionId/git/branches/:branchName")
+    #expect(DesktopRoute.sessionGit(id: "s", view: .blame(path: "secret.txt", ref: nil)).pattern
+      == "/sessions/:sessionId/git/blame")
+  }
+}
