@@ -273,6 +273,8 @@ enum MacTelemetryEvent {
   /// A git action from the git panel; `scope` is `session` or `project`,
   /// `remote` when the session is on a paired host.
   case gitUsed(action: GitAction, scope: String, remote: Bool, success: Bool)
+  /// A fix was picked from a git error banner; `kind` and `action` are the banner's enums.
+  case gitRecoveryUsed(kind: String, action: String)
   /// Another host was paired, attached, detached, forgotten, renamed or shown.
   case hostsUsed(action: HostsAction, success: Bool)
   /// A pull request was opened, merged, commented on or closed through the host's `gh`.
@@ -335,6 +337,7 @@ enum MacTelemetryEvent {
     case .browserUsed: "mac_browser_used"
     case .inspectionUsed: "mac_inspection_used"
     case .gitUsed: "mac_git_used"
+    case .gitRecoveryUsed: "mac_git_recovery_used"
     case .hostsUsed: "mac_hosts_used"
     case .pullRequestActed: "mac_pull_request_acted"
     case .paletteCommandRun: "mac_palette_command_run"
@@ -415,6 +418,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "success": success]
     case .gitUsed(let action, let scope, let remote, let success):
       ["action": action.rawValue, "scope": scope, "remote": remote, "success": success]
+    case .gitRecoveryUsed(let kind, let action):
+      ["kind": kind, "action": action]
     case .hostsUsed(let action, let success):
       ["action": action.rawValue, "success": success]
     case .pullRequestActed(let action):

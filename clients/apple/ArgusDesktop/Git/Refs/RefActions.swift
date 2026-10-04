@@ -181,6 +181,7 @@ struct RefActions {
       PushSheet(
         remotes: remoteNames, branch: branch.name, hasUpstream: branch.upstream != nil, dismiss: dismiss,
         submit: { params in
+          workspace.lastPush = params
           Task { await workspace.host(GitCommands.GitPushV2.self, params, label: "Pushing…", track: .push) }
         }, sessionId: id)
     }
