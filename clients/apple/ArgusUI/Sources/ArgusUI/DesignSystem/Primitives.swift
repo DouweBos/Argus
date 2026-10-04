@@ -518,9 +518,9 @@ public struct FlowRow: SwiftUI.Layout {
     var y = bounds.minY
     for row in rows(subviews, in: bounds.width) {
       let height = rowHeight(row, subviews: subviews)
-      let cell = (bounds.width - spacing * CGFloat(row.count - 1)) / CGFloat(row.count)
+      let cells = cellWidths(row, subviews: subviews, in: bounds.width)
       var x = bounds.minX
-      for index in row {
+      for (index, cell) in zip(row, cells) {
         // Centred in the cell: a control that declines to fill it — a ghost
         // button, say — should still sit on the column, not against its edge.
         subviews[index].place(
@@ -530,6 +530,17 @@ public struct FlowRow: SwiftUI.Layout {
       }
       y += height + rowSpacing
     }
+  }
+
+  /// Equal columns, unless one would truncate a wider label the row has room
+  /// for — then each gets its ideal width plus an equal share of the rest.
+  private func cellWidths(_ row: [Int], subviews: LayoutSubviews, in width: CGFloat) -> [CGFloat] {
+    let available = width - spacing * CGFloat(row.count - 1)
+    let equal = available / CGFloat(row.count)
+    let ideals = row.map { subviews[$0].sizeThatFits(.unspecified).width }
+    guard ideals.contains(where: { $0 > equal }) else { return ideals.map { _ in equal } }
+    let spare = max(0, available - ideals.reduce(0, +)) / CGFloat(row.count)
+    return ideals.map { min($0 + spare, available) }
   }
 
   /// Greedy packing on each subview's ideal width — the width it wants before
