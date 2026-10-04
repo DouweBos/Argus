@@ -12,6 +12,11 @@ struct DevicesScreen: View {
   @Environment(HostStore.self) private var store
   @Environment(RuntimeModel.self) private var runtime
 
+  /// The device whose details are open. `nil` keeps its own state; the
+  /// `/devices/:platform/:deviceKey` route passes a binding instead.
+  var selection: Binding<DeviceRef?>?
+
+  @State private var localSelection: DeviceRef?
   @AppStorage("devices.viewMode") private var mode = Mode.table
   @AppStorage("devices.tileSize") private var tileSize = 220.0
   @State private var devices: [ArgusProtocol.DeviceInfo] = []
@@ -40,6 +45,21 @@ struct DevicesScreen: View {
     }
     .background(theme.bg)
     .navigationTitle("Devices")
+    .sheet(item: selectedDevice) { device in
+      DeviceDetailSheet(
+        device: device, busy: busy.contains(device.deviceKey),
+        onBoot: { boot(device) }, onShutdown: { stop(device) },
+        onPopout: { popout(device) },
+        onOpen: { agent in
+          selected = nil
+          open(device, agent: agent)
+        },
+        onOpenProject: {
+          selected = nil
+          openProject(device)
+        },
+        onClose: { selected = nil })
+    }
     // The shown machine's devices; a tile streams from it too.
     .task(id: "\(store.connection == .ready)|\(model.hosts.focused)") {
       runtime.hostId = model.hosts.focused
@@ -95,7 +115,10 @@ struct DevicesScreen: View {
       TableColumn("Device") { (row: Row) in
         HStack(spacing: 6) {
           StatusDot(tone: row.device.online ? .success : .muted, pulse: false)
-          Text(row.device.name).lineLimit(1)
+          Button(row.device.name) { selected = DeviceRef(row.device) }
+            .buttonStyle(.plain)
+            .lineLimit(1)
+            .help("Show details")
         }
         .contextMenu { menu(row.device) }
       }
@@ -159,6 +182,7 @@ struct DevicesScreen: View {
 
   @ViewBuilder
   private func menu(_ device: ArgusProtocol.DeviceInfo) -> some View {
+    Button("Show Details") { selected = DeviceRef(device) }
     if device.sessionId != nil {
       Button("Open Session") { open(device, agent: false) }
     }
@@ -257,10 +281,36 @@ struct DevicesScreen: View {
     MacTelemetry.capture(.devicePopoutOpened(platform: device.platform.rawValue))
   }
 
+  private var selected: DeviceRef? {
+    get { selection?.wrappedValue ?? localSelection }
+    nonmutating set {
+      if let selection { selection.wrappedValue = newValue } else { localSelection = newValue }
+    }
+  }
+
+  /// The selected device while the host still lists it.
+  private var selectedDevice: Binding<ArgusProtocol.DeviceInfo?> {
+    Binding(
+      get: { selected.flatMap { ref in devices.first(where: ref.matches) } },
+      set: { if $0 == nil { selected = nil } })
+  }
+
+  /// The project's own checkout, as the renderer's "open project" lands on it.
+  private func openProject(_ device: ArgusProtocol.DeviceInfo) {
+    guard let repoRoot = device.repoRoot,
+      let root = store.sessionsByRepo[repoRoot]?.first(where: { $0.kind == .projectRoot })
+    else { return }
+    model.navigate(.sessionHome(id: root.id))
+  }
+
   private func open(_ device: ArgusProtocol.DeviceInfo, agent: Bool) {
     guard let sessionId = device.sessionId else { return }
     model.navigate(.session(id: sessionId, agentId: agent ? device.agentId : nil))
   }
+}
+
+extension ArgusProtocol.DeviceInfo: @retroactive Identifiable {
+  public var id: String { rowId }
 }
 
 extension ArgusProtocol.DeviceInfo {
