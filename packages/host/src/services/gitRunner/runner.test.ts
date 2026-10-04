@@ -34,6 +34,8 @@ const {
   gitRunnerOutput,
   gitRunnerRun,
 } = await import("./runner");
+const { closeConnection, runInConnection } =
+  await import("../remote/connectionScope");
 
 let base: string;
 let repo: string;
@@ -233,6 +235,62 @@ describe("remote git runner", () => {
 
     it("treats cancelling an unknown run as a no-op", () => {
       expect(() => gitRunnerCancel("never")).not.toThrow();
+    });
+  });
+
+  describe("when the client's connection drops", () => {
+    it("kills the git it started, with no runId to cancel by", async () => {
+      const slow = runInConnection("conn-1", () =>
+        gitRunnerRun({
+          sessionId: "s1",
+          args: ["-c", "alias.wait=!sleep 30", "wait"],
+        }),
+      );
+      await new Promise((r) => setTimeout(r, 200));
+      closeConnection("conn-1");
+
+      expect((await slow).exitCode).not.toBe(0);
+    });
+
+    it("leaves another connection's git alone", async () => {
+      const run = runInConnection("conn-2", () =>
+        gitRunnerRun({
+          sessionId: "s1",
+          args: ["-c", "alias.nap=!sleep 0.5", "nap"],
+        }),
+      );
+      closeConnection("conn-other");
+
+      expect((await run).exitCode).toBe(0);
+    });
+
+    it("clears argus-scratch once its last user is gone", async () => {
+      const a = await runInConnection("conn-a", () => gitRunnerInfo("s1"));
+      await runInConnection("conn-b", () => gitRunnerInfo("s1"));
+      const todo = path.join(a.scratchDir, "git-rebase-todo");
+      await fs.promises.writeFile(todo, "pick abc\n");
+
+      closeConnection("conn-a");
+      await new Promise((r) => setTimeout(r, 50));
+      expect(fs.existsSync(todo)).toBe(true);
+
+      closeConnection("conn-b");
+      await vi.waitFor(() => expect(fs.existsSync(a.scratchDir)).toBe(false));
+    });
+
+    it("sweeps scratch files a crashed client left a day ago", async () => {
+      const { scratchDir } = await gitRunnerInfo("s1");
+      const stale = path.join(scratchDir, "stale-index");
+      const fresh = path.join(scratchDir, "fresh-index");
+      await fs.promises.writeFile(stale, "x");
+      await fs.promises.writeFile(fresh, "x");
+      const old = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+      await fs.promises.utimes(stale, old, old);
+
+      await gitRunnerInfo("s1");
+
+      expect(fs.existsSync(stale)).toBe(false);
+      expect(fs.existsSync(fresh)).toBe(true);
     });
   });
 });

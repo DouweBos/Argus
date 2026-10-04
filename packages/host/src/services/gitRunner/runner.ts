@@ -15,6 +15,10 @@ import { StringDecoder } from "node:string_decoder";
 import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../state";
 import { resolveContainedPath } from "../file/operations";
+import {
+  currentConnectionId,
+  onConnectionClose,
+} from "../remote/connectionScope";
 import { git } from "../session/git";
 
 export interface GitRunnerInfo {
@@ -54,8 +58,14 @@ const OUTPUT_TTL_MS = 60_000;
 /** A runaway command (e.g. `cat-file` of a huge blob) is killed past this. */
 const MAX_STDOUT = 512 * 1024 * 1024;
 const MAX_STDERR = 1024 * 1024;
+/** Scratch files a client left behind (it crashed, the host restarted). */
+const SCRATCH_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+/** After SIGTERM, a group that is still there gets SIGKILL. */
+const KILL_GRACE_MS = 3000;
 
 const running = new Map<string, ChildProcess>();
+/** Connections using each scratch dir; the last one out clears it. */
+const scratchHolders = new Map<string, Set<string>>();
 const held = new Map<
   string,
   { data: Buffer; timer: ReturnType<typeof setTimeout> }
@@ -85,8 +95,49 @@ export async function gitRunnerInfo(sessionId: string): Promise<GitRunnerInfo> {
   );
   const scratchDir = path.join(gitDir, "argus-scratch");
   await fs.promises.mkdir(scratchDir, { recursive: true });
+  await sweepStaleScratch(scratchDir);
+  holdScratch(scratchDir);
 
   return { worktree, gitDir, commonGitDir, scratchDir };
+}
+
+async function sweepStaleScratch(scratchDir: string): Promise<void> {
+  const cutoff = Date.now() - SCRATCH_MAX_AGE_MS;
+  for (const name of await fs.promises.readdir(scratchDir).catch(() => [])) {
+    const entry = path.join(scratchDir, name);
+    const stat = await fs.promises.lstat(entry).catch(() => null);
+    if (stat && stat.mtimeMs < cutoff) {
+      await fs.promises.rm(entry, { recursive: true, force: true });
+    }
+  }
+}
+
+/** Remember who works in `scratchDir`, so it goes once they all have. */
+function holdScratch(scratchDir: string): void {
+  const connectionId = currentConnectionId();
+  if (!connectionId) {
+    return;
+  }
+  let holders = scratchHolders.get(scratchDir);
+  if (!holders) {
+    holders = new Set();
+    scratchHolders.set(scratchDir, holders);
+  }
+  if (holders.has(connectionId)) {
+    return;
+  }
+  holders.add(connectionId);
+  const set = holders;
+  onConnectionClose(() => {
+    set.delete(connectionId);
+    if (set.size > 0 || scratchHolders.get(scratchDir) !== set) {
+      return;
+    }
+    scratchHolders.delete(scratchDir);
+    fs.promises
+      .rm(scratchDir, { recursive: true, force: true })
+      .catch(() => undefined);
+  });
 }
 
 export async function gitRunnerRun(
@@ -122,6 +173,8 @@ export async function gitRunnerRun(
   if (runId !== undefined) {
     running.set(runId, child);
   }
+  // A client that dropped can't cancel, and nobody else knows the run exists.
+  const releaseOnClose = onConnectionClose(() => terminate(child));
 
   const stdout: Buffer[] = [];
   let stdoutBytes = 0;
@@ -166,6 +219,7 @@ export async function gitRunnerRun(
   } catch (e) {
     throw `Failed to run git: ${String(e)}`;
   } finally {
+    releaseOnClose();
     if (runId !== undefined) {
       running.delete(runId);
     }
@@ -227,6 +281,15 @@ export function gitRunnerCancel(runId: string): void {
   if (child) {
     killGroup(child, "SIGTERM");
   }
+}
+
+function terminate(child: ChildProcess): void {
+  killGroup(child, "SIGTERM");
+  setTimeout(() => {
+    if (child.exitCode === null && child.signalCode === null) {
+      killGroup(child, "SIGKILL");
+    }
+  }, KILL_GRACE_MS).unref();
 }
 
 function killGroup(child: ChildProcess, signal: NodeJS.Signals): void {
