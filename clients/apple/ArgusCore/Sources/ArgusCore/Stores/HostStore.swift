@@ -34,6 +34,9 @@ public final class HostStore {
   public internal(set) var recentAgents: [RemoteAgentStatus] = []
   /// Sessions that belong to no project, each in its own directory.
   public internal(set) var scratchPads: [RemoteSession] = []
+  /// Sessions outside every project, fetched by id — an automation run's host
+  /// session lives in the run's own folder, so no project lists it.
+  public internal(set) var adoptedSessions: [String: RemoteSession] = [:]
   /// LLM runners this computer has registered, for the spawn sheet's picker.
   public internal(set) var runners: [RemoteRunner] = []
   public internal(set) var stoppedByRepo: [String: [RemoteStoppedAgent]] = [:]

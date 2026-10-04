@@ -23,7 +23,9 @@ struct RunScreen: View {
   private var run: RemoteAutomationRun? { store.runs.first { $0.id == runId } ?? detail?.run }
 
   private var hostSession: RemoteSession? {
-    run?.hostSessionId.flatMap { id in host.sessionsByRepo.values.joined().first { $0.id == id } }
+    run?.hostSessionId.flatMap { id in
+      host.sessionsByRepo.values.joined().first { $0.id == id } ?? host.adoptedSessions[id]
+    }
   }
 
   var body: some View {
@@ -55,6 +57,11 @@ struct RunScreen: View {
     .task(id: "\(run?.status.rawValue ?? "")\(run?.finishedAt ?? 0)") {
       guard looked else { return }
       await store.loadRun(id: runId)
+    }
+    // No project lists a run's host session; fetch it so Open Transcript can open it.
+    .task(id: run?.hostSessionId) {
+      guard let id = run?.hostSessionId, hostSession == nil else { return }
+      await host.adoptSession(id: id)
     }
     .sheet(isPresented: $givingFeedback) {
       RunFeedbackSheet(runId: runId).frame(minWidth: 520, minHeight: 360)
