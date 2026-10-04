@@ -54,6 +54,20 @@ struct HostIndexTests {
     #expect(index.subscriptionHost("a7") == "mini")
   }
 
+  @Test func aDeviceSeveralHostsListGoesToTheOneOnScreen() {
+    let index = HostIndex()
+    index.remember(.device, "udid", host: Hosts.local)
+    index.remember(.device, "udid", host: "mini")
+    #expect(index.subject(of: json(#"{"device_id":"udid"}"#)) == Hosts.local)
+    index.preferDevices(on: "mini")
+    #expect(index.subject(of: json(#"{"device_id":"udid"}"#)) == "mini")
+    // Before that host's list arrives too.
+    #expect(index.subject(of: json(#"{"device_id":"other"}"#)) == "mini")
+    index.preferDevices(on: nil)
+    index.forget(host: "mini")
+    #expect(index.subject(of: json(#"{"device_id":"udid"}"#)) == Hosts.local)
+  }
+
   @Test func forgettingAHostDropsOnlyItsIds() {
     let index = HostIndex()
     index.remember(.session, "s1", host: "mini")

@@ -51,7 +51,7 @@ struct RuntimeDeviceView: View {
           .background(theme.bgSecondary)
       }
     }
-    .task(id: SubscribeKey(device: deviceId, ready: store.connection == .ready)) {
+    .task(id: SubscribeKey(device: deviceId, host: runtime.hostId, ready: store.connection == .ready)) {
       guard store.connection == .ready else { return }
       await subscribe()
     }
@@ -207,6 +207,8 @@ struct RuntimeDeviceView: View {
 /// Resubscribe when the device changes or the host (re)connects.
 private struct SubscribeKey: Hashable {
   var device: String
+  /// A device two hosts list streams from the one the panel shows.
+  var host: String
   var ready: Bool
 }
 

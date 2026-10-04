@@ -29,7 +29,8 @@ struct RuntimeNativeView: View {
               platform: target.remote, deviceId: target.id, sessionId: sessionId)
             Divider()
             RuntimeDeviceView(deviceId: target.id, platform: target.remote, isTv: target.isTv)
-              .id(target.id)
+              // A fresh view per host: the same simulator can be listed by two.
+              .id("\(runtime.hostId)|\(target.id)")
           }
         } else {
           bootPrompt(target)

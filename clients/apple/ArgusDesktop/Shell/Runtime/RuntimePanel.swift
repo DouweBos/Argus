@@ -1,3 +1,4 @@
+import ArgusCore
 import ArgusUI
 import SwiftUI
 
@@ -25,6 +26,13 @@ struct RuntimePanel: View {
     platform != .web && selectedDevice != nil && runtime.toolEnabled("device-debug")
   }
 
+  /// The session's machine, or the shown one off a session. Reads the
+  /// session list so a host that attaches after launch re-points the panel.
+  private var panelHost: HostId {
+    guard let sessionId, store.repoRoot(forSessionId: sessionId) != nil else { return model.hosts.focused }
+    return model.host(ofSession: sessionId)
+  }
+
   private var selectedDevice: String? {
     runtime.selectedDevice(platform: platform, session: sessionId)
   }
@@ -42,10 +50,9 @@ struct RuntimePanel: View {
         try? await Task.sleep(for: Self.pollInterval)
       }
     }
-    .task(id: "\(sessionId ?? "")|\(store.connection == .ready)") {
-      let host = sessionId.map(model.host(ofSession:)) ?? model.hosts.focused
-      if runtime.hostId != host {
-        runtime.hostId = host
+    .task(id: "\(sessionId ?? "")|\(store.connection == .ready)|\(panelHost)") {
+      if runtime.hostId != panelHost {
+        runtime.hostId = panelHost
         await runtime.refresh()
       }
       await runtime.loadProject(repoRoot: sessionId.flatMap { store.repoRoot(forSessionId: $0) })
@@ -59,6 +66,17 @@ struct RuntimePanel: View {
 
   @ViewBuilder
   private var content: some View {
+    if let sessionId, store.repoRoot(forSessionId: sessionId) == nil {
+      // Its machine isn't known yet (a host still attaching): waiting beats
+      // grabbing this Mac's device of the same name.
+      ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+    } else {
+      devicePane
+    }
+  }
+
+  @ViewBuilder
+  private var devicePane: some View {
     switch platform {
     case .web:
       RuntimeBrowserView(sessionKey: sessionId ?? RuntimeModel.globalKey)
