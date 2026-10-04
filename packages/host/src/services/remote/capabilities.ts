@@ -64,12 +64,20 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../agent/messageQueue";
+import { saveAppSettings } from "../appSettings/store";
 import { revisePlaybook } from "../automation/authoring";
+import { appDefaultAutonomy } from "../automation/autonomy";
+import {
+  deleteRun,
+  getAutomation,
+  getAutomationRun,
+} from "../automation/manager";
 import {
   deleteAutomationMemory,
   listAutomationMemories,
   saveAutomationMemory,
 } from "../automation/memory/service";
+import { calibrationFor } from "../automation/outcomes";
 import { cancelAutomationRun } from "../automation/runner";
 import { startAutomationRun } from "../automation/runner";
 import {
@@ -161,6 +169,7 @@ import {
   markRemoteRunRead,
   submitRemoteRunFeedback,
   remoteAutomation,
+  remoteAutomationDraft,
   remoteAutomationRun,
   remoteAutomationRuns,
   remoteAutomations,
@@ -210,7 +219,9 @@ import {
   acceptRemoteProposal,
   dismissRemoteProposal,
   performRemoteProposalCleanup,
+  remoteProposal,
   remoteProposals,
+  requestRemoteProposalRevision,
   resolveRemoteProposal,
 } from "./proposalsRemote";
 import {
@@ -2093,6 +2104,40 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
     return { accepted: true };
   },
+  "automations.delete_run": async (params) => {
+    const { run_id } = parse("automations.delete_run", params);
+    if (!getAutomationRun(run_id)) {
+      throw new GatewayError("not_found", `no run ${run_id}`);
+    }
+    await control(() => deleteRun(run_id));
+
+    return { accepted: true };
+  },
+  "automations.calibration": async (params) => {
+    const { automation_id } = parse("automations.calibration", params);
+    if (!getAutomation(automation_id)) {
+      throw new GatewayError("not_found", `no automation ${automation_id}`);
+    }
+
+    return calibrationFor(automation_id);
+  },
+  "automations.draft": async (params) => {
+    const { description, timezone } = parse("automations.draft", params);
+
+    // Spends the host's LLM, so it is gated like any other run.
+    return control(() => remoteAutomationDraft(description, timezone));
+  },
+  "automations.default_autonomy": async (params) => {
+    parse("automations.default_autonomy", params);
+
+    return { autonomy: appDefaultAutonomy() };
+  },
+  "automations.set_default_autonomy": async (params) => {
+    const { autonomy } = parse("automations.set_default_autonomy", params);
+    await control(() => saveAppSettings({ default_autonomy: autonomy }));
+
+    return { autonomy: appDefaultAutonomy() };
+  },
   "github.pull_requests": async (params) => {
     const { repo_roots } = parse("github.pull_requests", params);
     const roots = repo_roots ?? collectAllProjects().map((p) => p.path);
@@ -2137,11 +2182,28 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "proposals.list": async (params) =>
     remoteProposals(parse("proposals.list", params)),
   "proposals.accept": async (params) => {
-    const { proposal_id } = parse("proposals.accept", params);
+    const { proposal_id, note } = parse("proposals.accept", params);
 
     // Starting a worktree and an agent is code execution, so it goes through
     // the same control gate a remote `agents.send` does.
-    return control(() => acceptRemoteProposal(proposal_id));
+    return control(() => acceptRemoteProposal(proposal_id, note));
+  },
+  "proposals.get": async (params) => {
+    const { proposal_id } = parse("proposals.get", params);
+    const found = remoteProposal(proposal_id);
+    if (!found) {
+      throw new GatewayError("not_found", `no proposal ${proposal_id}`);
+    }
+
+    return found;
+  },
+  "proposals.request_revision": async (params) => {
+    const { proposal_id, note } = parse("proposals.request_revision", params);
+    if (!remoteProposal(proposal_id)) {
+      throw new GatewayError("not_found", `no proposal ${proposal_id}`);
+    }
+
+    return control(() => requestRemoteProposalRevision(proposal_id, note));
   },
   "proposals.perform_cleanup": async (params) => {
     const { proposal_id } = parse("proposals.perform_cleanup", params);

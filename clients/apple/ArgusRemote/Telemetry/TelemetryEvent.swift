@@ -38,6 +38,14 @@ enum TelemetryEvent {
     case autoExpandImageReads = "auto_expand_image_reads"
   }
 
+  /// A default that new work starts from.
+  enum DefaultSetting: String {
+    /// Phone-local: the mode new agents started here begin in.
+    case permissionMode = "permission_mode"
+    /// The computer's cap on how far any automation may go.
+    case autonomy
+  }
+
   /// How work leaves a session.
   typealias LandAction = StoreEvent.LandAction
 
@@ -65,6 +73,10 @@ enum TelemetryEvent {
   /// The inbox's shortcut into the run a proposal came out of.
   case proposalOpenedAsRun
   case settingChanged(setting: Setting, enabled: Bool)
+  /// `value` is the enum's raw value, or `computer` / `none` when cleared.
+  case defaultChanged(setting: DefaultSetting, value: String)
+  /// The warnings list was opened; `count` is how many it held.
+  case warningsOpened(count: Int)
   /// `message` is scrubbed and truncated by `Telemetry` before it is sent.
   case appError(scope: String, message: String)
   /// Shared with the desktop on purpose: it is the same consent signal.
@@ -93,6 +105,8 @@ enum TelemetryEvent {
     case .memoryEdited: "ios_memory_edited"
     case .proposalOpenedAsRun: "ios_proposal_opened"
     case .settingChanged: "ios_setting_changed"
+    case .defaultChanged: "ios_default_changed"
+    case .warningsOpened: "ios_warnings_opened"
     case .appError: "ios_app_error"
     case .telemetryEnabled: "telemetry_enabled"
     case .telemetryDisabled: "telemetry_disabled"
@@ -142,6 +156,10 @@ enum TelemetryEvent {
       ["action": action.rawValue]
     case .settingChanged(let setting, let enabled):
       ["setting": setting.rawValue, "enabled": enabled]
+    case .defaultChanged(let setting, let value):
+      ["setting": setting.rawValue, "value": value]
+    case .warningsOpened(let count):
+      ["count": count]
     case .appError(let scope, let message):
       ["scope": scope, "message": String(Telemetry.scrub(message).prefix(2000))]
     }

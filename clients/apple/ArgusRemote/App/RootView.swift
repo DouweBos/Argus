@@ -242,7 +242,10 @@ struct RootView: View {
 
   private func spawnAgent(in sessionId: String, project: RemoteProject) {
     Task {
-      guard let agent = await app.host.spawnAgent(sessionId: sessionId) else { return }
+      guard
+        let agent = await app.host.spawnAgent(
+          sessionId: sessionId, permissionMode: app.defaultPermissionMode)
+      else { return }
       router.apply(
         .agent(
           id: agent.agentId, label: Labels.agentName(agent),
@@ -423,6 +426,9 @@ struct RootView: View {
       DeviceView(deviceId: id, platform: platform, name: name, isTv: isTv)
     case .inbox:
       InboxView()
+    case .proposal(let id):
+      // Keyed so swapping one proposal for another doesn't keep the old one's state.
+      ProposalView(proposalId: id).id(id)
     case .pullRequests:
       PullRequestsView()
     case .pullRequest(let repo, let number, let label):
@@ -435,10 +441,16 @@ struct RootView: View {
       QuickRunView()
     case .automationEditor(let id, _):
       AutomationEditorView(automationId: id)
+    case .describeAutomation:
+      DescribeAutomationView()
+    case .automationDraft(let detail, let notes):
+      AutomationEditorView(automationId: nil, prefill: detail, notes: notes)
     case .run(let id, let label):
       RunView(runId: id, label: label)
     case .settings:
       SettingsView()
+    case .notifications:
+      WarningsView()
     case .computers:
       HomeView()
     case .claudeAccounts:

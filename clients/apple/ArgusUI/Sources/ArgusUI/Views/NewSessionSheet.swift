@@ -164,11 +164,13 @@ public struct NewAgentSheet: View {
   public init(
     sessionId: String,
     models: [RemoteModelInfo],
+    defaultMode: RemotePermissionMode? = nil,
     onSpawned: @escaping (RemoteAgentStatus) -> Void
   ) {
     self.sessionId = sessionId
     self.models = models
     self.onSpawned = onSpawned
+    _mode = State(initialValue: defaultMode)
   }
 
   public var body: some View {

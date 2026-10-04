@@ -24,6 +24,8 @@ enum Route: Hashable {
   case devices
   case device(id: String, platform: RemotePlatform, name: String, isTv: Bool)
   case inbox
+  /// One proposal in full, as the desktop's `/inbox/proposals/:proposalId`.
+  case proposal(id: String)
   case pullRequests
   case pullRequest(repo: String, number: Int, label: String)
   case automations
@@ -31,8 +33,13 @@ enum Route: Hashable {
   case quickRun
   /// Nil id creates a new automation.
   case automationEditor(id: String?, label: String)
+  /// "Describe it", and the draft it produced, reviewed in the editor.
+  case describeAutomation
+  case automationDraft(detail: RemoteAutomationDetail, notes: [String])
   case run(id: String, label: String)
   case settings
+  /// Warnings & errors shown this launch, as the desktop's `/notifications`.
+  case notifications
   case computers
   case claudeAccounts
 
@@ -58,14 +65,18 @@ enum Route: Hashable {
     case .devices: "devices"
     case .device: "device"
     case .inbox: "inbox"
+    case .proposal: "proposal"
     case .pullRequests: "pull_requests"
     case .pullRequest: "pull_request"
     case .automations: "automations"
     case .automation: "automation"
     case .quickRun: "quick_run"
     case .automationEditor: "automation_editor"
+    case .describeAutomation: "describe_automation"
+    case .automationDraft: "automation_draft"
     case .run: "run"
     case .settings: "settings"
+    case .notifications: "notifications"
     case .computers: "computers"
     case .claudeAccounts: "claude_accounts"
     }
@@ -250,6 +261,27 @@ final class Router {
       detailStack = [route]
     } else {
       paths[section] = [route]
+    }
+  }
+
+  func pop() {
+    if isSplit {
+      _ = detailStack.popLast()
+    } else {
+      _ = paths[section]?.popLast()
+    }
+  }
+
+  /// Swap the top `dropping` screens for one, so back skips a finished flow.
+  func replaceTop(with route: Route, dropping count: Int) {
+    if isSplit {
+      detailStack.removeLast(min(count, detailStack.count))
+      detailStack.append(route)
+    } else {
+      var path = paths[section] ?? []
+      path.removeLast(min(count, path.count))
+      path.append(route)
+      paths[section] = path
     }
   }
 

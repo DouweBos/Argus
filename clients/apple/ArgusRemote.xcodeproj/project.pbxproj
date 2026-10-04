@@ -43,6 +43,9 @@
 		AD0D5B2D0F246BA5D6CAF9F2 /* AutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */; };
 		613A936BB70479302327501E /* AutomationEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */; };
 		5891A5D53C0F0C7CEF4DE90D /* QuickRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */; };
+		F70136FC258ED77D2D4D337A /* WarningsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */; };
+		91BEB5E2000254899FF02DBF /* DescribeAutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 894443D21C1F9129A450074B /* DescribeAutomationView.swift */; };
+		13A4F4FA7A12EE9750CF8397 /* ProposalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 265F66754A83F20EA323B6C6 /* ProposalView.swift */; };
 		97AF0DF41C25983BAD9692C1 /* PullRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74103E5844EC73EB127B8F8A /* PullRequestView.swift */; };
 		EB002C96DC172A3D1C7BDEFF /* PullRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC876CC2111BA8BDFB115904 /* PullRequestsView.swift */; };
 		AE5043C2BADDF974895EAC5C /* Route.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCAD11D552D483C0C92312A /* Route.swift */; };
@@ -103,6 +106,9 @@
 		21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationView.swift; sourceTree = "<group>"; };
 		D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationEditorView.swift; sourceTree = "<group>"; };
 		15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickRunView.swift; sourceTree = "<group>"; };
+		2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WarningsView.swift; sourceTree = "<group>"; };
+		894443D21C1F9129A450074B /* DescribeAutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescribeAutomationView.swift; sourceTree = "<group>"; };
+		265F66754A83F20EA323B6C6 /* ProposalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProposalView.swift; sourceTree = "<group>"; };
 		74103E5844EC73EB127B8F8A /* PullRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestView.swift; sourceTree = "<group>"; };
 		DC876CC2111BA8BDFB115904 /* PullRequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestsView.swift; sourceTree = "<group>"; };
 		22BC770CA5DFEDFB0344DB2D /* ArgusRemote.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ArgusRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -262,6 +268,9 @@
 				21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */,
 				D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */,
 				15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */,
+				2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */,
+				894443D21C1F9129A450074B /* DescribeAutomationView.swift */,
+				265F66754A83F20EA323B6C6 /* ProposalView.swift */,
 				74103E5844EC73EB127B8F8A /* PullRequestView.swift */,
 				DC876CC2111BA8BDFB115904 /* PullRequestsView.swift */,
 				C01FFCA8035ABC8A01D2C6CF /* BranchesView.swift */,
@@ -526,6 +535,9 @@
 				AD0D5B2D0F246BA5D6CAF9F2 /* AutomationView.swift in Sources */,
 				613A936BB70479302327501E /* AutomationEditorView.swift in Sources */,
 				5891A5D53C0F0C7CEF4DE90D /* QuickRunView.swift in Sources */,
+				F70136FC258ED77D2D4D337A /* WarningsView.swift in Sources */,
+				91BEB5E2000254899FF02DBF /* DescribeAutomationView.swift in Sources */,
+				13A4F4FA7A12EE9750CF8397 /* ProposalView.swift in Sources */,
 				97AF0DF41C25983BAD9692C1 /* PullRequestView.swift in Sources */,
 				EB002C96DC172A3D1C7BDEFF /* PullRequestsView.swift in Sources */,
 				AA1000000000000000000001 /* ClaudeAccountsView.swift in Sources */,

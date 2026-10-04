@@ -49,6 +49,7 @@ import {
   RemoteTask,
   RemoteTodo,
 } from "./models";
+import { AutomationCalibration } from "./models/automations";
 import { ReportBlock } from "./report";
 
 /**
@@ -468,6 +469,18 @@ export const MethodParams = {
     enabled: z.boolean().optional(),
   }),
   "automations.cancel_run": z.object({ run_id: z.string() }),
+  /** Its record, report and the proposals it raised, for good. */
+  "automations.delete_run": z.object({ run_id: z.string() }),
+  "automations.calibration": z.object({ automation_id: z.string() }),
+  /** A draft from a sentence, for the editor to review. Nothing is saved. */
+  "automations.draft": z.object({
+    description: z.string().trim().min(1),
+    timezone: z.string().optional(),
+  }),
+  "automations.default_autonomy": z.object({}),
+  "automations.set_default_autonomy": z.object({
+    autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
+  }),
   "automations.mark_run_read": z.object({ run_id: z.string() }),
   "automations.run_feedback": z.object({
     run_id: z.string(),
@@ -506,7 +519,17 @@ export const MethodParams = {
     status: RemoteProposalStatus.optional(),
     limit: z.number().int().positive().max(100).optional(),
   }),
-  "proposals.accept": z.object({ proposal_id: z.string() }),
+  "proposals.accept": z.object({
+    proposal_id: z.string(),
+    /** Added to the agent's brief, as the desktop's "start with a note". */
+    note: z.string().optional(),
+  }),
+  "proposals.get": z.object({ proposal_id: z.string() }),
+  /** Ask the automation to rework it; the next run supersedes it. */
+  "proposals.request_revision": z.object({
+    proposal_id: z.string(),
+    note: z.string().trim().min(1),
+  }),
   /** Carry out a cleanup proposal's button. Destructive, so `control`-gated. */
   "proposals.perform_cleanup": z.object({ proposal_id: z.string() }),
   "proposals.dismiss": z.object({
@@ -738,6 +761,20 @@ export const MethodResult = {
   "automations.run_scratch": z.object({ run: RemoteAutomationRun }),
   "automations.save_scratch_run": z.object({ automation: RemoteAutomation }),
   "automations.cancel_run": z.object({ accepted: z.boolean() }),
+  "automations.delete_run": z.object({ accepted: z.boolean() }),
+  "automations.calibration": AutomationCalibration,
+  /** `automation.id` is empty: nothing is saved until the editor saves it. */
+  "automations.draft": z.object({
+    automation: RemoteAutomationDetail,
+    notes: z.array(z.string()),
+  }),
+  /** The app-wide cap on how far any automation may go; null is no cap. */
+  "automations.default_autonomy": z.object({
+    autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
+  }),
+  "automations.set_default_autonomy": z.object({
+    autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
+  }),
   /** The run as it now stands — read. */
   "automations.mark_run_read": z.object({ run: RemoteAutomationRun }),
   "automations.run_feedback": z.object({ run: RemoteAutomationRun }),
@@ -764,6 +801,12 @@ export const MethodResult = {
   }),
   /** Carry out a cleanup proposal's button. Destructive, so `control`-gated. */
   "proposals.perform_cleanup": z.object({ proposal_id: z.string() }),
+  "proposals.get": z.object({ proposal: RemoteProposal }),
+  "proposals.request_revision": z.object({
+    proposal: RemoteProposal,
+    /** False when no run was started — the note waits for the next one. */
+    run_started: z.boolean(),
+  }),
   "proposals.dismiss": z.object({ proposal: RemoteProposal }),
   "proposals.resolve": z.object({ proposal: RemoteProposal }),
   "claude_accounts.list": z.object({

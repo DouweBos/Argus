@@ -8,11 +8,14 @@ struct SettingsView: View {
   @Environment(AppStore.self) private var app
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
+  @Environment(AutomationsStore.self) private var automations
   @Environment(\.openURL) private var openURL
 
   @State private var name = ""
   @State private var saved = false
   @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
+  /// The computer's autonomy cap: nil until read, `.some(nil)` for no cap.
+  @State private var defaultAutonomy: RemoteAutonomy??
 
   var body: some View {
     Form {
@@ -45,6 +48,50 @@ struct SettingsView: View {
         .pickerStyle(.segmented)
       } footer: {
         Text("Match your system, or force light or dark.")
+      }
+
+      Section {
+        Picker("Default permission mode", selection: permissionModeBinding) {
+          Text("Computer's default").tag(RemotePermissionMode?.none)
+          ForEach(RemotePermissionMode.allCases, id: \.self) { mode in
+            Text(mode.label).tag(Optional(mode))
+          }
+        }
+      } header: {
+        Text("Agents")
+      } footer: {
+        Text("The mode new agents started from this phone begin in.")
+      }
+
+      if let autonomy = defaultAutonomy {
+        Section {
+          Picker("Autonomy cap", selection: autonomyBinding(autonomy)) {
+            Text("No cap").tag(RemoteAutonomy?.none)
+            ForEach(RemoteAutonomy.allRungs, id: \.self) { rung in
+              Text(rung.label.capitalized).tag(Optional(rung))
+            }
+          }
+          .disabled(!host.hasControl)
+        } header: {
+          Text("Automations")
+        } footer: {
+          Text(
+            "How far any automation on this computer may go on its own. A project can cap it lower, never higher.")
+        }
+      }
+
+      Section {
+        Button {
+          router.push(.notifications)
+        } label: {
+          HStack {
+            Text("Warnings & errors")
+            Spacer()
+            if app.unseenWarnings > 0 {
+              Badge(label: "\(app.unseenWarnings)", tone: .danger)
+            }
+          }
+        }
       }
 
       Section {
@@ -116,10 +163,30 @@ struct SettingsView: View {
       name = app.deviceName
       notificationStatus = await NotificationRouter.shared.authorizationStatus()
     }
+    .task(id: host.connection == .ready) {
+      guard host.connection == .ready else { return }
+      defaultAutonomy = await automations.loadDefaultAutonomy()
+    }
   }
 
   private var appearance: Binding<ThemePreference> {
     Binding(get: { app.themePreference }, set: { app.setThemePreference($0) })
+  }
+
+  private var permissionModeBinding: Binding<RemotePermissionMode?> {
+    Binding(get: { app.defaultPermissionMode }, set: { app.setDefaultPermissionMode($0) })
+  }
+
+  private func autonomyBinding(_ current: RemoteAutonomy?) -> Binding<RemoteAutonomy?> {
+    Binding(
+      get: { current },
+      set: { next in
+        Task {
+          guard await automations.setDefaultAutonomy(next) else { return }
+          defaultAutonomy = .some(next)
+          Telemetry.capture(.defaultChanged(setting: .autonomy, value: next?.rawValue ?? "none"))
+        }
+      })
   }
 
   private var autoExpandImageReadsBinding: Binding<Bool> {

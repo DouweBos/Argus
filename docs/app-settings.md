@@ -145,6 +145,10 @@ Project Settings. Argus takes the **lowest** of whichever of the three are set,
 so a repository can always ask for less autonomy than this setting allows and
 never for more. With none of them set the level is Propose.
 
+A paired phone with control can change it too, under Settings → Automations →
+Autonomy cap. The phone's own **Default permission mode** (Settings → Agents)
+is local to the phone and only applies to agents started from it.
+
 The limits are enforced by Argus, not by the instructions an automation is
 given: a playbook that tells the agent to start a session anyway still produces
 a proposal that waits for you.

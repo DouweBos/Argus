@@ -18,6 +18,8 @@ public struct ProposalCard: View {
   let onResolve: (String?) -> Void
   /// Nil when the computer didn't say which run raised it.
   var onOpenRun: (() -> Void)?
+  /// The proposal's own screen; nil when the card already is it.
+  var onOpenDetails: (() -> Void)?
 
   @State private var dismissing = false
   @State private var resolving = false
@@ -35,7 +37,8 @@ public struct ProposalCard: View {
     onCleanup: @escaping () -> Void,
     onDismiss: @escaping (String?) -> Void,
     onResolve: @escaping (String?) -> Void,
-    onOpenRun: (() -> Void)? = nil
+    onOpenRun: (() -> Void)? = nil,
+    onOpenDetails: (() -> Void)? = nil
   ) {
     self.proposal = proposal
     self.busy = busy
@@ -47,6 +50,7 @@ public struct ProposalCard: View {
     self.onDismiss = onDismiss
     self.onResolve = onResolve
     self.onOpenRun = onOpenRun
+    self.onOpenDetails = onOpenDetails
   }
 
   public var body: some View {
@@ -99,6 +103,12 @@ public struct ProposalCard: View {
     VStack(alignment: .leading, spacing: 8) {
       if !starting { decisions }
       HStack(spacing: 14) {
+        if let onOpenDetails {
+          Button("Details", action: onOpenDetails)
+            .buttonStyle(.plain)
+            .font(.system(size: 12))
+            .foregroundStyle(theme.accent)
+        }
         if let onOpenRun {
           Button("View run", action: onOpenRun)
             .buttonStyle(.plain)

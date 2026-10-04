@@ -28,7 +28,9 @@ import type {
   RemoteSignalSource,
 } from "@argus/remote-protocol";
 import path from "node:path";
+import { draftAutomation } from "../automation/authoring";
 import { submitRunFeedback } from "../automation/feedback";
+import { normalizeGuardrails } from "../automation/guardrails";
 import {
   createAutomation,
   deleteAutomation,
@@ -373,4 +375,38 @@ export function markRemoteRunRead(
   }
 
   return { run: toRemoteAutomationRun(markRunReportRead(runId)) };
+}
+
+/**
+ * "Describe it" for a phone: the host drafts it, the phone's editor reviews it.
+ * Flattened into the editor's shape with an empty id — nothing is saved.
+ */
+export async function remoteAutomationDraft(
+  description: string,
+  timezone?: string,
+): Promise<{ automation: RemoteAutomationDetail; notes: string[] }> {
+  const { input, notes } = await draftAutomation({ description, timezone });
+  const { trigger } = input;
+
+  return {
+    automation: {
+      id: "",
+      name: input.name,
+      description: input.description ?? "",
+      enabled: input.enabled ?? false,
+      trigger_kind: trigger.kind,
+      cron: trigger.kind === "schedule" ? trigger.cron : null,
+      timezone: trigger.kind === "schedule" ? trigger.timezone : null,
+      catch_up: trigger.kind === "schedule" ? trigger.catch_up : true,
+      repo_roots: input.scope?.repo_roots ?? [],
+      source_ids: input.source_ids ?? [],
+      playbook: input.playbook,
+      extra_instructions: input.extra_instructions ?? "",
+      autonomy: input.autonomy ?? null,
+      model: input.model ?? null,
+      runner: input.runner ?? null,
+      guardrails: normalizeGuardrails(input.guardrails),
+    },
+    notes,
+  };
 }

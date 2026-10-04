@@ -190,6 +190,11 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "automations.run_scratch": DENIED,
   "automations.save_scratch_run": DENIED,
   "automations.cancel_run": DENIED,
+  "automations.delete_run": DENIED,
+  "automations.calibration": DENIED,
+  "automations.draft": DENIED,
+  "automations.default_autonomy": DENIED,
+  "automations.set_default_autonomy": DENIED,
   "automations.mark_run_read": DENIED,
   "automations.run_feedback": DENIED,
   // A guest reviews the agent it was handed; it does not speak on GitHub.
@@ -203,6 +208,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "proposals.dismiss": DENIED,
   "proposals.resolve": DENIED,
   "proposals.perform_cleanup": DENIED,
+  "proposals.get": DENIED,
+  "proposals.request_revision": DENIED,
 
   // Browser streams share the claim table under a `browser:` prefix, so the
   // session id has to be namespaced before it is matched against device_keys.

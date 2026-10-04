@@ -69,7 +69,8 @@ struct InboxView: View {
                   Telemetry.capture(.proposalOpenedAsRun)
                   router.push(.run(id: runId, label: proposal.automationName))
                 }
-              })
+              },
+              onOpenDetails: { router.push(.proposal(id: proposal.id)) })
           }
         }
       }

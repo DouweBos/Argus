@@ -249,6 +249,16 @@ export const REMOTE_METHODS = {
   "automations.run_scratch": "control",
   "automations.save_scratch_run": "control",
   "automations.cancel_run": "control",
+  /** Throwing a run's record away is not undoable, so it sits with the writes. */
+  "automations.delete_run": "control",
+  /** How often its proposals were kept versus dismissed. */
+  "automations.calibration": "monitor",
+  /** Spends the host's LLM, like `revise_playbook`; saves nothing. */
+  "automations.draft": "control",
+  /** The app-wide autonomy cap. Raising it lets every automation go further
+   *  unattended, the same bar as editing one automation's autonomy. */
+  "automations.default_autonomy": "monitor",
+  "automations.set_default_autonomy": "control",
   /** Reading a report on the phone is reading it — it clears nowhere else.
    *  Monitor, not control: it records that you looked, and can do nothing else. */
   "automations.mark_run_read": "monitor",
@@ -268,6 +278,10 @@ export const REMOTE_METHODS = {
   "proposals.dismiss": "control",
   "proposals.resolve": "control",
   "proposals.perform_cleanup": "control",
+  /** One proposal's full record, for its own screen. */
+  "proposals.get": "monitor",
+  /** Starts a run of the automation with the note, so control. */
+  "proposals.request_revision": "control",
   /** Every address this desktop is reachable on, so a client can pick one. */
   "host.endpoints": "monitor",
   /** Claude accounts. Reading which plans the host owner signed into is

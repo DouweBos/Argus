@@ -560,6 +560,14 @@ public struct RemoteProposal: Codable, Hashable, Sendable, Identifiable {
   /// Why the last start failed, readable. Cleared when a new start begins.
   public var startError: String?
   public var createdAt: Double
+  /// The record behind a decision; absent from computers older than them.
+  public var acceptedNote: String?
+  public var dismissedReason: String?
+  public var resolvedNote: String?
+  /// A rework asked for and not yet picked up by a run.
+  public var revisionRequest: String?
+  public var clearedReason: String?
+  public var supersededBy: String?
 
   enum CodingKeys: String, CodingKey {
     case id, title, summary, rationale, confidence, cta, status, project
@@ -573,6 +581,12 @@ public struct RemoteProposal: Codable, Hashable, Sendable, Identifiable {
     case startStage = "start_stage"
     case startError = "start_error"
     case createdAt = "created_at"
+    case acceptedNote = "accepted_note"
+    case dismissedReason = "dismissed_reason"
+    case resolvedNote = "resolved_note"
+    case revisionRequest = "revision_request"
+    case clearedReason = "cleared_reason"
+    case supersededBy = "superseded_by"
   }
 }
 

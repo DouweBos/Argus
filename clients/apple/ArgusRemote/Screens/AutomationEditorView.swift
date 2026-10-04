@@ -13,6 +13,10 @@ struct AutomationEditorView: View {
 
   /// Nil creates a new automation.
   let automationId: String?
+  /// A drafted automation to review before it is created.
+  var prefill: RemoteAutomationDetail?
+  /// What the computer repaired or dropped while drafting it.
+  var notes: [String] = []
 
   @State private var draft = RemoteAutomationDetail(extraInstructions: "")
   @State private var loaded = false
@@ -31,6 +35,9 @@ struct AutomationEditorView: View {
     Screen {
       if let error = store.error {
         Banner(text: error, tone: .danger)
+      }
+      if !notes.isEmpty {
+        Banner(text: notes.joined(separator: "\n"), tone: .muted, title: "Adjusted while drafting")
       }
       if loaded {
         AutomationFields(draft: $draft, sources: store.sources, runners: store.runners)
@@ -64,6 +71,7 @@ struct AutomationEditorView: View {
     await store.loadSources()
     await store.loadRunners()
     guard let automationId else {
+      if let prefill, !loaded { draft = prefill }
       loaded = true
       return
     }
@@ -78,8 +86,13 @@ struct AutomationEditorView: View {
     Task {
       let id = await store.save(id: automationId, input: RemoteAutomationInput(draft))
       saving = false
-      guard id != nil else { return }
-      dismiss()
+      guard let id else { return }
+      if prefill != nil {
+        // The describe screen is underneath; land on the new automation instead.
+        router.replaceTop(with: .automation(id: id, label: draft.name), dropping: 2)
+      } else {
+        dismiss()
+      }
     }
   }
 

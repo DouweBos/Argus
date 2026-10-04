@@ -26,6 +26,12 @@ final class AppStore {
   var themePreference: ThemePreference = .system
   /// Opens Read calls that returned an image, so screenshots show without a tap.
   var autoExpandImageReads = false
+  /// The mode new agents started from this phone begin in; nil leaves it to
+  /// the computer, as the desktop's own default does for its agents.
+  var defaultPermissionMode: RemotePermissionMode?
+  /// Failures shown this launch, newest first — the phone's `/notifications`.
+  var warnings: [AppWarning] = []
+  var unseenWarnings = 0
   /// Mirrored from `Telemetry` so the Settings toggle has something to bind to.
   var telemetryMode: TelemetryMode = .presence
   var pushState: PushState = .off
@@ -48,7 +54,8 @@ final class AppStore {
   init() {
     host.hooks = HostStoreHooks(
       track: { Telemetry.capture(TelemetryEvent($0)) },
-      errorReported: { error, scope in
+      errorReported: { [weak self] error, scope in
+        self?.noteWarning(HostStore.describe(error))
         Telemetry.capture(.appError(scope: scope, message: HostStore.describe(error)))
         Telemetry.captureException(error, source: "app_error", extra: ["scope": scope])
       },
@@ -74,6 +81,8 @@ final class AppStore {
     themePreference =
       ThemePreference(rawValue: preferences.string(PreferenceKey.theme) ?? "") ?? .system
     autoExpandImageReads = preferences.string(PreferenceKey.autoExpandImageReads) == "on"
+    defaultPermissionMode = preferences.string(PreferenceKey.defaultPermissionMode)
+      .flatMap(RemotePermissionMode.init(rawValue:))
 
     let stored = await keystore.load()
     hosts = stored.hosts
@@ -250,4 +259,39 @@ final class AppStore {
     preferences.set(enabled ? "on" : "off", for: PreferenceKey.autoExpandImageReads)
     Telemetry.capture(.settingChanged(setting: .autoExpandImageReads, enabled: enabled))
   }
+
+  func setDefaultPermissionMode(_ mode: RemotePermissionMode?) {
+    defaultPermissionMode = mode
+    preferences.set(mode?.rawValue, for: PreferenceKey.defaultPermissionMode)
+    Telemetry.capture(.defaultChanged(setting: .permissionMode, value: mode?.rawValue ?? "computer"))
+  }
+
+  // MARK: Warnings
+
+  private static let warningCap = 50
+
+  private func noteWarning(_ message: String) {
+    // A polling screen repeats its failure every few seconds; keep one entry.
+    if warnings.first?.message == message {
+      warnings[0] = AppWarning(message: message, at: Date())
+      return
+    }
+    warnings.insert(AppWarning(message: message, at: Date()), at: 0)
+    if warnings.count > Self.warningCap { warnings.removeLast(warnings.count - Self.warningCap) }
+    unseenWarnings += 1
+  }
+
+  func markWarningsSeen() { unseenWarnings = 0 }
+
+  func clearWarnings() {
+    warnings = []
+    unseenWarnings = 0
+  }
+}
+
+/// One failure the user was shown, kept so a toast that vanished can be read.
+struct AppWarning: Identifiable, Hashable {
+  let id = UUID()
+  let message: String
+  let at: Date
 }

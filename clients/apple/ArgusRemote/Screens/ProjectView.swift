@@ -7,6 +7,7 @@ struct ProjectView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
+  @Environment(AppStore.self) private var app
 
   let repoRoot: String
   let name: String
@@ -113,7 +114,9 @@ struct ProjectView: View {
       }
     }
     .sheet(item: $spawningIn) { target in
-      NewAgentSheet(sessionId: target.id, models: knownModels) { agent in
+      NewAgentSheet(
+        sessionId: target.id, models: knownModels, defaultMode: app.defaultPermissionMode
+      ) { agent in
         router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
         Task { await refresh() }
       }
