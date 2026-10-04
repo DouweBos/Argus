@@ -46,11 +46,18 @@ struct ChangesView: View {
       }
 
       if host.hasControl {
-        LandWorkCard(sessionId: sessionId) { await refresh() }
+        LandWorkCard(sessionId: sessionId, allowsAmend: true) { await refresh() }
       }
     }
     .navigationTitle("Changes · \(label)")
     .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        NavigationLink(value: Route.stashes(sessionId: sessionId, label: label)) {
+          Label("Stashes & tags", systemImage: Icon.history)
+        }
+      }
+    }
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) { await refresh() }
     .onChange(of: mode) { _, _ in
       diff = nil

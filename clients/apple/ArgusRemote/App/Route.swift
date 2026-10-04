@@ -17,6 +17,8 @@ enum Route: Hashable {
   /// A session's terminals, read-only.
   case terminals(sessionId: String, label: String)
   case terminal(id: String, label: String)
+  /// A session's stashes and tags.
+  case stashes(sessionId: String, label: String)
   case branches(sessionId: String, repoRoot: String, label: String)
   case branch(sessionId: String, repoRoot: String, branch: RemoteGitBranch)
   case commit(sessionId: String, hash: String, subject: String)
@@ -58,6 +60,7 @@ enum Route: Hashable {
     case .changes: "changes"
     case .terminals: "terminals"
     case .terminal: "terminal"
+    case .stashes: "stashes"
     case .branches: "branches"
     case .branch: "branch"
     case .commit: "commit"

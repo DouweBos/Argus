@@ -53,25 +53,28 @@ extension HostStore {
 
   /// Stage everything and commit. Returns git's own output, or nil when it
   /// refused — the message is already on `lastError` by then.
-  public func commit(sessionId: String, message: String) async -> String? {
+  public func commit(sessionId: String, message: String, amend: Bool = false) async -> String? {
     guard let backend else { return nil }
     struct Params: Encodable {
       let session_id: String
       let message: String
+      /// Omitted unless set, so an older computer never sees a key it rejects.
+      let amend: Bool?
     }
     struct Result: Decodable { let output: String }
     do {
       let output = try await backend.request(
-        .sessionsCommit, Params(session_id: sessionId, message: message),
+        .sessionsCommit,
+        Params(session_id: sessionId, message: message, amend: amend ? true : nil),
         as: Result.self
       ).output
-      hooks.track(.workLanded(action: .commit, success: true))
+      hooks.track(.workLanded(action: amend ? .amend : .commit, success: true))
       await loadGitStatus(sessionId: sessionId)
 
       return output
     } catch {
       report(error, scope: "session:commit")
-      hooks.track(.workLanded(action: .commit, success: false))
+      hooks.track(.workLanded(action: amend ? .amend : .commit, success: false))
 
       return nil
     }

@@ -11,6 +11,8 @@ public struct LandWorkCard: View {
   @Environment(HostStore.self) private var host
 
   let sessionId: String
+  /// Offers folding the changes into the last commit.
+  let allowsAmend: Bool
   /// Called after anything that changes the tree, so the diff can reload.
   let onChanged: () async -> Void
 
@@ -21,6 +23,7 @@ public struct LandWorkCard: View {
   @State private var openingPullRequest = false
   @State private var changingBase = false
   @State private var note: String?
+  @State private var amend = false
 
   private var status: RemoteGitStatus? { host.gitStatusBySession[sessionId] }
   private var hasUncommitted: Bool { (status?.dirtyCount ?? 0) > 0 }
@@ -29,8 +32,11 @@ public struct LandWorkCard: View {
       && busy == nil
   }
 
-  public init(sessionId: String, onChanged: @escaping () async -> Void) {
+  public init(
+    sessionId: String, allowsAmend: Bool = false, onChanged: @escaping () async -> Void
+  ) {
     self.sessionId = sessionId
+    self.allowsAmend = allowsAmend
     self.onChanged = onChanged
   }
 
@@ -44,7 +50,15 @@ public struct LandWorkCard: View {
 
       if hasUncommitted {
         ThemedTextField(placeholder: "Commit message", text: $message, multiline: true)
-        Btn(label: busy == "commit" ? "Committing…" : "Commit all changes", small: true) {
+        if allowsAmend {
+          Toggle(isOn: $amend) { MutedText("Amend the last commit") }
+            .tint(theme.accent)
+        }
+        Btn(
+          label: busy == "commit"
+            ? "Committing…" : amend ? "Amend with all changes" : "Commit all changes",
+          small: true
+        ) {
           commit()
         }
         .disabled(!canCommit)
@@ -123,11 +137,12 @@ public struct LandWorkCard: View {
     Task {
       let output = await host.commit(
         sessionId: sessionId,
-        message: message.trimmingCharacters(in: .whitespacesAndNewlines))
+        message: message.trimmingCharacters(in: .whitespacesAndNewlines), amend: amend)
       busy = nil
       guard output != nil else { return }
       message = ""
-      note = "Committed."
+      note = amend ? "Amended the last commit." : "Committed."
+      amend = false
       await finish()
     }
   }

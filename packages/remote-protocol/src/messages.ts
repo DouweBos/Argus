@@ -50,6 +50,8 @@ import {
   RemoteTodo,
 } from "./models";
 import { AutomationCalibration } from "./models/automations";
+import { GitStashEntry } from "./models/git/history";
+import { GitTag } from "./models/git/remotes";
 import { ReportBlock } from "./report";
 
 /**
@@ -349,7 +351,21 @@ export const MethodParams = {
     message: z.string().trim().min(1),
     /** Stage everything first. A phone has no per-file staging UI. */
     stage_all: z.boolean().optional(),
+    /** Fold into the last commit instead of making a new one. */
+    amend: z.boolean().optional(),
   }),
+  "sessions.stashes": z.object({ session_id: z.string() }),
+  /** Apply a stash; `drop` also removes it once applied (a pop). */
+  "sessions.stash_apply": z.object({
+    session_id: z.string(),
+    index: z.number().int().min(0),
+    drop: z.boolean().optional(),
+  }),
+  "sessions.stash_drop": z.object({
+    session_id: z.string(),
+    index: z.number().int().min(0),
+  }),
+  "sessions.tags": z.object({ session_id: z.string() }),
   "sessions.push": z.object({ session_id: z.string() }),
   "sessions.merge_blockers": z.object({ session_id: z.string() }),
   "sessions.merge_base": z.object({
@@ -694,6 +710,11 @@ export const MethodResult = {
   }),
   /** Git's own output, so a refusal reads the same as it does in a terminal. */
   "sessions.commit": z.object({ output: z.string() }),
+  "sessions.stashes": z.object({ stashes: z.array(GitStashEntry) }),
+  /** Git's own output, so a conflicting apply reads as it does in a terminal. */
+  "sessions.stash_apply": z.object({ output: z.string() }),
+  "sessions.stash_drop": z.object({ output: z.string() }),
+  "sessions.tags": z.object({ tags: z.array(GitTag) }),
   "sessions.push": z.object({
     branch: z.string(),
     remote: z.string(),

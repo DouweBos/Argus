@@ -412,6 +412,8 @@ struct RootView: View {
       TerminalOutputView(terminalId: id)
         .navigationTitle(label)
         .navigationBarTitleDisplayMode(.inline)
+    case .stashes(let sessionId, let label):
+      StashesView(sessionId: sessionId, label: label)
     case .branches(let sessionId, let repoRoot, let label):
       BranchesView(sessionId: sessionId, repoRoot: repoRoot, label: label)
     case .branch(let sessionId, let repoRoot, let branch):

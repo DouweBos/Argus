@@ -198,6 +198,12 @@ export const REMOTE_METHODS = {
   "sessions.commit": "control",
   "sessions.push": "control",
   "sessions.merge_base": "control",
+  /** Stashes and tags are reads; applying or dropping a stash rewrites the
+   *  tree or throws work away, like a checkout or a delete. */
+  "sessions.stashes": "monitor",
+  "sessions.stash_apply": "control",
+  "sessions.stash_drop": "control",
+  "sessions.tags": "monitor",
   /** List connected simulators/emulators. */
   "devices.list": "monitor",
   /** Begin/stop streaming a device's screen (frames ride the binary channel). */

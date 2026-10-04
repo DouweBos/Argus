@@ -79,11 +79,15 @@ public enum StoreEvent: Sendable, Equatable {
     case pull
     case rename
     case pin
+    case stashApply = "stash_apply"
+    case stashPop = "stash_pop"
+    case stashDrop = "stash_drop"
   }
 
   /// How work leaves a session.
   public enum LandAction: String, Sendable {
     case commit
+    case amend
     case push
     case merge
   }

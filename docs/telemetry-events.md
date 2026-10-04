@@ -270,7 +270,8 @@ stay honest.
 
 The phone also sends `describe` on `ios_automation_edited`, `delete` and
 `mark_read` on `ios_run_acted`, and `request_revision` on
-`ios_proposal_handled`. `ios_default_changed`'s `value` is the mode or rung
+`ios_proposal_handled`, `amend` on `ios_work_landed`, and `stash_apply`,
+`stash_pop` and `stash_drop` on `ios_branch_acted`. `ios_default_changed`'s `value` is the mode or rung
 picked, or `computer` / `none` when cleared.
 
 `baseProps` in full mode: `app_version`, `build_number`,

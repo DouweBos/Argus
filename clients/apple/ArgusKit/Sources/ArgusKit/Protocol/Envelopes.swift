@@ -45,6 +45,10 @@ public enum RemoteMethod: String, Codable, Sendable {
   case sessionsPush = "sessions.push"
   case sessionsMergeBlockers = "sessions.merge_blockers"
   case sessionsMergeBase = "sessions.merge_base"
+  case sessionsStashes = "sessions.stashes"
+  case sessionsStashApply = "sessions.stash_apply"
+  case sessionsStashDrop = "sessions.stash_drop"
+  case sessionsTags = "sessions.tags"
 
   case agentsList = "agents.list"
   case agentsStatus = "agents.status"

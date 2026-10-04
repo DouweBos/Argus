@@ -3947,17 +3947,20 @@ extension ArgusProtocol {
       public var sessionId: String
       public var message: String
       public var stageAll: Bool?
+      public var amend: Bool?
 
       enum CodingKeys: String, CodingKey {
         case sessionId = "session_id"
         case message = "message"
         case stageAll = "stage_all"
+        case amend = "amend"
       }
 
-      public init(sessionId: String, message: String, stageAll: Bool? = nil) {
+      public init(sessionId: String, message: String, stageAll: Bool? = nil, amend: Bool? = nil) {
         self.sessionId = sessionId
         self.message = message
         self.stageAll = stageAll
+        self.amend = amend
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -3965,6 +3968,7 @@ extension ArgusProtocol {
         try c.encode(sessionId, forKey: .sessionId)
         try c.encode(message, forKey: .message)
         try c.encodeIfPresent(stageAll, forKey: .stageAll)
+        try c.encodeIfPresent(amend, forKey: .amend)
       }
     }
 
@@ -4991,6 +4995,154 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsStashApplyParams: Codable, Sendable {
+      public var sessionId: String
+      public var index: Int
+      public var drop: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case index = "index"
+        case drop = "drop"
+      }
+
+      public init(sessionId: String, index: Int, drop: Bool? = nil) {
+        self.sessionId = sessionId
+        self.index = index
+        self.drop = drop
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(index, forKey: .index)
+        try c.encodeIfPresent(drop, forKey: .drop)
+      }
+    }
+
+    public struct SessionsStashApplyResult: Codable, Sendable {
+      public var output: String
+
+      enum CodingKeys: String, CodingKey {
+        case output = "output"
+      }
+
+      public init(output: String) {
+        self.output = output
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(output, forKey: .output)
+      }
+    }
+
+    public struct SessionsStashDropParams: Codable, Sendable {
+      public var sessionId: String
+      public var index: Int
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case index = "index"
+      }
+
+      public init(sessionId: String, index: Int) {
+        self.sessionId = sessionId
+        self.index = index
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(index, forKey: .index)
+      }
+    }
+
+    public struct SessionsStashDropResult: Codable, Sendable {
+      public var output: String
+
+      enum CodingKeys: String, CodingKey {
+        case output = "output"
+      }
+
+      public init(output: String) {
+        self.output = output
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(output, forKey: .output)
+      }
+    }
+
+    public struct SessionsStashesParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsStashesResult: Codable, Sendable {
+      public var stashes: [GitStashEntry]
+
+      enum CodingKeys: String, CodingKey {
+        case stashes = "stashes"
+      }
+
+      public init(stashes: [GitStashEntry]) {
+        self.stashes = stashes
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(stashes, forKey: .stashes)
+      }
+    }
+
+    public struct SessionsTagsParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsTagsResult: Codable, Sendable {
+      public var tags: [GitTag]
+
+      enum CodingKeys: String, CodingKey {
+        case tags = "tags"
+      }
+
+      public init(tags: [GitTag]) {
+        self.tags = tags
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(tags, forKey: .tags)
+      }
+    }
+
     public struct TerminalsListParams: Codable, Sendable {
       public var sessionId: String
 
@@ -5817,6 +5969,30 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsSetBaseBranchParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsSetBaseBranchResult
       public static let name = "sessions.set_base_branch"
+    }
+
+    public enum SessionsStashApply: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsStashApplyParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsStashApplyResult
+      public static let name = "sessions.stash_apply"
+    }
+
+    public enum SessionsStashDrop: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsStashDropParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsStashDropResult
+      public static let name = "sessions.stash_drop"
+    }
+
+    public enum SessionsStashes: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsStashesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsStashesResult
+      public static let name = "sessions.stashes"
+    }
+
+    public enum SessionsTags: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsTagsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsTagsResult
+      public static let name = "sessions.tags"
     }
 
     public enum TerminalsList: RemoteCommand {

@@ -143,6 +143,10 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.commit": DENIED,
   "sessions.push": DENIED,
   "sessions.merge_base": DENIED,
+  "sessions.stashes": DENIED,
+  "sessions.stash_apply": DENIED,
+  "sessions.stash_drop": DENIED,
+  "sessions.tags": DENIED,
   "sessions.create_branch": DENIED,
   "sessions.delete_branch": DENIED,
   // Branch history and branch ops are project-root only — a guest's grant is
