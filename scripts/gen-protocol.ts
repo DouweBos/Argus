@@ -185,6 +185,8 @@ function docComment(text: string | undefined, indent: string): string {
 class Emitter {
   private readonly decls: string[] = [];
   private readonly emitted = new Set<string>();
+  /** Every type declared here or in an adopted emitter. */
+  readonly declared = new Set<string>();
 
   constructor(
     private readonly defs: Record<string, JsonSchema> = {},
@@ -201,6 +203,9 @@ class Emitter {
     const out = other.output();
     if (out) {
       this.decls.push(out);
+    }
+    for (const name of [...other.emitted, ...other.declared]) {
+      this.declared.add(name);
     }
   }
 
@@ -617,14 +622,18 @@ function indentLines(text: string): string {
 const BUILTINS =
   /^(String|Int|Double|Bool|JSONValue|IgnoredResult|EmptyParams)$/;
 
-/** Resolve a type named inside a family to a fully qualified Swift type. */
-function qualify(type: string, family: string): string {
+/**
+ * Resolve a type named inside a family to a fully qualified Swift type. One the
+ * family declared itself wins over a model of the same name: `huddle_say`'s own
+ * `HuddleSayParams` is not the gateway method's.
+ */
+function qualify(type: string, family: string, local: Emitter): string {
   return type.replace(/\b([A-Z][A-Za-z0-9_]*)\b/g, (m) => {
     if (BUILTINS.test(m)) {
       return m;
     }
 
-    return MODEL_NAMES.has(m)
+    return MODEL_NAMES.has(m) && !local.declared.has(m)
       ? `${NAMESPACE}.${m}`
       : `${NAMESPACE}.${family}Types.${m}`;
   });
@@ -637,11 +646,13 @@ function commandsFile(): string {
   for (const name of Object.keys(commands).sort()) {
     const spec = commands[name];
     const base = pascal(name);
-    const params = rootType(emitter, spec.params, `${base}Params`);
-    const result = rootType(emitter, spec.result, `${base}Result`);
+    const own = new Emitter();
+    const params = rootType(own, spec.params, `${base}Params`);
+    const result = rootType(own, spec.result, `${base}Result`);
+    emitter.append(own);
     entries.push(`    public enum ${base}: RemoteCommand {
-      public typealias Params = ${qualify(stripOptional(params), "Commands")}
-      public typealias Result = ${qualify(result, "Commands")}
+      public typealias Params = ${qualify(stripOptional(params), "Commands", own)}
+      public typealias Result = ${qualify(result, "Commands", own)}
       public static let name = ${swiftString(name)}
       public static let tier = ${swiftString(spec.tier)}
     }`);
@@ -662,13 +673,15 @@ function methodsFile(): string {
   const results = protocol.MethodResult as Record<string, z.ZodType>;
   for (const name of Object.keys(params).sort()) {
     const base = pascal(name);
-    const p = rootType(emitter, params[name], `${base}Params`);
+    const own = new Emitter();
+    const p = rootType(own, params[name], `${base}Params`);
     const r = results[name]
-      ? rootType(emitter, results[name], `${base}Result`)
+      ? rootType(own, results[name], `${base}Result`)
       : "IgnoredResult";
+    emitter.append(own);
     entries.push(`    public enum ${base}: RemoteCommand {
-      public typealias Params = ${qualify(stripOptional(p), "Methods")}
-      public typealias Result = ${qualify(r, "Methods")}
+      public typealias Params = ${qualify(stripOptional(p), "Methods", own)}
+      public typealias Result = ${qualify(r, "Methods", own)}
       public static let name = ${swiftString(name)}
     }`);
   }
@@ -687,9 +700,11 @@ function eventsFile(): string {
   const events = protocol.EventPayloads as Record<string, z.ZodType>;
   for (const name of Object.keys(events).sort()) {
     const base = pascal(name);
-    const type = rootType(emitter, events[name], `${base}Payload`);
+    const own = new Emitter();
+    const type = rootType(own, events[name], `${base}Payload`);
+    emitter.append(own);
     entries.push(
-      `    /// \`${name}\`\n    public typealias ${base} = ${qualify(type, "Events")}`,
+      `    /// \`${name}\`\n    public typealias ${base} = ${qualify(type, "Events", own)}`,
     );
   }
 
