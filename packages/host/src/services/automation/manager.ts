@@ -22,7 +22,10 @@ import { info, warn } from "@argus/host/logger";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { computeNextRun, isValidCron } from "./cron";
 import { migrateSpendCeiling, normalizeGuardrails } from "./guardrails";
-import { disposeAutomationHostSession } from "./hostSession";
+import {
+  disposeAutomationHostSession,
+  restoreAutomationHostSession,
+} from "./hostSession";
 import { deleteAllMemories } from "./memory/store";
 import { automationRunDir, automationRunsDir } from "./paths";
 import {
@@ -188,6 +191,20 @@ export function initAutomations(): void {
   if (interrupted > 0) {
     runs = saveAutomationRuns(runCache());
     info(`Marked ${interrupted} interrupted automation run(s) as failed`);
+  }
+  for (const run of runCache()) {
+    const automation = run.host_session_id
+      ? getAutomation(run.automation_id)
+      : null;
+    if (run.host_session_id && automation) {
+      restoreAutomationHostSession(run.host_session_id, {
+        automationId: run.automation_id,
+        runId: run.id,
+        displayName: automation.name,
+        runner: automation.runner,
+        model: automation.model,
+      });
+    }
   }
 }
 

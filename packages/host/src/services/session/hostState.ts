@@ -38,6 +38,15 @@ export async function hydrateHostState(): Promise<HostSnapshot> {
     agents.push(...listAgents(pad.id));
   }
 
+  // Under no project: a run's session would otherwise never reach a client,
+  // and the run's transcript couldn't be opened.
+  for (const session of appState.sessions.values()) {
+    if (session.kind === "automation_host") {
+      sessions.push({ ...session });
+      agents.push(...listAgents(session.id));
+    }
+  }
+
   return { projects, sessions, agents };
 }
 

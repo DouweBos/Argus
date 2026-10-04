@@ -17,16 +17,17 @@ import { loadAppSettings } from "../appSettings/store";
 import { resolveRunnerForSession } from "../llm/resolve";
 import { automationRunDir } from "./paths";
 
-export function createAutomationHostSession(options: {
+interface HostSessionOptions {
   automationId: string;
   runId: string;
   displayName: string;
   /** Runner the automation pinned; null follows the app default. */
   runner?: string | null;
   model?: string | null;
-}): Session {
+}
+
+function hostSession(id: string, options: HostSessionOptions): Session {
   const dir = automationRunDir(options.automationId, options.runId);
-  fs.mkdirSync(dir, { recursive: true });
 
   // No `.argus.json` level: the run dir is not a repo, so the cascade is the
   // automation's own pick, then the app default.
@@ -37,8 +38,8 @@ export function createAutomationHostSession(options: {
     appDefault,
   });
 
-  const session: Session = {
-    id: crypto.randomUUID(),
+  return {
+    id,
     kind: "automation_host",
     branch: "",
     display_name: options.displayName,
@@ -51,12 +52,39 @@ export function createAutomationHostSession(options: {
     runner_id: runner.id,
     model: defaultModel ?? appDefault?.model?.trim() ?? null,
   };
+}
+
+export function createAutomationHostSession(
+  options: HostSessionOptions,
+): Session {
+  fs.mkdirSync(automationRunDir(options.automationId, options.runId), {
+    recursive: true,
+  });
+  const session = hostSession(crypto.randomUUID(), options);
 
   appState.sessions.set(session.id, session);
   emitHostEvent("session:created", { ...session });
-  info(`Created automation-host session ${session.id} at ${dir}`);
+  info(`Created automation-host session ${session.id} at ${session.path}`);
 
   return { ...session };
+}
+
+/**
+ * Bring a past run's session back after a restart, under the id the run
+ * recorded, so its transcript can still be opened. Skipped once the run's
+ * directory is gone.
+ */
+export function restoreAutomationHostSession(
+  id: string,
+  options: HostSessionOptions,
+): void {
+  if (
+    appState.sessions.has(id) ||
+    !fs.existsSync(automationRunDir(options.automationId, options.runId))
+  ) {
+    return;
+  }
+  appState.sessions.set(id, hostSession(id, options));
 }
 
 /** Drop the session once the run is over; the directory stays for the record. */
