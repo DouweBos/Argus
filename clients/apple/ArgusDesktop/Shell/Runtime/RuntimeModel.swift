@@ -76,7 +76,11 @@ final class RuntimeModel {
   private var backend: (any HostBackend)? { store.backend }
   /// The machine whose devices the panel lists: the shown session's, or the
   /// shown machine's on the Devices screen. A device it lists routes there after.
-  var hostId: HostId = Hosts.local
+  var hostId: HostId = Hosts.local {
+    didSet {
+      (store.backend as? HostRouter)?.index.preferDevices(on: hostId)
+    }
+  }
 
   // MARK: Selection
 

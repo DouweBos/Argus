@@ -23,25 +23,51 @@ public final class HostIndex: Sendable {
   }
 
   private let tables = Mutex<[Kind: [String: HostId]]>([:])
+  /// A device can be reachable from more than one host — two hosts on one
+  /// Mac, or one phone plugged into both — so it keeps every host that listed it.
+  private let devices = Mutex<[String: [HostId]]>([:])
+  private let preferredDeviceHost = Mutex<HostId?>(nil)
 
   public init() {}
 
   public func remember(_ kind: Kind, _ id: String, host: HostId) {
     guard !id.isEmpty else { return }
+    if kind == .device {
+      devices.withLock { if !($0[id] ?? []).contains(host) { $0[id, default: []].append(host) } }
+      return
+    }
     tables.withLock { $0[kind, default: [:]][id] = host }
   }
 
   public func host(of kind: Kind, _ id: String) -> HostId? {
-    tables.withLock { $0[kind]?[id] }
+    if kind == .device {
+      // The machine on screen wins even before its device list lands: the
+      // runtime panel only offers that machine's devices.
+      if let preferred = preferredDeviceHost.withLock({ $0 }) { return preferred }
+      return devices.withLock { $0[id]?.first }
+    }
+    return tables.withLock { $0[kind]?[id] }
+  }
+
+  /// The machine whose devices are on screen; device calls go there.
+  public func preferDevices(on host: HostId?) {
+    preferredDeviceHost.withLock { $0 = host }
   }
 
   /// Every id of one kind a host owns.
   public func ids(_ kind: Kind, on host: HostId) -> [String] {
-    tables.withLock { ($0[kind] ?? [:]).filter { $0.value == host }.map(\.key) }
+    if kind == .device { return devices.withLock { $0.filter { $0.value.contains(host) }.map(\.key) } }
+    return tables.withLock { ($0[kind] ?? [:]).filter { $0.value == host }.map(\.key) }
   }
 
   /// Drop everything a host owned — on forget, so nothing routes to it.
   public func forget(host: HostId) {
+    devices.withLock { devices in
+      devices = devices.compactMapValues { hosts in
+        let kept = hosts.filter { $0 != host }
+        return kept.isEmpty ? nil : kept
+      }
+    }
     tables.withLock { tables in
       for kind in Kind.allCases {
         tables[kind] = tables[kind]?.filter { $0.value != host }

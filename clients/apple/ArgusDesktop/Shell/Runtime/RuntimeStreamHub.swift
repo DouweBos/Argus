@@ -25,8 +25,14 @@ final class RuntimeStreamHub {
   /// A device sending only deltas would grow this forever.
   private static let replayCap = 300
 
+  /// One device can be listed by two hosts; each one's stream is its own.
+  private struct Key: Hashable {
+    let subject: Subject
+    let host: HostId
+  }
+
   private let store: HostStore
-  private var entries: [Subject: Entry] = [:]
+  private var entries: [Key: Entry] = [:]
 
   init(store: HostStore) {
     self.store = store
@@ -35,20 +41,23 @@ final class RuntimeStreamHub {
   /// Start receiving `subject`'s frames; nil when the host couldn't start the
   /// stream. Call the returned closure to stop.
   func attach(_ subject: Subject, _ sink: @escaping (MediaMessage) -> Void) async -> (() -> Void)? {
-    let entry = entries[subject] ?? Entry()
-    entries[subject] = entry
+    let key = Key(subject: subject, host: host(of: subject))
+    let entry = entries[key] ?? Entry()
+    entries[key] = entry
     let id = UUID()
     entry.sinks[id] = sink
     if let config = entry.config { sink(config) }
     for message in entry.sinceKeyFrame { sink(message) }
 
     if entry.unregister == nil {
-      let opening = entry.opening ?? Task { await self.open(subject) }
+      let opening = entry.opening ?? Task {
+        await HostRouter.$pinned.withValue(key.host) { await self.open(subject) }
+      }
       entry.opening = opening
       guard let streamId = await opening.value else {
         entry.opening = nil
         entry.sinks.removeValue(forKey: id)
-        if entry.sinks.isEmpty { entries.removeValue(forKey: subject) }
+        if entry.sinks.isEmpty { entries.removeValue(forKey: key) }
         return nil
       }
       if entry.unregister == nil {
@@ -57,7 +66,17 @@ final class RuntimeStreamHub {
         }
       }
     }
-    return { [weak self] in self?.detach(subject, id) }
+    return { [weak self] in self?.detach(key, id) }
+  }
+
+  /// Which host streams it: the session's for a browser, else whichever host
+  /// the device resolves to right now.
+  private func host(of subject: Subject) -> HostId {
+    guard let router = store.backend as? HostRouter else { return Hosts.local }
+    switch subject {
+    case .device(let id, _): return router.host(of: .device, id)
+    case .browser(let sessionId): return router.host(of: .session, sessionId)
+    }
   }
 
   private func open(_ subject: Subject) async -> UInt16? {
@@ -83,22 +102,25 @@ final class RuntimeStreamHub {
     for sink in entry.sinks.values { sink(message) }
   }
 
-  private func detach(_ subject: Subject, _ id: UUID) {
-    guard let entry = entries[subject] else { return }
+  private func detach(_ key: Key, _ id: UUID) {
+    guard let entry = entries[key] else { return }
     entry.sinks.removeValue(forKey: id)
     guard entry.sinks.isEmpty else { return }
-    entries.removeValue(forKey: subject)
+    entries.removeValue(forKey: key)
     entry.unregister?()
     let store = store
+    let subject = key.subject
     Task {
-      // Let go before leaving, so another client isn't locked out by a
-      // picture nobody is looking at.
-      switch subject {
-      case .device(let id, _):
-        await store.releaseDevice(deviceId: id)
-        await store.unwatchDevice(deviceId: id)
-      case .browser(let sessionId):
-        await store.unwatchBrowser(sessionId: sessionId)
+      await HostRouter.$pinned.withValue(key.host) {
+        // Let go before leaving, so another client isn't locked out by a
+        // picture nobody is looking at.
+        switch subject {
+        case .device(let id, _):
+          await store.releaseDevice(deviceId: id)
+          await store.unwatchDevice(deviceId: id)
+        case .browser(let sessionId):
+          await store.unwatchBrowser(sessionId: sessionId)
+        }
       }
     }
   }

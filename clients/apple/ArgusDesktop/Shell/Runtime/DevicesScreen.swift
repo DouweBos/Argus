@@ -40,7 +40,9 @@ struct DevicesScreen: View {
     }
     .background(theme.bg)
     .navigationTitle("Devices")
-    .task(id: store.connection == .ready) {
+    // The shown machine's devices; a tile streams from it too.
+    .task(id: "\(store.connection == .ready)|\(model.hosts.focused)") {
+      runtime.hostId = model.hosts.focused
       while !Task.isCancelled {
         await load()
         try? await Task.sleep(for: Self.pollInterval)
