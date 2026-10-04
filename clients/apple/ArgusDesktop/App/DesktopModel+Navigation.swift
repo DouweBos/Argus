@@ -106,6 +106,11 @@ extension DesktopModel {
 
   /// Which panel and git view each session was last left on.
   private func remember(_ route: DesktopRoute) {
+    if let id = route.sessionId,
+      let session = store.sessionsByRepo.values.joined().first(where: { $0.id == id })
+    {
+      HomeRecents.shared.show(session.repoRoot)
+    }
     switch route {
     case .session(let id, _):
       agentsPanelSessions.insert(id)

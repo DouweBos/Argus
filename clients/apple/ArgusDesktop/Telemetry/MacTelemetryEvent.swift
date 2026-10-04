@@ -187,6 +187,18 @@ enum MacTelemetryEvent {
     case abandoned
   }
 
+  enum HomeCard: String {
+    case notifications
+    case recentProject = "recent_project"
+  }
+
+  enum HomeCardAction: String {
+    case open
+    case dismiss
+    case fixed
+    case failed
+  }
+
   enum ChatHistoryAction: String {
     case view
     case resume
@@ -205,6 +217,9 @@ enum MacTelemetryEvent {
   case screenViewed(screen: String)
   /// A saved chat was opened, resumed or deleted from a session's home.
   case chatHistoryUsed(action: ChatHistoryAction)
+  /// A home card's button was used: notifications enabled, opened or dismissed,
+  /// or a project removed from the recents grid.
+  case homeCardActed(card: HomeCard, action: HomeCardAction)
   /// A session's branch was renamed from its home.
   case branchRenamed(success: Bool)
   /// A deep link or launch route was opened; `screen` is its route pattern.
@@ -277,6 +292,7 @@ enum MacTelemetryEvent {
     case .linkOpened: "mac_link_opened"
     case .chatHistoryUsed: "mac_chat_history_used"
     case .branchRenamed: "mac_branch_renamed"
+    case .homeCardActed: "mac_home_card_acted"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
     case .inputUsed: "mac_input_used"
@@ -336,6 +352,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue]
     case .branchRenamed(let success):
       ["success": success]
+    case .homeCardActed(let card, let action):
+      ["card": card.rawValue, "action": action.rawValue]
     case .transcriptLinkOpened(let action, let relative):
       ["action": action.rawValue, "relative": relative]
     case .transcriptFindUsed(let matches, let navigated):

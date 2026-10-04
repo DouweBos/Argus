@@ -14,6 +14,7 @@ struct HomeScreen: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 24) {
         SetupCards()
+        HomeEnvironmentCards()
         if store.projects.isEmpty {
           empty
         } else {
@@ -21,6 +22,7 @@ struct HomeScreen: View {
             Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 32, height: 32)
             Text("Argus").font(.system(size: 24, weight: .semibold))
           }
+          HomeNeedsYouSection()
           section("Projects") {
             Button("Add Project…") { model.addingProject = true }.buttonStyle(.link)
           } content: {
@@ -40,6 +42,7 @@ struct HomeScreen: View {
               HomeDevicesList()
             }
           }
+          HomeRecentRunsSection()
         }
       }
       .padding(28)
@@ -63,7 +66,7 @@ struct HomeScreen: View {
     func latest(_ project: RemoteProject) -> Double {
       (store.agentsByRepo[project.repoRoot] ?? []).map { $0.createdAt ?? 0 }.max() ?? 0
     }
-    return store.projects.enumerated()
+    return store.projects.filter { !HomeRecents.shared.hidden.contains($0.repoRoot) }.enumerated()
       .sorted { latest($0.element) != latest($1.element) ? latest($0.element) > latest($1.element) : $0.offset < $1.offset }
       .map(\.element)
   }
@@ -129,6 +132,7 @@ private struct HomeProjectCard: View {
       HStack {
         Image(systemName: "folder.fill").foregroundStyle(theme.accent)
         Text(project.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
+        if model.host(ofProject: project.repoRoot) != Hosts.local { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
         Spacer()
         Button {
           model.newSessionProject = project
@@ -138,7 +142,7 @@ private struct HomeProjectCard: View {
         .buttonStyle(.borderless)
         .help("New session in \(project.name)")
       }
-      Text(project.repoRoot).font(.caption).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
+      Text(HostScopedPath.path(project.repoRoot)).font(.caption).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
       HStack(spacing: 6) {
         ForEach(agents.prefix(8)) { StatusDot(tone: tone($0.status), pulse: $0.status == .running) }
         Text(summary(agents: agents.count, sessions: sessions.count))
@@ -163,6 +167,7 @@ private struct HomeProjectCard: View {
       Button("Open") { Task { await model.openProjectRoot(project.repoRoot) } }
       Button("New Session…") { model.newSessionProject = project }
       Button("Project Settings…") { model.projectSettingsRepo = project.repoRoot }
+      Button("Remove from Recents") { HomeRecents.shared.hide(project.repoRoot) }
       Divider()
       Button("Reveal in Finder") {
         NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: project.repoRoot)])
