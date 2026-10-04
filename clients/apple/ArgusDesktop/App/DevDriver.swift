@@ -453,6 +453,18 @@
           runtime.runtime.mode = mode
         }
         return ["ok": true]
+      case "splits":
+        // Every split view's panes, to see which one won't shrink.
+        var found: [String] = []
+        func scan(_ view: NSView, depth: Int) {
+          if let split = view as? NSSplitView {
+            let panes = split.arrangedSubviews.map { "\(Int($0.frame.width))(fit \(Int($0.fittingSize.width)))" }
+            found.append("\(depth) \(type(of: split)) w=\(Int(split.frame.width)) [\(panes.joined(separator: ", "))]")
+          }
+          view.subviews.forEach { scan($0, depth: depth + 1) }
+        }
+        if let root = window.contentView?.superview { scan(root, depth: 0) }
+        return ["splits": found]
       case "makeKey":
         // Key within this app only: SwiftUI gestures skip a non-key window's
         // first click, as they would for a real one. The app stays inactive.

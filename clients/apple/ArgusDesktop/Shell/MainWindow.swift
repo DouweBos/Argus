@@ -6,9 +6,13 @@ struct MainWindow: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
   @State private var imageViewer = ImageViewerState()
+  @State private var columns: NavigationSplitViewVisibility = .all
+  /// The sidebar was hidden to make room, not by the user, so it comes back.
+  @State private var sidebarAutoHidden = false
+  @State private var windowWidth: CGFloat = 0
 
   var body: some View {
-    NavigationSplitView {
+    NavigationSplitView(columnVisibility: $columns) {
       SidebarView()
         .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
     } content: {
@@ -37,11 +41,16 @@ struct MainWindow: View {
         }
         .frame(maxHeight: .infinity)
       }
-      .navigationSplitViewColumnWidth(min: 420, ideal: 640)
+      .navigationSplitViewColumnWidth(min: contentMinWidth, ideal: max(contentMinWidth, 640))
     } detail: {
       RuntimePanel(sessionId: model.route.sessionId)
         .navigationSplitViewColumnWidth(min: 280, ideal: 420)
     }
+    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+      windowWidth = width
+      fitColumns()
+    }
+    .onChange(of: model.route) { fitColumns() }
     // One image viewer for the window, as on the phone.
     .overlay {
       ImageViewerOverlay()
@@ -71,6 +80,32 @@ struct MainWindow: View {
 }
 
 extension MainWindow {
+  /// The git panel nests its own sidebar, file list and diff; a column narrower
+  /// than they need clips the app sidebar and runtime panel instead.
+  static let gitContentMinWidth: CGFloat = 800
+  static let contentMinWidth: CGFloat = 420
+  /// Centre and runtime minimums with the git panel open and the sidebar hidden.
+  static let minWindowWidth: CGFloat = gitContentMinWidth + 280
+  /// Below this the git panel's split views would draw over the sidebar.
+  static let roomyGitWidth: CGFloat = 1480
+
+  /// The app sidebar gives way first when the git panel needs the room, so
+  /// the runtime panel keeps its place; it comes back once there's space.
+  private func fitColumns() {
+    let cramped = model.route.gitView != nil && windowWidth > 0 && windowWidth < Self.roomyGitWidth
+    if cramped, columns == .all {
+      columns = .doubleColumn
+      sidebarAutoHidden = true
+    } else if !cramped, sidebarAutoHidden {
+      if columns == .doubleColumn { columns = .all }
+      sidebarAutoHidden = false
+    }
+  }
+
+  private var contentMinWidth: CGFloat {
+    model.route.gitView == nil ? Self.contentMinWidth : Self.gitContentMinWidth
+  }
+
   private var projectSettingsRepo: Binding<RepoPath?> {
     Binding(
       get: { model.projectSettingsRepo.map(RepoPath.init) },
