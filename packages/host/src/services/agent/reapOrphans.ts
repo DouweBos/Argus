@@ -1,8 +1,9 @@
 /**
  * Startup sweep for orphaned Claude Code CLI subprocesses from previous
- * Argus runs. Each agent passes `--debug-file ~/.argus/agents/<id>.debug.log`,
+ * Argus runs. Each agent passes `--debug-file <ARGUS_HOME>/agents/<id>.debug.log`,
  * which makes them easy to identify in the process table without confusing
- * them with claude processes the user spawned in their terminal.
+ * them with claude processes the user spawned in their terminal — or with
+ * another Argus's on the same Mac, which runs on a different `ARGUS_HOME`.
  *
  * Why this is needed: `handle.kill()` sends SIGTERM and (now) escalates to
  * SIGKILL on a 2 s timeout, but a hard crash / SIGKILL of the Argus main
@@ -11,9 +12,10 @@
  */
 
 import { execFile } from "node:child_process";
-import os from "node:os";
+import path from "node:path";
 import { promisify } from "node:util";
 import { info, warn } from "@argus/host/logger";
+import { argusHomeDir } from "../../lib/argusHome";
 
 const execFileAsync = promisify(execFile);
 
@@ -28,7 +30,7 @@ export async function reapOrphanedAgentProcesses(): Promise<void> {
     return;
   }
 
-  const argusAgentsDir = `${os.homedir()}/.argus/agents/`;
+  const argusAgentsDir = `${path.join(argusHomeDir(), "agents")}/`;
   const victims: number[] = [];
   for (const line of stdout.split("\n")) {
     const trimmed = line.trim();
