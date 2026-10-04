@@ -6,7 +6,9 @@
   /// effort and linked projects — each a native menu over the agent's state.
   extension MacChatInputView {
     var controlRow: some View {
-      HStack(spacing: 6) {
+      // Wraps instead of growing: a fixed-size row widened the middle column
+      // and squeezed the sidebar.
+      ChipFlowLayout {
         if contextTokens > 0 {
           ContextMeter(
             tokens: contextTokens,
@@ -17,8 +19,8 @@
         permissionMenu
         if !effortLevels.isEmpty { effortMenu }
         projectMenu
-        Spacer(minLength: 0)
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
       .disabled(!isEnabled)
     }
 
