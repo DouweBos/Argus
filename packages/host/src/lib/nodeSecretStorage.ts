@@ -3,7 +3,8 @@
  * `safeStorage` doesn't exist.
  *
  * A random AES-256-GCM key lives in the macOS login keychain (via the
- * `security` CLI), or in a 0600 file under `ARGUS_HOME` elsewhere. Blobs are
+ * `security` CLI), or in a 0600 file under `ARGUS_HOME` elsewhere — and for a
+ * home in a temp dir, whose keychain item would outlive it. Blobs are
  * tagged so one written by Electron's `safeStorage` fails to decrypt loudly
  * rather than yielding garbage.
  */
@@ -15,6 +16,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { argusHomeDir } from "./argusHome";
+import { canonicalPath } from "./canonicalPath";
 
 const MAGIC = Buffer.from("ah1");
 const KEYCHAIN_SERVICE = "Argus Host Secret Storage";
@@ -145,10 +147,25 @@ function loadOrCreateKey(
   return stored ? key : null;
 }
 
-export function nodeSecretStorage(
-  backend: SecretKeyBackend = process.platform === "darwin"
+/** A test or scratch host: its state is meant to vanish with the folder. */
+export function isTempArgusHome(home = argusHomeDir()): boolean {
+  const real = canonicalPath(home);
+
+  return [os.tmpdir(), "/tmp"].some((dir) => {
+    const rel = path.relative(canonicalPath(dir), real);
+
+    return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
+  });
+}
+
+export function defaultSecretKeyBackend(): SecretKeyBackend {
+  return process.platform === "darwin" && !isTempArgusHome()
     ? "keychain"
-    : "file",
+    : "file";
+}
+
+export function nodeSecretStorage(
+  backend: SecretKeyBackend = defaultSecretKeyBackend(),
   tool: KeychainTool = SECURITY,
 ): SecretStorage {
   let key: Buffer | null | undefined;

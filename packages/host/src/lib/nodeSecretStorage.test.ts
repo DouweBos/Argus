@@ -1,8 +1,12 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { nodeSecretStorage } from "./nodeSecretStorage";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  defaultSecretKeyBackend,
+  isTempArgusHome,
+  nodeSecretStorage,
+} from "./nodeSecretStorage";
 
 describe("node secret storage", () => {
   let home: string;
@@ -98,6 +102,31 @@ describe("node secret storage in the keychain", () => {
       const calls = fs.readFileSync(log, "utf8");
       expect(calls).toContain(`-w ${keychain}`);
       expect(calls).toContain(`"${keychain}"`);
+    },
+  );
+});
+
+describe("default secret key backend", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("keeps a temp home's key in the home, not the login keychain", () => {
+    vi.stubEnv("ARGUS_HOME", path.join(os.tmpdir(), "argus-test-home"));
+    expect(isTempArgusHome()).toBe(true);
+    expect(defaultSecretKeyBackend()).toBe("file");
+  });
+
+  it("counts /tmp as temp however it is spelled", () => {
+    expect(isTempArgusHome("/tmp/argus-m65/h1")).toBe(true);
+    expect(isTempArgusHome("/tmp")).toBe(false);
+  });
+
+  it.runIf(process.platform === "darwin")(
+    "uses the keychain for a real home",
+    () => {
+      vi.stubEnv("ARGUS_HOME", path.join(os.homedir(), ".argus-test-home"));
+      expect(defaultSecretKeyBackend()).toBe("keychain");
     },
   );
 });
