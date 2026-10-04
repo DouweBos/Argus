@@ -72,6 +72,13 @@
 			remoteGlobalIDString = 8CECFF1D74073176AD704531;
 			remoteInfo = ArgusNotificationService;
 		};
+		D7E500000000000000000009 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD9C612A8E5AE985CEA06BA0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DE5C00000000000000000001;
+			remoteInfo = ArgusDesktop;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -144,6 +151,7 @@
 		E3E0EB550BA6630F2052ABE5 /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
 		EC699CB84E030428A8060A13 /* ChangesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangesView.swift; sourceTree = "<group>"; };
 		DE5C00000000000000000002 /* Argus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Argus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D7E500000000000000000002 /* ArgusDesktopTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArgusDesktopTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -163,6 +171,11 @@
 				DE5C00000000000000000011 /* Exceptions for "ArgusDesktop" folder in "ArgusDesktop" target */,
 			);
 			path = ArgusDesktop;
+			sourceTree = "<group>";
+		};
+		D7E500000000000000000003 /* ArgusDesktopTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ArgusDesktopTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -196,6 +209,13 @@
 				DE5C00000000000000000010 /* ArgusUI in Frameworks */,
 				7E2A00000000000000000003 /* SwiftTerm in Frameworks */,
 				6B0F00000000000000000003 /* GroveKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D7E500000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -236,6 +256,7 @@
 				FEED000100000000000000A5 /* Config */,
 				554FDC8717D9CC35677B42B3 /* ArgusRemote */,
 				DE5C00000000000000000003 /* ArgusDesktop */,
+				D7E500000000000000000003 /* ArgusDesktopTests */,
 				664BEF247131A39B00FDFB6F /* NotificationService */,
 				2542E15A24347C94BC63C98B /* Packages */,
 				2367FD0131C0CDC27F4B7B30 /* Products */,
@@ -248,6 +269,7 @@
 				4B819AF7F05F8000A0B5D08A /* ArgusNotificationService.appex */,
 				22BC770CA5DFEDFB0344DB2D /* ArgusRemote.app */,
 				DE5C00000000000000000002 /* Argus.app */,
+				D7E500000000000000000002 /* ArgusDesktopTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -427,6 +449,27 @@
 			productReference = DE5C00000000000000000002 /* Argus.app */;
 			productType = "com.apple.product-type.application";
 		};
+		D7E500000000000000000001 /* ArgusDesktopTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D7E500000000000000000008 /* Build configuration list for PBXNativeTarget "ArgusDesktopTests" */;
+			buildPhases = (
+				D7E500000000000000000004 /* Sources */,
+				D7E500000000000000000005 /* Frameworks */,
+				D7E500000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D7E50000000000000000000A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D7E500000000000000000003 /* ArgusDesktopTests */,
+			);
+			name = ArgusDesktopTests;
+			productName = ArgusDesktopTests;
+			productReference = D7E500000000000000000002 /* ArgusDesktopTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -446,6 +489,10 @@
 					};
 					DE5C00000000000000000001 = {
 						CreatedOnToolsVersion = 26.0;
+					};
+					D7E500000000000000000001 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = DE5C00000000000000000001;
 					};
 				};
 			};
@@ -474,6 +521,7 @@
 				8CECFF1D74073176AD704531 /* ArgusNotificationService */,
 				FD27DF58294A7821099F159D /* ArgusRemote */,
 				DE5C00000000000000000001 /* ArgusDesktop */,
+				D7E500000000000000000001 /* ArgusDesktopTests */,
 			);
 		};
 /* End PBXProject section */
@@ -488,6 +536,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		DE5C00000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D7E500000000000000000006 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -583,6 +638,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D7E500000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -590,6 +652,11 @@
 			isa = PBXTargetDependency;
 			target = 8CECFF1D74073176AD704531 /* ArgusNotificationService */;
 			targetProxy = 28A7D58F39398B637F359DD6 /* PBXContainerItemProxy */;
+		};
+		D7E50000000000000000000A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DE5C00000000000000000001 /* ArgusDesktop */;
+			targetProxy = D7E500000000000000000009 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -853,6 +920,40 @@
 			};
 			name = Release;
 		};
+		D7E50000000000000000000B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = CKZT75PN5T;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.houwert.argus.mac.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Argus.app/Contents/MacOS/Argus";
+			};
+			name = Debug;
+		};
+		D7E50000000000000000000C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = CKZT75PN5T;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.houwert.argus.mac.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Argus.app/Contents/MacOS/Argus";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -888,6 +989,15 @@
 			buildConfigurations = (
 				DE5C00000000000000000009 /* Debug */,
 				DE5C0000000000000000000A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D7E500000000000000000008 /* Build configuration list for PBXNativeTarget "ArgusDesktopTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D7E50000000000000000000B /* Debug */,
+				D7E50000000000000000000C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
