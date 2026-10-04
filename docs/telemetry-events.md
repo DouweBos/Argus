@@ -352,4 +352,5 @@ Everything the host already sees (`agent_started`, `session_created`,
 `refusal_dismissed`, `runner`, `llm_model`, `custom_runner_saved`,
 `custom_runner_deleted`, `mcp_servers`, `mcp_tested`, `mcp_signed_in`,
 `mcp_signed_out`, `tool_toggled`, `prereq_fixed`, `conductor_version` or
-`update_channel`.
+`update_channel`. `mcp_tested` also fires when a server is tested from Project
+Settings.
