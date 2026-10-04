@@ -116,3 +116,19 @@ export const BUTTON_TO_KEY: Record<string, string> = {
   right: "DpadRight",
   select: "DpadCenter",
 };
+
+/** Named hardware buttons → Android AKEYCODE_* values. */
+export const BUTTON_TO_KEYCODE: Record<string, number> = {
+  home: 3,
+  back: 4,
+  recents: 187,
+  power: 26,
+  volume_up: 24,
+  volume_down: 25,
+  // Android TV dpad (AKEYCODE_DPAD_*)
+  up: 19,
+  down: 20,
+  left: 21,
+  right: 22,
+  select: 23,
+};

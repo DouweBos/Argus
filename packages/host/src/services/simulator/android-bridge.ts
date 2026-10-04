@@ -17,6 +17,7 @@ import { promisify } from "node:util";
 import { emitHostEvent } from "@argus/host/bus";
 import { log } from "@argus/host/logger";
 import { resolveAssetPath } from "../tools/assets";
+import { BUTTON_TO_KEYCODE } from "./emulator-input";
 import { H264AccessUnitParser } from "./h264-parser";
 import { clearVideo, emitVideoConfig, emitVideoFrame } from "./videoForward";
 
@@ -101,22 +102,6 @@ export interface AndroidBridgeOptions {
 }
 
 const SCRCPY_VERSION = "3.1";
-
-/** Named hardware buttons → Android AKEYCODE_* values. */
-const BUTTON_KEYCODES: Record<string, number> = {
-  home: 3,
-  back: 4,
-  recents: 187,
-  power: 26,
-  volume_up: 24,
-  volume_down: 25,
-  // Android TV dpad (AKEYCODE_DPAD_*)
-  up: 19,
-  down: 20,
-  left: 21,
-  right: 22,
-  select: 23,
-};
 
 export class AndroidBridge implements AndroidCaptureBackend {
   static instance: AndroidBridge | null = null;
@@ -212,7 +197,7 @@ export class AndroidBridge implements AndroidCaptureBackend {
 
   /** Press a named hardware button via a keycode down + up pair. */
   async sendButton(button: string): Promise<void> {
-    const keycode = BUTTON_KEYCODES[button];
+    const keycode = BUTTON_TO_KEYCODE[button];
     if (keycode === undefined) {
       throw `Unknown button: ${button}`;
     }
