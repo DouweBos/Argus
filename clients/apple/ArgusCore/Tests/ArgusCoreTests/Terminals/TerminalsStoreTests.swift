@@ -54,6 +54,28 @@ struct TerminalsStoreTests {
     #expect(store.tabs("s1").first { $0.id == "r1" }?.exitCode == 1)
   }
 
+  @Test func startingARunDoesNotOpenADefaultShellOverIt() async {
+    let backend = RecordingBackend()
+    backend.reply("create_terminal", #""t1""#)
+    backend.reply("list_terminals", #"[{"id":"r1","sessionId":"s1","title":"dev","runTitle":"dev","exited":false,"exitCode":null}]"#)
+    backend.reply("create_run_terminal", #"{"sessionId":"r1","started":true,"title":"dev","dependencies":[]}"#)
+    let store = makeStore(backend)
+    await store.run("dev", sessionId: "s1")
+    await store.open(sessionId: "s1", repoRoot: "/repo")
+    #expect(store.tabs("s1").map(\.id) == ["r1"])
+    #expect(store.active("s1")?.id == "r1")
+  }
+
+  @Test func aRunThatExitedBeforeTheSubscriptionShowsAsExited() async {
+    let backend = RecordingBackend()
+    backend.reply("create_run_terminal", #"{"sessionId":"r1","started":true,"title":"pwd","dependencies":[]}"#)
+    backend.reply("terminal_scrollback", #"{"data":"","truncated":false,"exited":true,"exitCode":0}"#)
+    let store = makeStore(backend)
+    await store.run("pwd", sessionId: "s1")
+    #expect(store.tabs("s1").first?.exitCode == 0)
+    #expect(store.running("pwd", in: "s1") == nil)
+  }
+
   @Test func anAgentsRunOpensItsTabAndAsksToBeShown() async {
     let store = makeStore(RecordingBackend())
     store.ipc(
