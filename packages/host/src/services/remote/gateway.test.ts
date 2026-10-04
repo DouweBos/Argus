@@ -239,6 +239,25 @@ describe("raw broadcast forwarding", () => {
     ]);
   });
 
+  it("streams a subscribed terminal to a phone as typed events", async () => {
+    const { conn, send, fromGateway } = connect(["monitor"]);
+    conn.handleBroadcast("terminal:data:t1", ["ZWFybHk="]);
+    await send({ type: "sub", action: "subscribe", agent_id: "terminal:t1" });
+    conn.handleBroadcast("terminal:data:t1", ["aGk="]);
+    conn.handleBroadcast("terminal:data:t2", ["bm8="]);
+    conn.handleBroadcast("terminal:exit:t1", [0]);
+    expect(
+      fromGateway.map((e) => {
+        const { event, payload } = e as { event?: string; payload?: unknown };
+
+        return { event, payload };
+      }),
+    ).toEqual([
+      { event: "terminal.data", payload: { terminal_id: "t1", data: "aGk=" } },
+      { event: "terminal.exit", payload: { terminal_id: "t1", exit_code: 0 } },
+    ]);
+  });
+
   it("scopes git runner progress to its run's subscription", async () => {
     const { conn, send, fromGateway } = connect(["admin"]);
     conn.handleBroadcast("git-runner:progress:r1", [{ chunk: "early" }]);

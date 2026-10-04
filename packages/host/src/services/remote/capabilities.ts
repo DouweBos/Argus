@@ -149,7 +149,11 @@ import {
 } from "../simulator/ios";
 import { getVideoDims } from "../simulator/videoForward";
 import { capture } from "../telemetry/telemetry";
-import { listTerminals, readTerminalOutput } from "../terminal/multiplexer";
+import {
+  listTerminals,
+  readTerminalOutput,
+  terminalScrollback,
+} from "../terminal/multiplexer";
 import { listPinnedBranches } from "../userProjectSettings/store";
 import {
   createRemoteAutomation,
@@ -1672,6 +1676,20 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       exit_code: read.exitCode,
       truncated:
         terminal.outputLog.length > TERMINAL_READ_TAIL || read.droppedBytes > 0,
+    };
+  },
+
+  "terminals.scrollback": async (params) => {
+    const { terminal_id } = parse("terminals.scrollback", params);
+    if (!appState.terminals.has(terminal_id)) {
+      throw new GatewayError("not_found", `no terminal ${terminal_id}`);
+    }
+    const scrollback = terminalScrollback(terminal_id);
+
+    return {
+      data: scrollback.data,
+      truncated: scrollback.truncated,
+      exit_code: scrollback.exitCode,
     };
   },
 

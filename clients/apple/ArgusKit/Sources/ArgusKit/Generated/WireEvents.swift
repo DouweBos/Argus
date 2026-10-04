@@ -248,6 +248,48 @@ extension ArgusProtocol {
         try c.encode(repoRoot, forKey: .repoRoot)
       }
     }
+
+    public struct TerminalDataPayload: Codable, Sendable {
+      public var terminalId: String
+      public var data: String
+
+      enum CodingKeys: String, CodingKey {
+        case terminalId = "terminal_id"
+        case data = "data"
+      }
+
+      public init(terminalId: String, data: String) {
+        self.terminalId = terminalId
+        self.data = data
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(terminalId, forKey: .terminalId)
+        try c.encode(data, forKey: .data)
+      }
+    }
+
+    public struct TerminalExitPayload: Codable, Sendable {
+      public var terminalId: String
+      public var exitCode: Double
+
+      enum CodingKeys: String, CodingKey {
+        case terminalId = "terminal_id"
+        case exitCode = "exit_code"
+      }
+
+      public init(terminalId: String, exitCode: Double) {
+        self.terminalId = terminalId
+        self.exitCode = exitCode
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(terminalId, forKey: .terminalId)
+        try c.encode(exitCode, forKey: .exitCode)
+      }
+    }
   }
 
   /// Payloads of the events the gateway pushes, by event name.
@@ -305,5 +347,11 @@ extension ArgusProtocol {
 
     /// `sessions.changed`
     public typealias SessionsChanged = ArgusProtocol.EventsTypes.SessionsChangedPayload
+
+    /// `terminal.data`
+    public typealias TerminalData = ArgusProtocol.EventsTypes.TerminalDataPayload
+
+    /// `terminal.exit`
+    public typealias TerminalExit = ArgusProtocol.EventsTypes.TerminalExitPayload
   }
 }

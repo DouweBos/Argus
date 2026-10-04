@@ -123,6 +123,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   // tokens in URLs — which is the owner's, not a huddle guest's.
   "terminals.list": DENIED,
   "terminals.read": DENIED,
+  "terminals.scrollback": DENIED,
   "sessions.branches": session(),
   "sessions.diff": session(),
   "sessions.merge_blockers": session(),

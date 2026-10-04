@@ -81,6 +81,12 @@ final class RecordingBackend: HostBackend, @unchecked Sendable {
     (try answer(C.name, params, as: C.Result.self), lock.withLock { responseSeq })
   }
 
+  func sequencedRequest<Params: Encodable & Sendable, Result: Decodable & Sendable>(
+    _ method: RemoteMethod, _ params: Params, as: Result.Type
+  ) async throws -> (result: Result, seq: Int) {
+    (try answer(method.rawValue, params, as: Result.self), lock.withLock { responseSeq })
+  }
+
   private func answer<Result: Decodable>(
     _ name: String, _ params: some Encodable, as _: Result.Type
   ) throws -> Result {

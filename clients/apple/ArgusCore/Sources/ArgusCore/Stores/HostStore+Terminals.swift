@@ -26,3 +26,42 @@ extension HostStore {
       .terminalsRead, Params(terminal_id: id), as: ArgusProtocol.RemoteTerminalOutput.self)
   }
 }
+
+extension HostStore {
+  /// Follow a terminal's output as it is produced: `deliver` gets the replay
+  /// of what was captured, then every later chunk exactly once. Returns the
+  /// call that stops following, or nil when the computer can't stream (an
+  /// older host, or a terminal that is already gone) — poll `readTerminal`.
+  public func followTerminal(
+    id: String, deliver: @escaping @MainActor ([TerminalFeed.Output]) -> Void
+  ) async -> (@MainActor @Sendable () -> Void)? {
+    guard let backend, backend.kind == .gateway else { return nil }
+    struct Params: Encodable, Sendable { let terminal_id: String }
+    struct Scrollback: Decodable, Sendable {
+      let data: String
+      let exit_code: Int?
+    }
+    final class Box { var feed = TerminalFeed() }
+    let box = Box()
+    box.feed.beginReplay()
+    terminalObservers[id] = { event, seq in deliver(box.feed.live(event, seq: seq)) }
+    let channel = "terminal:\(id)"
+    await backend.subscribe(agentId: channel, on: true)
+    let stop: @MainActor @Sendable () -> Void = { [weak self] in
+      self?.terminalObservers.removeValue(forKey: id)
+      Task { await backend.subscribe(agentId: channel, on: false) }
+    }
+    do {
+      let (scrollback, seq) = try await backend.sequencedRequest(
+        .terminalsScrollback, Params(terminal_id: id), as: Scrollback.self)
+      deliver(
+        box.feed.replay(
+          data: Data(base64Encoded: scrollback.data) ?? Data(),
+          exitCode: scrollback.exit_code, seq: seq))
+      return stop
+    } catch {
+      stop()
+      return nil
+    }
+  }
+}

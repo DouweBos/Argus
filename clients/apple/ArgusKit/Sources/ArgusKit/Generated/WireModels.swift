@@ -3258,6 +3258,8 @@ extension ArgusProtocol {
     public static let claudeAccountsLogin = EventEnvelopeEvent(rawValue: "claude_accounts.login")
     public static let notification = EventEnvelopeEvent(rawValue: "notification")
     public static let hostEndpoints = EventEnvelopeEvent(rawValue: "host.endpoints")
+    public static let terminalData = EventEnvelopeEvent(rawValue: "terminal.data")
+    public static let terminalExit = EventEnvelopeEvent(rawValue: "terminal.exit")
     public static let huddleState = EventEnvelopeEvent(rawValue: "huddle.state")
     public static let huddleChat = EventEnvelopeEvent(rawValue: "huddle.chat")
     public static let ipc = EventEnvelopeEvent(rawValue: "ipc")

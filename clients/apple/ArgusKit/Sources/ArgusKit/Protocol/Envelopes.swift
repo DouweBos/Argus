@@ -25,6 +25,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case sessionsGitStatus = "sessions.git_status"
   case terminalsList = "terminals.list"
   case terminalsRead = "terminals.read"
+  case terminalsScrollback = "terminals.scrollback"
   case sessionsBranches = "sessions.branches"
   case sessionsCheckout = "sessions.checkout"
   case sessionsCreateBranch = "sessions.create_branch"
@@ -153,6 +154,9 @@ public enum RemoteEventName: String, Sendable {
   case claudeAccountsChanged = "claude_accounts.changed"
   case claudeAccountsLogin = "claude_accounts.login"
   case notification = "notification"
+  /// Output of a terminal subscribed to as `terminal:<id>`.
+  case terminalData = "terminal.data"
+  case terminalExit = "terminal.exit"
   /// A raw host broadcast (`{ channel, args }`), only sent to admin devices.
   case ipc = "ipc"
 }

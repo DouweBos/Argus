@@ -44,12 +44,15 @@ public struct SessionTerminalsList: View {
   }
 }
 
-/// One terminal's output, following the tail as it grows.
+/// One terminal's output, following the tail as it grows. Streams when the
+/// computer can; an older one is polled every two seconds instead.
 public struct TerminalOutputView: View {
   @Environment(HostStore.self) private var host
   @Environment(\.theme) private var theme
   let terminalId: String
-  @State private var read: ArgusProtocol.RemoteTerminalOutput?
+  @State private var output = TerminalText()
+  @State private var exitCode: Int?
+  @State private var streaming = false
   @State private var gone = false
 
   public init(terminalId: String) {
@@ -60,17 +63,17 @@ public struct TerminalOutputView: View {
     ScrollViewReader { proxy in
       ScrollView {
         VStack(alignment: .leading, spacing: 8) {
-          if read?.truncated == true {
+          if output.truncated {
             MutedText("Showing the most recent output.")
           }
-          Text(read?.output ?? "")
+          Text(output.text)
             .font(.system(size: 12, design: .monospaced))
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
-          if let read, !read.running {
+          if let exitCode {
             Banner(
-              text: "Exited with code \(Int(read.exitCode ?? 0))",
-              tone: read.exitCode == 0 ? .muted : .warning)
+              text: "Exited with code \(exitCode)",
+              tone: exitCode == 0 ? .muted : .warning)
           }
           if gone {
             Banner(text: "This terminal has closed on the computer.", tone: .muted)
@@ -79,14 +82,43 @@ public struct TerminalOutputView: View {
         }
         .padding(12)
       }
-      .onChange(of: read?.output) { proxy.scrollTo("end", anchor: .bottom) }
+      .onChange(of: output.text) { proxy.scrollTo("end", anchor: .bottom) }
     }
     .background(theme.bg)
-    .liveRefresh(enabled: host.connection == .ready && !gone, every: .seconds(2)) {
+    // A dropped connection loses its subscription, so a reconnect follows again.
+    .task(id: host.connection == .ready) {
+      guard host.connection == .ready, !gone else { return }
+      guard let stop = await host.followTerminal(id: terminalId, deliver: apply) else {
+        streaming = false
+        return
+      }
+      streaming = true
+      await withTaskCancellationHandler {
+        while !Task.isCancelled { try? await Task.sleep(for: .seconds(3600)) }
+      } onCancel: {
+        Task { @MainActor in stop() }
+      }
+    }
+    .liveRefresh(enabled: host.connection == .ready && !streaming && !gone, every: .seconds(2)) {
       if let next = await host.readTerminal(id: terminalId) {
-        read = next
-      } else if read != nil {
+        output.reset()
+        output.append(Data(next.output.utf8))
+        output.truncated = next.truncated
+        exitCode = next.running ? nil : Int(next.exitCode ?? 0)
+      } else if !output.text.isEmpty || exitCode != nil {
         gone = true
+      }
+    }
+  }
+
+  private func apply(_ outputs: [TerminalFeed.Output]) {
+    for item in outputs {
+      switch item {
+      case .reset:
+        output.reset()
+        exitCode = nil
+      case .data(let data): output.append(data)
+      case .exit(let code): exitCode = code
       }
     }
   }
