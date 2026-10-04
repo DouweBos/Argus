@@ -20,6 +20,12 @@ import {
   onConnectionClose,
 } from "../remote/connectionScope";
 import { git } from "../session/git";
+import {
+  classifyGitStderr,
+  type GitErrorKind,
+  type GitRecovery,
+  isGitRecovery,
+} from "../session/gitError";
 
 export interface GitRunnerInfo {
   commonGitDir: string;
@@ -28,8 +34,15 @@ export interface GitRunnerInfo {
   worktree: string;
 }
 
+export interface GitRunnerFailure {
+  kind: GitErrorKind;
+  message: string;
+  recovery?: GitRecovery;
+}
+
 export interface GitRunnerRunResult {
   exitCode: number;
+  failure?: GitRunnerFailure;
   outputId?: string;
   stderr: string;
   stdout: string;
@@ -232,14 +245,45 @@ export async function gitRunnerRun(
     stderr += tail;
   }
 
+  const failure = exitCode === 0 ? undefined : classifyFailure(p.args, stderr);
   const data = Buffer.concat(stdout);
   if (data.length <= INLINE_LIMIT) {
-    return { exitCode, stdout: data.toString("base64"), stderr, stdoutBytes };
+    return {
+      exitCode,
+      stdout: data.toString("base64"),
+      stderr,
+      stdoutBytes,
+      ...(failure && { failure }),
+    };
   }
   const outputId = crypto.randomUUID();
   hold(outputId, data);
 
-  return { exitCode, stdout: "", stderr, stdoutBytes, outputId };
+  return {
+    exitCode,
+    stdout: "",
+    stderr,
+    stdoutBytes,
+    outputId,
+    ...(failure && { failure }),
+  };
+}
+
+/** The subcommand is the hint: a conflict means something else mid-rebase. */
+export function classifyFailure(
+  args: string[],
+  stderr: string,
+): GitRunnerFailure {
+  const op = args.find(
+    (a, i) => !a.startsWith("-") && !["-c", "-C"].includes(args[i - 1] ?? ""),
+  );
+  const err = classifyGitStderr(stderr, { op });
+
+  return {
+    kind: err.kind,
+    message: err.message,
+    ...(isGitRecovery(err.recovery) && { recovery: err.recovery }),
+  };
 }
 
 function hold(outputId: string, data: Buffer): void {

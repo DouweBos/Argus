@@ -29,6 +29,7 @@ const { appState } = await import("../../state");
 const { emitHostEvent } = vi.mocked(await import("@argus/host/bus"));
 const {
   INLINE_LIMIT,
+  classifyFailure,
   gitRunnerCancel,
   gitRunnerInfo,
   gitRunnerOutput,
@@ -129,6 +130,39 @@ describe("remote git runner", () => {
       });
       expect(res.exitCode).not.toBe(0);
       expect(res.stderr).toMatch(/fatal/);
+    });
+
+    it("classifies a failure so a client can offer git's fix", async () => {
+      const bare = path.join(base, "remote.git");
+      if (!fs.existsSync(bare)) {
+        sh(base, "init", "-q", "--bare", bare);
+        sh(repo, "remote", "add", "origin", bare);
+      }
+      const res = await gitRunnerRun({ sessionId: "s1", args: ["push"] });
+
+      expect(res.failure).toEqual({
+        kind: "no-upstream",
+        message: "Branch has no upstream configured",
+        recovery: "publish-branch",
+      });
+    });
+
+    it("sends no failure for a run that worked", async () => {
+      const res = await gitRunnerRun({ sessionId: "s1", args: ["status"] });
+      expect(res).not.toHaveProperty("failure");
+    });
+
+    it("reads the subcommand past -c and -C to name a conflict", () => {
+      const stderr = "CONFLICT (content): Merge conflict in a.txt\n";
+      expect(
+        classifyFailure(["-c", "core.editor=true", "rebase", "main"], stderr),
+      ).toMatchObject({
+        kind: "rebase-conflict",
+        recovery: "resolve-conflicts",
+      });
+      expect(classifyFailure(["-C", "/x", "merge", "main"], stderr).kind).toBe(
+        "merge-conflict",
+      );
     });
 
     it("layers the caller's env over the defaults", async () => {
