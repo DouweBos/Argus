@@ -12,6 +12,7 @@ import path from "node:path";
 import readline from "node:readline";
 import { shutdownHost, startHost, syncHostCleanup } from "../boot";
 import { argusHomeDir } from "../lib/argusHome";
+import { checkoutRoot } from "../lib/checkoutRoot";
 import { acquireHostLock, releaseHostLock } from "../lib/hostLock";
 import { nodeSecretStorage } from "../lib/nodeSecretStorage";
 import { nodeHostPlatform, setHostPlatform } from "../platform";
@@ -38,7 +39,7 @@ function resolveWebClientDir(): string | null {
   const resources = process.env.ARGUS_RESOURCES;
   const candidate = resources
     ? path.join(resources, "argus-web")
-    : path.join(process.cwd(), "clients", "argus-web", "dist");
+    : path.join(checkoutRoot(), "clients", "argus-web", "dist");
 
   return fs.existsSync(path.join(candidate, "index.html")) ? candidate : null;
 }
