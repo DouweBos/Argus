@@ -16,6 +16,7 @@
  */
 
 import { argusHomeDir } from "../../lib/argusHome";
+import { canonicalPath } from "../../lib/canonicalPath";
 import { loadAppSettings } from "../appSettings/store";
 import { loadUserProjectSettings } from "../userProjectSettings/store";
 import {
@@ -100,9 +101,14 @@ export function worktreeRootsForRepo(repoRoot: string): string[] {
   ];
 }
 
-/** True when the path sits under any root this repo's worktrees may use. */
+/**
+ * True when the path sits under any root this repo's worktrees may use.
+ * Compared canonically: git lists `/private/tmp/…` for a root set as `/tmp/…`.
+ */
 export function isKnownWorktreePath(repoRoot: string, target: string): boolean {
+  const real = canonicalPath(target);
+
   return worktreeRootsForRepo(repoRoot).some((root) =>
-    isInsideRoot(root, target),
+    isInsideRoot(canonicalPath(root), real),
   );
 }

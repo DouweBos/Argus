@@ -196,3 +196,64 @@ describe("listSessions — while a worktree is being checked out", () => {
     await waitForStatusError(session.id);
   });
 });
+
+describe("listSessions — ARGUS_HOME behind a symlink (/tmp on macOS)", () => {
+  let home: string;
+  let linkHome: string;
+
+  beforeEach(() => {
+    appState.sessions.clear();
+    home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "argus-")));
+    linkHome = `${home}-link`;
+    fs.symlinkSync(home, linkHome);
+    vi.stubEnv("ARGUS_HOME", linkHome);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.mocked(git).mockImplementation(async () => "");
+    fs.rmSync(linkHome, { force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+  });
+
+  it("finds the session again after a restart, by git's real path", async () => {
+    const repoRoot = path.join(linkHome, "repo");
+    fs.mkdirSync(repoRoot);
+    appState.repoRoots.add(repoRoot);
+
+    let worktreePath = "";
+    vi.mocked(addWorktree).mockImplementationOnce(async (_repo, target) => {
+      worktreePath = target;
+      fs.mkdirSync(target, { recursive: true });
+      fs.writeFileSync(path.join(target, ".git"), "gitdir: elsewhere");
+    });
+    // Git resolves symlinks in what it lists.
+    vi.mocked(git).mockImplementation(async (_cwd, args) =>
+      args[0] === "worktree" && args[1] === "list" && worktreePath
+        ? `worktree ${fs.realpathSync(worktreePath)}\nHEAD abc\nbranch refs/heads/feature\n`
+        : "",
+    );
+
+    const session = await createSession(
+      repoRoot,
+      "feature",
+      "kept",
+      false,
+      undefined,
+      undefined,
+      { awaitWorktreeReady: true },
+    );
+    expect(worktreePath.startsWith(home)).toBe(true);
+    expect((await listSessions(repoRoot)).map((s) => s.id)).toEqual([
+      session.id,
+    ]);
+
+    // A restart: nothing in memory, only the index on disk.
+    appState.sessions.clear();
+    const listed = await listSessions(repoRoot);
+
+    expect(listed.map((s) => [s.id, s.description])).toEqual([
+      [session.id, "kept"],
+    ]);
+  });
+});
