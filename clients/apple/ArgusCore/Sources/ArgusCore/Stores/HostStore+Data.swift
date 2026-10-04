@@ -29,6 +29,16 @@ extension HostStore {
   }
 
   /// Older computers don't know the method, which leaves the list empty.
+  /// A session no project lists, by id, so a screen can open it.
+  public func adoptSession(id: String) async {
+    guard let backend,
+      let session = try? await backend.request(ArgusProtocol.Commands.GetSession.self, .init(id: id)),
+      let data = try? JSONEncoder().encode(session),
+      let remote = try? JSONDecoder().decode(RemoteSession.self, from: data)
+    else { return }
+    adoptedSessions[id] = remote
+  }
+
   public func loadScratchPads() async {
     guard let backend else { return }
     struct Result: Decodable { let sessions: [RemoteSession] }

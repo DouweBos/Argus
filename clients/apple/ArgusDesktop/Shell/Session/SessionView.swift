@@ -10,7 +10,7 @@ struct SessionView: View {
 
   private var session: RemoteSession? {
     store.sessionsByRepo.values.joined().first { $0.id == sessionId }
-      ?? store.scratchPads.first { $0.id == sessionId }
+      ?? store.scratchPads.first { $0.id == sessionId } ?? store.adoptedSessions[sessionId]
   }
 
   /// Live agents first — they appear the moment the host starts them — with
