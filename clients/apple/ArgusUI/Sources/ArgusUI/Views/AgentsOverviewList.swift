@@ -44,7 +44,11 @@ public struct AgentsOverviewList: View {
       }
     }
     .refreshable { await host.loadRecentAgents() }
-    .task { await host.loadRecentAgents() }
+    // Status events only reach agents this phone is subscribed to, so a list
+    // spanning every agent polls to see new ones start and others finish.
+    .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) {
+      await host.loadRecentAgents()
+    }
   }
 
   /// "3 total · 1 running · 2 idle · 0 errored", as the desktop's overview says.
