@@ -16,9 +16,7 @@ struct McpServersSection: View {
     if let inherited, !inherited.isEmpty {
       Section("Inherited") {
         ForEach(inherited, id: \.name) { server in
-          LabeledContent(server.name) {
-            Text(server.source).font(.caption).foregroundStyle(theme.textMuted)
-          }
+          InheritedMcpRow(server: server, backend: model.backend)
         }
       }
     }
@@ -31,6 +29,7 @@ struct McpServersSection: View {
         if let error = server.error {
           Text(error).font(.caption).foregroundStyle(theme.error)
         }
+        ProjectMcpProbe(server: server, backend: model.backend)
       } header: {
         HStack {
           Text(server.name.isEmpty ? "New server" : server.name)
@@ -50,6 +49,18 @@ struct McpServersSection: View {
       inherited = try? await backend.request(
         ArgusProtocol.Commands.ListInheritedMcpServers.self, .init(worktreePath: repo))
     }
+  }
+}
+
+/// Test and tools for a project server, as the desktop dialog offers per entry.
+private struct ProjectMcpProbe: View {
+  let server: ArgusConfigDraft.McpServer
+  let backend: HostRouter?
+  @State private var probe = McpProbe()
+
+  var body: some View {
+    let entry = McpServerEntry(name: server.name, json: server.json)
+    McpProbeControls(backend: backend, probe: probe, config: entry.config, url: entry.url)
   }
 }
 

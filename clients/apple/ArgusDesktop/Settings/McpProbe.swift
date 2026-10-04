@@ -28,8 +28,8 @@ final class McpProbe {
     return result.status == 401 || result.resourceMetadataUrl != nil
   }
 
-  func test(_ config: [String: JSONValue], host: HostSettingsModel, track: Bool = true) async {
-    guard let backend = host.backend else { return }
+  func test(_ config: [String: JSONValue], backend: HostRouter?, track: Bool = true) async {
+    guard let backend else { return }
     testing = true
     defer { testing = false }
     do {
@@ -40,14 +40,14 @@ final class McpProbe {
     if track { MacTelemetry.capture(.settingsChanged(setting: .mcpTested)) }
   }
 
-  func loadAuth(url: String?, host: HostSettingsModel) async {
-    guard let url, let backend = host.backend else { return auth = nil }
+  func loadAuth(url: String?, backend: HostRouter?) async {
+    guard let url, let backend else { return auth = nil }
     auth = (try? await backend.request(ArgusProtocol.Commands.McpOauthStatus.self, .init(serverUrl: url))) ?? nil
   }
 
   /// Opens the browser through the host, then re-tests with the new token.
-  func signIn(url: String, config: [String: JSONValue], host: HostSettingsModel) async {
-    guard let backend = host.backend else { return }
+  func signIn(url: String, config: [String: JSONValue], backend: HostRouter?) async {
+    guard let backend else { return }
     signingIn = true
     signInError = nil
     do {
@@ -56,7 +56,7 @@ final class McpProbe {
         .init(serverUrl: url, resourceMetadataUrl: result?.resourceMetadataUrl))
       signingIn = false
       MacTelemetry.capture(.settingsChanged(setting: .mcpSignedIn))
-      await test(config, host: host, track: false)
+      await test(config, backend: backend, track: false)
     } catch {
       signingIn = false
       let message = HostStore.describe(error)
@@ -64,13 +64,13 @@ final class McpProbe {
     }
   }
 
-  func cancelSignIn(url: String, host: HostSettingsModel) async {
-    guard let backend = host.backend else { return }
+  func cancelSignIn(url: String, backend: HostRouter?) async {
+    guard let backend else { return }
     _ = try? await backend.request(ArgusProtocol.Commands.McpOauthCancelSignIn.self, .init(serverUrl: url))
   }
 
-  func signOut(url: String, host: HostSettingsModel) async {
-    guard let backend = host.backend else { return }
+  func signOut(url: String, backend: HostRouter?) async {
+    guard let backend else { return }
     _ = try? await backend.request(ArgusProtocol.Commands.McpOauthSignOut.self, .init(serverUrl: url))
     auth = nil
     MacTelemetry.capture(.settingsChanged(setting: .mcpSignedOut))
@@ -111,7 +111,7 @@ struct McpStatusDot: View {
 
 /// Test / Retry, the failure, the tools it offers, and sign in or out.
 struct McpProbeControls: View {
-  @Environment(HostSettingsModel.self) private var host
+  let backend: HostRouter?
   let probe: McpProbe
   let config: [String: JSONValue]?
   let url: String?
@@ -133,27 +133,27 @@ struct McpProbeControls: View {
         } else {
           Button(probe.result == nil ? "Test" : "Retry") {
             guard let config else { return }
-            Task { await probe.test(config, host: host) }
+            Task { await probe.test(config, backend: backend) }
           }
           .disabled(config == nil || probe.signingIn)
         }
         if let url, let config, probe.canSignIn {
           if probe.signingIn {
             Text("Waiting for browser…").foregroundStyle(.secondary)
-            Button("Cancel") { Task { await probe.cancelSignIn(url: url, host: host) } }
+            Button("Cancel") { Task { await probe.cancelSignIn(url: url, backend: backend) } }
           } else {
             Button(probe.signInError == nil ? "Sign In" : "Try Again") {
-              Task { await probe.signIn(url: url, config: config, host: host) }
+              Task { await probe.signIn(url: url, config: config, backend: backend) }
             }
             .buttonStyle(.borderedProminent)
           }
         }
         if let url, probe.auth != nil {
           Label("Signed in", systemImage: "checkmark").foregroundStyle(.secondary)
-          Button("Sign Out") { Task { await probe.signOut(url: url, host: host) } }
+          Button("Sign Out") { Task { await probe.signOut(url: url, backend: backend) } }
         }
       }
     }
-    .task(id: url) { await probe.loadAuth(url: url, host: host) }
+    .task(id: url) { await probe.loadAuth(url: url, backend: backend) }
   }
 }
