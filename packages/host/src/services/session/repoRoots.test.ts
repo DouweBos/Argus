@@ -1,10 +1,16 @@
 import type * as GitModule from "./git";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appState } from "../../state";
-import { addRepoRoot, removeRepoRoot, restoreRepoRoots } from "./manager";
+import {
+  addRepoRoot,
+  createHeadSession,
+  removeRepoRoot,
+  restoreRepoRoots,
+} from "./manager";
 import { loadPersistedRepoRoots, persistRepoRoots } from "./repoRootsStore";
 
 vi.mock("../../main", () => ({ getMainWindow: () => null }));
@@ -59,6 +65,24 @@ describe("repo root persistence", () => {
     restoreRepoRoots();
 
     expect([...appState.repoRoots]).toEqual([repo]);
+  });
+
+  it("brings a project's home session back with its id after a restart", () => {
+    execFileSync("git", ["init", "-q"], { cwd: repo });
+    addRepoRoot(repo);
+    const head = createHeadSession(repo);
+
+    // A restart: nothing in memory but what was saved.
+    for (const handle of appState.watchers.values()) {
+      handle.stop();
+    }
+    appState.watchers.clear();
+    appState.sessions.clear();
+    appState.repoRoots.clear();
+    restoreRepoRoots();
+
+    expect(appState.sessions.get(head.id)?.kind).toBe("project_root");
+    removeRepoRoot(repo);
   });
 
   it("keeps an unreachable root saved rather than registering it", () => {

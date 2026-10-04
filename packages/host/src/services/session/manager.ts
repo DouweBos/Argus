@@ -124,6 +124,11 @@ export function restoreRepoRoots(): void {
     info(`Restoring repo root: ${dirPath}`);
     appState.repoRoots.add(dirPath);
     emitHostEvent("project:added", dirPath);
+    // Its home session is in memory only; without this it is gone until a
+    // client happens to ask for it again.
+    if (getMeta(loadMetadata(dirPath), dirPath)?.kind === "project_root") {
+      createHeadSession(dirPath);
+    }
   }
 }
 
