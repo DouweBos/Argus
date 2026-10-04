@@ -4,6 +4,7 @@ import {
   FileStat,
   HostDirectoryListing,
   MentionPathResult,
+  PathKind,
   UploadedAttachment,
 } from "../models/files";
 import { type CommandSpec, Void } from "./spec";
@@ -51,5 +52,43 @@ export const FILE_COMMANDS = {
     tier: "admin",
     params: z.object({ path: z.string().optional() }),
     result: HostDirectoryListing,
+  },
+  /**
+   * Binary-safe file primitives for a remote git runner. Paths are absolute or
+   * session-relative, confined like `read_file`.
+   */
+  read_file_bytes: {
+    tier: "admin",
+    params: SessionFile,
+    /** Base64. */
+    result: z.string(),
+  },
+  write_file_bytes: {
+    tier: "admin",
+    params: SessionFile.extend({
+      /** Base64. */
+      data: z.string(),
+      executable: z.boolean().optional(),
+    }),
+    result: Void,
+  },
+  /** Null when nothing is there. Follows symlinks. */
+  stat_path: {
+    tier: "admin",
+    params: SessionFile,
+    result: PathKind.nullable(),
+  },
+  list_directory_names: {
+    tier: "admin",
+    params: SessionFile,
+    result: z.array(z.string()),
+  },
+  /** Recursive; a symlink is removed, never followed. */
+  remove_path: { tier: "admin", params: SessionFile, result: Void },
+  make_directory: { tier: "admin", params: SessionFile, result: Void },
+  move_path: {
+    tier: "admin",
+    params: z.object({ id: z.string(), from: z.string(), to: z.string() }),
+    result: Void,
   },
 } as const satisfies Record<string, CommandSpec>;

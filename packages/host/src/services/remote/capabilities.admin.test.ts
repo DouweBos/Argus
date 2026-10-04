@@ -8,7 +8,7 @@
 import type { GatewayContext } from "./capabilities";
 import type { PairedDevice } from "./deviceStore";
 import type { CommandArgs, CommandTier } from "../command/registry";
-import { REMOTE_METHODS } from "@argus/remote-protocol";
+import { COMMANDS, REMOTE_METHODS } from "@argus/remote-protocol";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
@@ -320,5 +320,58 @@ describe("admin passthrough guards", () => {
       dispatch("simulator_touch", { udid: "s1", x: 0, y: 0 }, second),
     ).resolves.toBeDefined();
     resetClaims();
+  });
+});
+
+describe("remote git runner commands", () => {
+  const GIT_RUNNER = [
+    "git_runner_info",
+    "git_runner_run",
+    "git_runner_output",
+    "git_runner_cancel",
+    "read_file_bytes",
+    "write_file_bytes",
+    "stat_path",
+    "list_directory_names",
+    "remove_path",
+    "make_directory",
+    "move_path",
+  ] as const;
+  for (const name of GIT_RUNNER) {
+    defineCommand(name, { tier: COMMANDS[name].tier, handler: () => "ran" });
+  }
+
+  it("are all admin in the catalog", () => {
+    expect(GIT_RUNNER.map((n) => COMMANDS[n].tier)).toEqual(
+      GIT_RUNNER.map(() => "admin"),
+    );
+  });
+
+  it("run for an admin device", async () => {
+    await expect(
+      dispatch("git_runner_run", {}, makeCtx(["monitor", "admin"])),
+    ).resolves.toBe("ran");
+  });
+
+  it("are refused for monitor and control devices", async () => {
+    for (const caps of [["monitor"], ["monitor", "control"]] as const) {
+      for (const name of GIT_RUNNER) {
+        await expect(
+          dispatch(name, {}, makeCtx([...caps])),
+        ).rejects.toMatchObject({ code: "capability_denied" });
+      }
+    }
+  });
+
+  it("are refused for a scoped guest, even one holding admin", async () => {
+    const ctx = {
+      ...makeCtx(["monitor", "control", "admin"]),
+      scope: { agent_ids: ["ag1"], device_keys: [] },
+    };
+    for (const name of GIT_RUNNER) {
+      await expect(dispatch(name, {}, ctx)).rejects.toMatchObject({
+        code: "capability_denied",
+      });
+    }
   });
 });

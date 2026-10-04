@@ -1,4 +1,13 @@
 import { defineTypedCommand } from "../services/command/registry";
+import {
+  listDirectory,
+  makeDirectory,
+  movePath,
+  readFileBytes,
+  removePath,
+  statPath,
+  writeFileBytes,
+} from "../services/file/bytes";
 import { listHostDirectory } from "../services/file/hostBrowse";
 import {
   listPath,
@@ -25,4 +34,19 @@ export function registerFileCommands(): void {
   );
   defineTypedCommand("list_path", (p) => listPath(p.path));
   defineTypedCommand("list_host_directory", (p) => listHostDirectory(p.path));
+  defineTypedCommand("read_file_bytes", (p) =>
+    readFileBytes(p.id, p.relativePath),
+  );
+  defineTypedCommand("write_file_bytes", (p) =>
+    writeFileBytes(p.id, p.relativePath, p.data, p.executable),
+  );
+  defineTypedCommand("stat_path", (p) => statPath(p.id, p.relativePath));
+  defineTypedCommand("list_directory_names", (p) =>
+    listDirectory(p.id, p.relativePath),
+  );
+  defineTypedCommand("remove_path", (p) => removePath(p.id, p.relativePath));
+  defineTypedCommand("make_directory", (p) =>
+    makeDirectory(p.id, p.relativePath),
+  );
+  defineTypedCommand("move_path", (p) => movePath(p.id, p.from, p.to));
 }
