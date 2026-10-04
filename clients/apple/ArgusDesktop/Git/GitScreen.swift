@@ -46,9 +46,12 @@ struct GitWorkspaceView: View {
   let view: GitRoute
 
   var body: some View {
-    HSplitView {
+    // Not a split view: HSplitView holds its sidebar at full width and won't
+    // shrink, pushing the panel over the app sidebar and runtime panel.
+    HStack(spacing: 0) {
       GitSidebar(workspace: workspace, session: session, view: view)
-        .frame(minWidth: 180, idealWidth: 230, maxWidth: 360)
+        .frame(width: 230)
+      Divider()
       VStack(spacing: 0) {
         if let error = workspace.hostError {
           GitErrorBanner(message: error) { workspace.hostError = nil }

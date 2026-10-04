@@ -16,12 +16,14 @@ struct ArgusDesktopApp: App {
         .environment(delegate.model.automations)
         .environment(delegate.model.proposals)
         .environment(delegate.model.hosts)
-        .frame(minWidth: 960, minHeight: 600)
+        .frame(minWidth: MainWindow.minWindowWidth, minHeight: 600)
         // Deep links, once a build claims `argus://` (see docs/mac-app.md).
         .onOpenURL { url in
           if let route = DesktopRoute(deepLink: url) { delegate.model.navigate(route) }
         }
     }
+    // Room for the sidebar, the git panel's three columns and the runtime.
+    .defaultSize(width: 1560, height: 960)
     .commands {
       CommandGroup(replacing: .newItem) {
         NewSessionCommand(model: delegate.model)
