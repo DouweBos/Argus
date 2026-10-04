@@ -289,3 +289,101 @@ describe("raw broadcast forwarding", () => {
     expect(ipcEvents(fromGateway)).toHaveLength(0);
   });
 });
+
+describe("connection.typed_events", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const eventNames = (sent: Envelope[]) =>
+    sent
+      .filter((e) => (e as { type?: string }).type === "evt")
+      .map((e) => {
+        const evt = e as unknown as {
+          event: string;
+          payload: { channel?: string };
+        };
+
+        return evt.event === "ipc" ? `ipc:${evt.payload.channel}` : evt.event;
+      });
+
+  const response = (sent: Envelope[], id: string) =>
+    sent.find(
+      (e) =>
+        (e as { type?: string }).type === "res" &&
+        (e as { id?: string }).id === id,
+    ) as { ok?: unknown; error?: { code: string } } | undefined;
+
+  it("is off by default: agent channels arrive raw only", async () => {
+    const { conn, send, fromGateway } = connect(["admin"]);
+    await send({ type: "sub", action: "subscribe", agent_id: "ag1" });
+    conn.handleBroadcast("agent:event:ag1", [{ type: "x" }]);
+    conn.handleBroadcast("session:created", [{ id: "s1", repo_root: "/r" }]);
+    expect(eventNames(fromGateway)).toEqual([
+      "ipc:agent:event:ag1",
+      "ipc:session:created",
+    ]);
+  });
+
+  it("when on, mirrors typed agent events and keeps raw non-agent channels", async () => {
+    const { conn, send, fromGateway } = connect(["admin"]);
+    await send({
+      type: "req",
+      id: "t",
+      method: "connection.typed_events",
+      params: { on: true },
+    });
+    expect(response(fromGateway, "t")?.ok).toEqual({});
+    await send({ type: "sub", action: "subscribe", agent_id: "ag1" });
+    fromGateway.length = 0;
+    conn.handleBroadcast("agent:event:ag1", [{ type: "x" }]);
+    conn.handleBroadcast("session:created", [{ id: "s1", repo_root: "/r" }]);
+    conn.handleBroadcast("terminal:data:t1", ["aGk="]);
+    expect(eventNames(fromGateway)).toEqual([
+      "agent.event",
+      "ipc:session:created",
+      "sessions.changed",
+    ]);
+  });
+
+  it("can be switched back off", async () => {
+    const { conn, send, fromGateway } = connect(["admin"]);
+    for (const [id, on] of [
+      ["a", true],
+      ["b", false],
+    ] as const) {
+      await send({
+        type: "req",
+        id,
+        method: "connection.typed_events",
+        params: { on },
+      });
+    }
+    await send({ type: "sub", action: "subscribe", agent_id: "ag1" });
+    fromGateway.length = 0;
+    conn.handleBroadcast("agent:event:ag1", [{ type: "x" }]);
+    expect(eventNames(fromGateway)).toEqual(["ipc:agent:event:ag1"]);
+  });
+
+  it("is refused for monitor and control devices", async () => {
+    for (const caps of [["monitor"], ["monitor", "control"]] as const) {
+      const { send, fromGateway } = connect([...caps]);
+      await send({
+        type: "req",
+        id: "t",
+        method: "connection.typed_events",
+        params: { on: true },
+      });
+      expect(response(fromGateway, "t")?.error?.code).toBe("capability_denied");
+    }
+  });
+
+  it("rejects malformed params", async () => {
+    const { send, fromGateway } = connect(["admin"]);
+    await send({
+      type: "req",
+      id: "t",
+      method: "connection.typed_events",
+      params: { on: "yes" },
+    });
+    expect(response(fromGateway, "t")?.error?.code).toBe("bad_request");
+  });
+});

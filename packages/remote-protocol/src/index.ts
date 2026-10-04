@@ -1,4 +1,5 @@
 export * from "./capabilities";
+export * from "./connection";
 export * from "./huddle";
 export * from "./models";
 export * from "./messages";
