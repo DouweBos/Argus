@@ -46,3 +46,58 @@ describe("node secret storage", () => {
     expect(() => nodeSecretStorage("file").decrypt(blob)).toThrow();
   });
 });
+
+describe("node secret storage in the keychain", () => {
+  let dir: string;
+  let prevHome: string | undefined;
+  let prevArgusHome: string | undefined;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "argus-keychain-"));
+    prevHome = process.env.HOME;
+    prevArgusHome = process.env.ARGUS_HOME;
+    // A scratch HOME has no default keychain; that's what used to hang.
+    process.env.HOME = dir;
+    process.env.ARGUS_HOME = dir;
+  });
+
+  afterEach(() => {
+    process.env.HOME = prevHome;
+    process.env.ARGUS_HOME = prevArgusHome;
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  /** A `security` stand-in: logs its argv and stdin, hangs when told to. */
+  function fakeSecurity(script: string): string {
+    const bin = path.join(dir, "security");
+    fs.writeFileSync(bin, `#!/bin/sh\n${script}\n`, { mode: 0o755 });
+
+    return bin;
+  }
+
+  it("gives up on a security call that never returns", () => {
+    const command = fakeSecurity("sleep 30");
+    const started = Date.now();
+    const storage = nodeSecretStorage("keychain", { command, timeoutMs: 300 });
+
+    expect(storage.isAvailable()).toBe(false);
+    expect(Date.now() - started).toBeLessThan(5000);
+  });
+
+  it.runIf(process.platform === "darwin")(
+    "names the login keychain, which a different HOME can't find",
+    () => {
+      const log = path.join(dir, "calls.log");
+      const command = fakeSecurity(`echo "$@" >> "${log}"; cat >> "${log}"`);
+      nodeSecretStorage("keychain", { command, timeoutMs: 2000 }).isAvailable();
+
+      const keychain = path.join(
+        os.userInfo().homedir,
+        "Library/Keychains/login.keychain-db",
+      );
+      const calls = fs.readFileSync(log, "utf8");
+      expect(calls).toContain(`-w ${keychain}`);
+      expect(calls).toContain(`"${keychain}"`);
+    },
+  );
+});

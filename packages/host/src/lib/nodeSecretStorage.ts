@@ -12,21 +12,46 @@ import type { SecretStorage } from "../platform";
 import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { argusHomeDir } from "./argusHome";
 
 const MAGIC = Buffer.from("ah1");
 const KEYCHAIN_SERVICE = "Argus Host Secret Storage";
 
+export interface KeychainTool {
+  /** The `security` binary. */
+  command: string;
+  /** A keychain prompt must never block the host for good. */
+  timeoutMs: number;
+}
+
+const SECURITY: KeychainTool = { command: "security", timeoutMs: 10_000 };
+
 function keychainAccount(): string {
   // One key per state directory, so a dev host never shares one with prod.
   return argusHomeDir();
 }
 
-function readKeychainKey(): Buffer | null {
+/**
+ * The login keychain, named outright: `security` finds the default one through
+ * `HOME`, and under any other `HOME` it has none and waits on a prompt.
+ */
+export function loginKeychainArgs(): string[] {
+  const keychain = path.join(
+    os.userInfo().homedir,
+    "Library",
+    "Keychains",
+    "login.keychain-db",
+  );
+
+  return fs.existsSync(keychain) ? [keychain] : [];
+}
+
+function readKeychainKey(tool: KeychainTool): Buffer | null {
   try {
     const out = execFileSync(
-      "security",
+      tool.command,
       [
         "find-generic-password",
         "-s",
@@ -34,8 +59,13 @@ function readKeychainKey(): Buffer | null {
         "-a",
         keychainAccount(),
         "-w",
+        ...loginKeychainArgs(),
       ],
-      { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] },
+      {
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "ignore"],
+        timeout: tool.timeoutMs,
+      },
     ).trim();
 
     return out ? Buffer.from(out, "base64") : null;
@@ -44,7 +74,7 @@ function readKeychainKey(): Buffer | null {
   }
 }
 
-function writeKeychainKey(key: Buffer): boolean {
+function writeKeychainKey(tool: KeychainTool, key: Buffer): boolean {
   const quote = (v: string) => `"${v.replace(/(["\\])/g, "\\$1")}"`;
   // Fed over stdin (`security -i`) so the key never shows up in `ps`.
   const command = [
@@ -56,14 +86,16 @@ function writeKeychainKey(key: Buffer): boolean {
     quote(keychainAccount()),
     "-w",
     quote(key.toString("base64")),
+    ...loginKeychainArgs().map(quote),
   ].join(" ");
   try {
-    execFileSync("security", ["-i"], {
+    execFileSync(tool.command, ["-i"], {
       input: `${command}\n`,
       stdio: ["pipe", "ignore", "ignore"],
+      timeout: tool.timeoutMs,
     });
 
-    return readKeychainKey()?.equals(key) ?? false;
+    return readKeychainKey(tool)?.equals(key) ?? false;
   } catch {
     return false;
   }
@@ -98,14 +130,17 @@ function writeFileKey(key: Buffer): boolean {
 export type SecretKeyBackend = "file" | "keychain";
 
 /** Loads the key, minting one on first use. Null when nowhere can hold it. */
-function loadOrCreateKey(backend: SecretKeyBackend): Buffer | null {
+function loadOrCreateKey(
+  backend: SecretKeyBackend,
+  tool: KeychainTool,
+): Buffer | null {
   const useKeychain = backend === "keychain";
-  const existing = useKeychain ? readKeychainKey() : readFileKey();
+  const existing = useKeychain ? readKeychainKey(tool) : readFileKey();
   if (existing?.length === 32) {
     return existing;
   }
   const key = crypto.randomBytes(32);
-  const stored = useKeychain ? writeKeychainKey(key) : writeFileKey(key);
+  const stored = useKeychain ? writeKeychainKey(tool, key) : writeFileKey(key);
 
   return stored ? key : null;
 }
@@ -114,11 +149,12 @@ export function nodeSecretStorage(
   backend: SecretKeyBackend = process.platform === "darwin"
     ? "keychain"
     : "file",
+  tool: KeychainTool = SECURITY,
 ): SecretStorage {
   let key: Buffer | null | undefined;
   const getKey = (): Buffer | null => {
     if (key === undefined) {
-      key = loadOrCreateKey(backend);
+      key = loadOrCreateKey(backend, tool);
     }
 
     return key;
