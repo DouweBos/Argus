@@ -3845,6 +3845,39 @@ extension ArgusProtocol {
     }
   }
 
+  public struct GitFailureKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let authRequired = GitFailureKind(rawValue: "auth-required")
+    public static let branchCheckedOut = GitFailureKind(rawValue: "branch-checked-out")
+    public static let busy = GitFailureKind(rawValue: "busy")
+    public static let cherryPickConflict = GitFailureKind(rawValue: "cherry-pick-conflict")
+    public static let detachedHead = GitFailureKind(rawValue: "detached-head")
+    public static let dirtyWorkingTree = GitFailureKind(rawValue: "dirty-working-tree")
+    public static let hookFailed = GitFailureKind(rawValue: "hook-failed")
+    public static let lfsMissing = GitFailureKind(rawValue: "lfs-missing")
+    public static let lockFileExists = GitFailureKind(rawValue: "lock-file-exists")
+    public static let mergeConflict = GitFailureKind(rawValue: "merge-conflict")
+    public static let networkTimeout = GitFailureKind(rawValue: "network-timeout")
+    public static let noUpstream = GitFailureKind(rawValue: "no-upstream")
+    public static let nonFastForward = GitFailureKind(rawValue: "non-fast-forward")
+    public static let nothingToCommit = GitFailureKind(rawValue: "nothing-to-commit")
+    public static let nothingToPull = GitFailureKind(rawValue: "nothing-to-pull")
+    public static let nothingToPush = GitFailureKind(rawValue: "nothing-to-push")
+    public static let outputTooLarge = GitFailureKind(rawValue: "output-too-large")
+    public static let rebaseConflict = GitFailureKind(rawValue: "rebase-conflict")
+    public static let signingFailed = GitFailureKind(rawValue: "signing-failed")
+    public static let unknown = GitFailureKind(rawValue: "unknown")
+  }
+
   public struct GitHook: Codable, Sendable {
     public var executable: Bool
     public var lastModified: Double
@@ -3949,6 +3982,28 @@ extension ArgusProtocol {
     }
   }
 
+  public struct GitRecovery: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let configureSigning = GitRecovery(rawValue: "configure-signing")
+    public static let installLfs = GitRecovery(rawValue: "install-lfs")
+    public static let publishBranch = GitRecovery(rawValue: "publish-branch")
+    public static let pullThenPush = GitRecovery(rawValue: "pull-then-push")
+    public static let reauthenticate = GitRecovery(rawValue: "reauthenticate")
+    public static let resolveConflicts = GitRecovery(rawValue: "resolve-conflicts")
+    public static let retry = GitRecovery(rawValue: "retry")
+    public static let showHookOutput = GitRecovery(rawValue: "show-hook-output")
+    public static let stashAndRetry = GitRecovery(rawValue: "stash-and-retry")
+  }
+
   public struct GitRemote: Codable, Sendable {
     public var name: String
     public var url: String
@@ -4036,6 +4091,31 @@ extension ArgusProtocol {
     }
   }
 
+  public struct GitRunnerFailure: Codable, Sendable {
+    public var kind: GitFailureKind
+    public var message: String
+    public var recovery: GitRecovery?
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case message = "message"
+      case recovery = "recovery"
+    }
+
+    public init(kind: GitFailureKind, message: String, recovery: GitRecovery? = nil) {
+      self.kind = kind
+      self.message = message
+      self.recovery = recovery
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(message, forKey: .message)
+      try c.encodeIfPresent(recovery, forKey: .recovery)
+    }
+  }
+
   public struct GitRunnerInfo: Codable, Sendable {
     public var commonGitDir: String
     public var gitDir: String
@@ -4105,6 +4185,7 @@ extension ArgusProtocol {
 
   public struct GitRunnerRunResult: Codable, Sendable {
     public var exitCode: Double
+    public var failure: GitRunnerFailure?
     public var outputId: String?
     public var stderr: String
     public var stdout: String
@@ -4112,14 +4193,16 @@ extension ArgusProtocol {
 
     enum CodingKeys: String, CodingKey {
       case exitCode = "exitCode"
+      case failure = "failure"
       case outputId = "outputId"
       case stderr = "stderr"
       case stdout = "stdout"
       case stdoutBytes = "stdoutBytes"
     }
 
-    public init(exitCode: Double, outputId: String? = nil, stderr: String, stdout: String, stdoutBytes: Double) {
+    public init(exitCode: Double, failure: GitRunnerFailure? = nil, outputId: String? = nil, stderr: String, stdout: String, stdoutBytes: Double) {
       self.exitCode = exitCode
+      self.failure = failure
       self.outputId = outputId
       self.stderr = stderr
       self.stdout = stdout
@@ -4129,6 +4212,7 @@ extension ArgusProtocol {
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(exitCode, forKey: .exitCode)
+      try c.encodeIfPresent(failure, forKey: .failure)
       try c.encodeIfPresent(outputId, forKey: .outputId)
       try c.encode(stderr, forKey: .stderr)
       try c.encode(stdout, forKey: .stdout)

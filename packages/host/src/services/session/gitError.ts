@@ -28,6 +28,24 @@ export type GitErrorKind =
   | "signing-failed"
   | "unknown";
 
+/** The recovery hints `classifyGitStderr` attaches, one per kind at most. */
+export const GIT_RECOVERIES = [
+  "configure-signing",
+  "install-lfs",
+  "publish-branch",
+  "pull-then-push",
+  "reauthenticate",
+  "resolve-conflicts",
+  "retry",
+  "show-hook-output",
+  "stash-and-retry",
+] as const;
+export type GitRecovery = (typeof GIT_RECOVERIES)[number];
+
+export function isGitRecovery(value: unknown): value is GitRecovery {
+  return (GIT_RECOVERIES as readonly unknown[]).includes(value);
+}
+
 export interface GitErrorPayload {
   __gitError: true;
   kind: GitErrorKind;
