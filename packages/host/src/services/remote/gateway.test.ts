@@ -239,6 +239,19 @@ describe("raw broadcast forwarding", () => {
     ]);
   });
 
+  it("scopes git runner progress to its run's subscription", async () => {
+    const { conn, send, fromGateway } = connect(["admin"]);
+    conn.handleBroadcast("git-runner:progress:r1", [{ chunk: "early" }]);
+    await send({ type: "sub", action: "subscribe", agent_id: "git-runner:r1" });
+    conn.handleBroadcast("git-runner:progress:r1", [{ chunk: "a" }]);
+    conn.handleBroadcast("git-runner:progress:r2", [{ chunk: "b" }]);
+    expect(
+      ipcEvents(fromGateway).map(
+        (e) => (e as unknown as { payload: { channel: string } }).payload,
+      ),
+    ).toEqual([{ channel: "git-runner:progress:r1", args: [{ chunk: "a" }] }]);
+  });
+
   it("tells typed clients when the device claim changes", () => {
     const { conn, fromGateway } = connect(["monitor", "control"]);
     conn.handleBroadcast("devices:claim-changed", [

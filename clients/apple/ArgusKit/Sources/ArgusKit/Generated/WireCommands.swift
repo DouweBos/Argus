@@ -3957,6 +3957,98 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GitRunnerCancelParams: Codable, Sendable {
+      public var runId: String
+
+      enum CodingKeys: String, CodingKey {
+        case runId = "runId"
+      }
+
+      public init(runId: String) {
+        self.runId = runId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runId, forKey: .runId)
+      }
+    }
+
+    public struct GitRunnerInfoParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct GitRunnerOutputParams: Codable, Sendable {
+      public var outputId: String
+      public var offset: Double
+
+      enum CodingKeys: String, CodingKey {
+        case outputId = "outputId"
+        case offset = "offset"
+      }
+
+      public init(outputId: String, offset: Double) {
+        self.outputId = outputId
+        self.offset = offset
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(outputId, forKey: .outputId)
+        try c.encode(offset, forKey: .offset)
+      }
+    }
+
+    public struct GitRunnerRunParams: Codable, Sendable {
+      public var sessionId: String
+      public var args: [String]
+      public var cwd: String?
+      public var env: [String: String]?
+      public var stdin: String?
+      public var runId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+        case args = "args"
+        case cwd = "cwd"
+        case env = "env"
+        case stdin = "stdin"
+        case runId = "runId"
+      }
+
+      public init(sessionId: String, args: [String], cwd: String? = nil, env: [String: String]? = nil, stdin: String? = nil, runId: String? = nil) {
+        self.sessionId = sessionId
+        self.args = args
+        self.cwd = cwd
+        self.env = env
+        self.stdin = stdin
+        self.runId = runId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(args, forKey: .args)
+        try c.encodeIfPresent(cwd, forKey: .cwd)
+        try c.encodeIfPresent(env, forKey: .env)
+        try c.encodeIfPresent(stdin, forKey: .stdin)
+        try c.encodeIfPresent(runId, forKey: .runId)
+      }
+    }
+
     public struct GitSearchLogParamsRefType: RawRepresentable, Codable, Hashable, Sendable {
       public var rawValue: String
       public init(rawValue: String) { self.rawValue = rawValue }
@@ -4943,6 +5035,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct ListDirectoryNamesParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+      }
+
+      public init(id: String, relativePath: String) {
+        self.id = id
+        self.relativePath = relativePath
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+      }
+    }
+
     public struct ListHostDirectoryParams: Codable, Sendable {
       public var path: String?
 
@@ -5171,6 +5284,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct MakeDirectoryParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+      }
+
+      public init(id: String, relativePath: String) {
+        self.id = id
+        self.relativePath = relativePath
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+      }
+    }
+
     public struct McpOauthCancelSignInParams: Codable, Sendable {
       public var serverUrl: String
 
@@ -5276,6 +5410,31 @@ extension ArgusProtocol {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
         try c.encodeIfPresent(strategy, forKey: .strategy)
+      }
+    }
+
+    public struct MovePathParams: Codable, Sendable {
+      public var id: String
+      public var from: String
+      public var to: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case from = "from"
+        case to = "to"
+      }
+
+      public init(id: String, from: String, to: String) {
+        self.id = id
+        self.from = from
+        self.to = to
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(from, forKey: .from)
+        try c.encode(to, forKey: .to)
       }
     }
 
@@ -6048,6 +6207,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct ReadFileBytesParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+      }
+
+      public init(id: String, relativePath: String) {
+        self.id = id
+        self.relativePath = relativePath
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+      }
+    }
+
     public struct ReadPrTemplateParams: Codable, Sendable {
       public var repoRoot: String
 
@@ -6214,6 +6394,27 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(deviceId, forKey: .deviceId)
+      }
+    }
+
+    public struct RemovePathParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+      }
+
+      public init(id: String, relativePath: String) {
+        self.id = id
+        self.relativePath = relativePath
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
       }
     }
 
@@ -7132,6 +7333,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct StatPathParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+      }
+
+      public init(id: String, relativePath: String) {
+        self.id = id
+        self.relativePath = relativePath
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+      }
+    }
+
     public struct StopAgentParams: Codable, Sendable {
       public var agentId: String
 
@@ -7643,6 +7865,35 @@ extension ArgusProtocol {
         try c.encode(id, forKey: .id)
         try c.encode(relativePath, forKey: .relativePath)
         try c.encode(content, forKey: .content)
+      }
+    }
+
+    public struct WriteFileBytesParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var data: String
+      public var executable: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case data = "data"
+        case executable = "executable"
+      }
+
+      public init(id: String, relativePath: String, data: String, executable: Bool? = nil) {
+        self.id = id
+        self.relativePath = relativePath
+        self.data = data
+        self.executable = executable
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(data, forKey: .data)
+        try c.encodeIfPresent(executable, forKey: .executable)
       }
     }
   }
@@ -9070,6 +9321,34 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum GitRunnerCancel: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GitRunnerCancelParams
+      public typealias Result = IgnoredResult
+      public static let name = "git_runner_cancel"
+      public static let tier = "admin"
+    }
+
+    public enum GitRunnerInfo: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GitRunnerInfoParams
+      public typealias Result = ArgusProtocol.GitRunnerInfo
+      public static let name = "git_runner_info"
+      public static let tier = "admin"
+    }
+
+    public enum GitRunnerOutput: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GitRunnerOutputParams
+      public typealias Result = ArgusProtocol.GitRunnerOutputChunk
+      public static let name = "git_runner_output"
+      public static let tier = "admin"
+    }
+
+    public enum GitRunnerRun: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GitRunnerRunParams
+      public typealias Result = ArgusProtocol.GitRunnerRunResult
+      public static let name = "git_runner_run"
+      public static let tier = "admin"
+    }
+
     public enum GitSearchLog: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.GitSearchLogParams
       public typealias Result = ArgusProtocol.LogSearchResult
@@ -9427,6 +9706,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum ListDirectoryNames: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.ListDirectoryNamesParams
+      public typealias Result = [String]
+      public static let name = "list_directory_names"
+      public static let tier = "admin"
+    }
+
     public enum ListEditors: RemoteCommand {
       public typealias Params = EmptyParams
       public typealias Result = [ArgusProtocol.EditorDescriptor]
@@ -9560,6 +9846,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum MakeDirectory: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.MakeDirectoryParams
+      public typealias Result = IgnoredResult
+      public static let name = "make_directory"
+      public static let tier = "admin"
+    }
+
     public enum McpOauthCancelSignIn: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.McpOauthCancelSignInParams
       public typealias Result = Bool
@@ -9599,6 +9892,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.MergeSessionIntoBaseParams
       public typealias Result = IgnoredResult
       public static let name = "merge_session_into_base"
+      public static let tier = "admin"
+    }
+
+    public enum MovePath: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.MovePathParams
+      public typealias Result = IgnoredResult
+      public static let name = "move_path"
       public static let tier = "admin"
     }
 
@@ -9903,6 +10203,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum ReadFileBytes: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.ReadFileBytesParams
+      public typealias Result = String
+      public static let name = "read_file_bytes"
+      public static let tier = "admin"
+    }
+
     public enum ReadPrTemplate: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.ReadPrTemplateParams
       public typealias Result = String?
@@ -10012,6 +10319,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.RemoteTestPushParams
       public typealias Result = ArgusProtocol.RemotePushTestResult
       public static let name = "remote_test_push"
+      public static let tier = "admin"
+    }
+
+    public enum RemovePath: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.RemovePathParams
+      public typealias Result = IgnoredResult
+      public static let name = "remove_path"
       public static let tier = "admin"
     }
 
@@ -10323,6 +10637,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum StatPath: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.StatPathParams
+      public typealias Result = ArgusProtocol.PathKind?
+      public static let name = "stat_path"
+      public static let tier = "admin"
+    }
+
     public enum StateHydrate: RemoteCommand {
       public typealias Params = EmptyParams
       public typealias Result = ArgusProtocol.HostSnapshot
@@ -10537,6 +10858,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.WriteFileParams
       public typealias Result = IgnoredResult
       public static let name = "write_file"
+      public static let tier = "admin"
+    }
+
+    public enum WriteFileBytes: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.WriteFileBytesParams
+      public typealias Result = IgnoredResult
+      public static let name = "write_file_bytes"
       public static let tier = "admin"
     }
   }

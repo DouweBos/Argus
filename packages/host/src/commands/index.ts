@@ -10,6 +10,7 @@ import { registerBrowserCommands } from "./browser";
 import { registerDeviceCommands } from "./devices";
 import { registerFileCommands } from "./files";
 import { registerGitCommands } from "./git";
+import { registerGitRunnerCommands } from "./gitRunner";
 import { registerGithubCommands } from "./github";
 import { registerLlmCommands } from "./llm";
 import { registerMcpCommands } from "./mcp";
@@ -34,4 +35,5 @@ export function registerHostCommands(): void {
   registerRemoteCommands();
   registerMcpCommands();
   registerGithubCommands();
+  registerGitRunnerCommands();
 }

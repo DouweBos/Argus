@@ -10,6 +10,7 @@ import { BROWSER_COMMANDS } from "./browser";
 import { DEVICE_COMMANDS } from "./devices";
 import { FILE_COMMANDS } from "./files";
 import { GIT_COMMANDS } from "./git";
+import { GIT_RUNNER_COMMANDS } from "./gitRunner";
 import { GITHUB_COMMANDS } from "./github";
 import { LLM_COMMANDS } from "./llm";
 import { MCP_COMMANDS } from "./mcp";
@@ -37,6 +38,7 @@ export * from "../models/browser";
 export * from "../models/remote";
 export * from "../models/mcp";
 export * from "../models/github";
+export * from "../models/gitRunner";
 
 /** Each domain's entries, kept apart so a test can prove no name repeats. */
 export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
@@ -54,6 +56,7 @@ export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
   remote: REMOTE_COMMANDS,
   mcp: MCP_COMMANDS,
   github: GITHUB_COMMANDS,
+  gitRunner: GIT_RUNNER_COMMANDS,
   shell: SHELL_COMMANDS,
 };
 
@@ -72,6 +75,7 @@ export const COMMANDS = {
   ...REMOTE_COMMANDS,
   ...MCP_COMMANDS,
   ...GITHUB_COMMANDS,
+  ...GIT_RUNNER_COMMANDS,
   ...SHELL_COMMANDS,
 } as const;
 

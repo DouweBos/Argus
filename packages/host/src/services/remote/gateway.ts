@@ -161,8 +161,9 @@ const VIDEO_CHANNEL_RE = /^(?:ios|android)_video_/;
 
 /**
  * The subscription id a raw channel is scoped to, or null when it fans out to
- * every raw connection. Agent and terminal streams are per-id so a desktop
- * watching four agents doesn't receive a fifth's tokens (or another PTY's).
+ * every raw connection. Agent, terminal and git-runner streams are per-id so a
+ * desktop watching four agents doesn't receive a fifth's tokens (or another
+ * PTY's, or another run's progress).
  */
 function rawSubscriptionScope(channel: string): string | null {
   const agent = parseAgentChannel(channel);
@@ -170,8 +171,12 @@ function rawSubscriptionScope(channel: string): string | null {
     return agent.agentId;
   }
   const terminal = /^terminal:(?:data|exit):(.+)$/.exec(channel);
+  if (terminal) {
+    return `terminal:${terminal[1]}`;
+  }
+  const gitRun = /^git-runner:progress:(.+)$/.exec(channel);
 
-  return terminal ? `terminal:${terminal[1]}` : null;
+  return gitRun ? `git-runner:${gitRun[1]}` : null;
 }
 
 /** Parsed agent channel, e.g. `agent:permission:<id>` → kind + agentId. */

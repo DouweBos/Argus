@@ -53,3 +53,7 @@ export const UploadedAttachment = z.object({
   size: z.number(),
 });
 export type UploadedAttachment = z.infer<typeof UploadedAttachment>;
+
+/** What sits at a path, for a remote git runner. */
+export const PathKind = z.object({ kind: z.enum(["file", "directory"]) });
+export type PathKind = z.infer<typeof PathKind>;

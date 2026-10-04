@@ -2347,6 +2347,23 @@ extension ArgusProtocol {
     }
   }
 
+  public struct ConnectionTypedEventsParams: Codable, Sendable {
+    public var on: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case on = "on"
+    }
+
+    public init(on: Bool) {
+      self.on = on
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(on, forKey: .on)
+    }
+  }
+
   public struct CreateAutomationInputScope: Codable, Sendable {
     public var repoRoots: [String]
 
@@ -3987,6 +4004,106 @@ extension ArgusProtocol {
       try c.encode(refs, forKey: .refs)
       try c.encode(scheme, forKey: .scheme)
       try c.encode(host, forKey: .host)
+    }
+  }
+
+  public struct GitRunnerInfo: Codable, Sendable {
+    public var commonGitDir: String
+    public var gitDir: String
+    public var scratchDir: String
+    public var worktree: String
+
+    enum CodingKeys: String, CodingKey {
+      case commonGitDir = "commonGitDir"
+      case gitDir = "gitDir"
+      case scratchDir = "scratchDir"
+      case worktree = "worktree"
+    }
+
+    public init(commonGitDir: String, gitDir: String, scratchDir: String, worktree: String) {
+      self.commonGitDir = commonGitDir
+      self.gitDir = gitDir
+      self.scratchDir = scratchDir
+      self.worktree = worktree
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(commonGitDir, forKey: .commonGitDir)
+      try c.encode(gitDir, forKey: .gitDir)
+      try c.encode(scratchDir, forKey: .scratchDir)
+      try c.encode(worktree, forKey: .worktree)
+    }
+  }
+
+  public struct GitRunnerOutputChunk: Codable, Sendable {
+    public var data: String
+    public var done: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case data = "data"
+      case done = "done"
+    }
+
+    public init(data: String, done: Bool) {
+      self.data = data
+      self.done = done
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(data, forKey: .data)
+      try c.encode(done, forKey: .done)
+    }
+  }
+
+  public struct GitRunnerProgress: Codable, Sendable {
+    public var chunk: String
+
+    enum CodingKeys: String, CodingKey {
+      case chunk = "chunk"
+    }
+
+    public init(chunk: String) {
+      self.chunk = chunk
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(chunk, forKey: .chunk)
+    }
+  }
+
+  public struct GitRunnerRunResult: Codable, Sendable {
+    public var exitCode: Double
+    public var outputId: String?
+    public var stderr: String
+    public var stdout: String
+    public var stdoutBytes: Double
+
+    enum CodingKeys: String, CodingKey {
+      case exitCode = "exitCode"
+      case outputId = "outputId"
+      case stderr = "stderr"
+      case stdout = "stdout"
+      case stdoutBytes = "stdoutBytes"
+    }
+
+    public init(exitCode: Double, outputId: String? = nil, stderr: String, stdout: String, stdoutBytes: Double) {
+      self.exitCode = exitCode
+      self.outputId = outputId
+      self.stderr = stderr
+      self.stdout = stdout
+      self.stdoutBytes = stdoutBytes
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(exitCode, forKey: .exitCode)
+      try c.encodeIfPresent(outputId, forKey: .outputId)
+      try c.encode(stderr, forKey: .stderr)
+      try c.encode(stdout, forKey: .stdout)
+      try c.encode(stdoutBytes, forKey: .stdoutBytes)
     }
   }
 
@@ -5670,6 +5787,38 @@ extension ArgusProtocol {
       try c.encode(url, forKey: .url)
       try c.encode(dsPub, forKey: .dsPub)
       try c.encode(pairingSecret, forKey: .pairingSecret)
+    }
+  }
+
+  public struct PathKindKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let file = PathKindKind(rawValue: "file")
+    public static let directory = PathKindKind(rawValue: "directory")
+  }
+
+  public struct PathKind: Codable, Sendable {
+    public var kind: PathKindKind
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+    }
+
+    public init(kind: PathKindKind) {
+      self.kind = kind
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
     }
   }
 
