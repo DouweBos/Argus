@@ -28,7 +28,7 @@ struct ProjectFlows: ViewModifier {
         guard isAdding else { return }
         model.addingProject = false
         Task {
-          if let path = await FolderPicker.pick() { adding = RepoPath(path: path) }
+          if let path = await model.pickFolder() { adding = RepoPath(path: HostScopedPath.scope(path, on: model.hosts.focused)) }
         }
       }
       #if DEBUG
