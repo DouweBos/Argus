@@ -54,13 +54,29 @@ function httpGetOverSocket(
   });
 }
 
-interface DaemonStatus {
+export interface DaemonStatus {
   ok: boolean;
   platform: string;
   driverPort: number;
   chromiumCdpPort: number | null;
   pageTargetId: string | null;
   driverStartError: string | null;
+}
+
+/** One `/status` read; null when the daemon isn't there to answer. */
+async function readDaemonStatus(
+  deviceId: string,
+): Promise<DaemonStatus | null> {
+  try {
+    const { status, body } = await httpGetOverSocket(
+      daemonSocketPath(deviceId),
+      "/status",
+    );
+
+    return status === 200 ? (JSON.parse(body) as DaemonStatus) : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -110,7 +126,13 @@ async function pollDaemonStatus(deviceId: string): Promise<DaemonStatus> {
 // WebBrowserPool
 // ---------------------------------------------------------------------------
 
-class WebBrowserPool {
+export class WebBrowserPool {
+  constructor(
+    private readonly readStatus: (
+      deviceId: string,
+    ) => Promise<DaemonStatus | null> = readDaemonStatus,
+  ) {}
+
   /**
    * Serialization queue: each acquisition/release chains onto this promise so
    * concurrent calls don't race on daemon startup or reservation checks.
@@ -155,6 +177,41 @@ class WebBrowserPool {
   /** Get the reservation for an agent, or null. */
   getReservation(agentId: string): WebBrowserReservation | null {
     return appState.webBrowserReservations.get(agentId) ?? null;
+  }
+
+  /**
+   * The reservation, provided its daemon is still up. A daemon that died
+   * (idle timeout, crash, killed by hand) leaves a dead CDP port behind, so
+   * its entry is dropped; a browser it relaunched gets its new port recorded.
+   */
+  async liveReservation(
+    agentId: string,
+  ): Promise<WebBrowserReservation | null> {
+    const reservation = this.getReservation(agentId);
+    if (!reservation) {
+      return null;
+    }
+    const status = await this.readStatus(reservation.deviceId);
+    if (
+      !status?.chromiumCdpPort ||
+      status.chromiumCdpPort <= 0 ||
+      !status.pageTargetId
+    ) {
+      // Only drop the entry we probed — a fresh acquire may have replaced it.
+      if (appState.webBrowserReservations.get(agentId) === reservation) {
+        info(
+          `[web-browser-pool] ${reservation.deviceId} is gone, dropping its reservation`,
+        );
+        appState.webBrowserReservations.delete(agentId);
+      }
+
+      return null;
+    }
+    reservation.cdpPort = status.chromiumCdpPort;
+    reservation.cdpTargetId = status.pageTargetId;
+    reservation.driverPort = status.driverPort;
+
+    return reservation;
   }
 
   /**

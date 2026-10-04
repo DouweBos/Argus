@@ -117,7 +117,7 @@ export async function ensureSimulatorForAgent(
 export async function ensureWebBrowserForAgent(
   agentId: string,
 ): Promise<string> {
-  const existing = webBrowserPool.getReservation(agentId);
+  const existing = await webBrowserPool.liveReservation(agentId);
   if (existing) {
     return existing.deviceId;
   }
