@@ -327,6 +327,9 @@
           },
           "pairing": "\(hosts.pairing)", "focused": hosts.focused,
           "filter": model.machineFilter ?? "",
+          "runtimeHost": model.runtime.hostId,
+          "sessionHosts": model.store.sessionsByRepo.values.joined().map { "\($0.id) @\(model.host(ofSession: $0.id))" },
+          "devices": (model.runtime.simulators.map(\.udid)).map { "\($0) @\(model.backend?.host(of: .device, $0) ?? "?")" },
           "projects": model.store.projects.map { "\($0.repoRoot) @\(model.host(ofProject: $0.repoRoot))" },
         ]
       case "hostAction":
