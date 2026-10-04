@@ -131,7 +131,7 @@ private struct AutomationDetail: View {
   private var canSave: Bool {
     !draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
       && !draft.playbook.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-      && (draft.triggerKind == .manual || !(draft.cron ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
+      && draft.hasValidTrigger
   }
 
   private func save() {

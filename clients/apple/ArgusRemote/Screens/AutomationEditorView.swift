@@ -23,6 +23,7 @@ struct AutomationEditorView: View {
   private var canSave: Bool {
     !draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
       && !draft.playbook.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      && draft.hasValidTrigger
       && !saving
   }
 
