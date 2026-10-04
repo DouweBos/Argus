@@ -96,6 +96,7 @@ private struct Themed: ViewModifier {
       .tint(colorScheme == .dark ? Theme.dark.accent : Theme.light.accent)
       .dynamicTypeSize(prefs.dynamicTypeSize)
       .controlSize(prefs.controlSize)
+      .font(prefs.bodyFont)
   }
 }
 
