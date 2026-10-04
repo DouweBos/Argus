@@ -167,6 +167,9 @@ export const REMOTE_METHODS = {
    */
   "terminals.list": "monitor",
   "terminals.read": "monitor",
+  /** Replay for a streaming reader: subscribe to `terminal:<id>` first, then
+   *  stitch `terminal.data` events onto this by sequence. */
+  "terminals.scrollback": "monitor",
   /** List the branches of a session's repo (local, plus remote-only ones). */
   "sessions.branches": "monitor",
   /** Switch the checked-out branch. Host-side these branch ops only work on a
@@ -318,6 +321,9 @@ export const REMOTE_EVENTS = [
   "notification",
   /** The desktop's reachable addresses changed (a tunnel came up or died). */
   "host.endpoints",
+  /** Output of a terminal this device subscribed to as `terminal:<id>`. */
+  "terminal.data",
+  "terminal.exit",
   /** A huddle guest's standing changed — approved, denied, or the room ended. */
   "huddle.state",
   /** Someone in the huddle said something to the room (not to the agent). */

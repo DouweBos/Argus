@@ -30,6 +30,11 @@ public protocol HostBackend: AnyObject, Sendable {
   func sequencedRequest<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws
     -> (result: C.Result, seq: Int)
 
+  /// A typed method plus where its response falls among this backend's events.
+  func sequencedRequest<Params: Encodable & Sendable, Result: Decodable & Sendable>(
+    _ method: RemoteMethod, _ params: Params, as: Result.Type
+  ) async throws -> (result: Result, seq: Int)
+
   /// Gate `agent.*` / `permission.*` events for one agent.
   func subscribe(agentId: String, on: Bool) async
 
@@ -43,6 +48,12 @@ extension HostBackend {
     async throws -> (result: C.Result, seq: Int)
   {
     (try await request(command, params), Int.min)
+  }
+
+  public func sequencedRequest<Params: Encodable & Sendable, Result: Decodable & Sendable>(
+    _ method: RemoteMethod, _ params: Params, as: Result.Type
+  ) async throws -> (result: Result, seq: Int) {
+    (try await request(method, params, as: Result.self), Int.min)
   }
 }
 

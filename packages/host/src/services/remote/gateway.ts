@@ -954,6 +954,24 @@ export class DeviceConnection implements DeviceMediaController {
       return;
     }
 
+    // A typed reader following a terminal; guests can't subscribe to one, and
+    // a raw connection already got the channel itself.
+    const terminal = /^terminal:(data|exit):(.+)$/.exec(channel);
+    if (terminal) {
+      const [, kind, terminalId] = terminal;
+      if (!this.raw && this.subscriptions.has(`terminal:${terminalId}`)) {
+        this.pushEvent(
+          kind === "data" ? "terminal.data" : "terminal.exit",
+          null,
+          kind === "data"
+            ? { terminal_id: terminalId, data: args[0] }
+            : { terminal_id: terminalId, exit_code: args[0] },
+        );
+      }
+
+      return;
+    }
+
     const parsed = parseAgentChannel(channel);
     if (!parsed) {
       return;

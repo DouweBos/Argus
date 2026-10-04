@@ -42,6 +42,12 @@ public final class GatewayBackend: HostBackend {
     try await transport.request(name: C.name, params, as: C.Result.self)
   }
 
+  public func sequencedRequest<Params: Encodable & Sendable, Result: Decodable & Sendable>(
+    _ method: RemoteMethod, _ params: Params, as: Result.Type
+  ) async throws -> (result: Result, seq: Int) {
+    try await transport.sequencedRequest(name: method.rawValue, params, as: Result.self)
+  }
+
   public func subscribe(agentId: String, on: Bool) async {
     await transport.subscribe(agentId: agentId, on: on)
   }

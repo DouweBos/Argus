@@ -263,6 +263,7 @@ export const MethodParams = {
   "sessions.git_status": z.object({ session_id: z.string() }),
   "terminals.list": z.object({ session_id: z.string() }),
   "terminals.read": z.object({ terminal_id: z.string() }),
+  "terminals.scrollback": z.object({ terminal_id: z.string() }),
   "sessions.branches": z.object({ session_id: z.string() }),
   "sessions.checkout": z.object({
     session_id: z.string(),
@@ -634,6 +635,13 @@ export const MethodResult = {
   "sessions.git_status": z.object({ status: RemoteGitStatus }),
   "terminals.list": z.object({ terminals: z.array(RemoteTerminal) }),
   "terminals.read": RemoteTerminalOutput,
+  /** Base64 of the output broadcast so far; `terminal.data` events sequenced
+   *  after this response carry exactly what it doesn't. */
+  "terminals.scrollback": z.object({
+    data: z.string(),
+    truncated: z.boolean(),
+    exit_code: z.number().int().nullable(),
+  }),
   "sessions.branches": z.object({ branches: z.array(RemoteGitBranch) }),
   "sessions.checkout": z.object({
     accepted: z.boolean(),
@@ -915,6 +923,9 @@ export const EventPayloads = {
    *  a client that cares refetches whatever it holds. */
   "sessions.changed": z.object({ repo_root: z.string().nullable() }),
   "projects.changed": z.object({}),
+  /** Base64 output, in the order the terminal produced it. */
+  "terminal.data": z.object({ terminal_id: z.string(), data: z.string() }),
+  "terminal.exit": z.object({ terminal_id: z.string(), exit_code: z.number() }),
   /** Carries the new state outright — the list is small, and a rate limit or a
    *  finished login landing on the account screen should not need a refetch. */
   "claude_accounts.changed": z.object({

@@ -4756,6 +4756,48 @@ extension ArgusProtocol {
         try c.encode(terminalId, forKey: .terminalId)
       }
     }
+
+    public struct TerminalsScrollbackParams: Codable, Sendable {
+      public var terminalId: String
+
+      enum CodingKeys: String, CodingKey {
+        case terminalId = "terminal_id"
+      }
+
+      public init(terminalId: String) {
+        self.terminalId = terminalId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(terminalId, forKey: .terminalId)
+      }
+    }
+
+    public struct TerminalsScrollbackResult: Codable, Sendable {
+      public var data: String
+      public var truncated: Bool
+      public var exitCode: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case data = "data"
+        case truncated = "truncated"
+        case exitCode = "exit_code"
+      }
+
+      public init(data: String, truncated: Bool, exitCode: Int? = nil) {
+        self.data = data
+        self.truncated = truncated
+        self.exitCode = exitCode
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(data, forKey: .data)
+        try c.encode(truncated, forKey: .truncated)
+        try c.encode(exitCode, forKey: .exitCode)
+      }
+    }
   }
 
   /// The typed remote methods (`REMOTE_METHODS`), monitor and control tier.
@@ -5460,6 +5502,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.TerminalsReadParams
       public typealias Result = ArgusProtocol.RemoteTerminalOutput
       public static let name = "terminals.read"
+    }
+
+    public enum TerminalsScrollback: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.TerminalsScrollbackParams
+      public typealias Result = ArgusProtocol.MethodsTypes.TerminalsScrollbackResult
+      public static let name = "terminals.scrollback"
     }
   }
 }

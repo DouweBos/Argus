@@ -42,6 +42,7 @@ function terminal(id: string, fields: Record<string, unknown>) {
     outputLog: "",
     outputTotalBytes: 0,
     outputDroppedBytes: 0,
+    unflushedChars: 0,
     exitCode: null,
     waiters: [],
     ...fields,
@@ -72,6 +73,21 @@ describe("terminals over the gateway", () => {
     expect(REMOTE_METHODS["terminals.read"]).toBe("monitor");
     expect(METHOD_SCOPE["terminals.list"].kind).toBe("denied");
     expect(METHOD_SCOPE["terminals.read"].kind).toBe("denied");
+    expect(REMOTE_METHODS["terminals.scrollback"]).toBe("monitor");
+    expect(METHOD_SCOPE["terminals.scrollback"].kind).toBe("denied");
+  });
+
+  it("replays the broadcast output, colours and all, for a streaming reader", async () => {
+    const result = await dispatch(
+      "terminals.scrollback",
+      { terminal_id: "t1" },
+      makeCtx(["monitor"]),
+    );
+    expect(result).toEqual({
+      data: Buffer.from("\x1b[32mready\x1b[0m on :3000\r\n").toString("base64"),
+      truncated: false,
+      exit_code: null,
+    });
   });
 
   it("lists a session's live terminals", async () => {

@@ -118,6 +118,8 @@ public final class HostStore {
   private static let mediaBufferCap = 120
   /// Views listening to raw `ipc` channels; see `observeIpc`.
   @ObservationIgnored var ipcObservers: [UUID: @MainActor (String, [JSONValue], Int) -> Void] = [:]
+  /// Streaming terminal readers, by terminal id; see `followTerminal`.
+  @ObservationIgnored var terminalObservers: [String: @MainActor (TerminalFeed.Live, Int) -> Void] = [:]
 
   public static let transcriptPage = 80
 
@@ -322,6 +324,19 @@ public final class HostStore {
       guard let notification = try? ProtocolCodec.convert(
         envelope.payload, to: RemoteNotification.self) else { return }
       hooks.notify(notification)
+
+    case .terminalData:
+      struct Payload: Decodable { let terminal_id: String; let data: String }
+      guard let payload = try? ProtocolCodec.convert(envelope.payload, to: Payload.self),
+        let data = Data(base64Encoded: payload.data)
+      else { return }
+      terminalObservers[payload.terminal_id]?(.data(data), envelope.seq)
+
+    case .terminalExit:
+      struct Payload: Decodable { let terminal_id: String; let exit_code: Int }
+      guard let payload = try? ProtocolCodec.convert(envelope.payload, to: Payload.self)
+      else { return }
+      terminalObservers[payload.terminal_id]?(.exit(payload.exit_code), envelope.seq)
 
     case .ipc:
       // Raw broadcasts reach admin devices only; a local one is handled above.
