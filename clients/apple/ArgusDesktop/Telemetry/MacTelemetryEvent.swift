@@ -199,6 +199,12 @@ enum MacTelemetryEvent {
     case failed
   }
 
+  enum FolderPickStage: String {
+    case opened
+    case picked
+    case cancelled
+  }
+
   enum ChatHistoryAction: String {
     case view
     case resume
@@ -220,6 +226,8 @@ enum MacTelemetryEvent {
   /// A home card's button was used: notifications enabled, opened or dismissed,
   /// or a project removed from the recents grid.
   case homeCardActed(card: HomeCard, action: HomeCardAction)
+  /// A folder was browsed for on a paired host's disk.
+  case hostFolderPicked(stage: FolderPickStage)
   /// A session's branch was renamed from its home.
   case branchRenamed(success: Bool)
   /// A deep link or launch route was opened; `screen` is its route pattern.
@@ -293,6 +301,7 @@ enum MacTelemetryEvent {
     case .chatHistoryUsed: "mac_chat_history_used"
     case .branchRenamed: "mac_branch_renamed"
     case .homeCardActed: "mac_home_card_acted"
+    case .hostFolderPicked: "mac_host_folder_picked"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
     case .inputUsed: "mac_input_used"
@@ -354,6 +363,8 @@ enum MacTelemetryEvent {
       ["success": success]
     case .homeCardActed(let card, let action):
       ["card": card.rawValue, "action": action.rawValue]
+    case .hostFolderPicked(let stage):
+      ["stage": stage.rawValue]
     case .transcriptLinkOpened(let action, let relative):
       ["action": action.rawValue, "relative": relative]
     case .transcriptFindUsed(let matches, let navigated):

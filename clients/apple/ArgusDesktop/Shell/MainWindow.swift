@@ -66,6 +66,7 @@ struct MainWindow: View {
     .sheet(item: projectSettingsRepo) { repo in
       ProjectSettingsSheet(repoRoot: repo.path)
     }
+    .sheet(item: hostFolderRequest) { HostFolderPicker(request: $0) }
     .environment(imageViewer)
     // The viewer covers the window; the toolbar would still draw over it.
     .toolbar(imageViewer.isPresented ? .hidden : .automatic, for: .windowToolbar)
@@ -104,6 +105,10 @@ extension MainWindow {
 
   private var contentMinWidth: CGFloat {
     model.route.gitView == nil ? Self.contentMinWidth : Self.gitContentMinWidth
+  }
+
+  private var hostFolderRequest: Binding<HostFolderRequest?> {
+    Binding(get: { model.hostFolderRequest }, set: { model.hostFolderRequest = $0 })
   }
 
   private var projectSettingsRepo: Binding<RepoPath?> {

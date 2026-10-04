@@ -19,6 +19,7 @@
     /// The menu being tracked right now, if a click opened one.
     private var trackedMenu: NSMenu?
     private var menuObservers: [NSObjectProtocol] = []
+    private static var lastPick = ""
 
     static func startIfConfigured() -> DevDriver? {
       guard let path = ProcessInfo.processInfo.environment["ARGUS_DEV_DRIVER"] else { return nil }
@@ -362,6 +363,16 @@
         else { return ["error": "path?"] }
         model.open(location)
         return ["route": "\(model.route)", "pending": model.pendingLocation.map { $0.path } ?? ""]
+      case "pickFolder":
+        // What Add Project's Browse does on the focused machine, from a start folder.
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        Task {
+          let path = await model.pickFolder(start: command["start"] as? String)
+          Self.lastPick = path ?? "(cancelled)"
+        }
+        return ["ok": true]
+      case "lastPick":
+        return ["path": Self.lastPick]
       case "history":
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
         return [
