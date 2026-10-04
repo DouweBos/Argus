@@ -14,6 +14,8 @@ import { getActiveAccessToken } from "./oauth";
 
 const PROTOCOL_VERSION = "2025-06-18";
 const REQUEST_TIMEOUT_MS = 8_000;
+/** How long a stdio server gets to answer `tools/list` once initialize succeeded. */
+const TOOLS_FOLLOW_UP_MS = 2_000;
 
 export type McpTransport = "http" | "stdio" | "unknown";
 
@@ -336,7 +338,8 @@ async function testStdio(
       resolve(r);
     };
 
-    const timeout = setTimeout(
+    let initialized: McpTestResult | null = null;
+    let timeout = setTimeout(
       () =>
         finish({
           ok: false,
@@ -370,6 +373,17 @@ async function testStdio(
         } catch {
           continue;
         }
+        if (msg.id === 2 && initialized) {
+          const list = msg.result?.tools;
+          finish({
+            ...initialized,
+            tools: Array.isArray(list)
+              ? list.map((t) => ({ name: t.name, description: t.description }))
+              : undefined,
+          });
+
+          return;
+        }
         if (msg.id !== 1) {
           continue;
         }
@@ -385,15 +399,25 @@ async function testStdio(
 
           return;
         }
-        finish({
+        // Initialize alone decides "ok"; the tool list is a bonus, as for HTTP.
+        initialized = {
           ok: true,
           transport: "stdio",
           latencyMs,
           protocolVersion: msg.result?.protocolVersion,
           serverInfo: msg.result?.serverInfo,
-        });
-
-        return;
+        };
+        const ready = initialized;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => finish(ready), TOOLS_FOLLOW_UP_MS);
+        try {
+          child.stdin?.write(
+            `${JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" })}\n` +
+              `${JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} })}\n`,
+          );
+        } catch {
+          finish(ready);
+        }
       }
     });
 
@@ -401,6 +425,11 @@ async function testStdio(
       finish({ ok: false, transport: "stdio", error: err.message });
     });
     child.on("exit", (code, signal) => {
+      if (initialized) {
+        finish(initialized);
+
+        return;
+      }
       const tail = stderrBuf.trim().split("\n").slice(-3).join(" | ");
       let reason = "exited";
       if (code !== null) {
