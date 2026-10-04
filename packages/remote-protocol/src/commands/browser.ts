@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BrowserPreset } from "../models/browser";
+import { BrowserDevtools, BrowserPreset } from "../models/browser";
 import { type CommandSpec, NoParams, Void } from "./spec";
 
 const BrowserSession = z.object({ sessionId: z.string() });
@@ -54,6 +54,15 @@ export const BROWSER_COMMANDS = {
     tier: "admin",
     params: BrowserSession.extend({ preset: BrowserPreset }),
     result: Void,
+  },
+  /**
+   * The session browser's DevTools endpoints; null with no browser reserved.
+   * Host tier: they are loopback addresses, useless and unsafe off this machine.
+   */
+  browser_devtools: {
+    tier: "host",
+    params: BrowserSession,
+    result: BrowserDevtools.nullable(),
   },
   /** Port of the local MJPEG server the screencast frames are served from. */
   browser_get_mjpeg_port: {

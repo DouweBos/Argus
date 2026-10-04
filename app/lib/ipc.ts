@@ -94,6 +94,7 @@ import type {
   BisectStatus,
   BisectStep,
   BlameChunk,
+  BrowserDevtools,
   BrowserPreset,
   Checkpoint,
   CommandName,
@@ -2175,6 +2176,10 @@ export const browserUpdatePreset = (
   sessionId: string,
   preset: BrowserPreset,
 ): Promise<void> => invoke("browser_update_preset", { sessionId, preset });
+
+export const browserDevtools = (
+  sessionId: string,
+): Promise<BrowserDevtools | null> => invoke("browser_devtools", { sessionId });
 
 export const browserGetMjpegPort = (): Promise<number> =>
   invoke("browser_get_mjpeg_port");

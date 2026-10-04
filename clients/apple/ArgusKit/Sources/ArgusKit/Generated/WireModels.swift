@@ -1718,6 +1718,35 @@ extension ArgusProtocol {
     }
   }
 
+  public struct BrowserDevtools: Codable, Sendable {
+    public var port: Double
+    public var targetId: String
+    public var webSocketDebuggerUrl: String
+    public var devtoolsFrontendUrl: String
+
+    enum CodingKeys: String, CodingKey {
+      case port = "port"
+      case targetId = "targetId"
+      case webSocketDebuggerUrl = "webSocketDebuggerUrl"
+      case devtoolsFrontendUrl = "devtoolsFrontendUrl"
+    }
+
+    public init(port: Double, targetId: String, webSocketDebuggerUrl: String, devtoolsFrontendUrl: String) {
+      self.port = port
+      self.targetId = targetId
+      self.webSocketDebuggerUrl = webSocketDebuggerUrl
+      self.devtoolsFrontendUrl = devtoolsFrontendUrl
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(port, forKey: .port)
+      try c.encode(targetId, forKey: .targetId)
+      try c.encode(webSocketDebuggerUrl, forKey: .webSocketDebuggerUrl)
+      try c.encode(devtoolsFrontendUrl, forKey: .devtoolsFrontendUrl)
+    }
+  }
+
   public struct BrowserPresetScreenPosition: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }

@@ -181,6 +181,12 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `automation_github_read`                | main   | An automation run read GitHub through an Argus tool      | `tool: "get" \| "artifact_search"`, `success`                 |
 | `proposal_start_failed`                 | main   | Starting a proposal failed before its agent ran          | `stage` (`creating_worktree`, `setting_up`, `starting_agent`) |
 
+## Browser
+
+| Event                        | Source | When                                                            | Extra props                                         |
+| ---------------------------- | ------ | --------------------------------------------------------------- | --------------------------------------------------- |
+| `browser_devtools_requested` | main   | A client on this machine asked for a session browser's DevTools | `available` — whether that session had a browser up |
+
 ## Claude accounts
 
 | Event                      | Source | When                                                    | Extra props                                                                 |
