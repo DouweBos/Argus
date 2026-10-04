@@ -355,6 +355,20 @@
         else { return ["error": "path?"] }
         model.navigate(route)
         return ["route": "\(model.route)"]
+      case "openLocation":
+        // What a deep link does, without bringing the app forward.
+        guard let model = AppDelegate.current?.model, let path = command["path"] as? String,
+          let location = DesktopLocation(path: path)
+        else { return ["error": "path?"] }
+        model.open(location)
+        return ["route": "\(model.route)", "pending": model.pendingLocation.map { $0.path } ?? ""]
+      case "history":
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        return [
+          "location": model.location.path, "back": model.back.map(\.path), "forward": model.forward.map(\.path),
+          "pending": model.pendingLocation?.path ?? "",
+          "log": model.notificationsLog.entries.map(\.message),
+        ]
       case "palette":
         // What ⇧⌘P does; menu shortcuts only fire while the app is active.
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }

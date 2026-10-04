@@ -19,7 +19,7 @@ struct ArgusDesktopApp: App {
         .frame(minWidth: MainWindow.minWindowWidth, minHeight: 600)
         // Deep links, once a build claims `argus://` (see docs/mac-app.md).
         .onOpenURL { url in
-          if let route = DesktopRoute(deepLink: url) { delegate.model.navigate(route) }
+          delegate.model.open(deepLink: url)
         }
     }
     // Room for the sidebar, the git panel's three columns and the runtime.

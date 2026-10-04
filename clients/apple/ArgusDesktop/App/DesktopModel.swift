@@ -30,7 +30,7 @@ final class DesktopModel {
   /// The supervised host alone: platform requests and telemetry are this Mac's.
   private(set) var localBackend: LocalBackend?
 
-  private(set) var route: DesktopRoute = .home
+  var route: DesktopRoute = .home
   /// The project the New Session sheet is open for.
   var newSessionProject: RemoteProject?
   /// The session the Delete sheet is open for.
@@ -44,16 +44,20 @@ final class DesktopModel {
   /// The Add Project flow (⌘O).
   var addingProject = false
   /// The machine the sidebar is narrowed to; nil shows every attached one.
-  private(set) var machineFilter: HostId?
+  var machineFilter: HostId?
   /// The panel each session was last left on, as the desktop app remembers.
-  private var agentsPanelSessions: Set<String> = []
+  var agentsPanelSessions: Set<String> = []
   /// The git sub-view each session was last left on.
-  private var gitViews: [String: GitRoute] = [:]
+  var gitViews: [String: GitRoute] = [:]
   /// Sessions last left on their git panel.
-  private var gitPanelSessions: Set<String> = []
+  var gitPanelSessions: Set<String> = []
   private var launchRouteApplied = false
-  private var back: [DesktopRoute] = []
-  private var forward: [DesktopRoute] = []
+  var back: [DesktopLocation] = []
+  var forward: [DesktopLocation] = []
+  /// A launch route or deep link to a session no host has listed yet, held
+  /// until its host connects (`resolvePendingLocation`).
+  var pendingLocation: DesktopLocation?
+  var pendingTimeout: Task<Void, Never>?
 
   init() {
     supervisor = HostSupervisor(configuration: HostLocation.configuration())
@@ -148,13 +152,7 @@ final class DesktopModel {
     for project in store.projects where backend?.host(of: .project, project.repoRoot) == hostId {
       await openProject(project.repoRoot)
     }
-  }
-
-  /// Narrow the sidebar to one machine and show it everywhere else too; nil
-  /// shows them all, with this Mac answering what names no machine.
-  func showMachine(_ hostId: HostId?) {
-    machineFilter = hostId
-    hosts.focus(hostId ?? Hosts.local)
+    resolvePendingLocation()
   }
 
   /// The lists that span every host.
@@ -208,6 +206,7 @@ final class DesktopModel {
       applyDevRoute()
     #endif
     await applyLaunchRoute()
+    resolvePendingLocation()
   }
 
   /// The Launch screen setting, once per launch and only while nothing else
@@ -216,7 +215,7 @@ final class DesktopModel {
     guard !launchRouteApplied, let backend = localBackend else { return }
     launchRouteApplied = true
     let settings = try? await backend.request(ArgusProtocol.Commands.GetAppSettings.self, EmptyParams())
-    guard settings?.launchRoute == .inbox, route == .home else { return }
+    guard settings?.launchRoute == .inbox, route == .home, pendingLocation == nil else { return }
     route = .inbox
   }
 
@@ -227,15 +226,15 @@ final class DesktopModel {
       guard route == .home,
         let raw = ProcessInfo.processInfo.environment["ARGUS_DEV_ROUTE"]
       else { return }
-      if raw.hasPrefix("/"), let route = DesktopRoute(path: raw) { return navigate(route) }
+      if raw.hasPrefix("/"), let location = DesktopLocation(path: raw) { return open(location) }
       let parts = raw.split(separator: ":").map(String.init)
       switch (parts.first, parts.count) {
-      case ("session", 2...): navigate(.session(id: parts[1], agentId: parts.count > 2 ? parts[2] : nil))
-      case ("home", 2...): navigate(.sessionHome(id: parts[1]))
+      case ("session", 2...): open(.init(route: .session(id: parts[1], agentId: parts.count > 2 ? parts[2] : nil)))
+      case ("home", 2...): open(.init(route: .sessionHome(id: parts[1])))
       // `git:<sessionId>[:<view>[:<arg>…]]`
       case ("git", 2...):
         let view = parts.count > 2 ? GitRoute(devString: parts[2...].joined(separator: ":")) : nil
-        navigate(.sessionGit(id: parts[1], view: view ?? .working))
+        open(.init(route: .sessionGit(id: parts[1], view: view ?? .working)))
       case ("pull-requests", _): navigate(.pullRequests)
       case ("agents", _): navigate(.agents)
       case ("runtimes", _): navigate(.runtimes)
@@ -270,61 +269,6 @@ final class DesktopModel {
     case .handover(let holder, let success):
       MacTelemetry.capture(.hostHandover(holder: .init(holder), success: success))
     }
-  }
-
-  // MARK: Navigation
-
-  /// A deep link or `navigation:goto` path; unknown paths are ignored.
-  func open(path: String) {
-    guard let route = DesktopRoute(path: path) else { return }
-    NSApp.activate()
-    navigate(route)
-  }
-
-  /// A session from the sidebar: the panel it was last on, else its home.
-  func open(session id: String) {
-    if gitPanelSessions.contains(id) { return openGit(session: id) }
-    navigate(agentsPanelSessions.contains(id) ? .session(id: id, agentId: nil) : .sessionHome(id: id))
-  }
-
-  /// A session's git panel, on the sub-view it was last left on.
-  func openGit(session id: String) {
-    navigate(.sessionGit(id: id, view: gitViews[id] ?? .working))
-  }
-
-  func navigate(_ next: DesktopRoute) {
-    guard next != route else { return }
-    switch next {
-    case .session(let id, _):
-      agentsPanelSessions.insert(id)
-      gitPanelSessions.remove(id)
-    case .sessionHome(let id):
-      agentsPanelSessions.remove(id)
-      gitPanelSessions.remove(id)
-    case .sessionGit(let id, let view):
-      gitPanelSessions.insert(id)
-      gitViews[id] = view
-    default: break
-    }
-    back.append(route)
-    forward = []
-    route = next
-    MacTelemetry.capture(.screenViewed(screen: next.pattern))
-  }
-
-  var canGoBack: Bool { !back.isEmpty }
-  var canGoForward: Bool { !forward.isEmpty }
-
-  func goBack() {
-    guard let previous = back.popLast() else { return }
-    forward.append(route)
-    route = previous
-  }
-
-  func goForward() {
-    guard let next = forward.popLast() else { return }
-    back.append(route)
-    route = next
   }
 
   /// ⌘N: a new session in the project you're looking at, else the first.
