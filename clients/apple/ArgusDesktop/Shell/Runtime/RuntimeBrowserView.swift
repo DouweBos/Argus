@@ -83,9 +83,25 @@ struct RuntimeBrowserView: View {
       .labelsHidden()
       .controlSize(.small)
       .fixedSize()
+      // Loopback URLs: only this Mac's own browser can be inspected from here.
+      if runtime.hostId == Hosts.local {
+        navButton("DevTools", "hammer", enabled: true) { openDevTools() }
+      }
     }
     .padding(.horizontal, 8)
     .frame(height: 32)
+  }
+
+  private func openDevTools() {
+    let sessionId = sessionKey
+    let title = inputUrl
+    Task {
+      let devtools = try? await store.backend?.request(
+        ArgusProtocol.Commands.BrowserDevtools.self, .init(sessionId: sessionId))
+      guard let devtools = devtools ?? nil, let url = URL(string: devtools.devtoolsFrontendUrl)
+      else { return NSSound.beep() }
+      DevToolsWindow.show(sessionKey: sessionId, url: url, title: title)
+    }
   }
 
   private func navButton(
