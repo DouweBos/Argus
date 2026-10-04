@@ -132,7 +132,10 @@ final class DesktopModel {
       Task { @MainActor in platform.handle(envelope) }
     }
     let hosts = hosts
-    let router = HostRouter(local: local) { hostId, event in hosts.linkEvent(hostId, event) }
+    let router = HostRouter(
+      local: local,
+      snapshots: HostSnapshotFiles(directory: HostLocation.home.appendingPathComponent("mac-host-snapshots"))
+    ) { hostId, event in hosts.linkEvent(hostId, event) }
     localBackend = local
     backend = router
     store.beginConnecting()

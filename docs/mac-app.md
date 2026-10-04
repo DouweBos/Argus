@@ -82,6 +82,10 @@ headless Argus server, or `argus-host` — as well as its own:
   views refresh when the host reports a change.
 - If a host drops, its agents keep running there. Its projects stay in the
   sidebar marked offline, and the app reconnects and catches up on its own.
+  The app remembers each host's last projects and sessions, so one that is
+  down when the app starts still shows them, offline.
+- Two machines holding a repository at the same path show as two projects,
+  each under its own machine.
 
 The keys for paired hosts are kept in a file in the app's state folder that
 only your user can read.

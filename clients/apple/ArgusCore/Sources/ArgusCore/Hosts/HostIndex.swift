@@ -15,8 +15,8 @@ public enum Hosts {
 /// routing table behind `HostRouter`, mirroring the desktop's `hostIndex.ts`.
 ///
 /// Entries are learned from what each host says: its list responses, the ids
-/// in its events. Two hosts holding a repo at the same path can't be told apart
-/// here; the last one to mention it wins.
+/// in its events. A paired host's repo roots arrive scoped to it
+/// (`HostScopedPath`), so two hosts holding a repo at one path stay apart.
 public final class HostIndex: Sendable {
   public enum Kind: CaseIterable, Sendable {
     case project, session, agent, terminal, device
