@@ -9577,7 +9577,7 @@ extension ArgusProtocol {
     }
 
     public enum HuddleSay: RemoteCommand {
-      public typealias Params = ArgusProtocol.HuddleSayParams
+      public typealias Params = ArgusProtocol.CommandsTypes.HuddleSayParams
       public typealias Result = Bool
       public static let name = "huddle_say"
       public static let tier = "host"
