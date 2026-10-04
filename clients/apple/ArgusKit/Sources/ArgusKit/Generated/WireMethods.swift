@@ -926,6 +926,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AutomationsCalibrationParams: Codable, Sendable {
+      public var automationId: String
+
+      enum CodingKeys: String, CodingKey {
+        case automationId = "automation_id"
+      }
+
+      public init(automationId: String) {
+        self.automationId = automationId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automationId, forKey: .automationId)
+      }
+    }
+
     public struct AutomationsCancelRunParams: Codable, Sendable {
       public var runId: String
 
@@ -998,6 +1015,50 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AutomationsDefaultAutonomyParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct AutomationsDefaultAutonomyResultAutonomy: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let autoMerge = AutomationsDefaultAutonomyResultAutonomy(rawValue: "auto_merge")
+      public static let draft = AutomationsDefaultAutonomyResultAutonomy(rawValue: "draft")
+      public static let pr = AutomationsDefaultAutonomyResultAutonomy(rawValue: "pr")
+      public static let propose = AutomationsDefaultAutonomyResultAutonomy(rawValue: "propose")
+    }
+
+    public struct AutomationsDefaultAutonomyResult: Codable, Sendable {
+      public var autonomy: AutomationsDefaultAutonomyResultAutonomy?
+
+      enum CodingKeys: String, CodingKey {
+        case autonomy = "autonomy"
+      }
+
+      public init(autonomy: AutomationsDefaultAutonomyResultAutonomy? = nil) {
+        self.autonomy = autonomy
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(autonomy, forKey: .autonomy)
+      }
+    }
+
     public struct AutomationsDeleteParams: Codable, Sendable {
       public var automationId: String
 
@@ -1067,6 +1128,82 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AutomationsDeleteRunParams: Codable, Sendable {
+      public var runId: String
+
+      enum CodingKeys: String, CodingKey {
+        case runId = "run_id"
+      }
+
+      public init(runId: String) {
+        self.runId = runId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(runId, forKey: .runId)
+      }
+    }
+
+    public struct AutomationsDeleteRunResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AutomationsDraftParams: Codable, Sendable {
+      public var description: String
+      public var timezone: String?
+
+      enum CodingKeys: String, CodingKey {
+        case description = "description"
+        case timezone = "timezone"
+      }
+
+      public init(description: String, timezone: String? = nil) {
+        self.description = description
+        self.timezone = timezone
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(description, forKey: .description)
+        try c.encodeIfPresent(timezone, forKey: .timezone)
+      }
+    }
+
+    public struct AutomationsDraftResult: Codable, Sendable {
+      public var automation: RemoteAutomationDetail
+      public var notes: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case automation = "automation"
+        case notes = "notes"
+      }
+
+      public init(automation: RemoteAutomationDetail, notes: [String]) {
+        self.automation = automation
+        self.notes = notes
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(automation, forKey: .automation)
+        try c.encode(notes, forKey: .notes)
       }
     }
 
@@ -1613,6 +1750,74 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(automation, forKey: .automation)
+      }
+    }
+
+    public struct AutomationsSetDefaultAutonomyParamsAutonomy: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let autoMerge = AutomationsSetDefaultAutonomyParamsAutonomy(rawValue: "auto_merge")
+      public static let draft = AutomationsSetDefaultAutonomyParamsAutonomy(rawValue: "draft")
+      public static let pr = AutomationsSetDefaultAutonomyParamsAutonomy(rawValue: "pr")
+      public static let propose = AutomationsSetDefaultAutonomyParamsAutonomy(rawValue: "propose")
+    }
+
+    public struct AutomationsSetDefaultAutonomyParams: Codable, Sendable {
+      public var autonomy: AutomationsSetDefaultAutonomyParamsAutonomy?
+
+      enum CodingKeys: String, CodingKey {
+        case autonomy = "autonomy"
+      }
+
+      public init(autonomy: AutomationsSetDefaultAutonomyParamsAutonomy? = nil) {
+        self.autonomy = autonomy
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(autonomy, forKey: .autonomy)
+      }
+    }
+
+    public struct AutomationsSetDefaultAutonomyResultAutonomy: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let autoMerge = AutomationsSetDefaultAutonomyResultAutonomy(rawValue: "auto_merge")
+      public static let draft = AutomationsSetDefaultAutonomyResultAutonomy(rawValue: "draft")
+      public static let pr = AutomationsSetDefaultAutonomyResultAutonomy(rawValue: "pr")
+      public static let propose = AutomationsSetDefaultAutonomyResultAutonomy(rawValue: "propose")
+    }
+
+    public struct AutomationsSetDefaultAutonomyResult: Codable, Sendable {
+      public var autonomy: AutomationsSetDefaultAutonomyResultAutonomy?
+
+      enum CodingKeys: String, CodingKey {
+        case autonomy = "autonomy"
+      }
+
+      public init(autonomy: AutomationsSetDefaultAutonomyResultAutonomy? = nil) {
+        self.autonomy = autonomy
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(autonomy, forKey: .autonomy)
       }
     }
 
@@ -3233,18 +3438,22 @@ extension ArgusProtocol {
 
     public struct ProposalsAcceptParams: Codable, Sendable {
       public var proposalId: String
+      public var note: String?
 
       enum CodingKeys: String, CodingKey {
         case proposalId = "proposal_id"
+        case note = "note"
       }
 
-      public init(proposalId: String) {
+      public init(proposalId: String, note: String? = nil) {
         self.proposalId = proposalId
+        self.note = note
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(proposalId, forKey: .proposalId)
+        try c.encodeIfPresent(note, forKey: .note)
       }
     }
 
@@ -3295,6 +3504,40 @@ extension ArgusProtocol {
     }
 
     public struct ProposalsDismissResult: Codable, Sendable {
+      public var proposal: RemoteProposal
+
+      enum CodingKeys: String, CodingKey {
+        case proposal = "proposal"
+      }
+
+      public init(proposal: RemoteProposal) {
+        self.proposal = proposal
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposal, forKey: .proposal)
+      }
+    }
+
+    public struct ProposalsGetParams: Codable, Sendable {
+      public var proposalId: String
+
+      enum CodingKeys: String, CodingKey {
+        case proposalId = "proposal_id"
+      }
+
+      public init(proposalId: String) {
+        self.proposalId = proposalId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposalId, forKey: .proposalId)
+      }
+    }
+
+    public struct ProposalsGetResult: Codable, Sendable {
       public var proposal: RemoteProposal
 
       enum CodingKeys: String, CodingKey {
@@ -3380,6 +3623,48 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(proposalId, forKey: .proposalId)
+      }
+    }
+
+    public struct ProposalsRequestRevisionParams: Codable, Sendable {
+      public var proposalId: String
+      public var note: String
+
+      enum CodingKeys: String, CodingKey {
+        case proposalId = "proposal_id"
+        case note = "note"
+      }
+
+      public init(proposalId: String, note: String) {
+        self.proposalId = proposalId
+        self.note = note
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposalId, forKey: .proposalId)
+        try c.encode(note, forKey: .note)
+      }
+    }
+
+    public struct ProposalsRequestRevisionResult: Codable, Sendable {
+      public var proposal: RemoteProposal
+      public var runStarted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case proposal = "proposal"
+        case runStarted = "run_started"
+      }
+
+      public init(proposal: RemoteProposal, runStarted: Bool) {
+        self.proposal = proposal
+        self.runStarted = runStarted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(proposal, forKey: .proposal)
+        try c.encode(runStarted, forKey: .runStarted)
       }
     }
 
@@ -4934,6 +5219,12 @@ extension ArgusProtocol {
       public static let name = "agents.vitals"
     }
 
+    public enum AutomationsCalibration: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsCalibrationParams
+      public typealias Result = ArgusProtocol.AutomationCalibration
+      public static let name = "automations.calibration"
+    }
+
     public enum AutomationsCancelRun: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.AutomationsCancelRunParams
       public typealias Result = ArgusProtocol.MethodsTypes.AutomationsCancelRunResult
@@ -4946,6 +5237,12 @@ extension ArgusProtocol {
       public static let name = "automations.create"
     }
 
+    public enum AutomationsDefaultAutonomy: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsDefaultAutonomyParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsDefaultAutonomyResult
+      public static let name = "automations.default_autonomy"
+    }
+
     public enum AutomationsDelete: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.AutomationsDeleteParams
       public typealias Result = ArgusProtocol.MethodsTypes.AutomationsDeleteResult
@@ -4956,6 +5253,18 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AutomationsDeleteMemoryParams
       public typealias Result = ArgusProtocol.MethodsTypes.AutomationsDeleteMemoryResult
       public static let name = "automations.delete_memory"
+    }
+
+    public enum AutomationsDeleteRun: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsDeleteRunParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsDeleteRunResult
+      public static let name = "automations.delete_run"
+    }
+
+    public enum AutomationsDraft: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsDraftParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsDraftResult
+      public static let name = "automations.draft"
     }
 
     public enum AutomationsGet: RemoteCommand {
@@ -5034,6 +5343,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AutomationsSaveScratchRunParams
       public typealias Result = ArgusProtocol.MethodsTypes.AutomationsSaveScratchRunResult
       public static let name = "automations.save_scratch_run"
+    }
+
+    public enum AutomationsSetDefaultAutonomy: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AutomationsSetDefaultAutonomyParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AutomationsSetDefaultAutonomyResult
+      public static let name = "automations.set_default_autonomy"
     }
 
     public enum AutomationsSetEnabled: RemoteCommand {
@@ -5282,6 +5597,12 @@ extension ArgusProtocol {
       public static let name = "proposals.dismiss"
     }
 
+    public enum ProposalsGet: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.ProposalsGetParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProposalsGetResult
+      public static let name = "proposals.get"
+    }
+
     public enum ProposalsList: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.ProposalsListParams
       public typealias Result = ArgusProtocol.MethodsTypes.ProposalsListResult
@@ -5292,6 +5613,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.ProposalsPerformCleanupParams
       public typealias Result = ArgusProtocol.MethodsTypes.ProposalsPerformCleanupResult
       public static let name = "proposals.perform_cleanup"
+    }
+
+    public enum ProposalsRequestRevision: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.ProposalsRequestRevisionParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProposalsRequestRevisionResult
+      public static let name = "proposals.request_revision"
     }
 
     public enum ProposalsResolve: RemoteCommand {

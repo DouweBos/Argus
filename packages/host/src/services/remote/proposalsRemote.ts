@@ -52,6 +52,37 @@ export function toRemoteProposal(proposal: Proposal): RemoteProposal {
     start_stage: proposal.start_stage,
     start_error: proposal.start_error,
     created_at: proposal.created_at,
+    accepted_note: proposal.accepted_note,
+    dismissed_reason: proposal.dismissed_reason,
+    resolved_note: proposal.resolved_note,
+    revision_request: proposal.revision_request,
+    cleared_reason: proposal.cleared_reason,
+    superseded_by: proposal.superseded_by,
+  };
+}
+
+/** One proposal in full, or null when the host doesn't know it. */
+export function remoteProposal(
+  proposalId: string,
+): { proposal: RemoteProposal } | null {
+  const proposal = getProposal(proposalId);
+
+  return proposal ? { proposal: toRemoteProposal(proposal) } : null;
+}
+
+/** Ask the automation for a better one — the same call the desktop makes. */
+export async function requestRemoteProposalRevision(
+  proposalId: string,
+  note: string,
+): Promise<{ proposal: RemoteProposal; run_started: boolean }> {
+  // Loaded on use: a revision starts a run, which reaches the agent stack.
+  const { requestProposalRevision } =
+    await import("../automation/proposals/revise");
+  const result = await requestProposalRevision(proposalId, note);
+
+  return {
+    proposal: toRemoteProposal(result.proposal),
+    run_started: result.run_started,
   };
 }
 
@@ -76,7 +107,10 @@ const ACCEPT_ANSWER_WINDOW_MS = 1500;
  * take minutes, so this answers once it is under way and the phone follows the
  * proposal's `start_stage` from there.
  */
-export async function acceptRemoteProposal(proposalId: string): Promise<{
+export async function acceptRemoteProposal(
+  proposalId: string,
+  note?: string,
+): Promise<{
   agent_id: string | null;
   proposal: RemoteProposal;
   session_id: string | null;
@@ -84,7 +118,7 @@ export async function acceptRemoteProposal(proposalId: string): Promise<{
   // Loaded on use: accepting reaches the agent stack, which reaches back to
   // this gateway for push, and a static import would close that ring.
   const { acceptProposal } = await import("../automation/proposals/accept");
-  const started = acceptProposal(proposalId);
+  const started = acceptProposal(proposalId, { note });
   // A failure after the window is recorded on the proposal as `start_error`.
   started.catch(() => undefined);
 

@@ -35,6 +35,7 @@ struct AutomationView: View {
       }
       if let automation {
         detail(automation)
+        trackRecord
         memories
         runs(automation)
       } else {
@@ -57,10 +58,41 @@ struct AutomationView: View {
     .liveRefresh(enabled: host.connection == .ready) {
       await store.refresh()
       await store.loadMemories(automationId: automationId)
+      await store.loadCalibrationOverGateway(automationId: automationId)
     }
     .sheet(item: $openMemory) { selection in
       MemoryEditorSheet(automationId: automationId, memory: selection.memory)
     }
+  }
+
+  /// How often its proposals were kept versus dismissed — the record that
+  /// says whether to trust it with more autonomy.
+  @ViewBuilder
+  private var trackRecord: some View {
+    if let record = store.calibrationById[automationId], record.sample > 0 {
+      SectionHeader(title: "Track record", count: Int(record.sample))
+      Card {
+        if let rate = record.acceptanceRate {
+          BodyText("\(Int((rate * 100).rounded()))% kept")
+        } else {
+          BodyText("Nothing decided yet")
+        }
+        MutedText(Self.recordSummary(record), lineLimit: 3)
+        ForEach(Array(record.dismissals.prefix(3).enumerated()), id: \.offset) { _, dismissal in
+          MutedText("Dismissed “\(dismissal.title)”: \(dismissal.reason)", lineLimit: 2)
+        }
+      }
+    }
+  }
+
+  static func recordSummary(_ record: ArgusProtocol.AutomationCalibration) -> String {
+    let parts: [(Double, String)] = [
+      (record.accepted, "started"), (record.autoStarted, "auto-started"),
+      (record.resolved, "done by you"), (record.dismissed, "dismissed"),
+      (record.pending, "waiting"), (record.superseded, "replaced"),
+      (record.withdrawn, "withdrawn"),
+    ]
+    return parts.filter { $0.0 > 0 }.map { "\(Int($0.0)) \($0.1)" }.joined(separator: " · ")
   }
 
   @ViewBuilder

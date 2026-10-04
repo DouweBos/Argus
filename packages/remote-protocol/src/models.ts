@@ -869,5 +869,13 @@ export const RemoteProposal = z.object({
   /** Why the last start failed, readable. Cleared when a start begins. */
   start_error: z.string().nullable(),
   created_at: z.number(),
+  /** The record behind a decision, for the proposal's own screen. Optional so
+   *  an older host's proposals still parse. */
+  accepted_note: z.string().nullable().optional(),
+  dismissed_reason: z.string().nullable().optional(),
+  resolved_note: z.string().nullable().optional(),
+  revision_request: z.string().nullable().optional(),
+  cleared_reason: z.string().nullable().optional(),
+  superseded_by: z.string().nullable().optional(),
 });
 export type RemoteProposal = z.infer<typeof RemoteProposal>;

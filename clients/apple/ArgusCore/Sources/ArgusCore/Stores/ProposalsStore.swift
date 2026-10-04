@@ -21,6 +21,8 @@ public final class ProposalsStore {
   public internal(set) var requestErrors: [String: String] = [:]
   /// Started from this phone and now running, kept until opened or closed.
   public internal(set) var started: [RemoteProposal] = []
+  /// Proposals opened on their own screen, decided ones included.
+  public internal(set) var detailById: [String: RemoteProposal] = [:]
   /// Started from this phone and still being set up, so a card that leaves the
   /// pending list can be told apart from one dismissed elsewhere.
   private var starting: Set<String> = []
@@ -40,6 +42,58 @@ public final class ProposalsStore {
     requestErrors = [:]
     started = []
     starting = []
+    detailById = [:]
+  }
+
+  /// One proposal in full, for its own screen. Nil when it is gone; an older
+  /// computer without `proposals.get` falls back to the pending list.
+  @discardableResult
+  public func load(id: String) async -> RemoteProposal? {
+    guard let backend = host.backend else { return detailById[id] }
+    struct Params: Encodable { let proposal_id: String }
+    struct Result: Decodable { let proposal: RemoteProposal }
+    do {
+      let result = try await backend.request(
+        .proposalsGet, Params(proposal_id: id), as: Result.self)
+      detailById[id] = result.proposal
+    } catch let error as Transport.TransportError {
+      if case .gateway(let payload) = error, payload.isNotFound {
+        detailById[id] = nil
+      } else if let pending = proposals.first(where: { $0.id == id }) {
+        detailById[id] = pending
+      }
+    } catch {
+      report(error)
+    }
+    return detailById[id]
+  }
+
+  /// Ask the automation to rework it. Returns whether a run started now; a
+  /// note the next run picks up is just as good.
+  public func requestRevision(id: String, note: String) async -> Bool? {
+    guard let backend = host.backend else { return nil }
+    busy.insert(id)
+    defer { busy.remove(id) }
+
+    struct Params: Encodable {
+      let proposal_id: String
+      let note: String
+    }
+    struct Result: Decodable {
+      let proposal: RemoteProposal
+      let run_started: Bool
+    }
+    do {
+      let result = try await backend.request(
+        .proposalsRequestRevision, Params(proposal_id: id, note: note), as: Result.self)
+      host.hooks.track(.proposalHandled(action: .requestRevision))
+      detailById[id] = result.proposal
+      await refresh()
+      return result.run_started
+    } catch {
+      fail("Couldn't ask for a revision", error)
+      return nil
+    }
   }
 
   public func refresh() async {
@@ -107,20 +161,26 @@ public final class ProposalsStore {
 
   /// The host answers once the start is under way, and only has an agent to
   /// hand back when it finished inside that window; the caller opens it then.
-  public func accept(id: String) async -> String? {
+  public func accept(id: String, note: String? = nil) async -> String? {
     guard let backend = host.backend else { return nil }
     requesting.insert(id)
     requestErrors[id] = nil
     defer { requesting.remove(id) }
 
-    struct Params: Encodable { let proposal_id: String }
+    struct Params: Encodable {
+      let proposal_id: String
+      let note: String?
+    }
     struct Result: Decodable {
       let proposal: RemoteProposal
       let agent_id: String?
     }
+    let note = note?.trimmingCharacters(in: .whitespacesAndNewlines)
     do {
       let result = try await backend.request(
-        .proposalsAccept, Params(proposal_id: id), as: Result.self)
+        .proposalsAccept, Params(proposal_id: id, note: note?.isEmpty == false ? note : nil),
+        as: Result.self)
+      detailById[id] = result.proposal
       host.hooks.track(.proposalHandled(action: .accept))
       if let agentId = result.agent_id {
         proposals.removeAll { $0.id == id }

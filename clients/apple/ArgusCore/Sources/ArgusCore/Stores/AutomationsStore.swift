@@ -26,7 +26,7 @@ public final class AutomationsStore {
 
   private static let runLimit = 40
 
-  private unowned let host: HostStore
+  unowned let host: HostStore
 
   public init(host: HostStore) {
     self.host = host

@@ -257,6 +257,8 @@ stay honest.
 | `ios_memory_edited`                        | An automation's memory was saved or deleted                                             | `action` (`save`, `delete`)                                                             |
 | `ios_proposal_opened`                      | The inbox opened the run behind a proposal                                              | —                                                                                       |
 | `ios_setting_changed`                      | A phone-local setting was toggled                                                       | `setting` (`auto_expand_image_reads`), `enabled`                                        |
+| `ios_default_changed`                      | A default new work starts from was changed                                              | `setting` (`permission_mode`, `autonomy`), `value`                                      |
+| `ios_warnings_opened`                      | The Warnings & errors list was opened                                                   | `count`                                                                                 |
 | `ios_automation_edited`                    | An automation was created, saved, deleted, paused or resumed, or its playbook rewritten | `action` (`create`, `save`, `delete`, `enable`, `disable`, `revise_playbook`)           |
 | `ios_run_acted`                            | A run was started, cancelled, argued with, or kept as an automation                     | `action` (`start`, `start_scratch`, `cancel`, `feedback`, `save_scratch`)               |
 | `ios_proposal_handled`                     | An inbox proposal was answered                                                          | `action` (`accept`, `dismiss`, `resolve`, `cleanup`)                                    |
@@ -265,6 +267,11 @@ stay honest.
 | `ios_session_renamed`                      | A session's name, branch or base branch was changed                                     | `target` (`session`, `branch`, `base`)                                                  |
 | `ios_app_error`                            | A failure the user was shown                                                            | `scope`, scrubbed `message` (≤2000 chars)                                               |
 | `telemetry_enabled` / `telemetry_disabled` | The privacy toggle moved                                                                | — (shared with desktop on purpose: same signal)                                         |
+
+The phone also sends `describe` on `ios_automation_edited`, `delete` and
+`mark_read` on `ios_run_acted`, and `request_revision` on
+`ios_proposal_handled`. `ios_default_changed`'s `value` is the mode or rung
+picked, or `computer` / `none` when cleared.
 
 `baseProps` in full mode: `app_version`, `build_number`,
 `platform: "ios"`, `os_version`, `device_model` (the hardware

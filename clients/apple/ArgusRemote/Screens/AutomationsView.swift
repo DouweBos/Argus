@@ -63,6 +63,9 @@ struct AutomationsView: View {
             NavigationLink(value: Route.automationEditor(id: nil, label: "New automation")) {
               Label("New automation", systemImage: Icon.clock)
             }
+            NavigationLink(value: Route.describeAutomation) {
+              Label("Describe it", systemImage: Icon.agent)
+            }
           } label: {
             Label("New", systemImage: Icon.plus)
           }

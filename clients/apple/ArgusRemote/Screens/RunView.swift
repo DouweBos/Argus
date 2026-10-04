@@ -18,6 +18,7 @@ struct RunView: View {
   /// The name being typed while promoting a quick run; nil when not saving.
   @State private var savingName: String?
   @State private var givingFeedback = false
+  @State private var confirmingDelete = false
 
   private var detail: RemoteAutomationRunDetail? { store.detailByRun[runId] }
   private var run: RemoteAutomationRun? {
@@ -36,6 +37,26 @@ struct RunView: View {
     }
     .navigationTitle(label)
     .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      if host.hasControl, let run, !run.isActive {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button(role: .destructive) { confirmingDelete = true } label: {
+            Label("Delete run", systemImage: Icon.trash)
+          }
+        }
+      }
+    }
+    .alert("Delete this run?", isPresented: $confirmingDelete) {
+      Button("Cancel", role: .cancel) {}
+      Button("Delete", role: .destructive) {
+        Task {
+          guard await store.deleteRunOverGateway(id: runId) else { return }
+          router.pop()
+        }
+      }
+    } message: {
+      Text("Its record, its report and the proposals it raised go for good.")
+    }
     .task {
       await store.loadRun(id: runId)
       // Opening a report clears its unread dot on the computer too.

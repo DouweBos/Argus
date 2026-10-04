@@ -308,6 +308,13 @@ describe("the typed automations methods", () => {
     expect(tier("automations.memories")).toBe("monitor");
     expect(tier("automations.save_memory")).toBe("control");
     expect(tier("automations.delete_memory")).toBe("control");
+    // A track record is a read; deleting a run or drafting one is not.
+    expect(tier("automations.calibration")).toBe("monitor");
+    expect(tier("automations.delete_run")).toBe("control");
+    expect(tier("automations.draft")).toBe("control");
+    // Raising the app-wide cap lets every automation go further unattended.
+    expect(tier("automations.default_autonomy")).toBe("monitor");
+    expect(tier("automations.set_default_autonomy")).toBe("control");
   });
 
   /** A guest is handed one agent, never the clock that could start more. */
@@ -332,6 +339,9 @@ describe("the typed proposals methods", () => {
     // signal that calibrates the automation. Neither is a read.
     expect(tier("proposals.accept")).toBe("control");
     expect(tier("proposals.dismiss")).toBe("control");
+    expect(tier("proposals.get")).toBe("monitor");
+    // A revision starts a run of the automation.
+    expect(tier("proposals.request_revision")).toBe("control");
   });
 
   it("denies every one of them to a scoped grant", () => {

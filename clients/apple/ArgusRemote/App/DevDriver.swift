@@ -139,6 +139,7 @@
         guard matches.indices.contains(index) else {
           return ["ok": false, "error": "no \(label)", "count": matches.count]
         }
+        if pressAlertAction(label) { return ["ok": true, "via": "alert"] }
         let element = matches[index].element
         if element.accessibilityActivate() { return ["ok": true] }
         if let item = barButtonItem(label: label) {
@@ -160,7 +161,10 @@
         return ["ok": false, "type": String(describing: type(of: element))]
       case "type":
         let text = command["text"] as? String ?? ""
-        guard let field = firstTextInput() else { return ["ok": false, "error": "no field"] }
+        let inputs = textInputs()
+        let index = command["index"] as? Int ?? 0
+        guard inputs.indices.contains(index) else { return ["ok": false, "error": "no field"] }
+        let field = inputs[index]
         field.becomeFirstResponder()
         (field as? UIKeyInput)?.insertText(text)
         return ["ok": true]
@@ -220,6 +224,21 @@
       }
     }
 
+    /// An alert's action, run the way a tap would: dismiss, then its handler.
+    private func pressAlertAction(_ label: String) -> Bool {
+      var top = window?.rootViewController
+      while let presented = top?.presentedViewController { top = presented }
+      guard let alert = top as? UIAlertController,
+        let action = alert.actions.first(where: { $0.title == label })
+      else { return false }
+      typealias Handler = @convention(block) (UIAlertAction) -> Void
+      let handler = (action.value(forKey: "handler") as AnyObject?).map {
+        unsafeBitCast($0, to: Handler.self)
+      }
+      alert.dismiss(animated: false) { handler?(action) }
+      return true
+    }
+
     private func barButtonItem(label: String) -> UIBarButtonItem? {
       var controllers: [UIViewController] = window?.rootViewController.map { [$0] } ?? []
       while let controller = controllers.popLast() {
@@ -235,14 +254,19 @@
       return nil
     }
 
-    private func firstTextInput() -> UIView? {
-      guard let window else { return nil }
+    /// Text fields and views on screen, in view order.
+    private func textInputs() -> [UIView] {
+      guard let window else { return [] }
+      var found: [UIView] = []
       var stack: [UIView] = [window]
       while let view = stack.popLast() {
-        if view is UITextField || view is UITextView, !view.isHidden { return view }
+        if view is UITextField || view is UITextView, !view.isHidden {
+          found.append(view)
+          continue
+        }
         stack.append(contentsOf: view.subviews.reversed())
       }
-      return nil
+      return found
     }
   }
 
@@ -259,6 +283,9 @@
       case "terminals": self = .terminals(sessionId: arg(1), label: arg(2))
       case "terminal": self = .terminal(id: arg(1), label: arg(2))
       case "inbox": self = .inbox
+      case "proposal": self = .proposal(id: arg(1))
+      case "describeAutomation": self = .describeAutomation
+      case "notifications": self = .notifications
       case "automations": self = .automations
       case "automation": self = .automation(id: arg(1), label: arg(2))
       case "run": self = .run(id: arg(1), label: arg(2))

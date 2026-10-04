@@ -8939,6 +8939,12 @@ extension ArgusProtocol {
     public var startStage: RemoteProposalStartStage?
     public var startError: String?
     public var createdAt: Double
+    public var acceptedNote: String?
+    public var dismissedReason: String?
+    public var resolvedNote: String?
+    public var revisionRequest: String?
+    public var clearedReason: String?
+    public var supersededBy: String?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -8959,9 +8965,15 @@ extension ArgusProtocol {
       case startStage = "start_stage"
       case startError = "start_error"
       case createdAt = "created_at"
+      case acceptedNote = "accepted_note"
+      case dismissedReason = "dismissed_reason"
+      case resolvedNote = "resolved_note"
+      case revisionRequest = "revision_request"
+      case clearedReason = "cleared_reason"
+      case supersededBy = "superseded_by"
     }
 
-    public init(id: String, automationId: String, automationName: String, runId: String? = nil, title: String, summary: String, rationale: String, confidence: Double, cta: RemoteProposalCta? = nil, status: RemoteProposalStatus, project: String? = nil, sourceLabel: String? = nil, sourceUrl: String? = nil, sessionId: String? = nil, agentId: String? = nil, startStage: RemoteProposalStartStage? = nil, startError: String? = nil, createdAt: Double) {
+    public init(id: String, automationId: String, automationName: String, runId: String? = nil, title: String, summary: String, rationale: String, confidence: Double, cta: RemoteProposalCta? = nil, status: RemoteProposalStatus, project: String? = nil, sourceLabel: String? = nil, sourceUrl: String? = nil, sessionId: String? = nil, agentId: String? = nil, startStage: RemoteProposalStartStage? = nil, startError: String? = nil, createdAt: Double, acceptedNote: String? = nil, dismissedReason: String? = nil, resolvedNote: String? = nil, revisionRequest: String? = nil, clearedReason: String? = nil, supersededBy: String? = nil) {
       self.id = id
       self.automationId = automationId
       self.automationName = automationName
@@ -8980,6 +8992,12 @@ extension ArgusProtocol {
       self.startStage = startStage
       self.startError = startError
       self.createdAt = createdAt
+      self.acceptedNote = acceptedNote
+      self.dismissedReason = dismissedReason
+      self.resolvedNote = resolvedNote
+      self.revisionRequest = revisionRequest
+      self.clearedReason = clearedReason
+      self.supersededBy = supersededBy
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -9002,6 +9020,12 @@ extension ArgusProtocol {
       try c.encode(startStage, forKey: .startStage)
       try c.encode(startError, forKey: .startError)
       try c.encode(createdAt, forKey: .createdAt)
+      try c.encodeIfPresent(acceptedNote, forKey: .acceptedNote)
+      try c.encodeIfPresent(dismissedReason, forKey: .dismissedReason)
+      try c.encodeIfPresent(resolvedNote, forKey: .resolvedNote)
+      try c.encodeIfPresent(revisionRequest, forKey: .revisionRequest)
+      try c.encodeIfPresent(clearedReason, forKey: .clearedReason)
+      try c.encodeIfPresent(supersededBy, forKey: .supersededBy)
     }
   }
 

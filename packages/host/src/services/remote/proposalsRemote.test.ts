@@ -13,7 +13,11 @@ import {
   createProposal,
   resetProposalCache,
 } from "../automation/proposals/manager";
-import { dismissRemoteProposal, remoteProposals } from "./proposalsRemote";
+import {
+  dismissRemoteProposal,
+  remoteProposal,
+  remoteProposals,
+} from "./proposalsRemote";
 
 let home: string;
 let previousHome: string | undefined;
@@ -98,5 +102,17 @@ describe("the inbox a phone sees", () => {
 
   it("says nothing about a proposal it does not have", () => {
     expect(dismissRemoteProposal("no-such-proposal")).toBeNull();
+  });
+
+  it("carries the record behind a decision for the proposal's own screen", () => {
+    const decided = proposal();
+    dismissRemoteProposal(decided.id, "not worth it");
+
+    const sent = remoteProposal(decided.id)?.proposal;
+
+    expect(sent?.status).toBe("dismissed");
+    expect(sent?.dismissed_reason).toBe("not worth it");
+    expect(sent?.superseded_by).toBeNull();
+    expect(remoteProposal("nope")).toBeNull();
   });
 });
