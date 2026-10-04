@@ -162,7 +162,8 @@ struct RunScreen: View {
           .help("Create an automation from this run's playbook and scope")
       }
       if let session = hostSession {
-        Button { model.navigate(.sessionHome(id: session.id)) } label: {
+        // Straight to the run's agent; a session listed without it still opens on its agents.
+        Button { model.navigate(.session(id: session.id, agentId: run.hostAgentId)) } label: {
           Label("Open Transcript", systemImage: "text.bubble")
         }
         .labelStyle(.titleAndIcon)
