@@ -57,7 +57,7 @@ final class GitWorkspace {
     self.host = host
     let refs = RepositoryRefs(repository: repository, readsStatus: false)
     self.refs = refs
-    workingCopy = WorkingCopyViewModel(repository: repository)
+    workingCopy = WorkingCopyViewModel(repository: repository, templateStore: CommitPreferences.templates)
     history = HistoryViewModel(repository: repository, refs: refs)
     stashes = StashesViewModel(repository: repository)
     reflog = ReflogViewModel(repository: repository)

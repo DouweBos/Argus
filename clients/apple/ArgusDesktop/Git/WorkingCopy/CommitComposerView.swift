@@ -2,19 +2,38 @@ import ArgusUI
 import GroveKit
 import SwiftUI
 
-/// Subject, body and options under the Changes list, as Electron's CommitPanel.
+/// Subject, body and options under the Changes list, as Electron's CommitPanel,
+/// plus Grove's templates, gitmoji and identity switcher.
 struct CommitComposerView: View {
   @Environment(\.theme) private var theme
   let workspace: GitWorkspace
+  @State private var managingTemplates = false
+  @State private var pickingGitmoji = false
+  @FocusState private var subjectFocused: Bool
 
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
 
   var body: some View {
     @Bindable var vm = vm
     VStack(alignment: .leading, spacing: 6) {
-      TextField("Summary", text: $vm.commitSubject)
-        .textFieldStyle(.roundedBorder)
-        .onSubmit { commit() }
+      HStack(spacing: 4) {
+        TextField("Summary", text: $vm.commitSubject)
+          .textFieldStyle(.roundedBorder)
+          .focused($subjectFocused)
+          .onSubmit { if !vm.acceptAutoComplete() { commit() } }
+          .onKeyPress(.upArrow) { moveHighlight(-1) }
+          .onKeyPress(.downArrow) { moveHighlight(1) }
+          .onKeyPress(.escape) {
+            guard vm.isAutoCompleteVisible else { return .ignored }
+            vm.dismissAutoComplete()
+            return .handled
+          }
+        gitmojiButton
+        templatesMenu
+      }
+      if vm.isAutoCompleteVisible {
+        CommitAutoCompleteList(vm: vm) { track(vm.autoCompleteTrigger == .gitmoji ? .gitmoji : .template) }
+      }
       TextField("Description", text: $vm.commitBody, axis: .vertical)
         .textFieldStyle(.roundedBorder)
         .lineLimit(3...8)
@@ -31,14 +50,7 @@ struct CommitComposerView: View {
       .toggleStyle(.checkbox)
       .controlSize(.small)
       HStack(spacing: 8) {
-        if let identity = vm.identity {
-          Label("\(identity.name) <\(identity.email)>", systemImage: "person.crop.circle")
-            .font(.system(size: 11))
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-            .truncationMode(.middle)
-            .help("Commits are authored as this identity")
-        }
+        IdentityMenu(workspace: workspace)
         Spacer(minLength: 4)
         Button(vm.commitButtonTitle, action: commit)
           .buttonStyle(.borderedProminent)
@@ -49,6 +61,52 @@ struct CommitComposerView: View {
     }
     .font(.system(size: 12))
     .padding(10)
+    .sheet(isPresented: $managingTemplates) { CommitTemplatesSheet(store: CommitPreferences.templates) }
+  }
+
+  private var gitmojiButton: some View {
+    Button { pickingGitmoji.toggle() } label: { Image(systemName: "face.smiling") }
+      .buttonStyle(.borderless)
+      .help("Gitmoji (or type : in the summary)")
+      .accessibilityLabel("Gitmoji")
+      .popover(isPresented: $pickingGitmoji, arrowEdge: .bottom) {
+        GitmojiPicker { gitmoji in
+          pickingGitmoji = false
+          vm.insertGitmoji(gitmoji)
+          track(.gitmoji)
+          subjectFocused = true
+        }
+      }
+  }
+
+  private var templatesMenu: some View {
+    Menu {
+      ForEach(vm.availableTemplates) { template in
+        Button(template.name) {
+          vm.applyTemplate(template)
+          track(.template)
+        }
+      }
+      if !vm.availableTemplates.isEmpty { Divider() }
+      Button("Manage Templates…") { managingTemplates = true }
+    } label: {
+      Image(systemName: "text.badge.plus")
+    }
+    .menuStyle(.borderlessButton)
+    .menuIndicator(.hidden)
+    .fixedSize()
+    .help("Commit templates (or type / in the summary)")
+    .accessibilityLabel("Commit templates")
+  }
+
+  private func moveHighlight(_ delta: Int) -> KeyPress.Result {
+    guard vm.isAutoCompleteVisible else { return .ignored }
+    vm.moveAutoCompleteHighlight(by: delta)
+    return .handled
+  }
+
+  private func track(_ action: MacTelemetryEvent.GitAction) {
+    workspace.track(action, success: true)
   }
 
   private var disabledReason: String? {
@@ -61,5 +119,76 @@ struct CommitComposerView: View {
   private func commit() {
     guard vm.canCommit else { return }
     Task { await WorkingCopyActions(workspace: workspace).commit() }
+  }
+}
+
+/// The summary field's suggestions: `#` issues, `c:` commits, backticked
+/// files, `/` templates and `:` gitmoji.
+private struct CommitAutoCompleteList: View {
+  @Environment(\.theme) private var theme
+  let vm: WorkingCopyViewModel
+  let onPick: () -> Void
+
+  var body: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 0) {
+        ForEach(vm.autoCompleteSuggestions.prefix(40)) { suggestion in
+          Button {
+            vm.applyAutoComplete(suggestion)
+            onPick()
+          } label: {
+            HStack(spacing: 6) {
+              Image(systemName: suggestion.icon).frame(width: 16).foregroundStyle(theme.textMuted)
+              Text(suggestion.title).lineLimit(1)
+              if let subtitle = suggestion.subtitle {
+                Text(subtitle).foregroundStyle(theme.textMuted).lineLimit(1)
+              }
+              Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(
+              suggestion.id == vm.autoCompleteHighlight ? theme.accent.opacity(0.2) : .clear,
+              in: .rect(cornerRadius: 4))
+            .contentShape(.rect)
+          }
+          .buttonStyle(.plain)
+          .onHover { if $0 { vm.highlightAutoComplete(suggestion.id) } }
+        }
+      }
+      .padding(4)
+    }
+    .frame(height: min(160, CGFloat(min(vm.autoCompleteSuggestions.count, 40)) * 22 + 8))
+    .background(theme.bgTertiary, in: .rect(cornerRadius: theme.radiusSmall))
+    .overlay(RoundedRectangle(cornerRadius: theme.radiusSmall).strokeBorder(theme.border))
+  }
+}
+
+/// Every gitmoji, searchable by code or description.
+private struct GitmojiPicker: View {
+  @Environment(\.theme) private var theme
+  let pick: (Gitmoji) -> Void
+  @State private var query = ""
+
+  var body: some View {
+    VStack(spacing: 6) {
+      TextField("Search gitmoji", text: $query)
+        .textFieldStyle(.roundedBorder)
+      List(Gitmoji.search(query)) { gitmoji in
+        Button { pick(gitmoji) } label: {
+          HStack(spacing: 8) {
+            Text(gitmoji.emoji)
+            Text(gitmoji.code).font(.system(size: 11, design: .monospaced))
+            Text(gitmoji.description).foregroundStyle(theme.textMuted).lineLimit(1)
+            Spacer(minLength: 0)
+          }
+          .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+      }
+      .listStyle(.plain)
+    }
+    .padding(8)
+    .frame(width: 380, height: 360)
   }
 }
