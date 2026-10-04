@@ -79,7 +79,7 @@ extension LiveAgents {
   /// queue; an idle one gets a checkpoint, the user bubble and the message.
   /// On failure the bubble comes back out, so the caller can offer a retry.
   func send(
-    agentId: String, message: String, images: [RemoteImageAttachment]
+    agentId: String, message: String, images: [RemoteImageAttachment], author: String? = nil
   ) async throws -> SendOutcome {
     guard let backend else { throw Transport.TransportError.notReady }
     maybeGenerateTitle(agentId, firstMessage: message)
@@ -88,7 +88,7 @@ extension LiveAgents {
     let checkpointId = await checkpoint(agents[agentId]?.sessionId)
     let conversationImages = images.map { ConversationImage(data: $0.data, mediaType: $0.mediaType) }
     let messageId = mutate(agentId) { reducer -> String? in
-      reducer.addUserMessage(message, images: conversationImages, checkpointId: checkpointId)
+      reducer.addUserMessage(message, images: conversationImages, checkpointId: checkpointId, author: author)
       return reducer.conversation?.messages.last?.id
     }
     inflight.insert(agentId)
