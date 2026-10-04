@@ -13,23 +13,28 @@ struct DeeplinksSection: View {
     )
     Section {
       if draft.deeplinks.isEmpty { Text("No deep links").foregroundStyle(theme.textMuted) }
-      DeeplinkLevel(entries: $draft.deeplinks, depth: 0)
+      DeeplinkLevel(root: $draft.deeplinks, entries: $draft.deeplinks, depth: 0)
     }
   }
 }
 
 /// One level of the tree: its entries, then add buttons for this level.
+/// Rows drag by their handle: onto a link to land before it, onto a folder to
+/// land inside it, onto a level's add row to land at its end.
 private struct DeeplinkLevel: View {
+  @Binding var root: [ArgusConfigDraft.Deeplink]
   @Binding var entries: [ArgusConfigDraft.Deeplink]
+  var folder: UUID?
   let depth: Int
+  @State private var targeted = false
 
   var body: some View {
     ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-      DeeplinkRow(entry: $entries[index], depth: depth) { entries.remove(at: index) } move: {
-        entries.move(at: index, by: $0)
+      DeeplinkRow(entry: $entries[index], depth: depth) { entries.remove(at: index) } drop: { id in
+        move(id, to: entry.isFolder ? .append(to: entry.id) : .before(entry.id))
       }
       if entry.isFolder {
-        DeeplinkLevel(entries: children(index), depth: depth + 1)
+        DeeplinkLevel(root: $root, entries: children(index), folder: entry.id, depth: depth + 1)
       }
     }
     HStack(spacing: 14) {
@@ -37,6 +42,17 @@ private struct DeeplinkLevel: View {
       AddButton("Folder") { entries.append(.init(children: [])) }
     }
     .padding(.leading, CGFloat(depth) * 18)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(targeted ? Color.accentColor.opacity(0.15) : .clear)
+    .dropDestination(for: String.self) { ids, _ in
+      ids.first.map { move($0, to: .append(to: folder)) } ?? false
+    } isTargeted: { targeted = $0 }
+  }
+
+  private func move(_ raw: String, to drop: DeeplinkDrop) -> Bool {
+    guard let id = UUID(uuidString: raw) else { return false }
+    withAnimation { root.moveDeeplink(id, to: drop) }
+    return true
   }
 
   private func children(_ index: Int) -> Binding<[ArgusConfigDraft.Deeplink]> {
@@ -48,22 +64,32 @@ private struct DeeplinkRow: View {
   @Binding var entry: ArgusConfigDraft.Deeplink
   let depth: Int
   let remove: () -> Void
-  let move: (Int) -> Void
+  let drop: (String) -> Bool
+  @State private var targeted = false
 
   var body: some View {
     HStack {
-      Image(systemName: entry.isFolder ? "folder" : "link").frame(width: 16)
+      Image(systemName: "line.3.horizontal")
+        .foregroundStyle(.secondary)
+        .frame(width: 16)
+        .contentShape(Rectangle())
+        .draggable(entry.id.uuidString) { Label(entry.label.isEmpty ? "Untitled" : entry.label, systemImage: icon) }
+        .help("Drag to reorder")
+        .accessibilityLabel("Reorder \(entry.label)")
+      Image(systemName: icon).frame(width: 16)
       TextField("Label", text: $entry.label, prompt: Text(entry.isFolder ? "Folder" : "Profile")).labelsHidden()
       if !entry.isFolder {
         TextField("URL", text: $entry.url, prompt: Text("myapp://profile/123")).labelsHidden()
           .font(.system(.body, design: .monospaced))
       }
-      Button { move(-1) } label: { Image(systemName: "chevron.up") }
-        .buttonStyle(.borderless).accessibilityLabel("Move up")
-      Button { move(1) } label: { Image(systemName: "chevron.down") }
-        .buttonStyle(.borderless).accessibilityLabel("Move down")
       RemoveButton(action: remove)
     }
     .padding(.leading, CGFloat(depth) * 18)
+    .background(targeted ? Color.accentColor.opacity(0.15) : .clear)
+    .dropDestination(for: String.self) { ids, _ in
+      ids.first.map(drop) ?? false
+    } isTargeted: { targeted = $0 }
   }
+
+  private var icon: String { entry.isFolder ? "folder" : "link" }
 }
