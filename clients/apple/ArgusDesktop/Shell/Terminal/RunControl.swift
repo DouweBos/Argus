@@ -31,6 +31,8 @@ struct RunControl: View {
           toggle(primary.title)
         }
         .help(running(primary.title) ? "Stop \(primary.title)" : primary.command)
+        // A toolbar menu keeps the items it was first built with.
+        .id(runs.map { running($0.title) })
       }
     }
     .labelStyle(.titleAndIcon)
