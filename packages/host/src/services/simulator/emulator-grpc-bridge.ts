@@ -27,8 +27,13 @@ import { promisify } from "node:util";
 import { emitHostEvent } from "@argus/host/bus";
 import { log } from "@argus/host/logger";
 import { resolveAssetPath } from "../tools/assets";
+import { AdbKeyInjector, guestHasKeyboard } from "./emulator-adb-keys";
 import { discoverEmulatorGrpc } from "./emulator-discovery";
-import { ANDROID_TO_EVDEV, BUTTON_TO_KEY } from "./emulator-input";
+import {
+  ANDROID_TO_EVDEV,
+  BUTTON_TO_KEY,
+  BUTTON_TO_KEYCODE,
+} from "./emulator-input";
 import { H264AccessUnitParser } from "./h264-parser";
 import { clearVideo, emitVideoConfig, emitVideoFrame } from "./videoForward";
 
@@ -129,6 +134,9 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
   private deviceWidth = 0;
   private deviceHeight = 0;
 
+  /** Set when the guest has no keyboard, so gRPC keys would be dropped. */
+  private adbKeys: AdbKeyInjector | null = null;
+
   constructor(opts: EmulatorGrpcBridgeOptions) {
     this.serial = opts.serial;
     this.adbPath = opts.adbPath;
@@ -157,6 +165,11 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
     // Real device resolution for touch mapping (full res, unscaled).
     await this.queryDeviceResolution();
 
+    if (!(await this.hasGuestKeyboard())) {
+      log(`[EmulatorGrpc] ${this.serial} has no keyboard; keys go via adb`);
+      this.adbKeys = new AdbKeyInjector(this.adbPath, this.serial);
+    }
+
     this.startVideoPipeline();
   }
 
@@ -177,8 +190,15 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
     );
   }
 
-  sendKey(action: number, keyCode: number, _metaState: number): void {
+  sendKey(action: number, keyCode: number, metaState: number): void {
     if (!this.client) {
+      return;
+    }
+    if (this.adbKeys) {
+      if (action === 0) {
+        this.adbKeys.press(keyCode, metaState);
+      }
+
       return;
     }
     const evdev = ANDROID_TO_EVDEV[keyCode];
@@ -197,6 +217,12 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
   }
 
   sendButton(button: string): Promise<void> {
+    const keyCode = BUTTON_TO_KEYCODE[button];
+    if (this.adbKeys && keyCode !== undefined) {
+      this.adbKeys.press(keyCode);
+
+      return Promise.resolve();
+    }
     const key = BUTTON_TO_KEY[button];
     if (!key || !this.client) {
       return Promise.resolve();
@@ -217,6 +243,9 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
       this.keepAliveTimer = null;
     }
     this.lastFrame = null;
+
+    this.adbKeys?.close();
+    this.adbKeys = null;
 
     this.screenStream?.cancel();
     this.screenStream = null;
@@ -294,6 +323,21 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
     }
     this.deviceWidth = parseInt(match[1], 10);
     this.deviceHeight = parseInt(match[2], 10);
+  }
+
+  /** Unknown counts as yes: that keeps the gRPC path that worked before. */
+  private async hasGuestKeyboard(): Promise<boolean> {
+    try {
+      const { stdout } = await execFileAsync(
+        this.adbPath,
+        ["-s", this.serial, "shell", "getevent", "-lp"],
+        { timeout: 5000 },
+      );
+
+      return guestHasKeyboard(stdout);
+    } catch {
+      return true;
+    }
   }
 
   private startVideoPipeline(): void {
