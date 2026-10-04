@@ -15,6 +15,8 @@ import type { SimulatorDeviceState } from "../simulator/deviceState";
 import type { H264Config } from "../simulator/h264-parser";
 import type { PlatformRequest } from "@argus/remote-protocol";
 import {
+  CONNECTION_TYPED_EVENTS,
+  ConnectionTypedEventsParams,
   Envelope,
   EventPayloads,
   HuddleJoinParams,
@@ -273,6 +275,11 @@ export class DeviceConnection implements DeviceMediaController {
   /** Forward raw renderer broadcasts instead of typed events (admin devices). */
   private readonly raw: boolean;
   private readonly console: boolean;
+  /**
+   * An admin client that opted into the console's event shaping (the Mac app
+   * driving a remote host). Events only — its tiers stay admin.
+   */
+  private typedEvents = false;
   private readonly localRoute: DeviceConnectionOptions["localRoute"];
   private closer: (() => void) | null = null;
   private bufferedProbe: (() => number) | null = null;
@@ -630,6 +637,9 @@ export class DeviceConnection implements DeviceMediaController {
     if (method.startsWith("transfer.")) {
       return await this.handleTransfer(method, params);
     }
+    if (method === CONNECTION_TYPED_EVENTS) {
+      return this.handleTypedEvents(params);
+    }
 
     return await dispatch(method, params, this.ctx);
   }
@@ -759,6 +769,28 @@ export class DeviceConnection implements DeviceMediaController {
     }
   }
 
+  /** `connection.typed_events`: raw (admin) connections only. */
+  private handleTypedEvents(params: unknown): unknown {
+    if (!this.raw) {
+      throw new GatewayError(
+        "capability_denied",
+        "device lacks 'admin' capability",
+      );
+    }
+    const parsed = ConnectionTypedEventsParams.safeParse(params);
+    if (!parsed.success) {
+      throw new GatewayError("bad_request", "invalid connection.typed_events");
+    }
+    this.typedEvents = parsed.data.on;
+
+    return {};
+  }
+
+  /** Whether this connection gets the typed mirror alongside raw broadcasts. */
+  private get typed(): boolean {
+    return this.console || this.typedEvents;
+  }
+
   /**
    * Mirror a renderer broadcast verbatim. Subscription-scoped channels (agents,
    * terminals) are dropped unless this connection asked for that id; everything
@@ -772,7 +804,7 @@ export class DeviceConnection implements DeviceMediaController {
     if (scope !== null && !this.subscriptions.has(scope)) {
       return;
     }
-    if (this.console) {
+    if (this.typed) {
       const agent = parseAgentChannel(channel);
       if (agent && TYPED_AGENT_KINDS.has(agent.kind)) {
         return;
@@ -809,7 +841,7 @@ export class DeviceConnection implements DeviceMediaController {
     if (this.raw) {
       this.trackPermissions(channel, args);
       this.forwardRawBroadcast(channel, args);
-      if (!this.console) {
+      if (!this.typed) {
         return;
       }
     }
