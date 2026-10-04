@@ -90,7 +90,11 @@ struct HuddleGuestRow: View {
     HStack {
       StatusDot(tone: guest.connected ? .success : .muted)
       Text(guest.label)
-      Text(status).font(.caption).foregroundStyle(theme.textSecondary)
+      if guest.state == .approved, huddles.drivers(of: room).holder == guest.label {
+        Label(status, systemImage: "hand.tap.fill").font(.caption).foregroundStyle(theme.accent)
+      } else {
+        Text(status).font(.caption).foregroundStyle(theme.textSecondary)
+      }
       Spacer()
       if guest.state == .pending {
         Button("Deny") { huddles.deny(room, guest.devStaticPub) }
@@ -101,9 +105,5 @@ struct HuddleGuestRow: View {
     }
   }
 
-  private var status: String {
-    if guest.state == .pending { return "wants to join" }
-    if guest.typing { return "typing…" }
-    return guest.connected ? "here" : "away"
-  }
+  private var status: String { Huddles.guestStatus(guest, drivers: huddles.drivers(of: room)) }
 }

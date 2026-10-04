@@ -18,6 +18,18 @@ public enum Huddles {
     approved(room).filter(\.typing).map(\.label)
   }
 
+  /// What a guest is doing, in the order the desktop's guest list ranks it:
+  /// driving the shared device beats waiting for it beats typing.
+  public static func guestStatus(
+    _ guest: ArgusProtocol.HuddleGuestModel, drivers: HuddleDrivers
+  ) -> String {
+    if guest.state == .pending { return "wants to join" }
+    if guest.state == .approved, guest.label == drivers.holder { return "driving the device" }
+    if guest.state == .approved, drivers.waiting.contains(guest.label) { return "waiting for the device" }
+    if guest.typing { return "typing…" }
+    return guest.connected ? "here" : "away"
+  }
+
   /// Peacock's `TypingIndicator` phrase; the view draws the dots.
   public static func typingLine(_ names: [String]) -> String? {
     switch names.count {
@@ -61,6 +73,24 @@ public enum Huddles {
   public static func hostName(configured: String, gitName: String?) -> String {
     let trimmed = configured.trimmingCharacters(in: .whitespacesAndNewlines)
     return trimmed.isEmpty ? (gitName ?? "") : trimmed
+  }
+}
+
+/// Who among the guests holds a shared device and who is bouncing off it
+/// (`devices:claim-changed`). The host's own input is never arbitrated, so
+/// this is for awareness only.
+public struct HuddleDrivers: Equatable, Sendable {
+  public var holder: String?
+  public var waiting: [String]
+  public static let nobody = HuddleDrivers(holder: nil, waiting: [])
+
+  public init(holder: String?, waiting: [String]) {
+    self.holder = holder
+    self.waiting = waiting
+  }
+
+  public init(_ state: ArgusProtocol.RemoteDeviceClaimState) {
+    self.init(holder: state.holder?.label, waiting: (state.waiting ?? []).map(\.label))
   }
 }
 
