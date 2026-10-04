@@ -195,6 +195,8 @@ public final class TerminalsStore {
   @discardableResult
   public func run(_ title: String, sessionId: String) async -> Tab? {
     guard let backend = backend() else { return nil }
+    // The panel this reveals would otherwise open a default shell over the run.
+    opened.insert(sessionId)
     do {
       let result = try await backend.request(
         ArgusProtocol.Commands.CreateRunTerminal.self, .init(sessionId: sessionId, title: title))
@@ -279,6 +281,7 @@ public final class TerminalsStore {
     }
     let data = Data(base64Encoded: scrollback.data) ?? Data()
     let exitCode = scrollback.exited ? Int(scrollback.exitCode ?? -1) : nil
+    if let exitCode, tab(terminalId)?.exited == false { exited(terminalId, code: exitCode) }
     replayed(data.count, scrollback.truncated)
     emit(terminalId, feeds[terminalId]?.replay(data: data, exitCode: exitCode, seq: seq) ?? [])
   }
@@ -372,6 +375,7 @@ public final class TerminalsStore {
       let dependencies: [Dependency]
     }
     guard let run = try? ProtocolCodec.convert(payload, to: Payload.self) else { return }
+    opened.insert(run.sessionId)
     Task {
       await register(
         sessionId: run.sessionId, title: run.title, terminalId: run.terminalSessionId,
@@ -398,7 +402,18 @@ public final class TerminalsStore {
     activeBySession[sessionId] = terminalId
     for (id, _) in dependencies { await subscribe(id) }
     await subscribe(terminalId)
+    // A quick command can exit before the subscription lands; ask the host.
+    for (id, _) in dependencies + [(terminalId, title)] { await catchUpExit(id) }
     return tab(terminalId)
+  }
+
+  private func catchUpExit(_ terminalId: String) async {
+    guard let backend = backend(),
+      let scrollback = try? await backend.request(
+        ArgusProtocol.Commands.TerminalScrollback.self, .init(sessionId: terminalId)),
+      scrollback.exited, tab(terminalId)?.exited == false
+    else { return }
+    exited(terminalId, code: Int(scrollback.exitCode ?? -1))
   }
 
   private func subscribe(_ terminalId: String) async {
