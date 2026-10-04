@@ -58,3 +58,37 @@ struct HostBadge: View {
     .help(hosts.state(hostId).title)
   }
 }
+
+/// The screen is about a machine that isn't answering: what's shown is its
+/// last snapshot, and its agents keep running there.
+struct HostOfflineBanner: View {
+  @Environment(DesktopModel.self) private var model
+  @Environment(RemoteHostsStore.self) private var hosts
+  @Environment(\.theme) private var theme
+
+  private var hostId: HostId? {
+    let id = model.route.sessionId.map(model.host(ofSession:)) ?? hosts.focused
+    return id == Hosts.local || hosts.state(id) == .ready ? nil : id
+  }
+
+  var body: some View {
+    if let hostId {
+      HStack(spacing: 8) {
+        Image(systemName: "bolt.horizontal.circle")
+        Text(message(hostId))
+        Spacer()
+      }
+      .font(.callout)
+      .padding(.horizontal, 12)
+      .padding(.vertical, 6)
+      .background(theme.warningSoft)
+    }
+  }
+
+  private func message(_ id: HostId) -> String {
+    let name = hosts.label(id)
+    return hosts.state(id) == .detached
+      ? "\(name) is detached. This is its last snapshot; attach it in Settings → Hosts to work on it."
+      : "\(name) isn't connected. Its agents keep running there; this is its last snapshot until it reconnects."
+  }
+}

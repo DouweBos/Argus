@@ -1,3 +1,4 @@
+import ArgusKit
 import ArgusCore
 import Foundation
 import Observation
@@ -157,6 +158,8 @@ final class RuntimeModel {
     do {
       simulators = try await backend.request(ArgusProtocol.Commands.ListSimulators.self, .init())
       iosToolsError = nil
+    } catch where Self.hostUnavailable(error) {
+      // The host dropped; its last list stays and the banner says why.
     } catch {
       iosToolsError = HostStore.describe(error)
     }
@@ -164,10 +167,16 @@ final class RuntimeModel {
       androidDevices = try await backend.request(
         ArgusProtocol.Commands.ListAndroidDevices.self, .init())
       androidToolsError = nil
+    } catch where Self.hostUnavailable(error) {
     } catch {
       androidToolsError = HostStore.describe(error)
     }
     pruneSelections()
+  }
+
+  private static func hostUnavailable(_ error: Error) -> Bool {
+    if case Transport.TransportError.gateway(let payload) = error { return payload.code == "unavailable" }
+    return false
   }
 
   func loadProject(repoRoot: String?) async {
