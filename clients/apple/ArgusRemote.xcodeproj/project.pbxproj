@@ -19,6 +19,7 @@
 		0DAAD89A3BF90D72CFF2E3A9 /* ArgusNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4B819AF7F05F8000A0B5D08A /* ArgusNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		801B94D184E882085D5A21C1 /* HardwareKeyCatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 195DBDEBD1CDBCE511CAA5C8 /* HardwareKeyCatcher.swift */; };
 		1346FB8C6E0119391A82DC4B /* NotificationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */; };
+		A279FDAB48CC421077ED1C7A /* DevDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A25C129590BCC456E86F7A6 /* DevDriver.swift */; };
 		18E1680F774BE67751984A6B /* InboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AA1C76CC7A23652BD96252A /* InboxView.swift */; };
 		2861E9669ED0132B42988497 /* DevicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ADDE446C44DCB7D8E5AA3C /* DevicesView.swift */; };
 		3C1C0796FCE5D8AA678463BF /* StoppedAgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13099DE3A6A5F9047693B53C /* StoppedAgentView.swift */; };
@@ -92,6 +93,7 @@
 		A1C0FFEE000000000000AA01 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Push.swift"; sourceTree = "<group>"; };
 		0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRouter.swift; sourceTree = "<group>"; };
+		2A25C129590BCC456E86F7A6 /* DevDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevDriver.swift; sourceTree = "<group>"; };
 		117E737A68AD0170E2CC50F7 /* ProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsView.swift; sourceTree = "<group>"; };
 		13099DE3A6A5F9047693B53C /* StoppedAgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoppedAgentView.swift; sourceTree = "<group>"; };
 		1D00B47DC68F09613A0A0769 /* ArgusKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ArgusKit; path = ArgusKit; sourceTree = SOURCE_ROOT; };
@@ -330,6 +332,7 @@
 				20BFB66C676863B8775FDB91 /* ArgusRemoteApp.swift */,
 				3E4CF7C9E04D0A1D6F57EDA5 /* LockScreen.swift */,
 				0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */,
+				2A25C129590BCC456E86F7A6 /* DevDriver.swift */,
 				B33859C3DC1F6B2FE094BDF8 /* PushTokens.swift */,
 				9798D9FC585435B89959E156 /* RootView.swift */,
 				6FCAD11D552D483C0C92312A /* Route.swift */,
@@ -540,6 +543,7 @@
 				A02801135DF7D4CE5879D439 /* LockScreen.swift in Sources */,
 				801B94D184E882085D5A21C1 /* HardwareKeyCatcher.swift in Sources */,
 				1346FB8C6E0119391A82DC4B /* NotificationRouter.swift in Sources */,
+				A279FDAB48CC421077ED1C7A /* DevDriver.swift in Sources */,
 				C230860282D4938F66D435CF /* PairView.swift in Sources */,
 				6897D3167EEB3794CED55DDA /* ProjectView.swift in Sources */,
 				9EC0F026CA4FC53AA74669D9 /* ProjectsView.swift in Sources */,
