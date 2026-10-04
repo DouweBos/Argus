@@ -18,6 +18,9 @@ struct RuntimeLogsView: View {
   /// While paused the view holds still; lines keep arriving underneath.
   @State private var paused: [DebugLogEntry]?
   @State private var stopEvents: (() -> Void)?
+  /// Chunks land here and reach `log` in batches: a simulator logs hundreds of
+  /// lines a second, and redrawing per chunk pinned the main thread.
+  @State private var inbox = LogInbox()
 
   private var visible: [DebugLogEntry] {
     (paused ?? log.entries).filter { (!errorsOnly || $0.isError) && $0.matches(filter) }
@@ -35,6 +38,12 @@ struct RuntimeLogsView: View {
     .task(id: "\(deviceKey)|\(store.connection == .ready)") {
       guard store.connection == .ready else { return }
       await start()
+    }
+    .task {
+      while !Task.isCancelled {
+        try? await Task.sleep(for: .milliseconds(150))
+        flush()
+      }
     }
     .onDisappear { stop() }
   }
@@ -111,7 +120,7 @@ struct RuntimeLogsView: View {
       if channel == "debug:data:\(id)", let payload = args.first?.objectValue,
         let text = payload["text"]?.stringValue
       {
-        log.append(text, source: payload["source"]?.stringValue == "stderr" ? .stderr : .stdout)
+        inbox.chunks.append((text, payload["source"]?.stringValue == "stderr" ? .stderr : .stdout))
       } else if channel == "debug:exit:\(id)" {
         running = false
         if let message = args.first?.objectValue?["error"]?.stringValue {
@@ -130,6 +139,14 @@ struct RuntimeLogsView: View {
     }
   }
 
+  private func flush() {
+    guard !inbox.chunks.isEmpty else { return }
+    var next = log
+    for (text, source) in inbox.chunks { next.append(text, source: source) }
+    inbox.chunks.removeAll(keepingCapacity: true)
+    log = next
+  }
+
   private func stop() {
     stopEvents?()
     stopEvents = nil
@@ -141,14 +158,20 @@ struct RuntimeLogsView: View {
   }
 }
 
+/// Not observed, so filling it doesn't redraw the view.
+@MainActor
+private final class LogInbox {
+  var chunks: [(String, DebugLogEntry.Source)] = []
+}
+
 private struct LogLine: View {
   @Environment(\.theme) private var theme
   let entry: DebugLogEntry
 
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 6) {
-      if let timestamp = entry.timestamp {
-        Text(timestamp).foregroundStyle(theme.textMuted)
+      if let time = entry.clockTime {
+        Text(time).foregroundStyle(theme.textMuted).fixedSize()
       }
       Text(entry.message).foregroundStyle(color)
     }
