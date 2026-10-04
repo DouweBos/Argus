@@ -183,12 +183,12 @@ and switching hosts in the sidebar.
 **M6.5 — Close the gaps:** everything an earlier milestone skipped, left
 partial or found broken. Each milestone's report adds its deviations and open
 risks here; M7's cutover waits until this list is empty or each item is
-explicitly dropped. Known so far:
+explicitly dropped. Known so far (struck through = done, **Dropped:** = won't do, with why):
 
 - Host (also affects Electron today):
-  - Android emulator ignores input sent over its gRPC control channel (API 36 AVD); `adb input` works.
-  - A session created over the host socket disappeared after a host restart.
-  - The Conductor browser's debugging port isn't exposed, so there are no DevTools.
+  - ~~Android emulator ignores input sent over its gRPC control channel (API 36 AVD); `adb input` works.~~ Keys and buttons were dropped on AVDs without `hw.keyboard` (the `avdmanager` default); they go through `adb input` there.
+  - ~~A session created over the host socket disappeared after a host restart.~~ It was the project's home session, never persisted; restored at boot now.
+  - ~~The Conductor browser's debugging port isn't exposed, so there are no DevTools.~~ `browser_devtools` returns the loopback endpoints (host tier).
 - Mac app:
   - Session home lacks chat history and branch rename.
   - Run commands: `restartOnRerun`, `cwd` and `prerequisites` never exercised from the UI.
@@ -208,22 +208,22 @@ explicitly dropped. Known so far:
   - Quit: SIGTERM doesn't quit the app while a sheet (e.g. onboarding) is open; it and its host keep running. Without a sheet it quits fine.
   - Deep links: `DesktopRoute(path:)` doesn't parse the git routes (`/sessions/:id/git/:view`), so links to git screens fall back.
   - A launch route (`ARGUS_DEV_ROUTE`, and later deep links) to a remote host's session falls back to Home when it applies before that host has connected.
-  - Test hosts leave a login-keychain item ("Argus Host Secret Storage", account = their `ARGUS_HOME`) behind; tests and dev runs on temp homes should remove theirs.
-  - Worktree sessions in a temp home didn't come back after an app restart (seen once in M4; may be the `/tmp` vs `/private/tmp` host bug below).
+  - ~~Test hosts leave a login-keychain item ("Argus Host Secret Storage", account = their `ARGUS_HOME`) behind; tests and dev runs on temp homes should remove theirs.~~ A host on a temp `ARGUS_HOME` keeps its key in the home instead.
+  - ~~Worktree sessions in a temp home didn't come back after an app restart (seen once in M4; may be the `/tmp` vs `/private/tmp` host bug below).~~ It was the `/private/tmp` bug.
 - Mac app (from M6):
   - Not built: window tabs per machine; the focused host in the route (back/forward between machines); a host folder browser, so Add Project, Browse… in settings and worktree locations can't pick a folder on a remote host; dropping files into a remote session's chat (Electron sends them over the gateway's transfer channel).
   - The offline snapshot is in memory only: a host that is down when the app launches shows nothing until it answers.
   - Two hosts holding a repo at the same path are one project in the sidebar (the routing index is keyed by path); Electron keys projects by host.
   - Never exercised against a remote host: permission prompts and plan approval, notifications and banners for its agents, pull requests, automations and the inbox of a shown host, huddles (refused, as on Electron: host tier), the browser runtime, Android devices.
   - A remote session's git views refresh on the host's broadcasts only (no file watcher there); an edit nothing broadcasts shows up on the next action.
-  - Host-run git processes started over the gateway aren't killed when the connection drops; `argus-scratch` in the git dir is never cleaned.
+  - ~~Host-run git processes started over the gateway aren't killed when the connection drops; `argus-scratch` in the git dir is never cleaned.~~ Killed with their connection; scratch removed with the last one and swept daily. Failures now carry a `failure` kind and recovery.
 - iOS app (from M6): the remote git runner's host commands are admin tier, which a phone never holds, so the phone keeps the typed git methods; giving it GroveKit needs a scoped git tier first.
-- Host (found in M6): `reapOrphanedSpawnHelpers` kills any orphaned node-pty spawn helper on the machine at boot, not only its own; harmless for real orphans but a second host on one Mac reaps the first's leftovers.
+- Host (found in M6): ~~`reapOrphanedSpawnHelpers` kills any orphaned node-pty spawn helper on the machine at boot, not only its own; harmless for real orphans but a second host on one Mac reaps the first's leftovers.~~ Only pids this home recorded are reaped (agents too).
 - Host (found in M5):
-  - `security -i` hangs when the host runs with a different `HOME`, blocking the host (only seen with a scratch `HOME` in tests).
-  - A session keyed `/tmp/…` isn't found again after a restart because git reports `/private/tmp/…` Reproduced in M6 on a second host whose `ARGUS_HOME` was under `/tmp`: its worktree session was gone after the host restarted.
-  - An automation's host session doesn't list under its project, so its transcript can't be opened from a run.
-  - `gen-protocol` types `huddle_say`'s params as the gateway's `HuddleSayParams`, which lacks `roomId`; the Mac app sends it by wire name.
+  - ~~`security -i` hangs when the host runs with a different `HOME`, blocking the host (only seen with a scratch `HOME` in tests).~~ Calls name the login keychain from the passwd home and time out.
+  - ~~A session keyed `/tmp/…` isn't found again after a restart because git reports `/private/tmp/…` Reproduced in M6 on a second host whose `ARGUS_HOME` was under `/tmp`: its worktree session was gone after the host restarted.~~ Worktree paths and metadata keys are canonicalised.
+  - ~~An automation's host session doesn't list under its project, so its transcript can't be opened from a run.~~ In `state_hydrate` and restored at boot.
+  - ~~`gen-protocol` types `huddle_say`'s params as the gateway's `HuddleSayParams`, which lacks `roomId`; the Mac app sends it by wire name.~~ A command's own params type wins over a same-named model.
   - Phone gaps found while building M5, all admin-only today: proposal request-revision and start-with-note, the full proposal record, deleting a run, an automation's track record, describing an automation, huddles, the app-level default autonomy and permission mode.
 - iOS app:
   - None of the M4 git views reach the phone; it keeps the host's typed git methods (see the M6 note below on the runner's tier).
@@ -235,7 +235,7 @@ explicitly dropped. Known so far:
   - Grove-specific wording and file names (`HostingError` messages, `grove/restack.json`, `grove-` scratch prefix) and shared `UserDefaults` keys.
   - `FileWatcher`, `WorktreeResolver` and view-model file actions still touch the local disk directly instead of going through the runner.
   - From M4: a public `DiffParser` (or `DiffResult`/`FileDiff` initialisers) and a range diff `diff(from:to:)`; `BlameViewModel.open(file:revision:)`; an incremental `CommitGraphBuilder`; public `ListSelection.focus`, `WorkingCopyViewModel.selectedPath`, `PendingHunkDiscard.action`, `RestackPlan.steps`; a `nonisolated` `PullRequestHost.headRef` default; a linked-worktree watcher that ignores sibling worktrees; `RefName.isValid` and the branch-tree builder; an action hook on the view models for telemetry.
-- Release notes: the next Electron release is the first with the host lock; say so.
+- ~~Release notes: the next Electron release is the first with the host lock; say so.~~ The host-lock changeset says so.
 - Electron features added after this plan was written: go through every `feat` commit on `main` since the plan (excluding `feat(mac)` / `feat(ios)`), add a parity row for each one the Mac app (and phone) lacks, and build it. Known so far: agents continuing automatically once a usage limit resets, the chat banner showing when they will, and cancelling it (`7b886845`, `40a54996`, `1da71602`). Re-run this sweep right before cutover, since Electron keeps shipping until then.
 
 **M7 — Ship:**
