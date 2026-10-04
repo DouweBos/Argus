@@ -12,7 +12,7 @@ final class HostSettingsModel {
   private(set) var runners: [ArgusProtocol.RegisteredRunner] = []
   var error: String?
   /// Set by the window once the host is up.
-  @ObservationIgnored var backend: LocalBackend?
+  @ObservationIgnored var backend: HostRouter?
 
   var loaded: Bool { settings != nil }
 

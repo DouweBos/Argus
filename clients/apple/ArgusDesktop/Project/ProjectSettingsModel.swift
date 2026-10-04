@@ -33,7 +33,7 @@ final class ProjectSettingsModel {
   var previewJSON: String { ConfigJSON.string(.object(output)) }
   var isDirty: Bool { draft != initial || branchPrefix.trimmingCharacters(in: .whitespaces) != initialBranchPrefix }
 
-  func load(_ backend: LocalBackend) async {
+  func load(_ backend: HostRouter) async {
     // The raw file, not the host's normalized config, so unknown keys survive.
     let found = try? await backend.request(
       ArgusProtocol.Commands.OnboardingReadExistingArgusJson.self, .init(path: repoRoot))
@@ -52,7 +52,7 @@ final class ProjectSettingsModel {
     loaded = true
   }
 
-  private func loadStorage(_ backend: LocalBackend) async {
+  private func loadStorage(_ backend: HostRouter) async {
     guard let storage = try? await backend.request(
       ArgusProtocol.Commands.GetWorktreeStorage.self, .init(repoRoot: repoRoot))
     else { return }
@@ -63,7 +63,7 @@ final class ProjectSettingsModel {
   }
 
   /// Writes `.argus.json` and the branch prefix; true when the sheet can close.
-  func save(_ backend: LocalBackend) async -> Bool {
+  func save(_ backend: HostRouter) async -> Bool {
     guard draft.isValid else {
       error = draft.validationErrors.joined(separator: "\n")
       return false
@@ -102,7 +102,7 @@ final class ProjectSettingsModel {
   }
 
   /// Saved straight away, as the desktop does: it's personal, not part of the file.
-  func commitWorktreeBase(_ value: String, purpose: ArgusProtocol.WorktreePurpose, _ backend: LocalBackend) async {
+  func commitWorktreeBase(_ value: String, purpose: ArgusProtocol.WorktreePurpose, _ backend: HostRouter) async {
     let settings =
       purpose == .automation
       ? ArgusProtocol.UserProjectSettings(automationWorktreesBaseDir: value)

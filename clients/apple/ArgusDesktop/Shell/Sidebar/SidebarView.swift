@@ -1,10 +1,12 @@
+import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// Projects and their sessions, live from the host.
+/// Projects and their sessions, live from every attached host.
 struct SidebarView: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
+  @Environment(RemoteHostsStore.self) private var hosts
 
   var body: some View {
     List(selection: selection) {
@@ -19,10 +21,10 @@ struct SidebarView: View {
         Label("Automations", systemImage: "clock.arrow.circlepath").tag(Self.automationsTag)
         NotificationsSidebarRow().tag(Self.notificationsTag)
       }
-      if store.projects.isEmpty {
+      if projects.isEmpty {
         Text("No projects yet").foregroundStyle(.secondary)
       }
-      ForEach(store.projects) { project in
+      ForEach(projects) { project in
         Section {
           ForEach(store.sessionsByRepo[project.repoRoot] ?? []) { session in
             SessionRow(session: session, agents: agents(in: session))
@@ -36,6 +38,7 @@ struct SidebarView: View {
         } header: {
           HStack {
             Text(project.name)
+            if showsHosts { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
             Spacer()
             Button {
               model.newSessionProject = project
@@ -51,15 +54,18 @@ struct SidebarView: View {
           }
         }
       }
-      if !store.scratchPads.isEmpty {
+      if !scratchPads.isEmpty {
         Section("Scratch pads") {
-          ForEach(store.scratchPads) { pad in
+          ForEach(scratchPads) { pad in
             SessionRow(session: pad, agents: agents(in: pad)).tag(pad.id)
           }
         }
       }
     }
     .listStyle(.sidebar)
+    .safeAreaInset(edge: .top) {
+      if showsHosts { MachinesMenu().padding(.horizontal, 10).padding(.top, 4) }
+    }
     .sheet(item: newSessionProject) { project in
       NewSessionSheet(project: project) { session in
         model.navigate(.sessionHome(id: session.id))
@@ -120,6 +126,30 @@ struct SidebarView: View {
         case nil: break
         }
       })
+  }
+
+  /// Hosts are only worth naming once there is more than this Mac.
+  private var showsHosts: Bool { !hosts.attached.isEmpty }
+
+  /// This Mac's projects first, then each host's in pairing order, narrowed to
+  /// the machine picked in the sidebar.
+  private var projects: [RemoteProject] {
+    let order = Dictionary(uniqueKeysWithValues: hosts.machines.enumerated().map { ($1, $0) })
+    return store.projects
+      .filter { model.machineFilter == nil || model.host(ofProject: $0.repoRoot) == model.machineFilter }
+      .enumerated()
+      .sorted { a, b in
+        let ha = order[model.host(ofProject: a.element.repoRoot)] ?? .max
+        let hb = order[model.host(ofProject: b.element.repoRoot)] ?? .max
+        return ha == hb ? a.offset < b.offset : ha < hb
+      }
+      .map(\.element)
+  }
+
+  private var scratchPads: [RemoteSession] {
+    store.scratchPads.filter {
+      model.machineFilter == nil || model.host(ofSession: $0.id) == model.machineFilter
+    }
   }
 
   private func agents(in session: RemoteSession) -> [RemoteAgentStatus] {

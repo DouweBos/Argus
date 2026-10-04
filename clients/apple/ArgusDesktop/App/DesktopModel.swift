@@ -23,7 +23,12 @@ final class DesktopModel {
   let palette = CommandPaletteModel()
   let notificationsLog: NotificationsLog
   let huddles: HuddleStore
-  private(set) var backend: LocalBackend?
+  /// Paired hosts this window drives besides its own.
+  let hosts: RemoteHostsStore
+  /// Every request, routed to the host that owns its subject.
+  private(set) var backend: HostRouter?
+  /// The supervised host alone: platform requests and telemetry are this Mac's.
+  private(set) var localBackend: LocalBackend?
 
   private(set) var route: DesktopRoute = .home
   /// The project the New Session sheet is open for.
@@ -38,6 +43,8 @@ final class DesktopModel {
   var projectSettingsRepo: String?
   /// The Add Project flow (⌘O).
   var addingProject = false
+  /// The machine the sidebar is narrowed to; nil shows every attached one.
+  private(set) var machineFilter: HostId?
   /// The panel each session was last left on, as the desktop app remembers.
   private var agentsPanelSessions: Set<String> = []
   /// The git sub-view each session was last left on.
@@ -50,6 +57,11 @@ final class DesktopModel {
 
   init() {
     supervisor = HostSupervisor(configuration: HostLocation.configuration())
+    hosts = RemoteHostsStore(
+      file: PairedHostsFile(url: HostLocation.home.appendingPathComponent("mac-paired-hosts.json")),
+      clientInfo: PairingClientInfo(
+        product: "Argus for Mac", kind: "desktop", device: Host.current().localizedName,
+        version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String))
     let notificationsLog = NotificationsLog()
     self.notificationsLog = notificationsLog
     store = HostStore(
@@ -94,6 +106,11 @@ final class DesktopModel {
     SettingsPalette.register(in: palette)
     platform.closeDevicePopout = { [runtime] key in runtime.closePopout(key) }
     AutomationsWiring.install(in: self)
+    hosts.onReady = { [weak self] hostId in Task { await self?.hostCameUp(hostId) } }
+    hosts.onHostsChanged = { [weak self] in Task { await self?.reloadLists() } }
+    hosts.onAction = { action, success in
+      MacTelemetry.capture(.hostsUsed(action: .init(action), success: success))
+    }
   }
 
   func start() {
@@ -107,15 +124,56 @@ final class DesktopModel {
   private func hostRunning() async {
     guard backend == nil else { return }
     let platform = platform
-    let backend = LocalBackend(socketPath: supervisor.configuration.socketPath) { envelope in
+    let local = LocalBackend(socketPath: supervisor.configuration.socketPath) { envelope in
       Task { @MainActor in platform.handle(envelope) }
     }
-    self.backend = backend
+    let hosts = hosts
+    let router = HostRouter(local: local) { hostId, event in hosts.linkEvent(hostId, event) }
+    localBackend = local
+    backend = router
     store.beginConnecting()
-    await store.attach(backend)
-    platform.attach(backend)
-    await MacTelemetry.attach(backend)
-    watchConnection(backend)
+    await store.attach(router)
+    platform.attach(local)
+    await MacTelemetry.attach(local)
+    hosts.bind(router)
+    watchConnection(local)
+  }
+
+  /// A paired host connected, or reconnected after a drop: it kept running
+  /// agents while we were away, so its share of the window is refetched.
+  private func hostCameUp(_ hostId: HostId) async {
+    await reloadLists()
+    await store.live?.resync()
+    await terminals.reconnected()
+    for project in store.projects where backend?.host(of: .project, project.repoRoot) == hostId {
+      await openProject(project.repoRoot)
+    }
+  }
+
+  /// Narrow the sidebar to one machine and show it everywhere else too; nil
+  /// shows them all, with this Mac answering what names no machine.
+  func showMachine(_ hostId: HostId?) {
+    machineFilter = hostId
+    hosts.focus(hostId ?? Hosts.local)
+  }
+
+  /// The lists that span every host.
+  func reloadLists() async {
+    if let filter = machineFilter, filter != Hosts.local, !hosts.attached.contains(filter) {
+      machineFilter = nil
+    }
+    await store.refreshProjects()
+    await store.loadScratchPads()
+    await store.loadRecentAgents()
+  }
+
+  /// Which machine a session lives on.
+  func host(ofSession id: String) -> HostId {
+    backend?.host(of: .session, id) ?? Hosts.local
+  }
+
+  func host(ofProject repoRoot: String) -> HostId {
+    backend?.host(of: .project, repoRoot) ?? Hosts.local
   }
 
   /// Refetch on every (re)connect — the host may have restarted underneath
@@ -155,7 +213,7 @@ final class DesktopModel {
   /// The Launch screen setting, once per launch and only while nothing else
   /// has picked a screen — it replaces Home rather than stacking on it.
   private func applyLaunchRoute() async {
-    guard !launchRouteApplied, let backend else { return }
+    guard !launchRouteApplied, let backend = localBackend else { return }
     launchRouteApplied = true
     let settings = try? await backend.request(ArgusProtocol.Commands.GetAppSettings.self, EmptyParams())
     guard settings?.launchRoute == .inbox, route == .home else { return }

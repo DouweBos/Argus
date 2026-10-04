@@ -30,7 +30,7 @@ final class PrereqChecks {
         }
       case "claude-auth:accounts-changed":
         // Signing in or switching moves the auth card; re-probe rather than trust it.
-        if ran, let backend = store.backend as? LocalBackend {
+        if ran, let backend = store.backend as? HostRouter {
           Task { await self.run(backend, ids: [.claudeAuth], force: true) }
         }
       default: break
@@ -40,7 +40,7 @@ final class PrereqChecks {
 
   /// Runs `ids`, plus any core check that has never reported, so a targeted
   /// run can't leave a card without a verdict.
-  func run(_ backend: LocalBackend, ids: [PrereqId] = SetupChecks.core, force: Bool = false) async {
+  func run(_ backend: HostRouter, ids: [PrereqId] = SetupChecks.core, force: Bool = false) async {
     guard !running, force || !ran else { return }
     running = true
     defer { running = false }
@@ -59,7 +59,7 @@ final class PrereqChecks {
   }
 
   /// One-click fixer, then a re-check of that one.
-  func fix(_ backend: LocalBackend, _ id: PrereqId, gitName: String? = nil, gitEmail: String? = nil) async {
+  func fix(_ backend: HostRouter, _ id: PrereqId, gitName: String? = nil, gitEmail: String? = nil) async {
     fixing = id
     fixError = nil
     defer { fixing = nil }

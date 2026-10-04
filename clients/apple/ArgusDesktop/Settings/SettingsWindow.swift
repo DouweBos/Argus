@@ -1,3 +1,4 @@
+import ArgusCore
 import SwiftUI
 
 /// App Settings (⌘,): every field in `docs/app-settings.md`, one tab per area.
@@ -22,13 +23,16 @@ struct SettingsWindow: View {
       Tab("Remote", systemImage: "antenna.radiowaves.left.and.right", value: SettingsTab.remote) {
         RemoteSettingsTab()
       }
+      Tab("Hosts", systemImage: "desktopcomputer", value: SettingsTab.hosts) { HostsSettingsTab() }
       Tab("Advanced", systemImage: "slider.horizontal.3", value: SettingsTab.advanced) {
         AdvancedSettingsTab()
       }
     }
     .frame(minWidth: 640, idealWidth: 720, minHeight: 480, idealHeight: 620)
     .environment(host)
-    .task(id: model.store.connection == .ready) {
+    .safeAreaInset(edge: .top) { FocusedHostBanner() }
+    // Settings that live on a host are the shown host's.
+    .task(id: SettingsLoadKey(ready: model.store.connection == .ready, host: model.hosts.focused)) {
       guard model.store.connection == .ready else { return }
       host.backend = model.backend
       await host.load()
@@ -38,7 +42,7 @@ struct SettingsWindow: View {
 }
 
 enum SettingsTab: String, Hashable, CaseIterable {
-  case general, accounts, agents, llm, mcp, tools, remote, advanced
+  case general, accounts, agents, llm, mcp, tools, remote, hosts, advanced
 
   var title: String {
     switch self {
@@ -49,7 +53,34 @@ enum SettingsTab: String, Hashable, CaseIterable {
     case .mcp: "MCP"
     case .tools: "Tools"
     case .remote: "Remote"
+    case .hosts: "Hosts"
     case .advanced: "Advanced"
+    }
+  }
+}
+
+private struct SettingsLoadKey: Equatable {
+  let ready: Bool
+  let host: HostId
+}
+
+/// Says whose settings these are while another host is shown.
+private struct FocusedHostBanner: View {
+  @Environment(DesktopModel.self) private var model
+  @Environment(\.theme) private var theme
+
+  var body: some View {
+    if model.hosts.focused != Hosts.local {
+      HStack(spacing: 8) {
+        Image(systemName: "desktopcomputer")
+        Text("Showing \(model.hosts.label(model.hosts.focused))'s settings. Remote access and Hosts are always this Mac's.")
+        Spacer()
+        Button("Show This Mac") { model.hosts.focus(Hosts.local) }
+      }
+      .font(.callout)
+      .padding(.horizontal, 12)
+      .padding(.vertical, 6)
+      .background(theme.warningSoft)
     }
   }
 }
