@@ -37,15 +37,35 @@ const mockReadFileSync = vi.mocked(fs.readFileSync);
 describe("getMeta", () => {
   it("looks up by normalized path", () => {
     const meta = new Map<string, SessionMeta>();
-    meta.set("/home/user/.argus/worktrees/App/feature", {
+    meta.set("/argus-test/.argus/worktrees/App/feature", {
       id: "ws-1",
       description: "Test",
     });
 
     // Trailing slash should still match
-    const result = getMeta(meta, "/home/user/.argus/worktrees/App/feature/");
+    const result = getMeta(meta, "/argus-test/.argus/worktrees/App/feature/");
     expect(result?.id).toBe("ws-1");
   });
+
+  it.runIf(process.platform === "darwin")(
+    "finds a /tmp entry by the /private/tmp path git reports",
+    () => {
+      mockReadFileSync.mockReturnValueOnce(
+        JSON.stringify({
+          version: 2,
+          sessions: { "/tmp/argus-h/worktrees/App/feature": { id: "ws-1" } },
+        }),
+      );
+      const meta = loadMetadata("/tmp/argus-h/App");
+
+      expect(
+        getMeta(meta, "/private/tmp/argus-h/worktrees/App/feature")?.id,
+      ).toBe("ws-1");
+      expect([...meta.keys()]).toEqual([
+        "/private/tmp/argus-h/worktrees/App/feature",
+      ]);
+    },
+  );
 
   it("normalizes backslashes", () => {
     const meta = new Map<string, SessionMeta>();

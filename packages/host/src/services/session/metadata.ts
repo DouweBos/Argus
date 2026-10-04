@@ -13,6 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
 import { argusHomeDir } from "../../lib/argusHome";
+import { canonicalPath } from "../../lib/canonicalPath";
 import { isOnMissingVolume } from "./volumeAvailability";
 import { worktreeRootsForRepo } from "./worktreeLocation";
 
@@ -87,8 +88,12 @@ export function normalizeMetaKey(p: string): string {
   return normalizePathKey(p);
 }
 
+/** Canonical too, so `/tmp/…` and git's `/private/tmp/…` are one entry. */
 function normalizePathKey(p: string): string {
-  return p.replace(/\\/g, "/").replace(/\/+$/, "");
+  const slashed = p.replace(/\\/g, "/");
+  const real = path.isAbsolute(slashed) ? canonicalPath(slashed) : slashed;
+
+  return real.replace(/\\/g, "/").replace(/\/+$/, "");
 }
 
 /**

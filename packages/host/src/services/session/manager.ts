@@ -8,6 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
 import { error, info } from "@argus/host/logger";
+import { canonicalPath } from "../../lib/canonicalPath";
 import { appState } from "../../state";
 import { loadAppSettings } from "../appSettings/store";
 import { type AppDefaultLlm, resolveRunnerForSession } from "../llm/resolve";
@@ -1652,7 +1653,8 @@ async function createWorktree(
   purpose: WorktreePurpose = "user",
 ): Promise<WorktreeInfo> {
   const branchSlug = titleToBranchSlug(branch);
-  const worktreesDir = worktreesRoot(repoRoot, purpose);
+  // Spelled the way git will list it, or the session and git disagree on its path.
+  const worktreesDir = canonicalPath(worktreesRoot(repoRoot, purpose));
   const dirName = branchToDir(branchSlug);
   const worktreePath = path.join(worktreesDir, dirName);
 
@@ -1704,7 +1706,8 @@ async function checkoutBranchIntoWorktree(
   _baseBranch: string | undefined,
   purpose: WorktreePurpose = "user",
 ): Promise<WorktreeInfo> {
-  const worktreesDir = worktreesRoot(repoRoot, purpose);
+  // Spelled the way git will list it, or the session and git disagree on its path.
+  const worktreesDir = canonicalPath(worktreesRoot(repoRoot, purpose));
   const baseDir = branchToDir(branch);
   let worktreePath = `${worktreesDir}/${baseDir}`;
   let suffix = 2;
