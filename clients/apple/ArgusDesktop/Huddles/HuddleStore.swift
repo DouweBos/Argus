@@ -21,18 +21,34 @@ final class HuddleStore {
   var readCounts: [String: Int] = [:]
   /// The side chat is docked beside the agent.
   var chatOpen = false
+  /// Who drives each shared device, by device key; live rooms' keys only.
+  private(set) var drivers: [String: HuddleDrivers] = [:]
 
   init(store: HostStore, runtime: RuntimeModel) {
     self.store = store
     self.runtime = runtime
     _ = store.observeIpc { [weak self] channel, args, _ in
-      guard channel == "huddle:changed", let self else { return }
-      let rooms = args.first?["rooms"].flatMap {
-        try? ProtocolCodec.convert($0, to: [ArgusProtocol.HuddleRoomModel].self)
+      guard let self else { return }
+      switch channel {
+      case "huddle:changed":
+        let rooms = args.first?["rooms"].flatMap {
+          try? ProtocolCodec.convert($0, to: [ArgusProtocol.HuddleRoomModel].self)
+        }
+        self.rooms = rooms ?? []
+        self.seedDrivers()
+      case "devices:claim-changed":
+        guard let raw = args.first,
+          let state = try? ProtocolCodec.convert(raw, to: ArgusProtocol.RemoteDeviceClaimState.self),
+          self.rooms.contains(where: { $0.deviceKey == state.deviceId })
+        else { return }
+        self.drivers[state.deviceId] = HuddleDrivers(state)
+      default: break
       }
-      self.rooms = rooms ?? []
     }
     trackDevices()
+    store.huddleAuthor = { [weak self] agentId in
+      self?.room(forAgent: agentId).flatMap { $0.hostLabel.isEmpty ? nil : $0.hostLabel }
+    }
   }
 
   private var backend: (any HostBackend)? { store.backend }
@@ -42,12 +58,37 @@ final class HuddleStore {
   /// A room we just started, ahead of its `huddle:changed`.
   func adopt(_ room: ArgusProtocol.HuddleRoomModel) {
     if !rooms.contains(where: { $0.id == room.id }) { rooms.append(room) }
+    seedDrivers()
   }
 
   /// Hydrate on every (re)connect: a restarted host has no rooms.
   func load() async {
     guard let backend else { return }
     rooms = (try? await backend.request(ArgusProtocol.Commands.HuddleList.self, .init())) ?? []
+    seedDrivers()
+  }
+
+  func drivers(of room: ArgusProtocol.HuddleRoomModel) -> HuddleDrivers {
+    drivers[room.deviceKey] ?? .nobody
+  }
+
+  /// Seeded as well as subscribed: a guest who took the device before the
+  /// sheet opened would otherwise read as nobody until they next touch it.
+  private func seedDrivers() {
+    let keys = Set(rooms.map(\.deviceKey).filter { !$0.isEmpty })
+    drivers = drivers.filter { keys.contains($0.key) }
+    guard let backend else { return }
+    for key in keys where drivers[key] == nil {
+      drivers[key] = .nobody
+      Task { [weak self] in
+        guard
+          let state = try? await backend.request(
+            ArgusProtocol.Commands.DeviceClaimStatus.self, .init(deviceId: key))
+        else { return }
+        // A live change that landed first is newer than this answer.
+        if self?.drivers[key] == .nobody { self?.drivers[key] = HuddleDrivers(state) }
+      }
+    }
   }
 
   func room(forAgent agentId: String?) -> ArgusProtocol.HuddleRoomModel? {
@@ -167,9 +208,10 @@ final class HuddleStore {
       ]
       adopt(
         .init(
-          id: "fixture-\(agentId)", token: "t", agentId: agentId, deviceKey: "", url: url,
+          id: "fixture-\(agentId)", token: "t", agentId: agentId, deviceKey: "fixture-device", url: url,
           createdAt: now - 120_000, expiresAt: now + 3_600_000, guests: guests, hostTyping: false,
           hostLabel: "Host", chat: chat))
+      drivers["fixture-device"] = HuddleDrivers(holder: "Ana", waiting: [])
     }
   }
 #endif
