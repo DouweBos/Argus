@@ -9,7 +9,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   /// SwiftUI owns the delegate; a signal handler needs a way back to it.
   private(set) static weak var current: AppDelegate?
   private(set) var terminating = false
-  var skipQuitConfirmation = false
   #if DEBUG
     private var devDriver: DevDriver?
   #endif
@@ -33,27 +32,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     #endif
   }
 
-  /// Not from a main-queue block: `terminateLater` waits in a nested run loop,
-  /// and the main queue can't drain the shutdown while it is inside one.
+  /// Not through `NSApp.terminate`: AppKit won't quit while a sheet is up
+  /// (onboarding, any dialog), and a signal can't answer one. Shut the host
+  /// down the same way ⌘Q does, then exit.
   private nonisolated static func terminateFromSignal() {
-    let main = CFRunLoopGetMain()
-    CFRunLoopPerformBlock(main, CFRunLoopMode.commonModes.rawValue) {
-      MainActor.assumeIsolated {
-        guard let delegate = AppDelegate.current, !delegate.terminating else { return }
-        // Whoever sent it (another Argus taking over) already asked the user.
-        delegate.skipQuitConfirmation = true
-        // An open sheet makes AppKit refuse to quit and bring the app forward
-        // to show it instead; a signal can't answer the sheet, so close it
-        // and quit once it's gone.
-        delegate.model.newSessionProject = nil
-        delegate.model.deletingSession = nil
-        let timer = Timer(timeInterval: 0.3, repeats: false) { _ in
-          MainActor.assumeIsolated { NSApp.terminate(nil) }
-        }
-        RunLoop.main.add(timer, forMode: .common)
-      }
+    Task { @MainActor in
+      guard let delegate = AppDelegate.current, !delegate.terminating else { return }
+      delegate.terminating = true
+      await delegate.shutdownBounded()
+      exit(0)
     }
-    CFRunLoopWakeUp(main)
+  }
+
+  /// A host that won't go must not keep the app alive: the supervisor
+  /// SIGKILLs it after its own timeout, and this bounds everything else.
+  private func shutdownBounded() async {
+    await withTaskGroup(of: Void.self) { group in
+      group.addTask { await self.model.shutdown() }
+      group.addTask { try? await Task.sleep(for: .seconds(25)) }
+      await group.next()
+      group.cancelAll()
+    }
   }
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -63,19 +62,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     if terminating { return .terminateLater }
     let running = model.runningAgentCount
-    if running > 0, !skipQuitConfirmation, !confirmQuit(runningAgents: running) {
+    if running > 0, !confirmQuit(runningAgents: running) {
       return .terminateCancel
     }
     terminating = true
     Task {
-      // A host that won't go must not keep the app alive: the supervisor
-      // SIGKILLs it after its own timeout, and this bounds everything else.
-      await withTaskGroup(of: Void.self) { group in
-        group.addTask { await self.model.shutdown() }
-        group.addTask { try? await Task.sleep(for: .seconds(25)) }
-        await group.next()
-        group.cancelAll()
-      }
+      await shutdownBounded()
       NSApp.reply(toApplicationShouldTerminate: true)
     }
     return .terminateLater
