@@ -24,6 +24,9 @@ struct RootView: View {
   @State private var unlocked = false
   @State private var canAuthenticate = false
   @State private var biometryLabel: String?
+  #if DEBUG
+    @State private var devDriver: DevDriver?
+  #endif
   private var theme: Theme {
     Theme.resolved(for: app.themePreference.colorScheme ?? systemScheme)
   }
@@ -70,9 +73,6 @@ struct RootView: View {
     // Rotating an iPad, or resizing it in Split View, changes the column
     // count; carry the open destinations across rather than losing them.
     .onChange(of: sizeClass) { _, new in router.adopt(split: new == .regular) }
-    // Rotating an iPad, or resizing it in Split View, changes the column
-    // count; carry the open destinations across rather than losing them.
-
   }
 
   /// A tab bar on a phone, a system sidebar on an iPad — `sidebarAdaptable`
@@ -448,6 +448,10 @@ struct RootView: View {
 
   private func bootstrap() async {
     askingConsent = !Telemetry.hasAnsweredConsent
+    #if DEBUG
+      if devDriver == nil { devDriver = DevDriver.startIfConfigured(app: app, router: router) }
+      if devDriver != nil { askingConsent = false }
+    #endif
     if automations == nil { automations = AutomationsStore(host: app.host) }
     if proposals == nil { proposals = ProposalsStore(host: app.host) }
     if pullRequests == nil { pullRequests = PullRequestsStore(host: app.host) }
