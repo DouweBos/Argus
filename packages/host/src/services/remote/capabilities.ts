@@ -116,6 +116,7 @@ import {
 } from "../session/gitBranchOps";
 import { GitError, serializeGitError } from "../session/gitError";
 import { gitStatus } from "../session/gitStatus";
+import { gitListTags } from "../session/gitTags";
 import {
   clearSessionSetupError,
   createSession,
@@ -131,6 +132,9 @@ import {
   getSessionFullDiff,
   getSessionMergeBlockers,
   gitCommit,
+  gitStashApply,
+  gitStashDrop,
+  gitStashList,
   mergeSessionIntoBase,
   pushSessionBranch,
   setSessionBaseBranch,
@@ -1948,7 +1952,10 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { diff, base_branch: base };
   },
   "sessions.commit": async (params) => {
-    const { session_id, message, stage_all } = parse("sessions.commit", params);
+    const { session_id, message, stage_all, amend } = parse(
+      "sessions.commit",
+      params,
+    );
     requireSession(session_id);
     const output = await control(async () => {
       // A phone reviews whole files, so everything goes in unless the caller
@@ -1957,10 +1964,42 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         await stageAll(session_id);
       }
 
-      return await gitCommit(session_id, message, false);
+      return await gitCommit(session_id, message, amend ?? false);
     });
 
     return { output };
+  },
+  "sessions.stashes": async (params) => {
+    const { session_id } = parse("sessions.stashes", params);
+    requireSession(session_id);
+
+    return { stashes: await gitStashList(session_id) };
+  },
+  "sessions.stash_apply": async (params) => {
+    const { session_id, index, drop } = parse("sessions.stash_apply", params);
+    requireSession(session_id);
+    const output = await control(async () => {
+      const applied = await gitStashApply(session_id, index);
+
+      // Dropped only once the apply went through, so a conflict keeps it.
+      return drop
+        ? `${applied}\n${await gitStashDrop(session_id, index)}`.trim()
+        : applied;
+    });
+
+    return { output };
+  },
+  "sessions.stash_drop": async (params) => {
+    const { session_id, index } = parse("sessions.stash_drop", params);
+    requireSession(session_id);
+
+    return { output: await control(() => gitStashDrop(session_id, index)) };
+  },
+  "sessions.tags": async (params) => {
+    const { session_id } = parse("sessions.tags", params);
+    requireSession(session_id);
+
+    return { tags: await gitListTags(session_id) };
   },
   "sessions.push": async (params) => {
     const { session_id } = parse("sessions.push", params);

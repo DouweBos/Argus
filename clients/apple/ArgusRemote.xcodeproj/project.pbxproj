@@ -43,6 +43,7 @@
 		AD0D5B2D0F246BA5D6CAF9F2 /* AutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */; };
 		613A936BB70479302327501E /* AutomationEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */; };
 		5891A5D53C0F0C7CEF4DE90D /* QuickRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */; };
+		61D0A65B0EF57B4FB152AFF6 /* StashesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF27D5904269DE56D427462 /* StashesView.swift */; };
 		F70136FC258ED77D2D4D337A /* WarningsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */; };
 		91BEB5E2000254899FF02DBF /* DescribeAutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 894443D21C1F9129A450074B /* DescribeAutomationView.swift */; };
 		13A4F4FA7A12EE9750CF8397 /* ProposalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 265F66754A83F20EA323B6C6 /* ProposalView.swift */; };
@@ -106,6 +107,7 @@
 		21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationView.swift; sourceTree = "<group>"; };
 		D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationEditorView.swift; sourceTree = "<group>"; };
 		15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickRunView.swift; sourceTree = "<group>"; };
+		0EF27D5904269DE56D427462 /* StashesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StashesView.swift; sourceTree = "<group>"; };
 		2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WarningsView.swift; sourceTree = "<group>"; };
 		894443D21C1F9129A450074B /* DescribeAutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescribeAutomationView.swift; sourceTree = "<group>"; };
 		265F66754A83F20EA323B6C6 /* ProposalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProposalView.swift; sourceTree = "<group>"; };
@@ -268,6 +270,7 @@
 				21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */,
 				D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */,
 				15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */,
+				0EF27D5904269DE56D427462 /* StashesView.swift */,
 				2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */,
 				894443D21C1F9129A450074B /* DescribeAutomationView.swift */,
 				265F66754A83F20EA323B6C6 /* ProposalView.swift */,
@@ -535,6 +538,7 @@
 				AD0D5B2D0F246BA5D6CAF9F2 /* AutomationView.swift in Sources */,
 				613A936BB70479302327501E /* AutomationEditorView.swift in Sources */,
 				5891A5D53C0F0C7CEF4DE90D /* QuickRunView.swift in Sources */,
+				61D0A65B0EF57B4FB152AFF6 /* StashesView.swift in Sources */,
 				F70136FC258ED77D2D4D337A /* WarningsView.swift in Sources */,
 				91BEB5E2000254899FF02DBF /* DescribeAutomationView.swift in Sources */,
 				13A4F4FA7A12EE9750CF8397 /* ProposalView.swift in Sources */,

@@ -66,4 +66,18 @@ struct PhoneGatewayStoresTests {
     #expect(backend.calls("automations.set_default_autonomy").first?.params
       == .object(["autonomy": .null]))
   }
+
+  @Test func popsAStashAndAmends() async {
+    let backend = RecordingBackend(kind: .gateway)
+    backend.reply("sessions.stash_apply", #"{"output":"Dropped stash@{1}"}"#)
+    backend.reply("sessions.commit", #"{"output":"ok"}"#)
+    let host = HostStore()
+    await host.attach(backend)
+
+    #expect(await host.applyStash(sessionId: "s1", index: 1, drop: true) == "Dropped stash@{1}")
+    #expect(backend.calls("sessions.stash_apply").first?.params
+      == .object(["session_id": .string("s1"), "index": .number(1), "drop": .bool(true)]))
+    _ = await host.commit(sessionId: "s1", message: "m", amend: true)
+    #expect(backend.calls("sessions.commit").first?.params["amend"] == .bool(true))
+  }
 }

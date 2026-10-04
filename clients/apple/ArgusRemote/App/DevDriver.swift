@@ -282,6 +282,8 @@
       case "agent": self = .agent(id: arg(1), label: arg(2))
       case "terminals": self = .terminals(sessionId: arg(1), label: arg(2))
       case "terminal": self = .terminal(id: arg(1), label: arg(2))
+      case "changes": self = .changes(sessionId: arg(1), label: arg(2))
+      case "stashes": self = .stashes(sessionId: arg(1), label: arg(2))
       case "inbox": self = .inbox
       case "proposal": self = .proposal(id: arg(1))
       case "describeAutomation": self = .describeAutomation
