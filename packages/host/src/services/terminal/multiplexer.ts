@@ -38,6 +38,7 @@ import {
   resolveAccountForSession,
 } from "../claudeAuth/accounts";
 import { loadArgusConfig } from "../session/argusConfig";
+import { forgetPty, recordPty } from "./ptyLedger";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty = require("node-pty") as typeof NodePty;
@@ -418,6 +419,7 @@ export function createTerminal(
     cwd,
     env: cleanEnv,
   });
+  recordPty(ptyProcess.pid);
 
   // Coalesce PTY output on a short timer. Under heavy load (yarn/pnpm install,
   // verbose builds) node-pty emits many small chunks — batching them drops
@@ -487,6 +489,7 @@ export function createTerminal(
 
   // Forward exit notification to the renderer.
   ptyProcess.onExit(({ exitCode }: { exitCode: number }) => {
+    forgetPty(ptyProcess.pid);
     // Drain any buffered output before signalling exit so the renderer sees
     // trailing bytes (e.g. a failing command's last line) before the close.
     if (flushTimer !== null) {
