@@ -39,6 +39,11 @@ final class GitWorkspaces {
     case .failed, nil: break
     }
     slots[session.id] = .opening
+    if let router = host.backend as? HostRouter, case let hostId = router.host(of: .session, session.id),
+      hostId != Hosts.local
+    {
+      return await openRemote(session, on: hostId, router: router)
+    }
     guard let backend = host.backend,
       let path = (try? await backend.request(ArgusProtocol.Commands.GetSession.self, .init(id: session.id)))??.path,
       !path.isEmpty
@@ -53,6 +58,31 @@ final class GitWorkspaces {
       return workspace
     } catch {
       slots[session.id] = .failed(error.localizedDescription)
+      return nil
+    }
+  }
+
+  /// A session on a paired host: GroveKit runs git there, over the gateway.
+  private func openRemote(_ session: RemoteSession, on hostId: HostId, router: HostRouter) async -> GitWorkspace? {
+    let store = host
+    do {
+      let (runner, worktree) = try await GatewayGitRunner.open(
+        hostId: hostId, sessionId: session.id, backend: router
+      ) { channel, handler in
+        await MainActor.run {
+          nonisolated(unsafe) let stop = store.observeIpc { name, args, _ in
+            if name == channel, let payload = args.first { handler(payload) }
+          }
+          // `observeIpc`'s canceller hops to the main actor itself.
+          return { stop() }
+        }
+      }
+      let repository = try await GitRepository(path: worktree, runner: runner)
+      let workspace = GitWorkspace(session: session, repository: repository, host: host, isRemote: true)
+      slots[session.id] = .open(workspace)
+      return workspace
+    } catch {
+      slots[session.id] = .failed(HostStore.describe(error))
       return nil
     }
   }
