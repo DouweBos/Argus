@@ -78,6 +78,8 @@ headless Argus server, or `argus-host` — as well as its own:
   on its host; the connection is end-to-end encrypted. Links still open on
   this Mac; Reveal in Finder and Open in editor aren't available for files on
   another machine.
+- The git views work on a remote session too: git runs on its host, and the
+  views refresh when the host reports a change.
 - If a host drops, its agents keep running there. Its projects stay in the
   sidebar marked offline, and the app reconnects and catches up on its own.
 
