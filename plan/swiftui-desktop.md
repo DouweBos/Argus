@@ -200,6 +200,13 @@ explicitly dropped. Known so far:
   - M5 not built: Organisations (settings, org host session, member-repo context); the home screen's notification-permission and missing-dependency cards, update banner, "Needs you" / "Recent runs" sections and removing a project from recents.
   - M5 partial: guests driving the shared device aren't marked and host huddle messages carry no author; deep links work but the app doesn't claim `argus://` while Electron does; display size scales controls, not text; automations show raw cron with no preview or validation; deep-link presets reorder with buttons, not drag; inherited MCP servers have no test or tool list.
   - Two `WorktreeLocationField`s (App and Project settings) should become one, with the move-worktrees sheet shared.
+  - M4 partial: pull-request merge, comment and opening a PR only exercised up to their confirm dialogs; blame at an arbitrary ref (GroveKit can't).
+  - M4 not built: commit templates, Gitmoji, the identity switcher, LFS actions, patch apply, the all-files list.
+  - M4: host-run git commands report errors as plain strings, so the app can't offer git's recovery actions (e.g. force-with-lease) like Electron's error banner; a linked worktree's session watches the whole main `.git`, so busy sibling worktrees cause extra refreshes.
+  - M4: the ArgusDesktop target has no unit-test target, so route parsing and diff row building are untested.
+  - Layout: with the git sidebar, file list, diff and runtime panel open, the default window is too narrow; the app sidebar and runtime panel get clipped.
+  - Quit: SIGTERM doesn't quit the app while the onboarding sheet is open (it and its host keep running).
+  - Worktree sessions in a temp home didn't come back after an app restart (seen once in M4; may be the `/tmp` vs `/private/tmp` host bug below).
 - Host (found in M5):
   - `security -i` hangs when the host runs with a different `HOME`, blocking the host (only seen with a scratch `HOME` in tests).
   - A session keyed `/tmp/…` isn't found again after a restart because git reports `/private/tmp/…`.
@@ -207,12 +214,14 @@ explicitly dropped. Known so far:
   - `gen-protocol` types `huddle_say`'s params as the gateway's `HuddleSayParams`, which lacks `roomId`; the Mac app sends it by wire name.
   - Phone gaps found while building M5, all admin-only today: proposal request-revision and start-with-note, the full proposal record, deleting a run, an automation's track record, describing an automation, huddles, the app-level default autonomy and permission mode.
 - iOS app:
+  - None of the M4 git views reach the phone; it keeps the host's typed git methods until the remote GroveKit runner (M6) exists.
   - The all-agents list and read-only terminals were never run against a paired computer.
   - Phone terminals poll every 2 s rather than streaming.
 - GroveKit (fix in Grove, then bump the pin):
   - Branch actions (checkout, rename, delete, remotes, submodules, worktrees) still live in Grove's app-side `SidebarViewModel`.
   - Grove-specific wording and file names (`HostingError` messages, `grove/restack.json`, `grove-` scratch prefix) and shared `UserDefaults` keys.
   - `FileWatcher`, `WorktreeResolver` and view-model file actions still touch the local disk directly instead of going through the runner.
+  - From M4: a public `DiffParser` (or `DiffResult`/`FileDiff` initialisers) and a range diff `diff(from:to:)`; `BlameViewModel.open(file:revision:)`; an incremental `CommitGraphBuilder`; public `ListSelection.focus`, `WorkingCopyViewModel.selectedPath`, `PendingHunkDiscard.action`, `RestackPlan.steps`; a `nonisolated` `PullRequestHost.headRef` default; a linked-worktree watcher that ignores sibling worktrees; `RefName.isValid` and the branch-tree builder; an action hook on the view models for telemetry.
 - Release notes: the next Electron release is the first with the host lock; say so.
 - Electron features added after this plan was written: go through every `feat` commit on `main` since the plan (excluding `feat(mac)` / `feat(ios)`), add a parity row for each one the Mac app (and phone) lacks, and build it. Known so far: agents continuing automatically once a usage limit resets, the chat banner showing when they will, and cancelling it (`7b886845`, `40a54996`, `1da71602`). Re-run this sweep right before cutover, since Electron keeps shipping until then.
 
