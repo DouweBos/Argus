@@ -28,6 +28,16 @@ public struct DebugLogEntry: Identifiable, Equatable, Sendable {
     return source == .stderr
   }
 
+  /// The time of day from `timestamp` (`HH:mm:ss.SSS`), dropping the date and
+  /// zone simctl's `2026-10-04 21:04:54.120707+0200` carries.
+  public var clockTime: String? {
+    guard let timestamp else { return nil }
+    guard let match = timestamp.firstMatch(of: /(\d{2}:\d{2}:\d{2})(\.\d{1,3})?/) else {
+      return timestamp
+    }
+    return String(match.output.0)
+  }
+
   public func matches(_ needle: String) -> Bool {
     let needle = needle.trimmingCharacters(in: .whitespaces).lowercased()
     guard !needle.isEmpty else { return true }
@@ -46,8 +56,17 @@ public struct DebugLog: Sendable {
     self.limit = limit
   }
 
+  /// A chunk's unfinished last line, per stream, until the rest arrives.
+  private var partial: [DebugLogEntry.Source: String] = [:]
+
   public mutating func append(_ chunk: String, source: DebugLogEntry.Source) {
-    for line in chunk.split(whereSeparator: \.isNewline) where !line.isEmpty {
+    var text = (partial.removeValue(forKey: source) ?? "") + chunk
+    if let last = text.last, !last.isNewline {
+      let cut = text.lastIndex(where: \.isNewline).map { text.index(after: $0) } ?? text.startIndex
+      partial[source] = String(text[cut...])
+      text = String(text[..<cut])
+    }
+    for line in text.split(whereSeparator: \.isNewline) where !line.isEmpty {
       let text = String(line)
       let parsed = source == .stdout ? Self.structured(text) : nil
       entries.append(
@@ -62,6 +81,7 @@ public struct DebugLog: Sendable {
 
   public mutating func clear() {
     entries = []
+    partial = [:]
   }
 
   private static let levels: [String: DebugLogEntry.Level] = [
