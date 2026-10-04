@@ -51,7 +51,7 @@
 
     var body: some View {
       VStack(alignment: .leading, spacing: 6) {
-        if let at = status?.limitResumeAt {
+        if let at = ChatInputView.pendingLimitResume(status) {
           Banner(text: Labels.limitResumeBanner(at), actionLabel: "Cancel") {
             Task { await host.dismissLimitResume(agentId: agentId) }
           }

@@ -67,9 +67,15 @@ public struct ChatInputView: View {
     #endif
   }
 
+  /// A stopped agent's last status can still carry the continue it had queued.
+  static func pendingLimitResume(_ status: RemoteAgentStatus?) -> Double? {
+    guard let status, status.status != .stopped, status.status != .error else { return nil }
+    return status.limitResumeAt
+  }
+
   private var phoneBody: some View {
     VStack(alignment: .leading, spacing: 8) {
-      if let at = status?.limitResumeAt {
+      if let at = ChatInputView.pendingLimitResume(status) {
         Banner(text: Labels.limitResumeBanner(at), actionLabel: "Cancel") {
           Task { await host.dismissLimitResume(agentId: agentId) }
         }
