@@ -58,8 +58,8 @@ public final class HostIndex: Sendable {
   static let rootKeys = ["repoRoot", "repo_root", "projectRoot", "projectPath", "root"]
 
   /// The host a call's subject belongs to, in `hostRouting.ts`'s order:
-  /// session, agent, terminal, device, repo root, then a bare `id` naming any
-  /// of the first three. Nil when it names nothing this index knows.
+  /// session, agent, terminal, device, repo root, then any id key naming
+  /// something of another kind. Nil when it names nothing this index knows.
   public func subject(of params: JSONValue) -> HostId? {
     guard case .object(let object) = params else { return nil }
     let lookups: [([String], Kind)] = [
@@ -71,7 +71,10 @@ public final class HostIndex: Sendable {
         if case .string(let id) = object[key], let owner = host(of: kind, id) { return owner }
       }
     }
-    if case .string(let id) = object["id"] {
+    // Ids are uuids, and some commands name a terminal by `sessionId`, so any
+    // id-shaped key falls back to every table.
+    for key in ["id"] + Self.sessionKeys + Self.agentKeys + Self.terminalKeys {
+      guard case .string(let id) = object[key] else { continue }
       for kind in [Kind.session, .agent, .terminal] {
         if let owner = host(of: kind, id) { return owner }
       }

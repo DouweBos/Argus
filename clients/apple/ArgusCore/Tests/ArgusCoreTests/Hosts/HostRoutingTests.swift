@@ -23,6 +23,9 @@ struct HostIndexTests {
     // A bare id names a session, agent or terminal.
     #expect(index.subject(of: json(#"{"id":"s1"}"#)) == "mini")
     #expect(index.subject(of: json(#"{"id":"other"}"#)) == nil)
+    // Terminal commands name their terminal by `sessionId`.
+    index.remember(.terminal, "t1", host: "box")
+    #expect(index.subject(of: json(#"{"sessionId":"t1","data":"x"}"#)) == "box")
   }
 
   @Test func learnsIdsFromListsAndEvents() {
