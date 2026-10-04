@@ -12,6 +12,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
 import { hostPlatform } from "@argus/host/platform";
+import { checkoutRoot } from "../../lib/checkoutRoot";
 
 const CLAUDE_BIN = "claude";
 const TIMEOUT_MS = 120_000;
@@ -24,7 +25,7 @@ function loadSchemaDoc(): string {
   }
   const docPath = hostPlatform().isPackaged()
     ? path.join(hostPlatform().resourcesPath(), "docs", "project-settings.md")
-    : path.join(process.cwd(), "docs", "project-settings.md");
+    : path.join(checkoutRoot(), "docs", "project-settings.md");
   try {
     cachedSchemaDoc = readFileSync(docPath, "utf-8");
   } catch (e) {

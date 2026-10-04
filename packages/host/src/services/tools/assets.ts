@@ -9,6 +9,7 @@
  */
 
 import path from "node:path";
+import { checkoutRoot } from "@argus/host/lib/checkoutRoot";
 import { hostPlatform } from "@argus/host/platform";
 
 interface AssetSpec {
@@ -53,5 +54,5 @@ export function resolveAssetPath(assetName: string): string {
     return path.join(hostPlatform().resourcesPath(), spec.name);
   }
 
-  return path.join(process.cwd(), spec.source);
+  return path.join(checkoutRoot(), spec.source);
 }

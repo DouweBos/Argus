@@ -45,6 +45,7 @@ import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "@argus/host/logger";
 import { hostPlatform } from "@argus/host/platform";
 import { argusHomeDir } from "../../lib/argusHome";
+import { checkoutRoot } from "../../lib/checkoutRoot";
 import { appState } from "../../state";
 import {
   automationDisallowedTools,
@@ -139,7 +140,7 @@ function loadPromptFile(filename: string): string {
   try {
     const promptPath = hostPlatform().isPackaged()
       ? path.join(hostPlatform().resourcesPath(), filename)
-      : path.join(process.cwd(), "packages", "host", "prompts", filename);
+      : path.join(checkoutRoot(), "packages", "host", "prompts", filename);
 
     return readFileSync(promptPath, "utf-8");
   } catch (e) {
