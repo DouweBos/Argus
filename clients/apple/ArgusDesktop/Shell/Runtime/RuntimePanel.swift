@@ -8,6 +8,7 @@ struct RuntimePanel: View {
   @Environment(\.openWindow) private var openWindow
   @Environment(HostStore.self) private var store
   @Environment(RuntimeModel.self) private var runtime
+  @Environment(DesktopModel.self) private var model
   let sessionId: String?
 
   /// How often the device lists are refetched while the panel is up.
@@ -42,6 +43,11 @@ struct RuntimePanel: View {
       }
     }
     .task(id: "\(sessionId ?? "")|\(store.connection == .ready)") {
+      let host = sessionId.map(model.host(ofSession:)) ?? model.hosts.focused
+      if runtime.hostId != host {
+        runtime.hostId = host
+        await runtime.refresh()
+      }
       await runtime.loadProject(repoRoot: sessionId.flatMap { store.repoRoot(forSessionId: $0) })
     }
     .onChange(of: "\(inspectorAvailable)|\(logsAvailable)") {
@@ -109,6 +115,7 @@ struct RuntimePanel: View {
 /// Platform and device in one menu: picking a device implies its platform.
 struct RuntimeTargetPicker: View {
   @Environment(RuntimeModel.self) private var runtime
+  @Environment(DesktopModel.self) private var model
   let sessionId: String?
 
   var body: some View {

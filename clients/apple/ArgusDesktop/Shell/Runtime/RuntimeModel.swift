@@ -74,6 +74,9 @@ final class RuntimeModel {
   }
 
   private var backend: (any HostBackend)? { store.backend }
+  /// The machine whose devices the panel lists: the shown session's, or the
+  /// shown machine's on the Devices screen. A device it lists routes there after.
+  var hostId: HostId = Hosts.local
 
   // MARK: Selection
 
@@ -142,6 +145,10 @@ final class RuntimeModel {
 
   /// Every list the picker offers, whatever platform is showing.
   func refresh() async {
+    await HostRouter.$pinned.withValue(hostId) { await refreshLists() }
+  }
+
+  private func refreshLists() async {
     guard let backend else { return }
     do {
       simulators = try await backend.request(ArgusProtocol.Commands.ListSimulators.self, .init())
@@ -160,6 +167,10 @@ final class RuntimeModel {
   }
 
   func loadProject(repoRoot: String?) async {
+    await HostRouter.$pinned.withValue(hostId) { await loadProjectSettings(repoRoot: repoRoot) }
+  }
+
+  private func loadProjectSettings(repoRoot: String?) async {
     guard let backend else { return }
     enabledTools =
       (try? await backend.request(ArgusProtocol.Commands.GetEnabledTools.self, .init())) ?? [:]
