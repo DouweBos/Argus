@@ -1,3 +1,4 @@
+import ArgusCore
 import ArgusUI
 import GroveKit
 import SwiftUI
@@ -15,7 +16,13 @@ struct WorkingCopyView: View {
   var body: some View {
     VStack(spacing: 0) {
       if let error = vm.errorMessage {
-        GitErrorBanner(message: error) { vm.clearError() }
+        let typed = workspace.isRemote ? RemoteGitFailures.shared.recent(sessionId: workspace.sessionId) : nil
+        GitFailureBanner(
+          workspace: workspace, session: nil,
+          failure: typed.map { GitFailure(kind: $0.kind, message: error, recovery: $0.recovery, details: $0.details) }
+            ?? GitFailure.classify(error),
+          canRetry: false
+        ) { vm.clearError() }
       }
       if vm.isInOperation {
         OperationBanner(workspace: workspace)

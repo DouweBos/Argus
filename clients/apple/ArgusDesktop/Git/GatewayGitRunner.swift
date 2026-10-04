@@ -85,6 +85,9 @@ nonisolated struct GatewayGitRunner: GitRunner {
         }
       }
     }
+    if let failure = result.failure {
+      RemoteGitFailures.shared.record(GitFailure(failure, stderr: result.stderr), sessionId: sessionId)
+    }
     var stdout = Data(base64Encoded: result.stdout) ?? Data()
     if let outputId = result.outputId {
       stdout = try await page(outputId)

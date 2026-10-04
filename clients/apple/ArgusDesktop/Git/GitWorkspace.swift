@@ -30,8 +30,20 @@ final class GitWorkspace {
   var visible: GitRoute? {
     didSet { if visible != oldValue { Task { await refreshVisibleIfStale() } } }
   }
-  /// Why the last host-run git command failed, for the panel's banner.
-  var hostError: String?
+  /// Why the last git command the panel ran failed, typed for the banner's fixes.
+  var failure: GitFailure?
+  /// Runs the failed command again, for Retry and Stash and Retry.
+  private(set) var retry: (@MainActor () async -> Void)?
+  /// The last push, so Pull Then Push and Force Push can repeat it.
+  var lastPush: ArgusProtocol.CommandsTypes.GitPushV2Params?
+  var hostError: String? {
+    get { failure?.message }
+    set {
+      guard newValue == nil else { return }
+      failure = nil
+      retry = nil
+    }
+  }
   /// A host-run command is in flight (fetch, pull, push, checkout, …).
   private(set) var hostBusy: String?
   /// Bumped by every refresh, so a view can key work on it.
@@ -220,7 +232,10 @@ final class GitWorkspace {
       await refreshAll()
       return result
     } catch {
-      hostError = HostStore.describe(error)
+      failure = GitFailure(error: error) ?? GitFailure.classify(HostStore.describe(error), operation: C.name)
+      // A metatype is immutable; Swift just can't prove `C.Type` is Sendable here.
+      nonisolated(unsafe) let again = command
+      retry = { [weak self] in _ = await self?.host(again, params, label: label, track: action) }
       if let action { track(action, success: false) }
       await refreshAll()
       return nil
@@ -239,7 +254,8 @@ final class GitWorkspace {
       await refreshAll()
       return true
     } catch {
-      hostError = error.localizedDescription
+      failure = GitFailure.classify(error.localizedDescription, operation: action.rawValue)
+      retry = nil
       track(action, success: false)
       await refreshAll()
       return false

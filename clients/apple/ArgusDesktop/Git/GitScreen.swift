@@ -53,8 +53,10 @@ struct GitWorkspaceView: View {
         .frame(width: 230)
       Divider()
       VStack(spacing: 0) {
-        if let error = workspace.hostError {
-          GitErrorBanner(message: error) { workspace.hostError = nil }
+        if let failure = workspace.failure {
+          GitFailureBanner(workspace: workspace, session: session, failure: failure, canRetry: workspace.retry != nil) {
+            workspace.hostError = nil
+          }
         }
         if let error = workspace.undo.errorMessage {
           GitErrorBanner(message: "\(workspace.undo.errorTitle): \(error)") { workspace.undo.dismissError() }
@@ -114,30 +116,5 @@ struct GitWorkspaceView: View {
     case .pullRequests:
       ProjectPullRequestsView(repoRoot: session.repoRoot)
     }
-  }
-}
-
-/// A failed git command: what git said, dismissable.
-struct GitErrorBanner: View {
-  @Environment(\.theme) private var theme
-  let message: String
-  let dismiss: () -> Void
-
-  var body: some View {
-    HStack(alignment: .top, spacing: 8) {
-      Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(theme.error)
-      Text(message)
-        .font(.system(size: 12))
-        .textSelection(.enabled)
-        .frame(maxWidth: .infinity, alignment: .leading)
-      Button("Copy") { Clipboard.copy(message) }
-        .buttonStyle(.borderless)
-        .controlSize(.small)
-      Button(action: dismiss) { Image(systemName: "xmark") }
-        .buttonStyle(.borderless)
-        .help("Dismiss")
-    }
-    .padding(10)
-    .background(theme.errorSoft)
   }
 }
