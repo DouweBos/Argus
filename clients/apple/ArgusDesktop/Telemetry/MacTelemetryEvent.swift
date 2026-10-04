@@ -115,6 +115,14 @@ enum MacTelemetryEvent {
     /// Archive or unarchive a branch in the sidebar.
     case archive
     case setUpstream = "set_upstream"
+    /// A commit template or gitmoji went into the composer.
+    case template
+    case gitmoji
+    /// The repository's commit identity switched to a saved profile.
+    case identity
+    case lfsTrack = "lfs_track"
+    case patchCreate = "patch_create"
+    case patchApply = "patch_apply"
   }
 
   enum PullRequestAction: String {

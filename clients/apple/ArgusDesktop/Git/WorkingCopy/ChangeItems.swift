@@ -16,6 +16,8 @@ struct ChangeItem: Identifiable {
     case header(ChangeSection, count: Int)
     case directory(String, ChangeSection)
     case file(StatusEntry, ChangeSection, showsDirectory: Bool)
+    /// An unchanged tracked file, in the All Files list.
+    case tracked(String)
   }
 
   let id: String
@@ -36,9 +38,32 @@ struct ChangeItem: Identifiable {
 
   static func fileID(_ path: String, _ section: ChangeSection) -> String { "f:\(section.rawValue):\(path)" }
 
+  /// Every tracked file plus the untracked ones, by path; changed files keep
+  /// their status and stay selectable for the diff.
+  @MainActor
+  static func allFiles(_ vm: WorkingCopyViewModel, filter: String) -> [ChangeItem] {
+    allFiles(tracked: vm.allTrackedFiles, entries: vm.statusEntries, filter: filter)
+  }
+
+  @MainActor
+  static func allFiles(tracked: [String], entries: [StatusEntry], filter: String) -> [ChangeItem] {
+    let query = filter.trimmingCharacters(in: .whitespaces)
+    let byPath = Dictionary(entries.map { ($0.path, $0) }, uniquingKeysWith: { first, _ in first })
+    let paths = Set(tracked).union(byPath.keys).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    return paths
+      .filter { query.isEmpty || $0.localizedCaseInsensitiveContains(query) }
+      .map { path in
+        guard let entry = byPath[path] else { return ChangeItem(id: "t:\(path)", kind: .tracked(path)) }
+        let section: ChangeSection =
+          entry.isConflicted ? .conflicted : (entry.workdirStatus != .unmodified ? .unstaged : .staged)
+        return .file(entry, section, showsDirectory: true)
+      }
+  }
+
   /// Every row, grouped as the view model orders them; `filter` matches paths case-insensitively.
   @MainActor
   static func build(_ vm: WorkingCopyViewModel, filter: String) -> [ChangeItem] {
+    if vm.fileViewMode == .allFiles { return allFiles(vm, filter: filter) }
     let query = filter.trimmingCharacters(in: .whitespaces)
     func matching(_ entries: [StatusEntry]) -> [StatusEntry] {
       query.isEmpty ? entries : entries.filter { $0.path.localizedCaseInsensitiveContains(query) }

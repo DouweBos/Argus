@@ -9,6 +9,7 @@ struct ChangeRow: View {
   let entry: StatusEntry
   let section: ChangeSection
   let showsDirectory: Bool
+  var isLFS = false
   let toggleStage: () -> Void
 
   private var status: FileStatus {
@@ -31,6 +32,14 @@ struct ChangeRow: View {
           .truncationMode(.head)
       }
       Spacer(minLength: 4)
+      if isLFS {
+        Text("LFS")
+          .font(.system(size: 9, weight: .semibold))
+          .foregroundStyle(.secondary)
+          .padding(.horizontal, 4)
+          .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(.secondary.opacity(0.5)))
+          .help("Stored with Git LFS")
+      }
       if section != .conflicted {
         Button(action: toggleStage) {
           Image(systemName: section == .staged ? "minus.circle" : "plus.circle")
@@ -73,6 +82,7 @@ struct ChangeRowMenu: View {
     }
     Divider()
     ChangeFileActionsMenu(workspace: workspace, entries: entries)
+    ChangeLFSAndPatchMenu(workspace: workspace, entry: entry, section: section, entries: entries)
     Divider()
     Button(entries.count > 1 ? "Copy \(entries.count) Paths" : "Copy Path") {
       Clipboard.copy(entries.map(\.path).joined(separator: "\n"))

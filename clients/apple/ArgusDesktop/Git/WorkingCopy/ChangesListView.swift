@@ -6,6 +6,7 @@ import SwiftUI
 /// Conflicted / Staged / Unstaged files in one lazy list, with Finder-style
 /// multi-selection driven by the view model.
 struct ChangesListView: View {
+  @Environment(\.theme) private var theme
   let workspace: GitWorkspace
   var onShowFileHistory: ((String) -> Void)?
   @State private var filter = ""
@@ -18,7 +19,19 @@ struct ChangesListView: View {
     VStack(spacing: 0) {
       toolbar
       Divider()
+      if vm.lfs.status.isMissing {
+        Text(LFSStatus.missingMessage)
+          .font(.system(size: 11))
+          .foregroundStyle(theme.textSecondary)
+          .padding(8)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .background(theme.warning.opacity(0.12))
+        Divider()
+      }
       content
+    }
+    .sheet(item: Binding(get: { vm.patchApply }, set: { if $0 == nil { vm.cancelApplyPatch() } })) { request in
+      PatchApplySheet(workspace: workspace, request: request)
     }
   }
 
@@ -30,10 +43,20 @@ struct ChangesListView: View {
       Picker("View", selection: viewMode) {
         Image(systemName: FileViewMode.flatModified.symbol).help("List").tag(FileViewMode.flatModified)
         Image(systemName: FileViewMode.treeModified.symbol).help("Tree").tag(FileViewMode.treeModified)
+        Image(systemName: FileViewMode.allFiles.symbol).help("All Files").tag(FileViewMode.allFiles)
       }
       .pickerStyle(.segmented)
       .labelsHidden()
       .fixedSize()
+      // The patch file is on this Mac; a remote session's git can't read it.
+      if !workspace.isRemote {
+        Button { PatchPanels.chooseToApply(workspace: workspace) } label: {
+          Image(systemName: "doc.badge.arrow.up")
+        }
+        .buttonStyle(.borderless)
+        .help("Apply Patch…")
+        .accessibilityLabel("Apply Patch")
+      }
     }
     .padding(.horizontal, 8)
     .frame(height: 34)
@@ -53,7 +76,9 @@ struct ChangesListView: View {
         } else if !filter.isEmpty {
           ContentUnavailableView.search(text: filter)
         } else {
-          ContentUnavailableView("No changes", systemImage: "checkmark.circle", description: Text("The working tree is clean."))
+          ContentUnavailableView(
+            vm.fileViewMode == .allFiles ? "No files" : "No changes", systemImage: "checkmark.circle",
+            description: Text(vm.fileViewMode == .allFiles ? "Nothing is tracked yet." : "The working tree is clean."))
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -105,6 +130,9 @@ struct ChangesListView: View {
         .selectionDisabled()
     case .file(let entry, let section, let showsDirectory):
       fileRow(entry, section: section, showsDirectory: showsDirectory)
+    case .tracked(let path):
+      TrackedFileRow(path: path)
+        .contextMenu { TrackedFileMenu(workspace: workspace, path: path, onShowFileHistory: onShowFileHistory) }
     }
   }
 
@@ -132,7 +160,7 @@ struct ChangesListView: View {
       click(entry, section: section)
     } label: {
       ChangeRow(
-        entry: entry, section: section, showsDirectory: showsDirectory,
+        entry: entry, section: section, showsDirectory: showsDirectory, isLFS: vm.isLFS(entry),
         toggleStage: {
           Task { section == .staged ? await actions.unstage(entry) : await actions.stage(entry) }
         }
