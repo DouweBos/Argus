@@ -37,6 +37,7 @@ struct AutomationEditorForm: View {
         TextField("Cron", text: optional(\.cron), prompt: Text("0 9 * * 1-5"))
           .font(.system(.body, design: .monospaced))
         TextField("Timezone", text: optional(\.timezone), prompt: Text(TimeZone.current.identifier))
+        if let preview = draft.schedulePreviewText() { SchedulePreviewRow(preview: preview) }
         Toggle("Catch up after the computer was asleep", isOn: $draft.catchUp)
       }
     } header: {
@@ -162,6 +163,25 @@ struct AutomationEditorForm: View {
         draft[keyPath: path].removeAll { $0 == value }
         if on { draft[keyPath: path].append(value) }
       })
+  }
+}
+
+/// What a schedule means before it's saved, or why the host would reject it.
+private struct SchedulePreviewRow: View {
+  let preview: SchedulePreviewText
+
+  var body: some View {
+    if let error = preview.error {
+      Label(error, systemImage: "exclamationmark.triangle.fill")
+        .foregroundStyle(.red)
+    } else {
+      LabeledContent("Next runs") {
+        VStack(alignment: .trailing, spacing: 2) {
+          if let headline = preview.headline { Text(headline).bold() }
+          ForEach(preview.runs, id: \.self) { Text($0).monospacedDigit().foregroundStyle(.secondary) }
+        }
+      }
+    }
   }
 }
 
