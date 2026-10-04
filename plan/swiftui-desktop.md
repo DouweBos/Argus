@@ -230,7 +230,7 @@ explicitly dropped. Known so far (struck through = done, **Dropped:** = won't do
   - ~~The all-agents list and read-only terminals were never run against a paired computer.~~ Run against a scratch host; the agents list now refreshes while open.
   - ~~Phone terminals poll every 2 s rather than streaming.~~ Streamed with replay on attach; older hosts still polled.
   - A phone paired to a headless host (no window open) gets no transcripts and its sends stay at "Sending…": transcripts come from snapshots only a window publishes.
-  - Proposal card buttons are cut off ("Start ses…") on an iPhone 17 Pro.
+  - ~~Proposal card buttons are cut off ("Start ses…") on an iPhone 17 Pro.~~
 - GroveKit (fix in Grove, then bump the pin). All built on Grove's `grovekit-argus-followups-a14984` branch (unreleased); Argus adopts them after the release: drop the `/bin/sh` replay, `PullRequestPatch`'s scratch repo, `CompareModel`'s `commit-tree` trick, the blame-at-ref walk, Argus's `BranchTreeNode` and `GitNameSheet.isValidRef`, wire `onAction` into telemetry, and pass `GitNaming(name: "grove")` to share Grove's restacks and branch parents.
   - ~~From M6: `ShellResult` has no public initializer, so a runner outside GroveKit can't build one; Argus's gateway runner replays the host's output through a local `/bin/sh` via `LocalGitRunner` (stderr capped at 64 KB). `GitRunner.withGitExecutable`'s default is main-actor isolated, so conformers must spell it out.~~
   - ~~Branch actions (checkout, rename, delete, remotes, submodules, worktrees) still live in Grove's app-side `SidebarViewModel`.~~
