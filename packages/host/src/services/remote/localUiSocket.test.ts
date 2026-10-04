@@ -36,6 +36,8 @@ const { nodeHostPlatform } = await import("../../platform");
 const { encodeFrame, frameReader, startLocalUiSocket } =
   await import("./localUiSocket");
 const { uiHostPlatform } = await import("./uiHostPlatform");
+const { onConnectionClose } = await import("./connectionScope");
+const connectionClosed = vi.fn();
 
 type Envelope = Record<string, unknown>;
 
@@ -94,6 +96,14 @@ describe("local UI socket", () => {
       tier: "admin",
       handler: () => ({ admin: true }),
     });
+    defineCommand("local_ui_scoped_cmd", {
+      tier: "admin",
+      handler: () => {
+        onConnectionClose(connectionClosed);
+
+        return {};
+      },
+    });
   });
 
   let dir: string;
@@ -144,6 +154,16 @@ describe("local UI socket", () => {
       admin: true,
     });
     client.socket.destroy();
+  });
+
+  it("runs what a request left behind once its client disconnects", async () => {
+    const client = await connectClient(socketPath);
+    await client.request("local_ui_scoped_cmd");
+    expect(connectionClosed).not.toHaveBeenCalled();
+
+    client.socket.destroy();
+
+    await vi.waitFor(() => expect(connectionClosed).toHaveBeenCalledOnce());
   });
 
   it("forwards typed agent events and raw broadcasts the typed dialect lacks", async () => {

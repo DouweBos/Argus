@@ -65,6 +65,7 @@ import {
   type DeviceMediaController,
   type GatewayContext,
 } from "./capabilities";
+import { closeConnection, runInConnection } from "./connectionScope";
 import { releaseConnection, releaseDevice } from "./deviceClaims";
 import {
   guestChatIdentity,
@@ -437,6 +438,7 @@ export class DeviceConnection implements DeviceMediaController {
       leaveGuest(this.guest.roomId, this.guest.devStaticPub);
     }
     releaseConnection(this.connectionId);
+    closeConnection(this.connectionId);
   }
 
   // --- DeviceMediaController -------------------------------------------------
@@ -646,7 +648,9 @@ export class DeviceConnection implements DeviceMediaController {
       return this.handleTypedEvents(params);
     }
 
-    return await dispatch(method, params, this.ctx);
+    return await runInConnection(this.connectionId, () =>
+      dispatch(method, params, this.ctx),
+    );
   }
 
   /**
