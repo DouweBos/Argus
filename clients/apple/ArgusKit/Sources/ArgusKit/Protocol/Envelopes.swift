@@ -162,6 +162,12 @@ public struct GatewayErrorPayload: Codable, Sendable, Error {
   public var message: String
   public var data: JSONValue?
 
+  public init(code: String, message: String, data: JSONValue? = nil) {
+    self.code = code
+    self.message = message
+    self.data = data
+  }
+
   /// The host refused on capability grounds, not because the call was wrong.
   public var isCapabilityDenied: Bool { code == "capability_denied" }
   public var isNotFound: Bool { code == "not_found" }

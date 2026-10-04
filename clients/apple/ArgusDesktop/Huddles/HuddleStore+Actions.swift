@@ -55,7 +55,7 @@ extension HuddleStore {
     // By wire name: the catalog's typed `HuddleSay.Params` resolves to the
     // gateway's `HuddleSayParams`, which has no room id.
     act(.say, room) { backend in
-      guard let local = backend as? LocalBackend else { return false }
+      guard let local = backend as? HostRouter else { return false }
       return try await local.request(
         method: ArgusProtocol.Commands.HuddleSay.name,
         ArgusProtocol.CommandsTypes.HuddleSayParams(roomId: room.id, text: text), as: Bool.self)

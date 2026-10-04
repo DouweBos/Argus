@@ -83,7 +83,7 @@ public final class LiveAgents {
   /// Find every agent the host is running and subscribe to each. Runs on
   /// attach and after every reconnect: subscriptions belong to a connection,
   /// so a new one starts with none.
-  func resync() async {
+  public func resync() async {
     guard let backend else { return }
     // Only agents known before asking can be judged gone by the answer: one
     // that starts while the request is in flight isn't in it yet.

@@ -39,7 +39,7 @@ final class ArgusJsonGenerator {
   var isBusy: Bool { [.generatingQuick, .generatingClaude, .saving].contains(phase) }
   var proposedText: String { ConfigJSON.string(.object(proposed ?? [:])) }
 
-  func load(_ backend: LocalBackend) async {
+  func load(_ backend: HostRouter) async {
     let found = try? await backend.request(
       ArgusProtocol.Commands.OnboardingReadExistingArgusJson.self, .init(path: repoRoot))
     existing = found ?? nil
@@ -47,7 +47,7 @@ final class ArgusJsonGenerator {
   }
 
   /// Fast, no network: package.json, lockfiles, platform dirs.
-  func quick(_ backend: LocalBackend) async {
+  func quick(_ backend: HostRouter) async {
     phase = .generatingQuick
     error = nil
     do {
@@ -60,7 +60,7 @@ final class ArgusJsonGenerator {
   }
 
   /// Runs the Claude CLI in the repo over the inferred config (~30–90s).
-  func claude(_ backend: LocalBackend) async {
+  func claude(_ backend: HostRouter) async {
     phase = .generatingClaude
     error = nil
     do {
@@ -75,7 +75,7 @@ final class ArgusJsonGenerator {
     }
   }
 
-  func save(_ backend: LocalBackend) async {
+  func save(_ backend: HostRouter) async {
     guard let proposed else { return }
     phase = .saving
     error = nil
@@ -100,7 +100,7 @@ final class ArgusJsonGenerator {
     phase = .choosing
   }
 
-  private func suggest(_ backend: LocalBackend) async throws {
+  private func suggest(_ backend: HostRouter) async throws {
     let suggestion = try await backend.request(
       ArgusProtocol.Commands.OnboardingSuggestArgusJson.self, .init(path: repoRoot))
     proposed = suggestion.config

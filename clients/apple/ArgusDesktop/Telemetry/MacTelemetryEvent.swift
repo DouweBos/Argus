@@ -58,6 +58,10 @@ enum MacTelemetryEvent {
   /// What a git action did, from any git view. GroveKit runs these in the app,
   /// so the host never sees them; host-run ones (merge into base, PRs) are
   /// captured there instead.
+  enum HostsAction: String {
+    case pair, attach, detach, forget, rename, focus
+  }
+
   enum GitAction: String {
     case stage
     case unstage
@@ -203,8 +207,11 @@ enum MacTelemetryEvent {
   case devicePower(action: PowerAction, platform: String)
   case browserUsed(action: BrowserAction)
   case inspectionUsed(action: InspectionAction, success: Bool)
-  /// A git action from the git panel; `scope` is `session` or `project`.
-  case gitUsed(action: GitAction, scope: String, success: Bool)
+  /// A git action from the git panel; `scope` is `session` or `project`,
+  /// `remote` when the session is on a paired host.
+  case gitUsed(action: GitAction, scope: String, remote: Bool, success: Bool)
+  /// Another host was paired, attached, detached, forgotten, renamed or shown.
+  case hostsUsed(action: HostsAction, success: Bool)
   /// A pull request was opened, merged, commented on or closed through the host's `gh`.
   case pullRequestActed(action: PullRequestAction)
   /// A command palette entry was run; `section` is its group, never its title.
@@ -258,6 +265,7 @@ enum MacTelemetryEvent {
     case .browserUsed: "mac_browser_used"
     case .inspectionUsed: "mac_inspection_used"
     case .gitUsed: "mac_git_used"
+    case .hostsUsed: "mac_hosts_used"
     case .pullRequestActed: "mac_pull_request_acted"
     case .paletteCommandRun: "mac_palette_command_run"
     case .handoffContinued: "mac_handoff_continued"
@@ -321,8 +329,10 @@ enum MacTelemetryEvent {
       ["action": action.rawValue]
     case .inspectionUsed(let action, let success):
       ["action": action.rawValue, "success": success]
-    case .gitUsed(let action, let scope, let success):
-      ["action": action.rawValue, "scope": scope, "success": success]
+    case .gitUsed(let action, let scope, let remote, let success):
+      ["action": action.rawValue, "scope": scope, "remote": remote, "success": success]
+    case .hostsUsed(let action, let success):
+      ["action": action.rawValue, "success": success]
     case .pullRequestActed(let action):
       ["action": action.rawValue]
     case .paletteCommandRun(let section):
@@ -379,5 +389,11 @@ enum MacTelemetryEvent {
     case 4096..<65536: "<64k"
     default: "64k+"
     }
+  }
+}
+
+extension MacTelemetryEvent.HostsAction {
+  init(_ action: RemoteHostsStore.Action) {
+    self = Self(rawValue: action.rawValue) ?? .attach
   }
 }

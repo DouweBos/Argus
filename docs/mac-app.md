@@ -60,6 +60,30 @@ go through the host, exactly as in the Electron app.
 - The command palette (⇧⌘P), and Handoff of the session on screen to your
   phone.
 
+## Other hosts
+
+Argus for Mac can drive other machines running Argus — another Mac, a
+headless Argus server, or `argus-host` — as well as its own:
+
+- **Settings → Hosts** pairs with one: paste the pairing code from that
+  machine's Remote screen, compare the 6-digit code, and approve it there with
+  **Admin** ticked. Paired hosts can be renamed, attached, detached, shown or
+  forgotten.
+- Attached hosts' projects sit in the sidebar beside this Mac's, each marked
+  with its machine and whether it's connected. The machines menu at the top
+  of the sidebar narrows it to one machine and shows that machine on the
+  screens that aren't about one session (Home, Devices, Automations, Inbox,
+  Settings).
+- Sessions, agents, terminals and the runtime panel of a remote project run
+  on its host; the connection is end-to-end encrypted. Links still open on
+  this Mac; Reveal in Finder and Open in editor aren't available for files on
+  another machine.
+- If a host drops, its agents keep running there. Its projects stay in the
+  sidebar marked offline, and the app reconnects and catches up on its own.
+
+The keys for paired hosts are kept in a file in the app's state folder that
+only your user can read.
+
 ## How it relates to the Electron app
 
 Both apps run the Argus host on the same `~/.argus`, and **only one may run at

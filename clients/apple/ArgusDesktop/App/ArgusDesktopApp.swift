@@ -15,6 +15,7 @@ struct ArgusDesktopApp: App {
         .environment(delegate.model.runtime)
         .environment(delegate.model.automations)
         .environment(delegate.model.proposals)
+        .environment(delegate.model.hosts)
         .frame(minWidth: 960, minHeight: 600)
         // Deep links, once a build claims `argus://` (see docs/mac-app.md).
         .onOpenURL { url in
@@ -38,6 +39,7 @@ struct ArgusDesktopApp: App {
         .environment(delegate.model)
         .environment(delegate.model.store)
         .environment(delegate.model.automations)
+        .environment(delegate.model.hosts)
     }
 
     // Device popouts float above everything, as on the desktop.

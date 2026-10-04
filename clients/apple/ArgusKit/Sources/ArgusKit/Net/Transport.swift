@@ -30,7 +30,7 @@ public actor Transport {
   private static let tagJSON: UInt8 = 0x00
   private static let tagMedia: UInt8 = 0x01
 
-  private static let requestTimeout: Duration = .seconds(15)
+  public static let requestTimeout: Duration = .seconds(15)
 
   public let url: String
   private let identity: DeviceIdentity
@@ -211,16 +211,34 @@ public actor Transport {
   /// command type.
   @discardableResult
   public func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
-    name: String, _ params: Params, as _: Result.Type = Result.self
+    name: String, _ params: Params, as _: Result.Type = Result.self,
+    timeout: Duration = Transport.requestTimeout
   ) async throws -> Result {
-    try await send(name, params, as: Result.self)
+    try await send(name, params, as: Result.self, timeout: timeout)
+  }
+
+  /// A request plus the response's place in this connection's sequence of
+  /// events and responses, so a snapshot can be stitched onto later events.
+  public func sequencedRequest<Params: Encodable & Sendable, Result: Decodable & Sendable>(
+    name: String, _ params: Params, as _: Result.Type
+  ) async throws -> (result: Result, seq: Int) {
+    let response = try await exchange(name, params, timeout: Self.requestTimeout)
+    return (try ProtocolCodec.convert(response.ok ?? .null, to: Result.self), response.seq)
   }
 
   private func send<Params: Encodable, Result: Decodable>(
     _ method: String,
     _ params: Params,
-    as _: Result.Type
+    as _: Result.Type,
+    timeout: Duration = Transport.requestTimeout
   ) async throws -> Result {
+    let response = try await exchange(method, params, timeout: timeout)
+    return try ProtocolCodec.convert(response.ok ?? .null, to: Result.self)
+  }
+
+  private func exchange<Params: Encodable>(
+    _ method: String, _ params: Params, timeout: Duration
+  ) async throws -> ResponseEnvelope {
     guard session != nil else { throw TransportError.notReady }
     let id = "r\(sendSeq)"
     let envelope = RequestEnvelope(seq: sendSeq, id: id, method: method, params: params)
@@ -233,7 +251,7 @@ public actor Transport {
         return try await self.awaitResponse(id: id, sending: data)
       }
       group.addTask {
-        try await Task.sleep(for: Self.requestTimeout)
+        try await Task.sleep(for: timeout)
         throw TransportError.timedOut
       }
       guard let first = try await group.next() else { throw TransportError.timedOut }
@@ -242,14 +260,23 @@ public actor Transport {
     }
 
     if let error = response.error { throw TransportError.gateway(error) }
-    return try ProtocolCodec.convert(response.ok ?? .null, to: Result.self)
+    return response
   }
 
+  /// Cancellable, so a timed-out request doesn't keep its task group waiting.
   private func awaitResponse(id: String, sending data: Data) async throws -> ResponseEnvelope {
-    try await withCheckedThrowingContinuation { continuation in
-      pending[id] = continuation
-      Task { await emit(data) }
+    try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { continuation in
+        pending[id] = continuation
+        Task { await emit(data) }
+      }
+    } onCancel: {
+      Task { await self.cancel(id) }
     }
+  }
+
+  private func cancel(_ id: String) {
+    pending.removeValue(forKey: id)?.resume(throwing: CancellationError())
   }
 
   /// Subscriptions are per agent and gate which `agent.*` / `permission.*`

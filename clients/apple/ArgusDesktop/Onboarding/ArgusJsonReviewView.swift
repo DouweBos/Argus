@@ -34,7 +34,7 @@ struct ArgusJsonReviewView: View {
     .task { if generator.phase == .loading, let backend { await generator.load(backend) } }
   }
 
-  private var backend: LocalBackend? { model.backend }
+  private var backend: HostRouter? { model.backend }
 
   private var choosing: some View {
     VStack(alignment: .leading, spacing: 16) {
@@ -60,7 +60,7 @@ struct ArgusJsonReviewView: View {
 
   private func option(
     title: String, detail: String, button: String, busy: Bool, prominent: Bool,
-    run: @escaping (LocalBackend) async -> Void
+    run: @escaping (HostRouter) async -> Void
   ) -> some View {
     VStack(alignment: .leading, spacing: 6) {
       Text(title).font(.headline)

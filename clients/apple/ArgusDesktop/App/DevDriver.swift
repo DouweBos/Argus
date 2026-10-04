@@ -316,6 +316,36 @@
           await model.reload()
         }
         return ["ok": true]
+      case "hosts":
+        // Paired hosts, what's attached and how each link is doing.
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        let hosts = model.hosts
+        return [
+          "hosts": hosts.hosts.map {
+            ["id": $0.deviceId, "label": $0.label, "url": $0.url, "caps": $0.capabilities,
+             "attached": hosts.attached.contains($0.deviceId), "state": hosts.state($0.deviceId).title]
+          },
+          "pairing": "\(hosts.pairing)", "focused": hosts.focused,
+          "filter": model.machineFilter ?? "",
+          "projects": model.store.projects.map { "\($0.repoRoot) @\(model.host(ofProject: $0.repoRoot))" },
+        ]
+      case "hostAction":
+        // What the Hosts settings tab and the machines menu do.
+        guard let model = AppDelegate.current?.model, let action = command["action"] as? String else {
+          return ["error": "action?"]
+        }
+        let id = command["id"] as? String ?? ""
+        switch action {
+        case "pair": model.hosts.startPairing(code: command["code"] as? String ?? "")
+        case "cancelPairing": model.hosts.cancelPairing()
+        case "attach": model.hosts.attach(id)
+        case "detach": Task { await model.hosts.detach(id) }
+        case "forget": Task { await model.hosts.forget(id) }
+        case "rename": model.hosts.rename(id, to: command["label"] as? String ?? "")
+        case "show": model.showMachine(id.isEmpty ? nil : id)
+        default: return ["error": "unknown action"]
+        }
+        return ["ok": true]
       case "routePath":
         guard let model = AppDelegate.current?.model, let path = command["path"] as? String,
           let route = DesktopRoute(path: path)

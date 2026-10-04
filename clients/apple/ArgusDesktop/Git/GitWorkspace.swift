@@ -13,6 +13,8 @@ final class GitWorkspace {
   let sessionId: String
   let repoRoot: String
   let isProjectRoot: Bool
+  /// On a paired host: git runs there, and its broadcasts stand in for a file watcher.
+  let isRemote: Bool
   let repository: GitRepository
   /// One read of branches, tags and remotes per refresh, shared by every view.
   let refs: RepositoryRefs
@@ -45,8 +47,9 @@ final class GitWorkspace {
 
   var scope: String { isProjectRoot ? "project" : "session" }
 
-  init(session: RemoteSession, repository: GitRepository, host: HostStore) {
+  init(session: RemoteSession, repository: GitRepository, host: HostStore, isRemote: Bool = false) {
     sessionId = session.id
+    self.isRemote = isRemote
     repoRoot = session.repoRoot
     isProjectRoot = session.kind == .projectRoot
     self.repository = repository
@@ -236,7 +239,7 @@ final class GitWorkspace {
   }
 
   func track(_ action: MacTelemetryEvent.GitAction, success: Bool) {
-    MacTelemetry.capture(.gitUsed(action: action, scope: scope, success: success))
+    MacTelemetry.capture(.gitUsed(action: action, scope: scope, remote: isRemote, success: success))
   }
 
   func undoLast(redo: Bool) async {
