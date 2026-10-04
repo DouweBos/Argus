@@ -95,6 +95,10 @@ public final class HostStore {
   /// here from live events instead of fetched. Nil for a gateway.
   public internal(set) var live: LiveAgents?
   @ObservationIgnored public var liveTiming = LiveAgents.Timing()
+  /// The name to stamp on this machine's own sends to a shared agent, nil
+  /// outside a huddle (the desktop's `huddleAuthor`). Queued sends get it from
+  /// the host, which knows the room.
+  @ObservationIgnored public var huddleAuthor: (@MainActor (String) -> String?)?
   @ObservationIgnored var liveEnvironment = ConversationEnvironment.live
 
   @ObservationIgnored private var pump: Task<Void, Never>?

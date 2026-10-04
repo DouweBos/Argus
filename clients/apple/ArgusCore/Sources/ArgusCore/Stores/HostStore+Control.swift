@@ -67,7 +67,8 @@ extension HostStore {
     displayText: String?, isRetry: Bool
   ) async {
     do {
-      switch try await live.send(agentId: agentId, message: message, images: images) {
+      switch try await live.send(
+        agentId: agentId, message: message, images: images, author: huddleAuthor?(agentId)) {
       case .sent:
         hooks.track(
           .messageSent(queued: false, hasImages: !images.isEmpty, length: message.count))
