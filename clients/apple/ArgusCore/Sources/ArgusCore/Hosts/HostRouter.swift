@@ -39,21 +39,54 @@ public final class HostRouter: HostBackend {
 
   private let state = Mutex(State())
   private let onRemote: @Sendable (HostId, RemoteHostLink.Event) -> Void
+  private let snapshots: HostSnapshotFiles?
 
   /// Lists asked of every host and merged, when nothing narrows them to one.
   static let mergedMethods: Set<String> = [
     "projects.list", "scratch_pads.list", "agents.list", "state_hydrate",
   ]
 
+  /// A paired host's lists, kept (and saved) so an offline host still shows
+  /// what it last said.
+  static let snapshotMethods: Set<String> = mergedMethods.union(["sessions.list", "agents.stopped"])
+
   /// `onRemote` sees each paired host's connection changes (and its events),
   /// for the app's own bookkeeping.
+  /// `snapshots` keeps each host's last lists on disk across launches.
   public init(
-    local: LocalBackend, index: HostIndex = HostIndex(),
+    local: LocalBackend, index: HostIndex = HostIndex(), snapshots: HostSnapshotFiles? = nil,
     onRemote: @escaping @Sendable (HostId, RemoteHostLink.Event) -> Void = { _, _ in }
   ) {
     self.local = local
     self.index = index
     self.onRemote = onRemote
+    self.snapshots = snapshots
+    guard let snapshots else { return }
+    for (hostId, answers) in snapshots.loadAll() {
+      state.withLock { state in
+        for (key, value) in answers { state.cache["\(hostId)\(key)"] = value }
+      }
+      for (key, value) in answers {
+        let method = key.split(separator: "|", omittingEmptySubsequences: false).dropFirst().first
+        index.learn(response: value, method: method.map(String.init) ?? "", host: hostId)
+      }
+    }
+  }
+
+  /// Keep a host's answer, on disk too when it changed.
+  private func remember(_ result: JSONValue, key: String, host hostId: HostId) {
+    let changed = state.withLock { state -> [String: JSONValue]? in
+      let full = hostId + key
+      guard state.cache[full] != result else { return nil }
+      state.cache[full] = result
+      return state.cache.filter { $0.key.hasPrefix("\(hostId)|") }
+        .reduce(into: [:]) { $0[String($1.key.dropFirst(hostId.count))] = $1.value }
+    }
+    if let changed { snapshots?.save(changed, for: hostId) }
+  }
+
+  private func cacheKey(_ method: String, _ params: JSONValue) -> String {
+    "|\(method)|\((try? ProtocolCodec.encoder.encode(params)).map { String(decoding: $0, as: UTF8.self) } ?? "")"
   }
 
   // MARK: Hosts
@@ -87,6 +120,7 @@ public final class HostRouter: HostBackend {
       state.labels[hostId] = nil
       if state.focused == hostId { state.focused = Hosts.local }
     }
+    snapshots?.remove(hostId)
   }
 
   /// Detached: its lists leave the merged answers.
@@ -94,6 +128,7 @@ public final class HostRouter: HostBackend {
     state.withLock { state in
       state.cache = state.cache.filter { !$0.key.hasPrefix("\(hostId)|") }
     }
+    snapshots?.remove(hostId)
   }
 
   public func setLabel(_ label: String, for hostId: HostId) {
@@ -112,7 +147,8 @@ public final class HostRouter: HostBackend {
 
   /// Which machine owns a session, project or agent; this Mac when unknown.
   public func host(of kind: HostIndex.Kind, _ id: String) -> HostId {
-    index.host(of: kind, id) ?? Hosts.local
+    if kind == .project, let (owner, _) = HostScopedPath.split(id) { return owner }
+    return index.host(of: kind, id) ?? Hosts.local
   }
 
   // MARK: Events
@@ -138,7 +174,8 @@ public final class HostRouter: HostBackend {
     case .state:
       // The window's connection is this Mac's; a host's is its own business.
       break
-    case .event(let envelope):
+    case .event(var envelope):
+      envelope.payload = HostScopedPath.scopeRoots(in: envelope.payload, host: hostId)
       index.learn(event: envelope, host: hostId)
       continuation?.yield(.event(envelope))
     case .media(let bytes):
@@ -181,11 +218,14 @@ public final class HostRouter: HostBackend {
   }
 
   /// Where a call goes, before checking whether that host can take it.
-  func destination(_ method: String, _ params: JSONValue, tier: String?) -> Destination {
+  func destination(
+    _ method: String, _ params: JSONValue, tier: String?, scopedHost: HostId? = nil
+  ) -> Destination {
     if let pinned = Self.pinned {
       return pinned == Hosts.local ? .local : .remote(pinned)
     }
     if HostCommandTarget.of(method, tier: tier) == .client { return .local }
+    if let scopedHost { return .remote(scopedHost) }
     if let owner = index.subject(of: params) {
       return owner == Hosts.local ? .local : .remote(owner)
     }
@@ -219,21 +259,37 @@ public final class HostRouter: HostBackend {
   func dispatch(
     _ method: String, _ params: JSONValue, tier: String?, timeout: Duration? = nil
   ) async throws -> (result: JSONValue, seq: Int, host: HostId) {
-    switch destination(method, params, tier: tier) {
+    let scoped = params
+    let (params, scopedHost) = HostScopedPath.unscope(scoped)
+    switch destination(method, params, tier: tier, scopedHost: scopedHost) {
     case .local:
       let (result, seq) = try await local.transport.sequencedRequest(
         method: method, params, as: JSONValue.self)
       index.learn(response: result, method: method, host: Hosts.local)
       return (result, seq, Hosts.local)
     case .remote(let hostId):
-      let link = try readyLink(hostId, method: method, tier: tier)
+      let snapshots = Self.snapshotMethods.contains(method)
+      let key = cacheKey(method, scoped)
+      let link: RemoteHostLink
+      do {
+        link = try readyLink(hostId, method: method, tier: tier)
+      } catch {
+        if snapshots, let cached = state.withLock({ $0.cache[hostId + key] }) {
+          return (cached, Int.min, hostId)
+        }
+        throw error
+      }
       var (result, seq): (JSONValue, Int)
       if let timeout {
         (result, seq) = (try await link.request(method, params, timeout: timeout), Int.min)
       } else {
         (result, seq) = try await link.sequencedRequest(method, params)
       }
+      if !HostIndex.skipsLearning(method) {
+        result = HostScopedPath.scopeRoots(in: result, host: hostId)
+      }
       index.learn(response: result, method: method, host: hostId)
+      if snapshots { remember(result, key: key, host: hostId) }
       result = renumberStream(in: result, from: hostId)
       return (result, seq, hostId)
     case .merged:
@@ -253,7 +309,7 @@ public final class HostRouter: HostBackend {
   private func merged(_ method: String, _ params: JSONValue, tier: String?) async throws -> JSONValue {
     let localResult = try await local.request(method: method, params, as: JSONValue.self)
     index.learn(response: localResult, method: method, host: Hosts.local)
-    let cacheKey = "|\(method)|\((try? ProtocolCodec.encoder.encode(params)).map { String(decoding: $0, as: UTF8.self) } ?? "")"
+    let cacheKey = cacheKey(method, params)
     let links = state.withLock { state in state.links }
     let cachedKeys = state.withLock { state in Set(state.cache.keys) }
     let remoteHosts = Set(links.keys).union(
@@ -265,10 +321,11 @@ public final class HostRouter: HostBackend {
         group.addTask { [self] in
           let key = hostId + cacheKey
           if let link, link.isReady, HostCommandTarget.of(method, tier: tier) == .host,
-            let result = try? await link.request(method, params)
+            let raw = try? await link.request(method, params)
           {
+            let result = HostScopedPath.scopeRoots(in: raw, host: hostId)
             index.learn(response: result, method: method, host: hostId)
-            state.withLock { $0.cache[key] = result }
+            remember(result, key: cacheKey, host: hostId)
             return result
           }
           return state.withLock { $0.cache[key] }
