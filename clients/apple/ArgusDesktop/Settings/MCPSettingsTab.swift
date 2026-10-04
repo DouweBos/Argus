@@ -42,7 +42,7 @@ struct MCPSettingsTab: View {
               .foregroundStyle(.secondary)
           }
           ForEach(Array(inherited.enumerated()), id: \.offset) { _, server in
-            InheritedMcpRow(server: server)
+            InheritedMcpRow(server: server, backend: host.backend)
           }
         } else {
           SettingsLoading()
@@ -80,6 +80,7 @@ struct MCPSettingsTab: View {
 
 /// One editable server: name, JSON config with live validation, and a probe.
 private struct McpServerRow: View {
+  @Environment(HostSettingsModel.self) private var host
   @Binding var entry: McpServerEntry
   let remove: () -> Void
   @State private var probe = McpProbe()
@@ -103,15 +104,16 @@ private struct McpServerRow: View {
           if straight != typed { entry.json = straight }
         }
       SettingsError(text: entry.error)
-      McpProbeControls(probe: probe, config: entry.config, url: entry.url)
+      McpProbeControls(backend: host.backend, probe: probe, config: entry.config, url: entry.url)
     }
     .padding(.vertical, 4)
   }
 }
 
-private struct InheritedMcpRow: View {
-  @Environment(HostSettingsModel.self) private var host
+/// Shared with Project Settings, which lists the same servers for its repo.
+struct InheritedMcpRow: View {
   let server: ArgusProtocol.InheritedMcpServer
+  let backend: HostRouter?
   @State private var probe = McpProbe()
 
   private var url: String? {
@@ -127,9 +129,9 @@ private struct InheritedMcpRow: View {
         Text(server.source).font(.caption).foregroundStyle(.secondary)
         Spacer()
       }
-      McpProbeControls(probe: probe, config: server.config, url: url)
+      McpProbeControls(backend: backend, probe: probe, config: server.config, url: url)
     }
     // Every inherited row is checked on sight, as on the desktop.
-    .task { await probe.test(server.config, host: host, track: false) }
+    .task { await probe.test(server.config, backend: backend, track: false) }
   }
 }
