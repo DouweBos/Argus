@@ -36,7 +36,7 @@ function emitNavState(sessionId: string, nav: NavState): void {
 }
 
 export async function browserViewEnsure(sessionId: string): Promise<void> {
-  let reservation = webBrowserPool.getReservation(sessionId);
+  let reservation = await webBrowserPool.liveReservation(sessionId);
   if (!reservation) {
     reservation = await webBrowserPool.acquireBrowser(sessionId);
   }

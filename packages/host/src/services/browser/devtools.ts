@@ -67,7 +67,7 @@ function listTargets(port: number): Promise<CdpTarget[]> {
 export async function browserDevtools(
   sessionId: string,
 ): Promise<BrowserDevtools | null> {
-  const reservation = webBrowserPool.getReservation(sessionId);
+  const reservation = await webBrowserPool.liveReservation(sessionId);
   const devtools = reservation
     ? devtoolsFor(
         reservation.cdpPort,
