@@ -85,6 +85,24 @@ extension LiveAgents {
 
   // MARK: Hydration
 
+  /// A saved chat's messages, as the transcript reads them.
+  public static func messages(of saved: ArgusProtocol.SavedConversation) -> [ConversationMessage] {
+    guard let data = try? JSONEncoder().encode(saved.messages) else { return [] }
+    return (try? JSONDecoder().decode([ConversationMessage].self, from: data)) ?? []
+  }
+
+  /// A resumed chat starts with its saved transcript — the renderer's
+  /// `loadSavedMessages(…, resuming: true)` — published so other clients see it.
+  public func restore(_ agentId: String, from saved: ArgusProtocol.SavedConversation) async {
+    let messages = Self.messages(of: saved)
+    guard !messages.isEmpty, conversations[agentId]?.messages.isEmpty ?? true else { return }
+    mutate(agentId) {
+      $0.loadSavedMessages(
+        messages, model: saved.model, sessionId: saved.sessionId, resuming: true, title: saved.title)
+    }
+    await save(agentId)
+  }
+
   /// Seed an agent's transcript from the snapshot the host holds for it — the
   /// conversation a resume spawn carries, or what this app published before a
   /// reconnect. Never overwrites a chat already under way.

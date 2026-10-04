@@ -12,6 +12,7 @@ struct SessionHomeView: View {
   /// The session's agents, as its agent tabs show them.
   let sessionAgents: [RemoteAgentStatus]
   let startAgent: (RemotePermissionMode?) -> Void
+  @State private var renamingBranch = false
 
   /// Active agents, newest first, as the desktop app lists them.
   private var agents: [RemoteAgentStatus] {
@@ -30,7 +31,8 @@ struct SessionHomeView: View {
       VStack(alignment: .leading, spacing: 16) {
         SessionHomeHero(
           session: session, projectName: projectName,
-          canStart: session.status == .ready, startAgent: startAgent)
+          canStart: session.status == .ready, startAgent: startAgent,
+          renameBranch: session.kind == .worktree ? { renamingBranch = true } : nil)
         SessionPathRow(sessionId: session.id, status: session.status)
         switch session.status {
         case .initializing:
@@ -46,11 +48,13 @@ struct SessionHomeView: View {
         if session.kind == .worktree, session.status == .ready {
           LandWorkCard(sessionId: session.id) { await store.loadGitStatus(sessionId: session.id) }
         }
+        SessionChatHistoryCard(session: session)
       }
       .padding(24)
       .frame(maxWidth: 760, alignment: .leading)
       .frame(maxWidth: .infinity)
     }
+    .sheet(isPresented: $renamingBranch) { RenameBranchSheet(session: session) }
     // The card's commit and merge state follow the worktree as agents edit it.
     .liveRefresh(enabled: session.status == .ready && session.kind == .worktree, every: .seconds(5)) {
       await store.loadGitStatus(sessionId: session.id)
@@ -83,6 +87,8 @@ private struct SessionHomeHero: View {
   let projectName: String
   let canStart: Bool
   let startAgent: (RemotePermissionMode?) -> Void
+  /// Worktree sessions only: the project root's branch is the repo's own.
+  let renameBranch: (() -> Void)?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -96,10 +102,20 @@ private struct SessionHomeHero: View {
           Text(session.displayName ?? session.branch)
             .font(.title2.weight(.semibold))
             .lineLimit(2)
-          Text(subtitle)
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .lineLimit(2)
+          HStack(spacing: 6) {
+            Text(subtitle)
+              .font(.callout)
+              .foregroundStyle(.secondary)
+              .lineLimit(2)
+            if let renameBranch {
+              Button(action: renameBranch) {
+                Image(systemName: "pencil")
+              }
+              .buttonStyle(.borderless)
+              .help("Rename branch")
+              .accessibilityLabel("Rename branch")
+            }
+          }
         }
       }
       // Their own row, so a narrow column never squeezes them.

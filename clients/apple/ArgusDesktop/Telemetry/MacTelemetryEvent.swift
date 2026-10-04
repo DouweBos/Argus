@@ -187,6 +187,13 @@ enum MacTelemetryEvent {
     case abandoned
   }
 
+  enum ChatHistoryAction: String {
+    case view
+    case resume
+    case delete
+    case clear
+  }
+
   case launched
   case quit(hadRunningAgents: Bool)
   case hostStarted(restarts: Int)
@@ -196,6 +203,10 @@ enum MacTelemetryEvent {
   case hostHandover(holder: Holder, success: Bool)
   /// `screen` is a route pattern, never an id.
   case screenViewed(screen: String)
+  /// A saved chat was opened, resumed or deleted from a session's home.
+  case chatHistoryUsed(action: ChatHistoryAction)
+  /// A session's branch was renamed from its home.
+  case branchRenamed(success: Bool)
   /// A deep link or launch route was opened; `screen` is its route pattern.
   case linkOpened(screen: String, outcome: LinkOutcome)
   /// A transcript link was used; `relative` is whether the path needed the worktree.
@@ -264,6 +275,8 @@ enum MacTelemetryEvent {
     case .hostHandover: "mac_host_handover"
     case .screenViewed: "mac_screen_viewed"
     case .linkOpened: "mac_link_opened"
+    case .chatHistoryUsed: "mac_chat_history_used"
+    case .branchRenamed: "mac_branch_renamed"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
     case .inputUsed: "mac_input_used"
@@ -319,6 +332,10 @@ enum MacTelemetryEvent {
       ["screen": screen]
     case .linkOpened(let screen, let outcome):
       ["screen": screen, "outcome": outcome.rawValue]
+    case .chatHistoryUsed(let action):
+      ["action": action.rawValue]
+    case .branchRenamed(let success):
+      ["success": success]
     case .transcriptLinkOpened(let action, let relative):
       ["action": action.rawValue, "relative": relative]
     case .transcriptFindUsed(let matches, let navigated):
