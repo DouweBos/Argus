@@ -718,7 +718,8 @@ While reading from a host:
   when it does. Only that host is affected; the rest keep working.
 
 Host keys are stored in this Mac's `localStorage` alongside the other UI
-preferences.
+preferences. Argus for Mac keeps them in a file only your user can read, in its
+state folder, and has the same Hosts tab in its Settings window.
 
 ---
 

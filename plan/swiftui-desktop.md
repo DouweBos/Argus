@@ -205,19 +205,32 @@ explicitly dropped. Known so far:
   - M4: host-run git commands report errors as plain strings, so the app can't offer git's recovery actions (e.g. force-with-lease) like Electron's error banner; a linked worktree's session watches the whole main `.git`, so busy sibling worktrees cause extra refreshes.
   - M4: the ArgusDesktop target has no unit-test target, so route parsing and diff row building are untested.
   - Layout: with the git sidebar, file list, diff and runtime panel open, the default window is too narrow; the app sidebar and runtime panel get clipped.
-  - Quit: SIGTERM doesn't quit the app while the onboarding sheet is open (it and its host keep running).
+  - Quit: SIGTERM doesn't quit the app while a sheet (e.g. onboarding) is open; it and its host keep running. Without a sheet it quits fine.
+  - Deep links: `DesktopRoute(path:)` doesn't parse the git routes (`/sessions/:id/git/:view`), so links to git screens fall back.
+  - A launch route (`ARGUS_DEV_ROUTE`, and later deep links) to a remote host's session falls back to Home when it applies before that host has connected.
+  - Test hosts leave a login-keychain item ("Argus Host Secret Storage", account = their `ARGUS_HOME`) behind; tests and dev runs on temp homes should remove theirs.
   - Worktree sessions in a temp home didn't come back after an app restart (seen once in M4; may be the `/tmp` vs `/private/tmp` host bug below).
+- Mac app (from M6):
+  - Not built: window tabs per machine; the focused host in the route (back/forward between machines); a host folder browser, so Add Project, Browse… in settings and worktree locations can't pick a folder on a remote host; dropping files into a remote session's chat (Electron sends them over the gateway's transfer channel).
+  - The offline snapshot is in memory only: a host that is down when the app launches shows nothing until it answers.
+  - Two hosts holding a repo at the same path are one project in the sidebar (the routing index is keyed by path); Electron keys projects by host.
+  - Never exercised against a remote host: permission prompts and plan approval, notifications and banners for its agents, pull requests, automations and the inbox of a shown host, huddles (refused, as on Electron: host tier), the browser runtime, Android devices.
+  - A remote session's git views refresh on the host's broadcasts only (no file watcher there); an edit nothing broadcasts shows up on the next action.
+  - Host-run git processes started over the gateway aren't killed when the connection drops; `argus-scratch` in the git dir is never cleaned.
+- iOS app (from M6): the remote git runner's host commands are admin tier, which a phone never holds, so the phone keeps the typed git methods; giving it GroveKit needs a scoped git tier first.
+- Host (found in M6): `reapOrphanedSpawnHelpers` kills any orphaned node-pty spawn helper on the machine at boot, not only its own; harmless for real orphans but a second host on one Mac reaps the first's leftovers.
 - Host (found in M5):
   - `security -i` hangs when the host runs with a different `HOME`, blocking the host (only seen with a scratch `HOME` in tests).
-  - A session keyed `/tmp/…` isn't found again after a restart because git reports `/private/tmp/…`.
+  - A session keyed `/tmp/…` isn't found again after a restart because git reports `/private/tmp/…` Reproduced in M6 on a second host whose `ARGUS_HOME` was under `/tmp`: its worktree session was gone after the host restarted.
   - An automation's host session doesn't list under its project, so its transcript can't be opened from a run.
   - `gen-protocol` types `huddle_say`'s params as the gateway's `HuddleSayParams`, which lacks `roomId`; the Mac app sends it by wire name.
   - Phone gaps found while building M5, all admin-only today: proposal request-revision and start-with-note, the full proposal record, deleting a run, an automation's track record, describing an automation, huddles, the app-level default autonomy and permission mode.
 - iOS app:
-  - None of the M4 git views reach the phone; it keeps the host's typed git methods until the remote GroveKit runner (M6) exists.
+  - None of the M4 git views reach the phone; it keeps the host's typed git methods (see the M6 note below on the runner's tier).
   - The all-agents list and read-only terminals were never run against a paired computer.
   - Phone terminals poll every 2 s rather than streaming.
 - GroveKit (fix in Grove, then bump the pin):
+  - From M6: `ShellResult` has no public initializer, so a runner outside GroveKit can't build one; Argus's gateway runner replays the host's output through a local `/bin/sh` via `LocalGitRunner` (stderr capped at 64 KB). `GitRunner.withGitExecutable`'s default is main-actor isolated, so conformers must spell it out.
   - Branch actions (checkout, rename, delete, remotes, submodules, worktrees) still live in Grove's app-side `SidebarViewModel`.
   - Grove-specific wording and file names (`HostingError` messages, `grove/restack.json`, `grove-` scratch prefix) and shared `UserDefaults` keys.
   - `FileWatcher`, `WorktreeResolver` and view-model file actions still touch the local disk directly instead of going through the runner.

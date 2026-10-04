@@ -24,6 +24,9 @@ How to tick a row:
 - M5 rows were verified on 2026-10-04 the same way, with a scratch `HOME` too so
   account, git and Claude CLI state stayed off the real machine; pairing used a
   throwaway local client, never a phone.
+- M6 rows were verified on 2026-10-04 by pairing the Mac app (scratch Argus
+  home) with a second `argus-host` started on its own scratch home and port,
+  with a throwaway simulator; never with a real host or device.
 - The iOS column follows the CLAUDE.md rule: a ☐ there is a gap to close, not a
   decision. A — needs its reason in Notes.
 
@@ -77,13 +80,13 @@ How to tick a row:
 
 ### Navigation
 
-| Item                           | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                 |
-| ------------------------------ | -------- | --- | --- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Settings dialog (overlay)      | ✅       | ◐   | ◐   | M5        | iOS: device name, appearance, push, Claude accounts, telemetry, computers only. Mac: a Settings window (⌘,). Git and Git signing come with M4's git views, Hosts with M6.                             |
-| Window tabs                    | ✅       | ☐   | —   | M6        | iOS: window management; a phone switches computers instead.                                                                                                                                           |
-| Per-tab back / forward         | ✅       | ◐   | ✅  | M5        | Not owned by a plan milestone; assigned M5. iOS: per-section navigation stacks. Mac: back/forward per window (⌘[ / ⌘]); per tab once window tabs land (M6).                                           |
-| Deep links (`navigation:goto`) | ✅       | ◐   | ✅  | M5        | iOS: notification taps and Handoff open routes. Mac: routes parse from paths (`DesktopRoute(path:)`) and `onOpenURL` handles `argus://`, but the app doesn't claim the scheme while Electron owns it. |
-| `?host=` focused host          | ✅       | ☐   | ◐   | M6        | iOS: many paired computers, one connected at a time.                                                                                                                                                  |
+| Item                           | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                                |
+| ------------------------------ | -------- | --- | --- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Settings dialog (overlay)      | ✅       | ◐   | ◐   | M5        | iOS: device name, appearance, push, Claude accounts, telemetry, computers only. Mac: a Settings window (⌘,). Git and Git signing come with M4's git views. Hosts verified in M6.                                     |
+| Window tabs                    | ✅       | ☐   | —   | M6        | iOS: window management; a phone switches computers instead. Mac: not built in M6; listed under M6.5.                                                                                                                 |
+| Per-tab back / forward         | ✅       | ◐   | ✅  | M5        | Not owned by a plan milestone; assigned M5. iOS: per-section navigation stacks. Mac: back/forward per window (⌘[ / ⌘]); per tab once window tabs land (M6).                                                          |
+| Deep links (`navigation:goto`) | ✅       | ◐   | ✅  | M5        | iOS: notification taps and Handoff open routes. Mac: routes parse from paths (`DesktopRoute(path:)`) and `onOpenURL` handles `argus://`, but the app doesn't claim the scheme while Electron owns it.                |
+| `?host=` focused host          | ✅       | ◐   | ◐   | M6        | iOS: many paired computers, one connected at a time. Mac: the machines menu shows a host on the unscoped screens and narrows the sidebar; it isn't part of the route, so back/forward doesn't move between machines. |
 
 ## Features
 
@@ -178,11 +181,11 @@ How to tick a row:
 
 ### Working across several Macs
 
-| Feature                                  | Electron | Mac | iOS | Milestone | Notes                                         |
-| ---------------------------------------- | -------- | --- | --- | --------- | --------------------------------------------- |
-| Attach several hosts, routed per subject | ✅       | ☐   | ◐   | M6        | iOS: one computer at a time.                  |
-| Pair another Mac with Admin              | ✅       | ☐   | —   | M6        | Admin is a desktop-to-host grant.             |
-| Offline host keeps its last snapshot     | ✅       | ☐   | ◐   | M6        | iOS: shows cached lists; no per-host routing. |
+| Feature                                  | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                                         |
+| ---------------------------------------- | -------- | --- | --- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Attach several hosts, routed per subject | ✅       | ✅  | ◐   | M6        | iOS: one computer at a time. Mac: verified against a second host on a scratch home (sessions, agent transcript, terminal, git, runtime video and taps, Project Settings, settings of the shown host).                         |
+| Pair another Mac with Admin              | ✅       | ✅  | —   | M6        | Admin is a desktop-to-host grant. Mac: Settings → Hosts; paired with a throwaway `argus-host`, approved there with Admin.                                                                                                     |
+| Offline host keeps its last snapshot     | ✅       | ◐   | ◐   | M6        | iOS: shows cached lists; no per-host routing. Mac: verified for a drop while the app runs (offline badge, banner, reconnect and refetch); the snapshot is in memory, so a host down at launch shows nothing until it answers. |
 
 ### Huddles
 
