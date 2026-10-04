@@ -178,6 +178,15 @@ enum MacTelemetryEvent {
     case copyInvite = "copy_invite"
   }
 
+  enum LinkOutcome: String {
+    /// Its screen was there to open.
+    case direct
+    /// It named a session whose host connected later.
+    case waited
+    /// Its session never turned up.
+    case abandoned
+  }
+
   case launched
   case quit(hadRunningAgents: Bool)
   case hostStarted(restarts: Int)
@@ -187,6 +196,8 @@ enum MacTelemetryEvent {
   case hostHandover(holder: Holder, success: Bool)
   /// `screen` is a route pattern, never an id.
   case screenViewed(screen: String)
+  /// A deep link or launch route was opened; `screen` is its route pattern.
+  case linkOpened(screen: String, outcome: LinkOutcome)
   /// A transcript link was used; `relative` is whether the path needed the worktree.
   case transcriptLinkOpened(action: LinkAction, relative: Bool)
   /// Find in chat was closed after a search. Counts are bucketed, never the query.
@@ -252,6 +263,7 @@ enum MacTelemetryEvent {
     case .hostLockConflict: "mac_host_lock_conflict"
     case .hostHandover: "mac_host_handover"
     case .screenViewed: "mac_screen_viewed"
+    case .linkOpened: "mac_link_opened"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
     case .inputUsed: "mac_input_used"
@@ -305,6 +317,8 @@ enum MacTelemetryEvent {
       ["holder": holder.rawValue, "success": success]
     case .screenViewed(let screen):
       ["screen": screen]
+    case .linkOpened(let screen, let outcome):
+      ["screen": screen, "outcome": outcome.rawValue]
     case .transcriptLinkOpened(let action, let relative):
       ["action": action.rawValue, "relative": relative]
     case .transcriptFindUsed(let matches, let navigated):
