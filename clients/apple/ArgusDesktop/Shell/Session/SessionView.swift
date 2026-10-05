@@ -209,6 +209,7 @@ enum SessionPanel: Hashable {
 }
 
 struct AgentTabBar: View {
+  @Environment(HostStore.self) private var store
   let agents: [RemoteAgentStatus]
   let focused: String?
   let canStart: Bool
@@ -223,6 +224,8 @@ struct AgentTabBar: View {
           ForEach(agents) { agent in
             AgentTab(
               agent: agent, selected: agent.agentId == focused,
+              children: childCounts[agent.agentId] ?? 0,
+              subagentsRunning: subagentsRunning(agent.agentId),
               select: { select(agent.agentId) }, close: { close(agent.agentId) })
           }
         }
@@ -238,6 +241,25 @@ struct AgentTabBar: View {
     // A scroll view takes all the height it's offered; a tab bar is one row.
     .frame(height: 38)
   }
+
+  /// Agents each agent spawned, across every agent the host has described.
+  private var childCounts: [String: Int] {
+    var counts: [String: Int] = [:]
+    for agent in store.statusByAgent.values {
+      if let parent = agent.parentAgentId { counts[parent, default: 0] += 1 }
+    }
+    return counts
+  }
+
+  /// A Task/Agent call still without a result: a subagent is at work, even
+  /// when the CLI reports its parent idle.
+  private func subagentsRunning(_ agentId: String) -> Bool {
+    store.live?.conversation(for: agentId)?.messages.contains { message in
+      message.toolCalls.contains {
+        ($0.name == "Task" || $0.name == "Agent") && $0.result == nil && $0.pendingPermission != true
+      }
+    } ?? false
+  }
 }
 
 /// One tab: status, title, and a close button that stops the agent, as in
@@ -245,18 +267,36 @@ struct AgentTabBar: View {
 struct AgentTab: View {
   let agent: RemoteAgentStatus
   let selected: Bool
+  /// Agents this one spawned.
+  var children = 0
+  var subagentsRunning = false
   let select: () -> Void
   let close: () -> Void
   @State private var hovering = false
+
+  private var running: Bool {
+    agent.status == .running || (agent.status == .idle && subagentsRunning)
+  }
 
   var body: some View {
     HStack(spacing: 6) {
       Button(action: select) {
         HStack(spacing: 6) {
           StatusDot(
-            tone: agent.awaiting != nil ? .warning : agent.status.tone,
-            pulse: agent.status == .running)
+            tone: agent.awaiting != nil ? .warning : (running ? RemoteAgentState.running.tone : agent.status.tone),
+            pulse: running)
+          if agent.parentAgentId != nil {
+            Image(systemName: "arrow.turn.down.right")
+              .font(.system(size: 9, weight: .semibold))
+              .foregroundStyle(.secondary)
+              .help("Spawned by another agent")
+              .accessibilityLabel("Subagent")
+          }
           Text(agent.title ?? "Agent").lineLimit(1)
+          if children > 0 {
+            Badge(label: "\(children)", tone: .accent)
+              .help("\(children) subagent\(children == 1 ? "" : "s")")
+          }
         }
       }
       .buttonStyle(.plain)
