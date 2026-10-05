@@ -290,9 +290,16 @@ extension HostStore {
       // Refused or lost: put the prompt back so it can be answered again.
       answered.remove(key)
       if let prompt { prompts[key] = prompt }
-      lastError = Self.describe(error)
+      lastError = Self.refusedAnswerMessage(error)
       hooks.decisionUndelivered(agentId, toolUseId, decision)
     }
+  }
+
+  /// Why an answer didn't land, in words: the host's own reason otherwise.
+  public nonisolated static func refusedAnswerMessage(_ error: Error) -> String {
+    let reason = describe(error)
+    guard reason.contains("no such outstanding prompt") else { return "Your answer didn't reach the agent: \(reason)" }
+    return "That prompt is no longer waiting — the agent may have stopped or someone else answered it."
   }
 
   // MARK: Agent lifecycle
