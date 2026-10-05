@@ -62,8 +62,8 @@ export interface StartHostOptions {
 }
 
 export interface StartedHost {
-  /** Settles once the gateway is listening (or failed to start). */
-  remoteReady: Promise<void>;
+  /** Settles once the gateway is listening, or with why it failed to start. */
+  remoteReady: Promise<{ error: string | null }>;
 }
 
 /**
@@ -123,9 +123,14 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
     options.forceRemote
       ? setRemoteConfig({ enabled: true }).then(() => undefined)
       : applyRemoteSettings()
-  ).catch((err) => {
-    log.error("Failed to start remote access:", err);
-  });
+  ).then(
+    () => ({ error: null }),
+    (err: unknown) => {
+      log.error("Failed to start remote access:", err);
+
+      return { error: err instanceof Error ? err.message : String(err) };
+    },
+  );
 
   // Push status to every client whenever the tunnel state changes (e.g. a
   // quick tunnel finishing startup and revealing its URL).

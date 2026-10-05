@@ -4,7 +4,8 @@
  *
  * A random AES-256-GCM key lives in the macOS login keychain (via the
  * `security` CLI), or in a 0600 file under `ARGUS_HOME` elsewhere — and for a
- * home in a temp dir, whose keychain item would outlive it. Blobs are
+ * home in a temp dir, whose keychain item would outlive it (one that already
+ * has a keychain key moves it into the file). Blobs are
  * tagged so one written by Electron's `safeStorage` fails to decrypt loudly
  * rather than yielding garbage.
  */
@@ -140,6 +141,16 @@ function loadOrCreateKey(
   const existing = useKeychain ? readKeychainKey(tool) : readFileKey();
   if (existing?.length === 32) {
     return existing;
+  }
+  // A temp home made before keys moved to the file has its secrets sealed
+  // with a keychain key; adopt that key, or they never decrypt again.
+  if (!useKeychain && process.platform === "darwin") {
+    const legacy = readKeychainKey(tool);
+    if (legacy?.length === 32) {
+      writeFileKey(legacy);
+
+      return legacy;
+    }
   }
   const key = crypto.randomBytes(32);
   const stored = useKeychain ? writeKeychainKey(tool, key) : writeFileKey(key);

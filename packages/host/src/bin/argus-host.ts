@@ -22,10 +22,10 @@ import {
   startLocalUiSocket,
   type LocalUiServer,
 } from "../services/remote/localUiSocket";
-import { LOCAL_GATEWAY_PORT } from "../services/remote/remoteService";
 import { uiHostPlatform } from "../services/remote/uiHostPlatform";
 import { attachConsolePairing } from "./consolePairing";
 import { parseHostArgs } from "./hostArgs";
+import { gatewayLine } from "./hostBanner";
 import { desktopMode } from "./hostEnv";
 
 /** Exit code when another host holds this ARGUS_HOME; the Mac app keys on it. */
@@ -118,10 +118,10 @@ process.on("exit", () => {
   releaseHostLock();
 });
 
-Promise.all([remoteReady, uiReady]).then(() => {
+Promise.all([remoteReady, uiReady]).then(([remote]) => {
   print(`Argus host ${base.appVersion()}`);
   if (!desktopMode) {
-    print(`Gateway: ws://127.0.0.1:${LOCAL_GATEWAY_PORT}`);
+    print(gatewayLine(remote.error));
   }
   print(`State: ${argusHomeDir()}`);
   if (uiSocketPath) {
