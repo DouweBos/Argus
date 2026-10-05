@@ -154,4 +154,11 @@ extension DesktopModel {
     apply(next)
     persistTabs()
   }
+
+  /// A scratch pad on the machine on screen, opened on its first agent.
+  func newScratchPad() async {
+    guard let agent = await store.createScratchPad() else { return }
+    MacTelemetry.capture(.scratchPadCreated)
+    navigate(.session(id: agent.sessionId, agentId: agent.agentId))
+  }
 }

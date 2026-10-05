@@ -57,11 +57,28 @@ struct SidebarView: View {
           }
         }
       }
-      if !scratchPads.isEmpty {
-        Section("Scratch pads") {
-          ForEach(scratchPads) { pad in
-            SessionRow(session: pad, agents: agents(in: pad)).tag(pad.id)
+      Section {
+        ForEach(scratchPads) { pad in
+          SessionRow(session: pad, agents: agents(in: pad)).tag(pad.id)
+            .contextMenu {
+              Button("Open in New Tab") {
+                model.openTab(DesktopLocation(route: .sessionHome(id: pad.id), host: model.host(ofSession: pad.id)))
+              }
+              Button("Delete Scratch Pad…") { model.deletingSession = pad }
+            }
+        }
+      } header: {
+        HStack {
+          Text("Scratch pads")
+          Spacer()
+          Button {
+            Task { await model.newScratchPad() }
+          } label: {
+            Image(systemName: "plus")
           }
+          .buttonStyle(.borderless)
+          .help("New scratch pad")
+          .accessibilityLabel("New scratch pad")
         }
       }
     }
