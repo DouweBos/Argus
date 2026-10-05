@@ -32,6 +32,7 @@ struct MainWindow: View {
       VStack(spacing: 0) {
         WindowTabStrip()
         HostOfflineBanner()
+        StoreErrorBanner()
         HuddleJoinRequests()
         Group {
         if let sessionId = model.route.sessionId {

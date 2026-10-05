@@ -373,6 +373,8 @@ extension HostStore {
   /// the instant it is tapped.
   public func isToolCallPending(agentKey: String, call: RemoteToolCall) -> Bool {
     if answered.contains(promptKey(agentKey, call.id)) { return false }
+    // A stopped agent's last call can't be answered any more.
+    if let state = statusByAgent[agentKey]?.status, state == .stopped || state == .error { return false }
     if prompts[promptKey(agentKey, call.id)] != nil { return true }
     return call.status == .pending || call.pendingPermission == true
   }

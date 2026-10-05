@@ -1,5 +1,6 @@
 import ArgusCore
 import Foundation
+import ArgusKit
 import Testing
 
 @MainActor
@@ -148,7 +149,9 @@ struct HostStoreTests {
     await store.attach(backend)
     await store.respond(agentId: "a1", toolUseId: "t1", decision: "allow")
     #expect(!store.answered.contains(store.promptKey("a1", "t1")))
-    #expect(store.lastError != nil)
+    #expect(store.lastError?.hasPrefix("Your answer didn't reach the agent") == true)
+    let gone = Transport.TransportError.gateway(GatewayErrorPayload(code: "bad_request", message: "no such outstanding prompt"))
+    #expect(HostStore.refusedAnswerMessage(gone).hasPrefix("That prompt is no longer waiting"))
   }
 
   @Test("reset forgets the previous computer")
