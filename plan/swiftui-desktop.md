@@ -190,30 +190,31 @@ explicitly dropped. Known so far (struck through = done, **Dropped:** = won't do
   - ~~A session created over the host socket disappeared after a host restart.~~ It was the project's home session, never persisted; restored at boot now.
   - ~~The Conductor browser's debugging port isn't exposed, so there are no DevTools.~~ `browser_devtools` returns the loopback endpoints (host tier).
 - Mac app:
-  - Session home lacks chat history and branch rename.
+  - ~~Session home lacks chat history and branch rename.~~ Resume is built but not run (it starts Claude with real credentials).
   - Run commands: `restartOnRerun`, `cwd` and `prerequisites` never exercised from the UI.
   - The chat input's control row is wider than the middle column and squeezes the sidebar.
   - Device logs: never saw a line arrive from a stock simulator.
   - Not ported: capture-card video inputs, the inspector's 3D view, the `/devices/:platform/:deviceKey` dialog.
-  - Sidebar and table clicks only verified through driver routes, not real first clicks into a background window.
+  - ~~Sidebar and table clicks only verified through driver routes, not real first clicks into a background window.~~ Rows select on a first click into a background window, verified with events posted through the app's queue; a row whose click does more than select may still miss it.
   - ~~M5 never exercised for real: a live huddle room and its guests (needs `cloudflared`), tunnels, Test push, taking a Handoff over from the phone, Claude sign-in / re-auth / remove, the Tailscale fixes, signal triggers, playbook revision, and moving existing worktrees.~~ Moving worktrees verified on scratch repos. **Dropped:** the live huddle room and Cloudflare tunnels (no `cloudflared` here), Tailscale (would change the real tailnet's serve config), Test push and taking a Handoff over (need a real phone and its token), Claude sign-in and playbook revision (need a real Claude account), signal triggers beyond the editor (need GitHub or Linear accounts). Run them by hand on a clean account before cutover.
-  - M5 not built: Organisations (settings, org host session, member-repo context); the home screen's notification-permission and missing-dependency cards, update banner, "Needs you" / "Recent runs" sections and removing a project from recents.
-  - M5 partial: ~~guests driving the shared device aren't marked and host huddle messages carry no author~~; deep links work but the app doesn't claim `argus://` while Electron does; display size scales unstyled text now, but not text with an explicit style (captions, headings, sidebar rows); ~~automations show raw cron with no preview or validation~~; ~~deep-link presets reorder with buttons, not drag~~ (the drag itself is unverified: a faked drop hung the dev driver); ~~inherited MCP servers have no test or tool list~~.
+  - M5 not built: **Dropped:** Organisations, which Electron removed on 2026-09-14 (`226eb2bb`). ~~the home screen's notification-permission and missing-dependency cards, update banner, "Needs you" / "Recent runs" sections and removing a project from recents.~~ **Dropped until M7:** the update banner, since the Mac app has no updater before Sparkle.
+  - M5 partial: ~~guests driving the shared device aren't marked and host huddle messages carry no author~~; **Dropped until M7:** claiming `argus://`, which Electron owns until cutover (two claimants let macOS pick either); display size scales unstyled text now, but not text with an explicit style (captions, headings, sidebar rows); ~~automations show raw cron with no preview or validation~~; ~~deep-link presets reorder with buttons, not drag~~ (the drag itself is unverified: a faked drop hung the dev driver); ~~inherited MCP servers have no test or tool list~~.
   - ~~Two `WorktreeLocationField`s (App and Project settings) should become one, with the move-worktrees sheet shared.~~
   - M4 partial: pull-request merge, comment and opening a PR only exercised up to their confirm dialogs; blame at an arbitrary ref (GroveKit can't).
   - M4 not built: commit templates, Gitmoji, the identity switcher, LFS actions, patch apply, the all-files list.
   - M4: host-run git commands report errors as plain strings, so the app can't offer git's recovery actions (e.g. force-with-lease) like Electron's error banner; a linked worktree's session watches the whole main `.git`, so busy sibling worktrees cause extra refreshes.
-  - M4: the ArgusDesktop target has no unit-test target, so route parsing and diff row building are untested.
-  - Layout: with the git sidebar, file list, diff and runtime panel open, the default window is too narrow; the app sidebar and runtime panel get clipped.
-  - Quit: SIGTERM doesn't quit the app while a sheet (e.g. onboarding) is open; it and its host keep running. Without a sheet it quits fine.
-  - Deep links: `DesktopRoute(path:)` doesn't parse the git routes (`/sessions/:id/git/:view`), so links to git screens fall back.
-  - A launch route (`ARGUS_DEV_ROUTE`, and later deep links) to a remote host's session falls back to Home when it applies before that host has connected.
+  - ~~M4: the ArgusDesktop target has no unit-test target, so route parsing and diff row building are untested.~~ `ArgusDesktopTests` covers routes and split-diff pairing; whole diff rows wait on GroveKit's public `DiffResult` init.
+  - ~~Layout: with the git sidebar, file list, diff and runtime panel open, the default window is too narrow; the app sidebar and runtime panel get clipped.~~ Default 1560×960; the app sidebar hides below 1480 pt on git screens. `WorkingCopyView`'s and `DiffPane`'s nested split views still refuse to shrink once laid out.
+  - ~~Quit: SIGTERM doesn't quit the app while a sheet (e.g. onboarding) is open; it and its host keep running. Without a sheet it quits fine.~~
+  - ~~Deep links: `DesktopRoute(path:)` doesn't parse the git routes (`/sessions/:id/git/:view`), so links to git screens fall back.~~
+  - ~~A launch route (`ARGUS_DEV_ROUTE`, and later deep links) to a remote host's session falls back to Home when it applies before that host has connected.~~ It waits for the host, up to 30 s.
   - ~~Test hosts leave a login-keychain item ("Argus Host Secret Storage", account = their `ARGUS_HOME`) behind; tests and dev runs on temp homes should remove theirs.~~ A host on a temp `ARGUS_HOME` keeps its key in the home instead.
   - ~~Worktree sessions in a temp home didn't come back after an app restart (seen once in M4; may be the `/tmp` vs `/private/tmp` host bug below).~~ It was the `/private/tmp` bug.
 - Mac app (from M6):
-  - Not built: window tabs per machine; the focused host in the route (back/forward between machines); a host folder browser, so Add Project, Browse… in settings and worktree locations can't pick a folder on a remote host; dropping files into a remote session's chat (Electron sends them over the gateway's transfer channel).
-  - The offline snapshot is in memory only: a host that is down when the app launches shows nothing until it answers.
-  - Two hosts holding a repo at the same path are one project in the sidebar (the routing index is keyed by path); Electron keys projects by host.
+  - ~~Not built: window tabs per machine; the focused host in the route (back/forward between machines); a host folder browser, so Add Project, Browse… in settings and worktree locations can't pick a folder on a remote host; dropping files into a remote session's chat (Electron sends them over the gateway's transfer channel).~~ Drops go one message per file, up to 8 MB (no chunked transfer in ArgusKit yet).
+  - A paired host's repo roots are scoped as `argus-host://<hostId>/…`; anything that shows `repoRoot` in full (Project Settings) shows that prefix.
+  - ~~The offline snapshot is in memory only: a host that is down when the app launches shows nothing until it answers.~~ Saved per host in `mac-host-snapshots/`.
+  - ~~Two hosts holding a repo at the same path are one project in the sidebar (the routing index is keyed by path); Electron keys projects by host.~~
   - Never exercised against a remote host: permission prompts and plan approval, notifications and banners for its agents, pull requests, automations and the inbox of a shown host, huddles (refused, as on Electron: host tier), the browser runtime, Android devices.
   - A remote session's git views refresh on the host's broadcasts only (no file watcher there); an edit nothing broadcasts shows up on the next action.
   - ~~Host-run git processes started over the gateway aren't killed when the connection drops; `argus-scratch` in the git dir is never cleaned.~~ Killed with their connection; scratch removed with the last one and swept daily. Failures now carry a `failure` kind and recovery.
