@@ -222,12 +222,17 @@
           onAffordance?(.imageDrop)
           images.append(contentsOf: pending)
         }
-        let others = urls.filter { !ImageAttachments.isImage($0) }.map(\.path)
+        let others = urls.filter { !ImageAttachments.isImage($0) }
         guard !others.isEmpty else { return }
         onAffordance?(.fileMention)
-        let edit = MentionPicker.insertingFileMentions(
-          others, into: text, caret: controller.caret)
-        controller.replace(with: edit.text, caret: edit.caret)
+        // A session on another machine gets the files uploaded first.
+        Task {
+          let dropped = await host.hostPaths(forDropped: others, sessionId: sessionId)
+          guard !dropped.paths.isEmpty else { return }
+          let edit = MentionPicker.insertingFileMentions(
+            dropped.paths, into: text, caret: controller.caret)
+          controller.replace(with: edit.text, caret: edit.caret)
+        }
       }
       controller.focus()
     }

@@ -102,6 +102,7 @@ final class DesktopModel {
     }
     runtime = RuntimeModel(store: store)
     huddles = HuddleStore(store: store, runtime: runtime)
+    store.hooks.sessionIsRemote = { [weak self] id in self?.host(ofSession: id) != Hosts.local }
     store.hooks.agentNotificationClicked = { [weak self] agentId, sessionId in
       NSApp.activate()
       self?.navigate(.session(id: sessionId, agentId: agentId))
