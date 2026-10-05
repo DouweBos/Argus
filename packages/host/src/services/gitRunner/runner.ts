@@ -26,6 +26,7 @@ import {
   type GitRecovery,
   isGitRecovery,
 } from "../session/gitError";
+import { beginRunnerRun, holdRepoWatch } from "./watch";
 
 export interface GitRunnerInfo {
   commonGitDir: string;
@@ -110,6 +111,7 @@ export async function gitRunnerInfo(sessionId: string): Promise<GitRunnerInfo> {
   await fs.promises.mkdir(scratchDir, { recursive: true });
   await sweepStaleScratch(scratchDir);
   holdScratch(scratchDir);
+  holdRepoWatch(sessionId, { worktree, gitDir, commonGitDir });
 
   return { worktree, gitDir, commonGitDir, scratchDir };
 }
@@ -188,6 +190,7 @@ export async function gitRunnerRun(
   }
   // A client that dropped can't cancel, and nobody else knows the run exists.
   const releaseOnClose = onConnectionClose(() => terminate(child));
+  const endRun = beginRunnerRun(p.sessionId);
 
   const stdout: Buffer[] = [];
   let stdoutBytes = 0;
@@ -233,6 +236,7 @@ export async function gitRunnerRun(
     throw `Failed to run git: ${String(e)}`;
   } finally {
     releaseOnClose();
+    endRun();
     if (runId !== undefined) {
       running.delete(runId);
     }
