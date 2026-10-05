@@ -232,6 +232,8 @@ enum MacTelemetryEvent {
   /// A home card's button was used: notifications enabled, opened or dismissed,
   /// or a project removed from the recents grid.
   case homeCardActed(card: HomeCard, action: HomeCardAction)
+  /// A scratch pad was created from the sidebar.
+  case scratchPadCreated
   /// A window tab was opened, closed or switched to.
   case tabUsed(action: TabAction)
   /// A folder was browsed for on a paired host's disk.
@@ -311,6 +313,7 @@ enum MacTelemetryEvent {
     case .homeCardActed: "mac_home_card_acted"
     case .hostFolderPicked: "mac_host_folder_picked"
     case .tabUsed: "mac_tab_used"
+    case .scratchPadCreated: "mac_scratch_pad_created"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
     case .inputUsed: "mac_input_used"
@@ -376,6 +379,8 @@ enum MacTelemetryEvent {
       ["stage": stage.rawValue]
     case .tabUsed(let action):
       ["action": action.rawValue]
+    case .scratchPadCreated:
+      [:]
     case .transcriptLinkOpened(let action, let relative):
       ["action": action.rawValue, "relative": relative]
     case .transcriptFindUsed(let matches, let navigated):
