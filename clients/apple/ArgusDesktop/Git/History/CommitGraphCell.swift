@@ -55,15 +55,15 @@ struct CommitRowModel {
 
 @MainActor
 enum CommitListMetrics {
-  static let rowHeight: CGFloat = 24
+  static var rowHeight: CGFloat { TextScale.shared(24).rounded() }
   static let laneWidth: CGFloat = 14
   static let dotRadius: CGFloat = 4
   /// Beyond this many lanes the graph is clipped rather than pushing the subject away.
   static let maxLanes = 24
-  static let font = NSFont.systemFont(ofSize: 12)
-  static let boldFont = NSFont.systemFont(ofSize: 12, weight: .semibold)
-  static let badgeFont = NSFont.systemFont(ofSize: 10, weight: .medium)
-  static let monoFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+  static var font: NSFont { .systemFont(ofSize: TextScale.shared(12)) }
+  static var boldFont: NSFont { .systemFont(ofSize: TextScale.shared(12), weight: .semibold) }
+  static var badgeFont: NSFont { .systemFont(ofSize: TextScale.shared(10), weight: .medium) }
+  static var monoFont: NSFont { .monospacedSystemFont(ofSize: TextScale.shared(11), weight: .regular) }
 
   static func graphWidth(columns: Int) -> CGFloat {
     CGFloat(min(max(columns, 1), maxLanes)) * laneWidth + 6
@@ -201,8 +201,9 @@ final class CommitSubjectCell: NSView {
     let attrs: [NSAttributedString.Key: Any] = [.font: CommitListMetrics.badgeFont, .foregroundColor: fg]
     let label = (badge.kind == .tag ? "◆ " : "") + badge.name
     let size = (label as NSString).size(withAttributes: attrs)
-    let width = min(ceil(size.width) + 10, 160)
-    let rect = NSRect(x: x, y: (bounds.height - 16) / 2, width: width, height: 16)
+    let width = min(ceil(size.width) + 10, TextScale.shared(160))
+    let badgeHeight = TextScale.shared(16).rounded()
+    let rect = NSRect(x: x, y: (bounds.height - badgeHeight) / 2, width: width, height: badgeHeight)
     bg.setFill()
     NSBezierPath(roundedRect: rect, xRadius: 4, yRadius: 4).fill()
     if badge.kind == .head {
@@ -214,7 +215,7 @@ final class CommitSubjectCell: NSView {
     var textAttrs = attrs
     textAttrs[.paragraphStyle] = Self.truncating
     (label as NSString).draw(
-      with: NSRect(x: rect.minX + 5, y: rect.minY + (16 - size.height) / 2, width: rect.width - 10, height: size.height),
+      with: NSRect(x: rect.minX + 5, y: rect.minY + (badgeHeight - size.height) / 2, width: rect.width - 10, height: size.height),
       options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine], attributes: textAttrs)
     return rect.maxX + 4
   }

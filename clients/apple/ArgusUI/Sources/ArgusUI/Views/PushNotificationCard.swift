@@ -29,10 +29,10 @@ struct PushNotificationCard: View {
     VStack(alignment: .leading, spacing: 6) {
       HStack(spacing: 6) {
         Image(systemName: Icon.notification)
-          .font(.system(size: 11, weight: .semibold))
+          .font(.scaled(size: 11, weight: .semibold))
           .foregroundStyle(theme.accent)
         Text("Notification")
-          .font(.system(size: 11, weight: .semibold))
+          .font(.scaled(size: 11, weight: .semibold))
           .foregroundStyle(theme.accent)
         Spacer(minLength: 4)
         if undelivered { Badge(label: "not delivered", tone: .danger) }
@@ -40,7 +40,7 @@ struct PushNotificationCard: View {
       }
       if let title {
         Text(title)
-          .font(.system(size: 15, weight: .semibold))
+          .font(.scaled(size: 15, weight: .semibold))
           .foregroundStyle(theme.text)
       }
       if let body = call.input["body"]?.stringValue, !body.isEmpty {

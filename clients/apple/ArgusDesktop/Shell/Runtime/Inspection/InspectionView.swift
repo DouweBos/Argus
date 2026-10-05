@@ -21,7 +21,7 @@ struct InspectionView: View {
       }
       if let error = model.captureError {
         Label(error, systemImage: Icon.warning)
-          .font(.caption)
+          .font(.scaled(.caption))
           .foregroundStyle(theme.error)
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(.horizontal, 10)
@@ -93,7 +93,7 @@ struct InspectionView: View {
         Text(
           "\(capture.device.platform.uppercased()) · \(Inspection.format(capture.device.width)) × \(Inspection.format(capture.device.height)) · \(capture.nodeCount) nodes"
         )
-        .font(.caption.monospacedDigit())
+        .font(.scaled(.caption).monospacedDigit())
         .foregroundStyle(theme.textMuted)
         .lineLimit(1)
       }
@@ -114,7 +114,7 @@ struct InspectionView: View {
         .help("Exit focused view")
         ForEach(model.breadcrumbs) { node in
           Image(systemName: Icon.chevronRight)
-            .font(.system(size: 8, weight: .semibold))
+            .font(.scaled(size: 8, weight: .semibold))
             .foregroundStyle(theme.textMuted)
           let focused = node.id == model.focusedRootId
           Button {
@@ -126,7 +126,7 @@ struct InspectionView: View {
         }
       }
       .buttonStyle(.borderless)
-      .font(.system(size: 11, design: .monospaced))
+      .font(.scaled(size: 11, design: .monospaced))
       .padding(.horizontal, 10)
     }
     .frame(height: 26)

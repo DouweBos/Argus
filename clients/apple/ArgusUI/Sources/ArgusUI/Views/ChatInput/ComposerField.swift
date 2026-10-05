@@ -113,6 +113,8 @@
         Task { @MainActor in if self.caret != caret { self.caret = caret } }
       }
       view.placeholder = placeholder
+      let size = TextScale.shared(13)
+      if view.font?.pointSize != size { view.font = .systemFont(ofSize: size) }
       view.isEditable = isEnabled
       view.argumentHint = argumentHint
       view.onKey = onKey

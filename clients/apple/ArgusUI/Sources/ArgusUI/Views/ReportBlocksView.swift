@@ -26,7 +26,7 @@ public struct ReportBlocksView: View {
   private func view(for block: RemoteReportBlock) -> some View {
     switch block {
     case .heading(let text):
-      Text(text).font(.system(size: 16, weight: .bold)).foregroundStyle(theme.text)
+      Text(text).font(.scaled(size: 16, weight: .bold)).foregroundStyle(theme.text)
 
     case .markdown(let text):
       MarkdownView(text: text)
@@ -68,7 +68,7 @@ public struct ReportBlocksView: View {
           BodyText("\(ids.count) proposal\(ids.count == 1 ? "" : "s") in the inbox")
           Spacer()
           Image(systemName: Icon.chevronRight)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.scaled(size: 12, weight: .semibold))
             .foregroundStyle(theme.textMuted)
         }
       }
@@ -81,7 +81,7 @@ public struct ReportBlocksView: View {
 
   private func listText(_ text: String, color: Color) -> some View {
     Text(text)
-      .font(.system(size: 14))
+      .font(.scaled(size: 14))
       .foregroundStyle(color)
       .multilineTextAlignment(.leading)
       .frame(maxWidth: .infinity, alignment: .leading)
@@ -101,12 +101,12 @@ public struct ReportBlocksView: View {
       ForEach(Array(items.enumerated()), id: \.offset) { _, item in
         VStack(alignment: .leading, spacing: 3) {
           Text(item.label)
-            .font(.system(size: 11)).foregroundStyle(theme.textMuted).lineLimit(1)
+            .font(.scaled(size: 11)).foregroundStyle(theme.textMuted).lineLimit(1)
           Text(item.value)
-            .font(.system(size: 18, weight: .semibold)).foregroundStyle(theme.text)
+            .font(.scaled(size: 18, weight: .semibold)).foregroundStyle(theme.text)
           if let delta = item.delta, delta != 0 {
             Text(delta > 0 ? "+\(formatted(delta))" : formatted(delta))
-              .font(.system(size: 11, weight: .semibold))
+              .font(.scaled(size: 11, weight: .semibold))
               .foregroundStyle(delta > 0 ? theme.success : theme.error)
           }
         }
@@ -124,7 +124,7 @@ public struct ReportBlocksView: View {
         HStack(spacing: 0) {
           ForEach(Array(columns.enumerated()), id: \.offset) { _, column in
             Text(column)
-              .font(.system(size: 11, weight: .bold))
+              .font(.scaled(size: 11, weight: .bold))
               .foregroundStyle(theme.textMuted)
               .frame(width: 130, alignment: .leading)
               .padding(.vertical, 6)
@@ -137,7 +137,7 @@ public struct ReportBlocksView: View {
           HStack(spacing: 0) {
             ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
               Text(cell.text)
-                .font(.system(size: 13))
+                .font(.scaled(size: 13))
                 .foregroundStyle(theme.text)
                 .frame(width: 130, alignment: .leading)
                 .padding(.vertical, 5)
@@ -158,7 +158,7 @@ public struct ReportBlocksView: View {
       ForEach(Array(zip(labels, values).enumerated()), id: \.offset) { _, pair in
         HStack(spacing: 8) {
           Text(pair.0)
-            .font(.system(size: 11))
+            .font(.scaled(size: 11))
             .foregroundStyle(theme.textMuted)
             .frame(width: 64, alignment: .leading)
             .lineLimit(1)
@@ -169,7 +169,7 @@ public struct ReportBlocksView: View {
           }
           .frame(height: 10)
           Text(formatted(pair.1))
-            .font(.system(size: 11, design: .monospaced))
+            .font(.scaled(size: 11, design: .monospaced))
             .foregroundStyle(theme.textSecondary)
             .frame(width: 48, alignment: .trailing)
         }

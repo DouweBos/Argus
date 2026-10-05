@@ -133,7 +133,7 @@ struct RemoteTunnelSections: View {
     }
     .disabled(model.busy || status == nil)
     if on, let error = state?.error {
-      Text(error).font(.callout).foregroundStyle(theme.error).textSelection(.enabled)
+      Text(error).font(.scaled(.callout)).foregroundStyle(theme.error).textSelection(.enabled)
     }
   }
 }

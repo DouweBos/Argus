@@ -83,11 +83,11 @@ struct ProposalCardView: View {
     VStack(alignment: .leading, spacing: 6) {
       if openable {
         Button { model.navigate(.proposal(id: proposal.id)) } label: {
-          Text(proposal.title).font(.headline).foregroundStyle(theme.text).multilineTextAlignment(.leading)
+          Text(proposal.title).font(.scaled(.headline)).foregroundStyle(theme.text).multilineTextAlignment(.leading)
         }
         .buttonStyle(.plain)
       } else {
-        Text(proposal.title).font(.headline).textSelection(.enabled)
+        Text(proposal.title).font(.scaled(.headline)).textSelection(.enabled)
       }
       HStack(spacing: 6) {
         Badge(

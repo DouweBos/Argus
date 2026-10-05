@@ -1,5 +1,6 @@
 import AppKit
 import ArgusCore
+import ArgusUI
 import Observation
 
 /// One agent pane's transcript state that isn't the host's: rendered text,
@@ -34,6 +35,7 @@ final class TranscriptModel {
 
   private struct Rendered {
     let source: [String]
+    let scale: CGFloat
     let text: NSAttributedString
   }
 
@@ -43,16 +45,17 @@ final class TranscriptModel {
 
   // MARK: Rendering
 
-  /// The message's text as one attributed string, cached until its blocks change.
+  /// The message's text as one attributed string, cached until its blocks or the text scale change.
   func text(for message: RemoteMessage) -> NSAttributedString? {
     let blocks = Self.textBlocks(message)
     guard !blocks.isEmpty else { return nil }
-    if let cached = rendered[message.id], cached.source == blocks { return cached.text }
+    let scale = TextScale.shared.factor
+    if let cached = rendered[message.id], cached.source == blocks, cached.scale == scale { return cached.text }
     let text =
       message.role == .user
       ? TranscriptMarkdown.render(userText: blocks.joined(separator: "\n\n"))
       : TranscriptMarkdown.render(markdown: blocks.joined(separator: "\n\n"))
-    rendered[message.id] = Rendered(source: blocks, text: text)
+    rendered[message.id] = Rendered(source: blocks, scale: scale, text: text)
     return text
   }
 

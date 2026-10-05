@@ -52,7 +52,7 @@ public struct AutomationFields: View {
       if showsSchedule {
         ThemedTextField(placeholder: "What it does", text: $draft.description, multiline: true)
         Toggle("Enabled", isOn: $draft.enabled)
-          .font(.system(size: 15))
+          .font(.scaled(size: 15))
           .tint(theme.accent)
       }
     }
@@ -83,7 +83,7 @@ public struct AutomationFields: View {
           input: .code)
         if let preview = draft.schedulePreviewText() { schedulePreview(preview) }
         Toggle("Catch up after the computer was asleep", isOn: $draft.catchUp)
-          .font(.system(size: 14))
+          .font(.scaled(size: 14))
           .tint(theme.accent)
       }
     }
@@ -92,7 +92,7 @@ public struct AutomationFields: View {
   private func schedulePreview(_ preview: SchedulePreviewText) -> some View {
     VStack(alignment: .leading, spacing: 2) {
       if let error = preview.error {
-        Text(error).font(.system(size: 13)).foregroundStyle(theme.error)
+        Text(error).font(.scaled(size: 13)).foregroundStyle(theme.error)
       } else {
         if let headline = preview.headline { BodyText(headline) }
         ForEach(preview.runs, id: \.self) { MutedText($0).monospacedDigit() }

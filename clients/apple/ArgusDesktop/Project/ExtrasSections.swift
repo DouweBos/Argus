@@ -27,7 +27,7 @@ struct McpServersSection: View {
           .font(.system(.callout, design: .monospaced))
           .frame(minHeight: 90)
         if let error = server.error {
-          Text(error).font(.caption).foregroundStyle(theme.error)
+          Text(error).font(.scaled(.caption)).foregroundStyle(theme.error)
         }
         ProjectMcpProbe(server: server, backend: model.backend)
       } header: {
@@ -141,7 +141,7 @@ struct JSONPreviewSection: View {
     SectionIntro(title: "JSON preview", text: "Read-only view of what will be written to .argus.json on save.")
     Section {
       Text(settings.previewJSON)
-        .font(.system(size: 12, design: .monospaced))
+        .font(.scaled(size: 12, design: .monospaced))
         .textSelection(.enabled)
         .frame(maxWidth: .infinity, alignment: .leading)
       Button("Copy") {

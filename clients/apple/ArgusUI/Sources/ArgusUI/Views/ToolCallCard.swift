@@ -99,11 +99,11 @@ public struct ToolCallCard: View {
           ProgressView().controlSize(.mini)
         } else {
           Image(systemName: expanded ? Icon.chevronDown : Icon.chevronRight)
-            .font(.system(size: 10, weight: .semibold))
+            .font(.scaled(size: 10, weight: .semibold))
             .foregroundStyle(theme.textMuted)
         }
         Text(displayName)
-          .font(.system(size: 12, weight: .semibold))
+          .font(.scaled(size: 12, weight: .semibold))
           .foregroundStyle(theme.text)
         MonoText(
           text: ToolCallSummary.summary(name: call.name, input: call.input),
@@ -126,12 +126,12 @@ public struct ToolCallCard: View {
       HStack(spacing: 4) {
         if stats.additions > 0 {
           Text("+\(stats.additions)")
-            .font(.system(size: 10, design: .monospaced))
+            .font(.scaled(size: 10, design: .monospaced))
             .foregroundStyle(theme.success)
         }
         if stats.deletions > 0 {
           Text("-\(stats.deletions)")
-            .font(.system(size: 10, design: .monospaced))
+            .font(.scaled(size: 10, design: .monospaced))
             .foregroundStyle(theme.error)
         }
       }
@@ -209,7 +209,7 @@ public struct ToolCallCard: View {
 
     if let children = call.children, !children.isEmpty, depth < 3 {
       Text("Sub-agent activity")
-        .font(.system(size: 10, weight: .bold))
+        .font(.scaled(size: 10, weight: .bold))
         .foregroundStyle(theme.textMuted)
       ForEach(Array(children.enumerated()), id: \.offset) { _, child in
         switch child {
@@ -270,7 +270,7 @@ public struct ToolCallCard: View {
           text.count > Self.resultPreviewChars
           ? String(text.prefix(Self.resultPreviewChars)) + "…" : text
         Text(clipped)
-          .font(.system(size: 11, design: .monospaced))
+          .font(.scaled(size: 11, design: .monospaced))
           .foregroundStyle(call.isError == true ? theme.error : theme.textSecondary)
       case .image(let imageId, _):
         TranscriptImage(

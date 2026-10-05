@@ -83,13 +83,13 @@ struct RuntimeNativeView: View {
     let booting = runtime.booting.contains(target.avdName ?? target.id)
     VStack(spacing: 12) {
       Image(systemName: target.isTv ? "appletv" : "iphone")
-        .font(.system(size: 40, weight: .thin))
+        .font(.scaled(size: 40, weight: .thin))
         .foregroundStyle(theme.textMuted)
-      Text(target.name).font(.system(size: 13, weight: .medium))
+      Text(target.name).font(.scaled(size: 13, weight: .medium))
       Button(booting ? "Booting…" : "Boot") { Task { await boot(target) } }
         .disabled(booting)
       if let bootError {
-        Text(bootError).font(.system(size: 11)).foregroundStyle(theme.error)
+        Text(bootError).font(.scaled(size: 11)).foregroundStyle(theme.error)
           .multilineTextAlignment(.center)
       }
     }
@@ -98,8 +98,8 @@ struct RuntimeNativeView: View {
 
   private func hint(title: String, detail: String) -> some View {
     VStack(spacing: 6) {
-      Text(title).font(.system(size: 13, weight: .medium))
-      Text(detail).font(.system(size: 12)).foregroundStyle(theme.textMuted)
+      Text(title).font(.scaled(size: 13, weight: .medium))
+      Text(detail).font(.scaled(size: 12)).foregroundStyle(theme.textMuted)
         .multilineTextAlignment(.center)
     }
     .padding(24)

@@ -47,7 +47,7 @@ public struct TranscriptMessageView: View {
             Date(timeIntervalSince1970: timestamp / 1000)
               .formatted(date: .omitted, time: .shortened)
           )
-          .font(.caption2)
+          .font(.scaled(.caption2))
           .foregroundStyle(.tertiary)
         }
       }
@@ -125,7 +125,7 @@ public struct TranscriptMessageView: View {
       }
       if refs.count > 3 {
         Text("+\(refs.count - 3) more")
-          .font(.caption)
+          .font(.scaled(.caption))
           .foregroundStyle(.secondary)
       }
     }
@@ -198,7 +198,7 @@ struct SendingLabel: View {
       ProgressView().controlSize(.mini)
       Text("Sending…")
     }
-    .font(.caption2)
+    .font(.scaled(.caption2))
     .foregroundStyle(.tertiary)
     .accessibilityElement(children: .combine)
   }
@@ -247,19 +247,19 @@ public struct CollapsedToolGroupView: View {
     } label: {
       HStack(spacing: 8) {
         Image(systemName: isExpanded ? Icon.chevronDown : Icon.chevronRight)
-          .font(.system(size: 10, weight: .semibold))
+          .font(.scaled(size: 10, weight: .semibold))
           .foregroundStyle(theme.textMuted)
         Text(
           "\(ToolGroups.countToolCalls(messages)) tool calls · \(messages.count) messages"
         )
-        .font(.system(size: 12))
+        .font(.scaled(size: 12))
         .foregroundStyle(theme.textSecondary)
         Spacer(minLength: 4)
         ForEach(ToolGroups.categorize(messages), id: \.0) { category, count in
           if let icon = icon(for: category) {
             HStack(spacing: 2) {
-              Image(systemName: icon).font(.system(size: 9))
-              Text("\(count)").font(.system(size: 10))
+              Image(systemName: icon).font(.scaled(size: 9))
+              Text("\(count)").font(.scaled(size: 10))
             }
             .foregroundStyle(theme.textMuted)
           }

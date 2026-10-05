@@ -38,7 +38,7 @@ struct RemotePushSection: View {
         }
         LabeledContent("Browser push key", value: push.webPushConfigured ? "generated" : "made on first use")
         Text("Phones are reached through \(push.relayUrl), which only ever handles ciphertext.")
-          .font(.callout).foregroundStyle(theme.textSecondary)
+          .font(.scaled(.callout)).foregroundStyle(theme.textSecondary)
       }
     } footer: {
       Text(

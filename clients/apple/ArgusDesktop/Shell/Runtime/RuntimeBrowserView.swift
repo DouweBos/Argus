@@ -139,7 +139,7 @@ struct RuntimeBrowserView: View {
         RuntimeInputView(onInput: receive)
         if !receiving {
           Text("Waiting for frames…")
-            .font(.system(size: 12))
+            .font(.scaled(size: 12))
             .foregroundStyle(theme.textMuted)
             .allowsHitTesting(false)
         }

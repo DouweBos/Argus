@@ -193,10 +193,10 @@ private struct TrackRecordSection: View {
     -> some View
   {
     VStack(alignment: .leading, spacing: 2) {
-      Text(label).font(.caption).foregroundStyle(.secondary)
-      Text(value).font(.title3.weight(.semibold)).monospacedDigit()
+      Text(label).font(.scaled(.caption)).foregroundStyle(.secondary)
+      Text(value).font(.scaled(.title3).weight(.semibold)).monospacedDigit()
       if let delta {
-        Text(delta).font(.caption).foregroundStyle(poor ? theme.error : theme.textSecondary)
+        Text(delta).font(.scaled(.caption)).foregroundStyle(poor ? theme.error : theme.textSecondary)
       }
     }
   }

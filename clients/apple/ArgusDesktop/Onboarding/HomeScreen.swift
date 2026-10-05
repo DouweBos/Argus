@@ -20,7 +20,7 @@ struct HomeScreen: View {
         } else {
           HStack(spacing: 10) {
             Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 32, height: 32)
-            Text("Argus").font(.system(size: 24, weight: .semibold))
+            Text("Argus").font(.scaled(size: 24, weight: .semibold))
           }
           HomeNeedsYouSection()
           section("Projects") {
@@ -73,8 +73,8 @@ struct HomeScreen: View {
 
   private var empty: some View {
     VStack(spacing: 14) {
-      Image(systemName: "folder.badge.plus").font(.system(size: 40)).foregroundStyle(theme.textMuted)
-      Text("No projects yet").font(.title2.weight(.semibold))
+      Image(systemName: "folder.badge.plus").font(.scaled(size: 40)).foregroundStyle(theme.textMuted)
+      Text("No projects yet").font(.scaled(.title2).weight(.semibold))
       Text("Add a git repository to start sessions and agents in it.").foregroundStyle(theme.textSecondary)
       Button {
         model.addingProject = true
@@ -95,11 +95,11 @@ struct HomeScreen: View {
 
   private func shortcut(_ keys: String, _ label: String) -> some View {
     HStack(spacing: 8) {
-      Text(keys).font(.system(size: 11, design: .monospaced))
+      Text(keys).font(.scaled(size: 11, design: .monospaced))
         .padding(.horizontal, 6).padding(.vertical, 2)
         .background(theme.bgTertiary)
         .clipShape(RoundedRectangle(cornerRadius: 4))
-      Text(label).font(.system(size: 11)).foregroundStyle(theme.textMuted)
+      Text(label).font(.scaled(size: 11)).foregroundStyle(theme.textMuted)
     }
   }
 
@@ -108,7 +108,7 @@ struct HomeScreen: View {
   ) -> some View {
     VStack(alignment: .leading, spacing: 10) {
       HStack {
-        Text(title.uppercased()).font(.system(size: 11, weight: .semibold)).foregroundStyle(theme.textMuted)
+        Text(title.uppercased()).font(.scaled(size: 11, weight: .semibold)).foregroundStyle(theme.textMuted)
         Spacer()
         trailing()
       }
@@ -131,7 +131,7 @@ private struct HomeProjectCard: View {
     VStack(alignment: .leading, spacing: 8) {
       HStack {
         Image(systemName: "folder.fill").foregroundStyle(theme.accent)
-        Text(project.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
+        Text(project.name).font(.scaled(size: 14, weight: .semibold)).lineLimit(1)
         if model.host(ofProject: project.repoRoot) != Hosts.local { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
         Spacer()
         Button {
@@ -142,14 +142,14 @@ private struct HomeProjectCard: View {
         .buttonStyle(.borderless)
         .help("New session in \(project.name)")
       }
-      Text(HostScopedPath.path(project.repoRoot)).font(.caption).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
+      Text(HostScopedPath.path(project.repoRoot)).font(.scaled(.caption)).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
       HStack(spacing: 6) {
         ForEach(agents.prefix(8)) { StatusDot(tone: tone($0.status), pulse: $0.status == .running) }
         Text(summary(agents: agents.count, sessions: sessions.count))
-          .font(.caption).foregroundStyle(theme.textSecondary)
+          .font(.scaled(.caption)).foregroundStyle(theme.textSecondary)
         Spacer()
         if let last = agents.map(Labels.lastActivity).max(), last > 0 {
-          Text(Labels.timeAgo(last)).font(.caption).foregroundStyle(theme.textMuted)
+          Text(Labels.timeAgo(last)).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
         }
       }
     }
@@ -204,7 +204,7 @@ private struct HomeAgentsList: View {
       .filter { $0.status != .stopped }
       .sorted { Labels.activityRank($0) < Labels.activityRank($1) }
     if agents.isEmpty {
-      Text("No agents running. Start one from a session.").foregroundStyle(theme.textMuted).font(.callout)
+      Text("No agents running. Start one from a session.").foregroundStyle(theme.textMuted).font(.scaled(.callout))
     } else {
       VStack(alignment: .leading, spacing: 2) {
         ForEach(agents.prefix(6)) { agent in
@@ -215,8 +215,8 @@ private struct HomeAgentsList: View {
               StatusDot(tone: agent.status == .running ? .accent : .muted, pulse: agent.status == .running)
               Text(Labels.agentName(agent)).lineLimit(1)
               Spacer()
-              Text(agent.projectName ?? "").font(.caption).foregroundStyle(theme.textMuted)
-              Text(Labels.metaLabel(agent.status)).font(.caption).foregroundStyle(theme.textSecondary)
+              Text(agent.projectName ?? "").font(.scaled(.caption)).foregroundStyle(theme.textMuted)
+              Text(Labels.metaLabel(agent.status)).font(.scaled(.caption)).foregroundStyle(theme.textSecondary)
             }
             .padding(.vertical, 5)
             .contentShape(Rectangle())
@@ -236,7 +236,7 @@ private struct HomeDevicesList: View {
   var body: some View {
     let devices = store.devices.filter(\.booted)
     if devices.isEmpty {
-      Text("No devices online. Boot a simulator or start an agent.").foregroundStyle(theme.textMuted).font(.callout)
+      Text("No devices online. Boot a simulator or start an agent.").foregroundStyle(theme.textMuted).font(.scaled(.callout))
     } else {
       VStack(alignment: .leading, spacing: 2) {
         ForEach(devices.prefix(6), id: \.id) { device in
@@ -247,7 +247,7 @@ private struct HomeDevicesList: View {
               StatusDot(tone: .success)
               Text(device.name).lineLimit(1)
               Spacer()
-              Text(device.platform.rawValue.uppercased()).font(.caption).foregroundStyle(theme.textMuted)
+              Text(device.platform.rawValue.uppercased()).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
             }
             .padding(.vertical, 5)
             .contentShape(Rectangle())

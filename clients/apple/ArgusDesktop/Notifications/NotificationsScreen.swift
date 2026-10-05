@@ -49,11 +49,11 @@ private struct NotificationRow: View {
       VStack(alignment: .leading, spacing: 4) {
         Text(entry.message).textSelection(.enabled)
         HStack(spacing: 6) {
-          Text(entry.level.rawValue).font(.caption).foregroundStyle(.secondary)
+          Text(entry.level.rawValue).font(.scaled(.caption)).foregroundStyle(.secondary)
           if let source = entry.source {
-            Text(source).font(.caption).foregroundStyle(.secondary)
+            Text(source).font(.scaled(.caption)).foregroundStyle(.secondary)
           }
-          Text(entry.timestamp, style: .relative).font(.caption).foregroundStyle(.tertiary)
+          Text(entry.timestamp, style: .relative).font(.scaled(.caption)).foregroundStyle(.tertiary)
         }
       }
       Spacer()

@@ -75,7 +75,7 @@ struct DevicesScreen: View {
       Text(
         "\(devices.count) total · \(online.count) running · \(devices.filter(\.reserved).count) reserved"
       )
-      .font(.system(size: 12))
+      .font(.scaled(size: 12))
       .foregroundStyle(theme.textMuted)
       Spacer()
       if mode == .grid {
@@ -97,7 +97,7 @@ struct DevicesScreen: View {
 
   private func hint(_ text: String) -> some View {
     Text(text)
-      .font(.system(size: 12))
+      .font(.scaled(size: 12))
       .foregroundStyle(theme.textMuted)
       .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
@@ -228,7 +228,7 @@ struct DevicesScreen: View {
                 isTv: device.runtime?.hasPrefix("tvOS") ?? false)
                 .frame(height: tileSize * 2)
                 .clipShape(.rect(cornerRadius: theme.radiusSmall))
-              Text(device.name).font(.system(size: 11)).foregroundStyle(theme.textMuted)
+              Text(device.name).font(.scaled(size: 11)).foregroundStyle(theme.textMuted)
             }
           }
         }

@@ -131,13 +131,13 @@ private struct SubmoduleRow: View {
       Image(systemName: "shippingbox").foregroundStyle(.secondary)
       VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: 6) {
-          Text(submodule.name).font(.system(size: 13, weight: .medium))
+          Text(submodule.name).font(.scaled(size: 13, weight: .medium))
           if submodule.path != submodule.name {
-            Text(submodule.path).font(.system(size: 12, design: .monospaced)).foregroundStyle(.secondary)
+            Text(submodule.path).font(.scaled(size: 12, design: .monospaced)).foregroundStyle(.secondary)
           }
         }
         Text(submodule.url)
-          .font(.system(size: 11))
+          .font(.scaled(size: 11))
           .foregroundStyle(.secondary)
           .lineLimit(1)
           .truncationMode(.middle)
@@ -146,7 +146,7 @@ private struct SubmoduleRow: View {
       Spacer(minLength: 8)
       if !submodule.commitHash.isEmpty {
         Text(String(submodule.commitHash.prefix(8)))
-          .font(.system(size: 11, design: .monospaced))
+          .font(.scaled(size: 11, design: .monospaced))
           .foregroundStyle(.secondary)
           .textSelection(.enabled)
       }

@@ -31,7 +31,7 @@ struct HuddleDisclosure: View {
         .padding(.top, 4)
       }
     }
-    .font(.callout)
+    .font(.scaled(.callout))
     .foregroundStyle(theme.textSecondary)
   }
 
@@ -55,7 +55,7 @@ struct ShareBlockerView<Actions: View>: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       Label(blocker.message, systemImage: "exclamationmark.triangle.fill")
-        .font(.headline).foregroundStyle(tone)
+        .font(.scaled(.headline)).foregroundStyle(tone)
       Text(blocker.explanation).foregroundStyle(theme.textSecondary)
       ForEach(Array(blocker.steps.enumerated()), id: \.offset) { index, step in
         Text("\(index + 1). \(step)").fixedSize(horizontal: false, vertical: true)
@@ -66,7 +66,7 @@ struct ShareBlockerView<Actions: View>: View {
           .background(theme.bgTertiary, in: .rect(cornerRadius: 6))
       }
       if let alternative = blocker.alternative {
-        Text(alternative).font(.callout).foregroundStyle(theme.textSecondary)
+        Text(alternative).font(.scaled(.callout)).foregroundStyle(theme.textSecondary)
       }
       if let detail = blocker.detail {
         Text(detail).font(.system(.caption, design: .monospaced)).foregroundStyle(theme.textMuted)
@@ -91,9 +91,9 @@ struct HuddleGuestRow: View {
       StatusDot(tone: guest.connected ? .success : .muted)
       Text(guest.label)
       if guest.state == .approved, huddles.drivers(of: room).holder == guest.label {
-        Label(status, systemImage: "hand.tap.fill").font(.caption).foregroundStyle(theme.accent)
+        Label(status, systemImage: "hand.tap.fill").font(.scaled(.caption)).foregroundStyle(theme.accent)
       } else {
-        Text(status).font(.caption).foregroundStyle(theme.textSecondary)
+        Text(status).font(.scaled(.caption)).foregroundStyle(theme.textSecondary)
       }
       Spacer()
       if guest.state == .pending {

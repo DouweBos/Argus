@@ -35,12 +35,12 @@ struct InteractiveRebaseView: View {
   private func editor(_ planner: InteractiveRebaseViewModel) -> some View {
     VStack(alignment: .leading, spacing: 0) {
       VStack(alignment: .leading, spacing: 4) {
-        Text("Interactive Rebase").font(.system(size: 13, weight: .semibold))
+        Text("Interactive Rebase").font(.scaled(size: 13, weight: .semibold))
         Text(
           "Replays \(planner.steps.count) commit\(planner.steps.count == 1 ? "" : "s") onto \(planner.base.shortSHA) "
             + "\u{201C}\(planner.base.summary)\u{201D}. Newest first; drag to reorder. Squash and fixup fold into the commit below."
         )
-        .font(.system(size: 12)).foregroundStyle(.secondary)
+        .font(.scaled(size: 12)).foregroundStyle(.secondary)
       }
       .padding(12)
       Divider()
@@ -63,7 +63,7 @@ struct InteractiveRebaseView: View {
         }
         if let error = history.errorMessage { SheetBanner(message: error, tone: .danger) }
         HStack {
-          Text(planner.summary).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+          Text(planner.summary).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(.secondary)
           if running { ProgressView().controlSize(.small) }
           Spacer()
           Button("Cancel") { navigate(.history) }.keyboardShortcut(.cancelAction)
@@ -137,12 +137,12 @@ private struct RebaseStepRow: View {
           .foregroundStyle(step.action == .drop ? .secondary : .primary)
           .lineLimit(1)
         Spacer()
-        Text(String(step.sha.prefix(7))).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+        Text(String(step.sha.prefix(7))).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(.secondary)
       }
-      .font(.system(size: 12))
+      .font(.scaled(size: 12))
       if step.action == .reword {
         TextEditor(text: Binding(get: { step.message ?? "" }, set: { onMessage($0) }))
-          .font(.system(size: 12))
+          .font(.scaled(size: 12))
           .frame(height: 64)
           .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(theme.border))
           .accessibilityLabel("New message")

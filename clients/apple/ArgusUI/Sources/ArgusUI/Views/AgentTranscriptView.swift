@@ -106,7 +106,7 @@ public struct AgentTranscriptView: View {
             withAnimation { proxy.scrollTo(Self.bottomAnchor, anchor: .bottom) }
           } label: {
             Image(systemName: Icon.chevronDown)
-              .font(.system(size: 13, weight: .bold))
+              .font(.scaled(size: 13, weight: .bold))
               .foregroundStyle(theme.onAccent)
               .padding(10)
               .background(theme.accent)

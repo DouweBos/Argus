@@ -17,7 +17,7 @@ struct TailscaleSetupView: View {
           icon(step)
           VStack(alignment: .leading, spacing: 2) {
             Text(step.title).fontWeight(.medium)
-            Text(step.message).font(.callout).foregroundStyle(theme.textSecondary)
+            Text(step.message).font(.scaled(.callout)).foregroundStyle(theme.textSecondary)
             if let detail = step.detail {
               Text(detail).font(.system(.caption, design: .monospaced)).foregroundStyle(theme.textMuted)
                 .textSelection(.enabled)
@@ -33,10 +33,10 @@ struct TailscaleSetupView: View {
         }
       }
       if model.tailscaleHandedOff {
-        Text("Finish in the browser, then re-check.").font(.callout).foregroundStyle(theme.textSecondary)
+        Text("Finish in the browser, then re-check.").font(.scaled(.callout)).foregroundStyle(theme.textSecondary)
       }
       if let error = model.tailscaleError {
-        Text(error).font(.callout).foregroundStyle(theme.error).textSelection(.enabled)
+        Text(error).font(.scaled(.callout)).foregroundStyle(theme.error).textSelection(.enabled)
       }
       HStack {
         Button(model.tailscaleChecking ? "Checking…" : "Re-check") {
@@ -45,7 +45,7 @@ struct TailscaleSetupView: View {
         .disabled(busy)
         if model.tailscale?.ready == true {
           Text("Ready — enable remote access to start the Funnel.")
-            .font(.callout).foregroundStyle(theme.success)
+            .font(.scaled(.callout)).foregroundStyle(theme.success)
         }
       }
     }

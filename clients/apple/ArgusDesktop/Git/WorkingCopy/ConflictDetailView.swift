@@ -37,8 +37,8 @@ struct ConflictDetailView: View {
   private func side(_ side: ConflictSide, label: String, text: String?) -> some View {
     VStack(spacing: 0) {
       HStack(spacing: 8) {
-        Text(side == .ours ? "Ours" : "Theirs").font(.system(size: 12, weight: .semibold))
-        Text(label).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary).lineLimit(1)
+        Text(side == .ours ? "Ours" : "Theirs").font(.scaled(size: 12, weight: .semibold))
+        Text(label).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(.secondary).lineLimit(1)
         Spacer()
         Button(side == .ours ? "Take Ours" : "Take Theirs") {
           Task { await WorkingCopyActions(workspace: workspace).resolve(taking: side) }
@@ -63,8 +63,8 @@ struct ConflictDetailView: View {
   private var mergedEditor: some View {
     VStack(spacing: 0) {
       HStack(spacing: 8) {
-        Text("Result").font(.system(size: 12, weight: .semibold))
-        Text(entry.path).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+        Text("Result").font(.scaled(size: 12, weight: .semibold))
+        Text(entry.path).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(.secondary)
           .lineLimit(1).truncationMode(.head)
         Spacer()
         if hasMarkers {

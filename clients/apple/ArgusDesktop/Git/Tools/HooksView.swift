@@ -95,8 +95,8 @@ private struct HookRow: View {
     HStack(spacing: 10) {
       Image(systemName: "link").foregroundStyle(.secondary)
       VStack(alignment: .leading, spacing: 2) {
-        Text(hook.name).font(.system(size: 13, weight: .medium, design: .monospaced))
-        Text(meta).font(.system(size: 11)).foregroundStyle(.secondary)
+        Text(hook.name).font(.scaled(size: 13, weight: .medium, design: .monospaced))
+        Text(meta).font(.scaled(size: 11)).foregroundStyle(.secondary)
       }
       Spacer()
       if let output = hook.lastOutput {
@@ -156,7 +156,7 @@ private struct HookOutputPane: View {
       if let output = hook?.lastOutput {
         ScrollView {
           Text(text(output).isEmpty ? "(empty)" : text(output))
-            .font(.system(size: 12, design: .monospaced))
+            .font(.scaled(size: 12, design: .monospaced))
             .foregroundStyle(text(output).isEmpty ? theme.textMuted : theme.text)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -58,7 +58,7 @@ extension View {
       navigationTitle(title).navigationBarTitleDisplayMode(.inline)
     #else
       safeAreaInset(edge: .top, spacing: 0) {
-        Text(title).font(.headline).frame(maxWidth: .infinity).padding(.top, 14)
+        Text(title).font(.scaled(.headline)).frame(maxWidth: .infinity).padding(.top, 14)
       }
     #endif
   }

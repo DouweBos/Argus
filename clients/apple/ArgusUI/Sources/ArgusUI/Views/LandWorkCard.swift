@@ -214,7 +214,7 @@ public struct OpenPullRequestSheet: View {
           ThemedTextField(
             placeholder: "Description", text: $summary, multiline: true, lines: 4...12)
           Toggle("Open as a draft", isOn: $draft)
-            .font(.system(size: 14))
+            .font(.scaled(size: 14))
         }
         Btn(label: opening ? "Opening…" : "Open pull request") { open() }
           .disabled(opening || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

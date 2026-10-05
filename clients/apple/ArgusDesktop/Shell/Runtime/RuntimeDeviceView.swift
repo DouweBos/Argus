@@ -68,7 +68,7 @@ struct RuntimeDeviceView: View {
         RuntimeInputView(onInput: receive)
         if status != .streaming {
           Text(placeholder)
-            .font(.system(size: 12))
+            .font(.scaled(size: 12))
             .foregroundStyle(theme.textMuted)
             .multilineTextAlignment(.center)
             .padding(theme.space)
@@ -223,7 +223,7 @@ struct RuntimeClaimOverlay: View {
       theme.mediaBg.opacity(0.6)
       VStack(spacing: 10) {
         Text("\(holderLabel) is controlling this device")
-          .font(.system(size: 12, weight: .medium))
+          .font(.scaled(size: 12, weight: .medium))
           .foregroundStyle(theme.text)
         Button("Take Control", action: takeControl)
           .buttonStyle(.borderedProminent)

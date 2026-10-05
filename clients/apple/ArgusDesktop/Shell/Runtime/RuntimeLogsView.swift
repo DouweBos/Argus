@@ -31,7 +31,7 @@ struct RuntimeLogsView: View {
       controls
       Divider()
       if let error {
-        Text(error).font(.system(size: 11)).foregroundStyle(theme.error).padding(8)
+        Text(error).font(.scaled(size: 11)).foregroundStyle(theme.error).padding(8)
       }
       lines
     }
@@ -99,7 +99,7 @@ struct RuntimeLogsView: View {
       .overlay {
         if visible.isEmpty {
           Text(log.entries.isEmpty ? (running ? "Waiting for logs…" : "Not streaming.") : "No lines match the filter.")
-            .font(.system(size: 12))
+            .font(.scaled(size: 12))
             .foregroundStyle(theme.textMuted)
         }
       }
@@ -175,7 +175,7 @@ private struct LogLine: View {
       }
       Text(entry.message).foregroundStyle(color)
     }
-    .font(.system(size: 11, design: .monospaced))
+    .font(.scaled(size: 11, design: .monospaced))
     .frame(maxWidth: .infinity, alignment: .leading)
   }
 

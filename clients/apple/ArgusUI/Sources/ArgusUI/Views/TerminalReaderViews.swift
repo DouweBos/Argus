@@ -67,7 +67,7 @@ public struct TerminalOutputView: View {
             MutedText("Showing the most recent output.")
           }
           Text(output.text)
-            .font(.system(size: 12, design: .monospaced))
+            .font(.scaled(size: 12, design: .monospaced))
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
           if let exitCode {

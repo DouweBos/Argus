@@ -63,12 +63,12 @@ struct StashesView: View {
       VStack(alignment: .leading, spacing: 2) {
         Text(stash.message).lineLimit(2)
         HStack(spacing: 6) {
-          Text(Self.ref(stash)).font(.system(size: 10, design: .monospaced))
+          Text(Self.ref(stash)).font(.scaled(size: 10, design: .monospaced))
           if let branch = stash.branchName { Label(branch, systemImage: "arrow.triangle.branch") }
           Spacer(minLength: 4)
           Text(stash.date, format: .relative(presentation: .named))
         }
-        .font(.system(size: 11))
+        .font(.scaled(size: 11))
         .foregroundStyle(theme.textSecondary)
         .lineLimit(1)
       }
@@ -88,7 +88,7 @@ struct StashesView: View {
     if let stash = stashes.selectedStash {
       VStack(spacing: 0) {
         HStack(spacing: 8) {
-          Text(stash.message).font(.headline).lineLimit(1)
+          Text(stash.message).font(.scaled(.headline)).lineLimit(1)
           Spacer()
           Button("Apply") { stashes.request(.apply, on: stash) }
           Button("Pop") { stashes.request(.pop, on: stash) }

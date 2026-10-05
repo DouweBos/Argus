@@ -78,8 +78,8 @@ private struct NewPullRequestSheet: View {
     Form {
       if let createdURL {
         Section {
-          Label("Pull request opened", systemImage: "checkmark.circle").font(.headline)
-          Text(createdURL).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+          Label("Pull request opened", systemImage: "checkmark.circle").font(.scaled(.headline))
+          Text(createdURL).font(.scaled(size: 12, design: .monospaced)).textSelection(.enabled)
           HStack {
             Button("Open on GitHub") { PullRequestLinks.open(createdURL, store: store) }
             Button("Copy Link") { Clipboard.copy(createdURL) }
@@ -94,7 +94,7 @@ private struct NewPullRequestSheet: View {
     }
     .formStyle(.grouped)
     .safeAreaInset(edge: .top) {
-      Text("New Pull Request").font(.headline).frame(maxWidth: .infinity, alignment: .leading)
+      Text("New Pull Request").font(.scaled(.headline)).frame(maxWidth: .infinity, alignment: .leading)
         .padding([.top, .horizontal], 20)
     }
     .frame(width: 560, height: createdURL == nil ? 560 : 260)
@@ -140,7 +140,7 @@ private struct NewPullRequestSheet: View {
     }
     Section {
       TextEditor(text: $bodyText)
-        .font(.system(size: 12, design: .monospaced))
+        .font(.scaled(size: 12, design: .monospaced))
         .frame(minHeight: 180)
     } header: {
       HStack {

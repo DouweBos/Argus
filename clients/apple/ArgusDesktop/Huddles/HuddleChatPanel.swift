@@ -17,7 +17,7 @@ struct HuddleChatPanel: View {
           LazyVStack(alignment: .leading, spacing: 10) {
             if room.chat.isEmpty {
               Text("Nothing said yet. This stays between the people here — the agent never sees it.")
-                .font(.callout).foregroundStyle(theme.textSecondary)
+                .font(.scaled(.callout)).foregroundStyle(theme.textSecondary)
                 .padding(.top, 8)
             }
             ForEach(room.chat, id: \.id) { message in
@@ -55,8 +55,8 @@ struct HuddleChatPanel: View {
     let mine = message.memberId == nil
     return VStack(alignment: mine ? .trailing : .leading, spacing: 2) {
       HStack(spacing: 6) {
-        Text(mine ? "You" : message.author).font(.caption.weight(.semibold))
-        Text(Date(timeIntervalSince1970: message.at / 1000), style: .time).font(.caption2)
+        Text(mine ? "You" : message.author).font(.scaled(.caption).weight(.semibold))
+        Text(Date(timeIntervalSince1970: message.at / 1000), style: .time).font(.scaled(.caption2))
       }
       .foregroundStyle(theme.textSecondary)
       Text(message.text)
@@ -80,7 +80,7 @@ struct HuddleTypingBar: View {
         Image(systemName: "ellipsis").symbolEffect(.variableColor.iterative)
         Text(line)
       }
-      .font(.caption)
+      .font(.scaled(.caption))
       .foregroundStyle(theme.textSecondary)
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 12)

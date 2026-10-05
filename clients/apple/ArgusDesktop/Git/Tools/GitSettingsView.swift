@@ -145,7 +145,7 @@ private struct GitLfsSection: View {
           if !lfs.tracked.isEmpty {
             DisclosureGroup("Show tracked files") {
               ForEach(lfs.tracked.prefix(200), id: \.self) { path in
-                Text(path).font(.system(size: 11, design: .monospaced)).lineLimit(1).truncationMode(.middle)
+                Text(path).font(.scaled(size: 11, design: .monospaced)).lineLimit(1).truncationMode(.middle)
               }
             }
           }

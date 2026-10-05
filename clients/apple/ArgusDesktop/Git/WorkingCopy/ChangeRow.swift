@@ -34,7 +34,7 @@ struct ChangeRow: View {
       Spacer(minLength: 4)
       if isLFS {
         Text("LFS")
-          .font(.system(size: 9, weight: .semibold))
+          .font(.scaled(size: 9, weight: .semibold))
           .foregroundStyle(.secondary)
           .padding(.horizontal, 4)
           .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(.secondary.opacity(0.5)))
@@ -49,7 +49,7 @@ struct ChangeRow: View {
         .accessibilityLabel("\(section == .staged ? "Unstage" : "Stage") \(entry.path)")
       }
     }
-    .font(.system(size: 12))
+    .font(.scaled(size: 12))
     .help(entry.path)
     .contentShape(.rect)
   }

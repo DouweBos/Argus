@@ -84,7 +84,7 @@ private struct PairingStatus: View {
           .foregroundStyle(.secondary)
         HStack {
           Text(sas)
-            .font(.system(size: 28, weight: .semibold, design: .monospaced))
+            .font(.scaled(size: 28, weight: .semibold, design: .monospaced))
             .textSelection(.enabled)
             .accessibilityLabel("Pairing check code \(sas)")
           Spacer()
@@ -122,7 +122,7 @@ private struct PairedHostRow: View {
       HStack {
         TextField("Host name", text: $label)
           .textFieldStyle(.plain)
-          .font(.headline)
+          .font(.scaled(.headline))
           .onSubmit { hosts.rename(id, to: label) }
           .accessibilityLabel("Host name")
         Spacer()
@@ -134,7 +134,7 @@ private struct PairedHostRow: View {
           Text("· limited grant — this host will refuse most commands").foregroundStyle(theme.warning)
         }
       }
-      .font(.caption)
+      .font(.scaled(.caption))
       .foregroundStyle(.secondary)
       HStack {
         if attached {

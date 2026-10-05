@@ -71,14 +71,14 @@ private struct TabChip: View {
       .accessibilityLabel("Tab \(title)")
       if closable {
         Button(action: close) {
-          Image(systemName: "xmark").font(.system(size: 9, weight: .semibold))
+          Image(systemName: "xmark").font(.scaled(size: 9, weight: .semibold))
         }
         .buttonStyle(.borderless)
         .help("Close Tab")
         .accessibilityLabel("Close tab \(title)")
       }
     }
-    .font(.callout)
+    .font(.scaled(.callout))
     .padding(.horizontal, 10)
     .padding(.vertical, 4)
     .frame(maxWidth: 220)

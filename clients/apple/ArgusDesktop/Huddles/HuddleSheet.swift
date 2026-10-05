@@ -30,7 +30,7 @@ struct HuddleSheet: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
-      Text(room == nil ? "Share This Agent" : "Huddle").font(.title2.weight(.semibold))
+      Text(room == nil ? "Share This Agent" : "Huddle").font(.scaled(.title2).weight(.semibold))
       if let room {
         live(room)
       } else {
@@ -97,7 +97,7 @@ struct HuddleSheet: View {
   private func live(_ room: ArgusProtocol.HuddleRoomModel) -> some View {
     let invite = Huddles.inviteText(name: hostName, agentTitle: agentTitle, url: room.url ?? "")
     VStack(alignment: .leading, spacing: 8) {
-      Text("Send this to them").font(.headline)
+      Text("Send this to them").font(.scaled(.headline))
       if let url = room.url {
         HStack(alignment: .top, spacing: 12) {
           VStack(alignment: .leading, spacing: 8) {
@@ -123,10 +123,10 @@ struct HuddleSheet: View {
         }
       }
       Text("The link alone gets nobody in — you approve each person here.")
-        .font(.callout).foregroundStyle(theme.textSecondary)
+        .font(.scaled(.callout)).foregroundStyle(theme.textSecondary)
     }
     VStack(alignment: .leading, spacing: 8) {
-      Label("People", systemImage: "person.2").font(.headline)
+      Label("People", systemImage: "person.2").font(.scaled(.headline))
       let guests = room.guests.filter { $0.state != .denied }
       if guests.isEmpty {
         Text("Nobody has opened the link yet.").foregroundStyle(theme.textSecondary)

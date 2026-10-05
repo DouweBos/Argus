@@ -20,7 +20,7 @@ private struct InboxRow<Actions: View>: View {
         Button(action: open) {
           VStack(alignment: .leading, spacing: 2) {
             Text(title).fontWeight(.medium).lineLimit(1)
-            Text(subtitle).font(.caption).foregroundStyle(theme.textSecondary).lineLimit(2)
+            Text(subtitle).font(.scaled(.caption)).foregroundStyle(theme.textSecondary).lineLimit(2)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           .contentShape(.rect)

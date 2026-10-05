@@ -68,11 +68,11 @@ struct TerminalFindBar: View {
   var body: some View {
     HStack(spacing: 6) {
       Image(systemName: Icon.search)
-        .font(.system(size: 11))
+        .font(.scaled(size: 11))
         .foregroundStyle(theme.textMuted)
       TextField("Find in terminal", text: $search.query)
         .textFieldStyle(.plain)
-        .font(.system(size: 13))
+        .font(.scaled(size: 13))
         .frame(minWidth: 160)
         .focused($focused)
         .onKeyPress(.return, phases: .down) { press in
@@ -81,7 +81,7 @@ struct TerminalFindBar: View {
         }
         .onExitCommand { search.close() }
       Text(search.counter)
-        .font(.system(size: 11).monospacedDigit())
+        .font(.scaled(size: 11).monospacedDigit())
         .foregroundStyle(theme.textMuted)
         .fixedSize()
       Divider().frame(height: 14)

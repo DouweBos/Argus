@@ -11,14 +11,14 @@ struct SidebarView: View {
   var body: some View {
     List(selection: selection) {
       Section {
-        Label("Agents", systemImage: "sparkles").tag(Self.agentsTag)
-        Label("Runtimes", systemImage: "play.rectangle").tag(Self.runtimesTag)
-        Label("Devices", systemImage: "iphone.gen3").tag(Self.devicesTag)
-        Label("Pull Requests", systemImage: "arrow.triangle.pull").tag(Self.pullRequestsTag)
+        SidebarLabel("Agents", systemImage: "sparkles").tag(Self.agentsTag)
+        SidebarLabel("Runtimes", systemImage: "play.rectangle").tag(Self.runtimesTag)
+        SidebarLabel("Devices", systemImage: "iphone.gen3").tag(Self.devicesTag)
+        SidebarLabel("Pull Requests", systemImage: "arrow.triangle.pull").tag(Self.pullRequestsTag)
       }
       Section {
-        Label("Inbox", systemImage: "tray").tag(Self.inboxTag)
-        Label("Automations", systemImage: "clock.arrow.circlepath").tag(Self.automationsTag)
+        SidebarLabel("Inbox", systemImage: "tray").tag(Self.inboxTag)
+        SidebarLabel("Automations", systemImage: "clock.arrow.circlepath").tag(Self.automationsTag)
         NotificationsSidebarRow().tag(Self.notificationsTag)
       }
       if projects.isEmpty {
@@ -40,7 +40,7 @@ struct SidebarView: View {
           }
         } header: {
           HStack {
-            Text(project.name)
+            Text(project.name).font(.sidebarScaled(.subheadline))
             if showsHosts { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
             Spacer()
             Button {
@@ -69,7 +69,7 @@ struct SidebarView: View {
         }
       } header: {
         HStack {
-          Text("Scratch pads")
+          Text("Scratch pads").font(.sidebarScaled(.subheadline))
           Spacer()
           Button {
             Task { await model.newScratchPad() }
@@ -182,7 +182,7 @@ private struct NotificationsSidebarRow: View {
   @Environment(DesktopModel.self) private var model
 
   var body: some View {
-    Label("Notifications", systemImage: "exclamationmark.triangle")
+    SidebarLabel("Notifications", systemImage: "exclamationmark.triangle")
       .badge(model.notificationsLog.unseenCount)
   }
 }
@@ -195,9 +195,9 @@ struct SessionRow: View {
     HStack(spacing: 8) {
       StatusDot(tone: tone, pulse: isBusy)
       VStack(alignment: .leading, spacing: 2) {
-        Text(session.displayName ?? session.branch).lineLimit(1)
+        Text(session.displayName ?? session.branch).font(.sidebarScaled(.body)).lineLimit(1)
         if let subtitle {
-          Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+          Text(subtitle).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
         }
       }
       Spacer(minLength: 4)

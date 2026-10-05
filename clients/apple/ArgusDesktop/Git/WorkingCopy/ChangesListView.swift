@@ -21,7 +21,7 @@ struct ChangesListView: View {
       Divider()
       if vm.lfs.status.isMissing {
         Text(LFSStatus.missingMessage)
-          .font(.system(size: 11))
+          .font(.scaled(size: 11))
           .foregroundStyle(theme.textSecondary)
           .padding(8)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -123,7 +123,7 @@ struct ChangesListView: View {
       header(section, count: count).selectionDisabled()
     case .directory(let directory, _):
       Label(directory, systemImage: "folder")
-        .font(.system(size: 11, design: .monospaced))
+        .font(.scaled(size: 11, design: .monospaced))
         .foregroundStyle(.secondary)
         .lineLimit(1)
         .truncationMode(.head)
@@ -138,8 +138,8 @@ struct ChangesListView: View {
 
   private func header(_ section: ChangeSection, count: Int) -> some View {
     HStack {
-      Text(section.rawValue).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
-      Text("\(count)").font(.system(size: 11).monospacedDigit()).foregroundStyle(.tertiary)
+      Text(section.rawValue).font(.scaled(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+      Text("\(count)").font(.scaled(size: 11).monospacedDigit()).foregroundStyle(.tertiary)
       Spacer()
       switch section {
       case .staged:

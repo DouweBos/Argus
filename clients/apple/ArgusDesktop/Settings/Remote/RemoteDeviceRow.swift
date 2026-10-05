@@ -36,7 +36,7 @@ struct RemoteDeviceRow: View {
         Spacer()
         if device.push != nil {
           if let result = model.pushResults[device.deviceId] {
-            Text(result).font(.caption).foregroundStyle(theme.textSecondary)
+            Text(result).font(.scaled(.caption)).foregroundStyle(theme.textSecondary)
           }
           Button("Test Push") {
             sendingPush = true
@@ -72,7 +72,7 @@ struct RemoteDeviceRow: View {
         Text("push via \(RemoteAccessLabels.push(push.service))")
       }
     }
-    .font(.caption)
+    .font(.scaled(.caption))
     .foregroundStyle(theme.textSecondary)
   }
 

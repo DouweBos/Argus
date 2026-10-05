@@ -64,7 +64,7 @@ struct InspectionTreeView: View {
       if !query.isEmpty {
         let index = matches.firstIndex { $0.id == model.selectedId }.map { $0 + 1 } ?? 0
         Text(matches.isEmpty ? "no hits" : "\(index) / \(matches.count)")
-          .font(.caption.monospacedDigit())
+          .font(.scaled(.caption).monospacedDigit())
           .foregroundStyle(matches.isEmpty ? theme.textMuted : theme.text)
         stepButton("Previous match", Icon.chevronUp, forward: false, enabled: !matches.isEmpty)
         stepButton("Next match", Icon.chevronDown, forward: true, enabled: !matches.isEmpty)
@@ -133,7 +133,7 @@ private struct TreeRow: View {
           if open { model.expanded.remove(node.id) } else { model.expanded.insert(node.id) }
         } label: {
           Image(systemName: Icon.chevronRight)
-            .font(.system(size: 9, weight: .semibold))
+            .font(.scaled(size: 9, weight: .semibold))
             .rotationEffect(.degrees(open ? 90 : 0))
             .frame(width: 12, height: 12)
         }
@@ -158,7 +158,7 @@ private struct TreeRow: View {
       }
       .buttonStyle(.plain)
     }
-    .font(.system(size: 11, design: .monospaced))
+    .font(.scaled(size: 11, design: .monospaced))
     .padding(.leading, 6 + CGFloat(level) * 12)
     .padding(.trailing, 8)
     .frame(height: 20)

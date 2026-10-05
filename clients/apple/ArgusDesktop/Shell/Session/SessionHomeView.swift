@@ -94,17 +94,17 @@ private struct SessionHomeHero: View {
     VStack(alignment: .leading, spacing: 12) {
       HStack(alignment: .top, spacing: 12) {
         Image(systemName: session.kind == .scratchPad ? "note.text" : Icon.branch)
-          .font(.system(size: 16, weight: .semibold))
+          .font(.scaled(size: 16, weight: .semibold))
           .frame(width: 36, height: 36)
           .background(theme.accentSoft, in: .rect(cornerRadius: theme.radiusSmall))
           .foregroundStyle(theme.accent)
         VStack(alignment: .leading, spacing: 4) {
           Text(session.displayName ?? session.branch)
-            .font(.title2.weight(.semibold))
+            .font(.scaled(.title2).weight(.semibold))
             .lineLimit(2)
           HStack(spacing: 6) {
             Text(subtitle)
-              .font(.callout)
+              .font(.scaled(.callout))
               .foregroundStyle(.secondary)
               .lineLimit(2)
             if let renameBranch {
@@ -152,7 +152,7 @@ private struct SessionPathRow: View {
   var body: some View {
     HStack(spacing: 8) {
       Text(path.map(Self.tilde) ?? " ")
-        .font(.system(size: 12, design: .monospaced))
+        .font(.scaled(size: 12, design: .monospaced))
         .foregroundStyle(.secondary)
         .lineLimit(1)
         .truncationMode(.middle)
@@ -161,7 +161,7 @@ private struct SessionPathRow: View {
       // Editors and Finder would open this Mac's disk, not the host's.
       if let path, model.host(ofSession: sessionId) != Hosts.local {
         Text("on \(model.hosts.label(model.host(ofSession: sessionId)))")
-          .font(.caption).foregroundStyle(.secondary)
+          .font(.scaled(.caption)).foregroundStyle(.secondary)
         copyButton(path)
       } else if let path {
         let custom = AppPreferences.shared.customEditors
@@ -246,9 +246,9 @@ private struct SetupProgressCard: View {
       HStack(spacing: 8) {
         ProgressView().controlSize(.small)
         Text(step.flatMap { $0.phase.flatMap { Self.phaseLabels[$0] } } ?? "Initializing session")
-          .font(.headline)
+          .font(.scaled(.headline))
         Spacer()
-        Text(stepLine).font(.caption).foregroundStyle(.secondary)
+        Text(stepLine).font(.scaled(.caption)).foregroundStyle(.secondary)
       }
       if let fraction = fraction {
         ProgressView(value: fraction)
@@ -256,10 +256,10 @@ private struct SetupProgressCard: View {
         ProgressView().progressViewStyle(.linear)
       }
       if let step {
-        Text(step.item).font(.caption.monospaced()).foregroundStyle(.secondary).lineLimit(1)
+        Text(step.item).font(.scaled(.caption).monospaced()).foregroundStyle(.secondary).lineLimit(1)
           .truncationMode(.middle)
         if let detail = step.detail {
-          Text(detail).font(.caption.monospaced()).foregroundStyle(.secondary).lineLimit(1)
+          Text(detail).font(.scaled(.caption).monospaced()).foregroundStyle(.secondary).lineLimit(1)
             .truncationMode(.middle)
         }
       }

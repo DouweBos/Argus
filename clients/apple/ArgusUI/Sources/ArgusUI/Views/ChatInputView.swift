@@ -164,7 +164,7 @@ public struct ChatInputView: View {
           onPasteImages: { images in images.forEach(append) })
         if text.isEmpty {
           Text("Message")
-            .font(.system(size: 15))
+            .font(.scaled(size: 15))
             .foregroundStyle(theme.textMuted)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
@@ -208,7 +208,7 @@ public struct ChatInputView: View {
                 attachments.remove(at: index)
               } label: {
                 Image(systemName: Icon.close)
-                  .font(.system(size: 9, weight: .bold))
+                  .font(.scaled(size: 9, weight: .bold))
                   .foregroundStyle(theme.onAccent)
                   .padding(4)
                   .background(Circle().fill(theme.accent))
@@ -230,10 +230,10 @@ public struct ChatInputView: View {
             acceptCommand(item)
           } label: {
             VStack(alignment: .leading, spacing: 1) {
-              Text(item).font(.system(size: 14)).foregroundStyle(theme.text)
+              Text(item).font(.scaled(size: 14)).foregroundStyle(theme.text)
               if let hint, index < hint.count, !hint[index].isEmpty {
                 Text(hint[index])
-                  .font(.system(size: 11))
+                  .font(.scaled(size: 11))
                   .foregroundStyle(theme.textMuted)
                   .lineLimit(1)
               }
@@ -317,7 +317,7 @@ public struct ChatInputView: View {
   private var mentionList: some View {
     VStack(alignment: .leading, spacing: 0) {
       Text(mentionHeader)
-        .font(.system(size: 10, weight: .bold))
+        .font(.scaled(size: 10, weight: .bold))
         .foregroundStyle(theme.textMuted)
         .lineLimit(1)
         .truncationMode(.head)
@@ -330,17 +330,17 @@ public struct ChatInputView: View {
             } label: {
               HStack(spacing: 6) {
                 Image(systemName: icon(for: item.kind))
-                  .font(.system(size: 11))
+                  .font(.scaled(size: 11))
                   .foregroundStyle(theme.textMuted)
                 Text(item.label)
-                  .font(.system(size: 14))
+                  .font(.scaled(size: 14))
                   .foregroundStyle(item.kind == .useDirectory ? theme.accent : theme.text)
                   .lineLimit(1)
                   .truncationMode(.head)
                 Spacer(minLength: 0)
                 if item.kind == .directory {
                   Image(systemName: Icon.chevronRight)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.scaled(size: 10, weight: .semibold))
                     .foregroundStyle(theme.textMuted)
                 }
               }

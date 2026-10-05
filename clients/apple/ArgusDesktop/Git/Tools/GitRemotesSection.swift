@@ -111,18 +111,18 @@ private struct RemoteRow: View {
       Image(systemName: remote.scheme == .ssh ? "key" : "globe").foregroundStyle(.secondary)
       VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: 6) {
-          Text(remote.name).font(.system(size: 13, weight: .medium))
+          Text(remote.name).font(.scaled(size: 13, weight: .medium))
           if !remote.host.isEmpty, !remote.fetchUrl.hasPrefix(remote.host) { Badge(label: remote.host, tone: .muted) }
         }
-        Text(remote.fetchUrl).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+        Text(remote.fetchUrl).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(.secondary)
           .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
         if let push = remote.pushUrl, push != remote.fetchUrl {
-          Text("push: \(push)").font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+          Text("push: \(push)").font(.scaled(size: 11, design: .monospaced)).foregroundStyle(.secondary)
             .lineLimit(1).truncationMode(.middle)
         }
       }
       Spacer()
-      Text("\(Int(remote.refs)) refs").font(.callout).foregroundStyle(.secondary)
+      Text("\(Int(remote.refs)) refs").font(.scaled(.callout)).foregroundStyle(.secondary)
       Menu {
         items
       } label: {
@@ -192,7 +192,7 @@ private struct RemoteEditSheet: View {
     }
     .formStyle(.grouped)
     .safeAreaInset(edge: .top) {
-      Text(title).font(.headline).frame(maxWidth: .infinity, alignment: .leading).padding([.top, .horizontal], 20)
+      Text(title).font(.scaled(.headline)).frame(maxWidth: .infinity, alignment: .leading).padding([.top, .horizontal], 20)
     }
     .frame(width: 440)
     .toolbar {

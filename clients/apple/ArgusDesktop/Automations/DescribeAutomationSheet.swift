@@ -82,7 +82,7 @@ struct DescribeAutomationSheet: View {
         "\(scopeLabel(draft)) · autonomy inherits the app default. Saves disabled — turn it on "
           + "once you have read it."
       )
-      .font(.caption).foregroundStyle(.secondary)
+      .font(.scaled(.caption)).foregroundStyle(.secondary)
     }
   }
 

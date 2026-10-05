@@ -146,24 +146,24 @@ private struct PullRequestHeader: View {
     VStack(alignment: .leading, spacing: 6) {
       HStack(alignment: .firstTextBaseline, spacing: 8) {
         Badge(label: state.label, tone: state.tone)
-        Text(detail.title).font(.title3.weight(.semibold)).textSelection(.enabled)
+        Text(detail.title).font(.scaled(.title3).weight(.semibold)).textSelection(.enabled)
       }
       HStack(spacing: 8) {
         Text(detail.author.map { "\($0) wants to merge" } ?? "Wants to merge").foregroundStyle(.secondary)
         branch(detail.headRefName)
-        Image(systemName: "arrow.right").foregroundStyle(.secondary).font(.caption)
+        Image(systemName: "arrow.right").foregroundStyle(.secondary).font(.scaled(.caption))
         branch(detail.baseRefName)
         Text("· opened \(PullRequestLabels.relative(detail.createdAt))").foregroundStyle(.secondary)
       }
-      .font(.system(size: 12))
+      .font(.scaled(size: 12))
       HStack(spacing: 10) {
         DiffStatsLabel(stats: DiffStats(additions: Int(detail.additions), deletions: Int(detail.deletions)))
-        Text("\(Int(detail.changedFiles)) files · \(Int(detail.commits)) commits").font(.system(size: 11))
+        Text("\(Int(detail.changedFiles)) files · \(Int(detail.commits)) commits").font(.scaled(size: 11))
           .foregroundStyle(.secondary)
         ForEach(detail.labels, id: \.self) { Badge(label: $0, tone: .muted) }
         if detail.mergeable == "CONFLICTING", !detail.merged {
           Label("Conflicts with \(detail.baseRefName)", systemImage: "exclamationmark.triangle")
-            .font(.system(size: 11)).foregroundStyle(theme.warning)
+            .font(.scaled(size: 11)).foregroundStyle(theme.warning)
         }
       }
     }
@@ -174,7 +174,7 @@ private struct PullRequestHeader: View {
 
   private func branch(_ name: String) -> some View {
     Text(name)
-      .font(.system(size: 11, design: .monospaced))
+      .font(.scaled(size: 11, design: .monospaced))
       .padding(.horizontal, 6)
       .padding(.vertical, 2)
       .background(theme.bgTertiary, in: .rect(cornerRadius: 4))
@@ -208,7 +208,7 @@ private struct MergePullRequestSheet: View {
     .formStyle(.grouped)
     .safeAreaInset(edge: .top) {
       VStack(alignment: .leading, spacing: 4) {
-        Text("Merge #\(Int(detail.number))?").font(.headline)
+        Text("Merge #\(Int(detail.number))?").font(.scaled(.headline))
         Text("\(detail.headRefName) into \(detail.baseRefName) on GitHub. This can't be undone from here.")
           .foregroundStyle(.secondary)
       }

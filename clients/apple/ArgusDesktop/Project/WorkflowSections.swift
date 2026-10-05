@@ -34,7 +34,7 @@ struct BranchProtectionSection: View {
       Text(
         "Only relevant when the repo has multiple PR templates under .github/PULL_REQUEST_TEMPLATE/. For the common single-template case GitHub auto-applies the file and this field does nothing."
       )
-      .font(.caption).foregroundStyle(.secondary)
+      .font(.scaled(.caption)).foregroundStyle(.secondary)
     }
   }
 
@@ -55,7 +55,7 @@ struct AgentSection: View {
     )
     Section("System prompt addition") {
       TextEditor(text: $draft.agentPrompt)
-        .font(.body)
+        .font(.scaled(.body))
         .frame(minHeight: 120)
         .overlay(alignment: .topLeading) {
           if draft.agentPrompt.isEmpty {
@@ -151,7 +151,7 @@ struct ReleaseNotesSection: View {
           ForEach(ArgusConfigDraft.ReleasePattern.formats, id: \.self) { Text($0).tag($0) }
         }
         if pattern.format == "changesets" {
-          Text("Labels come from the YAML frontmatter automatically.").font(.caption).foregroundStyle(theme.textMuted)
+          Text("Labels come from the YAML frontmatter automatically.").font(.scaled(.caption)).foregroundStyle(theme.textMuted)
         } else {
           ForEach($pattern.labels) { $label in
             HStack {

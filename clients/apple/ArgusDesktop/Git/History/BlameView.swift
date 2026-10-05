@@ -49,11 +49,11 @@ struct BlameView: View {
       Button { navigate(.blame(path: nil, ref: nil)) } label: { Image(systemName: "doc.text.magnifyingglass") }
         .help("Choose another file")
         .accessibilityLabel("Choose File")
-      Text(path).font(.system(size: 12, design: .monospaced)).lineLimit(1).truncationMode(.head)
-      Text(revisionLabel).font(.system(size: 11)).foregroundStyle(.secondary)
+      Text(path).font(.scaled(size: 12, design: .monospaced)).lineLimit(1).truncationMode(.head)
+      Text(revisionLabel).font(.scaled(size: 11)).foregroundStyle(.secondary)
       if blame.isLoadingBlame { ProgressView().controlSize(.mini) }
       Spacer()
-      Text("\(blame.commitCount) commit\(blame.commitCount == 1 ? "" : "s")").font(.system(size: 11)).foregroundStyle(.secondary)
+      Text("\(blame.commitCount) commit\(blame.commitCount == 1 ? "" : "s")").font(.scaled(size: 11)).foregroundStyle(.secondary)
       ControlGroup {
         Button { Task { await blame.goToPreviousRevision() } } label: { Image(systemName: "chevron.left") }
           .help("Before the newest commit shown")
@@ -120,7 +120,7 @@ private struct BlameFilePicker: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack {
-        Text("Blame").font(.system(size: 13, weight: .semibold))
+        Text("Blame").font(.scaled(size: 13, weight: .semibold))
         Spacer()
         TextField("Filter files", text: Binding(get: { blame.filterText }, set: { blame.setFilter($0) }))
           .textFieldStyle(.roundedBorder)
@@ -138,7 +138,7 @@ private struct BlameFilePicker: View {
             Text((file as NSString).deletingLastPathComponent).foregroundStyle(.secondary).lineLimit(1)
             Spacer()
           }
-          .font(.system(size: 12))
+          .font(.scaled(size: 12))
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

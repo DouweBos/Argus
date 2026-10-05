@@ -54,7 +54,7 @@ struct ProjectSettingsSheet: View {
       ForEach(ProjectSettingsSection.groups, id: \.title) { group in
         Section(group.title) {
           ForEach(group.sections) { item in
-            Label(item.title, systemImage: item.icon).tag(item)
+            SidebarLabel(item.title, systemImage: item.icon).tag(item)
           }
         }
       }
@@ -65,12 +65,12 @@ struct ProjectSettingsSheet: View {
   private var footer: some View {
     HStack(spacing: 10) {
       VStack(alignment: .leading, spacing: 2) {
-        Text(URL(fileURLWithPath: repoRoot).lastPathComponent).font(.headline)
-        Text(HostScopedPath.path(repoRoot)).font(.caption).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
+        Text(URL(fileURLWithPath: repoRoot).lastPathComponent).font(.scaled(.headline))
+        Text(HostScopedPath.path(repoRoot)).font(.scaled(.caption)).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
       }
       Spacer()
       if let error = settings.error ?? settings.draft.validationErrors.first {
-        Text(error).font(.caption).foregroundStyle(theme.error).lineLimit(2)
+        Text(error).font(.scaled(.caption)).foregroundStyle(theme.error).lineLimit(2)
       }
       Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
       Button(settings.saving ? "Saving…" : "Save") {

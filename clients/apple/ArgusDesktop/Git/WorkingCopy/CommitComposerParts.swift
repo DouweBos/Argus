@@ -49,7 +49,7 @@ struct IdentityMenu: View {
         .truncationMode(.middle)
     }
     .menuStyle(.borderlessButton)
-    .font(.system(size: 11))
+    .font(.scaled(size: 11))
     .foregroundStyle(.secondary)
     .fixedSize(horizontal: false, vertical: true)
     .help("Commits are authored as this identity — pick a saved profile to switch this repository")
@@ -110,7 +110,7 @@ struct CommitTemplatesSheet: View {
       Divider()
       HStack {
         Text("`/` in the summary picks one too; a repository's commit.template comes first.")
-          .font(.system(size: 11))
+          .font(.scaled(size: 11))
           .foregroundStyle(theme.textMuted)
         Spacer()
         Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)

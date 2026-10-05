@@ -9,7 +9,7 @@ struct SettingsCaption: View {
 
   var body: some View {
     Text(text)
-      .font(.caption)
+      .font(.scaled(.caption))
       .foregroundStyle(.secondary)
       .fixedSize(horizontal: false, vertical: true)
   }
@@ -23,7 +23,7 @@ struct SettingsError: View {
   var body: some View {
     if let text {
       Label(text, systemImage: "exclamationmark.triangle")
-        .font(.caption)
+        .font(.scaled(.caption))
         .foregroundStyle(theme.error)
         .textSelection(.enabled)
     }

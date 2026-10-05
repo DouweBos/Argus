@@ -95,7 +95,7 @@ struct InboxScreen: View {
     if let meta {
       VStack(alignment: .leading, spacing: 8) {
         HStack {
-          Text(title).font(.title3.weight(.semibold))
+          Text(title).font(.scaled(.title3).weight(.semibold))
           Text(meta).foregroundStyle(.secondary)
         }
         content()

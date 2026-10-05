@@ -1,5 +1,6 @@
 import AppKit
 import ArgusCore
+import ArgusUI
 
 /// Transcript text as one attributed string per message, so a single TextKit 2
 /// view can select, copy, search and link across the whole message.
@@ -102,7 +103,7 @@ enum TranscriptMarkdown {
   /// Columns on tab stops sized to their widest cell, so a table reads as one
   /// while staying plain, selectable text.
   private static func table(columns: [String], rows: [[String]]) -> NSAttributedString {
-    let header = columns.map { inline($0, font: .systemFont(ofSize: TranscriptStyle.bodySize, weight: .semibold)) }
+    let header = columns.map { inline($0, font: .systemFont(ofSize: TextScale.shared(TranscriptStyle.bodySize), weight: .semibold)) }
     let body = rows.map { $0.map { inline($0, font: TranscriptStyle.body) } }
     let all = [header] + body
     let count = all.map(\.count).max() ?? 0

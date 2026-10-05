@@ -13,7 +13,7 @@ public struct TitleText: View {
   let text: String
   public init(_ text: String) { self.text = text }
   public var body: some View {
-    Text(text).font(.system(size: 19, weight: .bold)).foregroundStyle(theme.text)
+    Text(text).font(.scaled(size: 19, weight: .bold)).foregroundStyle(theme.text)
   }
 }
 
@@ -26,7 +26,7 @@ public struct BodyText: View {
     self.lineLimit = lineLimit
   }
   public var body: some View {
-    Text(text).font(.system(size: 15)).foregroundStyle(theme.text).lineLimit(lineLimit)
+    Text(text).font(.scaled(size: 15)).foregroundStyle(theme.text).lineLimit(lineLimit)
   }
 }
 
@@ -39,7 +39,7 @@ public struct MutedText: View {
     self.lineLimit = lineLimit
   }
   public var body: some View {
-    Text(text).font(.system(size: 13)).foregroundStyle(theme.textMuted).lineLimit(lineLimit)
+    Text(text).font(.scaled(size: 13)).foregroundStyle(theme.textMuted).lineLimit(lineLimit)
   }
 }
 
@@ -69,7 +69,7 @@ public struct MonoText: View {
 
   public var body: some View {
     Text(text)
-      .font(.system(size: size, design: .monospaced))
+      .font(.scaled(size: size, design: .monospaced))
       .foregroundStyle(color ?? theme.textSecondary)
       .lineLimit(lineLimit)
       .truncationMode(truncateHead ? .head : .tail)
@@ -152,11 +152,11 @@ public struct SectionHeader: View {
   public var body: some View {
     HStack(spacing: 6) {
       Text(title.uppercased())
-        .font(.system(size: 11, weight: .bold))
+        .font(.scaled(size: 11, weight: .bold))
         .foregroundStyle(theme.textMuted)
       if let count {
         Text("\(count)")
-          .font(.system(size: 11, weight: .bold))
+          .font(.scaled(size: 11, weight: .bold))
           .foregroundStyle(theme.textMuted.opacity(0.7))
       }
       Spacer(minLength: 0)
@@ -181,7 +181,7 @@ public struct Field<Content: View>: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(label)
-        .font(.system(size: 11, weight: .bold))
+        .font(.scaled(size: 11, weight: .bold))
         .foregroundStyle(theme.textMuted)
       content
       if let caption {
@@ -228,9 +228,9 @@ public struct Btn: View {
     Button(action: action) {
       HStack(spacing: 6) {
         if let icon {
-          Image(systemName: icon).font(.system(size: small ? 11 : 13, weight: .semibold))
+          Image(systemName: icon).font(.scaled(size: small ? 11 : 13, weight: .semibold))
         }
-        Text(label).font(.system(size: small ? 13 : 15, weight: .semibold))
+        Text(label).font(.scaled(size: small ? 13 : 15, weight: .semibold))
       }
       .frame(maxWidth: tone == .ghost ? nil : Layout.maxControlWidth)
       .padding(.vertical, small ? 7 : 11)
@@ -297,7 +297,7 @@ public struct IconBtn: View {
   public var body: some View {
     Button(action: action) {
       Image(systemName: systemName)
-        .font(.system(size: size, weight: .medium))
+        .font(.scaled(size: size, weight: .medium))
         .foregroundStyle(tint ?? theme.textSecondary)
         .frame(width: 32, height: 32)
         .contentShape(Rectangle())
@@ -321,7 +321,7 @@ public struct Badge: View {
 
   public var body: some View {
     Text(label)
-      .font(.system(size: 11, weight: .semibold))
+      .font(.scaled(size: 11, weight: .semibold))
       .foregroundStyle(tone.color(theme))
       .padding(.horizontal, 7)
       .padding(.vertical, 3)
@@ -355,10 +355,10 @@ public struct Chip: View {
   public var body: some View {
     let content = HStack(spacing: 4) {
       if let icon {
-        Image(systemName: icon).font(.system(size: 10, weight: .medium))
+        Image(systemName: icon).font(.scaled(size: 10, weight: .medium))
       }
       Text(label)
-        .font(.system(size: 12, design: mono ? .monospaced : .default))
+        .font(.scaled(size: 12, design: mono ? .monospaced : .default))
         .lineLimit(1)
     }
     .foregroundStyle(tone?.color(theme) ?? theme.textSecondary)
@@ -403,9 +403,9 @@ public struct Banner: View {
     HStack(spacing: 10) {
       VStack(alignment: .leading, spacing: 3) {
         if let title {
-          Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(tone.color(theme))
+          Text(title).font(.scaled(size: 13, weight: .semibold)).foregroundStyle(tone.color(theme))
         }
-        Text(text).font(.system(size: 13)).foregroundStyle(theme.text)
+        Text(text).font(.scaled(size: 13)).foregroundStyle(theme.text)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       if let actionLabel, let action {
@@ -474,7 +474,7 @@ public struct Loading: View {
     VStack(spacing: 10) {
       ThinkingDots(size: 8, tint: theme.accent)
       Text(label)
-        .font(.subheadline)
+        .font(.scaled(.subheadline))
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
     }

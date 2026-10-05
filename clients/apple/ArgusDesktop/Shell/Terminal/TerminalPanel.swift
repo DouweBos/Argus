@@ -139,7 +139,7 @@ struct TerminalTabButton: View {
       }
       if closable && !renaming {
         Button(action: close) {
-          Image(systemName: "xmark").font(.system(size: 9, weight: .semibold))
+          Image(systemName: "xmark").font(.scaled(size: 9, weight: .semibold))
         }
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
@@ -148,7 +148,7 @@ struct TerminalTabButton: View {
         .accessibilityLabel("Close \(tab.title)")
       }
     }
-    .font(.system(size: 12))
+    .font(.scaled(size: 12))
     .padding(.horizontal, 8)
     .padding(.vertical, 4)
     .background(selected ? AnyShapeStyle(.selection) : AnyShapeStyle(.clear), in: .rect(cornerRadius: 6))
@@ -168,7 +168,7 @@ struct TerminalTabButton: View {
       ProgressView().controlSize(.mini)
     } else {
       Image(systemName: tab.isRun ? "play.fill" : "terminal")
-        .font(.system(size: 10))
+        .font(.scaled(size: 10))
         .foregroundStyle(tab.exitCode.map { $0 == 0 ? theme.textMuted : theme.error } ?? theme.textMuted)
     }
   }

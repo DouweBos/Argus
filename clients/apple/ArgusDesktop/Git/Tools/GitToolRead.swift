@@ -30,9 +30,9 @@ struct GitToolHeader<Actions: View>: View {
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 10) {
       VStack(alignment: .leading, spacing: 2) {
-        Text(title).font(.headline)
+        Text(title).font(.scaled(.headline))
         if let caption {
-          Text(caption).font(.callout).foregroundStyle(.secondary)
+          Text(caption).font(.scaled(.callout)).foregroundStyle(.secondary)
         }
       }
       Spacer()

@@ -29,16 +29,16 @@ public struct MarkdownView: View {
     switch block {
     case .heading(let level, let text):
       inline(text)
-        .font(.system(size: headingSize(level), weight: .bold))
+        .font(.scaled(size: headingSize(level), weight: .bold))
         .padding(.top, 2)
     case .paragraph(let text):
-      inline(text).font(.system(size: baseSize))
+      inline(text).font(.scaled(size: baseSize))
     case .code(let language, let body):
       CodeBlockView(language: language, code: body)
     case .quote(let text):
       HStack(alignment: .top, spacing: 8) {
         Rectangle().fill(theme.borderStrong).frame(width: 3)
-        inline(text).font(.system(size: baseSize))
+        inline(text).font(.scaled(size: baseSize))
       }
       .fixedSize(horizontal: false, vertical: true)
     case .list(let items, let ordered):
@@ -46,9 +46,9 @@ public struct MarkdownView: View {
         ForEach(Array(items.enumerated()), id: \.offset) { index, item in
           HStack(alignment: .top, spacing: 6) {
             Text(ordered ? "\(index + 1)." : "•")
-              .font(.system(size: baseSize))
+              .font(.scaled(size: baseSize))
               .foregroundStyle(theme.textMuted)
-            inline(item).font(.system(size: baseSize))
+            inline(item).font(.scaled(size: baseSize))
           }
         }
       }
@@ -91,14 +91,14 @@ public struct CodeBlockView: View {
     VStack(alignment: .leading, spacing: 0) {
       if let language, !language.isEmpty {
         Text(language)
-          .font(.system(size: 10, weight: .semibold))
+          .font(.scaled(size: 10, weight: .semibold))
           .foregroundStyle(theme.textMuted)
           .padding(.horizontal, 8)
           .padding(.vertical, 4)
       }
       ScrollView(.horizontal, showsIndicators: false) {
         Text(code)
-          .font(.system(size: 12, design: .monospaced))
+          .font(.scaled(size: 12, design: .monospaced))
           .foregroundStyle(theme.textSecondary)
           .padding(8)
           .fixedSize(horizontal: true, vertical: false)
@@ -137,7 +137,7 @@ private struct MarkdownTable: View {
     HStack(alignment: .top, spacing: 0) {
       ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
         inline(cell)
-          .font(.system(size: 13, weight: isHeader ? .semibold : .regular))
+          .font(.scaled(size: 13, weight: isHeader ? .semibold : .regular))
           .frame(width: 160, alignment: .leading)
           .fixedSize(horizontal: false, vertical: true)
           .padding(.horizontal, 8)

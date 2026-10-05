@@ -15,7 +15,7 @@ struct CommandPaletteView: View {
     VStack(spacing: 0) {
       TextField("Type a command…", text: $query)
         .textFieldStyle(.plain)
-        .font(.title3)
+        .font(.scaled(.title3))
         .padding(12)
         .focused($focused)
         .onSubmit { run(results) }
@@ -88,13 +88,13 @@ private struct PaletteRow: View {
       VStack(alignment: .leading, spacing: 1) {
         Text(command.title)
         if let subtitle = command.subtitle {
-          Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+          Text(subtitle).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
         }
       }
       Spacer()
-      Text(command.section).font(.caption).foregroundStyle(.tertiary)
+      Text(command.section).font(.scaled(.caption)).foregroundStyle(.tertiary)
       if let shortcut = command.shortcut {
-        Text(shortcut).font(.caption.monospaced()).foregroundStyle(.secondary)
+        Text(shortcut).font(.scaled(.caption).monospaced()).foregroundStyle(.secondary)
       }
     }
     .padding(.vertical, 3)

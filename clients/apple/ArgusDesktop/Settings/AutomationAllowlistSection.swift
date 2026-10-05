@@ -17,7 +17,7 @@ struct AutomationAllowlistSection: View {
           HStack {
             TextField("Command", text: $draft, prompt: Text("conductor screenshot"))
               .labelsHidden()
-              .font(.body.monospaced())
+              .font(.scaled(.body).monospaced())
               .onSubmit(addDraft)
             Button("Add", action: addDraft)
               .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -116,7 +116,7 @@ private struct EntryList: View {
   var body: some View {
     ForEach(entries, id: \.self) { entry in
       HStack {
-        Text(entry).font(.body.monospaced())
+        Text(entry).font(.scaled(.body).monospaced())
         Spacer()
         Button("Remove", systemImage: "xmark.circle.fill") { remove(entry) }
           .labelStyle(.iconOnly)
@@ -135,11 +135,11 @@ private struct RefusalRow: View {
   var body: some View {
     HStack(alignment: .top) {
       VStack(alignment: .leading, spacing: 2) {
-        Text(entry.command ?? entry.toolName).font(.body.monospaced()).lineLimit(2)
+        Text(entry.command ?? entry.toolName).font(.scaled(.body).monospaced()).lineLimit(2)
         Text(
           "\(entry.automationName) · \(Int(entry.count))× · last \(lastSeen) · would allow \(entry.suggestedEntry)"
         )
-        .font(.caption)
+        .font(.scaled(.caption))
         .foregroundStyle(.secondary)
       }
       Spacer()

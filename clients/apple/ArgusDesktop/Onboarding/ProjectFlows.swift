@@ -63,7 +63,7 @@ private struct AddProjectSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
       VStack(alignment: .leading, spacing: 4) {
-        Text("Add Project").font(.title2.weight(.semibold))
+        Text("Add Project").font(.scaled(.title2).weight(.semibold))
         Label(URL(fileURLWithPath: path).lastPathComponent, systemImage: "folder.fill")
           .foregroundStyle(theme.textSecondary)
           .help(path)

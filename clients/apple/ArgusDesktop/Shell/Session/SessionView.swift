@@ -288,7 +288,7 @@ struct AgentTab: View {
             pulse: running)
           if agent.parentAgentId != nil {
             Image(systemName: "arrow.turn.down.right")
-              .font(.system(size: 9, weight: .semibold))
+              .font(.scaled(size: 9, weight: .semibold))
               .foregroundStyle(.secondary)
               .help("Spawned by another agent")
               .accessibilityLabel("Subagent")
@@ -302,7 +302,7 @@ struct AgentTab: View {
       }
       .buttonStyle(.plain)
       Button(action: close) {
-        Image(systemName: "xmark").font(.system(size: 9, weight: .semibold))
+        Image(systemName: "xmark").font(.scaled(size: 9, weight: .semibold))
       }
       .buttonStyle(.plain)
       .foregroundStyle(.secondary)

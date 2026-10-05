@@ -46,7 +46,7 @@ struct OnboardingPage<Content: View, Footer: View>: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 18) {
       VStack(alignment: .leading, spacing: 6) {
-        Text(title).font(.system(size: 24, weight: .semibold)).foregroundStyle(theme.text)
+        Text(title).font(.scaled(size: 24, weight: .semibold)).foregroundStyle(theme.text)
         Text(subtitle).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
       }
       content
@@ -71,14 +71,14 @@ private struct Stepper: View {
           ZStack {
             Circle().fill(step == current || done ? theme.accent : theme.bgTertiary)
             if done {
-              Image(systemName: "checkmark").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.onAccent)
+              Image(systemName: "checkmark").font(.scaled(size: 9, weight: .bold)).foregroundStyle(theme.onAccent)
             } else {
-              Text("\(index + 1)").font(.system(size: 10, weight: .semibold))
+              Text("\(index + 1)").font(.scaled(size: 10, weight: .semibold))
                 .foregroundStyle(step == current ? theme.onAccent : theme.textMuted)
             }
           }
           .frame(width: 18, height: 18)
-          Text(step.title).font(.system(size: 12, weight: step == current ? .semibold : .regular))
+          Text(step.title).font(.scaled(size: 12, weight: step == current ? .semibold : .regular))
             .foregroundStyle(step == current ? theme.text : theme.textMuted)
         }
         if step != OnboardingStepId.allCases.last {
@@ -190,7 +190,7 @@ struct OnboardingPrivacyStep: View {
 
   private func section(_ title: String, _ items: [String]) -> some View {
     VStack(alignment: .leading, spacing: 4) {
-      Text(title).font(.system(size: 13, weight: .semibold))
+      Text(title).font(.scaled(size: 13, weight: .semibold))
       ForEach(items, id: \.self) {
         Text("•  \($0)").foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
       }

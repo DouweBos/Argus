@@ -59,7 +59,7 @@ struct CommitComposerView: View {
           .help(disabledReason ?? "Commit (⌘↩)")
       }
     }
-    .font(.system(size: 12))
+    .font(.scaled(size: 12))
     .padding(10)
     .sheet(isPresented: $managingTemplates) { CommitTemplatesSheet(store: CommitPreferences.templates) }
   }
@@ -178,7 +178,7 @@ private struct GitmojiPicker: View {
         Button { pick(gitmoji) } label: {
           HStack(spacing: 8) {
             Text(gitmoji.emoji)
-            Text(gitmoji.code).font(.system(size: 11, design: .monospaced))
+            Text(gitmoji.code).font(.scaled(size: 11, design: .monospaced))
             Text(gitmoji.description).foregroundStyle(theme.textMuted).lineLimit(1)
             Spacer(minLength: 0)
           }
