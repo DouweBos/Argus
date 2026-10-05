@@ -96,14 +96,14 @@ struct MainWindow: View {
 }
 
 extension MainWindow {
-  /// The git panel nests its own sidebar, file list and diff; a column narrower
-  /// than they need clips the app sidebar and runtime panel instead.
-  static let gitContentMinWidth: CGFloat = 800
+  /// The git panel's own sidebar (230), the changes list's minimum (220) and
+  /// the diff's (280); its panes narrow down to these, so nothing is clipped.
+  static let gitContentMinWidth: CGFloat = 740
   static let contentMinWidth: CGFloat = 420
   /// Centre and runtime minimums with the git panel open and the sidebar hidden.
   static let minWindowWidth: CGFloat = gitContentMinWidth + 280
-  /// Below this the git panel's split views would draw over the sidebar.
-  static let roomyGitWidth: CGFloat = 1480
+  /// App sidebar, git panel and runtime panel at their minimums.
+  static let roomyGitWidth: CGFloat = 1260
 
   /// The app sidebar gives way first when the git panel needs the room, so
   /// the runtime panel keeps its place; it comes back once there's space.

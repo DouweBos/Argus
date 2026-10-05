@@ -41,7 +41,7 @@ struct ConflictsView: View {
         }
       }
     } else {
-      HSplitView {
+      ResizableHSplit(key: "git.conflicts", leadingMin: 160, leadingIdeal: 220, leadingMax: 400, trailingMin: 320) {
         List(conflicts, selection: selection) { entry in
           // A button so the click lands even before the window is key.
           Button {
@@ -61,14 +61,13 @@ struct ConflictsView: View {
           .tag(entry.path)
         }
         .listStyle(.inset)
-        .frame(minWidth: 180, idealWidth: 220, maxWidth: 400)
+      } trailing: {
         if let entry = vm.selectedEntry, entry.isConflicted {
           ConflictDetailView(workspace: workspace, entry: entry)
             .id(entry.path)
-            .frame(minWidth: 420)
         } else {
           ContentUnavailableView("Select a conflicted file", systemImage: "exclamationmark.triangle")
-            .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
       }
     }

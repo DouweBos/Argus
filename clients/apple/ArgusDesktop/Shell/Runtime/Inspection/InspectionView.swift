@@ -39,13 +39,14 @@ struct InspectionView: View {
   @ViewBuilder
   private var content: some View {
     if let snapshot = model.active, let root = model.treeRoot {
-      VSplitView {
+      ResizableVSplit(key: "inspection.panes", topMin: 180, bottomMin: 200, bottomIdeal: 440, showsBottom: true) {
         InspectionOverlay(model: model, snapshot: snapshot, root: root)
-          .frame(minHeight: 180, idealHeight: 420)
-        InspectionTreeView(model: model, root: root)
-          .frame(minHeight: 100, idealHeight: 200)
-        InspectionMetadataView(model: model)
-          .frame(minHeight: 100, idealHeight: 240)
+      } bottom: {
+        ResizableVSplit(key: "inspection.metadata", topMin: 100, bottomMin: 100, bottomIdeal: 240, showsBottom: true) {
+          InspectionTreeView(model: model, root: root)
+        } bottom: {
+          InspectionMetadataView(model: model)
+        }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     } else if let prompt = model.launchPrompt {

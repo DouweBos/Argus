@@ -16,9 +16,10 @@ struct StashesView: View {
       if let error = stashes.errorMessage {
         GitErrorBanner(message: error) { stashes.dismissError() }
       }
-      HSplitView {
-        list.frame(minWidth: 220, idealWidth: 260, maxWidth: 460, maxHeight: .infinity)
-        detail.frame(minWidth: 420, maxHeight: .infinity)
+      ResizableHSplit(key: "git.stashes", leadingMin: 200, leadingIdeal: 260, leadingMax: 460, trailingMin: 320) {
+        list.frame(maxHeight: .infinity)
+      } trailing: {
+        detail.frame(maxHeight: .infinity)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

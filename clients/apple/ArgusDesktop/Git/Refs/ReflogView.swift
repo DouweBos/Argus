@@ -17,9 +17,10 @@ struct ReflogView: View {
       if let error = reflog.errorMessage {
         GitErrorBanner(message: error) { reflog.dismissError() }
       }
-      HSplitView {
-        list.frame(minWidth: 260, idealWidth: 360, maxWidth: 520, maxHeight: .infinity)
-        detail.frame(minWidth: 420, maxHeight: .infinity)
+      ResizableHSplit(key: "git.reflog", leadingMin: 220, leadingIdeal: 360, leadingMax: 520, trailingMin: 320) {
+        list.frame(maxHeight: .infinity)
+      } trailing: {
+        detail.frame(maxHeight: .infinity)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

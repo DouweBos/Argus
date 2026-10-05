@@ -45,14 +45,13 @@ struct HooksView: View {
           "No hooks installed", systemImage: "link",
           description: Text("Add an executable file under .git/hooks to run it from here."))
       } else {
-        VSplitView {
+        ResizableVSplit(key: "git.hooks", topMin: 120, bottomMin: 160, bottomIdeal: 240, showsBottom: true) {
           List(hooks, id: \.name, selection: $selected) { hook in
             HookRow(hook: hook, running: running == hook.name) { run(hook.name) }
           }
           .listStyle(.inset)
-          .frame(minHeight: 120)
+        } bottom: {
           HookOutputPane(hook: selectedHook)
-            .frame(minHeight: 160)
         }
       }
     } else {
