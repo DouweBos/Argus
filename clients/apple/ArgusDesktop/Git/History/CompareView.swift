@@ -26,16 +26,18 @@ struct CompareView: View {
       } else {
         summary
         Divider()
-        VSplitView {
-          HSplitView {
+        ResizableVSplit(key: "git.compare.files", topMin: 120, bottomMin: 240, bottomIdeal: 400, showsBottom: true) {
+          HStack(spacing: 0) {
             CompareCommitList(title: "Only in \(left)", commits: compare.comparison?.onlyInBase, reveal: reveal)
+              .frame(maxWidth: .infinity)
+            Divider()
             CompareCommitList(title: "Only in \(right)", commits: compare.comparison?.onlyInCompare, reveal: reveal)
+              .frame(maxWidth: .infinity)
           }
-          .frame(minHeight: 120, idealHeight: 220)
+        } bottom: {
           FileDiffsView(files: compare.files, isLoading: compare.isLoadingFiles) { file in
             AnyView(fileMenu(file.path))
           }
-          .frame(minHeight: 240)
         }
       }
     }

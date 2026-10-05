@@ -87,7 +87,10 @@ struct SessionView: View {
   }
 
   var body: some View {
-    VSplitView {
+    ResizableVSplit(
+      key: "session.terminal", topMin: 240, bottomMin: 120, bottomIdeal: 280,
+      showsBottom: model.terminalPanelVisible && session?.status == .ready
+    ) {
       Group {
         if case .sessionHome = model.route, let session {
           SessionHomeView(session: session, sessionAgents: agents, startAgent: startAgent(mode:))
@@ -103,11 +106,8 @@ struct SessionView: View {
           agentsPane
         }
       }
-      .frame(minHeight: 240)
-      if model.terminalPanelVisible, let session, session.status == .ready {
-        TerminalPanel(session: session)
-          .frame(minHeight: 200, idealHeight: 280)
-      }
+    } bottom: {
+      if let session { TerminalPanel(session: session) }
     }
     .toolbar {
       ToolbarItem(placement: .navigation) {

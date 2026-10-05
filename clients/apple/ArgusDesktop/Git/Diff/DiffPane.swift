@@ -154,7 +154,7 @@ struct FileDiffsView: View {
   @State private var selected: String?
 
   var body: some View {
-    HSplitView {
+    ResizableHSplit(key: "git.files", leadingMin: 180, leadingIdeal: 260, leadingMax: 420, trailingMin: 280) {
       List(files, id: \.path, selection: $selected) { file in
         HStack(spacing: 6) {
           FileStatusBadge(status: file.status)
@@ -173,9 +173,8 @@ struct FileDiffsView: View {
       .overlay {
         if isLoading && files.isEmpty { ProgressView().controlSize(.small) }
       }
-      .frame(minWidth: 200, idealWidth: 260, maxWidth: 420)
+    } trailing: {
       DiffPane(diff: current?.diff, path: current?.path, isLoading: isLoading)
-        .frame(minWidth: 320)
     }
     .onChange(of: files.map(\.path), initial: true) { _, paths in
       if selected == nil || !paths.contains(selected ?? "") { selected = paths.first }

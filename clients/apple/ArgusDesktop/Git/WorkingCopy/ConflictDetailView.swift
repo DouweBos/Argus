@@ -19,14 +19,17 @@ struct ConflictDetailView: View {
   }
 
   var body: some View {
-    VSplitView {
-      HSplitView {
+    ResizableVSplit(key: "git.conflict.merged", topMin: 140, bottomMin: 180, bottomIdeal: 320, showsBottom: true) {
+      // Two even halves that narrow with the window, unlike an HSplitView.
+      HStack(spacing: 0) {
         side(.ours, label: vm.operationContext?.oursLabel ?? "HEAD", text: vm.conflictVersions?.ours)
+          .frame(maxWidth: .infinity)
+        Divider()
         side(.theirs, label: vm.operationContext?.theirsLabel ?? "Incoming", text: vm.conflictVersions?.theirs)
+          .frame(maxWidth: .infinity)
       }
-      .frame(minHeight: 140, idealHeight: 280)
+    } bottom: {
       mergedEditor
-        .frame(minHeight: 180)
     }
     .task(id: entry.path) { load() }
   }

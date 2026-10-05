@@ -24,7 +24,7 @@ struct HistoryScreen: View {
 
   var body: some View {
     let actions = actions
-    VSplitView {
+    ResizableVSplit(key: "git.history.detail", topMin: 160, bottomMin: 300, bottomIdeal: 480, showsBottom: true) {
       VStack(spacing: 0) {
         HistoryToolbar(history: history, title: title)
         Divider()
@@ -33,9 +33,8 @@ struct HistoryScreen: View {
         }
         list(actions)
       }
-      .frame(maxWidth: .infinity, minHeight: 160, idealHeight: 340)
+    } bottom: {
       CommitDetailView(actions: actions)
-        .frame(maxWidth: .infinity, minHeight: 380, idealHeight: 480)
     }
     .sheet(item: sheetBinding) { HistoryActionSheet(actions: actions, action: $0) }
     .confirmationDialog(

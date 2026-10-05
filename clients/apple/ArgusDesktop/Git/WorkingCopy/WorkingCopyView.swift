@@ -28,16 +28,15 @@ struct WorkingCopyView: View {
         OperationBanner(workspace: workspace)
         Divider()
       }
-      HSplitView {
+      ResizableHSplit(key: "git.changes", leadingMin: 220, leadingIdeal: 320, leadingMax: 560, trailingMin: 280) {
         VStack(spacing: 0) {
           ChangesListView(workspace: workspace, onShowFileHistory: onShowFileHistory)
             .frame(maxHeight: .infinity)
           Divider()
           CommitComposerView(workspace: workspace)
         }
-        .frame(minWidth: 240, idealWidth: 320, maxWidth: 560)
+      } trailing: {
         WorkingDiffView(workspace: workspace, pendingDiscardAction: $pendingDiscardAction)
-          .frame(minWidth: 320, maxWidth: .infinity)
       }
     }
     .modifier(WorkingCopyDialogs(workspace: workspace, pendingDiscardAction: $pendingDiscardAction))
