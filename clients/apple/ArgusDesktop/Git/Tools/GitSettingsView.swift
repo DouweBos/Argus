@@ -10,6 +10,7 @@ struct GitSettingsView: View {
   var body: some View {
     Form {
       GitConfigSection(workspace: workspace)
+      GitSigningSection(sessionId: workspace.sessionId, workspace: workspace)
       GitRemotesSection(workspace: workspace)
       GitArgusSettingsSection(workspace: workspace)
       GitLfsSection(workspace: workspace)
