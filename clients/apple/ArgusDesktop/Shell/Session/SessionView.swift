@@ -28,6 +28,8 @@ struct SessionView: View {
       else { return nil }
       status.status = agent.status
       status.title = live.conversation(for: agent.id)?.title ?? status.title
+      // Spawned before any list mentioned it: only the live agent knows its parent.
+      status.parentAgentId = status.parentAgentId ?? agent.parentAgentId
       return status
     }
   }
@@ -244,11 +246,10 @@ struct AgentTabBar: View {
 
   /// Agents each agent spawned, across every agent the host has described.
   private var childCounts: [String: Int] {
-    var counts: [String: Int] = [:]
-    for agent in store.statusByAgent.values {
-      if let parent = agent.parentAgentId { counts[parent, default: 0] += 1 }
-    }
-    return counts
+    var parents: [String: String] = [:]
+    for agent in store.statusByAgent.values { parents[agent.agentId] = agent.parentAgentId }
+    for agent in agents where agent.parentAgentId != nil { parents[agent.agentId] = agent.parentAgentId }
+    return parents.values.reduce(into: [:]) { counts, parent in counts[parent, default: 0] += 1 }
   }
 
   /// A Task/Agent call still without a result: a subagent is at work, even
