@@ -89,6 +89,32 @@ describe("node secret storage in the keychain", () => {
   });
 
   it.runIf(process.platform === "darwin")(
+    "moves a temp home's existing keychain key into the file",
+    () => {
+      const legacy = Buffer.alloc(32, 7).toString("base64");
+      const command = fakeSecurity(`echo ${legacy}`);
+      const tool = { command, timeoutMs: 2000 };
+      const sealed = nodeSecretStorage("keychain", tool).encrypt("devices");
+
+      expect(nodeSecretStorage("file", tool).decrypt(sealed)).toBe("devices");
+      expect(
+        fs.readFileSync(path.join(dir, "secret-storage.key"), "utf8"),
+      ).toBe(legacy);
+    },
+  );
+
+  it.runIf(process.platform === "darwin")(
+    "mints a file key for a temp home the keychain has never seen",
+    () => {
+      const command = fakeSecurity("exit 44");
+      const storage = nodeSecretStorage("file", { command, timeoutMs: 2000 });
+
+      expect(storage.isAvailable()).toBe(true);
+      expect(fs.existsSync(path.join(dir, "secret-storage.key"))).toBe(true);
+    },
+  );
+
+  it.runIf(process.platform === "darwin")(
     "names the login keychain, which a different HOME can't find",
     () => {
       const log = path.join(dir, "calls.log");
