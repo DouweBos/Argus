@@ -8,6 +8,10 @@ import { registerHostCommands } from "./commands/index";
 import { createLogger } from "./logger";
 import { stopPowerAssertion } from "./serverMode";
 import { destroyAllAgents } from "./services/agent/agentService";
+import {
+  startHostConversations,
+  stopHostConversations,
+} from "./services/agent/conversation/hostDriver";
 import { reapOrphanedAgentProcesses } from "./services/agent/reapOrphans";
 import { initAutomations } from "./services/automation/manager";
 import { initAutomationOutcomes } from "./services/automation/outcomes";
@@ -117,6 +121,8 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
 
   // Commands first, so nothing that attaches over the gateway finds a gap.
   registerHostCommands();
+  // Until a UI claims them, the host folds agent conversations itself.
+  startHostConversations();
 
   setWebClientDir(options.webClientDir ?? null);
   const remoteReady = (
@@ -152,6 +158,7 @@ export function stopHostServices(): void {
   telemetryCapture("app_quit");
   shutdownTelemetry().catch(() => undefined);
   stopAutomationScheduler();
+  stopHostConversations();
   stopMcpServer();
   stopRemote();
   stopMjpegServer();

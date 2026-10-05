@@ -30,6 +30,7 @@ import { emitHostEvent } from "@argus/host/bus";
 import { argusHomeDir } from "@argus/host/lib/argusHome";
 import { writeLogLine } from "@argus/host/lib/logFile";
 import { isServerMode, startPowerAssertion } from "@argus/host/serverMode";
+import { claimConversations } from "@argus/host/services/agent/conversation/hostDriver";
 import { setColorScheme } from "@argus/host/services/browser/conductorInput";
 import { LOCAL_GATEWAY_PORT } from "@argus/host/services/remote/remoteService";
 import { refreshAllBranches } from "@argus/host/services/session/watcher";
@@ -582,6 +583,8 @@ function createWindow(): void {
     },
   });
   setMainWindow(mainWindow);
+  // The renderer folds and publishes agent conversations while it lives.
+  mainWindow.on("closed", claimConversations());
 
   // Allow the app's own renderers to use camera/mic (video-input viewer) while
   // NOT auto-granting media to arbitrary sites loaded in embedded browsers.
