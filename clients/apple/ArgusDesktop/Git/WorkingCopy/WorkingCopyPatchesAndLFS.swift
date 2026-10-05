@@ -128,33 +128,53 @@ struct ChangeLFSAndPatchMenu: View {
   let section: ChangeSection
   let entries: [StatusEntry]
 
-  private var vm: WorkingCopyViewModel { workspace.workingCopy }
-
   var body: some View {
-    if section != .conflicted, !workspace.isRemote {
-      let patchEntries = vm.patchEntries(for: entry, side: section.side)
-      Button(patchEntries.count > 1 ? "Create Patch from \(patchEntries.count) Files…" : "Create Patch…") {
-        PatchPanels.create(workspace: workspace, entries: patchEntries, side: section.side)
-      }
-    }
-    let candidates = vm.lfsCandidates(entries)
-    if !candidates.isEmpty, !vm.lfs.status.isMissing {
-      Divider()
-      Button(candidates.count > 1 ? "Track \(candidates.count) Files with Git LFS" : "Track with Git LFS") {
-        track(candidates, byExtension: false)
-      }
-      if let pattern = WorkingCopyViewModel.lfsExtensionPattern(for: candidates) {
-        Button("Track All “\(pattern)” Files with Git LFS") { track(candidates, byExtension: true) }
-      }
+    let items = Self.items(workspace: workspace, entry: entry, section: section, entries: entries)
+    ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+      if item.startsGroup, index > 0 { Divider() }
+      Button(item.title, action: item.run)
     }
   }
 
-  private func track(_ candidates: [StatusEntry], byExtension: Bool) {
-    Task {
-      vm.clearError()
-      await vm.trackWithLFS(candidates, byExtension: byExtension)
-      workspace.track(.lfsTrack, success: vm.errorMessage == nil)
+  struct Item {
+    let title: String
+    let startsGroup: Bool
+    let run: @MainActor () -> Void
+  }
+
+  /// What the menu offers, shared with the dev driver, which can't open a context menu.
+  static func items(
+    workspace: GitWorkspace, entry: StatusEntry, section: ChangeSection, entries: [StatusEntry]
+  ) -> [Item] {
+    let vm = workspace.workingCopy
+    var items: [Item] = []
+    if section != .conflicted, !workspace.isRemote {
+      let patchEntries = vm.patchEntries(for: entry, side: section.side)
+      items.append(
+        Item(
+          title: patchEntries.count > 1 ? "Create Patch from \(patchEntries.count) Files…" : "Create Patch…",
+          startsGroup: false
+        ) { PatchPanels.create(workspace: workspace, entries: patchEntries, side: section.side) })
     }
+    let candidates = vm.lfsCandidates(entries)
+    if !candidates.isEmpty, !vm.lfs.status.isMissing {
+      let track = { (byExtension: Bool) in
+        Task {
+          vm.clearError()
+          await vm.trackWithLFS(candidates, byExtension: byExtension)
+          workspace.track(.lfsTrack, success: vm.errorMessage == nil)
+        }
+      }
+      items.append(
+        Item(
+          title: candidates.count > 1 ? "Track \(candidates.count) Files with Git LFS" : "Track with Git LFS",
+          startsGroup: true
+        ) { _ = track(false) })
+      if let pattern = WorkingCopyViewModel.lfsExtensionPattern(for: candidates) {
+        items.append(Item(title: "Track All “\(pattern)” Files with Git LFS", startsGroup: false) { _ = track(true) })
+      }
+    }
+    return items
   }
 }
 
