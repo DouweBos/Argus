@@ -121,6 +121,11 @@ struct HostRouterTests {
     #expect(router.destination("browser_view_ensure", json(#"{"sessionId":"global"}"#), tier: "admin") == .remote("mini"))
     router.index.remember(.session, local, host: "mini")
     #expect(router.destination("browser_view_ensure", json(#"{"sessionId":"\#(local)"}"#), tier: "admin") == .remote("mini"))
+    // This Mac echoing a remote agent's id (its banner) leaves the agent where it is.
+    let agent = UUID().uuidString
+    router.index.remember(.agent, agent, host: "mini")
+    router.index.remember(.agent, agent, host: Hosts.local)
+    #expect(router.index.host(of: .agent, agent) == "mini")
     #expect(router.index.unknownScope("terminal:\(UUID().uuidString)"))
     #expect(!router.index.unknownScope("terminal:abc"))
   }
