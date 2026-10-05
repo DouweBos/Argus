@@ -231,19 +231,6 @@ automation is refused `create_session` and `spawn_agent`.
 
 ---
 
-## Organisations
-
-- Group multiple repos that ship as one product (e.g. mobile app +
-  backend + marketing site).
-- An **org host** session is a neutral cross-repo agent — it can spawn
-  child sessions inside specific member repos to coordinate changes.
-- Each member repo's agent receives organisation context: what the org
-  does, what the sibling repos are for, and how to delegate to them.
-
-Organisations are configured in App settings.
-
----
-
 ## Onboarding
 
 First launch is two screens: a welcome explaining what Argus does, and a

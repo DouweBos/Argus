@@ -77,7 +77,7 @@ Argus organises work around three areas:
 
 | Area          | What lives there                                                                                                           |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Workspace** | Projects, sessions, and organisations — pick what to work on.                                                              |
+| **Workspace** | Projects and sessions — pick what to work on.                                                                              |
 | **Agent**     | The agent's chat thread, tool-call timeline, and prompt input.                                                             |
 | **Runtime**   | Live view of the agent's work: iOS simulator, Android emulator, embedded browser, run output, terminals, and the git diff. |
 
@@ -110,19 +110,6 @@ dependency automatically before launching the command.
 
 See [Project settings → Run commands](/argus/docs/project-settings) for
 the full schema.
-
----
-
-## Organisation
-
-An **organisation** groups multiple repositories that ship as one product
-— for example, a mobile app, a backend, and a marketing site that each
-live in separate repos.
-
-When a session belongs to an organisation, the agent receives extra
-context about the sibling repos: what they do, where they live, and how
-to spawn agents inside them. This unlocks cross-repo work — a single
-prompt can drive coordinated changes across a frontend repo and its API.
 
 ---
 
