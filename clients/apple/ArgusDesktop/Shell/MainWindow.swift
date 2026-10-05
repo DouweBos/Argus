@@ -17,6 +17,7 @@ struct MainWindow: View {
         .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
     } content: {
       VStack(spacing: 0) {
+        WindowTabStrip()
         HostOfflineBanner()
         HuddleJoinRequests()
         Group {

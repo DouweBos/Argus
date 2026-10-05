@@ -92,6 +92,7 @@ extension DesktopModel {
     guard location != current else { return }
     back.append(current)
     forward = []
+    persistTabs()
   }
 
   private func go(to next: DesktopLocation) {
@@ -101,6 +102,7 @@ extension DesktopModel {
     back.append(current)
     forward = []
     apply(next)
+    persistTabs()
     MacTelemetry.capture(.screenViewed(screen: next.route.pattern))
   }
 
@@ -143,11 +145,13 @@ extension DesktopModel {
     guard let previous = back.popLast() else { return }
     forward.append(location)
     apply(previous)
+    persistTabs()
   }
 
   func goForward() {
     guard let next = forward.popLast() else { return }
     back.append(location)
     apply(next)
+    persistTabs()
   }
 }

@@ -30,6 +30,9 @@ struct SidebarView: View {
             SessionRow(session: session, agents: agents(in: session))
               .tag(session.id)
               .contextMenu {
+                Button("Open in New Tab") {
+                  model.openTab(DesktopLocation(route: .sessionHome(id: session.id), host: model.host(ofSession: session.id)))
+                }
                 if session.kind == .worktree {
                   Button("Delete Session…") { model.deletingSession = session }
                 }

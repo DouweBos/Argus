@@ -384,6 +384,21 @@
         return ["ok": true]
       case "lastPick":
         return ["path": Self.lastPick]
+      case "tabs":
+        // The window tabs, and what the strip and menus do to them.
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        switch command["action"] as? String {
+        case "openHost": model.openHostTab(command["host"] as? String ?? Hosts.local)
+        case "open": model.openTab()
+        case "switch": model.switchTab(command["id"] as? String ?? "")
+        case "close": model.closeTab(command["id"] as? String)
+        case "next": model.cycleTab(by: 1)
+        default: break
+        }
+        return [
+          "active": model.activeTabId, "focused": model.hosts.focused, "route": "\(model.route)",
+          "tabs": model.tabs.map { "\($0.id) \(model.title(of: $0)) \($0.location.path)" },
+        ]
       case "history":
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
         return [
