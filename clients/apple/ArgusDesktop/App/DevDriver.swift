@@ -183,7 +183,7 @@
           DispatchQueue.main.async { _ = self.click(at: point, in: window, count: count, flags: flags) }
           return ["ok": true]
         }
-        return ["ok": click(at: point, in: window, count: count, flags: flags)]
+        return ["ok": click(at: point, in: window, count: count, flags: flags, viaApp: command["viaApp"] as? Bool ?? false)]
       case "rightClickAt":
         guard let x = command["x"] as? Double, let y = command["y"] as? Double,
           let event = NSEvent.mouseEvent(
@@ -489,6 +489,19 @@
           runtime.runtime.mode = mode
         }
         return ["ok": true]
+      case "hitTest":
+        // Which views sit under a point (top-left window coordinates), and
+        // whether each takes a background window's first click.
+        guard let x = command["x"] as? Double, let y = command["y"] as? Double,
+          let root = window.contentView?.superview
+        else { return ["error": "x, y?"] }
+        var view = root.hitTest(NSPoint(x: x, y: window.frame.height - y))
+        var chain: [String] = []
+        while let current = view, chain.count < 14 {
+          chain.append("\(type(of: current)) firstMouse=\(current.acceptsFirstMouse(for: nil))")
+          view = current.superview
+        }
+        return ["chain": chain, "key": window.isKeyWindow]
       case "splits":
         // Every split view's panes, to see which one won't shrink.
         var found: [String] = []
@@ -582,7 +595,8 @@
     /// gestures only see events that arrive that way. A window that isn't key
     /// doesn't activate the app for an in-process event, so focus stays put.
     private func click(
-      at point: NSPoint, in window: NSWindow, count: Int = 1, flags: NSEvent.ModifierFlags = []
+      at point: NSPoint, in window: NSWindow, count: Int = 1, flags: NSEvent.ModifierFlags = [],
+      viaApp: Bool = false
     ) -> Bool {
       func event(_ type: NSEvent.EventType) -> NSEvent? {
         NSEvent.mouseEvent(
@@ -593,6 +607,13 @@
       guard let down = event(.leftMouseDown), let up = event(.leftMouseUp) else { return false }
       // Views that track the mouse (text views, buttons) pull the up from the
       // queue while handling the down, so it has to be waiting there first.
+      // Through the event queue, as a real click arrives: local event
+      // monitors and AppKit's first-mouse check both see it.
+      if viaApp {
+        NSApp.postEvent(down, atStart: false)
+        NSApp.postEvent(up, atStart: false)
+        return true
+      }
       NSApp.postEvent(up, atStart: false)
       window.sendEvent(down)
       return true
