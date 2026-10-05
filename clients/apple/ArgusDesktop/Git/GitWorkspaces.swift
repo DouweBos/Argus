@@ -54,6 +54,7 @@ final class GitWorkspaces {
     do {
       let repository = try await GitRepository(path: URL(fileURLWithPath: path), runner: LocalGitRunner())
       let workspace = GitWorkspace(session: session, repository: repository, host: host)
+      Task { await GitPreferences.apply(to: workspace.workingCopy) }
       slots[session.id] = .open(workspace)
       return workspace
     } catch {
@@ -79,6 +80,7 @@ final class GitWorkspaces {
       }
       let repository = try await GitRepository(path: worktree, runner: runner)
       let workspace = GitWorkspace(session: session, repository: repository, host: host, isRemote: true)
+      Task { await GitPreferences.apply(to: workspace.workingCopy) }
       slots[session.id] = .open(workspace)
       return workspace
     } catch {
