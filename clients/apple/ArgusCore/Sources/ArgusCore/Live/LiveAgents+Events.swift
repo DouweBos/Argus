@@ -55,10 +55,33 @@ extension LiveAgents {
     Task { @MainActor [weak self] in
       for _ in 0..<timing.permissionRetries {
         try? await Task.sleep(for: timing.permissionRetryInterval)
-        guard let self, self.conversations[agentId] != nil else { return }
+        guard let self else { return }
         if self.mutate(agentId, { $0.setPermissionPending(toolUseId: toolUseId) }) { return }
       }
+      // The call streamed before this app subscribed (a prompted spawn asks
+      // straight away): fold it in from the request so it can be answered.
+      self?.mutate(agentId) { reducer in
+        reducer.appendEvent(Self.toolCallEvent(for: request))
+        reducer.setPermissionPending(toolUseId: toolUseId)
+      }
     }
+  }
+
+  /// The assistant event a permission request's tool call would have arrived in.
+  nonisolated static func toolCallEvent(for request: RemotePermissionRequest) -> JSONValue {
+    .object([
+      "type": .string("assistant"),
+      "message": .object([
+        "id": .string("permission-\(request.toolUseId)"),
+        "role": .string("assistant"),
+        "content": .array([
+          .object([
+            "type": .string("tool_use"), "id": .string(request.toolUseId),
+            "name": .string(request.toolName), "input": .object(request.toolInput),
+          ])
+        ]),
+      ]),
+    ])
   }
 
   /// `permission.cancel` — the host sends it both when the CLI withdraws a
@@ -176,6 +199,8 @@ extension LiveAgents {
     case "remote-message":
       // Another client's send: the host wrote it to stdin, so record the bubble.
       guard let p = try? ProtocolCodec.convert(arg, to: RemoteMessagePayload.self) else { return }
+      // A prompted spawn's prompt is already its first bubble.
+      if seededPrompts.removeValue(forKey: agentId) == p.message { return }
       mutate(agentId) { $0.addUserMessage(p.message, images: p.images, author: p.author) }
       maybeGenerateTitle(agentId, firstMessage: p.message)
       scheduleSave(agentId)

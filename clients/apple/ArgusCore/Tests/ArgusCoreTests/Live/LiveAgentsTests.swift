@@ -95,6 +95,43 @@ struct LiveAgentsTests {
     #expect(backend.calls("generate_session_title").first?.params["firstMessage"] == .string("fix the build"))
   }
 
+  @Test("a prompted spawn's prompt is its first bubble, once")
+  func promptedSpawnBubble() async throws {
+    let (store, backend) = await Self.attached()
+    backend.reply("generate_session_title", #""Fix the build""#)
+    try backend.ipc(
+      "agent:started",
+      #"{"agent_id":"a3","session_id":"s1","status":"idle","initial_prompt":"fix the build"}"#)
+    #expect(await eventually { store.messagesByAgent["a3"]?.first?.textBlocks == ["fix the build"] })
+    // The host's echo of the same send, when it does reach us.
+    try backend.ipc("agent:remote-message:a3", #"{"message":"fix the build","author":null}"#)
+    try backend.ipc("agent:remote-message:a3", #"{"message":"and the tests","author":null}"#)
+    #expect(await eventually { store.messagesByAgent["a3"]?.count == 2 })
+    #expect(store.messagesByAgent["a3"]?.map(\.textBlocks) == [["fix the build"], ["and the tests"]])
+  }
+
+  @Test("a permission for a call that streamed before we subscribed still shows")
+  func permissionWithoutItsToolCall() async throws {
+    let backend = RecordingBackend()
+    backend.reply("state_hydrate", Self.hydrate(Self.agent("a1", "running")))
+    let store = HostStore()
+    var timing = LiveAgents.Timing()
+    timing.permissionRetries = 2
+    timing.permissionRetryInterval = .milliseconds(10)
+    store.liveTiming = timing
+    await store.attach(backend)
+    #expect(await eventually { backend.subscriptions.count == 1 })
+    try backend.emit(
+      "permission.request", agentId: "a1",
+      payload: #"{"agent_id":"a1","tool_use_id":"t9","tool_name":"Bash","tool_input":{"command":"echo hi"}}"#)
+    #expect(await eventually {
+      store.messagesByAgent["a1"]?.last?.toolCalls.first?.pendingPermission == true
+    })
+    let call = try #require(store.messagesByAgent["a1"]?.last?.toolCalls.first)
+    #expect(call.id == "t9")
+    #expect(call.name == "Bash")
+  }
+
   @Test("a prompted turn that ended before we subscribed settles from its result")
   func promptedSpawnSettlesFromResult() async throws {
     let (store, backend) = await Self.attached()
