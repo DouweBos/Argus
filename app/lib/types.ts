@@ -228,115 +228,15 @@ export type {
 // Claude Code stream-json event types
 // ---------------------------------------------------------------------------
 
-export type LlmStreamEvent =
-  | {
-      /** Authoritative idle/running signal from the CLI. */
-      state: "idle" | "requires_action" | "running";
-      subtype: "session_state_changed";
-      type: "system";
-    }
-  | {
-      /** Emitted when an API request fails with a retryable error. */
-      attempt: number;
-      error_status: number | null;
-      max_retries: number;
-      retry_delay_ms: number;
-      subtype: "api_retry";
-      type: "system";
-    }
-  | {
-      /** Generic status update from the CLI. */
-      status: string;
-      subtype: "status";
-      type: "system";
-    }
-  | {
-      duration_ms: number;
-      /** Per-model usage; each entry carries the CLI's `contextWindow`. */
-      modelUsage?: Record<string, { contextWindow?: number }>;
-      result?: string;
-      subtype: "error" | "success";
-      total_cost_usd: number;
-      type: "result";
-      usage: TokenUsage;
-    }
-  | {
-      message: {
-        content: LlmContentBlock[];
-        model: string;
-        usage: TokenUsage;
-      };
-      /** Present when this assistant message is from a sub-agent (Task/Agent tool). */
-      parent_tool_use_id?: string | null;
-      type: "assistant";
-    }
-  | {
-      message: { content: LlmToolResult[] };
-      /** Present when this tool_result is from a sub-agent (Task/Agent tool). */
-      parent_tool_use_id?: string | null;
-      type: "user";
-    }
-  | {
-      model: string;
-      session_id: string;
-      /** Skills specifically (plugins, user settings, bundled). */
-      skills?: string[];
-      /** All user-invocable commands (built-in + skills + plugins). */
-      slash_commands?: string[];
-      subtype: "init";
-      tools: { name: string }[];
-      type: "system";
-    };
-
-export type LlmContentBlock =
-  | {
-      id: string;
-      input: Record<string, unknown>;
-      name: string;
-      type: "tool_use";
-    }
-  | { text: string; type: "text" };
-
-export interface LlmToolResult {
-  /** May be a plain string or a structured content block from the Claude API. */
-  content: unknown;
-  is_error?: boolean;
-  tool_use_id: string;
-  type: "tool_result";
-}
-
-export interface TokenUsage {
-  cache_creation_input_tokens?: number;
-  cache_read_input_tokens?: number;
-  input_tokens: number;
-  output_tokens: number;
-}
-
-// ---------------------------------------------------------------------------
-// Permission request (from control protocol via IPC event)
-// ---------------------------------------------------------------------------
-
-export interface PermissionSuggestion {
-  prefix?: string;
-  tool: string;
-  type: string;
-}
-
-export interface PermissionRequest {
-  /** Permission suggestions from the CLI (e.g. "always allow Edit in /src"). */
-  permission_suggestions?: PermissionSuggestion[];
-  /** Control protocol request_id — needed for the response round-trip. */
-  request_id: string;
-  tool_input: Record<string, unknown>;
-  tool_name: string;
-  tool_use_id: string;
-}
-
-/** Emitted when the CLI withdraws a pending permission request. */
-export interface PermissionCancellation {
-  request_id: string;
-  tool_use_id: string;
-}
+export type {
+  LlmContentBlock,
+  LlmStreamEvent,
+  LlmToolResult,
+  PermissionCancellation,
+  PermissionRequest,
+  PermissionSuggestion,
+  TokenUsage,
+} from "@argus/host/services/agent/conversation/types";
 
 // ---------------------------------------------------------------------------
 // Capabilities (from initialize control_request response)

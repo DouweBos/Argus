@@ -1,155 +1,36 @@
 import type { ImageAttachment } from "../lib/ipc";
 import type {
   AgentCapabilities,
-  LlmContentBlock,
+  AgentConversation,
+  ConversationMessage,
   LlmStreamEvent,
   PermissionRequest,
-  SlashCommand,
-  TokenUsage,
-} from "../lib/types";
+} from "@argus/host/services/agent/conversation/types";
 import { create } from "zustand";
 import { contextWindowFromModelUsage } from "@argus/host/services/agent/contextWindow";
+import {
+  emptyConversation,
+  fromSavedMessages,
+  reduceEvent,
+  withCapabilities,
+  withInjectedPrompt,
+  withPermissionPending,
+  withSystemMessage,
+  withUserMessage,
+} from "@argus/host/services/agent/conversation/reducer";
 import { rememberContextWindow } from "../lib/contextWindow";
 import { persistLastKnownCapabilities } from "../lib/lastKnownCapabilities";
-import { toToolResult } from "../lib/toolResult";
 
-export interface TodoItem {
-  activeForm?: string;
-  content: string;
-  status: "completed" | "in_progress" | "pending";
-}
-
-export interface Task {
-  activeForm?: string;
-  blockedBy?: string[];
-  blocks?: string[];
-  description?: string;
-  id: string;
-  metadata?: Record<string, unknown>;
-  owner?: string;
-  status: "completed" | "in_progress" | "pending";
-  subject: string;
-}
-
-export type ToolResultBlock =
-  | {
-      source: { data: string; media_type: string; type: "base64" };
-      type: "image";
-    }
-  | { text: string; type: "text" };
-
-export type ToolCallChild =
-  | { kind: "text"; text: string }
-  | { kind: "tool_use"; toolCall: ToolCallInfo };
-
-export interface ToolCallInfo {
-  /**
-   * Nested events streamed by a sub-agent (Task/Agent). Only populated on
-   * parent Task/Agent tool calls whose sub-agent emitted text or tool_use
-   * blocks with `parent_tool_use_id === this.id`.
-   */
-  children?: ToolCallChild[];
-  id: string;
-  input: Record<string, unknown>;
-  isError?: boolean;
-  name: string;
-  /** Whether this tool call is waiting for user permission. */
-  pendingPermission?: boolean;
-  /** String for plain text results; array of content blocks for rich results (e.g. images). */
-  result?: ToolResultBlock[] | string;
-}
-
-/**
- * Describes where a system message came from, so the UI can render it with
- * richer framing (source label, parent agent name, attachments).
- *
- * Today only MCP-originated messages carry a source; future origins (scripts,
- * webhooks, scheduled triggers) can add new `kind` variants.
- */
-export interface SystemMessageSource {
-  kind: "mcp";
-  /** Agent that originated the call, if known. */
-  parentAgentId?: string;
-  /** Human-readable label for the originating agent (session display name). */
-  parentLabel?: string;
-  /** MCP tool that injected the message. */
-  tool:
-    | "create_session"
-    | "send_agent_message"
-    | "spawn_agent"
-    | "spawn_agents_batch";
-}
-
-export interface ConversationMessage {
-  /**
-   * Who sent this user message when it wasn't the local user — a huddle guest's
-   * chosen name. Absent for the engineer's own sends.
-   */
-  author?: string;
-  /**
-   * Worktree snapshot captured immediately before this user message was sent
-   * to the agent. Set only on user messages, and only when the snapshot
-   * succeeded. Lets the user revert all file changes made after this turn.
-   */
-  checkpointId?: string;
-  id: string;
-  /** Image attachments accompanying this message. */
-  images?: ImageAttachment[];
-  role: "assistant" | "system" | "user";
-  /** Origin metadata for system messages (e.g. MCP tool calls). */
-  source?: SystemMessageSource;
-  textBlocks: string[];
-  timestamp: number;
-  /** Severity of a system message — stderr is an error, a CLI diagnostic a warning. */
-  tone?: "error" | "warning";
-  toolCalls: ToolCallInfo[];
-  usage?: TokenUsage;
-}
-
-export interface AgentConversation {
-  /** Rich capabilities from the initialize control_request response. */
-  capabilities?: AgentCapabilities | null;
-  /** Context window the CLI reported on its last `result`, in tokens. */
-  contextWindow?: number;
-  /** Tracks the type of the most recent Claude CLI event for thinking-state derivation. */
-  lastEventType?: string;
-  messages: ConversationMessage[];
-  model?: string;
-  /** Tool input of the currently executing tool (for richer activity descriptions). */
-  pendingToolInput?: Record<string, unknown> | null;
-  /** Name of the tool currently executing (awaiting result). Null when thinking/idle. */
-  pendingToolName?: string | null;
-  /** Messages waiting to be sent when the agent becomes idle. */
-  /** When true, skip replayed events from a --resume until the first result. */
-  resuming?: boolean;
-  /** Claude CLI session ID from the init event, used for --resume. */
-  sessionId?: string;
-  /** Slash commands — rich objects from initialize, or bare strings from init event. */
-  slashCommands?: SlashCommand[];
-  /**
-   * Stable creation order of `tasks` ids so the list renders deterministically
-   * across re-folds. Tasks marked `deleted` are removed from both maps.
-   */
-  taskOrder?: string[];
-  /**
-   * Task list authored via the stateful Task* tool family (TaskCreate /
-   * TaskUpdate / TaskList / TaskGet). Folded from tool inputs + results across
-   * the message history. `null` when the user dismisses; a subsequent Task*
-   * call repopulates it.
-   */
-  tasks?: Record<string, Task> | null;
-  /** Generated short title summarising the conversation (async). */
-  title?: string;
-  /**
-   * Latest todo list authored by the agent via TodoWrite. Overwritten on each
-   * new TodoWrite call, and set to null when the user dismisses the list.
-   * A subsequent TodoWrite repopulates it.
-   */
-  todos?: TodoItem[] | null;
-  tools?: string[];
-  totalCost?: number;
-  totalDuration?: number;
-}
+export type {
+  AgentConversation,
+  ConversationMessage,
+  SystemMessageSource,
+  Task,
+  TodoItem,
+  ToolCallChild,
+  ToolCallInfo,
+  ToolResultBlock,
+} from "@argus/host/services/agent/conversation/types";
 
 export interface PendingImage {
   attachment: ImageAttachment;
@@ -189,458 +70,6 @@ interface ConversationStoreData {
    * unread.
    */
   unreadMessages: Record<string, ReadonlySet<string>>;
-}
-
-function emptyConversation(): AgentConversation {
-  return { messages: [] };
-}
-
-function extractTodos(toolCalls: ToolCallInfo[]): TodoItem[] | null {
-  for (let i = toolCalls.length - 1; i >= 0; i--) {
-    const tc = toolCalls[i];
-    if (tc.name !== "TodoWrite") {
-      continue;
-    }
-    const todos = (tc.input as { todos?: unknown }).todos;
-    if (Array.isArray(todos)) {
-      return todos as TodoItem[];
-    }
-  }
-
-  return null;
-}
-
-function findLatestTodosInMessages(
-  messages: ConversationMessage[],
-): TodoItem[] | null {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const todos = extractTodos(messages[i].toolCalls);
-    if (todos) {
-      return todos;
-    }
-  }
-
-  return null;
-}
-
-const TASK_TOOL_NAMES = new Set([
-  "TaskCreate",
-  "TaskGet",
-  "TaskList",
-  "TaskUpdate",
-]);
-
-function resultText(result: ToolCallInfo["result"] | undefined): string | null {
-  if (!result) {
-    return null;
-  }
-  if (typeof result === "string") {
-    return result;
-  }
-  const parts: string[] = [];
-  for (const block of result) {
-    if (block.type === "text") {
-      parts.push(block.text);
-    }
-  }
-
-  return parts.length > 0 ? parts.join("\n") : null;
-}
-
-function tryParseJson(text: string | null): unknown {
-  if (!text) {
-    return null;
-  }
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
-function coerceStatus(raw: unknown): Task["status"] | "deleted" | null {
-  if (raw === "completed" || raw === "in_progress" || raw === "pending") {
-    return raw;
-  }
-  if (raw === "deleted") {
-    return "deleted";
-  }
-
-  return null;
-}
-
-function coerceTask(raw: unknown): Task | null {
-  if (!raw || typeof raw !== "object") {
-    return null;
-  }
-  const r = raw as Record<string, unknown>;
-  const id = typeof r.id === "string" ? r.id : null;
-  const subject = typeof r.subject === "string" ? r.subject : null;
-  if (!id || !subject) {
-    return null;
-  }
-  const status = coerceStatus(r.status) ?? "pending";
-  if (status === "deleted") {
-    return null;
-  }
-
-  return {
-    id,
-    subject,
-    status,
-    description: typeof r.description === "string" ? r.description : undefined,
-    activeForm: typeof r.activeForm === "string" ? r.activeForm : undefined,
-    owner: typeof r.owner === "string" ? r.owner : undefined,
-    blocks: Array.isArray(r.blocks)
-      ? (r.blocks.filter((x) => typeof x === "string") as string[])
-      : undefined,
-    blockedBy: Array.isArray(r.blockedBy)
-      ? (r.blockedBy.filter((x) => typeof x === "string") as string[])
-      : undefined,
-    metadata:
-      r.metadata && typeof r.metadata === "object"
-        ? (r.metadata as Record<string, unknown>)
-        : undefined,
-  };
-}
-
-function upsertTask(tasks: Map<string, Task>, order: string[], task: Task) {
-  if (!tasks.has(task.id)) {
-    order.push(task.id);
-  }
-  tasks.set(task.id, { ...tasks.get(task.id), ...task });
-}
-
-function deleteTask(tasks: Map<string, Task>, order: string[], id: string) {
-  if (tasks.delete(id)) {
-    const idx = order.indexOf(id);
-    if (idx !== -1) {
-      order.splice(idx, 1);
-    }
-  }
-}
-
-/**
- * Resolve a `TaskCreate` tool call to a `Task` object. The id can live in
- * one of two places:
- *  - the parsed JSON result (when the harness echoes a full task back), or
- *  - the result text `"Task #<id> created successfully: ..."` (regex), in
- *    which case we synthesize the rest from the input.
- *
- * Returns `null` if neither path yields enough to build a task.
- */
-function coerceTaskFromCreateCall(tc: ToolCallInfo): Task | null {
-  if (tc.name !== "TaskCreate") {
-    return null;
-  }
-  const parsedResult = tryParseJson(resultText(tc.result));
-  const fromResult = coerceTask(parsedResult);
-  if (fromResult) {
-    return fromResult;
-  }
-  const input = tc.input as {
-    activeForm?: unknown;
-    description?: unknown;
-    subject?: unknown;
-  };
-  const subject = typeof input.subject === "string" ? input.subject : null;
-  if (!subject) {
-    return null;
-  }
-  const idMatch = (resultText(tc.result) ?? "").match(/Task #(\S+) created/);
-  const id = idMatch?.[1] ?? `pending:${tc.id}`;
-
-  return {
-    id,
-    subject,
-    status: "pending",
-    description:
-      typeof input.description === "string" ? input.description : undefined,
-    activeForm:
-      typeof input.activeForm === "string" ? input.activeForm : undefined,
-  };
-}
-
-/**
- * Walk the agent's message history looking for the `TaskCreate` whose
- * resolved id matches `taskId`. Used to recover a single task entry when a
- * later `TaskUpdate` fires for an id that's missing from the live map
- * (typically because the user cleared the task list in between).
- */
-function findTaskCreateForId(
-  messages: ConversationMessage[],
-  taskId: string,
-): Task | null {
-  const walk = (calls: ToolCallInfo[]): Task | null => {
-    for (const tc of calls) {
-      if (tc.name === "TaskCreate") {
-        const t = coerceTaskFromCreateCall(tc);
-        if (t && t.id === taskId) {
-          return t;
-        }
-      }
-      if (tc.children) {
-        for (const child of tc.children) {
-          if (child.kind === "tool_use") {
-            const found = walk([child.toolCall]);
-            if (found) {
-              return found;
-            }
-          }
-        }
-      }
-    }
-
-    return null;
-  };
-
-  for (const msg of messages) {
-    const found = walk(msg.toolCalls);
-    if (found) {
-      return found;
-    }
-  }
-
-  return null;
-}
-
-function applyTaskCall(
-  tc: ToolCallInfo,
-  tasks: Map<string, Task>,
-  order: string[],
-  messages?: ConversationMessage[],
-) {
-  const parsedResult = tryParseJson(resultText(tc.result));
-
-  if (tc.name === "TaskList") {
-    // Authoritative snapshot when the agent calls TaskList. Replace everything
-    // it returns; keep any locally-tracked tasks not in the snapshot (they may
-    // have been created by a sibling call not yet folded).
-    if (Array.isArray(parsedResult)) {
-      for (const raw of parsedResult) {
-        const t = coerceTask(raw);
-        if (t) {
-          upsertTask(tasks, order, t);
-        }
-      }
-    }
-
-    return;
-  }
-
-  if (tc.name === "TaskGet") {
-    const t = coerceTask(parsedResult);
-    if (t) {
-      upsertTask(tasks, order, t);
-    }
-
-    return;
-  }
-
-  if (tc.name === "TaskCreate") {
-    const created = coerceTaskFromCreateCall(tc);
-    if (created) {
-      upsertTask(tasks, order, created);
-    }
-
-    return;
-  }
-
-  if (tc.name === "TaskUpdate") {
-    const input = tc.input as {
-      activeForm?: unknown;
-      addBlockedBy?: unknown;
-      addBlocks?: unknown;
-      description?: unknown;
-      owner?: unknown;
-      status?: unknown;
-      subject?: unknown;
-      taskId?: unknown;
-    };
-    const taskId = typeof input.taskId === "string" ? input.taskId : null;
-    if (!taskId) {
-      return;
-    }
-    const status = coerceStatus(input.status);
-    if (status === "deleted") {
-      deleteTask(tasks, order, taskId);
-
-      return;
-    }
-    let existing = tasks.get(taskId);
-    if (!existing && messages) {
-      // The task was likely cleared by the user; recover just this one entry
-      // from the originating TaskCreate in history so the update merges onto
-      // a real subject instead of fabricating a row labelled with the raw id.
-      const recovered = findTaskCreateForId(messages, taskId);
-      if (!recovered) {
-        return;
-      }
-      upsertTask(tasks, order, recovered);
-      existing = tasks.get(taskId);
-    } else if (!existing) {
-      return;
-    }
-    const merged: Task = {
-      id: taskId,
-      subject:
-        typeof input.subject === "string"
-          ? input.subject
-          : (existing?.subject ?? taskId),
-      status: status ?? existing?.status ?? "pending",
-      description:
-        typeof input.description === "string"
-          ? input.description
-          : existing?.description,
-      activeForm:
-        typeof input.activeForm === "string"
-          ? input.activeForm
-          : existing?.activeForm,
-      owner: typeof input.owner === "string" ? input.owner : existing?.owner,
-      blocks: Array.isArray(input.addBlocks)
-        ? [
-            ...(existing?.blocks ?? []),
-            ...(input.addBlocks.filter(
-              (x) => typeof x === "string",
-            ) as string[]),
-          ]
-        : existing?.blocks,
-      blockedBy: Array.isArray(input.addBlockedBy)
-        ? [
-            ...(existing?.blockedBy ?? []),
-            ...(input.addBlockedBy.filter(
-              (x) => typeof x === "string",
-            ) as string[]),
-          ]
-        : existing?.blockedBy,
-    };
-    upsertTask(tasks, order, merged);
-  }
-}
-
-function extractTasksFromMessages(messages: ConversationMessage[]): {
-  order: string[];
-  tasks: Record<string, Task>;
-} | null {
-  const tasks = new Map<string, Task>();
-  const order: string[] = [];
-  let sawAny = false;
-
-  const walk = (calls: ToolCallInfo[]) => {
-    for (const tc of calls) {
-      if (TASK_TOOL_NAMES.has(tc.name)) {
-        sawAny = true;
-        applyTaskCall(tc, tasks, order);
-      }
-      if (tc.children) {
-        for (const child of tc.children) {
-          if (child.kind === "tool_use") {
-            walk([child.toolCall]);
-          }
-        }
-      }
-    }
-  };
-
-  for (const msg of messages) {
-    walk(msg.toolCalls);
-  }
-
-  if (!sawAny) {
-    return null;
-  }
-
-  return { tasks: Object.fromEntries(tasks), order };
-}
-
-/**
- * Apply a batch of Task* tool calls on top of the existing snapshot. Used on
- * the live event path so the task list updates incrementally — never by
- * re-deriving from full message history, which would resurrect entries the
- * user has explicitly cleared.
- */
-function applyTaskCallsLive(
-  existingTasks: Record<string, Task> | null | undefined,
-  existingOrder: string[] | undefined,
-  calls: ToolCallInfo[],
-  messages?: ConversationMessage[],
-): { order: string[]; tasks: Record<string, Task> } | null {
-  if (calls.length === 0) {
-    return null;
-  }
-  const tasks = new Map<string, Task>(Object.entries(existingTasks ?? {}));
-  const order = [...(existingOrder ?? [])];
-  for (const tc of calls) {
-    applyTaskCall(tc, tasks, order, messages);
-  }
-
-  return { tasks: Object.fromEntries(tasks), order };
-}
-
-/**
- * Walk a tool call tree and apply `updater` to the call whose id matches.
- * Returns a new tool call with updated descendants, or null if not found.
- */
-function updateToolCallTree(
-  tc: ToolCallInfo,
-  id: string,
-  updater: (tc: ToolCallInfo) => ToolCallInfo,
-): ToolCallInfo | null {
-  if (tc.id === id) {
-    return updater(tc);
-  }
-  if (!tc.children || tc.children.length === 0) {
-    return null;
-  }
-  let changed = false;
-  const nextChildren = tc.children.map((child) => {
-    if (child.kind !== "tool_use") {
-      return child;
-    }
-    const updated = updateToolCallTree(child.toolCall, id, updater);
-    if (updated) {
-      changed = true;
-
-      return { kind: "tool_use" as const, toolCall: updated };
-    }
-
-    return child;
-  });
-
-  return changed ? { ...tc, children: nextChildren } : null;
-}
-
-/**
- * Scan all messages for the tool call with `id`, applying `updater`. Returns
- * new messages array if found (with that tool call updated), or null.
- */
-function updateToolCallInMessages(
-  messages: ConversationMessage[],
-  id: string,
-  updater: (tc: ToolCallInfo) => ToolCallInfo,
-): ConversationMessage[] | null {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i];
-    let changed = false;
-    const nextCalls = msg.toolCalls.map((tc) => {
-      const updated = updateToolCallTree(tc, id, updater);
-      if (updated) {
-        changed = true;
-
-        return updated;
-      }
-
-      return tc;
-    });
-    if (changed) {
-      const next = [...messages];
-      next[i] = { ...msg, toolCalls: nextCalls };
-
-      return next;
-    }
-  }
-
-  return null;
 }
 
 const conversationStore = create<ConversationStoreData>(() => ({
@@ -764,20 +193,24 @@ export function clearAgentUnread(agentId: string) {
   });
 }
 
-export function appendSystemMessage(agentId: string, msg: ConversationMessage) {
+/** Apply a pure update to one agent's conversation, creating it if needed. */
+function updateConversation(
+  agentId: string,
+  update: (existing: AgentConversation) => AgentConversation,
+) {
   conversationStore.setState((state) => {
     const existing = state.conversations[agentId] ?? emptyConversation();
+    const next = update(existing);
+    if (next === existing) {
+      return state;
+    }
 
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: {
-          ...existing,
-          messages: [...existing.messages, msg],
-        },
-      },
-    };
+    return { conversations: { ...state.conversations, [agentId]: next } };
   });
+}
+
+export function appendSystemMessage(agentId: string, msg: ConversationMessage) {
+  updateConversation(agentId, (c) => withSystemMessage(c, msg));
 }
 
 /**
@@ -788,20 +221,7 @@ export function appendInjectedPrompt(
   agentId: string,
   msg: ConversationMessage,
 ) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId] ?? emptyConversation();
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: {
-          ...existing,
-          resuming: false,
-          messages: [...existing.messages, msg],
-        },
-      },
-    };
-  });
+  updateConversation(agentId, (c) => withInjectedPrompt(c, msg));
 }
 
 export function migrateConversation(oldAgentId: string, newAgentId: string) {
@@ -832,7 +252,6 @@ export function migrateConversation(oldAgentId: string, newAgentId: string) {
     return { conversations: next, unreadMessages, pendingUnread };
   });
 }
-
 export function addUserMessage(
   agentId: string,
   text: string,
@@ -840,396 +259,47 @@ export function addUserMessage(
   checkpointId?: string,
   author?: string,
 ) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId] ?? emptyConversation();
-    const msg: ConversationMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      textBlocks: [text],
-      toolCalls: [],
-      timestamp: Date.now(),
-      images: images?.length ? images : undefined,
-      checkpointId,
-      author,
-    };
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: {
-          ...existing,
-          resuming: false,
-          lastEventType: "user_sent",
-          messages: [...existing.messages, msg],
-        },
-      },
-    };
-  });
-}
-
-function reportedContextWindow(
-  event: Extract<LlmStreamEvent, { type: "result" }>,
-  existing: AgentConversation,
-): number | undefined {
-  const size = contextWindowFromModelUsage(event.modelUsage, existing.model);
-  if (!size) {
-    return existing.contextWindow;
-  }
-  if (existing.model) {
-    rememberContextWindow(existing.model, size);
-  }
-
-  return size;
+  updateConversation(agentId, (c) =>
+    withUserMessage(c, text, { images, checkpointId, author }),
+  );
 }
 
 export function appendEvent(agentId: string, event: LlmStreamEvent) {
   conversationStore.setState((state) => {
     const existing = state.conversations[agentId] ?? emptyConversation();
-
-    // When resuming a session, the CLI replays the last turn. Skip those
-    // events so we don't duplicate messages. Let the init event through
-    // (to refresh session metadata), and clear the flag on the first result.
-    if (existing.resuming) {
-      if (event.type === "result") {
-        return {
-          conversations: {
-            ...state.conversations,
-            [agentId]: {
-              ...existing,
-              contextWindow: reportedContextWindow(event, existing),
-              resuming: false,
-            },
-          },
-        };
-      }
-
-      if (event.type !== "system") {
-        return state;
-      }
+    const next = reduceEvent(existing, event);
+    if (next === existing) {
+      return state;
     }
-
-    if (event.type === "system" && event.subtype === "init") {
-      const existingByName = new Map<string, SlashCommand>(
-        (existing.slashCommands ?? []).map((c) => [c.name, c]),
+    if (event.type === "result" && next.model) {
+      const size = contextWindowFromModelUsage(
+        event.modelUsage,
+        existing.model,
       );
-
-      const allNames = new Set([
-        ...(event.slash_commands ?? []),
-        ...(event.skills ?? []),
-      ]);
-      for (const name of allNames) {
-        if (!existingByName.has(name)) {
-          existingByName.set(name, {
-            name,
-            description: "",
-            argumentHint: "",
-          });
-        }
+      if (size) {
+        rememberContextWindow(next.model, size);
       }
-
-      return {
-        conversations: {
-          ...state.conversations,
-          [agentId]: {
-            ...existing,
-            lastEventType: event.type,
-            model: event.model,
-            sessionId: event.session_id,
-            tools: event.tools.map((t) => t.name),
-            slashCommands: Array.from(existingByName.values()),
-          },
-        },
-      };
     }
 
-    if (event.type === "system" && event.subtype === "session_state_changed") {
-      return {
-        conversations: {
-          ...state.conversations,
-          [agentId]: {
-            ...existing,
-            lastEventType: `system:${event.subtype}:${event.state}`,
-          },
-        },
-      };
-    }
+    // A new assistant message is pending-unread for this turn, graduating to
+    // unread only once the agent goes idle — so a streaming agent doesn't keep
+    // re-asserting unread state. Tool-call-only messages have nothing to read.
+    const added =
+      next.messages.length > existing.messages.length
+        ? next.messages[next.messages.length - 1]
+        : null;
+    const readable =
+      event.type === "assistant" &&
+      added?.role === "assistant" &&
+      (added.textBlocks.some((t) => t.trim().length > 0) ||
+        added.toolCalls.length === 0);
 
-    if (event.type === "system" && event.subtype === "api_retry") {
-      const retryMsg: ConversationMessage = {
-        id: crypto.randomUUID(),
-        role: "system",
-        textBlocks: [
-          `API retry ${event.attempt}/${event.max_retries}` +
-            (event.error_status ? ` (HTTP ${event.error_status})` : "") +
-            ` — retrying in ${Math.round(event.retry_delay_ms / 1000)}s`,
-        ],
-        toolCalls: [],
-        timestamp: Date.now(),
-      };
-
-      return {
-        conversations: {
-          ...state.conversations,
-          [agentId]: {
-            ...existing,
-            lastEventType: `system:${event.subtype}`,
-            messages: [...existing.messages, retryMsg],
-          },
-        },
-      };
-    }
-
-    if (event.type === "assistant") {
-      const content: LlmContentBlock[] = event.message.content ?? [];
-
-      // Sub-agent messages: nest under the parent Task/Agent tool call.
-      if (event.parent_tool_use_id) {
-        const parentId = event.parent_tool_use_id;
-        const newChildren: ToolCallChild[] = content.map((block) => {
-          if (block.type === "text") {
-            return { kind: "text", text: block.text };
-          }
-
-          return {
-            kind: "tool_use",
-            toolCall: {
-              id: block.id,
-              name: block.name,
-              input: block.input,
-            },
-          };
-        });
-        const nextMessages = updateToolCallInMessages(
-          existing.messages,
-          parentId,
-          (tc) => ({
-            ...tc,
-            children: [...(tc.children ?? []), ...newChildren],
-          }),
-        );
-        if (!nextMessages) {
-          return state;
-        }
-
-        return {
-          conversations: {
-            ...state.conversations,
-            [agentId]: {
-              ...existing,
-              lastEventType: event.type,
-              messages: nextMessages,
-            },
-          },
-        };
-      }
-
-      const textBlocks: string[] = [];
-      const toolCalls: ToolCallInfo[] = [];
-
-      for (const block of content) {
-        if (block.type === "text") {
-          textBlocks.push(block.text);
-        } else if (block.type === "tool_use") {
-          toolCalls.push({
-            id: block.id,
-            name: block.name,
-            input: block.input,
-          });
-        }
-      }
-
-      const assistantMsg: ConversationMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        textBlocks,
-        toolCalls,
-        timestamp: Date.now(),
-        usage: event.message.usage,
-      };
-
-      const lastTool =
-        toolCalls.length > 0 ? toolCalls[toolCalls.length - 1] : null;
-
-      // Update the agent's todo list whenever a TodoWrite tool call arrives.
-      // Later calls overwrite earlier ones so the stored snapshot always
-      // reflects the most recent agent-authored state.
-      const newTodos = extractTodos(toolCalls);
-
-      const nextMessages = [...existing.messages, assistantMsg];
-
-      // Stash the new assistant message as pending-unread for this turn.
-      // It only graduates to the unread set on the `result` event, so an
-      // actively-streaming agent doesn't keep re-asserting unread state as
-      // each chunk arrives. Tool-call-only turns are skipped — the user has
-      // nothing to "read" in those.
-      const hasReadable =
-        textBlocks.some((t) => t.trim().length > 0) || toolCalls.length === 0;
-      const nextPending = hasReadable
-        ? addUnreadId(state.pendingUnread, agentId, assistantMsg.id)
-        : state.pendingUnread;
-
-      return {
-        conversations: {
-          ...state.conversations,
-          [agentId]: {
-            ...existing,
-            lastEventType: event.type,
-            model: existing.model ?? event.message.model,
-            messages: nextMessages,
-            pendingToolName: lastTool?.name ?? null,
-            pendingToolInput: lastTool?.input ?? null,
-            todos: newTodos ?? existing.todos,
-          },
-        },
-        pendingUnread: nextPending,
-      };
-    }
-
-    if (event.type === "user") {
-      const results = event.message.content ?? [];
-      if (results.length === 0) {
-        return state;
-      }
-
-      // Sub-agent tool_results: attach to matching children within the parent.
-      if (event.parent_tool_use_id) {
-        let messages = existing.messages;
-        const taskCallsWithResults: ToolCallInfo[] = [];
-        for (const match of results) {
-          const next = updateToolCallInMessages(
-            messages,
-            match.tool_use_id,
-            (tc) => {
-              const result = toToolResult(match.content);
-              const isDenyAnswerFlow =
-                tc.name === "AskUserQuestion" || tc.name === "ExitPlanMode";
-              const nextTc: ToolCallInfo = {
-                ...tc,
-                result,
-                isError: isDenyAnswerFlow ? false : (match.is_error ?? false),
-              };
-              if (TASK_TOOL_NAMES.has(nextTc.name)) {
-                taskCallsWithResults.push(nextTc);
-              }
-
-              return nextTc;
-            },
-          );
-          if (next) {
-            messages = next;
-          }
-        }
-        if (messages === existing.messages) {
-          return state;
-        }
-
-        const tasksUpdate = applyTaskCallsLive(
-          existing.tasks,
-          existing.taskOrder,
-          taskCallsWithResults,
-          messages,
-        );
-
-        return {
-          conversations: {
-            ...state.conversations,
-            [agentId]: {
-              ...existing,
-              lastEventType: event.type,
-              messages,
-              taskOrder: tasksUpdate?.order ?? existing.taskOrder,
-              tasks: tasksUpdate ? tasksUpdate.tasks : (existing.tasks ?? null),
-            },
-          },
-        };
-      }
-
-      // Match each result to the tool call that owns its id anywhere in the
-      // history — not just the most recent assistant message. A background
-      // Agent's result lands many turns after its call, so a last-message-only
-      // scan would drop it and the subagent's output would never appear.
-      let messages = existing.messages;
-      const taskCallsWithResults: ToolCallInfo[] = [];
-      for (const match of results) {
-        const next = updateToolCallInMessages(
-          messages,
-          match.tool_use_id,
-          (tc) => {
-            const result = toToolResult(match.content);
-
-            // AskUserQuestion and ExitPlanMode use a deny-with-message pattern to
-            // pass the user's answer back — the CLI marks the tool_result as
-            // is_error, but from the user's POV it's a successful answer.
-            const isDenyAnswerFlow =
-              tc.name === "AskUserQuestion" || tc.name === "ExitPlanMode";
-
-            const nextTc: ToolCallInfo = {
-              ...tc,
-              result,
-              isError: isDenyAnswerFlow ? false : (match.is_error ?? false),
-            };
-            if (TASK_TOOL_NAMES.has(nextTc.name)) {
-              taskCallsWithResults.push(nextTc);
-            }
-
-            return nextTc;
-          },
-        );
-        if (next) {
-          messages = next;
-        }
-      }
-
-      const tasksUpdate = applyTaskCallsLive(
-        existing.tasks,
-        existing.taskOrder,
-        taskCallsWithResults,
-        messages,
-      );
-
-      return {
-        conversations: {
-          ...state.conversations,
-          [agentId]: {
-            ...existing,
-            lastEventType: event.type,
-            messages,
-            pendingToolName: null,
-            pendingToolInput: null,
-            taskOrder: tasksUpdate?.order ?? existing.taskOrder,
-            tasks: tasksUpdate ? tasksUpdate.tasks : (existing.tasks ?? null),
-          },
-        },
-      };
-    }
-
-    if (event.type === "result") {
-      const newTotal = (existing.totalCost ?? 0) + (event.total_cost_usd ?? 0);
-      const newDuration =
-        (existing.totalDuration ?? 0) + (event.duration_ms ?? 0);
-
-      // pendingUnread is flushed when the agent actually transitions to idle
-      // (see flushPendingUnread). A `result` only marks the end of a single
-      // turn — if a queued message drains immediately, the agent goes back to
-      // running and shouldn't show an unread badge yet.
-
-      return {
-        conversations: {
-          ...state.conversations,
-          [agentId]: {
-            ...existing,
-            lastEventType: event.type,
-            pendingToolName: null,
-            pendingToolInput: null,
-            contextWindow: reportedContextWindow(event, existing),
-            totalCost: newTotal,
-            totalDuration: newDuration,
-          },
-        },
-      };
-    }
-
-    return state;
+    return {
+      conversations: { ...state.conversations, [agentId]: next },
+      ...(readable && added
+        ? { pendingUnread: addUnreadId(state.pendingUnread, agentId, added.id) }
+        : {}),
+    };
   });
 }
 
@@ -1237,20 +307,7 @@ export function setCapabilities(
   agentId: string,
   capabilities: AgentCapabilities,
 ) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId] ?? emptyConversation();
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: {
-          ...existing,
-          capabilities,
-          slashCommands: capabilities.commands,
-        },
-      },
-    };
-  });
+  updateConversation(agentId, (c) => withCapabilities(c, capabilities));
   // Cache to localStorage so the start-agent / new-session dialogs can show
   // a real model + slash-command list immediately on the next launch,
   // without waiting for an agent to spawn first.
@@ -1265,84 +322,45 @@ export function setCapabilities(
 }
 
 export function setModel(agentId: string, model: string) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId] ?? emptyConversation();
+  updateConversation(agentId, (c) => ({ ...c, model }));
+}
 
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: { ...existing, model },
-      },
-    };
+/** Walks the full tool-call tree: a subagent's call nests under its parent. */
+function setPermissionFlag(
+  agentId: string,
+  toolUseId: string,
+  pending: boolean,
+): boolean {
+  let found = false;
+  conversationStore.setState((state) => {
+    const existing = state.conversations[agentId];
+    const next = existing
+      ? withPermissionPending(existing, toolUseId, pending)
+      : null;
+    if (!next) {
+      return state;
+    }
+    found = true;
+
+    return { conversations: { ...state.conversations, [agentId]: next } };
   });
+
+  return found;
 }
 
 export function setPermissionPending(
   agentId: string,
   request: PermissionRequest,
 ): boolean {
-  let found = false;
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId];
-    if (!existing) {
-      return state;
-    }
-
-    // Walk the full tool-call tree: a subagent's tool call lives nested under
-    // its parent Agent/Task call, not at the top level.
-    const messages = updateToolCallInMessages(
-      existing.messages,
-      request.tool_use_id,
-      (tc) => ({ ...tc, pendingPermission: true }),
-    );
-    if (!messages) {
-      return state;
-    }
-    found = true;
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: { ...existing, messages },
-      },
-    };
-  });
-
-  return found;
+  return setPermissionFlag(agentId, request.tool_use_id, true);
 }
 
 export function clearPermission(agentId: string, toolUseId: string) {
-  setPermissionResolved(agentId, toolUseId);
+  setPermissionFlag(agentId, toolUseId, false);
 }
 
 export function cancelPermission(agentId: string, toolUseId: string) {
-  setPermissionResolved(agentId, toolUseId);
-}
-
-/** Clear `pendingPermission` on the (possibly nested) tool call. */
-function setPermissionResolved(agentId: string, toolUseId: string) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId];
-    if (!existing) {
-      return state;
-    }
-
-    const messages = updateToolCallInMessages(
-      existing.messages,
-      toolUseId,
-      (tc) => ({ ...tc, pendingPermission: false }),
-    );
-    if (!messages) {
-      return state;
-    }
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: { ...existing, messages },
-      },
-    };
-  });
+  setPermissionFlag(agentId, toolUseId, false);
 }
 
 export function loadSavedMessages(
@@ -1353,25 +371,17 @@ export function loadSavedMessages(
   resuming?: boolean,
   title?: string,
 ) {
-  conversationStore.setState((state) => {
-    const tasksSnapshot = extractTasksFromMessages(messages);
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: {
-          messages,
-          model,
-          sessionId,
-          resuming,
-          title,
-          todos: findLatestTodosInMessages(messages),
-          tasks: tasksSnapshot?.tasks ?? null,
-          taskOrder: tasksSnapshot?.order,
-        },
-      },
-    };
-  });
+  conversationStore.setState((state) => ({
+    conversations: {
+      ...state.conversations,
+      [agentId]: fromSavedMessages(messages, {
+        model,
+        sessionId,
+        resuming,
+        title,
+      }),
+    },
+  }));
 }
 
 export function clearAgentTasks(agentId: string) {

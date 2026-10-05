@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toToolResult } from "./toolResult";
+import { toToolResult } from "./toolCalls";
 
 describe("toToolResult", () => {
   it("passes strings through", () => {
