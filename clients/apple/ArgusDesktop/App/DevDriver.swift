@@ -371,6 +371,17 @@
           Self.lastPick = path ?? "(cancelled)"
         }
         return ["ok": true]
+      case "uploadDrop":
+        // What dropping files on a session's chat does, without a chat open.
+        guard let model = AppDelegate.current?.model, let paths = command["paths"] as? [String],
+          let session = command["session"] as? String
+        else { return ["error": "paths, session?"] }
+        Task {
+          let dropped = await model.store.hostPaths(
+            forDropped: paths.map { URL(fileURLWithPath: $0) }, sessionId: session)
+          Self.lastPick = (dropped.paths + dropped.errors).joined(separator: "\n")
+        }
+        return ["ok": true]
       case "lastPick":
         return ["path": Self.lastPick]
       case "history":

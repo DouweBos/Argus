@@ -25,6 +25,9 @@ public struct HostStoreHooks: Sendable {
   /// A notification for this agent was clicked; navigate to it.
   public var agentNotificationClicked:
     @MainActor @Sendable (_ agentId: String, _ sessionId: String) -> Void
+  /// Whether a session runs on another machine, so a file dropped here has
+  /// to be uploaded before its agent can open it.
+  public var sessionIsRemote: @MainActor @Sendable (_ sessionId: String) -> Bool = { _ in false }
 
   public init(
     track: @escaping @MainActor @Sendable (StoreEvent) -> Void = { _ in },
