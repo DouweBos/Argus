@@ -36,6 +36,9 @@ public final class LiveAgents {
   /// Agents with a message sent but no idle back yet. Keeps overlapping drains
   /// from dispatching two queued messages into one turn.
   @ObservationIgnored var inflight: Set<String> = []
+  /// First prompts drawn from `agent:started`, so the host's echo of the same
+  /// send isn't drawn twice.
+  @ObservationIgnored var seededPrompts: [String: String] = [:]
   @ObservationIgnored var finishedTurns: [String: FinishedTurn] = [:]
   @ObservationIgnored var saveTimers: [String: Task<Void, Never>] = [:]
   @ObservationIgnored var titleRequested: Set<String> = []
@@ -154,6 +157,9 @@ public final class LiveAgents {
       // early idle mustn't settle the agent while it is still on it.
       inflight.insert(id)
       setStatus(id, .running)
+      // Its `remote-message` usually goes out before anyone subscribes.
+      mutate(id) { $0.addUserMessage(prompt) }
+      seededPrompts[id] = prompt
     }
     await track(id)
   }
@@ -165,6 +171,7 @@ public final class LiveAgents {
     conversations[agentId] = nil
     hostStatus[agentId] = nil
     inflight.remove(agentId)
+    seededPrompts[agentId] = nil
     finishedTurns[agentId] = nil
     rowCache[agentId] = nil
     titleRequested.remove(agentId)
