@@ -140,6 +140,17 @@ struct HostStoreTests {
     #expect(store.answered.contains(store.promptKey("a1", "t1")))
   }
 
+  @Test("an answer the host refuses brings its prompt back")
+  func refusedDecision() async {
+    let backend = FakeBackend()
+    backend.fail(.permissionRespond)
+    let store = HostStore()
+    await store.attach(backend)
+    await store.respond(agentId: "a1", toolUseId: "t1", decision: "allow")
+    #expect(!store.answered.contains(store.promptKey("a1", "t1")))
+    #expect(store.lastError != nil)
+  }
+
   @Test("reset forgets the previous computer")
   func reset() async throws {
     let store = HostStore()
