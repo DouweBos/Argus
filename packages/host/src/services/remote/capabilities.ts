@@ -588,8 +588,8 @@ export function toRemoteAgentCapabilities(
 // --- Transcript mapping (ConversationMessage → RemoteMessage) --------------
 
 /**
- * Raw snapshot shapes — the JSON the renderer publishes via
- * `publishAgentSnapshot` (camelCase mirror of `AgentConversation`). Deliberately
+ * Raw snapshot shapes — the JSON the conversation owner (a UI, or the host's
+ * own driver) publishes via `publishAgentSnapshot` (an `AgentConversation`). Deliberately
  * loose: fields we don't forward are omitted.
  */
 type RawResultBlock =
@@ -1495,9 +1495,9 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         runner_id,
       ),
     );
-    // Announce the agent exactly like the start_agent IPC does — the desktop
-    // renderer listens for this to track the agent, subscribe to its event
-    // stream, and publish the transcript snapshots the remote monitor reads.
+    // Announce the agent exactly like the start_agent IPC does — the
+    // conversation owner (a UI, or the host itself) listens for this to track
+    // the agent and publish the transcript snapshots the remote monitor reads.
     // Without it the agent is a backend-only "ghost": never shown on the
     // desktop and producing no snapshot for us to read back.
     emitHostEvent("agent:started", info);
