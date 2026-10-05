@@ -7,6 +7,7 @@ import type {
   PermissionRequest,
 } from "./types";
 import type { AgentConversation } from "../stores/conversationStore";
+import { parseCliDiagnostic } from "@argus/host/services/agent/conversation/cliDiagnostics";
 import { error } from "@logger";
 import {
   addAgent,
@@ -46,7 +47,6 @@ import {
   notifyPermissionRequested,
 } from "./agentNotifications";
 import { deriveTitle } from "./chatHistory";
-import { parseCliDiagnostic } from "./cliDiagnostics";
 import { type UnlistenFn, listen } from "./events";
 import {
   createCheckpoint,
