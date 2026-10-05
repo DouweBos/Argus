@@ -11,6 +11,19 @@ struct MainWindow: View {
   @State private var sidebarAutoHidden = false
   @State private var windowWidth: CGFloat = 0
 
+  /// The device whose details are open, as the route says.
+  private var deviceSelection: Binding<DeviceRef?> {
+    Binding(
+      get: {
+        guard case .device(let platform, let key) = model.route else { return nil }
+        return DeviceRef(platform: platform, deviceKey: key)
+      },
+      set: { ref in
+        let next: DesktopRoute = ref.map { .device(platform: $0.platform, deviceKey: $0.deviceKey) } ?? .devices
+        if next != model.route { model.navigate(next) }
+      })
+  }
+
   var body: some View {
     NavigationSplitView(columnVisibility: $columns) {
       SidebarView()
@@ -27,8 +40,8 @@ struct MainWindow: View {
           AgentsOverview()
         } else if model.route == .runtimes {
           RuntimesOverview()
-        } else if model.route == .devices {
-          DevicesScreen()
+        } else if model.route.isDevices {
+          DevicesScreen(selection: deviceSelection)
         } else if model.route == .pullRequests {
           PullRequestsScreen()
         } else if case .pullRequest(let repo, let number) = model.route {

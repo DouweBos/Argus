@@ -9,6 +9,9 @@ struct DesktopRouteTests {
     ("/agents", .agents),
     ("/runtimes", .runtimes),
     ("/devices", .devices),
+    ("/devices/ios/ABC-123", .device(platform: "ios", deviceKey: "ABC-123")),
+    ("/devices/android/emulator-5554", .device(platform: "android", deviceKey: "emulator-5554")),
+    ("/devices/android/avd%3APixel_9", .device(platform: "android", deviceKey: "avd:Pixel_9")),
     ("/inbox", .inbox),
     ("/inbox/proposals/p1", .proposal(id: "p1")),
     ("/notifications", .notifications),
@@ -60,14 +63,14 @@ struct DesktopRouteTests {
   }
 
   @Test(arguments: [
-    "/nope", "/sessions", "/sessions/s1/git/nope", "/pull-requests/a/b/notanumber", "/agents/extra",
+    "/nope", "/sessions", "/sessions/s1/git/nope", "/devices/ios", "/devices/ios/a/b", "/pull-requests/a/b/notanumber", "/agents/extra",
   ])
   func rejectsUnknownPaths(path: String) {
     #expect(DesktopRoute(path: path) == nil)
   }
 
   @Test(arguments: [
-    DesktopRoute.home, .agents, .runtimes, .devices, .inbox, .proposal(id: "p 1"), .notifications,
+    DesktopRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox, .proposal(id: "p 1"), .notifications,
     .pullRequests, .pullRequest(repo: "o/r", number: 7), .automations, .quickRun(runId: nil),
     .quickRun(runId: "r"), .automation(id: "a", runId: nil), .automation(id: "a", runId: "r"),
     .sessionHome(id: "s"), .session(id: "s", agentId: nil), .session(id: "s", agentId: "a"),
@@ -107,5 +110,12 @@ struct DesktopRouteTests {
       == "/sessions/:sessionId/git/branches/:branchName")
     #expect(DesktopRoute.sessionGit(id: "s", view: .blame(path: "secret.txt", ref: nil)).pattern
       == "/sessions/:sessionId/git/blame")
+  }
+
+  @Test func aDeviceRouteIsTheDevicesScreenWithAPattern() {
+    let route = DesktopRoute.device(platform: "ios", deviceKey: "U1")
+    #expect(route.isDevices && DesktopRoute.devices.isDevices && !DesktopRoute.agents.isDevices)
+    #expect(route.pattern == "/devices/:platform/:deviceKey")
+    #expect(DeviceRef(platform: "ios", deviceKey: "U1") == DeviceRef(platform: "ios", deviceKey: "U1"))
   }
 }

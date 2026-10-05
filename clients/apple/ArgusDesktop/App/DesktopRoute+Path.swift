@@ -12,6 +12,7 @@ extension DesktopRoute {
     case ("agents", 1): self = .agents
     case ("runtimes", 1): self = .runtimes
     case ("devices", 1): self = .devices
+    case ("devices", 3): self = .device(platform: parts[1], deviceKey: parts[2])
     case ("inbox", 1): self = .inbox
     case ("inbox", 3) where parts[1] == "proposals": self = .proposal(id: parts[2])
     case ("notifications", 1): self = .notifications
@@ -54,6 +55,7 @@ extension DesktopRoute {
     case .agents: "/agents"
     case .runtimes: "/runtimes"
     case .devices: "/devices"
+    case .device(let platform, let key): "/devices/\(Self.encode(platform))/\(Self.encode(key))"
     case .inbox: "/inbox"
     case .proposal(let id): "/inbox/proposals/\(Self.encode(id))"
     case .notifications: "/notifications"
