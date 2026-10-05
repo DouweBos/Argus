@@ -25,9 +25,10 @@ lives in the repository (`plan/swiftui-parity.md`).
   permission prompts.
 - The runtime panel: each session's simulator, emulator or browser, live, to
   tap, type, scroll and rotate; Simulate, Inspect (the iOS UI inspector) and
-  Logs modes; devices in their own floating windows.
-- The Devices screen: every simulator and emulator, with boot, shut down and a
-  live grid.
+  Logs modes; devices in their own floating windows. DevTools for the
+  session's browser open in a window of their own.
+- The Devices screen: every simulator and emulator, with boot, shut down, a
+  live grid, and each device's details with a live picture.
 - **Git** for each session (the Git tab): the working copy with file, hunk
   and line staging, discard and commit (with amend); the history as a commit
   graph, with each commit's changes and actions (cherry-pick, revert, reset,
@@ -36,6 +37,10 @@ lives in the repository (`plan/swiftui-parity.md`).
   conflict resolution for merges, rebases and cherry-picks, branches review,
   submodules, bisect, hooks and git settings. Fetch, pull, push, new branch,
   stash and tag are in the toolbar, with undo for the last git action.
+  Commit templates, gitmoji, saved identities, Git LFS tracking, creating and
+  applying patches and an All Files list are in the working copy; when a git
+  command fails, its banner offers the fix (pull then push, a lease-protected
+  force push, publishing the branch, resolving conflicts, …).
 - **Pull Requests** in the sidebar: the pull requests that need you across
   your projects, each with its conversation, checks and changes, and opening
   a new one for a session's branch.
@@ -50,8 +55,9 @@ go through the host, exactly as in the Electron app.
   project), a Home screen with cards that fix what's missing, and **Add
   Project…** (⌘O), which can write the project's `.argus.json` for you.
 - **Settings** (⌘,): appearance, Claude accounts, agents and automation
-  defaults, LLM runners including custom ones, MCP servers, tools, the update
-  channel, and remote access — pairing a phone, its grants, push and tunnels.
+  defaults, LLM runners including custom ones, MCP servers, tools, git
+  defaults and commit signing, the update channel, and remote access —
+  pairing a phone, its grants, push and tunnels.
 - **Project Settings** from a project's menu in the sidebar: every
   `.argus.json` field, plus your own branch prefix and worktree locations.
 - **Automations**, **Quick Run**, the **Inbox** and its proposals, and
