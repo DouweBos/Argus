@@ -253,8 +253,9 @@ extension HostStore {
     hooks.track(
       .permissionAnswered(approved: decision == "allow", fromNotification: fromNotification))
     // Clear the inline form at once; the round trip only confirms it.
-    answered.insert(promptKey(agentId, toolUseId))
-    prompts.removeValue(forKey: promptKey(agentId, toolUseId))
+    let key = promptKey(agentId, toolUseId)
+    let prompt = prompts.removeValue(forKey: key)
+    answered.insert(key)
 
     guard let backend else {
       hooks.decisionUndelivered(agentId, toolUseId, decision)
@@ -286,6 +287,10 @@ extension HostStore {
         as: IgnoredResult.self)
       await loadTranscript(agentId: agentId)
     } catch {
+      // Refused or lost: put the prompt back so it can be answered again.
+      answered.remove(key)
+      if let prompt { prompts[key] = prompt }
+      lastError = Self.describe(error)
       hooks.decisionUndelivered(agentId, toolUseId, decision)
     }
   }
