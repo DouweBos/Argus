@@ -96,6 +96,8 @@ final class CommitSubjectCell: NSView {
 
   override func draw(_ dirtyRect: NSRect) {
     guard let model, let palette else { return }
+    // Views no longer clip to their bounds by default; badges and the subject would spill into Author.
+    bounds.clip()
     var x: CGFloat = 4
     if showsGraph, let node = model.node {
       let width = CommitListMetrics.graphWidth(columns: model.graphColumns)
@@ -121,6 +123,7 @@ final class CommitSubjectCell: NSView {
       .paragraphStyle: Self.truncating,
     ]
     let height = ceil(CommitListMetrics.font.boundingRectForFont.height)
+    guard bounds.width - x - 6 > 0 else { return }
     let rect = NSRect(x: x + 2, y: (bounds.height - height) / 2, width: max(0, bounds.width - x - 6), height: height)
     (model.commit.summary as NSString).draw(with: rect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine],
       attributes: attrs)
