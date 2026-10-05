@@ -84,12 +84,17 @@ struct RuntimeBrowserView: View {
       .controlSize(.small)
       .fixedSize()
       // Loopback URLs: only this Mac's own browser can be inspected from here.
-      if runtime.hostId == Hosts.local {
+      if browserHost == Hosts.local {
         navButton("DevTools", "hammer", enabled: true) { openDevTools() }
       }
     }
     .padding(.horizontal, 8)
     .frame(height: 32)
+  }
+
+  /// The machine running this session's browser.
+  private var browserHost: HostId {
+    (store.backend as? HostRouter)?.host(of: .session, sessionKey) ?? Hosts.local
   }
 
   private func openDevTools() {
