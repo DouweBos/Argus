@@ -56,7 +56,7 @@ struct AutomationEditorForm: View {
           if host.projects.isEmpty { Text("No projects are open.").foregroundStyle(.secondary) }
           ForEach(host.projects) { project in
             Toggle(project.name, isOn: member(project.repoRoot, of: \.repoRoots))
-              .help(project.repoRoot)
+              .help(HostScopedPath.path(project.repoRoot))
           }
         }
       }

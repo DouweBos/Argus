@@ -87,9 +87,11 @@ struct ChangeRowMenu: View {
     Button(entries.count > 1 ? "Copy \(entries.count) Paths" : "Copy Path") {
       Clipboard.copy(entries.map(\.path).joined(separator: "\n"))
     }
-    Button("Reveal in Finder") {
-      NSWorkspace.shared.activateFileViewerSelecting(
-        entries.map { workspace.repository.path.appendingPathComponent($0.path) })
+    if !workspace.isRemote {
+      Button("Reveal in Finder") {
+        NSWorkspace.shared.activateFileViewerSelecting(
+          entries.map { workspace.repository.path.appendingPathComponent($0.path) })
+      }
     }
     if entries.count == 1, entry.workdirStatus != .untracked, entry.indexStatus != .added {
       Divider()

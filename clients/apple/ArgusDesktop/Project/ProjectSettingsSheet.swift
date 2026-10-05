@@ -66,7 +66,7 @@ struct ProjectSettingsSheet: View {
     HStack(spacing: 10) {
       VStack(alignment: .leading, spacing: 2) {
         Text(URL(fileURLWithPath: repoRoot).lastPathComponent).font(.headline)
-        Text(repoRoot).font(.caption).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
+        Text(HostScopedPath.path(repoRoot)).font(.caption).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
       }
       Spacer()
       if let error = settings.error ?? settings.draft.validationErrors.first {

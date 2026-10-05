@@ -168,9 +168,12 @@ private struct HomeProjectCard: View {
       Button("New Session…") { model.newSessionProject = project }
       Button("Project Settings…") { model.projectSettingsRepo = project.repoRoot }
       Button("Remove from Recents") { HomeRecents.shared.hide(project.repoRoot) }
-      Divider()
-      Button("Reveal in Finder") {
-        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: project.repoRoot)])
+      // Another host's folder isn't on this Mac's disk.
+      if HostScopedPath.split(project.repoRoot) == nil {
+        Divider()
+        Button("Reveal in Finder") {
+          NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: project.repoRoot)])
+        }
       }
     }
   }
