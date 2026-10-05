@@ -93,7 +93,7 @@ extension DesktopModel {
     case .home: screen = tab.pinned && location.host == nil ? "This Mac" : "Home"
     case .agents: screen = "Agents"
     case .runtimes: screen = "Runtimes"
-    case .devices: screen = "Devices"
+    case .devices, .device: screen = "Devices"
     case .pullRequests: screen = "Pull Requests"
     case .pullRequest(let repo, let number): screen = "\(repo)#\(number)"
     case .automations, .automation, .quickRun: screen = "Automations"

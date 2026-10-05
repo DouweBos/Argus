@@ -125,7 +125,7 @@ struct SidebarView: View {
         switch model.route {
         case .agents: Self.agentsTag
         case .runtimes: Self.runtimesTag
-        case .devices: Self.devicesTag
+        case .devices, .device: Self.devicesTag
         case .pullRequests, .pullRequest: Self.pullRequestsTag
         case .inbox, .proposal: Self.inboxTag
         case .automations, .automation, .quickRun: Self.automationsTag

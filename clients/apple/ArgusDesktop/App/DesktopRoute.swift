@@ -12,6 +12,8 @@ enum DesktopRoute: Hashable {
   case sessionHome(id: String)
   /// `/devices`: every simulator, emulator and browser the host knows.
   case devices
+  /// `/devices/:platform/:deviceKey`: the devices screen with one device's details open.
+  case device(platform: String, deviceKey: String)
   /// `/sessions/:sessionId/agents`, optionally focused on one agent tab.
   case session(id: String, agentId: String?)
   /// `/sessions/:sessionId/git/:gitView`.
@@ -40,6 +42,13 @@ enum DesktopRoute: Hashable {
     }
   }
 
+  var isDevices: Bool {
+    switch self {
+    case .devices, .device: true
+    default: false
+    }
+  }
+
   var agentId: String? {
     if case .session(_, let agentId) = self { return agentId }
     return nil
@@ -58,6 +67,7 @@ enum DesktopRoute: Hashable {
     case .runtimes: "/runtimes"
     case .sessionHome: "/sessions/:sessionId/home"
     case .devices: "/devices"
+    case .device: "/devices/:platform/:deviceKey"
     case .session: "/sessions/:sessionId/agents"
     case .sessionGit(_, let view): "/sessions/:sessionId/git/\(view.segment)"
     case .pullRequests: "/pull-requests"
