@@ -98,6 +98,18 @@ private struct NavigationCommands: View {
       .keyboardShortcut("]", modifiers: .command)
       .disabled(!model.canGoForward)
     Divider()
+    Button("New Tab") { model.openTab() }
+      .keyboardShortcut("t", modifiers: [.command, .option])
+    Button("Close Tab") { model.closeTab() }
+      .keyboardShortcut("w", modifiers: .command)
+      .disabled(model.activeTab?.pinned ?? true)
+    Button("Show Next Tab") { model.cycleTab(by: 1) }
+      .keyboardShortcut(.tab, modifiers: .control)
+      .disabled(model.tabs.count < 2)
+    Button("Show Previous Tab") { model.cycleTab(by: -1) }
+      .keyboardShortcut(.tab, modifiers: [.control, .shift])
+      .disabled(model.tabs.count < 2)
+    Divider()
     Button("Inbox") { model.navigate(.inbox) }
       .keyboardShortcut("i", modifiers: [.command, .shift])
     Button("Automations") { model.navigate(.automations) }

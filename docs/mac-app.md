@@ -74,6 +74,13 @@ headless Argus server, or `argus-host` — as well as its own:
   of the sidebar narrows it to one machine and shows that machine on the
   screens that aren't about one session (Home, Devices, Automations, Inbox,
   Settings).
+- Window tabs keep machines apart: **Open in New Tab** from the machines menu
+  or a session's menu (⌥⌘T for a new tab, ⌃Tab to cycle). Each tab has its
+  own back and forward, and the tabs come back when the app restarts.
+- **Add Project…** and **Browse…** for worktree locations pick a folder on
+  the machine you're looking at, browsing that machine's disk.
+- Files dropped on a remote session's chat are sent to its machine first
+  (up to 8 MB each).
 - Sessions, agents, terminals and the runtime panel of a remote project run
   on its host; the connection is end-to-end encrypted. Links still open on
   this Mac; Reveal in Finder and Open in editor aren't available for files on

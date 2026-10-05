@@ -199,6 +199,12 @@ enum MacTelemetryEvent {
     case failed
   }
 
+  enum TabAction: String {
+    case open
+    case close
+    case `switch`
+  }
+
   enum FolderPickStage: String {
     case opened
     case picked
@@ -226,6 +232,8 @@ enum MacTelemetryEvent {
   /// A home card's button was used: notifications enabled, opened or dismissed,
   /// or a project removed from the recents grid.
   case homeCardActed(card: HomeCard, action: HomeCardAction)
+  /// A window tab was opened, closed or switched to.
+  case tabUsed(action: TabAction)
   /// A folder was browsed for on a paired host's disk.
   case hostFolderPicked(stage: FolderPickStage)
   /// A session's branch was renamed from its home.
@@ -302,6 +310,7 @@ enum MacTelemetryEvent {
     case .branchRenamed: "mac_branch_renamed"
     case .homeCardActed: "mac_home_card_acted"
     case .hostFolderPicked: "mac_host_folder_picked"
+    case .tabUsed: "mac_tab_used"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
     case .inputUsed: "mac_input_used"
@@ -365,6 +374,8 @@ enum MacTelemetryEvent {
       ["card": card.rawValue, "action": action.rawValue]
     case .hostFolderPicked(let stage):
       ["stage": stage.rawValue]
+    case .tabUsed(let action):
+      ["action": action.rawValue]
     case .transcriptLinkOpened(let action, let relative):
       ["action": action.rawValue, "relative": relative]
     case .transcriptFindUsed(let matches, let navigated):

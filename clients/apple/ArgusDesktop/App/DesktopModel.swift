@@ -54,12 +54,17 @@ final class DesktopModel {
   /// Sessions last left on their git panel.
   var gitPanelSessions: Set<String> = []
   private var launchRouteApplied = false
+  private var tabRestored = false
   var back: [DesktopLocation] = []
   var forward: [DesktopLocation] = []
   /// A launch route or deep link to a session no host has listed yet, held
   /// until its host connects (`resolvePendingLocation`).
   var pendingLocation: DesktopLocation?
   var pendingTimeout: Task<Void, Never>?
+  /// The window's tabs, each a saved location with its own history; the
+  /// active one's live state is `route`, `back`, `forward` and the focused host.
+  var tabs: [WindowTab] = WindowTab.restored()
+  var activeTabId = WindowTab.restoredActive()
 
   init() {
     supervisor = HostSupervisor(configuration: HostLocation.configuration())
@@ -211,8 +216,15 @@ final class DesktopModel {
     #if DEBUG
       applyDevRoute()
     #endif
+    restoreActiveTabOnce()
     await applyLaunchRoute()
     resolvePendingLocation()
+  }
+
+  private func restoreActiveTabOnce() {
+    guard !tabRestored else { return }
+    tabRestored = true
+    restoreActiveTab()
   }
 
   /// The Launch screen setting, once per launch and only while nothing else

@@ -21,6 +21,12 @@ struct MachinesMenu: View {
         }
       }
       Divider()
+      Menu("Open in New Tab") {
+        ForEach(hosts.machines, id: \.self) { id in
+          Button(hosts.label(id)) { model.openHostTab(id) }
+        }
+      }
+      Divider()
       Button("Hosts Settings…") {
         model.settingsTab = .hosts
         openSettings()
