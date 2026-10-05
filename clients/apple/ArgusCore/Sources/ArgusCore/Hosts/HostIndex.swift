@@ -36,7 +36,12 @@ public final class HostIndex: Sendable {
       devices.withLock { if !($0[id] ?? []).contains(host) { $0[id, default: []].append(host) } }
       return
     }
-    tables.withLock { $0[kind, default: [:]][id] = host }
+    tables.withLock { tables in
+      // This Mac echoes other hosts' ids (a banner it shows for their agent);
+      // that mustn't take the id away from the host that issued it.
+      if host == Hosts.local, let owner = tables[kind]?[id], owner != Hosts.local { return }
+      tables[kind, default: [:]][id] = host
+    }
   }
 
   public func host(of kind: Kind, _ id: String) -> HostId? {
