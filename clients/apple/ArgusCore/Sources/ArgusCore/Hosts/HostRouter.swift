@@ -229,9 +229,26 @@ public final class HostRouter: HostBackend {
     if let owner = index.subject(of: params) {
       return owner == Hosts.local ? .local : .remote(owner)
     }
+    // An id nobody has claimed is this Mac's until a host says otherwise —
+    // the focused host would get a local session's calls at launch.
+    if index.unknownSubject(of: params) != nil { return .local }
     if Self.mergedMethods.contains(method) { return .merged }
     let focused = focusedHost
     return focused == Hosts.local ? .local : .remote(focused)
+  }
+
+  /// How long a call naming an unclaimed id waits for its host to mention it.
+  static let indexWait: Duration = .seconds(2)
+
+  /// With other hosts attached, an id this index hasn't seen may be theirs and
+  /// in flight (a just-created agent, a list still loading); wait for it.
+  private func awaitIndexed(_ known: @Sendable () -> Bool) async {
+    guard state.withLock({ !$0.links.isEmpty }) else { return }
+    let clock = ContinuousClock()
+    let deadline = clock.now.advanced(by: Self.indexWait)
+    while !known(), clock.now < deadline {
+      try? await Task.sleep(for: .milliseconds(50))
+    }
   }
 
   private func unavailable(_ hostId: HostId, _ message: String) -> Error {
@@ -261,6 +278,9 @@ public final class HostRouter: HostBackend {
   ) async throws -> (result: JSONValue, seq: Int, host: HostId) {
     let scoped = params
     let (params, scopedHost) = HostScopedPath.unscope(scoped)
+    if Self.pinned == nil, scopedHost == nil, index.unknownSubject(of: params) != nil {
+      await awaitIndexed { self.index.unknownSubject(of: params) == nil }
+    }
     switch destination(method, params, tier: tier, scopedHost: scopedHost) {
     case .local:
       let (result, seq) = try await local.transport.sequencedRequest(
@@ -388,6 +408,9 @@ public final class HostRouter: HostBackend {
   /// Agent scopes go to the agent's host, `terminal:<id>` to the terminal's;
   /// anything pinned to the host it was pinned to.
   public func subscribe(agentId scope: String, on: Bool) async {
+    if Self.pinned == nil, index.unknownScope(scope) {
+      await awaitIndexed { !self.index.unknownScope(scope) }
+    }
     let hostId = Self.pinned ?? index.subscriptionHost(scope) ?? Hosts.local
     if hostId == Hosts.local {
       await local.subscribe(agentId: scope, on: on)

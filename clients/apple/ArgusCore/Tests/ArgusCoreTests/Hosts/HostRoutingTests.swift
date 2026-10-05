@@ -112,6 +112,19 @@ struct HostRouterTests {
         == .local)
   }
 
+  @Test func anUnclaimedIdIsThisMacsNotTheFocusedHosts() {
+    let router = router()
+    router.focusedHost = "mini"
+    let local = "6F9619FF-8B86-D011-B42D-00C04FC964FF"
+    #expect(router.destination("browser_view_ensure", json(#"{"sessionId":"\#(local)"}"#), tier: "admin") == .local)
+    // Not id-shaped: still the focused host, as before.
+    #expect(router.destination("browser_view_ensure", json(#"{"sessionId":"global"}"#), tier: "admin") == .remote("mini"))
+    router.index.remember(.session, local, host: "mini")
+    #expect(router.destination("browser_view_ensure", json(#"{"sessionId":"\#(local)"}"#), tier: "admin") == .remote("mini"))
+    #expect(router.index.unknownScope("terminal:\(UUID().uuidString)"))
+    #expect(!router.index.unknownScope("terminal:abc"))
+  }
+
   @Test func listsSpanEveryHostUnlessNarrowed() {
     let router = router()
     router.index.remember(.project, "/remote", host: "mini")

@@ -108,6 +108,27 @@ public final class HostIndex: Sendable {
     return nil
   }
 
+  /// A session, agent or terminal id the call names that no host has been
+  /// heard owning yet — say a session this Mac lists before its first answer
+  /// lands. Only uuid-shaped ids count: they are what hosts issue.
+  public func unknownSubject(of params: JSONValue) -> String? {
+    guard case .object(let object) = params else { return nil }
+    let keys = Self.sessionKeys + Self.agentKeys + Self.terminalKeys + ["id"]
+    for key in keys {
+      guard case .string(let id) = object[key], Self.isIssuedId(id) else { continue }
+      if [Kind.session, .agent, .terminal].allSatisfy({ host(of: $0, id) == nil }) { return id }
+    }
+    return nil
+  }
+
+  /// Like `subscriptionHost`, but only for an id-shaped scope nobody owns yet.
+  public func unknownScope(_ scope: String) -> Bool {
+    let id = scope.hasPrefix("terminal:") ? String(scope.dropFirst("terminal:".count)) : scope
+    return Self.isIssuedId(id) && subscriptionHost(scope) == nil
+  }
+
+  static func isIssuedId(_ id: String) -> Bool { UUID(uuidString: id) != nil }
+
   /// The host a gateway subscription scope (`<agentId>`, `terminal:<id>`)
   /// belongs to.
   public func subscriptionHost(_ scope: String) -> HostId? {
