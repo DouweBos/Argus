@@ -94,7 +94,7 @@ private struct McpServerRow: View {
         Button("Remove", action: remove)
       }
       TextEditor(text: $entry.json)
-        .font(.body.monospaced())
+        .font(.scaled(.body).monospaced())
         .frame(minHeight: 96)
         .scrollContentBackground(.hidden)
         .autocorrectionDisabled()
@@ -126,7 +126,7 @@ struct InheritedMcpRow: View {
       HStack {
         McpStatusDot(status: probe.status)
         Text(server.name)
-        Text(server.source).font(.caption).foregroundStyle(.secondary)
+        Text(server.source).font(.scaled(.caption)).foregroundStyle(.secondary)
         Spacer()
       }
       McpProbeControls(backend: backend, probe: probe, config: server.config, url: url)

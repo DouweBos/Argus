@@ -52,7 +52,7 @@ public struct RunFeedbackSheet: View {
             + "asking for something in there to go."
         ) {
           Toggle("It may withdraw or supersede what your note names", isOn: $allowClearing)
-            .font(.system(size: 14))
+            .font(.scaled(size: 14))
             .tint(theme.accent)
         }
       }

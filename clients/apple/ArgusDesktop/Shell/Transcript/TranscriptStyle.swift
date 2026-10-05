@@ -10,8 +10,8 @@ enum TranscriptStyle {
   static let bodySize: CGFloat = 13
   static let codeSize: CGFloat = 12
 
-  nonisolated(unsafe) static let body = NSFont.systemFont(ofSize: bodySize)
-  nonisolated(unsafe) static let code = NSFont.monospacedSystemFont(ofSize: codeSize, weight: .regular)
+  static var body: NSFont { .systemFont(ofSize: TextScale.shared(bodySize)) }
+  static var code: NSFont { .monospacedSystemFont(ofSize: TextScale.shared(codeSize), weight: .regular) }
 
   static let text = NSColor.labelColor
   static let secondary = NSColor.secondaryLabelColor

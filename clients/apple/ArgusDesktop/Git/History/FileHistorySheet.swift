@@ -44,9 +44,9 @@ struct FileHistorySheet: View {
           VStack(alignment: .leading, spacing: 2) {
             Text(commit.summary).lineLimit(1)
             Text("\(commit.shortSHA) · \(commit.authorName) · \(CommitDates.full.string(from: commit.authorDate))")
-              .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+              .font(.scaled(size: 11)).foregroundStyle(.secondary).lineLimit(1)
           }
-          .font(.system(size: 12))
+          .font(.scaled(size: 12))
           .tag(commit.id)
         }
         .overlay { if history.isLoading && history.commits.isEmpty { ProgressView().controlSize(.small) } }
@@ -84,8 +84,8 @@ struct FileHistorySheet: View {
   private var header: some View {
     HStack(spacing: 8) {
       Image(systemName: "clock.arrow.circlepath").foregroundStyle(.secondary)
-      Text(path).font(.system(size: 12, design: .monospaced)).lineLimit(1).truncationMode(.head)
-      Text("\(history.commits.count) commits").font(.system(size: 11)).foregroundStyle(.secondary)
+      Text(path).font(.scaled(size: 12, design: .monospaced)).lineLimit(1).truncationMode(.head)
+      Text("\(history.commits.count) commits").font(.scaled(size: 11)).foregroundStyle(.secondary)
       Spacer()
       Button("Blame") {
         let ref = history.selectedCommit?.id

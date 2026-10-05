@@ -45,11 +45,16 @@ struct BlameTableView: NSViewRepresentable {
     coordinator.onBlameBefore = onBlameBefore
     coordinator.onReveal = onReveal
     coordinator.update(lines: lines, palette: BlamePalette(theme))
+    if coordinator.textScale.changed(), let table = coordinator.table {
+      table.rowHeight = BlameLineView.height
+      table.reloadData()
+    }
   }
 
   @MainActor
   final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate {
     weak var table: NSTableView?
+    var textScale = TextScaleTracker()
     var onBlameBefore: ((String) -> Void)?
     var onReveal: ((String) -> Void)?
     private var lines: [BlameLine] = []
@@ -143,9 +148,9 @@ struct BlamePalette: Equatable {
 /// accent bar, stronger for newer commits, shows age.
 final class BlameLineView: NSView {
   static let identifier = NSUserInterfaceItemIdentifier("BlameLineView")
-  static let height: CGFloat = 18
+  static var height: CGFloat { TextScale.shared(18).rounded() }
   static let gutterWidth: CGFloat = 400
-  private static let gutterTextFont = NSFont.systemFont(ofSize: 11)
+  private static var gutterTextFont: NSFont { .systemFont(ofSize: TextScale.shared(11)) }
   static let numberWidth: CGFloat = 44
   static var textX: CGFloat { gutterWidth + numberWidth + 10 }
   private static let dateFormatter: DateFormatter = {

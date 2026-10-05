@@ -104,7 +104,7 @@ struct SetupCard<Actions: View, Below: View>: View {
     VStack(alignment: .leading, spacing: 8) {
       HStack(alignment: .center, spacing: 10) {
         (Text(title).bold().foregroundStyle(tone.color(theme)) + Text(" ") + Text(text).foregroundStyle(theme.text))
-          .font(.system(size: 13))
+          .font(.scaled(size: 13))
           .frame(maxWidth: .infinity, alignment: .leading)
           .fixedSize(horizontal: false, vertical: true)
         actions

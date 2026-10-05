@@ -59,7 +59,7 @@ struct HostBadge: View {
         Text(hosts.state(hostId) == .detached ? "detached" : "offline")
       }
     }
-    .font(.caption)
+    .font(.scaled(.caption))
     .foregroundStyle(theme.textSecondary)
     .help(hosts.state(hostId).title)
   }
@@ -84,7 +84,7 @@ struct HostOfflineBanner: View {
         Text(message(hostId))
         Spacer()
       }
-      .font(.callout)
+      .font(.scaled(.callout))
       .padding(.horizontal, 12)
       .padding(.vertical, 6)
       .background(theme.warningSoft)

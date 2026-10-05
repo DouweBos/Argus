@@ -24,7 +24,7 @@ struct LLMSettingsTab: View {
                 prompt: Text("e.g. claude-opus-4-7 (leave blank for runner default)")
               )
               .labelsHidden()
-              .font(.body.monospaced())
+              .font(.scaled(.body).monospaced())
               .onSubmit(saveModel)
             }
             SettingsCaption(

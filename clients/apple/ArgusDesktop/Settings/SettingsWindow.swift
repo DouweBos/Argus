@@ -78,7 +78,7 @@ private struct FocusedHostBanner: View {
         Spacer()
         Button("Show This Mac") { model.hosts.focus(Hosts.local) }
       }
-      .font(.callout)
+      .font(.scaled(.callout))
       .padding(.horizontal, 12)
       .padding(.vertical, 6)
       .background(theme.warningSoft)

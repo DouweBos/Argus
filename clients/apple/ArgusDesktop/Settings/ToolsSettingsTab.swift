@@ -59,7 +59,7 @@ private struct ToolRow: View {
           Text(tool.name)
           SettingsCaption(tool.description)
           if !missing.isEmpty {
-            Text("Needs: \(missing.joined(separator: ", "))").font(.caption).foregroundStyle(theme.warning)
+            Text("Needs: \(missing.joined(separator: ", "))").font(.scaled(.caption)).foregroundStyle(theme.warning)
           }
         }
       }

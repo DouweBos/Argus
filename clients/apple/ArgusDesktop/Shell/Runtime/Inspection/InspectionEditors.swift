@@ -49,7 +49,7 @@ struct InspectionNumberEdit: View {
   var body: some View {
     TextField("", text: $draft)
       .textFieldStyle(.roundedBorder)
-      .font(.system(size: 11).monospacedDigit())
+      .font(.scaled(size: 11).monospacedDigit())
       .frame(maxWidth: 80)
       .focused($focused)
       .onSubmit(send)
@@ -107,7 +107,7 @@ struct InspectionColorEdit: View {
         .fixedSize()
       TextField("", text: $draft)
         .textFieldStyle(.roundedBorder)
-        .font(.system(size: 11, design: .monospaced))
+        .font(.scaled(size: 11, design: .monospaced))
         .frame(maxWidth: 100)
         .onSubmit(send)
         .onExitCommand { draft = value }
@@ -157,7 +157,7 @@ struct InspectionColorSwatch: View {
         .fill(Inspection.RGBA(hex: hex).map(Color.init(rgba:)) ?? .clear)
         .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(theme.border))
         .frame(width: 14, height: 14)
-      Text(hex).font(.system(size: 11, design: .monospaced))
+      Text(hex).font(.scaled(size: 11, design: .monospaced))
     }
   }
 }

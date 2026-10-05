@@ -25,7 +25,7 @@ struct CommitDetailView: View {
           .labelsHidden()
           .fixedSize()
           Spacer()
-          Text(fileCount).font(.system(size: 11)).foregroundStyle(.secondary)
+          Text(fileCount).font(.scaled(size: 11)).foregroundStyle(.secondary)
         }
         .padding(.horizontal, 10)
         .frame(height: 32)
@@ -68,9 +68,9 @@ private struct CommitDetailHeader: View {
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 8) {
-        Text(commit.summary).font(.system(size: 14, weight: .semibold)).textSelection(.enabled)
+        Text(commit.summary).font(.scaled(size: 14, weight: .semibold)).textSelection(.enabled)
         if let body = commit.body, !body.isEmpty {
-          Text(body).font(.system(size: 12)).foregroundStyle(.secondary).textSelection(.enabled)
+          Text(body).font(.scaled(size: 12)).foregroundStyle(.secondary).textSelection(.enabled)
         }
         Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 4) {
           row("Author", "\(commit.authorName) <\(commit.authorEmail)> · \(CommitDates.full.string(from: commit.authorDate))")
@@ -82,7 +82,7 @@ private struct CommitDetailHeader: View {
           GridRow {
             label("SHA")
             HStack(spacing: 6) {
-              Text(commit.id).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
+              Text(commit.id).font(.scaled(size: 11, design: .monospaced)).textSelection(.enabled)
               Button { Clipboard.copy(commit.id) } label: { Image(systemName: "doc.on.doc") }
                 .buttonStyle(.borderless)
                 .help("Copy SHA")
@@ -95,7 +95,7 @@ private struct CommitDetailHeader: View {
                 ForEach(commit.parentIDs, id: \.self) { parent in
                   Button(String(parent.prefix(7))) { Task { await history.selectCommit(id: parent) } }
                     .buttonStyle(.link)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.scaled(size: 11, design: .monospaced))
                     .help("Select parent \(parent.prefix(7))")
                 }
               }
@@ -106,7 +106,7 @@ private struct CommitDetailHeader: View {
               label("Refs")
               HStack(spacing: 4) {
                 ForEach(refs, id: \.self) { ref in
-                  Text(ref).font(.system(size: 10, weight: .medium))
+                  Text(ref).font(.scaled(size: 10, weight: .medium))
                     .padding(.horizontal, 5).padding(.vertical, 1)
                     .background(theme.accentSoft, in: .rect(cornerRadius: 4))
                 }
@@ -145,11 +145,11 @@ private struct CommitDetailHeader: View {
       label(title)
       Text(value).textSelection(.enabled)
     }
-    .font(.system(size: 12))
+    .font(.scaled(size: 12))
   }
 
   private func label(_ title: String) -> some View {
-    Text(title).font(.system(size: 11)).foregroundStyle(.secondary).gridColumnAlignment(.trailing)
+    Text(title).font(.scaled(size: 11)).foregroundStyle(.secondary).gridColumnAlignment(.trailing)
   }
 }
 
@@ -166,9 +166,9 @@ private struct CommitTreeList<Menu: View>: View {
       } label: {
         HStack(spacing: 6) {
           Image(systemName: "doc").foregroundStyle(.secondary)
-          Text(path).font(.system(size: 12)).foregroundStyle(changed ? .primary : .secondary)
+          Text(path).font(.scaled(size: 12)).foregroundStyle(changed ? .primary : .secondary)
           Spacer()
-          if changed { Image(systemName: "circle.fill").font(.system(size: 5)).foregroundStyle(.tint) }
+          if changed { Image(systemName: "circle.fill").font(.scaled(size: 5)).foregroundStyle(.tint) }
         }
       }
       .buttonStyle(.plain)
@@ -186,11 +186,11 @@ private struct CommitSelectionSummary: View {
   var body: some View {
     let history = actions.history
     VStack(alignment: .leading, spacing: 12) {
-      Text("\(commits.count) commits selected").font(.headline)
-      Text(people).font(.system(size: 12)).foregroundStyle(.secondary)
+      Text("\(commits.count) commits selected").font(.scaled(.headline))
+      Text(people).font(.scaled(size: 12)).foregroundStyle(.secondary)
       if let first = commits.last?.authorDate, let last = commits.first?.authorDate {
         Text("\(CommitDates.full.string(from: first)) – \(CommitDates.full.string(from: last))")
-          .font(.system(size: 12)).foregroundStyle(.secondary)
+          .font(.scaled(size: 12)).foregroundStyle(.secondary)
       }
       HStack {
         Button("Squash \(commits.count) Commits…") { history.request(.squashCommits(commits)) }

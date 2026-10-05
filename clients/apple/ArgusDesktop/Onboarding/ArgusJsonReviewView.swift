@@ -63,7 +63,7 @@ struct ArgusJsonReviewView: View {
     run: @escaping (HostRouter) async -> Void
   ) -> some View {
     VStack(alignment: .leading, spacing: 6) {
-      Text(title).font(.headline)
+      Text(title).font(.scaled(.headline))
       Text(detail).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
       HStack {
         Button {
@@ -122,7 +122,7 @@ struct JSONCodeView: View {
   var body: some View {
     ScrollView {
       Text(text)
-        .font(.system(size: 12, design: .monospaced))
+        .font(.scaled(size: 12, design: .monospaced))
         .foregroundStyle(theme.text)
         .textSelection(.enabled)
         .padding(10)

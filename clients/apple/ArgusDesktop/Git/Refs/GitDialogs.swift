@@ -82,7 +82,7 @@ struct GitSheetLayout<Content: View>: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
-      Text(title).font(.headline)
+      Text(title).font(.scaled(.headline))
       content
       HStack {
         Spacer()

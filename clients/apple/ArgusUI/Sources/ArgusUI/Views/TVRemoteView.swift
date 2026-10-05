@@ -59,7 +59,7 @@ public struct TVRemoteView: View {
   private func arrow(_ icon: String, id: String) -> some View {
     Button { fire(id) } label: {
       Image(systemName: icon)
-        .font(.system(size: 20, weight: .semibold))
+        .font(.scaled(size: 20, weight: .semibold))
         .foregroundStyle(active == id ? theme.accent : theme.textSecondary)
         .frame(width: 52, height: 52)
         .contentShape(Rectangle())
@@ -72,7 +72,7 @@ public struct TVRemoteView: View {
     Button { fire(id) } label: {
       Label(label, systemImage: icon)
         .labelStyle(.iconOnly)
-        .font(.system(size: 15))
+        .font(.scaled(size: 15))
         .frame(width: 56, height: 36)
     }
     .buttonStyle(.bordered)

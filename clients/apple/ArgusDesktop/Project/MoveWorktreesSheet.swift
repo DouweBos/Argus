@@ -53,7 +53,7 @@ struct MoveWorktreesSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text(purpose == .automation ? "Move existing automation worktrees?" : "Move existing worktrees?")
-        .font(.title3.weight(.semibold))
+        .font(.scaled(.title3).weight(.semibold))
       if let error { Text(error).foregroundStyle(theme.error) }
       switch phase {
       case .loading:
@@ -76,7 +76,7 @@ struct MoveWorktreesSheet: View {
         Text(progress.map { "Moving \($0.index + 1) of \($0.total): \($0.branch)" } ?? "Moving \(count) \(noun)…")
         if let progress {
           ProgressView(value: progress.fraction)
-          Text(progress.stepLabel).font(.caption).foregroundStyle(theme.textMuted)
+          Text(progress.stepLabel).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
         } else {
           ProgressView().progressViewStyle(.linear)
         }

@@ -62,11 +62,11 @@ struct ReflogView: View {
         VStack(alignment: .leading, spacing: 2) {
           Text(entry.message).lineLimit(1).truncationMode(.tail)
           HStack(spacing: 6) {
-            Text(entry.newSHA.prefix(7)).font(.system(size: 10, design: .monospaced))
+            Text(entry.newSHA.prefix(7)).font(.scaled(size: 10, design: .monospaced))
             Spacer(minLength: 4)
             Text(entry.date, format: .relative(presentation: .named))
           }
-          .font(.system(size: 11))
+          .font(.scaled(size: 11))
           .foregroundStyle(theme.textSecondary)
         }
       }
@@ -140,7 +140,7 @@ private struct ReflogEntryDetail<Actions: View>: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       HStack(alignment: .firstTextBaseline) {
-        Text(commit?.summary ?? entry.message).font(.headline).lineLimit(2).textSelection(.enabled)
+        Text(commit?.summary ?? entry.message).font(.scaled(.headline)).lineLimit(2).textSelection(.enabled)
         Spacer()
         Menu { actions } label: { Image(systemName: "ellipsis.circle") }
           .menuIndicator(.hidden)
@@ -149,7 +149,7 @@ private struct ReflogEntryDetail<Actions: View>: View {
       }
       Text(entry.message).foregroundStyle(theme.textSecondary).lineLimit(2)
       HStack(spacing: 10) {
-        Text("\(entry.oldSHA.prefix(7)) → \(entry.newSHA.prefix(7))").font(.system(size: 11, design: .monospaced))
+        Text("\(entry.oldSHA.prefix(7)) → \(entry.newSHA.prefix(7))").font(.scaled(size: 11, design: .monospaced))
         if let commit {
           Text(commit.authorName)
           Text(commit.authorDate, format: .dateTime)
@@ -159,10 +159,10 @@ private struct ReflogEntryDetail<Actions: View>: View {
           Text("Commit no longer exists")
         }
       }
-      .font(.system(size: 11))
+      .font(.scaled(size: 11))
       .foregroundStyle(theme.textSecondary)
       if let body = commit?.body, !body.isEmpty {
-        Text(body).font(.system(size: 12)).lineLimit(6).textSelection(.enabled)
+        Text(body).font(.scaled(size: 12)).lineLimit(6).textSelection(.enabled)
       }
     }
     .padding(12)

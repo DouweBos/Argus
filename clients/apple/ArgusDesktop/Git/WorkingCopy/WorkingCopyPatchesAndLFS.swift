@@ -72,7 +72,7 @@ struct PatchApplySheet: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("Apply “\(current.file.lastPathComponent)”").font(.headline)
+      Text("Apply “\(current.file.lastPathComponent)”").font(.scaled(.headline))
       Toggle(
         "Stage the changes too (git apply --index)",
         isOn: Binding(get: { current.toIndex }, set: { on in Task { await vm.setPatchAppliesToIndex(on) } }))
@@ -111,7 +111,7 @@ struct PatchApplySheet: View {
         Label("The patch doesn't apply.", systemImage: "xmark.octagon").foregroundStyle(theme.error)
         ScrollView {
           Text(detail)
-            .font(.system(size: 11, design: .monospaced))
+            .font(.scaled(size: 11, design: .monospaced))
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -192,7 +192,7 @@ struct TrackedFileRow: View {
       }
       Spacer(minLength: 0)
     }
-    .font(.system(size: 12))
+    .font(.scaled(size: 12))
     .help(path)
     .selectionDisabled()
   }

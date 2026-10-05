@@ -27,7 +27,7 @@ struct InspectionPropsSection: View {
         InspectionSection(props.rawProps == nil && !bag.isEmpty ? "React props (native)" : "React props") {
           if !bag.isEmpty { InspectionFields(values: bag) }
           if let note = props.note {
-            Text(note).font(.caption).foregroundStyle(theme.textMuted)
+            Text(note).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
           }
         }
       }
@@ -66,16 +66,16 @@ struct InspectionFields: View {
     default:
       return AnyView(
         InspectionRow(key) {
-          Text(Self.scalar(value)).font(.system(size: 11, design: .monospaced))
+          Text(Self.scalar(value)).font(.scaled(size: 11, design: .monospaced))
         })
     }
   }
 
   private func nested(_ title: String, _ fields: InspectionFields) -> some View {
     VStack(alignment: .leading, spacing: 3) {
-      Text(title).font(.system(size: 11)).foregroundStyle(theme.textMuted)
+      Text(title).font(.scaled(size: 11)).foregroundStyle(theme.textMuted)
       if fields.entries.isEmpty {
-        Text("empty").font(.caption).foregroundStyle(theme.textMuted).padding(.leading, 12)
+        Text("empty").font(.scaled(.caption)).foregroundStyle(theme.textMuted).padding(.leading, 12)
       } else {
         fields.padding(.leading, 12)
       }

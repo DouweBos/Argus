@@ -20,8 +20,8 @@ struct OperationBanner: View {
     HStack(spacing: 10) {
       Image(systemName: "arrow.triangle.merge").foregroundStyle(theme.warning)
       VStack(alignment: .leading, spacing: 2) {
-        Text(title).font(.system(size: 12, weight: .semibold))
-        Text(detail(conflicts: conflicts)).font(.system(size: 11)).foregroundStyle(.secondary)
+        Text(title).font(.scaled(size: 12, weight: .semibold))
+        Text(detail(conflicts: conflicts)).font(.scaled(size: 11)).foregroundStyle(.secondary)
       }
       Spacer()
       if vm.isRunningOperation { ProgressView().controlSize(.small) }

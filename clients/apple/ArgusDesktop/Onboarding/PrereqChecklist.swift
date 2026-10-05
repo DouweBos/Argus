@@ -18,7 +18,7 @@ struct PrereqChecklist: View {
       }
       HStack {
         if let error = checks.fixError {
-          Text(error).font(.caption).foregroundStyle(theme.error)
+          Text(error).font(.scaled(.caption)).foregroundStyle(theme.error)
         }
         Spacer()
         Button("Re-run checks") {
@@ -47,12 +47,12 @@ private struct PrereqRow: View {
     HStack(alignment: .top, spacing: 10) {
       icon.frame(width: 18)
       VStack(alignment: .leading, spacing: 4) {
-        Text(SetupChecks.meta(id).title).font(.system(size: 13, weight: .semibold))
+        Text(SetupChecks.meta(id).title).font(.scaled(size: 13, weight: .semibold))
         if let message = fixing ? "Installing…" : result?.message {
           Text(message).foregroundStyle(theme.textSecondary)
         }
         if let detail = result?.detail, !detail.isEmpty {
-          Text(detail).font(.caption).foregroundStyle(theme.textMuted).textSelection(.enabled)
+          Text(detail).font(.scaled(.caption)).foregroundStyle(theme.textMuted).textSelection(.enabled)
         }
         if id == .gitIdentity, status != .pass, status != .running {
           GitIdentityForm(busy: fixing) { name, email in
@@ -91,7 +91,7 @@ private struct PrereqRow: View {
     let meta = SetupChecks.meta(id)
     if let command = meta.installCommand {
       Text(command)
-        .font(.system(size: 12, design: .monospaced))
+        .font(.scaled(size: 12, design: .monospaced))
         .textSelection(.enabled)
         .padding(.horizontal, 8).padding(.vertical, 4)
         .background(theme.bgSecondary)
@@ -102,7 +102,7 @@ private struct PrereqRow: View {
         Text("How to install:").foregroundStyle(theme.textMuted)
         Link(meta.installLabel ?? url.absoluteString, destination: url)
       }
-      .font(.caption)
+      .font(.scaled(.caption))
     }
   }
 }

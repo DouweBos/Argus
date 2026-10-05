@@ -59,7 +59,7 @@ struct GitArgusSettingsSection: View {
       DisclosureGroup("Archived branches (\(branches.count))") {
         ForEach(branches, id: \.self) { branch in
           HStack {
-            Text(branch).font(.system(size: 12, design: .monospaced))
+            Text(branch).font(.scaled(size: 12, design: .monospaced))
             Spacer()
             Button("Unarchive") { unarchive(branch) }.controlSize(.small)
           }

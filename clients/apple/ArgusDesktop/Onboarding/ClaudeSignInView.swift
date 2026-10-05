@@ -20,7 +20,7 @@ struct ClaudeSignInView: View {
             VStack(alignment: .leading, spacing: 1) {
               Text(account.displayName)
               if !account.subtitle.isEmpty {
-                Text(account.subtitle).font(.caption).foregroundStyle(theme.textMuted)
+                Text(account.subtitle).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
               }
             }
             Spacer()

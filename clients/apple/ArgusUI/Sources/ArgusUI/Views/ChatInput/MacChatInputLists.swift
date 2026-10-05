@@ -15,7 +15,7 @@
       VStack(alignment: .leading, spacing: 0) {
         if let header {
           Text(header)
-            .font(.system(size: 10, weight: .bold))
+            .font(.scaled(size: 10, weight: .bold))
             .foregroundStyle(theme.textMuted)
             .lineLimit(1)
             .truncationMode(.head)
@@ -70,7 +70,7 @@
       SuggestionList(items: items, selected: selected, pick: pick) { command in
         HStack(alignment: .firstTextBaseline, spacing: 8) {
           Text("/\(command.name)")
-            .font(.system(size: 13, design: .monospaced))
+            .font(.scaled(size: 13, design: .monospaced))
             .foregroundStyle(theme.text)
             // Truncated, not fixed: a plugin's long command name would otherwise
             // widen the whole column and push the sidebar off the window.
@@ -79,14 +79,14 @@
             .layoutPriority(1)
           if !command.argumentHint.isEmpty {
             Text(command.argumentHint)
-              .font(.system(size: 12, design: .monospaced))
+              .font(.scaled(size: 12, design: .monospaced))
               .foregroundStyle(theme.textMuted)
               .lineLimit(1)
               .layoutPriority(-1)
           }
           if !command.description.isEmpty {
             Text(command.description)
-              .font(.system(size: 12))
+              .font(.scaled(size: 12))
               .foregroundStyle(theme.textMuted)
               .lineLimit(1)
           }
@@ -106,16 +106,16 @@
       SuggestionList(header: header, items: items, selected: selected, pick: pick) { item in
         HStack(spacing: 6) {
           Image(systemName: icon(item))
-            .font(.system(size: 11))
+            .font(.scaled(size: 11))
             .foregroundStyle(theme.textMuted)
             .frame(width: 14)
           Text(item.isLinkAction ? "Link \(item.display)" : item.display)
-            .font(.system(size: 13))
+            .font(.scaled(size: 13))
             .foregroundStyle(item.isLinkAction ? theme.accent : theme.text)
             .lineLimit(1)
           if let hint = item.hint, !hint.isEmpty {
             Text(hint)
-              .font(.system(size: 11))
+              .font(.scaled(size: 11))
               .foregroundStyle(theme.textMuted)
               .lineLimit(1)
               .truncationMode(.head)
@@ -123,7 +123,7 @@
           Spacer(minLength: 0)
           if item.isDirectory, !item.isLinkAction {
             Image(systemName: Icon.chevronRight)
-              .font(.system(size: 9, weight: .semibold))
+              .font(.scaled(size: 9, weight: .semibold))
               .foregroundStyle(theme.textMuted)
           }
         }
@@ -159,7 +159,7 @@
                   remove(image.id)
                 } label: {
                   Image(systemName: Icon.close)
-                    .font(.system(size: 8, weight: .bold))
+                    .font(.scaled(size: 8, weight: .bold))
                     .foregroundStyle(theme.onAccent)
                     .padding(4)
                     .background(Circle().fill(theme.accent))

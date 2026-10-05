@@ -376,7 +376,7 @@ struct TranscriptToolText: View {
       if lines > Self.clipLines {
         Button(expanded ? "Show less" : "Show all \(lines) lines") { expanded.toggle() }
           .buttonStyle(.link)
-          .font(.system(size: 11))
+          .font(.scaled(size: 11))
       }
     }
   }
@@ -387,7 +387,7 @@ struct TranscriptToolText: View {
   }
 
   private func rendered(_ text: String) -> NSAttributedString {
-    let key = "\(role)|\(text)" as NSString
+    let key = "\(role)|\(TextScale.shared.factor)|\(text)" as NSString
     if let cached = Self.cache.object(forKey: key) { return cached }
     let color =
       switch role {

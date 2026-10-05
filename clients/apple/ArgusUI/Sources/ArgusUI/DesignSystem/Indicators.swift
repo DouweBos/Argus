@@ -113,7 +113,7 @@ public struct ContextMeter: View {
       }
       .frame(width: 18, height: 18)
       Text(ContextWindow.format(tokens))
-        .font(.system(size: 11))
+        .font(.scaled(size: 11))
         .foregroundStyle(theme.textMuted)
         .fixedSize()
     }
@@ -160,7 +160,7 @@ public struct WorkingIndicator: View {
       HStack(spacing: 8) {
         StatusDot(tone: description.state == .blocked ? .warning : .accent, pulse: true)
         Text(isThinking ? verb : description.text)
-          .font(.system(size: 13))
+          .font(.scaled(size: 13))
           .foregroundStyle(theme.textSecondary)
         ThinkingDots()
       }

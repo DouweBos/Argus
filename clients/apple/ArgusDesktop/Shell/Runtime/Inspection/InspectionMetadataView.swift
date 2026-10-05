@@ -14,7 +14,7 @@ struct InspectionMetadataView: View {
         Divider()
         if let error = model.editError {
           Text(error)
-            .font(.caption)
+            .font(.scaled(.caption))
             .foregroundStyle(theme.error)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 10)
@@ -44,14 +44,14 @@ struct InspectionMetadataView: View {
 
   private func header(_ node: Inspection.Node) -> some View {
     HStack(spacing: 6) {
-      Text("Inspecting").font(.caption).foregroundStyle(theme.textMuted)
-      Text(node.className).font(.system(size: 12, weight: .semibold, design: .monospaced))
+      Text("Inspecting").font(.scaled(.caption)).foregroundStyle(theme.textMuted)
+      Text(node.className).font(.scaled(size: 12, weight: .semibold, design: .monospaced))
         .lineLimit(1)
         .truncationMode(.middle)
       Spacer(minLength: 0)
       if model.editSaving {
         ProgressView().controlSize(.small)
-        Text("Applying…").font(.caption).foregroundStyle(theme.textMuted)
+        Text("Applying…").font(.scaled(.caption)).foregroundStyle(theme.textMuted)
       }
     }
     .padding(.horizontal, 10)
@@ -214,7 +214,7 @@ struct InspectionSection<Content: View>: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
       Text(title.uppercased())
-        .font(.system(size: 10, weight: .semibold))
+        .font(.scaled(size: 10, weight: .semibold))
         .foregroundStyle(theme.textMuted)
       content
     }
@@ -243,7 +243,7 @@ struct InspectionRow<Value: View>: View {
           .textSelection(.enabled)
           .frame(maxWidth: .infinity, alignment: .leading)
       }
-      .font(.system(size: 11))
+      .font(.scaled(size: 11))
     }
   }
 }

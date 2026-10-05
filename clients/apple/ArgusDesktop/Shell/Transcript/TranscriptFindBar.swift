@@ -11,11 +11,11 @@ struct TranscriptFindBar: View {
     @Bindable var model = model
     HStack(spacing: 6) {
       Image(systemName: Icon.search)
-        .font(.system(size: 11))
+        .font(.scaled(size: 11))
         .foregroundStyle(theme.textMuted)
       TextField("Find in chat", text: $model.query)
         .textFieldStyle(.plain)
-        .font(.system(size: 13))
+        .font(.scaled(size: 13))
         .frame(minWidth: 160)
         .focused($focused)
         .onKeyPress(.return, phases: .down) { press in
@@ -24,7 +24,7 @@ struct TranscriptFindBar: View {
         }
         .onExitCommand { model.closeFind() }
       Text(TranscriptSearch.counter(query: model.query, count: model.hits.count, current: model.current))
-        .font(.system(size: 11).monospacedDigit())
+        .font(.scaled(size: 11).monospacedDigit())
         .foregroundStyle(theme.textMuted)
         .fixedSize()
       Divider().frame(height: 14)

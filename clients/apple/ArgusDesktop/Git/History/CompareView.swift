@@ -49,7 +49,7 @@ struct CompareView: View {
 
   private var header: some View {
     HStack(spacing: 8) {
-      Text("Compare").font(.system(size: 13, weight: .semibold))
+      Text("Compare").font(.scaled(size: 13, weight: .semibold))
       refPicker("Base", selection: left) { go(left: $0, right: right) }
       Button { go(left: right, right: left) } label: { Image(systemName: "arrow.left.arrow.right") }
         .help("Swap sides")
@@ -72,7 +72,7 @@ struct CompareView: View {
         stat("\(comparison.files.count)", comparison.files.count == 1 ? "file" : "files")
       }
       if let base = compare.mergeBase {
-        Text("merge base \(String(base.prefix(7)))").font(.system(size: 11, design: .monospaced))
+        Text("merge base \(String(base.prefix(7)))").font(.scaled(size: 11, design: .monospaced))
           .foregroundStyle(.secondary)
       }
       Spacer()
@@ -87,7 +87,7 @@ struct CompareView: View {
         EmptyView()
       }
     }
-    .font(.system(size: 12))
+    .font(.scaled(size: 12))
     .padding(.horizontal, 10)
     .frame(height: 30)
   }
@@ -146,16 +146,16 @@ private struct CompareCommitList: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      Text(title).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary).lineLimit(1)
+      Text(title).font(.scaled(size: 11, weight: .semibold)).foregroundStyle(.secondary).lineLimit(1)
         .padding(.horizontal, 10).padding(.vertical, 6)
       List(commits ?? []) { commit in
         HStack(spacing: 8) {
-          Text(commit.shortSHA).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+          Text(commit.shortSHA).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(.secondary)
           Text(commit.summary).lineLimit(1)
           Spacer(minLength: 4)
           Text(commit.authorName).foregroundStyle(.secondary).lineLimit(1)
         }
-        .font(.system(size: 12))
+        .font(.scaled(size: 12))
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { reveal(commit.id) }
         .contextMenu {

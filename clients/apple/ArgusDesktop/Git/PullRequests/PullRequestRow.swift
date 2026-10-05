@@ -21,19 +21,19 @@ struct PullRequestRow: View {
         .padding(.top, 2)
       VStack(alignment: .leading, spacing: 4) {
         HStack(spacing: 6) {
-          Text(pullRequest.title).font(.system(size: 13, weight: .medium)).lineLimit(2)
+          Text(pullRequest.title).font(.scaled(size: 13, weight: .medium)).lineLimit(2)
           if pullRequest.isDraft { Badge(label: "Draft", tone: .muted) }
           if let decision = pullRequest.reviewDecision, let review = PullRequestLabels.review(decision) {
             Badge(label: review.label, tone: review.tone)
           }
         }
-        Text(meta).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+        Text(meta).font(.scaled(size: 11)).foregroundStyle(.secondary).lineLimit(1)
         HStack(spacing: 4) {
           ForEach(pullRequest.reasons, id: \.self) { reason in
             Badge(label: PullRequestLabels.reason(reason), tone: PullRequestLabels.reasonTone(reason))
           }
           Label(pullRequest.headRef, systemImage: "arrow.triangle.branch")
-            .font(.system(size: 11, design: .monospaced))
+            .font(.scaled(size: 11, design: .monospaced))
             .foregroundStyle(.secondary)
             .lineLimit(1)
             .truncationMode(.middle)

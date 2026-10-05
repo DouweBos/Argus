@@ -6,12 +6,12 @@ import SwiftUI
 /// Sizes every diff row shares; monospaced, so a line's width is its length.
 @MainActor
 enum DiffMetrics {
-  static let font = NSFont.monospacedSystemFont(ofSize: 11.5, weight: .regular)
-  static let gutterFont = NSFont.monospacedSystemFont(ofSize: 10.5, weight: .regular)
-  static let lineHeight: CGFloat = 17
-  static let headerHeight: CGFloat = 28
-  static let charWidth: CGFloat = ("M" as NSString).size(withAttributes: [.font: font]).width
-  static let gutterWidth: CGFloat = 40
+  static var font: NSFont { .monospacedSystemFont(ofSize: TextScale.shared(11.5), weight: .regular) }
+  static var gutterFont: NSFont { .monospacedSystemFont(ofSize: TextScale.shared(10.5), weight: .regular) }
+  static var lineHeight: CGFloat { TextScale.shared(17).rounded() }
+  static var headerHeight: CGFloat { TextScale.shared(28).rounded() }
+  static var charWidth: CGFloat { ("M" as NSString).size(withAttributes: [.font: font]).width }
+  static var gutterWidth: CGFloat { TextScale.shared(40).rounded() }
 
   /// Where a line's text starts: two gutters (inline) or one per side (split).
   static func textX(layout: DiffLayout) -> CGFloat {

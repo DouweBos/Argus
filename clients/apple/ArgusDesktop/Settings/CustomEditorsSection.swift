@@ -16,7 +16,7 @@ struct CustomEditorsSection: View {
         HStack {
           VStack(alignment: .leading, spacing: 2) {
             Text(editor.name)
-            Text(editor.command).font(.caption.monospaced()).foregroundStyle(.secondary)
+            Text(editor.command).font(.scaled(.caption).monospaced()).foregroundStyle(.secondary)
           }
           Spacer()
           Button("Edit") { editing = editor }
@@ -71,7 +71,7 @@ private struct CustomEditorSheet: View {
       LabeledContent("Command") {
         TextField("Command", text: $command, prompt: Text("Command or .app path"))
           .labelsHidden()
-          .font(.body.monospaced())
+          .font(.scaled(.body).monospaced())
       }
     }
     .formStyle(.grouped)

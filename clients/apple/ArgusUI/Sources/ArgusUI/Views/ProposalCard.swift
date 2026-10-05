@@ -106,18 +106,18 @@ public struct ProposalCard: View {
         if let onOpenDetails {
           Button("Details", action: onOpenDetails)
             .buttonStyle(.plain)
-            .font(.system(size: 12))
+            .font(.scaled(size: 12))
             .foregroundStyle(theme.accent)
         }
         if let onOpenRun {
           Button("View run", action: onOpenRun)
             .buttonStyle(.plain)
-            .font(.system(size: 12))
+            .font(.scaled(size: 12))
             .foregroundStyle(theme.accent)
         }
         if let source = proposal.sourceUrl, let url = URL(string: source) {
           Link(proposal.sourceLabel ?? "Source", destination: url)
-            .font(.system(size: 12))
+            .font(.scaled(size: 12))
             .foregroundStyle(theme.accent)
         }
       }
@@ -254,13 +254,13 @@ public struct StartedProposalCard: View {
     Card(tone: .success) {
       HStack(spacing: 8) {
         Image(systemName: Icon.check)
-          .font(.system(size: 13, weight: .semibold))
+          .font(.scaled(size: 13, weight: .semibold))
           .foregroundStyle(theme.success)
         BodyText("Agent started")
         Spacer(minLength: 4)
         Button(action: onClose) {
           Image(systemName: Icon.close)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.scaled(size: 12, weight: .semibold))
             .foregroundStyle(theme.textMuted)
         }
         .buttonStyle(.plain)

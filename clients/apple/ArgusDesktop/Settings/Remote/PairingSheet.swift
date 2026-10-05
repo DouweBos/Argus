@@ -12,7 +12,7 @@ struct PairingSheet: View {
 
   var body: some View {
     VStack(spacing: 16) {
-      Text("Pair a Device").font(.title2.weight(.semibold))
+      Text("Pair a Device").font(.scaled(.title2).weight(.semibold))
       content
     }
     .padding(24)
@@ -30,7 +30,7 @@ struct PairingSheet: View {
       Text("Scan this with Argus on your phone, then confirm the 6-digit code matches on both screens.")
         .multilineTextAlignment(.center).foregroundStyle(theme.textSecondary)
       QRCodeView(payload: qrPayload)
-      Text("Or paste this code into the app:").font(.callout).foregroundStyle(theme.textSecondary)
+      Text("Or paste this code into the app:").font(.scaled(.callout)).foregroundStyle(theme.textSecondary)
       codeRow(pairingCode)
       HStack(spacing: 6) {
         ProgressView().controlSize(.small)
@@ -58,7 +58,7 @@ struct PairingSheet: View {
     .multilineTextAlignment(.center)
     .foregroundStyle(theme.textSecondary)
     Text(sas)
-      .font(.system(size: 40, weight: .semibold, design: .monospaced))
+      .font(.scaled(size: 40, weight: .semibold, design: .monospaced))
       .tracking(8)
       .textSelection(.enabled)
       .accessibilityLabel("Pairing code \(sas)")
@@ -112,8 +112,8 @@ struct PairingSheet: View {
 
   @ViewBuilder
   private func outcome(icon: String, tone: Color, title: String, message: String) -> some View {
-    Image(systemName: icon).font(.system(size: 40)).foregroundStyle(tone)
-    Text(title).font(.headline)
+    Image(systemName: icon).font(.scaled(size: 40)).foregroundStyle(tone)
+    Text(title).font(.scaled(.headline))
     Text(message).multilineTextAlignment(.center).foregroundStyle(theme.textSecondary).textSelection(.enabled)
     footer { Button("Done", action: model.closePairing).keyboardShortcut(.defaultAction) }
   }

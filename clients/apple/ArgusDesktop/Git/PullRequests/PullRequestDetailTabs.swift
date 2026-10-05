@@ -49,9 +49,9 @@ struct PullRequestConversation: View {
   ) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       HStack(spacing: 6) {
-        Text(author ?? "someone").font(.system(size: 12, weight: .semibold))
+        Text(author ?? "someone").font(.scaled(size: 12, weight: .semibold))
         if let badge { Badge(label: badge.label, tone: badge.tone) }
-        Text(PullRequestLabels.relative(date)).font(.system(size: 11)).foregroundStyle(.secondary)
+        Text(PullRequestLabels.relative(date)).font(.scaled(size: 11)).foregroundStyle(.secondary)
       }
       if !body.isEmpty {
         MarkdownView(text: body, baseSize: 13).textSelection(.enabled)
@@ -59,7 +59,7 @@ struct PullRequestConversation: View {
       ForEach(inline, id: \.id) { comment in
         HStack(alignment: .top, spacing: 6) {
           Image(systemName: "text.bubble").foregroundStyle(.secondary)
-          Text(comment.body).font(.system(size: 12)).lineLimit(4).textSelection(.enabled)
+          Text(comment.body).font(.scaled(size: 12)).lineLimit(4).textSelection(.enabled)
           Spacer()
           Button("View") { model.openOnGitHub(comment.url) }.buttonStyle(.link).controlSize(.small)
         }
@@ -73,7 +73,7 @@ struct PullRequestConversation: View {
   private var composer: some View {
     VStack(alignment: .trailing, spacing: 8) {
       TextEditor(text: $draft)
-        .font(.system(size: 13))
+        .font(.scaled(size: 13))
         .frame(minHeight: 80)
         .scrollContentBackground(.hidden)
         .padding(6)
@@ -116,11 +116,11 @@ struct PullRequestCommits: View {
     } else {
       List(commits, id: \.oid) { commit in
         HStack(spacing: 10) {
-          Text(commit.abbreviatedOid).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+          Text(commit.abbreviatedOid).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(.secondary)
           VStack(alignment: .leading, spacing: 2) {
             Text(commit.message.components(separatedBy: "\n").first ?? "").lineLimit(1)
             Text("\(commit.author ?? "unknown") · \(PullRequestLabels.relative(commit.committedDate))")
-              .font(.system(size: 11)).foregroundStyle(.secondary)
+              .font(.scaled(size: 11)).foregroundStyle(.secondary)
           }
           Spacer()
           if let rollup = commit.statusRollup { Badge(label: rollup.lowercased(), tone: tone(rollup)) }
@@ -159,12 +159,12 @@ struct PullRequestChecks: View {
           VStack(alignment: .leading, spacing: 2) {
             Text(check.name).lineLimit(1)
             if let description = check.description, !description.isEmpty {
-              Text(description).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+              Text(description).font(.scaled(size: 11)).foregroundStyle(.secondary).lineLimit(1)
             }
           }
           Spacer()
           Text((check.conclusion?.rawValue ?? check.status?.rawValue ?? "").replacingOccurrences(of: "_", with: " "))
-            .font(.system(size: 11)).foregroundStyle(.secondary)
+            .font(.scaled(size: 11)).foregroundStyle(.secondary)
           if let url = check.detailsUrl {
             Button("Details") { open(url) }.buttonStyle(.link).controlSize(.small)
           }

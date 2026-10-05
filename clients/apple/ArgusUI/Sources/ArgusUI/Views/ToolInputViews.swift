@@ -37,7 +37,7 @@ public struct ToolInputFieldsView: View {
 
   private func label(_ text: String) -> some View {
     Text(text)
-      .font(.system(size: 10, weight: .bold))
+      .font(.scaled(size: 10, weight: .bold))
       .foregroundStyle(theme.textMuted)
   }
 }
@@ -65,7 +65,7 @@ public struct AnsweredQuestionsView: View {
       ForEach(Array(questions.enumerated()), id: \.offset) { index, question in
         VStack(alignment: .leading, spacing: 4) {
           Text(question.header ?? question.question)
-            .font(.system(size: 11, weight: .bold))
+            .font(.scaled(size: 11, weight: .bold))
             .foregroundStyle(theme.textMuted)
           answerRows(for: question, answered: answers[index])
         }
@@ -85,10 +85,10 @@ public struct AnsweredQuestionsView: View {
       ForEach(picks, id: \.self) { pick in
         HStack(alignment: .firstTextBaseline, spacing: 6) {
           Image(systemName: Icon.check)
-            .font(.system(size: 10, weight: .semibold))
+            .font(.scaled(size: 10, weight: .semibold))
             .foregroundStyle(theme.success)
           VStack(alignment: .leading, spacing: 1) {
-            Text(pick).font(.system(size: 13)).foregroundStyle(theme.text)
+            Text(pick).font(.scaled(size: 13)).foregroundStyle(theme.text)
             if let description = question.options.first(where: { $0.label == pick })?
               .description
             {

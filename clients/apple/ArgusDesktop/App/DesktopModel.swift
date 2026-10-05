@@ -127,6 +127,7 @@ final class DesktopModel {
 
   func start() {
     AppPreferences.shared.applyTheme()
+    AppPreferences.shared.applyDisplaySize()
     MacTelemetry.capture(.launched)
     supervisor.start()
   }

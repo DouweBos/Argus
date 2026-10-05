@@ -94,7 +94,7 @@ struct GitErrorBanner: View {
     HStack(alignment: .top, spacing: 8) {
       Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(theme.error)
       Text(message)
-        .font(.system(size: 12))
+        .font(.scaled(size: 12))
         .textSelection(.enabled)
         .frame(maxWidth: .infinity, alignment: .leading)
       ForEach(actions, id: \.self) { action in

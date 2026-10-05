@@ -60,6 +60,10 @@ struct CommitTableView: NSViewRepresentable {
       commits: history.filteredCommits, showsGraph: history.layout == .graph && !history.isFiltering,
       graphColumns: history.maxGraphColumns, refsKey: refsKey,
       selection: history.selection.rows, focus: history.selectedCommit?.id, palette: CommitListPalette(theme))
+    if coordinator.textScale.changed(), let table = coordinator.table {
+      table.rowHeight = CommitListMetrics.rowHeight
+      table.reloadData()
+    }
   }
 
   /// Changes whenever a row's decoration would: a ref moving, HEAD moving, the graph rebuilding.
@@ -98,6 +102,7 @@ struct CommitTableView: NSViewRepresentable {
   final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate {
     let history: HistoryViewModel
     weak var table: NSTableView?
+    var textScale = TextScaleTracker()
     var menuBuilder: ((NSMenu, CommitInfo, [CommitInfo]) -> Void)?
     var ownCommits: Set<String>?
     private(set) var commits: [CommitInfo] = []

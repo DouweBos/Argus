@@ -21,15 +21,16 @@ struct BranchRow: View {
         .truncationMode(.middle)
       Spacer(minLength: 4)
       if marks.isPinned(branch.name) {
-        Image(systemName: "pin.fill").font(.system(size: 9)).foregroundStyle(theme.textMuted)
+        Image(systemName: "pin.fill").font(.scaled(size: 9)).foregroundStyle(theme.textMuted)
       }
       if marks.isProtected(branch.name) {
-        Image(systemName: "lock.fill").font(.system(size: 9)).foregroundStyle(theme.textMuted)
+        Image(systemName: "lock.fill").font(.scaled(size: 9)).foregroundStyle(theme.textMuted)
           .help("Protected branch")
       }
       AheadBehindLabel(ahead: branch.ahead, behind: branch.behind)
     }
     .help(branch.upstream.map { "\(branch.name) → \($0)" } ?? branch.name)
+    .font(.sidebarScaled(.body))
     .accessibilityLabel(branch.name)
     .tag(GitSidebarTag.branch(branch.name))
     .contextMenu { BranchMenu(branch: branch, actions: actions) }
@@ -48,7 +49,7 @@ struct AheadBehindLabel: View {
         if ahead > 0 { Text("↑\(ahead)") }
         if behind > 0 { Text("↓\(behind)") }
       }
-      .font(.system(size: 10, weight: .medium).monospacedDigit())
+      .font(.scaled(size: 10, weight: .medium).monospacedDigit())
       .foregroundStyle(theme.textSecondary)
       .help("\(ahead) ahead, \(behind) behind")
     }
@@ -107,7 +108,7 @@ struct BranchFolderRow: View {
           BranchFolderRow(node: child, actions: actions, expanded: $expanded)
         }
       } label: {
-        Label(node.title, systemImage: "folder")
+        SidebarLabel(node.title, systemImage: "folder")
       }
     }
   }
@@ -134,6 +135,7 @@ struct RemoteBranchRow: View {
     } icon: {
       Image(systemName: "arrow.triangle.branch").foregroundStyle(theme.textSecondary)
     }
+    .font(.sidebarScaled(.body))
     .accessibilityLabel(branch.name)
     .tag(GitSidebarTag.branch(branch.name))
     .contextMenu {
@@ -160,6 +162,7 @@ struct TagRow: View {
     } icon: {
       Image(systemName: tag.isAnnotated ? "tag.fill" : "tag").foregroundStyle(theme.textSecondary)
     }
+    .font(.sidebarScaled(.body))
     .accessibilityLabel(tag.name)
     .tag(GitSidebarTag.tag(tag.name))
     .contextMenu {

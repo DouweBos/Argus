@@ -13,12 +13,12 @@ struct SheetHeader: View {
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
       Image(systemName: symbol)
-        .font(.system(size: 20))
+        .font(.scaled(size: 20))
         .foregroundStyle(isDestructive ? theme.error : theme.accent)
         .frame(width: 28)
       VStack(alignment: .leading, spacing: 4) {
-        Text(title).font(.headline)
-        Text(message).font(.system(size: 12)).foregroundStyle(.secondary)
+        Text(title).font(.scaled(.headline))
+        Text(message).font(.scaled(size: 12)).foregroundStyle(.secondary)
           .fixedSize(horizontal: false, vertical: true)
       }
     }
@@ -35,7 +35,7 @@ struct SheetBanner: View {
     HStack(alignment: .top, spacing: 8) {
       Image(systemName: symbol)
         .foregroundStyle(tone.color(theme))
-      Text(message).font(.system(size: 12)).textSelection(.enabled)
+      Text(message).font(.scaled(size: 12)).textSelection(.enabled)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding(10)
@@ -79,12 +79,12 @@ struct CommitSummaryTile: View {
 
   var body: some View {
     HStack(spacing: 8) {
-      Text(commit.shortSHA).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+      Text(commit.shortSHA).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(.secondary)
       Text(commit.summary).lineLimit(1)
       Spacer(minLength: 4)
-      Text(commit.authorName).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+      Text(commit.authorName).font(.scaled(size: 11)).foregroundStyle(.secondary).lineLimit(1)
     }
-    .font(.system(size: 12))
+    .font(.scaled(size: 12))
     .padding(.horizontal, 10)
     .padding(.vertical, 6)
     .background(theme.bgTertiary, in: .rect(cornerRadius: 6))

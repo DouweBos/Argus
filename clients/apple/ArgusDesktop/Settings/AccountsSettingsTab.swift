@@ -143,16 +143,16 @@ private struct AccountRow: View {
         HStack(spacing: 6) {
           Text(AccountsSettingsTab.name(account))
           if let plan = account.subscriptionType {
-            Text(Self.plans[plan] ?? plan).font(.caption).foregroundStyle(.secondary)
+            Text(Self.plans[plan] ?? plan).font(.scaled(.caption)).foregroundStyle(.secondary)
           }
           if account.needsReauth {
-            Text("Signed out").font(.caption.weight(.medium)).foregroundStyle(theme.error)
+            Text("Signed out").font(.scaled(.caption).weight(.medium)).foregroundStyle(theme.error)
           } else if account.rateLimited {
-            Text("Limit reached").font(.caption.weight(.medium)).foregroundStyle(theme.warning)
+            Text("Limit reached").font(.scaled(.caption).weight(.medium)).foregroundStyle(theme.warning)
           }
         }
         if let detail {
-          Text(detail).font(.caption).foregroundStyle(.secondary)
+          Text(detail).font(.scaled(.caption)).foregroundStyle(.secondary)
         }
       }
       Spacer(minLength: 0)

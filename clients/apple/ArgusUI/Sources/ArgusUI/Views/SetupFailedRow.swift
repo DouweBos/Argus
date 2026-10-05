@@ -19,12 +19,12 @@ public struct SetupFailedRow: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       Label("Setup failed", systemImage: Icon.warning)
-        .font(.subheadline.weight(.semibold))
+        .font(.scaled(.subheadline).weight(.semibold))
         .foregroundStyle(theme.error)
       if let message = session.setupError, !message.isEmpty {
         // The cause is at the end; the start is usually checkout progress.
         Text(message)
-          .font(.caption.monospaced())
+          .font(.scaled(.caption).monospaced())
           .foregroundStyle(.secondary)
           .lineLimit(expanded ? nil : 4)
           .truncationMode(.head)

@@ -56,7 +56,7 @@ public struct AgentRow: View {
       VStack(alignment: .leading, spacing: 2) {
         Text(name).lineLimit(1)
         if let subtitle {
-          Text(subtitle).font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+          Text(subtitle).font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
         }
       }
       Spacer(minLength: 6)
@@ -89,7 +89,7 @@ public struct StoppedAgentRow: View {
         "\(Labels.timeAgo(agent.endedAt)) · \(agent.messageCount) messages"
           + (showBranch ? " · \(agent.branch)" : "")
       )
-      .font(.footnote)
+      .font(.scaled(.footnote))
       .foregroundStyle(.secondary)
       .lineLimit(1)
     }
@@ -111,7 +111,7 @@ public struct AutomationRow: View {
       VStack(alignment: .leading, spacing: 2) {
         Text(automation.name).lineLimit(1)
         Text("\(Labels.triggerLabel(automation)) · \(state)")
-          .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+          .font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
       }
       Spacer(minLength: 0)
     }
@@ -149,14 +149,14 @@ public struct RunRow: View {
           }
         }
         Text("\(Labels.timeAgo(run.startedAt)) · \(run.triggerReason)")
-          .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+          .font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
         if let error = run.error, !error.isEmpty {
-          Text(error).font(.footnote).foregroundStyle(theme.error).lineLimit(2)
+          Text(error).font(.scaled(.footnote)).foregroundStyle(theme.error).lineLimit(2)
         }
       }
       Spacer(minLength: 6)
       Text(Labels.runDuration(run))
-        .font(.system(size: 11, design: .monospaced))
+        .font(.scaled(size: 11, design: .monospaced))
         .foregroundStyle(.secondary)
     }
   }

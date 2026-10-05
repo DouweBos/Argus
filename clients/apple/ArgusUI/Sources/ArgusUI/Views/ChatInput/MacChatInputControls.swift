@@ -208,7 +208,7 @@
     var body: some View {
       VStack(alignment: .leading, spacing: 2) {
         Text("Switch model")
-          .font(.system(size: 11, weight: .semibold))
+          .font(.scaled(size: 11, weight: .semibold))
           .foregroundStyle(theme.textMuted)
           .padding(.horizontal, 8)
         if models.isEmpty {
@@ -225,7 +225,7 @@
                 Text(model.displayName).foregroundStyle(theme.text)
                 if !model.description.isEmpty {
                   Text(model.description)
-                    .font(.system(size: 11))
+                    .font(.scaled(size: 11))
                     .foregroundStyle(theme.textMuted)
                     .lineLimit(1)
                 }

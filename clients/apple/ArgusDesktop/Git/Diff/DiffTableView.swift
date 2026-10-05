@@ -45,11 +45,13 @@ struct DiffTableView: NSViewRepresentable {
     let coordinator = context.coordinator
     coordinator.onAction = onAction
     coordinator.update(diff: diff, layout: layout, actions: actions, palette: DiffPalette(theme))
+    if coordinator.textScale.changed() { coordinator.table?.reloadData() }
   }
 
   @MainActor
   final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate {
     weak var table: NSTableView?
+    var textScale = TextScaleTracker()
     var onAction: ((HunkAction, HunkData, [GroveKit.DiffLine]) -> Void)?
     private(set) var diff: DiffResult?
     private(set) var rows: [DiffRow] = []

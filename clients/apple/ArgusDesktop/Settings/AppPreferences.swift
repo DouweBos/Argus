@@ -28,7 +28,10 @@ final class AppPreferences {
   }
 
   var displaySize: DisplaySize {
-    didSet { defaults.set(displaySize.rawValue, forKey: Key.displaySize) }
+    didSet {
+      defaults.set(displaySize.rawValue, forKey: Key.displaySize)
+      applyDisplaySize()
+    }
   }
 
   /// Applied to every agent spawned without an explicit mode.
@@ -68,9 +71,20 @@ final class AppPreferences {
 
   // MARK: Display size
 
-  /// macOS ignores Dynamic Type for text, so the step lands three ways: the
-  /// control size, the default font every unstyled text inherits, and
-  /// `dynamicTypeSize` for views that read it.
+  /// How the body font compares to macOS's own 13pt.
+  var textScale: CGFloat {
+    switch displaySize {
+    case .larger: 17 / 13
+    case .large: 15 / 13
+    case .default: 1
+    case .small: 12 / 13
+    case .smaller: 11 / 13
+    }
+  }
+
+  /// macOS ignores Dynamic Type for text, so the step lands four ways: the
+  /// control size, the default font every unstyled text inherits, the text
+  /// scale, and `dynamicTypeSize` for views that read it.
   var dynamicTypeSize: DynamicTypeSize {
     switch displaySize {
     case .larger: .xxLarge
@@ -84,11 +98,8 @@ final class AppPreferences {
   /// The body font at this size; macOS's own body is 13pt.
   var bodyFont: Font {
     switch displaySize {
-    case .larger: .system(size: 17)
-    case .large: .system(size: 15)
     case .default: .body
-    case .small: .system(size: 12)
-    case .smaller: .system(size: 11)
+    default: .system(size: 13 * textScale)
     }
   }
 

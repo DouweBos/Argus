@@ -23,7 +23,7 @@ struct HuddleJoinRequests: View {
               Text(
                 "They'll see this agent's whole conversation, can answer its tool prompts, and can drive the shared device."
               )
-              .font(.caption).foregroundStyle(theme.textSecondary)
+              .font(.scaled(.caption)).foregroundStyle(theme.textSecondary)
             }
             Spacer()
             Button("Deny") { huddles.deny(room, guest.devStaticPub) }

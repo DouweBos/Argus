@@ -48,7 +48,7 @@ struct HostFolderPicker: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
       Text("Folders on \(model.hosts.label(request.host))")
-        .font(.headline)
+        .font(.scaled(.headline))
       HStack(spacing: 6) {
         Button {
           if let parent = listing?.parent { Task { await load(parent) } }

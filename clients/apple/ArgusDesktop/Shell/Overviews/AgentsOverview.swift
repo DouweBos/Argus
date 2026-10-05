@@ -46,7 +46,7 @@ struct AgentsOverview: View {
                   tone: row.agent.awaiting != nil ? .warning : row.agent.status.tone,
                   pulse: row.agent.status == .running)
                 Text(Labels.agentName(row.agent)).lineLimit(1)
-                Text(row.agent.agentId.prefix(8)).foregroundStyle(.tertiary).font(.caption.monospaced())
+                Text(row.agent.agentId.prefix(8)).foregroundStyle(.tertiary).font(.scaled(.caption).monospaced())
               }
               .contentShape(.rect)
             }
@@ -135,7 +135,7 @@ struct OverviewHeader: View {
 
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 10) {
-      Text(title).font(.title2.weight(.semibold))
+      Text(title).font(.scaled(.title2).weight(.semibold))
       Text(summary).foregroundStyle(.secondary)
       Spacer()
     }

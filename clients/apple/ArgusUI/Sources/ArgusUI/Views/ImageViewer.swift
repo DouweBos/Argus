@@ -85,7 +85,7 @@ public struct ImageViewerOverlay: View {
           Spacer()
           if viewer.imageIds.count > 1, let index = viewer.currentIndex {
             Text("\(index + 1) of \(viewer.imageIds.count)")
-              .font(.system(size: 12))
+              .font(.scaled(size: 12))
               .foregroundStyle(.white.opacity(0.7))
               .padding(.bottom, 12)
           }

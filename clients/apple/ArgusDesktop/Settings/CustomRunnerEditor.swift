@@ -16,9 +16,9 @@ struct CustomRunnerEditor: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
       HStack {
-        Text(draft.displayName.isEmpty ? "New runner" : draft.displayName).font(.headline)
+        Text(draft.displayName.isEmpty ? "New runner" : draft.displayName).font(.scaled(.headline))
         if let id = draft.runnerId {
-          Text(id).font(.caption.monospaced()).foregroundStyle(.secondary)
+          Text(id).font(.scaled(.caption).monospaced()).foregroundStyle(.secondary)
         }
         Spacer()
         Button("Remove", action: onDelete)
@@ -42,7 +42,7 @@ struct CustomRunnerEditor: View {
           Text("Default model")
           TextField("Default model", text: $draft.defaultModel, prompt: Text("e.g. callstack/Apex"))
             .labelsHidden()
-            .font(.body.monospaced())
+            .font(.scaled(.body).monospaced())
         }
       }
 
@@ -51,7 +51,7 @@ struct CustomRunnerEditor: View {
         HStack {
           TextField("Variable", text: $row.key, prompt: Text("ANTHROPIC_BASE_URL"))
             .labelsHidden()
-            .font(.body.monospaced())
+            .font(.scaled(.body).monospaced())
             .frame(width: 260)
           Group {
             if row.isSecret, !revealed.contains(row.id) {
@@ -61,7 +61,7 @@ struct CustomRunnerEditor: View {
             }
           }
           .labelsHidden()
-          .font(.body.monospaced())
+          .font(.scaled(.body).monospaced())
           if row.isSecret {
             Button(revealed.contains(row.id) ? "Hide" : "Show") { toggle(row.id) }
           }
@@ -74,7 +74,7 @@ struct CustomRunnerEditor: View {
         HStack {
           TextField("Model id", text: $model.modelId, prompt: Text("callstack/Apex"))
             .labelsHidden()
-            .font(.body.monospaced())
+            .font(.scaled(.body).monospaced())
             .frame(width: 260)
           TextField("Label", text: $model.displayName, prompt: Text("Label shown in the picker"))
             .labelsHidden()
@@ -98,7 +98,7 @@ struct CustomRunnerEditor: View {
 
   private func header(_ title: String, add: @escaping () -> Void) -> some View {
     HStack {
-      Text(title).font(.subheadline.weight(.semibold))
+      Text(title).font(.scaled(.subheadline).weight(.semibold))
       Spacer()
       Button(title == "Models" ? "Add Model" : "Add Variable", systemImage: "plus", action: add)
         .buttonStyle(.borderless)

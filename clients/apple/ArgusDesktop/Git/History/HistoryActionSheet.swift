@@ -92,13 +92,13 @@ struct CommitActionSheet: View {
       VStack(alignment: .leading, spacing: 4) {
         ForEach(commits.prefix(4)) { CommitSummaryTile(commit: $0) }
         if commits.count > 4 {
-          Text("and \(commits.count - 4) more").font(.caption).foregroundStyle(.secondary)
+          Text("and \(commits.count - 4) more").font(.scaled(.caption)).foregroundStyle(.secondary)
         }
       }
       if let warning { SheetBanner(message: warning, tone: .warning) }
       if initialText != nil {
         TextEditor(text: $text)
-          .font(.system(size: 13))
+          .font(.scaled(size: 13))
           .frame(height: 120)
           .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(theme.border))
           .accessibilityLabel("Commit message")
@@ -158,7 +158,7 @@ struct ResetCommitSheet: View {
   private func option(_ mode: ResetMode, _ title: String, _ detail: String) -> some View {
     VStack(alignment: .leading, spacing: 1) {
       Text(title)
-      Text(detail).font(.system(size: 11)).foregroundStyle(.secondary)
+      Text(detail).font(.scaled(size: 11)).foregroundStyle(.secondary)
     }
     .padding(.vertical, 2)
     .tag(mode)

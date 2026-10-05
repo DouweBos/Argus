@@ -30,8 +30,8 @@ public struct ActionTiles: View {
       ForEach(actions) { action in
         Button(action: action.run) {
           VStack(spacing: 5) {
-            Image(systemName: action.icon).font(.system(size: 16, weight: .medium))
-            Text(action.label).font(.system(size: 10, weight: .medium)).lineLimit(1)
+            Image(systemName: action.icon).font(.scaled(size: 16, weight: .medium))
+            Text(action.label).font(.scaled(size: 10, weight: .medium)).lineLimit(1)
           }
           .foregroundStyle(action.disabled ? theme.textMuted : theme.textSecondary)
           .frame(maxWidth: .infinity)
@@ -67,7 +67,7 @@ public struct SegmentedControl<Value: Hashable>: View {
           value = option.value
         } label: {
           Text(option.label)
-            .font(.system(size: 13, weight: .semibold))
+            .font(.scaled(size: 13, weight: .semibold))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 7)
             .foregroundStyle(value == option.value ? theme.onAccent : theme.textSecondary)
@@ -129,7 +129,7 @@ public struct ThemedTextField: View {
         TextField(placeholder, text: $text)
       }
     }
-    .font(mono ? .system(size: 14, design: .monospaced) : .system(size: 15))
+    .font(mono ? .scaled(size: 14, design: .monospaced) : .scaled(size: 15))
     .foregroundStyle(theme.text)
     .platformKeyboard(keyboard, input: input)
     .autocorrectionDisabled(input == .code)
@@ -223,11 +223,11 @@ public struct PickerSheet<Value: Hashable>: View {
                 HStack(spacing: 10) {
                   VStack(alignment: .leading, spacing: 2) {
                     Text(option.label)
-                      .font(.system(size: 15))
+                      .font(.scaled(size: 15))
                       .foregroundStyle(theme.text)
                     if let hint = option.hint, !hint.isEmpty {
                       Text(hint)
-                        .font(.system(size: 12))
+                        .font(.scaled(size: 12))
                         .foregroundStyle(theme.textMuted)
                         .lineLimit(2)
                     }
@@ -235,7 +235,7 @@ public struct PickerSheet<Value: Hashable>: View {
                   Spacer(minLength: 8)
                   if selected.contains(option.value) {
                     Image(systemName: Icon.check)
-                      .font(.system(size: 13, weight: .bold))
+                      .font(.scaled(size: 13, weight: .bold))
                       .foregroundStyle(theme.accent)
                   }
                 }

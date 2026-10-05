@@ -13,8 +13,8 @@ struct SectionIntro: View {
       EmptyView()
     } header: {
       VStack(alignment: .leading, spacing: 4) {
-        Text(title).font(.title3.weight(.semibold)).foregroundStyle(theme.text)
-        Text(text).font(.callout).foregroundStyle(theme.textSecondary)
+        Text(title).font(.scaled(.title3).weight(.semibold)).foregroundStyle(theme.text)
+        Text(text).font(.scaled(.callout)).foregroundStyle(theme.textSecondary)
           .fixedSize(horizontal: false, vertical: true)
       }
       .textCase(nil)

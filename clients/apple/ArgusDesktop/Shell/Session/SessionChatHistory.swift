@@ -118,7 +118,7 @@ private struct ChatHistoryRow: View {
       Button(action: open) {
         VStack(alignment: .leading, spacing: 2) {
           Text(entry.title).lineLimit(1)
-          Text(meta).font(.caption).foregroundStyle(theme.textSecondary).lineLimit(1)
+          Text(meta).font(.scaled(.caption)).foregroundStyle(theme.textSecondary).lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
@@ -159,7 +159,7 @@ private struct ChatHistoryViewer: View {
       .frame(minWidth: 640, idealWidth: 760, minHeight: 480, idealHeight: 640)
       .safeAreaInset(edge: .top) {
         Text(chat.entry.title)
-          .font(.headline)
+          .font(.scaled(.headline))
           .lineLimit(1)
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding([.top, .horizontal], 20)
@@ -200,7 +200,7 @@ struct RenameBranchSheet: View {
     .formStyle(.grouped)
     .safeAreaInset(edge: .top) {
       Text("Rename Branch")
-        .font(.headline)
+        .font(.scaled(.headline))
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding([.top, .horizontal], 20)
     }

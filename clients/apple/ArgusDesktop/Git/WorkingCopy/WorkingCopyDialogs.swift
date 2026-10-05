@@ -94,17 +94,17 @@ private struct RenameFileSheet: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("Rename \(entry.fileName)").font(.headline)
+      Text("Rename \(entry.fileName)").font(.scaled(.headline))
       Text(
         entry.workdirStatus == .untracked
           ? "Include folders in the path to move the file."
           : "Tracked files are renamed with git mv, so the rename is staged."
       )
-      .font(.system(size: 12))
+      .font(.scaled(size: 12))
       .foregroundStyle(.secondary)
       TextField("New path", text: $newPath)
         .textFieldStyle(.roundedBorder)
-        .font(.system(size: 12, design: .monospaced))
+        .font(.scaled(size: 12, design: .monospaced))
         .onSubmit { if isValid { onRename(trimmed) } }
       HStack {
         Spacer()

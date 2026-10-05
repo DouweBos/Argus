@@ -17,7 +17,7 @@ struct TranscriptPrompts: View {
         HStack(spacing: 6) {
           StatusDot(tone: .warning, pulse: true)
           Text(title(for: call))
-            .font(.system(size: 12, weight: .semibold))
+            .font(.scaled(size: 12, weight: .semibold))
             .foregroundStyle(theme.text)
         }
         ToolCallCard(agentKey: agentKey, call: call, depth: 0)

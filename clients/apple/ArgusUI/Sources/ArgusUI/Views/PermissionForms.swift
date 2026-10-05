@@ -244,7 +244,7 @@ public struct QuestionFormView: View {
       ForEach(Array(questions.enumerated()), id: \.offset) { index, question in
         VStack(alignment: .leading, spacing: 6) {
           Text(question.header ?? "Question \(index + 1)")
-            .font(.system(size: 11, weight: .bold))
+            .font(.scaled(size: 11, weight: .bold))
             .foregroundStyle(theme.textMuted)
           BodyText(question.question)
 
@@ -294,16 +294,16 @@ public struct QuestionFormView: View {
             ? (selected ? "checkmark.square.fill" : "square")
             : (selected ? "largecircle.fill.circle" : "circle")
         )
-        .font(.system(size: 15))
+        .font(.scaled(size: 15))
         .foregroundStyle(selected ? theme.accent : theme.textMuted)
 
         VStack(alignment: .leading, spacing: 2) {
           Text(isCustom ? "Type your own answer" : label)
-            .font(.system(size: 14))
+            .font(.scaled(size: 14))
             .foregroundStyle(theme.text)
           if let description {
             Text(description)
-              .font(.system(size: 12))
+              .font(.scaled(size: 12))
               .foregroundStyle(theme.textMuted)
           }
         }
@@ -377,7 +377,7 @@ public struct TaskListView: View {
     Card {
       HStack {
         Text("\(title) · \(items.count { $0.status == .completed }) done")
-          .font(.system(size: 11, weight: .bold))
+          .font(.scaled(size: 11, weight: .bold))
           .foregroundStyle(theme.textMuted)
         Spacer()
       }
@@ -385,7 +385,7 @@ public struct TaskListView: View {
         HStack(alignment: .top, spacing: 8) {
           mark(item.status)
           Text(item.text)
-            .font(.system(size: 14))
+            .font(.scaled(size: 14))
             .foregroundStyle(item.status == .completed ? theme.textMuted : theme.text)
             .strikethrough(item.status == .completed)
           Spacer(minLength: 0)
@@ -402,7 +402,7 @@ public struct TaskListView: View {
     switch status {
     case .completed:
       Image(systemName: Icon.check)
-        .font(.system(size: 12, weight: .bold))
+        .font(.scaled(size: 12, weight: .bold))
         .foregroundStyle(theme.success)
         .frame(width: 14, height: 18)
     case .inProgress:

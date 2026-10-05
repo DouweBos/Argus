@@ -19,9 +19,9 @@ struct RunHistoryRow: View {
       Button(action: open) {
         VStack(alignment: .leading, spacing: 2) {
           Text(AutomationText.timestamp(run.startedAt))
-          Text(title).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+          Text(title).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
           if let error = run.error, !error.isEmpty {
-            Text(error).font(.caption).foregroundStyle(theme.error).lineLimit(2)
+            Text(error).font(.scaled(.caption)).foregroundStyle(theme.error).lineLimit(2)
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -70,7 +70,7 @@ struct MemoriesSection: View {
           HStack {
             VStack(alignment: .leading, spacing: 2) {
               Text(memory.name).font(.system(.body, design: .monospaced))
-              Text(memory.description).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+              Text(memory.description).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
             Badge(label: memory.type.rawValue)

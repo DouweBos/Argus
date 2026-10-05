@@ -26,25 +26,39 @@ struct DiffPane: View {
   }
 
   private var header: some View {
+    // Large text makes the controls wider than a narrow pane; they give way
+    // rather than push the panes beside it out of the window.
+    ViewThatFits(in: .horizontal) {
+      headerRow(compact: false)
+      headerRow(compact: true)
+    }
+    .padding(.horizontal, 10)
+    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 34, maxHeight: 34, alignment: .leading)
+    .clipped()
+  }
+
+  private func headerRow(compact: Bool) -> some View {
     HStack(spacing: 8) {
       if let name = path ?? diff?.filePath {
         Image(systemName: "doc.text").foregroundStyle(.secondary)
         Text(name)
-          .font(.system(size: 12, design: .monospaced))
+          .font(.scaled(size: 12, design: .monospaced))
           .lineLimit(1)
           .truncationMode(.head)
           .textSelection(.enabled)
           .layoutPriority(-1)
       }
-      if let stats = diff?.stats {
+      if let stats = diff?.stats, !compact {
         DiffStatsLabel(stats: stats).fixedSize()
       }
-      Spacer()
+      Spacer(minLength: 0)
       accessory
       if let ignoreWhitespace {
         Toggle("Ignore Whitespace", isOn: ignoreWhitespace)
           .toggleStyle(.checkbox)
           .controlSize(.small)
+          .labelsHidden(compact)
+          .help("Ignore Whitespace")
           .fixedSize()
       }
       Picker("Layout", selection: $layout) {
@@ -56,8 +70,6 @@ struct DiffPane: View {
       .labelsHidden()
       .fixedSize()
     }
-    .padding(.horizontal, 10)
-    .frame(height: 34)
   }
 
   @ViewBuilder
@@ -92,7 +104,7 @@ struct DiffStatsLabel: View {
       Text("+\(stats.additions)").foregroundStyle(theme.success)
       Text("−\(stats.deletions)").foregroundStyle(theme.error)
     }
-    .font(.system(size: 11, design: .monospaced))
+    .font(.scaled(size: 11, design: .monospaced))
   }
 }
 
@@ -103,7 +115,7 @@ struct FileStatusBadge: View {
 
   var body: some View {
     Text(letter)
-      .font(.system(size: 10, weight: .bold, design: .monospaced))
+      .font(.scaled(size: 10, weight: .bold, design: .monospaced))
       .foregroundStyle(tone.color(theme))
       .frame(width: 16, height: 16)
       .background(tone.soft(theme), in: .rect(cornerRadius: 4))
@@ -166,7 +178,7 @@ struct FileDiffsView: View {
           Spacer(minLength: 4)
           DiffStatsLabel(stats: file.stats)
         }
-        .font(.system(size: 12))
+        .font(.scaled(size: 12))
         .contextMenu { fileMenu?(file) }
       }
       .listStyle(.sidebar)
@@ -183,5 +195,11 @@ struct FileDiffsView: View {
 
   private var current: FileDiff? {
     files.first { $0.path == selected }
+  }
+}
+
+extension View {
+  @ViewBuilder fileprivate func labelsHidden(_ hidden: Bool) -> some View {
+    if hidden { labelsHidden() } else { self }
   }
 }

@@ -177,14 +177,14 @@ private struct BisectStepCard: View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(spacing: 8) {
         Image(systemName: "scope").foregroundStyle(theme.accent)
-        Text("Test this commit").font(.headline)
+        Text("Test this commit").font(.scaled(.headline))
         Spacer()
         if let remaining = status.remaining {
-          Text("~\(Int(remaining)) revisions left").font(.callout).foregroundStyle(.secondary)
+          Text("~\(Int(remaining)) revisions left").font(.scaled(.callout)).foregroundStyle(.secondary)
         }
       }
       if let ref = status.currentRef {
-        Text(String(ref.prefix(12))).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+        Text(String(ref.prefix(12))).font(.scaled(size: 12, design: .monospaced)).textSelection(.enabled)
       }
       if let subject = status.currentSubject {
         Text(subject).textSelection(.enabled)
@@ -212,9 +212,9 @@ private struct BisectFoundCard: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
-      Label("First bad commit found", systemImage: "flag.checkered").font(.headline)
+      Label("First bad commit found", systemImage: "flag.checkered").font(.scaled(.headline))
         .foregroundStyle(theme.error)
-      Text(String(commit.hash.prefix(12))).font(.system(size: 12, design: .monospaced)).textSelection(.enabled)
+      Text(String(commit.hash.prefix(12))).font(.scaled(size: 12, design: .monospaced)).textSelection(.enabled)
       if !commit.subject.isEmpty { Text(commit.subject).textSelection(.enabled) }
       HStack(spacing: 8) {
         Button("Show in History", action: reveal).keyboardShortcut(.defaultAction)
@@ -258,14 +258,14 @@ private struct BisectLogList: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
-      Text("Log").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+      Text("Log").font(.scaled(.subheadline).weight(.semibold)).foregroundStyle(.secondary)
       ForEach(entries) { entry in
         HStack(spacing: 8) {
           Badge(label: entry.verdict, tone: tone(entry.verdict))
-          Text(String(entry.sha.prefix(8))).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+          Text(String(entry.sha.prefix(8))).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(.secondary)
           Text(entry.subject).lineLimit(1).truncationMode(.tail)
         }
-        .font(.system(size: 12))
+        .font(.scaled(size: 12))
       }
     }
   }

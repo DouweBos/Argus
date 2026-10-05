@@ -78,7 +78,7 @@ struct AutomationsScreen: View {
           VStack(alignment: .leading, spacing: 2) {
             Text(automation.name).fontWeight(.medium)
             if !automation.description.isEmpty {
-              Text(automation.description).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+              Text(automation.description).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
             }
           }
           .contentShape(.rect)

@@ -36,9 +36,9 @@ struct DeviceDetailSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       HStack(alignment: .firstTextBaseline, spacing: 8) {
-        Text(device.name).font(.system(size: 15, weight: .semibold))
+        Text(device.name).font(.scaled(size: 15, weight: .semibold))
         Text("\(device.platform.rawValue) · \(device.online ? "online" : "offline")")
-          .font(.system(size: 12))
+          .font(.scaled(size: 12))
           .foregroundStyle(theme.textMuted)
         Spacer()
       }
@@ -67,7 +67,7 @@ struct DeviceDetailSheet: View {
         link(device.repoRoot.map { ($0 as NSString).lastPathComponent }, run: onOpenProject)
       }
     }
-    .font(.system(size: 12))
+    .font(.scaled(size: 12))
   }
 
   private func row(_ label: String, @ViewBuilder value: () -> some View) -> some View {
@@ -95,7 +95,7 @@ struct DeviceDetailSheet: View {
         .clipShape(.rect(cornerRadius: theme.radiusSmall))
     } else {
       Text(device.online ? "No preview for this device." : "Boot the device to see it here.")
-        .font(.system(size: 12))
+        .font(.scaled(size: 12))
         .foregroundStyle(theme.textMuted)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(theme.bgSecondary, in: .rect(cornerRadius: theme.radiusSmall))

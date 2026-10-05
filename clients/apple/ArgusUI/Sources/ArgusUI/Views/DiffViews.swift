@@ -26,7 +26,7 @@ public struct FileDiffCard: View {
       } label: {
         HStack(spacing: 8) {
           Image(systemName: expanded ? Icon.chevronDown : Icon.chevronRight)
-            .font(.system(size: 11, weight: .semibold))
+            .font(.scaled(size: 11, weight: .semibold))
             .foregroundStyle(theme.textMuted)
           MonoText(
             text: file.displayPath, size: 12, color: theme.text, lineLimit: 1,
@@ -34,12 +34,12 @@ public struct FileDiffCard: View {
           Spacer(minLength: 6)
           if file.additions > 0 {
             Text("+\(file.additions)")
-              .font(.system(size: 11, design: .monospaced))
+              .font(.scaled(size: 11, design: .monospaced))
               .foregroundStyle(theme.success)
           }
           if file.deletions > 0 {
             Text("-\(file.deletions)")
-              .font(.system(size: 11, design: .monospaced))
+              .font(.scaled(size: 11, design: .monospaced))
               .foregroundStyle(theme.error)
           }
           Badge(label: file.status.label, tone: tone)
@@ -59,7 +59,7 @@ public struct FileDiffCard: View {
           ForEach(file.hunks) { hunk in
             VStack(alignment: .leading, spacing: 0) {
               Text(hunk.header)
-                .font(.system(size: 11, design: .monospaced))
+                .font(.scaled(size: 11, design: .monospaced))
                 .foregroundStyle(theme.textMuted)
                 .padding(.vertical, 4)
                 .padding(.horizontal, 6)
@@ -96,11 +96,11 @@ public struct DiffLinesView: View {
           ForEach(visible) { line in
             HStack(spacing: 6) {
               Text(gutter(line))
-                .font(.system(size: 11, design: .monospaced))
+                .font(.scaled(size: 11, design: .monospaced))
                 .foregroundStyle(theme.textMuted)
                 .frame(width: 34, alignment: .trailing)
               Text("\(prefix(line))\(line.text)")
-                .font(.system(size: 11.5, design: .monospaced))
+                .font(.scaled(size: 11.5, design: .monospaced))
                 .foregroundStyle(color(line))
                 .fixedSize(horizontal: true, vertical: false)
             }
@@ -112,7 +112,7 @@ public struct DiffLinesView: View {
       }
       if lines.count > Self.collapsedCount {
         Button(showAll ? "Collapse" : "See all \(lines.count) lines") { showAll.toggle() }
-          .font(.system(size: 12))
+          .font(.scaled(size: 12))
           .foregroundStyle(theme.accent)
           .padding(.vertical, 6)
           .padding(.horizontal, 6)

@@ -13,7 +13,7 @@ struct InspectionLauncherView: View {
   var body: some View {
     VStack(spacing: 10) {
       Image(systemName: "square.3.layers.3d")
-        .font(.system(size: 22))
+        .font(.scaled(size: 22))
         .foregroundStyle(theme.accent)
         .frame(width: 44, height: 44)
         .background(theme.accentSoft, in: RoundedRectangle(cornerRadius: theme.radiusSmall))
@@ -39,7 +39,7 @@ struct InspectionLauncherView: View {
       }
       .buttonStyle(.borderedProminent)
       .disabled(model.launching)
-      Text(bundleId).font(.caption.monospaced()).foregroundStyle(theme.textMuted)
+      Text(bundleId).font(.scaled(.caption).monospaced()).foregroundStyle(theme.textMuted)
     }
   }
 
@@ -86,7 +86,7 @@ struct InspectionLauncherView: View {
       HStack {
         VStack(alignment: .leading, spacing: 1) {
           Text(app.name).foregroundStyle(theme.text)
-          Text(app.bundleId).font(.caption.monospaced()).foregroundStyle(theme.textMuted)
+          Text(app.bundleId).font(.scaled(.caption).monospaced()).foregroundStyle(theme.textMuted)
         }
         Spacer(minLength: 0)
         Image(systemName: Icon.chevronRight).foregroundStyle(theme.textMuted)
@@ -106,10 +106,10 @@ struct InspectionLauncherView: View {
   }
 
   private func title(_ text: String) -> some View {
-    Text(text).font(.headline).foregroundStyle(theme.text).multilineTextAlignment(.center)
+    Text(text).font(.scaled(.headline)).foregroundStyle(theme.text).multilineTextAlignment(.center)
   }
 
   private func hint(_ text: String) -> some View {
-    Text(text).font(.callout).foregroundStyle(theme.textMuted).multilineTextAlignment(.center)
+    Text(text).font(.scaled(.callout)).foregroundStyle(theme.textMuted).multilineTextAlignment(.center)
   }
 }

@@ -67,7 +67,7 @@ private struct PrereqRow: View {
         icon
         Text(meta.title)
         if let message = fixing ? "Installing…" : result?.message {
-          Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+          Text(message).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(2)
         }
         Spacer()
         // Git identity needs a name and email; Settings → Git owns that form.
@@ -77,12 +77,12 @@ private struct PrereqRow: View {
       }
       if failing, !fixing {
         if let command = meta.installCommand {
-          Text(command).font(.caption.monospaced()).textSelection(.enabled)
+          Text(command).font(.scaled(.caption).monospaced()).textSelection(.enabled)
         }
         if let url = meta.installURL {
           Button("How to install: \(meta.installLabel ?? url)") { open(url) }
             .buttonStyle(.link)
-            .font(.caption)
+            .font(.scaled(.caption))
         }
       }
     }

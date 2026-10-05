@@ -129,7 +129,7 @@ private struct ProposalSummaryRow: View {
           Image(systemName: "lightbulb").foregroundStyle(theme.accent)
           VStack(alignment: .leading, spacing: 2) {
             Text(proposal.title).fontWeight(.medium).lineLimit(1)
-            Text(proposal.summary).font(.caption).foregroundStyle(theme.textSecondary).lineLimit(2)
+            Text(proposal.summary).font(.scaled(.caption)).foregroundStyle(theme.textSecondary).lineLimit(2)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           Image(systemName: "chevron.right").foregroundStyle(theme.textMuted)
@@ -158,7 +158,7 @@ struct HomeRecentRunsSection: View {
     } content: {
       if runs.isEmpty {
         Text("Nothing has run yet. Enable an automation, or try a quick run.")
-          .foregroundStyle(theme.textMuted).font(.callout)
+          .foregroundStyle(theme.textMuted).font(.scaled(.callout))
       } else {
         VStack(alignment: .leading, spacing: 2) {
           ForEach(runs.prefix(Self.limit)) { run in
@@ -174,7 +174,7 @@ struct HomeRecentRunsSection: View {
                 Badge(label: run.status.rawValue, tone: run.status.tone)
                 Text(run.isQuick ? "Quick run" : run.automationName).lineLimit(1)
                 Spacer()
-                Text(Labels.timeAgo(run.startedAt)).font(.caption).foregroundStyle(theme.textMuted)
+                Text(Labels.timeAgo(run.startedAt)).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
               }
               .padding(.vertical, 5)
               .contentShape(.rect)
@@ -198,9 +198,9 @@ struct HomeSection<Trailing: View, Content: View>: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(spacing: 8) {
-        Text(title.uppercased()).font(.system(size: 11, weight: .semibold)).foregroundStyle(theme.textMuted)
+        Text(title.uppercased()).font(.scaled(size: 11, weight: .semibold)).foregroundStyle(theme.textMuted)
         if let note {
-          Text(note).font(.system(size: 11, weight: .medium)).foregroundStyle(theme.warning)
+          Text(note).font(.scaled(size: 11, weight: .medium)).foregroundStyle(theme.warning)
         }
         Spacer()
         trailing()

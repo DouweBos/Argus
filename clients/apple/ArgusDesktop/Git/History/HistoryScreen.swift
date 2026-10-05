@@ -100,8 +100,8 @@ private struct HistoryToolbar: View {
 
   var body: some View {
     HStack(spacing: 8) {
-      Text(title).font(.system(size: 13, weight: .semibold)).lineLimit(1)
-      Text(count).font(.system(size: 11)).foregroundStyle(.secondary)
+      Text(title).font(.scaled(size: 13, weight: .semibold)).lineLimit(1)
+      Text(count).font(.scaled(size: 11)).foregroundStyle(.secondary)
       if history.isLoading { ProgressView().controlSize(.mini) }
       Spacer()
       TextField(

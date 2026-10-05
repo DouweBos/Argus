@@ -67,7 +67,7 @@ struct NewSessionSheet: View {
     .safeAreaInset(edge: .top) {
       // A sheet shows no navigation title; say where the session goes.
       Text("New Session in \(project.name)")
-        .font(.headline)
+        .font(.scaled(.headline))
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding([.top, .horizontal], 20)
     }
@@ -116,7 +116,7 @@ struct DeleteSessionSheet: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
-      Text("Delete “\(session.displayName ?? session.branch)”?").font(.headline)
+      Text("Delete “\(session.displayName ?? session.branch)”?").font(.scaled(.headline))
       Text("Its worktree is removed and any agents in it are stopped.")
         .foregroundStyle(.secondary)
       Toggle("Also delete the branch \(session.branch)", isOn: $deleteBranch)

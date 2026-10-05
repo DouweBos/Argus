@@ -113,8 +113,8 @@ struct RunScreen: View {
 
   private func stat(_ label: String, _ value: String) -> some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text(label).font(.caption).foregroundStyle(theme.textMuted)
-      Text(value).font(.title3.weight(.semibold)).monospacedDigit().textSelection(.enabled)
+      Text(label).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
+      Text(value).font(.scaled(.title3).weight(.semibold)).monospacedDigit().textSelection(.enabled)
     }
   }
 

@@ -45,7 +45,7 @@ struct GitSidebar: View {
   }
 
   private func row(_ title: String, _ symbol: String, _ route: GitRoute, count: Int = 0) -> some View {
-    Label(title, systemImage: symbol)
+    SidebarLabel(title, systemImage: symbol)
       .badge(count)
       .tag(GitSidebarTag.view(route.segment))
   }

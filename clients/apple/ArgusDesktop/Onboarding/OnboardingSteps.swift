@@ -19,7 +19,7 @@ struct OnboardingSetupStep: View {
         PrereqChecklist(ids: SetupChecks.core)
         if checks.results[.claudeCli]?.status == .pass {
           VStack(alignment: .leading, spacing: 8) {
-            Text("Claude account").font(.headline)
+            Text("Claude account").font(.scaled(.headline))
             ClaudeSignInView()
           }
         }
@@ -70,7 +70,7 @@ struct OnboardingProjectStep: View {
       onBack: generator == nil ? { go(.setup) } : { generator = nil }
     ) {
       if let generator {
-        Label(projectName(generator.repoRoot), systemImage: "folder.fill").font(.headline)
+        Label(projectName(generator.repoRoot), systemImage: "folder.fill").font(.scaled(.headline))
         ArgusJsonReviewView(generator: generator)
       } else {
         picker
@@ -110,7 +110,7 @@ struct OnboardingProjectStep: View {
       let recents = onboarding.recentProjects.filter { FileManager.default.fileExists(atPath: $0) }
       if !recents.isEmpty {
         VStack(alignment: .leading, spacing: 6) {
-          Text("Recent projects").font(.headline)
+          Text("Recent projects").font(.scaled(.headline))
           ForEach(recents, id: \.self) { path in
             Button {
               guard let backend = model.backend else { return }
@@ -120,7 +120,7 @@ struct OnboardingProjectStep: View {
                 Image(systemName: "folder")
                 VStack(alignment: .leading) {
                   Text(projectName(path))
-                  Text(path).font(.caption).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
+                  Text(path).font(.scaled(.caption)).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
                 }
               }
             }
@@ -165,7 +165,7 @@ private struct ExamplesList: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
-      Text("Or try an example").font(.headline)
+      Text("Or try an example").font(.scaled(.headline))
       if let examples = onboarding.examples {
         if examples.isEmpty { Text("No examples available.").foregroundStyle(theme.textMuted) }
         ForEach(examples, id: \.slug) { example in
@@ -173,7 +173,7 @@ private struct ExamplesList: View {
             Image(systemName: icon(example.platform.rawValue)).frame(width: 18)
             VStack(alignment: .leading, spacing: 2) {
               Text(example.name)
-              Text(example.description).font(.caption).foregroundStyle(theme.textMuted)
+              Text(example.description).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
                 .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()

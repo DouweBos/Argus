@@ -60,7 +60,7 @@ struct GitRefSections: View {
     if !refs.submodules.isEmpty {
       Section("Submodules") {
         ForEach(refs.submodules) { submodule in
-          Label(submodule.path, systemImage: submodule.state == .upToDate ? "shippingbox" : "shippingbox.fill")
+          SidebarLabel(submodule.path, systemImage: submodule.state == .upToDate ? "shippingbox" : "shippingbox.fill")
             .help(submodule.url ?? submodule.path)
             .tag(GitSidebarTag.view(GitRoute.submodules.segment))
         }
@@ -75,7 +75,7 @@ struct GitRefSections: View {
 
   private func archivedRow(_ name: String, actions: RefActions) -> some View {
     let exists = refs.localBranches.contains { $0.name == name }
-    return Label(name, systemImage: "archivebox")
+    return SidebarLabel(name, systemImage: "archivebox")
       .foregroundStyle(exists ? theme.textSecondary : theme.textMuted)
       .help(exists ? name : "\(name) no longer exists")
       .tag(GitSidebarTag.branch(name))
@@ -97,7 +97,7 @@ struct GitRefSections: View {
     ) {
       ForEach(branches) { RemoteBranchRow(branch: $0, actions: actions) }
     } label: {
-      Label(remote.name, systemImage: "network")
+      SidebarLabel(remote.name, systemImage: "network")
         .help(remote.url)
         .contextMenu {
           Button("Fetch \(remote.name)") { Task { await actions.fetch(remote: remote.name) } }
@@ -114,7 +114,7 @@ struct GitRefSections: View {
   }
 
   private func worktreeRow(_ worktree: WorktreeInfo) -> some View {
-    Label(
+    SidebarLabel(
       worktree.branch ?? "Detached", systemImage: worktree.isMain ? "folder.fill" : "folder"
     )
     .foregroundStyle(worktree.isPrunable ? theme.textMuted : theme.text)
