@@ -44,12 +44,26 @@ public actor Transport {
   private var continuation: AsyncStream<Event>.Continuation?
   private var pump: Task<Void, Never>?
   private var lastState: State = .offline
+  /// Sealed frames in the order they were numbered and encrypted: the gateway
+  /// drops a frame whose `seq` is behind the last one, and Noise needs nonce
+  /// order, so they reach the socket one at a time, first in first out.
+  private var outbox: AsyncStream<Data>.Continuation
+  private var writer: Task<Void, Never>
 
   public init(identity: DeviceIdentity, url: String? = nil) {
     self.identity = identity
     self.url = url ?? identity.url
     let endpoint = URL(string: "\(self.url)/device")!
     self.socket = GatewaySocket(url: endpoint)
+    (outbox, writer) = Self.makeWriter(socket)
+  }
+
+  private static func makeWriter(_ socket: GatewaySocket) -> (AsyncStream<Data>.Continuation, Task<Void, Never>) {
+    let (frames, outbox) = AsyncStream<Data>.makeStream()
+    let writer = Task {
+      for await frame in frames { await socket.send(frame) }
+    }
+    return (outbox, writer)
   }
 
   public var state: State { lastState }
@@ -103,6 +117,10 @@ public actor Transport {
     session = nil
     sendSeq = 0
     recvSeq = -1
+    // Frames sealed for the old session mean nothing to the next one.
+    writer.cancel()
+    outbox.finish()
+    (outbox, writer) = Self.makeWriter(socket)
     for (_, cont) in pending {
       cont.resume(throwing: TransportError.notReady)
     }
@@ -181,12 +199,13 @@ public actor Transport {
     }
   }
 
-  private func emit(_ data: Data) async {
+  /// Seals now, in numbering order, and queues the frame for the writer.
+  private func emit(_ data: Data) {
     guard let session else { return }
     var plain = Data([Self.tagJSON])
     plain.append(data)
     guard let sealed = try? session.encrypt(plain) else { return }
-    await socket.send(sealed)
+    outbox.yield(sealed)
   }
 
   @discardableResult
@@ -240,15 +259,12 @@ public actor Transport {
     _ method: String, _ params: Params, timeout: Duration
   ) async throws -> ResponseEnvelope {
     guard session != nil else { throw TransportError.notReady }
-    let id = "r\(sendSeq)"
-    let envelope = RequestEnvelope(seq: sendSeq, id: id, method: method, params: params)
-    sendSeq += 1
-    let data = try ProtocolCodec.encoder.encode(envelope)
+    let json = try ProtocolCodec.decoder.decode(JSONValue.self, from: ProtocolCodec.encoder.encode(params))
 
     let response = try await withThrowingTaskGroup(of: ResponseEnvelope.self) { group in
       group.addTask { [weak self] in
         guard let self else { throw TransportError.notReady }
-        return try await self.awaitResponse(id: id, sending: data)
+        return try await self.awaitResponse(method, json)
       }
       group.addTask {
         try await Task.sleep(for: timeout)
@@ -264,11 +280,16 @@ public actor Transport {
   }
 
   /// Cancellable, so a timed-out request doesn't keep its task group waiting.
-  private func awaitResponse(id: String, sending data: Data) async throws -> ResponseEnvelope {
-    try await withTaskCancellationHandler {
+  /// Numbered in the same actor turn it's sealed in, so `seq` follows send order.
+  private func awaitResponse(_ method: String, _ params: JSONValue) async throws -> ResponseEnvelope {
+    let id = "r\(sendSeq)"
+    let envelope = RequestEnvelope(seq: sendSeq, id: id, method: method, params: params)
+    sendSeq += 1
+    let data = try ProtocolCodec.encoder.encode(envelope)
+    return try await withTaskCancellationHandler {
       try await withCheckedThrowingContinuation { continuation in
         pending[id] = continuation
-        Task { await emit(data) }
+        emit(data)
       }
     } onCancel: {
       Task { await self.cancel(id) }
@@ -288,6 +309,6 @@ public actor Transport {
       seq: sendSeq, action: on ? "subscribe" : "unsubscribe", agentId: agentId)
     sendSeq += 1
     guard let data = try? ProtocolCodec.encoder.encode(envelope) else { return }
-    await emit(data)
+    emit(data)
   }
 }

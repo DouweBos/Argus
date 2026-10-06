@@ -233,15 +233,12 @@ public actor LocalTransport {
     -> ResponseEnvelope
   {
     guard lastState == .ready else { throw Transport.TransportError.notReady }
-    let id = "r\(sendSeq)"
-    let data = try ProtocolCodec.encoder.encode(
-      RequestEnvelope(seq: sendSeq, id: id, method: method, params: params))
-    sendSeq += 1
+    let json = try ProtocolCodec.decoder.decode(JSONValue.self, from: ProtocolCodec.encoder.encode(params))
 
     let response = try await withThrowingTaskGroup(of: ResponseEnvelope.self) { group in
       group.addTask { [weak self] in
         guard let self else { throw Transport.TransportError.notReady }
-        return try await self.awaitResponse(id: id, sending: data)
+        return try await self.awaitResponse(method, json)
       }
       group.addTask {
         try await Task.sleep(for: Self.requestTimeout)
@@ -255,8 +252,13 @@ public actor LocalTransport {
     return response
   }
 
-  private func awaitResponse(id: String, sending data: Data) async throws -> ResponseEnvelope {
-    try await withTaskCancellationHandler {
+  /// Numbered in the same actor turn it's written in: the host drops a frame
+  /// whose `seq` is behind the last one it read.
+  private func awaitResponse(_ method: String, _ params: JSONValue) async throws -> ResponseEnvelope {
+    let id = "r\(sendSeq)"
+    let data = try ProtocolCodec.encoder.encode(RequestEnvelope(seq: sendSeq, id: id, method: method, params: params))
+    sendSeq += 1
+    return try await withTaskCancellationHandler {
       try await withCheckedThrowingContinuation { continuation in
         pending[id] = continuation
         write(data)

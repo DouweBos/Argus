@@ -57,6 +57,15 @@ struct LocalTransportTests {
     let snapshot = try await transport.request(ArgusProtocol.Commands.StateHydrate.self, EmptyParams())
     #expect(snapshot.sessions.isEmpty)
 
+    // A burst: the host drops a request numbered behind one it already read,
+    // so each has to leave in the order it was numbered or it times out.
+    try await withThrowingTaskGroup(of: Void.self) { group in
+      for _ in 0..<64 {
+        group.addTask { _ = try await transport.request(ArgusProtocol.Commands.StateHydrate.self, EmptyParams()) }
+      }
+      try await group.waitForAll()
+    }
+
     // Host tier: only the local console may call it. It comes straight back
     // as a delegated platform request.
     _ = try await transport.request(
