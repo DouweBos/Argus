@@ -40,4 +40,39 @@ struct DiffRowBuilderTests {
   @Test func emptyHunksHaveNoPairs() {
     #expect(pairs("").isEmpty)
   }
+
+  private func diff(_ hunks: String...) -> DiffResult {
+    DiffResult(
+      filePath: "a.txt",
+      hunks: hunks.enumerated().map { h, types in
+        HunkData(id: "\(h)", header: "@@", oldStart: 1, oldCount: 1, newStart: 1, newCount: 1, lines: lines(types))
+      },
+      stats: DiffStats(additions: 0, deletions: 0))
+  }
+
+  @Test func inlineRowsAreEachHunksHeaderThenItsLines() {
+    #expect(
+      DiffRowBuilder.rows(for: diff(" -", "+"), layout: .inline) == [
+        DiffRow(hunk: 0, kind: .header), DiffRow(hunk: 0, kind: .line(0)), DiffRow(hunk: 0, kind: .line(1)),
+        DiffRow(hunk: 1, kind: .header), DiffRow(hunk: 1, kind: .line(0)),
+      ])
+  }
+
+  @Test func splitRowsAreEachHunksHeaderThenItsPairs() {
+    #expect(
+      DiffRowBuilder.rows(for: diff(" -+", "-"), layout: .split) == [
+        DiffRow(hunk: 0, kind: .header), DiffRow(hunk: 0, kind: .pair(left: 0, right: 0)),
+        DiffRow(hunk: 0, kind: .pair(left: 1, right: 2)),
+        DiffRow(hunk: 1, kind: .header), DiffRow(hunk: 1, kind: .pair(left: 0, right: nil)),
+      ])
+  }
+
+  @Test func aDiffWithNoHunksHasNoRows() {
+    #expect(DiffRowBuilder.rows(for: diff(), layout: .split).isEmpty)
+    #expect(DiffRowBuilder.widestLine(in: diff()) == 0)
+  }
+
+  @Test func theWidestLineIsCountedAcrossHunks() {
+    #expect(DiffRowBuilder.widestLine(in: diff("  ", String(repeating: " ", count: 11))) == "line 10".count)
+  }
 }
