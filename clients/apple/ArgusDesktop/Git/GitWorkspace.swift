@@ -16,6 +16,8 @@ final class GitWorkspace {
   /// On a paired host: git runs there, and its broadcasts stand in for a file watcher.
   let isRemote: Bool
   let repository: GitRepository
+  /// Runs git where the worktree is, for what GroveKit's engine doesn't wrap.
+  let runner: any GitRunner
   /// One read of branches, tags and remotes per refresh, shared by every view.
   let refs: RepositoryRefs
   let workingCopy: WorkingCopyViewModel
@@ -60,12 +62,15 @@ final class GitWorkspace {
 
   var scope: String { isProjectRoot ? "project" : "session" }
 
-  init(session: RemoteSession, repository: GitRepository, host: HostStore, isRemote: Bool = false) {
+  init(
+    session: RemoteSession, repository: GitRepository, runner: any GitRunner, host: HostStore, isRemote: Bool = false
+  ) {
     sessionId = session.id
     self.isRemote = isRemote
     repoRoot = session.repoRoot
     isProjectRoot = session.kind == .projectRoot
     self.repository = repository
+    self.runner = runner
     self.host = host
     let refs = RepositoryRefs(repository: repository, readsStatus: false)
     self.refs = refs
@@ -108,7 +113,7 @@ final class GitWorkspace {
       return await refreshAll()
     }
     guard watcher == nil else { return }
-    let watcher = RepositoryWatcher(path: repository.path, runner: LocalGitRunner()) { [weak self] in
+    let watcher = RepositoryWatcher(path: repository.path, runner: runner) { [weak self] in
       Task { @MainActor in await self?.refreshAll() }
     }
     self.watcher = watcher
