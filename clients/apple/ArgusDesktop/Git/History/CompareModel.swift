@@ -45,7 +45,7 @@ final class CompareModel {
     guard loadedKey == key else { return }
     mergeBase = base
     wouldConflict = conflicts
-    let diffs = try? await Self.diffs(repository: workspace.repository, shell: shell, base: base, right: right)
+    let diffs = try? await workspace.repository.diff(from: base ?? left, to: right)
     guard loadedKey == key else { return }
     files = diffs ?? []
     isLoadingFiles = false
@@ -63,22 +63,5 @@ final class CompareModel {
     case 1: return (base, true)
     default: return (base, nil)
     }
-  }
-
-  /// GroveKit only diffs commits, so the range diff is a commit object made
-  /// for it: `right`'s tree on the merge base. No ref, index or worktree is
-  /// touched, and fixed identity and dates make it the same object every time.
-  private static func diffs(repository: GitRepository, shell: GitShell, base: String?, right: String) async throws
-    -> [FileDiff]
-  {
-    let env = [
-      "GIT_AUTHOR_NAME": "Argus", "GIT_AUTHOR_EMAIL": "argus@localhost", "GIT_AUTHOR_DATE": "1970-01-01T00:00:00Z",
-      "GIT_COMMITTER_NAME": "Argus", "GIT_COMMITTER_EMAIL": "argus@localhost",
-      "GIT_COMMITTER_DATE": "1970-01-01T00:00:00Z",
-    ]
-    var args = ["commit-tree", "\(right)^{tree}", "-m", "compare"]
-    if let base, !base.isEmpty { args += ["-p", base] }
-    let sha = try await shell.run(args, environment: env).stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-    return try await repository.diffForCommit(sha)
   }
 }
