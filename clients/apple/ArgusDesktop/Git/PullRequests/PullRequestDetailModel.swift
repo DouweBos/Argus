@@ -50,7 +50,7 @@ final class PullRequestDetailModel {
     do {
       let patch = try await backend.request(
         ArgusProtocol.Commands.GetPullRequestDiff.self, .init(owner: owner, repo: name, number: Double(number)))
-      files = try await PullRequestPatch.fileDiffs(patch: patch, number: number)
+      files = DiffParser.fileDiffs(patch: patch)
       diffError = nil
     } catch {
       diffError = HostStore.describe(error)
