@@ -22,37 +22,37 @@ struct HistoryActionSheet: View {
       CommitActionSheet(
         history: history, commits: [commit], symbol: "arrow.uturn.backward", title: "Revert Commit",
         message: "Creates a new commit that undoes the changes made in this commit.", primaryTitle: "Revert"
-      ) { _ in await actions.perform(.revert) { await history.revert(commit) } }
+      ) { _ in await actions.perform { await history.revert(commit) } }
     case .reset(let commit):
       ResetCommitSheet(history: history, commit: commit) { mode in
-        await actions.perform(.reset) { await history.reset(to: commit, mode: mode) }
+        await actions.perform { await history.reset(to: commit, mode: mode) }
       }
     case .reword(let commit):
       CommitActionSheet(
         history: history, commits: [commit], symbol: "pencil", title: "Edit Commit Message",
         message: rewriteNote(from: commit), warning: pushedWarning(from: commit), initialText: commit.message,
         primaryTitle: "Save Message"
-      ) { message in await actions.perform(.reword) { await history.reword(commit, message: message) } }
+      ) { message in await actions.perform { await history.reword(commit, message: message) } }
     case .squash(let commit):
       let parent = commit.parentIDs.first.flatMap { history.commit(withID: $0) } ?? commit
       CommitActionSheet(
         history: history, commits: [commit], symbol: "arrow.triangle.merge", title: "Squash with Parent",
         message: "Combines this commit with its parent. " + rewriteNote(from: parent),
         warning: pushedWarning(from: parent), initialText: history.squashMessage(for: commit), primaryTitle: "Squash"
-      ) { message in await actions.perform(.squash) { await history.squashWithParent(commit, message: message) } }
+      ) { message in await actions.perform { await history.squashWithParent(commit, message: message) } }
     case .squashCommits(let commits):
       let oldest = commits.last ?? commits[0]
       CommitActionSheet(
         history: history, commits: commits, symbol: "arrow.triangle.merge", title: "Squash \(commits.count) Commits",
         message: "Combines these commits into one. " + rewriteNote(from: oldest),
         warning: pushedWarning(from: oldest), initialText: history.squashMessage(for: commits), primaryTitle: "Squash"
-      ) { message in await actions.perform(.squash) { await history.squash(commits, message: message) } }
+      ) { message in await actions.perform { await history.squash(commits, message: message) } }
     case .drop(let commit):
       CommitActionSheet(
         history: history, commits: [commit], symbol: "trash", title: "Drop Commit",
         message: "Removes this commit and its changes from the branch. " + rewriteNote(from: commit),
         warning: pushedWarning(from: commit), primaryTitle: "Drop Commit", isDestructive: true
-      ) { _ in await actions.perform(.drop) { await history.drop(commit) } }
+      ) { _ in await actions.perform { await history.drop(commit) } }
     case .fileHistory(let path):
       FileHistorySheet(workspace: actions.workspace, path: path) { history.dismissAction() }
     case .interactiveRebase, .compare:

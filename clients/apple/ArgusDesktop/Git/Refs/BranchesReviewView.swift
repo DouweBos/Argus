@@ -33,7 +33,6 @@ struct BranchesReviewView: View {
         Task {
           review.dismissError()
           await review.confirmDelete(pending)
-          workspace.track(.branchDelete, success: review.errorMessage == nil)
         }
       }
       Button("Cancel", role: .cancel) { review.cancelDelete() }

@@ -76,6 +76,15 @@ final class GitWorkspace {
     branchesReview = BranchesReviewViewModel(repository: repository, refs: refs)
     blame = BlameViewModel(repository: repository)
     let refresh: () async -> Void = { [weak self] in await self?.refreshAll() }
+    let report: GroveKitActionHandler = { [weak self] in self?.report($0, success: $1) }
+    // The working copy's only config change is switching to a saved identity.
+    workingCopy.onAction = { [weak self] in
+      if $0 == .config { self?.track(.identity, success: $1) } else { self?.report($0, success: $1) }
+    }
+    history.onAction = report
+    stashes.onAction = report
+    reflog.onAction = report
+    branchesReview.onAction = report
     workingCopy.onRepositoryChanged = refresh
     workingCopy.undoManager = undo
     history.onRepositoryChanged = refresh
@@ -161,6 +170,7 @@ final class GitWorkspace {
     let vm = HistoryViewModel(repository: repository, refs: refs)
     vm.filterBranch = ref
     vm.onRepositoryChanged = { [weak self] in await self?.refreshAll() }
+    vm.onAction = { [weak self] in self?.report($0, success: $1) }
     vm.undoManager = undo
     filteredHistory[ref] = vm
     while filteredHistoryOrder.count > 8 {
@@ -258,6 +268,11 @@ final class GitWorkspace {
 
   func track(_ action: MacTelemetryEvent.GitAction, success: Bool) {
     MacTelemetry.capture(.gitUsed(action: action, scope: scope, remote: isRemote, success: success))
+  }
+
+  /// A git action a GroveKit view model ran, from its `onAction` hook.
+  func report(_ action: GroveKitAction, success: Bool) {
+    if let action = MacTelemetryEvent.GitAction(action) { track(action, success: success) }
   }
 
   func undoLast(redo: Bool) async {

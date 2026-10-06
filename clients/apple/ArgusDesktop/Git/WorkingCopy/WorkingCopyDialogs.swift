@@ -6,7 +6,6 @@ import SwiftUI
 /// renaming and moving to the Trash.
 struct WorkingCopyDialogs: ViewModifier {
   let workspace: GitWorkspace
-  @Binding var pendingDiscardAction: HunkAction?
 
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
   private var actions: WorkingCopyActions { WorkingCopyActions(workspace: workspace) }
@@ -51,8 +50,7 @@ struct WorkingCopyDialogs: ViewModifier {
   }
 
   private func confirm(_ pending: PendingHunkDiscard, dontAskAgain: Bool) {
-    let action = pendingDiscardAction
-    Task { await actions.confirmHunkDiscard(pending, action: action, dontAskAgain: dontAskAgain) }
+    Task { await actions.confirmHunkDiscard(pending, dontAskAgain: dontAskAgain) }
   }
 
   private func present(_ shown: Bool, dismiss: @escaping () -> Void) -> Binding<Bool> {

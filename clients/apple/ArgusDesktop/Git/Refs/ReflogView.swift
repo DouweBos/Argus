@@ -33,7 +33,6 @@ struct ReflogView: View {
         Task {
           reflog.dismissError()
           await reflog.confirmReset(pending)
-          workspace.track(.reset, success: reflog.errorMessage == nil)
         }
       }
       Button("Cancel", role: .cancel) { reflog.cancelReset() }
@@ -114,7 +113,6 @@ struct ReflogView: View {
           workspace.reflog.beginCreateBranch(from: entry)
           workspace.reflog.dismissError()
           await workspace.reflog.createBranch(named: name, checkout: checkout)
-          workspace.track(.branchCreate, success: workspace.reflog.errorMessage == nil)
         }
       }
     }
