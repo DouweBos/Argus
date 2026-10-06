@@ -15,6 +15,8 @@ final class GitWorkspaces {
   }
 
   private(set) var slots: [String: Slot] = [:]
+  /// Grove's names, so restacks and branch parents are shared with Grove on the same repository.
+  private static let naming = GitNaming(name: "grove")
   private let host: HostStore
   private var stopObserving: (() -> Void)?
 
@@ -52,7 +54,8 @@ final class GitWorkspaces {
       return nil
     }
     do {
-      let repository = try await GitRepository(path: URL(fileURLWithPath: path), runner: LocalGitRunner())
+      let repository = try await GitRepository(
+        path: URL(fileURLWithPath: path), runner: LocalGitRunner(), naming: Self.naming)
       let workspace = GitWorkspace(session: session, repository: repository, host: host)
       Task { await GitPreferences.apply(to: workspace.workingCopy) }
       slots[session.id] = .open(workspace)
@@ -78,7 +81,7 @@ final class GitWorkspaces {
           return { stop() }
         }
       }
-      let repository = try await GitRepository(path: worktree, runner: runner)
+      let repository = try await GitRepository(path: worktree, runner: runner, naming: Self.naming)
       let workspace = GitWorkspace(session: session, repository: repository, host: host, isRemote: true)
       Task { await GitPreferences.apply(to: workspace.workingCopy) }
       slots[session.id] = .open(workspace)
