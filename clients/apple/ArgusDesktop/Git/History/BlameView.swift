@@ -9,7 +9,6 @@ struct BlameView: View {
   let workspace: GitWorkspace
   let path: String?
   let ref: String?
-  @State private var refNote: String?
   private var blame: BlameViewModel { workspace.blame }
 
   var body: some View {
@@ -18,7 +17,6 @@ struct BlameView: View {
         VStack(spacing: 0) {
           toolbar(path)
           Divider()
-          if let refNote { SheetBanner(message: refNote, tone: .warning).padding(8) }
           content.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .task(id: "\(path)@\(ref ?? "")") { await open(path) }
@@ -75,31 +73,14 @@ struct BlameView: View {
 
   private var revisionLabel: String {
     guard let revision = blame.revision else { return "working tree" }
-    let base = revision.hasSuffix("^") ? String(revision.dropLast()) : revision
-    return "before \(base.prefix(7))"
+    guard revision.hasSuffix("^") else { return "at \(revision.prefix(12))" }
+    return "before \(revision.dropLast().prefix(7))"
   }
 
-  /// GroveKit only blames the working tree or the parent of a commit, so a
-  /// ref is reached as the parent of its child on HEAD's first-parent line.
   private func open(_ path: String) async {
-    refNote = nil
-    if blame.selectedFile != path || !blame.isAtWorkingTree || blame.lines.isEmpty { await blame.open(file: path) }
-    guard let ref, !ref.isEmpty else { return }
-    let shell = GitShell(workingDirectory: workspace.repository.path, runner: LocalGitRunner())
-    func resolve(_ rev: String) async -> String? {
-      try? await shell.run(["rev-parse", "--verify", "--quiet", "\(rev)^{commit}"]).stdout
-        .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-    guard let target = await resolve(ref) else { return refNote = "Couldn't find \(ref); showing the working tree." }
-    if target == (await resolve("HEAD")) { return }
-    let children = try? await shell.run(["rev-list", "--first-parent", "--ancestry-path", "--reverse", "\(target)..HEAD"])
-    if let child = children?.stdout.split(separator: "\n").first.map(String.init),
-      await resolve("\(child)^") == target
-    {
-      await blame.blameBefore(child)
-    } else {
-      refNote = "\(ref.prefix(12)) isn't on HEAD's line; showing the working tree."
-    }
+    let revision = ref.flatMap { $0.isEmpty ? nil : $0 }
+    if blame.selectedFile == path, blame.revision == revision, !blame.lines.isEmpty { return }
+    await blame.open(file: path, revision: revision)
   }
 
   private func reveal(_ sha: String) {
