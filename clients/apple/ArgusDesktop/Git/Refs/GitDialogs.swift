@@ -130,11 +130,6 @@ struct GitNameSheet: View {
   }
 }
 
-extension GitNameSheet {
-  /// `git check-ref-format`'s common rules, for inline validation.
-  static func isValidRef(_ name: String) -> Bool { ReflogViewModel.isValidBranchName(name) }
-}
-
 /// Focuses a sheet's first field once it's on screen.
 private struct InitialFocus: ViewModifier {
   @FocusState private var focused: Bool

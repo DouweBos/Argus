@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/DouweBos/Grove.git",
       "state" : {
-        "revision" : "f7cfb701cb5d2baf8fd2f466d924e35a0bf55bbc",
-        "version" : "0.5.1"
+        "revision" : "07f5d8260fdccd530442db8dab8e5b7c614a87c9",
+        "version" : "0.6.0"
       }
     },
     {

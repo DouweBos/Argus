@@ -108,7 +108,7 @@ struct ReflogView: View {
     GitDialogs.sheet(theme: theme) { dismiss in
       GitNameSheet(
         title: "New Branch at \(entry.newSHA.prefix(7))", label: "Branch name", primary: "Create",
-        toggle: "Check out the new branch", validate: GitNameSheet.isValidRef, dismiss: dismiss
+        toggle: "Check out the new branch", validate: RefName.isValid, dismiss: dismiss
       ) { name, checkout in
         Task {
           workspace.reflog.beginCreateBranch(from: entry)
