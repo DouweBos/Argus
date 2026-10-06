@@ -92,7 +92,9 @@ nonisolated struct GatewayGitRunner: GitRunner {
     if let outputId = result.outputId {
       stdout = try await page(outputId)
     }
-    return try await Self.shellResult(stdout: stdout, stderr: result.stderr, exitCode: Int32(result.exitCode))
+    return ShellResult(
+      stdout: String(data: stdout, encoding: .utf8) ?? "", stderr: result.stderr,
+      exitCode: Int32(result.exitCode), stdoutData: stdout)
   }
 
   /// Output too big for one frame, a page at a time.
@@ -107,23 +109,6 @@ nonisolated struct GatewayGitRunner: GitRunner {
       if chunk.done { return data }
     }
   }
-
-  /// GroveKit 0.5.1 has no public `ShellResult` initializer, so a runner outside
-  /// it can only get one from `LocalGitRunner`: replay the host's output
-  /// through a local `sh`, byte for byte.
-  private static func shellResult(stdout: Data, stderr: String, exitCode: Int32) async throws -> ShellResult {
-    let replay = LocalGitRunner(gitPath: "/bin/sh")
-    return try await replay.run(
-      GitInvocation(
-        arguments: ["-c", #"cat; printf '%s' "$ARGUS_REPLAY_STDERR" >&2; exit "$ARGUS_REPLAY_EXIT""#],
-        workingDirectory: URL(fileURLWithPath: NSTemporaryDirectory()),
-        environment: ["ARGUS_REPLAY_STDERR": String(stderr.suffix(64 * 1024)), "ARGUS_REPLAY_EXIT": String(exitCode & 0xFF)],
-        input: stdout))
-  }
-
-  /// The host picks its own git; GroveKit's default for this is main-actor
-  /// isolated, so it's spelled out here.
-  func withGitExecutable(_ path: String) -> (any GitRunner)? { nil }
 
   // MARK: Files
 
