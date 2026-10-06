@@ -30,7 +30,7 @@ final class CompareModel {
     errorMessage = nil
     isLoading = true
     isLoadingFiles = true
-    let shell = GitShell(workingDirectory: workspace.repository.path, runner: LocalGitRunner())
+    let shell = GitShell(workingDirectory: workspace.repository.path, runner: workspace.runner)
     async let precheck = Self.precheck(shell: shell, left: left, right: right)
     do {
       let result = try await workspace.repository.compareBranches(base: left, compare: right)
