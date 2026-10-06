@@ -19,7 +19,6 @@ struct IdentityMenu: View {
           Task {
             vm.clearError()
             await vm.switchIdentity(to: profile)
-            workspace.track(.identity, success: vm.errorMessage == nil)
           }
         } label: {
           if profile.matches(vm.identity) {

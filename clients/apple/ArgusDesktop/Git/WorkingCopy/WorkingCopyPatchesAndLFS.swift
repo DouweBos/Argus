@@ -84,10 +84,7 @@ struct PatchApplySheet: View {
         Button("Cancel", role: .cancel) { vm.cancelApplyPatch() }
           .keyboardShortcut(.cancelAction)
         Button(current.isApplying ? "Applying…" : "Apply") {
-          Task {
-            await vm.applyPendingPatch()
-            workspace.track(.patchApply, success: vm.patchApply == nil)
-          }
+          Task { await vm.applyPendingPatch() }
         }
         .keyboardShortcut(.defaultAction)
         .disabled(!current.canApply)
@@ -162,7 +159,6 @@ struct ChangeLFSAndPatchMenu: View {
         Task {
           vm.clearError()
           await vm.trackWithLFS(candidates, byExtension: byExtension)
-          workspace.track(.lfsTrack, success: vm.errorMessage == nil)
         }
       }
       items.append(

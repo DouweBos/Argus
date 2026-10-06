@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 
 /// What the History screen does to commits: the host's typed commands where
 /// Argus has its own flow (checkout, branch, tag), GroveKit for the rest.
-/// Every action reports its telemetry once, from here.
+/// Host-run actions report their telemetry here; GroveKit's through `onAction`.
 @MainActor
 struct HistoryActions {
   let workspace: GitWorkspace
@@ -44,16 +44,14 @@ struct HistoryActions {
   // MARK: GroveKit
 
   /// Runs a view-model mutation, which reports failure in `errorMessage`.
-  func perform(_ action: MacTelemetryEvent.GitAction, _ work: () async -> Void) async {
+  func perform(_ work: () async -> Void) async {
     history.dismissError()
     await work()
-    let failed = history.errorMessage != nil
-    workspace.track(action, success: !failed)
     if workspace.repository.repositoryState != .normal { navigate(.conflicts) }
   }
 
   func cherryPick(_ commit: CommitInfo) async {
-    await perform(.cherryPick) { await history.cherryPick(commit) }
+    await perform { await history.cherryPick(commit) }
   }
 
   // MARK: Export

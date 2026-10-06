@@ -18,7 +18,9 @@ struct FileHistorySheet: View {
     self.workspace = workspace
     self.path = path
     self.close = close
-    _history = State(initialValue: FileHistoryViewModel(repository: workspace.repository, filePath: path))
+    let history = FileHistoryViewModel(repository: workspace.repository, filePath: path)
+    history.onAction = { [weak workspace] in workspace?.report($0, success: $1) }
+    _history = State(initialValue: history)
   }
 
   var body: some View {
@@ -104,16 +106,11 @@ struct FileHistorySheet: View {
   }
 
   private func requestRestore(_ commit: CommitInfo) {
-    Task {
-      await history.requestRestore(commit)
-      // A clean file restored straight away; a dirty one waits on the dialog.
-      if history.pendingRestore == nil { workspace.track(.restoreFile, success: history.errorMessage == nil) }
-    }
+    Task { await history.requestRestore(commit) }
   }
 
   private func restore(_ commit: CommitInfo) async {
     await history.restore(commit)
-    workspace.track(.restoreFile, success: history.errorMessage == nil)
   }
 
   private func export() async {

@@ -9,7 +9,6 @@ struct WorkingCopyView: View {
   let workspace: GitWorkspace
   /// File history lives in the history view; nil hides the menu item.
   var onShowFileHistory: ((String) -> Void)? = nil
-  @State private var pendingDiscardAction: HunkAction?
 
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
 
@@ -36,9 +35,9 @@ struct WorkingCopyView: View {
           CommitComposerView(workspace: workspace)
         }
       } trailing: {
-        WorkingDiffView(workspace: workspace, pendingDiscardAction: $pendingDiscardAction)
+        WorkingDiffView(workspace: workspace)
       }
     }
-    .modifier(WorkingCopyDialogs(workspace: workspace, pendingDiscardAction: $pendingDiscardAction))
+    .modifier(WorkingCopyDialogs(workspace: workspace))
   }
 }

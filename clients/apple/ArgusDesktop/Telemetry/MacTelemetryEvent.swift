@@ -100,7 +100,7 @@ enum MacTelemetryEvent {
     case continueOperation = "continue_operation"
     case abortOperation = "abort_operation"
     case restoreFile = "restore_file"
-    /// Ignore, stop tracking, rename or move to Trash from the changes list.
+    /// Ignore, stop tracking, rename, move to Trash or track with LFS from the changes list.
     case fileAction = "file_action"
     case undo
     case redo
@@ -120,7 +120,6 @@ enum MacTelemetryEvent {
     case gitmoji
     /// The repository's commit identity switched to a saved profile.
     case identity
-    case lfsTrack = "lfs_track"
     case patchCreate = "patch_create"
     case patchApply = "patch_apply"
   }

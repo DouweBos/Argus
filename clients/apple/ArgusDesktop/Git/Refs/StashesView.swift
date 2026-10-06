@@ -128,13 +128,6 @@ struct StashesView: View {
   private func perform(_ pending: StashesViewModel.PendingOperation) async {
     stashes.dismissError()
     await stashes.confirm(pending)
-    let action: MacTelemetryEvent.GitAction =
-      switch pending.operation {
-      case .apply: .stashApply
-      case .pop: .stashPop
-      case .drop: .stashDrop
-      }
-    workspace.track(action, success: stashes.errorMessage == nil)
   }
 
   private func branch(from stash: StashEntry) {

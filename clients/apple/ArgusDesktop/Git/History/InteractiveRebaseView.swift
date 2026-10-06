@@ -97,9 +97,7 @@ struct InteractiveRebaseView: View {
     defer { running = false }
     history.dismissError()
     await history.rebaseInteractively(onto: planner.base, plan: planner.plan)
-    let stopped = workspace.repository.repositoryState != .normal
-    workspace.track(.interactiveRebase, success: history.errorMessage == nil && !stopped)
-    if stopped {
+    if workspace.repository.repositoryState != .normal {
       navigate(.conflicts)
     } else if history.errorMessage == nil {
       navigate(.history)
