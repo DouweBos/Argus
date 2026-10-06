@@ -16,11 +16,15 @@ final class CompareModel {
   private(set) var isLoadingFiles = false
   private(set) var errorMessage: String?
   private var loadedKey: String?
+  /// Bumped per load, so a superseded one (e.g. cancelled by a refresh) drops what it gets back.
+  private var loadId = 0
 
   func load(workspace: GitWorkspace, left: String, right: String) async {
     let key = "\(left)...\(right)"
     let isNewPair = key != loadedKey
     loadedKey = key
+    loadId += 1
+    let id = loadId
     if isNewPair {
       comparison = nil
       files = []
@@ -34,19 +38,19 @@ final class CompareModel {
     async let precheck = Self.precheck(shell: shell, left: left, right: right)
     do {
       let result = try await workspace.repository.compareBranches(base: left, compare: right)
-      guard loadedKey == key else { return }
+      guard loadId == id else { return }
       comparison = result
     } catch {
-      guard loadedKey == key else { return }
+      guard loadId == id else { return }
       errorMessage = error.localizedDescription
     }
-    isLoading = false
+    if loadId == id { isLoading = false }
     let (base, conflicts) = await precheck
-    guard loadedKey == key else { return }
+    guard loadId == id else { return }
     mergeBase = base
     wouldConflict = conflicts
     let diffs = try? await workspace.repository.diff(from: base ?? left, to: right)
-    guard loadedKey == key else { return }
+    guard loadId == id else { return }
     files = diffs ?? []
     isLoadingFiles = false
   }
