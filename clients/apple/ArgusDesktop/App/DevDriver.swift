@@ -446,6 +446,11 @@
           item.run()
         }
         return ["items": items.map(\.title)]
+      case "gitGeneration":
+        // How many times a session's git views refreshed, to see what its watcher reacts to.
+        guard let id = command["session"] as? String, let workspace = AppDelegate.current?.model.git.workspace(id)
+        else { return ["error": "session?"] }
+        return ["generation": workspace.generation, "active": workspace.isActive]
       case "state":
         let model = AppDelegate.current?.model
         let item = menuItem("New Session…", in: NSApp.mainMenu)
