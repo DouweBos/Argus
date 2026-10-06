@@ -27,7 +27,7 @@ extension RefActions {
     GitDialogs.sheet(theme: theme) { dismiss in
       GitNameSheet(
         title: "Rename \(remote)", label: "New name", primary: "Rename", initial: remote,
-        validate: { GitNameSheet.isValidRef($0) && $0 != remote }, dismiss: dismiss
+        validate: { RefName.isValid($0) && $0 != remote }, dismiss: dismiss
       ) { name, _ in
         Task {
           await workspace.host(

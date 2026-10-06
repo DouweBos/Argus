@@ -110,7 +110,7 @@ struct BranchSheet: View {
 
   var body: some View {
     GitSheetLayout(
-      title: "New Branch", primary: "Create", canSubmit: GitNameSheet.isValidRef(trimmed) && !start.isEmpty,
+      title: "New Branch", primary: "Create", canSubmit: RefName.isValid(trimmed) && !start.isEmpty,
       cancel: dismiss,
       submit: {
         dismiss()
@@ -168,7 +168,7 @@ struct TagSheet: View {
 
   var body: some View {
     GitSheetLayout(
-      title: "New Tag", primary: "Create", canSubmit: GitNameSheet.isValidRef(trimmed) && !ref.isEmpty,
+      title: "New Tag", primary: "Create", canSubmit: RefName.isValid(trimmed) && !ref.isEmpty,
       cancel: dismiss,
       submit: {
         dismiss()
@@ -199,7 +199,7 @@ struct RemoteSheet: View {
     let cleanName = name.trimmingCharacters(in: .whitespaces)
     let cleanURL = url.trimmingCharacters(in: .whitespaces)
     GitSheetLayout(
-      title: "Add Remote", primary: "Add", canSubmit: GitNameSheet.isValidRef(cleanName) && !cleanURL.isEmpty,
+      title: "Add Remote", primary: "Add", canSubmit: RefName.isValid(cleanName) && !cleanURL.isEmpty,
       cancel: dismiss,
       submit: {
         dismiss()

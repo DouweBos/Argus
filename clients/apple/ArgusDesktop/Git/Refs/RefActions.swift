@@ -71,7 +71,7 @@ struct RefActions {
     GitDialogs.sheet(theme: theme) { dismiss in
       GitNameSheet(
         title: "Rename \(branch)", label: "New name", primary: "Rename", initial: branch,
-        validate: { GitNameSheet.isValidRef($0) && $0 != branch }, dismiss: dismiss
+        validate: { RefName.isValid($0) && $0 != branch }, dismiss: dismiss
       ) { name, _ in
         Task {
           await workspace.host(
@@ -88,7 +88,7 @@ struct RefActions {
     GitDialogs.sheet(theme: theme) { dismiss in
       GitNameSheet(
         title: "Rename Branch", label: "New name", primary: "Rename", initial: branch,
-        validate: { GitNameSheet.isValidRef($0) && $0 != branch }, dismiss: dismiss
+        validate: { RefName.isValid($0) && $0 != branch }, dismiss: dismiss
       ) { name, _ in
         Task {
           await workspace.host(

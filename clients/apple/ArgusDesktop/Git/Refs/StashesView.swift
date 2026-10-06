@@ -142,7 +142,7 @@ struct StashesView: View {
     GitDialogs.sheet(theme: theme) { dismiss in
       GitNameSheet(
         title: "New Branch from \(Self.ref(stash))", label: "Branch name", primary: "Create",
-        validate: GitNameSheet.isValidRef, dismiss: dismiss
+        validate: RefName.isValid, dismiss: dismiss
       ) { name, _ in
         Task {
           await workspace.host(
