@@ -117,6 +117,44 @@ agents. Whichever starts first holds the lock (`~/.argus/host.lock`).
 Your phone keeps working with either: the Mac app runs the same remote access
 gateway, with the same paired devices.
 
+## Moving from the Electron app
+
+Everything the host keeps carries over by itself: projects, sessions and
+their worktrees, chat history, automations, each project's `.argus.json`,
+and your settings — appearance, display size, agent defaults, custom
+editors, git views, your telemetry choice — along with recent projects,
+the device each session last used and the Devices view.
+
+1. **Update the Electron app and open it once.** It moves your paired
+   devices and MCP sign-ins to the keychain format both apps read, and
+   copies the preferences it kept to itself into your Argus home. Nothing
+   else changes for it; it keeps working as before. If the move can't
+   finish (the keychain refuses, say), the Electron app leaves the files
+   exactly as they were, keeps using them in the old format, and tries
+   again the next time it opens.
+2. **Quit it and open Argus for Mac.** Your phone stays paired, your MCP
+   servers stay signed in, and the app opens with your settings.
+
+You can switch back and forth: both apps read and write the same values, so
+a change in one shows up in the other the next time it opens.
+
+If you open Argus for Mac before step 1, Home says that your paired devices
+or MCP sign-ins are still in the Electron app's format, and remote access
+won't start until they're moved: quit Argus for Mac, open the Electron app
+once, quit it, and open Argus for Mac again (**Check Again** on the card
+confirms it).
+
+What doesn't carry over: window tabs and panel sizes, a few Electron-only
+git toggles (word diff, the conventional-commit picker, ignored and
+unchanged files, the default pull strategy, "don't ask again" choices), and
+the other computers you paired the Electron app with under Settings →
+Hosts — pair those again in Argus for Mac.
+
+Encrypted files (`remote-devices.json`, `mcp-tokens.json`) are sealed with a
+key in your login keychain, the item "Argus Host Secret Storage" for your
+Argus home. Every Argus app reads it through macOS's `security` tool, which
+the item trusts, so neither app asks for your keychain password.
+
 ## Under the hood
 
 The app bundles its own Node runtime and the host
