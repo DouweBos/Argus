@@ -5,6 +5,7 @@ import type {
   DependencyReport as HostDependencyReport,
   DependencyStatus as HostDependencyStatus,
 } from "../services/dependencies/check";
+import type { SecretStoreId as HostSecretStoreId } from "../services/secrets/legacyStores";
 import type { EditorDescriptor as HostEditorDescriptor } from "../services/shell/editors";
 import type {
   TelemetryInit as HostTelemetryInit,
@@ -18,12 +19,14 @@ import type {
   DependencyStatus,
   EditorDescriptor,
   EnabledTools,
+  SecretStoreId,
   TelemetryInit,
   TelemetryMode,
 } from "@argus/remote-protocol";
 
 export type SettingsModelChecks = [
   Expect<Equal<AppSettings, HostAppSettings>>,
+  Expect<Equal<SecretStoreId, HostSecretStoreId>>,
   Expect<Equal<DependencyStatus, HostDependencyStatus>>,
   Expect<Equal<DependencyReport, HostDependencyReport>>,
   Expect<Equal<EditorDescriptor, HostEditorDescriptor>>,

@@ -199,6 +199,7 @@ enum MacTelemetryEvent {
   enum HomeCard: String {
     case notifications
     case recentProject = "recent_project"
+    case legacySecrets = "legacy_secrets"
   }
 
   enum HomeCardAction: String {

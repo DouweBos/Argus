@@ -1,6 +1,7 @@
 /**
- * Secret storage for a host running as plain Node, where Electron's
- * `safeStorage` doesn't exist.
+ * The host's one secret storage scheme, used by every Argus host on a home:
+ * Electron (desktop and Argus Server.app), the Mac app's bundled host and
+ * `argus-host`, so any of them can read what another wrote.
  *
  * A random AES-256-GCM key lives in the macOS login keychain (via the
  * `security` CLI), or in a 0600 file under `ARGUS_HOME` elsewhere — and for a
@@ -20,7 +21,13 @@ import { argusHomeDir } from "./argusHome";
 import { canonicalPath } from "./canonicalPath";
 
 const MAGIC = Buffer.from("ah1");
-const KEYCHAIN_SERVICE = "Argus Host Secret Storage";
+
+/** Whether a blob was sealed by this scheme rather than Electron's `safeStorage`. */
+export function isNodeSecretBlob(blob: Buffer): boolean {
+  return blob.subarray(0, MAGIC.length).equals(MAGIC);
+}
+
+export const KEYCHAIN_SERVICE = "Argus Host Secret Storage";
 
 export interface KeychainTool {
   /** The `security` binary. */
@@ -29,11 +36,19 @@ export interface KeychainTool {
   timeoutMs: number;
 }
 
-const SECURITY: KeychainTool = { command: "security", timeoutMs: 10_000 };
+/**
+ * By absolute path: the item's ACL trusts `/usr/bin/security` itself, so any
+ * host (Electron, the Mac app's `node`, `argus-host`) reads it without a prompt.
+ */
+const SECURITY: KeychainTool = {
+  command: process.platform === "darwin" ? "/usr/bin/security" : "security",
+  timeoutMs: 10_000,
+};
 
-function keychainAccount(): string {
-  // One key per state directory, so a dev host never shares one with prod.
-  return argusHomeDir();
+/** One key per state directory, so a dev host never shares one with prod. */
+export function keychainAccount(home = argusHomeDir()): string {
+  // Normalised so `~/.argus/` from one app and `~/.argus` from another agree.
+  return path.resolve(home);
 }
 
 /**
@@ -209,7 +224,7 @@ export function nodeSecretStorage(
       return Buffer.concat([MAGIC, iv, cipher.getAuthTag(), body]);
     },
     decrypt: (ciphertext) => {
-      if (!ciphertext.subarray(0, MAGIC.length).equals(MAGIC)) {
+      if (!isNodeSecretBlob(ciphertext)) {
         throw new Error("not written by this host's secret storage");
       }
       const iv = ciphertext.subarray(3, 15);

@@ -6,6 +6,7 @@
 
 import { registerHostCommands } from "./commands/index";
 import { createLogger } from "./logger";
+import { hostPlatform } from "./platform";
 import { stopPowerAssertion } from "./serverMode";
 import { destroyAllAgents } from "./services/agent/agentService";
 import {
@@ -40,9 +41,11 @@ import {
   stopRemote,
 } from "./services/remote/remoteService";
 import { restoreScratchPads } from "./services/scratchPad/manager";
+import { migrateLegacySecretStores } from "./services/secrets/legacyStores";
 import { restoreRepoRoots } from "./services/session/manager";
 import {
   capture as telemetryCapture,
+  captureWhenEnabled,
   initTelemetry,
   shutdownTelemetry,
 } from "./services/telemetry/telemetry";
@@ -54,6 +57,36 @@ import { reapOrphanedSpawnHelpers } from "./services/terminal/reapOrphans";
 import { fixProcessPath } from "./services/terminal/shellEnv";
 
 const log = createLogger("boot");
+
+/**
+ * Move stores Electron's `safeStorage` sealed onto the shared scheme. Only a
+ * platform that can still read them (Electron) supplies `legacySecretStorage`.
+ */
+function migrateSecretStores(): void {
+  const platform = hostPlatform();
+  if (!platform.legacySecretStorage) {
+    return;
+  }
+  for (const result of migrateLegacySecretStores(
+    platform.legacySecretStorage,
+    platform.secretStorage,
+  )) {
+    if (result.outcome === "failed") {
+      log.warn(
+        `[secrets] ${result.store} not migrated, staying on safeStorage until next launch: ${result.error}`,
+      );
+    } else if (result.outcome === "migrated") {
+      log.info(`[secrets] ${result.store} moved off safeStorage`);
+    }
+    // `already` is every launch after the first: nothing to measure.
+    if (result.outcome !== "already") {
+      captureWhenEnabled("secret_store_migrated", {
+        store: result.store,
+        outcome: result.outcome,
+      });
+    }
+  }
+}
 
 export interface StartHostOptions {
   /**
@@ -83,6 +116,9 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   // Restore a user-pinned conductor version, installing it in the background
   // if it isn't provisioned yet. Falls back to the bundled version meanwhile.
   initConductorOverride();
+
+  // Before anything opens the device store or an MCP token.
+  migrateSecretStores();
 
   // The projects this host had open last run. Must happen before the gateway
   // accepts anyone: a client hydrates from this set the moment it attaches,

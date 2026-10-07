@@ -165,6 +165,10 @@ export const ConductorStatus = z.object({
 });
 export type ConductorStatus = z.infer<typeof ConductorStatus>;
 
+/** A store the host seals with its secret storage. */
+export const SecretStoreId = z.enum(["mcp_tokens", "remote_devices"]);
+export type SecretStoreId = z.infer<typeof SecretStoreId>;
+
 export const TelemetryMode = z.enum(["full", "presence"]);
 export type TelemetryMode = z.infer<typeof TelemetryMode>;
 
