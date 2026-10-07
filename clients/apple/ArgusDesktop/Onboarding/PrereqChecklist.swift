@@ -101,6 +101,7 @@ private struct PrereqRow: View {
       HStack(spacing: 4) {
         Text("How to install:").foregroundStyle(theme.textMuted)
         Link(meta.installLabel ?? url.absoluteString, destination: url)
+          .buttonStyle(.accentLink)
       }
       .font(.scaled(.caption))
     }

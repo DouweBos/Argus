@@ -81,7 +81,7 @@ private struct PrereqRow: View {
         }
         if let url = meta.installURL {
           Button("How to install: \(meta.installLabel ?? url)") { open(url) }
-            .buttonStyle(.link)
+            .buttonStyle(.accentLink)
             .font(.scaled(.caption))
         }
       }

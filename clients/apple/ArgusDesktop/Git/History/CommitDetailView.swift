@@ -94,7 +94,7 @@ private struct CommitDetailHeader: View {
               HStack(spacing: 6) {
                 ForEach(commit.parentIDs, id: \.self) { parent in
                   Button(String(parent.prefix(7))) { Task { await history.selectCommit(id: parent) } }
-                    .buttonStyle(.link)
+                    .buttonStyle(.accentLink)
                     .font(.scaled(size: 11, design: .monospaced))
                     .help("Select parent \(parent.prefix(7))")
                 }

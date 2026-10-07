@@ -147,7 +147,7 @@ struct DevicesScreen: View {
   private func link(_ label: String?, run: @escaping () -> Void) -> some View {
     Group {
       if let label {
-        Button(label, action: run).buttonStyle(.link)
+        Button(label, action: run).buttonStyle(.accentLink)
       } else {
         Text("—").foregroundStyle(theme.textMuted)
       }

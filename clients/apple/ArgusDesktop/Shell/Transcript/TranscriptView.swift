@@ -375,7 +375,7 @@ struct TranscriptToolText: View {
       TranscriptText(text: rendered(clipped ? head : text))
       if lines > Self.clipLines {
         Button(expanded ? "Show less" : "Show all \(lines) lines") { expanded.toggle() }
-          .buttonStyle(.link)
+          .buttonStyle(.accentLink)
           .font(.scaled(size: 11))
       }
     }

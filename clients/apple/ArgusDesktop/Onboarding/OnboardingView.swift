@@ -116,7 +116,7 @@ struct OnboardingWelcomeStep: View {
         guard let backend = model.backend else { return }
         Task { await onboarding.complete(backend) }
       }
-      .buttonStyle(.link)
+      .buttonStyle(.accentLink)
       Spacer()
       Button("Get started") {
         guard let backend = model.backend else { return }

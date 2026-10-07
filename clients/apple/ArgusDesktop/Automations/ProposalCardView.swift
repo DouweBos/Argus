@@ -114,9 +114,9 @@ struct ProposalCardView: View {
       Button("View Run") {
         AutomationActions.openRun(model, automationId: proposal.automationId, runId: proposal.runId)
       }
-      .buttonStyle(.link)
+      .buttonStyle(.accentLink)
       if let source = proposal.sourceRef, let url = URL(string: source.url) {
-        Button(source.externalId) { openURL(url) }.buttonStyle(.link)
+        Button(source.externalId) { openURL(url) }.buttonStyle(.accentLink)
       }
     }
   }

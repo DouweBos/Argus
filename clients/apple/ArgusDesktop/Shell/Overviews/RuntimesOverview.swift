@@ -56,13 +56,13 @@ struct RuntimesOverview: View {
             Button { model.open(session: row.session.id) } label: {
               Text(sessionLabel(row.session)).lineLimit(1)
             }
-              .buttonStyle(.link)
+              .buttonStyle(.accentLink)
           }
           TableColumn("Project") { row in
             Button { openProject(row.session.repoRoot) } label: {
               Text(projectName(row.session.repoRoot)).lineLimit(1)
             }
-              .buttonStyle(.link)
+              .buttonStyle(.accentLink)
           }
           TableColumn("") { row in
             if !row.tab.exited {

@@ -99,13 +99,13 @@ struct HomeNeedsYouSection: View {
       let runs = items.failed.prefix(Self.maxFailed)
       let hidden = waiting - proposals.count - runs.count
       HomeSection(title: "Needs you", note: "\(waiting) waiting") {
-        Button("Open inbox") { model.navigate(.inbox) }.buttonStyle(.link)
+        Button("Open inbox") { model.navigate(.inbox) }.buttonStyle(.accentLink)
       } content: {
         VStack(alignment: .leading, spacing: 8) {
           ForEach(Array(proposals), id: \.id) { ProposalSummaryRow(proposal: $0) }
           ForEach(Array(runs), id: \.id) { FailedRow(run: $0) }
           if hidden > 0 {
-            Button("\(hidden) more in the inbox") { model.navigate(.inbox) }.buttonStyle(.link)
+            Button("\(hidden) more in the inbox") { model.navigate(.inbox) }.buttonStyle(.accentLink)
           }
         }
       }
@@ -154,7 +154,7 @@ struct HomeRecentRunsSection: View {
       .sorted { $0.unreadReport != $1.unreadReport ? $0.unreadReport : $0.startedAt > $1.startedAt }
     let unread = runs.count { $0.unreadReport }
     HomeSection(title: "Recent runs", note: unread > 0 ? "\(unread) new report\(unread == 1 ? "" : "s")" : nil) {
-      Button("View all") { model.navigate(.automations) }.buttonStyle(.link)
+      Button("View all") { model.navigate(.automations) }.buttonStyle(.accentLink)
     } content: {
       if runs.isEmpty {
         Text("Nothing has run yet. Enable an automation, or try a quick run.")

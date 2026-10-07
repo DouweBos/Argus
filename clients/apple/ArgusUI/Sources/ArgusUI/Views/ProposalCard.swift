@@ -118,7 +118,7 @@ public struct ProposalCard: View {
         if let source = proposal.sourceUrl, let url = URL(string: source) {
           Link(proposal.sourceLabel ?? "Source", destination: url)
             .font(.scaled(size: 12))
-            .foregroundStyle(theme.accent)
+            .buttonStyle(.accentLink)
         }
       }
     }
