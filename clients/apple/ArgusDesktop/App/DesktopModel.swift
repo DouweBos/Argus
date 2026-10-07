@@ -105,6 +105,7 @@ final class DesktopModel {
     _ = store.observeIpc { [terminals] channel, args, seq in
       terminals.ipc(channel: channel, args: args, seq: seq)
     }
+    HomeDefaults.dropLegacyKeys()
     runtime = RuntimeModel(store: store)
     huddles = HuddleStore(store: store, runtime: runtime)
     store.hooks.sessionIsRemote = { [weak self] id in self?.host(ofSession: id) != Hosts.local }

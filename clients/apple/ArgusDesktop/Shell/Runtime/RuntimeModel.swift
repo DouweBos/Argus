@@ -5,7 +5,7 @@ import Observation
 
 /// What the runtime panel shows: which platform, which device per session, the
 /// devices the host can see, and which device tools are switched on. The
-/// renderer's `simulatorStore`, kept in `UserDefaults` instead of localStorage.
+/// renderer's `simulatorStore`, kept with the Argus home it was picked in.
 @MainActor
 @Observable
 final class RuntimeModel {
@@ -26,7 +26,7 @@ final class RuntimeModel {
   static let globalKey = "__global__"
 
   private let store: HostStore
-  private let defaults: UserDefaults
+  private let defaults: HomeDefaults
   let streams: RuntimeStreamHub
 
   var platform: Platform {
@@ -64,7 +64,7 @@ final class RuntimeModel {
     static let browserPreset = "runtime.browserPreset"
   }
 
-  init(store: HostStore, defaults: UserDefaults = .standard) {
+  init(store: HostStore, defaults: HomeDefaults = .shared) {
     self.store = store
     self.defaults = defaults
     streams = RuntimeStreamHub(store: store)
