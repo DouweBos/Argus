@@ -10,11 +10,13 @@ enum MacTelemetry {
   private static var queued: [MacTelemetryEvent] = []
   private static let queueCap = 50
 
-  /// The consent level, kept by this app (the renderer kept it in its own
-  /// storage, which this app can't read). `presence` until the user opts in.
+  static let modeKey = "telemetryMode"
+
+  /// The consent level: the host's, shared with the Electron app, which
+  /// `HostPreferences` copies here before `attach`. `presence` until the user opts in.
   static var mode: String {
-    get { UserDefaults.standard.string(forKey: "telemetryMode") ?? "presence" }
-    set { UserDefaults.standard.set(newValue, forKey: "telemetryMode") }
+    get { UserDefaults.standard.string(forKey: modeKey) ?? "presence" }
+    set { UserDefaults.standard.set(newValue, forKey: modeKey) }
   }
 
   /// The host is reachable: apply the consent level, then flush.

@@ -244,6 +244,8 @@ enum MacTelemetryEvent {
   case homeCardActed(card: HomeCard, action: HomeCardAction)
   /// A scratch pad was created from the sidebar.
   case scratchPadCreated
+  /// On connect this app handed the host preferences it had no value for yet.
+  case prefsSupplied(keys: Int)
   /// A window tab was opened, closed or switched to.
   case tabUsed(action: TabAction)
   /// A folder was browsed for on a paired host's disk.
@@ -326,6 +328,7 @@ enum MacTelemetryEvent {
     case .hostFolderPicked: "mac_host_folder_picked"
     case .tabUsed: "mac_tab_used"
     case .scratchPadCreated: "mac_scratch_pad_created"
+    case .prefsSupplied: "mac_prefs_supplied"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
     case .inputUsed: "mac_input_used"
@@ -392,6 +395,8 @@ enum MacTelemetryEvent {
       ["stage": stage.rawValue]
     case .tabUsed(let action):
       ["action": action.rawValue]
+    case .prefsSupplied(let keys):
+      ["keys": keys]
     case .scratchPadCreated:
       [:]
     case .transcriptLinkOpened(let action, let relative):

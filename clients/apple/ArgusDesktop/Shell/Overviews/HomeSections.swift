@@ -242,28 +242,71 @@ struct HomeSection<Trailing: View, Content: View>: View {
   }
 }
 
-/// Projects taken off home's grid, as Electron's recents forget them; one
-/// comes back the next time you open one of its sessions.
+/// Home's recents, shared with the Electron app through the host: projects
+/// taken off the grid (one comes back the next time you open one of its
+/// sessions) and when each was last opened, newest first.
 @MainActor
 @Observable
 final class HomeRecents {
-  static let shared = HomeRecents()
-  private static let key = "home.hiddenProjects"
+  struct Entry: Codable, Equatable {
+    let path: String
+    /// Milliseconds since 1970, as Electron stores it.
+    let lastOpened: Double
 
-  private(set) var hidden: Set<String>
+    var plist: [String: Any] { ["path": path, "lastOpened": lastOpened] }
+  }
+
+  static let shared = HomeRecents()
+  static let hiddenKey = "home.hiddenProjects"
+  static let openedKey = "home.recentProjects"
+  /// As many as Electron's recents keep.
+  private static let cap = 10
+
+  private(set) var hidden: Set<String> = []
+  private(set) var opened: [Entry] = []
 
   private init() {
-    hidden = Set(HomeDefaults.shared.stringArray(forKey: Self.key) ?? [])
+    reload()
+  }
+
+  static func entries(from plist: [Any]) -> [Entry] {
+    plist.compactMap { item in
+      guard let dict = item as? [String: Any], let path = dict["path"] as? String,
+        let lastOpened = dict["lastOpened"] as? Double
+      else { return nil }
+      return Entry(path: path, lastOpened: lastOpened)
+    }
+  }
+
+  /// Re-read after the host handed over its copy.
+  func reload() {
+    hidden = Set(HomeDefaults.shared.stringArray(forKey: Self.hiddenKey) ?? [])
+    opened = Self.entries(from: HomeDefaults.shared.array(forKey: Self.openedKey) ?? [])
+  }
+
+  /// When a project was last opened, if it was in the recents.
+  func lastOpened(_ repoRoot: String) -> Double? {
+    opened.first { $0.path == repoRoot }?.lastOpened
   }
 
   func hide(_ repoRoot: String) {
     hidden.insert(repoRoot)
-    HomeDefaults.shared.set(Array(hidden), forKey: Self.key)
+    HomeDefaults.shared.set(Array(hidden), forKey: Self.hiddenKey)
+    setOpened(opened.filter { $0.path != repoRoot })
     MacTelemetry.capture(.homeCardActed(card: .recentProject, action: .dismiss))
   }
 
   func show(_ repoRoot: String) {
-    guard hidden.remove(repoRoot) != nil else { return }
-    HomeDefaults.shared.set(Array(hidden), forKey: Self.key)
+    if hidden.remove(repoRoot) != nil {
+      HomeDefaults.shared.set(Array(hidden), forKey: Self.hiddenKey)
+    }
+    let now = (Date().timeIntervalSince1970 * 1000).rounded()
+    setOpened(Array(([Entry(path: repoRoot, lastOpened: now)] + opened.filter { $0.path != repoRoot }).prefix(Self.cap)))
+  }
+
+  private func setOpened(_ entries: [Entry]) {
+    guard entries != opened else { return }
+    opened = entries
+    HomeDefaults.shared.set(entries.map(\.plist), forKey: Self.openedKey)
   }
 }
