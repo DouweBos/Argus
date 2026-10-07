@@ -215,6 +215,13 @@ enum MacTelemetryEvent {
     case `switch`
   }
 
+  /// How a session's Home / Agents / Git switch was made.
+  enum PanelSwitchSource: String {
+    case toolbar
+    case menu
+    case shortcut
+  }
+
   enum FolderPickStage: String {
     case opened
     case picked
@@ -248,6 +255,8 @@ enum MacTelemetryEvent {
   case prefsSupplied(keys: Int)
   /// A window tab was opened, closed or switched to.
   case tabUsed(action: TabAction)
+  /// A session's Home, Agents or Git panel was picked from the toolbar or the View menu.
+  case sessionPanelSwitched(panel: String, via: PanelSwitchSource)
   /// A folder was browsed for on a paired host's disk.
   case hostFolderPicked(stage: FolderPickStage)
   /// A session's branch was renamed from its home.
@@ -327,6 +336,7 @@ enum MacTelemetryEvent {
     case .homeCardActed: "mac_home_card_acted"
     case .hostFolderPicked: "mac_host_folder_picked"
     case .tabUsed: "mac_tab_used"
+    case .sessionPanelSwitched: "mac_session_panel_switched"
     case .scratchPadCreated: "mac_scratch_pad_created"
     case .prefsSupplied: "mac_prefs_supplied"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
@@ -395,6 +405,8 @@ enum MacTelemetryEvent {
       ["stage": stage.rawValue]
     case .tabUsed(let action):
       ["action": action.rawValue]
+    case .sessionPanelSwitched(let panel, let via):
+      ["panel": panel, "via": via.rawValue]
     case .prefsSupplied(let keys):
       ["keys": keys]
     case .scratchPadCreated:

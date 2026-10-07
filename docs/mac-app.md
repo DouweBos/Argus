@@ -16,6 +16,8 @@ lives in the repository (`plan/swiftui-parity.md`).
 - Agents in a session as tabs, with their transcript.
 - A home for each session: its setup progress (or why it failed), the
   agents working in it, and committing, pushing and merging its branch.
+  A session's Home, Agents and Git views switch from the toolbar, the View
+  menu or ⌘1, ⌘2 and ⌘3.
 - **Agents** and **Runtimes** in the sidebar: every agent, and every run
   command's process, across all your sessions.
 - Terminals under each session (⇧⌘T): tabs, the project's run commands in

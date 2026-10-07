@@ -1,3 +1,4 @@
+import AppKit
 import ArgusCore
 import SwiftUI
 
@@ -95,6 +96,18 @@ private struct NavigationCommands: View {
   let model: DesktopModel
 
   var body: some View {
+    // The session's views, as Xcode and Finder number theirs.
+    ForEach(Array(SessionPanel.allCases.enumerated()), id: \.element) { index, panel in
+      Toggle(panel.title, isOn: Binding(
+        get: { model.sessionPanel == panel },
+        set: { _ in
+          // A key equivalent arrives as the current event; a click doesn't.
+          model.show(panel, via: NSApp.currentEvent?.type == .keyDown ? .shortcut : .menu)
+        }))
+      .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
+      .disabled(model.sessionPanel == nil)
+    }
+    Divider()
     Button("Back") { model.goBack() }
       .keyboardShortcut("[", modifiers: .command)
       .disabled(!model.canGoBack)

@@ -124,14 +124,15 @@ struct SessionView: View {
       if let session { TerminalPanel(session: session) }
     }
     .toolbar {
-      ToolbarItem(placement: .navigation) {
-        Picker("Panel", selection: panel) {
-          Text("Home").tag(SessionPanel.home)
-          Text("Agents").tag(SessionPanel.agents)
-          Text("Git").tag(SessionPanel.git)
+      // Centred, as Xcode and Finder place their view switchers.
+      ToolbarItem(placement: .principal) {
+        Picker("View", selection: panel) {
+          ForEach(SessionPanel.allCases, id: \.self) { Text($0.title).tag($0) }
         }
         .pickerStyle(.segmented)
+        .labelsHidden()
         .fixedSize()
+        .help("Switch view (⌘1, ⌘2, ⌘3)")
       }
       if let session, session.status == .ready {
         ToolbarItemGroup {
@@ -169,20 +170,8 @@ struct SessionView: View {
   /// Home, agents or git — a route per panel, as in the desktop app.
   private var panel: Binding<SessionPanel> {
     Binding(
-      get: {
-        switch model.route {
-        case .session: .agents
-        case .sessionGit: .git
-        default: .home
-        }
-      },
-      set: { panel in
-        switch panel {
-        case .home: model.navigate(.sessionHome(id: sessionId))
-        case .agents: model.openAgents(session: sessionId)
-        case .git: model.openGit(session: sessionId)
-        }
-      })
+      get: { model.sessionPanel ?? .home },
+      set: { model.show($0, via: .toolbar) })
   }
 
   private var agentsPane: some View {
@@ -219,10 +208,6 @@ struct SessionView: View {
         .hidden()
     }
   }
-}
-
-enum SessionPanel: Hashable {
-  case home, agents, git
 }
 
 struct AgentTabBar: View {
