@@ -11,6 +11,7 @@ import {
 } from "../services/conductor/override";
 import { listConductorVersions } from "../services/conductor/registry";
 import { checkDependencies } from "../services/dependencies/check";
+import { findLegacySecretStores } from "../services/secrets/legacyStores";
 import {
   listEditors,
   openInCustomEditor,
@@ -44,6 +45,8 @@ export function registerSettingsCommands(): void {
 
     return null;
   });
+
+  defineTypedCommand("legacy_secret_stores", () => findLegacySecretStores());
 
   defineTypedCommand("reveal_in_finder", (p) => revealInFinder(p.path));
   defineTypedCommand("open_path", (p) => openPath(p.path));

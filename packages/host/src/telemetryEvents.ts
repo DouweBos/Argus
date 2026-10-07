@@ -77,6 +77,10 @@ export interface EventMap {
     stage: "creating_worktree" | "setting_up" | "starting_agent";
   };
   renderer_started: { popout: string };
+  secret_store_migrated: {
+    outcome: "failed" | "migrated";
+    store: "mcp_tokens" | "remote_devices";
+  };
   scratch_pad_created: { has_name: boolean };
   session_created: {
     has_description: boolean;

@@ -2,12 +2,11 @@
  * Persisted remote-access identity and paired-device records.
  *
  * The desktop static private key + paired-device records are encrypted with
- * Electron's `safeStorage` and stored
- * base64 in `~/.argus/remote-devices.json` (mode 0600). Mirrors the approach in
- * `electron/services/mcp/oauthStore.ts`. Public keys are not secret but live in
+ * the host's secret storage and stored base64 in `~/.argus/remote-devices.json`
+ * (mode 0600), like the MCP OAuth store. Public keys are not secret but live in
  * the same encrypted blob for simplicity.
  *
- * If `hostPlatform().secretStorage.isAvailable()` is false we fall back to plaintext
+ * If secret storage is unavailable we fall back to plaintext
  * with a warning, matching the OAuth store — remote access still works, just
  * without at-rest encryption on that host.
  */
@@ -16,8 +15,13 @@ import type { Capability } from "@argus/remote-protocol";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
-import { hostPlatform } from "@argus/host/platform";
+import { isNodeSecretBlob } from "../../lib/nodeSecretStorage";
 import { argusDirPath } from "../onboarding/state";
+import {
+  legacySecretStoreMessage,
+  secretStorageFor,
+  usesLegacySecretStorage,
+} from "../secrets/legacyStores";
 import { generateKeypair } from "./noise";
 
 /** A device's push registration, handed over the gateway after pairing. */
@@ -53,7 +57,7 @@ export interface PairedDevice {
 
 /**
  * Push settings. The VAPID key is a real secret, so this lives in the same
- * safeStorage-encrypted blob as the device keys rather than in plaintext
+ * encrypted blob as the device keys rather than in plaintext
  * `app-settings.json`. APNs/FCM credentials are deliberately absent — those
  * belong to the phone app's Apple team and live in the relay.
  */
@@ -126,20 +130,24 @@ async function readState(): Promise<RemoteState | null> {
 
   const file = JSON.parse(raw) as FileShape;
   if (file.enc) {
-    if (!hostPlatform().secretStorage.isAvailable()) {
+    const blob = Buffer.from(file.data as string, "base64");
+    if (!isNodeSecretBlob(blob) && !usesLegacySecretStorage("remote_devices")) {
+      throw new Error(
+        legacySecretStoreMessage("Your paired devices and remote access key"),
+      );
+    }
+    if (!secretStorageFor("remote_devices").isAvailable()) {
       throw new Error(
         "the remote device store is encrypted but this host has no secret storage to decrypt it",
       );
     }
     try {
-      const json = hostPlatform().secretStorage.decrypt(
-        Buffer.from(file.data as string, "base64"),
-      );
+      const json = secretStorageFor("remote_devices").decrypt(blob);
 
       return JSON.parse(json) as RemoteState;
     } catch (err) {
       throw new Error(
-        `failed to decrypt the remote device store (was it written by another Argus build?): ${(err as Error).message}`,
+        `failed to decrypt the remote device store: ${(err as Error).message}`,
       );
     }
   }
@@ -150,12 +158,14 @@ async function readState(): Promise<RemoteState | null> {
 async function writeState(state: RemoteState): Promise<void> {
   await fs.mkdir(argusDirPath(), { recursive: true });
   let file: FileShape;
-  if (hostPlatform().secretStorage.isAvailable()) {
-    const buf = hostPlatform().secretStorage.encrypt(JSON.stringify(state));
+  if (secretStorageFor("remote_devices").isAvailable()) {
+    const buf = secretStorageFor("remote_devices").encrypt(
+      JSON.stringify(state),
+    );
     file = { enc: true, data: buf.toString("base64") };
   } else {
     warn(
-      "[remote] safeStorage unavailable — writing remote device store in plaintext",
+      "[remote] secret storage unavailable — writing remote device store in plaintext",
     );
     file = { enc: false, data: state };
   }

@@ -33,11 +33,25 @@ describe("remote device store", () => {
   it("refuses an encrypted store it cannot decrypt instead of replacing it", async () => {
     setHostPlatform(nodeHostPlatform());
     const file = path.join(home, "remote-devices.json");
-    const original = JSON.stringify({ enc: true, data: "c2VjcmV0" });
+    const sealed = Buffer.from("ah1sealed").toString("base64");
+    const original = JSON.stringify({ enc: true, data: sealed });
     fs.writeFileSync(file, original);
 
     const { listDevices } = await import("./deviceStore");
     await expect(listDevices()).rejects.toThrow(/encrypted/);
+    expect(fs.readFileSync(file, "utf-8")).toBe(original);
+  });
+
+  it("tells a host to open Electron once when the store is in safeStorage's format", async () => {
+    setHostPlatform(nodeHostPlatform());
+    const file = path.join(home, "remote-devices.json");
+    const original = JSON.stringify({ enc: true, data: "djEwc2VjcmV0" });
+    fs.writeFileSync(file, original);
+
+    const { listDevices } = await import("./deviceStore");
+    await expect(listDevices()).rejects.toThrow(
+      /Open the Argus Electron app once/,
+    );
     expect(fs.readFileSync(file, "utf-8")).toBe(original);
   });
 

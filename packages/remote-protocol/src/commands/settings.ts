@@ -5,6 +5,7 @@ import {
   DependencyReport,
   EditorDescriptor,
   EnabledTools,
+  SecretStoreId,
   TelemetryInit,
   TelemetryMode,
 } from "../models/settings";
@@ -38,6 +39,15 @@ export const SETTINGS_COMMANDS = {
     tier: "admin",
     params: z.object({ key: z.string(), value: z.string() }),
     result: z.null(),
+  },
+  /**
+   * Stores still sealed by Electron's `safeStorage`, which only the Electron
+   * app can read and move over.
+   */
+  legacy_secret_stores: {
+    tier: "admin",
+    params: NoParams,
+    result: z.array(SecretStoreId),
   },
   reveal_in_finder: { tier: "host", params: HostPath, result: Void },
   open_path: { tier: "host", params: HostPath, result: Void },

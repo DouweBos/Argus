@@ -4,7 +4,8 @@ import SwiftUI
 import UserNotifications
 
 /// The cards Electron's home adds past the core checks: notifications that
-/// are off, and tools a project might need that aren't installed.
+/// are off, and tools a project might need that aren't installed. Plus one
+/// only this app needs: secrets the Electron app hasn't moved over yet.
 struct HomeEnvironmentCards: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
@@ -12,12 +13,16 @@ struct HomeEnvironmentCards: View {
   @State private var notifications: UNAuthorizationStatus?
   @State private var asking = false
   @State private var missing: [ArgusProtocol.DependencyStatus] = []
+  @State private var legacySecrets: [ArgusProtocol.SecretStoreId] = []
 
   /// Covered by the core checks above.
   private static let coveredByChecks: Set<String> = ["claude", "git"]
 
   var body: some View {
     VStack(spacing: 8) {
+      if !legacySecrets.isEmpty {
+        legacySecretsCard
+      }
       if !notificationsDismissed, let status = notifications, status != .authorized, status != .provisional {
         notificationsCard(denied: status == .denied)
       }
@@ -36,6 +41,32 @@ struct HomeEnvironmentCards: View {
       guard store.connection == .ready, let backend = model.localBackend else { return }
       let report = try? await backend.request(ArgusProtocol.Commands.CheckDependencies.self, EmptyParams())
       missing = (report?.dependencies ?? []).filter { !$0.installed && !Self.coveredByChecks.contains($0.id) }
+      legacySecrets = await fetchLegacySecrets() ?? []
+    }
+  }
+
+  private func fetchLegacySecrets() async -> [ArgusProtocol.SecretStoreId]? {
+    guard let backend = model.localBackend else { return nil }
+    return try? await backend.request(ArgusProtocol.Commands.LegacySecretStores.self, EmptyParams())
+  }
+
+  /// Only the Electron app can read what its old keychain scheme sealed.
+  private var legacySecretsCard: some View {
+    let what = [
+      legacySecrets.contains(.remoteDevices) ? "paired devices" : nil,
+      legacySecrets.contains(.mcpTokens) ? "MCP sign-ins" : nil,
+    ].compactMap(\.self).joined(separator: " and ")
+    return SetupCard(
+      tone: .warning,
+      title: "Your \(what) are still in the Electron app's format.",
+      text: "Quit Argus for Mac, open the Electron app once so it moves them over, quit it, then reopen this app."
+    ) {
+      Button("Check Again") {
+        Task {
+          legacySecrets = await fetchLegacySecrets() ?? legacySecrets
+          MacTelemetry.capture(.homeCardActed(card: .legacySecrets, action: legacySecrets.isEmpty ? .fixed : .failed))
+        }
+      }
     }
   }
 

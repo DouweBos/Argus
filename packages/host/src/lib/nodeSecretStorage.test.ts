@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   defaultSecretKeyBackend,
   isTempArgusHome,
+  keychainAccount,
   nodeSecretStorage,
 } from "./nodeSecretStorage";
 
@@ -155,4 +156,12 @@ describe("default secret key backend", () => {
       expect(defaultSecretKeyBackend()).toBe("keychain");
     },
   );
+});
+
+describe("keychain account", () => {
+  it("names a home the same however a host spells it", () => {
+    const home = path.join(os.homedir(), ".argus");
+    expect(keychainAccount(`${home}/`)).toBe(home);
+    expect(keychainAccount(`${home}/../.argus`)).toBe(home);
+  });
 });

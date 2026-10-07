@@ -9667,6 +9667,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum LegacySecretStores: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.SecretStoreId]
+      public static let name = "legacy_secret_stores"
+      public static let tier = "admin"
+    }
+
     public enum ListAgents: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.ListAgentsParams
       public typealias Result = [ArgusProtocol.AgentInfo]

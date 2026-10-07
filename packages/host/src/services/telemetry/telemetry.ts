@@ -38,6 +38,8 @@ let client: PostHog | null = null;
 // `telemetry_set_mode` once it boots, and can only ever raise it to `full`.
 let mode: TelemetryMode = "presence";
 let distinctId = "";
+/** Boot-time events held until the user's consent arrives from a UI. */
+const deferred: (() => void)[] = [];
 
 function baseProps(): Record<string, boolean | number | string> {
   return {
@@ -109,6 +111,9 @@ export function setTelemetryMode(next: TelemetryMode): void {
     mode = "full";
     capture("app_launched");
     capture("telemetry_enabled");
+    for (const send of deferred.splice(0)) {
+      send();
+    }
 
     return;
   }
@@ -165,6 +170,22 @@ export function capture<N extends EventName>(
   } catch (e) {
     log.warn("capture failed", e);
   }
+}
+
+/**
+ * `capture` for events the host records at boot, before any UI has told it
+ * the user's consent: sent once telemetry turns full, dropped if it never does.
+ */
+export function captureWhenEnabled<N extends EventName>(
+  event: N,
+  ...rest: EventArgs<N>
+): void {
+  if (mode === "full") {
+    capture(event, ...rest);
+
+    return;
+  }
+  deferred.push(() => capture(event, ...rest));
 }
 
 /**

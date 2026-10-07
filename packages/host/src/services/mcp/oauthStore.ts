@@ -1,21 +1,24 @@
 /**
  * Persisted OAuth tokens for MCP servers.
  *
- * Tokens are encrypted with Electron's `safeStorage` (Keychain on macOS,
- * libsecret on Linux, DPAPI on Windows) and stored as base64 inside
- * `~/.argus/mcp-tokens.json`. The file is keyed by the canonical resource
- * URL of the MCP server.
+ * Tokens are encrypted with the host's secret storage (a key in the login
+ * keychain on macOS) and stored as base64 inside `~/.argus/mcp-tokens.json`.
+ * The file is keyed by the canonical resource URL of the MCP server.
  *
- * If `safeStorage.isEncryptionAvailable()` is false on the host platform,
- * we fall back to plaintext with a warning — better than refusing to
- * authenticate at all.
+ * If secret storage is unavailable on the host, we fall back to plaintext
+ * with a warning — better than refusing to authenticate at all.
  */
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
-import { hostPlatform } from "@argus/host/platform";
+import { isNodeSecretBlob } from "../../lib/nodeSecretStorage";
 import { argusDirPath } from "../onboarding/state";
+import {
+  legacySecretStoreMessage,
+  secretStorageFor,
+  usesLegacySecretStorage,
+} from "../secrets/legacyStores";
 
 export interface StoredMcpToken {
   /** Canonical MCP server URL this token belongs to. */
@@ -107,7 +110,13 @@ export async function loadToken(
     return null;
   }
   if (entry.enc) {
-    if (!hostPlatform().secretStorage.isAvailable()) {
+    const blob = Buffer.from(entry.data, "base64");
+    if (!isNodeSecretBlob(blob) && !usesLegacySecretStorage("mcp_tokens")) {
+      warn(`[mcp-oauth] ${legacySecretStoreMessage("MCP sign-ins")}`);
+
+      return null;
+    }
+    if (!secretStorageFor("mcp_tokens").isAvailable()) {
       warn(
         "[mcp-oauth] encryption unavailable but token is encrypted; cannot decrypt",
       );
@@ -115,9 +124,7 @@ export async function loadToken(
       return null;
     }
     try {
-      const json = hostPlatform().secretStorage.decrypt(
-        Buffer.from(entry.data, "base64"),
-      );
+      const json = secretStorageFor("mcp_tokens").decrypt(blob);
 
       return JSON.parse(json) as StoredMcpToken;
     } catch (err) {
@@ -133,12 +140,12 @@ export async function loadToken(
 export async function saveToken(token: StoredMcpToken): Promise<void> {
   const key = canonicalResource(token.resource);
   const file = await readFile();
-  if (hostPlatform().secretStorage.isAvailable()) {
-    const buf = hostPlatform().secretStorage.encrypt(JSON.stringify(token));
+  if (secretStorageFor("mcp_tokens").isAvailable()) {
+    const buf = secretStorageFor("mcp_tokens").encrypt(JSON.stringify(token));
     file.servers[key] = { enc: true, data: buf.toString("base64") };
   } else {
     warn(
-      "[mcp-oauth] safeStorage unavailable — writing token in plaintext to ~/.argus/mcp-tokens.json",
+      "[mcp-oauth] secret storage unavailable — writing token in plaintext to ~/.argus/mcp-tokens.json",
     );
     file.servers[key] = { enc: false, data: token };
   }

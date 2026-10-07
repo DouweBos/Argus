@@ -11007,6 +11007,21 @@ extension ArgusProtocol {
     }
   }
 
+  public struct SecretStoreId: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let mcpTokens = SecretStoreId(rawValue: "mcp_tokens")
+    public static let remoteDevices = SecretStoreId(rawValue: "remote_devices")
+  }
+
   public struct SessionAvailability: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }

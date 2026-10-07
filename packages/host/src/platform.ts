@@ -10,7 +10,7 @@
 
 import { argusHomeDir } from "./lib/argusHome";
 
-/** OS-backed encryption for tokens at rest (Electron's `safeStorage`). */
+/** OS-backed encryption for tokens at rest (`nodeSecretStorage` on every host). */
 export interface SecretStorage {
   /** Whether encryption is actually backed by the OS keychain. */
   isAvailable: () => boolean;
@@ -50,6 +50,12 @@ export interface HostPlatform {
   revealInFinder: (target: string) => void;
 
   secretStorage: SecretStorage;
+  /**
+   * Electron's `safeStorage`, which sealed the host's stores before every host
+   * moved to `secretStorage`. The migration at boot reads it; a store whose
+   * move failed keeps using it until a later launch moves it.
+   */
+  legacySecretStorage?: SecretStorage;
 
   notificationsSupported: () => boolean;
   notify: (options: HostNotificationOptions) => void;
