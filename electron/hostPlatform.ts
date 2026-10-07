@@ -8,7 +8,7 @@
  * degrades to a documented no-op.
  */
 
-import { Notification, app, safeStorage, shell } from "electron";
+import { BrowserWindow, Notification, app, safeStorage, shell } from "electron";
 import { nodeSecretStorage } from "@argus/host/lib/nodeSecretStorage";
 import {
   type HostPlatform,
@@ -58,7 +58,8 @@ const electronHostPlatform: Omit<HostPlatform, "secretStorage"> = {
 
   closeDevicePopout,
 
-  isForeground: () => getMainWindow()?.isFocused() ?? false,
+  // Any Argus window: a chat popped out is still in front of you.
+  isForeground: () => BrowserWindow.getFocusedWindow() !== null,
   focusUi: () => {
     const win = getMainWindow();
     if (!win) {

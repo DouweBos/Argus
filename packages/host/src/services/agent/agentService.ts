@@ -1746,7 +1746,7 @@ export async function claimPrewarmAgent(
     await setAgentPermissionMode(agentId, opts.permissionMode);
   }
 
-  return {
+  const claimed: AgentInfo = {
     agent_id: session.agentId,
     session_id: session.sessionId,
     status: session.status,
@@ -1756,6 +1756,10 @@ export async function claimPrewarmAgent(
     model: session.model,
     runner_id: session.runner.id,
   };
+  // Only now is it a real agent: the host folds its conversation from here.
+  emitHostEvent("agent:started", claimed);
+
+  return claimed;
 }
 
 export async function discardPrewarmAgent(agentId: string): Promise<void> {

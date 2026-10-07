@@ -4,17 +4,8 @@ import {
   startAgentListening,
   stopAgentListening,
 } from "../../lib/agentEventService";
-import {
-  closeAgentPopout,
-  getAgentSnapshot,
-  getSession,
-  listAgents,
-} from "../../lib/ipc";
+import { closeAgentPopout, getSession, listAgents } from "../../lib/ipc";
 import { addAgent, getAgent } from "../../stores/agentStore";
-import {
-  type AgentConversation,
-  setConversationState,
-} from "../../stores/conversationStore";
 import { addSession, getSessionState } from "../../stores/sessionStore";
 import { AgentChat } from "../agent/AgentChat";
 import styles from "./AgentPopout.module.css";
@@ -28,7 +19,7 @@ interface AgentPopoutProps {
 /**
  * Dedicated renderer for an agent that has been detached from the tab bar
  * into its own BrowserWindow. Seeds the session + agent stores from IPC,
- * subscribes to the live agent stream, and hosts the standard `AgentChat`
+ * follows the host's transcript, and hosts the standard `AgentChat`
  * component. A "Back to main window" button closes the popout; the main
  * window then re-shows the agent in its tab bar.
  */
@@ -75,23 +66,7 @@ export function AgentPopout({ agentId, sessionId, title }: AgentPopoutProps) {
           setPermissionMode(agent.permission_mode);
         }
 
-        // 3. Seed the conversation store from the latest snapshot published
-        //    by the main window. Without this, the popout opens to an empty
-        //    chat even though the agent has real message history — live
-        //    events arriving after mount would only show new turns.
-        try {
-          const raw = await getAgentSnapshot(agentId);
-          if (raw) {
-            const conv = JSON.parse(raw) as AgentConversation;
-            setConversationState((state) => ({
-              conversations: { ...state.conversations, [agentId]: conv },
-            }));
-          }
-        } catch {
-          // Snapshot missing or malformed — fall through with an empty chat.
-        }
-
-        // 4. Start subscribing to live events for this agent.
+        // 3. Follow the agent: its newest page from the host, then deltas.
         startAgentListening(agentId);
 
         if (!cancelled) {

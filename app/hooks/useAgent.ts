@@ -3,15 +3,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { requestStopAgent } from "../components/shared/ConfirmStopAgent/stopAgentRequest";
 import {
   notifyMessageSent,
-  saveAgentConversation,
   startAgentListening,
   stopAgentListening,
 } from "../lib/agentEventService";
 import { startAgentInSession } from "../lib/agentLifecycle";
 import {
-  sendAgentMessage as apiSendAgentMessage,
   startAgent as apiStartAgent,
   stopAgent as apiStopAgent,
+  submitAgentMessage,
 } from "../lib/ipc";
 import {
   getAgentState,
@@ -26,8 +25,6 @@ import {
 import {
   clearConversation,
   getConversationState,
-  migrateConversation,
-  setCapabilities,
 } from "../stores/conversationStore";
 import { useIpcEvent } from "./useIpcEvent";
 
@@ -183,8 +180,7 @@ export function useSessionAgents(
     const currentAgents = Object.values(getAgentState().agents).filter(
       (a) => a.session_id === sessionId,
     );
-    // Save all conversations before cleanup
-    currentAgents.forEach((a) => saveAgentConversation(a.agent_id));
+    // The host saves each conversation as it stops.
     await Promise.allSettled(
       currentAgents.map((a) => apiStopAgent(a.agent_id)),
     );
@@ -218,14 +214,15 @@ export function useSessionAgents(
           ? opts.model
           : (currentAgent?.model ?? conv?.model ?? undefined);
       stopAgentListening(agentId);
-      apiStopAgent(agentId).catch(() => {});
+      // Stopping saves the history the resumed agent's conversation is seeded from.
+      await apiStopAgent(agentId).catch(() => {});
       const agentInfo: AgentStatus = await apiStartAgent(
         sessionId,
         newModel ?? undefined,
         newPermissionMode,
         claudeSessionId,
       );
-      migrateConversation(agentId, agentInfo.agent_id);
+      clearConversation(agentId);
       replaceAgent(agentId, {
         agent_id: agentInfo.agent_id,
         session_id: agentInfo.session_id,
@@ -234,9 +231,6 @@ export function useSessionAgents(
         model: agentInfo.model ?? newModel ?? null,
       });
       startAgentListening(agentInfo.agent_id);
-      if (agentInfo.capabilities) {
-        setCapabilities(agentInfo.agent_id, agentInfo.capabilities);
-      }
     },
     [sessionId],
   );
@@ -246,9 +240,13 @@ export function useSessionAgents(
       if (!activeAgent) {
         return;
       }
-      notifyMessageSent(activeAgent.agent_id);
-      updateAgent(activeAgent.agent_id, { status: "running" });
-      await apiSendAgentMessage(activeAgent.agent_id, message);
+      const { queued } = await submitAgentMessage(
+        activeAgent.agent_id,
+        message,
+      );
+      if (!queued) {
+        notifyMessageSent(activeAgent.agent_id);
+      }
     },
     [activeAgent],
   );

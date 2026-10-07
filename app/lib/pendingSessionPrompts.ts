@@ -8,7 +8,6 @@ import {
   getSessionState,
   subscribeSessionStore,
 } from "../stores/sessionStore";
-import { maybeGenerateTitle } from "./agentEventService";
 import { startAgentInSession, sendUserMessageToAgent } from "./agentLifecycle";
 import { buildLinkedProjectsPreamble } from "./linkedProjectsPreamble";
 
@@ -45,7 +44,6 @@ async function dispatchPrompt(
       focus: false,
       model: model && model !== "default" ? model : undefined,
     });
-    maybeGenerateTitle(agentInfo.agent_id, prompt);
     if (linkedProjects?.length) {
       setLinkedProjects(agentInfo.agent_id, linkedProjects);
     }
@@ -53,11 +51,12 @@ async function dispatchPrompt(
       linkedProjects ?? [],
       prompt || "(see attached images)",
     );
+    // The transcript (and the title made from it) shows what the user typed.
     await sendUserMessageToAgent(
       agentInfo.agent_id,
       message,
       images?.length ? images : undefined,
-      { assumeIdle: true },
+      message === prompt ? undefined : prompt,
     );
   } catch (err) {
     pushError(

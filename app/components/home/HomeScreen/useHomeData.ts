@@ -9,7 +9,10 @@ import {
   type HostId,
 } from "../../../lib/transport/hostId";
 import { useAgentsRecord } from "../../../stores/agentStore";
-import { useConversations } from "../../../stores/conversationStore";
+import {
+  firstUserText,
+  useConversations,
+} from "../../../stores/conversationStore";
 import { useDevices } from "../../../stores/deviceStore";
 import {
   useRecentProjects,
@@ -159,11 +162,9 @@ export function useHomeData(): HomeData & {
       }
       const conv = conversations[a.agent_id];
       const convTitle = conv?.title?.trim();
-      const firstUserText = conv?.messages
-        ?.find((m) => m.role === "user")
-        ?.textBlocks?.[0]?.trim();
+      const firstText = firstUserText(conv)?.trim();
       const displayName =
-        convTitle || firstUserText || ws.display_name || ws.branch;
+        convTitle || firstText || ws.display_name || ws.branch;
       const entry: HomeAgent = {
         id: a.agent_id,
         branch: ws.branch,

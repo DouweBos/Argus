@@ -68,9 +68,7 @@ export function useFixConflictsInChat({
         sessionBranch,
         conflicts,
       );
-      await sendUserMessageToAgent(info.agent_id, prompt, undefined, {
-        assumeIdle: true,
-      });
+      await sendUserMessageToAgent(info.agent_id, prompt, undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start agent");
     } finally {

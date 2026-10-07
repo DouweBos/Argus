@@ -391,7 +391,6 @@ export function StartAgentDialog({
         info.agent_id,
         message,
         images.length > 0 ? images : undefined,
-        { assumeIdle: true },
       );
     } catch (err) {
       pushError(

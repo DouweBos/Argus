@@ -58,6 +58,8 @@ export interface EventMap {
   };
   agent_nudged: { critical: boolean; tagged: boolean };
   agent_stopped: undefined;
+  agent_transcript_paged: { success: boolean };
+  agent_transcript_resynced: { new_epoch: boolean };
   app_error: { message: string; scope: string };
   app_launched: undefined;
   app_quit: undefined;

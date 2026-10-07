@@ -177,9 +177,7 @@ export function AgentsEmptyState({ sessionId }: AgentsEmptyStateProps) {
           focus: true,
           permissionMode: mode,
         });
-        await sendUserMessageToAgent(info.agent_id, message, images, {
-          assumeIdle: true,
-        });
+        await sendUserMessageToAgent(info.agent_id, message, images);
         setPrompt("");
         setPendingImages([]);
       } catch (err) {

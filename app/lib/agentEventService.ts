@@ -1,13 +1,4 @@
-import type { SavedConversation } from "./chatHistory";
-import type {
-  AgentCapabilities,
-  AgentStatus,
-  LlmStreamEvent,
-  PermissionCancellation,
-  PermissionRequest,
-} from "./types";
-import type { AgentConversation } from "../stores/conversationStore";
-import { parseCliDiagnostic } from "@argus/host/services/agent/conversation/cliDiagnostics";
+import type { AgentStatus } from "./types";
 import { error } from "@logger";
 import {
   addAgent,
@@ -17,342 +8,73 @@ import {
   updateAgent,
 } from "../stores/agentStore";
 import {
-  addUserMessage,
-  appendEvent,
-  appendInjectedPrompt,
-  appendSystemMessage,
-  cancelPermission,
   clearConversation,
-  clearPermission,
+  firstUserText,
   flushPendingUnread,
   getConversationState,
-  loadSavedMessages,
-  setCapabilities,
-  setConversationTitle,
-  setModel,
-  setPermissionPending,
 } from "../stores/conversationStore";
-import {
-  dequeueMessage,
-  getQueuedMessages,
-  unwatchQueue,
-  useQueueStore,
-  watchQueue,
-} from "../stores/queueStore";
-import { getSessionState } from "../stores/sessionStore";
-import {
-  isAwaitingAnswerTool,
-  notifyAgentFinished,
-  notifyAwaitingAnswer,
-  notifyPermissionRequested,
-} from "./agentNotifications";
-import { deriveTitle } from "./chatHistory";
-import { serializeConversation } from "./conversationSnapshot";
+import { unwatchQueue, watchQueue } from "../stores/queueStore";
 import { type UnlistenFn, listen } from "./events";
-import {
-  createCheckpoint,
-  generateSessionTitle,
-  type ImageAttachment,
-  getAgentSnapshot,
-  publishAgentSnapshot,
-  saveChatHistory,
-  sendAgentMessage,
-  stopAgent as apiStopAgent,
-} from "./ipc";
+import { stopAgent as apiStopAgent } from "./ipc";
+import { followTranscript } from "./transcriptSync";
 
 /**
- * Singleton service that owns event subscriptions for agent stream events.
- * Decouples event subscription lifetime from React component lifetime.
+ * The agent-level events a window keeps its agent list current with. The
+ * conversation itself is the host's: this only follows it
+ * (`followTranscript`). Decouples subscription lifetime from React's.
  */
 
 /**
- * Tracks per-agent debounce timers for incremental saves during an active
- * conversation. A window reload or crash would otherwise drop the chat —
- * writing through to disk on each completed exchange means at most the
- * in-flight turn is lost.
+ * Agents with a message sent but no idle back yet, so an early idle signal
+ * (the CLI's init, a capabilities reply) doesn't hide the activity indicator.
  */
-const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
-const SAVE_DEBOUNCE_MS = 500;
+const inflight = new Set<string>();
 
-/**
- * The snapshot is cheap to republish; the on-disk history is the whole
- * transcript cloned across IPC and rewritten, so mid-turn it is written at
- * most this often. Turn ends, exits and quits still write straight through.
- */
-const PERSIST_INTERVAL_MS = 10_000;
-const lastPersistAt = new Map<string, number>();
-
-/**
- * Tracks agents that have already had (or are currently having) a title
- * generated so we only fire the background `claude -p` call once per agent.
- */
-const titleRequested = new Set<string>();
-
-/**
- * Kick off a background title-generation call for the agent if we haven't
- * already. Fire-and-forget — the promise resolves into the conversation
- * store and updates the UI wherever `conv.title` is read.
- */
-export function maybeGenerateTitle(agentId: string, firstMessage: string) {
-  if (titleRequested.has(agentId)) {
-    return;
-  }
-  // Resumed conversations already carry a title — don't regenerate it from
-  // the first follow-up message.
-  if (getConversationState().conversations[agentId]?.title) {
-    titleRequested.add(agentId);
-
-    return;
-  }
-  const text = firstMessage.trim();
-  if (!text) {
-    return;
-  }
-  titleRequested.add(agentId);
-
-  generateSessionTitle(text)
-    .then((title) => {
-      if (!title) {
-        return;
-      }
-      // Only set if the agent still exists and hasn't been given one via
-      // a resumed conversation in the meantime.
-      const conv = getConversationState().conversations[agentId];
-      if (!conv || conv.title) {
-        return;
-      }
-      setConversationTitle(agentId, title);
-    })
-    .catch(() => {
-      // Allow a retry on the next user message if the CLI call failed.
-      titleRequested.delete(agentId);
-    });
-}
-
-/**
- * Publish the current in-memory conversation to the backend so other windows
- * (notably a freshly opened agent popout) can hydrate without waiting for the
- * next live event. Fire-and-forget; best-effort.
- */
-function publishSnapshot(agentId: string): void {
-  const conv = getConversationState().conversations[agentId];
-  if (!conv) {
-    return;
-  }
-  try {
-    publishAgentSnapshot(agentId, serializeConversation(conv)).catch(() => {});
-  } catch {
-    // Circular refs / huge payloads — skip rather than crash.
-  }
-}
-
-/**
- * Build a SavedConversation from the current store state and persist it.
- * No-op if the conversation has no messages or was already saved.
- */
-export function saveAgentConversation(agentId: string): void {
-  const timer = saveTimers.get(agentId);
-  if (timer) {
-    clearTimeout(timer);
-    saveTimers.delete(agentId);
-  }
-
-  publishSnapshot(agentId);
-  persistConversation(agentId);
-}
-
-/** Write the conversation to the project's chat history on disk. */
-function persistConversation(agentId: string): void {
-  lastPersistAt.set(agentId, Date.now());
-  const conv = getConversationState().conversations[agentId];
-  if (!conv || conv.messages.length === 0) {
-    return;
-  }
-  // Upsert-by-sessionId on the backend requires a real sessionId. Skip if
-  // we haven't received the `system:init` event yet — the exit/quit/stop
-  // paths will catch it later.
-  if (!conv.sessionId) {
-    return;
-  }
-
-  const agent = getAgentState().agents[agentId];
-  if (!agent) {
-    return;
-  }
-
-  const wsState = getSessionState();
-  const session = wsState.sessions.find((w) => w.id === agent.session_id);
-  if (!session) {
-    return;
-  }
-
-  const saved: SavedConversation = {
-    id: crypto.randomUUID(),
-    sessionId: conv.sessionId,
-    agentId,
-    parentAgentId: agent.parent_agent_id ?? undefined,
-    argusSessionId: agent.session_id,
-    title: conv.title ?? deriveTitle(conv.messages),
-    sessionBranch: session.branch ?? "",
-    sessionDescription: session.description ?? "",
-    model: conv.model,
-    runnerId: agent.runner_id,
-    totalCost: conv.totalCost,
-    totalDuration: conv.totalDuration,
-    messageCount: conv.messages.length,
-    createdAt: conv.messages[0]?.timestamp ?? Date.now(),
-    endedAt: Date.now(),
-    messages: conv.messages,
-  };
-
-  // Fire-and-forget — saving is best-effort. The backend upserts by sessionId
-  // so repeated calls during a live chat overwrite the on-disk record.
-  saveChatHistory(session.repo_root, saved).catch(() => {});
-}
-
-/**
- * Debounced incremental save — coalesces bursts of events into a single
- * write. Called on every meaningful conversation change.
- */
-export function scheduleAgentSave(agentId: string): void {
-  const existing = saveTimers.get(agentId);
-  if (existing) {
-    clearTimeout(existing);
-  }
-  const t = setTimeout(() => {
-    saveTimers.delete(agentId);
-    publishSnapshot(agentId);
-    const sincePersist = Date.now() - (lastPersistAt.get(agentId) ?? 0);
-    if (sincePersist >= PERSIST_INTERVAL_MS) {
-      persistConversation(agentId);
-    } else {
-      // Keep a trailing write so the tail of a burst still reaches disk.
-      saveTimers.set(
-        agentId,
-        setTimeout(
-          () => saveAgentConversation(agentId),
-          PERSIST_INTERVAL_MS - sincePersist,
-        ),
-      );
-    }
-  }, SAVE_DEBOUNCE_MS);
-  saveTimers.set(agentId, t);
-}
-
-/**
- * Listen for app quit and save all active conversations.
- * Called once at app startup.
- */
-export function initAppQuitSave(): void {
-  listen<undefined>("app:will-quit", () => {
-    const agents = getAgentState().agents;
-    for (const agentId of Object.keys(agents)) {
-      saveAgentConversation(agentId);
-    }
-  });
-
-  // Flush on window reload / close so a debounced save in flight is committed
-  // before the renderer tears down.
-  window.addEventListener("beforeunload", () => {
-    const agents = getAgentState().agents;
-    for (const agentId of Object.keys(agents)) {
-      saveAgentConversation(agentId);
-    }
-  });
-}
-
-/**
- * Seed an externally-spawned agent's transcript from the snapshot the backend
- * published for it (a resume spawn carries the conversation it resumed). Skips
- * agents we already have messages for so a live chat is never overwritten.
- */
-function hydrateFromSnapshot(agentId: string): void {
-  if (getConversationState().conversations[agentId]?.messages.length) {
-    return;
-  }
-  getAgentSnapshot(agentId)
-    .then((raw) => {
-      if (!raw) {
-        return;
-      }
-      const conv = JSON.parse(raw) as AgentConversation;
-      if (
-        !conv.messages?.length ||
-        getConversationState().conversations[agentId]?.messages.length
-      ) {
-        return;
-      }
-      loadSavedMessages(
-        agentId,
-        conv.messages,
-        conv.model,
-        conv.sessionId,
-        conv.resuming,
-        conv.title,
-      );
-    })
-    .catch(() => {
-      // No snapshot or malformed JSON — the chat just starts empty.
-    });
-}
+const subscriptions = new Map<string, UnlistenFn[]>();
 
 /**
  * Listen for agents spawned outside the UI flow (e.g. via the MCP
  * `spawn_agent` tool). Registers them in the agent store and starts
- * subscribing to their event channels so they appear in the UI.
+ * following them so they appear in the UI.
  */
 export function initExternalAgentStarted(): void {
-  listen<AgentStatus>("agent:started", (event) => {
-    const info = event.payload;
-    if (getAgentState().agents[info.agent_id]) {
-      return;
-    }
-    addAgent({
-      agent_id: info.agent_id,
-      session_id: info.session_id,
-      status: info.status,
-      permission_mode: info.permission_mode,
-      parent_agent_id: info.parent_agent_id,
-      created_at: info.created_at,
-      model: info.model,
-    });
-    startAgentListening(info.agent_id);
-    hydrateFromSnapshot(info.agent_id);
-    // An agent spawned without a prompt (the phone's "New agent") is idle and
-    // waiting. Faking "running" here strands it: `trySetIdle` is blocked by
-    // `inflight`, and the queue drainer only fires for an idle agent, so the
-    // first message from any client never leaves the queue.
-    if (!info.initial_prompt) {
-      return;
-    }
-    // Derive a human-readable title from the prompt the MCP tool sent.
-    // Without this, the Agents overview falls back to the branch name for
-    // MCP-spawned agents, since the renderer never sees the first user
-    // message (it is written to stdin by the backend).
-    maybeGenerateTitle(info.agent_id, info.initial_prompt);
-    // Prompted spawns receive that prompt from the backend before the renderer
-    // gets a chance to subscribe. Mark the session as in-flight so early
-    // `system:init` / `session_state_changed(idle)` signals don't flip the
-    // agent to "idle" while it's actually still processing it.
-    inflight.add(info.agent_id);
-    updateAgent(info.agent_id, { status: "running" });
-  });
+  listen<AgentStatus & { initial_prompt?: string }>(
+    "agent:started",
+    (event) => {
+      const info = event.payload;
+      if (getAgentState().agents[info.agent_id]) {
+        return;
+      }
+      addAgent({
+        agent_id: info.agent_id,
+        session_id: info.session_id,
+        status: info.status,
+        permission_mode: info.permission_mode,
+        parent_agent_id: info.parent_agent_id,
+        created_at: info.created_at,
+        model: info.model,
+      });
+      startAgentListening(info.agent_id);
+      // An agent spawned without a prompt (the phone's "New agent") is idle and
+      // waiting; only a prompted spawn is busy before its first event.
+      if (info.initial_prompt) {
+        notifyMessageSent(info.agent_id);
+      }
+    },
+  );
 }
 
 /**
  * Stop an agent by ID — works for any agent (user-initiated or MCP-spawned).
- * Saves the conversation, tears down listeners, calls the backend to kill
- * the process, then removes the agent from the store.
+ * Remembers it as recently closed, tears down listeners, asks the host to
+ * stop it (which saves its history), then forgets it.
  */
 export async function stopAgentById(agentId: string): Promise<void> {
-  saveAgentConversation(agentId);
   const agent = getAgentState().agents[agentId];
   const conv = getConversationState().conversations[agentId];
   if (agent) {
-    const firstUserText = conv?.messages.find((m) => m.role === "user")
-      ?.textBlocks[0];
     const title =
-      conv?.title?.trim() || firstUserText?.trim() || "Untitled agent";
+      conv?.title?.trim() || firstUserText(conv)?.trim() || "Untitled agent";
     recordRecentlyClosed(agent.session_id, {
       agentId,
       runnerId: agent.runner_id,
@@ -371,514 +93,79 @@ export async function stopAgentById(agentId: string): Promise<void> {
   removeAgent(agentId);
 }
 
-const listeners = new Map<string, UnlistenFn>();
-const exitListeners = new Map<string, UnlistenFn>();
-const permListeners = new Map<string, UnlistenFn>();
-const permCancelListeners = new Map<string, UnlistenFn>();
-const permResolvedListeners = new Map<string, UnlistenFn>();
-const capListeners = new Map<string, UnlistenFn>();
-const modelListeners = new Map<string, UnlistenFn>();
-const runnerListeners = new Map<string, UnlistenFn>();
-const permModeListeners = new Map<string, UnlistenFn>();
-const effortListeners = new Map<string, UnlistenFn>();
-const stderrListeners = new Map<string, UnlistenFn>();
-const mcpMessageListeners = new Map<string, UnlistenFn>();
-const remoteMessageListeners = new Map<string, UnlistenFn>();
-const statusListeners = new Map<string, UnlistenFn>();
-
-/**
- * Payload emitted by the Electron main process when the MCP server injects
- * a prompt or follow-up into an agent. Mirrors
- * `McpSystemMessagePayload` on the backend.
- */
-interface McpSystemMessagePayload {
-  images?: { data: string; media_type: string }[];
-  message: string;
-  parentAgentId?: string;
-  parentLabel?: string;
-  timestamp: number;
-  tool:
-    | "create_session"
-    | "send_agent_message"
-    | "spawn_agent"
-    | "spawn_agents_batch";
-}
-
-/**
- * Grace period before announcing a question or plan. One that is approved
- * outright resolves within a tick, and notifying for that would be noise.
- */
-const AWAITING_ANSWER_GRACE_MS = 750;
-
-/** Announce a prompt only if it is genuinely still waiting on the user. */
-function notifyIfStillUnanswered(
+function on<T>(
   agentId: string,
-  toolUseId: string,
-  toolName: string,
+  channel: string,
+  handler: (payload: T) => void,
 ): void {
-  setTimeout(() => {
-    const conv = getConversationState().conversations[agentId];
-    const answered = conv?.messages.some((m) =>
-      m.toolCalls.some((tc) => tc.id === toolUseId && tc.result !== undefined),
-    );
-    if (!answered) {
-      notifyAwaitingAnswer(agentId, toolUseId, toolName);
-    }
-  }, AWAITING_ANSWER_GRACE_MS);
+  listen<T>(`${channel}:${agentId}`, (event) => handler(event.payload)).then(
+    (unlisten) => {
+      const list = subscriptions.get(agentId);
+      if (list) {
+        list.push(unlisten);
+      } else {
+        // stopAgentListening ran before the listener was in place.
+        unlisten();
+      }
+    },
+  );
 }
 
-/** Subscribe to all agent event channels. */
+/** Follow an agent: its status, settings and conversation. */
 export function startAgentListening(agentId: string): void {
-  if (listeners.has(agentId)) {
+  if (subscriptions.has(agentId)) {
     return;
   }
+  subscriptions.set(agentId, []);
+  const unfollow = followTranscript(agentId);
+  subscriptions.get(agentId)!.push(unfollow);
 
-  // Store placeholder so we know listening has been requested
-  listeners.set(agentId, () => {});
-
-  // Mirror the backend queue for every live agent, not just the chats the user
-  // has open — otherwise a message queued from the phone is invisible here and
-  // never drains when the turn ends.
+  // Mirror the host queue for every live agent, not just the chats the user
+  // has open — a message queued from the phone shows up here too.
   watchQueue(agentId);
 
-  listen<string>(`agent:event:${agentId}`, (event) => {
-    try {
-      const parsed: LlmStreamEvent = JSON.parse(event.payload);
-      appendEvent(agentId, parsed);
-      scheduleAgentSave(agentId);
-
-      // A question or plan can land without a permission request behind it —
-      // in `auto` mode the CLI approves these itself — so announce them here.
-      // Duplicate calls are dropped, so the permission path can also fire.
-      if (parsed.type === "assistant") {
-        for (const block of parsed.message.content) {
-          if (block.type === "tool_use" && isAwaitingAnswerTool(block.name)) {
-            notifyIfStillUnanswered(agentId, block.id, block.name);
-          }
-        }
-      }
-
-      // A `result` is not the agent going idle — background work can follow
-      // it. Hold the outcome until the backend's `idle` ends the turn.
-      if (parsed.type === "result") {
-        finishedTurns.set(agentId, {
-          durationMs: parsed.duration_ms,
-          subtype: parsed.subtype === "error" ? "error" : "success",
-        });
-      }
-    } catch {
-      // Ignore malformed or non-JSON events (e.g. unknown system subtypes)
-    }
-  }).then((unlisten) => {
-    if (!listeners.has(agentId)) {
-      // stopAgentListening was called before promise resolved
-      unlisten();
-
-      return;
-    }
-
-    listeners.set(agentId, unlisten);
-  });
-
-  // Also watch for agent process exit
-  exitListeners.set(agentId, () => {});
-
-  listen<number>(`agent:exit:${agentId}`, (event) => {
-    const exitCode = event.payload;
-    const status = exitCode === 0 ? "stopped" : "error";
-    // Save conversation before updating status (data still in store)
-    saveAgentConversation(agentId);
-    updateAgent(agentId, { status });
+  on<number>(agentId, "agent:exit", (exitCode) => {
+    updateAgent(agentId, { status: exitCode === 0 ? "stopped" : "error" });
     inflight.delete(agentId);
     flushPendingUnread(agentId);
-  }).then((unlisten) => {
-    if (!exitListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-
-    exitListeners.set(agentId, unlisten);
   });
 
-  // The backend's status is the CLI's own busy/idle state. Stopped/error stay
-  // with the exit listener, which saves the conversation first.
-  statusListeners.set(agentId, () => {});
-  listen<string>(`agent:status:${agentId}`, (event) => {
-    if (event.payload === "running" || event.payload === "requires_action") {
-      updateAgent(agentId, { status: event.payload });
-    } else if (event.payload === "idle") {
-      onTurnOver(agentId);
-    }
-  }).then((unlisten) => {
-    if (!statusListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-
-    statusListeners.set(agentId, unlisten);
-  });
-
-  // Watch for permission requests from the control protocol.
-  // With the native control protocol, the assistant event (containing the
-  // tool_use block) is always forwarded to the renderer *before* the
-  // permission event is emitted, because the control_request arrives on a
-  // subsequent stdout line. No retry loop needed.
-  permListeners.set(agentId, () => {});
-
-  listen<PermissionRequest>(`agent:permission:${agentId}`, (event) => {
-    const request = event.payload;
-    notifyPermissionRequested(agentId, request);
-    const found = setPermissionPending(agentId, request);
-    if (!found) {
-      // Fallback: if the tool call hasn't been processed yet (fast streaming,
-      // or a nested subagent tool_use whose block is still being folded in),
-      // retry over ~1s so the prompt is never silently dropped.
-      let attempts = 20;
-      const retry = () => {
-        if (attempts-- > 0 && !setPermissionPending(agentId, request)) {
-          setTimeout(retry, 50);
-        }
-      };
-
-      setTimeout(retry, 50);
-    }
-  }).then((unlisten) => {
-    if (!permListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-
-    permListeners.set(agentId, unlisten);
-  });
-
-  // Watch for permission cancellations (CLI withdrew the request).
-  permCancelListeners.set(agentId, () => {});
-
-  listen<PermissionCancellation>(
-    `agent:permission-cancel:${agentId}`,
-    (event) => {
-      const { tool_use_id } = event.payload;
-      cancelPermission(agentId, tool_use_id);
-    },
-  ).then((unlisten) => {
-    if (!permCancelListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-
-    permCancelListeners.set(agentId, unlisten);
-  });
-
-  // A prompt was answered — possibly by a remote (web) client, whose response
-  // goes straight to the CLI and never touches this store. Clear the pending
-  // state and republish the snapshot so the desktop and other clients update.
-  permResolvedListeners.set(agentId, () => {});
-
-  listen<{ tool_use_id: string }>(
-    `agent:permission-resolved:${agentId}`,
-    (event) => {
-      clearPermission(agentId, event.payload.tool_use_id);
-      // Publish immediately (not debounced) so remote clients see the prompt
-      // resolve right after they answer, rather than lagging a save cycle.
-      saveAgentConversation(agentId);
-    },
-  ).then((unlisten) => {
-    if (!permResolvedListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-
-    permResolvedListeners.set(agentId, unlisten);
-  });
-
-  // Watch for capabilities from the initialize control_request response.
-  capListeners.set(agentId, () => {});
-
-  listen<AgentCapabilities>(`agent:capabilities:${agentId}`, (event) => {
-    setCapabilities(agentId, event.payload);
-    // The capabilities response means the CLI is initialized and ready for
-    // input. Drain any queued messages or transition to idle — but only if
-    // nothing is already in-flight.
-    if (!trySendNextQueued(agentId)) {
-      trySetIdle(agentId);
-    }
-  }).then((unlisten) => {
-    if (!capListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-
-    capListeners.set(agentId, unlisten);
-  });
-
-  // Watch for model changes via the control protocol.
-  modelListeners.set(agentId, () => {});
-
-  listen<string>(`agent:model-changed:${agentId}`, (event) => {
-    setModel(agentId, event.payload);
-    // Mirror onto agentStore so a later restartAgent / restoreAgentAtTurn
-    // sees the most recent model when re-spawning.
-    updateAgent(agentId, { model: event.payload });
-  }).then((unlisten) => {
-    if (!modelListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-
-    modelListeners.set(agentId, unlisten);
-  });
-
-  // Watch for per-agent runner switches (the agent is respawned under the
-  // new runner's env, so the id survives but the binding changes).
-  runnerListeners.set(agentId, () => {});
-
-  listen<string>(`agent:runner-changed:${agentId}`, (event) => {
-    updateAgent(agentId, { runner_id: event.payload });
-  }).then((unlisten) => {
-    if (!runnerListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-
-    runnerListeners.set(agentId, unlisten);
-  });
-
-  // Watch for permission mode changes via the control protocol.
-  permModeListeners.set(agentId, () => {});
-
-  listen<string>(`agent:permission-mode-changed:${agentId}`, (event) => {
-    updateAgent(agentId, {
-      permission_mode: event.payload || undefined,
-    });
-  }).then((unlisten) => {
-    if (!permModeListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-
-    permModeListeners.set(agentId, unlisten);
-  });
-
-  // Watch for reasoning-effort changes via the control protocol.
-  effortListeners.set(agentId, () => {});
-
-  listen<string | null>(`agent:effort-changed:${agentId}`, (event) => {
-    updateAgent(agentId, {
-      effort: event.payload ?? null,
-    });
-  }).then((unlisten) => {
-    if (!effortListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-
-    effortListeners.set(agentId, unlisten);
-  });
-
-  // Watch for stderr output from the CLI process (auth errors, diagnostics).
-  stderrListeners.set(agentId, () => {});
-
-  // Watch for MCP-injected messages (spawn_agent prompt, send_agent_message).
-  mcpMessageListeners.set(agentId, () => {});
-
-  listen<McpSystemMessagePayload>(`agent:mcp-message:${agentId}`, (event) => {
-    const payload = event.payload;
-    appendInjectedPrompt(agentId, {
-      id: crypto.randomUUID(),
-      role: "system",
-      textBlocks: [payload.message],
-      toolCalls: [],
-      images: payload.images?.length ? payload.images : undefined,
-      timestamp: payload.timestamp ?? Date.now(),
-      source: {
-        kind: "mcp",
-        tool: payload.tool,
-        parentAgentId: payload.parentAgentId,
-        parentLabel: payload.parentLabel,
-      },
-    });
-    scheduleAgentSave(agentId);
-  }).then((unlisten) => {
-    if (!mcpMessageListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-
-    mcpMessageListeners.set(agentId, unlisten);
-  });
-
-  // Messages sent from a remote (web) control client: the backend wrote them to
-  // the CLI's stdin, but only the initiating renderer records the user bubble —
-  // so mirror them here into a real user message the transcript (and snapshot)
-  // can show.
-  remoteMessageListeners.set(agentId, () => {});
-  listen<{
-    author?: string | null;
-    images?: ImageAttachment[];
-    message: string;
-  }>(`agent:remote-message:${agentId}`, (event) => {
-    const { message, images, author } = event.payload;
-    addUserMessage(agentId, message, images, undefined, author ?? undefined);
-    maybeGenerateTitle(agentId, message);
-    scheduleAgentSave(agentId);
-  }).then((unlisten) => {
-    if (!remoteMessageListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-    remoteMessageListeners.set(agentId, unlisten);
-  });
-
-  listen<string>(`agent:stderr:${agentId}`, (event) => {
-    const line = event.payload;
-    if (!line) {
-      return;
-    }
-    // A structured CLI diagnostic is a notice the run survived — a gateway
-    // runner trips a couple on every session — so it reads as a warning with
-    // spelled-out fields, not as a failure with a JSON blob.
-    const diagnostic = parseCliDiagnostic(line);
-    appendSystemMessage(agentId, {
-      id: crypto.randomUUID(),
-      role: "system",
-      tone: diagnostic ? "warning" : "error",
-      textBlocks: diagnostic
-        ? [diagnostic.title, ...diagnostic.details]
-        : [line],
-      toolCalls: [],
-      timestamp: Date.now(),
-    });
-  }).then((unlisten) => {
-    if (!stderrListeners.has(agentId)) {
-      unlisten();
-
-      return;
-    }
-
-    stderrListeners.set(agentId, unlisten);
-  });
-}
-
-/**
- * Agents with a message sent but no idle back yet. Keeps overlapping drains
- * from dispatching two queued messages into one turn.
- */
-const inflight = new Set<string>();
-
-/** Outcome of each agent's last `result`, announced once the turn is over. */
-const finishedTurns = new Map<
-  string,
-  { durationMs: number; subtype: "error" | "success" }
->();
-
-/** The backend reports the turn over: send the next queued message or settle. */
-function onTurnOver(agentId: string): void {
-  inflight.delete(agentId);
-  saveAgentConversation(agentId);
-  const finished = finishedTurns.get(agentId);
-  finishedTurns.delete(agentId);
-  if (trySendNextQueued(agentId)) {
-    return;
-  }
-  trySetIdle(agentId);
-  if (finished) {
-    notifyAgentFinished(agentId, finished.durationMs, finished.subtype);
-  }
-}
-
-/**
- * Mark an agent as having an in-flight message.  Call this whenever a
- * message is sent directly (not via the queue).
- */
-export function notifyMessageSent(agentId: string): void {
-  inflight.add(agentId);
-  scheduleAgentSave(agentId);
-}
-
-/**
- * If the queue has a message, dequeue it, send it, and mark in-flight.
- * Returns true if a message was sent.
- *
- * Bails when a message is already in-flight so that overlapping `result`
- * and `session_state_changed(idle)` signals don't drain multiple queued
- * messages back-to-back without waiting for each turn to finish.
- */
-function trySendNextQueued(agentId: string): boolean {
-  if (inflight.has(agentId)) {
-    return false;
-  }
-  // The queue lives in the backend; this reads the mirrored copy to decide
-  // synchronously, then pops for real. Claiming `inflight` before the await
-  // keeps a second caller from draining underneath this one.
-  if (getQueuedMessages(agentId).length === 0) {
-    return false;
-  }
-  inflight.add(agentId);
-  updateAgent(agentId, { status: "running" });
-
-  const sessionId = getAgentState().agents[agentId]?.session_id;
-  (async () => {
-    const next = await dequeueMessage(agentId);
-    if (!next) {
+  // The host's status is the CLI's own busy/idle state. Stopped/error stay
+  // with the exit listener.
+  on<string>(agentId, "agent:status", (status) => {
+    if (status === "running" || status === "requires_action") {
+      updateAgent(agentId, { status });
+    } else if (status === "idle") {
       inflight.delete(agentId);
       trySetIdle(agentId);
-
-      return;
     }
+  });
 
-    // Capture a checkpoint right before the prompt is dispatched so the user
-    // can later revert the worktree to its pre-prompt state. Best-effort —
-    // a git failure shouldn't block the queued send.
-    let checkpointId: string | undefined;
-    if (sessionId) {
-      try {
-        const cp = await createCheckpoint(sessionId);
-        checkpointId = cp.id;
-      } catch {
-        // Skip checkpoint.
-      }
-    }
-    addUserMessage(agentId, next.text, next.images, checkpointId, next.author);
-    sendAgentMessage(agentId, next.text, next.images).catch(() => {});
-    scheduleAgentSave(agentId);
-  })().catch(() => {});
+  // The capabilities reply means the CLI is up and waiting for input.
+  on<unknown>(agentId, "agent:capabilities", () => trySetIdle(agentId));
 
-  return true;
+  // Mirrored onto the agent so a restart re-spawns with the latest choices.
+  on<string>(agentId, "agent:model-changed", (model) =>
+    updateAgent(agentId, { model }),
+  );
+  on<string>(agentId, "agent:runner-changed", (runnerId) =>
+    updateAgent(agentId, { runner_id: runnerId }),
+  );
+  on<string>(agentId, "agent:permission-mode-changed", (mode) =>
+    updateAgent(agentId, { permission_mode: mode || undefined }),
+  );
+  on<string | null>(agentId, "agent:effort-changed", (effort) =>
+    updateAgent(agentId, { effort: effort ?? null }),
+  );
 }
 
-/**
- * A message queued from another client (phone, web) can land after the agent
- * has already gone idle, so no `result` or idle event follows to drain it.
- * Watch the mirrored queue and dispatch as soon as one shows up.
- */
-useQueueStore.subscribe((state, prev) => {
-  for (const [agentId, messages] of Object.entries(state.queues)) {
-    if (messages.length === 0 || messages === prev.queues[agentId]) {
-      continue;
-    }
-    if (getAgentState().agents[agentId]?.status !== "idle") {
-      continue;
-    }
-    trySendNextQueued(agentId);
-  }
-});
+/** A message is on its way to the agent: show it busy until the turn ends. */
+export function notifyMessageSent(agentId: string): void {
+  inflight.add(agentId);
+  updateAgent(agentId, { status: "running" });
+}
 
-/**
- * Set the agent to idle — but only if no message is currently in-flight.
- * This prevents stale idle signals from hiding the activity indicator.
- */
+/** Set the agent idle — unless a message it hasn't answered is in flight. */
 function trySetIdle(agentId: string): void {
   if (inflight.has(agentId)) {
     return;
@@ -890,90 +177,7 @@ function trySetIdle(agentId: string): void {
 /** Unsubscribe all listeners for an agent and clean up tracking state. */
 export function stopAgentListening(agentId: string): void {
   inflight.delete(agentId);
-  finishedTurns.delete(agentId);
-  lastPersistAt.delete(agentId);
   unwatchQueue(agentId);
-  const unlisten = listeners.get(agentId);
-  if (unlisten) {
-    unlisten();
-  }
-  listeners.delete(agentId);
-
-  const exitUnlisten = exitListeners.get(agentId);
-  if (exitUnlisten) {
-    exitUnlisten();
-  }
-  exitListeners.delete(agentId);
-
-  const statusUnlisten = statusListeners.get(agentId);
-  if (statusUnlisten) {
-    statusUnlisten();
-  }
-  statusListeners.delete(agentId);
-
-  const permUnlisten = permListeners.get(agentId);
-  if (permUnlisten) {
-    permUnlisten();
-  }
-  permListeners.delete(agentId);
-
-  const permCancelUnlisten = permCancelListeners.get(agentId);
-  if (permCancelUnlisten) {
-    permCancelUnlisten();
-  }
-  permCancelListeners.delete(agentId);
-
-  const permResolvedUnlisten = permResolvedListeners.get(agentId);
-  if (permResolvedUnlisten) {
-    permResolvedUnlisten();
-  }
-  permResolvedListeners.delete(agentId);
-
-  const capUnlisten = capListeners.get(agentId);
-  if (capUnlisten) {
-    capUnlisten();
-  }
-  capListeners.delete(agentId);
-
-  const modelUnlisten = modelListeners.get(agentId);
-  if (modelUnlisten) {
-    modelUnlisten();
-  }
-  modelListeners.delete(agentId);
-
-  const runnerUnlisten = runnerListeners.get(agentId);
-  if (runnerUnlisten) {
-    runnerUnlisten();
-  }
-  runnerListeners.delete(agentId);
-
-  const permModeUnlisten = permModeListeners.get(agentId);
-  if (permModeUnlisten) {
-    permModeUnlisten();
-  }
-  permModeListeners.delete(agentId);
-
-  const effortUnlisten = effortListeners.get(agentId);
-  if (effortUnlisten) {
-    effortUnlisten();
-  }
-  effortListeners.delete(agentId);
-
-  const stderrUnlisten = stderrListeners.get(agentId);
-  if (stderrUnlisten) {
-    stderrUnlisten();
-  }
-  stderrListeners.delete(agentId);
-
-  const mcpUnlisten = mcpMessageListeners.get(agentId);
-  if (mcpUnlisten) {
-    mcpUnlisten();
-  }
-  mcpMessageListeners.delete(agentId);
-
-  const remoteUnlisten = remoteMessageListeners.get(agentId);
-  if (remoteUnlisten) {
-    remoteUnlisten();
-  }
-  remoteMessageListeners.delete(agentId);
+  subscriptions.get(agentId)?.forEach((unlisten) => unlisten());
+  subscriptions.delete(agentId);
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, DialogBody, DialogFooter, Input } from "@argus/peacock";
-import { setConversationTitle } from "../../../stores/conversationStore";
+import { setAgentTitle } from "../../../lib/ipc";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
 interface RenameAgentDialogProps {
@@ -25,7 +25,7 @@ export function RenameAgentDialog({
     e.preventDefault();
     const next = value.trim();
     if (next) {
-      setConversationTitle(agentId, next);
+      setAgentTitle(agentId, next).catch(() => {});
     }
     onClose();
   };

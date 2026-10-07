@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Dialog, DialogBody } from "@argus/peacock";
 import { useSessionAgents } from "../../../hooks/useAgent";
-import { saveAgentConversation } from "../../../lib/agentEventService";
 import { listChatHistory, loadChatHistory } from "../../../lib/ipc";
 import { isSessionReady } from "../../../lib/types";
 import {
@@ -102,30 +101,8 @@ export function HomePanel({ sessionId }: HomePanelProps) {
         : [];
       const entry = entries.find((e) => e.sessionId === claudeSessionId);
 
-      const newAgentId = await startNew(
-        undefined,
-        undefined,
-        claudeSessionId,
-        entry?.runnerId,
-      );
-      if (!newAgentId || !repoRoot || !entry) {
-        return;
-      }
-
-      const saved = await loadChatHistory(repoRoot, entry.id).catch(() => null);
-      if (saved && saved.messages.length > 0) {
-        loadSavedMessages(
-          newAgentId,
-          saved.messages,
-          saved.model,
-          saved.sessionId,
-          true,
-          saved.title,
-        );
-        // Hydration is renderer-only state. Publish it so the web and phone
-        // clients see the restored transcript instead of an empty chat.
-        saveAgentConversation(newAgentId);
-      }
+      // The host seeds the resumed agent's conversation from this record.
+      await startNew(undefined, undefined, claudeSessionId, entry?.runnerId);
     },
     [handleCloseHistory, repoRoot, startNew],
   );
