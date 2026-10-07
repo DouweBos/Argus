@@ -64,6 +64,7 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../agent/messageQueue";
+import { getParsedAgentSnapshot } from "../agent/snapshots";
 import { saveAppSettings } from "../appSettings/store";
 import { revisePlaybook } from "../automation/authoring";
 import { appDefaultAutonomy } from "../automation/autonomy";
@@ -480,12 +481,8 @@ function sessionProjectName(sessionId: string): string | undefined {
 
 /** The agent's generated conversation title, read from its published snapshot. */
 function agentTitle(agentId: string): string | null {
-  const snapshot = appState.agentSnapshots.get(agentId);
-  if (!snapshot) {
-    return null;
-  }
   try {
-    const title = (JSON.parse(snapshot) as { title?: string }).title;
+    const title = getParsedAgentSnapshot<{ title?: string }>(agentId)?.title;
 
     return title && title.trim() ? title : null;
   } catch {
@@ -505,13 +502,9 @@ function agentAwaiting(agentId: string): RemoteAgentStatus["awaiting"] {
     return awaitingForTool(prompt.tool_name) ?? "permission";
   }
 
-  const snapshot = appState.agentSnapshots.get(agentId);
-  if (!snapshot) {
-    return null;
-  }
   try {
-    const conv = JSON.parse(snapshot) as RawConversation;
-    for (const message of (conv.messages ?? []).slice(-3).reverse()) {
+    const conv = getParsedAgentSnapshot<RawConversation>(agentId);
+    for (const message of (conv?.messages ?? []).slice(-3).reverse()) {
       for (const tc of message.toolCalls ?? []) {
         if (tc.result != null) {
           continue;
@@ -889,15 +882,17 @@ function findImage(
 
 /** Parse an agent's published snapshot JSON, or throw a gateway error. */
 function parseSnapshot(agentId: string): RawConversation {
-  const snapshotJson = appState.agentSnapshots.get(agentId);
-  if (!snapshotJson) {
-    throw new GatewayError("not_found", `no transcript for ${agentId}`);
-  }
+  let conv: RawConversation | null;
   try {
-    return JSON.parse(snapshotJson) as RawConversation;
+    conv = getParsedAgentSnapshot<RawConversation>(agentId);
   } catch {
     throw new GatewayError("internal", "corrupt transcript snapshot");
   }
+  if (!conv) {
+    throw new GatewayError("not_found", `no transcript for ${agentId}`);
+  }
+
+  return conv;
 }
 
 /**
