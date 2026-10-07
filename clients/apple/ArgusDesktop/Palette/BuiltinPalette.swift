@@ -64,7 +64,7 @@ enum BuiltinPalette {
         model.navigate(.sessionHome(id: id))
       },
       PaletteCommand(id: "session.agents", title: "Session Agents", section: "Session", systemImage: "sparkles") {
-        model.navigate(.session(id: id, agentId: nil))
+        model.openAgents(session: id)
       },
       PaletteCommand(
         id: "session.terminal", title: model.terminalPanelVisible ? "Hide Terminal" : "Show Terminal",

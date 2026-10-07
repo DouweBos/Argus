@@ -97,7 +97,7 @@ struct PullRequestActions {
     switch action {
     case .openDetail: model.navigate(.pullRequest(repo: pr.repo, number: pr.number))
     case .openInBrowser: PullRequestLinks.open(pr.url, store: store)
-    case .openSession(let id): model.navigate(.session(id: id, agentId: nil))
+    case .openSession(let id): model.openAgents(session: id)
     case .copyURL: Clipboard.copy(pr.url)
     case .startSession:
       starting.wrappedValue = pr.id

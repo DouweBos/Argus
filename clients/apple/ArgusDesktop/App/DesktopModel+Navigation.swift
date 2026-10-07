@@ -70,7 +70,20 @@ extension DesktopModel {
   /// A session from the sidebar: the panel it was last on, else its home.
   func open(session id: String) {
     if gitPanelSessions.contains(id) { return openGit(session: id) }
-    navigate(agentsPanelSessions.contains(id) ? .session(id: id, agentId: nil) : .sessionHome(id: id))
+    if agentsPanelSessions.contains(id) { return openAgents(session: id) }
+    navigate(.sessionHome(id: id))
+  }
+
+  /// A session's agents, on the one last open there, as the desktop keeps
+  /// each session's active agent.
+  func openAgents(session id: String) {
+    navigate(.session(id: id, agentId: lastAgents[id]))
+  }
+
+  /// An agent just started or resumed, shown before the host lists it.
+  func open(spawned agentId: String, session id: String) {
+    spawnedAgent = agentId
+    navigate(.session(id: id, agentId: agentId))
   }
 
   /// A session's git panel, on the sub-view it was last left on.
@@ -114,9 +127,10 @@ extension DesktopModel {
       HomeRecents.shared.show(session.repoRoot)
     }
     switch route {
-    case .session(let id, _):
+    case .session(let id, let agentId):
       agentsPanelSessions.insert(id)
       gitPanelSessions.remove(id)
+      if let agentId { lastAgents[id] = agentId }
     case .sessionHome(let id):
       agentsPanelSessions.remove(id)
       gitPanelSessions.remove(id)
@@ -159,6 +173,6 @@ extension DesktopModel {
   func newScratchPad() async {
     guard let agent = await store.createScratchPad() else { return }
     MacTelemetry.capture(.scratchPadCreated)
-    navigate(.session(id: agent.sessionId, agentId: agent.agentId))
+    open(spawned: agent.agentId, session: agent.sessionId)
   }
 }
