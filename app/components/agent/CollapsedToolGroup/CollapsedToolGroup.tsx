@@ -2,7 +2,7 @@ import type {
   ConversationMessage,
   ToolCallInfo,
 } from "../../../stores/conversationStore";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { HoverTimestamp, Icons } from "@argus/peacock";
 import { ToolCallCard } from "../ToolCallCard";
 import { categorizeTools } from "../categorizeTools";
@@ -20,7 +20,7 @@ interface CollapsedToolGroupProps {
   onSaveToolCallToDisk?: (toolCall: ToolCallInfo) => void;
 }
 
-export function CollapsedToolGroup({
+export const CollapsedToolGroup = memo(function CollapsedToolGroup({
   agentId,
   messages,
   onPermissionRespond,
@@ -131,5 +131,19 @@ export function CollapsedToolGroup({
     >
       {body}
     </HoverTimestamp>
+  );
+}, sameGroup);
+
+/** A regrouped run is a fresh array; equal when it holds the same messages. */
+function sameGroup(
+  prev: CollapsedToolGroupProps,
+  next: CollapsedToolGroupProps,
+): boolean {
+  return (
+    prev.agentId === next.agentId &&
+    prev.onPermissionRespond === next.onPermissionRespond &&
+    prev.onSaveToolCallToDisk === next.onSaveToolCallToDisk &&
+    prev.messages.length === next.messages.length &&
+    prev.messages.every((m, i) => m === next.messages[i])
   );
 }

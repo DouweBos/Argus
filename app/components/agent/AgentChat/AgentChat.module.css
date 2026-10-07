@@ -19,6 +19,14 @@
   -webkit-user-select: text;
 }
 
+/* Off-screen rows skip style, layout and paint; `auto` keeps each row's last
+   rendered height so the scrollbar stays put once it has been seen. */
+.row {
+  flex-shrink: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 96px;
+}
+
 .loadMoreIndicator {
   flex-shrink: 0;
   display: flex;

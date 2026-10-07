@@ -2,7 +2,7 @@ import type {
   ConversationMessage,
   ToolCallInfo,
 } from "../../../stores/conversationStore";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Chip,
@@ -124,7 +124,8 @@ function toMessageImages(
   });
 }
 
-export function ChatMessage({
+/** Memoized: a long transcript re-renders only the rows whose message changed. */
+export const ChatMessage = memo(function ChatMessage({
   agentId,
   message,
   onCopy,
@@ -433,4 +434,4 @@ export function ChatMessage({
       Container={FileLinkHandler}
     />
   );
-}
+});
