@@ -12,6 +12,11 @@ import {
   loadIdentity,
   saveIdentity,
 } from "./keystore";
+import {
+  applyDeltaMessages,
+  deltaAction,
+  type TranscriptCursor,
+} from "./transcriptDelta";
 import type { DeviceIdentity } from "./keystore";
 import {
   fetchHostKey,
@@ -71,6 +76,7 @@ import type {
   RemoteTask,
   RemoteTodo,
   RemoteTranscript,
+  RemoteTranscriptDelta,
 } from "./protocol";
 import {
   MediaRouter,
@@ -326,6 +332,48 @@ export const useAppStore = create<AppState>((set, get) => {
   // The room this tab is in, so a rename can re-present the same token.
   let huddleToken: string | null = null;
 
+  // Where each transcript's newest page sits in the host's deltas. An agent
+  // whose host has sent one stops refetching on every event.
+  const cursors = new Map<string, TranscriptCursor>();
+  const followsDeltas = new Set<string>();
+  /** Deltas that arrived while a page was in flight, keyed by agent. */
+  const buffered = new Map<string, RemoteTranscriptDelta[]>();
+
+  const applyDelta = (delta: RemoteTranscriptDelta) => {
+    const agentId = delta.agent_id;
+    const action = deltaAction(cursors.get(agentId), delta);
+    if (action === "drop") {
+      return;
+    }
+    if (action === "refetch") {
+      scheduleTranscript(agentId);
+
+      return;
+    }
+    cursors.set(agentId, { epoch: delta.epoch, revision: delta.revision });
+    set((s) => {
+      const existing = s.messagesByAgent[agentId] ?? [];
+      const messages = applyDeltaMessages(existing, delta);
+
+      return {
+        messagesByAgent:
+          messages === existing
+            ? s.messagesByAgent
+            : { ...s.messagesByAgent, [agentId]: messages },
+        tasksByAgent: jsonEq(s.tasksByAgent[agentId], delta.tasks)
+          ? s.tasksByAgent
+          : { ...s.tasksByAgent, [agentId]: delta.tasks },
+        todosByAgent: jsonEq(s.todosByAgent[agentId], delta.todos)
+          ? s.todosByAgent
+          : { ...s.todosByAgent, [agentId]: delta.todos },
+        pendingToolByAgent: {
+          ...s.pendingToolByAgent,
+          [agentId]: delta.pending_tool_name,
+        },
+      };
+    });
+  };
+
   // Debounce live transcript refreshes so a burst of events → one refetch.
   const refetchTimers = new Map<string, ReturnType<typeof setTimeout>>();
   const scheduleTranscript = (agentId: string) => {
@@ -347,7 +395,9 @@ export const useAppStore = create<AppState>((set, get) => {
         prompts: { ...s.prompts, [`${p.agent_id}:${p.tool_use_id}`]: p },
       }));
       // Refresh the transcript so the tool call renders its pending form inline.
-      scheduleTranscript(p.agent_id);
+      if (!followsDeltas.has(p.agent_id)) {
+        scheduleTranscript(p.agent_id);
+      }
     } else if (ev.event === "permission.cancel") {
       const p = ev.payload as { agent_id: string; tool_use_id: string };
       set((s) => {
@@ -356,7 +406,9 @@ export const useAppStore = create<AppState>((set, get) => {
 
         return { prompts: next };
       });
-      scheduleTranscript(p.agent_id);
+      if (!followsDeltas.has(p.agent_id)) {
+        scheduleTranscript(p.agent_id);
+      }
     } else if (ev.event === "agent.status") {
       const a = ev.payload as RemoteAgentStatus;
       set((s) => {
@@ -395,9 +447,20 @@ export const useAppStore = create<AppState>((set, get) => {
           [ev.agent_id as string]: ev.payload as RemoteAgentCapabilities,
         },
       }));
+    } else if (ev.event === "agent.transcript") {
+      const delta = ev.payload as RemoteTranscriptDelta;
+      followsDeltas.add(delta.agent_id);
+      const waiting = buffered.get(delta.agent_id);
+      if (waiting) {
+        waiting.push(delta);
+      } else {
+        applyDelta(delta);
+      }
     } else if (ev.event === "agent.event" && ev.agent_id) {
-      // Re-fetch the structured transcript rather than rendering raw events.
-      scheduleTranscript(ev.agent_id);
+      // An older host sends no deltas: re-fetch the structured transcript.
+      if (!followsDeltas.has(ev.agent_id)) {
+        scheduleTranscript(ev.agent_id);
+      }
     } else if (ev.event === "notification") {
       showRemoteNotification(ev.payload as RemoteNotification);
     } else if (ev.event === "device.state") {
@@ -863,6 +926,8 @@ export const useAppStore = create<AppState>((set, get) => {
       // fetches the most-recent page (the tail); older history lazy-loads on
       // scroll-up via loadOlderMessages.
       let res: RemoteTranscript = { messages: [], next_after: null };
+      const waiting: RemoteTranscriptDelta[] = buffered.get(agentId) ?? [];
+      buffered.set(agentId, waiting);
       try {
         res = await t.request<RemoteTranscript>("agents.transcript", {
           agent_id: agentId,
@@ -870,6 +935,11 @@ export const useAppStore = create<AppState>((set, get) => {
         });
       } catch {
         res = { messages: [], next_after: null };
+      } finally {
+        buffered.delete(agentId);
+      }
+      if (res.epoch !== undefined && res.revision !== undefined) {
+        cursors.set(agentId, { epoch: res.epoch, revision: res.revision });
       }
       set((s) => {
         // Merge the fetched tail into any older pages already loaded — keeping
@@ -950,6 +1020,10 @@ export const useAppStore = create<AppState>((set, get) => {
           },
         };
       });
+      // Deltas that raced the page: anything it already had is dropped.
+      for (const delta of waiting) {
+        applyDelta(delta);
+      }
     },
 
     loadOlderMessages: async (agentId) => {

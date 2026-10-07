@@ -363,6 +363,26 @@ export interface RemoteTranscript {
   todos?: RemoteTodo[] | null;
   model?: string | null;
   pending_tool_name?: string | null;
+  /** Line the page up with `agent.transcript` deltas. Absent on older hosts. */
+  epoch?: string;
+  revision?: number;
+}
+
+/** `agent.transcript`: what changed since `revision - 1`. */
+export interface RemoteTranscriptDelta {
+  agent_id: string;
+  epoch: string;
+  revision: number;
+  total: number;
+  /** Upserted by id; unknown ids append, in order. */
+  messages: RemoteMessage[];
+  /** Removed, or now hidden. */
+  removed_ids: string[];
+  title: string | null;
+  model: string | null;
+  pending_tool_name: string | null;
+  tasks: RemoteTask[] | null;
+  todos: RemoteTodo[] | null;
 }
 
 export interface RemoteImageData {
