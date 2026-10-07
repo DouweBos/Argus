@@ -53,6 +53,10 @@ final class DesktopModel {
   var gitViews: [String: GitRoute] = [:]
   /// Sessions last left on their git panel.
   var gitPanelSessions: Set<String> = []
+  /// The agent each session last showed.
+  var lastAgents: [String: String] = [:]
+  /// An agent opened the moment it was spawned, before any list names it.
+  var spawnedAgent: String?
   private var launchRouteApplied = false
   private var tabRestored = false
   var back: [DesktopLocation] = []

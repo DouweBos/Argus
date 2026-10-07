@@ -52,7 +52,7 @@ struct SessionView: View {
       if let remoteMode = mode ?? RemotePermissionMode(rawValue: fallback.rawValue) {
         guard let agent = await store.spawnAgent(sessionId: sessionId, permissionMode: remoteMode)
         else { return }
-        model.navigate(.session(id: sessionId, agentId: agent.agentId))
+        model.open(spawned: agent.agentId, session: sessionId)
       } else {
         await startTrusted(fallback.rawValue)
       }
@@ -67,7 +67,7 @@ struct SessionView: View {
       let info = try await backend.request(
         ArgusProtocol.Commands.StartAgent.self, .init(sessionId: sessionId, permissionMode: mode))
       if let repoRoot = session?.repoRoot { await store.loadAgents(repoRoot: repoRoot) }
-      model.navigate(.session(id: sessionId, agentId: info.agentId))
+      model.open(spawned: info.agentId, session: sessionId)
     } catch {
       store.report(error)
     }
@@ -76,6 +76,12 @@ struct SessionView: View {
   /// Closing a tab stops its agent, as in the desktop app; its transcript is
   /// saved first.
   private func closeAgent(_ agentId: String) {
+    // The neighbour takes over, as on the desktop; the route never names a closed agent.
+    if agentId == focusedAgentId, let index = agents.firstIndex(where: { $0.agentId == agentId }) {
+      let rest = agents.filter { $0.agentId != agentId }
+      let next = rest.isEmpty ? nil : rest[min(max(index - 1, 0), rest.count - 1)].agentId
+      model.navigate(.session(id: sessionId, agentId: next))
+    }
     Task {
       await store.stopAgent(agentId: agentId)
       await store.live?.forget(agentId)
@@ -83,9 +89,15 @@ struct SessionView: View {
   }
 
   /// The routed agent, else the first — a session always shows something.
+  /// One just spawned (a resumed chat) is routed to before any list has it.
   private var focusedAgentId: String? {
-    model.route.agentId.flatMap { id in agents.contains { $0.agentId == id } ? id : nil }
-      ?? agents.first?.agentId
+    model.route.agentId.flatMap { id in
+      agents.contains { $0.agentId == id } || justSpawned(id) ? id : nil
+    } ?? agents.first?.agentId
+  }
+
+  private func justSpawned(_ agentId: String) -> Bool {
+    model.spawnedAgent == agentId
   }
 
   var body: some View {
@@ -138,6 +150,9 @@ struct SessionView: View {
     .onChange(of: terminals.revealed) { _, reveal in
       if reveal?.sessionId == sessionId { model.terminalPanelVisible = true }
     }
+    .onChange(of: agents.map(\.agentId)) { _, ids in
+      if let spawned = model.spawnedAgent, ids.contains(spawned) { model.spawnedAgent = nil }
+    }
     .navigationTitle(session?.displayName ?? session?.branch ?? "Session")
     .navigationSubtitle(session?.branch ?? "")
     .task(id: session?.repoRoot) {
@@ -164,7 +179,7 @@ struct SessionView: View {
       set: { panel in
         switch panel {
         case .home: model.navigate(.sessionHome(id: sessionId))
-        case .agents: model.navigate(.session(id: sessionId, agentId: nil))
+        case .agents: model.openAgents(session: sessionId)
         case .git: model.openGit(session: sessionId)
         }
       })

@@ -85,9 +85,10 @@ struct SessionChatHistoryCard: View {
       let agent = await store.spawnAgent(
         sessionId: session.id, resumeSessionId: entry.sessionId, runnerId: entry.runnerId)
     else { return }
-    if let saved { await store.live?.restore(agent.agentId, from: saved) }
-    model.navigate(.session(id: session.id, agentId: agent.agentId))
+    // Open it straight away, as the desktop does; the transcript fills in.
+    model.open(spawned: agent.agentId, session: session.id)
     MacTelemetry.capture(.chatHistoryUsed(action: .resume))
+    if let saved { await store.live?.restore(agent.agentId, from: saved) }
   }
 
   private func delete(_ doomed: [ArgusProtocol.ChatHistoryEntry]) async {
