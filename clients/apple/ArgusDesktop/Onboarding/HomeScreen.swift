@@ -24,7 +24,7 @@ struct HomeScreen: View {
           }
           HomeNeedsYouSection()
           section("Projects") {
-            Button("Add Project…") { model.addingProject = true }.buttonStyle(.link)
+            Button("Add Project…") { model.addingProject = true }.buttonStyle(.accentLink)
           } content: {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 12)], spacing: 12) {
               ForEach(projects) { HomeProjectCard(project: $0) }
@@ -32,12 +32,12 @@ struct HomeScreen: View {
           }
           HStack(alignment: .top, spacing: 20) {
             section("Active agents") {
-              Button("View all") { model.navigate(.agents) }.buttonStyle(.link)
+              Button("View all") { model.navigate(.agents) }.buttonStyle(.accentLink)
             } content: {
               HomeAgentsList()
             }
             section("Devices") {
-              Button("View all") { model.navigate(.devices) }.buttonStyle(.link)
+              Button("View all") { model.navigate(.devices) }.buttonStyle(.accentLink)
             } content: {
               HomeDevicesList()
             }

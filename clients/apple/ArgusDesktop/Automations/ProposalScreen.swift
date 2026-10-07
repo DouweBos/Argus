@@ -69,7 +69,7 @@ struct ProposalScreen: View {
         Button("The session it started") { model.navigate(.sessionHome(id: session)) }
       }
     }
-    .buttonStyle(.link)
+    .buttonStyle(.accentLink)
   }
 
   /// What happened to a proposal nobody can act on any more. A withdrawal

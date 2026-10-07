@@ -61,7 +61,7 @@ struct PullRequestConversation: View {
           Image(systemName: "text.bubble").foregroundStyle(.secondary)
           Text(comment.body).font(.scaled(size: 12)).lineLimit(4).textSelection(.enabled)
           Spacer()
-          Button("View") { model.openOnGitHub(comment.url) }.buttonStyle(.link).controlSize(.small)
+          Button("View") { model.openOnGitHub(comment.url) }.buttonStyle(.accentLink).controlSize(.small)
         }
       }
     }
@@ -166,7 +166,7 @@ struct PullRequestChecks: View {
           Text((check.conclusion?.rawValue ?? check.status?.rawValue ?? "").replacingOccurrences(of: "_", with: " "))
             .font(.scaled(size: 11)).foregroundStyle(.secondary)
           if let url = check.detailsUrl {
-            Button("Details") { open(url) }.buttonStyle(.link).controlSize(.small)
+            Button("Details") { open(url) }.buttonStyle(.accentLink).controlSize(.small)
           }
         }
       }

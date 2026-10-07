@@ -51,6 +51,7 @@ public struct ReportBlocksView: View {
               Link(destination: url) {
                 listText(item.text, color: theme.accent)
               }
+              .buttonStyle(.accentLink)
             } else {
               listText(item.text, color: theme.text)
             }

@@ -67,7 +67,7 @@ struct AgentsOverview: View {
               Button { open(session: session) } label: {
                 Text(session.displayName ?? session.branch).lineLimit(1)
               }
-              .buttonStyle(.link)
+              .buttonStyle(.accentLink)
             } else {
               Text(row.agent.sessionLabel ?? "").foregroundStyle(.secondary)
             }
@@ -78,7 +78,7 @@ struct AgentsOverview: View {
               Button { openProject(session.repoRoot) } label: {
                 Text(projectName(session.repoRoot)).lineLimit(1)
               }
-              .buttonStyle(.link)
+              .buttonStyle(.accentLink)
             } else {
               Text(row.agent.projectName ?? "").foregroundStyle(.secondary)
             }
