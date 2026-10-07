@@ -14,7 +14,11 @@
  * so this does: every Mach-O with the hardened runtime, and `node` with the JIT
  * entitlements it can't run without.
  *
- *   tsx scripts/build-mac-host.ts --out <dir> [--sign <identity>] [--skip-build]
+ *   tsx scripts/build-mac-host.ts --out <dir> [--sign <identity>] [--app <bundle>] [--skip-build]
+ *
+ * `--app` names the app bundle. Xcode skips its own CodeSign when no Swift
+ * changed, so when staging changed the bundle this reseals it, or the app
+ * fails verification.
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
@@ -31,6 +35,7 @@ const ENTITLEMENTS = path.join(
 interface Options {
   out: string;
   sign: string | null;
+  app: string | null;
   skipBuild: boolean;
 }
 
@@ -50,6 +55,7 @@ function parseArgs(argv: string[]): Options {
     out: path.resolve(out),
     // Xcode's "Sign to Run Locally" hands us "-": ad-hoc, still hardened.
     sign: sign && sign.length > 0 ? sign : null,
+    app: value("--app"),
     skipBuild: argv.includes("--skip-build"),
   };
 }
@@ -62,17 +68,28 @@ function log(line: string): void {
  * Mirror `src` into `dest`, copying only what changed. `--update` keeps a copy
  * we signed (newer than its source) until the source itself moves on.
  */
-function sync(src: string, dest: string): void {
+/** `byContent` for unsigned files rebuilt every run with the same bytes. */
+function sync(src: string, dest: string, byContent = false): boolean {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   const isDir = fs.statSync(src).isDirectory();
-  execFileSync("rsync", [
-    "-a",
-    "--update",
-    "--delete",
-    "--copy-links",
-    isDir ? `${src}/` : src,
-    dest,
-  ]);
+  const changes = execFileSync(
+    "rsync",
+    [
+      "-a",
+      byContent ? "--checksum" : "--update",
+      "--delete",
+      "--copy-links",
+      "--itemize-changes",
+      isDir ? `${src}/` : src,
+      dest,
+    ],
+    { encoding: "utf8" },
+  );
+
+  // Itemized lines for directories whose only change is their own mtime don't count.
+  return changes
+    .split("\n")
+    .some((line) => line.length > 0 && !/^\.d\.\.t/.test(line));
 }
 
 /** Resources the host resolves through `ARGUS_RESOURCES`, as electron-builder ships them. */
@@ -106,7 +123,7 @@ const RESOURCES: { from: string; to: string; optional?: boolean }[] = [
   { from: "clients/argus-web/dist", to: "argus-web", optional: true },
 ];
 
-function stage(options: Options): void {
+function stage(options: Options): boolean {
   if (!options.skipBuild) {
     execFileSync(process.execPath, ["build-host.mjs"], {
       cwd: ROOT,
@@ -124,22 +141,29 @@ function stage(options: Options): void {
   const out = options.out;
   fs.mkdirSync(out, { recursive: true });
 
-  stageNode(out, options.sign);
-  sync(
-    path.join(ROOT, "dist-host/argus-host.js"),
-    path.join(out, "argus-host.js"),
-  );
-  sync(
-    path.join(ROOT, "dist-host/package.json"),
-    path.join(out, "package.json"),
-  );
+  let changed = stageNode(out, options.sign);
+  changed =
+    sync(
+      path.join(ROOT, "dist-host/argus-host.js"),
+      path.join(out, "argus-host.js"),
+      true,
+    ) || changed;
+  changed =
+    sync(
+      path.join(ROOT, "dist-host/package.json"),
+      path.join(out, "package.json"),
+      true,
+    ) || changed;
 
   const pty = fs.realpathSync(path.join(ROOT, "node_modules/node-pty"));
   const ptyOut = path.join(out, "node_modules/node-pty");
-  sync(path.join(pty, "package.json"), path.join(ptyOut, "package.json"));
-  sync(path.join(pty, "lib"), path.join(ptyOut, "lib"));
+  changed =
+    sync(path.join(pty, "package.json"), path.join(ptyOut, "package.json")) ||
+    changed;
+  changed = sync(path.join(pty, "lib"), path.join(ptyOut, "lib")) || changed;
   const prebuild = `prebuilds/${process.platform}-${process.arch}`;
-  sync(path.join(pty, prebuild), path.join(ptyOut, prebuild));
+  changed =
+    sync(path.join(pty, prebuild), path.join(ptyOut, prebuild)) || changed;
 
   for (const resource of RESOURCES) {
     const src = path.join(ROOT, resource.from);
@@ -150,8 +174,10 @@ function stage(options: Options): void {
       }
       throw new Error(`missing ${resource.from}`);
     }
-    sync(src, path.join(out, "resources", resource.to));
+    changed = sync(src, path.join(out, "resources", resource.to)) || changed;
   }
+
+  return changed;
 }
 
 /**
@@ -159,7 +185,7 @@ function stage(options: Options): void {
  * the copy, so a stamp — not rsync — decides whether it is current; otherwise
  * every build would copy and re-sign 100 MB.
  */
-function stageNode(out: string, identity: string | null): void {
+function stageNode(out: string, identity: string | null): boolean {
   const src = fs.realpathSync(process.execPath);
   const dest = path.join(out, "node");
   const stampFile = path.join(out, ".node-stamp");
@@ -169,8 +195,12 @@ function stageNode(out: string, identity: string | null): void {
     identity,
     entitlements: fs.readFileSync(ENTITLEMENTS, "utf8"),
   });
-  if (fs.existsSync(dest) && fs.readFileSync(stampFile, "utf8") === stamp) {
-    return;
+  if (
+    fs.existsSync(dest) &&
+    fs.existsSync(stampFile) &&
+    fs.readFileSync(stampFile, "utf8") === stamp
+  ) {
+    return false;
   }
   fs.copyFileSync(src, dest);
   fs.chmodSync(dest, 0o755);
@@ -178,6 +208,8 @@ function stageNode(out: string, identity: string | null): void {
     signFile(dest, identity, true);
   }
   fs.writeFileSync(stampFile, stamp);
+
+  return true;
 }
 
 function signFile(file: string, identity: string, jit: boolean): void {
@@ -237,10 +269,57 @@ function isSignedBy(file: string, identity: string): boolean {
 
   return identity === "-"
     ? info.stderr.includes("Signature=adhoc")
-    : info.stderr.includes(`Authority=${identity}`);
+    : info.stderr.includes(`Authority=${identityName(identity)}`);
 }
 
-function signNested(out: string, identity: string): void {
+/**
+ * Re-sign an app whose seal this run broke. A bundle Xcode hasn't signed yet
+ * (a clean build) is left alone: its own CodeSign step comes after this one.
+ */
+function reseal(app: string, identity: string): void {
+  if (!fs.existsSync(app)) {
+    return;
+  }
+  const signed = spawnSync("codesign", ["-dv", app]);
+  const valid = spawnSync("codesign", ["--verify", "--deep", "--strict", app]);
+  if (signed.status !== 0 || valid.status === 0) {
+    return;
+  }
+  const result = spawnSync("codesign", [
+    "--force",
+    "--sign",
+    identity,
+    "--preserve-metadata=identifier,entitlements,requirements,flags,runtime",
+    "--timestamp=none",
+    app,
+  ]);
+  log(
+    result.status === 0
+      ? "staging changed the bundle; resealed the app"
+      : `couldn't reseal the app: ${result.stderr.toString().trim()}`,
+  );
+}
+
+/** Xcode passes the certificate's SHA-1; `codesign -dvv` reports its name. */
+function identityName(identity: string): string {
+  if (!/^[0-9A-F]{40}$/i.test(identity)) {
+    return identity;
+  }
+  const list = spawnSync(
+    "security",
+    ["find-identity", "-v", "-p", "codesigning"],
+    {
+      encoding: "utf8",
+    },
+  );
+  const line = list.stdout
+    .split("\n")
+    .find((entry) => entry.toUpperCase().includes(identity.toUpperCase()));
+
+  return line?.match(/"(.+)"/)?.[1] ?? identity;
+}
+
+function signNested(out: string, identity: string): number {
   const node = path.join(out, "node");
   const files = machOFiles(out).filter((file) => file !== node);
   let signed = 0;
@@ -252,11 +331,16 @@ function signNested(out: string, identity: string): void {
     }
   }
   log(`signed ${signed} of ${files.length} nested binaries`);
+
+  return signed;
 }
 
 const options = parseArgs(process.argv.slice(2));
-stage(options);
+let changed = stage(options);
 if (options.sign) {
-  signNested(options.out, options.sign);
+  changed = signNested(options.out, options.sign) > 0 || changed;
+}
+if (changed && options.sign && options.app) {
+  reseal(options.app, options.sign);
 }
 log(`staged ${options.out}`);
