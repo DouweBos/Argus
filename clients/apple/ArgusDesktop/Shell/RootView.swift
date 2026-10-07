@@ -54,7 +54,7 @@ struct HostLockedView: View {
     } actions: {
       Button("Quit \(holder.holderName) and Continue") { model.supervisor.takeOver() }
         .buttonStyle(.borderedProminent)
-      Button("Quit Argus") { NSApp.terminate(nil) }
+      Button("Quit Argus") { AppDelegate.current?.quit() }
     }
   }
 }

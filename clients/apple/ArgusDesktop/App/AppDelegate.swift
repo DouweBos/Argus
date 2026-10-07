@@ -33,6 +33,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     #endif
   }
 
+  /// ⌘Q. AppKit refuses `terminate` while a sheet is up (onboarding, any
+  /// dialog), so with one up this asks about running agents itself and shuts
+  /// down the way the signal path does.
+  func quit() {
+    guard !terminating else { return }
+    guard NSApp.windows.contains(where: { $0.attachedSheet != nil || ($0.isSheet && $0.isVisible) }) else {
+      NSApp.terminate(nil)
+      return
+    }
+    let running = model.runningAgentCount
+    if running > 0, !confirmQuit(runningAgents: running) { return }
+    terminating = true
+    Task {
+      await shutdownBounded()
+      exit(0)
+    }
+  }
+
   /// Not through `NSApp.terminate`: AppKit won't quit while a sheet is up
   /// (onboarding, any dialog), and a signal can't answer one. Shut the host
   /// down the same way ⌘Q does, then exit.
