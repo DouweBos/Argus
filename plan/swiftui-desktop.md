@@ -250,6 +250,7 @@ explicitly dropped. Known so far (struck through = done, **Dropped:** = won't do
 - Telemetry.
 - The beta channel.
 - Parity sign-off, then cutover: the Electron app's last update points users at the Mac app.
+- ~~Taking over an Electron setup: secrets sealed with `safeStorage`, and preferences only in renderer `localStorage`.~~ Every host seals with the host scheme and Electron migrates its old blobs at boot; preferences and per-home picks live in `app-settings.json` / `ui-state.json`, imported by Electron's first run (`docs/mac-app.md`, "Moving from the Electron app"). Still left behind: Electron's paired hosts (client keys in `localStorage`; re-pair), window tabs, and the Electron-only git toggles. The Electron release before the cutover must be one with the migration, and users must open it once.
 
 ## Parity checklist
 
