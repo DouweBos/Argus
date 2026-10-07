@@ -95,10 +95,7 @@ struct HomeScreen: View {
 
   private func shortcut(_ keys: String, _ label: String) -> some View {
     HStack(spacing: 8) {
-      Text(keys).font(.scaled(size: 11, design: .monospaced))
-        .padding(.horizontal, 6).padding(.vertical, 2)
-        .background(theme.bgTertiary)
-        .clipShape(RoundedRectangle(cornerRadius: 4))
+      KeyHint(keys)
       Text(label).font(.scaled(size: 11)).foregroundStyle(theme.textMuted)
     }
   }
