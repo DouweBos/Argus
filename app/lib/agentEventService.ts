@@ -47,6 +47,7 @@ import {
   notifyPermissionRequested,
 } from "./agentNotifications";
 import { deriveTitle } from "./chatHistory";
+import { serializeConversation } from "./conversationSnapshot";
 import { type UnlistenFn, listen } from "./events";
 import {
   createCheckpoint,
@@ -72,6 +73,14 @@ import {
  */
 const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const SAVE_DEBOUNCE_MS = 500;
+
+/**
+ * The snapshot is cheap to republish; the on-disk history is the whole
+ * transcript cloned across IPC and rewritten, so mid-turn it is written at
+ * most this often. Turn ends, exits and quits still write straight through.
+ */
+const PERSIST_INTERVAL_MS = 10_000;
+const lastPersistAt = new Map<string, number>();
 
 /**
  * Tracks agents that have already had (or are currently having) a title
@@ -131,7 +140,7 @@ function publishSnapshot(agentId: string): void {
     return;
   }
   try {
-    publishAgentSnapshot(agentId, JSON.stringify(conv)).catch(() => {});
+    publishAgentSnapshot(agentId, serializeConversation(conv)).catch(() => {});
   } catch {
     // Circular refs / huge payloads — skip rather than crash.
   }
@@ -149,7 +158,12 @@ export function saveAgentConversation(agentId: string): void {
   }
 
   publishSnapshot(agentId);
+  persistConversation(agentId);
+}
 
+/** Write the conversation to the project's chat history on disk. */
+function persistConversation(agentId: string): void {
+  lastPersistAt.set(agentId, Date.now());
   const conv = getConversationState().conversations[agentId];
   if (!conv || conv.messages.length === 0) {
     return;
@@ -207,7 +221,20 @@ export function scheduleAgentSave(agentId: string): void {
   }
   const t = setTimeout(() => {
     saveTimers.delete(agentId);
-    saveAgentConversation(agentId);
+    publishSnapshot(agentId);
+    const sincePersist = Date.now() - (lastPersistAt.get(agentId) ?? 0);
+    if (sincePersist >= PERSIST_INTERVAL_MS) {
+      persistConversation(agentId);
+    } else {
+      // Keep a trailing write so the tail of a burst still reaches disk.
+      saveTimers.set(
+        agentId,
+        setTimeout(
+          () => saveAgentConversation(agentId),
+          PERSIST_INTERVAL_MS - sincePersist,
+        ),
+      );
+    }
   }, SAVE_DEBOUNCE_MS);
   saveTimers.set(agentId, t);
 }
@@ -759,6 +786,7 @@ const finishedTurns = new Map<
 /** The backend reports the turn over: send the next queued message or settle. */
 function onTurnOver(agentId: string): void {
   inflight.delete(agentId);
+  saveAgentConversation(agentId);
   const finished = finishedTurns.get(agentId);
   finishedTurns.delete(agentId);
   if (trySendNextQueued(agentId)) {
@@ -863,6 +891,7 @@ function trySetIdle(agentId: string): void {
 export function stopAgentListening(agentId: string): void {
   inflight.delete(agentId);
   finishedTurns.delete(agentId);
+  lastPersistAt.delete(agentId);
   unwatchQueue(agentId);
   const unlisten = listeners.get(agentId);
   if (unlisten) {
