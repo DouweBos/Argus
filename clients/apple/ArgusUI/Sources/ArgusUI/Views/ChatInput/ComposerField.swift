@@ -94,7 +94,7 @@
       view.isHorizontallyResizable = false
       view.autoresizingMask = [.width]
       view.textContainer?.widthTracksTextView = true
-      view.registerForDraggedTypes([.fileURL, .png, .tiff])
+      view.registerForDraggedTypes(view.acceptableDragTypes)
       view.string = text
       controller.attach(view)
       scroll.documentView = view
@@ -227,6 +227,32 @@
     }
 
     // MARK: Paste and drop
+
+    /// Images and files on top of plain text. A plain-text view reads only
+    /// strings, so without these ⌘V of an image is disabled and AppKit drops
+    /// our drag registration whenever it re-registers (e.g. on `isEditable`).
+    static let attachmentTypes: [NSPasteboard.PasteboardType] = [.fileURL, .png, .tiff]
+
+    override var readablePasteboardTypes: [NSPasteboard.PasteboardType] {
+      super.readablePasteboardTypes + Self.attachmentTypes
+    }
+
+    override var acceptableDragTypes: [NSPasteboard.PasteboardType] {
+      super.acceptableDragTypes + Self.attachmentTypes
+    }
+
+    override func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
+      if item.action == #selector(paste(_:)), isEditable, Self.hasAttachment(on: .general) {
+        return true
+      }
+      return super.validateUserInterfaceItem(item)
+    }
+
+    /// A cheap type check for menu validation; `drop(from:)` decodes.
+    static func hasAttachment(on pasteboard: NSPasteboard) -> Bool {
+      pasteboard.availableType(from: attachmentTypes) != nil
+        || pasteboard.canReadObject(forClasses: [NSImage.self], options: nil)
+    }
 
     override func paste(_ sender: Any?) {
       if let drop = Self.drop(from: .general, pasted: true) {

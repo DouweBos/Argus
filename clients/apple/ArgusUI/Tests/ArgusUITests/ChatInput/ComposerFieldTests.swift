@@ -116,6 +116,35 @@
       #expect(dropped.first?.attachment.data == png.base64EncodedString())
     }
 
+    @Test("images and files stay pasteable and droppable on a plain-text composer")
+    func attachmentTypes() {
+      let plain = NSTextView()
+      plain.isRichText = false
+      plain.importsGraphics = false
+      // What made ⌘V of an image a no-op: a plain-text view reads strings only.
+      #expect(!plain.readablePasteboardTypes.contains(.png))
+
+      let view = ComposerTextView()
+      view.isRichText = false
+      view.importsGraphics = false
+      view.registerForDraggedTypes(view.acceptableDragTypes)
+      view.isEditable = false
+      view.isEditable = true
+      for type in ComposerTextView.attachmentTypes {
+        #expect(view.readablePasteboardTypes.contains(type))
+        #expect(view.registeredDraggedTypes.contains(type))
+      }
+
+      let board = NSPasteboard(name: .init("argus-test-\(UUID().uuidString)"))
+      defer { board.releaseGlobally() }
+      board.clearContents()
+      board.setString("hello", forType: .string)
+      #expect(!ComposerTextView.hasAttachment(on: board))
+      board.clearContents()
+      board.setData(Data([0]), forType: .tiff)
+      #expect(ComposerTextView.hasAttachment(on: board))
+    }
+
     @Test("accepting a suggestion is undoable; a send clears the history")
     func undo() {
       let view = ComposerTextView()
