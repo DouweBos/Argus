@@ -1,5 +1,12 @@
 # @argus/peacock
 
+## 0.25.0
+
+### Minor Changes
+
+- 40a5499: An agent waiting for a usage limit to reset now shows when it will continue automatically.
+- 1da7160: The usage-limit banner has a Cancel button that stops an agent from being continued automatically until one of its turns gets through.
+
 ## 0.24.0
 
 ### Minor Changes
