@@ -94,7 +94,7 @@ private struct PaletteRow: View {
       Spacer()
       Text(command.section).font(.scaled(.caption)).foregroundStyle(.tertiary)
       if let shortcut = command.shortcut {
-        Text(shortcut).font(.scaled(.caption).monospaced()).foregroundStyle(.secondary)
+        KeyHint(shortcut, size: 10, boxed: false).foregroundStyle(.secondary)
       }
     }
     .padding(.vertical, 3)
