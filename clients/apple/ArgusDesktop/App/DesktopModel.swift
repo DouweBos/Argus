@@ -92,9 +92,7 @@ final class DesktopModel {
         errorReported: { error, scope in
           NSLog("[argus] %@: %@", scope, HostStore.describe(error))
           notificationsLog.push(.error, HostStore.describe(error), source: scope)
-        },
-        // Banners only when you aren't already looking at the window.
-        isAppFocused: { NSApp.isActive && NSApp.keyWindow != nil }))
+        }))
     store.capabilities = ["monitor", "control", "admin"]
     terminals = TerminalsStore(backend: { [store] in store.backend })
     pullRequests = PullRequestsStore(host: store)
@@ -169,7 +167,7 @@ final class DesktopModel {
   /// agents while we were away, so its share of the window is refetched.
   private func hostCameUp(_ hostId: HostId) async {
     await reloadLists()
-    await store.live?.resync()
+    store.followAgents()
     await terminals.reconnected()
     for project in store.projects where backend?.host(of: .project, project.repoRoot) == hostId {
       await openProject(project.repoRoot)
@@ -323,15 +321,12 @@ final class DesktopModel {
   // MARK: Quit
 
   var runningAgentCount: Int {
-    store.live?.agents.values.filter { $0.status == .running }.count
-      ?? store.statusByAgent.values.filter { $0.status == .running }.count
+    store.statusByAgent.values.filter { $0.status == .running }.count
   }
 
   /// Stop the host cleanly: it lets agents finish stopping before it exits.
   func shutdown() async {
     MacTelemetry.capture(.quit(hadRunningAgents: runningAgentCount > 0))
-    // The renderer's job on quit: every transcript saved before the host goes.
-    await store.live?.saveAll()
     await store.detach()
     platform.detach()
     MacTelemetry.detach()

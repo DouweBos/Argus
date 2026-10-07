@@ -12,12 +12,6 @@ extension HostStore {
     agentId: String, message: String, images: [RemoteImageAttachment] = [],
     displayText: String? = nil, isRetry: Bool = false
   ) async {
-    if ownsConversations, let live, live.agents[agentId] != nil {
-      await sendLive(
-        live, agentId: agentId, message: message, images: images, displayText: displayText,
-        isRetry: isRetry)
-      return
-    }
     let localId = appendOptimistic(agentId: agentId, text: displayText ?? message, images: images)
     // No socket at all still has to land somewhere the user can see and retry,
     // or the message is gone the moment the lock screen took the connection.
@@ -57,33 +51,6 @@ extension HostStore {
       report(error, scope: "agent:send")
       markFailed(agentId: agentId, localId: localId, message: message, displayText: displayText,
         images: images, isRetry: isRetry)
-    }
-  }
-
-  /// The local send: the bubble goes straight into the live conversation, so
-  /// there is no optimistic copy to reconcile.
-  private func sendLive(
-    _ live: LiveAgents, agentId: String, message: String, images: [RemoteImageAttachment],
-    displayText: String?, isRetry: Bool
-  ) async {
-    do {
-      switch try await live.send(
-        agentId: agentId, message: message, images: images, author: huddleAuthor?(agentId)) {
-      case .sent:
-        hooks.track(
-          .messageSent(queued: false, hasImages: !images.isEmpty, length: message.count))
-      case .busy:
-        await queueMessage(
-          agentId: agentId, message: message, images: images,
-          displayText: displayText ?? message)
-      }
-    } catch {
-      report(error, scope: "agent:send")
-      hooks.track(.messageSendFailed(retried: isRetry))
-      failedByAgent[agentId, default: []].append(
-        FailedSend(
-          id: "failed-\(UUID().uuidString)", body: message, displayText: displayText,
-          images: images))
     }
   }
 
@@ -323,12 +290,12 @@ extension HostStore {
   public func stopAgent(agentId: String) async {
     guard let backend else { return }
     hooks.track(.agentControlled(action: .stop))
-    // Save while the conversation is still whole.
-    if ownsConversations { await live?.save(agentId) }
     struct Params: Encodable { let agent_id: String }
     do {
       try await backend.request(
         .agentsStop, Params(agent_id: agentId), as: IgnoredResult.self)
+      // The host forgets a stopped agent rather than announcing it.
+      agentExited(agentId, code: 0)
     } catch { report(error) }
   }
 

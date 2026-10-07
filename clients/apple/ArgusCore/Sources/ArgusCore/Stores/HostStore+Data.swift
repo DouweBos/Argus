@@ -150,8 +150,6 @@ extension HostStore {
 
   public func loadTranscript(agentId key: String, before: Double? = nil) async {
     guard let backend else { return }
-    // A live agent's transcript is already here, whole.
-    if liveTranscript(key) { return }
 
     struct LiveParams: Encodable {
       let agent_id: String
@@ -297,7 +295,6 @@ extension HostStore {
     guard !Self.isLocallySeeded(imageId: imageId) else { return }
     let cacheKey = imageKey(key, imageId)
     guard imageCache[cacheKey] == nil, let backend else { return }
-    if liveImage(key, imageId: imageId) { return }
 
     struct LiveParams: Encodable {
       let agent_id: String
@@ -337,11 +334,11 @@ extension HostStore {
   // MARK: Subscriptions
 
   public func watchAgent(_ key: String, on: Bool) async {
-    // A stopped agent has no live process to subscribe to, and a live-owned
-    // one stays subscribed whether or not a view is showing it.
+    // A stopped agent has no live process to subscribe to, and a local
+    // backend follows every agent whether or not a view is showing it.
     guard Self.parseStoppedKey(key) == nil else { return }
     if on { watchedAgents.insert(key) } else { watchedAgents.remove(key) }
-    guard !ownsConversations, let backend else { return }
+    guard let backend, on || !followsAllAgents else { return }
     await backend.subscribe(agentId: key, on: on)
   }
 

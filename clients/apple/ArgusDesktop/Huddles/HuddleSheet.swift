@@ -25,7 +25,7 @@ struct HuddleSheet: View {
   private var deviceKey: String { huddles.shareableDeviceKey(sessionId: sessionId) }
   private var hostName: String { Huddles.hostName(configured: HuddleDisplayName.value, gitName: gitName) }
   private var agentTitle: String {
-    store.live?.conversation(for: agentId)?.title ?? store.statusByAgent[agentId]?.title ?? ""
+    store.statusByAgent[agentId]?.title ?? ""
   }
 
   var body: some View {

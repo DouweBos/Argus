@@ -46,9 +46,6 @@ final class HuddleStore {
       }
     }
     trackDevices()
-    store.huddleAuthor = { [weak self] agentId in
-      self?.room(forAgent: agentId).flatMap { $0.hostLabel.isEmpty ? nil : $0.hostLabel }
-    }
   }
 
   private var backend: (any HostBackend)? { store.backend }
@@ -109,7 +106,7 @@ final class HuddleStore {
   // MARK: Device
 
   func sessionId(ofAgent agentId: String) -> String? {
-    store.live?.agents[agentId]?.sessionId ?? store.statusByAgent[agentId]?.sessionId
+    store.statusByAgent[agentId]?.sessionId
   }
 
   /// The key a share from this session would carry right now.

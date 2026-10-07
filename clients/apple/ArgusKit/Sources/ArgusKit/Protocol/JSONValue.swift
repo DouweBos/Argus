@@ -53,6 +53,16 @@ public indirect enum JSONValue: Codable, Hashable, Sendable {
     return nil
   }
 
+  public var numberValue: Double? {
+    if case .number(let n) = self { return n }
+    return nil
+  }
+
+  public var boolValue: Bool? {
+    if case .bool(let b) = self { return b }
+    return nil
+  }
+
   public var intValue: Int? {
     if case .number(let d) = self { return Int(d) }
     return nil

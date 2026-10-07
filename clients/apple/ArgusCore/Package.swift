@@ -12,10 +12,6 @@ let package = Package(
   ],
   targets: [
     .target(name: "ArgusCore", dependencies: ["ArgusKit"]),
-    .testTarget(
-      name: "ArgusCoreTests",
-      dependencies: ["ArgusCore"],
-      resources: [.copy("Fixtures")]
-    ),
+    .testTarget(name: "ArgusCoreTests", dependencies: ["ArgusCore"]),
   ]
 )

@@ -14,8 +14,9 @@ struct HuddleToolbarButton: View {
   /// The agent on screen: the routed one, else the session's first.
   private var agentId: String? {
     if let id = model.route.agentId { return id }
-    return store.live?.agents(inSession: sessionId).first?.id
-      ?? (store.agentsByRepo.values.joined().first { $0.sessionId == sessionId })?.agentId
+    return store.agentsByRepo.values.joined()
+      .filter { $0.sessionId == sessionId }
+      .min { ($0.createdAt ?? 0) < ($1.createdAt ?? 0) }?.agentId
   }
 
   var body: some View {

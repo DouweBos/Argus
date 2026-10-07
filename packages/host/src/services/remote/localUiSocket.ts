@@ -22,7 +22,6 @@ import net from "node:net";
 import path from "node:path";
 import { addHostEventSink } from "@argus/host/bus";
 import { log, warn } from "@argus/host/logger";
-import { claimConversations } from "../agent/conversation/hostDriver";
 import { GatewayError } from "./capabilities";
 import { DeviceConnection, type FrameCipher } from "./gateway";
 
@@ -60,7 +59,6 @@ const MAX_NOTIFICATIONS = 200;
  */
 export class LocalUiChannel {
   private readonly connections = new Set<DeviceConnection>();
-  private readonly conversationClaims = new Map<DeviceConnection, () => void>();
   private readonly notifications = new Map<string, NotificationCallbacks>();
   private foreground = false;
   private nextId = 1;
@@ -133,14 +131,10 @@ export class LocalUiChannel {
 
   add(conn: DeviceConnection): void {
     this.connections.add(conn);
-    // The Mac app folds and publishes its agents' conversations itself.
-    this.conversationClaims.set(conn, claimConversations());
   }
 
   remove(conn: DeviceConnection): void {
     this.connections.delete(conn);
-    this.conversationClaims.get(conn)?.();
-    this.conversationClaims.delete(conn);
     if (!this.attached) {
       this.foreground = false;
     }

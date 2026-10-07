@@ -32,7 +32,7 @@ struct SessionChatHistoryCard: View {
           }
           ForEach(sessionEntries, id: \.id) { entry in
             ChatHistoryRow(entry: entry) {
-              Task { await view(entry) }
+              view(entry)
             } resume: {
               Task { await resume(entry) }
             } delete: {
@@ -63,27 +63,15 @@ struct SessionChatHistoryCard: View {
         ArgusProtocol.Commands.ListChatHistory.self, .init(repoRoot: session.repoRoot))) ?? []
   }
 
-  private func saved(_ entry: ArgusProtocol.ChatHistoryEntry) async -> ArgusProtocol.SavedConversation? {
-    guard let backend = store.backend else { return nil }
-    return (try? await backend.request(
-      ArgusProtocol.Commands.LoadChatHistory.self, .init(repoRoot: session.repoRoot, historyId: entry.id))) ?? nil
-  }
-
-  private func view(_ entry: ArgusProtocol.ChatHistoryEntry) async {
-    guard let saved = await saved(entry) else { return }
-    // A long chat is megabytes to decode and convert: keep it off the main actor.
-    let messages = await Task.detached(priority: .userInitiated) {
-      let conversation = AgentConversation(messages: LiveAgents.messages(of: saved))
-      // A saved chat's agent is gone: calls without a result show as interrupted.
-      return (try? RemoteTranscriptBuilder.messages(conversation, settled: true)) ?? []
-    }.value
-    viewing = ViewedChat(entry: entry, messages: messages)
+  /// Paged from the host like a stopped agent's transcript, so a long chat
+  /// opens at its newest page instead of decoding the whole file.
+  private func view(_ entry: ArgusProtocol.ChatHistoryEntry) {
+    viewing = ViewedChat(entry: entry, key: HostStore.stoppedKey(repoRoot: session.repoRoot, historyId: entry.id))
     MacTelemetry.capture(.chatHistoryUsed(action: .view))
   }
 
-  /// A new agent on the chat's Claude session and runner, seeded with its transcript.
+  /// A new agent on the chat's Claude session and runner; the host seeds its transcript.
   private func resume(_ entry: ArgusProtocol.ChatHistoryEntry) async {
-    let saved = await saved(entry)
     guard
       let agent = await store.spawnAgent(
         sessionId: session.id, resumeSessionId: entry.sessionId, runnerId: entry.runnerId)
@@ -91,7 +79,6 @@ struct SessionChatHistoryCard: View {
     // Open it straight away, as the desktop does; the transcript fills in.
     model.open(spawned: agent.agentId, session: session.id)
     MacTelemetry.capture(.chatHistoryUsed(action: .resume))
-    if let saved { await store.live?.restore(agent.agentId, from: saved) }
   }
 
   private func delete(_ doomed: [ArgusProtocol.ChatHistoryEntry]) async {
@@ -105,10 +92,10 @@ struct SessionChatHistoryCard: View {
   }
 }
 
-/// A saved chat on screen.
+/// A saved chat on screen, by its stopped-transcript key.
 struct ViewedChat: Identifiable {
   let entry: ArgusProtocol.ChatHistoryEntry
-  let messages: [RemoteMessage]
+  let key: String
   var id: String { entry.id }
 }
 
@@ -161,7 +148,7 @@ private struct ChatHistoryViewer: View {
   let resume: () -> Void
 
   var body: some View {
-    TranscriptView(agentKey: "history:\(chat.entry.id)", sessionId: sessionId, fixture: chat.messages)
+    TranscriptView(agentKey: chat.key, sessionId: sessionId)
       .frame(minWidth: 640, idealWidth: 760, minHeight: 480, idealHeight: 640)
       .safeAreaInset(edge: .top) {
         Text(chat.entry.title)

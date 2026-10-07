@@ -44,14 +44,17 @@ extension HostStore {
   /// A refetch of the tail (the poll behind a view, the check after a send)
   /// that only a host sending no deltas needs.
   public func refreshTranscript(agentId key: String) async {
-    guard !followsTranscriptDeltas(key) else { return }
+    // A saved chat never changes.
+    guard !followsTranscriptDeltas(key), Self.parseStoppedKey(key) == nil else { return }
     await loadTranscript(agentId: key)
   }
 
   /// Events only say the transcript moved; once deltas carry the change itself
   /// they need no refetch.
+  /// A local backend hears every agent; only the ones on screen are refetched.
   func refreshUnlessFollowing(_ agentId: String) {
-    guard !deltaAgents.contains(agentId) else { return }
+    guard !deltaAgents.contains(agentId), !followsAllAgents || watchedAgents.contains(agentId)
+    else { return }
     scheduleTranscriptRefresh(agentId)
   }
 
@@ -132,7 +135,7 @@ extension HostStore {
     return messages
   }
 
-  private func patchStatus(_ agentId: String, _ body: (inout RemoteAgentStatus) -> Void) {
+  func patchStatus(_ agentId: String, _ body: (inout RemoteAgentStatus) -> Void) {
     if var status = statusByAgent[agentId] {
       body(&status)
       if statusByAgent[agentId] != status { statusByAgent[agentId] = status }
