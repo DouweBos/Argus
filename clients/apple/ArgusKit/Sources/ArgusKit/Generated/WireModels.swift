@@ -437,6 +437,128 @@ extension ArgusProtocol {
     public static let token = AppSettingsRemoteTunnelMode(rawValue: "token")
   }
 
+  public struct AppSettingsTheme: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let dark = AppSettingsTheme(rawValue: "dark")
+    public static let light = AppSettingsTheme(rawValue: "light")
+    public static let system = AppSettingsTheme(rawValue: "system")
+  }
+
+  public struct AppSettingsUiScale: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let `default` = AppSettingsUiScale(rawValue: "default")
+    public static let large = AppSettingsUiScale(rawValue: "large")
+    public static let larger = AppSettingsUiScale(rawValue: "larger")
+    public static let small = AppSettingsUiScale(rawValue: "small")
+    public static let smaller = AppSettingsUiScale(rawValue: "smaller")
+  }
+
+  public struct AppSettingsDefaultPermissionMode: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let ask = AppSettingsDefaultPermissionMode(rawValue: "ask")
+    public static let auto = AppSettingsDefaultPermissionMode(rawValue: "auto")
+    public static let plan = AppSettingsDefaultPermissionMode(rawValue: "plan")
+    public static let review = AppSettingsDefaultPermissionMode(rawValue: "review")
+    public static let trusted = AppSettingsDefaultPermissionMode(rawValue: "trusted")
+  }
+
+  public struct AppSettingsCustomEditorsItem: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var command: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case command = "command"
+    }
+
+    public init(id: String, name: String, command: String) {
+      self.id = id
+      self.name = name
+      self.command = command
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+      try c.encode(command, forKey: .command)
+    }
+  }
+
+  public struct AppSettingsTelemetryMode: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let full = AppSettingsTelemetryMode(rawValue: "full")
+    public static let presence = AppSettingsTelemetryMode(rawValue: "presence")
+  }
+
+  public struct AppSettingsGitFileView: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let flat = AppSettingsGitFileView(rawValue: "flat")
+    public static let tree = AppSettingsGitFileView(rawValue: "tree")
+  }
+
+  public struct AppSettingsGitDiffLayout: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let split = AppSettingsGitDiffLayout(rawValue: "split")
+    public static let unified = AppSettingsGitDiffLayout(rawValue: "unified")
+  }
+
   public struct AppSettings: Codable, Sendable {
     public var worktreesBaseDir: String?
     public var automationWorktreesBaseDir: String?
@@ -459,6 +581,16 @@ extension ArgusProtocol {
     public var remoteTunnelToken: String?
     public var remotePublicUrl: String?
     public var remoteNotifyWhenFocused: Bool?
+    public var theme: AppSettingsTheme?
+    public var uiScale: AppSettingsUiScale?
+    public var defaultPermissionMode: AppSettingsDefaultPermissionMode?
+    public var defaultModel: String?
+    public var customEditors: [AppSettingsCustomEditorsItem]?
+    public var huddleDisplayName: String?
+    public var telemetryMode: AppSettingsTelemetryMode?
+    public var gitFileView: AppSettingsGitFileView?
+    public var gitDiffLayout: AppSettingsGitDiffLayout?
+    public var gitIgnoreWhitespace: Bool?
 
     enum CodingKeys: String, CodingKey {
       case worktreesBaseDir = "worktrees_base_dir"
@@ -482,9 +614,19 @@ extension ArgusProtocol {
       case remoteTunnelToken = "remote_tunnel_token"
       case remotePublicUrl = "remote_public_url"
       case remoteNotifyWhenFocused = "remote_notify_when_focused"
+      case theme = "theme"
+      case uiScale = "ui_scale"
+      case defaultPermissionMode = "default_permission_mode"
+      case defaultModel = "default_model"
+      case customEditors = "custom_editors"
+      case huddleDisplayName = "huddle_display_name"
+      case telemetryMode = "telemetry_mode"
+      case gitFileView = "git_file_view"
+      case gitDiffLayout = "git_diff_layout"
+      case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, launchRoute: AppSettingsLaunchRoute? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, launchRoute: AppSettingsLaunchRoute? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, defaultModel: String? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.defaultLlm = defaultLlm
@@ -506,6 +648,16 @@ extension ArgusProtocol {
       self.remoteTunnelToken = remoteTunnelToken
       self.remotePublicUrl = remotePublicUrl
       self.remoteNotifyWhenFocused = remoteNotifyWhenFocused
+      self.theme = theme
+      self.uiScale = uiScale
+      self.defaultPermissionMode = defaultPermissionMode
+      self.defaultModel = defaultModel
+      self.customEditors = customEditors
+      self.huddleDisplayName = huddleDisplayName
+      self.telemetryMode = telemetryMode
+      self.gitFileView = gitFileView
+      self.gitDiffLayout = gitDiffLayout
+      self.gitIgnoreWhitespace = gitIgnoreWhitespace
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -531,6 +683,16 @@ extension ArgusProtocol {
       try c.encodeIfPresent(remoteTunnelToken, forKey: .remoteTunnelToken)
       try c.encodeIfPresent(remotePublicUrl, forKey: .remotePublicUrl)
       try c.encodeIfPresent(remoteNotifyWhenFocused, forKey: .remoteNotifyWhenFocused)
+      try c.encodeIfPresent(theme, forKey: .theme)
+      try c.encodeIfPresent(uiScale, forKey: .uiScale)
+      try c.encodeIfPresent(defaultPermissionMode, forKey: .defaultPermissionMode)
+      try c.encodeIfPresent(defaultModel, forKey: .defaultModel)
+      try c.encodeIfPresent(customEditors, forKey: .customEditors)
+      try c.encodeIfPresent(huddleDisplayName, forKey: .huddleDisplayName)
+      try c.encodeIfPresent(telemetryMode, forKey: .telemetryMode)
+      try c.encodeIfPresent(gitFileView, forKey: .gitFileView)
+      try c.encodeIfPresent(gitDiffLayout, forKey: .gitDiffLayout)
+      try c.encodeIfPresent(gitIgnoreWhitespace, forKey: .gitIgnoreWhitespace)
     }
   }
 

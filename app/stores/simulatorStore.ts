@@ -1,6 +1,7 @@
 import type { AndroidDevice, SimulatorDevice } from "../lib/types";
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
+import { mirrorToHost } from "../lib/hostPrefs";
 
 /** Check if a device is a tvOS (Apple TV) simulator. */
 export function isTvOS(device: SimulatorDevice | undefined): boolean {
@@ -48,6 +49,7 @@ function saveSelectedBySession(
   }
 
   localStorage.setItem(key, JSON.stringify(toSave));
+  mirrorToHost(key);
 }
 
 function loadPlatform(): Platform {
@@ -155,6 +157,7 @@ const useSimulatorStore = simulatorStore;
 
 export const setPlatform = (platform: Platform) => {
   localStorage.setItem(PLATFORM_STORAGE_KEY, platform);
+  mirrorToHost(PLATFORM_STORAGE_KEY);
   simulatorStore.setState({ platform });
 };
 
@@ -315,6 +318,7 @@ export const setAndroidDisconnected = (disconnected: boolean) => {
 
 export const setBrowserPreset = (preset: string) => {
   localStorage.setItem(BROWSER_PRESET_STORAGE_KEY, preset);
+  mirrorToHost(BROWSER_PRESET_STORAGE_KEY);
   simulatorStore.setState({ browserPreset: preset });
 };
 

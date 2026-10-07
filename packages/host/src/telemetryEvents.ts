@@ -73,6 +73,7 @@ export interface EventMap {
   };
   host_lock_handover: { holder: "cli" | "electron" | "mac" };
   onboarding_completed: undefined;
+  prefs_imported: { keys: number };
   proposal_start_failed: {
     stage: "creating_worktree" | "setting_up" | "starting_agent";
   };

@@ -7,6 +7,7 @@
  */
 
 import { create } from "zustand";
+import { mirrorToHost } from "../lib/hostPrefs";
 
 const STORAGE_KEY = "argus:git-favorites";
 
@@ -47,6 +48,7 @@ function load(): FavoritesState {
 function persist(state: FavoritesState): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    mirrorToHost(STORAGE_KEY);
   } catch {
     // localStorage may be unavailable (private mode); silently drop.
   }
