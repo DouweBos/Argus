@@ -21,8 +21,9 @@ struct WindowTab: Identifiable, Equatable {
   private static let tabsKey = "window.tabs"
   private static let activeKey = "window.activeTab"
 
+  @MainActor
   static func restored() -> [WindowTab] {
-    let saved = UserDefaults.standard.data(forKey: tabsKey)
+    let saved = HomeDefaults.shared.data(forKey: tabsKey)
       .flatMap { try? JSONDecoder().decode([Saved].self, from: $0) } ?? []
     let tabs = saved.compactMap { entry in
       DesktopLocation(path: entry.path).map { WindowTab(id: entry.id, location: $0) }
@@ -31,14 +32,16 @@ struct WindowTab: Identifiable, Equatable {
     return [local] + tabs.filter { !$0.pinned }
   }
 
+  @MainActor
   static func restoredActive() -> String {
-    UserDefaults.standard.string(forKey: activeKey) ?? localId
+    HomeDefaults.shared.string(forKey: activeKey) ?? localId
   }
 
+  @MainActor
   static func save(_ tabs: [WindowTab], active: String) {
     let saved = tabs.map { Saved(id: $0.id, path: $0.location.path) }
-    UserDefaults.standard.set(try? JSONEncoder().encode(saved), forKey: tabsKey)
-    UserDefaults.standard.set(active, forKey: activeKey)
+    HomeDefaults.shared.set(try? JSONEncoder().encode(saved), forKey: tabsKey)
+    HomeDefaults.shared.set(active, forKey: activeKey)
   }
 }
 

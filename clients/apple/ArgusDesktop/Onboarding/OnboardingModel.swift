@@ -27,13 +27,13 @@ final class OnboardingModel {
     recentProjects = state.recentProjects
     visible = !state.onboarding.completed
     step = OnboardingStepId.resume(
-      hostStep: state.onboarding.lastStep, local: UserDefaults.standard.string(forKey: Self.localStepKey))
+      hostStep: state.onboarding.lastStep, local: HomeDefaults.shared.string(forKey: Self.localStepKey))
     loaded = true
   }
 
   func go(to next: OnboardingStepId, _ backend: HostRouter) async {
     step = next
-    UserDefaults.standard.set(next.rawValue, forKey: Self.localStepKey)
+    HomeDefaults.shared.set(next.rawValue, forKey: Self.localStepKey)
     _ = try? await backend.request(ArgusProtocol.Commands.OnboardingSetLastStep.self, .init(step: next.hostStep))
   }
 
@@ -54,7 +54,7 @@ final class OnboardingModel {
 
   func complete(_ backend: HostRouter) async {
     _ = try? await backend.request(ArgusProtocol.Commands.OnboardingComplete.self, .init())
-    UserDefaults.standard.removeObject(forKey: Self.localStepKey)
+    HomeDefaults.shared.removeObject(forKey: Self.localStepKey)
     visible = false
   }
 

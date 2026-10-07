@@ -222,17 +222,17 @@ final class HomeRecents {
   private(set) var hidden: Set<String>
 
   private init() {
-    hidden = Set(UserDefaults.standard.stringArray(forKey: Self.key) ?? [])
+    hidden = Set(HomeDefaults.shared.stringArray(forKey: Self.key) ?? [])
   }
 
   func hide(_ repoRoot: String) {
     hidden.insert(repoRoot)
-    UserDefaults.standard.set(Array(hidden), forKey: Self.key)
+    HomeDefaults.shared.set(Array(hidden), forKey: Self.key)
     MacTelemetry.capture(.homeCardActed(card: .recentProject, action: .dismiss))
   }
 
   func show(_ repoRoot: String) {
     guard hidden.remove(repoRoot) != nil else { return }
-    UserDefaults.standard.set(Array(hidden), forKey: Self.key)
+    HomeDefaults.shared.set(Array(hidden), forKey: Self.key)
   }
 }
