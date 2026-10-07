@@ -149,9 +149,10 @@ export function saveConversation(
   const dir = historyDir(repoRoot);
   try {
     fs.mkdirSync(dir, { recursive: true });
+    // Compact: a long chat is megabytes, rewritten on every save.
     fs.writeFileSync(
       conversationPath(repoRoot, conversation.id),
-      JSON.stringify(conversation, null, 2),
+      JSON.stringify(conversation),
       "utf8",
     );
   } catch (e) {
