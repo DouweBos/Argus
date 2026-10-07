@@ -92,6 +92,29 @@ export const AppSettings = z.object({
    * focused. Off by default.
    */
   remote_notify_when_focused: z.boolean().optional(),
+  // Preferences both desktop apps (Electron and Argus for Mac) read and write.
+  theme: z.enum(["dark", "light", "system"]).optional(),
+  /** Display size. */
+  ui_scale: z
+    .enum(["default", "large", "larger", "small", "smaller"])
+    .optional(),
+  /** Permission mode for agents started without one. */
+  default_permission_mode: z
+    .enum(["ask", "auto", "plan", "review", "trusted"])
+    .optional(),
+  /** Model seeded into new sessions; empty means the CLI's own default. */
+  default_model: z.string().optional(),
+  custom_editors: z
+    .array(z.object({ id: z.string(), name: z.string(), command: z.string() }))
+    .optional(),
+  /** Name shown to guests in huddles this machine hosts. */
+  huddle_display_name: z.string().optional(),
+  /** Telemetry consent; the host applies it at boot. */
+  telemetry_mode: z.enum(["full", "presence"]).optional(),
+  /** Changed files as a flat list or a tree. */
+  git_file_view: z.enum(["flat", "tree"]).optional(),
+  git_diff_layout: z.enum(["split", "unified"]).optional(),
+  git_ignore_whitespace: z.boolean().optional(),
 });
 export type AppSettings = z.infer<typeof AppSettings>;
 

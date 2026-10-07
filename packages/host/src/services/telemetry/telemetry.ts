@@ -5,8 +5,9 @@
  * - Distinct id is a random UUID stored under `~/.argus/telemetry-id`.
  *   Never linked to any user account or system identifier.
  * - No autocapture, no session recording, no IP, no PII in props.
- * - Two modes (`presence` / `full`) — the renderer mirrors the user's choice
- *   via the `telemetry_set_mode` IPC. `presence` is the floor: a single
+ * - Two modes (`presence` / `full`) — a client sets the user's choice via
+ *   `telemetry_set_mode`; the host keeps it in `app-settings.json` and applies
+ *   it at the next boot before any client attaches. `presence` is the floor: a single
  *   anonymous heartbeat per launch (no baseProps merge, no errors, no
  *   feedback); `full` enables the whole event catalogue.
  * - Off when `POSTHOG_KEY` is not configured. The key is inlined into the
@@ -24,6 +25,7 @@ import os from "node:os";
 import { PostHog } from "posthog-node";
 import { createLogger, setErrorSink } from "@argus/host/logger";
 import { hostPlatform } from "@argus/host/platform";
+import { loadAppSettings, saveAppSettings } from "../appSettings/store";
 import { getAnonymousId } from "./anonymousId";
 
 const log = createLogger("telemetry");
@@ -34,8 +36,7 @@ const HOST = process.env.POSTHOG_HOST || "https://eu.i.posthog.com";
 export type TelemetryMode = "full" | "presence";
 
 let client: PostHog | null = null;
-// Presence is the floor — the renderer pushes the user's choice via
-// `telemetry_set_mode` once it boots, and can only ever raise it to `full`.
+// Presence is the floor until the user's stored choice is applied at boot.
 let mode: TelemetryMode = "presence";
 let distinctId = "";
 /** Boot-time events held until the user's consent arrives from a UI. */
@@ -65,6 +66,7 @@ export function initTelemetry(): void {
 
   if (!API_KEY) {
     log.info("disabled — no POSTHOG_KEY configured");
+    mode = storedTelemetryMode();
 
     return;
   }
@@ -99,9 +101,22 @@ export function initTelemetry(): void {
       message: scrubMessage(formatLogArgs(args)),
     });
   });
+
+  // The user's choice from last run, so events the host raises at boot are
+  // sent (or not) before any client has attached to say so again.
+  if (storedTelemetryMode() === "full") {
+    setTelemetryMode("full");
+  }
+}
+
+function storedTelemetryMode(): TelemetryMode {
+  return loadAppSettings().telemetry_mode === "full" ? "full" : "presence";
 }
 
 export function setTelemetryMode(next: TelemetryMode): void {
+  if (loadAppSettings().telemetry_mode !== next) {
+    saveAppSettings({ telemetry_mode: next });
+  }
   if (next === mode) {
     return;
   }

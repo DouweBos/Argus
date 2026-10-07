@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { mirrorToHost } from "../lib/hostPrefs";
 
 export type UiScale = "default" | "large" | "larger" | "small" | "smaller";
 
@@ -77,6 +78,7 @@ export function setUiScale(scale: UiScale) {
   store.setState({ scale });
   try {
     localStorage.setItem(STORAGE_KEY, scale);
+    mirrorToHost(STORAGE_KEY);
   } catch {
     // storage unavailable
   }

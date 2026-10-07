@@ -121,6 +121,24 @@ export interface AppSettings {
    * are already watching on screen.
    */
   remote_notify_when_focused?: boolean;
+  // Preferences both desktop apps (Electron and Argus for Mac) read and
+  // write, so switching apps keeps them.
+  theme?: "dark" | "light" | "system";
+  /** Display size. */
+  ui_scale?: "default" | "large" | "larger" | "small" | "smaller";
+  /** Permission mode for agents started without one. */
+  default_permission_mode?: "ask" | "auto" | "plan" | "review" | "trusted";
+  /** Model seeded into new sessions; empty means the CLI's own default. */
+  default_model?: string;
+  custom_editors?: { id: string; name: string; command: string }[];
+  /** Name shown to guests in huddles this machine hosts. */
+  huddle_display_name?: string;
+  /** Telemetry consent; the host applies it at boot, before any UI attaches. */
+  telemetry_mode?: "full" | "presence";
+  /** Changed files as a flat list or a tree. */
+  git_file_view?: "flat" | "tree";
+  git_diff_layout?: "split" | "unified";
+  git_ignore_whitespace?: boolean;
 }
 
 interface AppSettingsFile {

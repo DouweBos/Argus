@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { mirrorToHost } from "../lib/hostPrefs";
 import {
   LOCAL_HOST_ID,
   hostScopedKey,
@@ -7,6 +8,11 @@ import {
 
 const STORAGE_KEY = "argus:recentProjects";
 const OPEN_PROJECTS_KEY = "argus:openProjects";
+/**
+ * This Mac's projects taken off the recents, shared with Argus for Mac's home
+ * grid (which lists every project the host has, minus these).
+ */
+const HIDDEN_PROJECTS_KEY = "argus:hiddenProjects";
 const MAX_PROJECTS = 10;
 
 export interface RecentProject {
@@ -43,7 +49,13 @@ function loadProjects(): RecentProject[] {
     }
     const parsed = JSON.parse(raw) as RecentProject[];
 
-    return parsed.map(withHost).sort((a, b) => b.lastOpened - a.lastOpened);
+    // Taken off the recents in Argus for Mac.
+    const hidden = new Set(loadHidden());
+
+    return parsed
+      .map(withHost)
+      .filter((p) => p.hostId !== LOCAL_HOST_ID || !hidden.has(p.path))
+      .sort((a, b) => b.lastOpened - a.lastOpened);
   } catch {
     return [];
   }
@@ -51,6 +63,31 @@ function loadProjects(): RecentProject[] {
 
 function persistProjects(projects: RecentProject[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+  mirrorToHost(STORAGE_KEY);
+}
+
+function loadHidden(): string[] {
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(HIDDEN_PROJECTS_KEY) ?? "[]",
+    ) as unknown;
+
+    return Array.isArray(parsed)
+      ? parsed.filter((p): p is string => typeof p === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function setHidden(path: string, hidden: boolean) {
+  const current = loadHidden();
+  if (current.includes(path) === hidden) {
+    return;
+  }
+  const next = hidden ? [...current, path] : current.filter((p) => p !== path);
+  localStorage.setItem(HIDDEN_PROJECTS_KEY, JSON.stringify(next));
+  mirrorToHost(HIDDEN_PROJECTS_KEY);
 }
 
 function loadOpenProjects(): OpenProject[] {
@@ -86,6 +123,9 @@ export const addRecentProject = (
   path: string,
   hostId: HostId = LOCAL_HOST_ID,
 ) => {
+  if (hostId === LOCAL_HOST_ID) {
+    setHidden(path, false);
+  }
   recentProjectsStore.setState((state) => {
     const filtered = state.projects.filter(
       (p) => p.path !== path || p.hostId !== hostId,
@@ -104,6 +144,9 @@ export const removeRecentProject = (
   path: string,
   hostId: HostId = LOCAL_HOST_ID,
 ) => {
+  if (hostId === LOCAL_HOST_ID) {
+    setHidden(path, true);
+  }
   recentProjectsStore.setState((state) => {
     const updated = state.projects.filter(
       (p) => p.path !== path || p.hostId !== hostId,

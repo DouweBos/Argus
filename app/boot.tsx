@@ -17,6 +17,7 @@ import {
   initExternalAgentStarted,
 } from "./lib/agentEventService";
 import { initAgentPopoutSync } from "./lib/agentPopoutService";
+import { hostPrefsImportedCount } from "./lib/hostPrefs";
 import { initHuddleDeviceMirror } from "./lib/huddleDeviceMirror";
 import { getTelemetryInit, setTelemetryModeOnMain } from "./lib/ipc";
 import { initNotificationsListener } from "./lib/notificationsService";
@@ -51,6 +52,10 @@ export function boot(popoutMode: string | null, params: URLSearchParams): void {
       }
       if (userMode === "full") {
         telemetryCapture("renderer_started", { popout: popoutMode ?? "main" });
+      }
+      const imported = hostPrefsImportedCount();
+      if (imported > 0) {
+        telemetryCapture("prefs_imported", { keys: imported });
       }
     } catch {
       // Telemetry must never block app startup.

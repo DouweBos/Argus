@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
+import { mirrorToHost } from "../lib/hostPrefs";
 
 export type DevicesViewMode = "grid" | "table";
 
@@ -56,6 +57,7 @@ function save(key: string, value: string[] | string) {
       key,
       typeof value === "string" ? value : JSON.stringify(value),
     );
+    mirrorToHost(key);
   } catch {
     // ignore storage failures
   }

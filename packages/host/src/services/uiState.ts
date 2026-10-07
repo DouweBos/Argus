@@ -1,19 +1,23 @@
 /**
- * Small persistent key/value blob store for renderer UI state that needs to
- * survive relaunches (e.g. the last active route). Stored as a single JSON
- * file under `~/.argus/ui-state.json` — deliberately lightweight; use a real
- * database for anything that needs queries.
+ * Small persistent key/value blob store for UI state that belongs to one
+ * Argus home and outlives a relaunch — and a switch between the Electron app
+ * and Argus for Mac, which both read it: recent projects, per-session device
+ * picks, git favourites. Stored as a single JSON file under
+ * `~/.argus/ui-state.json`; use a real database for anything that needs
+ * queries.
  */
 
 import fs from "node:fs";
 import path from "node:path";
 import { argusHomeDir } from "../lib/argusHome";
 
-const FILE = path.join(argusHomeDir(), "ui-state.json");
+function filePath(): string {
+  return path.join(argusHomeDir(), "ui-state.json");
+}
 
 function readAll(): Record<string, string> {
   try {
-    const raw = fs.readFileSync(FILE, "utf8");
+    const raw = fs.readFileSync(filePath(), "utf8");
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed === "object") {
       return parsed as Record<string, string>;
@@ -26,8 +30,11 @@ function readAll(): Record<string, string> {
 }
 
 function writeAll(state: Record<string, string>): void {
-  fs.mkdirSync(path.dirname(FILE), { recursive: true });
-  fs.writeFileSync(FILE, JSON.stringify(state, null, 2));
+  const file = filePath();
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(state, null, 2), { mode: 0o600 });
+  fs.renameSync(tmp, file);
 }
 
 export function getUiState(key: string): string | null {

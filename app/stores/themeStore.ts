@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { mirrorToHost } from "../lib/hostPrefs";
 
 export type ThemePreference = "dark" | "light" | "system";
 export type ResolvedTheme = "dark" | "light";
@@ -62,6 +63,7 @@ export function setThemePreference(preference: ThemePreference) {
   store.setState({ preference });
   try {
     localStorage.setItem(STORAGE_KEY, preference);
+    mirrorToHost(STORAGE_KEY);
   } catch {
     // storage unavailable
   }

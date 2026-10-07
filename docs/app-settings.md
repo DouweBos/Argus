@@ -735,18 +735,29 @@ Argus keeps everything under `~/.argus/`:
 ~/.argus/
   worktrees/                  ← Session worktrees (one dir per repo)
   sessions/                   ← Session metadata
-  app-settings.json           ← MCP servers, remote-access tunnel + kill-switch, automations switch
+  app-settings.json           ← Your preferences (theme, display size, agent defaults, editors, git views, telemetry), MCP servers, remote-access tunnel + kill-switch, automations switch
   automations.json            ← Your automations
   automation-runs.json        ← Automation run history (last 50 per automation)
   automation-runs/            ← One working directory per run
   claude-accounts.json        ← Signed-in Claude accounts + the active one
   claude-accounts/            ← Per-account Claude credentials
   remote-devices.json         ← Remote-access identity key, paired devices, push credentials (encrypted)
+  mcp-tokens.json             ← MCP sign-ins (encrypted)
+  ui-state.json               ← Recent projects, the device each session last used, favourite branches, the Devices view
   user-project-settings.json  ← Per-developer project prefs (branch prefix, worktree locations, …)
   telemetry-id                ← Anonymous install id
 ```
 
-UI preferences (theme, display size, default permission mode, default
-LLM runner/model, custom editors) live in the app's `localStorage`.
+Preferences and these picks live in the host's files rather than in one
+app, so the Electron app and Argus for Mac share them: change the theme in
+one and the other opens in it. The first time the Electron app starts with
+this, it copies the preferences it had onto them. Window layout (tabs,
+panel widths, collapsed sections) and a few Electron-only git view toggles
+stay with the app that set them.
+
+Encrypted files are sealed with a key in your login keychain ("Argus Host
+Secret Storage", one per Argus home), which every Argus app on this Mac
+reads the same way.
+
 Delete a file or wipe the
 directory at any time — Argus recreates what it needs on next launch.

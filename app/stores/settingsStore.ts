@@ -1,5 +1,6 @@
 import type { CanonicalPermissionMode } from "../lib/permissionModes";
 import { create } from "zustand";
+import { mirrorToHost } from "../lib/hostPrefs";
 
 /**
  * App-level default permission mode for new agents. Canonical names — the
@@ -355,6 +356,7 @@ function load(): SettingsState {
 function persist(state: SettingsState) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    mirrorToHost(STORAGE_KEY);
   } catch {
     // storage unavailable
   }
