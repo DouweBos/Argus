@@ -15,12 +15,7 @@ const mockStartAgentInSession = vi
   .mockResolvedValue({ agent_id: "agent-1" });
 const mockSendUserMessageToAgent = vi
   .fn<
-    (
-      agentId: string,
-      prompt: string,
-      attachments: unknown,
-      opts?: { assumeIdle?: boolean },
-    ) => Promise<void>
+    (agentId: string, prompt: string, attachments: unknown) => Promise<void>
   >()
   .mockResolvedValue(undefined);
 
@@ -31,8 +26,7 @@ vi.mock("../lib/agentLifecycle", () => ({
     agentId: string,
     prompt: string,
     attachments: unknown,
-    opts?: { assumeIdle?: boolean },
-  ) => mockSendUserMessageToAgent(agentId, prompt, attachments, opts),
+  ) => mockSendUserMessageToAgent(agentId, prompt, attachments),
 }));
 
 function cs(filename: string, summary = "summary"): ReleaseNoteEntry {

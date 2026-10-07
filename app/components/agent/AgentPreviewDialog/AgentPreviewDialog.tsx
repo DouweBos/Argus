@@ -2,7 +2,10 @@ import type { AgentStatus } from "../../../lib/types";
 import { useCallback } from "react";
 import { Button, Dialog, DialogBody } from "@argus/peacock";
 import { focusAgent } from "../../../lib/agentLifecycle";
-import { useConversation } from "../../../stores/conversationStore";
+import {
+  firstUserText,
+  useConversation,
+} from "../../../stores/conversationStore";
 import { useSessions } from "../../../stores/sessionStore";
 import { AgentChat } from "../AgentChat";
 import styles from "./AgentPreviewDialog.module.css";
@@ -24,7 +27,7 @@ export function AgentPreviewDialog({
     session?.display_name ?? session?.branch ?? agent.session_id.slice(0, 8);
   const title =
     conversation?.title?.trim() ||
-    conversation?.messages.find((m) => m.role === "user")?.textBlocks[0] ||
+    firstUserText(conversation) ||
     `Agent ${agent.agent_id.slice(0, 6)}`;
 
   const handleGoTo = useCallback(() => {

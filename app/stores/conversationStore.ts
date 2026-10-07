@@ -1,25 +1,27 @@
-import type { ImageAttachment } from "../lib/ipc";
 import type {
-  AgentCapabilities,
   AgentConversation,
   ConversationMessage,
-  LlmStreamEvent,
-  PermissionRequest,
 } from "@argus/host/services/agent/conversation/types";
+import type {
+  AgentTranscriptDelta,
+  AgentTranscriptPage,
+} from "@argus/remote-protocol";
 import { create } from "zustand";
-import { contextWindowFromModelUsage } from "@argus/host/services/agent/contextWindow";
 import {
-  emptyConversation,
   fromSavedMessages,
-  reduceEvent,
-  withCapabilities,
-  withInjectedPrompt,
   withPermissionPending,
-  withSystemMessage,
-  withUserMessage,
 } from "@argus/host/services/agent/conversation/reducer";
 import { rememberContextWindow } from "../lib/contextWindow";
 import { persistLastKnownCapabilities } from "../lib/lastKnownCapabilities";
+import {
+  applyDelta,
+  fromPage,
+  prependPage,
+  type TranscriptWindow,
+  trimWindow,
+  type Viewed,
+  type ViewedConversation,
+} from "../lib/transcriptWindow";
 
 export type {
   AgentConversation,
@@ -32,14 +34,20 @@ export type {
   ToolResultBlock,
 } from "@argus/host/services/agent/conversation/types";
 
+export type { TranscriptWindow, ViewedConversation };
+
 export interface PendingImage {
-  attachment: ImageAttachment;
+  attachment: { data: string; media_type: string };
   name: string;
   previewUrl: string;
 }
 
 interface ConversationStoreData {
-  conversations: Record<string, AgentConversation>;
+  /**
+   * What this window shows of each agent's conversation. The host owns the
+   * conversation; this holds the pages loaded so far, kept current by deltas.
+   */
+  conversations: Record<string, ViewedConversation>;
   /** Draft message text per agent, preserved across tab switches. */
   drafts: Record<string, string>;
   /**
@@ -70,10 +78,13 @@ interface ConversationStoreData {
    * unread.
    */
   unreadMessages: Record<string, ReadonlySet<string>>;
+  /** Where each followed conversation's loaded messages sit in the host's. */
+  windows: Record<string, TranscriptWindow>;
 }
 
 const conversationStore = create<ConversationStoreData>(() => ({
   conversations: {},
+  windows: {},
   drafts: {},
   linkedProjects: {},
   pendingImages: {},
@@ -126,11 +137,13 @@ export function clearConversation(agentId: string) {
     const { [agentId]: _removed, ...next } = state.conversations;
     const { [agentId]: _removedUnread, ...nextUnread } = state.unreadMessages;
     const { [agentId]: _removedPending, ...nextPending } = state.pendingUnread;
+    const { [agentId]: _removedWindow, ...nextWindows } = state.windows;
 
     return {
       conversations: next,
       unreadMessages: nextUnread,
       pendingUnread: nextPending,
+      windows: nextWindows,
     };
   });
 }
@@ -193,176 +206,160 @@ export function clearAgentUnread(agentId: string) {
   });
 }
 
-/** Apply a pure update to one agent's conversation, creating it if needed. */
-function updateConversation(
+function viewedOf(
+  state: ConversationStoreData,
   agentId: string,
-  update: (existing: AgentConversation) => AgentConversation,
-) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId] ?? emptyConversation();
-    const next = update(existing);
-    if (next === existing) {
-      return state;
-    }
+): Viewed | null {
+  const conversation = state.conversations[agentId];
+  const window = state.windows[agentId];
 
-    return { conversations: { ...state.conversations, [agentId]: next } };
-  });
+  return conversation && window ? { conversation, window } : null;
 }
 
-export function appendSystemMessage(agentId: string, msg: ConversationMessage) {
-  updateConversation(agentId, (c) => withSystemMessage(c, msg));
+function withViewed(
+  state: ConversationStoreData,
+  agentId: string,
+  viewed: Viewed,
+): Pick<ConversationStoreData, "conversations" | "windows"> {
+  return {
+    conversations: { ...state.conversations, [agentId]: viewed.conversation },
+    windows: { ...state.windows, [agentId]: viewed.window },
+  };
+}
+
+/** Show the newest page of an agent's conversation, replacing what was loaded. */
+export function applyTranscriptPage(
+  agentId: string,
+  page: AgentTranscriptPage,
+) {
+  conversationStore.setState((state) =>
+    withViewed(state, agentId, fromPage(page)),
+  );
+  rememberMeta(page.meta);
+}
+
+/** Put an older page in front. False when it no longer lines up. */
+export function prependTranscriptPage(
+  agentId: string,
+  page: AgentTranscriptPage,
+): boolean {
+  let ok = false;
+  conversationStore.setState((state) => {
+    const viewed = viewedOf(state, agentId);
+    const next = viewed ? prependPage(viewed, page) : null;
+    if (!next) {
+      return state;
+    }
+    ok = true;
+
+    return withViewed(state, agentId, next);
+  });
+
+  return ok;
+}
+
+/** Keep only the newest `keep` loaded messages of a followed conversation. */
+export function trimTranscript(agentId: string, keep: number) {
+  conversationStore.setState((state) => {
+    const viewed = viewedOf(state, agentId);
+    if (!viewed) {
+      return state;
+    }
+    const next = trimWindow(viewed, keep);
+
+    return next === viewed ? state : withViewed(state, agentId, next);
+  });
 }
 
 /**
- * A prompt sent on the agent's behalf (spawn_agent, send_agent_message). Like a
- * typed message it starts a new turn, so nothing after it is a --resume replay.
+ * Apply a host delta. "gap" means it doesn't follow what is loaded — the
+ * caller refetches; "stale" means it was already in the page.
  */
-export function appendInjectedPrompt(
+export function applyTranscriptDelta(
   agentId: string,
-  msg: ConversationMessage,
-) {
-  updateConversation(agentId, (c) => withInjectedPrompt(c, msg));
-}
-
-export function migrateConversation(oldAgentId: string, newAgentId: string) {
+  delta: AgentTranscriptDelta,
+): "applied" | "gap" | "stale" {
+  let kind = "gap" as "applied" | "gap" | "stale";
   conversationStore.setState((state) => {
-    const existing = state.conversations[oldAgentId];
-    if (!existing) {
+    const viewed = viewedOf(state, agentId);
+    if (!viewed) {
       return state;
     }
-    const { [oldAgentId]: _removed, ...rest } = state.conversations;
-    const next = { ...rest, [newAgentId]: { ...existing, resuming: true } };
-
-    const oldUnread = state.unreadMessages[oldAgentId];
-    let unreadMessages = state.unreadMessages;
-    if (oldUnread) {
-      const { [oldAgentId]: _droppedUnread, ...remaining } =
-        state.unreadMessages;
-      unreadMessages = { ...remaining, [newAgentId]: oldUnread };
-    }
-
-    const oldPending = state.pendingUnread[oldAgentId];
-    let pendingUnread = state.pendingUnread;
-    if (oldPending) {
-      const { [oldAgentId]: _droppedPending, ...remainingPending } =
-        state.pendingUnread;
-      pendingUnread = { ...remainingPending, [newAgentId]: oldPending };
-    }
-
-    return { conversations: next, unreadMessages, pendingUnread };
-  });
-}
-export function addUserMessage(
-  agentId: string,
-  text: string,
-  images?: ImageAttachment[],
-  checkpointId?: string,
-  author?: string,
-) {
-  updateConversation(agentId, (c) =>
-    withUserMessage(c, text, { images, checkpointId, author }),
-  );
-}
-
-export function appendEvent(agentId: string, event: LlmStreamEvent) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId] ?? emptyConversation();
-    const next = reduceEvent(existing, event);
-    if (next === existing) {
+    const outcome = applyDelta(viewed, delta);
+    kind = outcome.kind;
+    if (outcome.kind !== "applied") {
       return state;
     }
-    if (event.type === "result" && next.model) {
-      const size = contextWindowFromModelUsage(
-        event.modelUsage,
-        existing.model,
-      );
-      if (size) {
-        rememberContextWindow(next.model, size);
-      }
-    }
-
     // A new assistant message is pending-unread for this turn, graduating to
     // unread only once the agent goes idle — so a streaming agent doesn't keep
     // re-asserting unread state. Tool-call-only messages have nothing to read.
-    const added =
-      next.messages.length > existing.messages.length
-        ? next.messages[next.messages.length - 1]
-        : null;
-    const readable =
-      event.type === "assistant" &&
-      added?.role === "assistant" &&
-      (added.textBlocks.some((t) => t.trim().length > 0) ||
-        added.toolCalls.length === 0);
+    let pendingUnread = state.pendingUnread;
+    let unreadMessages = state.unreadMessages;
+    for (const op of delta.ops) {
+      if (op.op === "remove") {
+        pendingUnread = removeUnreadId(pendingUnread, agentId, op.id);
+        unreadMessages = removeUnreadId(unreadMessages, agentId, op.id);
+      }
+    }
+    for (const added of outcome.appended) {
+      const readable =
+        added.role === "assistant" &&
+        (added.textBlocks.some((t) => t.trim().length > 0) ||
+          added.toolCalls.length === 0);
+      if (readable) {
+        pendingUnread = addUnreadId(pendingUnread, agentId, added.id);
+      }
+    }
 
     return {
-      conversations: { ...state.conversations, [agentId]: next },
-      ...(readable && added
-        ? { pendingUnread: addUnreadId(state.pendingUnread, agentId, added.id) }
-        : {}),
+      ...withViewed(state, agentId, outcome.viewed),
+      pendingUnread,
+      unreadMessages,
+    };
+  });
+  if (kind === "applied" && delta.meta) {
+    rememberMeta(getConversationState().conversations[agentId] ?? {});
+  }
+
+  return kind;
+}
+
+/** Cache what the start-agent dialogs show before any agent is running. */
+function rememberMeta(meta: Partial<ViewedConversation>) {
+  if (meta.model && meta.contextWindow) {
+    rememberContextWindow(meta.model, meta.contextWindow);
+  }
+  if (meta.capabilities) {
+    persistLastKnownCapabilities({
+      models: meta.capabilities.models?.map((m) => ({
+        value: m.value,
+        displayName: m.displayName,
+        description: m.description,
+      })),
+      slashCommands: meta.capabilities.commands,
+    });
+  }
+}
+
+/**
+ * Show a conversation nothing follows: an older host's snapshot, or a saved
+ * chat being previewed.
+ */
+export function setStaticConversation(
+  agentId: string,
+  conversation: AgentConversation,
+) {
+  conversationStore.setState((state) => {
+    const { [agentId]: _removed, ...windows } = state.windows;
+
+    return {
+      conversations: { ...state.conversations, [agentId]: conversation },
+      windows,
     };
   });
 }
 
-export function setCapabilities(
-  agentId: string,
-  capabilities: AgentCapabilities,
-) {
-  updateConversation(agentId, (c) => withCapabilities(c, capabilities));
-  // Cache to localStorage so the start-agent / new-session dialogs can show
-  // a real model + slash-command list immediately on the next launch,
-  // without waiting for an agent to spawn first.
-  persistLastKnownCapabilities({
-    models: capabilities.models?.map((m) => ({
-      value: m.value,
-      displayName: m.displayName,
-      description: m.description,
-    })),
-    slashCommands: capabilities.commands,
-  });
-}
-
-export function setModel(agentId: string, model: string) {
-  updateConversation(agentId, (c) => ({ ...c, model }));
-}
-
-/** Walks the full tool-call tree: a subagent's call nests under its parent. */
-function setPermissionFlag(
-  agentId: string,
-  toolUseId: string,
-  pending: boolean,
-): boolean {
-  let found = false;
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId];
-    const next = existing
-      ? withPermissionPending(existing, toolUseId, pending)
-      : null;
-    if (!next) {
-      return state;
-    }
-    found = true;
-
-    return { conversations: { ...state.conversations, [agentId]: next } };
-  });
-
-  return found;
-}
-
-export function setPermissionPending(
-  agentId: string,
-  request: PermissionRequest,
-): boolean {
-  return setPermissionFlag(agentId, request.tool_use_id, true);
-}
-
-export function clearPermission(agentId: string, toolUseId: string) {
-  setPermissionFlag(agentId, toolUseId, false);
-}
-
-export function cancelPermission(agentId: string, toolUseId: string) {
-  setPermissionFlag(agentId, toolUseId, false);
-}
-
+/** A saved chat, shown read-only. */
 export function loadSavedMessages(
   agentId: string,
   messages: ConversationMessage[],
@@ -371,64 +368,27 @@ export function loadSavedMessages(
   resuming?: boolean,
   title?: string,
 ) {
-  conversationStore.setState((state) => ({
-    conversations: {
-      ...state.conversations,
-      [agentId]: fromSavedMessages(messages, {
-        model,
-        sessionId,
-        resuming,
-        title,
-      }),
-    },
-  }));
+  setStaticConversation(
+    agentId,
+    fromSavedMessages(messages, { model, sessionId, resuming, title }),
+  );
 }
 
-export function clearAgentTasks(agentId: string) {
+/**
+ * Drop a prompt the user just answered without waiting for the host's delta.
+ * Walks the full tool-call tree: a subagent's call nests under its parent.
+ */
+export function clearPermission(agentId: string, toolUseId: string) {
   conversationStore.setState((state) => {
     const existing = state.conversations[agentId];
-    if (!existing) {
+    const next = existing
+      ? withPermissionPending(existing, toolUseId, false)
+      : null;
+    if (!next) {
       return state;
     }
 
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: { ...existing, tasks: null, taskOrder: undefined },
-      },
-    };
-  });
-}
-
-export function clearAgentTodos(agentId: string) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId];
-    if (!existing) {
-      return state;
-    }
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: { ...existing, todos: null },
-      },
-    };
-  });
-}
-
-export function setConversationTitle(agentId: string, title: string) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId];
-    if (!existing) {
-      return state;
-    }
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: { ...existing, title },
-      },
-    };
+    return { conversations: { ...state.conversations, [agentId]: next } };
   });
 }
 
@@ -571,18 +531,37 @@ export const useConversation = (agentId: string | null | undefined) =>
 export const useConversations = () =>
   useConversationStore((state) => state.conversations);
 
+export const useTranscriptWindow = (agentId: string | null | undefined) =>
+  useConversationStore((state) =>
+    agentId ? state.windows[agentId] : undefined,
+  );
+
+/** The first thing the user said — the title until one is generated. */
+export function firstUserText(
+  conversation: ViewedConversation | undefined,
+): string | undefined {
+  return (
+    conversation?.firstUserText ??
+    conversation?.messages.find((m) => m.role === "user")?.textBlocks[0]
+  );
+}
+
 /**
  * True when the agent has an in-flight Claude subagent — a `Task`/`Agent`
  * tool call that hasn't returned a result yet (and isn't waiting on a
  * permission prompt). The CLI can report the parent session `idle` between
  * tool calls while its subagents keep working, so this is the live signal
- * that work is still happening under the hood.
+ * that work is still happening under the hood. The host says so for the whole
+ * history; a conversation nothing follows is scanned.
  */
 function conversationHasRunningSubagents(
-  conversation: AgentConversation | undefined,
+  conversation: ViewedConversation | undefined,
 ): boolean {
   if (!conversation) {
     return false;
+  }
+  if (conversation.runningSubagents !== undefined) {
+    return conversation.runningSubagents;
   }
   const { messages } = conversation;
   for (let i = messages.length - 1; i >= 0; i--) {

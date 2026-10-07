@@ -1,9 +1,10 @@
 /**
- * The agent banners and pushes a UI would raise, for a host that owns its
- * conversations itself. Same wording as the desktop's.
+ * The agent banners and pushes for the conversations the host folds: a banner
+ * on this machine when no Argus window is focused, and a push to the phones.
  */
 
 import path from "node:path";
+import { hostPlatform } from "@argus/host/platform";
 import { appState } from "../../../state";
 import {
   type AgentNotificationInput,
@@ -41,8 +42,9 @@ function context(sessionId: string | null, title?: string): Context {
 }
 
 function dispatch(input: AgentNotificationInput): void {
-  // Nobody is at this host's screen; the phone is who gets told.
-  showAgentNotification(input, { showLocal: false });
+  // A banner here only when nobody is looking at an Argus window; a headless
+  // host has no banners at all, so its phones are who get told.
+  showAgentNotification(input, { showLocal: !hostPlatform().isForeground() });
 }
 
 function claim(agentId: string, toolUseId: string): boolean {

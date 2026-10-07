@@ -12,10 +12,7 @@ import { AgentPopout } from "./components/popout/AgentPopout";
 import { DevicePopout } from "./components/popout/DevicePopout";
 import { PopoutRoot } from "./components/popout/PopoutRoot";
 import { seedPopoutStore } from "./components/popout/seedPopoutStore";
-import {
-  initAppQuitSave,
-  initExternalAgentStarted,
-} from "./lib/agentEventService";
+import { initExternalAgentStarted } from "./lib/agentEventService";
 import { initAgentPopoutSync } from "./lib/agentPopoutService";
 import { hostPrefsImportedCount } from "./lib/hostPrefs";
 import { initHuddleDeviceMirror } from "./lib/huddleDeviceMirror";
@@ -99,8 +96,6 @@ export function boot(popoutMode: string | null, params: URLSearchParams): void {
       </React.StrictMode>,
     );
   } else {
-    // Save active conversations when the app is about to quit.
-    initAppQuitSave();
     // Register agents spawned outside the UI (e.g. via MCP spawn_agent).
     initExternalAgentStarted();
     // Append every conductor call to the per-device live log.

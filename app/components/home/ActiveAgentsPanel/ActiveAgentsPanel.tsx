@@ -3,7 +3,10 @@ import type { AgentStatus as PeacockAgentStatus } from "@argus/peacock";
 import { useCallback, useMemo } from "react";
 import { AgentRow, SectionPanel } from "@argus/peacock";
 import { setActiveAgent, useAgentsRecord } from "../../../stores/agentStore";
-import { useConversations } from "../../../stores/conversationStore";
+import {
+  firstUserText,
+  useConversations,
+} from "../../../stores/conversationStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
 import styles from "../homeLayout.module.css";
@@ -75,15 +78,9 @@ export function ActiveAgentsPanel({
         const ws = scopedSessions.find((w) => w.id === a.session_id);
         const conv = conversations[a.agent_id];
         const convTitle = conv?.title?.trim();
-        const firstUserText = conv?.messages
-          ?.find((m) => m.role === "user")
-          ?.textBlocks?.[0]?.trim();
+        const firstText = firstUserText(conv)?.trim();
         const displayName =
-          convTitle ||
-          firstUserText ||
-          ws?.display_name ||
-          ws?.branch ||
-          "Agent";
+          convTitle || firstText || ws?.display_name || ws?.branch || "Agent";
         const branchLabel = ws?.display_name ?? ws?.branch ?? "";
 
         return {

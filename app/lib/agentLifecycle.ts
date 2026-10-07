@@ -1,28 +1,25 @@
 import type { AgentStatus } from "./types";
 import {
   addAgent,
-  getAgent,
   removeAgent,
   setActiveAgent,
   updateAgent,
 } from "../stores/agentStore";
-import { addUserMessage, setCapabilities } from "../stores/conversationStore";
 import { setActiveCenterView } from "../stores/editorStore";
 import { pushError } from "../stores/notificationsStore";
 import { clearPrewarm, getPrewarmSlot } from "../stores/prewarmStore";
-import { queueMessage } from "../stores/queueStore";
 import { selectSession } from "../stores/sessionStore";
 import { getDefaultPermissionMode } from "../stores/settingsStore";
 import { notifyMessageSent, startAgentListening } from "./agentEventService";
 import { huddleAuthor } from "./huddleAuthor";
 import {
   claimPrewarmAgent,
-  createCheckpoint,
   type ImageAttachment,
-  sendAgentMessage,
   setAgentRunner,
   startAgent as apiStartAgent,
+  submitAgentMessage,
 } from "./ipc";
+import { refetch } from "./transcriptSync";
 
 interface StartAgentOptions {
   focus?: boolean;
@@ -31,6 +28,8 @@ interface StartAgentOptions {
   resumeSessionId?: string;
   /** Runner to spawn under. Defaults to the session's. */
   runnerId?: string;
+  /** A fork: the host seeds the transcript from this agent's, up to the message. */
+  seedFrom?: { agentId: string; throughMessageId: string };
 }
 
 /**
@@ -43,7 +42,7 @@ export async function startAgentInSession(
   sessionId: string,
   options: StartAgentOptions = {},
 ): Promise<AgentStatus> {
-  const { focus = true, model, resumeSessionId, runnerId } = options;
+  const { focus = true, model, resumeSessionId, runnerId, seedFrom } = options;
   // Resolve the permission mode for every spawn — the app-level default
   // applies unless the caller passed an explicit one, so an agent never
   // silently falls back to the CLI's prompt-for-everything default.
@@ -51,9 +50,9 @@ export async function startAgentInSession(
 
   // Prefer claiming a prewarmed slot — the Claude subprocess is already
   // alive and past initialize, so the user-facing path is sub-second.
-  // `resumeSessionId` is incompatible with prewarms (the warm slot was
-  // started fresh, not resumed) so fall back to a normal spawn in that case.
-  if (!resumeSessionId) {
+  // `resumeSessionId` and `seedFrom` are incompatible with prewarms (the warm
+  // slot was started fresh, not resumed) so fall back to a normal spawn then.
+  if (!resumeSessionId && !seedFrom) {
     const slot = getPrewarmSlot(sessionId);
     if (slot && slot.status === "ready" && slot.agentId) {
       try {
@@ -110,6 +109,7 @@ export async function startAgentInSession(
       undefined,
       agentId,
       runnerId,
+      seedFrom,
     );
     // Reconcile backend-authoritative fields onto the optimistic entry.
     // The id is identical, so no replace — just patch any drift.
@@ -123,9 +123,8 @@ export async function startAgentInSession(
     // Capabilities are returned inline on start_agent because the backend's
     // `agent:capabilities` event fires before renderer listeners attach and
     // would otherwise be lost — seed the store directly.
-    if (info.capabilities) {
-      setCapabilities(agentId, info.capabilities);
-    }
+    // The host started folding it just now; a page fetched before that was empty.
+    refetch(agentId).catch(() => {});
 
     return info;
   } catch (err) {
@@ -178,9 +177,7 @@ async function claimPrewarm(
       model: info.model,
       runner_id: info.runner_id,
     });
-    if (info.capabilities) {
-      setCapabilities(agentId, info.capabilities);
-    }
+    refetch(agentId).catch(() => {});
 
     return info;
   } catch (err) {
@@ -200,47 +197,24 @@ export function focusAgent(sessionId: string, agentId: string): void {
 }
 
 /**
- * Send a user-authored message to an agent, matching the behavior of the
- * chat input: optimistically adds the message to the transcript, marks the
- * agent as running, and either sends immediately or queues if the agent is
- * already processing a prior turn.
- *
- * Use this from every call site that programmatically messages an agent
- * (chat input, conflict-fix dispatch, command palette, etc.) so the
- * transcript and status stay consistent.
- *
- * Pass `assumeIdle: true` immediately after `startAgentInSession` — the
- * freshly-spawned agent is marked "running" before any turn has begun, so
- * we want to send directly instead of queueing.
+ * Send a user-authored message to an agent, the way the chat input does: the
+ * host sends it now or queues it behind the turn in flight, checkpoints the
+ * worktree and records the bubble. Use this from every call site that
+ * programmatically messages an agent (chat input, conflict-fix dispatch,
+ * command palette, etc.) so the transcript and status stay consistent.
  */
 export async function sendUserMessageToAgent(
   agentId: string,
   text: string,
   images?: ImageAttachment[],
-  options: { assumeIdle?: boolean } = {},
+  displayText?: string,
 ): Promise<void> {
-  const status = getAgent(agentId)?.status;
-
-  if (!options.assumeIdle && status === "running") {
-    queueMessage(agentId, text, images, undefined, huddleAuthor(agentId));
-
-    return;
+  const { queued } = await submitAgentMessage(agentId, text, {
+    author: huddleAuthor(agentId),
+    displayText,
+    images,
+  });
+  if (!queued) {
+    notifyMessageSent(agentId);
   }
-
-  // Snapshot the worktree before dispatching so the user can revert files
-  // to the pre-prompt state from the chat. Best-effort — never blocks send.
-  const sessionId = getAgent(agentId)?.session_id;
-  let checkpointId: string | undefined;
-  if (sessionId) {
-    try {
-      const cp = await createCheckpoint(sessionId);
-      checkpointId = cp.id;
-    } catch {
-      // Skip checkpoint.
-    }
-  }
-  addUserMessage(agentId, text, images, checkpointId, huddleAuthor(agentId));
-  notifyMessageSent(agentId);
-  updateAgent(agentId, { status: "running" });
-  await sendAgentMessage(agentId, text, images);
 }

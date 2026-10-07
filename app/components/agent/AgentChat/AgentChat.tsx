@@ -17,10 +17,7 @@ import {
   UnreadDivider,
 } from "@argus/peacock";
 import { deriveActivity } from "../../../lib/activityDescription";
-import {
-  maybeGenerateTitle,
-  notifyMessageSent,
-} from "../../../lib/agentEventService";
+import { notifyMessageSent } from "../../../lib/agentEventService";
 import {
   resolveContextLimit,
   tokensInContext,
@@ -29,7 +26,8 @@ import { editAndRestoreFromMessage } from "../../../lib/editRestoreChat";
 import { huddleAuthor } from "../../../lib/huddleAuthor";
 import {
   type ImageAttachment,
-  createCheckpoint,
+  clearAgentTranscript,
+  dismissAgentList,
   getCommandMetrics,
   interruptAgent,
   setAgentEffort as ipcSetAgentEffort,
@@ -37,7 +35,7 @@ import {
   setAgentPermissionMode as ipcSetAgentPermissionMode,
   readFile,
   respondToPermission,
-  sendAgentMessage,
+  submitAgentMessage,
   writeFile,
 } from "../../../lib/ipc";
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
@@ -55,22 +53,14 @@ import {
 import {
   type ConversationMessage,
   type ToolCallInfo,
-  addUserMessage,
-  clearAgentTasks,
-  clearAgentTodos,
   clearAgentUnread,
-  clearConversation,
   clearPermission,
   setDraft,
   useConversation,
   useHasRunningSubagents,
   useUnreadMessageIds,
 } from "../../../stores/conversationStore";
-import {
-  queueMessage,
-  useQueuedMessages,
-  watchQueue,
-} from "../../../stores/queueStore";
+import { useQueuedMessages, watchQueue } from "../../../stores/queueStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { useSessions } from "../../../stores/sessionStore";
 import {
@@ -89,6 +79,7 @@ import { TodoList } from "../TodoList";
 import styles from "./AgentChat.module.css";
 import { LimitResumeBanner } from "./LimitResumeBanner";
 import { QueuedMessages } from "./QueuedMessages";
+import { useOlderTranscript } from "./useOlderTranscript";
 
 /**
  * Well-known commands that should always appear in autocomplete.
@@ -172,6 +163,7 @@ export function AgentChat({
   const agentSnapshot = useAgentStatus(agentId ?? "");
   const agentStatus = agentId != null ? (agentSnapshot?.status ?? null) : null;
   const hasRunningSubagents = useHasRunningSubagents(agentId);
+  const { loadOlder, releaseOlder } = useOlderTranscript(agentId);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -507,14 +499,15 @@ export function AgentChat({
       visibleCountRef.current > INITIAL_VISIBLE_MESSAGES
     ) {
       setVisibleCount(INITIAL_VISIBLE_MESSAGES);
+      releaseOlder();
 
       return;
     }
+    if (container.scrollTop >= LOAD_MORE_THRESHOLD) {
+      return;
+    }
     // Near the top with older messages still hidden → reveal the next page.
-    if (
-      container.scrollTop < LOAD_MORE_THRESHOLD &&
-      visibleCountRef.current < messagesLengthRef.current
-    ) {
+    if (visibleCountRef.current < messagesLengthRef.current) {
       pendingScrollRestoreRef.current = {
         scrollHeight: container.scrollHeight,
         scrollTop: container.scrollTop,
@@ -522,8 +515,20 @@ export function AgentChat({
       setVisibleCount((c) =>
         Math.min(c + VISIBLE_MESSAGES_STEP, messagesLengthRef.current),
       );
+
+      return;
     }
-  }, [recheckAtBottom]);
+    // Everything loaded is showing → fetch the page before it from the host.
+    loadOlder().then((added) => {
+      if (added > 0 && messagesContainerRef.current) {
+        pendingScrollRestoreRef.current = {
+          scrollHeight: messagesContainerRef.current.scrollHeight,
+          scrollTop: messagesContainerRef.current.scrollTop,
+        };
+        setVisibleCount((c) => c + added);
+      }
+    });
+  }, [recheckAtBottom, loadOlder, releaseOlder]);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -920,7 +925,7 @@ export function AgentChat({
         const parts = trimmed.slice(1).split(/\s+/);
         const cmd = parts[0].toLowerCase();
         if (cmd === "clear") {
-          clearConversation(agentId);
+          clearAgentTranscript(agentId).catch(() => {});
 
           return;
         }
@@ -949,46 +954,16 @@ export function AgentChat({
         }
       }
 
-      const status = getAgent(agentId)?.status;
-
-      // Kick off background title generation on the first real user message.
-      // `maybeGenerateTitle` is a no-op for later messages.
-      maybeGenerateTitle(agentId, message);
-
-      // If the agent is busy (running/starting), queue the message for later.
-      if (status === "running") {
-        queueMessage(
-          agentId,
-          message,
+      // The host sends it now or queues it behind the turn in flight, and
+      // records the bubble (with a worktree checkpoint) once it goes out.
+      try {
+        const { queued } = await submitAgentMessage(agentId, message, {
+          author: huddleAuthor(agentId),
           images,
-          undefined,
-          huddleAuthor(agentId),
-        );
-
-        return;
-      }
-
-      // Agent is idle — snapshot the worktree, then send. Checkpoint is
-      // best-effort: a git failure (e.g. detached state, no HEAD) shouldn't
-      // block the user from chatting.
-      let checkpointId: string | undefined;
-      try {
-        const cp = await createCheckpoint(sessionId);
-        checkpointId = cp.id;
-      } catch {
-        // Skip checkpoint — the message still goes through.
-      }
-      addUserMessage(
-        agentId,
-        message,
-        images,
-        checkpointId,
-        huddleAuthor(agentId),
-      );
-      notifyMessageSent(agentId);
-      updateAgent(agentId, { status: "running" });
-      try {
-        await sendAgentMessage(agentId, message, images);
+        });
+        if (!queued) {
+          notifyMessageSent(agentId);
+        }
         // Refresh command metrics after sending a slash command so sorting
         // updates immediately.
         if (trimmed.startsWith("/") && repoRoot) {
@@ -997,10 +972,10 @@ export function AgentChat({
             .catch(() => {});
         }
       } catch {
-        // Message failed — user sees the optimistic message
+        // The agent may have exited; its status says so.
       }
     },
-    [agentId, sessionId, permissionMode, repoRoot, handleSetPermissionMode],
+    [agentId, permissionMode, repoRoot, handleSetPermissionMode],
   );
 
   if (!agentId) {
@@ -1153,14 +1128,14 @@ export function AgentChat({
       {activeTodos && activeTodos.length > 0 && agentId && (
         <TodoList
           todos={activeTodos}
-          onDismiss={() => clearAgentTodos(agentId)}
+          onDismiss={() => dismissAgentList(agentId, "todos").catch(() => {})}
         />
       )}
 
       {activeTasks && agentId && (
         <TaskList
           tasks={activeTasks}
-          onDismiss={() => clearAgentTasks(agentId)}
+          onDismiss={() => dismissAgentList(agentId, "tasks").catch(() => {})}
         />
       )}
 

@@ -12,7 +12,6 @@ import {
   StatusDots,
 } from "@argus/peacock";
 import { useTabReorder } from "../../../hooks/useTabReorder";
-import { saveAgentConversation } from "../../../lib/agentEventService";
 import {
   interruptAgent,
   openAgentPopout,
@@ -25,9 +24,11 @@ import {
 } from "../../../stores/agentStore";
 import {
   clearAgentUnread,
+  firstUserText,
   getConversationState,
   useAgentHasUnread,
   useConversation,
+  useHasRunningSubagents,
 } from "../../../stores/conversationStore";
 import { getSessionState } from "../../../stores/sessionStore";
 import { RenameAgentDialog } from "../RenameAgentDialog/RenameAgentDialog";
@@ -68,9 +69,8 @@ function useTabMeta(
     fullLabel = title;
     label = title.length > 24 ? title.slice(0, 24) + truncationSuffix : title;
   } else {
-    const firstUser = messages.find((m) => m.role === "user");
-    if (firstUser && firstUser.textBlocks.length > 0) {
-      const text = firstUser.textBlocks[0].trim();
+    const text = firstUserText(conv)?.trim();
+    if (text) {
       fullLabel = text;
       label = text.length > 20 ? text.slice(0, 20) + truncationSuffix : text;
     }
@@ -81,14 +81,7 @@ function useTabMeta(
   );
   // A Task/Agent tool call without a result yet means a subagent is still
   // working, even if the CLI reported the parent session idle.
-  const hasRunningSubagents = messages.some((m) =>
-    m.toolCalls.some(
-      (tc) =>
-        (tc.name === "Task" || tc.name === "Agent") &&
-        tc.result === undefined &&
-        !tc.pendingPermission,
-    ),
-  );
+  const hasRunningSubagents = useHasRunningSubagents(agentId);
 
   let state: StatusDotsState = "idle";
   if (awaitingPermission) {
@@ -453,10 +446,8 @@ export function AgentTabBar({
     // so detaching a sibling into a popout window doesn't renumber the rest.
     const stableIndex = rawAgents.findIndex((a) => a.agent_id === targetId);
     const fallbackTitle = `Agent ${(stableIndex < 0 ? targetIndex : stableIndex) + 1}`;
-    const firstUserText = conv?.messages.find((m) => m.role === "user")
-      ?.textBlocks[0];
     const currentTitle =
-      conv?.title?.trim() || firstUserText?.trim() || fallbackTitle;
+      conv?.title?.trim() || firstUserText(conv)?.trim() || fallbackTitle;
     const session = getSessionState().sessions.find(
       (w) => w.id === target.session_id,
     );
@@ -493,10 +484,6 @@ export function AgentTabBar({
       {
         label: "Open in New Window",
         onClick: () => {
-          // Flush the current in-memory conversation to the backend first
-          // so the freshly opened popout can hydrate from it — the
-          // debounced save in `scheduleAgentSave` may not have fired yet.
-          saveAgentConversation(targetId);
           openAgentPopout({
             agentId: targetId,
             sessionId: target.session_id,

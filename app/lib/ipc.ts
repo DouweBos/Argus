@@ -90,13 +90,13 @@ import type {
   MoveWorktreesResult,
 } from "./types";
 import type {
-  AgentNotificationInput,
+  AgentForkPoint,
+  AgentTranscriptPage,
   BisectStatus,
   BisectStep,
   BlameChunk,
   BrowserDevtools,
   BrowserPreset,
-  Checkpoint,
   CommandName,
   PopoutPlatform,
   UpdaterState,
@@ -746,15 +746,6 @@ export const forkChatInSession = (
     forkTurnNumber,
   });
 
-/**
- * Restore an agent's conversation in place — kills and respawns the child
- * under the same agentId. Returns the new Claude session UUID (or null for
- * a fresh-start when `keepTurnNumber === 0`).
- */
-/** Snapshot the session worktree's files. Returned id is what `restoreCheckpoint` accepts. */
-export const createCheckpoint = (sessionId: string): Promise<Checkpoint> =>
-  invoke("create_checkpoint", { sessionId });
-
 /** Revert the session worktree to a previously created checkpoint. */
 export const restoreCheckpoint = (
   sessionId: string,
@@ -766,19 +757,6 @@ export const deleteCheckpoint = (
   sessionId: string,
   checkpointId: string,
 ): Promise<void> => invoke("delete_checkpoint", { sessionId, checkpointId });
-
-export const restoreAgentAtTurn = (
-  agentId: string,
-  sourceClaudeSessionId: string,
-  keepTurnNumber: number,
-  cutoffTimestampMs: number,
-): Promise<{ claude_session_id: string | null }> =>
-  invoke("restore_agent_at_turn", {
-    agentId,
-    sourceClaudeSessionId,
-    keepTurnNumber,
-    cutoffTimestampMs,
-  });
 
 export const getSessionDiff = (id: string): Promise<string> =>
   invoke("get_session_diff", { id });
@@ -1222,9 +1200,11 @@ export const startAgent = (
   appendSystemPrompt?: string,
   agentId?: string,
   runnerId?: string,
+  seedFrom?: { agentId: string; throughMessageId: string },
 ): Promise<AgentStatus> =>
   invoke("start_agent", {
     sessionId,
+    ...(seedFrom && { seedFrom }),
     ...(runnerId != null && runnerId !== "" && { runnerId }),
     ...(model != null && model !== "" && { model }),
     ...(permissionMode != null && permissionMode !== "" && { permissionMode }),
@@ -1242,17 +1222,6 @@ export const interruptAgent = (agentId: string): Promise<void> =>
   invoke("interrupt_agent", { agentId });
 
 export type { ImageAttachment };
-
-export const sendAgentMessage = (
-  agentId: string,
-  message: string,
-  images?: ImageAttachment[],
-): Promise<void> =>
-  invoke("send_agent_message", {
-    agentId,
-    message,
-    images: images?.length ? images : null,
-  });
 
 export const listAgents = (sessionId: string): Promise<AgentStatus[]> =>
   invoke("list_agents", { sessionId });
@@ -1773,15 +1742,6 @@ export const getCommandMetrics = (
   invoke("get_command_metrics", { repoRoot });
 
 // Chat history commands
-export const saveChatHistory = (
-  repoRoot: string,
-  conversation: SavedConversation,
-): Promise<void> =>
-  invoke("save_chat_history", {
-    repoRoot,
-    conversation,
-  });
-
 export const listChatHistory = (
   repoRoot: string,
 ): Promise<ChatHistoryEntry[]> => invoke("list_chat_history", { repoRoot });
@@ -1806,10 +1766,6 @@ export const deleteChatHistory = (
   repoRoot: string,
   historyId: string,
 ): Promise<void> => invoke("delete_chat_history", { repoRoot, historyId });
-
-export const generateSessionTitle = (
-  firstMessage: string,
-): Promise<string | null> => invoke("generate_session_title", { firstMessage });
 
 // Terminal commands.
 //
@@ -1960,15 +1916,60 @@ export const dequeueMessage = (
   agentId: string,
 ): Promise<QueuedMessage | null> => invoke("dequeue_message", { agentId });
 
-// Cross-window conversation snapshot sharing — lets a newly opened popout (or
-// reloaded main) hydrate an agent's conversation from whichever window last
-// owned it, without waiting for the next live event.
-export const publishAgentSnapshot = (
+/** A page of the host's conversation: the newest, or the one ending at `before`. */
+export const getAgentTranscript = (
   agentId: string,
-  snapshot: string | null,
-): Promise<void> =>
-  invoke("publish_agent_snapshot", { agentId, snapshot: snapshot ?? "" });
+  cursor: { before?: number; limit?: number } = {},
+): Promise<AgentTranscriptPage | null> =>
+  invoke("get_agent_transcript", { agentId, ...cursor });
 
+/** Send now or queue behind the turn in flight; the host records the bubble. */
+export const submitAgentMessage = (
+  agentId: string,
+  text: string,
+  options: {
+    author?: string;
+    displayText?: string;
+    images?: ImageAttachment[];
+  } = {},
+): Promise<{ queued: boolean }> =>
+  invoke("submit_agent_message", {
+    agentId,
+    text,
+    ...(options.displayText && { displayText: options.displayText }),
+    ...(options.images?.length && { images: options.images }),
+    ...(options.author && { author: options.author }),
+  });
+
+/** Rewind to just before a user message, optionally resending an edit. */
+export const rewindAgent = (
+  agentId: string,
+  messageId: string,
+  options: {
+    resend?: { images?: ImageAttachment[]; text: string };
+    restoreFiles?: boolean;
+  } = {},
+): Promise<{ claude_session_id: string | null; restoredPrompt: string }> =>
+  invoke("rewind_agent", { agentId, messageId, ...options });
+
+export const agentForkPoint = (
+  agentId: string,
+  messageId: string,
+): Promise<AgentForkPoint> =>
+  invoke("agent_fork_point", { agentId, messageId });
+
+export const setAgentTitle = (agentId: string, title: string): Promise<void> =>
+  invoke("set_agent_title", { agentId, title });
+
+export const dismissAgentList = (
+  agentId: string,
+  list: "tasks" | "todos",
+): Promise<void> => invoke("dismiss_agent_list", { agentId, list });
+
+export const clearAgentTranscript = (agentId: string): Promise<void> =>
+  invoke("clear_agent_transcript", { agentId });
+
+/** Older hosts only: the conversation as one JSON snapshot. */
 export const getAgentSnapshot = (agentId: string): Promise<string | null> =>
   invoke("get_agent_snapshot", { agentId });
 
@@ -2257,23 +2258,6 @@ export const debugRunCommand = (
 // Shell commands
 export const revealInFinder = (path: string): Promise<void> =>
   invoke("reveal_in_finder", { path });
-
-export type NotifyAgentPayload = AgentNotificationInput;
-
-/**
- * Show a notification on this Mac (when `showLocal`) and mirror it to every
- * paired device. The main process owns both halves so the banner can carry
- * quick actions (which Electron cannot render from the renderer) and so the
- * action set is decided in exactly one place.
- */
-export const notifyAgent = (
-  payload: NotifyAgentPayload,
-  showLocal: boolean,
-): Promise<void> =>
-  invoke("notify_agent", {
-    payload,
-    showLocal,
-  });
 
 /** Open a file/folder with the system's default handler. */
 export const openPath = (path: string): Promise<void> =>
