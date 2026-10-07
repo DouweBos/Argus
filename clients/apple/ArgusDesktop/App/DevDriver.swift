@@ -20,6 +20,8 @@
     private var trackedMenu: NSMenu?
     private var menuObservers: [NSObjectProtocol] = []
     private static var lastPick = ""
+    /// The last `secrets` answer, read back with `secretsResult`.
+    private static var secrets: [String: Any] = ["pending": true]
 
     static func startIfConfigured() -> DevDriver? {
       guard let path = ProcessInfo.processInfo.environment["ARGUS_DEV_DRIVER"] else { return nil }
@@ -317,6 +319,37 @@
           await model.reload()
         }
         return ["ok": true]
+      case "prefs":
+        // What HostPreferences took from the host.
+        let prefs = AppPreferences.shared
+        return [
+          "theme": prefs.theme.rawValue, "displaySize": prefs.displaySize.rawValue,
+          "permissionMode": prefs.defaultPermissionMode.rawValue, "model": prefs.defaultModel,
+          "editors": prefs.customEditors.map(\.name), "telemetry": MacTelemetry.mode,
+          "huddleName": HuddleDisplayName.value,
+          "platform": AppDelegate.current?.model.runtime.platform.rawValue ?? "",
+          "hidden": Array(HomeRecents.shared.hidden), "recents": HomeRecents.shared.opened.map(\.path),
+        ]
+      case "secrets":
+        // Asks the host for what only decrypting the stores can tell.
+        guard let backend = AppDelegate.current?.model.localBackend else { return ["error": "no host"] }
+        let url = command["mcpUrl"] as? String ?? ""
+        Self.secrets = ["pending": true]
+        Task {
+          var out: [String: Any] = [:]
+          do {
+            let devices = try await backend.request(ArgusProtocol.Commands.RemoteListDevices.self, EmptyParams())
+            out["devices"] = devices.map(\.label)
+          } catch { out["devicesError"] = "\(error)" }
+          let auth = try? await backend.request(ArgusProtocol.Commands.McpOauthStatus.self, .init(serverUrl: url))
+          out["mcpSignedIn"] = (auth ?? nil) != nil
+          let legacy = try? await backend.request(ArgusProtocol.Commands.LegacySecretStores.self, EmptyParams())
+          out["legacy"] = (legacy ?? []).map(\.rawValue)
+          Self.secrets = out
+        }
+        return ["ok": true]
+      case "secretsResult":
+        return Self.secrets
       case "hosts":
         // Paired hosts, what's attached and how each link is doing.
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
