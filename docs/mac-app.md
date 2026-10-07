@@ -179,3 +179,8 @@ never default to `~/.argus` — they use `~/.argus-mac-dev` unless `ARGUS_HOME`
 says otherwise — so a dev build can't collide with the app you use. They are
 signed with your Apple Development identity: macOS refuses notifications to an
 ad-hoc signed app, and to one run from `/tmp`.
+
+Telemetry needs a PostHog key at build time, as for the Electron app:
+`POSTHOG_KEY` in the environment `xcodebuild` runs in, or `POSTHOG_KEY = …` in
+a gitignored `clients/apple/Config/Argus.local.xcconfig`, which also covers
+builds started from Xcode. Without one the host logs that telemetry is off.

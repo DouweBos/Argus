@@ -85,8 +85,9 @@ nor stored.
 
 **When telemetry is hard-disabled, regardless of the mode:**
 
-- Builds with no PostHog key configured. On iOS that is every checkout
-  without a local `Config/Argus.local.xcconfig`, which is the default.
+- Builds with no PostHog key configured. On iOS and the Mac app that is every
+  checkout without a local `Config/Argus.local.xcconfig` (or `POSTHOG_KEY` in
+  the environment `xcodebuild` runs in), which is the default.
 
 ## Presence
 
