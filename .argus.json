@@ -16,6 +16,11 @@
       "restartOnRerun": true
     },
     {
+      "title": "Mac app",
+      "command": "xcodebuild -project clients/apple/ArgusRemote.xcodeproj -scheme ArgusDesktop -destination 'platform=macOS,arch=arm64' -derivedDataPath .build/mac-dd build -quiet && ARGUS_HOME=\"$HOME/.argus-mac-dev-${ARGUS_PORT:-1420}\" \".build/mac-dd/Build/Products/Debug/Argus.app/Contents/MacOS/Argus\"",
+      "restartOnRerun": true
+    },
+    {
       "title": "Dev: Server",
       "command": "ARGUS_HOME=\"$HOME/.argus-server-dev-${ARGUS_PORT:-1420}\" ARGUS_REMOTE_PORT=$((47617 + 2 * (${ARGUS_PORT:-1420} - 1420))) pnpm dev:server",
       "restartOnRerun": true

@@ -38,6 +38,7 @@ release
 # Native build artifacts
 native/argus-sim-bridge/argus-sim-bridge
 native/argus-sim-bridge/.build/
+/.build/
 native/argus-sim-input/argus-sim-input
 native/scrcpy-server/
 native/conductor/
