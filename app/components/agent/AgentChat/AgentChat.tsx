@@ -1,6 +1,5 @@
 import type { SlashCommand } from "../../../lib/types";
 import {
-  Fragment,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -492,6 +491,17 @@ export function AgentChat({
     recheckAtBottom();
     const container = messagesContainerRef.current;
     if (!container) {
+      return;
+    }
+    // Back at the bottom → drop the older pages again, so one trip up a long
+    // history doesn't keep every row mounted for the rest of the session.
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    if (
+      scrollHeight - scrollTop - clientHeight < 40 &&
+      visibleCountRef.current > INITIAL_VISIBLE_MESSAGES
+    ) {
+      setVisibleCount(INITIAL_VISIBLE_MESSAGES);
+
       return;
     }
     // Near the top with older messages still hidden → reveal the next page.
@@ -1048,7 +1058,7 @@ export function AgentChat({
               : segment.message.id;
 
           return (
-            <Fragment key={key}>
+            <div key={key} className={styles.row}>
               {index === firstUnreadSegmentIndex && <UnreadDivider />}
               {segment.type === "collapsed" ? (
                 <CollapsedToolGroup
@@ -1077,7 +1087,7 @@ export function AgentChat({
                   }
                 />
               )}
-            </Fragment>
+            </div>
           );
         })}
 
