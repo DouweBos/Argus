@@ -4,7 +4,7 @@ import SwiftUI
 /// One message: badges, attachments, its text as one selectable TextKit view,
 /// and its tool calls. A call waiting on a decision is drawn in the prompt
 /// area at the bottom instead, so it never shows twice.
-struct TranscriptMessageRow: View {
+struct TranscriptMessageRow: View, Equatable {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
   @Environment(TranscriptModel.self) private var model
@@ -13,6 +13,12 @@ struct TranscriptMessageRow: View {
   let message: RemoteMessage
 
   private var isUser: Bool { message.role == .user }
+
+  /// A stream update rebuilds the transcript; rows whose message didn't change
+  /// skip their body. What they read from the store still invalidates them.
+  nonisolated static func == (a: Self, b: Self) -> Bool {
+    a.agentKey == b.agentKey && a.message == b.message
+  }
 
   private var calls: [RemoteToolCall] {
     message.toolCalls.filter { !host.isToolCallPending(agentKey: agentKey, call: $0) }
@@ -142,7 +148,7 @@ struct TranscriptToolCall: View {
 
 /// A run of tool-only messages folded into one row. Open state lives in the
 /// model so find can open a group that holds the match.
-struct TranscriptToolGroup: View {
+struct TranscriptToolGroup: View, Equatable {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
   @Environment(TranscriptModel.self) private var model
@@ -152,6 +158,10 @@ struct TranscriptToolGroup: View {
   let messages: [RemoteMessage]
 
   private var expanded: Bool { model.expandedGroups.contains(id) }
+
+  nonisolated static func == (a: Self, b: Self) -> Bool {
+    a.agentKey == b.agentKey && a.id == b.id && a.messages == b.messages
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
