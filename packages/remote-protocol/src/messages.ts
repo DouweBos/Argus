@@ -601,6 +601,9 @@ export const MethodResult = {
     model: z.string().nullable().optional(),
     /** Name of the tool currently executing, if any. */
     pending_tool_name: z.string().nullable().optional(),
+    /** Line the page up with `agent.transcript` deltas. Absent on older hosts. */
+    epoch: z.string().optional(),
+    revision: z.number().int().nonnegative().optional(),
   }),
   "agents.image": z.object({
     /** Base64-encoded image bytes (no data-URL prefix). */
@@ -962,6 +965,25 @@ export const EventPayloads = {
   "host.endpoints": z.object({ endpoints: z.array(RemoteEndpoint) }),
   "agent.event": z.object({ agent_id: z.string(), event: z.unknown() }),
   "agent.status": RemoteAgentStatus,
+  /**
+   * What changed in an agent's transcript since `revision - 1`. `messages` are
+   * upserted by id (unknown ids append, in order); `removed_ids` were removed
+   * or are now hidden. The other fields are the current values, small enough
+   * to send whole. A gap in `revision`, or a new `epoch`, means: refetch.
+   */
+  "agent.transcript": z.object({
+    agent_id: z.string(),
+    epoch: z.string(),
+    revision: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    messages: z.array(RemoteMessage),
+    removed_ids: z.array(z.string()),
+    title: z.string().nullable(),
+    model: z.string().nullable(),
+    pending_tool_name: z.string().nullable(),
+    tasks: z.array(RemoteTask).nullable(),
+    todos: z.array(RemoteTodo).nullable(),
+  }),
   "agent.queue": z.object({
     agent_id: z.string(),
     messages: z.array(RemoteQueuedMessage),

@@ -13,7 +13,10 @@ import type { NoiseSession } from "./noise";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
 import type { SimulatorDeviceState } from "../simulator/deviceState";
 import type { H264Config } from "../simulator/h264-parser";
-import type { PlatformRequest } from "@argus/remote-protocol";
+import type {
+  AgentTranscriptDelta,
+  PlatformRequest,
+} from "@argus/remote-protocol";
 import {
   CONNECTION_TYPED_EVENTS,
   ConnectionTypedEventsParams,
@@ -37,6 +40,7 @@ import {
 import { addHostEventSink } from "@argus/host/bus";
 import { log } from "@argus/host/logger";
 import { appState } from "../../state";
+import { liveMeta } from "../agent/conversation/live";
 import { onBrowserFrame } from "../browser/frameForward";
 import {
   forceStopAndroidCapture,
@@ -75,6 +79,7 @@ import {
   say,
   setGuestTyping,
 } from "./huddle";
+import { toRemoteTranscriptDelta } from "./transcript";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -269,6 +274,7 @@ const TYPED_AGENT_KINDS = new Set([
   "permission-resolved",
   "queue",
   "status",
+  "transcript",
 ]);
 
 export class DeviceConnection implements DeviceMediaController {
@@ -988,6 +994,23 @@ export class DeviceConnection implements DeviceMediaController {
           event: args[0],
         });
         break;
+      case "transcript": {
+        const delta = args[0] as AgentTranscriptDelta;
+        const meta = liveMeta(agentId);
+        if (!meta) {
+          break;
+        }
+        this.pushEvent(
+          "agent.transcript",
+          agentId,
+          toRemoteTranscriptDelta(delta, meta),
+        );
+        // The status carries the title lists show.
+        if (delta.meta && "title" in delta.meta) {
+          this.pushAgentStatus(agentId);
+        }
+        break;
+      }
       case "status": {
         const agent = appState.agents.get(agentId);
         if (agent) {

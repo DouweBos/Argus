@@ -10,6 +10,7 @@ import {
   QueuedMessage,
   SavedConversation,
 } from "../models/agents";
+import { AgentTranscriptPage } from "../models/conversation";
 import { ForkChatResult } from "../models/sessions";
 import { type CommandSpec, NoParams, Void } from "./spec";
 
@@ -164,6 +165,18 @@ export const AGENT_COMMANDS = {
     tier: "admin",
     params: AgentId,
     result: QueuedMessage.nullable(),
+  },
+  /**
+   * A page of the conversation the host folds for an agent: the newest, or the
+   * one ending at `before`. Follow it with `agent:transcript:<agentId>` deltas.
+   */
+  get_agent_transcript: {
+    tier: "admin",
+    params: AgentId.extend({
+      before: z.number().int().nonnegative().optional(),
+      limit: z.number().int().positive().max(500).optional(),
+    }),
+    result: AgentTranscriptPage.nullable(),
   },
   /**
    * Cross-window conversation snapshot sharing, so a new popout or a reloaded

@@ -1768,6 +1768,31 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GetAgentTranscriptParams: Codable, Sendable {
+      public var agentId: String
+      public var before: Int?
+      public var limit: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agentId"
+        case before = "before"
+        case limit = "limit"
+      }
+
+      public init(agentId: String, before: Int? = nil, limit: Int? = nil) {
+        self.agentId = agentId
+        self.before = before
+        self.limit = limit
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encodeIfPresent(before, forKey: .before)
+        try c.encodeIfPresent(limit, forKey: .limit)
+      }
+    }
+
     public struct GetCommandMetricsParams: Codable, Sendable {
       public var repoRoot: String
 
@@ -8607,6 +8632,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.GetAgentSnapshotParams
       public typealias Result = String?
       public static let name = "get_agent_snapshot"
+      public static let tier = "admin"
+    }
+
+    public enum GetAgentTranscript: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GetAgentTranscriptParams
+      public typealias Result = ArgusProtocol.AgentTranscriptPage?
+      public static let name = "get_agent_transcript"
       public static let tier = "admin"
     }
 

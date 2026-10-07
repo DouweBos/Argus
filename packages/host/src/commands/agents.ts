@@ -27,6 +27,10 @@ import {
   restoreCheckpoint,
 } from "../services/agent/checkpoints";
 import {
+  liveConversation,
+  livePage,
+} from "../services/agent/conversation/live";
+import {
   dismissLimitResume,
   limitResumeAt,
 } from "../services/agent/limitResume";
@@ -139,7 +143,15 @@ export function registerAgentCommands(): void {
   defineTypedCommand("publish_agent_snapshot", (p) =>
     publishAgentSnapshot(p.agentId, p.snapshot),
   );
-  defineTypedCommand("get_agent_snapshot", (p) => getAgentSnapshot(p.agentId));
+  defineTypedCommand("get_agent_snapshot", (p) => {
+    // Older desktops still hydrate from a snapshot; serialise the live fold for them.
+    const live = liveConversation(p.agentId);
+
+    return live ? JSON.stringify(live) : getAgentSnapshot(p.agentId);
+  });
+  defineTypedCommand("get_agent_transcript", (p) =>
+    livePage(p.agentId, { before: p.before, limit: p.limit }),
+  );
   defineTypedCommand("notify_agent", (p) => {
     showAgentNotification(p.payload, { showLocal: p.showLocal });
   });

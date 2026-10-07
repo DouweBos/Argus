@@ -1,8 +1,13 @@
 import type { AgentConversation } from "./types";
 import type { Session } from "../../session/models";
 import type { AgentSession } from "../models";
+import type { AgentTranscriptDelta } from "@argus/remote-protocol";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { emitHostEvent, resetHostEventSinks } from "@argus/host/bus";
+import {
+  addHostEventSink,
+  emitHostEvent,
+  resetHostEventSinks,
+} from "@argus/host/bus";
 import { appState } from "../../../state";
 import { enqueueMessage } from "../messageQueue";
 
@@ -31,6 +36,7 @@ vi.mock("../../notifications/osNotification", () => ({
 
 const { claimConversations, resetHostConversations, startHostConversations } =
   await import("./hostDriver");
+const { readConversation } = await import("./live");
 
 const AGENT = "agent-1";
 
@@ -67,9 +73,7 @@ function line(event: unknown): void {
 }
 
 function snapshot(): AgentConversation | null {
-  const raw = appState.agentSnapshots.get(AGENT);
-
-  return raw ? (JSON.parse(raw) as AgentConversation) : null;
+  return readConversation(AGENT);
 }
 
 function texts(): string[] {
@@ -185,5 +189,51 @@ describe("host conversation driver", () => {
     await vi.advanceTimersByTimeAsync(100);
 
     expect(texts()).toEqual(["user: from the UI", "assistant: after"]);
+  });
+
+  it("follows the conversation with revisioned deltas", async () => {
+    const deltas: AgentTranscriptDelta[] = [];
+    addAgent();
+    started();
+    addHostEventSink((channel, args) => {
+      if (channel === `agent:transcript:${AGENT}`) {
+        deltas.push(args[0] as AgentTranscriptDelta);
+      }
+    });
+    line(INIT);
+    line(reply("one"));
+    await vi.advanceTimersByTimeAsync(20);
+    line(reply("two"));
+    await vi.advanceTimersByTimeAsync(20);
+
+    expect(deltas.map((d) => d.revision)).toEqual([1, 2]);
+    expect(new Set(deltas.map((d) => d.epoch)).size).toBe(1);
+    expect(deltas[0]?.ops.map((o) => o.op)).toEqual(["append"]);
+    expect(deltas[0]?.meta?.sessionId).toBe("cli-1");
+    expect(deltas[1]?.ops).toMatchObject([{ op: "append", index: 1 }]);
+    expect(deltas[1]?.meta?.sessionId).toBeUndefined();
+    expect(deltas[1]?.total).toBe(2);
+  });
+
+  it("serves the newest page, lined up with the deltas", async () => {
+    const { livePage } = await import("./live");
+    addAgent();
+    started();
+    line(INIT);
+    for (let i = 0; i < 5; i++) {
+      line(reply(`r${i}`));
+    }
+    // Pending, not yet emitted: the page sends it first.
+    const page = livePage(AGENT, { limit: 2 });
+
+    expect(page?.revision).toBe(1);
+    expect(page?.start).toBe(3);
+    expect(page?.total).toBe(5);
+    expect(page?.messages.map((m) => m.textBlocks[0])).toEqual(["r3", "r4"]);
+    expect(
+      livePage(AGENT, { before: 3, limit: 2 })?.messages.map(
+        (m) => m.textBlocks[0],
+      ),
+    ).toEqual(["r1", "r2"]);
   });
 });
