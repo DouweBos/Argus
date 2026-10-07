@@ -11,14 +11,33 @@ final class FakeBackend: HostBackend, @unchecked Sendable {
   private var failing: Set<String> = []
   private var calls: [String] = []
   private var subscriptions: [(String, Bool)] = []
+  private var held: Set<String> = []
+  private var waiters: [String: [CheckedContinuation<Void, Never>]] = [:]
   private let stream: AsyncStream<HostEvent>
   private let continuation: AsyncStream<HostEvent>.Continuation
+  let kind: HostBackendKind
 
-  init() {
+  init(kind: HostBackendKind = .local) {
+    self.kind = kind
     (stream, continuation) = AsyncStream<HostEvent>.makeStream()
   }
 
-  var kind: HostBackendKind { .local }
+  /// Park every call to `method` until `release`.
+  func hold(_ method: RemoteMethod) {
+    lock.withLock { _ = held.insert(method.rawValue) }
+  }
+
+  func release(_ method: RemoteMethod) {
+    let parked = lock.withLock { () -> [CheckedContinuation<Void, Never>] in
+      held.remove(method.rawValue)
+      return waiters.removeValue(forKey: method.rawValue) ?? []
+    }
+    for waiter in parked { waiter.resume() }
+  }
+
+  func count(_ method: RemoteMethod) -> Int {
+    lock.withLock { calls.filter { $0 == method.rawValue }.count }
+  }
 
   func reply(_ method: RemoteMethod, _ json: String) {
     lock.withLock { replies[method.rawValue] = json }
@@ -55,7 +74,19 @@ final class FakeBackend: HostBackend, @unchecked Sendable {
   func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
     _ method: RemoteMethod, _ params: Params, as: Result.Type
   ) async throws -> Result {
-    try answer(method.rawValue, as: Result.self)
+    await waitIfHeld(method.rawValue)
+    return try answer(method.rawValue, as: Result.self)
+  }
+
+  private func waitIfHeld(_ name: String) async {
+    await withCheckedContinuation { continuation in
+      let parked = lock.withLock { () -> Bool in
+        guard held.contains(name) else { return false }
+        waiters[name, default: []].append(continuation)
+        return true
+      }
+      if !parked { continuation.resume() }
+    }
   }
 
   func request<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws -> C.Result {

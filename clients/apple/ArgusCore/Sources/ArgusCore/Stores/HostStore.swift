@@ -114,6 +114,18 @@ public final class HostStore {
   @ObservationIgnored var creatingSessions: [String: RemoteSession] = [:]
   /// Debounces transcript refetches: a burst of agent events becomes one call.
   @ObservationIgnored private var refetchTimers: [String: Task<Void, Never>] = [:]
+  /// Where each held transcript sits among the host's deltas; see `HostStore+TranscriptSync`.
+  @ObservationIgnored var transcriptSync: [String: TranscriptSync] = [:]
+  /// The epoch each held transcript was last paged in; survives a reconnect so
+  /// a restarted host's re-seeded conversation replaces it rather than merging.
+  @ObservationIgnored var heldEpochs: [String: String] = [:]
+  /// Tail fetches in flight per agent; deltas wait in `bufferedDeltas` until they land.
+  @ObservationIgnored var tailFetches: [String: Int] = [:]
+  @ObservationIgnored var bufferedDeltas: [String: [TranscriptDelta]] = [:]
+  /// Agents a delta has arrived for since the last connect: their events need no refetch.
+  @ObservationIgnored var deltaAgents: Set<String> = []
+  /// Agents a view is showing, so a delta that can't be lined up is worth a refetch.
+  @ObservationIgnored var watchedAgents: Set<String> = []
 
   /// Frames arrive far too fast for observable state, and a view registers its
   /// sink only after `devices.watch` returns — so the config message that
@@ -160,6 +172,7 @@ public final class HostStore {
     pump = nil
     for (_, timer) in refetchTimers { timer.cancel() }
     refetchTimers.removeAll()
+    forgetTranscriptSync()
     await backend?.disconnect()
     backend = nil
     connection = .offline
@@ -210,6 +223,9 @@ public final class HostStore {
     lastError = nil
     mediaSinks = [:]
     mediaBuffer = [:]
+    forgetTranscriptSync()
+    heldEpochs = [:]
+    watchedAgents = []
     live = nil
   }
 
@@ -223,6 +239,8 @@ public final class HostStore {
       // Subscriptions belong to a connection; a fresh one starts with none.
       if reconnected, ownsConversations, let live {
         Task { await live.resync() }
+      } else if reconnected {
+        resyncTranscripts()
       }
     case .media(let bytes):
       guard let message = MediaMessage.parse(bytes) else { return }
@@ -250,7 +268,7 @@ public final class HostStore {
       if let live, ownsConversations {
         live.permissionRequested(request)
       } else {
-        scheduleTranscriptRefresh(request.agentId)
+        refreshUnlessFollowing(request.agentId)
       }
 
     case .permissionCancel:
@@ -260,7 +278,7 @@ public final class HostStore {
       if let live, ownsConversations {
         live.permissionCleared(cancel.agentId, toolUseId: cancel.toolUseId)
       } else {
-        scheduleTranscriptRefresh(cancel.agentId)
+        refreshUnlessFollowing(cancel.agentId)
       }
 
     case .agentStatus:
@@ -289,7 +307,14 @@ public final class HostStore {
     case .agentEvent:
       // Never rendered raw — it only tells us the snapshot is stale.
       guard let agentId = envelope.agentId else { return }
-      scheduleTranscriptRefresh(agentId)
+      refreshUnlessFollowing(agentId)
+
+    case .agentTranscript:
+      // The local owner folds its own; the host stands down while it does.
+      guard !ownsConversations,
+        let delta = try? ProtocolCodec.convert(envelope.payload, to: TranscriptDelta.self)
+      else { return }
+      receive(delta)
 
     case .deviceState:
       guard let state = try? ProtocolCodec.convert(
@@ -377,7 +402,7 @@ public final class HostStore {
 
   /// A burst of events becomes one refetch — the snapshot is the truth, the
   /// events only say it moved.
-  private func scheduleTranscriptRefresh(_ agentId: String) {
+  func scheduleTranscriptRefresh(_ agentId: String) {
     refetchTimers[agentId]?.cancel()
     refetchTimers[agentId] = Task { [weak self] in
       try? await Task.sleep(for: .milliseconds(300))

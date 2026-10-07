@@ -154,6 +154,8 @@ public enum RemoteEventName: String, Sendable {
   case hostEndpoints = "host.endpoints"
   case agentStatus = "agent.status"
   case agentEvent = "agent.event"
+  /// A revisioned change to a subscribed agent's folded transcript.
+  case agentTranscript = "agent.transcript"
   case agentQueue = "agent.queue"
   case agentCapabilities = "agent.capabilities"
   case permissionRequest = "permission.request"

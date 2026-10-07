@@ -177,11 +177,23 @@ extension HostStore {
             limit: Self.transcriptPage, before: before),
           as: RemoteTranscript.self)) ?? Self.emptyTranscript
     } else {
+      // A tail page re-establishes where deltas line up; those arriving
+      // meanwhile wait for it.
+      let isTail = before == nil
+      if isTail { tailFetchStarted(key) }
       transcript =
         (try? await backend.request(
           .agentsTranscript,
           LiveParams(agent_id: key, limit: Self.transcriptPage, before: before),
           as: RemoteTranscript.self)) ?? Self.emptyTranscript
+      if isTail {
+        if !isStale(transcript, for: key) {
+          replaceIfNewEpoch(transcript, for: key)
+          merge(transcript, into: key, isOlderPage: false)
+        }
+        tailFetchLanded(key, page: transcript)
+        return
+      }
     }
 
     merge(transcript, into: key, isOlderPage: before != nil)
@@ -327,7 +339,9 @@ extension HostStore {
   public func watchAgent(_ key: String, on: Bool) async {
     // A stopped agent has no live process to subscribe to, and a live-owned
     // one stays subscribed whether or not a view is showing it.
-    guard Self.parseStoppedKey(key) == nil, !ownsConversations, let backend else { return }
+    guard Self.parseStoppedKey(key) == nil else { return }
+    if on { watchedAgents.insert(key) } else { watchedAgents.remove(key) }
+    guard !ownsConversations, let backend else { return }
     await backend.subscribe(agentId: key, on: on)
   }
 
