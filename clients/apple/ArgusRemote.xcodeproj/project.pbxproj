@@ -569,7 +569,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/zsh;
-			shellScript = "# The bundled Node host: runtime, dist-host, node-pty and resources, signed\n# with the identity Xcode signs the app with (scripts/build-mac-host.ts).\nexport PATH=\"$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/local/bin:$PATH\"\ncd \"$SRCROOT/../..\"\npnpm exec tsx scripts/build-mac-host.ts \\\n  --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/host\" \\\n  --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\"\n";
+			shellScript = "# The bundled Node host: runtime, dist-host, node-pty and resources, signed\n# with the identity Xcode signs the app with (scripts/build-mac-host.ts).\nexport PATH=\"$HOME/.local/share/mise/shims:/opt/homebrew/bin:/usr/local/bin:$PATH\"\ncd \"$SRCROOT/../..\"\npnpm exec tsx scripts/build-mac-host.ts \\\n  --out \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/host\" \\\n  --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" \\\n  --app \"$TARGET_BUILD_DIR/$WRAPPER_NAME\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
