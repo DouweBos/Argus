@@ -11,7 +11,12 @@ import Observation
 final class PrereqChecks {
   static let shared = PrereqChecks()
 
-  private(set) var results: [PrereqId: PrereqResult] = [:]
+  private(set) var results: [PrereqId: PrereqResult] = [:] {
+    didSet { verdicts.merge(results.filter { $0.value.status != .running }) { $1 } }
+  }
+  /// The last finished result per check: a re-check keeps showing it until a
+  /// new one lands, so a card doesn't blink out and back while it runs.
+  private(set) var verdicts: [PrereqId: PrereqResult] = [:]
   private(set) var running = false
   private(set) var ran = false
   private(set) var fixing: PrereqId?
@@ -70,5 +75,5 @@ final class PrereqChecks {
     await run(backend, ids: [id], force: true)
   }
 
-  var cards: [SetupChecks.Card] { SetupChecks.cards(results) }
+  var cards: [SetupChecks.Card] { SetupChecks.cards(verdicts) }
 }

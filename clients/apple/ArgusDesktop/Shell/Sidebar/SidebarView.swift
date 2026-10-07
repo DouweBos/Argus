@@ -21,7 +21,7 @@ struct SidebarView: View {
         SidebarLabel("Automations", systemImage: "clock.arrow.circlepath").tag(Self.automationsTag)
         NotificationsSidebarRow().tag(Self.notificationsTag)
       }
-      if projects.isEmpty {
+      if projects.isEmpty, store.projectsLoaded {
         Text("No projects yet").foregroundStyle(.secondary)
       }
       ForEach(projects) { project in

@@ -16,6 +16,12 @@ struct SetupChecksTests {
     #expect(SetupChecks.cards(results).isEmpty)
   }
 
+  @Test func showsNothingWhileChecksAreStillRunning() {
+    let running = Dictionary(uniqueKeysWithValues: SetupChecks.core.map { result($0, .running) })
+    #expect(SetupChecks.cards(running).isEmpty)
+    #expect(SetupChecks.cards([:]).isEmpty)
+  }
+
   @Test func authWaitsOnTheCli() {
     let results = Dictionary(uniqueKeysWithValues: [
       result(.claudeCli, .fail, fixable: true), result(.claudeAuth, .fail), result(.gitCli, .pass),

@@ -15,7 +15,9 @@ struct HomeScreen: View {
       VStack(alignment: .leading, spacing: 24) {
         SetupCards()
         HomeEnvironmentCards()
-        if store.projects.isEmpty {
+        if !store.projectsLoaded {
+          ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
+        } else if store.projects.isEmpty {
           empty
         } else {
           HStack(spacing: 10) {
@@ -207,7 +209,9 @@ private struct HomeAgentsList: View {
     let agents = store.recentAgents.map { store.statusByAgent[$0.agentId] ?? $0 }
       .filter { $0.status != .stopped }
       .sorted { Labels.activityRank($0) < Labels.activityRank($1) }
-    if agents.isEmpty {
+    if !store.recentAgentsLoaded {
+      ProgressView().controlSize(.small)
+    } else if agents.isEmpty {
       Text("No agents running. Start one from a session.").foregroundStyle(theme.textMuted).font(.scaled(.callout))
     } else {
       VStack(alignment: .leading, spacing: 2) {
@@ -239,7 +243,9 @@ private struct HomeDevicesList: View {
 
   var body: some View {
     let devices = store.devices.filter(\.booted)
-    if devices.isEmpty {
+    if !store.devicesLoaded {
+      ProgressView().controlSize(.small)
+    } else if devices.isEmpty {
       Text("No devices online. Boot a simulator or start an agent.").foregroundStyle(theme.textMuted).font(.scaled(.callout))
     } else {
       VStack(alignment: .leading, spacing: 2) {

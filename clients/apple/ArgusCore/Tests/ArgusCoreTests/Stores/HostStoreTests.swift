@@ -178,4 +178,23 @@ struct HostStoreTests {
     backend.emitState(.offline)
     #expect(await eventually { store.connection == .offline })
   }
+
+  @Test("an empty list reads as not loaded until the computer answers")
+  func listsLoaded() async {
+    let store = HostStore()
+    let backend = FakeBackend()
+    await store.attach(backend)
+    await store.refreshProjects()
+    #expect(!store.projectsLoaded)
+
+    backend.reply(.projectsList, #"{"projects":[]}"#)
+    backend.reply(.devicesList, #"{"devices":[]}"#)
+    await store.refreshProjects()
+    await store.refreshDevices()
+    #expect(store.projectsLoaded && store.projects.isEmpty)
+    #expect(store.devicesLoaded)
+
+    store.reset()
+    #expect(!store.projectsLoaded && !store.devicesLoaded)
+  }
 }
