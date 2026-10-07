@@ -1,11 +1,13 @@
-// Build settings the app reads at runtime through Info.plist.
-//
-// A gitignored `Argus.local.xcconfig` beside this file wins, so a contributor
-// can point their own PostHog project at a local build without touching git.
-#include? "Argus.local.xcconfig"
+// Build settings the app reads at runtime through Info.plist, and that the Mac
+// app's host build phase passes on to the Node host (`build-host.mjs`).
 
 // Empty by default: no key means telemetry stays off entirely.
 POSTHOG_KEY =
 // Spelled through `SLASH` because xcconfig reads a literal `//` as a comment.
 SLASH = /
 POSTHOG_HOST = https:$(SLASH)$(SLASH)eu.i.posthog.com
+
+// A gitignored `Argus.local.xcconfig` beside this file wins — included last so
+// its values override the defaults above — so a contributor can point their
+// own PostHog project at a local build without touching git.
+#include? "Argus.local.xcconfig"
