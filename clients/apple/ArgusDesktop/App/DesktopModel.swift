@@ -151,7 +151,12 @@ final class DesktopModel {
     store.beginConnecting()
     await store.attach(router)
     platform.attach(local)
+    // Before telemetry: the consent level is one of the host's preferences.
+    let supplied = await HostPreferences.shared.attach(.local(local))
+    runtime.reloadPersisted()
+    HomeRecents.shared.reload()
     await MacTelemetry.attach(local)
+    if supplied > 0 { MacTelemetry.capture(.prefsSupplied(keys: supplied)) }
     hosts.bind(router)
     watchConnection(local)
   }

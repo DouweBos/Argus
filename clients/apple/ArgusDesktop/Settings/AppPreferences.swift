@@ -3,8 +3,8 @@ import ArgusCore
 import Observation
 import SwiftUI
 
-/// What the desktop keeps in its renderer's localStorage, kept here in
-/// `UserDefaults` under the same keys: this machine's, never the host's.
+/// Appearance and agent defaults. The host keeps them for both desktop apps
+/// (`HostPreferences`); this is the copy views read, in `UserDefaults`.
 @MainActor
 @Observable
 final class AppPreferences {

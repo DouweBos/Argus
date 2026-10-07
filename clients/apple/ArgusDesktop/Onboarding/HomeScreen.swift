@@ -61,13 +61,20 @@ struct HomeScreen: View {
     }
   }
 
-  /// Most recently active first: the newest agent in each project.
+  /// Most recently opened first (in either desktop app), then the newest
+  /// agent in each project.
   private var projects: [RemoteProject] {
+    let recents = HomeRecents.shared
+    func opened(_ project: RemoteProject) -> Double { recents.lastOpened(project.repoRoot) ?? 0 }
     func latest(_ project: RemoteProject) -> Double {
       (store.agentsByRepo[project.repoRoot] ?? []).map { $0.createdAt ?? 0 }.max() ?? 0
     }
-    return store.projects.filter { !HomeRecents.shared.hidden.contains($0.repoRoot) }.enumerated()
-      .sorted { latest($0.element) != latest($1.element) ? latest($0.element) > latest($1.element) : $0.offset < $1.offset }
+    return store.projects.filter { !recents.hidden.contains($0.repoRoot) }.enumerated()
+      .sorted { a, b in
+        if opened(a.element) != opened(b.element) { return opened(a.element) > opened(b.element) }
+        if latest(a.element) != latest(b.element) { return latest(a.element) > latest(b.element) }
+        return a.offset < b.offset
+      }
       .map(\.element)
   }
 

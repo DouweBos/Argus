@@ -7,6 +7,8 @@ import Foundation
 @MainActor
 final class HomeDefaults {
   static let shared = HomeDefaults(file: HostLocation.home.appendingPathComponent("mac-app-state.plist"))
+  /// Posted after any write, so the host's copy can follow (`HostPreferences`).
+  static let didChange = Notification.Name("HomeDefaults.didChange")
 
   /// Keys that used to live in `UserDefaults`; dropped there so a stale value
   /// from another home can't come back.
@@ -28,15 +30,18 @@ final class HomeDefaults {
   func stringArray(forKey key: String) -> [String]? { values[key] as? [String] }
   func dictionary(forKey key: String) -> [String: Any]? { values[key] as? [String: Any] }
   func data(forKey key: String) -> Data? { values[key] as? Data }
+  func array(forKey key: String) -> [Any]? { values[key] as? [Any] }
 
   func set(_ value: Any?, forKey key: String) {
     values[key] = value
     save()
+    NotificationCenter.default.post(name: Self.didChange, object: self)
   }
 
   func removeObject(forKey key: String) {
     guard values.removeValue(forKey: key) != nil else { return }
     save()
+    NotificationCenter.default.post(name: Self.didChange, object: self)
   }
 
   static func dropLegacyKeys(from defaults: UserDefaults = .standard) {

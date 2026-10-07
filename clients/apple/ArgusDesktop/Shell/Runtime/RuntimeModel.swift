@@ -64,7 +64,7 @@ final class RuntimeModel {
     didSet { defaults.set(browserPreset, forKey: Keys.browserPreset) }
   }
 
-  private enum Keys {
+  enum Keys {
     static let platform = "runtime.platform"
     static let ios = "runtime.iosBySession"
     static let android = "runtime.androidBySession"
@@ -79,6 +79,18 @@ final class RuntimeModel {
     iosBySession = defaults.dictionary(forKey: Keys.ios) as? [String: String] ?? [:]
     androidBySession = defaults.dictionary(forKey: Keys.android) as? [String: String] ?? [:]
     browserPreset = defaults.string(forKey: Keys.browserPreset) ?? "desktop"
+  }
+
+  /// Picks up the picks the host handed over on connect.
+  func reloadPersisted() {
+    if let saved = defaults.string(forKey: Keys.platform).flatMap(Platform.init), saved != platform {
+      platform = saved
+    }
+    iosBySession = defaults.dictionary(forKey: Keys.ios) as? [String: String] ?? [:]
+    androidBySession = defaults.dictionary(forKey: Keys.android) as? [String: String] ?? [:]
+    if let preset = defaults.string(forKey: Keys.browserPreset), preset != browserPreset {
+      browserPreset = preset
+    }
   }
 
   private var backend: (any HostBackend)? { store.backend }
