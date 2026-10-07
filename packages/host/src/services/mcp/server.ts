@@ -34,6 +34,7 @@ import {
   ensureWebBrowserForAgent,
   emitMcpSystemMessage,
 } from "../agent/claude";
+import { readConversation } from "../agent/conversation/live";
 import { forgetAutomationSession } from "../automation/ownedSessions";
 import { sendPushNotification } from "../notifications/push";
 import { createSession, deleteSession, listSessions } from "../session/manager";
@@ -1885,8 +1886,21 @@ export function createMcpServer(
         ),
     },
     async ({ agent_id, tail_messages, head_messages, offset, limit }) => {
-      const snapshotJson = appState.agentSnapshots.get(agent_id);
-      if (!snapshotJson) {
+      let conv: { messages?: unknown[]; title?: string } | null;
+      try {
+        conv = readConversation(agent_id);
+      } catch {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Failed to parse transcript snapshot for agent ${agent_id}.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+      if (!conv) {
         const agentSession = appState.agents.get(agent_id);
         if (agentSession) {
           return {
@@ -1907,21 +1921,6 @@ export function createMcpServer(
               text:
                 localAgentHint(agent_id) ??
                 `No transcript available for agent ${agent_id}. The agent has stopped and its in-memory snapshot was released; use \`get_agent_result\` for the final result summary instead.`,
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      let conv: { messages?: unknown[]; title?: string } = {};
-      try {
-        conv = JSON.parse(snapshotJson);
-      } catch {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: `Failed to parse transcript snapshot for agent ${agent_id}.`,
             },
           ],
           isError: true,

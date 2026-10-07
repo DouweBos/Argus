@@ -35,6 +35,13 @@ import {
   notifyPrompt,
 } from "./hostNotifications";
 import {
+  dropLive,
+  flushLive,
+  liveConversation,
+  seedLive,
+  setLive,
+} from "./live";
+import {
   deriveTitle,
   emptyConversation,
   reduceEvent,
@@ -45,23 +52,22 @@ import {
   withUserMessage,
 } from "./reducer";
 
-/** Coalesces a burst of events into one snapshot; clients refetch ~300ms on. */
-const PUBLISH_DELAY_MS = 50;
-/** Disk writes are dearer than snapshots, so they wait longer. */
-const SAVE_DELAY_MS = 500;
+/**
+ * Mid-turn history writes, at most this often: a long chat is megabytes. Turn
+ * ends, exits and stops write at once.
+ */
+const SAVE_INTERVAL_MS = 10_000;
 const AWAITING_ANSWER_GRACE_MS = 750;
 const PERMISSION_RETRY_MS = 50;
 const PERMISSION_RETRIES = 20;
 
 interface Tracked {
-  conversation: AgentConversation;
   sessionId: string;
   parentAgentId: string | null;
   runnerId?: string;
   /** A message went in and no idle came back yet. */
   inflight: boolean;
   finished?: { durationMs: number; failed: boolean };
-  publishTimer?: NodeJS.Timeout;
   saveTimer?: NodeJS.Timeout;
   titleRequested?: boolean;
 }
@@ -130,11 +136,20 @@ export function resetHostConversations(): void {
   owners = 0;
 }
 
+/** Hand every conversation to the UI that claimed them, via its snapshot. */
 function standDown(): void {
   for (const agentId of [...tracked.keys()]) {
-    flush(agentId);
+    save(agentId);
+    publish(agentId);
+    untrack(agentId);
   }
-  tracked.clear();
+}
+
+function untrack(agentId: string): void {
+  const entry = tracked.get(agentId);
+  clearTimeout(entry?.saveTimer);
+  tracked.delete(agentId);
+  dropLive(agentId);
 }
 
 function adoptLiveAgents(): void {
@@ -153,8 +168,8 @@ function track(
   if (existing) {
     return existing;
   }
+  seedLive(agentId, seed(agentId));
   const entry: Tracked = {
-    conversation: seed(agentId),
     sessionId,
     parentAgentId,
     runnerId,
@@ -207,7 +222,8 @@ function route(channel: string, payload: unknown): void {
       break;
     case "exit":
       entry.inflight = false;
-      flush(id);
+      save(id);
+      flushLive(id);
       break;
     case "queue":
       if (appState.agents.get(id)?.status === "idle") {
@@ -278,9 +294,8 @@ function started(info: AgentInfo & { initial_prompt?: string }): void {
     info.runner_id,
   );
   if (info.capabilities) {
-    entry.conversation = withCapabilities(
-      entry.conversation,
-      info.capabilities as unknown as AgentCapabilities,
+    update(info.agent_id, entry, (c) =>
+      withCapabilities(c, info.capabilities as unknown as AgentCapabilities),
     );
   }
   if (info.initial_prompt) {
@@ -289,7 +304,6 @@ function started(info: AgentInfo & { initial_prompt?: string }): void {
     entry.inflight = true;
     maybeGenerateTitle(info.agent_id, entry, info.initial_prompt);
   }
-  publishSoon(info.agent_id, entry);
 }
 
 function streamLine(agentId: string, entry: Tracked, line: string): void {
@@ -322,8 +336,8 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
   }
   if (status === "stopped" || status === "error") {
     entry.inflight = false;
-    flush(agentId);
-    tracked.delete(agentId);
+    save(agentId);
+    untrack(agentId);
 
     return;
   }
@@ -331,6 +345,7 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
     return;
   }
   entry.inflight = false;
+  save(agentId);
   const finished = entry.finished;
   entry.finished = undefined;
   if (trySendNextQueued(agentId, entry)) {
@@ -340,7 +355,7 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
     notifyFinished(
       agentId,
       entry.sessionId,
-      entry.conversation.title,
+      conversationOf(agentId).title,
       finished.durationMs,
       finished.failed,
     );
@@ -357,14 +372,14 @@ function permissionRequested(
     notifyPrompt(
       agentId,
       entry.sessionId,
-      entry.conversation.title,
+      conversationOf(agentId).title,
       request.tool_use_id,
       request.tool_name,
       true,
     );
   }
   const next = withPermissionPending(
-    entry.conversation,
+    conversationOf(agentId),
     request.tool_use_id,
     true,
   );
@@ -393,14 +408,14 @@ function notifyIfStillUnanswered(
     if (!entry) {
       return;
     }
-    const answered = entry.conversation.messages.some((m) =>
+    const answered = conversationOf(agentId).messages.some((m) =>
       m.toolCalls.some((tc) => tc.id === toolUseId && tc.result !== undefined),
     );
     if (!answered) {
       notifyPrompt(
         agentId,
         entry.sessionId,
-        entry.conversation.title,
+        conversationOf(agentId).title,
         toolUseId,
         toolName,
         false,
@@ -509,7 +524,7 @@ function maybeGenerateTitle(
   entry: Tracked,
   firstMessage: string,
 ): void {
-  if (entry.titleRequested || entry.conversation.title) {
+  if (entry.titleRequested || conversationOf(agentId).title) {
     entry.titleRequested = true;
 
     return;
@@ -524,7 +539,7 @@ function maybeGenerateTitle(
       if (
         title &&
         tracked.get(agentId) === entry &&
-        !entry.conversation.title
+        !conversationOf(agentId).title
       ) {
         update(agentId, entry, (c) => ({ ...c, title }));
       }
@@ -534,64 +549,52 @@ function maybeGenerateTitle(
     });
 }
 
+function conversationOf(agentId: string): AgentConversation {
+  return liveConversation(agentId) ?? emptyConversation();
+}
+
 function update(
   agentId: string,
   entry: Tracked,
   fn: (c: AgentConversation) => AgentConversation | null,
 ): void {
-  const next = fn(entry.conversation);
-  if (!next || next === entry.conversation) {
+  const current = liveConversation(agentId);
+  if (!current) {
     return;
   }
-  entry.conversation = next;
-  publishSoon(agentId, entry);
-  if (!entry.saveTimer) {
-    entry.saveTimer = setTimeout(() => {
-      entry.saveTimer = undefined;
-      save(agentId, entry);
-    }, SAVE_DELAY_MS);
-  }
-}
-
-function publishSoon(agentId: string, entry: Tracked): void {
-  if (entry.publishTimer) {
+  const next = fn(current);
+  if (!next || next === current) {
     return;
   }
-  entry.publishTimer = setTimeout(() => {
-    entry.publishTimer = undefined;
-    publish(agentId, entry);
-  }, PUBLISH_DELAY_MS);
+  setLive(agentId, next);
+  entry.saveTimer ??= setTimeout(() => {
+    entry.saveTimer = undefined;
+    save(agentId);
+  }, SAVE_INTERVAL_MS);
 }
 
-function publish(agentId: string, entry: Tracked): void {
-  // A stopped agent's snapshot is gone for good; don't bring it back.
-  if (!appState.agents.has(agentId)) {
+/** Leave the conversation where a UI that claims it next will look. */
+function publish(agentId: string): void {
+  const conv = liveConversation(agentId);
+  if (!conv || !appState.agents.has(agentId)) {
     return;
   }
   try {
-    publishAgentSnapshot(agentId, JSON.stringify(entry.conversation));
+    publishAgentSnapshot(agentId, JSON.stringify(conv));
   } catch (e) {
     warn(`[conversations] snapshot for ${agentId} failed: ${String(e)}`);
   }
 }
 
-/** Write pending state out now. */
-function flush(agentId: string): void {
+/** Upserts by the CLI session id, so repeat saves overwrite one record. */
+function save(agentId: string): void {
   const entry = tracked.get(agentId);
-  if (!entry) {
+  const conv = liveConversation(agentId);
+  if (!entry || !conv) {
     return;
   }
-  clearTimeout(entry.publishTimer);
   clearTimeout(entry.saveTimer);
-  entry.publishTimer = undefined;
   entry.saveTimer = undefined;
-  publish(agentId, entry);
-  save(agentId, entry);
-}
-
-/** Upserts by the CLI session id, so repeat saves overwrite one record. */
-function save(agentId: string, entry: Tracked): void {
-  const conv = entry.conversation;
   const session = appState.sessions.get(entry.sessionId);
   if (!conv.sessionId || conv.messages.length === 0 || !session) {
     return;

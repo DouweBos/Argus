@@ -28,6 +28,7 @@ export * from "../models/shell";
 export * from "../models/git";
 export * from "../models/sessions";
 export * from "../models/agents";
+export * from "../models/conversation";
 export * from "../models/terminals";
 export * from "../models/automations";
 export * from "../models/onboarding";

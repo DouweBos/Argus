@@ -17,6 +17,7 @@ import { Menu, Tray, app, clipboard, nativeImage } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import { isServerMode } from "@argus/host/serverMode";
+import { readConversation } from "@argus/host/services/agent/conversation/live";
 import {
   cancelServerPairing,
   confirmServerPairing,
@@ -118,17 +119,13 @@ function projectName(session: Session): string | null {
 }
 
 function agentLabel(agentId: string): string {
-  const snapshotJson = appState.agentSnapshots.get(agentId);
-  if (snapshotJson) {
-    try {
-      const parsed = JSON.parse(snapshotJson) as { title?: string };
-      const title = parsed.title?.trim();
-      if (title) {
-        return title;
-      }
-    } catch {
-      // fall through
+  try {
+    const title = readConversation(agentId)?.title?.trim();
+    if (title) {
+      return title;
     }
+  } catch {
+    // A corrupt snapshot just goes unlabelled.
   }
 
   return "Agent";

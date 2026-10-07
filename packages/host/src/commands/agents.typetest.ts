@@ -8,6 +8,13 @@ import type {
 } from "../services/agent/chatHistory";
 import type { Checkpoint as HostCheckpoint } from "../services/agent/checkpoints";
 import type {
+  AgentConversation as HostAgentConversation,
+  ConversationMessage as HostConversationMessage,
+  Task as HostTask,
+  TodoItem as HostTodoItem,
+  ToolCallInfo as HostToolCallInfo,
+} from "../services/agent/conversation/types";
+import type {
   QueuedImage as HostQueuedImage,
   QueuedMessage as HostQueuedMessage,
 } from "../services/agent/messageQueue";
@@ -19,6 +26,7 @@ import type { InitializeResponse } from "../services/llm/runners/claudeCode/prot
 import type { AgentNotificationInput as HostAgentNotificationInput } from "../services/notifications/osNotification";
 import type {
   AgentCapabilities,
+  AgentConversationMeta,
   AgentInfo,
   AgentNotificationInput,
   AgentStatusValue,
@@ -26,6 +34,10 @@ import type {
   ChatHistoryMessageMatch,
   ChatHistorySearchResult,
   Checkpoint,
+  ConversationMessage,
+  ConversationTask,
+  ConversationTodo,
+  ConversationToolCall,
   ImageAttachment,
   QueuedImage,
   QueuedMessage,
@@ -45,4 +57,17 @@ export type AgentModelChecks = [
   Expect<Equal<ChatHistoryMessageMatch, HostChatHistoryMessageMatch>>,
   Expect<Equal<ChatHistorySearchResult, HostChatHistorySearchResult>>,
   Expect<Equal<AgentNotificationInput, HostAgentNotificationInput>>,
+];
+
+export type ConversationModelChecks = [
+  Expect<Equal<ConversationMessage, HostConversationMessage>>,
+  Expect<Equal<ConversationToolCall, HostToolCallInfo>>,
+  Expect<Equal<ConversationTodo, HostTodoItem>>,
+  Expect<Equal<ConversationTask, HostTask>>,
+  Expect<
+    Equal<
+      Omit<AgentConversationMeta, "firstUserText" | "runningSubagents">,
+      Omit<HostAgentConversation, "messages">
+    >
+  >,
 ];

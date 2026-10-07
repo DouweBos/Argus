@@ -48,6 +48,63 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AgentTranscriptPayload: Codable, Sendable {
+      public var agentId: String
+      public var epoch: String
+      public var revision: Int
+      public var total: Int
+      public var messages: [RemoteMessage]
+      public var removedIds: [String]
+      public var title: String?
+      public var model: String?
+      public var pendingToolName: String?
+      public var tasks: [RemoteTask]?
+      public var todos: [RemoteTodo]?
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case epoch = "epoch"
+        case revision = "revision"
+        case total = "total"
+        case messages = "messages"
+        case removedIds = "removed_ids"
+        case title = "title"
+        case model = "model"
+        case pendingToolName = "pending_tool_name"
+        case tasks = "tasks"
+        case todos = "todos"
+      }
+
+      public init(agentId: String, epoch: String, revision: Int, total: Int, messages: [RemoteMessage], removedIds: [String], title: String? = nil, model: String? = nil, pendingToolName: String? = nil, tasks: [RemoteTask]? = nil, todos: [RemoteTodo]? = nil) {
+        self.agentId = agentId
+        self.epoch = epoch
+        self.revision = revision
+        self.total = total
+        self.messages = messages
+        self.removedIds = removedIds
+        self.title = title
+        self.model = model
+        self.pendingToolName = pendingToolName
+        self.tasks = tasks
+        self.todos = todos
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(epoch, forKey: .epoch)
+        try c.encode(revision, forKey: .revision)
+        try c.encode(total, forKey: .total)
+        try c.encode(messages, forKey: .messages)
+        try c.encode(removedIds, forKey: .removedIds)
+        try c.encode(title, forKey: .title)
+        try c.encode(model, forKey: .model)
+        try c.encode(pendingToolName, forKey: .pendingToolName)
+        try c.encode(tasks, forKey: .tasks)
+        try c.encode(todos, forKey: .todos)
+      }
+    }
+
     public struct ClaudeAccountsChangedPayload: Codable, Sendable {
       public var accounts: [RemoteClaudeAccount]
       public var activeId: String
@@ -305,6 +362,9 @@ extension ArgusProtocol {
 
     /// `agent.status`
     public typealias AgentStatus = ArgusProtocol.RemoteAgentStatus
+
+    /// `agent.transcript`
+    public typealias AgentTranscript = ArgusProtocol.EventsTypes.AgentTranscriptPayload
 
     /// `claude_accounts.changed`
     public typealias ClaudeAccountsChanged = ArgusProtocol.EventsTypes.ClaudeAccountsChangedPayload

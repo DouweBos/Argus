@@ -95,6 +95,91 @@ extension ArgusProtocol {
     }
   }
 
+  public struct AgentConversationMeta: Codable, Sendable {
+    public var capabilities: AgentCapabilities?
+    public var contextWindow: Double?
+    public var firstUserText: String?
+    public var lastEventType: String?
+    public var model: String?
+    public var pendingToolInput: [String: JSONValue]?
+    public var pendingToolName: String?
+    public var resuming: Bool?
+    public var runningSubagents: Bool?
+    public var sessionId: String?
+    public var slashCommands: [AgentSlashCommand]?
+    public var taskOrder: [String]?
+    public var tasks: [String: ConversationTask]?
+    public var title: String?
+    public var todos: [ConversationTodo]?
+    public var tools: [String]?
+    public var totalCost: Double?
+    public var totalDuration: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case capabilities = "capabilities"
+      case contextWindow = "contextWindow"
+      case firstUserText = "firstUserText"
+      case lastEventType = "lastEventType"
+      case model = "model"
+      case pendingToolInput = "pendingToolInput"
+      case pendingToolName = "pendingToolName"
+      case resuming = "resuming"
+      case runningSubagents = "runningSubagents"
+      case sessionId = "sessionId"
+      case slashCommands = "slashCommands"
+      case taskOrder = "taskOrder"
+      case tasks = "tasks"
+      case title = "title"
+      case todos = "todos"
+      case tools = "tools"
+      case totalCost = "totalCost"
+      case totalDuration = "totalDuration"
+    }
+
+    public init(capabilities: AgentCapabilities? = nil, contextWindow: Double? = nil, firstUserText: String? = nil, lastEventType: String? = nil, model: String? = nil, pendingToolInput: [String: JSONValue]? = nil, pendingToolName: String? = nil, resuming: Bool? = nil, runningSubagents: Bool? = nil, sessionId: String? = nil, slashCommands: [AgentSlashCommand]? = nil, taskOrder: [String]? = nil, tasks: [String: ConversationTask]? = nil, title: String? = nil, todos: [ConversationTodo]? = nil, tools: [String]? = nil, totalCost: Double? = nil, totalDuration: Double? = nil) {
+      self.capabilities = capabilities
+      self.contextWindow = contextWindow
+      self.firstUserText = firstUserText
+      self.lastEventType = lastEventType
+      self.model = model
+      self.pendingToolInput = pendingToolInput
+      self.pendingToolName = pendingToolName
+      self.resuming = resuming
+      self.runningSubagents = runningSubagents
+      self.sessionId = sessionId
+      self.slashCommands = slashCommands
+      self.taskOrder = taskOrder
+      self.tasks = tasks
+      self.title = title
+      self.todos = todos
+      self.tools = tools
+      self.totalCost = totalCost
+      self.totalDuration = totalDuration
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(capabilities, forKey: .capabilities)
+      try c.encodeIfPresent(contextWindow, forKey: .contextWindow)
+      try c.encodeIfPresent(firstUserText, forKey: .firstUserText)
+      try c.encodeIfPresent(lastEventType, forKey: .lastEventType)
+      try c.encodeIfPresent(model, forKey: .model)
+      try c.encodeIfPresent(pendingToolInput, forKey: .pendingToolInput)
+      try c.encodeIfPresent(pendingToolName, forKey: .pendingToolName)
+      try c.encodeIfPresent(resuming, forKey: .resuming)
+      try c.encodeIfPresent(runningSubagents, forKey: .runningSubagents)
+      try c.encodeIfPresent(sessionId, forKey: .sessionId)
+      try c.encodeIfPresent(slashCommands, forKey: .slashCommands)
+      try c.encodeIfPresent(taskOrder, forKey: .taskOrder)
+      try c.encodeIfPresent(tasks, forKey: .tasks)
+      try c.encodeIfPresent(title, forKey: .title)
+      try c.encodeIfPresent(todos, forKey: .todos)
+      try c.encodeIfPresent(tools, forKey: .tools)
+      try c.encodeIfPresent(totalCost, forKey: .totalCost)
+      try c.encodeIfPresent(totalDuration, forKey: .totalDuration)
+    }
+  }
+
   public struct AgentInfo: Codable, Sendable {
     public var agentId: String
     public var capabilities: AgentCapabilities?
@@ -300,6 +385,82 @@ extension ArgusProtocol {
       try c.encode(description, forKey: .description)
       try c.encodeIfPresent(model, forKey: .model)
       try c.encode(name, forKey: .name)
+    }
+  }
+
+  public struct AgentTranscriptDelta: Codable, Sendable {
+    public var agentId: String
+    public var epoch: String
+    public var meta: [String: JSONValue]?
+    public var ops: [AgentTranscriptOp]
+    public var revision: Int
+    public var total: Int
+
+    enum CodingKeys: String, CodingKey {
+      case agentId = "agentId"
+      case epoch = "epoch"
+      case meta = "meta"
+      case ops = "ops"
+      case revision = "revision"
+      case total = "total"
+    }
+
+    public init(agentId: String, epoch: String, meta: [String: JSONValue]? = nil, ops: [AgentTranscriptOp], revision: Int, total: Int) {
+      self.agentId = agentId
+      self.epoch = epoch
+      self.meta = meta
+      self.ops = ops
+      self.revision = revision
+      self.total = total
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(agentId, forKey: .agentId)
+      try c.encode(epoch, forKey: .epoch)
+      try c.encodeIfPresent(meta, forKey: .meta)
+      try c.encode(ops, forKey: .ops)
+      try c.encode(revision, forKey: .revision)
+      try c.encode(total, forKey: .total)
+    }
+  }
+
+  public typealias AgentTranscriptOp = JSONValue
+
+  public struct AgentTranscriptPage: Codable, Sendable {
+    public var epoch: String
+    public var messages: [ConversationMessage]
+    public var meta: AgentConversationMeta
+    public var revision: Int
+    public var start: Int
+    public var total: Int
+
+    enum CodingKeys: String, CodingKey {
+      case epoch = "epoch"
+      case messages = "messages"
+      case meta = "meta"
+      case revision = "revision"
+      case start = "start"
+      case total = "total"
+    }
+
+    public init(epoch: String, messages: [ConversationMessage], meta: AgentConversationMeta, revision: Int, start: Int, total: Int) {
+      self.epoch = epoch
+      self.messages = messages
+      self.meta = meta
+      self.revision = revision
+      self.start = start
+      self.total = total
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(epoch, forKey: .epoch)
+      try c.encode(messages, forKey: .messages)
+      try c.encode(meta, forKey: .meta)
+      try c.encode(revision, forKey: .revision)
+      try c.encode(start, forKey: .start)
+      try c.encode(total, forKey: .total)
     }
   }
 
@@ -2555,6 +2716,475 @@ extension ArgusProtocol {
     }
   }
 
+  public struct ConversationMessageRole: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let assistant = ConversationMessageRole(rawValue: "assistant")
+    public static let system = ConversationMessageRole(rawValue: "system")
+    public static let user = ConversationMessageRole(rawValue: "user")
+  }
+
+  public struct ConversationMessageTone: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let error = ConversationMessageTone(rawValue: "error")
+    public static let warning = ConversationMessageTone(rawValue: "warning")
+  }
+
+  public struct ConversationMessage: Codable, Sendable {
+    public var author: String?
+    public var checkpointId: String?
+    public var id: String
+    public var images: [ImageAttachment]?
+    public var role: ConversationMessageRole
+    public var source: ConversationMessageSource?
+    public var textBlocks: [String]
+    public var timestamp: Double
+    public var tone: ConversationMessageTone?
+    public var toolCalls: [ConversationToolCall]
+    public var usage: ConversationTokenUsage?
+
+    enum CodingKeys: String, CodingKey {
+      case author = "author"
+      case checkpointId = "checkpointId"
+      case id = "id"
+      case images = "images"
+      case role = "role"
+      case source = "source"
+      case textBlocks = "textBlocks"
+      case timestamp = "timestamp"
+      case tone = "tone"
+      case toolCalls = "toolCalls"
+      case usage = "usage"
+    }
+
+    public init(author: String? = nil, checkpointId: String? = nil, id: String, images: [ImageAttachment]? = nil, role: ConversationMessageRole, source: ConversationMessageSource? = nil, textBlocks: [String], timestamp: Double, tone: ConversationMessageTone? = nil, toolCalls: [ConversationToolCall], usage: ConversationTokenUsage? = nil) {
+      self.author = author
+      self.checkpointId = checkpointId
+      self.id = id
+      self.images = images
+      self.role = role
+      self.source = source
+      self.textBlocks = textBlocks
+      self.timestamp = timestamp
+      self.tone = tone
+      self.toolCalls = toolCalls
+      self.usage = usage
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(author, forKey: .author)
+      try c.encodeIfPresent(checkpointId, forKey: .checkpointId)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(images, forKey: .images)
+      try c.encode(role, forKey: .role)
+      try c.encodeIfPresent(source, forKey: .source)
+      try c.encode(textBlocks, forKey: .textBlocks)
+      try c.encode(timestamp, forKey: .timestamp)
+      try c.encodeIfPresent(tone, forKey: .tone)
+      try c.encode(toolCalls, forKey: .toolCalls)
+      try c.encodeIfPresent(usage, forKey: .usage)
+    }
+  }
+
+  public struct ConversationMessageSourceTool: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let createSession = ConversationMessageSourceTool(rawValue: "create_session")
+    public static let sendAgentMessage = ConversationMessageSourceTool(rawValue: "send_agent_message")
+    public static let spawnAgent = ConversationMessageSourceTool(rawValue: "spawn_agent")
+    public static let spawnAgentsBatch = ConversationMessageSourceTool(rawValue: "spawn_agents_batch")
+  }
+
+  public struct ConversationMessageSource: Codable, Sendable {
+    public var kind: String
+    public var parentAgentId: String?
+    public var parentLabel: String?
+    public var tool: ConversationMessageSourceTool
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case parentAgentId = "parentAgentId"
+      case parentLabel = "parentLabel"
+      case tool = "tool"
+    }
+
+    public init(kind: String, parentAgentId: String? = nil, parentLabel: String? = nil, tool: ConversationMessageSourceTool) {
+      self.kind = kind
+      self.parentAgentId = parentAgentId
+      self.parentLabel = parentLabel
+      self.tool = tool
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encodeIfPresent(parentAgentId, forKey: .parentAgentId)
+      try c.encodeIfPresent(parentLabel, forKey: .parentLabel)
+      try c.encode(tool, forKey: .tool)
+    }
+  }
+
+  public struct ConversationTaskStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let completed = ConversationTaskStatus(rawValue: "completed")
+    public static let inProgress = ConversationTaskStatus(rawValue: "in_progress")
+    public static let pending = ConversationTaskStatus(rawValue: "pending")
+  }
+
+  public struct ConversationTask: Codable, Sendable {
+    public var activeForm: String?
+    public var blockedBy: [String]?
+    public var blocks: [String]?
+    public var description: String?
+    public var id: String
+    public var metadata: [String: JSONValue]?
+    public var owner: String?
+    public var status: ConversationTaskStatus
+    public var subject: String
+
+    enum CodingKeys: String, CodingKey {
+      case activeForm = "activeForm"
+      case blockedBy = "blockedBy"
+      case blocks = "blocks"
+      case description = "description"
+      case id = "id"
+      case metadata = "metadata"
+      case owner = "owner"
+      case status = "status"
+      case subject = "subject"
+    }
+
+    public init(activeForm: String? = nil, blockedBy: [String]? = nil, blocks: [String]? = nil, description: String? = nil, id: String, metadata: [String: JSONValue]? = nil, owner: String? = nil, status: ConversationTaskStatus, subject: String) {
+      self.activeForm = activeForm
+      self.blockedBy = blockedBy
+      self.blocks = blocks
+      self.description = description
+      self.id = id
+      self.metadata = metadata
+      self.owner = owner
+      self.status = status
+      self.subject = subject
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(activeForm, forKey: .activeForm)
+      try c.encodeIfPresent(blockedBy, forKey: .blockedBy)
+      try c.encodeIfPresent(blocks, forKey: .blocks)
+      try c.encodeIfPresent(description, forKey: .description)
+      try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(metadata, forKey: .metadata)
+      try c.encodeIfPresent(owner, forKey: .owner)
+      try c.encode(status, forKey: .status)
+      try c.encode(subject, forKey: .subject)
+    }
+  }
+
+  public struct ConversationTodoStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let completed = ConversationTodoStatus(rawValue: "completed")
+    public static let inProgress = ConversationTodoStatus(rawValue: "in_progress")
+    public static let pending = ConversationTodoStatus(rawValue: "pending")
+  }
+
+  public struct ConversationTodo: Codable, Sendable {
+    public var activeForm: String?
+    public var content: String
+    public var status: ConversationTodoStatus
+
+    enum CodingKeys: String, CodingKey {
+      case activeForm = "activeForm"
+      case content = "content"
+      case status = "status"
+    }
+
+    public init(activeForm: String? = nil, content: String, status: ConversationTodoStatus) {
+      self.activeForm = activeForm
+      self.content = content
+      self.status = status
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(activeForm, forKey: .activeForm)
+      try c.encode(content, forKey: .content)
+      try c.encode(status, forKey: .status)
+    }
+  }
+
+  public struct ConversationTokenUsage: Codable, Sendable {
+    public var cacheCreationInputTokens: Double?
+    public var cacheReadInputTokens: Double?
+    public var inputTokens: Double
+    public var outputTokens: Double
+
+    enum CodingKeys: String, CodingKey {
+      case cacheCreationInputTokens = "cache_creation_input_tokens"
+      case cacheReadInputTokens = "cache_read_input_tokens"
+      case inputTokens = "input_tokens"
+      case outputTokens = "output_tokens"
+    }
+
+    public init(cacheCreationInputTokens: Double? = nil, cacheReadInputTokens: Double? = nil, inputTokens: Double, outputTokens: Double) {
+      self.cacheCreationInputTokens = cacheCreationInputTokens
+      self.cacheReadInputTokens = cacheReadInputTokens
+      self.inputTokens = inputTokens
+      self.outputTokens = outputTokens
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(cacheCreationInputTokens, forKey: .cacheCreationInputTokens)
+      try c.encodeIfPresent(cacheReadInputTokens, forKey: .cacheReadInputTokens)
+      try c.encode(inputTokens, forKey: .inputTokens)
+      try c.encode(outputTokens, forKey: .outputTokens)
+    }
+  }
+
+  public struct ConversationToolCall: Codable, Sendable {
+    public var children: [ConversationToolCallChild]?
+    public var id: String
+    public var input: [String: JSONValue]
+    public var isError: Bool?
+    public var name: String
+    public var pendingPermission: Bool?
+    public var result: JSONValue?
+
+    enum CodingKeys: String, CodingKey {
+      case children = "children"
+      case id = "id"
+      case input = "input"
+      case isError = "isError"
+      case name = "name"
+      case pendingPermission = "pendingPermission"
+      case result = "result"
+    }
+
+    public init(children: [ConversationToolCallChild]? = nil, id: String, input: [String: JSONValue], isError: Bool? = nil, name: String, pendingPermission: Bool? = nil, result: JSONValue? = nil) {
+      self.children = children
+      self.id = id
+      self.input = input
+      self.isError = isError
+      self.name = name
+      self.pendingPermission = pendingPermission
+      self.result = result
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(children, forKey: .children)
+      try c.encode(id, forKey: .id)
+      try c.encode(input, forKey: .input)
+      try c.encodeIfPresent(isError, forKey: .isError)
+      try c.encode(name, forKey: .name)
+      try c.encodeIfPresent(pendingPermission, forKey: .pendingPermission)
+      try c.encodeIfPresent(result, forKey: .result)
+    }
+  }
+
+  public struct ConversationToolCallChildText: Codable, Sendable {
+    public var kind: String
+    public var text: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case text = "text"
+    }
+
+    public init(kind: String, text: String) {
+      self.kind = kind
+      self.text = text
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(text, forKey: .text)
+    }
+  }
+
+  public struct ConversationToolCallChildToolUse: Codable, Sendable {
+    public var kind: String
+    public var toolCall: ConversationToolCall
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case toolCall = "toolCall"
+    }
+
+    public init(kind: String, toolCall: ConversationToolCall) {
+      self.kind = kind
+      self.toolCall = toolCall
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(toolCall, forKey: .toolCall)
+    }
+  }
+
+  public enum ConversationToolCallChild: Codable, Sendable {
+    case text(ConversationToolCallChildText)
+    case toolUse(ConversationToolCallChildToolUse)
+    case unknown(JSONValue)
+
+    private enum Tag: String, CodingKey { case tag = "kind" }
+
+    public init(from decoder: Decoder) throws {
+      let tag = try decoder.container(keyedBy: Tag.self).decodeIfPresent(String.self, forKey: .tag)
+      switch tag {
+      case "text": self = .text(try ConversationToolCallChildText(from: decoder))
+      case "tool_use": self = .toolUse(try ConversationToolCallChildToolUse(from: decoder))
+      default: self = .unknown(try JSONValue(from: decoder))
+      }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      switch self {
+      case .text(let value): try value.encode(to: encoder)
+      case .toolUse(let value): try value.encode(to: encoder)
+      case .unknown(let value): try value.encode(to: encoder)
+      }
+    }
+  }
+
+  public struct ConversationToolResultBlockImageSource: Codable, Sendable {
+    public var data: String
+    public var mediaType: String
+    public var type: String
+
+    enum CodingKeys: String, CodingKey {
+      case data = "data"
+      case mediaType = "media_type"
+      case type = "type"
+    }
+
+    public init(data: String, mediaType: String, type: String) {
+      self.data = data
+      self.mediaType = mediaType
+      self.type = type
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(data, forKey: .data)
+      try c.encode(mediaType, forKey: .mediaType)
+      try c.encode(type, forKey: .type)
+    }
+  }
+
+  public struct ConversationToolResultBlockImage: Codable, Sendable {
+    public var source: ConversationToolResultBlockImageSource
+    public var type: String
+
+    enum CodingKeys: String, CodingKey {
+      case source = "source"
+      case type = "type"
+    }
+
+    public init(source: ConversationToolResultBlockImageSource, type: String) {
+      self.source = source
+      self.type = type
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(source, forKey: .source)
+      try c.encode(type, forKey: .type)
+    }
+  }
+
+  public struct ConversationToolResultBlockText: Codable, Sendable {
+    public var text: String
+    public var type: String
+
+    enum CodingKeys: String, CodingKey {
+      case text = "text"
+      case type = "type"
+    }
+
+    public init(text: String, type: String) {
+      self.text = text
+      self.type = type
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(text, forKey: .text)
+      try c.encode(type, forKey: .type)
+    }
+  }
+
+  public enum ConversationToolResultBlock: Codable, Sendable {
+    case image(ConversationToolResultBlockImage)
+    case text(ConversationToolResultBlockText)
+    case unknown(JSONValue)
+
+    private enum Tag: String, CodingKey { case tag = "type" }
+
+    public init(from decoder: Decoder) throws {
+      let tag = try decoder.container(keyedBy: Tag.self).decodeIfPresent(String.self, forKey: .tag)
+      switch tag {
+      case "image": self = .image(try ConversationToolResultBlockImage(from: decoder))
+      case "text": self = .text(try ConversationToolResultBlockText(from: decoder))
+      default: self = .unknown(try JSONValue(from: decoder))
+      }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      switch self {
+      case .image(let value): try value.encode(to: encoder)
+      case .text(let value): try value.encode(to: encoder)
+      case .unknown(let value): try value.encode(to: encoder)
+      }
+    }
+  }
+
   public struct CreateAutomationInputScope: Codable, Sendable {
     public var repoRoots: [String]
 
@@ -3408,6 +4038,7 @@ extension ArgusProtocol {
 
     public static let agentEvent = EventEnvelopeEvent(rawValue: "agent.event")
     public static let agentStatus = EventEnvelopeEvent(rawValue: "agent.status")
+    public static let agentTranscript = EventEnvelopeEvent(rawValue: "agent.transcript")
     public static let agentQueue = EventEnvelopeEvent(rawValue: "agent.queue")
     public static let agentCapabilities = EventEnvelopeEvent(rawValue: "agent.capabilities")
     public static let permissionRequest = EventEnvelopeEvent(rawValue: "permission.request")

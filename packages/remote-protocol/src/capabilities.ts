@@ -321,6 +321,8 @@ export function isRemoteMethod(value: string): value is RemoteMethod {
 export const REMOTE_EVENTS = [
   "agent.event",
   "agent.status",
+  /** The agent's transcript changed: messages upserted/removed, revisioned. */
+  "agent.transcript",
   /** The agent's queued messages changed (from any client). */
   "agent.queue",
   /** Models/commands/subagents became available (post-CLI-handshake). */
