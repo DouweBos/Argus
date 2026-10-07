@@ -1,4 +1,7 @@
 import type { Session, WorkspaceEnvConfig } from "../session/models";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { addHostEventSink } from "@argus/host/bus";
 import { appState } from "../../state";
@@ -7,6 +10,7 @@ import {
   defaultShell,
   commandShell,
   setupShellCommand,
+  setupShell,
   createTerminal,
   destroyTerminal,
   terminalScrollback,
@@ -170,6 +174,59 @@ describe("setupShellCommand", () => {
   it("blanks the prompt so it can't be mistaken for command output", () => {
     expect(setupShellCommand()).toContain("PS1=");
   });
+});
+
+describe("setupShell", () => {
+  const SESSION_ID = "session-setup-shell";
+  const saved = { HOME: process.env.HOME, SHELL: process.env.SHELL };
+  let home: string;
+
+  beforeEach(() => {
+    // An rc that reads the terminal, as oh-my-zsh's update prompt does.
+    home = fs.mkdtempSync(path.join(os.tmpdir(), "argus-setup-shell-"));
+    fs.writeFileSync(path.join(home, ".bash_profile"), "read -r -n 1 answer\n");
+    process.env.HOME = home;
+    process.env.SHELL = "/bin/bash";
+    appState.sessions.set(SESSION_ID, {
+      id: SESSION_ID,
+      kind: "project_root",
+      path: home,
+      repo_root: home,
+    } as Session);
+  });
+
+  afterEach(() => {
+    for (const id of appState.terminals.keys()) {
+      destroyTerminal(id);
+    }
+    process.env.HOME = saved.HOME;
+    process.env.SHELL = saved.SHELL;
+    appState.sessions.clear();
+    appState.terminals.clear();
+    fs.rmSync(home, { recursive: true, force: true });
+  });
+
+  it.skipIf(!fs.existsSync("/bin/bash"))(
+    "keeps rc files from swallowing the first command written to it",
+    async () => {
+      const id = createTerminal(SESSION_ID, undefined, setupShell());
+      const pty = appState.terminals.get(id)!.pty;
+      let output = "";
+      const done = new Promise<string>((resolve) => {
+        pty.onData((data) => {
+          output += data;
+          const match = /__DONE__:(\d+)/.exec(output);
+          if (match) {
+            resolve(match[1]);
+          }
+        });
+      });
+      pty.write(`echo "ok-$((1 + 1))"; printf '\\n__DONE__:%s\\n' "$?"\n`);
+
+      await expect(done).resolves.toBe("0");
+      expect(output).toContain("ok-2");
+    },
+  );
 });
 
 describe("terminal events on the broadcast bus", () => {

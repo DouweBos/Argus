@@ -25,7 +25,7 @@ import { capture as telemetryCapture } from "../telemetry/telemetry";
 import {
   createTerminal,
   SETUP_TERMINAL_TITLE,
-  setupShellCommand,
+  setupShell,
 } from "../terminal/multiplexer";
 import {
   applyBranchPrefix,
@@ -793,13 +793,13 @@ async function finalizeSession(
     // version-manager shims (mise, asdf, rbenv, nvm) aren't on PATH and setup
     // commands fall back to the system Ruby/Node/etc. It then hands off to a
     // line-editor-free shell so the commands the pipeline writes arrive
-    // verbatim; see setupShellCommand().
+    // verbatim; see setupShell().
     let setupTerminalId: string | null = null;
     try {
       setupTerminalId = createTerminal(
         id,
         undefined,
-        setupShellCommand(),
+        setupShell(),
         SETUP_TERMINAL_TITLE,
       );
       const t = appState.terminals.get(setupTerminalId);

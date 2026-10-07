@@ -14,11 +14,14 @@ import { promisify } from "node:util";
 import { emitHostEvent } from "@argus/host/bus";
 import { info } from "@argus/host/logger";
 import { appState } from "../../state";
+import { loginShellEnv, writeExportScript } from "../terminal/loginEnv";
 import {
   createTerminal,
+  defaultShell,
   SETUP_TERMINAL_TITLE,
-  setupShellCommand,
+  setupShell,
   stripAnsi,
+  terminalEnv,
   writeTerminalOutput,
 } from "../terminal/multiplexer";
 import { type ArgusConfig, setupEntryExcludes, setupEntryPath } from "./models";
@@ -129,7 +132,7 @@ export async function runSetupPipeline(
     terminalId = createTerminal(
       sessionId,
       undefined,
-      setupShellCommand(),
+      setupShell(),
       SETUP_TERMINAL_TITLE,
     );
   }
@@ -138,6 +141,14 @@ export async function runSetupPipeline(
     throw `Failed to create setup terminal for session ${sessionId}`;
   }
   const setupPty = terminal.pty;
+
+  // The setup shell loads no rc files (see `setupShell`); the login shell's
+  // environment is resolved off the terminal while files copy, then sourced.
+  const session = appState.sessions.get(sessionId);
+  const loginEnv =
+    session && config.setup.commands.length > 0
+      ? loginShellEnv(defaultShell(), terminalEnv(session), worktreePath)
+      : Promise.resolve(null);
 
   // Fire the setup-terminal event so listeners registered via the realtime
   // path (not via the synchronous create_session response) still attach a tab.
@@ -422,6 +433,19 @@ export async function runSetupPipeline(
     // the terminal's data channel, so nothing to re-emit here. If a command
     // prompts for input, the user can type into the visible tab and unblock it.
     info("Setup pipeline: starting commands phase");
+    const env = await loginEnv;
+    if (env) {
+      const script = writeExportScript(env);
+      try {
+        await runInPty(`. '${script}'`);
+      } finally {
+        fs.rmSync(path.dirname(script), { recursive: true, force: true });
+      }
+    } else if (config.setup.commands.length > 0) {
+      info(
+        "Setup pipeline: login shell environment unavailable, running commands with the host's",
+      );
+    }
     for (const cmdStr of config.setup.commands) {
       idx += 1;
       info(`Setup pipeline: running command [${idx}/${total}] ${cmdStr}`);
