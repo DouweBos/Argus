@@ -13,34 +13,14 @@ struct SessionView: View {
       ?? store.scratchPads.first { $0.id == sessionId } ?? store.adoptedSessions[sessionId]
   }
 
-  /// Live agents first — they appear the moment the host starts them — with
-  /// the host's last status laid over for title and attention.
+  /// The host's agents in this session, oldest first, each with the latest
+  /// status (and title) it announced laid over the listed one.
   private var agents: [RemoteAgentStatus] {
     guard let session else { return [] }
-    let listed = (store.agentsByRepo[session.repoRoot] ?? []).filter { $0.sessionId == sessionId }
-    guard let live = store.live else {
-      return listed.sorted { ($0.createdAt ?? 0) < ($1.createdAt ?? 0) }
-    }
-    return live.agents(inSession: sessionId).compactMap { agent in
-      guard
-        var status = store.statusByAgent[agent.id] ?? listed.first(where: { $0.agentId == agent.id })
-          ?? Self.placeholder(agentId: agent.id, sessionId: sessionId)
-      else { return nil }
-      status.status = agent.status
-      status.title = live.conversation(for: agent.id)?.title ?? status.title
-      // Spawned before any list mentioned it: only the live agent knows its parent.
-      status.parentAgentId = status.parentAgentId ?? agent.parentAgentId
-      return status
-    }
-  }
-
-  /// An agent the host hasn't described yet; the wire type has no public init.
-  private static func placeholder(agentId: String, sessionId: String) -> RemoteAgentStatus? {
-    try? ProtocolCodec.convert(
-      .object([
-        "agent_id": .string(agentId), "session_id": .string(sessionId),
-        "status": .string("running"),
-      ]), to: RemoteAgentStatus.self)
+    return (store.agentsByRepo[session.repoRoot] ?? [])
+      .filter { $0.sessionId == sessionId }
+      .map { store.statusByAgent[$0.agentId] ?? $0 }
+      .sorted { ($0.createdAt ?? 0) < ($1.createdAt ?? 0) }
   }
 
   private func startAgent() { startAgent(mode: nil) }
@@ -82,10 +62,7 @@ struct SessionView: View {
       let next = rest.isEmpty ? nil : rest[min(max(index - 1, 0), rest.count - 1)].agentId
       model.navigate(.session(id: sessionId, agentId: next))
     }
-    Task {
-      await store.stopAgent(agentId: agentId)
-      await store.live?.forget(agentId)
-    }
+    Task { await store.stopAgent(agentId: agentId) }
   }
 
   /// The routed agent, else the first — a session always shows something.
@@ -114,7 +91,7 @@ struct SessionView: View {
             GitScreen(session: session, view: gitView)
           } else {
             SessionSetupView(
-              session: session, progress: store.live?.setupProgress(sessionId: sessionId) ?? session.progress)
+              session: session, progress: session.progress)
           }
         } else {
           agentsPane
@@ -183,7 +160,7 @@ struct SessionView: View {
       Divider()
       if let session, session.status != .ready {
         SessionSetupView(
-          session: session, progress: store.live?.setupProgress(sessionId: sessionId) ?? session.progress)
+          session: session, progress: session.progress)
       } else if let agentId = focusedAgentId {
         AgentPane(agentId: agentId, sessionId: sessionId)
           .id(agentId)
@@ -252,14 +229,12 @@ struct AgentTabBar: View {
     return parents.values.reduce(into: [:]) { counts, parent in counts[parent, default: 0] += 1 }
   }
 
-  /// A Task/Agent call still without a result: a subagent is at work, even
-  /// when the CLI reports its parent idle.
+  /// A Task/Agent call still running in the loaded transcript: a subagent is
+  /// at work, even when the CLI reports its parent idle.
   private func subagentsRunning(_ agentId: String) -> Bool {
-    store.live?.conversation(for: agentId)?.messages.contains { message in
-      message.toolCalls.contains {
-        ($0.name == "Task" || $0.name == "Agent") && $0.result == nil && $0.pendingPermission != true
-      }
-    } ?? false
+    (store.messagesByAgent[agentId] ?? []).contains { message in
+      message.toolCalls.contains { ($0.name == "Task" || $0.name == "Agent") && $0.status == .running }
+    }
   }
 }
 
@@ -363,7 +338,7 @@ struct AgentPane: View {
 /// A session still being set up (or torn down), or one whose setup failed.
 struct SessionSetupView: View {
   let session: RemoteSession
-  /// The live `session:progress`, which runs ahead of the listed session.
+  /// The listed session's progress, refreshed on each `session:progress`.
   let progress: RemoteSessionProgress?
 
   var body: some View {

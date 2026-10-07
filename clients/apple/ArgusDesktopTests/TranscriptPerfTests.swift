@@ -8,83 +8,110 @@ import Testing
 
 @testable import Argus
 
-/// A long saved chat, decoded, reduced and laid out the way the Mac shows a
-/// resumed agent, then resized like a sidebar drag. Opt-in: point
-/// `ARGUS_TRANSCRIPT_PERF` (via `TEST_RUNNER_ARGUS_TRANSCRIPT_PERF`) at a saved
-/// conversation JSON; timings go to stdout and `<file>.perf.json`.
+/// A long chat laid out the way the Mac shows an agent, then resized like a
+/// sidebar drag. Opt-in, two paths, timings to stdout and `<file>.perf.json`:
+///
+/// - `ARGUS_TRANSCRIPT_PAGE` (via `TEST_RUNNER_…`): an `agents.transcript`
+///   tail page, opened through the store the way the app opens an agent, then
+///   streamed into with `agent.transcript` deltas.
+/// - `ARGUS_TRANSCRIPT_PERF`: a saved conversation. The rows the app used to
+///   fold from it are gone with the reducer, so the whole chat is the page's
+///   rows repeated to the saved count — what holding every row costs.
 @MainActor
-@Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["ARGUS_TRANSCRIPT_PERF"] != nil))
+@Suite(
+  .serialized,
+  .enabled(if: ProcessInfo.processInfo.environment["ARGUS_TRANSCRIPT_PAGE"] != nil))
 struct TranscriptPerfTests {
-  private var path: String { ProcessInfo.processInfo.environment["ARGUS_TRANSCRIPT_PERF"] ?? "" }
+  private var pagePath: String { ProcessInfo.processInfo.environment["ARGUS_TRANSCRIPT_PAGE"] ?? "" }
+  private var savedPath: String? { ProcessInfo.processInfo.environment["ARGUS_TRANSCRIPT_PERF"] }
 
-  @Test func longSavedChat() async throws {
+  @Test func longChat() async throws {
     var report: [String: Any] = [:]
-    let data = try Data(contentsOf: URL(fileURLWithPath: path))
+    let pageData = try Data(contentsOf: URL(fileURLWithPath: pagePath))
+    report["page"] = try await openViaPage(pageData)
+
+    if let savedPath {
+      let data = try Data(contentsOf: URL(fileURLWithPath: savedPath))
+      var start = CACurrentMediaTime()
+      let saved = try JSONDecoder().decode(ArgusProtocol.SavedConversation.self, from: data)
+      report["decode_saved_ms"] = ms(since: start)
+      let page = try ProtocolCodec.decoder.decode(RemoteTranscript.self, from: pageData)
+      start = CACurrentMediaTime()
+      let messages = Self.tiled(page.messages, to: saved.messages.count)
+      report["tile_rows_ms"] = ms(since: start)
+      report["messages"] = messages.count
+      report["full"] = try await fullChat(messages)
+    }
+
+    let out = (savedPath ?? pagePath) + ".perf.json"
+    let json = try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
+    try json.write(to: URL(fileURLWithPath: out))
+    print("[transcript-perf] \(String(decoding: json, as: UTF8.self))")
+  }
+
+  /// The viewer path: fetch and merge the tail page, lay it out, drag, then
+  /// apply streamed deltas to its last message.
+  private func openViaPage(_ data: Data) async throws -> [String: Any] {
+    var report: [String: Any] = [:]
+    let backend = PageBackend(page: data)
+    let store = HostStore()
+    await store.attach(backend)
 
     var start = CACurrentMediaTime()
-    let saved = try JSONDecoder().decode(ArgusProtocol.SavedConversation.self, from: data)
-    report["decode_saved_ms"] = ms(since: start)
-
-    start = CACurrentMediaTime()
-    let source = LiveAgents.messages(of: saved)
-    report["to_conversation_ms"] = ms(since: start)
-
-    start = CACurrentMediaTime()
-    var reducer = ConversationReducer(conversation: nil, environment: .live)
-    reducer.loadSavedMessages(source, model: saved.model, sessionId: saved.sessionId, resuming: true)
-    report["reduce_ms"] = ms(since: start)
-
-    start = CACurrentMediaTime()
-    let messages = try RemoteTranscriptBuilder.messages(try #require(reducer.conversation))
-    report["project_rows_ms"] = ms(since: start)
+    await store.loadTranscript(agentId: Self.agent)
+    report["open_page_ms"] = ms(since: start)
+    let messages = store.messagesByAgent[Self.agent] ?? []
     report["messages"] = messages.count
+    #expect(messages.count > 0)
 
-    // What `LiveAgents.project` does per event: every row checked against its cached source.
-    let copy = reducer.conversation?.messages ?? []
-    start = CACurrentMediaTime()
-    let unchanged = zip(source, copy).allSatisfy { $0 == $1 }
-    report["project_cache_check_ms"] = ms(since: start)
-    #expect(unchanged)
-
-    // What every debounced save of a live agent encodes: the snapshot, then
-    // the history's messages through `[JSONValue]`, then that request.
-    let conversation = try #require(reducer.conversation)
-    start = CACurrentMediaTime()
-    _ = try JSONEncoder().encode(conversation)
-    report["save_snapshot_ms"] = ms(since: start)
-    start = CACurrentMediaTime()
-    let history = try JSONDecoder().decode([JSONValue].self, from: JSONEncoder().encode(conversation.messages))
-    _ = try JSONEncoder().encode(history)
-    report["save_history_ms"] = ms(since: start)
-
-    let store = HostStore()
-    let hosting = NSHostingView(rootView: Self.root(messages, store: store))
-    let window = NSWindow(
-      contentRect: NSRect(x: -6000, y: -6000, width: 900, height: 800), styleMask: [.borderless],
-      backing: .buffered, defer: false)
-    window.contentView = hosting
-    window.orderFrontRegardless()
+    let (window, hosting) = Self.window(Self.root(nil, store: store))
     defer { window.orderOut(nil) }
-
     start = CACurrentMediaTime()
     pass(window)
     report["first_layout_ms"] = ms(since: start)
-    // Let the landing scroll and lazy measuring settle before the drag.
-    for _ in 0..<20 {
+    try await settle(window)
+    report["resize_at_tail"] = drag(window)
+    _ = hosting
+
+    let page = try ProtocolCodec.decoder.decode(RemoteTranscript.self, from: data)
+    var last = try #require(messages.last)
+    var revision = page.revision ?? 0
+    var updates: [Double] = []
+    for index in 0..<30 {
+      last.textBlocks.append("token \(index) ")
+      revision += 1
+      let frame = try Self.deltaFrame(last, epoch: page.epoch ?? "", revision: revision, total: page.total ?? 0)
+      start = CACurrentMediaTime()
+      backend.push(try ProtocolCodec.decoder.decode(EventEnvelope.self, from: frame))
+      while store.messagesByAgent[Self.agent]?.last != last { await Task.yield() }
       pass(window)
-      try await Task.sleep(for: .milliseconds(20))
+      updates.append(ms(since: start))
     }
+    report["stream_update"] = Self.stats(updates)
+    return report
+  }
+
+  /// The whole chat held as rows: what opening it used to lay out.
+  private func fullChat(_ messages: [RemoteMessage]) async throws -> [String: Any] {
+    var report: [String: Any] = [:]
+    let store = HostStore()
+    let (window, hosting) = Self.window(Self.root(messages, store: store))
+    defer { window.orderOut(nil) }
+
+    var start = CACurrentMediaTime()
+    pass(window)
+    report["first_layout_ms"] = ms(since: start)
+    try await settle(window)
 
     let scrollView = try #require(Self.scrollViews(in: hosting).max {
       ($0.documentView?.frame.height ?? 0) < ($1.documentView?.frame.height ?? 0)
     })
     report["settled_at"] = Self.position(scrollView)
     report["resize_at_tail"] = drag(window)
-
     report["after_drag_at"] = Self.position(scrollView)
 
-    // Read back through the whole history, the way the reader who hit the freeze had.
-    // Trackpad gestures, so the view sees the reader leave the tail.
+    // Read back through the whole history with trackpad gestures, so the view
+    // sees the reader leave the tail.
     var scrollSteps: [Double] = []
     var stalled = 0
     Self.wheel(scrollView, phase: .began, delta: 0)
@@ -109,17 +136,13 @@ struct TranscriptPerfTests {
     report["scroll_to_top"] = Self.stats(scrollSteps)
     report["content_height_at_top"] = scrollView.documentView?.frame.height ?? 0
     report["resize_at_top"] = drag(window)
-    report["after_top_drag_at"] = Self.position(scrollView)
 
     // Streamed text growing the last message, back at the tail.
     let clip = scrollView.contentView
     let flipped = scrollView.documentView?.isFlipped ?? true
     clip.scroll(to: NSPoint(x: 0, y: flipped ? (scrollView.documentView?.frame.height ?? 0) : 0))
     scrollView.reflectScrolledClipView(clip)
-    for _ in 0..<10 {
-      pass(window)
-      try await Task.sleep(for: .milliseconds(20))
-    }
+    try await settle(window, passes: 10)
     var updates: [Double] = []
     var streamed = messages
     for index in 0..<30 {
@@ -130,19 +153,58 @@ struct TranscriptPerfTests {
       updates.append(ms(since: start))
     }
     report["stream_update"] = Self.stats(updates)
+    return report
+  }
 
-    let json = try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
-    try json.write(to: URL(fileURLWithPath: path + ".perf.json"))
-    print("[transcript-perf] \(String(decoding: json, as: UTF8.self))")
-    #expect(messages.count > 0)
+  private static let agent = "perf"
+
+  /// The page's rows repeated with fresh ids up to `count`.
+  private static func tiled(_ rows: [RemoteMessage], to count: Int) -> [RemoteMessage] {
+    guard !rows.isEmpty else { return [] }
+    return (0..<count).map { index in
+      var row = rows[(rows.count - count % rows.count + index) % rows.count]
+      row.id = "\(row.id)-\(index)"
+      return row
+    }
+  }
+
+  /// An `agent.transcript` frame upserting one message.
+  private static func deltaFrame(
+    _ message: RemoteMessage, epoch: String, revision: Int, total: Int
+  ) throws -> Data {
+    let encoded = try ProtocolCodec.encoder.encode(message)
+    let payload =
+      #"{"agent_id":"\#(agent)","epoch":"\#(epoch)","revision":\#(revision),"total":\#(total),"#
+      + #""messages":["# + String(decoding: encoded, as: UTF8.self)
+      + #"],"removed_ids":[],"title":null,"model":null,"pending_tool_name":null,"tasks":null,"todos":null}"#
+    return Data(#"{"seq":\#(revision),"event":"agent.transcript","agent_id":"\#(agent)","payload":\#(payload)}"#.utf8)
+  }
+
+  private static func window(_ root: some View) -> (NSWindow, NSHostingView<AnyView>) {
+    let hosting = NSHostingView(rootView: AnyView(root))
+    let window = NSWindow(
+      contentRect: NSRect(x: -6000, y: -6000, width: 900, height: 800), styleMask: [.borderless],
+      backing: .buffered, defer: false)
+    window.contentView = hosting
+    window.orderFrontRegardless()
+    return (window, hosting)
+  }
+
+  /// Let the landing scroll and lazy measuring settle.
+  private func settle(_ window: NSWindow, passes: Int = 20) async throws {
+    for _ in 0..<passes {
+      pass(window)
+      try await Task.sleep(for: .milliseconds(20))
+    }
   }
 
   private static let viewer = ImageViewerState()
 
-  private static func root(_ messages: [RemoteMessage], store: HostStore) -> some View {
-    TranscriptView(agentKey: "perf", sessionId: "perf", fixture: messages)
-      .environment(store)
-      .environment(viewer)
+  private static func root(_ messages: [RemoteMessage]?, store: HostStore) -> AnyView {
+    AnyView(
+      TranscriptView(agentKey: agent, sessionId: "perf", fixture: messages)
+        .environment(store)
+        .environment(viewer))
   }
 
   /// A sidebar drag: 900pt down to 560pt and back in 10pt steps.
@@ -206,4 +268,39 @@ struct TranscriptPerfTests {
   private func ms(since start: CFTimeInterval) -> Double {
     ((CACurrentMediaTime() - start) * 10_000).rounded() / 10
   }
+}
+
+/// Answers `agents.transcript` with the fixture page and pushes the test's
+/// events; everything else fails, as an empty host would.
+private final class PageBackend: HostBackend, @unchecked Sendable {
+  struct Unavailable: Error {}
+
+  let kind = HostBackendKind.gateway
+  private let page: Data
+  private let stream: AsyncStream<HostEvent>
+  private let continuation: AsyncStream<HostEvent>.Continuation
+
+  init(page: Data) {
+    self.page = page
+    (stream, continuation) = AsyncStream<HostEvent>.makeStream()
+  }
+
+  func push(_ envelope: EventEnvelope) { continuation.yield(.event(envelope)) }
+
+  func events() async -> AsyncStream<HostEvent> { stream }
+
+  func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
+    _ method: RemoteMethod, _ params: Params, as: Result.Type
+  ) async throws -> Result {
+    guard method == .agentsTranscript else { throw Unavailable() }
+    return try ProtocolCodec.decoder.decode(Result.self, from: page)
+  }
+
+  func request<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws -> C.Result {
+    throw Unavailable()
+  }
+
+  func subscribe(agentId: String, on: Bool) async {}
+
+  func disconnect() async { continuation.finish() }
 }

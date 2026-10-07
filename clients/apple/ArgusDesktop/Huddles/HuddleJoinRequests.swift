@@ -40,7 +40,7 @@ struct HuddleJoinRequests: View {
   }
 
   private func title(guest: ArgusProtocol.HuddleGuestModel, agentId: String) -> String {
-    let agentTitle = (store.live?.conversation(for: agentId)?.title ?? store.statusByAgent[agentId]?.title)?
+    let agentTitle = store.statusByAgent[agentId]?.title?
       .trimmingCharacters(in: .whitespaces)
     guard let agentTitle, !agentTitle.isEmpty else { return "\(guest.label) wants to join" }
     return "\(guest.label) wants to join “\(agentTitle)”"

@@ -6,7 +6,7 @@ import Foundation
 /// Only a local backend receives them.
 extension HostStore {
   /// Called with every channel, its arguments and the envelope's `seq` until
-  /// the returned closure runs. Fires before the live layer consumes the event.
+  /// the returned closure runs.
   public func observeIpc(
     _ handler: @escaping @MainActor (_ channel: String, _ args: [JSONValue], _ seq: Int) -> Void
   ) -> () -> Void {
@@ -23,4 +23,10 @@ extension HostStore {
     else { return }
     for handler in ipcObservers.values { handler(ipc.channel, ipc.args ?? [], envelope.seq) }
   }
+}
+
+/// The raw broadcast a console connection receives as an `ipc` event.
+struct IpcPayload: Decodable {
+  let channel: String
+  let args: [JSONValue]?
 }

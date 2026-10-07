@@ -99,16 +99,6 @@ public final class HostStore {
   public private(set) var backend: (any HostBackend)?
   @ObservationIgnored public var hooks: HostStoreHooks
 
-  /// The conversation owner when the backend is local: transcripts are built
-  /// here from live events instead of fetched. Nil for a gateway.
-  public internal(set) var live: LiveAgents?
-  @ObservationIgnored public var liveTiming = LiveAgents.Timing()
-  /// The name to stamp on this machine's own sends to a shared agent, nil
-  /// outside a huddle (the desktop's `huddleAuthor`). Queued sends get it from
-  /// the host, which knows the room.
-  @ObservationIgnored public var huddleAuthor: (@MainActor (String) -> String?)?
-  @ObservationIgnored var liveEnvironment = ConversationEnvironment.live
-
   @ObservationIgnored private var pump: Task<Void, Never>?
   /// Sessions created here that the host doesn't list yet (still setting up).
   @ObservationIgnored var creatingSessions: [String: RemoteSession] = [:]
@@ -162,7 +152,7 @@ public final class HostStore {
         await self?.handle(event)
       }
     }
-    attachLive(backend)
+    followAgents()
   }
 
   /// Drop the backend. Data stays until `reset()`, so a reconnect to the same
@@ -226,7 +216,6 @@ public final class HostStore {
     forgetTranscriptSync()
     heldEpochs = [:]
     watchedAgents = []
-    live = nil
   }
 
   // MARK: Events
@@ -237,10 +226,9 @@ public final class HostStore {
       let reconnected = state == .ready && connection != .ready
       connection = state
       // Subscriptions belong to a connection; a fresh one starts with none.
-      if reconnected, ownsConversations, let live {
-        Task { await live.resync() }
-      } else if reconnected {
+      if reconnected {
         resyncTranscripts()
+        followAgents()
       }
     case .media(let bytes):
       guard let message = MediaMessage.parse(bytes) else { return }
@@ -253,7 +241,6 @@ public final class HostStore {
   func handle(_ envelope: EventEnvelope) {
     guard let name = RemoteEventName(rawValue: envelope.event) else { return }
     if name == .ipc { notifyIpcObservers(envelope) }
-    if handleLive(name, envelope) { return }
     switch name {
     case .hostEndpoints:
       struct Payload: Decodable { let endpoints: [RemoteEndpoint] }
@@ -265,27 +252,18 @@ public final class HostStore {
       guard let request = try? ProtocolCodec.convert(
         envelope.payload, to: RemotePermissionRequest.self) else { return }
       prompts[promptKey(request.agentId, request.toolUseId)] = request
-      if let live, ownsConversations {
-        live.permissionRequested(request)
-      } else {
-        refreshUnlessFollowing(request.agentId)
-      }
+      refreshUnlessFollowing(request.agentId)
 
     case .permissionCancel:
       guard let cancel = try? ProtocolCodec.convert(
         envelope.payload, to: RemotePermissionCancel.self) else { return }
       prompts.removeValue(forKey: promptKey(cancel.agentId, cancel.toolUseId))
-      if let live, ownsConversations {
-        live.permissionCleared(cancel.agentId, toolUseId: cancel.toolUseId)
-      } else {
-        refreshUnlessFollowing(cancel.agentId)
-      }
+      refreshUnlessFollowing(cancel.agentId)
 
     case .agentStatus:
       guard let status = try? ProtocolCodec.convert(
         envelope.payload, to: RemoteAgentStatus.self) else { return }
       apply(status)
-      if ownsConversations { live?.statusChanged(status) }
 
     case .agentQueue:
       struct Payload: Decodable {
@@ -295,7 +273,6 @@ public final class HostStore {
       guard let payload = try? ProtocolCodec.convert(envelope.payload, to: Payload.self)
       else { return }
       queuedByAgent[payload.agent_id] = payload.messages
-      if ownsConversations { live?.queueChanged(payload.agent_id) }
 
     case .agentCapabilities:
       guard let agentId = envelope.agentId,
@@ -310,9 +287,7 @@ public final class HostStore {
       refreshUnlessFollowing(agentId)
 
     case .agentTranscript:
-      // The local owner folds its own; the host stands down while it does.
-      guard !ownsConversations,
-        let delta = try? ProtocolCodec.convert(envelope.payload, to: TranscriptDelta.self)
+      guard let delta = try? ProtocolCodec.convert(envelope.payload, to: TranscriptDelta.self)
       else { return }
       receive(delta)
 
@@ -372,8 +347,8 @@ public final class HostStore {
       terminalObservers[payload.terminal_id]?(.exit(payload.exit_code), envelope.seq)
 
     case .ipc:
-      // Raw broadcasts reach admin devices only; a local one is handled above.
-      break
+      // Raw broadcasts reach admin devices only.
+      handleRawBroadcast(envelope.payload)
     }
   }
 

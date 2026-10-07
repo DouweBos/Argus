@@ -334,6 +334,12 @@ struct TranscriptView: View {
       links = TranscriptLinkHandler(store: host, sessionId: sessionId)
     }
     guard fixture == nil else { return }
+    // A saved chat has no queue, subscription or anything left to catch up on.
+    if HostStore.parseStoppedKey(agentKey) != nil {
+      await host.loadTranscript(agentId: agentKey)
+      if !landed, messages.isEmpty { landed = true }
+      return
+    }
     await host.loadQueue(agentId: agentKey)
     await links?.load()
     // Events emitted before our subscription registered are lost; one

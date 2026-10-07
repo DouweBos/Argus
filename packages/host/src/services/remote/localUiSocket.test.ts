@@ -287,15 +287,16 @@ describe("local UI socket", () => {
     expect(platform.isForeground()).toBe(false);
   });
 
-  it("leaves conversations to the Mac app while it is attached", async () => {
+  it("keeps conversations while the Mac app is attached", async () => {
     startHostConversations();
     try {
       expect(hostOwnsConversations()).toBe(true);
       const client = await connectClient(socketPath);
       await client.request("ui.state", { foreground: false });
-      expect(hostOwnsConversations()).toBe(false);
+      expect(hostOwnsConversations()).toBe(true);
       client.socket.destroy();
-      await vi.waitFor(() => expect(hostOwnsConversations()).toBe(true));
+      await vi.waitFor(() => expect(server.channel.attached).toBe(false));
+      expect(hostOwnsConversations()).toBe(true);
     } finally {
       stopHostConversations();
     }
