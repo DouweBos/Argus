@@ -210,13 +210,14 @@ function attach(socket: net.Socket, channel: LocalUiChannel): void {
   conn.setBufferedProbe(() => socket.writableLength);
   channel.add(conn);
 
-  // Frames are handled in arrival order; `onFrame` is async only for requests.
-  let chain = Promise.resolve();
+  // `onFrame` reads, sequences and subscribes synchronously, so frames still
+  // land in arrival order; only request handlers run concurrently, as on the
+  // gateway — one slow command must not hold up every request behind it.
   socket.on(
     "data",
     frameReader(
       (frame) => {
-        chain = chain.then(() => conn.onFrame(frame)).catch(() => undefined);
+        conn.onFrame(frame).catch(() => undefined);
       },
       () => socket.destroy(),
     ),

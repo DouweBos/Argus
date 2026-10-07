@@ -40,6 +40,7 @@ const { hostOwnsConversations, startHostConversations, stopHostConversations } =
   await import("../agent/conversation/hostDriver");
 const { onConnectionClose } = await import("./connectionScope");
 const connectionClosed = vi.fn();
+let releaseSlow: ((value: unknown) => void) | null = null;
 
 type Envelope = Record<string, unknown>;
 
@@ -98,6 +99,13 @@ describe("local UI socket", () => {
       tier: "admin",
       handler: () => ({ admin: true }),
     });
+    defineCommand("local_ui_slow_cmd", {
+      tier: "admin",
+      handler: () =>
+        new Promise((resolve) => {
+          releaseSlow = resolve;
+        }),
+    });
     defineCommand("local_ui_scoped_cmd", {
       tier: "admin",
       handler: () => {
@@ -155,6 +163,18 @@ describe("local UI socket", () => {
     expect((await client.request("local_ui_admin_cmd")).ok).toEqual({
       admin: true,
     });
+    client.socket.destroy();
+  });
+
+  it("answers a quick request while a slow one is still running", async () => {
+    const client = await connectClient(socketPath);
+    const slow = client.request("local_ui_slow_cmd");
+    await vi.waitFor(() => expect(releaseSlow).not.toBeNull());
+    expect((await client.request("local_ui_admin_cmd")).ok).toEqual({
+      admin: true,
+    });
+    releaseSlow?.({ slow: true });
+    expect((await slow).ok).toEqual({ slow: true });
     client.socket.destroy();
   });
 
