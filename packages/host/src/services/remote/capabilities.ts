@@ -481,7 +481,7 @@ function sessionProjectName(sessionId: string): string | undefined {
   return repoRoot ? (repoRoot.split("/").pop() ?? repoRoot) : undefined;
 }
 
-/** The agent's generated conversation title, read from its published snapshot. */
+/** The agent's generated conversation title. */
 function agentTitle(agentId: string): string | null {
   try {
     const title = readConversation(agentId)?.title;
@@ -495,7 +495,7 @@ function agentTitle(agentId: string): string | null {
 /**
  * What an agent is blocked on the user for. Permission prompts are tracked
  * host-side; questions and plan approvals never raise one in auto-approving
- * modes, so those come from the unresolved tool call in the snapshot.
+ * modes, so those come from the unresolved tool call in the transcript.
  */
 function agentAwaiting(agentId: string): RemoteAgentStatus["awaiting"] {
   const pending = appState.agentPendingPermissions.get(agentId);
@@ -521,7 +521,7 @@ function agentAwaiting(agentId: string): RemoteAgentStatus["awaiting"] {
       }
     }
   } catch {
-    // Corrupt snapshot — treat as nothing pending.
+    // A malformed conversation — treat as nothing pending.
   }
 
   return null;
@@ -581,13 +581,8 @@ export function toRemoteAgentCapabilities(
 }
 
 /** An agent's conversation, or throw a gateway error. */
-function parseSnapshot(agentId: string): RawConversation {
-  let conv: RawConversation | null;
-  try {
-    conv = readConversation(agentId) as RawConversation | null;
-  } catch {
-    throw new GatewayError("internal", "corrupt transcript snapshot");
-  }
+function liveTranscript(agentId: string): RawConversation {
+  const conv = readConversation(agentId) as RawConversation | null;
   if (!conv) {
     throw new GatewayError("not_found", `no transcript for ${agentId}`);
   }
@@ -596,7 +591,7 @@ function parseSnapshot(agentId: string): RawConversation {
 }
 
 /**
- * Read a stopped agent's conversation back off disk. Its live snapshot is gone
+ * Read a stopped agent's conversation back off disk. Its live one is gone
  * the moment the agent is torn down, so saved chat history is the only record.
  */
 function loadStoppedConversation(
@@ -846,7 +841,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     // The cursor first: reading it sends any pending delta, so the page and
     // the deltas that follow it line up.
     const cursor = liveCursor(agent_id);
-    const conv = parseSnapshot(agent_id);
+    const conv = liveTranscript(agent_id);
 
     return {
       ...transcriptPage(conv, { after, before, limit }),
@@ -860,7 +855,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
   "agents.image": async (params) => {
     const { agent_id, image_id } = parse("agents.image", params);
-    const conv = parseSnapshot(agent_id);
+    const conv = liveTranscript(agent_id);
     const found = findImage(conv, image_id);
     if (!found) {
       throw new GatewayError("not_found", `no image ${image_id}`);
@@ -1126,11 +1121,10 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         runner_id,
       ),
     );
-    // Announce the agent exactly like the start_agent IPC does — the
-    // conversation owner (a UI, or the host itself) listens for this to track
-    // the agent and publish the transcript snapshots the remote monitor reads.
-    // Without it the agent is a backend-only "ghost": never shown on the
-    // desktop and producing no snapshot for us to read back.
+    // Announce the agent exactly like the start_agent IPC does — the host's
+    // conversation driver and every client listen for this. Without it the
+    // agent is a backend-only "ghost": never shown on the desktop and with no
+    // transcript for us to read back.
     emitHostEvent("agent:started", info);
     const agent = appState.agents.get(info.agent_id);
     if (!agent) {

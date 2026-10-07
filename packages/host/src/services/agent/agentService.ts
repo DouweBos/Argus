@@ -35,6 +35,7 @@ import type {
   BrowserSession,
   SimulatorReservation,
 } from "../../state";
+import type { ConversationMessage } from "./conversation/types";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
 import type { LlmRunner, PermissionPreHook } from "../llm/runners/types";
 import type { RuntimePlatform, SessionKind } from "../session/models";
@@ -80,6 +81,8 @@ import {
   contextWindowFromModelUsage,
   rememberContextWindow,
 } from "./contextWindow";
+import { stageConversation, takeStagedConversation } from "./conversation/live";
+import { fromSavedMessages } from "./conversation/reducer";
 import {
   cancelLimitResume,
   forgetLimitResume,
@@ -218,11 +221,11 @@ export async function checkClaudeCli(): Promise<string> {
 const DEFAULT_AGENT_PERMISSION_MODE = "auto";
 
 /**
- * Publish a saved conversation as the new agent's transcript snapshot, so a
- * resumed agent shows the turns it is actually resuming from. No-op when
- * nothing was saved for that runner session.
+ * Start a resumed agent's conversation from its saved history, so it shows
+ * the turns it is actually resuming from. No-op when nothing was saved for
+ * that runner session.
  */
-function seedResumedSnapshot(
+function seedResumedConversation(
   agentId: string,
   repoRoot: string,
   runnerSessionId: string,
@@ -232,19 +235,17 @@ function seedResumedSnapshot(
     if (!saved || saved.messages.length === 0) {
       return;
     }
-    appState.agentSnapshots.set(
-      agentId,
-      JSON.stringify({
-        messages: saved.messages,
+    stageConversation(agentId, {
+      ...fromSavedMessages(saved.messages as ConversationMessage[], {
         model: saved.model,
         sessionId: runnerSessionId,
-        // Tells the UI to drop the turn the CLI replays on --resume.
+        // Drops the turn the CLI replays on --resume.
         resuming: true,
         title: saved.title,
-        totalCost: saved.totalCost,
-        totalDuration: saved.totalDuration,
       }),
-    );
+      totalCost: saved.totalCost,
+      totalDuration: saved.totalDuration,
+    });
   } catch (e) {
     warn(`[agent:${agentId}] failed to seed resumed transcript: ${String(e)}`);
   }
@@ -563,13 +564,12 @@ export async function startAgent(
   };
   appState.agents.set(agentId, agentSession);
 
-  // A resume spawn inherits a finished conversation, but the transcript lives
-  // in renderer state — seed the shared snapshot from saved history so remote
-  // clients (and the desktop, via `agent:started`) hydrate the prior turns
-  // instead of opening an empty chat. Restore-at-turn is excluded: its agent
-  // already holds a deliberately truncated transcript.
+  // A resume spawn inherits a finished conversation: start it from saved
+  // history so every client shows the prior turns instead of an empty chat.
+  // Restore-at-turn is excluded: its agent already holds a deliberately
+  // truncated transcript.
   if (resumeSessionId && !reuseAgentId) {
-    seedResumedSnapshot(agentId, argusSession.repo_root, resumeSessionId);
+    seedResumedConversation(agentId, argusSession.repo_root, resumeSessionId);
   }
 
   const eventChannel = `agent:event:${agentId}`;
@@ -1121,7 +1121,7 @@ export async function stopAgent(agentId: string): Promise<void> {
   await webBrowserPool.releaseBrowser(agentId);
 
   appState.agents.delete(agentId);
-  appState.agentSnapshots.delete(agentId);
+  takeStagedConversation(agentId);
   appState.agentPendingPermissions.delete(agentId);
   clearQueue(agentId);
   forgetLimitResume(agentId);
@@ -1154,7 +1154,6 @@ export async function destroyAllAgents(): Promise<void> {
     }),
   );
   appState.agents.clear();
-  appState.agentSnapshots.clear();
 }
 
 // ---------------------------------------------------------------------------

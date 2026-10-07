@@ -239,15 +239,15 @@ export const AGENT_COMMANDS = {
   /** Empty the transcript; the CLI keeps its context. */
   clear_agent_transcript: { tier: "admin", params: AgentId, result: Void },
   /**
-   * Cross-window conversation snapshot sharing, so a new popout or a reloaded
-   * window can hydrate an agent without waiting for its next event. An empty
-   * snapshot drops the stored one.
+   * Older desktops published the conversations they folded. Accepted and
+   * ignored: the host folds every conversation itself.
    */
   publish_agent_snapshot: {
     tier: "admin",
     params: AgentId.extend({ snapshot: z.string().nullish() }),
     result: Void,
   },
+  /** The conversation as one JSON document, for desktops older than `get_agent_transcript`. */
   get_agent_snapshot: {
     tier: "admin",
     params: AgentId,

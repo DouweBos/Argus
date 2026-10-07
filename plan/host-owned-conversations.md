@@ -207,3 +207,31 @@ tool outputs. Before/after, the same harness:
 - renderer memory with the chat loaded
 - time to open a long chat (renderer and Mac)
 - Mac transcript layout across window widths (resize)
+
+## Outcome (2026-10-07)
+
+Done as planned; every step landed in its own commit. Measured with
+`longChatFixture` (4,000 messages, 40 MB of history, tool outputs up to
+120 KB), `app/lib/conversationPerf.test.ts` and `TranscriptPerfTests`:
+
+| Measure                               | Before                                     | After                                         |
+| ------------------------------------- | ------------------------------------------ | --------------------------------------------- |
+| Desktop: work per streamed event      | 4.0 ms p50 (fold + republish + rescans)    | 0.01 ms p50 to apply; host 0.03 ms to diff    |
+| Desktop: IPC per update               | 40.6 MB snapshot (every 500 ms)            | 6.3 KB delta                                  |
+| Desktop: heap holding the open chat   | 122 MB                                     | 0.9 MB (one page)                             |
+| Desktop: open a chat (popout, reload) | 24 ms parse of a 40 MB snapshot            | 0.8 ms for a 0.9 MB page                      |
+| Phone/web: host work per update       | 33 ms reparse of the snapshot, then a page | < 0.01 ms to map the delta, once for everyone |
+| Mac: open a long chat                 | ≈ 960 ms (decode, convert, build rows)     | 3.7 ms page + 30 ms first layout              |
+| Mac: stream update                    | 18.4 ms p50                                | 8.8 ms p50                                    |
+| Mac: resize at the tail (68 steps)    | 6.3 ms p50, 28 ms max                      | 5.5 ms p50, 28 ms max                         |
+| Mac: save per debounce                | 112 ms snapshot + 560 ms history           | none (the host saves)                         |
+| Host: history writes while streaming  | whole file every 500 ms                    | at most every 10 s, plus turn end             |
+
+Resize was already windowed before this work, so it barely moves. Before
+numbers for the desktop measure each republish; the renderer debounced those
+to one per 500 ms, so its real per-second cost was ~8 ms of serialising and a
+40 MB IPC copy twice a second.
+
+Not done here: the Electron renderer still receives tool-result images inline
+in deltas (the phone's lazy `agents.image` refs are untouched); rewind, fork,
+rename and clear are desktop-only host commands, not yet on the gateway.

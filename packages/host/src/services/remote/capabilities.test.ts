@@ -1,5 +1,6 @@
 import type { GatewayContext } from "./capabilities";
 import type { PairedDevice } from "./deviceStore";
+import type { AgentConversation } from "../agent/conversation/types";
 import { MethodResult } from "@argus/remote-protocol";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,7 +8,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../state", () => ({
   appState: {
     agents: new Map(),
-    agentSnapshots: new Map<string, string>(),
     agentPendingPermissions: new Map(),
     sessions: new Map(),
   },
@@ -39,6 +39,10 @@ vi.mock("../session/manager", () => ({
 
 const { appState } = await import("../../state");
 const { dispatch } = await import("./capabilities");
+const { resetLive, seedLive } = await import("../agent/conversation/live");
+
+/** Loose fixtures: the mapping reads whatever a folded conversation holds. */
+const asConversation = (conv: unknown) => conv as AgentConversation;
 
 const device: PairedDevice = {
   device_id: "dev-1",
@@ -138,7 +142,7 @@ describe("agent status attention", () => {
   beforeEach(() => {
     appState.agents.clear();
     appState.agents.set("a1", AGENT as never);
-    appState.agentSnapshots.clear();
+    resetLive();
     appState.agentPendingPermissions.clear();
   });
 
@@ -173,9 +177,9 @@ describe("agent status attention", () => {
   });
 
   it("flags an unanswered question even with no permission prompt", async () => {
-    appState.agentSnapshots.set(
+    seedLive(
       "a1",
-      JSON.stringify({
+      asConversation({
         messages: [
           {
             id: "m1",
@@ -189,9 +193,9 @@ describe("agent status attention", () => {
   });
 
   it("flags a plan waiting for approval", async () => {
-    appState.agentSnapshots.set(
+    seedLive(
       "a1",
-      JSON.stringify({
+      asConversation({
         messages: [
           {
             id: "m1",
@@ -205,9 +209,9 @@ describe("agent status attention", () => {
   });
 
   it("ignores a tool that is merely still running", async () => {
-    appState.agentSnapshots.set(
+    seedLive(
       "a1",
-      JSON.stringify({
+      asConversation({
         messages: [
           {
             id: "m1",
@@ -221,9 +225,9 @@ describe("agent status attention", () => {
   });
 
   it("clears once the question has an answer", async () => {
-    appState.agentSnapshots.set(
+    seedLive(
       "a1",
-      JSON.stringify({
+      asConversation({
         messages: [
           {
             id: "m1",
@@ -241,8 +245,8 @@ describe("agent status attention", () => {
 
 describe("gateway transcript mapping", () => {
   beforeEach(() => {
-    appState.agentSnapshots.clear();
-    appState.agentSnapshots.set("a1", JSON.stringify(SNAPSHOT));
+    resetLive();
+    seedLive("a1", asConversation(SNAPSHOT));
   });
 
   it("preserves structure, diffs, children, blocks and mints image ids", async () => {
@@ -342,8 +346,8 @@ describe("transcript pagination", () => {
         toolCalls: [],
       })),
     };
-    appState.agentSnapshots.clear();
-    appState.agentSnapshots.set("p", JSON.stringify(conv));
+    resetLive();
+    seedLive("p", asConversation(conv));
   });
 
   it("returns the tail when no cursor is given", async () => {

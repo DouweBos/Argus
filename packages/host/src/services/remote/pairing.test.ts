@@ -25,7 +25,7 @@ vi.mock("@argus/host/bus", () => ({
   emitHostEvent: () => {},
 }));
 vi.mock("../../state", () => ({
-  appState: { agents: new Map(), agentSnapshots: new Map() },
+  appState: { agents: new Map() },
 }));
 vi.mock("../agent/agentService", () => ({
   listAgents: () => [],

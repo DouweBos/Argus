@@ -114,7 +114,7 @@ export const RemoteQueuedMessage = z.object({
 export type RemoteQueuedMessage = z.infer<typeof RemoteQueuedMessage>;
 
 /**
- * Reference to an image whose bytes live in the desktop snapshot. The client
+ * Reference to an image whose bytes live in the host's transcript. The client
  * fetches the base64 payload lazily via `agents.image` keyed by `image_id`,
  * so transcripts stay cheap to re-fetch on every live event.
  */

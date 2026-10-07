@@ -81,14 +81,6 @@ class AppState {
   webBrowserReservations = new Map<string, WebBrowserReservation>();
 
   /**
-   * Latest conversation snapshot per agent, serialized as a JSON string.
-   * Published by whichever window currently owns the agent (main or popout)
-   * on every meaningful state change. Lets a newly opened window (or popout)
-   * hydrate its conversation store without round-tripping to disk.
-   */
-  agentSnapshots = new Map<string, string>();
-
-  /**
    * Currently-outstanding permission prompts per agent (`toolUseId` → payload).
    * A durable source of truth so the remote gateway can replay pending prompts
    * to a device that connects (or reconnects) after the prompt was raised —

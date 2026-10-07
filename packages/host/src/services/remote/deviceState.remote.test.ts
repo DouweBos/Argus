@@ -11,7 +11,6 @@ vi.mock("@argus/host/bus", () => ({ emitHostEvent: vi.fn() }));
 vi.mock("../../state", () => ({
   appState: {
     agents: new Map(),
-    agentSnapshots: new Map<string, string>(),
     agentPendingPermissions: new Map(),
     agentQueues: new Map(),
     sessions: new Map(),
