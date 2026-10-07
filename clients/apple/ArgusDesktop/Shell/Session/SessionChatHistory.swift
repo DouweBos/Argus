@@ -71,9 +71,12 @@ struct SessionChatHistoryCard: View {
 
   private func view(_ entry: ArgusProtocol.ChatHistoryEntry) async {
     guard let saved = await saved(entry) else { return }
-    let conversation = AgentConversation(messages: LiveAgents.messages(of: saved))
-    // A saved chat's agent is gone: calls without a result show as interrupted.
-    let messages = (try? RemoteTranscriptBuilder.messages(conversation, settled: true)) ?? []
+    // A long chat is megabytes to decode and convert: keep it off the main actor.
+    let messages = await Task.detached(priority: .userInitiated) {
+      let conversation = AgentConversation(messages: LiveAgents.messages(of: saved))
+      // A saved chat's agent is gone: calls without a result show as interrupted.
+      return (try? RemoteTranscriptBuilder.messages(conversation, settled: true)) ?? []
+    }.value
     viewing = ViewedChat(entry: entry, messages: messages)
     MacTelemetry.capture(.chatHistoryUsed(action: .view))
   }
