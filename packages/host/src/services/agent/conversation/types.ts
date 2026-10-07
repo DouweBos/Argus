@@ -83,7 +83,8 @@ export type LlmContentBlock =
       name: string;
       type: "tool_use";
     }
-  | { text: string; type: "text" };
+  | { text: string; type: "text" }
+  | { thinking?: string; type: "redacted_thinking" | "thinking" };
 
 export interface LlmToolResult {
   /** May be a plain string or a structured content block from the Claude API. */

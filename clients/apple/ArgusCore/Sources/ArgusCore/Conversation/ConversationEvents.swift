@@ -117,15 +117,19 @@ extension ConversationReducer {
       // `content.map` throws on a string.
       if case .string? = message["content"] { return nil }
       let parentId = event["parent_tool_use_id"]?.stringValue
-      // Every non-text block becomes a tool_use child — `thinking` included.
-      let children = content.map { block -> ConversationToolCallChild in
-        if block["type"]?.stringValue == "text" {
+      // Thinking blocks have nothing to show; folding them in leaves empty cards.
+      let children = content.compactMap { block -> ConversationToolCallChild? in
+        switch block["type"]?.stringValue {
+        case "text":
           return .text(block["text"]?.stringValue ?? "")
+        case "tool_use":
+          return .toolUse(
+            ConversationToolCall(
+              id: block["id"]?.stringValue, name: block["name"]?.stringValue,
+              input: block["input"]?.objectValue))
+        default:
+          return nil
         }
-        return .toolUse(
-          ConversationToolCall(
-            id: block["id"]?.stringValue, name: block["name"]?.stringValue,
-            input: block["input"]?.objectValue))
       }
       guard
         let messages = ToolCallTree.update(in: existing.messages, id: parentId, { tc in
@@ -153,6 +157,15 @@ extension ConversationReducer {
       default:
         break
       }
+    }
+
+    // A thinking-only block or a synthetic stub: track the event, add no row.
+    if toolCalls.isEmpty && textBlocks.allSatisfy(TranscriptVisibility.isMetaText) {
+      conv.lastEventType = "assistant"
+      conv.model = existing.model ?? message["model"]?.stringValue
+      conv.pendingToolName = .null
+      conv.pendingToolInput = .null
+      return conv
     }
 
     let msg = ConversationMessage(

@@ -1,0 +1,2021 @@
+{
+  "name": "bookkeeping",
+  "description": "Thinking-only turns, ToolSearch, synthetic no-response stubs and a sub-agent's thinking add no rows; saved ones are hidden from pages.",
+  "clockStart": 1760000000000,
+  "ops": [
+    {
+      "op": "loadSaved",
+      "messages": [
+        {
+          "id": "s1",
+          "role": "user",
+          "textBlocks": [
+            "Go"
+          ],
+          "toolCalls": [],
+          "timestamp": 1
+        },
+        {
+          "id": "s2",
+          "role": "assistant",
+          "textBlocks": [],
+          "toolCalls": [],
+          "timestamp": 2
+        },
+        {
+          "id": "s3",
+          "role": "assistant",
+          "textBlocks": [
+            ""
+          ],
+          "toolCalls": [
+            {
+              "id": "s_ts",
+              "name": "ToolSearch",
+              "input": {
+                "query": "select:Read"
+              },
+              "result": [
+                {
+                  "type": "text",
+                  "text": "Read"
+                }
+              ]
+            }
+          ],
+          "timestamp": 3
+        },
+        {
+          "id": "s4",
+          "role": "assistant",
+          "textBlocks": [],
+          "toolCalls": [
+            {
+              "id": "s_agent",
+              "name": "Agent",
+              "input": {
+                "description": "Look"
+              },
+              "result": "done",
+              "children": [
+                {
+                  "kind": "tool_use",
+                  "toolCall": {}
+                },
+                {
+                  "kind": "text",
+                  "text": "Found it."
+                }
+              ]
+            }
+          ],
+          "timestamp": 4
+        },
+        {
+          "id": "s5",
+          "role": "assistant",
+          "textBlocks": [
+            "No response requested."
+          ],
+          "toolCalls": [],
+          "timestamp": 5
+        }
+      ]
+    },
+    {
+      "op": "userMessage",
+      "text": "Continue."
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "Which tool?",
+              "signature": "sig"
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "ts_1",
+              "name": "ToolSearch",
+              "input": {
+                "query": "select:ExitPlanMode",
+                "max_results": 1
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "user",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "ts_1",
+              "content": [
+                {
+                  "type": "tool_reference",
+                  "tool_name": "ExitPlanMode"
+                }
+              ]
+            }
+          ]
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "ag_1",
+              "name": "Agent",
+              "input": {
+                "description": "Dig",
+                "prompt": "Dig"
+              }
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "Hmm",
+              "signature": "sig"
+            },
+            {
+              "type": "text",
+              "text": "Digging."
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": "ag_1",
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "redacted_thinking",
+              "data": "x"
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "text",
+              "text": "No response requested."
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "assistant",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-opus-4-8",
+          "content": [
+            {
+              "type": "text",
+              "text": "Done."
+            }
+          ],
+          "stop_reason": null,
+          "usage": {
+            "input_tokens": 1200,
+            "output_tokens": 80,
+            "cache_read_input_tokens": 9000,
+            "service_tier": "standard"
+          }
+        },
+        "parent_tool_use_id": null,
+        "session_id": "cli-session-1",
+        "uuid": "evt"
+      }
+    },
+    {
+      "op": "event",
+      "event": {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "duration_ms": 4200,
+        "duration_api_ms": 3900,
+        "num_turns": 2,
+        "result": "Done.",
+        "session_id": "cli-session-1",
+        "total_cost_usd": 0.0123,
+        "usage": {
+          "input_tokens": 1200,
+          "output_tokens": 80,
+          "cache_read_input_tokens": 9000
+        },
+        "modelUsage": {
+          "claude-opus-4-8": {
+            "inputTokens": 1200,
+            "outputTokens": 80,
+            "contextWindow": 1000000
+          },
+          "claude-haiku-4-5-20251001": {
+            "inputTokens": 300,
+            "contextWindow": 200000
+          }
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "s1",
+            "role": "user",
+            "textBlocks": [
+              "Go"
+            ],
+            "toolCalls": [],
+            "timestamp": 1
+          },
+          {
+            "id": "s2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [],
+            "timestamp": 2
+          },
+          {
+            "id": "s3",
+            "role": "assistant",
+            "textBlocks": [
+              ""
+            ],
+            "toolCalls": [
+              {
+                "id": "s_ts",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:Read"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "Read"
+                  }
+                ]
+              }
+            ],
+            "timestamp": 3
+          },
+          {
+            "id": "s4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "s_agent",
+                "name": "Agent",
+                "input": {
+                  "description": "Look"
+                },
+                "result": "done",
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Found it."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 4
+          },
+          {
+            "id": "s5",
+            "role": "assistant",
+            "textBlocks": [
+              "No response requested."
+            ],
+            "toolCalls": [],
+            "timestamp": 5
+          }
+        ],
+        "todos": null,
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "s1",
+            "role": "user",
+            "textBlocks": [
+              "Go"
+            ],
+            "toolCalls": [],
+            "timestamp": 1
+          },
+          {
+            "id": "s2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [],
+            "timestamp": 2
+          },
+          {
+            "id": "s3",
+            "role": "assistant",
+            "textBlocks": [
+              ""
+            ],
+            "toolCalls": [
+              {
+                "id": "s_ts",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:Read"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "Read"
+                  }
+                ]
+              }
+            ],
+            "timestamp": 3
+          },
+          {
+            "id": "s4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "s_agent",
+                "name": "Agent",
+                "input": {
+                  "description": "Look"
+                },
+                "result": "done",
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Found it."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 4
+          },
+          {
+            "id": "s5",
+            "role": "assistant",
+            "textBlocks": [
+              "No response requested."
+            ],
+            "toolCalls": [],
+            "timestamp": 5
+          },
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Continue."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          }
+        ],
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "user_sent"
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "s1",
+            "role": "user",
+            "textBlocks": [
+              "Go"
+            ],
+            "toolCalls": [],
+            "timestamp": 1
+          },
+          {
+            "id": "s2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [],
+            "timestamp": 2
+          },
+          {
+            "id": "s3",
+            "role": "assistant",
+            "textBlocks": [
+              ""
+            ],
+            "toolCalls": [
+              {
+                "id": "s_ts",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:Read"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "Read"
+                  }
+                ]
+              }
+            ],
+            "timestamp": 3
+          },
+          {
+            "id": "s4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "s_agent",
+                "name": "Agent",
+                "input": {
+                  "description": "Look"
+                },
+                "result": "done",
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Found it."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 4
+          },
+          {
+            "id": "s5",
+            "role": "assistant",
+            "textBlocks": [
+              "No response requested."
+            ],
+            "toolCalls": [],
+            "timestamp": 5
+          },
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Continue."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "assistant",
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "s1",
+            "role": "user",
+            "textBlocks": [
+              "Go"
+            ],
+            "toolCalls": [],
+            "timestamp": 1
+          },
+          {
+            "id": "s2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [],
+            "timestamp": 2
+          },
+          {
+            "id": "s3",
+            "role": "assistant",
+            "textBlocks": [
+              ""
+            ],
+            "toolCalls": [
+              {
+                "id": "s_ts",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:Read"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "Read"
+                  }
+                ]
+              }
+            ],
+            "timestamp": 3
+          },
+          {
+            "id": "s4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "s_agent",
+                "name": "Agent",
+                "input": {
+                  "description": "Look"
+                },
+                "result": "done",
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Found it."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 4
+          },
+          {
+            "id": "s5",
+            "role": "assistant",
+            "textBlocks": [
+              "No response requested."
+            ],
+            "toolCalls": [],
+            "timestamp": 5
+          },
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Continue."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ts_1",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:ExitPlanMode",
+                  "max_results": 1
+                }
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "assistant",
+        "pendingToolName": "ToolSearch",
+        "pendingToolInput": {
+          "query": "select:ExitPlanMode",
+          "max_results": 1
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "s1",
+            "role": "user",
+            "textBlocks": [
+              "Go"
+            ],
+            "toolCalls": [],
+            "timestamp": 1
+          },
+          {
+            "id": "s2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [],
+            "timestamp": 2
+          },
+          {
+            "id": "s3",
+            "role": "assistant",
+            "textBlocks": [
+              ""
+            ],
+            "toolCalls": [
+              {
+                "id": "s_ts",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:Read"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "Read"
+                  }
+                ]
+              }
+            ],
+            "timestamp": 3
+          },
+          {
+            "id": "s4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "s_agent",
+                "name": "Agent",
+                "input": {
+                  "description": "Look"
+                },
+                "result": "done",
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Found it."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 4
+          },
+          {
+            "id": "s5",
+            "role": "assistant",
+            "textBlocks": [
+              "No response requested."
+            ],
+            "toolCalls": [],
+            "timestamp": 5
+          },
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Continue."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ts_1",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:ExitPlanMode",
+                  "max_results": 1
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "ExitPlanMode"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "user",
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "s1",
+            "role": "user",
+            "textBlocks": [
+              "Go"
+            ],
+            "toolCalls": [],
+            "timestamp": 1
+          },
+          {
+            "id": "s2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [],
+            "timestamp": 2
+          },
+          {
+            "id": "s3",
+            "role": "assistant",
+            "textBlocks": [
+              ""
+            ],
+            "toolCalls": [
+              {
+                "id": "s_ts",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:Read"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "Read"
+                  }
+                ]
+              }
+            ],
+            "timestamp": 3
+          },
+          {
+            "id": "s4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "s_agent",
+                "name": "Agent",
+                "input": {
+                  "description": "Look"
+                },
+                "result": "done",
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Found it."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 4
+          },
+          {
+            "id": "s5",
+            "role": "assistant",
+            "textBlocks": [
+              "No response requested."
+            ],
+            "toolCalls": [],
+            "timestamp": 5
+          },
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Continue."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ts_1",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:ExitPlanMode",
+                  "max_results": 1
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "ExitPlanMode"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ag_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Dig",
+                  "prompt": "Dig"
+                }
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "assistant",
+        "pendingToolName": "Agent",
+        "pendingToolInput": {
+          "description": "Dig",
+          "prompt": "Dig"
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "s1",
+            "role": "user",
+            "textBlocks": [
+              "Go"
+            ],
+            "toolCalls": [],
+            "timestamp": 1
+          },
+          {
+            "id": "s2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [],
+            "timestamp": 2
+          },
+          {
+            "id": "s3",
+            "role": "assistant",
+            "textBlocks": [
+              ""
+            ],
+            "toolCalls": [
+              {
+                "id": "s_ts",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:Read"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "Read"
+                  }
+                ]
+              }
+            ],
+            "timestamp": 3
+          },
+          {
+            "id": "s4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "s_agent",
+                "name": "Agent",
+                "input": {
+                  "description": "Look"
+                },
+                "result": "done",
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Found it."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 4
+          },
+          {
+            "id": "s5",
+            "role": "assistant",
+            "textBlocks": [
+              "No response requested."
+            ],
+            "toolCalls": [],
+            "timestamp": 5
+          },
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Continue."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ts_1",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:ExitPlanMode",
+                  "max_results": 1
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "ExitPlanMode"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ag_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Dig",
+                  "prompt": "Dig"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "Digging."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "assistant",
+        "pendingToolName": "Agent",
+        "pendingToolInput": {
+          "description": "Dig",
+          "prompt": "Dig"
+        }
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "s1",
+            "role": "user",
+            "textBlocks": [
+              "Go"
+            ],
+            "toolCalls": [],
+            "timestamp": 1
+          },
+          {
+            "id": "s2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [],
+            "timestamp": 2
+          },
+          {
+            "id": "s3",
+            "role": "assistant",
+            "textBlocks": [
+              ""
+            ],
+            "toolCalls": [
+              {
+                "id": "s_ts",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:Read"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "Read"
+                  }
+                ]
+              }
+            ],
+            "timestamp": 3
+          },
+          {
+            "id": "s4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "s_agent",
+                "name": "Agent",
+                "input": {
+                  "description": "Look"
+                },
+                "result": "done",
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Found it."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 4
+          },
+          {
+            "id": "s5",
+            "role": "assistant",
+            "textBlocks": [
+              "No response requested."
+            ],
+            "toolCalls": [],
+            "timestamp": 5
+          },
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Continue."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ts_1",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:ExitPlanMode",
+                  "max_results": 1
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "ExitPlanMode"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ag_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Dig",
+                  "prompt": "Dig"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "Digging."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "assistant",
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "s1",
+            "role": "user",
+            "textBlocks": [
+              "Go"
+            ],
+            "toolCalls": [],
+            "timestamp": 1
+          },
+          {
+            "id": "s2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [],
+            "timestamp": 2
+          },
+          {
+            "id": "s3",
+            "role": "assistant",
+            "textBlocks": [
+              ""
+            ],
+            "toolCalls": [
+              {
+                "id": "s_ts",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:Read"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "Read"
+                  }
+                ]
+              }
+            ],
+            "timestamp": 3
+          },
+          {
+            "id": "s4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "s_agent",
+                "name": "Agent",
+                "input": {
+                  "description": "Look"
+                },
+                "result": "done",
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Found it."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 4
+          },
+          {
+            "id": "s5",
+            "role": "assistant",
+            "textBlocks": [
+              "No response requested."
+            ],
+            "toolCalls": [],
+            "timestamp": 5
+          },
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Continue."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ts_1",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:ExitPlanMode",
+                  "max_results": 1
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "ExitPlanMode"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ag_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Dig",
+                  "prompt": "Dig"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "Digging."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "assistant",
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "s1",
+            "role": "user",
+            "textBlocks": [
+              "Go"
+            ],
+            "toolCalls": [],
+            "timestamp": 1
+          },
+          {
+            "id": "s2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [],
+            "timestamp": 2
+          },
+          {
+            "id": "s3",
+            "role": "assistant",
+            "textBlocks": [
+              ""
+            ],
+            "toolCalls": [
+              {
+                "id": "s_ts",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:Read"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "Read"
+                  }
+                ]
+              }
+            ],
+            "timestamp": 3
+          },
+          {
+            "id": "s4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "s_agent",
+                "name": "Agent",
+                "input": {
+                  "description": "Look"
+                },
+                "result": "done",
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Found it."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 4
+          },
+          {
+            "id": "s5",
+            "role": "assistant",
+            "textBlocks": [
+              "No response requested."
+            ],
+            "toolCalls": [],
+            "timestamp": 5
+          },
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Continue."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ts_1",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:ExitPlanMode",
+                  "max_results": 1
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "ExitPlanMode"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ag_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Dig",
+                  "prompt": "Dig"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "Digging."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [
+              "Done."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "assistant",
+        "pendingToolName": null,
+        "pendingToolInput": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "s1",
+            "role": "user",
+            "textBlocks": [
+              "Go"
+            ],
+            "toolCalls": [],
+            "timestamp": 1
+          },
+          {
+            "id": "s2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [],
+            "timestamp": 2
+          },
+          {
+            "id": "s3",
+            "role": "assistant",
+            "textBlocks": [
+              ""
+            ],
+            "toolCalls": [
+              {
+                "id": "s_ts",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:Read"
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "Read"
+                  }
+                ]
+              }
+            ],
+            "timestamp": 3
+          },
+          {
+            "id": "s4",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "s_agent",
+                "name": "Agent",
+                "input": {
+                  "description": "Look"
+                },
+                "result": "done",
+                "children": [
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {}
+                  },
+                  {
+                    "kind": "text",
+                    "text": "Found it."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 4
+          },
+          {
+            "id": "s5",
+            "role": "assistant",
+            "textBlocks": [
+              "No response requested."
+            ],
+            "toolCalls": [],
+            "timestamp": 5
+          },
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Continue."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ts_1",
+                "name": "ToolSearch",
+                "input": {
+                  "query": "select:ExitPlanMode",
+                  "max_results": 1
+                },
+                "result": [
+                  {
+                    "type": "text",
+                    "text": "ExitPlanMode"
+                  }
+                ],
+                "isError": false
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "textBlocks": [],
+            "toolCalls": [
+              {
+                "id": "ag_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Dig",
+                  "prompt": "Dig"
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "Digging."
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000002000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "textBlocks": [
+              "Done."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000003000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "model": "claude-opus-4-8",
+        "resuming": false,
+        "todos": null,
+        "tasks": null,
+        "lastEventType": "result",
+        "pendingToolName": null,
+        "pendingToolInput": null,
+        "contextWindow": 1000000,
+        "totalCost": 0.0123,
+        "totalDuration": 4200
+      }
+    }
+  ],
+  "transcripts": [
+    {
+      "params": {},
+      "result": {
+        "messages": [
+          {
+            "id": "s1",
+            "role": "user",
+            "text_blocks": [
+              "Go"
+            ],
+            "tool_calls": [],
+            "timestamp": 1
+          },
+          {
+            "id": "s4",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "s_agent",
+                "name": "Agent",
+                "input": {
+                  "description": "Look"
+                },
+                "result_blocks": [
+                  {
+                    "type": "text",
+                    "text": "done"
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "Found it."
+                  }
+                ],
+                "status": "done"
+              }
+            ],
+            "timestamp": 4
+          },
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "text_blocks": [
+              "Continue."
+            ],
+            "tool_calls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "ag_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Dig",
+                  "prompt": "Dig"
+                },
+                "result_blocks": [],
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "Digging."
+                  }
+                ],
+                "status": "running"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "text_blocks": [
+              "Done."
+            ],
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000003000
+          }
+        ],
+        "next_after": null,
+        "prev_before": null,
+        "total": 9,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "limit": 2
+      },
+      "result": {
+        "messages": [
+          {
+            "id": "uuid-3",
+            "role": "assistant",
+            "text_blocks": [],
+            "tool_calls": [
+              {
+                "id": "ag_1",
+                "name": "Agent",
+                "input": {
+                  "description": "Dig",
+                  "prompt": "Dig"
+                },
+                "result_blocks": [],
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "Digging."
+                  }
+                ],
+                "status": "running"
+              }
+            ],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000002000
+          },
+          {
+            "id": "uuid-4",
+            "role": "assistant",
+            "text_blocks": [
+              "Done."
+            ],
+            "tool_calls": [],
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000
+            },
+            "timestamp": 1760000003000
+          }
+        ],
+        "next_after": null,
+        "prev_before": 7,
+        "total": 9,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "after": 1,
+        "limit": 2
+      },
+      "result": {
+        "messages": [],
+        "next_after": 3,
+        "prev_before": 1,
+        "total": 9,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    },
+    {
+      "params": {
+        "before": 2,
+        "limit": 1
+      },
+      "result": {
+        "messages": [],
+        "next_after": 2,
+        "prev_before": 1,
+        "total": 9,
+        "tasks": null,
+        "todos": null,
+        "model": "claude-opus-4-8",
+        "pending_tool_name": null
+      }
+    }
+  ]
+}

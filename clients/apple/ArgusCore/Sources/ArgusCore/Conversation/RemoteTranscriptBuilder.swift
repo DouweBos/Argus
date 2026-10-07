@@ -14,7 +14,10 @@ public enum RemoteTranscriptBuilder {
 
   // MARK: Messages
 
-  public static func messageJSON(_ m: ConversationMessage) -> JSONValue {
+  /// Bookkeeping (ToolSearch, blank text) is stripped; a message left empty
+  /// is dropped by the page builders here and by `ToolGroups` downstream.
+  public static func messageJSON(_ source: ConversationMessage) -> JSONValue {
+    let m = TranscriptVisibility.strip(source)
     let messageId = m.id
     var out: [String: JSONValue] = [
       "id": .string(messageId),
@@ -56,8 +59,11 @@ public enum RemoteTranscriptBuilder {
     try decode(messageJSON(m))
   }
 
-  public static func messages(_ conv: AgentConversation) throws -> [RemoteMessage] {
-    try conv.messages.map(message)
+  /// `settled`: the agent is gone, so result-less calls show as interrupted.
+  public static func messages(_ conv: AgentConversation, settled: Bool = false) throws
+    -> [RemoteMessage]
+  {
+    try TranscriptVisibility.visibleMessages(conv.messages, settled: settled).map(message)
   }
 
   static func toolCallJSON(messageId: String, _ tc: ConversationToolCall) -> JSONValue {
@@ -162,9 +168,11 @@ public enum RemoteTranscriptBuilder {
   // MARK: Pages
 
   /// One `agents.transcript` page. `before` → the page ending there, `after` →
-  /// forward from there, neither → the tail.
+  /// forward from there, neither → the tail. Cursors index the raw history;
+  /// hidden bookkeeping just thins the page.
   public static func transcriptJSON(
-    _ conv: AgentConversation, after: Int? = nil, before: Int? = nil, limit: Int? = nil
+    _ conv: AgentConversation, after: Int? = nil, before: Int? = nil, limit: Int? = nil,
+    settled: Bool = false
   ) -> JSONValue {
     let total = conv.messages.count
     let size = limit ?? 100
@@ -180,7 +188,10 @@ public enum RemoteTranscriptBuilder {
       start = max(0, total - size)
       end = total
     }
-    let page = start < end ? Array(conv.messages[start..<end]) : []
+    let page =
+      start < end
+      ? TranscriptVisibility.visibleMessages(Array(conv.messages[start..<end]), settled: settled)
+      : []
     return .object([
       "messages": .array(page.map(messageJSON)),
       "next_after": end < total ? .number(Double(end)) : .null,
@@ -194,9 +205,10 @@ public enum RemoteTranscriptBuilder {
   }
 
   public static func transcript(
-    _ conv: AgentConversation, after: Int? = nil, before: Int? = nil, limit: Int? = nil
+    _ conv: AgentConversation, after: Int? = nil, before: Int? = nil, limit: Int? = nil,
+    settled: Bool = false
   ) throws -> RemoteTranscript {
-    try decode(transcriptJSON(conv, after: after, before: before, limit: limit))
+    try decode(transcriptJSON(conv, after: after, before: before, limit: limit, settled: settled))
   }
 
   // MARK: Images
