@@ -356,9 +356,22 @@ async function checkPlaywright(): Promise<PrereqResult> {
   return { id: "playwright", status: "pass" };
 }
 
+/**
+ * Every caller asking while a check is running shares it: each one is a real
+ * API call, and the desktop fires several at launch.
+ */
+let authInFlight: Promise<PrereqResult> | null = null;
+function checkClaudeAuthShared(): Promise<PrereqResult> {
+  authInFlight ??= checkClaudeAuth().finally(() => {
+    authInFlight = null;
+  });
+
+  return authInFlight;
+}
+
 const CHECKS: Record<PrereqId, () => Promise<PrereqResult>> = {
   claude_cli: checkClaudeCli,
-  claude_auth: checkClaudeAuth,
+  claude_auth: checkClaudeAuthShared,
   git_cli: checkGitCli,
   git_identity: checkGitIdentity,
   xcode: checkXcode,
