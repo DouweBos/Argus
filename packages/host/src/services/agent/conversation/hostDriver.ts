@@ -195,6 +195,76 @@ function seed(agentId: string): AgentConversation {
   }
 }
 
+// --- What conversation actions (`./actions`) change ----------------------
+
+/** Whether the host is folding this agent's conversation. */
+export function isFolding(agentId: string): boolean {
+  return tracked.has(agentId);
+}
+
+/** Apply `fn` to a folded conversation. False when the host isn't folding it. */
+export function changeConversation(
+  agentId: string,
+  fn: (c: AgentConversation) => AgentConversation | null,
+): boolean {
+  const entry = tracked.get(agentId);
+  if (!entry) {
+    return false;
+  }
+  update(agentId, entry, fn);
+
+  return true;
+}
+
+/** Record a message the user sent, and title the chat from it if untitled. */
+export function recordUserMessage(
+  agentId: string,
+  text: string,
+  options: {
+    author?: string;
+    checkpointId?: string;
+    images?: ImageAttachment[];
+  },
+): void {
+  const entry = tracked.get(agentId);
+  if (entry) {
+    userMessage(
+      agentId,
+      entry,
+      text,
+      options.images,
+      options.author,
+      options.checkpointId,
+    );
+  }
+}
+
+/** A message is on its way to the CLI (or isn't any more). */
+export function setInflight(agentId: string, inflight: boolean): void {
+  const entry = tracked.get(agentId);
+  if (entry) {
+    entry.inflight = inflight;
+  }
+}
+
+export function isInflight(agentId: string): boolean {
+  return tracked.get(agentId)?.inflight ?? false;
+}
+
+/** Start the conversation over from `conversation` — a fork's backfill. */
+export function reseedConversation(
+  agentId: string,
+  conversation: AgentConversation,
+): void {
+  const entry = tracked.get(agentId);
+  if (!entry) {
+    return;
+  }
+  seedLive(agentId, conversation);
+  entry.titleRequested = Boolean(conversation.title);
+  save(agentId);
+}
+
 const AGENT_CHANNEL = /^agent:([a-z-]+):(.+)$/;
 
 function route(channel: string, payload: unknown): void {

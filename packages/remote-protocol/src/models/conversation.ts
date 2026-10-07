@@ -10,6 +10,7 @@ import {
   AgentSlashCommand,
   ImageAttachment,
 } from "./agents";
+import { ForkReplayOp } from "./sessions";
 
 export const ConversationTokenUsage = z.object({
   cache_creation_input_tokens: z.number().optional(),
@@ -203,3 +204,16 @@ export type AgentTranscriptDelta = Omit<
     [K in keyof AgentConversationMeta]?: AgentConversationMeta[K] | null;
   };
 };
+
+/** What forking a chat at one of its messages needs from the whole history. */
+export const AgentForkPoint = z.object({
+  claudeSessionId: z.string().nullable(),
+  model: z.string().optional(),
+  /** Edits and writes up to the fork, to replay onto the fork's worktree. */
+  replayOps: z.array(ForkReplayOp),
+  timestampMs: z.number(),
+  title: z.string().optional(),
+  /** User turns up to and including the fork message. */
+  turnNumber: z.number().int().nonnegative(),
+});
+export type AgentForkPoint = z.infer<typeof AgentForkPoint>;

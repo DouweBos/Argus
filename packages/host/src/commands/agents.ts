@@ -27,6 +27,15 @@ import {
   restoreCheckpoint,
 } from "../services/agent/checkpoints";
 import {
+  agentForkPoint,
+  clearConversation,
+  dismissConversationList,
+  rewindAgent,
+  seedForkedConversation,
+  setConversationTitle,
+  submitAgentMessage,
+} from "../services/agent/conversation/actions";
+import {
   liveConversation,
   livePage,
 } from "../services/agent/conversation/live";
@@ -52,7 +61,14 @@ import { showAgentNotification } from "../services/notifications/osNotification"
 
 export function registerAgentCommands(): void {
   defineTypedCommand("check_claude_cli", () => checkClaudeCli());
-  defineTypedCommand("start_agent", (p) => launchAgent(p));
+  defineTypedCommand("start_agent", async ({ seedFrom, ...p }) => {
+    const agent = await launchAgent(p);
+    if (seedFrom) {
+      seedForkedConversation(agent.agent_id, seedFrom, p.resumeSessionId);
+    }
+
+    return agent;
+  });
   defineTypedCommand("stop_agent", (p) => stopAgent(p.agentId));
   defineTypedCommand("restore_agent_at_turn", (p) => restoreAgentAtTurn(p));
   defineTypedCommand("interrupt_agent", (p) => interruptAgent(p.agentId));
@@ -149,6 +165,24 @@ export function registerAgentCommands(): void {
 
     return live ? JSON.stringify(live) : getAgentSnapshot(p.agentId);
   });
+  defineTypedCommand("submit_agent_message", ({ agentId, ...message }) =>
+    submitAgentMessage(agentId, message),
+  );
+  defineTypedCommand("rewind_agent", ({ agentId, messageId, ...options }) =>
+    rewindAgent(agentId, messageId, options),
+  );
+  defineTypedCommand("agent_fork_point", (p) =>
+    agentForkPoint(p.agentId, p.messageId),
+  );
+  defineTypedCommand("set_agent_title", (p) =>
+    setConversationTitle(p.agentId, p.title),
+  );
+  defineTypedCommand("dismiss_agent_list", (p) =>
+    dismissConversationList(p.agentId, p.list),
+  );
+  defineTypedCommand("clear_agent_transcript", (p) =>
+    clearConversation(p.agentId),
+  );
   defineTypedCommand("get_agent_transcript", (p) =>
     livePage(p.agentId, { before: p.before, limit: p.limit }),
   );

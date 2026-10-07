@@ -180,6 +180,43 @@ extension ArgusProtocol {
     }
   }
 
+  public struct AgentForkPoint: Codable, Sendable {
+    public var claudeSessionId: String?
+    public var model: String?
+    public var replayOps: [ForkReplayOp]
+    public var timestampMs: Double
+    public var title: String?
+    public var turnNumber: Int
+
+    enum CodingKeys: String, CodingKey {
+      case claudeSessionId = "claudeSessionId"
+      case model = "model"
+      case replayOps = "replayOps"
+      case timestampMs = "timestampMs"
+      case title = "title"
+      case turnNumber = "turnNumber"
+    }
+
+    public init(claudeSessionId: String? = nil, model: String? = nil, replayOps: [ForkReplayOp], timestampMs: Double, title: String? = nil, turnNumber: Int) {
+      self.claudeSessionId = claudeSessionId
+      self.model = model
+      self.replayOps = replayOps
+      self.timestampMs = timestampMs
+      self.title = title
+      self.turnNumber = turnNumber
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(claudeSessionId, forKey: .claudeSessionId)
+      try c.encodeIfPresent(model, forKey: .model)
+      try c.encode(replayOps, forKey: .replayOps)
+      try c.encode(timestampMs, forKey: .timestampMs)
+      try c.encodeIfPresent(title, forKey: .title)
+      try c.encode(turnNumber, forKey: .turnNumber)
+    }
+  }
+
   public struct AgentInfo: Codable, Sendable {
     public var agentId: String
     public var capabilities: AgentCapabilities?
