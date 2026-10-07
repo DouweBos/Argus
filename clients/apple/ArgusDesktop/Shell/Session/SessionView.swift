@@ -322,18 +322,29 @@ struct AgentTab: View {
 
 /// The focused agent: its transcript, kept live, and the input that drives it.
 struct AgentPane: View {
+  @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var store
   let agentId: String
   let sessionId: String
+  /// Images and files dropped on the transcript go to the composer.
+  @State private var drops = ComposerDropInbox()
+  @State private var dropTargeted = false
 
   var body: some View {
     VStack(spacing: 0) {
       TranscriptView(agentKey: agentId, sessionId: sessionId, fixture: TranscriptStress.fixture)
+        .onDrop(of: ComposerDropInbox.types, isTargeted: $dropTargeted, perform: drops.accept)
+        .overlay {
+          if dropTargeted {
+            Rectangle().strokeBorder(theme.accent, lineWidth: 2).allowsHitTesting(false)
+          }
+        }
       HuddleTypingBar(agentId: agentId)
       ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
         MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))
       }
     }
+    .environment(\.composerDropInbox, drops)
     .huddleAgent(agentId)
     .task {
       await store.watchAgent(agentId, on: true)

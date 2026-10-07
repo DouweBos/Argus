@@ -12,6 +12,7 @@
     @Environment(\.theme) var theme
     @Environment(HostStore.self) var host
     @Environment(\.composerTyping) var composerTyping
+    @Environment(\.composerDropInbox) var dropInbox
     let preferences = Preferences()
 
     let agentId: String
@@ -81,6 +82,10 @@
         composerTyping?(agentId, !value.isEmpty)
       }
       .onChange(of: mentionContext?.query) { _, _ in Task { await refreshBrowse() } }
+      .onChange(of: dropInbox?.generation) { _, _ in
+        let drops = dropInbox?.take() ?? []
+        if isEnabled { drops.forEach(receive) }
+      }
     }
 
     // MARK: Rows
