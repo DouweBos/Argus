@@ -130,7 +130,7 @@ public struct AgentTranscriptView: View {
     }
     .task(id: agentKey) { await start() }
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) {
-      await host.loadTranscript(agentId: agentKey)
+      await host.refreshTranscript(agentId: agentKey)
     }
     // Queue changes only ever arrive over the agent subscription, which the
     // lock screen takes down with the socket. Re-arm it and re-read the queue.

@@ -52,7 +52,7 @@ extension HostStore {
 
         return
       }
-      await loadTranscript(agentId: agentId)
+      await refreshTranscript(agentId: agentId)
     } catch {
       report(error, scope: "agent:send")
       markFailed(agentId: agentId, localId: localId, message: message, displayText: displayText,
@@ -285,7 +285,7 @@ extension HostStore {
         Params(
           agent_id: agentId, tool_use_id: toolUseId, decision: decision, message: message),
         as: IgnoredResult.self)
-      await loadTranscript(agentId: agentId)
+      await refreshTranscript(agentId: agentId)
     } catch {
       // Refused or lost: put the prompt back so it can be answered again.
       answered.remove(key)

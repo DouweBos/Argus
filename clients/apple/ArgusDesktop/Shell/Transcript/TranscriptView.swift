@@ -152,7 +152,7 @@ struct TranscriptView: View {
       }
     #endif
     .liveRefresh(enabled: fixture == nil && host.connection == .ready, every: .seconds(5)) {
-      await host.loadTranscript(agentId: agentKey)
+      await host.refreshTranscript(agentId: agentKey)
     }
   }
 

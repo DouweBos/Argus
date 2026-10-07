@@ -423,8 +423,11 @@ public struct RemoteQueuedMessage: Codable, Hashable, Sendable, Identifiable {
 public struct RemoteTranscript: Codable, Sendable {
   public init(
     messages: [RemoteMessage], nextAfter: Double?, prevBefore: Double?, total: Int?,
-    tasks: [RemoteTask]?, todos: [RemoteTodo]?, model: String?, pendingToolName: String?
+    tasks: [RemoteTask]?, todos: [RemoteTodo]?, model: String?, pendingToolName: String?,
+    epoch: String? = nil, revision: Int? = nil
   ) {
+    self.epoch = epoch
+    self.revision = revision
     self.messages = messages
     self.nextAfter = nextAfter
     self.prevBefore = prevBefore
@@ -443,9 +446,12 @@ public struct RemoteTranscript: Codable, Sendable {
   public var todos: [RemoteTodo]?
   public var model: String?
   public var pendingToolName: String?
+  /// Where the page sits among `agent.transcript` deltas; nil from a host that sends none.
+  public var epoch: String?
+  public var revision: Int?
 
   enum CodingKeys: String, CodingKey {
-    case messages, total, tasks, todos, model
+    case messages, total, tasks, todos, model, epoch, revision
     case nextAfter = "next_after"
     case prevBefore = "prev_before"
     case pendingToolName = "pending_tool_name"
