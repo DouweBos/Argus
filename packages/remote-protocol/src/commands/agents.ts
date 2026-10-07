@@ -10,7 +10,7 @@ import {
   QueuedMessage,
   SavedConversation,
 } from "../models/agents";
-import { AgentTranscriptPage } from "../models/conversation";
+import { AgentForkPoint, AgentTranscriptPage } from "../models/conversation";
 import { ForkChatResult } from "../models/sessions";
 import { type CommandSpec, NoParams, Void } from "./spec";
 
@@ -35,6 +35,10 @@ export const AGENT_COMMANDS = {
       /** Client-minted id, so an optimistic entry can land before the spawn. */
       agentId: z.string().optional(),
       runnerId: z.string().optional(),
+      /** A fork: start from this agent's history up to and including the message. */
+      seedFrom: z
+        .object({ agentId: z.string(), throughMessageId: z.string() })
+        .optional(),
     }),
     result: AgentInfo,
   },
@@ -178,6 +182,62 @@ export const AGENT_COMMANDS = {
     }),
     result: AgentTranscriptPage.nullable(),
   },
+  /**
+   * Send a message, or queue it behind the turn in flight. A sent message gets
+   * a worktree checkpoint and its bubble in the transcript.
+   */
+  submit_agent_message: {
+    tier: "admin",
+    params: AgentId.extend({
+      text: z.string(),
+      displayText: z.string().optional(),
+      images: z.array(ImageAttachment).optional(),
+      author: z.string().optional(),
+    }),
+    result: z.object({ queued: z.boolean() }),
+  },
+  /**
+   * Rewind to just before a user message: cut the transcript, respawn the CLI
+   * on a transcript forked at that turn, drop the queue. `resend` sends an
+   * edited message in its place; `restoreFiles` also restores its checkpoint.
+   */
+  rewind_agent: {
+    tier: "admin",
+    params: AgentId.extend({
+      messageId: z.string(),
+      resend: z
+        .object({
+          text: z.string(),
+          images: z.array(ImageAttachment).optional(),
+        })
+        .optional(),
+      restoreFiles: z.boolean().optional(),
+    }),
+    result: z.object({
+      claude_session_id: z.string().nullable(),
+      /** The rewound message's text, to put back in the composer. */
+      restoredPrompt: z.string(),
+    }),
+  },
+  /** What forking at a message needs from the whole history. */
+  agent_fork_point: {
+    tier: "admin",
+    params: AgentId.extend({ messageId: z.string() }),
+    result: AgentForkPoint,
+  },
+  set_agent_title: {
+    tier: "admin",
+    params: AgentId.extend({ title: z.string() }),
+    result: Void,
+  },
+  /** Hide the todo or task list until the agent writes a new one. */
+  dismiss_agent_list: {
+    tier: "admin",
+    params: AgentId.extend({ list: z.enum(["tasks", "todos"]) }),
+    result: Void,
+  },
+  /** Empty the transcript; the CLI keeps its context. */
+  clear_agent_transcript: { tier: "admin", params: AgentId, result: Void },
   /**
    * Cross-window conversation snapshot sharing, so a new popout or a reloaded
    * window can hydrate an agent without waiting for its next event. An empty

@@ -674,19 +674,6 @@ function requireAgent(agentId: string): AgentSession {
   return agent;
 }
 
-/**
- * Whether a turn is still in flight. Status alone understates it: the CLI
- * flips `session_state_changed` to idle between tool calls, so a message sent
- * on that reading lands mid-turn instead of waiting its place in the queue.
- */
-function isWorking(agent: AgentSession): boolean {
-  return (
-    agent.status === "running" ||
-    agent.status === "requires_action" ||
-    agent.inflightPrompts > 0
-  );
-}
-
 /** Ensure a session exists or throw a gateway not_found. */
 /** How much of a terminal a phone reads: enough to follow a dev server. */
 const TERMINAL_READ_TAIL = 64 * 1024;
@@ -1044,39 +1031,22 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       "agents.send",
       params,
     );
-    const agent = requireAgent(agent_id);
+    requireAgent(agent_id);
     const author = messageAuthor(agent_id, ctx);
 
-    // Queue-or-send is decided here, not by the client: a remote's view of the
-    // agent's status can lag a turn that started a moment ago, and in a huddle
-    // several people send against the same agent. Anything already waiting also
-    // has to keep its place, so a send never jumps the queue.
-    // A question or a plan prompt is answered through its own form, never by
-    // typing, so those turns keep waiting here like any other.
-    if (isWorking(agent) || listQueue(agent_id).length > 0) {
-      await control(() =>
-        enqueueMessage(agent_id, {
-          text: message,
-          displayText: display_text,
-          author,
-          images,
-        }),
-      );
+    // Loaded on use: the conversation stack reaches back to this gateway for push.
+    const { submitAgentMessage } =
+      await import("../agent/conversation/actions");
+    const { queued } = await control(() =>
+      submitAgentMessage(agent_id, {
+        text: message,
+        displayText: display_text,
+        author,
+        images,
+      }),
+    );
 
-      return { accepted: true, queued: true };
-    }
-
-    await control(() => sendAgentMessage(agent_id, message, images));
-    // The desktop renderer records the user bubble only for sends it initiates;
-    // mirror this remote send so the prompt (not just the response) shows and
-    // lands in the published snapshot the web client reads back.
-    emitHostEvent(`agent:remote-message:${agent_id}`, {
-      message,
-      images,
-      author: author ?? null,
-    });
-
-    return { accepted: true };
+    return queued ? { accepted: true, queued: true } : { accepted: true };
   },
 
   "agents.interrupt": async (params) => {

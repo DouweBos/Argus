@@ -7,6 +7,7 @@ import type {
   SavedConversation as HostSavedConversation,
 } from "../services/agent/chatHistory";
 import type { Checkpoint as HostCheckpoint } from "../services/agent/checkpoints";
+import type { AgentForkPoint as HostAgentForkPoint } from "../services/agent/conversation/actions";
 import type {
   AgentConversation as HostAgentConversation,
   ConversationMessage as HostConversationMessage,
@@ -27,6 +28,7 @@ import type { AgentNotificationInput as HostAgentNotificationInput } from "../se
 import type {
   AgentCapabilities,
   AgentConversationMeta,
+  AgentForkPoint,
   AgentInfo,
   AgentNotificationInput,
   AgentStatusValue,
@@ -60,6 +62,7 @@ export type AgentModelChecks = [
 ];
 
 export type ConversationModelChecks = [
+  Expect<Equal<AgentForkPoint, HostAgentForkPoint>>,
   Expect<Equal<ConversationMessage, HostConversationMessage>>,
   Expect<Equal<ConversationToolCall, HostToolCallInfo>>,
   Expect<Equal<ConversationTodo, HostTodoItem>>,
