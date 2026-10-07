@@ -41,6 +41,8 @@ public final class LiveAgents {
   @ObservationIgnored var seededPrompts: [String: String] = [:]
   @ObservationIgnored var finishedTurns: [String: FinishedTurn] = [:]
   @ObservationIgnored var saveTimers: [String: Task<Void, Never>] = [:]
+  /// Bumped per save, so an older save still encoding never publishes over a newer one.
+  @ObservationIgnored var saveGenerations: [String: Int] = [:]
   @ObservationIgnored var titleRequested: Set<String> = []
   @ObservationIgnored var notified = NotificationLedger()
   @ObservationIgnored var rowCache: [String: [String: CachedRow]] = [:]
@@ -173,6 +175,7 @@ public final class LiveAgents {
     inflight.remove(agentId)
     seededPrompts[agentId] = nil
     finishedTurns[agentId] = nil
+    saveGenerations[agentId] = nil
     rowCache[agentId] = nil
     titleRequested.remove(agentId)
     await backend?.subscribe(agentId: agentId, on: false)
