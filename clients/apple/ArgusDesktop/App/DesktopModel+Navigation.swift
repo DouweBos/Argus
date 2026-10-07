@@ -86,6 +86,27 @@ extension DesktopModel {
     navigate(.session(id: id, agentId: agentId))
   }
 
+  /// The session on screen, if any: which panel it shows.
+  var sessionPanel: SessionPanel? {
+    switch route {
+    case .session: .agents
+    case .sessionGit: .git
+    case .sessionHome: .home
+    default: nil
+    }
+  }
+
+  /// Home, Agents or Git of the session on screen, from the toolbar or the View menu.
+  func show(_ panel: SessionPanel, via: MacTelemetryEvent.PanelSwitchSource) {
+    guard let id = route.sessionId, panel != sessionPanel else { return }
+    switch panel {
+    case .home: navigate(.sessionHome(id: id))
+    case .agents: openAgents(session: id)
+    case .git: openGit(session: id)
+    }
+    MacTelemetry.capture(.sessionPanelSwitched(panel: panel.rawValue, via: via))
+  }
+
   /// A session's git panel, on the sub-view it was last left on.
   func openGit(session id: String) {
     navigate(.sessionGit(id: id, view: gitViews[id] ?? .working))
@@ -174,5 +195,18 @@ extension DesktopModel {
     guard let agent = await store.createScratchPad() else { return }
     MacTelemetry.capture(.scratchPadCreated)
     open(spawned: agent.agentId, session: agent.sessionId)
+  }
+}
+
+/// The panels a session switches between.
+enum SessionPanel: String, CaseIterable {
+  case home, agents, git
+
+  var title: String {
+    switch self {
+    case .home: "Home"
+    case .agents: "Agents"
+    case .git: "Git"
+    }
   }
 }
