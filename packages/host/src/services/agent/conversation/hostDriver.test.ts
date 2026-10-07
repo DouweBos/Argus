@@ -34,9 +34,10 @@ vi.mock("../../notifications/osNotification", () => ({
   showAgentNotification: () => false,
 }));
 
-const { claimConversations, resetHostConversations, startHostConversations } =
+const { startHostConversations, stopHostConversations } =
   await import("./hostDriver");
-const { readConversation } = await import("./live");
+const { readConversation, resetLive, stageConversation } =
+  await import("./live");
 
 const AGENT = "agent-1";
 
@@ -109,11 +110,11 @@ describe("host conversation driver", () => {
   });
 
   afterEach(() => {
-    resetHostConversations();
+    stopHostConversations();
+    resetLive();
     resetHostEventSinks();
     appState.agents.clear();
     appState.sessions.clear();
-    appState.agentSnapshots.clear();
     appState.agentQueues.clear();
     sent.length = 0;
     saved.length = 0;
@@ -156,39 +157,6 @@ describe("host conversation driver", () => {
     emitHostEvent(`agent:exit:${AGENT}`, 0);
 
     expect(saved.at(-1)?.messageCount).toBe(1);
-  });
-
-  it("stands down while a UI owns conversations, then picks up its snapshot", async () => {
-    addAgent();
-    const release = claimConversations();
-    started();
-    line(reply("from the host"));
-    enqueueMessage(AGENT, { text: "queued" });
-    await vi.advanceTimersByTimeAsync(600);
-
-    expect(snapshot()).toBeNull();
-    expect(sent).toEqual([]);
-
-    // The UI's last word before it goes.
-    appState.agentSnapshots.set(
-      AGENT,
-      JSON.stringify({
-        messages: [
-          {
-            id: "m1",
-            role: "user",
-            textBlocks: ["from the UI"],
-            toolCalls: [],
-            timestamp: 1,
-          },
-        ],
-      }),
-    );
-    release();
-    line(reply("after"));
-    await vi.advanceTimersByTimeAsync(100);
-
-    expect(texts()).toEqual(["user: from the UI", "assistant: after"]);
   });
 
   it("follows the conversation with revisioned deltas", async () => {
@@ -235,5 +203,36 @@ describe("host conversation driver", () => {
         (m) => m.textBlocks[0],
       ),
     ).toEqual(["r1", "r2"]);
+  });
+
+  it("starts a resumed agent from its saved history and skips the replay", async () => {
+    addAgent();
+    stageConversation(AGENT, {
+      messages: [
+        {
+          id: "old",
+          role: "user",
+          textBlocks: ["from last time"],
+          toolCalls: [],
+          timestamp: 1,
+        },
+      ],
+      resuming: true,
+      title: "Saved",
+    });
+    started();
+    // The CLI replays its last turn on --resume; nothing new until a result.
+    line(reply("replayed"));
+    line({
+      type: "result",
+      subtype: "success",
+      duration_ms: 1,
+      total_cost_usd: 0,
+    });
+    line(reply("new"));
+    await vi.advanceTimersByTimeAsync(20);
+
+    expect(texts()).toEqual(["user: from last time", "assistant: new"]);
+    expect(snapshot()?.title).toBe("Saved");
   });
 });

@@ -23,7 +23,7 @@ import {
   recordUserMessage,
   reseedConversation,
   setInflight,
-} from "./hostDriver";
+} from "./folded";
 import { liveConversation } from "./live";
 import { fromSavedMessages } from "./reducer";
 

@@ -21,9 +21,9 @@ import {
 } from "../agent/conversation/visibility";
 
 /**
- * Raw snapshot shapes — the JSON the conversation owner (a UI, or the host's
- * own driver) publishes via `publishAgentSnapshot` (an `AgentConversation`). Deliberately
- * loose: fields we don't forward are omitted.
+ * The conversation shapes this reads — a folded `AgentConversation`, or one
+ * saved by any past version. Deliberately loose: fields we don't forward are
+ * omitted.
  */
 export type RawResultBlock =
   | {
@@ -99,7 +99,7 @@ export interface RawConversation {
 /**
  * Stable image id for a result/attachment block. `slot` is the owning tool's
  * id, or "msg" for message-level attachments. Ids are recomputed on demand by
- * `agents.image` from the same snapshot, so they need no server-side storage.
+ * `agents.image` from the same conversation, so they need no server-side storage.
  */
 function imageId(messageId: string, slot: string, blockIndex: number): string {
   return `${messageId}:${slot}:${blockIndex}`;
@@ -211,7 +211,7 @@ export function toRemoteMessage(m: RawMessage): RemoteMessage {
   };
 }
 
-/** Ordered task list from the snapshot's tasks map + taskOrder. */
+/** Ordered task list from the conversation's tasks map + taskOrder. */
 export function toRemoteTasks(conv: RawConversation): RemoteTask[] | null {
   if (!conv.tasks) {
     return null;
@@ -263,7 +263,7 @@ export function toRemoteTodos(conv: RawConversation): RemoteTodo[] | null {
 }
 
 /**
- * Re-walk a snapshot minting the same image ids as `toRemoteMessage`, so
+ * Re-walk a conversation minting the same image ids as `toRemoteMessage`, so
  * `agents.image` can resolve an id → its base64 bytes without server state.
  */
 export function findImage(

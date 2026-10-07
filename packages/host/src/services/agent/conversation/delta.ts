@@ -37,10 +37,13 @@ export function diffMessages(
   return ops;
 }
 
-/** A Task/Agent call anywhere in the history that hasn't returned. */
+/**
+ * A Task/Agent call anywhere in the history that hasn't returned. Tolerates
+ * the loose messages an old saved chat can hold.
+ */
 export function hasRunningSubagents(messages: ConversationMessage[]): boolean {
   for (let i = messages.length - 1; i >= 0; i--) {
-    for (const tc of messages[i]!.toolCalls) {
+    for (const tc of messages[i]!.toolCalls ?? []) {
       if (
         (tc.name === "Task" || tc.name === "Agent") &&
         tc.result === undefined &&
@@ -57,7 +60,7 @@ export function hasRunningSubagents(messages: ConversationMessage[]): boolean {
 export function firstUserText(
   messages: ConversationMessage[],
 ): string | undefined {
-  return messages.find((m) => m.role === "user")?.textBlocks[0];
+  return messages.find((m) => m.role === "user")?.textBlocks?.[0];
 }
 
 /** The conversation's fields, plus what viewers would otherwise rescan. */

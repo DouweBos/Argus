@@ -20,7 +20,6 @@ import {
 vi.mock("../../state", () => ({
   appState: {
     agents: new Map(),
-    agentSnapshots: new Map(),
     agentPendingPermissions: new Map(),
     sessions: new Map(),
   },
@@ -36,8 +35,6 @@ const { nodeHostPlatform } = await import("../../platform");
 const { encodeFrame, frameReader, startLocalUiSocket } =
   await import("./localUiSocket");
 const { uiHostPlatform } = await import("./uiHostPlatform");
-const { hostOwnsConversations, startHostConversations, stopHostConversations } =
-  await import("../agent/conversation/hostDriver");
 const { onConnectionClose } = await import("./connectionScope");
 const connectionClosed = vi.fn();
 let releaseSlow: ((value: unknown) => void) | null = null;
@@ -285,21 +282,6 @@ describe("local UI socket", () => {
     client.socket.destroy();
     await vi.waitFor(() => expect(server.channel.attached).toBe(false));
     expect(platform.isForeground()).toBe(false);
-  });
-
-  it("keeps conversations while the Mac app is attached", async () => {
-    startHostConversations();
-    try {
-      expect(hostOwnsConversations()).toBe(true);
-      const client = await connectClient(socketPath);
-      await client.request("ui.state", { foreground: false });
-      expect(hostOwnsConversations()).toBe(true);
-      client.socket.destroy();
-      await vi.waitFor(() => expect(server.channel.attached).toBe(false));
-      expect(hostOwnsConversations()).toBe(true);
-    } finally {
-      stopHostConversations();
-    }
   });
 
   it("rejects malformed ui.* params", async () => {

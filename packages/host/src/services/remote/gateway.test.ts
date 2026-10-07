@@ -8,7 +8,6 @@ import { generateKeypair, NoiseHandshake, type NoiseSession } from "./noise";
 vi.mock("../../state", () => ({
   appState: {
     agents: new Map(),
-    agentSnapshots: new Map(),
     agentPendingPermissions: new Map(),
   },
 }));

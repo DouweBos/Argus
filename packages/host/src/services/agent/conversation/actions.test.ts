@@ -38,10 +38,10 @@ vi.mock("../../notifications/osNotification", () => ({
   showAgentNotification: () => false,
 }));
 
-const { resetHostConversations, startHostConversations } =
+const { startHostConversations, stopHostConversations } =
   await import("./hostDriver");
 const actions = await import("./actions");
-const { liveConversation } = await import("./live");
+const { liveConversation, resetLive } = await import("./live");
 
 const AGENT = "agent-1";
 
@@ -127,11 +127,11 @@ describe("conversation actions", () => {
   });
 
   afterEach(() => {
-    resetHostConversations();
+    stopHostConversations();
+    resetLive();
     resetHostEventSinks();
     appState.agents.clear();
     appState.sessions.clear();
-    appState.agentSnapshots.clear();
     appState.agentQueues.clear();
     sent.length = 0;
     restored.length = 0;

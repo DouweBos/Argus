@@ -1,19 +1,12 @@
 /**
- * The host's own conversation owner, for when no UI is attached to do it: a
- * plain `argus-host`, a Linux box, the windowless server. It does what the
- * desktop renderer and the Mac app do for their agents — fold the stream into
- * a conversation, publish the snapshot the gateway serves, record the user's
- * messages, drain the queue, save chat history, title and notify.
- *
- * A UI that owns conversations claims them (`claimConversations`) and the host
- * stands down, so a snapshot only ever has one writer. When the last one lets
- * go, the host picks every live agent back up from its latest snapshot.
+ * The one owner of every agent's conversation: it folds the stream, records
+ * the user's messages, drains the queue, saves chat history, titles and
+ * notifies. Clients only view it — a page from `./live`, then its deltas.
  */
 
 import type { AgentInfo } from "../models";
 import type {
   AgentCapabilities,
-  AgentConversation,
   ConversationMessage,
   ImageAttachment,
   LlmStreamEvent,
@@ -22,247 +15,66 @@ import type {
 import { addHostEventSink } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
-import { generateChatTitle } from "../../llm/titleGenerator";
 import { sendAgentMessage } from "../agentService";
-import { saveConversation } from "../chatHistory";
 import { createCheckpoint } from "../checkpoints";
 import { dequeueMessage, listQueue } from "../messageQueue";
-import { getAgentSnapshot, publishAgentSnapshot } from "../snapshots";
 import { parseCliDiagnostic } from "./cliDiagnostics";
+import {
+  conversationOf,
+  maybeGenerateTitle,
+  save,
+  type Tracked,
+  track,
+  trackedAgentIds,
+  trackedEntry,
+  untrack,
+  update,
+  userMessage,
+} from "./folded";
 import {
   isAwaitingAnswerTool,
   notifyFinished,
   notifyPrompt,
 } from "./hostNotifications";
+import { flushLive } from "./live";
 import {
-  dropLive,
-  flushLive,
-  liveConversation,
-  seedLive,
-  setLive,
-} from "./live";
-import {
-  deriveTitle,
-  emptyConversation,
   reduceEvent,
   withCapabilities,
   withInjectedPrompt,
   withPermissionPending,
   withSystemMessage,
-  withUserMessage,
 } from "./reducer";
 
-/**
- * Mid-turn history writes, at most this often: a long chat is megabytes. Turn
- * ends, exits and stops write at once.
- */
-const SAVE_INTERVAL_MS = 10_000;
 const AWAITING_ANSWER_GRACE_MS = 750;
 const PERMISSION_RETRY_MS = 50;
 const PERMISSION_RETRIES = 20;
 
-interface Tracked {
-  sessionId: string;
-  parentAgentId: string | null;
-  runnerId?: string;
-  /** A message went in and no idle came back yet. */
-  inflight: boolean;
-  finished?: { durationMs: number; failed: boolean };
-  saveTimer?: NodeJS.Timeout;
-  titleRequested?: boolean;
-}
-
-const tracked = new Map<string, Tracked>();
-let owners = 0;
 let unsubscribe: (() => void) | null = null;
-
-/** Whether the host itself is folding conversations right now. */
-export function hostOwnsConversations(): boolean {
-  return unsubscribe !== null && owners === 0;
-}
-
-/**
- * A UI that folds and publishes conversations itself is attached. Returns the
- * release; once every claim is released the host takes over again.
- */
-export function claimConversations(): () => void {
-  owners += 1;
-  if (owners === 1) {
-    standDown();
-  }
-  let released = false;
-
-  return () => {
-    if (released) {
-      return;
-    }
-    released = true;
-    owners -= 1;
-    if (owners === 0 && unsubscribe) {
-      adoptLiveAgents();
-    }
-  };
-}
 
 export function startHostConversations(): void {
   if (unsubscribe) {
     return;
   }
   unsubscribe = addHostEventSink((channel, args) => {
-    if (!hostOwnsConversations()) {
-      return;
-    }
     try {
       route(channel, args[0]);
     } catch (e) {
       warn(`[conversations] ${channel}: ${String(e)}`);
     }
   });
-  if (owners === 0) {
-    adoptLiveAgents();
-  }
-}
-
-/** Flush every pending save and stop listening. */
-export function stopHostConversations(): void {
-  unsubscribe?.();
-  unsubscribe = null;
-  standDown();
-}
-
-/** Test-only. */
-export function resetHostConversations(): void {
-  stopHostConversations();
-  owners = 0;
-}
-
-/** Hand every conversation to the UI that claimed them, via its snapshot. */
-function standDown(): void {
-  for (const agentId of [...tracked.keys()]) {
-    save(agentId);
-    publish(agentId);
-    untrack(agentId);
-  }
-}
-
-function untrack(agentId: string): void {
-  const entry = tracked.get(agentId);
-  clearTimeout(entry?.saveTimer);
-  tracked.delete(agentId);
-  dropLive(agentId);
-}
-
-function adoptLiveAgents(): void {
   for (const agent of appState.agents.values()) {
     track(agent.agentId, agent.sessionId, agent.parentAgentId, agent.runner.id);
   }
 }
 
-function track(
-  agentId: string,
-  sessionId: string,
-  parentAgentId: string | null,
-  runnerId?: string,
-): Tracked {
-  const existing = tracked.get(agentId);
-  if (existing) {
-    return existing;
+/** Save every conversation and stop listening. */
+export function stopHostConversations(): void {
+  unsubscribe?.();
+  unsubscribe = null;
+  for (const agentId of trackedAgentIds()) {
+    save(agentId);
+    untrack(agentId);
   }
-  seedLive(agentId, seed(agentId));
-  const entry: Tracked = {
-    sessionId,
-    parentAgentId,
-    runnerId,
-    inflight: appState.agents.get(agentId)?.status === "running",
-  };
-  tracked.set(agentId, entry);
-
-  return entry;
-}
-
-/** Whatever was last published — a resumed chat, or a UI's that just left. */
-function seed(agentId: string): AgentConversation {
-  const raw = getAgentSnapshot(agentId);
-  if (!raw) {
-    return emptyConversation();
-  }
-  try {
-    const conv = JSON.parse(raw) as AgentConversation;
-
-    return Array.isArray(conv.messages) ? conv : emptyConversation();
-  } catch {
-    return emptyConversation();
-  }
-}
-
-// --- What conversation actions (`./actions`) change ----------------------
-
-/** Whether the host is folding this agent's conversation. */
-export function isFolding(agentId: string): boolean {
-  return tracked.has(agentId);
-}
-
-/** Apply `fn` to a folded conversation. False when the host isn't folding it. */
-export function changeConversation(
-  agentId: string,
-  fn: (c: AgentConversation) => AgentConversation | null,
-): boolean {
-  const entry = tracked.get(agentId);
-  if (!entry) {
-    return false;
-  }
-  update(agentId, entry, fn);
-
-  return true;
-}
-
-/** Record a message the user sent, and title the chat from it if untitled. */
-export function recordUserMessage(
-  agentId: string,
-  text: string,
-  options: {
-    author?: string;
-    checkpointId?: string;
-    images?: ImageAttachment[];
-  },
-): void {
-  const entry = tracked.get(agentId);
-  if (entry) {
-    userMessage(
-      agentId,
-      entry,
-      text,
-      options.images,
-      options.author,
-      options.checkpointId,
-    );
-  }
-}
-
-/** A message is on its way to the CLI (or isn't any more). */
-export function setInflight(agentId: string, inflight: boolean): void {
-  const entry = tracked.get(agentId);
-  if (entry) {
-    entry.inflight = inflight;
-  }
-}
-
-export function isInflight(agentId: string): boolean {
-  return tracked.get(agentId)?.inflight ?? false;
-}
-
-/** Start the conversation over from `conversation` — a fork's backfill. */
-export function reseedConversation(
-  agentId: string,
-  conversation: AgentConversation,
-): void {
-  const entry = tracked.get(agentId);
-  if (!entry) {
-    return;
-  }
-  seedLive(agentId, conversation);
-  entry.titleRequested = Boolean(conversation.title);
-  save(agentId);
 }
 
 const AGENT_CHANNEL = /^agent:([a-z-]+):(.+)$/;
@@ -278,7 +90,7 @@ function route(channel: string, payload: unknown): void {
     return;
   }
   const [, kind, agentId] = match;
-  const entry = tracked.get(agentId!);
+  const entry = trackedEntry(agentId!);
   if (!entry) {
     return;
   }
@@ -461,7 +273,7 @@ function permissionRequested(
   // The tool call may not be folded in yet (a nested subagent call).
   if (attempt < PERMISSION_RETRIES) {
     setTimeout(() => {
-      if (tracked.get(agentId) === entry) {
+      if (trackedEntry(agentId) === entry) {
         permissionRequested(agentId, entry, request, attempt + 1);
       }
     }, PERMISSION_RETRY_MS);
@@ -474,7 +286,7 @@ function notifyIfStillUnanswered(
   toolName: string,
 ): void {
   setTimeout(() => {
-    const entry = tracked.get(agentId);
+    const entry = trackedEntry(agentId);
     if (!entry) {
       return;
     }
@@ -511,20 +323,6 @@ function injected(agentId: string, entry: Tracked, payload: McpMessage): void {
       },
     }),
   );
-}
-
-function userMessage(
-  agentId: string,
-  entry: Tracked,
-  text: string,
-  images?: ImageAttachment[],
-  author?: string,
-  checkpointId?: string,
-): void {
-  update(agentId, entry, (c) =>
-    withUserMessage(c, text, { images, author, checkpointId }),
-  );
-  maybeGenerateTitle(agentId, entry, text);
 }
 
 function stderr(agentId: string, entry: Tracked, line: string): void {
@@ -567,7 +365,7 @@ function trySendNextQueued(agentId: string, entry: Tracked): boolean {
     } catch {
       // A checkpoint is a nicety; the send goes ahead without one.
     }
-    if (tracked.get(agentId) !== entry) {
+    if (trackedEntry(agentId) !== entry) {
       return;
     }
     userMessage(
@@ -587,108 +385,4 @@ function trySendNextQueued(agentId: string, entry: Tracked): boolean {
   })().catch(() => undefined);
 
   return true;
-}
-
-function maybeGenerateTitle(
-  agentId: string,
-  entry: Tracked,
-  firstMessage: string,
-): void {
-  if (entry.titleRequested || conversationOf(agentId).title) {
-    entry.titleRequested = true;
-
-    return;
-  }
-  const text = firstMessage.trim();
-  if (!text) {
-    return;
-  }
-  entry.titleRequested = true;
-  generateChatTitle(text)
-    .then((title) => {
-      if (
-        title &&
-        tracked.get(agentId) === entry &&
-        !conversationOf(agentId).title
-      ) {
-        update(agentId, entry, (c) => ({ ...c, title }));
-      }
-    })
-    .catch(() => {
-      entry.titleRequested = false;
-    });
-}
-
-function conversationOf(agentId: string): AgentConversation {
-  return liveConversation(agentId) ?? emptyConversation();
-}
-
-function update(
-  agentId: string,
-  entry: Tracked,
-  fn: (c: AgentConversation) => AgentConversation | null,
-): void {
-  const current = liveConversation(agentId);
-  if (!current) {
-    return;
-  }
-  const next = fn(current);
-  if (!next || next === current) {
-    return;
-  }
-  setLive(agentId, next);
-  entry.saveTimer ??= setTimeout(() => {
-    entry.saveTimer = undefined;
-    save(agentId);
-  }, SAVE_INTERVAL_MS);
-}
-
-/** Leave the conversation where a UI that claims it next will look. */
-function publish(agentId: string): void {
-  const conv = liveConversation(agentId);
-  if (!conv || !appState.agents.has(agentId)) {
-    return;
-  }
-  try {
-    publishAgentSnapshot(agentId, JSON.stringify(conv));
-  } catch (e) {
-    warn(`[conversations] snapshot for ${agentId} failed: ${String(e)}`);
-  }
-}
-
-/** Upserts by the CLI session id, so repeat saves overwrite one record. */
-function save(agentId: string): void {
-  const entry = tracked.get(agentId);
-  const conv = liveConversation(agentId);
-  if (!entry || !conv) {
-    return;
-  }
-  clearTimeout(entry.saveTimer);
-  entry.saveTimer = undefined;
-  const session = appState.sessions.get(entry.sessionId);
-  if (!conv.sessionId || conv.messages.length === 0 || !session) {
-    return;
-  }
-  try {
-    saveConversation(session.repo_root, {
-      id: crypto.randomUUID(),
-      sessionId: conv.sessionId,
-      agentId,
-      parentAgentId: entry.parentAgentId ?? undefined,
-      argusSessionId: entry.sessionId,
-      title: conv.title ?? deriveTitle(conv.messages),
-      sessionBranch: session.branch ?? "",
-      sessionDescription: session.description ?? "",
-      model: conv.model,
-      runnerId: entry.runnerId,
-      totalCost: conv.totalCost,
-      totalDuration: conv.totalDuration,
-      messageCount: conv.messages.length,
-      createdAt: conv.messages[0]?.timestamp ?? Date.now(),
-      endedAt: Date.now(),
-      messages: conv.messages,
-    });
-  } catch (e) {
-    warn(`[conversations] saving ${agentId} failed: ${String(e)}`);
-  }
 }

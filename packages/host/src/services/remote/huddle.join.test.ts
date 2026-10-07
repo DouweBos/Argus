@@ -42,7 +42,6 @@ vi.mock("@argus/host/bus", () => ({
 vi.mock("../../state", () => ({
   appState: {
     agents: new Map(),
-    agentSnapshots: new Map(),
     agentPendingPermissions: new Map(),
     sessions: new Map(),
   },

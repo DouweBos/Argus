@@ -12,7 +12,6 @@ import type {
   AgentTranscriptPage,
 } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
-import { getParsedAgentSnapshot } from "../snapshots";
 import { conversationMeta, diffMessages, diffMeta } from "./delta";
 
 /** Long enough to fold a burst of events into one delta, short enough to read as live. */
@@ -30,6 +29,25 @@ interface Live {
 }
 
 const live = new Map<string, Live>();
+/** Conversations waiting for an agent that is still starting: a resume's. */
+const staged = new Map<string, AgentConversation>();
+
+/** What an agent about to start begins with, taken when the host starts folding it. */
+export function stageConversation(
+  agentId: string,
+  conversation: AgentConversation,
+): void {
+  staged.set(agentId, conversation);
+}
+
+export function takeStagedConversation(
+  agentId: string,
+): AgentConversation | null {
+  const conversation = staged.get(agentId) ?? null;
+  staged.delete(agentId);
+
+  return conversation;
+}
 
 /** Start (or restart, under a new epoch) following an agent's conversation. */
 export function seedLive(
@@ -112,6 +130,7 @@ export function resetLive(): void {
     clearTimeout(entry.emitTimer);
   }
   live.clear();
+  staged.clear();
 }
 
 function emit(agentId: string, entry: Live): void {
@@ -194,15 +213,13 @@ export function liveCursor(
   return { epoch: entry.epoch, revision: entry.revision };
 }
 
-/**
- * The conversation to read for an agent: the host's own fold, or — while a UI
- * still owns conversations — the snapshot it last published.
- */
+/** The conversation to read for an agent, as of the last delta sent. */
 export function readConversation(agentId: string): AgentConversation | null {
   const entry = live.get(agentId);
-  if (entry) {
-    return entry.conversation;
+  if (!entry) {
+    return null;
   }
+  flushLive(agentId);
 
-  return getParsedAgentSnapshot<AgentConversation>(agentId);
+  return entry.conversation;
 }

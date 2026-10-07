@@ -36,8 +36,9 @@ import {
   submitAgentMessage,
 } from "../services/agent/conversation/actions";
 import {
-  liveConversation,
+  isLive,
   livePage,
+  readConversation,
 } from "../services/agent/conversation/live";
 import {
   dismissLimitResume,
@@ -51,10 +52,6 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../services/agent/messageQueue";
-import {
-  getAgentSnapshot,
-  publishAgentSnapshot,
-} from "../services/agent/snapshots";
 import { defineTypedCommand } from "../services/command/registry";
 import { generateChatTitle } from "../services/llm/titleGenerator";
 import { showAgentNotification } from "../services/notifications/osNotification";
@@ -114,9 +111,14 @@ export function registerAgentCommands(): void {
     deleteCheckpoint(p.sessionId, p.checkpointId),
   );
 
-  defineTypedCommand("save_chat_history", (p) =>
-    saveConversation(p.repoRoot, p.conversation),
-  );
+  defineTypedCommand("save_chat_history", (p) => {
+    // An older desktop still saves the chats it folds; the host's own record
+    // of a live agent is the one that counts.
+    if (p.conversation.agentId && isLive(p.conversation.agentId)) {
+      return;
+    }
+    saveConversation(p.repoRoot, p.conversation);
+  });
   defineTypedCommand("list_chat_history", (p) => loadHistoryIndex(p.repoRoot));
   defineTypedCommand("search_chat_history", (p) =>
     searchChatHistory(p.repoRoot, p.query),
@@ -156,14 +158,12 @@ export function registerAgentCommands(): void {
     (p) => dequeueMessage(p.agentId) ?? null,
   );
 
-  defineTypedCommand("publish_agent_snapshot", (p) =>
-    publishAgentSnapshot(p.agentId, p.snapshot),
-  );
+  // Older desktops publish what they fold; the host folds it itself now.
+  defineTypedCommand("publish_agent_snapshot", () => undefined);
   defineTypedCommand("get_agent_snapshot", (p) => {
-    // Older desktops still hydrate from a snapshot; serialise the live fold for them.
-    const live = liveConversation(p.agentId);
+    const live = readConversation(p.agentId);
 
-    return live ? JSON.stringify(live) : getAgentSnapshot(p.agentId);
+    return live ? JSON.stringify(live) : null;
   });
   defineTypedCommand("submit_agent_message", ({ agentId, ...message }) =>
     submitAgentMessage(agentId, message),
