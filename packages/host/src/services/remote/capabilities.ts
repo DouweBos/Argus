@@ -57,6 +57,10 @@ import {
 } from "../agent/agentService";
 import { loadConversation, loadHistoryIndex } from "../agent/chatHistory";
 import { knownContextWindow } from "../agent/contextWindow";
+import {
+  type VisibilityOptions,
+  visibleMessages,
+} from "../agent/conversation/visibility";
 import { dismissLimitResume, limitResumeAt } from "../agent/limitResume";
 import {
   enqueueMessage,
@@ -923,6 +927,7 @@ function loadStoppedConversation(
 function transcriptPage(
   conv: RawConversation,
   cursor: { after?: number; before?: number; limit?: number },
+  options: VisibilityOptions = {},
 ): {
   messages: RemoteMessage[];
   next_after: number | null;
@@ -946,7 +951,11 @@ function transcriptPage(
   }
 
   return {
-    messages: raw.slice(start, end).map(toRemoteMessage),
+    // Cursors index the raw history; hidden bookkeeping just thins the page.
+    messages: visibleMessages<RawMessage, RawToolCall>(
+      raw.slice(start, end),
+      options,
+    ).map(toRemoteMessage),
     next_after: end < total ? end : null,
     prev_before: start > 0 ? start : null,
     total,
@@ -1255,7 +1264,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const conv = loadStoppedConversation(repo_root, history_id);
 
     return {
-      ...transcriptPage(conv, { after, before, limit }),
+      ...transcriptPage(conv, { after, before, limit }, { settled: true }),
       model: conv.model ?? null,
     };
   },

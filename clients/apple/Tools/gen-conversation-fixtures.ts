@@ -602,6 +602,58 @@ it("generates conversation fixtures", async () => {
   );
 
   await generate(
+    "bookkeeping",
+    "Thinking-only turns, ToolSearch, synthetic no-response stubs and a sub-agent's thinking add no rows; saved ones are hidden from pages.",
+    [
+      {
+        op: "loadSaved",
+        messages: [
+          { id: "s1", role: "user", textBlocks: ["Go"], toolCalls: [], timestamp: 1 },
+          { id: "s2", role: "assistant", textBlocks: [], toolCalls: [], timestamp: 2 },
+          {
+            id: "s3",
+            role: "assistant",
+            textBlocks: [""],
+            toolCalls: [
+              { id: "s_ts", name: "ToolSearch", input: { query: "select:Read" }, result: [{ type: "text", text: "Read" }] },
+            ],
+            timestamp: 3,
+          },
+          {
+            id: "s4",
+            role: "assistant",
+            textBlocks: [],
+            toolCalls: [
+              {
+                id: "s_agent",
+                name: "Agent",
+                input: { description: "Look" },
+                result: "done",
+                children: [
+                  { kind: "tool_use", toolCall: {} as never },
+                  { kind: "text", text: "Found it." },
+                ],
+              },
+            ],
+            timestamp: 4,
+          },
+          { id: "s5", role: "assistant", textBlocks: ["No response requested."], toolCalls: [], timestamp: 5 },
+        ],
+      },
+      { op: "userMessage", text: "Continue." },
+      assistant([{ type: "thinking", thinking: "Which tool?", signature: "sig" }]),
+      assistant([toolUse("ts_1", "ToolSearch", { query: "select:ExitPlanMode", max_results: 1 })]),
+      user([toolResult("ts_1", [{ type: "tool_reference", tool_name: "ExitPlanMode" }])]),
+      assistant([toolUse("ag_1", "Agent", { description: "Dig", prompt: "Dig" })]),
+      assistant([{ type: "thinking", thinking: "Hmm", signature: "sig" }, text("Digging.")], "ag_1"),
+      assistant([{ type: "redacted_thinking", data: "x" }]),
+      assistant([text("No response requested.")]),
+      assistant([text("Done.")]),
+      result(),
+    ],
+  );
+
+  await generate(
     "quirks",
     "Shapes the renderer handles by accident: string user content, init without model, assistant without usage, unknown types.",
     [

@@ -24,6 +24,7 @@ import {
   TASK_TOOL_NAMES,
 } from "./tasks";
 import { toToolResult, updateToolCallInMessages } from "./toolCalls";
+import { isMetaText } from "./visibility";
 
 export function emptyConversation(): AgentConversation {
   return { messages: [] };
@@ -104,13 +105,23 @@ function withAssistant(
 
   // Sub-agent messages: nest under the parent Task/Agent tool call.
   if (event.parent_tool_use_id) {
-    const newChildren: ToolCallChild[] = content.map((block) =>
-      block.type === "text"
-        ? { kind: "text", text: block.text }
-        : {
-            kind: "tool_use",
-            toolCall: { id: block.id, name: block.name, input: block.input },
-          },
+    // Thinking blocks have nothing to show; folding them in leaves empty cards.
+    const newChildren: ToolCallChild[] = content.flatMap(
+      (block): ToolCallChild[] => {
+        if (block.type === "text") {
+          return [{ kind: "text", text: block.text }];
+        }
+        if (block.type === "tool_use") {
+          return [
+            {
+              kind: "tool_use",
+              toolCall: { id: block.id, name: block.name, input: block.input },
+            },
+          ];
+        }
+
+        return [];
+      },
     );
     const messages = updateToolCallInMessages(
       existing.messages,
@@ -131,6 +142,16 @@ function withAssistant(
     } else if (block.type === "tool_use") {
       toolCalls.push({ id: block.id, name: block.name, input: block.input });
     }
+  }
+  // A thinking-only block or a synthetic stub: track the event, add no row.
+  if (toolCalls.length === 0 && textBlocks.every(isMetaText)) {
+    return {
+      ...existing,
+      lastEventType: event.type,
+      model: existing.model ?? event.message.model,
+      pendingToolName: null,
+      pendingToolInput: null,
+    };
   }
   const assistantMsg: ConversationMessage = {
     id: crypto.randomUUID(),

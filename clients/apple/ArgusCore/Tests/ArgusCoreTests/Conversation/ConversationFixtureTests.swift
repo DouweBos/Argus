@@ -11,6 +11,7 @@ import Testing
 private let fixtureNames = [
   "plain-text-turn", "tool-results", "parallel-tools", "subagent", "todos-tasks",
   "permissions", "system-result", "resume", "user-images-injected", "quirks",
+  "bookkeeping",
 ]
 
 private func loadFixture(_ name: String) throws -> JSONValue {

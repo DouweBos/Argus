@@ -586,10 +586,6 @@
                 },
                 "children": [
                   {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
-                  {
                     "kind": "text",
                     "text": "Looking at logs."
                   },
@@ -694,10 +690,6 @@
                   "subagent_type": "general-purpose"
                 },
                 "children": [
-                  {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
                   {
                     "kind": "text",
                     "text": "Looking at logs."
@@ -806,10 +798,6 @@
                 },
                 "children": [
                   {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
-                  {
                     "kind": "text",
                     "text": "Looking at logs."
                   },
@@ -915,10 +903,6 @@
                   "subagent_type": "general-purpose"
                 },
                 "children": [
-                  {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
                   {
                     "kind": "text",
                     "text": "Looking at logs."
@@ -1028,10 +1012,6 @@
                   "subagent_type": "general-purpose"
                 },
                 "children": [
-                  {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
                   {
                     "kind": "text",
                     "text": "Looking at logs."
@@ -1154,9 +1134,128 @@
                 },
                 "children": [
                   {
-                    "kind": "tool_use",
-                    "toolCall": {}
+                    "kind": "text",
+                    "text": "Looking at logs."
                   },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_1",
+                      "name": "Bash",
+                      "input": {
+                        "command": "tail crash.log"
+                      },
+                      "pendingPermission": false,
+                      "result": "Fatal error: index out of range",
+                      "isError": false
+                    }
+                  },
+                  {
+                    "kind": "tool_use",
+                    "toolCall": {
+                      "id": "sub_2",
+                      "name": "Agent",
+                      "input": {
+                        "description": "Deeper",
+                        "prompt": "Dig in"
+                      },
+                      "children": [
+                        {
+                          "kind": "tool_use",
+                          "toolCall": {
+                            "id": "deep_1",
+                            "name": "Read",
+                            "input": {
+                              "file_path": "Player.swift"
+                            },
+                            "result": "func play() {}",
+                            "isError": false
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "timestamp": 1760000001000,
+            "usage": {
+              "input_tokens": 1200,
+              "output_tokens": 80,
+              "cache_read_input_tokens": 9000,
+              "service_tier": "standard"
+            }
+          }
+        ],
+        "resuming": false,
+        "lastEventType": "user",
+        "model": "claude-opus-4-8",
+        "sessionId": "cli-session-1",
+        "tools": [
+          "Read",
+          "Edit",
+          "Bash",
+          "Task"
+        ],
+        "slashCommands": [
+          {
+            "name": "compact",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "review",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "commit",
+            "description": "",
+            "argumentHint": ""
+          },
+          {
+            "name": "pdf",
+            "description": "",
+            "argumentHint": ""
+          }
+        ],
+        "pendingToolName": "Task",
+        "pendingToolInput": {
+          "description": "Investigate",
+          "prompt": "Find the crash",
+          "subagent_type": "general-purpose"
+        },
+        "tasks": null
+      }
+    },
+    {
+      "snapshot": {
+        "messages": [
+          {
+            "id": "uuid-1",
+            "role": "user",
+            "textBlocks": [
+              "Investigate the crash."
+            ],
+            "toolCalls": [],
+            "timestamp": 1760000000000
+          },
+          {
+            "id": "uuid-2",
+            "role": "assistant",
+            "textBlocks": [
+              "Spawning an investigator."
+            ],
+            "toolCalls": [
+              {
+                "id": "task_1",
+                "name": "Task",
+                "input": {
+                  "description": "Investigate",
+                  "prompt": "Find the crash",
+                  "subagent_type": "general-purpose"
+                },
+                "children": [
                   {
                     "kind": "text",
                     "text": "Looking at logs."
@@ -1281,10 +1380,6 @@
                 },
                 "children": [
                   {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
-                  {
                     "kind": "text",
                     "text": "Looking at logs."
                   },
@@ -1407,137 +1502,6 @@
                   "subagent_type": "general-purpose"
                 },
                 "children": [
-                  {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
-                  {
-                    "kind": "text",
-                    "text": "Looking at logs."
-                  },
-                  {
-                    "kind": "tool_use",
-                    "toolCall": {
-                      "id": "sub_1",
-                      "name": "Bash",
-                      "input": {
-                        "command": "tail crash.log"
-                      },
-                      "pendingPermission": false,
-                      "result": "Fatal error: index out of range",
-                      "isError": false
-                    }
-                  },
-                  {
-                    "kind": "tool_use",
-                    "toolCall": {
-                      "id": "sub_2",
-                      "name": "Agent",
-                      "input": {
-                        "description": "Deeper",
-                        "prompt": "Dig in"
-                      },
-                      "children": [
-                        {
-                          "kind": "tool_use",
-                          "toolCall": {
-                            "id": "deep_1",
-                            "name": "Read",
-                            "input": {
-                              "file_path": "Player.swift"
-                            },
-                            "result": "func play() {}",
-                            "isError": false
-                          }
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            ],
-            "timestamp": 1760000001000,
-            "usage": {
-              "input_tokens": 1200,
-              "output_tokens": 80,
-              "cache_read_input_tokens": 9000,
-              "service_tier": "standard"
-            }
-          }
-        ],
-        "resuming": false,
-        "lastEventType": "user",
-        "model": "claude-opus-4-8",
-        "sessionId": "cli-session-1",
-        "tools": [
-          "Read",
-          "Edit",
-          "Bash",
-          "Task"
-        ],
-        "slashCommands": [
-          {
-            "name": "compact",
-            "description": "",
-            "argumentHint": ""
-          },
-          {
-            "name": "review",
-            "description": "",
-            "argumentHint": ""
-          },
-          {
-            "name": "commit",
-            "description": "",
-            "argumentHint": ""
-          },
-          {
-            "name": "pdf",
-            "description": "",
-            "argumentHint": ""
-          }
-        ],
-        "pendingToolName": "Task",
-        "pendingToolInput": {
-          "description": "Investigate",
-          "prompt": "Find the crash",
-          "subagent_type": "general-purpose"
-        },
-        "tasks": null
-      }
-    },
-    {
-      "snapshot": {
-        "messages": [
-          {
-            "id": "uuid-1",
-            "role": "user",
-            "textBlocks": [
-              "Investigate the crash."
-            ],
-            "toolCalls": [],
-            "timestamp": 1760000000000
-          },
-          {
-            "id": "uuid-2",
-            "role": "assistant",
-            "textBlocks": [
-              "Spawning an investigator."
-            ],
-            "toolCalls": [
-              {
-                "id": "task_1",
-                "name": "Task",
-                "input": {
-                  "description": "Investigate",
-                  "prompt": "Find the crash",
-                  "subagent_type": "general-purpose"
-                },
-                "children": [
-                  {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
                   {
                     "kind": "text",
                     "text": "Looking at logs."
@@ -1663,10 +1627,6 @@
                   "subagent_type": "general-purpose"
                 },
                 "children": [
-                  {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
                   {
                     "kind": "text",
                     "text": "Looking at logs."
@@ -1817,10 +1777,6 @@
                   "subagent_type": "general-purpose"
                 },
                 "children": [
-                  {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
                   {
                     "kind": "text",
                     "text": "Looking at logs."
@@ -1974,10 +1930,6 @@
                   "subagent_type": "general-purpose"
                 },
                 "children": [
-                  {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
                   {
                     "kind": "text",
                     "text": "Looking at logs."
@@ -2146,10 +2098,6 @@
                   "subagent_type": "general-purpose"
                 },
                 "children": [
-                  {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
                   {
                     "kind": "text",
                     "text": "Looking at logs."
@@ -2320,10 +2268,6 @@
                   "subagent_type": "general-purpose"
                 },
                 "children": [
-                  {
-                    "kind": "tool_use",
-                    "toolCall": {}
-                  },
                   {
                     "kind": "text",
                     "text": "Looking at logs."
@@ -2506,16 +2450,6 @@
                   }
                 ],
                 "children": [
-                  {
-                    "kind": "tool_use",
-                    "tool_call": {
-                      "id": "",
-                      "name": "tool",
-                      "input": {},
-                      "result_blocks": [],
-                      "status": "running"
-                    }
-                  },
                   {
                     "kind": "text",
                     "text": "Looking at logs."
@@ -2731,16 +2665,6 @@
                 ],
                 "children": [
                   {
-                    "kind": "tool_use",
-                    "tool_call": {
-                      "id": "",
-                      "name": "tool",
-                      "input": {},
-                      "result_blocks": [],
-                      "status": "running"
-                    }
-                  },
-                  {
                     "kind": "text",
                     "text": "Looking at logs."
                   },
@@ -2879,16 +2803,6 @@
                   }
                 ],
                 "children": [
-                  {
-                    "kind": "tool_use",
-                    "tool_call": {
-                      "id": "",
-                      "name": "tool",
-                      "input": {},
-                      "result_blocks": [],
-                      "status": "running"
-                    }
-                  },
                   {
                     "kind": "text",
                     "text": "Looking at logs."

@@ -3324,33 +3324,6 @@
             "timestamp": 1760000003000
           },
           {
-            "id": "uuid-5",
-            "role": "assistant",
-            "text_blocks": [],
-            "tool_calls": [
-              {
-                "id": "tu_search",
-                "name": "ToolSearch",
-                "input": {
-                  "query": "notebook"
-                },
-                "result_blocks": [
-                  {
-                    "type": "text",
-                    "text": "NotebookEdit\nNotebookRead"
-                  }
-                ],
-                "status": "done"
-              }
-            ],
-            "usage": {
-              "input_tokens": 1200,
-              "output_tokens": 80,
-              "cache_read_input_tokens": 9000
-            },
-            "timestamp": 1760000004000
-          },
-          {
             "id": "uuid-6",
             "role": "assistant",
             "text_blocks": [],

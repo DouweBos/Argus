@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { visibleMessages as shownMessages } from "@argus/host/services/agent/conversation/visibility";
 import {
   Button,
   ConfirmDialog,
@@ -320,10 +321,15 @@ export function AgentChat({
     [messages, visibleCount, hasMoreMessages],
   );
 
-  // Group consecutive tool-call-only assistant messages into collapsed segments
+  // Hide bookkeeping (thinking-only turns, ToolSearch), then group consecutive
+  // tool-call-only assistant messages into collapsed segments.
+  const settled =
+    agentStatus === null ||
+    agentStatus === "stopped" ||
+    agentStatus === "error";
   const segments = useMemo(
-    () => groupMessages(visibleMessages),
-    [visibleMessages],
+    () => groupMessages(shownMessages(visibleMessages, { settled })),
+    [visibleMessages, settled],
   );
 
   // Find the first segment whose message(s) contain an unread assistant message;
