@@ -40,6 +40,19 @@ struct HomeDefaultsTests {
     #expect(HomeDefaults(file: b.appendingPathComponent("mac-app-state.plist")).string(forKey: "runtime.platform") == nil)
   }
 
+  @Test func aRestoredBrowserPickDoesNotStartTheBrowser() {
+    let home = tempHome()
+    defer { try? FileManager.default.removeItem(at: home) }
+    let defaults = HomeDefaults(file: home.appendingPathComponent("mac-app-state.plist"))
+    defaults.set("web", forKey: "runtime.platform")
+
+    let runtime = RuntimeModel(store: HostStore(), defaults: defaults)
+    #expect(runtime.platform == .web)
+    #expect(runtime.startedBrowsers.isEmpty)
+
+    runtime.select(platform: .web, device: nil, session: "s1")
+    #expect(runtime.startedBrowsers == ["s1"])
+  }
 
   @Test func aFreshHomeDefaultsToIOS() {
     let home = tempHome()

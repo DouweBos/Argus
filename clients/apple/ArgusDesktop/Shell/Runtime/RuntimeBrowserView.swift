@@ -34,6 +34,8 @@ struct RuntimeBrowserView: View {
 
   private var claimId: String { "browser:\(sessionKey)" }
 
+  private var started: Bool { runtime.startedBrowsers.contains(sessionKey) }
+
   private var otherHolder: RemoteDeviceClaim? {
     guard let holder = store.deviceClaims[claimId]?.holder, let mine = store.connectionId
     else { return nil }
@@ -46,8 +48,8 @@ struct RuntimeBrowserView: View {
       Divider()
       stage
     }
-    .task(id: OpenKey(session: sessionKey, ready: store.connection == .ready)) {
-      guard store.connection == .ready else { return }
+    .task(id: OpenKey(session: sessionKey, ready: store.connection == .ready, started: started)) {
+      guard store.connection == .ready, started else { return }
       await open()
     }
     .onDisappear { close() }
@@ -137,7 +139,18 @@ struct RuntimeBrowserView: View {
         theme.mediaBg
         RuntimeJpegView(handle: frame) { receiving = true }
         RuntimeInputView(onInput: receive)
-        if !receiving {
+        if !started {
+          VStack(spacing: 8) {
+            Text("The browser isn't running")
+              .font(.scaled(size: 12))
+              .foregroundStyle(theme.textMuted)
+            Button("Open Browser") {
+              runtime.startBrowser(session: sessionKey)
+              MacTelemetry.capture(.browserUsed(action: .open))
+            }
+              .controlSize(.small)
+          }
+        } else if !receiving {
           Text("Waiting for frames…")
             .font(.scaled(size: 12))
             .foregroundStyle(theme.textMuted)
@@ -257,6 +270,7 @@ struct RuntimeBrowserView: View {
   private func submitUrl() {
     let url = BrowserPreset.normalize(inputUrl)
     guard !url.isEmpty else { return }
+    runtime.startBrowser(session: sessionKey)
     inputUrl = url
     runtime.browserUrls[sessionKey] = url
     let sessionId = sessionKey
@@ -283,6 +297,7 @@ struct RuntimeBrowserView: View {
 private struct OpenKey: Hashable {
   var session: String
   var ready: Bool
+  var started: Bool
 }
 
 /// A JPEG stream drawn into a layer, scaled to fit. SwiftUI's `Image` would

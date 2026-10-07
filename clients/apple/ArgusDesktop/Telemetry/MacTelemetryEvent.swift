@@ -41,6 +41,8 @@ enum MacTelemetryEvent {
   }
 
   enum BrowserAction: String {
+    /// Started from the panel's Open Browser button.
+    case open
     case navigate
     case back
     case forward

@@ -53,6 +53,13 @@ final class RuntimeModel {
   var browserUrls: [String: String] = [:]
   /// Sessions whose browser has loaded its start URL this launch.
   var openedBrowsers: Set<String> = []
+  /// Sessions whose browser was asked for this launch. A restored pick alone
+  /// never starts Chromium; picking the browser or opening it does.
+  private(set) var startedBrowsers: Set<String> = []
+
+  func startBrowser(session: String?) {
+    startedBrowsers.insert(session ?? Self.globalKey)
+  }
   var browserPreset: String {
     didSet { defaults.set(browserPreset, forKey: Keys.browserPreset) }
   }
@@ -106,7 +113,7 @@ final class RuntimeModel {
       androidBySession[key] = device
       defaults.set(androidBySession, forKey: Keys.android)
     case .web:
-      break
+      startBrowser(session: session)
     }
     MacTelemetry.capture(.runtimeTargetPicked(platform: platform.rawValue))
   }
