@@ -2,9 +2,10 @@ import ArgusUI
 import SwiftUI
 
 /// The Mac transcript: newest at the bottom and pinned there while following,
-/// older pages loaded on reaching the top without losing your place, TextKit
-/// text you can select and search, file links, and the agent's pending
-/// decisions at the foot.
+/// older rows revealed (or fetched) on reaching the top without losing your
+/// place, TextKit text you can select and search, file links, and the agent's
+/// pending decisions at the foot. Only the window's rows exist, so a long chat
+/// costs a page of rows on a resize, not all of them.
 struct TranscriptView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
@@ -22,6 +23,7 @@ struct TranscriptView: View {
   @State private var follow = FollowState()
   @State private var landed = false
   @State private var loadingOlder = false
+  @State private var window = TranscriptWindow()
 
   private static let bottom = "transcript-bottom"
 
@@ -30,23 +32,20 @@ struct TranscriptView: View {
   var body: some View {
     let messages = messages
     let segments = ToolGroups.group(messages)
-    let chunks = Self.chunks(segments)
+    let windowStart = window.start(segments)
+    let shown = segments[windowStart...]
     let pending = pendingCalls(messages)
     ScrollViewReader { proxy in
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 14) {
-          topSentinel(first: segments.first?.id, chunks: chunks, proxy: proxy)
+          topSentinel(first: shown.first?.id, hidden: windowStart > 0, segments: segments, proxy: proxy)
           if messages.isEmpty, landed || fixture != nil {
             EmptyState(
               icon: Icon.agent, title: "Nothing yet",
               body: "Send this agent a message to get it going.")
           }
-          ForEach(chunks) { chunk in
-            VStack(alignment: .leading, spacing: 14) {
-              ForEach(chunk.segments) { segment in
-                row(segment).id(segment.id)
-              }
-            }
+          ForEach(shown) { segment in
+            row(segment).id(segment.id)
           }
           footer(pending: pending)
           Color.clear.frame(height: 1).id(Self.bottom)
@@ -57,6 +56,13 @@ struct TranscriptView: View {
         .frame(maxWidth: .infinity)
       }
       .defaultScrollAnchor(.bottom, for: .initialOffset)
+      // Rows re-measure at a new width and the lazy stack's estimates move the
+      // offset; someone following the tail stays on it through a resize.
+      .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { _ in
+        guard follow.atBottom else { return }
+        window.trim(segments)
+        proxy.scrollTo(Self.bottom, anchor: .bottom)
+      }
       .onScrollGeometryChange(for: ScrollState.self) { geometry in
         ScrollState(
           offset: geometry.contentOffset.y, content: geometry.contentSize.height,
@@ -66,6 +72,10 @@ struct TranscriptView: View {
         // lazy stack shifts the offset as it re-measures rows, and new output
         // grows the content; neither should end following.
         if follow.userScrolling { follow.atBottom = new.isAtBottom }
+        // The sentinel's `onAppear` misses a top it never left; reaching it does not.
+        if new.offset < 80, new.content > new.container {
+          loadOlder(first: shown.first?.id, hidden: windowStart > 0, segments: segments, proxy: proxy)
+        }
       }
       .onScrollPhaseChange { _, phase, context in
         let wasUser = follow.userScrolling
@@ -78,16 +88,20 @@ struct TranscriptView: View {
             geometry.contentOffset.y + geometry.containerSize.height >= geometry.contentSize.height - 40
         }
       }
-      .onChange(of: tail(messages, pending: pending)) { _, _ in
+      .onChange(of: tail(messages, pending: pending), initial: true) { _, _ in
         guard !messages.isEmpty else { return }
         if !landed {
           landed = true
+          // Pinned from here on, so output arriving below never slides the
+          // window out from under someone reading near its top.
+          if window.pinned == nil { window.pinned = shown.first?.firstMessageId }
           proxy.scrollTo(Self.bottom, anchor: .bottom)
           return
         }
         // Follow the tail only while the reader is at it; someone reading
         // history shouldn't be yanked down by new output.
         guard follow.atBottom else { return }
+        window.trim(segments)
         proxy.scrollTo(Self.bottom, anchor: .bottom)
       }
       .onChange(of: pending.map(\.id)) { _, ids in
@@ -103,7 +117,7 @@ struct TranscriptView: View {
         }
       }
       .onChange(of: model.revealToken) { _, _ in
-        reveal(chunks: chunks, proxy: proxy)
+        reveal(segments: segments, proxy: proxy)
       }
       .overlay(alignment: .top) {
         if model.findOpen {
@@ -113,6 +127,7 @@ struct TranscriptView: View {
       .overlay(alignment: .bottomTrailing) {
         JumpToLatest(follow: follow) {
           follow.atBottom = true
+          window.trim(segments, limit: TranscriptWindow.page)
           withAnimation { proxy.scrollTo(Self.bottom, anchor: .bottom) }
         }
       }
@@ -128,9 +143,12 @@ struct TranscriptView: View {
     .environment(\.transcriptLinks, links)
     .environment(\.toolTextRenderer, toolTextRenderer)
     .task(id: agentKey) { await start() }
+    .onChange(of: agentKey) { window = TranscriptWindow() }
     #if DEBUG
       .task {
-        if let fixture { await TranscriptStress.run(model: model, messages: fixture) }
+        if let fixture, TranscriptStress.count != nil {
+          await TranscriptStress.run(model: model, messages: fixture)
+        }
       }
     #endif
     .liveRefresh(enabled: fixture == nil && host.connection == .ready, every: .seconds(5)) {
@@ -144,9 +162,9 @@ struct TranscriptView: View {
   private func row(_ segment: ToolGroups.Segment) -> some View {
     switch segment {
     case .single(let message):
-      TranscriptMessageRow(agentKey: agentKey, message: message)
+      TranscriptMessageRow(agentKey: agentKey, message: message).equatable()
     case .collapsed(let messages):
-      TranscriptToolGroup(agentKey: agentKey, id: segment.id, messages: messages)
+      TranscriptToolGroup(agentKey: agentKey, id: segment.id, messages: messages).equatable()
     }
   }
 
@@ -180,11 +198,14 @@ struct TranscriptView: View {
     }
   }
 
-  /// Reaching this means the reader wants older history. Once the page lands,
-  /// the row that was first goes back to the top, so the view doesn't jump.
+  /// Reaching this means the reader wants older history: the next page above
+  /// the window, or once none is left here, the host's. Once it lands the row
+  /// that was first goes back to the top, so the view doesn't jump.
   @ViewBuilder
-  private func topSentinel(first: String?, chunks: [Chunk], proxy: ScrollViewProxy) -> some View {
-    if fixture == nil, host.hasOlderMessages(for: agentKey) {
+  private func topSentinel(
+    first: String?, hidden: Bool, segments: [ToolGroups.Segment], proxy: ScrollViewProxy
+  ) -> some View {
+    if hidden || (fixture == nil && host.hasOlderMessages(for: agentKey)) {
       HStack(spacing: 8) {
         Spacer()
         if loadingOlder {
@@ -194,15 +215,22 @@ struct TranscriptView: View {
         Spacer()
       }
       .frame(height: 28)
-      .onAppear {
-        guard !loadingOlder, landed else { return }
-        loadingOlder = true
-        Task {
-          await host.loadOlderMessages(agentId: agentKey)
-          if let first { scroll(to: first, in: chunks, anchor: .top, proxy: proxy) }
-          loadingOlder = false
-        }
+      .onAppear { loadOlder(first: first, hidden: hidden, segments: segments, proxy: proxy) }
+    }
+  }
+
+  private func loadOlder(first: String?, hidden: Bool, segments: [ToolGroups.Segment], proxy: ScrollViewProxy) {
+    guard !loadingOlder, landed, hidden || (fixture == nil && host.hasOlderMessages(for: agentKey)) else { return }
+    loadingOlder = true
+    Task {
+      if hidden {
+        window.grow(segments)
+      } else {
+        await host.loadOlderMessages(agentId: agentKey)
+        window.pinned = host.visibleMessages(for: agentKey).first?.id
       }
+      if let first { scroll(to: first, anchor: .top, proxy: proxy) }
+      loadingOlder = false
     }
   }
 
@@ -224,41 +252,25 @@ struct TranscriptView: View {
     .accessibilityHidden(true)
   }
 
-  /// Scrolls the current match's row into view, opening its tool group first.
-  private func reveal(chunks: [Chunk], proxy: ScrollViewProxy) {
-    guard let hit = model.currentHit, let messageId = Self.messageId(of: hit.unitId) else { return }
-    for segment in chunks.lazy.flatMap(\.segments) {
-      switch segment {
-      case .single(let message) where message.id == messageId:
-        scroll(to: segment.id, in: chunks, anchor: .center, proxy: proxy)
-        return
-      case .collapsed(let group) where group.contains { $0.id == messageId }:
-        model.expandedGroups.insert(segment.id)
-        scroll(to: segment.id, in: chunks, anchor: .top, proxy: proxy)
-        return
-      default:
-        continue
-      }
+  /// Scrolls the current match's row into view, rendering it and opening its
+  /// tool group first.
+  private func reveal(segments: [ToolGroups.Segment], proxy: ScrollViewProxy) {
+    guard let hit = model.currentHit, let messageId = Self.messageId(of: hit.unitId),
+      let segment = segments.first(where: { $0.holds(messageId) })
+    else { return }
+    window.include(messageId, in: segments)
+    if case .collapsed = segment {
+      model.expandedGroups.insert(segment.id)
+      scroll(to: segment.id, anchor: .top, proxy: proxy)
+    } else {
+      scroll(to: segment.id, anchor: .center, proxy: proxy)
     }
   }
 
-  /// A row is only addressable once its chunk exists, so the chunk comes into
-  /// view first and the row is placed on the next pass.
-  private func scroll(to id: String, in chunks: [Chunk], anchor: UnitPoint, proxy: ScrollViewProxy) {
-    if let chunk = chunks.first(where: { $0.segments.contains { $0.id == id } }) {
-      proxy.scrollTo(chunk.id, anchor: anchor)
-    }
+  /// A row revealed by this same change only exists after the next pass.
+  private func scroll(to id: String, anchor: UnitPoint, proxy: ScrollViewProxy) {
+    proxy.scrollTo(id, anchor: anchor)
     DispatchQueue.main.async { proxy.scrollTo(id, anchor: anchor) }
-  }
-
-  struct Chunk: Identifiable {
-    let id: String
-    let segments: ArraySlice<ToolGroups.Segment>
-  }
-
-  static func chunks(_ segments: [ToolGroups.Segment]) -> [Chunk] {
-    let ids = segments.map(\.id)
-    return TranscriptChunks.ranges(ids).map { Chunk(id: "chunk-" + ids[$0.lowerBound], segments: segments[$0]) }
   }
 
   private static func messageId(of unit: String) -> String? {
