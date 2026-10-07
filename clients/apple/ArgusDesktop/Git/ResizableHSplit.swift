@@ -3,16 +3,16 @@ import ArgusUI
 import SwiftUI
 
 /// Two panes side by side with a draggable divider. Unlike `HSplitView`, the
-/// leading pane gives up width when the window narrows — an NSSplitView keeps
+/// pinned pane gives up width when the window narrows — an NSSplitView keeps
 /// its panes as laid out, which pushed the git panel over the app sidebar.
 struct ResizableHSplit<Leading: View, Trailing: View>: View {
   @Environment(\.theme) private var theme
-  /// Where the leading width is remembered.
-  let key: String
-  let leadingMin: CGFloat
-  let leadingIdeal: CGFloat
-  let leadingMax: CGFloat
-  let trailingMin: CGFloat
+  /// The pane with the remembered width; the other takes the rest.
+  let pinned: HorizontalEdge
+  let pinnedMin: CGFloat
+  let pinnedMax: CGFloat
+  /// The flexible pane's minimum.
+  let otherMin: CGFloat
   @ViewBuilder let leading: () -> Leading
   @ViewBuilder let trailing: () -> Trailing
 
@@ -24,26 +24,48 @@ struct ResizableHSplit<Leading: View, Trailing: View>: View {
     key: String, leadingMin: CGFloat, leadingIdeal: CGFloat, leadingMax: CGFloat, trailingMin: CGFloat,
     @ViewBuilder leading: @escaping () -> Leading, @ViewBuilder trailing: @escaping () -> Trailing
   ) {
-    self.key = key
-    self.leadingMin = leadingMin
-    self.leadingIdeal = leadingIdeal
-    self.leadingMax = leadingMax
-    self.trailingMin = trailingMin
+    self.init(
+      key: key, pinned: .leading, min: leadingMin, ideal: leadingIdeal, max: leadingMax, otherMin: trailingMin,
+      leading: leading, trailing: trailing)
+  }
+
+  init(
+    key: String, leadingMin: CGFloat, trailingMin: CGFloat, trailingIdeal: CGFloat, trailingMax: CGFloat,
+    @ViewBuilder leading: @escaping () -> Leading, @ViewBuilder trailing: @escaping () -> Trailing
+  ) {
+    self.init(
+      key: key, pinned: .trailing, min: trailingMin, ideal: trailingIdeal, max: trailingMax, otherMin: leadingMin,
+      leading: leading, trailing: trailing)
+  }
+
+  private init(
+    key: String, pinned: HorizontalEdge, min: CGFloat, ideal: CGFloat, max: CGFloat, otherMin: CGFloat,
+    leading: @escaping () -> Leading, trailing: @escaping () -> Trailing
+  ) {
+    self.pinned = pinned
+    pinnedMin = min
+    pinnedMax = max
+    self.otherMin = otherMin
     self.leading = leading
     self.trailing = trailing
-    _stored = AppStorage(wrappedValue: Double(leadingIdeal), "split.\(key)")
+    _stored = AppStorage(wrappedValue: Double(ideal), "split.\(key)")
   }
 
   private var width: CGFloat {
-    Self.leadingWidth(
-      stored: CGFloat(stored), total: total, min: leadingMin, max: leadingMax, trailingMin: trailingMin)
+    Self.leadingWidth(stored: CGFloat(stored), total: total, min: pinnedMin, max: pinnedMax, trailingMin: otherMin)
   }
 
   var body: some View {
     HStack(spacing: 0) {
-      leading().frame(width: width)
-      divider
-      trailing().frame(maxWidth: .infinity)
+      if pinned == .leading {
+        leading().frame(width: width)
+        divider
+        trailing().frame(maxWidth: .infinity)
+      } else {
+        leading().frame(maxWidth: .infinity)
+        divider
+        trailing().frame(width: width)
+      }
     }
     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { total = $0 }
   }
@@ -62,7 +84,8 @@ struct ResizableHSplit<Leading: View, Trailing: View>: View {
           .onChanged { value in
             let start = dragStart ?? width
             dragStart = start
-            stored = Double(min(max(start + value.translation.width, leadingMin), leadingMax))
+            let delta = pinned == .leading ? value.translation.width : -value.translation.width
+            stored = Double(min(max(start + delta, pinnedMin), pinnedMax))
           }
           .onEnded { _ in dragStart = nil })
       .accessibilityLabel("Resize")

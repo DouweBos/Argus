@@ -28,38 +28,18 @@ struct MainWindow: View {
     NavigationSplitView(columnVisibility: $columns) {
       SidebarView()
         .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
-    } content: {
-      VStack(spacing: 0) {
-        WindowTabStrip()
-        HostOfflineBanner()
-        StoreErrorBanner()
-        HuddleJoinRequests()
-        Group {
-        if let sessionId = model.route.sessionId {
-          SessionView(sessionId: sessionId)
-        } else if model.route == .agents {
-          AgentsOverview()
-        } else if model.route == .runtimes {
-          RuntimesOverview()
-        } else if model.route.isDevices {
-          DevicesScreen(selection: deviceSelection)
-        } else if model.route == .pullRequests {
-          PullRequestsScreen()
-        } else if case .pullRequest(let repo, let number) = model.route {
-          PullRequestDetailScreen(repo: repo, number: number)
-            .id("\(repo)#\(number)")
-        } else if RouteScreen.handles(model.route) {
-          RouteScreen(route: model.route)
-        } else {
-          HomeScreen()
-        }
-        }
-        .frame(maxHeight: .infinity)
-      }
-      .navigationSplitViewColumnWidth(min: contentMinWidth, ideal: max(contentMinWidth, 640))
     } detail: {
-      RuntimePanel(sessionId: model.route.sessionId)
-        .navigationSplitViewColumnWidth(min: 280, ideal: 420)
+      // The runtime keeps the width it was given and the centre takes the
+      // rest, as on the desktop; a split view's detail column would grow
+      // with the window and leave the chat squeezed.
+      ResizableHSplit(
+        key: "runtime.width", leadingMin: contentMinWidth,
+        trailingMin: Self.runtimeMinWidth, trailingIdeal: Self.runtimeIdealWidth, trailingMax: Self.runtimeMaxWidth
+      ) {
+        centre
+      } trailing: {
+        RuntimePanel(sessionId: model.route.sessionId)
+      }
     }
     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
       windowWidth = width
@@ -96,12 +76,47 @@ struct MainWindow: View {
 }
 
 extension MainWindow {
+  /// The centre panel: whatever the route shows.
+  private var centre: some View {
+    VStack(spacing: 0) {
+      WindowTabStrip()
+      HostOfflineBanner()
+      StoreErrorBanner()
+      HuddleJoinRequests()
+      Group {
+        if let sessionId = model.route.sessionId {
+          SessionView(sessionId: sessionId)
+        } else if model.route == .agents {
+          AgentsOverview()
+        } else if model.route == .runtimes {
+          RuntimesOverview()
+        } else if model.route.isDevices {
+          DevicesScreen(selection: deviceSelection)
+        } else if model.route == .pullRequests {
+          PullRequestsScreen()
+        } else if case .pullRequest(let repo, let number) = model.route {
+          PullRequestDetailScreen(repo: repo, number: number)
+            .id("\(repo)#\(number)")
+        } else if RouteScreen.handles(model.route) {
+          RouteScreen(route: model.route)
+        } else {
+          HomeScreen()
+        }
+      }
+      .frame(maxHeight: .infinity)
+    }
+  }
+
   /// The git panel's own sidebar (230), the changes list's minimum (220) and
   /// the diff's (280); its panes narrow down to these, so nothing is clipped.
   static let gitContentMinWidth: CGFloat = 740
   static let contentMinWidth: CGFloat = 420
+  /// The runtime panel's bounds and first width, the desktop's right panel's.
+  static let runtimeMinWidth: CGFloat = 280
+  static let runtimeIdealWidth: CGFloat = 420
+  static let runtimeMaxWidth: CGFloat = 800
   /// Centre and runtime minimums with the git panel open and the sidebar hidden.
-  static let minWindowWidth: CGFloat = gitContentMinWidth + 280
+  static let minWindowWidth: CGFloat = gitContentMinWidth + runtimeMinWidth + 7
   /// App sidebar, git panel and runtime panel at their minimums.
   static let roomyGitWidth: CGFloat = 1260
 
@@ -110,10 +125,10 @@ extension MainWindow {
   private func fitColumns() {
     let cramped = model.route.gitView != nil && windowWidth > 0 && windowWidth < Self.roomyGitWidth
     if cramped, columns == .all {
-      columns = .doubleColumn
+      columns = .detailOnly
       sidebarAutoHidden = true
     } else if !cramped, sidebarAutoHidden {
-      if columns == .doubleColumn { columns = .all }
+      if columns == .detailOnly { columns = .all }
       sidebarAutoHidden = false
     }
   }
