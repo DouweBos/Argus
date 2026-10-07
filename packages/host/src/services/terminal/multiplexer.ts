@@ -23,6 +23,7 @@
 
 import type {
   RunCommand,
+  Session,
   SessionKind,
   WorkspaceEnvConfig,
 } from "../session/models";
@@ -260,6 +261,17 @@ export function setupShellCommand(): string {
 }
 
 /**
+ * Program + args for the setup PTY: `setupShellCommand()` under plain `sh`,
+ * with no rc files. Those run off the terminal instead (`loginShellEnv`): one
+ * that reads it — oh-my-zsh's "update? [Y/n]", compinit's insecure-directories
+ * prompt — would swallow the start of the first command the pipeline writes
+ * (`mise trust` runs as `ise trust`) or hold setup on a locked tab.
+ */
+export function setupShell(): [string, string[]] {
+  return ["/bin/sh", ["-c", setupShellCommand()]];
+}
+
+/**
  * Compute a deterministic per-session integer from `sessionId` using a
  * simple djb2-style hash, bounded by `range`.
  *
@@ -327,6 +339,41 @@ function buildWorkspaceEnv(
 // ---------------------------------------------------------------------------
 
 /**
+ * A session terminal's environment: the host's, with the session's Claude
+ * account and workspace env on top.
+ */
+export function terminalEnv(ws: Session): Record<string, string> {
+  // node-pty requires all env values to be defined strings — filter out any
+  // undefined entries from process.env to avoid posix_spawnp failures. The
+  // account overlay makes `claude` in this terminal use the same account as
+  // the session's agents.
+  const cleanEnv: Record<string, string> = {};
+  for (const [k, v] of Object.entries(
+    envForAccount(resolveAccountForSession(ws)),
+  )) {
+    if (v !== undefined) {
+      cleanEnv[k] = v;
+    }
+  }
+  // Advertise 24-bit color support so TUIs (nvim, bat, fzf, delta, …) enable
+  // truecolor rendering. `TERM` is set to xterm-256color below via node-pty.
+  if (!cleanEnv.COLORTERM) {
+    cleanEnv.COLORTERM = "truecolor";
+  }
+  // Let tools identify the host terminal (git config hints, shell rc logic,
+  // etc.). Distinct from `TERM`, which describes capabilities.
+  if (!cleanEnv.TERM_PROGRAM) {
+    cleanEnv.TERM_PROGRAM = "Argus";
+  }
+  Object.assign(
+    cleanEnv,
+    buildWorkspaceEnv(ws.id, ws.kind, ws.env_index ?? undefined, ws.repo_root),
+  );
+
+  return cleanEnv;
+}
+
+/**
  * Spawn a PTY running the session's shell (or a one-shot command), register
  * data and exit event handlers, and store the session in {@link appState}.
  *
@@ -336,8 +383,9 @@ function buildWorkspaceEnv(
  * @param sessionId - UUID of the owning session.
  * @param subDir      - Optional subdirectory (relative to the session root)
  *                      to use as the working directory.
- * @param command     - Optional one-shot command; if omitted, the user's login
- *                      shell is spawned interactively.
+ * @param command     - Optional one-shot command, or a program + args to run
+ *                      as given; if omitted, the user's login shell is
+ *                      spawned interactively.
  * @returns The new session ID.
  * @throws A plain string if the session is not found or the PTY fails to
  *         spawn.
@@ -345,7 +393,7 @@ function buildWorkspaceEnv(
 export function createTerminal(
   sessionId: string,
   subDir?: string,
-  command?: string,
+  command?: string | [string, string[]],
   title?: string,
 ): string {
   const ws = appState.sessions.get(sessionId);
@@ -373,44 +421,18 @@ export function createTerminal(
     cwd = joined;
   }
 
-  // Build session-specific environment extras.
-  const extraEnv = buildWorkspaceEnv(
-    sessionId,
-    ws.kind,
-    ws.env_index ?? undefined,
-    ws.repo_root,
-  );
-
   // Determine the program and arguments.
-  const [program, args]: [string, string[]] = command
-    ? commandShell(command)
-    : [defaultShell(), []];
+  let spawnWith: [string, string[]] = [defaultShell(), []];
+  if (Array.isArray(command)) {
+    spawnWith = command;
+  } else if (command) {
+    spawnWith = commandShell(command);
+  }
+  const [program, args] = spawnWith;
 
   const terminalId = crypto.randomUUID();
 
-  // node-pty requires all env values to be defined strings — filter out any
-  // undefined entries from process.env to avoid posix_spawnp failures. The
-  // account overlay makes `claude` in this terminal use the same account as
-  // the session's agents.
-  const cleanEnv: Record<string, string> = {};
-  for (const [k, v] of Object.entries(
-    envForAccount(resolveAccountForSession(ws)),
-  )) {
-    if (v !== undefined) {
-      cleanEnv[k] = v;
-    }
-  }
-  // Advertise 24-bit color support so TUIs (nvim, bat, fzf, delta, …) enable
-  // truecolor rendering. `TERM` is set to xterm-256color below via node-pty.
-  if (!cleanEnv.COLORTERM) {
-    cleanEnv.COLORTERM = "truecolor";
-  }
-  // Let tools identify the host terminal (git config hints, shell rc logic,
-  // etc.). Distinct from `TERM`, which describes capabilities.
-  if (!cleanEnv.TERM_PROGRAM) {
-    cleanEnv.TERM_PROGRAM = "Argus";
-  }
-  Object.assign(cleanEnv, extraEnv);
+  const cleanEnv = terminalEnv(ws);
 
   const ptyProcess: IPty = pty.spawn(program, args, {
     name: "xterm-256color",
