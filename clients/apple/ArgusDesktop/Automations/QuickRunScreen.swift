@@ -48,7 +48,7 @@ private struct QuickRunComposer: View {
           }
         LabeledContent("Projects") {
           VStack(alignment: .trailing, spacing: 4) {
-            if host.projects.isEmpty { Text("No projects are open.").foregroundStyle(.secondary) }
+            if host.projects.isEmpty, host.projectsLoaded { Text("No projects are open.").foregroundStyle(.secondary) }
             ForEach(host.projects) { project in
               Toggle(project.name, isOn: member(project.repoRoot)).help(HostScopedPath.path(project.repoRoot))
             }

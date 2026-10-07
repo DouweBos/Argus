@@ -27,9 +27,9 @@ public enum SetupChecks {
     public let signsIn: Bool
   }
 
+  /// Only a verdict: a check still running (or not run) is unknown, not failing.
   public static func needsAttention(_ result: PrereqResult?) -> Bool {
-    guard let result else { return false }
-    return result.status != .pass
+    result?.status == .fail || result?.status == .warn
   }
 
   /// The cards to show, in the desktop's order. Auth waits on the CLI: with

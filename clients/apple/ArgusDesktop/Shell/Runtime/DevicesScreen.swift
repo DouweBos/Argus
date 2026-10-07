@@ -20,6 +20,8 @@ struct DevicesScreen: View {
   @AppStorage("devices.viewMode") private var mode = Mode.table
   @AppStorage("devices.tileSize") private var tileSize = 220.0
   @State private var devices: [ArgusProtocol.DeviceInfo] = []
+  /// Until the first list arrives, no devices means "not known yet".
+  @State private var loaded = false
   @State private var error: String?
   @State private var busy: Set<String> = []
   /// Online devices shown as live tiles in the grid, in the order picked.
@@ -35,6 +37,8 @@ struct DevicesScreen: View {
       Divider()
       if let error {
         hint("Failed to list devices: \(error)")
+      } else if !loaded {
+        ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
       } else if devices.isEmpty {
         hint("No devices found. Start an agent or boot a simulator to see devices here.")
       } else if mode == .table {
@@ -247,6 +251,7 @@ struct DevicesScreen: View {
     guard let backend = store.backend, store.connection == .ready else { return }
     do {
       devices = try await backend.request(ArgusProtocol.Commands.ListDevices.self, .init())
+      loaded = true
       error = nil
       gridKeys.removeAll { key in !online.contains { $0.deviceKey == key } }
     } catch {

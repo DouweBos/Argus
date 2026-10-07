@@ -28,6 +28,11 @@ public final class HostStore {
   // MARK: Per-host data
 
   public internal(set) var projects: [RemoteProject] = []
+  /// Whether `projects`, `recentAgents` and `devices` have been fetched from
+  /// this computer yet — until then an empty list means "not known", not "none".
+  public internal(set) var projectsLoaded = false
+  public internal(set) var recentAgentsLoaded = false
+  public internal(set) var devicesLoaded = false
   public internal(set) var sessionsByRepo: [String: [RemoteSession]] = [:]
   public internal(set) var agentsByRepo: [String: [RemoteAgentStatus]] = [:]
   /// Every agent across every project, for the home "Recent agents" section.
@@ -170,6 +175,9 @@ public final class HostStore {
   public func reset() {
     creatingSessions = [:]
     projects = []
+    projectsLoaded = false
+    recentAgentsLoaded = false
+    devicesLoaded = false
     sessionsByRepo = [:]
     agentsByRepo = [:]
     recentAgents = []

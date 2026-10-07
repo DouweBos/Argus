@@ -16,6 +16,7 @@ extension HostStore {
     guard let result = try? await backend.request(
       .projectsList, EmptyParams(), as: Result.self) else { return }
     projects = result.projects
+    projectsLoaded = true
   }
 
   public func loadRecentAgents() async {
@@ -24,6 +25,7 @@ extension HostStore {
     guard let result = try? await backend.request(
       .agentsList, EmptyParams(), as: Result.self) else { return }
     recentAgents = result.agents
+    recentAgentsLoaded = true
     for agent in result.agents { statusByAgent[agent.agentId] = agent }
     hooks.agentsSeen(result.agents.map(\.agentId))
   }
@@ -127,6 +129,7 @@ extension HostStore {
     guard let result = try? await backend.request(
       .devicesList, EmptyParams(), as: Result.self) else { return }
     devices = result.devices
+    devicesLoaded = true
   }
 
   // MARK: Transcript
