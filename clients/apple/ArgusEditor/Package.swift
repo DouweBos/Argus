@@ -8,7 +8,9 @@ let package = Package(
     .library(name: "ArgusEditor", targets: ["ArgusEditor"])
   ],
   dependencies: [
-    .package(url: "https://github.com/CodeEditApp/CodeEditTextView", exact: "0.12.1"),
+    // CodeEditTextView's own dependencies, with its constraints; the view itself is vendored (Vendor/CodeEditTextView).
+    .package(url: "https://github.com/ChimeHQ/TextStory", from: "0.9.0"),
+    .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.0"),
     .package(path: "../ArgusSyntax"),
     .package(path: "../ArgusCore"),
     .package(path: "../ArgusUI"),
@@ -17,11 +19,26 @@ let package = Package(
     .target(
       name: "ArgusEditor",
       dependencies: [
-        .product(name: "CodeEditTextView", package: "CodeEditTextView"),
+        "CodeEditTextView",
         "ArgusSyntax",
         "ArgusCore",
         "ArgusUI",
       ]
+    ),
+    .target(
+      name: "CodeEditTextView",
+      dependencies: [
+        "TextStory",
+        .product(name: "Collections", package: "swift-collections"),
+        "CodeEditTextViewObjC",
+      ],
+      path: "Vendor/CodeEditTextView/CodeEditTextView",
+      swiftSettings: [.swiftLanguageMode(.v5)]
+    ),
+    .target(
+      name: "CodeEditTextViewObjC",
+      path: "Vendor/CodeEditTextView/CodeEditTextViewObjC",
+      publicHeadersPath: "include"
     ),
     .testTarget(name: "ArgusEditorTests", dependencies: ["ArgusEditor"]),
   ]
