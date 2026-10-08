@@ -126,6 +126,7 @@
         let screenHeight = NSScreen.screens.first?.frame.height ?? 0
         cg.location = CGPoint(x: x, y: screenHeight - (window.frame.height - y))
         guard let event = NSEvent(cgEvent: cg) else { return ["error": "event"] }
+        // What the transcript's wheel monitor does with a real wheel first.
         if let scroll = TranscriptDriver.transcriptScrollView(in: window) as? TranscriptScrollView,
           scroll.takeWheel(event)
         {
@@ -166,12 +167,30 @@
         if command["action"] as? String == "start" {
           guard let (scroll, table) = transcript(in: window) else { return ["error": "no transcript"] }
           probe = FrameProbe(scroll: scroll, table: table)
+          probe?.quiet = (command["quietMs"] as? Double).map { $0 / 1000 }
           return ["ok": true]
         }
         guard let report = probe?.stop() else { return ["error": "not probing"] }
         probe = nil
         if let out = command["out"] as? String { TranscriptDriver.write(report, to: out) }
         return report.filter { $0.key != "frames" }
+      case "tStepScroll":
+        // `steps` scrolls of `dy` points toward older rows, one per frame, through
+        // the clip view as a wheel moves it; each counts as sent for the probe.
+        guard let (scroll, _) = transcript(in: window) else { return ["error": "no transcript"] }
+        let dy = command["dy"] as? Double ?? 40
+        let steps = command["steps"] as? Int ?? 200
+        Task {
+          for _ in 0..<steps {
+            let clip = scroll.contentView
+            let target = max(0, clip.bounds.minY - dy)
+            sentDelta += clip.bounds.minY - target
+            clip.scroll(to: NSPoint(x: 0, y: target))
+            scroll.reflectScrolledClipView(clip)
+            try? await Task.sleep(for: .milliseconds(command["intervalMs"] as? Int ?? 16))
+          }
+        }
+        return ["ok": true]
       case "tBottom":
         guard let (_, table) = transcript(in: window), let controller = table.delegate as? TranscriptTableController
         else { return ["error": "no transcript"] }
@@ -279,6 +298,9 @@
     private var jumps: [[String: Any]] = []
     private var count = 0
     private let began = CACurrentMediaTime()
+    /// Only frames this long after the last wheel delta count, for wheels AppKit applies late.
+    var quiet: Double?
+    private var lastSentAt: CFTimeInterval = 0
 
     init(scroll: NSScrollView, table: NSTableView) {
       self.scroll = scroll
@@ -305,13 +327,15 @@
       // A positive wheel delta scrolls toward older rows, so rows move down by it.
       let moves = common.map { now[$0]! - last[$0]! }
       let atEdge = clip.minY <= 0.5 || clip.maxY >= table.frame.height - 0.5
-      if let first = common.sorted().first, !atEdge {
+      if sent != 0 { lastSentAt = CACurrentMediaTime() }
+      let skip = quiet.map { CACurrentMediaTime() - lastSentAt < $0 } ?? false
+      if let first = common.sorted().first, !atEdge, !skip {
         let jump = (now[first]! - last[first]!) - sent
         let spread = (moves.max() ?? 0) - (moves.min() ?? 0)
         if abs(jump) > 0.5 || spread > 0.5 {
           jumps.append([
             "t_ms": Stats.ms(CACurrentMediaTime() - began), "row": first, "jump": jump, "sent": sent,
-            "spread": spread,
+            "spread": spread, "offset": clip.minY, "content": table.frame.height,
           ])
         }
       }
@@ -330,7 +354,9 @@
       timer?.invalidate()
       timer = nil
       return [
-        "frames_seen": count, "jumps": jumps.count, "worst_jump": jumps.map { abs($0["jump"] as? CGFloat ?? 0) }.max() ?? 0,
+        "frames_seen": count, "jumps": jumps.count,
+        "worst_jump": jumps.map { abs(($0["jump"] as? CGFloat) ?? 0) }.max() ?? 0,
+        "worst_spread": jumps.map { ($0["spread"] as? CGFloat) ?? 0 }.max() ?? 0,
         "jump_samples": Array(jumps.prefix(20)), "frames": frames,
       ]
     }
