@@ -14,6 +14,16 @@ final class PlatformBridge: NSObject, UNUserNotificationCenterDelegate {
   var focusWindow: () -> Void = { NSApp.activate() }
   /// Closes the device popout keyed `platform:deviceKey`; set by the app.
   var closeDevicePopout: (String) -> Void = { _ in }
+  /// `platform` answers the host's own asks (banners, raising the window);
+  /// `viewer`, a window attached to another app's host, gets only what it
+  /// asked for itself. The host hears it with every `ui.state`.
+  var role: Role = .platform {
+    didSet { if role != oldValue { reportState() } }
+  }
+
+  enum Role: String, Encodable, Sendable {
+    case platform, viewer
+  }
 
   private nonisolated static let idKey = "argus_notification_id"
 
@@ -53,6 +63,11 @@ final class PlatformBridge: NSObject, UNUserNotificationCenterDelegate {
   /// A fresh connection: the host knows nothing about our window yet.
   func attach(_ backend: LocalBackend) {
     self.backend = backend
+    reportState()
+  }
+
+  /// Focus and role, again: after a reconnect the host has forgotten both.
+  func reportState() {
     reportForeground(NSApp.isActive)
   }
 
@@ -62,10 +77,13 @@ final class PlatformBridge: NSObject, UNUserNotificationCenterDelegate {
 
   private func reportForeground(_ foreground: Bool) {
     guard let backend else { return }
-    struct Params: Encodable, Sendable { let foreground: Bool }
+    struct Params: Encodable, Sendable {
+      let foreground: Bool
+      let role: Role
+    }
+    let params = Params(foreground: foreground, role: role)
     Task {
-      _ = try? await backend.request(
-        method: "ui.state", Params(foreground: foreground), as: IgnoredResult.self)
+      _ = try? await backend.request(method: "ui.state", params, as: IgnoredResult.self)
     }
   }
 

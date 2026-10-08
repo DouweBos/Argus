@@ -484,6 +484,34 @@
         guard let id = command["session"] as? String, let workspace = AppDelegate.current?.model.git.workspace(id)
         else { return ["error": "session?"] }
         return ["generation": workspace.generation, "active": workspace.isActive]
+      case "host":
+        // Whose host this window is on, and what it told that host it is.
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        return [
+          "state": "\(model.supervisor.state)", "attachOnly": model.supervisor.configuration.attachOnly,
+          "home": model.supervisor.configuration.home.path, "role": model.platform.role.rawValue,
+          "agents": model.store.statusByAgent.mapValues { $0.status.rawValue },
+          "prompts": model.store.prompts.values.map { "\($0.agentId) \($0.toolUseId) \($0.toolName)" },
+          "messages": model.store.messagesByAgent.mapValues { $0.map { "\($0.role.rawValue): \($0.textBlocks.joined())" } },
+        ]
+      case "takeOver", "startHere":
+        // Past the confirmation: what its Take Over / Start Argus Here buttons do.
+        guard let supervisor = AppDelegate.current?.model.supervisor else { return ["error": "no model"] }
+        if command["op"] as? String == "takeOver" { supervisor.takeOver() } else { supervisor.start() }
+        return ["ok": true]
+      case "send":
+        // What the chat input does on Return.
+        guard let store = AppDelegate.current?.model.store, let agent = command["agent"] as? String
+        else { return ["error": "agent?"] }
+        Task { await store.sendMessage(agentId: agent, message: command["text"] as? String ?? "") }
+        return ["ok": true]
+      case "respond":
+        // What the permission form's buttons do.
+        guard let store = AppDelegate.current?.model.store, let agent = command["agent"] as? String,
+          let toolUseId = command["toolUseId"] as? String
+        else { return ["error": "agent? toolUseId?"] }
+        Task { await store.respond(agentId: agent, toolUseId: toolUseId, decision: command["decision"] as? String ?? "allow") }
+        return ["ok": true]
       case "state":
         let model = AppDelegate.current?.model
         let item = menuItem("New Session…", in: NSApp.mainMenu)

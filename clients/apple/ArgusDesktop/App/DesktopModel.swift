@@ -135,9 +135,14 @@ final class DesktopModel {
     supervisor.start()
   }
 
-  /// The host is up. The transport reconnects across host restarts on its
-  /// own, so the backend is made once.
+  /// A second window on another app's host rather than the app running it.
+  var isAttached: Bool { supervisor.attachedTo != nil }
+
+  /// The host is up — ours, or another app's we attached to. The transport
+  /// reconnects across host restarts (and a take-over: the socket is the
+  /// home's either way) on its own, so the backend is made once.
   private func hostRunning() async {
+    platform.role = isAttached ? .viewer : .platform
     guard backend == nil else { return }
     let platform = platform
     let local = LocalBackend(socketPath: supervisor.configuration.socketPath) { envelope in
@@ -154,10 +159,15 @@ final class DesktopModel {
     await store.attach(router)
     platform.attach(local)
     // Before telemetry: the consent level is one of the host's preferences.
-    let supplied = await HostPreferences.shared.attach(.local(local))
+    // A second window never hands its own values to the host it joined.
+    let supplied = await HostPreferences.shared.attach(.local(local), supply: !isAttached)
     runtime.reloadPersisted()
     HomeRecents.shared.reload()
-    await MacTelemetry.attach(local)
+    _ = store.observeIpc { [weak self] channel, args, _ in
+      guard channel == "prefs:changed", let change = args.first else { return }
+      Task { await self?.hostPrefsChanged(change) }
+    }
+    await MacTelemetry.attach(local, applyMode: !isAttached)
     if supplied > 0 { MacTelemetry.capture(.prefsSupplied(keys: supplied)) }
     hosts.bind(router)
     watchConnection(local)
@@ -203,6 +213,8 @@ final class DesktopModel {
         while await backend.transport.state != .ready {
           try? await Task.sleep(for: .milliseconds(200))
         }
+        // A new connection: the host knows nothing of our window or role.
+        self?.platform.reportState()
         await self?.reload()
         await self?.terminals.reconnected()
         while await backend.transport.state == .ready {
@@ -282,11 +294,40 @@ final class DesktopModel {
     await store.loadAgents(repoRoot: repoRoot)
   }
 
+  /// Another window on the host changed preferences: take its values.
+  private func hostPrefsChanged(_ change: JSONValue) async {
+    let keys = { (field: String) -> [String] in
+      guard case .object(let fields) = change, case .array(let list)? = fields[field] else { return [] }
+      return list.compactMap { if case .string(let key) = $0 { key } else { nil } }
+    }
+    await HostPreferences.shared.hostChanged(settings: keys("settings"), uiState: keys("ui_state"))
+    runtime.reloadPersisted()
+    HomeRecents.shared.reload()
+  }
+
+  /// Taking over quits the other app and its agents with it, so it asks.
+  func confirmTakeOver(_ holder: HostLockRecord) {
+    let alert = NSAlert()
+    alert.messageText = "Quit \(holder.appName) and run Argus here?"
+    alert.informativeText =
+      "\(holder.appName) is asked to quit, which stops its running agents, and this app starts its own host on the same Argus home."
+    alert.addButton(withTitle: "Quit and Take Over")
+    alert.addButton(withTitle: "Cancel")
+    guard alert.runModal() == .alertFirstButtonReturn else { return }
+    supervisor.takeOver()
+  }
+
   private func supervisorEvent(_ event: HostSupervisor.Event) {
     switch event {
     case .started(let restarts):
       MacTelemetry.capture(.hostStarted(restarts: restarts))
+      if restarts == 0 { MacTelemetry.capture(.hostConnected(mode: .own, holder: nil)) }
       Task { await hostRunning() }
+    case .attached(let holder):
+      MacTelemetry.capture(.hostConnected(mode: .attached, holder: .init(holder)))
+      Task { await hostRunning() }
+    case .holderExited:
+      break
     case .crashed(let exitCode, let attempt):
       MacTelemetry.capture(.hostCrashed(exitCode: Int(exitCode), attempt: attempt))
     case .gaveUp(let crashes):
@@ -320,8 +361,10 @@ final class DesktopModel {
 
   // MARK: Quit
 
+  /// Agents quitting this app would stop: none when it only watches another app's host.
   var runningAgentCount: Int {
-    store.statusByAgent.values.filter { $0.status == .running }.count
+    guard supervisor.state == .running else { return 0 }
+    return store.statusByAgent.values.filter { $0.status == .running }.count
   }
 
   /// Stop the host cleanly: it lets agents finish stopping before it exits.

@@ -64,6 +64,7 @@ struct MainWindow: View {
     .sheet(item: hostFolderRequest) { HostFolderPicker(request: $0) }
     .environment(imageViewer)
     // The viewer covers the window; the toolbar would still draw over it.
+    .toolbar { AttachedHostBadge() }
     .toolbar(imageViewer.isPresented ? .hidden : .automatic, for: .windowToolbar)
     .themed()
     // A project added while we're up arrives as `projects.changed` alone.

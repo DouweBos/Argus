@@ -8,8 +8,8 @@ import Foundation
 /// views read synchronously; the host fills them on connect and every change
 /// goes back to it.
 ///
-/// Only one app runs on a home at a time (the host lock), so a read on
-/// connect plus write-through is enough.
+/// The Electron app can be open on the same host (this app attached to it), so
+/// the host's `prefs:changed` refetches what it names; last write wins.
 @MainActor
 final class HostPreferences {
   enum Slot: Hashable {
@@ -48,10 +48,11 @@ final class HostPreferences {
     self.bindings = bindings
   }
 
-  /// Takes the host's values, hands it any it lacks, then follows changes.
-  /// Returns how many values this app supplied.
+  /// Takes the host's values, hands it any it lacks (unless `supply` is off:
+  /// a window attached to another app's host takes, never gives), then
+  /// follows changes. Returns how many values this app supplied.
   @discardableResult
-  func attach(_ io: IO) async -> Int {
+  func attach(_ io: IO, supply: Bool = true) async -> Int {
     self.io = io
     guard let settings = try? await io.getSettings() else { return 0 }
     var supplied = 0
@@ -66,7 +67,9 @@ final class HostPreferences {
         if binding.read() != host { binding.write(host) }
         synced[binding.slot] = binding.read() ?? host
       } else if let local = binding.read() {
+        // Unsupplied, it still counts as seen: only a later change is sent.
         synced[binding.slot] = local
+        guard supply else { continue }
         pending[binding.slot] = local
         supplied += 1
       }
@@ -75,6 +78,32 @@ final class HostPreferences {
     await flush()
     observe()
     return supplied
+  }
+
+  /// Another window on the host wrote these: take its values, except one of
+  /// ours still waiting to flush, which is newer.
+  func hostChanged(settings keys: [String], uiState uiKeys: [String]) async {
+    guard let io else { return }
+    let wanted = Set(keys.map(Slot.setting) + uiKeys.map(Slot.uiState))
+    let affected = bindings.filter { wanted.contains($0.slot) && pending[$0.slot] == nil }
+    guard !affected.isEmpty else { return }
+    let settings = keys.isEmpty ? [:] : ((try? await io.getSettings()) ?? [:])
+    var ui: [String: JSONValue] = [:]
+    for key in Set(uiKeys) {
+      if let value = (try? await io.getUiState(key)).flatMap({ $0 }).flatMap(Self.decode) { ui[key] = value }
+    }
+    applying = true
+    defer { applying = false }
+    for binding in affected {
+      let host: JSONValue? =
+        switch binding.slot {
+        case .setting(let key): settings[key].flatMap { $0 == .null ? nil : $0 }
+        case .uiState(let key): ui[key]
+        }
+      guard let host, pending[binding.slot] == nil, synced[binding.slot] != host else { continue }
+      if binding.read() != host { binding.write(host) }
+      synced[binding.slot] = binding.read() ?? host
+    }
   }
 
   func detach() {

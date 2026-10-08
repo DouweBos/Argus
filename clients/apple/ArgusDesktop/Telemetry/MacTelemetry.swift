@@ -19,12 +19,15 @@ enum MacTelemetry {
     set { UserDefaults.standard.set(newValue, forKey: modeKey) }
   }
 
-  /// The host is reachable: apply the consent level, then flush.
-  static func attach(_ backend: LocalBackend) async {
+  /// The host is reachable: apply the consent level, then flush. A window
+  /// attached to another app's host leaves that app's consent alone.
+  static func attach(_ backend: LocalBackend, applyMode: Bool = true) async {
     self.backend = backend
-    _ = try? await backend.request(
-      ArgusProtocol.Commands.TelemetrySetMode.self,
-      .init(mode: ArgusProtocol.TelemetryMode(rawValue: mode)))
+    if applyMode {
+      _ = try? await backend.request(
+        ArgusProtocol.Commands.TelemetrySetMode.self,
+        .init(mode: ArgusProtocol.TelemetryMode(rawValue: mode)))
+    }
     let pending = queued
     queued = []
     for event in pending { capture(event) }
