@@ -119,10 +119,6 @@
   height: 13px;
 }
 
-.row[data-stale] {
-  border-color: var(--warning-soft);
-}
-
 .reauth {
   font-family: var(--font-ui);
   font-size: 12px;

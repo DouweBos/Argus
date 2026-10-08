@@ -15,18 +15,22 @@ import { listClaudeAccounts } from "../lib/ipc";
 interface ClaudeAccountsState {
   accounts: ClaudeAccount[];
   activeId: string | null;
-  loaded: boolean;
   loading: boolean;
   refresh: () => Promise<void>;
 }
 
+// A change landing mid-fetch may not be in that fetch's answer, so it queues
+// one more rather than being dropped.
+let refreshQueued = false;
+
 const store = create<ClaudeAccountsState>((set, get) => ({
   accounts: [],
   activeId: null,
-  loaded: false,
   loading: false,
   refresh: async () => {
     if (get().loading) {
+      refreshQueued = true;
+
       return;
     }
     set({ loading: true });
@@ -35,11 +39,15 @@ const store = create<ClaudeAccountsState>((set, get) => ({
       set({
         accounts: state.accounts,
         activeId: state.activeId,
-        loaded: true,
-        loading: false,
       });
     } catch {
+      // Keep the last good list; the next event or mount retries.
+    } finally {
       set({ loading: false });
+    }
+    if (refreshQueued) {
+      refreshQueued = false;
+      await get().refresh();
     }
   },
 }));
@@ -50,13 +58,11 @@ export function useClaudeAccounts(): {
 } {
   const accounts = store((s) => s.accounts);
   const activeId = store((s) => s.activeId);
-  const loaded = store((s) => s.loaded);
   const refresh = store((s) => s.refresh);
+  // Events only arrive while something is mounted, so refetch on every mount.
   useEffect(() => {
-    if (!loaded) {
-      refresh().catch(() => undefined);
-    }
-  }, [loaded, refresh]);
+    refresh().catch(() => undefined);
+  }, [refresh]);
   useIpcEvent("claude-auth:accounts-changed", () => {
     refresh().catch(() => undefined);
   });

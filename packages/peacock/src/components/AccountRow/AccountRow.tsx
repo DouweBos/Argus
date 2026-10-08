@@ -70,7 +70,6 @@ export function AccountRow({
     <div
       className={styles.row}
       data-active={active || undefined}
-      data-stale={needsReauth || rateLimited || undefined}
       data-selectable={onSelect && !active ? true : undefined}
       onClick={active || busy || editing ? undefined : onSelect}
     >
