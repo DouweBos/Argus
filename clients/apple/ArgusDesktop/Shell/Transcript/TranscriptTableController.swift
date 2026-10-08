@@ -92,8 +92,9 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
 
   func revision(_ id: String) -> Int { revisions[id] ?? 0 }
 
+  /// What the sizer measures.
   private func root(_ index: Int) -> AnyView {
-    TranscriptRow.root(row(index), id: id(index), agentKey: agentKey, model: model, environment: environment)
+    TranscriptRow.root(row(index), id: nil, agentKey: agentKey, model: model, environment: environment)
   }
 
   private var width: CGFloat { max(scrollView.contentView.bounds.width, 1) }
@@ -127,6 +128,12 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     guard !change.isEmpty || topChanged || footerChanged || restyled else { return }
 
     let wasEmpty = table.numberOfRows == 0
+    // The first page lands hidden and shows on the next turn, so building its
+    // rows and drawing them are two passes rather than one long one.
+    if !landed, !messages.isEmpty {
+      table.isHidden = true
+      DispatchQueue.main.async { [weak self] in self?.table.isHidden = false }
+    }
     keepingPlace(anchorShift: change) {
       if wasEmpty {
         table.reloadData()
@@ -235,7 +242,10 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   private func measureAroundViewport() {
     guard table.numberOfRows > 0 else { return }
     let visible = table.rows(in: scrollView.contentView.bounds)
-    let moved = measure(visible.location..<(visible.location + visible.length))
+    var indices = Array(visible.location..<(visible.location + visible.length))
+    // Mid-resize, hosted rows report the height they lay out at themselves.
+    if CACurrentMediaTime() - widthChangedAt < 0.3 { indices = indices.filter { plainText($0) != nil } }
+    let moved = measure(indices)
     if !moved.isEmpty { keepingPlace { note(moved) } }
     schedulePrefetch()
   }
@@ -245,9 +255,12 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   private func schedulePrefetch() {
     guard !prefetching else { return }
     prefetching = true
-    DispatchQueue.main.async { [weak self] in
+    // Not mid-resize: each step would measure the same rows at a width about to change.
+    let settle = widthChangedAt + 0.3 - CACurrentMediaTime()
+    DispatchQueue.main.asyncAfter(deadline: .now() + max(settle, 0)) { [weak self] in
       guard let self else { return }
       self.prefetching = false
+      guard CACurrentMediaTime() - self.widthChangedAt >= 0.3 else { return self.schedulePrefetch() }
       guard let index = self.nextUnmeasured() else { return }
       let moved = self.measure([index])
       if !moved.isEmpty { self.keepingPlace { self.note(moved) } }
@@ -340,14 +353,15 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     adjusting -= 1
   }
 
-  /// The newest rows measured first, so the bottom is the real bottom.
+  /// The newest screenful measured first, so the bottom is the real bottom;
+  /// prefetch measures what's above.
   func scrollToBottom() {
     guard table.numberOfRows > 0 else { return }
     let viewport = scrollView.contentView.bounds.height
     var filled: CGFloat = 0
     var index = table.numberOfRows - 1
     var moved = IndexSet()
-    while index >= 0, filled < viewport * 2 {
+    while index >= 0, filled < viewport {
       moved.formUnion(measure([index]))
       filled += heights.exact(id(index), revision: revision(id(index)), width: width) ?? 0
       index -= 1
@@ -393,12 +407,16 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     let width = width
     guard TranscriptRowHeights.widthKey(width) != TranscriptRowHeights.widthKey(lastWidth) else { return }
     lastWidth = width
+    widthChangedAt = CACurrentMediaTime()
     guard table.numberOfRows > 0 else { return }
-    // Rows on screen take the new width now; the rest as they come near.
+    // Text rows on screen take the new width now. Hosted ones lay out at it in
+    // their cells and report their height; the rest follow as they come near.
     let visible = table.rows(in: scrollView.contentView.bounds)
     let indices = IndexSet(integersIn: visible.location..<(visible.location + visible.length))
-    keepingPlace { note(measure(indices).union(indices)) }
+    keepingPlace { note(measure(indices.filter { plainText($0) != nil }).union(indices)) }
   }
+
+  private var widthChangedAt: CFTimeInterval = 0
 
   private func loadOlderIfNeeded() {
     guard top.hasOlder, !top.loading, landed else { return }
