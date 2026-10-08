@@ -283,6 +283,9 @@
       case "terminals": self = .terminals(sessionId: arg(1), label: arg(2))
       case "terminal": self = .terminal(id: arg(1), label: arg(2))
       case "changes": self = .changes(sessionId: arg(1), label: arg(2))
+      case "file": self = .file(sessionId: arg(1), path: arg(2), line: Int(arg(3)), source: .chatLink)
+      case "quickOpen": self = .quickOpen(sessionId: arg(1), label: arg(2))
+      case "fileSearch": self = .fileSearch(sessionId: arg(1), label: arg(2))
       case "stashes": self = .stashes(sessionId: arg(1), label: arg(2))
       case "inbox": self = .inbox
       case "proposal": self = .proposal(id: arg(1))

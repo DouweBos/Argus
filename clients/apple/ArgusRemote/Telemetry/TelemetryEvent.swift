@@ -77,6 +77,10 @@ enum TelemetryEvent {
   case defaultChanged(setting: DefaultSetting, value: String)
   /// The warnings list was opened; `count` is how many it held.
   case warningsOpened(count: Int)
+  /// A session file opened in the read-only viewer.
+  case fileViewed(source: FileViewSource, language: String)
+  /// A worktree search finished; `results` is bucketed before it is sent.
+  case fileSearchRun(regex: Bool, results: Int, truncated: Bool)
   /// `message` is scrubbed and truncated by `Telemetry` before it is sent.
   case appError(scope: String, message: String)
   /// Shared with the desktop on purpose: it is the same consent signal.
@@ -107,6 +111,8 @@ enum TelemetryEvent {
     case .settingChanged: "ios_setting_changed"
     case .defaultChanged: "ios_default_changed"
     case .warningsOpened: "ios_warnings_opened"
+    case .fileViewed: "ios_file_viewed"
+    case .fileSearchRun: "ios_file_search_run"
     case .appError: "ios_app_error"
     case .telemetryEnabled: "telemetry_enabled"
     case .telemetryDisabled: "telemetry_disabled"
@@ -160,8 +166,22 @@ enum TelemetryEvent {
       ["setting": setting.rawValue, "value": value]
     case .warningsOpened(let count):
       ["count": count]
+    case .fileViewed(let source, let language):
+      ["source": source.rawValue, "language": language]
+    case .fileSearchRun(let regex, let results, let truncated):
+      ["regex": regex, "result_bucket": Self.resultBucket(results), "truncated": truncated]
     case .appError(let scope, let message):
       ["scope": scope, "message": String(Telemetry.scrub(message).prefix(2000))]
+    }
+  }
+
+  private static func resultBucket(_ count: Int) -> String {
+    switch count {
+    case 0: "0"
+    case ...10: "1-10"
+    case ...100: "11-100"
+    case ...1000: "101-1000"
+    default: "1000+"
     }
   }
 

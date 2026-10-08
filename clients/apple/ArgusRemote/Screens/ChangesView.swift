@@ -8,6 +8,7 @@ import SwiftUI
 struct ChangesView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
+  @Environment(Router.self) private var router
 
   let sessionId: String
   let label: String
@@ -41,7 +42,7 @@ struct ChangesView: View {
             : "No uncommitted changes in the working tree.")
       } else {
         ForEach(files) { file in
-          FileDiffCard(file: file)
+          FileDiffCard(file: file, onViewFile: host.hasControl ? { viewFile(file, line: $0) } : nil)
         }
       }
 
@@ -72,6 +73,10 @@ struct ChangesView: View {
     parts.append(status.dirtyCount > 0 ? "\(status.dirtyCount) changed" : "clean")
     if status.conflictCount > 0 { parts.append("\(status.conflictCount) conflicts") }
     return parts.joined(separator: " · ")
+  }
+
+  private func viewFile(_ file: DiffFile, line: Int?) {
+    router.push(.file(sessionId: sessionId, path: file.displayPath, line: line, source: .changes))
   }
 
   private func refresh() async {

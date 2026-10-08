@@ -173,6 +173,8 @@ public enum RemoteEventName: String, Sendable {
   /// Output of a terminal subscribed to as `terminal:<id>`.
   case terminalData = "terminal.data"
   case terminalExit = "terminal.exit"
+  /// Matches for a worktree search subscribed to as `code-search:<id>`.
+  case filesSearch = "files.search"
   /// A raw host broadcast (`{ channel, args }`), only sent to admin devices.
   case ipc = "ipc"
 }

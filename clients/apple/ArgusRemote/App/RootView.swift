@@ -402,6 +402,12 @@ struct RootView: View {
         branch: branch, runnerSessionId: runner)
     case .changes(let sessionId, let label):
       ChangesView(sessionId: sessionId, label: label)
+    case .file(let sessionId, let path, let line, let source):
+      FileView(sessionId: sessionId, path: path, line: line, source: source)
+    case .quickOpen(let sessionId, let label):
+      QuickOpenView(sessionId: sessionId, label: label)
+    case .fileSearch(let sessionId, let label):
+      FileSearchView(sessionId: sessionId, label: label)
     case .terminals(let sessionId, let label):
       SessionTerminalsList(sessionId: sessionId) { terminal in
         router.push(.terminal(id: terminal.id, label: SessionTerminalsList.title(terminal)))

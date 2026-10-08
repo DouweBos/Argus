@@ -1,0 +1,67 @@
+import ArgusUI
+import SwiftUI
+
+/// Find a session file by name: fuzzy matching over the worktree's files, the
+/// ones this session changed first.
+struct QuickOpenView: View {
+  @Environment(HostStore.self) private var host
+
+  let sessionId: String
+  let label: String
+
+  @State private var matcher: FuzzyFileMatcher?
+  @State private var changed: Set<String> = []
+  @State private var query = ""
+
+  private var results: [FuzzyFileMatcher.Match] {
+    matcher?.search(query, boost: changed, limit: 100) ?? []
+  }
+
+  var body: some View {
+    List {
+      if !host.hasControl {
+        Banner(
+          text:
+            "This device can watch but not control. Grant it control in Argus → Settings → Remote Access to browse files."
+        )
+        .listRowBackground(Color.clear)
+      } else if matcher == nil {
+        Loading(label: "Listing files…").listRowBackground(Color.clear)
+      } else if results.isEmpty {
+        EmptyState(
+          icon: Icon.search, title: "No matching files",
+          body: query.isEmpty ? "This session has no files." : "Nothing in this worktree matches “\(query)”."
+        )
+        .listRowBackground(Color.clear)
+      } else {
+        ForEach(results, id: \.path) { match in
+          NavigationLink(
+            value: Route.file(sessionId: sessionId, path: match.path, line: nil, source: .quickOpen)
+          ) {
+            FuzzyFileRow(match: match)
+          }
+        }
+      }
+    }
+    .searchable(
+      text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "File name")
+    .autocorrectionDisabled()
+    .textInputAutocapitalization(.never)
+    .navigationTitle("Open file · \(label)")
+    .navigationBarTitleDisplayMode(.inline)
+    .refreshable { await load() }
+    .task(id: host.connection == .ready) {
+      guard matcher == nil, host.connection == .ready else { return }
+      await load()
+    }
+  }
+
+  private func load() async {
+    guard host.hasControl else { return }
+    async let files = host.listFiles(sessionId: sessionId)
+    async let diff = host.loadDiff(sessionId: sessionId, mode: "branch")
+    let (paths, patch) = await (files, diff)
+    changed = Set(DiffParser.parse(patch).filter { $0.status != .deleted }.map(\.displayPath))
+    matcher = FuzzyFileMatcher(paths: paths)
+  }
+}
