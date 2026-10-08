@@ -30,6 +30,8 @@ final class TranscriptModel {
   // MARK: Rows
 
   var expandedGroups: Set<String> = []
+  /// The edit or fork sheet a message's hover bar opened.
+  var messageAction: TranscriptMessageAction?
   /// Tool outputs opened past their first lines, by `outputKey`.
   var expandedOutputs: Set<String> = []
   /// Tool cards opened or closed; the table recycles rows, so this can't be row state.

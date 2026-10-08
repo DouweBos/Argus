@@ -30,6 +30,11 @@ extension TranscriptTableController {
       row(index), id: id, agentKey: agentKey, model: model, selection: selection, environment: environment,
       onHeight: { [weak self] height in self?.rowLaidOut(id, revision: revision, height: height) })
     cell.show(root, id: id, revision: revision, environmentKey: environmentKey)
+    if case .segment(.single(let message)) = row(index), !TranscriptModel.textBlocks(message).isEmpty {
+      cell.hover = (message, model, environment)
+    } else {
+      cell.hover = nil
+    }
   }
 
   func configure(_ cell: TranscriptTextCell, _ index: Int, message: RemoteMessage, text: TranscriptRendered) {
@@ -43,6 +48,7 @@ extension TranscriptTableController {
     }
     if cell.text.links !== environment.transcriptLinks { cell.text.links = environment.transcriptLinks }
     if cell.text.selection !== selection { cell.text.selection = selection }
+    cell.hover = (message, model, environment)
     applyFind(cell)
   }
 
