@@ -307,13 +307,19 @@ describe("a scoped context reaching anything else", () => {
       denied("sessions.diff", { session_id: "s2" }, ctx),
       denied("sessions.git_status", { session_id: "s2" }, ctx),
       denied("sessions.files", { session_id: "s2" }, ctx),
+      denied("files.read", { session_id: "s2", path: "a.ts" }, ctx),
+      denied(
+        "files.search",
+        { session_id: "s2", search_id: "q", query: "x" },
+        ctx,
+      ),
+      denied("files.search_cancel", { session_id: "s2", search_id: "q" }, ctx),
     ]);
 
-    expect(results).toEqual([
-      expect.stringMatching(OUT_OF_SCOPE),
-      expect.stringMatching(OUT_OF_SCOPE),
-      expect.stringMatching(OUT_OF_SCOPE),
-    ]);
+    expect(results).toEqual(
+      results.map(() => expect.stringMatching(OUT_OF_SCOPE)),
+    );
+    expect(results).toHaveLength(6);
   });
 
   it("denies creating and destroying things outright", async () => {

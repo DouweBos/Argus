@@ -378,6 +378,9 @@ extension ArgusProtocol {
     /// `device.state`
     public typealias DeviceState = ArgusProtocol.RemoteDeviceState
 
+    /// `files.search`
+    public typealias FilesSearch = ArgusProtocol.CodeSearchEvent
+
     /// `host.endpoints`
     public typealias HostEndpoints = ArgusProtocol.EventsTypes.HostEndpointsPayload
 

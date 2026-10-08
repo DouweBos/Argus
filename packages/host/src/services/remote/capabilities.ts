@@ -195,6 +195,11 @@ import {
 } from "./deviceStore";
 import { getEndpoints } from "./endpoints";
 import {
+  cancelSessionSearch,
+  readSessionFile,
+  searchSessionFiles,
+} from "./filesRemote";
+import {
   branchLog,
   branchPrUrl,
   commitDiff,
@@ -1210,6 +1215,26 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const files = await control(() => listSessionFiles(session_id));
 
     return { files };
+  },
+
+  "files.read": async (params) => {
+    const { session_id, path } = parse("files.read", params);
+    requireSession(session_id);
+
+    return control(() => readSessionFile(session_id, path));
+  },
+
+  "files.search": async (params) => {
+    const p = parse("files.search", params);
+    requireSession(p.session_id);
+
+    return control(() => searchSessionFiles(p));
+  },
+
+  "files.search_cancel": async (params) => {
+    const { session_id, search_id } = parse("files.search_cancel", params);
+
+    return cancelSessionSearch(session_id, search_id);
   },
 
   "sessions.resolve_mention_path": async (params) => {

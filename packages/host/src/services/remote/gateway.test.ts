@@ -303,6 +303,31 @@ describe("raw broadcast forwarding", () => {
     ]);
   });
 
+  it("streams a subscribed search to a phone as typed events", async () => {
+    const { conn, send, fromGateway } = connect(["monitor", "control"]);
+    const done = {
+      kind: "done",
+      searchId: "q1",
+      count: 0,
+      truncated: false,
+      cancelled: false,
+    };
+    await send({
+      type: "sub",
+      action: "subscribe",
+      agent_id: "code-search:q1",
+    });
+    conn.handleBroadcast("code:search:q1", [done]);
+    conn.handleBroadcast("code:search:q2", [{ ...done, searchId: "q2" }]);
+    expect(
+      fromGateway.map((e) => {
+        const { event, payload } = e as { event?: string; payload?: unknown };
+
+        return { event, payload };
+      }),
+    ).toEqual([{ event: "files.search", payload: done }]);
+  });
+
   it("tells typed clients when the device claim changes", () => {
     const { conn, fromGateway } = connect(["monitor", "control"]);
     conn.handleBroadcast("devices:claim-changed", [
