@@ -40,6 +40,7 @@ enum SettingsField: String {
   case editorInsertSpaces = "editor_insert_spaces"
   case editorWrapLines = "editor_wrap_lines"
   case editorShowInvisibles = "editor_show_invisibles"
+  case editorFormatOnSave = "editor_format_on_save"
   case openFileLinksIn = "open_file_links_in"
   case languageServers = "language_servers"
 
@@ -58,7 +59,7 @@ enum SettingsField: String {
     case .toolToggled, .prereqFixed, .conductorVersion: .tools
     case .updateChannel: .advanced
     case .editorFont, .editorFontSize, .editorTabWidth, .editorInsertSpaces, .editorWrapLines,
-      .editorShowInvisibles, .openFileLinksIn, .languageServers:
+      .editorShowInvisibles, .editorFormatOnSave, .openFileLinksIn, .languageServers:
       .editor
     }
   }

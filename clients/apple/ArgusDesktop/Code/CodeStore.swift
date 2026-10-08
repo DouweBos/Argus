@@ -11,6 +11,8 @@ import SwiftUI
 protocol CodeDocumentObserver: AnyObject {
   func documentOpened(session: String, path: String, document: EditorDocument, language: SyntaxLanguage?)
   func documentChanged(session: String, path: String, change: EditorTextChange)
+  /// Before a save reads the buffer: true when it formatted it.
+  func willSave(session: String, path: String, document: EditorDocument) async -> Bool
   func documentSaved(session: String, path: String, document: EditorDocument)
   func documentClosed(session: String, path: String)
 }

@@ -93,12 +93,13 @@ extension CodeSession {
   @discardableResult
   func save(_ path: String) async -> Bool {
     guard let store, let file = files[path], let document = file.document, !file.isSaving else { return false }
+    file.isSaving = true
+    defer { file.isSaving = false }
+    let formatted = await store.languageSupport?.willSave(session: sessionId, path: path, document: document) ?? false
     let text = document.textForSaving()
     let version = document.version
     let request = file.disk.saveRequest
     let hadConflict = file.disk.hadConflict
-    file.isSaving = true
-    defer { file.isSaving = false }
     do {
       let result = try await store.request(
         ArgusProtocol.Commands.CodeWriteFile.self,
@@ -114,7 +115,7 @@ extension CodeSession {
       if document.version == version { document.markSaved() }
       file.disk.saved(hash: hash)
       tabs.open(path, preview: false)
-      MacTelemetry.capture(.editorFileSaved(formatted: false, hadConflict: hadConflict))
+      MacTelemetry.capture(.editorFileSaved(formatted: formatted, hadConflict: hadConflict))
       store.languageSupport?.documentSaved(session: sessionId, path: path, document: document)
       if file.name == ".editorconfig" {
         editorConfigs.invalidate()

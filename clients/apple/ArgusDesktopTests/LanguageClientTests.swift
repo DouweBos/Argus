@@ -187,6 +187,22 @@ struct LanguageClientTests {
     #expect(sink.names.last == "lsp_did_close")
   }
 
+  @Test func formatOnSaveAppliesTheServersEdits() async throws {
+    let sink = FakeSink()
+    sink.responses["lsp_format"] =
+      #"[{"range":{"start":{"line":0,"character":5},"end":{"line":0,"character":5}},"newText":" "}]"#
+    let support = LanguageSupport(sink: sink, isEnabled: { _ in true }, formatOnSave: { true })
+    let document = EditorDocument(text: "let a=1", language: .typescript, configuration: .default)
+    support.documentOpened(session: "s1", path: "a.ts", document: document, language: .typescript)
+    #expect(await !support.willSave(session: "s1", path: "a.ts", document: document), "not before the server is up")
+    support.client("s1").receive(ArgusProtocol.LspStatus(servers: [.init(language: .typescript, state: .ready)]))
+    #expect(await support.willSave(session: "s1", path: "a.ts", document: document))
+    #expect(document.text == "let a =1")
+    let format = try #require(sink.params("lsp_format", as: ArgusProtocol.CommandsTypes.LspFormatParams.self).first)
+    #expect(format.tabSize == 4)
+    #expect(format.insertSpaces)
+  }
+
   @Test func filesWithoutAServerStayLocal() {
     let sink = FakeSink()
     let client = LanguageClient(sessionId: "s1", sink: sink) { _ in true }

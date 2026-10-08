@@ -13,17 +13,21 @@ final class LanguageSupport: CodeDocumentObserver {
   private(set) var clients: [String: LanguageClient] = [:]
   @ObservationIgnored private let sink: LspSink
   @ObservationIgnored private let isEnabled: (LspDocumentLanguage) -> Bool
+  @ObservationIgnored private let formatOnSave: () -> Bool
   @ObservationIgnored private var stopObserving: (() -> Void)?
 
-  init(sink: LspSink, isEnabled: @escaping (LspDocumentLanguage) -> Bool) {
+  init(sink: LspSink, isEnabled: @escaping (LspDocumentLanguage) -> Bool, formatOnSave: @escaping () -> Bool = { false }) {
     self.sink = sink
     self.isEnabled = isEnabled
+    self.formatOnSave = formatOnSave
   }
 
   /// Hooks into the app's code store, its host's broadcasts and Settings.
   static func install(on code: CodeStore) -> LanguageSupport {
     let preferences = AppPreferences.shared
-    let support = LanguageSupport(sink: code) { preferences.languageServerEnabled(for: $0.settingsKey) }
+    let support = LanguageSupport(
+      sink: code, isEnabled: { preferences.languageServerEnabled(for: $0.settingsKey) },
+      formatOnSave: { preferences.editorFormatOnSave })
     code.languageSupport = support
     code.statusBarAccessory = { [weak support] session, file in
       guard let client = support?.clients[session.sessionId] else { return AnyView(EmptyView()) }
@@ -51,6 +55,23 @@ final class LanguageSupport: CodeDocumentObserver {
 
   func documentChanged(session: String, path: String, change: EditorTextChange) {
     clients[session]?.changed(path: path, change: change)
+  }
+
+  /// Format on save, when it's on and the file's server is up. A slow server doesn't hold the save.
+  func willSave(session: String, path: String, document: EditorDocument) async -> Bool {
+    guard formatOnSave(), let provider = document.languageProvider as? LspDocumentProvider,
+      clients[session]?.status(of: provider.language.server)?.state == .ready
+    else { return false }
+    return await withTaskGroup(of: Bool?.self) { group in
+      group.addTask { await provider.format() }
+      group.addTask {
+        try? await Task.sleep(for: .seconds(3))
+        return nil
+      }
+      let first = await group.next() ?? nil
+      group.cancelAll()
+      return first ?? false
+    }
   }
 
   func documentSaved(session: String, path: String, document: EditorDocument) {}

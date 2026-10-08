@@ -739,6 +739,7 @@ The Mac app's code view (⌘4 in a session). These live on this Mac only.
 | **Insert spaces**      | `true`  | Tab inserts spaces. `.editorconfig`'s `indent_style` wins; its `trim_trailing_whitespace` and `insert_final_newline` apply on save.                                             |
 | **Wrap lines**         | `false` | Soft-wrap long lines.                                                                                                                                                           |
 | **Show invisibles**    | `false` | Draw tabs, spaces and line endings.                                                                                                                                             |
+| **Format on save**     | `false` | Run the file's language server formatter before each save. Format Document (⇧⌥F) does the same on demand. A server that takes over three seconds is skipped.                    |
 | **Open file links in** | Argus   | `Argus` opens a file an agent mentions in chat in the session's code view, at the line; `Default App` hands it to macOS. Files outside the worktree always use the default app. |
 | **Language servers**   | on      | Diagnostics, hover, go to definition and completion. Each language can also be turned off on its own.                                                                           |
 

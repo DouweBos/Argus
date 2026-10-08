@@ -23,9 +23,10 @@ extension EditorDocument: @preconcurrency TextViewDelegate {
 }
 
 extension EditorDocument {
-  /// Applies `edits` (ranges in the current text) as one undo group.
-  public func apply(edits: [(EditorRange, String)]) {
-    replace(edits.map { (nsRange($0.0), $0.1) }, selectAfter: true)
+  /// Applies `edits` (ranges in the current text) as one undo group. `moveCaret` puts the caret
+  /// after the last edit; otherwise it stays where it was (a format, a rename elsewhere).
+  public func apply(edits: [(EditorRange, String)], moveCaret: Bool = true) {
+    replace(edits.map { (nsRange($0.0), $0.1) }, selectAfter: moveCaret)
   }
 
   func replace(_ edits: [(NSRange, String)], selectAfter: Bool) {
@@ -46,8 +47,14 @@ extension EditorDocument {
       let end = last.0.location + delta + (last.1 as NSString).length
       textView.selectionManager.setSelectedRange(NSRange(location: min(end, storage.length), length: 0))
     } else {
+      // Each caret shifts by what changed before it.
       let length = storage.length
-      textView.selectionManager.setSelectedRanges(selections.map { NSRange(location: min($0.location, length), length: 0) })
+      textView.selectionManager.setSelectedRanges(
+        selections.map { selection in
+          let delta = edits.filter { NSMaxRange($0.0) <= selection.location }
+            .reduce(0) { $0 + ($1.1 as NSString).length - $1.0.length }
+          return NSRange(location: min(max(0, selection.location + delta), length), length: 0)
+        })
     }
   }
 
