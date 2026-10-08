@@ -1,9 +1,21 @@
 import { z } from "zod";
 
+/** Why a simulator can't boot as it is: its data folder is gone, or its runtime. */
+export const SimulatorProblemKind = z.enum(["missing_data", "unavailable"]);
+export type SimulatorProblemKind = z.infer<typeof SimulatorProblemKind>;
+
+export const SimulatorProblem = z.object({
+  kind: SimulatorProblemKind,
+  /** One short sentence, ready to show. */
+  message: z.string(),
+});
+export type SimulatorProblem = z.infer<typeof SimulatorProblem>;
+
 /** A discovered iOS simulator device. */
 export const SimulatorDevice = z.object({
   booted: z.boolean(),
   name: z.string(),
+  problem: SimulatorProblem.optional(),
   runtime: z.string(),
   udid: z.string(),
 });
@@ -85,6 +97,8 @@ export const DeviceInfo = z.object({
   /** True if the device is booted/online. */
   online: z.boolean(),
   platform: DevicePlatform,
+  /** iOS only: why the simulator can't boot as it is. */
+  problem: SimulatorProblem.optional(),
   /** Repo root of the owning session. */
   repoRoot: z.string().nullable(),
   /** Key used when talking to pool/stream APIs for this device. */

@@ -108,6 +108,7 @@ export type {
   ConductorLogEntry,
   DevicePlatform as HostDevicePlatform,
   SimulatorDevice,
+  SimulatorProblem,
 } from "@argus/remote-protocol";
 
 /** Host platforms plus video inputs, which only the renderer enumerates. */

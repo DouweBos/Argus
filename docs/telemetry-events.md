@@ -186,6 +186,13 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `automation_github_read`                | main   | An automation run read GitHub through an Argus tool      | `tool: "get" \| "artifact_search"`, `success`                 |
 | `proposal_start_failed`                 | main   | Starting a proposal failed before its agent ran          | `stage` (`creating_worktree`, `setting_up`, `starting_agent`) |
 
+## Simulators
+
+| Event                   | Source | When                                                       | Extra props                                                                                  |
+| ----------------------- | ------ | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `simulator_boot_failed` | main   | Booting an iOS simulator failed                            | `reason` (`missing_data`, `runtime_missing`, `not_found`, `disk_full`, `timeout`, `unknown`) |
+| `simulator_repaired`    | main   | A simulator was erased or deleted from Argus (fires after) | `action` (`erase` \| `delete`), `success`                                                    |
+
 ## Browser
 
 | Event                        | Source | When                                                            | Extra props                                         |

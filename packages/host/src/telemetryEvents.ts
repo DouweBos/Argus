@@ -103,6 +103,16 @@ export interface EventMap {
     action: "mark_ready" | "retry";
     success: boolean;
   };
+  simulator_boot_failed: {
+    reason:
+      | "disk_full"
+      | "missing_data"
+      | "not_found"
+      | "runtime_missing"
+      | "timeout"
+      | "unknown";
+  };
+  simulator_repaired: { action: "delete" | "erase"; success: boolean };
   telemetry_disabled: undefined;
   telemetry_enabled: undefined;
   worktrees_moved: {

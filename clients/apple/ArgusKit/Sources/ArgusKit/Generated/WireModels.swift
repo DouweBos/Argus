@@ -3732,6 +3732,7 @@ extension ArgusProtocol {
     public var name: String
     public var online: Bool
     public var platform: DevicePlatform
+    public var problem: SimulatorProblem?
     public var repoRoot: String?
     public var reservationKey: String
     public var reserved: Bool
@@ -3745,6 +3746,7 @@ extension ArgusProtocol {
       case name = "name"
       case online = "online"
       case platform = "platform"
+      case problem = "problem"
       case repoRoot = "repoRoot"
       case reservationKey = "reservationKey"
       case reserved = "reserved"
@@ -3753,12 +3755,13 @@ extension ArgusProtocol {
       case sessionPath = "sessionPath"
     }
 
-    public init(agentId: String? = nil, deviceKey: String, name: String, online: Bool, platform: DevicePlatform, repoRoot: String? = nil, reservationKey: String, reserved: Bool, runtime: String? = nil, sessionId: String? = nil, sessionPath: String? = nil) {
+    public init(agentId: String? = nil, deviceKey: String, name: String, online: Bool, platform: DevicePlatform, problem: SimulatorProblem? = nil, repoRoot: String? = nil, reservationKey: String, reserved: Bool, runtime: String? = nil, sessionId: String? = nil, sessionPath: String? = nil) {
       self.agentId = agentId
       self.deviceKey = deviceKey
       self.name = name
       self.online = online
       self.platform = platform
+      self.problem = problem
       self.repoRoot = repoRoot
       self.reservationKey = reservationKey
       self.reserved = reserved
@@ -3774,6 +3777,7 @@ extension ArgusProtocol {
       try c.encode(name, forKey: .name)
       try c.encode(online, forKey: .online)
       try c.encode(platform, forKey: .platform)
+      try c.encodeIfPresent(problem, forKey: .problem)
       try c.encode(repoRoot, forKey: .repoRoot)
       try c.encode(reservationKey, forKey: .reservationKey)
       try c.encode(reserved, forKey: .reserved)
@@ -12154,19 +12158,22 @@ extension ArgusProtocol {
   public struct SimulatorDevice: Codable, Sendable {
     public var booted: Bool
     public var name: String
+    public var problem: SimulatorProblem?
     public var runtime: String
     public var udid: String
 
     enum CodingKeys: String, CodingKey {
       case booted = "booted"
       case name = "name"
+      case problem = "problem"
       case runtime = "runtime"
       case udid = "udid"
     }
 
-    public init(booted: Bool, name: String, runtime: String, udid: String) {
+    public init(booted: Bool, name: String, problem: SimulatorProblem? = nil, runtime: String, udid: String) {
       self.booted = booted
       self.name = name
+      self.problem = problem
       self.runtime = runtime
       self.udid = udid
     }
@@ -12175,6 +12182,7 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(booted, forKey: .booted)
       try c.encode(name, forKey: .name)
+      try c.encodeIfPresent(problem, forKey: .problem)
       try c.encode(runtime, forKey: .runtime)
       try c.encode(udid, forKey: .udid)
     }
@@ -12207,6 +12215,42 @@ extension ArgusProtocol {
       try c.encode(orientation, forKey: .orientation)
       try c.encode(udid, forKey: .udid)
     }
+  }
+
+  public struct SimulatorProblem: Codable, Sendable {
+    public var kind: SimulatorProblemKind
+    public var message: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case message = "message"
+    }
+
+    public init(kind: SimulatorProblemKind, message: String) {
+      self.kind = kind
+      self.message = message
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(message, forKey: .message)
+    }
+  }
+
+  public struct SimulatorProblemKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let missingData = SimulatorProblemKind(rawValue: "missing_data")
+    public static let unavailable = SimulatorProblemKind(rawValue: "unavailable")
   }
 
   public struct SshKey: Codable, Sendable {

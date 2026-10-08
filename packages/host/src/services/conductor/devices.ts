@@ -4,6 +4,7 @@
  * agent / session / project.
  */
 
+import type { SimulatorProblem } from "../simulator/simctlProblems";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { appState } from "../../state";
@@ -27,6 +28,8 @@ export interface DeviceInfo {
   runtime?: string;
   /** True if the device is booted/online. */
   online: boolean;
+  /** iOS only: why the simulator can't boot as it is. */
+  problem?: SimulatorProblem;
   /** True if the device is currently reserved by an agent. */
   reserved: boolean;
   /** Agent that owns this device, if any. */
@@ -91,6 +94,7 @@ export async function listDevices(): Promise<DeviceInfo[]> {
         name: d.name,
         runtime: d.runtime,
         online: d.booted,
+        ...(d.problem ? { problem: d.problem } : {}),
         reserved: agentId !== null,
         agentId,
         sessionId: owner.sessionId,

@@ -301,6 +301,9 @@ export function DevicesScreen() {
                     aria-label={d.online ? "online" : "offline"}
                   />
                   {d.name}
+                  {d.problem && (
+                    <span className={styles.problem}>{d.problem.message}</span>
+                  )}
                 </td>
                 <td>
                   <span className={styles.platformBadge}>{d.platform}</span>
@@ -336,7 +339,7 @@ export function DevicesScreen() {
                 <td className={styles.actionCell}>
                   {d.platform === "ios" && (
                     <>
-                      {!d.online && (
+                      {!d.online && !d.problem && (
                         <button
                           className={styles.iconBtn}
                           disabled={booting.has(d.deviceKey)}

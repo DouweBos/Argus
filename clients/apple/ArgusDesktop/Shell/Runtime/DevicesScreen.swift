@@ -24,6 +24,8 @@ struct DevicesScreen: View {
   @State private var loaded = false
   @State private var error: String?
   @State private var busy: Set<String> = []
+  /// Why the last boot or shutdown from this screen failed.
+  @State private var actionError: String?
   /// Online devices shown as live tiles in the grid, in the order picked.
   @State private var gridKeys: [String] = []
 
@@ -35,6 +37,15 @@ struct DevicesScreen: View {
     VStack(spacing: 0) {
       header
       Divider()
+      if let actionError {
+        Label(actionError, systemImage: Icon.warning)
+          .font(.scaled(size: 12))
+          .foregroundStyle(theme.error)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 12)
+          .padding(.vertical, 6)
+        Divider()
+      }
       if let error {
         hint("Failed to list devices: \(error)")
       } else if !loaded {
@@ -61,6 +72,10 @@ struct DevicesScreen: View {
         onOpenProject: {
           selected = nil
           openProject(device)
+        },
+        onRepaired: {
+          selected = nil
+          Task { await load() }
         },
         onClose: { selected = nil })
     }
@@ -161,7 +176,12 @@ struct DevicesScreen: View {
   @ViewBuilder
   private func actions(_ device: ArgusProtocol.DeviceInfo) -> some View {
     HStack(spacing: 6) {
-      if device.platform == .ios, !device.online {
+      if let problem = device.problem {
+        Image(systemName: Icon.warning)
+          .foregroundStyle(theme.warning)
+          .help("\(problem.message) Open its details to erase or delete it.")
+          .accessibilityLabel(problem.message)
+      } else if device.platform == .ios, !device.online {
         iconButton("Boot simulator", "power.circle") { boot(device) }
           .disabled(busy.contains(device.deviceKey))
       }
@@ -261,9 +281,14 @@ struct DevicesScreen: View {
 
   private func boot(_ device: ArgusProtocol.DeviceInfo) {
     busy.insert(device.deviceKey)
+    actionError = nil
     Task {
-      try? await runtime.bootSimulator(device.deviceKey)
-      MacTelemetry.capture(.devicePower(action: .boot, platform: device.platform.rawValue))
+      do {
+        try await runtime.bootSimulator(device.deviceKey)
+        MacTelemetry.capture(.devicePower(action: .boot, platform: device.platform.rawValue))
+      } catch {
+        actionError = "\(device.name): \(HostStore.describe(error))"
+      }
       busy.remove(device.deviceKey)
       await load()
     }
@@ -271,11 +296,16 @@ struct DevicesScreen: View {
 
   private func stop(_ device: ArgusProtocol.DeviceInfo) {
     busy.insert(device.deviceKey)
+    actionError = nil
     Task {
-      _ = try? await store.backend?.request(
-        ArgusProtocol.Commands.StopDevice.self,
-        .init(deviceKey: device.deviceKey, platform: device.platform))
-      MacTelemetry.capture(.devicePower(action: .shutdown, platform: device.platform.rawValue))
+      do {
+        try await store.backend?.request(
+          ArgusProtocol.Commands.StopDevice.self,
+          .init(deviceKey: device.deviceKey, platform: device.platform))
+        MacTelemetry.capture(.devicePower(action: .shutdown, platform: device.platform.rawValue))
+      } catch {
+        actionError = "\(device.name): \(HostStore.describe(error))"
+      }
       busy.remove(device.deviceKey)
       await load()
     }

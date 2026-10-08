@@ -57,6 +57,7 @@ struct RuntimeNativeView: View {
     var isTv: Bool
     var remote: RemotePlatform
     var avdName: String?
+    var problem: ArgusProtocol.SimulatorProblem?
   }
 
   private func target(_ id: String) -> Target? {
@@ -65,7 +66,7 @@ struct RuntimeNativeView: View {
       return runtime.simulator(id).map {
         Target(
           id: $0.udid, name: $0.name, online: $0.booted, isTv: $0.runtime.hasPrefix("tvOS"),
-          remote: .ios)
+          remote: .ios, problem: $0.problem)
       }
     case .android:
       return runtime.androidDevice(id).map {
@@ -86,9 +87,16 @@ struct RuntimeNativeView: View {
         .font(.scaled(size: 40, weight: .thin))
         .foregroundStyle(theme.textMuted)
       Text(target.name).font(.scaled(size: 13, weight: .medium))
-      Button(booting ? "Booting…" : "Boot") { Task { await boot(target) } }
-        .disabled(booting)
-      if let bootError {
+      if let problem = target.problem {
+        SimulatorProblemView(udid: target.id, name: target.name, problem: problem) {
+          autoBooted.remove(target.id)
+          bootError = nil
+        }
+      } else {
+        Button(booting ? "Booting…" : "Boot") { Task { await boot(target) } }
+          .disabled(booting)
+      }
+      if let bootError, target.problem == nil {
         Text(bootError).font(.scaled(size: 11)).foregroundStyle(theme.error)
           .multilineTextAlignment(.center)
       }
@@ -110,7 +118,7 @@ struct RuntimeNativeView: View {
   private func autoBoot() async {
     bootError = nil
     guard platform == .ios, let id = selected, let target = target(id), !target.online,
-      !autoBooted.contains(id)
+      target.problem == nil, !autoBooted.contains(id)
     else { return }
     autoBooted.insert(id)
     await boot(target)
@@ -128,6 +136,8 @@ struct RuntimeNativeView: View {
       MacTelemetry.capture(.devicePower(action: .boot, platform: target.remote.rawValue))
     } catch {
       bootError = HostStore.describe(error)
+      // The host may only now see why it can't boot; the list says so.
+      await runtime.refresh()
     }
   }
 }

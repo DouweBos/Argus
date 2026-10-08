@@ -31,6 +31,7 @@ struct DeviceDetailSheet: View {
   let onPopout: () -> Void
   let onOpen: (_ agent: Bool) -> Void
   let onOpenProject: () -> Void
+  let onRepaired: () -> Void
   let onClose: () -> Void
 
   var body: some View {
@@ -104,7 +105,10 @@ struct DeviceDetailSheet: View {
 
   private var actions: some View {
     HStack(spacing: 8) {
-      if device.platform == .ios, !device.online {
+      if let problem = device.problem {
+        SimulatorProblemView(
+          udid: device.deviceKey, name: device.name, problem: problem, onRepaired: onRepaired)
+      } else if device.platform == .ios, !device.online {
         Button(busy ? "Booting…" : "Boot", systemImage: "power.circle", action: onBoot)
           .disabled(busy)
       }

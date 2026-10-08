@@ -142,7 +142,7 @@ struct RuntimeTargetPicker: View {
         if runtime.simulators.isEmpty { Text(runtime.iosToolsError == nil ? "None" : "Unavailable") }
         ForEach(runtime.simulators, id: \.udid) { device in
           toggle(
-            "\(device.name)\(device.booted ? " — booted" : "")",
+            "\(device.name)\(device.booted ? " — booted" : device.problem != nil ? " — can't boot" : "")",
             on: isSelected(.ios, device.udid)
           ) { runtime.select(platform: .ios, device: device.udid, session: sessionId) }
         }

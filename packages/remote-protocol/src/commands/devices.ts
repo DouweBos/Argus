@@ -34,6 +34,9 @@ const SIMULATOR_COMMANDS = {
     result: z.array(SimulatorDevice),
   },
   boot_simulator: { tier: "admin", params: Udid, result: Void },
+  /** Resets it to a fresh install; also recreates a missing data folder. */
+  erase_simulator: { tier: "admin", params: Udid, result: Void },
+  delete_simulator: { tier: "admin", params: Udid, result: Void },
   disconnect_simulator: { tier: "admin", params: Udid, result: Void },
   active_simulator: {
     tier: "admin",
