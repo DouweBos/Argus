@@ -16,6 +16,12 @@ struct CodeCommands: View {
     }
     .keyboardShortcut(.space, modifiers: .control)
     .disabled(document?.languageProvider == nil)
+    Button("Format Document") {
+      guard let provider = document?.languageProvider as? LspDocumentProvider else { return }
+      Task { _ = await provider.format() }
+    }
+    .keyboardShortcut("f", modifiers: [.shift, .option])
+    .disabled(document?.languageProvider == nil)
     Divider()
     Button("Send Selection to Agent") { document?.sendSelectionToAgent() }
       .keyboardShortcut("l", modifiers: [.command, .shift])

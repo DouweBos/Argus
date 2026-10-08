@@ -23,6 +23,7 @@ final class AppPreferences {
     static let editorWrapLines = "argus:editor.wrapLines"
     static let editorShowInvisibles = "argus:editor.showInvisibles"
     static let openFileLinksIn = "argus:editor.openFileLinksIn"
+    static let editorFormatOnSave = "argus:editor.formatOnSave"
     static let languageServers = "argus:editor.languageServers"
     static let disabledLanguageServers = "argus:editor.languageServers.disabled"
   }
@@ -87,6 +88,11 @@ final class AppPreferences {
     didSet { defaults.set(editorShowInvisibles, forKey: Key.editorShowInvisibles) }
   }
 
+  /// Run the language server's formatter before each save.
+  var editorFormatOnSave: Bool {
+    didSet { defaults.set(editorFormatOnSave, forKey: Key.editorFormatOnSave) }
+  }
+
   /// Where a file link in chat opens.
   var openFileLinksIn: FileLinkTarget {
     didSet { defaults.set(openFileLinksIn.rawValue, forKey: Key.openFileLinksIn) }
@@ -125,6 +131,7 @@ final class AppPreferences {
     editorInsertSpaces = defaults.object(forKey: Key.editorInsertSpaces) as? Bool ?? true
     editorWrapLines = defaults.bool(forKey: Key.editorWrapLines)
     editorShowInvisibles = defaults.bool(forKey: Key.editorShowInvisibles)
+    editorFormatOnSave = defaults.bool(forKey: Key.editorFormatOnSave)
     openFileLinksIn = FileLinkTarget(rawValue: defaults.string(forKey: Key.openFileLinksIn) ?? "") ?? .argus
     languageServersEnabled = defaults.object(forKey: Key.languageServers) as? Bool ?? true
     disabledLanguageServers = Set(defaults.stringArray(forKey: Key.disabledLanguageServers) ?? [])

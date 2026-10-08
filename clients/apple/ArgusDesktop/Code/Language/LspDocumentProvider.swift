@@ -60,6 +60,18 @@ final class LspDocumentProvider: EditorLanguageProvider {
     return (locations ?? []).map(LspConvert.location)
   }
 
+  /// Formats the whole buffer as one undo step, the caret kept in place. False when the server
+  /// changed nothing, failed, or the text moved on meanwhile.
+  func format() async -> Bool {
+    guard let configuration = document?.configuration else { return false }
+    let params = ArgusProtocol.CommandsTypes.LspFormatParams(
+      id: sessionId, relativePath: path, tabSize: configuration.tabWidth, insertSpaces: configuration.insertSpaces)
+    guard let edits = await current(ArgusProtocol.Commands.LspFormat.self, params), !edits.isEmpty, let document
+    else { return false }
+    document.apply(edits: edits.map { (LspConvert.range($0.range), $0.newText) }, moveCaret: false)
+    return true
+  }
+
   /// Sends `command` once the host has every edit so far; nil when it failed or the text moved on.
   private func current<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async -> C.Result? {
     // The position is in the text as of now.

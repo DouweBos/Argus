@@ -414,5 +414,5 @@ Everything the host already sees (`agent_started`, `session_created`,
 `mcp_signed_out`, `tool_toggled`, `prereq_fixed`, `conductor_version`,
 `update_channel`, `editor_font`, `editor_font_size`, `editor_tab_width`,
 `editor_insert_spaces`, `editor_wrap_lines`, `editor_show_invisibles`,
-`open_file_links_in` or `language_servers`. `mcp_tested` also fires when a server is tested from Project
+`editor_format_on_save`, `open_file_links_in` or `language_servers`. `mcp_tested` also fires when a server is tested from Project
 Settings.
