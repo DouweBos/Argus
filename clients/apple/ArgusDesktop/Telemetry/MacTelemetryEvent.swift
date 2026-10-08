@@ -35,6 +35,14 @@ enum MacTelemetryEvent {
     case acrossMessages = "across_messages"
   }
 
+  enum ImageViewerAction: String {
+    case open
+    case page
+    case copy
+    case save
+    case openPreview = "open_preview"
+  }
+
   enum TerminalAction: String {
     case newShell = "new_shell"
     case close
@@ -283,6 +291,8 @@ enum MacTelemetryEvent {
   case transcriptFindUsed(matches: String, navigated: Bool)
   /// Transcript text was copied with ⌘C or the context menu.
   case transcriptCopied(span: CopySpan)
+  /// The image viewer was opened, paged, or an image copied, saved or opened in Preview from it.
+  case imageViewerUsed(action: ImageViewerAction)
   /// A chat-input feature the host can't tell from a plain send.
   case inputUsed(affordance: String)
   /// Something done to a terminal from the panel or the run control.
@@ -361,6 +371,7 @@ enum MacTelemetryEvent {
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
     case .transcriptCopied: "mac_transcript_copied"
+    case .imageViewerUsed: "mac_image_viewer_used"
     case .inputUsed: "mac_input_used"
     case .terminalUsed: "mac_terminal_used"
     case .terminalReplayed: "mac_terminal_replayed"
@@ -440,6 +451,8 @@ enum MacTelemetryEvent {
       ["matches_bucket": matches, "navigated": navigated]
     case .transcriptCopied(let span):
       ["span": span.rawValue]
+    case .imageViewerUsed(let action):
+      ["action": action.rawValue]
     case .inputUsed(let affordance):
       ["affordance": affordance]
     case .terminalUsed(let action):

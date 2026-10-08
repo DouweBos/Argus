@@ -150,7 +150,12 @@
           }
         ]
       case "pasteboard":
-        return ["string": TranscriptSystem.pasteboard.string(forType: .string) ?? NSNull()]
+        let board = TranscriptSystem.pasteboard
+        return [
+          "string": board.string(forType: .string) ?? NSNull(),
+          "types": board.types?.map(\.rawValue) ?? [],
+          "image": (NSImage(pasteboard: board)?.size).map { "\(Int($0.width))x\(Int($0.height))" } ?? NSNull(),
+        ]
       case "clearPasteboard":
         TranscriptSystem.pasteboard.clearContents()
         return ["ok": true]
