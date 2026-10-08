@@ -62,6 +62,7 @@
 		DE5C0000000000000000000F /* ArgusCore in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000C /* ArgusCore */; };
 		DE5C00000000000000000010 /* ArgusUI in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000D /* ArgusUI */; };
 		5E7A00000000000000000008 /* ArgusSyntax in Frameworks */ = {isa = PBXBuildFile; productRef = 5E7A00000000000000000006 /* ArgusSyntax */; };
+		ED1700000000000000000004 /* ArgusEditor in Frameworks */ = {isa = PBXBuildFile; productRef = ED1700000000000000000003 /* ArgusEditor */; };
 		7E2A00000000000000000003 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 7E2A00000000000000000002 /* SwiftTerm */; };
 		6B0F00000000000000000003 /* GroveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6B0F00000000000000000002 /* GroveKit */; };
 /* End PBXBuildFile section */
@@ -113,6 +114,7 @@
 		A5C0DE0000000000000C0003 /* ArgusCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ArgusCore; path = ArgusCore; sourceTree = SOURCE_ROOT; };
 		A5C0DE0000000000000C0004 /* ArgusUI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ArgusUI; path = ArgusUI; sourceTree = SOURCE_ROOT; };
 		5E7A00000000000000000003 /* ArgusSyntax */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ArgusSyntax; path = ArgusSyntax; sourceTree = SOURCE_ROOT; };
+		ED1700000000000000000002 /* ArgusEditor */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ArgusEditor; path = ArgusEditor; sourceTree = SOURCE_ROOT; };
 		20BFB66C676863B8775FDB91 /* ArgusRemoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArgusRemoteApp.swift; sourceTree = "<group>"; };
 		21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationView.swift; sourceTree = "<group>"; };
 		D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationEditorView.swift; sourceTree = "<group>"; };
@@ -212,6 +214,7 @@
 				DE5C0000000000000000000F /* ArgusCore in Frameworks */,
 				DE5C00000000000000000010 /* ArgusUI in Frameworks */,
 				5E7A00000000000000000008 /* ArgusSyntax in Frameworks */,
+				ED1700000000000000000004 /* ArgusEditor in Frameworks */,
 				7E2A00000000000000000003 /* SwiftTerm in Frameworks */,
 				6B0F00000000000000000003 /* GroveKit in Frameworks */,
 			);
@@ -286,6 +289,7 @@
 				A5C0DE0000000000000C0003 /* ArgusCore */,
 				A5C0DE0000000000000C0004 /* ArgusUI */,
 				5E7A00000000000000000003 /* ArgusSyntax */,
+				ED1700000000000000000002 /* ArgusEditor */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -450,6 +454,7 @@
 				DE5C0000000000000000000C /* ArgusCore */,
 				DE5C0000000000000000000D /* ArgusUI */,
 				5E7A00000000000000000006 /* ArgusSyntax */,
+				ED1700000000000000000003 /* ArgusEditor */,
 				7E2A00000000000000000002 /* SwiftTerm */,
 				6B0F00000000000000000002 /* GroveKit */,
 			);
@@ -518,6 +523,7 @@
 				A5C0DE0000000000000C0001 /* XCLocalSwiftPackageReference "ArgusCore" */,
 				A5C0DE0000000000000C0002 /* XCLocalSwiftPackageReference "ArgusUI" */,
 				5E7A00000000000000000001 /* XCLocalSwiftPackageReference "ArgusSyntax" */,
+				ED1700000000000000000001 /* XCLocalSwiftPackageReference "ArgusEditor" */,
 				FEED000100000000000000A1 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				7E2A00000000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 				6B0F00000000000000000001 /* XCRemoteSwiftPackageReference "Grove" */,
@@ -1030,6 +1036,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ArgusSyntax;
 		};
+		ED1700000000000000000001 /* XCLocalSwiftPackageReference "ArgusEditor" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ArgusEditor;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -1117,6 +1127,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5E7A00000000000000000001 /* XCLocalSwiftPackageReference "ArgusSyntax" */;
 			productName = ArgusSyntax;
+		};
+		ED1700000000000000000003 /* ArgusEditor */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ED1700000000000000000001 /* XCLocalSwiftPackageReference "ArgusEditor" */;
+			productName = ArgusEditor;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
