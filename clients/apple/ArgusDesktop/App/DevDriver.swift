@@ -600,6 +600,17 @@
           view = current.superview
         }
         return ["chain": chain, "key": window.isKeyWindow]
+      case "diffSelect":
+        // Selects diff rows by index, as a click would; a driven window is
+        // never key, so the table's own mouse tracking doesn't run.
+        guard let root = window.contentView?.superview else { return ["error": "no view"] }
+        func findTable(_ view: NSView) -> DiffNSTableView? {
+          (view as? DiffNSTableView) ?? view.subviews.lazy.compactMap(findTable).first
+        }
+        guard let table = findTable(root) else { return ["error": "no diff table"] }
+        let rows = IndexSet(command["rows"] as? [Int] ?? [])
+        table.selectRowIndexes(rows, byExtendingSelection: false)
+        return ["rows": table.numberOfRows, "selected": Array(table.selectedRowIndexes)]
       case "splits":
         // Every split view's panes, to see which one won't shrink.
         var found: [String] = []
