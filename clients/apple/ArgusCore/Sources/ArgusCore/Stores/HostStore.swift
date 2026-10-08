@@ -90,6 +90,8 @@ public final class HostStore {
   /// app can tell "someone else" from "me".
   public internal(set) var deviceClaims: [String: RemoteDeviceClaimState] = [:]
   public internal(set) var connectionId: String?
+  /// Touches, keys and buttons, sent in the order they happened.
+  @ObservationIgnored let deviceInput = DeviceInputQueue()
 
   /// The most recent error worth showing, if any.
   public internal(set) var lastError: String?
