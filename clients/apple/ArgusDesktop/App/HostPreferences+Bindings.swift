@@ -45,15 +45,12 @@ extension HostPreferences {
       Binding(
         slot: .setting("git_diff_layout"),
         read: {
-          switch defaults.string(forKey: GitPreferences.diffLayoutKey) {
-          case "inline": .string("unified")
-          case "split": .string("split")
-          default: nil
-          }
+          home.string(forKey: GitPreferences.diffLayoutKey).flatMap(DiffLayout.init(rawValue:))
+            .map { .string($0.telemetryName) }
         },
         write: { value in
-          if value == .string("unified") { defaults.set("inline", forKey: GitPreferences.diffLayoutKey) }
-          if value == .string("split") { defaults.set("split", forKey: GitPreferences.diffLayoutKey) }
+          if value == .string("unified") { home.set(DiffLayout.inline.rawValue, forKey: GitPreferences.diffLayoutKey) }
+          if value == .string("split") { home.set(DiffLayout.split.rawValue, forKey: GitPreferences.diffLayoutKey) }
         }),
       Binding(
         slot: .setting("git_ignore_whitespace"),

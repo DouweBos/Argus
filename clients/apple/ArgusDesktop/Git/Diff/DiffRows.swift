@@ -1,14 +1,17 @@
 import Foundation
 import GroveKit
 
-/// How a diff lays out its lines.
+/// How a diff lays out its lines. `inline` is the unified diff; the raw value
+/// predates the name.
 enum DiffLayout: String, CaseIterable, Identifiable {
   case inline
   case split
 
   var id: Self { self }
-  var title: String { self == .inline ? "Inline" : "Side by Side" }
-  var symbol: String { self == .inline ? "rectangle.split.1x2" : "rectangle.split.2x1" }
+  var title: String { self == .inline ? "Unified" : "Split" }
+  var symbol: String { self == .inline ? "text.justify.left" : "rectangle.split.2x1" }
+  /// The host's and Electron's name for it.
+  var telemetryName: String { self == .inline ? "unified" : "split" }
 }
 
 /// Which hunk actions a diff offers: the working copy's two sides, or none.

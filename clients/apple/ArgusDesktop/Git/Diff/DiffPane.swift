@@ -2,7 +2,7 @@ import ArgusUI
 import GroveKit
 import SwiftUI
 
-/// A file's diff with its header: path, counts, inline/side-by-side and the
+/// A file's diff with its header: path, counts, unified/split and the
 /// whitespace toggle. Every git view shows diffs through this.
 struct DiffPane: View {
   @Environment(\.theme) private var theme
@@ -14,7 +14,8 @@ struct DiffPane: View {
   var ignoreWhitespace: Binding<Bool>?
   /// Extra controls on the header's trailing side.
   var accessory: AnyView?
-  @AppStorage("gitDiffLayout") private var layout: DiffLayout = .inline
+  private var setting: DiffLayoutSetting { .shared }
+  private var layout: DiffLayout { setting.layout }
 
   var body: some View {
     VStack(spacing: 0) {
@@ -61,7 +62,7 @@ struct DiffPane: View {
           .help("Ignore Whitespace")
           .fixedSize()
       }
-      Picker("Layout", selection: $layout) {
+      Picker("Layout", selection: Binding(get: { layout }, set: { setting.set($0, via: .diff) })) {
         ForEach(DiffLayout.allCases) { layout in
           Image(systemName: layout.symbol).help(layout.title).tag(layout)
         }
