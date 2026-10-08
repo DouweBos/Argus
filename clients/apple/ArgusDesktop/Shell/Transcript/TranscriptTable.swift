@@ -35,6 +35,8 @@ final class TranscriptCell: TranscriptHoverCell {
   private(set) var rowId = ""
   private(set) var revision = -1
   private(set) var environmentKey = ""
+  /// The height its content last laid out at, reported by the row itself.
+  var laidOutHeight: CGFloat?
 
   init() {
     super.init(frame: .zero)
@@ -49,6 +51,7 @@ final class TranscriptCell: TranscriptHoverCell {
   required init?(coder: NSCoder) { fatalError() }
 
   func show(_ root: AnyView, id: String, revision: Int, environmentKey: String) {
+    laidOutHeight = nil
     host.rootView = root
     rowId = id
     self.revision = revision
@@ -65,6 +68,13 @@ final class TranscriptCell: TranscriptHoverCell {
 /// opens on the first click rather than the second.
 final class TranscriptHostingView: NSHostingView<AnyView> {
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+  /// What row it shows, for perf logs.
+  var kind = ""
+
+  override func layout() {
+    TranscriptPerfLog.time("layout\(isHiddenOrHasHiddenAncestor ? ".staged" : "").\(kind)") { super.layout() }
+  }
 }
 
 /// Code blocks, tables and diffs scroll sideways in scroll views of their own,
