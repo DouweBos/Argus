@@ -11,20 +11,29 @@ struct TranscriptMessageRow: View, Equatable {
 
   let agentKey: String
   let message: RemoteMessage
+  /// Its own timestamp tooltip, inside an open tool group. A row of its own
+  /// gets one from its cell only while hovered: a live tooltip per row is
+  /// re-evaluated on every scrolled frame.
+  var tip = false
 
   private var isUser: Bool { message.role == .user }
 
   /// A stream update rebuilds the transcript; rows whose message didn't change
   /// skip their body. What they read from the store still invalidates them.
   nonisolated static func == (a: Self, b: Self) -> Bool {
-    a.agentKey == b.agentKey && a.message == b.message
+    a.agentKey == b.agentKey && a.message == b.message && a.tip == b.tip
   }
 
   private var calls: [RemoteToolCall] {
     message.toolCalls.filter { !host.isToolCallPending(agentKey: agentKey, call: $0) }
   }
 
+  @ViewBuilder
   var body: some View {
+    if tip { row.help(timestamp) } else { row }
+  }
+
+  private var row: some View {
     HStack(alignment: .top, spacing: 0) {
       if isUser { Spacer(minLength: 80) }
       VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
@@ -40,7 +49,6 @@ struct TranscriptMessageRow: View, Equatable {
       }
       if !isUser { Spacer(minLength: 0) }
     }
-    .help(timestamp)
   }
 
   private func textView(_ text: TranscriptRendered) -> some View {
@@ -62,7 +70,9 @@ struct TranscriptMessageRow: View, Equatable {
     }
   }
 
-  private var timestamp: String {
+  private var timestamp: String { Self.timestamp(message) }
+
+  static func timestamp(_ message: RemoteMessage) -> String {
     guard let timestamp = message.timestamp else { return "" }
     return Date(timeIntervalSince1970: timestamp / 1000).formatted(date: .abbreviated, time: .shortened)
   }
@@ -168,7 +178,7 @@ struct TranscriptToolGroup: View, Equatable {
       summary
       if expanded {
         ForEach(messages) { message in
-          TranscriptMessageRow(agentKey: agentKey, message: message)
+          TranscriptMessageRow(agentKey: agentKey, message: message, tip: true)
         }
       }
     }

@@ -90,9 +90,11 @@ extension TranscriptNSTextView {
 
   // MARK: Cursor
 
+  /// One area for the view's life: `inVisibleRect` follows scrolling, and
+  /// replacing it on every update was work on each scrolled frame.
   override func updateTrackingAreas() {
     super.updateTrackingAreas()
-    if let cursorArea { removeTrackingArea(cursorArea) }
+    guard cursorArea == nil else { return }
     let area = NSTrackingArea(
       rect: .zero, options: [.mouseMoved, .cursorUpdate, .activeInActiveApp, .inVisibleRect], owner: self)
     addTrackingArea(area)
