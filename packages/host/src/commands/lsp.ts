@@ -3,6 +3,7 @@ import {
   lspDidChange,
   lspDidClose,
   lspDidOpen,
+  restartLanguage,
 } from "../services/lsp/documents";
 import {
   lspCodeActions,
@@ -16,7 +17,7 @@ import {
   lspRename,
   lspSignatureHelp,
 } from "../services/lsp/features";
-import { lspRestart, lspStatus } from "../services/lsp/manager";
+import { lspStatus } from "../services/lsp/manager";
 
 export function registerLspCommands(): void {
   defineTypedCommand("lsp_did_open", (p) =>
@@ -62,5 +63,5 @@ export function registerLspCommands(): void {
     lspSignatureHelp(p.id, p.relativePath, p.position),
   );
   defineTypedCommand("lsp_status", (p) => lspStatus(p.id));
-  defineTypedCommand("lsp_restart", (p) => lspRestart(p.id, p.language));
+  defineTypedCommand("lsp_restart", (p) => restartLanguage(p.id, p.language));
 }

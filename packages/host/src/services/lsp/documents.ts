@@ -4,12 +4,13 @@
  * when the last one lets go or drops.
  */
 
-import type { LspContentChange } from "@argus/remote-protocol";
+import type { LspContentChange, LspLanguage } from "@argus/remote-protocol";
 import {
   DidChangeTextDocumentNotification,
   DidCloseTextDocumentNotification,
   TextDocumentSyncKind,
 } from "vscode-languageserver-protocol/node";
+import { emitHostEvent } from "@argus/host/bus";
 import { clientPath } from "../code/paths";
 import { resolveContainedPath } from "../file/operations";
 import {
@@ -20,12 +21,16 @@ import { applyChanges, toUri } from "./convert";
 import {
   allHandles,
   armIdle,
+  dropHandle,
   ensureRunning,
   getHandle,
+  lspRestart,
+  lspStatus,
   type OpenDoc,
   sendOpen,
   type ServerHandle,
 } from "./manager";
+import { routeFor } from "./routing";
 import { languageForId } from "./servers";
 
 /** A request over local IPC has no connection; it holds until closed. */
@@ -97,10 +102,12 @@ export async function lspDidOpen(
     return;
   }
   const { relativePath, absolute } = await docPaths(sessionId, requested);
-  const handle = getHandle(sessionId, language);
   const who = holder();
   hookConnection(who);
-  const existing = handle.docs.get(relativePath);
+  const existing = allHandles()
+    .filter((h) => h.sessionId === sessionId && h.language === language)
+    .map((h) => h.docs.get(relativePath))
+    .find((d) => d !== undefined);
   if (existing) {
     existing.holders.add(who);
     if (existing.text !== text) {
@@ -118,6 +125,11 @@ export async function lspDidOpen(
     text,
     holders: new Set([who]),
   };
+  const handle = getHandle(
+    sessionId,
+    language,
+    routeFor(sessionId, language, absolute),
+  );
   handle.docs.set(relativePath, doc);
   armIdle(handle);
   if (handle.proc && handle.state === "ready") {
@@ -185,5 +197,39 @@ export async function lspDidClose(
   doc.holders.delete(holder());
   if (doc.holders.size === 0) {
     closeDoc(handle, doc);
+  }
+}
+
+/**
+ * Retry a language. Swift files are routed again first: a build server or a
+ * package may have appeared since they were opened.
+ */
+export function restartLanguage(
+  sessionId: string,
+  language: LspLanguage,
+): void {
+  if (language !== "swift") {
+    lspRestart(sessionId, language);
+
+    return;
+  }
+  const own = allHandles().filter(
+    (h) => h.sessionId === sessionId && h.language === language,
+  );
+  const docs = own.flatMap((h) => [...h.docs.values()]);
+  own.forEach(dropHandle);
+  const routed = new Set<ServerHandle>();
+  for (const doc of docs) {
+    const handle = getHandle(
+      sessionId,
+      language,
+      routeFor(sessionId, language, doc.absolute),
+    );
+    handle.docs.set(doc.relativePath, doc);
+    routed.add(handle);
+  }
+  emitHostEvent(`lsp:status:${sessionId}`, lspStatus(sessionId));
+  for (const handle of routed) {
+    ensureRunning(handle).catch(() => undefined);
   }
 }

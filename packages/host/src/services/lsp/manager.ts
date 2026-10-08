@@ -1,16 +1,21 @@
 /**
- * Language servers per (session, language): started lazily by the first open
+ * Language servers per (session, language, root): started lazily by the first open
  * document, kept alive by open documents across every connection, stopped
  * after ten idle minutes, capped at six live processes (least recently used
  * goes first), and restarted with backoff when they crash.
  */
 
+import type { LspProject, Route } from "./route";
 import type {
   LspLanguage,
   LspServerSource,
   LspServerState,
+  LspServerStatus,
+  LspSetupAction,
   LspStatus,
 } from "@argus/remote-protocol";
+import fs from "node:fs";
+import path from "node:path";
 import type * as P from "vscode-languageserver-protocol";
 import { DidOpenTextDocumentNotification } from "vscode-languageserver-protocol/node";
 import { emitHostEvent } from "@argus/host/bus";
@@ -46,9 +51,16 @@ export interface OpenDoc {
 export interface ServerHandle {
   sessionId: string;
   language: LspLanguage;
+  /** Canonical absolute directory the server is rooted at. */
+  root: string;
+  route: Route;
   state: LspServerState;
   source?: LspServerSource;
   message?: string;
+  action?: LspSetupAction;
+  /** The file being polled while the gate is shut. */
+  watching: string | null;
+  setupReason?: string;
   docs: Map<string, OpenDoc>;
   proc: ServerProcess | null;
   /** Settles once `proc` has finished its handshake. */
@@ -66,8 +78,12 @@ export interface ServerHandle {
 
 const handles = new Map<string, ServerHandle>();
 
-const handleKey = (sessionId: string, language: LspLanguage) =>
-  `${sessionId}\0${language}`;
+const handleKey = (sessionId: string, language: LspLanguage, route: Route) =>
+  `${sessionId}\0${language}\0${route.root}\0${route.scope ?? ""}`;
+
+function project(handle: ServerHandle): { project?: LspProject } {
+  return handle.route.project ? { project: handle.route.project } : {};
+}
 
 function durationBucket(ms: number): "<1s" | "<5s" | "<30s" | ">=30s" {
   if (ms < 1000) {
@@ -83,13 +99,22 @@ function durationBucket(ms: number): "<1s" | "<5s" | "<30s" | ">=30s" {
 export function lspStatus(sessionId: string): LspStatus {
   const servers = [...handles.values()]
     .filter((h) => h.sessionId === sessionId)
-    .sort((a, b) => a.language.localeCompare(b.language))
-    .map((h) => ({
-      language: h.language,
-      state: h.state,
-      ...(h.source ? { source: h.source } : {}),
-      ...(h.message ? { message: h.message } : {}),
-    }));
+    .sort(
+      (a, b) =>
+        a.language.localeCompare(b.language) || a.root.localeCompare(b.root),
+    )
+    .map((h): LspServerStatus => {
+      const root = path.relative(canonicalSessionRoot(h.sessionId), h.root);
+
+      return {
+        language: h.language,
+        state: h.state,
+        ...(h.source ? { source: h.source } : {}),
+        ...(h.message ? { message: h.message } : {}),
+        ...(h.action ? { action: h.action } : {}),
+        ...(root && !root.startsWith("..") ? { root } : {}),
+      };
+    });
 
   return { servers };
 }
@@ -98,9 +123,11 @@ function setState(
   handle: ServerHandle,
   state: LspServerState,
   message?: string,
+  action?: LspSetupAction,
 ): void {
   handle.state = state;
   handle.message = message;
+  handle.action = action;
   emitHostEvent(`lsp:status:${handle.sessionId}`, lspStatus(handle.sessionId));
 }
 
@@ -186,15 +213,78 @@ function onCrash(handle: ServerHandle, proc: ServerProcess, detail: string) {
   const delay = LSP_TIMING.restartBaseMs * 2 ** (handle.crashes.length - 1);
   handle.restartTimer = setTimeout(() => {
     handle.restartTimer = null;
-    if (handles.get(handleKey(handle.sessionId, handle.language)) === handle) {
+    if (
+      handles.get(
+        handleKey(handle.sessionId, handle.language, handle.route),
+      ) === handle
+    ) {
       ensureRunning(handle).catch(() => undefined);
     }
   }, delay);
 }
 
+function unwatch(handle: ServerHandle): void {
+  if (handle.watching) {
+    fs.unwatchFile(handle.watching);
+    handle.watching = null;
+  }
+}
+
+/** Polled, not watched: the file may not exist yet, and it changes rarely. */
+function watchGate(handle: ServerHandle, file: string): void {
+  if (handle.watching === file) {
+    return;
+  }
+  unwatch(handle);
+  handle.watching = file;
+  fs.watchFile(file, { interval: 3000, persistent: false }, () => {
+    if (handle.state === "needs_setup" && handle.docs.size > 0) {
+      recheck(handle);
+    }
+  });
+}
+
+/** Try a server held back for setup again. */
+export function recheck(handle: ServerHandle): void {
+  if (handle.state !== "needs_setup" || handle.proc) {
+    return;
+  }
+  handle.ready = null;
+  handle.state = "stopped";
+  ensureRunning(handle).catch(() => undefined);
+}
+
 async function start(handle: ServerHandle): Promise<ServerProcess | null> {
   setState(handle, "starting");
-  const resolved = await resolveServer(handle.language);
+  let readyMessage: string | undefined;
+  let extraArgs: string[] = [];
+  if (handle.route.gate) {
+    const gate = await handle.route.gate();
+    if (!gate.ok) {
+      if (handle.setupReason !== gate.reason) {
+        handle.setupReason = gate.reason;
+        capture("lsp_setup_needed", {
+          language: handle.language,
+          reason: gate.reason,
+        });
+      }
+      setState(handle, "needs_setup", gate.message, gate.action);
+      if (gate.watch) {
+        watchGate(handle, gate.watch);
+      }
+
+      return null;
+    }
+    unwatch(handle);
+    handle.setupReason = undefined;
+    readyMessage = gate.message;
+    extraArgs = gate.args ?? [];
+  }
+  const found = await resolveServer(handle.language);
+  const resolved =
+    "missing" in found
+      ? found
+      : { ...found, args: [...found.args, ...extraArgs] };
   if ("missing" in resolved) {
     handle.source = undefined;
     setState(handle, "missing", resolved.missing);
@@ -203,6 +293,7 @@ async function start(handle: ServerHandle): Promise<ServerProcess | null> {
       source: "none",
       success: false,
       duration_bucket: "<1s",
+      ...project(handle),
     });
 
     return null;
@@ -212,7 +303,7 @@ async function start(handle: ServerHandle): Promise<ServerProcess | null> {
   const startedAt = Date.now();
   const proc: ServerProcess = new ServerProcess({
     resolved,
-    root: canonicalSessionRoot(handle.sessionId),
+    root: handle.root,
     settings: serverSettings(handle.language),
     onDiagnostics: (p) => {
       onDiagnostics(handle, p.uri, p.version, p.diagnostics).catch(
@@ -230,6 +321,7 @@ async function start(handle: ServerHandle): Promise<ServerProcess | null> {
       source: resolved.source,
       success: false,
       duration_bucket: durationBucket(Date.now() - startedAt),
+      ...project(handle),
     });
     if (handle.proc === proc) {
       // Counts as a crash: same backoff, same give-up.
@@ -247,11 +339,12 @@ async function start(handle: ServerHandle): Promise<ServerProcess | null> {
     source: resolved.source,
     success: true,
     duration_bucket: durationBucket(Date.now() - startedAt),
+    ...project(handle),
   });
   for (const doc of handle.docs.values()) {
     sendOpen(proc, doc);
   }
-  setState(handle, "ready");
+  setState(handle, "ready", readyMessage);
 
   return proc;
 }
@@ -261,7 +354,11 @@ export function ensureRunning(
   handle: ServerHandle,
 ): Promise<ServerProcess | null> {
   handle.lastUsed = Date.now();
-  if (handle.state === "failed" || handle.state === "missing") {
+  if (
+    handle.state === "failed" ||
+    handle.state === "missing" ||
+    handle.state === "needs_setup"
+  ) {
     return Promise.resolve(null);
   }
   if (handle.restartTimer) {
@@ -277,13 +374,17 @@ export function ensureRunning(
 export function getHandle(
   sessionId: string,
   language: LspLanguage,
+  route: Route = { root: canonicalSessionRoot(sessionId) },
 ): ServerHandle {
-  const key = handleKey(sessionId, language);
+  const key = handleKey(sessionId, language, route);
   let handle = handles.get(key);
   if (!handle) {
     handle = {
       sessionId,
       language,
+      root: route.root,
+      route,
+      watching: null,
       state: "stopped",
       docs: new Map(),
       proc: null,
@@ -310,6 +411,7 @@ export function armIdle(handle: ServerHandle): void {
   if (handle.docs.size > 0) {
     return;
   }
+  unwatch(handle);
   handle.idleTimer = setTimeout(() => {
     handle.idleTimer = null;
     if (handle.docs.size === 0 && handle.proc) {
@@ -318,9 +420,18 @@ export function armIdle(handle: ServerHandle): void {
   }, LSP_TIMING.idleShutdownMs);
 }
 
-/** Forget a failure and try again. */
+/** Forget a failure, or check setup, and try again. */
 export function lspRestart(sessionId: string, language: LspLanguage): void {
-  const handle = getHandle(sessionId, language);
+  const own = [...handles.values()].filter(
+    (h) => h.sessionId === sessionId && h.language === language,
+  );
+  for (const handle of own.length ? own : [getHandle(sessionId, language)]) {
+    restartHandle(handle);
+  }
+}
+
+function restartHandle(handle: ServerHandle): void {
+  unwatch(handle);
   if (handle.restartTimer) {
     clearTimeout(handle.restartTimer);
     handle.restartTimer = null;
@@ -339,7 +450,8 @@ export function lspRestart(sessionId: string, language: LspLanguage): void {
   }
 }
 
-function dropHandle(handle: ServerHandle): void {
+export function dropHandle(handle: ServerHandle): void {
+  unwatch(handle);
   if (handle.idleTimer) {
     clearTimeout(handle.idleTimer);
   }
@@ -349,7 +461,7 @@ function dropHandle(handle: ServerHandle): void {
   handle.proc?.kill();
   handle.proc = null;
   handle.ready = null;
-  handles.delete(handleKey(handle.sessionId, handle.language));
+  handles.delete(handleKey(handle.sessionId, handle.language, handle.route));
 }
 
 /** Kill every server of a session, or every server at all. */

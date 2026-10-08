@@ -60,7 +60,7 @@ final class LanguageSupport: CodeDocumentObserver {
   /// Format on save, when it's on and the file's server is up. A slow server doesn't hold the save.
   func willSave(session: String, path: String, document: EditorDocument) async -> Bool {
     guard formatOnSave(), let provider = document.languageProvider as? LspDocumentProvider,
-      clients[session]?.status(of: provider.language.server)?.state == .ready
+      clients[session]?.status(of: provider.language.server, path: path)?.state == .ready
     else { return false }
     return await withTaskGroup(of: Bool?.self) { group in
       group.addTask { await provider.format() }

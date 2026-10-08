@@ -103,8 +103,14 @@ export interface EventMap {
   lsp_server_started: {
     duration_bucket: "<1s" | "<5s" | "<30s" | ">=30s";
     language: LspLanguage;
+    /** Swift only. */
+    project?: "files" | "swiftpm" | "xcode";
     source: "bundled" | "none" | "path" | "toolchain";
     success: boolean;
+  };
+  lsp_setup_needed: {
+    language: LspLanguage;
+    reason: "loose_files" | "no_build_server" | "not_built";
   };
   onboarding_completed: undefined;
   prefs_imported: { keys: number };

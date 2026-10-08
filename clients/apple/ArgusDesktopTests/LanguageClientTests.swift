@@ -203,6 +203,18 @@ struct LanguageClientTests {
     #expect(format.insertSpaces)
   }
 
+  @Test func aFileGetsTheStatusOfTheClosestServerRoot() {
+    let statuses: [ArgusProtocol.LspServerStatus] = [
+      .init(language: .swift, state: .needsSetup, action: .installBuildServer),
+      .init(language: .swift, state: .ready, root: "Packages/Core"),
+      .init(language: .swift, state: .ready, root: "Packages/CoreUI"),
+    ]
+    #expect(LanguageClient.status(for: "App/App.swift", in: statuses)?.state == .needsSetup)
+    #expect(LanguageClient.status(for: "Packages/Core/Sources/A.swift", in: statuses)?.root == "Packages/Core")
+    #expect(LanguageClient.status(for: "Packages/CoreUI/B.swift", in: statuses)?.root == "Packages/CoreUI")
+    #expect(LanguageClient.status(for: "x.swift", in: Array(statuses.dropFirst())) == nil)
+  }
+
   @Test func filesWithoutAServerStayLocal() {
     let sink = FakeSink()
     let client = LanguageClient(sessionId: "s1", sink: sink) { _ in true }
