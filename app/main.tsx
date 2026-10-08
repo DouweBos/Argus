@@ -1,4 +1,5 @@
 import "./styles/global.css";
+import type { HostPrefsChange } from "./lib/hostPrefs";
 import { initTransport } from "./lib/transport";
 
 const params = new URLSearchParams(window.location.search);
@@ -27,8 +28,20 @@ async function syncHostPrefs(): Promise<void> {
   if (fixtureMode) {
     return;
   }
-  const { connectHostPrefs, hydrateHostPrefs } =
+  const { applyHostPrefsChange, connectHostPrefs, hydrateHostPrefs } =
     await import("./lib/hostPrefs");
+  const [{ listen }, { LOCAL_HOST_ID }] = await Promise.all([
+    import("./lib/events"),
+    import("./lib/transport/hostId"),
+  ]);
+  // Another window on this host (Argus for Mac) changed some of them.
+  await listen<HostPrefsChange>(
+    "prefs:changed",
+    ({ payload }) => {
+      applyHostPrefsChange(payload).catch(() => undefined);
+    },
+    { hostId: LOCAL_HOST_ID },
+  );
   if (popoutMode) {
     connectHostPrefs();
 

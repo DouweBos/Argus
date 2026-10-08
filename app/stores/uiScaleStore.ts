@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { mirrorToHost } from "../lib/hostPrefs";
+import { mirrorToHost, onHostPrefChange } from "../lib/hostPrefs";
 
 export type UiScale = "default" | "large" | "larger" | "small" | "smaller";
 
@@ -73,6 +73,11 @@ function apply(scale: UiScale) {
   const factor = UI_SCALE_FACTORS[scale];
   window.argus?.setZoomFactor?.(factor);
 }
+
+onHostPrefChange(STORAGE_KEY, () => {
+  store.setState(load());
+  apply(store.getState().scale);
+});
 
 export function setUiScale(scale: UiScale) {
   store.setState({ scale });

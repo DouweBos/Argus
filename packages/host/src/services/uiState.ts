@@ -10,6 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { argusHomeDir } from "../lib/argusHome";
+import { emitPrefsChanged } from "./prefsChanged";
 
 function filePath(): string {
   return path.join(argusHomeDir(), "ui-state.json");
@@ -47,4 +48,5 @@ export function setUiState(key: string, value: string): void {
   const state = readAll();
   state[key] = value;
   writeAll(state);
+  emitPrefsChanged({ ui_state: [key] });
 }

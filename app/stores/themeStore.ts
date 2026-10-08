@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { mirrorToHost } from "../lib/hostPrefs";
+import { mirrorToHost, onHostPrefChange } from "../lib/hostPrefs";
 
 export type ThemePreference = "dark" | "light" | "system";
 export type ResolvedTheme = "dark" | "light";
@@ -58,6 +58,11 @@ function apply(theme: ResolvedTheme) {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
 }
+
+onHostPrefChange(STORAGE_KEY, () => {
+  store.setState({ preference: load().preference });
+  apply(resolve(store.getState()));
+});
 
 export function setThemePreference(preference: ThemePreference) {
   store.setState({ preference });

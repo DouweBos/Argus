@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { mirrorToHost } from "../lib/hostPrefs";
+import { mirrorToHost, onHostPrefChange } from "../lib/hostPrefs";
 import {
   LOCAL_HOST_ID,
   hostScopedKey,
@@ -118,6 +118,12 @@ const recentProjectsStore = create<RecentProjectsStoreData>(() => ({
 }));
 
 const useRecentProjectsStore = recentProjectsStore;
+
+for (const key of [STORAGE_KEY, HIDDEN_PROJECTS_KEY]) {
+  onHostPrefChange(key, () =>
+    recentProjectsStore.setState({ projects: loadProjects() }),
+  );
+}
 
 export const addRecentProject = (
   path: string,
