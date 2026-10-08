@@ -53,10 +53,12 @@
         // saved chat opens; otherwise the view holds all of it.
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
         let count = command["count"] as? Int ?? 3000
+        let narrated = command["shape"] as? String == "narrated"
         let start = CACurrentMediaTime()
-        // Built once per count, so a second open measures only the transcript.
-        let (messages, images) = prepared[count] ?? prepare(count)
-        prepared[count] = (messages, images)
+        // Built once per count and shape, so a second open measures only the transcript.
+        let slot = narrated ? -count : count
+        let (messages, images) = prepared[slot] ?? prepare(count, narrated: narrated)
+        prepared[slot] = (messages, images)
         let built = CACurrentMediaTime() - start
         let paged = command["paged"] as? Bool ?? true
         let store = paged ? HostStore() : model.store
@@ -222,8 +224,8 @@
 
     static var prepared: [Int: ([RemoteMessage], [String: String])] = [:]
 
-    static func prepare(_ count: Int) -> ([RemoteMessage], [String: String]) {
-      let fixture = TranscriptFixture.messages(count: count)
+    static func prepare(_ count: Int, narrated: Bool = false) -> ([RemoteMessage], [String: String]) {
+      let fixture = TranscriptFixture.messages(count: count, narrated: narrated)
       let messages = TranscriptFixture.remote(fixture)
       var images: [String: String] = [:]
       for (message, raw) in zip(messages, TranscriptFixture.saved(fixture)) {

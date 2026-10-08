@@ -25,7 +25,10 @@
       var timestamp: Double
     }
 
-    static func messages(count: Int) -> [Message] {
+    /// `narrated`: each tool call carries a line of the agent's narration, so
+    /// every call is a row of its own rather than a folded run, with writes
+    /// and edits among them, as a chat that edits a lot reads.
+    static func messages(count: Int, narrated: Bool = false) -> [Message] {
       var rng = Rng(seed: 42)
       var out: [Message] = []
       var clock = 1_760_000_000_000.0
@@ -42,6 +45,11 @@
         // thinking-only messages (nothing to draw) in between.
         let run = turn % 4 == 0 ? rng.next(2...8) : rng.next(12...60)
         for index in 0..<run {
+          if narrated {
+            let call = index % 4 == 1 ? write(turn, index, &rng) : index % 4 == 3 ? edit(turn, &rng, index) : toolCall(turn: turn, index: index, &rng)
+            add("assistant", [sentence(&rng, words: rng.next(6...30)) + "."], calls: [call])
+            continue
+          }
           add("assistant", [], calls: [toolCall(turn: turn, index: index, &rng)])
           if index % 3 == 0 { add("assistant", []) }
         }
@@ -180,11 +188,18 @@
       }
     }
 
-    private static func edit(_ turn: Int, _ rng: inout Rng) -> Call {
+    private static func write(_ turn: Int, _ index: Int, _ rng: inout Rng) -> Call {
+      Call(
+        id: "c-\(turn)-write-\(index)", name: "Write",
+        input: ["file_path": "/tmp/argus/Sources/Module\(turn % 23)/New\(index).swift", "content": source(lines: rng.next(10...70), &rng)],
+        output: "File created successfully.")
+    }
+
+    private static func edit(_ turn: Int, _ rng: inout Rng, _ index: Int = -1) -> Call {
       let old = source(lines: rng.next(5...40), &rng)
       let new = source(lines: rng.next(5...40), &rng)
       return Call(
-        id: "c-\(turn)-edit", name: "Edit",
+        id: index < 0 ? "c-\(turn)-edit" : "c-\(turn)-edit-\(index)", name: "Edit",
         input: [
           "file_path": turn % 2 == 0 ? "/Users/someone/Work/Projects/Argus/.gitignore" : "/tmp/argus/Sources/Module\(turn % 23)/View.swift",
           "old_string": old, "new_string": new,

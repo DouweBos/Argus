@@ -237,7 +237,7 @@
         scroll.reflectScrolledClipView(scroll.contentView)
         return ["ok": true]
       default:
-        return nil
+        return TranscriptFlingDriver.run(command, window: window)
       }
     }
 
