@@ -122,8 +122,8 @@ extension HostStore {
   // MARK: Queue
   //
   // The queue lives on the computer, so it survives reinstalling this app and
-  // is shared with the desktop — which is also what drains it. There is
-  // deliberately no local mirror; state comes back on `agent.queue`.
+  // is shared with the desktop — which is also what drains it. The host's
+  // list is authoritative; it comes back on `agent.queue` and `loadQueue`.
 
   public func queueMessage(
     agentId: String, message: String, images: [RemoteImageAttachment], displayText: String
@@ -176,9 +176,32 @@ extension HostStore {
     guard let backend else { return }
     struct Params: Encodable { let agent_id: String }
     struct Result: Decodable { let messages: [RemoteQueuedMessage] }
-    guard let result = try? await backend.request(
-      .agentsQueueList, Params(agent_id: agentId), as: Result.self) else { return }
-    queuedByAgent[agentId] = result.messages
+    guard
+      let (result, seq) = try? await backend.sequencedRequest(
+        .agentsQueueList, Params(agent_id: agentId), as: Result.self)
+    else { return }
+    applyQueue(result.messages, agentId: agentId, seq: seq)
+  }
+
+  /// Take the host's queue unless something newer already landed: a list
+  /// answered before the agent drained it can reach us after the drain's event.
+  func applyQueue(_ messages: [RemoteQueuedMessage], agentId: String, seq: Int) {
+    if seq != Int.min {
+      if let held = queueSeq[agentId], held > seq { return }
+      queueSeq[agentId] = seq
+    }
+    queuedByAgent[agentId] = messages
+  }
+
+  /// Queue events missed while the connection was down are gone; re-read every
+  /// queue on screen or still showing entries.
+  public func resyncQueues() {
+    let agents = Set(queuedByAgent.filter { !$0.value.isEmpty }.keys)
+      .union(watchedAgents)
+    for agentId in agents {
+      queueSeq[agentId] = nil
+      Task { await loadQueue(agentId: agentId) }
+    }
   }
 
   public func removeQueued(agentId: String, id: String) async {
@@ -187,11 +210,13 @@ extension HostStore {
       let agent_id: String
       let id: String
     }
+    // Gone at once; the re-read below puts it back if the host kept it.
+    queuedByAgent[agentId]?.removeAll { $0.id == id }
     do {
       try await backend.request(
         .agentsQueueRemove, Params(agent_id: agentId, id: id), as: IgnoredResult.self)
-      await loadQueue(agentId: agentId)
     } catch { report(error) }
+    await loadQueue(agentId: agentId)
   }
 
   public func updateQueued(agentId: String, id: String, message: String) async {

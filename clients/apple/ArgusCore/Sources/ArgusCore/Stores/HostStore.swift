@@ -129,6 +129,8 @@ public final class HostStore {
   @ObservationIgnored var ipcObservers: [UUID: @MainActor (String, [JSONValue], Int) -> Void] = [:]
   /// Streaming terminal readers, by terminal id; see `followTerminal`.
   @ObservationIgnored var terminalObservers: [String: @MainActor (TerminalFeed.Live, Int) -> Void] = [:]
+  /// Where each agent's applied queue sits among the host's events; see `applyQueue`.
+  @ObservationIgnored var queueSeq: [String: Int] = [:]
 
   public static let transcriptPage = 80
 
@@ -148,6 +150,8 @@ public final class HostStore {
     pump?.cancel()
     self.backend = backend
     connection = .ready
+    // A new connection numbers its events from scratch.
+    queueSeq = [:]
     let stream = await backend.events()
     pump = Task { [weak self] in
       for await event in stream {
@@ -193,6 +197,7 @@ public final class HostStore {
     failedByAgent = [:]
     queuedByAgent = [:]
     sendingQueuedByAgent = [:]
+    queueSeq = [:]
     tasksByAgent = [:]
     todosByAgent = [:]
     pendingToolByAgent = [:]
@@ -230,6 +235,7 @@ public final class HostStore {
       // Subscriptions belong to a connection; a fresh one starts with none.
       if reconnected {
         resyncTranscripts()
+        resyncQueues()
         followAgents()
       }
     case .media(let bytes):
@@ -274,7 +280,7 @@ public final class HostStore {
       }
       guard let payload = try? ProtocolCodec.convert(envelope.payload, to: Payload.self)
       else { return }
-      queuedByAgent[payload.agent_id] = payload.messages
+      applyQueue(payload.messages, agentId: payload.agent_id, seq: envelope.seq)
 
     case .agentCapabilities:
       guard let agentId = envelope.agentId,
