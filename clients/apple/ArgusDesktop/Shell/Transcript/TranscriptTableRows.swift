@@ -24,17 +24,20 @@ enum TranscriptRow {
   /// `onHeight` hears a row that resizes itself (an image landing, a card opening).
   @MainActor
   static func root(
-    _ row: TranscriptRow, id: String, agentKey: String, model: TranscriptModel, environment: EnvironmentValues,
+    _ row: TranscriptRow, id: String?, agentKey: String, model: TranscriptModel, environment: EnvironmentValues,
     onHeight: ((CGFloat) -> Void)? = nil
   ) -> AnyView {
-    AnyView(
-      content(row, agentKey: agentKey)
-        .padding(.horizontal, 20)
-        .frame(maxWidth: 920, alignment: .leading)
-        .frame(maxWidth: .infinity)
-        .fixedSize(horizontal: false, vertical: true)
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onHeight?($0) }
-        .id(id)
+    let laidOut = content(row, agentKey: agentKey)
+      .padding(.horizontal, 20)
+      .frame(maxWidth: 920, alignment: .leading)
+      .frame(maxWidth: .infinity)
+      .fixedSize(horizontal: false, vertical: true)
+      .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onHeight?($0) }
+    // No identity for measuring: the sizer keeps no state, and diffing one row
+    // into the next is far cheaper than building a graph per row.
+    let rooted = id.map { AnyView(laidOut.id($0)) } ?? AnyView(laidOut)
+    return AnyView(
+      rooted
         .environment(\.toolCardExpansion, model.toolCards)
         .environment(\.self, environment))
   }

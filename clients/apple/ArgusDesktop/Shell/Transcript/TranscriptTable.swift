@@ -19,6 +19,12 @@ struct TranscriptTable: NSViewRepresentable {
     controller.update(
       agentKey: agentKey, messages: messages, top: top, footer: footer, environment: context.environment)
   }
+
+  /// Whatever it's offered. Otherwise each resize step asks Auto Layout to
+  /// measure the scroll view and its table.
+  func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSScrollView, context: Context) -> CGSize? {
+    proposal.replacingUnspecifiedDimensions(by: CGSize(width: 400, height: 400))
+  }
 }
 
 /// A recycled row: a hosting view whose root is swapped for each row shown.
@@ -98,6 +104,12 @@ final class TranscriptTableView: NSTableView {
   #endif
   override var acceptsFirstResponder: Bool { false }
   override func validateProposedFirstResponder(_ responder: NSResponder, for event: NSEvent?) -> Bool { true }
+
+  /// No overdraw: AppKit's default prepares dozens of rows at once, and a
+  /// hosted row is a SwiftUI layout. Rows ahead are measured by the controller.
+  override func prepareContent(in rect: NSRect) {
+    super.prepareContent(in: rect.intersection(visibleRect))
+  }
 }
 
 /// A text-only message as plain AppKit: the same text view the hosted rows

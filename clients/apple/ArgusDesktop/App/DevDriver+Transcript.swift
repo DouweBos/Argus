@@ -92,6 +92,36 @@
           fixtureWindow = window
         }
         return ["ok": true, "messages": messages.count, "build_ms": Stats.ms(built)]
+      case "transcriptOpenSaved":
+        // A saved chat through the real host, paged as the history viewer opens it.
+        guard let model = AppDelegate.current?.model, let repoRoot = command["repoRoot"] as? String,
+          let historyId = command["historyId"] as? String
+        else { return ["error": "repoRoot, historyId?"] }
+        let key = HostStore.stoppedKey(repoRoot: repoRoot, historyId: historyId)
+        let root = TranscriptView(agentKey: key, sessionId: "saved")
+          .environment(model)
+          .environment(model.store)
+          .environment(ImageViewerState())
+          .themed()
+        fixtureWindow?.close()
+        let window = NSWindow(
+          contentRect: NSRect(x: 80, y: 80, width: 900, height: 900),
+          styleMask: [.titled, .resizable, .closable], backing: .buffered, defer: false)
+        window.title = "Transcript Fixture"
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: root)
+        window.orderFront(nil)
+        fixtureWindow = window
+        return ["ok": true]
+      case "savedInfo":
+        guard let model = AppDelegate.current?.model, let repoRoot = command["repoRoot"] as? String,
+          let historyId = command["historyId"] as? String
+        else { return ["error": "repoRoot, historyId?"] }
+        let key = HostStore.stoppedKey(repoRoot: repoRoot, historyId: historyId)
+        return [
+          "loaded": model.store.messagesByAgent[key]?.count ?? 0,
+          "hasOlder": model.store.hasOlderMessages(for: key),
+        ]
       case "transcriptScroll":
         guard let scrollView = transcriptScrollView(in: window), let out = command["out"] as? String else {
           return ["error": "no transcript / out?"]
