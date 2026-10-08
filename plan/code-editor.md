@@ -19,15 +19,15 @@ offered tabs, a file tree, ⌘P, workspace search, TextMate highlighting for abo
 
 Why it failed, and the rule we take from each:
 
-| Failure | Evidence | Rule for this plan |
-|---|---|---|
-| Highlighting failed silently. There were five failure modes (no language, no grammar, theme without tokenColors, worker crash, colour overrides), which `92e0aa739`/`71542ae86` only logged | `[syntax-highlight-debug]` logging | Tokenise in-process with no workers, URL schemes or bundler involvement. Every grammar and query is compiled in a unit test. A file without a grammar *says so* in the status bar and in telemetry |
-| The library took over the global DOM: it clobbered `body` (`4140d5a39`), swallowed right-click (`0bf3bbe5c`), Space and ⌘W (`4aced4552`), and `beforeunload` cancelled quit | workarounds in `main.ts`, preload | Own a small view. Keys route through the app's existing `Commands` and focus, never a library's global handlers |
-| A mount-order race when opening a file at a line (`4423e48a0`, a 5 s promise timeout) | `openFileInEditor` | Opening a file at a line is a **route**, rendered by state. There is no imperative "open after mount" |
-| Stale caches across sessions, patched by poking private fields (`12656bb1f`) | `refreshFileSearchIndex` | Switching session is an explicit state reset. All per-session state is keyed by session id |
-| The palette was hand-copied into `colorCustomizations` (`87b28087f`) and syntax colours were never mapped | `vscodeSetup.ts` | Syntax colours are design tokens in `ArgusUI`'s `Theme.swift`, the same source every other colour comes from |
-| Absolute-path file IO could escape the worktree through symlinks (`e935c77c9`) | `read_path`/`write_path` | Session-relative IO only, through `resolveContainedPath` |
-| Weight: about 1,200 lockfile lines, COEP headers, and React blocked behind 50 services | `package.json` | We add a small number of Swift packages and nothing to the renderer |
+| Failure                                                                                                                                                                                     | Evidence                           | Rule for this plan                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Highlighting failed silently. There were five failure modes (no language, no grammar, theme without tokenColors, worker crash, colour overrides), which `92e0aa739`/`71542ae86` only logged | `[syntax-highlight-debug]` logging | Tokenise in-process with no workers, URL schemes or bundler involvement. Every grammar and query is compiled in a unit test. A file without a grammar _says so_ in the status bar and in telemetry |
+| The library took over the global DOM: it clobbered `body` (`4140d5a39`), swallowed right-click (`0bf3bbe5c`), Space and ⌘W (`4aced4552`), and `beforeunload` cancelled quit                 | workarounds in `main.ts`, preload  | Own a small view. Keys route through the app's existing `Commands` and focus, never a library's global handlers                                                                                    |
+| A mount-order race when opening a file at a line (`4423e48a0`, a 5 s promise timeout)                                                                                                       | `openFileInEditor`                 | Opening a file at a line is a **route**, rendered by state. There is no imperative "open after mount"                                                                                              |
+| Stale caches across sessions, patched by poking private fields (`12656bb1f`)                                                                                                                | `refreshFileSearchIndex`           | Switching session is an explicit state reset. All per-session state is keyed by session id                                                                                                         |
+| The palette was hand-copied into `colorCustomizations` (`87b28087f`) and syntax colours were never mapped                                                                                   | `vscodeSetup.ts`                   | Syntax colours are design tokens in `ArgusUI`'s `Theme.swift`, the same source every other colour comes from                                                                                       |
+| Absolute-path file IO could escape the worktree through symlinks (`e935c77c9`)                                                                                                              | `read_path`/`write_path`           | Session-relative IO only, through `resolveContainedPath`                                                                                                                                           |
+| Weight: about 1,200 lockfile lines, COEP headers, and React blocked behind 50 services                                                                                                      | `package.json`                     | We add a small number of Swift packages and nothing to the renderer                                                                                                                                |
 
 ## 2. Editor engine — **CodeEditTextView behind our own `EditorView` facade**
 
@@ -37,6 +37,7 @@ only the text-layout layer of CodeEdit: line-based, lazy CoreText layout built
 for large documents, with no grammar dependency. It is wrapped in an
 `NSViewRepresentable` the same way `Git/Diff/DiffTableView` is. On top of it we
 build our own chrome:
+
 - a gutter with line numbers, git marks and diagnostics;
 - a find bar;
 - a completion popover;
@@ -47,6 +48,7 @@ the "ask the agent" affordances are Argus-specific. Pin an exact version, the
 way SwiftTerm is pinned.
 
 **Why not the alternatives:**
+
 - **CodeEditSourceEditor.** Its own README says it is not ready for production.
   It also pulls in CodeEditLanguages, a macOS-only grammar bundle. That would
   give us a second, unshareable copy of the grammars next to the one the phone
@@ -63,6 +65,7 @@ way SwiftTerm is pinned.
   bundling and theme duplication that §1 says to avoid.
 
 **The facade (`EditorView` / `EditorDocument`)** exposes only what Argus uses:
+
 - text and versioned edits;
 - selection and scroll-to-line;
 - decorations (syntax runs, gutter marks, diagnostic squiggles, flash
@@ -109,6 +112,7 @@ viewer (§7) built from `ArgusUI` primitives. What both platforms share is the
   Unknown captures fall back by stripping suffixes (`keyword.return` becomes
   `keyword`), else they stay plain. Don't take nvim-treesitter's queries
   verbatim; they rely on Lua-only predicates.
+
 - **Theme.** Add `syntax*` colours (one per capture above) to
   `ArgusUI/DesignSystem/Theme.swift`, in both dark and light, so the Mac
   editor, the iOS viewer and chat code blocks all draw from them. Editor chrome reuses existing tokens: background `bgPrimary`, current
@@ -148,6 +152,7 @@ locally.
 servers (`vscode-jsonrpc` + `vscode-languageserver-protocol`, which are mature
 npm packages). Clients call **typed catalog commands** instead of proxying raw
 JSON-RPC over the socket. Reasons:
+
 - There is one LSP client implementation, in TypeScript, not one per client.
 - Document sync, capability negotiation, server crashes and restarts are handled
   once, in one place.
@@ -157,6 +162,7 @@ JSON-RPC over the socket. Reasons:
   if we ever need it. We don't for these features.
 
 **Document sync.** While a file is open the editor owns its buffer:
+
 - The client sends `lsp_did_open` with the full text and `lsp_did_change` with
   incremental, versioned edits.
 - Positions are **UTF-16**, which is LSP's default and also `NSString`'s native
@@ -169,20 +175,21 @@ JSON-RPC over the socket. Reasons:
 candidates, tried in order. The host resolves `PATH` the same way the agent
 service already does for agent subprocesses.
 
-| Language | Server | Source |
-|---|---|---|
-| TS/JS/TSX | `typescript-language-server` | **bundled** in `dist-host`. Uses the worktree's `node_modules/typescript`, falling back to the bundled `typescript` |
-| JSON, CSS, HTML | `vscode-langservers-extracted` | **bundled** (small). JSON gets schemas for `package.json` and `tsconfig` |
-| YAML | `yaml-language-server` | **bundled** |
-| Swift | `sourcekit-lsp` | toolchain, via `xcrun --find sourcekit-lsp` |
-| Objective-C / C | `clangd` | toolchain, via `xcrun --find clangd` |
-| Kotlin | JetBrains `kotlin-lsp` | `PATH` only. Pre-release, heavy on Gradle projects; opt-in in M4 |
-| Python / Go / Rust / Ruby | `pyright-langserver` / `gopls` / `rust-analyzer` / `ruby-lsp` | `PATH` only (M4) |
+| Language                  | Server                                                        | Source                                                                                                              |
+| ------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| TS/JS/TSX                 | `typescript-language-server`                                  | **bundled** in `dist-host`. Uses the worktree's `node_modules/typescript`, falling back to the bundled `typescript` |
+| JSON, CSS, HTML           | `vscode-langservers-extracted`                                | **bundled** (small). JSON gets schemas for `package.json` and `tsconfig`                                            |
+| YAML                      | `yaml-language-server`                                        | **bundled**                                                                                                         |
+| Swift                     | `sourcekit-lsp`                                               | toolchain, via `xcrun --find sourcekit-lsp`                                                                         |
+| Objective-C / C           | `clangd`                                                      | toolchain, via `xcrun --find clangd`                                                                                |
+| Kotlin                    | JetBrains `kotlin-lsp`                                        | `PATH` only. Pre-release, heavy on Gradle projects; opt-in in M4                                                    |
+| Python / Go / Rust / Ruby | `pyright-langserver` / `gopls` / `rust-analyzer` / `ruby-lsp` | `PATH` only (M4)                                                                                                    |
 
 Nothing is auto-downloaded in v1. When a server is missing, the status bar
 reports it and offers a single "How to install" link to the docs.
 
 **Lifecycle.**
+
 - **Start:** lazily, on the first open document of that language in that
   session.
 - **Reference counting:** by open documents across all connections, released
@@ -196,6 +203,7 @@ reports it and offers a single "How to install" link to the docs.
   the server is marked failed until the user clicks Retry.
 
 **Features, phased realistically:**
+
 - **M3:** diagnostics, hover, go to definition (⌘-click and ⌃⌘J), and
   completion (trigger characters plus ⌃Space, with resolve on select).
 - **M4:** find references, rename (`WorkspaceEdit`), format document and format
@@ -213,6 +221,7 @@ separately; we don't promise it in v1.
 ## 5. Files
 
 **Layout of the Code panel.** From left to right:
+
 - A **navigator** (collapsible) with two modes:
   - **Changes**, the default: files the session has modified, from the existing
     `session:diff-changed` stats and git status. This is what you'll open 80% of
@@ -225,7 +234,7 @@ separately; we don't promise it in v1.
 **Tabs, with a preview tab.** Single-click opens a reusable italic "preview" tab;
 editing or double-clicking pins it. Tabs are per-session, persisted like the
 existing `persistTabs()`, and capped at 20, closing the oldest clean tab first.
-The *active file and line* live in the route (§5.1), so back and forward work.
+The _active file and line_ live in the route (§5.1), so back and forward work.
 The tab list itself is view state, not a route.
 
 **Quick open (⌘P).** A fuzzy matcher over `list_session_files`, cached per
@@ -237,6 +246,7 @@ does not live in the host, because typing latency matters more than CPU here.
 
 `DesktopRoute.sessionCode(id:, path: String?, line: Int?)` maps to
 `/sessions/:id/code?path=&line=`. The changes this needs:
+
 - Add `SessionPanel.code` with the title "Code". The `NavigationCommands` loop
   gives it ⌘4 for free.
 - Update `remember()` so it recalls the last file per session.
@@ -250,6 +260,7 @@ call, rendered declaratively. That rules out the mount race from §1.
 
 `read_file` and `write_file` stay as they are for their current callers. The
 editor gets versioned variants:
+
 - **`code_read_file {id, relativePath}`** returns
   `{content, hash, mtimeMs, size, eol, readOnlyReason?}`. It keeps the 5 MB,
   binary and UTF-8 checks. Instead of throwing, it returns `readOnlyReason`
@@ -283,15 +294,17 @@ edge case.
     and the buffer on the right;
   - **Keep mine**;
   - **Reload**.
-  
+
   Saving in this state returns `conflict`, which shows the same banner. There is
   never a silent overwrite.
+
 - **File deleted on disk.** The tab shows a strikethrough. Saving recreates the
   file.
 - **An agent is mid-turn on a file you're editing.** Nothing locks; we don't
   pause agents. The banner is enough, and the hash check makes it safe.
 
 **Save, dirty state and undo.**
+
 - ⌘S saves the active file, ⌥⌘S saves all.
 - Dirty state is a dot in the tab plus `NSDocument`-style edited state on the
   window.
@@ -393,14 +406,15 @@ remote Mac, phone) all reach it the same way.
 
 ### Catalog (`packages/remote-protocol/src/commands/code.ts`, `models/code.ts`)
 
-| Command | Tier | Phase |
-|---|---|---|
-| `code_read_file`, `code_write_file`, `code_watch_files`, `code_unwatch_files` | admin | M1 |
-| `code_search`, `code_search_cancel` | admin | M2 |
-| `lsp_did_open`, `lsp_did_change`, `lsp_did_close`, `lsp_completion`, `lsp_completion_resolve`, `lsp_hover`, `lsp_definition`, `lsp_status`, `lsp_restart` | admin | M3 |
-| `lsp_references`, `lsp_rename`, `lsp_format`, `lsp_code_actions`, `lsp_execute_code_action`, `lsp_signature_help` | admin | M4 |
+| Command                                                                                                                                                   | Tier  | Phase |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ----- |
+| `code_read_file`, `code_write_file`, `code_watch_files`, `code_unwatch_files`                                                                             | admin | M1    |
+| `code_search`, `code_search_cancel`                                                                                                                       | admin | M2    |
+| `lsp_did_open`, `lsp_did_change`, `lsp_did_close`, `lsp_completion`, `lsp_completion_resolve`, `lsp_hover`, `lsp_definition`, `lsp_status`, `lsp_restart` | admin | M3    |
+| `lsp_references`, `lsp_rename`, `lsp_format`, `lsp_code_actions`, `lsp_execute_code_action`, `lsp_signature_help`                                         | admin | M4    |
 
 **Events:**
+
 - `code:file-changed:<sessionId>`
 - `code:search:<searchId>`
 - `lsp:diagnostics:<sessionId>`, with `{relativePath, version, diagnostics}`
@@ -421,20 +435,20 @@ after each catalog change.
 These events carry no paths, contents, queries, symbol names or messages.
 `language` is an enum of the bundled grammars plus `other`.
 
-| Event | Where | Props |
-|---|---|---|
-| `mac_editor_file_opened` | Mac | `source` (chat_link, diff, blame, changes, tree, quick_open, search, diagnostic, history), `language`, `size_bucket`, `read_only` |
-| `mac_editor_file_saved` | Mac | `formatted`, `had_conflict` |
-| `mac_editor_conflict_resolved` | Mac | `action` (compare, keep_mine, reload) |
-| `mac_editor_external_reload` | Mac | `agent_running` (sampled: first per file per session) |
-| `mac_editor_highlight_unavailable` | Mac | `language`, `reason` (no_grammar, too_large, long_lines) |
-| `mac_editor_search_run` | Mac | `scope` (file, worktree), `regex`, `result_bucket`, `truncated` |
-| `mac_editor_ask_agent` | Mac | `source` (diagnostic, selection), `started_agent` |
-| `mac_editor_completion_accepted` | Mac | `language` |
-| `lsp_server_started` | host | `language`, `source` (bundled, toolchain, path), `success`, `duration_bucket` |
-| `lsp_server_crashed` | host | `language`, `gave_up` |
-| `lsp_feature_used` | host | `feature` (hover, definition, references, rename, format, code_action), `language`, `success`. Completion is excluded because of volume |
-| `ios_file_viewed` | iOS | `source` (chat_link, changes, quick_open, search), `language` |
+| Event                              | Where | Props                                                                                                                                   |
+| ---------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `mac_editor_file_opened`           | Mac   | `source` (chat_link, diff, blame, changes, tree, quick_open, search, diagnostic, history), `language`, `size_bucket`, `read_only`       |
+| `mac_editor_file_saved`            | Mac   | `formatted`, `had_conflict`                                                                                                             |
+| `mac_editor_conflict_resolved`     | Mac   | `action` (compare, keep_mine, reload)                                                                                                   |
+| `mac_editor_external_reload`       | Mac   | `agent_running` (sampled: first per file per session)                                                                                   |
+| `mac_editor_highlight_unavailable` | Mac   | `language`, `reason` (no_grammar, too_large, long_lines)                                                                                |
+| `mac_editor_search_run`            | Mac   | `scope` (file, worktree), `regex`, `result_bucket`, `truncated`                                                                         |
+| `mac_editor_ask_agent`             | Mac   | `source` (diagnostic, selection), `started_agent`                                                                                       |
+| `mac_editor_completion_accepted`   | Mac   | `language`                                                                                                                              |
+| `lsp_server_started`               | host  | `language`, `source` (bundled, toolchain, path), `success`, `duration_bucket`                                                           |
+| `lsp_server_crashed`               | host  | `language`, `gave_up`                                                                                                                   |
+| `lsp_feature_used`                 | host  | `feature` (hover, definition, references, rename, format, code_action), `language`, `success`. Completion is excluded because of volume |
+| `ios_file_viewed`                  | iOS   | `source` (chat_link, changes, quick_open, search), `language`                                                                           |
 
 Each event goes into `MacTelemetryEvent.swift`, `EventMap` in
 `telemetryEvents.ts` (kept alphabetical) and `TelemetryEvent.swift`, and is
@@ -445,6 +459,7 @@ match. Errors go through the existing `log.error` and `fail(_:_:)` paths.
 
 App-level Mac settings live in `AppPreferences`, in a new **Editor** settings
 tab, and are documented in `docs/app-settings.md` under the Mac app section.
+
 - Font: SF Mono by default, any installed monospaced font. Size defaults to
   13, following `TextScale`.
 - Tab width: 4 by default. Insert spaces: on. `.editorconfig` wins when it is
@@ -466,6 +481,7 @@ as CLAUDE.md requires.
 ## 9. Milestones
 
 **M0 — spike (about 1 week, throwaway branch).**
+
 - Build CodeEditTextView plus an `ArgusSyntax` prototype for Swift, TS and
   JSON.
 - **Accept when:**
@@ -480,6 +496,7 @@ as CLAUDE.md requires.
 - The outcome is recorded in this file.
 
 **M1 — Code panel, read and write, no LSP.**
+
 - **Scope:**
   - `ArgusSyntax` with the first wave of languages, plus the syntax tokens in
     `Theme.swift`;
@@ -502,6 +519,7 @@ as CLAUDE.md requires.
   - `pnpm lint`, the `swift test` runs and both `xcodebuild` builds are green.
 
 **M2 — search and injections.**
+
 - **Scope:** bundled ripgrep, `code_search` with streaming results and ⌘⇧F; the
   `files.search` method on iOS; Markdown and HTML injections; highlighted code
   blocks in chat on both platforms.
@@ -509,6 +527,7 @@ as CLAUDE.md requires.
   < 500 ms and Cancel stops `rg`.
 
 **M3 — LSP foundation.**
+
 - **Scope:**
   - the host `lsp` service, its lifecycle and cap;
   - the bundled TS, JSON/CSS/HTML and YAML servers, plus sourcekit-lsp (SPM)
@@ -525,6 +544,7 @@ as CLAUDE.md requires.
   - six worktrees never run more than six servers.
 
 **M4 — deeper intelligence and more languages.**
+
 - References, rename, format and format on save, code actions, signature help.
 - Replace across the worktree.
 - The PATH servers for Kotlin, Python, Go, Rust and Ruby.
@@ -535,16 +555,16 @@ as CLAUDE.md requires.
 
 ### Risks
 
-| Risk | Mitigation |
-|---|---|
-| CodeEditTextView is pre-1.0 and its API churns | Exact pin, the facade (§2), STTextView as the measured fallback |
-| Grammar and binary size, iOS compile time | Measured in M0; a separate package so only the targets that highlight pay the cost; trim to a second wave if needed |
-| Swift intelligence in Xcode projects | Promise SPM only; the build-server path is a separate spike |
-| tsserver memory across many worktrees | Lazy start, idle shutdown, a cap of 6 with LRU eviction |
-| Agent and user write races | Hash-checked atomic writes, a banner instead of a silent overwrite, no autosave |
-| Watching too much (EMFILE) | Watch only open files, never recursively |
-| Shortcut clashes (⌘P, ⌘F, ⌘S, ⌘W, Space) with existing Mac commands | Register through `Commands` with focused-scene values, so they're active only while the Code panel has focus |
-| Highlighting silently breaking again | Compile tests and golden tests for every query, plus visible status and telemetry |
+| Risk                                                                | Mitigation                                                                                                          |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| CodeEditTextView is pre-1.0 and its API churns                      | Exact pin, the facade (§2), STTextView as the measured fallback                                                     |
+| Grammar and binary size, iOS compile time                           | Measured in M0; a separate package so only the targets that highlight pay the cost; trim to a second wave if needed |
+| Swift intelligence in Xcode projects                                | Promise SPM only; the build-server path is a separate spike                                                         |
+| tsserver memory across many worktrees                               | Lazy start, idle shutdown, a cap of 6 with LRU eviction                                                             |
+| Agent and user write races                                          | Hash-checked atomic writes, a banner instead of a silent overwrite, no autosave                                     |
+| Watching too much (EMFILE)                                          | Watch only open files, never recursively                                                                            |
+| Shortcut clashes (⌘P, ⌘F, ⌘S, ⌘W, Space) with existing Mac commands | Register through `Commands` with focused-scene values, so they're active only while the Code panel has focus        |
+| Highlighting silently breaking again                                | Compile tests and golden tests for every query, plus visible status and telemetry                                   |
 
 ### Explicitly not in v1
 
