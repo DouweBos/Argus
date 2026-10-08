@@ -914,6 +914,12 @@ export type Envelope = z.infer<typeof Envelope>;
 // --- Local UI socket ---------------------------------------------------------
 
 /**
+ * The local UI socket's protocol, advertised in `host.lock` next to its path.
+ * A client attaches only to a version it speaks; bump on a breaking change.
+ */
+export const LOCAL_UI_PROTOCOL = 1;
+
+/**
  * What the host asks of the UI attached to its local socket: the
  * `HostPlatform` capabilities a headless Node process can't do itself. Flat
  * rather than a union so every client decodes it the same way; `kind` says
@@ -949,8 +955,15 @@ export type PlatformRequest = z.infer<typeof PlatformRequest>;
  * delegation. Not remote methods: no paired device can reach them.
  */
 export const LocalUiMethods = {
-  /** The UI's window gained or lost focus. */
-  "ui.state": z.object({ foreground: z.boolean() }),
+  /**
+   * The UI's window gained or lost focus. `role` says whether it answers the
+   * host's platform requests (`platform`, the supervising app — the default)
+   * or only watches a host whose own app does (`viewer`, an attached window).
+   */
+  "ui.state": z.object({
+    foreground: z.boolean(),
+    role: z.enum(["platform", "viewer"]).optional(),
+  }),
   /** A `notify` banner was clicked (`action` null) or one of its buttons pressed. */
   "ui.notification_action": z.object({
     id: z.string(),

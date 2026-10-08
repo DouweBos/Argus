@@ -5,8 +5,10 @@
  *
  * `--desktop` runs it as the Mac app's host instead: on `~/.argus`, with the
  * gateway following Settings, and the app attached over `--ui-socket`.
+ * Either way the UI socket is served and advertised in `host.lock`.
  */
 
+import type { LocalUiServer } from "../services/remote/localUiSocket";
 import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
@@ -19,10 +21,9 @@ import { nodeHostPlatform, setHostPlatform } from "../platform";
 import { startPowerAssertion } from "../serverMode";
 import { stopAgentsForQuit } from "../services/agent/quit";
 import {
-  startLocalUiSocket,
-  type LocalUiServer,
-} from "../services/remote/localUiSocket";
-import { uiHostPlatform } from "../services/remote/uiHostPlatform";
+  defaultUiSocketPath,
+  serveLocalUi,
+} from "../services/remote/serveLocalUi";
 import { attachConsolePairing } from "./consolePairing";
 import { parseHostArgs } from "./hostArgs";
 import { gatewayLine } from "./hostBanner";
@@ -57,16 +58,15 @@ if (!lock.ok) {
 
 const base = nodeHostPlatform({ secretStorage: nodeSecretStorage() });
 setHostPlatform(base);
-const uiSocketPath =
-  args.uiSocket ??
-  (desktopMode ? path.join(argusHomeDir(), "host.sock") : null);
+// Every host serves it, so a window can attach to whichever one holds the home.
+const uiSocketPath = args.uiSocket ?? defaultUiSocketPath();
 let uiServer: LocalUiServer | null = null;
-const uiReady = uiSocketPath
-  ? startLocalUiSocket(uiSocketPath).then((server) => {
-      uiServer = server;
-      setHostPlatform(uiHostPlatform(server.channel, base));
-    })
-  : Promise.resolve();
+const uiReady = serveLocalUi({
+  socketPath: uiSocketPath,
+  supervised: desktopMode,
+}).then((server) => {
+  uiServer = server;
+});
 
 if (!desktopMode) {
   // A sleeping Mac stops agents mid-run and drops every attached client.
@@ -124,10 +124,8 @@ Promise.all([remoteReady, uiReady]).then(([remote]) => {
     print(gatewayLine(remote.error));
   }
   print(`State: ${argusHomeDir()}`);
-  if (uiSocketPath) {
-    // The supervisor waits for this line before connecting.
-    print(`UI socket: ${uiSocketPath}`);
-  }
+  // The supervisor waits for this line before connecting.
+  print(`UI socket: ${uiSocketPath}`);
   if (process.stdin.isTTY && !desktopMode) {
     const rl = readline.createInterface({ input: process.stdin });
     rl.on("SIGINT", stop);
