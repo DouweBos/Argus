@@ -93,11 +93,11 @@ extension TranscriptTableController {
       if let (message, text) = plainText(index) {
         configure(cell, index, message: message, text: text)
       } else {
-        table.reloadData(forRowIndexes: [index], columnIndexes: [0])
+        instantly { table.reloadData(forRowIndexes: [index], columnIndexes: [0]) }
       }
     case let cell as TranscriptCell:
       if plainText(index) != nil {
-        table.reloadData(forRowIndexes: [index], columnIndexes: [0])
+        instantly { table.reloadData(forRowIndexes: [index], columnIndexes: [0]) }
       } else {
         configure(cell, index)
       }

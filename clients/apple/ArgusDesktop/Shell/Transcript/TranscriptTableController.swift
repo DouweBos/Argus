@@ -185,7 +185,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     follow.atBottom = true
     messageOrder = nil
     selection.clear()
-    if table.numberOfRows > 0 { table.reloadData() }
+    if table.numberOfRows > 0 { instantly { table.reloadData() } }
   }
 
   /// What a hosted row looks like depends on these beyond the row itself.
@@ -269,7 +269,20 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
 
   private func note(_ indices: IndexSet) {
     guard !indices.isEmpty else { return }
-    table.noteHeightOfRows(withIndexesChanged: indices)
+    instantly { table.noteHeightOfRows(withIndexesChanged: indices) }
+  }
+
+  /// AppKit animates row heights, inserts and removes by default, which slides
+  /// rows into place mid-scroll; every table change here lands in one frame.
+  func instantly(_ body: () -> Void) {
+    NSAnimationContext.beginGrouping()
+    NSAnimationContext.current.duration = 0
+    NSAnimationContext.current.allowsImplicitAnimation = false
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    body()
+    CATransaction.commit()
+    NSAnimationContext.endGrouping()
   }
 
   /// The rows on screen are measured before they draw. Two screens above and
@@ -357,6 +370,10 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   /// was, or the tail back on screen when following. `anchorShift` maps the
   /// anchor through rows inserted or removed above it.
   private func keepingPlace(anchorShift change: TranscriptSegments.Change? = nil, _ body: () -> Void) {
+    instantly { keepingPlaceNow(anchorShift: change, body) }
+  }
+
+  private func keepingPlaceNow(anchorShift change: TranscriptSegments.Change?, _ body: () -> Void) {
     let clip = scrollView.contentView
     guard !follow.atBottom, table.numberOfRows > 0 else {
       body()
