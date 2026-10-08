@@ -10,9 +10,10 @@ let package = Package(
   dependencies: [
     .package(path: "../ArgusKit"),
     .package(path: "../ArgusCore"),
+    .package(path: "../ArgusSyntax"),
   ],
   targets: [
-    .target(name: "ArgusUI", dependencies: ["ArgusKit", "ArgusCore"]),
+    .target(name: "ArgusUI", dependencies: ["ArgusKit", "ArgusCore", "ArgusSyntax"]),
     .testTarget(name: "ArgusUITests", dependencies: ["ArgusUI"]),
   ]
 )
