@@ -1,11 +1,13 @@
 import type { AppSettings } from "./types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  applyHostPrefsChange,
   connectHostPrefs,
   type HostPrefsIo,
   hostPrefsImportedCount,
   hydrateHostPrefs,
   mirrorToHost,
+  onHostPrefChange,
   resetHostPrefs,
 } from "./hostPrefs";
 
@@ -164,5 +166,38 @@ describe("host prefs", () => {
 
     expect(host.ui["runtime.platform"]).toBe(JSON.stringify("web"));
     expect(host.settings.theme).toBe("dark");
+  });
+
+  it("pulls what another window changed and reloads the stores reading it", async () => {
+    const { host, io } = fakeHost({ theme: "dark" });
+    storage.set("argus:host-prefs-imported", "1");
+    await hydrateHostPrefs(io);
+    const reload = vi.fn();
+    onHostPrefChange("argus:theme", reload);
+
+    host.settings.theme = "light";
+    await applyHostPrefsChange({ settings: ["theme"] });
+    expect(storage.get("argus:theme")).toBe("light");
+    expect(reload).toHaveBeenCalledOnce();
+
+    // Our own write echoing back changes nothing.
+    await applyHostPrefsChange({ settings: ["theme"] });
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a local write that hasn't flushed yet over the host's older value", async () => {
+    vi.useFakeTimers();
+    const { host, io } = fakeHost({ theme: "dark" });
+    storage.set("argus:host-prefs-imported", "1");
+    await hydrateHostPrefs(io);
+    storage.set("argus:theme", "system");
+    mirrorToHost("argus:theme");
+
+    host.settings.theme = "light";
+    await applyHostPrefsChange({ settings: ["theme"] });
+    expect(storage.get("argus:theme")).toBe("system");
+    await vi.runAllTimersAsync();
+    expect(host.settings.theme).toBe("system");
+    vi.useRealTimers();
   });
 });

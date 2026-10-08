@@ -12,6 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
 import { argusHomeDir } from "../../lib/argusHome";
+import { emitPrefsChanged } from "../prefsChanged";
 import { invalidateWorktreeLocationCache } from "../session/worktreeRootCache";
 
 const SCHEMA_VERSION = 1;
@@ -193,6 +194,7 @@ export function saveAppSettings(settings: AppSettings): AppSettings {
   writeFile(file);
   // The app-wide base dir feeds every project's resolved worktree root.
   invalidateWorktreeLocationCache();
+  emitPrefsChanged({ settings: Object.keys(settings) });
 
   return file.settings;
 }

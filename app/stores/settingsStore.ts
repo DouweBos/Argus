@@ -1,6 +1,6 @@
 import type { CanonicalPermissionMode } from "../lib/permissionModes";
 import { create } from "zustand";
-import { mirrorToHost } from "../lib/hostPrefs";
+import { mirrorToHost, onHostPrefChange } from "../lib/hostPrefs";
 
 /**
  * App-level default permission mode for new agents. Canonical names — the
@@ -363,6 +363,7 @@ function persist(state: SettingsState) {
 }
 
 const store = create<SettingsState>(() => load());
+onHostPrefChange(STORAGE_KEY, () => store.setState(load()));
 
 export const setDefaultPermissionMode = (mode: PermissionMode) => {
   store.setState({ defaultPermissionMode: mode });

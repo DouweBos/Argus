@@ -1,7 +1,7 @@
 import type { AndroidDevice, SimulatorDevice } from "../lib/types";
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
-import { mirrorToHost } from "../lib/hostPrefs";
+import { mirrorToHost, onHostPrefChange } from "../lib/hostPrefs";
 
 /** Check if a device is a tvOS (Apple TV) simulator. */
 export function isTvOS(device: SimulatorDevice | undefined): boolean {
@@ -152,6 +152,28 @@ const simulatorStore = create<SimulatorStoreData>(() => ({
   runtimeDialogOpen: false,
   runtimeMode: "simulate",
 }));
+
+onHostPrefChange(PLATFORM_STORAGE_KEY, () =>
+  simulatorStore.setState({ platform: loadPlatform() }),
+);
+onHostPrefChange(STORAGE_KEY, () =>
+  simulatorStore.setState({
+    selectedUdidBySession: loadSelectedBySession(STORAGE_KEY),
+  }),
+);
+onHostPrefChange(ANDROID_STORAGE_KEY, () =>
+  simulatorStore.setState({
+    selectedAndroidBySession: loadSelectedBySession(ANDROID_STORAGE_KEY),
+  }),
+);
+onHostPrefChange(VIDEO_STORAGE_KEY, () =>
+  simulatorStore.setState({
+    selectedVideoBySession: loadSelectedBySession(VIDEO_STORAGE_KEY),
+  }),
+);
+onHostPrefChange(BROWSER_PRESET_STORAGE_KEY, () =>
+  simulatorStore.setState({ browserPreset: loadBrowserPreset() }),
+);
 
 const useSimulatorStore = simulatorStore;
 

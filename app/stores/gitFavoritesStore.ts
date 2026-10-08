@@ -7,7 +7,7 @@
  */
 
 import { create } from "zustand";
-import { mirrorToHost } from "../lib/hostPrefs";
+import { mirrorToHost, onHostPrefChange } from "../lib/hostPrefs";
 
 const STORAGE_KEY = "argus:git-favorites";
 
@@ -55,6 +55,7 @@ function persist(state: FavoritesState): void {
 }
 
 const store = create<FavoritesState>(() => load());
+onHostPrefChange(STORAGE_KEY, () => store.setState(load()));
 
 const EMPTY: string[] = [];
 

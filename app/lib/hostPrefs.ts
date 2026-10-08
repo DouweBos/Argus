@@ -4,8 +4,8 @@
  * synchronously; it is a cache the host fills at boot and every write goes
  * back to it.
  *
- * Only one app runs on a home at a time (the host lock), so a boot read plus
- * write-through is enough — nothing changes the host's copy underneath us.
+ * A second window can share the host (Argus for Mac attached to this app), so
+ * the host's `prefs:changed` refetches what it names; last write wins.
  */
 
 import type { AppSettings } from "./types";
@@ -40,6 +40,8 @@ let pendingSettings: AppSettings = {};
 const pendingUi = new Map<string, string>();
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let importedCount = 0;
+/** Stores to reload when the host changes their `localStorage` key under them. */
+const reloaders = new Map<string, Set<() => void>>();
 
 function readLocal(key: string): string | null {
   try {
@@ -187,11 +189,81 @@ export function mirrorToHost(localKey: string): void {
   }, FLUSH_DELAY_MS);
 }
 
+/** Reload a store whenever another window changes `localKey` on the host. */
+export function onHostPrefChange(localKey: string, reload: () => void): void {
+  let set = reloaders.get(localKey);
+  if (!set) {
+    set = new Set();
+    reloaders.set(localKey, set);
+  }
+  set.add(reload);
+}
+
+/** The host's `prefs:changed` payload. */
+export interface HostPrefsChange {
+  settings?: string[];
+  ui_state?: string[];
+}
+
+/**
+ * Another window wrote some of the host's values: pull those, write them to
+ * `localStorage` and reload the stores reading them. A value of ours still
+ * waiting to flush is newer and stays; our own write echoing back is a no-op.
+ */
+export async function applyHostPrefsChange(
+  change: HostPrefsChange,
+): Promise<void> {
+  const hostIo = io;
+  if (!hostIo) {
+    return;
+  }
+  const settingKeys = new Set(change.settings ?? []);
+  const uiKeys = new Set(change.ui_state ?? []);
+  const bindings = PREF_BINDINGS.filter((b) =>
+    "setting" in b.host
+      ? settingKeys.has(b.host.setting) && !(b.host.setting in pendingSettings)
+      : uiKeys.has(b.host.uiState) && !pendingUi.has(b.host.uiState),
+  );
+  if (bindings.length === 0) {
+    return;
+  }
+  const settings = bindings.some((b) => "setting" in b.host)
+    ? await hostIo.getAppSettings()
+    : {};
+  const uiValues = new Map(
+    await Promise.all(
+      [...uiKeys].map(
+        async (key) => [key, await hostIo.getUiState(key)] as const,
+      ),
+    ),
+  );
+  const changed = new Set<string>();
+  for (const binding of bindings) {
+    const value = hostValueOf(binding, settings, uiValues);
+    const encoded = JSON.stringify(value);
+    const id = slotId(binding.host);
+    if (value === undefined || synced.get(id) === encoded) {
+      continue;
+    }
+    synced.set(id, encoded);
+    const raw = readLocal(binding.local);
+    const next = binding.write(value, raw);
+    if (next !== undefined && next !== raw) {
+      localStorage.setItem(binding.local, next);
+      changed.add(binding.local);
+    }
+  }
+  for (const key of changed) {
+    reloaders.get(key)?.forEach((reload) => reload());
+  }
+}
+
 /** Test-only: forget the host and everything queued for it. */
 export function resetHostPrefs(): void {
   io = null;
   importedCount = 0;
   synced.clear();
+  reloaders.clear();
   pendingSettings = {};
   pendingUi.clear();
   if (flushTimer) {

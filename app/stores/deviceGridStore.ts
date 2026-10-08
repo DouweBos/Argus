@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
-import { mirrorToHost } from "../lib/hostPrefs";
+import { mirrorToHost, onHostPrefChange } from "../lib/hostPrefs";
 
 export type DevicesViewMode = "grid" | "table";
 
@@ -79,6 +79,13 @@ const deviceGridStore = create<DeviceGridStoreData>(() => ({
   interactiveKeys: loadStringArray(INTERACTIVE_KEY),
   tileSize: loadTileSize(),
 }));
+
+onHostPrefChange(VIEW_MODE_KEY, () =>
+  deviceGridStore.setState({ viewMode: loadViewMode() }),
+);
+onHostPrefChange(TILE_SIZE_KEY, () =>
+  deviceGridStore.setState({ tileSize: loadTileSize() }),
+);
 
 export const setDevicesViewMode = (viewMode: DevicesViewMode) => {
   save(VIEW_MODE_KEY, viewMode);
