@@ -103,13 +103,12 @@ struct SessionView: View {
     .toolbar {
       // Centred, as Xcode and Finder place their view switchers.
       ToolbarItem(placement: .principal) {
-        Picker("View", selection: panel) {
-          ForEach(SessionPanel.allCases, id: \.self) { Text($0.title).tag($0) }
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .fixedSize()
-        .help("Switch view (⌘1, ⌘2, ⌘3)")
+        PillTabBar(
+          tabs: SessionPanel.allCases.map {
+            PillTab(id: $0, title: $0.title, symbol: $0.symbol, badge: $0 == .git ? gitChangeCount : nil)
+          },
+          selection: model.sessionPanel ?? .home, compact: true
+        ) { model.show($0, via: .toolbar) }
       }
       if let session, session.status == .ready {
         ToolbarItemGroup {
@@ -144,11 +143,9 @@ struct SessionView: View {
     }
   }
 
-  /// Home, agents or git — a route per panel, as in the desktop app.
-  private var panel: Binding<SessionPanel> {
-    Binding(
-      get: { model.sessionPanel ?? .home },
-      set: { model.show($0, via: .toolbar) })
+  /// The open repository's changed files, as Grove badges its Changes tab.
+  private var gitChangeCount: Int? {
+    model.git.workspace(sessionId)?.workingCopy.changedCount
   }
 
   private var agentsPane: some View {

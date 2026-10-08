@@ -35,6 +35,10 @@ public struct Theme: Sendable, Equatable {
   public let radiusSmall: CGFloat = 8
   public let space: CGFloat = 12
 
+  /// A selected pill tab: the label colour inverted, as Grove's tab bar draws it.
+  public var pillSelected: Color { scheme == .light ? Color(hex: 0x1C1C1E) : .white }
+  public var pillSelectedText: Color { scheme == .light ? .white : Color(hex: 0x1C1C1E) }
+
   /// Neutral surfaces and text come from the system, so `List`, `Form` and
   /// the sidebar look like themselves and adapt to light, dark, increased
   /// contrast and Liquid Glass without being fought. Peacock keeps the colours
