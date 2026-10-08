@@ -4,7 +4,13 @@
  */
 
 import { z } from "zod";
-import { CodeFile, CodeSearchQuery, CodeWriteResult } from "../models/code";
+import {
+  CodeFile,
+  CodeSearchQuery,
+  CodeSymbolKind,
+  CodeSymbolSearchResult,
+  CodeWriteResult,
+} from "../models/code";
 import { type CommandSpec, Void } from "./spec";
 
 const SessionFile = z.object({ id: z.string(), relativePath: z.string() });
@@ -51,5 +57,20 @@ export const CODE_COMMANDS = {
     tier: "admin",
     params: z.object({ searchId: z.string() }),
     result: Void,
+  },
+  /**
+   * Definitions across the worktree by fuzzy name, from a heuristic index the
+   * host builds on first use — no language server needed.
+   */
+  code_symbol_search: {
+    tier: "admin",
+    params: z.object({
+      id: z.string(),
+      query: z.string(),
+      /** Defaults to 100, capped at 500. */
+      limit: z.number().int().positive().optional(),
+      kinds: z.array(CodeSymbolKind).optional(),
+    }),
+    result: CodeSymbolSearchResult,
   },
 } as const satisfies Record<string, CommandSpec>;

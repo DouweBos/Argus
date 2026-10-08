@@ -1305,6 +1305,35 @@ extension ArgusProtocol {
       }
     }
 
+    public struct CodeSymbolSearchParams: Codable, Sendable {
+      public var id: String
+      public var query: String
+      public var limit: Int?
+      public var kinds: [CodeSymbolKind]?
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case query = "query"
+        case limit = "limit"
+        case kinds = "kinds"
+      }
+
+      public init(id: String, query: String, limit: Int? = nil, kinds: [CodeSymbolKind]? = nil) {
+        self.id = id
+        self.query = query
+        self.limit = limit
+        self.kinds = kinds
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(query, forKey: .query)
+        try c.encodeIfPresent(limit, forKey: .limit)
+        try c.encodeIfPresent(kinds, forKey: .kinds)
+      }
+    }
+
     public struct CodeUnwatchFilesParams: Codable, Sendable {
       public var id: String
       public var paths: [String]
@@ -5800,6 +5829,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct LspDocumentSymbolsParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+      }
+
+      public init(id: String, relativePath: String) {
+        self.id = id
+        self.relativePath = relativePath
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+      }
+    }
+
     public struct LspExecuteCodeActionParams: Codable, Sendable {
       public var id: String
       public var relativePath: String
@@ -6001,6 +6051,27 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct LspWorkspaceSymbolsParams: Codable, Sendable {
+      public var id: String
+      public var query: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case query = "query"
+      }
+
+      public init(id: String, query: String) {
+        self.id = id
+        self.query = query
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(query, forKey: .query)
       }
     }
 
@@ -9312,6 +9383,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum CodeSymbolSearch: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.CodeSymbolSearchParams
+      public typealias Result = ArgusProtocol.CodeSymbolSearchResult
+      public static let name = "code_symbol_search"
+      public static let tier = "admin"
+    }
+
     public enum CodeUnwatchFiles: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.CodeUnwatchFilesParams
       public typealias Result = IgnoredResult
@@ -10880,6 +10958,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum LspDocumentSymbols: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspDocumentSymbolsParams
+      public typealias Result = [ArgusProtocol.CodeSymbol]
+      public static let name = "lsp_document_symbols"
+      public static let tier = "admin"
+    }
+
     public enum LspExecuteCodeAction: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.LspExecuteCodeActionParams
       public typealias Result = ArgusProtocol.LspWorkspaceEdit
@@ -10933,6 +11018,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.LspStatusParams
       public typealias Result = ArgusProtocol.LspStatus
       public static let name = "lsp_status"
+      public static let tier = "admin"
+    }
+
+    public enum LspWorkspaceSymbols: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspWorkspaceSymbolsParams
+      public typealias Result = [ArgusProtocol.CodeSymbol]
+      public static let name = "lsp_workspace_symbols"
       public static let tier = "admin"
     }
 

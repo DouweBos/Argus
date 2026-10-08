@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { CodeSymbol } from "../models/code";
 import {
   LspCodeAction,
   LspCompletionItem,
@@ -107,5 +108,17 @@ export const LSP_COMMANDS = {
     tier: "admin",
     params: z.object({ id: z.string(), language: LspLanguage }),
     result: Void,
+  },
+  /** Only servers already running for the session answer; none is started. */
+  lsp_workspace_symbols: {
+    tier: "admin",
+    params: z.object({ id: z.string(), query: z.string() }),
+    result: z.array(CodeSymbol),
+  },
+  /** The open document's symbols, flattened with their containers. */
+  lsp_document_symbols: {
+    tier: "admin",
+    params: Doc,
+    result: z.array(CodeSymbol),
   },
 } as const satisfies Record<string, CommandSpec>;

@@ -91,11 +91,13 @@ export interface EventMap {
     feature:
       | "code_action"
       | "definition"
+      | "document_symbols"
       | "format"
       | "hover"
       | "references"
       | "rename"
-      | "signature_help";
+      | "signature_help"
+      | "workspace_symbols";
     language: LspLanguage;
     success: boolean;
   };

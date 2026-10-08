@@ -2847,6 +2847,93 @@ extension ArgusProtocol {
     }
   }
 
+  public struct CodeSymbol: Codable, Sendable {
+    public var name: String
+    public var kind: CodeSymbolKind
+    public var container: String?
+    public var relativePath: String
+    public var line: Int
+    public var column: Int
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case kind = "kind"
+      case container = "container"
+      case relativePath = "relativePath"
+      case line = "line"
+      case column = "column"
+    }
+
+    public init(name: String, kind: CodeSymbolKind, container: String? = nil, relativePath: String, line: Int, column: Int) {
+      self.name = name
+      self.kind = kind
+      self.container = container
+      self.relativePath = relativePath
+      self.line = line
+      self.column = column
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(kind, forKey: .kind)
+      try c.encodeIfPresent(container, forKey: .container)
+      try c.encode(relativePath, forKey: .relativePath)
+      try c.encode(line, forKey: .line)
+      try c.encode(column, forKey: .column)
+    }
+  }
+
+  public struct CodeSymbolKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let `class` = CodeSymbolKind(rawValue: "class")
+    public static let `struct` = CodeSymbolKind(rawValue: "struct")
+    public static let `enum` = CodeSymbolKind(rawValue: "enum")
+    public static let interface = CodeSymbolKind(rawValue: "interface")
+    public static let `protocol` = CodeSymbolKind(rawValue: "protocol")
+    public static let `extension` = CodeSymbolKind(rawValue: "extension")
+    public static let function = CodeSymbolKind(rawValue: "function")
+    public static let method = CodeSymbolKind(rawValue: "method")
+    public static let constructor = CodeSymbolKind(rawValue: "constructor")
+    public static let property = CodeSymbolKind(rawValue: "property")
+    public static let constant = CodeSymbolKind(rawValue: "constant")
+    public static let variable = CodeSymbolKind(rawValue: "variable")
+    public static let typeAlias = CodeSymbolKind(rawValue: "type_alias")
+    public static let enumMember = CodeSymbolKind(rawValue: "enum_member")
+    public static let module = CodeSymbolKind(rawValue: "module")
+    public static let other = CodeSymbolKind(rawValue: "other")
+  }
+
+  public struct CodeSymbolSearchResult: Codable, Sendable {
+    public var symbols: [CodeSymbol]
+    public var complete: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case symbols = "symbols"
+      case complete = "complete"
+    }
+
+    public init(symbols: [CodeSymbol], complete: Bool) {
+      self.symbols = symbols
+      self.complete = complete
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(symbols, forKey: .symbols)
+      try c.encode(complete, forKey: .complete)
+    }
+  }
+
   public struct CodeWriteConflict: Codable, Sendable {
     public var hash: String?
     public var mtimeMs: Double?
