@@ -86,7 +86,7 @@
 
     private func run(_ command: [String: Any]) -> [String: Any] {
       if command["op"] as? String == "windows" {
-        return ["windows": NSApp.windows.map { "\($0.windowNumber) \($0.title) visible=\($0.isVisible) level=\($0.level.rawValue) \($0.frame)" }]
+        return ["windows": NSApp.windows.map { "\($0.windowNumber) \($0.title) visible=\($0.isVisible) level=\($0.level.rawValue) id=\($0.identifier?.rawValue ?? "-") \($0.frame)" }]
       }
       // `window`: a window number from `windows`, or a visible window's title
       // (a device popout), for windows that aren't sheets.
@@ -623,6 +623,12 @@
         }
         if let root = window.contentView?.superview { scan(root, depth: 0) }
         return ["splits": found]
+      case "activation":
+        // Whether this app is frontmost; `deactivate` hands focus back first,
+        // `activate` brings this app forward for checks that need a key window.
+        if command["deactivate"] as? Bool == true { NSApp.deactivate() }
+        if command["activate"] as? Bool == true { NSApp.activate() }
+        return ["active": NSApp.isActive, "key": window.isKeyWindow]
       case "makeKey":
         // Key within this app only: SwiftUI gestures skip a non-key window's
         // first click, as they would for a real one. The app stays inactive.

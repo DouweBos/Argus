@@ -20,6 +20,15 @@ enum FirstMouse {
         let row = table.row(at: table.convert(event.locationInWindow, from: nil))
         guard row >= 0, event.clickCount == 1, event.modifierFlags.intersection([.command, .shift]).isEmpty
         else { return false }
+        guard NSApp.isActive else {
+          // AppKit brings a background app forward from the click itself;
+          // swallowing it left the app inactive until a double click. Let it
+          // through and select the row once it has.
+          DispatchQueue.main.async {
+            table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+          }
+          return false
+        }
         window.makeKey()
         table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
         return true
