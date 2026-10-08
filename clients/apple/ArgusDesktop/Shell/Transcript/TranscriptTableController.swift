@@ -16,7 +16,19 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
 
   let scrollView = TranscriptScrollView()
   let table = TranscriptTableView()
+  /// Measures a hosted row whose cell reports no height.
   private let sizer = NSHostingController(rootView: AnyView(EmptyView()))
+  /// Where hosted rows are built before they scroll in: hidden, in the table's
+  /// own window, so joining a row changes nothing SwiftUI depends on.
+  let staging = NSView(frame: NSRect(x: -100_000, y: 0, width: 1, height: 1))
+  var prepared = PreparedCells()
+  var prefetchLink: CADisplayLink?
+  /// Hosted rows laying out to be measured, whose heights `measure` stores itself.
+  var measuring = 0
+  /// Which way the reader last scrolled; prefetch looks further that way.
+  var scrollingUp = true
+  var lastHostedBuild: CFTimeInterval = 0
+  private var lastOffset: CGFloat = 0
 
   private(set) var agentKey = ""
   private var segments = TranscriptSegments()
@@ -25,7 +37,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   private var footer = TranscriptRow.FooterState()
   private(set) var environment = EnvironmentValues()
   private(set) var environmentKey = ""
-  private var heights = TranscriptRowHeights()
+  var heights = TranscriptRowHeights()
   private var landed = false
   /// Our own scrolling, which says nothing about where the reader wants to be.
   private var adjusting = 0
@@ -51,6 +63,8 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     table.dataSource = self
     table.delegate = self
     scrollView.documentView = table
+    staging.isHidden = true
+    table.addSubview(staging)
     scrollView.drawsBackground = false
     scrollView.hasVerticalScroller = true
     scrollView.hasHorizontalScroller = false
@@ -82,7 +96,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
 
   // MARK: Rows
 
-  private var rowCount: Int { segments.segments.count + 2 }
+  var rowCount: Int { segments.segments.count + 2 }
 
   func row(_ index: Int) -> TranscriptRow {
     if index == 0 { return .top(top) }
@@ -104,7 +118,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
       row(index), id: nil, agentKey: agentKey, model: model, selection: selection, environment: environment)
   }
 
-  private var width: CGFloat { max(scrollView.contentView.bounds.width, 1) }
+  var width: CGFloat { max(scrollView.contentView.bounds.width, 1) }
 
   /// A message that is only text — no badges, attachments or tool calls — and
   /// so can be drawn by a plain AppKit text cell.
@@ -135,10 +149,18 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     self.footer = footer
     guard !change.isEmpty || topChanged || footerChanged || restyled else { return }
 
+    TranscriptPerfLog.time("update +\(change.inserted.count) -\(change.removed.count) ~\(change.reloaded.count)") {
+      apply(change, topChanged: topChanged, footerChanged: footerChanged, restyled: restyled, empty: messages.isEmpty)
+    }
+  }
+
+  private func apply(
+    _ change: TranscriptSegments.Change, topChanged: Bool, footerChanged: Bool, restyled: Bool, empty: Bool
+  ) {
     let wasEmpty = table.numberOfRows == 0
     // The first page lands hidden and shows on the next turn, so building its
     // rows and drawing them are two passes rather than one long one.
-    if !landed, !messages.isEmpty {
+    if !landed, !empty {
       table.isHidden = true
       DispatchQueue.main.async { [weak self] in self?.table.isHidden = false }
     }
@@ -162,13 +184,14 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
       for index in changed { revisions[id(index), default: 0] += 1 }
       if restyled {
         heights.forgetAll()
+        forgetPrepared()
         changed = IndexSet(integersIn: 0..<rowCount)
       }
       for index in changed { configureVisibleCell(index) }
       measure(changed.filter(isNearViewport), always: true)
       note(changed)
     }
-    if !landed, !messages.isEmpty {
+    if !landed, !empty {
       landed = true
       scrollToBottom()
     }
@@ -181,6 +204,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     segments = TranscriptSegments()
     revisions = [:]
     heights = TranscriptRowHeights()
+    forgetPrepared()
     landed = false
     follow.atBottom = true
     messageOrder = nil
@@ -245,7 +269,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   /// Lays the rows out at the current width, unless already known; returns
   /// the ones whose height moved from what the table has.
   @discardableResult
-  private func measure(_ indices: some Sequence<Int>, always: Bool = false) -> IndexSet {
+  func measure(_ indices: some Sequence<Int>, always: Bool = false) -> IndexSet {
     var moved = IndexSet()
     let width = width
     for index in indices {
@@ -254,11 +278,14 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
       if always || heights.exact(id, revision: revision, width: width) == nil {
         let height: CGFloat
         if let (_, text) = plainText(index) {
-          height = TranscriptTextCell.height(of: text, width: width)
+          height = TranscriptPerfLog.time("measure.text") { TranscriptTextCell.height(of: text, width: width) }
         } else {
-          sizer.rootView = root(index)
-          let size = sizer.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
-          height = size.height.isFinite ? ceil(size.height) : 40
+          height = TranscriptPerfLog.time("measure.\(kind(index))") {
+            if let laidOut = layOutHosted(index, width: width) { return ceil(laidOut) }
+            sizer.rootView = root(index)
+            let size = sizer.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
+            return size.height.isFinite ? ceil(size.height) : 40
+          }
         }
         heights.store(id, revision: revision, width: width, height: height)
       }
@@ -267,22 +294,9 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     return moved
   }
 
-  private func note(_ indices: IndexSet) {
+  func note(_ indices: IndexSet) {
     guard !indices.isEmpty else { return }
     instantly { table.noteHeightOfRows(withIndexesChanged: indices) }
-  }
-
-  /// AppKit animates row heights, inserts and removes by default, which slides
-  /// rows into place mid-scroll; every table change here lands in one frame.
-  func instantly(_ body: () -> Void) {
-    NSAnimationContext.beginGrouping()
-    NSAnimationContext.current.duration = 0
-    NSAnimationContext.current.allowsImplicitAnimation = false
-    CATransaction.begin()
-    CATransaction.setDisableActions(true)
-    body()
-    CATransaction.commit()
-    NSAnimationContext.endGrouping()
   }
 
   /// The rows on screen are measured before they draw. Two screens above and
@@ -300,44 +314,11 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     schedulePrefetch()
   }
 
-  private var prefetching = false
-
-  private func schedulePrefetch() {
-    guard !prefetching else { return }
-    prefetching = true
-    // Not mid-resize: each step would measure the same rows at a width about to change.
-    let settle = widthChangedAt + 0.3 - CACurrentMediaTime()
-    DispatchQueue.main.asyncAfter(deadline: .now() + max(settle, 0)) { [weak self] in
-      guard let self else { return }
-      self.prefetching = false
-      guard CACurrentMediaTime() - self.widthChangedAt >= 0.3 else { return self.schedulePrefetch() }
-      guard let index = self.nextUnmeasured() else { return }
-      let moved = self.measure([index])
-      if !moved.isEmpty { self.keepingPlace { self.note(moved) } }
-      self.schedulePrefetch()
-    }
-  }
-
-  private func nextUnmeasured() -> Int? {
-    guard table.numberOfRows > 0 else { return nil }
-    let visible = scrollView.contentView.bounds
-    let above = table.rows(
-      in: NSRect(x: 0, y: visible.minY - visible.height * 2, width: visible.width, height: visible.height * 2))
-    let below = table.rows(in: NSRect(x: 0, y: visible.maxY, width: visible.width, height: visible.height))
-    let candidates =
-      Array(stride(from: above.location + above.length - 1, through: above.location, by: -1))
-      + Array(below.location..<(below.location + below.length))
-    let width = width
-    return candidates.first { index in
-      index >= 0 && index < rowCount && heights.exact(id(index), revision: revision(id(index)), width: width) == nil
-    }
-  }
-
   /// A hosted row laid out at a height the table doesn't have: it resized
   /// itself, or was measured before an image or a form arrived. Applied once
   /// this layout pass is over, all together.
   func rowLaidOut(_ id: String, revision: Int, height: CGFloat) {
-    guard revision == self.revision(id), height.isFinite, height > 0 else { return }
+    guard measuring == 0, revision == self.revision(id), height.isFinite, height > 0 else { return }
     let height = ceil(height)
     guard heights.reported[id].map({ abs($0 - height) > 0.5 }) ?? false else { return }
     let first = laidOut.isEmpty
@@ -369,7 +350,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   /// Runs `body`, then puts the row at the top of the screen back where it
   /// was, or the tail back on screen when following. `anchorShift` maps the
   /// anchor through rows inserted or removed above it.
-  private func keepingPlace(anchorShift change: TranscriptSegments.Change? = nil, _ body: () -> Void) {
+  func keepingPlace(anchorShift change: TranscriptSegments.Change? = nil, _ body: () -> Void) {
     instantly { keepingPlaceNow(anchorShift: change, body) }
   }
 
@@ -470,6 +451,13 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
 
   @objc private func boundsChanged() {
     guard adjusting == 0 else { return }
+    TranscriptPerfLog.time("boundsChanged") { boundsChangedNow() }
+  }
+
+  private func boundsChangedNow() {
+    let offset = scrollView.contentView.bounds.minY
+    if offset != lastOffset { scrollingUp = offset < lastOffset }
+    lastOffset = offset
     // Following ends a little way up; it resumes only at the very bottom.
     if follow.atBottom {
       if distanceFromBottom() > 40 { follow.atBottom = false }
@@ -493,7 +481,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     keepingPlace { note(measure(indices.filter { plainText($0) != nil }).union(indices)) }
   }
 
-  private var widthChangedAt: CFTimeInterval = 0
+  private(set) var widthChangedAt: CFTimeInterval = 0
 
   private func loadOlderIfNeeded() {
     guard top.hasOlder, !top.loading, landed else { return }

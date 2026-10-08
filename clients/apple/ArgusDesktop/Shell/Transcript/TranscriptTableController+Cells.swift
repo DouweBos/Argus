@@ -1,19 +1,24 @@
 import AppKit
 import ArgusCore
+import QuartzCore
 import SwiftUI
 
 /// The transcript table's cells: a plain text cell for messages that are
 /// only text, a recycled hosting view for the rest, and find's highlights.
 extension TranscriptTableController {
   func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row index: Int) -> NSView? {
+    TranscriptPerfLog.time("viewFor.\(kind(index))") { cell(index) }
+  }
+
+  private func cell(_ index: Int) -> NSView {
     if let (message, text) = plainText(index) {
-      let cell = tableView.makeView(withIdentifier: TranscriptTextCell.identifier, owner: nil) as? TranscriptTextCell
+      let cell = table.makeView(withIdentifier: TranscriptTextCell.identifier, owner: nil) as? TranscriptTextCell
         ?? TranscriptTextCell()
       configure(cell, index, message: message, text: text)
       return cell
     }
-    let cell = tableView.makeView(withIdentifier: TranscriptCell.identifier, owner: nil) as? TranscriptCell
-      ?? TranscriptCell()
+    let cell = takePrepared(index)
+      ?? table.makeView(withIdentifier: TranscriptCell.identifier, owner: nil) as? TranscriptCell ?? TranscriptCell()
     let id = id(index)
     if cell.rowId != id || cell.revision != revision(id) || cell.environmentKey != environmentKey {
       configure(cell, index)
@@ -28,8 +33,12 @@ extension TranscriptTableController {
     let revision = revision(id)
     let root = TranscriptRow.root(
       row(index), id: id, agentKey: agentKey, model: model, selection: selection, environment: environment,
-      onHeight: { [weak self] height in self?.rowLaidOut(id, revision: revision, height: height) })
+      onHeight: { [weak self, weak cell] height in
+        cell?.laidOutHeight = height
+        self?.rowLaidOut(id, revision: revision, height: height)
+      })
     cell.show(root, id: id, revision: revision, environmentKey: environmentKey)
+    cell.host.kind = kind(index)
     if case .segment(.single(let message)) = row(index) {
       cell.tip = TranscriptMessageRow.timestamp(message)
       cell.hover = TranscriptModel.textBlocks(message).isEmpty ? nil : (message, model, environment)
@@ -103,6 +112,29 @@ extension TranscriptTableController {
       }
     default:
       break
+    }
+  }
+
+  /// AppKit animates row heights, inserts and removes by default, which slides
+  /// rows into place mid-scroll; every table change here lands in one frame.
+  func instantly(_ body: () -> Void) {
+    NSAnimationContext.beginGrouping()
+    NSAnimationContext.current.duration = 0
+    NSAnimationContext.current.allowsImplicitAnimation = false
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    body()
+    CATransaction.commit()
+    NSAnimationContext.endGrouping()
+  }
+
+  /// What a row is, for perf logs.
+  func kind(_ index: Int) -> String {
+    switch row(index) {
+    case .top: "top"
+    case .footer: "footer"
+    case .segment(.single(let message)): message.toolCalls.isEmpty ? "message" : "message+\(message.toolCalls.first?.name ?? "")"
+    case .segment: "group"
     }
   }
 }
