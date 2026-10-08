@@ -22,6 +22,12 @@ struct CodeCommands: View {
     }
     .keyboardShortcut("f", modifiers: [.shift, .option])
     .disabled(document?.languageProvider == nil)
+    Button("Rename Symbol…") {
+      guard let document, let code = model.activeCodeSession else { return }
+      Task { await LspRename.run(in: code, document: document) }
+    }
+    .keyboardShortcut("e", modifiers: [.command, .control])
+    .disabled(document?.languageProvider == nil)
     Divider()
     Button("Send Selection to Agent") { document?.sendSelectionToAgent() }
       .keyboardShortcut("l", modifiers: [.command, .shift])
@@ -30,6 +36,11 @@ struct CodeCommands: View {
 }
 
 extension DesktopModel {
+  var activeCodeSession: CodeSession? {
+    guard case .sessionCode(let id, _, _) = route else { return nil }
+    return code.sessions[id]
+  }
+
   /// The buffer on screen in the code view, if the route shows one.
   var activeCodeDocument: EditorDocument? {
     guard case .sessionCode(let id, let path?, _) = route else { return nil }

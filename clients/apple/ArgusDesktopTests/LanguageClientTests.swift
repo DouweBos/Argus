@@ -8,7 +8,7 @@ import Testing
 
 /// Records every request; `hold` parks them until `release()`.
 @MainActor
-private final class FakeSink: LspSink {
+final class FakeSink: LspSink {
   var calls: [(name: String, params: Any)] = []
   var subscriptions: [(scope: String, on: Bool)] = []
   var responses: [String: String] = [:]
@@ -44,7 +44,7 @@ private final class FakeSink: LspSink {
 
 /// Lets queued tasks run until `condition` holds.
 @MainActor
-private func settle(_ condition: () -> Bool = { false }) async {
+func settle(_ condition: () -> Bool = { false }) async {
   for _ in 0..<200 where !condition() { await Task.yield() }
 }
 
