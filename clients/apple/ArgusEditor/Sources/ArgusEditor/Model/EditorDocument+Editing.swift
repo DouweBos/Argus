@@ -139,13 +139,13 @@ extension EditorDocument {
     find.previous()
   }
 
-  /// Hands the selection to the agent (⇧⌘L).
+  /// Hands the selection to the agent (⌥⌘L).
   public func sendSelectionToAgent() {
     guard let text = selectedText, !text.isEmpty else { return }
     actions?.sendSelectionToAgent(text: text, range: selection)
   }
 
-  /// Go to definition at the caret (⌃⌘J).
+  /// Go to definition at the caret (F12).
   public func goToDefinition() {
     interaction.goToDefinition(at: caret)
   }

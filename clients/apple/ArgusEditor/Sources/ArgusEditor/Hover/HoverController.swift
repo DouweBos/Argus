@@ -55,6 +55,12 @@ import SwiftUI
     }
   }
 
+  /// Shows the card for `offset` now, as F8 does.
+  func present(at offset: Int) {
+    dwellTask?.cancel()
+    dwellTask = Task { [weak self] in await self?.show(at: offset) }
+  }
+
   /// The diagnostics covering `offset`, most severe first.
   func diagnostics(at offset: Int) -> [EditorDiagnostic] {
     document.diagnostics.filter { diagnostic in

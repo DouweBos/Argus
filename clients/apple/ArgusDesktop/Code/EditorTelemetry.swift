@@ -1,3 +1,4 @@
+import ArgusEditor
 import ArgusSyntax
 import Foundation
 
@@ -45,6 +46,15 @@ extension MacTelemetryEvent {
     case ..<100_000: "<100k"
     case ..<1_000_000: "<1m"
     default: "1m+"
+    }
+  }
+}
+
+extension EditorCommand {
+  /// `toggleLineComment` → `toggle_line_comment`.
+  var telemetryName: String {
+    rawValue.reduce(into: "") { name, character in
+      if character.isUppercase { name += "_" + character.lowercased() } else { name.append(character) }
     }
   }
 }

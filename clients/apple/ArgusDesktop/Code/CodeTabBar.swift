@@ -16,7 +16,7 @@ struct CodeTabBar: View {
         Image(systemName: "sidebar.left")
       }
       .buttonStyle(.borderless)
-      .help(code.navigatorVisible ? "Hide navigator (⌘0)" : "Show navigator (⌘0)")
+      .help(code.navigatorVisible ? "Hide navigator (⌘B)" : "Show navigator (⌘B)")
       .padding(.horizontal, 8)
       ScrollViewReader { proxy in
         ScrollView(.horizontal, showsIndicators: false) {

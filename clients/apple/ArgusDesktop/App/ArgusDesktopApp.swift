@@ -1,5 +1,6 @@
 import AppKit
 import ArgusCore
+import ArgusEditor
 import SwiftUI
 
 @main
@@ -38,6 +39,15 @@ struct ArgusDesktopApp: App {
       }
       CommandGroup(after: .sidebar) {
         NavigationCommands(model: delegate.model)
+      }
+      CommandGroup(after: .toolbar) {
+        CodeViewCommands(model: delegate.model)
+      }
+      CommandMenu("Selection") {
+        CodeSelectionCommands(model: delegate.model)
+      }
+      CommandMenu("Go") {
+        CodeGoCommands(model: delegate.model)
       }
       CommandMenu("Editor") {
         CodeCommands(model: delegate.model)
@@ -111,12 +121,26 @@ private struct NavigationCommands: View {
       .disabled(model.sessionPanel == nil)
     }
     Divider()
-    Button("Back") { model.goBack() }
-      .keyboardShortcut("[", modifiers: .command)
-      .disabled(!model.canGoBack)
-    Button("Forward") { model.goForward() }
-      .keyboardShortcut("]", modifiers: .command)
-      .disabled(!model.canGoForward)
+    // In the code editor ⌘[ and ⌘] outdent and indent, as in VS Code; the editor takes the key
+    // first, and this covers the menu seeing it before the window does.
+    Button("Back") {
+      if model.codeEditorFocused, NSApp.currentEvent?.type == .keyDown {
+        model.activeCodeDocument?.perform(.outdentLines)
+      } else {
+        model.goBack()
+      }
+    }
+    .keyboardShortcut("[", modifiers: .command)
+    .disabled(!model.canGoBack && !model.codeEditorFocused)
+    Button("Forward") {
+      if model.codeEditorFocused, NSApp.currentEvent?.type == .keyDown {
+        model.activeCodeDocument?.perform(.indentLines)
+      } else {
+        model.goForward()
+      }
+    }
+    .keyboardShortcut("]", modifiers: .command)
+    .disabled(!model.canGoForward && !model.codeEditorFocused)
     Divider()
     Button("New Tab") { model.openTab() }
       .keyboardShortcut("t", modifiers: [.command, .option])

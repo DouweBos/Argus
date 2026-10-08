@@ -5,12 +5,15 @@ import AppKit
 @MainActor protocol ArgusTextViewHost: AnyObject {
   /// Return true when the command was handled.
   func textView(_ textView: ArgusTextView, doCommand selector: Selector) -> Bool
+  /// A key before it's typed; true when it was an editor shortcut.
+  func textView(_ textView: ArgusTextView, keyDown event: NSEvent) -> Bool
   func contextMenu(for textView: ArgusTextView, at offset: Int?) -> NSMenu
   func textView(_ textView: ArgusTextView, commandClickedAt offset: Int)
   func textView(_ textView: ArgusTextView, mouseMovedTo offset: Int?, at point: NSPoint)
   func textViewMouseExited(_ textView: ArgusTextView)
   func textView(_ textView: ArgusTextView, performFindAction action: FindAction) -> Bool
   func textViewDidBecomeFirstResponder(_ textView: ArgusTextView)
+  func textViewDidResignFirstResponder(_ textView: ArgusTextView)
 }
 
 enum FindAction {
@@ -32,6 +35,12 @@ final class ArgusTextView: TextView, NSGestureRecognizerDelegate, NSMenuItemVali
 
   // MARK: Keys
 
+  /// ⌥ keys reach here before any key equivalent: editor shortcuts on them must win over typing.
+  override func keyDown(with event: NSEvent) {
+    if host?.textView(self, keyDown: event) == true { return }
+    super.keyDown(with: event)
+  }
+
   override func doCommand(by selector: Selector) {
     if host?.textView(self, doCommand: selector) == true { return }
     super.doCommand(by: selector)
@@ -41,6 +50,17 @@ final class ArgusTextView: TextView, NSGestureRecognizerDelegate, NSMenuItemVali
     let accepted = super.becomeFirstResponder()
     if accepted { host?.textViewDidBecomeFirstResponder(self) }
     return accepted
+  }
+
+  override func viewDidMoveToWindow() {
+    super.viewDidMoveToWindow()
+    if window == nil { host?.textViewDidResignFirstResponder(self) }
+  }
+
+  override func resignFirstResponder() -> Bool {
+    let resigned = super.resignFirstResponder()
+    if resigned { host?.textViewDidResignFirstResponder(self) }
+    return resigned
   }
 
   // MARK: Find (the standard Find menu items arrive here through the responder chain)

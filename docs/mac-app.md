@@ -105,6 +105,51 @@ headless Argus server, or `argus-host` — as well as its own:
 The keys for paired hosts are kept in a file in the app's state folder that
 only your user can read.
 
+## Keyboard shortcuts
+
+The app's own keys are in its menus: ⌘1–⌘4 switch a session's views, ⌘[ and
+⌘] go back and forward, ⇧⌘P opens the command palette and ⇧⌘T the terminal.
+
+The code view (⌘4) uses VS Code's default macOS keys, listed in the Editor,
+Selection, Go and View menus. Editing keys work on every caret at once, and
+each change undoes in one step.
+
+| Keys       | Action                                             |
+| ---------- | -------------------------------------------------- |
+| ⌘P         | Open a file by name                                |
+| ⇧⌘F        | Find in files                                      |
+| ⌘F / ⌥⌘F   | Find / replace in the file                         |
+| ⌘G / ⇧⌘G   | Next / previous match                              |
+| ⌘S / ⌥⌘S   | Save / save all                                    |
+| ⌘W         | Close the editor tab                               |
+| ⌘/         | Toggle line comment                                |
+| ⇧⌥A        | Toggle block comment                               |
+| ⌥↑ / ⌥↓    | Move lines up / down                               |
+| ⇧⌥↑ / ⇧⌥↓  | Copy lines up / down                               |
+| ⇧⌘K        | Delete lines                                       |
+| ⌘↩ / ⇧⌘↩   | Insert a line below / above                        |
+| ⌘] / ⌘[    | Indent / outdent (in the editor; Tab and ⇧Tab too) |
+| ⌘L         | Select the line; again for the next one            |
+| ⌘D         | Add the next match to the selection                |
+| ⇧⌘L        | Select every match                                 |
+| ⌥⌘↑ / ⌥⌘↓  | Add a cursor above / below                         |
+| Esc        | Back to one cursor                                 |
+| ⇧⌘\        | Go to the matching bracket                         |
+| ⌃G         | Go to line (`line` or `line:column`)               |
+| F12 / ⇧F12 | Go to definition / find references                 |
+| F2         | Rename symbol                                      |
+| ⇧⌥F        | Format document                                    |
+| ⌃Space     | Show completions                                   |
+| F8 / ⇧F8   | Next / previous problem                            |
+| ⇧⌘M        | Show or hide the problems list                     |
+| ⌘B         | Show or hide the navigator                         |
+| ⇧⌘E / ⌃⇧G  | Navigator: files / changes                         |
+| ⌥⌘→ / ⌥⌘←  | Next / previous editor tab                         |
+| ⌃- / ⌃⇧-   | Go back / forward                                  |
+| ⌥Z         | Toggle word wrap                                   |
+| ⌃\`        | Show or hide the terminal                          |
+| ⌥⌘L        | Send the selection to the session's agent          |
+
 ## How it relates to the Electron app
 
 Both apps run the Argus host on the same `~/.argus`, and **only one host may

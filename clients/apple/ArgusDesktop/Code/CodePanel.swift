@@ -69,8 +69,6 @@ struct CodePanel: View {
         code.search.focus()
       }
       .keyboardShortcut("f", modifiers: [.command, .shift])
-      Button("Toggle Navigator") { code.navigatorVisible.toggle() }
-        .keyboardShortcut("0", modifiers: .command)
     }
     .hidden()
   }

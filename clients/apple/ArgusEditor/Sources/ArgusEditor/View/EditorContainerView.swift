@@ -55,31 +55,12 @@ final class EditorContainerView: NSView {
     }
   }
 
-  /// Editor shortcuts with no standard menu item. Only while the editor has focus — this is not an app-wide monitor.
+  /// Editor keys, ahead of the app's menus (⌘[ indents here, it's Back elsewhere). Only while
+  /// the editor has focus — this is not an app-wide monitor.
   override func performKeyEquivalent(with event: NSEvent) -> Bool {
     guard let document, window?.firstResponder === document.engine.textView else {
       return super.performKeyEquivalent(with: event)
     }
-    let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting([.capsLock, .numericPad, .function])
-    let key = event.charactersIgnoringModifiers?.lowercased()
-    switch (flags, key) {
-    case ([.control], " "):
-      document.triggerCompletion()
-    case ([.command, .shift], "l"):
-      document.sendSelectionToAgent()
-    case ([.command, .control], "j"):
-      document.goToDefinition()
-    case ([.command], "f"):
-      document.showFind(replace: false)
-    case ([.command, .option], "f"):
-      document.showFind(replace: true)
-    case ([.command], "g"):
-      document.findNext()
-    case ([.command, .shift], "g"):
-      document.findPrevious()
-    default:
-      return super.performKeyEquivalent(with: event)
-    }
-    return true
+    return document.interaction.handleKey(event) || super.performKeyEquivalent(with: event)
   }
 }

@@ -263,6 +263,8 @@ enum MacTelemetryEvent {
   case editorSearchRun(scope: EditorSearchScope, regex: Bool, resultBucket: String, truncated: Bool)
   case editorAskAgent(source: EditorAskSource, startedAgent: Bool)
   case editorCompletionAccepted(language: String)
+  /// An editor command ran (comment, move line, add cursor, …); once per command per open file.
+  case editorCommand(command: String)
 
   var name: String {
     switch self {
@@ -329,6 +331,7 @@ enum MacTelemetryEvent {
     case .editorSearchRun: "mac_editor_search_run"
     case .editorAskAgent: "mac_editor_ask_agent"
     case .editorCompletionAccepted: "mac_editor_completion_accepted"
+    case .editorCommand: "mac_editor_command"
     }
   }
 
@@ -460,6 +463,8 @@ enum MacTelemetryEvent {
       ["source": source.rawValue, "started_agent": startedAgent]
     case .editorCompletionAccepted(let language):
       ["language": language]
+    case .editorCommand(let command):
+      ["command": command]
     }
   }
 

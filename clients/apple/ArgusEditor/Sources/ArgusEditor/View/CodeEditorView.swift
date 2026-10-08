@@ -17,6 +17,9 @@ public struct CodeEditorView: View {
         Divider()
       }
       EditorHost(document: document)
+        .overlay(alignment: .top) {
+          if document.isGoToLineVisible { GoToLineView(document: document) }
+        }
     }
   }
 }

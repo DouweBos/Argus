@@ -232,4 +232,10 @@ public struct EditorLocation: Hashable, Sendable {
   func revertHunk(_ mark: GutterMark)
   func open(_ location: EditorLocation)
   func completionAccepted()
+  /// An editor command ran, from its key or a menu.
+  func commandPerformed(_ command: EditorCommand)
+}
+
+extension EditorActions {
+  public func commandPerformed(_ command: EditorCommand) {}
 }

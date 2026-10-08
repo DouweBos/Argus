@@ -40,6 +40,7 @@ extension CodeSession {
       let actions = CodeEditorActions(session: self, path: file.path)
       file.actions = actions
       document.actions = actions
+      CodeShortcuts.install(on: document, store: store)
       document.onTextChange = { [weak self, weak file] change in
         guard let self, let file else { return }
         self.textChanged(file, change)
