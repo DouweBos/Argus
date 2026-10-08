@@ -35,6 +35,18 @@ enum MacTelemetryEvent {
     case acrossMessages = "across_messages"
   }
 
+  enum MessageAction: String {
+    case copy
+    case edit
+    case forkSession = "fork_session"
+    case forkAgent = "fork_agent"
+  }
+
+  enum MessageRole: String {
+    case user
+    case assistant
+  }
+
   enum ImageViewerAction: String {
     case open
     case page
@@ -293,6 +305,8 @@ enum MacTelemetryEvent {
   case transcriptCopied(span: CopySpan)
   /// The image viewer was opened, paged, or an image copied, saved or opened in Preview from it.
   case imageViewerUsed(action: ImageViewerAction)
+  /// A message's hover action was used; edit and fork report whether the host took it.
+  case messageAction(action: MessageAction, role: MessageRole, success: Bool)
   /// A chat-input feature the host can't tell from a plain send.
   case inputUsed(affordance: String)
   /// Something done to a terminal from the panel or the run control.
@@ -372,6 +386,7 @@ enum MacTelemetryEvent {
     case .transcriptFindUsed: "mac_transcript_find_used"
     case .transcriptCopied: "mac_transcript_copied"
     case .imageViewerUsed: "mac_image_viewer_used"
+    case .messageAction: "mac_message_action"
     case .inputUsed: "mac_input_used"
     case .terminalUsed: "mac_terminal_used"
     case .terminalReplayed: "mac_terminal_replayed"
@@ -453,6 +468,8 @@ enum MacTelemetryEvent {
       ["span": span.rawValue]
     case .imageViewerUsed(let action):
       ["action": action.rawValue]
+    case .messageAction(let action, let role, let success):
+      ["action": action.rawValue, "role": role.rawValue, "success": success]
     case .inputUsed(let affordance):
       ["affordance": affordance]
     case .terminalUsed(let action):

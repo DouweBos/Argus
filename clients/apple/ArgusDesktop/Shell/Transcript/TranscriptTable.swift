@@ -28,7 +28,7 @@ struct TranscriptTable: NSViewRepresentable {
 }
 
 /// A recycled row: a hosting view whose root is swapped for each row shown.
-final class TranscriptCell: NSTableCellView {
+final class TranscriptCell: TranscriptHoverCell {
   static let identifier = NSUserInterfaceItemIdentifier("transcript-row")
 
   let host = TranscriptHostingView(rootView: AnyView(EmptyView()))
@@ -136,14 +136,13 @@ final class TranscriptTableView: NSTableView {
 
 /// A text-only message as plain AppKit: the same message view the hosted rows
 /// use, laid out by the table, so the tallest rows cost no SwiftUI layout.
-final class TranscriptTextCell: NSTableCellView {
+final class TranscriptTextCell: TranscriptHoverCell {
   static let identifier = NSUserInterfaceItemIdentifier("transcript-text")
 
   let text = TranscriptMessageTextView()
   private(set) var rowId = ""
   private(set) var revision = -1
   private(set) var environmentKey = ""
-
   init() {
     super.init(frame: .zero)
     identifier = Self.identifier
@@ -184,5 +183,43 @@ final class TranscriptTextCell: NSTableCellView {
 
   static func height(of content: TranscriptRendered, width: CGFloat) -> CGFloat {
     ceil(TranscriptMessageTextView.height(of: content, width: textWidth(for: width))) + 14
+  }
+}
+
+/// A row that shows its message's hover bar while the pointer is on it, at
+/// the top of the part on screen: a long message's top is often far above.
+class TranscriptHoverCell: NSTableCellView {
+  /// What the bar acts on, when the row is one message with text.
+  var hover: (message: RemoteMessage, model: TranscriptModel, environment: EnvironmentValues)? {
+    didSet { if hover == nil { hoverBar.hide() } }
+  }
+  private(set) lazy var hoverBar = TranscriptHoverBarHost(cell: self)
+
+  override init(frame: NSRect) {
+    super.init(frame: frame)
+    addTrackingArea(
+      NSTrackingArea(
+        rect: .zero, options: [.mouseEnteredAndExited, .mouseMoved, .activeInActiveApp, .inVisibleRect],
+        owner: self))
+  }
+
+  required init?(coder: NSCoder) { fatalError() }
+
+  override var isFlipped: Bool { true }
+
+  override func mouseEntered(with event: NSEvent) { showHoverBar() }
+  override func mouseMoved(with event: NSEvent) { showHoverBar() }
+  override func mouseExited(with event: NSEvent) { hoverBar.hide() }
+
+  override func prepareForReuse() {
+    super.prepareForReuse()
+    hoverBar.hide()
+  }
+
+  private func showHoverBar() {
+    guard let hover else { return }
+    var frame = TranscriptTextCell.textFrame(in: bounds)
+    frame.origin.y = max(frame.minY, visibleRect.minY + 4)
+    hoverBar.show(hover.message, model: hover.model, environment: hover.environment, in: frame)
   }
 }

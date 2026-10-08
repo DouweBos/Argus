@@ -2,6 +2,7 @@
   import AppKit
   import ArgusCore
   import QuartzCore
+  import SwiftUI
 
   /// Dev-driver ops that use the transcript the way a hand does, all through
   /// our own window's event path. Coordinates are top-left window points, as
@@ -20,6 +21,7 @@
   enum TranscriptInputDriver {
     /// Pixel deltas the wheel bench sent, for the probe to subtract.
     static var sentDelta: Double = 0
+    private static var hovered: [NSView] = []
     private static var probe: FrameProbe?
 
     static func run(_ command: [String: Any], window: NSWindow) -> [String: Any]? {
@@ -98,8 +100,22 @@
         guard let x = command["x"] as? Double, let y = command["y"] as? Double,
           let event = mouse(.mouseMoved, at: point(x, y, in: window), in: window, flags: [])
         else { return ["error": "x, y?"] }
-        var at = window.contentView?.superview?.hitTest(event.locationInWindow)
-        while let view = at, !(view is TranscriptNSTextView), let parent = view.superview { at = parent }
+        // Tracking areas only hear the window server, so each view under the
+        // point is told the pointer entered and moved, as its areas would.
+        let hit = window.contentView?.superview?.hitTest(event.locationInWindow)
+        var chain: [NSView] = []
+        var view = hit
+        while let current = view {
+          chain.append(current)
+          view = current.superview
+        }
+        for previous in hovered where !chain.contains(where: { $0 === previous }) { previous.mouseExited(with: event) }
+        for view in chain.reversed() where view is TranscriptHoverCell {
+          if !hovered.contains(where: { $0 === view }) { view.mouseEntered(with: event) }
+          view.mouseMoved(with: event)
+        }
+        hovered = chain.filter { $0 is TranscriptHoverCell }
+        let at = chain.first { $0 is TranscriptNSTextView }
         at?.mouseMoved(with: event)
         let cursor = NSCursor.current
         let name =
@@ -147,6 +163,15 @@
               "document": block.text.frame.width, "clip": scroll?.contentView.bounds.width ?? -1,
               "height": block.frame.height, "scroller": scroll?.horizontalScroller?.isHidden == false,
             ] as [String: Any]
+          }
+        ]
+      case "hoverBars":
+        func cells(_ view: NSView) -> [TranscriptHoverCell] {
+          (view as? TranscriptHoverCell).map { [$0] } ?? view.subviews.flatMap(cells)
+        }
+        return [
+          "bars": (window.contentView.map(cells) ?? []).compactMap { cell in
+            cell.hoverBar.shownFrame.map { topLeft($0, in: window) }.map { [$0.minX, $0.minY, $0.width, $0.height] }
           }
         ]
       case "pasteboard":
