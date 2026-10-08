@@ -91,24 +91,14 @@ public struct DiffLinesView: View {
     let visible = showAll ? lines : Array(lines.prefix(Self.collapsedCount))
 
     VStack(alignment: .leading, spacing: 0) {
+      // One text for every line, its bands drawn behind it: a view per line
+      // made each diff card the costliest row in a scrolling transcript.
       ScrollView(.horizontal, showsIndicators: false) {
-        VStack(alignment: .leading, spacing: 0) {
-          ForEach(visible) { line in
-            HStack(spacing: 6) {
-              Text(gutter(line))
-                .font(.scaled(size: 11, design: .monospaced))
-                .foregroundStyle(theme.textMuted)
-                .frame(width: 34, alignment: .trailing)
-              Text("\(prefix(line))\(line.text)")
-                .font(.scaled(size: 11.5, design: .monospaced))
-                .foregroundStyle(color(line))
-                .fixedSize(horizontal: true, vertical: false)
-            }
-            .padding(.vertical, 1)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(background(line))
-          }
-        }
+        Text(text(visible))
+          .lineSpacing(2)
+          .fixedSize(horizontal: true, vertical: false)
+          .textRenderer(DiffBands(bands: visible.map(background)))
+          .padding(.vertical, 1)
       }
       if lines.count > Self.collapsedCount {
         Button(showAll ? "Collapse" : "See all \(lines.count) lines") { showAll.toggle() }
@@ -118,6 +108,22 @@ public struct DiffLinesView: View {
           .padding(.horizontal, 6)
       }
     }
+  }
+
+  private func text(_ visible: [DiffLine]) -> AttributedString {
+    var out = AttributedString()
+    for (index, line) in visible.enumerated() {
+      let number = gutter(line)
+      var gutter = AttributedString(String(repeating: " ", count: max(0, 5 - number.count)) + number + " ")
+      gutter.font = .scaled(size: 11, design: .monospaced)
+      gutter.foregroundColor = theme.textMuted
+      var code = AttributedString("\(prefix(line))\(line.text)" + (index < visible.count - 1 ? "\n" : ""))
+      code.font = .scaled(size: 11.5, design: .monospaced)
+      code.foregroundColor = color(line)
+      out += gutter
+      out += code
+    }
+    return out
   }
 
   private func gutter(_ line: DiffLine) -> String {
@@ -152,6 +158,22 @@ public struct DiffLinesView: View {
     case .add: theme.successSoft
     case .remove: theme.errorSoft
     default: .clear
+    }
+  }
+}
+
+/// Paints each diff line's band, as wide as the widest line, under its text.
+private struct DiffBands: TextRenderer {
+  let bands: [Color]
+
+  func draw(layout: Text.Layout, in context: inout GraphicsContext) {
+    let width = layout.reduce(0) { max($0, $1.typographicBounds.rect.maxX) }
+    for (index, line) in layout.enumerated() {
+      if index < bands.count, bands[index] != .clear {
+        let rect = line.typographicBounds.rect
+        context.fill(Path(CGRect(x: 0, y: rect.minY - 1, width: width, height: rect.height + 2)), with: .color(bands[index]))
+      }
+      context.draw(line)
     }
   }
 }
