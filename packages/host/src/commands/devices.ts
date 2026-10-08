@@ -47,11 +47,17 @@ import {
   startSimulatorCapture,
   stopSimulatorCapture,
 } from "../services/simulator/ios";
+import {
+  deleteSimulator,
+  eraseSimulator,
+} from "../services/simulator/simulatorRepair";
 
 function registerSimulatorCommands(): void {
   defineTypedCommand("check_ios_tools", () => checkIosTools());
   defineTypedCommand("list_simulators", () => listSimulators());
   defineTypedCommand("boot_simulator", (p) => bootSimulator(p.udid));
+  defineTypedCommand("erase_simulator", (p) => eraseSimulator(p.udid));
+  defineTypedCommand("delete_simulator", (p) => deleteSimulator(p.udid));
   defineTypedCommand("disconnect_simulator", (p) =>
     disconnectSimulator(p.udid),
   );

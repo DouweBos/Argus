@@ -12,6 +12,7 @@ import { promisify } from "node:util";
 import { warn } from "@argus/host/logger";
 import { hostPlatform } from "@argus/host/platform";
 import { appState } from "../../state";
+import { capture } from "../telemetry/telemetry";
 import { SimBridge } from "./bridge";
 import {
   type DeviceOrientation,
@@ -34,6 +35,12 @@ import {
 } from "./hidUsage";
 import { startIosVideoStream, stopIosVideoStream } from "./ios-video";
 import { sendButtonUsage, sendKeyUsage, stopSimInput } from "./simInput";
+import {
+  type SimctlDeviceHealth,
+  type SimulatorProblem,
+  describeSimctlFailure,
+  simulatorProblem,
+} from "./simctlProblems";
 
 const execFileAsync = promisify(execFile);
 
@@ -47,6 +54,8 @@ export interface SimulatorDevice {
   name: string;
   runtime: string;
   booted: boolean;
+  /** Why it can't boot as it is, when simctl's listing already shows it. */
+  problem?: SimulatorProblem;
 }
 
 // ---------------------------------------------------------------------------
@@ -57,7 +66,7 @@ interface SimctlOutput {
   devices: Record<string, SimctlDevice[]>;
 }
 
-interface SimctlDevice {
+interface SimctlDevice extends SimctlDeviceHealth {
   udid: string;
   name: string;
   state: string;
@@ -166,11 +175,13 @@ export async function listSimulators(): Promise<SimulatorDevice[]> {
   for (const [runtimeId, deviceList] of Object.entries(parsed.devices)) {
     const runtime = runtimeIdToHuman(runtimeId);
     for (const dev of deviceList) {
+      const problem = simulatorProblem(dev);
       devices.push({
         udid: dev.udid,
         name: dev.name,
         runtime,
         booted: dev.state === "Booted",
+        ...(problem ? { problem } : {}),
       });
     }
   }
@@ -201,7 +212,10 @@ export async function bootSimulator(udid: string): Promise<void> {
     // simctl exits non-zero with "Unable to boot device in current state: Booted"
     // when the device is already running — that is not a real error.
     if (!msg.includes("Booted")) {
-      throw `Failed to boot simulator: ${msg}`;
+      warn(`[Simulator] boot failed for ${udid}:`, msg);
+      const failure = describeSimctlFailure(msg);
+      capture("simulator_boot_failed", { reason: failure.reason });
+      throw failure.message;
     }
   }
 

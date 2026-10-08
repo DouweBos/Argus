@@ -101,6 +101,12 @@
   color: var(--text-muted);
 }
 
+.problem {
+  margin-left: 8px;
+  color: var(--warning);
+  font-size: 11px;
+}
+
 .link {
   color: var(--accent);
   text-decoration: none;

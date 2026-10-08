@@ -1,5 +1,5 @@
 import type { DeviceOrientation } from "../../../lib/types";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DeviceControlOverlay, Icons } from "@argus/peacock";
 import { error } from "@logger";
 import { useDeviceClaim } from "../../../hooks/useDeviceClaim";
@@ -28,6 +28,7 @@ import { AppleTVRemote } from "./AppleTVRemote";
 import { IosDeviceStreamView } from "./IosDeviceStreamView";
 import { RuntimeLinkButton } from "./RuntimeLinkButton";
 import styles from "./RuntimeView.module.css";
+import { SimulatorProblemPanel } from "./SimulatorProblemPanel";
 
 interface IosSimulatorViewProps {
   children?: React.ReactNode;
@@ -65,6 +66,8 @@ export function IosSimulatorView({
   const selectedDevice = devices.find((d) => d.udid === selectedUdid);
   const isTv = isTvOS(selectedDevice);
   const isBooted = selectedDevice?.booted ?? false;
+  const problem = selectedDevice?.problem;
+  const [bootError, setBootError] = useState<string | null>(null);
   const prevSessionIdRef = useRef<string | null>(null);
   // Guards against double auto-start while a previous startCapture() is
   // mid-flight — `capturing` only flips to true after the await resolves, so
@@ -132,6 +135,7 @@ export function IosSimulatorView({
       return;
     }
     autoStartingRef.current = null;
+    setBootError(null);
     setCapturing(false);
     setMjpegPort(prevUdid, null);
     stopSimulatorCapture(prevUdid).catch(() => {});
@@ -167,12 +171,14 @@ export function IosSimulatorView({
       booting ||
       disconnected ||
       !selectedUdid ||
+      problem ||
       autoStartingRef.current === selectedUdid
     ) {
       return;
     }
     const udid = selectedUdid;
     autoStartingRef.current = udid;
+    setBootError(null);
     (isBooted ? Promise.resolve() : bootSimulator(udid))
       .then(() => startCapture(udid))
       .then(() => {
@@ -182,8 +188,11 @@ export function IosSimulatorView({
         // Surface but don't wedge — user can retry via the boot button or by
         // reselecting the device.
         error("Auto-capture failed:", err);
+        setBootError(String(err));
+        refreshDevices();
       });
   }, [
+    problem,
     isBooted,
     capturing,
     booting,
@@ -208,12 +217,15 @@ export function IosSimulatorView({
     }
     setBooting(true);
     setDisconnected(false);
+    setBootError(null);
     try {
       await bootSimulator(selectedUdid);
       await startCapture(selectedUdid);
       refreshDevices();
     } catch (err) {
       error("Boot/capture failed:", err);
+      setBootError(String(err));
+      refreshDevices();
     } finally {
       setBooting(false);
     }
@@ -417,7 +429,7 @@ export function IosSimulatorView({
   const titleBarExtra =
     !deviceSessionActive && (selectedUdid || sessionId) ? (
       <div className={chrome.titleBarTrailing}>
-        {!isBooted && !capturing && selectedUdid && (
+        {!isBooted && !capturing && selectedUdid && !problem && (
           <button
             className={chrome.titleBarButton}
             disabled={booting}
@@ -481,18 +493,35 @@ export function IosSimulatorView({
 
   // --- Placeholder ---
 
+  const screenContent =
+    problem && selectedDevice ? (
+      <SimulatorProblemPanel
+        name={selectedDevice.name}
+        problem={problem}
+        udid={selectedDevice.udid}
+        onRepaired={() => {
+          setBootError(null);
+          autoStartingRef.current = null;
+          refreshDevices();
+        }}
+      />
+    ) : (
+      <p className={chrome.phaseHint}>
+        {bootError ??
+          (isTv
+            ? "Boot a tvOS simulator to see it here"
+            : "Boot a simulator to see it here")}
+      </p>
+    );
+
   const placeholderContent = isTv ? (
     <div className={styles.tvFrame}>
-      <div className={styles.tvScreen}>
-        <p className={chrome.phaseHint}>Boot a tvOS simulator to see it here</p>
-      </div>
+      <div className={styles.tvScreen}>{screenContent}</div>
       <div className={styles.tvStand} />
     </div>
   ) : (
     <div className={styles.phoneFrame}>
-      <div className={styles.phoneScreen}>
-        <p className={chrome.phaseHint}>Boot a simulator to see it here</p>
-      </div>
+      <div className={styles.phoneScreen}>{screenContent}</div>
     </div>
   );
 

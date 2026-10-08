@@ -25,6 +25,7 @@ import type {
   SimulatorDeviceState as HostSimulatorDeviceState,
 } from "../services/simulator/deviceState";
 import type { SimulatorDevice as HostSimulatorDevice } from "../services/simulator/ios";
+import type { SimulatorProblem as HostSimulatorProblem } from "../services/simulator/simctlProblems";
 import type {
   AndroidDevice,
   ConductorLogEntry,
@@ -44,10 +45,12 @@ import type {
   ParamsOf,
   SimulatorDevice,
   SimulatorDeviceState,
+  SimulatorProblem,
 } from "@argus/remote-protocol";
 
 export type DeviceModelChecks = [
   Expect<Equal<SimulatorDevice, HostSimulatorDevice>>,
+  Expect<Equal<SimulatorProblem, HostSimulatorProblem>>,
   Expect<Equal<FoldPose, HostFoldPose>>,
   Expect<Equal<DeviceOrientation, HostDeviceOrientation>>,
   Expect<Equal<FoldState, HostFoldState>>,

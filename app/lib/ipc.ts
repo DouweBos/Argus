@@ -2018,6 +2018,12 @@ export const listSimulators = (): Promise<SimulatorDevice[]> =>
 export const bootSimulator = (udid: string): Promise<void> =>
   invoke("boot_simulator", { udid });
 
+export const eraseSimulator = (udid: string): Promise<void> =>
+  invoke("erase_simulator", { udid });
+
+export const deleteSimulator = (udid: string): Promise<void> =>
+  invoke("delete_simulator", { udid });
+
 export const disconnectSimulator = (udid: string): Promise<void> =>
   invoke("disconnect_simulator", { udid });
 

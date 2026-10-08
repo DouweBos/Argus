@@ -236,6 +236,20 @@ final class RuntimeModel {
     await refresh()
   }
 
+  enum Repair { case erase, delete }
+
+  /// Erases or deletes a simulator that can't boot as it is; the user confirmed.
+  func repairSimulator(_ udid: String, _ action: Repair) async throws {
+    guard let backend else { throw RuntimeError.offline }
+    switch action {
+    case .erase:
+      try await backend.request(ArgusProtocol.Commands.EraseSimulator.self, .init(udid: udid))
+    case .delete:
+      try await backend.request(ArgusProtocol.Commands.DeleteSimulator.self, .init(udid: udid))
+    }
+    await refresh()
+  }
+
   /// Boots an AVD and returns the serial it came up as.
   func bootAvd(_ name: String) async throws -> String {
     guard let backend else { throw RuntimeError.offline }

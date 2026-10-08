@@ -1482,6 +1482,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct DeleteSimulatorParams: Codable, Sendable {
+      public var udid: String
+
+      enum CodingKeys: String, CodingKey {
+        case udid = "udid"
+      }
+
+      public init(udid: String) {
+        self.udid = udid
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(udid, forKey: .udid)
+      }
+    }
+
     public struct DequeueMessageParams: Codable, Sendable {
       public var agentId: String
 
@@ -1718,6 +1735,23 @@ extension ArgusProtocol {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(agentId, forKey: .agentId)
         try c.encode(list, forKey: .list)
+      }
+    }
+
+    public struct EraseSimulatorParams: Codable, Sendable {
+      public var udid: String
+
+      enum CodingKeys: String, CodingKey {
+        case udid = "udid"
+      }
+
+      public init(udid: String) {
+        self.udid = udid
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(udid, forKey: .udid)
       }
     }
 
@@ -8778,6 +8812,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum DeleteSimulator: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.DeleteSimulatorParams
+      public typealias Result = IgnoredResult
+      public static let name = "delete_simulator"
+      public static let tier = "admin"
+    }
+
     public enum DequeueMessage: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.DequeueMessageParams
       public typealias Result = ArgusProtocol.QueuedMessage?
@@ -8859,6 +8900,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.DismissAgentListParams
       public typealias Result = IgnoredResult
       public static let name = "dismiss_agent_list"
+      public static let tier = "admin"
+    }
+
+    public enum EraseSimulator: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.EraseSimulatorParams
+      public typealias Result = IgnoredResult
+      public static let name = "erase_simulator"
       public static let tier = "admin"
     }
 
