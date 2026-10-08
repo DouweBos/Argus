@@ -95,7 +95,7 @@ extension HostStore {
     return result?.state
   }
 
-  /// Fire-and-forget: a touch that waits for a round trip feels broken.
+  /// Returns at once: a touch that waits for a round trip feels broken.
   public func deviceTouch(
     deviceId: String, platform: RemotePlatform, x: Double, y: Double, eventType: Int
   ) {
@@ -107,14 +107,14 @@ extension HostStore {
       let y: Double
       let event_type: Int
     }
-    Task {
-      try? await backend.request(
-        .devicesTouch,
-        Params(
-          device_id: deviceId, platform: platform.rawValue,
-          x: min(max(x, 0), 0.9999), y: min(max(y, 0), 0.9999), event_type: eventType),
-        as: IgnoredResult.self)
-    }
+    let params = Params(
+      device_id: deviceId, platform: platform.rawValue,
+      x: min(max(x, 0), 0.9999), y: min(max(y, 0), 0.9999), event_type: eventType)
+    // Only moves coalesce; a down or an up is never dropped.
+    deviceInput.enqueue(
+      .init(coalesceKey: eventType == 1 ? "move:\(deviceId)" : nil) {
+        _ = try? await backend.request(.devicesTouch, params, as: IgnoredResult.self)
+      })
   }
 
   // MARK: Device claims
@@ -175,12 +175,11 @@ extension HostStore {
       let platform: String
       let button: String
     }
-    Task {
-      try? await backend.request(
-        .devicesButton,
-        Params(device_id: deviceId, platform: platform.rawValue, button: button),
-        as: IgnoredResult.self)
-    }
+    let params = Params(device_id: deviceId, platform: platform.rawValue, button: button)
+    deviceInput.enqueue(
+      .init {
+        _ = try? await backend.request(.devicesButton, params, as: IgnoredResult.self)
+      })
   }
 
   public func deviceKeyboard(
@@ -194,13 +193,12 @@ extension HostStore {
       let modifiers: Int
       let is_down: Bool
     }
-    Task {
-      try? await backend.request(
-        .devicesKeyboard,
-        Params(
-          device_id: deviceId, platform: platform.rawValue, key_code: keyCode,
-          modifiers: modifiers, is_down: isDown),
-        as: IgnoredResult.self)
-    }
+    let params = Params(
+      device_id: deviceId, platform: platform.rawValue, key_code: keyCode,
+      modifiers: modifiers, is_down: isDown)
+    deviceInput.enqueue(
+      .init {
+        _ = try? await backend.request(.devicesKeyboard, params, as: IgnoredResult.self)
+      })
   }
 }
