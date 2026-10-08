@@ -21,6 +21,17 @@ enum HostLocation {
     #endif
   }
 
+  /// `ARGUS_ATTACH_HOME`: run only as a second window on whatever app holds
+  /// that home — never a host there, no lock, no migration. How a debug build
+  /// opens next to the Argus you use (`ARGUS_ATTACH_HOME=~/.argus`) while its
+  /// own state stays in `home`.
+  static var attachHome: URL? {
+    guard let raw = ProcessInfo.processInfo.environment["ARGUS_ATTACH_HOME"],
+      !raw.trimmingCharacters(in: .whitespaces).isEmpty
+    else { return nil }
+    return URL(fileURLWithPath: (raw as NSString).expandingTildeInPath)
+  }
+
   /// `Contents/Resources/host`, staged by `scripts/build-mac-host.ts`.
   static var bundledHost: URL {
     Bundle.main.resourceURL!.appendingPathComponent("host")
@@ -32,6 +43,7 @@ enum HostLocation {
       node: host.appendingPathComponent("node"),
       hostScript: host.appendingPathComponent("argus-host.js"),
       resources: host.appendingPathComponent("resources"),
-      home: home)
+      home: attachHome ?? home,
+      attachOnly: attachHome != nil)
   }
 }

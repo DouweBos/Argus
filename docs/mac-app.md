@@ -107,14 +107,34 @@ only your user can read.
 
 ## How it relates to the Electron app
 
-Both apps run the Argus host on the same `~/.argus`, and **only one may run at
-a time**: two hosts on the same state would fight over the same worktrees and
-agents. Whichever starts first holds the lock (`~/.argus/host.lock`).
+Both apps run the Argus host on the same `~/.argus`, and **only one host may
+run at a time**: two hosts on the same state would fight over the same
+worktrees and agents. Whichever starts first holds the lock
+(`~/.argus/host.lock`).
 
-- Open Argus for Mac while the Electron app is running and it says so, with a
-  button to quit the Electron app and take over.
-- Open the Electron app while Argus for Mac is running and it offers the same
-  in reverse.
+Open Argus for Mac while the Electron app is running and it **opens as a
+second window on the Electron app's host** instead of starting its own:
+
+- A badge in the toolbar says **Attached to Argus (Electron)**. Both windows
+  show the same projects, sessions and agents, live. A message sent from
+  either lands once, and a permission prompt answered in one disappears from
+  the other.
+- What's on screen stays per window: the agent you have open, where you've
+  scrolled, what you're typing.
+- Settings changed in one window show up in the other right away; if both
+  change the same one, the last change wins. Attaching never copies Argus for
+  Mac's own settings over the Electron app's.
+- The Electron app stays in charge of banners: you get one per event, not one
+  per window. Links and files you open from Argus for Mac open from it.
+- Quitting Argus for Mac leaves the agents running. Quitting the Electron app
+  stops them, and Argus for Mac says so; it reconnects by itself when the
+  Electron app opens again, or **Start Argus Here** runs its own host instead.
+- To make Argus for Mac the one running the host, pick **Quit Argus (Electron)
+  and Take Over…** from the badge. It asks first, since quitting the Electron
+  app stops its agents.
+
+Open the Electron app while Argus for Mac is running and it offers to quit
+Argus for Mac and take over.
 
 Your phone keeps working with either: the Mac app runs the same remote access
 gateway, with the same paired devices.
@@ -165,7 +185,20 @@ launch, restarts it if it crashes, and stops it — after letting running agents
 stop cleanly — when you quit. The host's log is at `~/.argus/logs/host.log`.
 
 The app talks to its host over a Unix socket in `~/.argus` that only your user
-can open, rather than over the network.
+can open, rather than over the network. Every host serves that socket — the
+Electron app's, Argus for Mac's and `argus-host` — and names it in
+`host.lock`, which is how a second window finds one to attach to.
+
+What the host asks of the windows on that socket:
+
+| Request                                  | Goes to                                                                                                           |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Banners, raising the window              | The app running the host (the Electron app, or Argus for Mac when it runs its own); never a window attached to it |
+| Opening a link or file, Reveal in Finder | The window whose click asked for it; when the host itself asks, the app running it                                |
+| Closing a device's popout                | Every window, since each has its own popouts                                                                      |
+
+The host counts any Argus window in front as you looking at Argus, so it
+skips the banner either way.
 
 ## Building it
 
@@ -176,7 +209,14 @@ open clients/apple/ArgusRemote.xcodeproj   # scheme: ArgusDesktop
 A build phase stages the Node host into the app
 (`pnpm build:mac-host --out <dir>`). Debug builds are called **Argus Dev** and
 never default to `~/.argus` — they use `~/.argus-mac-dev` unless `ARGUS_HOME`
-says otherwise — so a dev build can't collide with the app you use. They are
+says otherwise — so a dev build can't collide with the app you use.
+
+To develop against your real projects and agents, start a dev build with
+`ARGUS_ATTACH_HOME=~/.argus`. It then only ever attaches to the Argus already
+running on that home, as a second window: it never starts a host there, takes
+the lock, offers to take over, or copies its settings in. With nothing running
+it waits for one. Its own state (window tabs, paired hosts) stays in its own
+home. They are
 signed with your Apple Development identity: macOS refuses notifications to an
 ad-hoc signed app, and to one run from `/tmp`.
 

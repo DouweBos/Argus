@@ -14,6 +14,12 @@ enum MacTelemetryEvent {
     case cli
   }
 
+  /// Whether the window runs its own host or is a second window on another app's.
+  enum HostMode: String {
+    case own
+    case attached
+  }
+
   enum LinkAction: String {
     case open
     case openInEditor = "open_in_editor"
@@ -242,6 +248,8 @@ enum MacTelemetryEvent {
   case hostFailed(crashes: Int)
   case hostLockConflict(holder: Holder)
   case hostHandover(holder: Holder, success: Bool)
+  /// `holder` only when attached: whose host the window joined.
+  case hostConnected(mode: HostMode, holder: Holder?)
   /// `screen` is a route pattern, never an id.
   case screenViewed(screen: String)
   /// A saved chat was opened, resumed or deleted from a session's home.
@@ -329,6 +337,7 @@ enum MacTelemetryEvent {
     case .hostFailed: "mac_host_failed"
     case .hostLockConflict: "mac_host_lock_conflict"
     case .hostHandover: "mac_host_handover"
+    case .hostConnected: "mac_host_connected"
     case .screenViewed: "mac_screen_viewed"
     case .linkOpened: "mac_link_opened"
     case .chatHistoryUsed: "mac_chat_history_used"
@@ -391,6 +400,8 @@ enum MacTelemetryEvent {
       ["holder": holder.rawValue]
     case .hostHandover(let holder, let success):
       ["holder": holder.rawValue, "success": success]
+    case .hostConnected(let mode, let holder):
+      ["mode": mode.rawValue, "holder": holder?.rawValue].compactMapValues { $0 }
     case .screenViewed(let screen):
       ["screen": screen]
     case .linkOpened(let screen, let outcome):

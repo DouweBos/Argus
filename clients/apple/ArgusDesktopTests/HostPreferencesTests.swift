@@ -123,4 +123,62 @@ struct HostPreferencesTests {
     #expect(f.home.string(forKey: RuntimeModel.Keys.platform) == "android")
     #expect(host.ui["runtime.platform"] == #""video""#)
   }
+
+  @Test func aSecondWindowTakesButNeverGives() async {
+    let f = Fixture()
+    defer { f.cleanUp() }
+    f.defaults.set("Tree", forKey: GitPreferences.fileViewModeKey)
+    let host = FakeHost()
+    host.settings = ["theme": .string("dark")]
+
+    let supplied = await f.sync.attach(host.io, supply: false)
+    f.sync.localChanged()
+    await f.sync.flush()
+
+    #expect(supplied == 0)
+    #expect(f.prefs.theme == .dark)
+    #expect(host.settings == ["theme": .string("dark")])
+    #expect(host.ui.isEmpty)
+
+    // What the user changes here still goes to the host.
+    f.prefs.displaySize = .large
+    f.sync.localChanged()
+    await f.sync.flush()
+    #expect(host.settings["ui_scale"] == .string("large"))
+  }
+
+  @Test func followsWhatAnotherWindowChanged() async {
+    let f = Fixture()
+    defer { f.cleanUp() }
+    let host = FakeHost()
+    host.settings = ["theme": .string("dark")]
+    await f.sync.attach(host.io, supply: false)
+
+    host.settings["theme"] = .string("light")
+    host.ui["runtime.platform"] = #""web""#
+    await f.sync.hostChanged(settings: ["theme"], uiState: ["runtime.platform"])
+
+    #expect(f.prefs.theme == .light)
+    #expect(f.home.string(forKey: RuntimeModel.Keys.platform) == "web")
+    let writes = host.settingWrites
+    f.sync.localChanged()
+    await f.sync.flush()
+    #expect(host.settingWrites == writes)
+  }
+
+  @Test func keepsALocalChangeNotYetSentOverAnOlderHostValue() async {
+    let f = Fixture()
+    defer { f.cleanUp() }
+    let host = FakeHost()
+    host.settings = ["theme": .string("dark")]
+    await f.sync.attach(host.io, supply: false)
+
+    f.prefs.theme = .system
+    f.sync.localChanged()
+    host.settings["theme"] = .string("light")
+    await f.sync.hostChanged(settings: ["theme"], uiState: [])
+    #expect(f.prefs.theme == .system)
+    await f.sync.flush()
+    #expect(host.settings["theme"] == .string("system"))
+  }
 }

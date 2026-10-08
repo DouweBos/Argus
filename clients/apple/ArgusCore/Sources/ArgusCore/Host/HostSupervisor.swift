@@ -7,8 +7,10 @@
   /// socket, restarts it with backoff when it crashes, streams its output to
   /// `logs/host.log`, and stops it cleanly on quit.
   ///
-  /// Never starts a second host on a home someone else holds — it reports the
-  /// holder instead, and only takes over when asked to.
+  /// Never starts a second host on a home someone else holds: when the holder
+  /// advertises its UI socket this app attaches to it as a second window,
+  /// otherwise it reports the holder. It only takes over when asked to, and an
+  /// attach-only supervisor never launches, takes over or signals anything.
   @MainActor
   @Observable
   public final class HostSupervisor {
@@ -20,16 +22,19 @@
       public var home: URL
       /// Extra environment for the host (on top of this process's).
       public var environment: [String: String]
+      /// Only ever a client of whoever runs `home`: never a host of its own.
+      public var attachOnly: Bool
 
       public init(
         node: URL, hostScript: URL, resources: URL?, home: URL,
-        environment: [String: String] = [:]
+        environment: [String: String] = [:], attachOnly: Bool = false
       ) {
         self.node = node
         self.hostScript = hostScript
         self.resources = resources
         self.home = home
         self.environment = environment
+        self.attachOnly = attachOnly
       }
 
       public var socketPath: String { home.appendingPathComponent("host.sock").path }
@@ -40,8 +45,14 @@
       case idle
       case starting
       case running
-      /// Another app's host is on this home.
+      /// Connected to another app's host as a second window.
+      case attached(HostLockRecord)
+      /// Another app's host is on this home and can't be attached to.
       case locked(HostLockRecord)
+      /// The host this app was attached to went away; reattaches if one returns.
+      case holderExited(HostLockRecord)
+      /// Attach-only, and nothing runs on this home yet.
+      case waitingForHost
       /// Waiting for the other app to quit.
       case handingOver(HostLockRecord)
       case restarting(attempt: Int)
@@ -56,6 +67,8 @@
       case gaveUp(crashes: Int)
       case lockConflict(holder: HostLockRecord.Owner)
       case handover(holder: HostLockRecord.Owner, success: Bool)
+      case attached(holder: HostLockRecord.Owner)
+      case holderExited(holder: HostLockRecord.Owner)
     }
 
     /// The host's exit code when someone else holds the lock.
@@ -74,18 +87,36 @@
     private var restarts = 0
     private var stopping = false
     private var log: LogSink?
+    /// Follows the lock while this app is someone else's window, or waits for one.
+    private var watch: Task<Void, Never>?
+    static let watchInterval: Duration = .milliseconds(750)
 
     public init(configuration: Configuration) {
       self.configuration = configuration
     }
 
-    /// Bring the host up, unless another app holds the home.
+    /// The host this app is a second window on, if it is one.
+    public var attachedTo: HostLockRecord? {
+      if case .attached(let holder) = state { holder } else { nil }
+    }
+
+    /// A host is up and this app is connected to it, its own or another app's.
+    public var isConnected: Bool {
+      state == .running || attachedTo != nil
+    }
+
+    /// Bring the host up, unless another app holds the home — then attach to it
+    /// when it lets us.
     public func start() {
       stopping = false
       if let holder = HostLock.read(home: configuration.home) {
+        if canAttach(holder) {
+          attach(holder)
+          return
+        }
         // An orphan of a previous run of this app: its supervisor is gone, so
         // nobody else will ever stop it.
-        if holder.owner == .mac, !HostLock.isAlive(holder.ownerPid) {
+        if !configuration.attachOnly, holder.owner == .mac, !HostLock.isAlive(holder.ownerPid) {
           kill(holder.pid, SIGTERM)
           state = .starting
           Task {
@@ -94,18 +125,88 @@
           }
           return
         }
-        if holder.ownerPid != getpid() {
-          state = .locked(holder)
-          onEvent?(.lockConflict(holder: holder.owner))
+        if holder.ownerPid != getpid() || configuration.attachOnly {
+          lock(holder)
           return
         }
+      }
+      if configuration.attachOnly {
+        state = .waitingForHost
+        follow()
+        return
       }
       launch()
     }
 
-    /// Ask the app holding the home to quit, then start ours.
+    /// Advertised on our own home's socket, in a protocol we speak.
+    func canAttach(_ holder: HostLockRecord) -> Bool {
+      guard holder.attachable, let socket = holder.socket, holder.ownerPid != getpid() else {
+        return false
+      }
+      let ours = URL(fileURLWithPath: configuration.socketPath).resolvingSymlinksInPath()
+      return URL(fileURLWithPath: socket).resolvingSymlinksInPath() == ours
+    }
+
+    /// Someone we can't attach to holds it. Keep watching: Electron advertises
+    /// its socket a moment after taking the lock.
+    private func lock(_ holder: HostLockRecord) {
+      state = .locked(holder)
+      onEvent?(.lockConflict(holder: holder.owner))
+      follow()
+    }
+
+    private func attach(_ holder: HostLockRecord) {
+      state = .attached(holder)
+      onEvent?(.attached(holder: holder.owner))
+      follow()
+    }
+
+    /// Track the lock: follow a holder that restarts, notice one that leaves,
+    /// and attach to whoever comes up next.
+    private func follow() {
+      watch?.cancel()
+      watch = Task { [weak self] in
+        while !Task.isCancelled {
+          try? await Task.sleep(for: Self.watchInterval)
+          guard let self, !Task.isCancelled else { return }
+          self.lockMoved(HostLock.read(home: self.configuration.home))
+        }
+      }
+    }
+
+    private func lockMoved(_ current: HostLockRecord?) {
+      switch (state, current) {
+      case (.attached(let holder), nil):
+        state = .holderExited(holder)
+        onEvent?(.holderExited(holder: holder.owner))
+      case (.attached(let holder), let next?) where next.pid != holder.pid || next.socket != holder.socket:
+        if canAttach(next) { attach(next) } else { lock(next) }
+      case (.locked(let holder), nil):
+        state = configuration.attachOnly ? .waitingForHost : .holderExited(holder)
+      case (.locked(let holder), let next?) where canAttach(next) || next.pid != holder.pid:
+        if canAttach(next) { attach(next) } else { state = .locked(next) }
+      case (.holderExited, let next?), (.waitingForHost, let next?):
+        if canAttach(next) { attach(next) } else { lock(next) }
+      default:
+        break
+      }
+    }
+
+    private func stopFollowing() {
+      watch?.cancel()
+      watch = nil
+    }
+
+    /// Ask the app holding the home to quit, then start ours. Never for an
+    /// attach-only app: it has no host of its own to start.
     public func takeOver() {
-      guard case .locked(let holder) = state else { return }
+      guard !configuration.attachOnly else { return }
+      let holder: HostLockRecord
+      switch state {
+      case .locked(let record), .attached(let record): holder = record
+      default: return
+      }
+      stopFollowing()
       state = .handingOver(holder)
       HostLock.askToQuit(holder)
       Task {
@@ -115,7 +216,7 @@
         if released {
           launch()
         } else {
-          state = .locked(HostLock.read(home: configuration.home) ?? holder)
+          lock(HostLock.read(home: configuration.home) ?? holder)
         }
       }
     }
@@ -123,6 +224,7 @@
     /// SIGTERM, then wait for the host's own shutdown; SIGKILL past `timeout`.
     public func stop(timeout: Duration = .seconds(15)) async {
       stopping = true
+      stopFollowing()
       guard let process, process.isRunning else {
         state = .stopped
         return
@@ -140,7 +242,8 @@
     }
 
     private func launch() {
-      guard !stopping else { return }
+      guard !stopping, !configuration.attachOnly else { return }
+      stopFollowing()
       state = restarts == 0 ? .starting : .restarting(attempt: restarts)
       let log = LogSink(file: configuration.logFile, maxBytes: Self.maxLogBytes)
       self.log = log
@@ -201,8 +304,7 @@
         return
       }
       if code == Self.exitLocked, let holder = HostLock.read(home: configuration.home) {
-        state = .locked(holder)
-        onEvent?(.lockConflict(holder: holder.owner))
+        if canAttach(holder) { attach(holder) } else { lock(holder) }
         return
       }
       let now = ContinuousClock.now

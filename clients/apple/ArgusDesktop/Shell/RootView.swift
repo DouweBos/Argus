@@ -7,10 +7,14 @@ struct RootView: View {
 
   var body: some View {
     switch model.supervisor.state {
-    case .running:
+    case .running, .attached:
       MainWindow()
     case .locked(let holder):
       HostLockedView(holder: holder)
+    case .holderExited(let holder):
+      HostExitedView(holder: holder)
+    case .waitingForHost:
+      HostWaitingView()
     case .handingOver(let holder):
       HostStatusView(title: "Waiting for \(holder.holderName) to quit…", busy: true)
     case .failed(let message):
@@ -49,11 +53,55 @@ struct HostLockedView: View {
       Label("\(holder.holderName) is already running", systemImage: "lock")
     } description: {
       Text(
-        "It is using \(model.supervisor.configuration.home.path). Only one app can run the Argus host on it at a time."
+        "It is using \(model.supervisor.configuration.home.path). Only one app can run the Argus host on it at a time"
+          + (model.supervisor.configuration.attachOnly
+            ? ", and this window only attaches to one that lets it." : ".")
       )
     } actions: {
-      Button("Quit \(holder.holderName) and Continue") { model.supervisor.takeOver() }
-        .buttonStyle(.borderedProminent)
+      if !model.supervisor.configuration.attachOnly {
+        Button("Quit \(holder.holderName) and Continue") { model.supervisor.takeOver() }
+          .buttonStyle(.borderedProminent)
+      }
+      Button("Quit Argus") { AppDelegate.current?.quit() }
+    }
+  }
+}
+
+/// The app this window was attached to quit. One that comes back is joined on
+/// its own; until then this app can run its own host instead.
+struct HostExitedView: View {
+  @Environment(DesktopModel.self) private var model
+  let holder: HostLockRecord
+
+  var body: some View {
+    ContentUnavailableView {
+      Label("\(holder.appName) quit", systemImage: "link.badge.plus")
+    } description: {
+      Text(
+        "This window was attached to its Argus host. It reconnects when \(holder.appName) opens again."
+      )
+    } actions: {
+      if !model.supervisor.configuration.attachOnly {
+        Button("Start Argus Here") { model.supervisor.start() }
+          .buttonStyle(.borderedProminent)
+      }
+      Button("Quit Argus") { AppDelegate.current?.quit() }
+    }
+  }
+}
+
+/// Attach-only (`ARGUS_ATTACH_HOME`) and nothing runs on that home yet.
+struct HostWaitingView: View {
+  @Environment(DesktopModel.self) private var model
+
+  var body: some View {
+    ContentUnavailableView {
+      Label("Waiting for Argus", systemImage: "hourglass")
+    } description: {
+      Text(
+        "This window only attaches to an Argus already running on \(model.supervisor.configuration.home.path). Open Argus and it connects."
+      )
+    } actions: {
       Button("Quit Argus") { AppDelegate.current?.quit() }
     }
   }

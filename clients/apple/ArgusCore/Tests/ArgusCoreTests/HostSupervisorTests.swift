@@ -105,5 +105,112 @@
       #expect(!other.isRunning)
       await supervisor.stop()
     }
+
+    /// A live stand-in for another app's host, advertising `socket` in the lock.
+    func holder(home: URL, socket: String?, owner: HostLockRecord.Owner = .electron) throws
+      -> (Process, HostLockRecord)
+    {
+      let other = Process()
+      other.executableURL = URL(fileURLWithPath: "/bin/sleep")
+      other.arguments = ["60"]
+      try other.run()
+      let record = HostLockRecord(
+        pid: other.processIdentifier, ownerPid: other.processIdentifier, owner: owner,
+        startedAt: 0, socket: socket, protocol: socket == nil ? nil : HostLock.uiProtocol)
+      try JSONEncoder().encode(record).write(to: HostLock.path(home: home))
+      return (other, record)
+    }
+
+    func attachOnly(home: URL) -> HostSupervisor {
+      HostSupervisor(
+        configuration: .init(
+          node: URL(fileURLWithPath: "/nonexistent/node"), hostScript: Self.hostJS,
+          resources: nil, home: home, attachOnly: true))
+    }
+
+    @Test
+    func attachesToAnAdvertisedHostAndFollowsItAcrossARestart() async throws {
+      let home = try makeHome()
+      defer { try? FileManager.default.removeItem(at: home) }
+      let supervisor = supervisor(home: home)
+      var events: [String] = []
+      supervisor.onEvent = { events.append("\($0)") }
+      let (first, record) = try holder(home: home, socket: supervisor.configuration.socketPath)
+
+      supervisor.start()
+      #expect(supervisor.state == .attached(record))
+      #expect(supervisor.isConnected)
+
+      // It quits: this app says so and never starts a host behind its back.
+      first.terminate()
+      first.waitUntilExit()
+      #expect(await waitFor(supervisor, timeout: .seconds(5)) { if case .holderExited = $0 { true } else { false } })
+      #expect(HostLock.read(home: home) == nil)
+
+      // It comes back: attach again.
+      let (second, next) = try holder(home: home, socket: supervisor.configuration.socketPath)
+      defer { second.terminate() }
+      #expect(await waitFor(supervisor, timeout: .seconds(5)) { $0 == .attached(next) })
+      await supervisor.stop()
+      #expect(second.isRunning)
+      #expect(events.filter { $0.hasPrefix("attached") }.count == 2)
+    }
+
+    @Test
+    func attachesOnceAHolderAdvertisesItsSocket() async throws {
+      let home = try makeHome()
+      defer { try? FileManager.default.removeItem(at: home) }
+      let supervisor = supervisor(home: home)
+      let (other, record) = try holder(home: home, socket: nil)
+      defer { other.terminate() }
+
+      supervisor.start()
+      #expect(supervisor.state == .locked(record))
+
+      var advertised = record
+      advertised.socket = supervisor.configuration.socketPath
+      advertised.protocol = HostLock.uiProtocol
+      try JSONEncoder().encode(advertised).write(to: HostLock.path(home: home))
+      #expect(await waitFor(supervisor, timeout: .seconds(5)) { $0 == .attached(advertised) })
+      await supervisor.stop()
+      #expect(other.isRunning)
+    }
+
+    @Test
+    func neverAttachesToASocketElsewhereOrAnotherProtocol() throws {
+      let home = try makeHome()
+      defer { try? FileManager.default.removeItem(at: home) }
+      let supervisor = supervisor(home: home)
+      let (other, record) = try holder(home: home, socket: "/tmp/elsewhere.sock")
+      defer { other.terminate() }
+      #expect(!supervisor.canAttach(record))
+      var newer = record
+      newer.socket = supervisor.configuration.socketPath
+      newer.protocol = HostLock.uiProtocol + 1
+      #expect(!supervisor.canAttach(newer))
+    }
+
+    @Test
+    func attachOnlyWaitsForAHostAndNeverTakesOne() async throws {
+      let home = try makeHome()
+      defer { try? FileManager.default.removeItem(at: home) }
+      let supervisor = attachOnly(home: home)
+
+      supervisor.start()
+      #expect(supervisor.state == .waitingForHost)
+      #expect(!FileManager.default.fileExists(atPath: HostLock.path(home: home).path))
+
+      // A holder without a socket: shown, but never taken over or signalled.
+      let (other, record) = try holder(home: home, socket: nil, owner: .mac)
+      defer { other.terminate() }
+      #expect(await waitFor(supervisor, timeout: .seconds(5)) { $0 == .locked(record) })
+      supervisor.takeOver()
+      #expect(supervisor.state == .locked(record))
+      try await Task.sleep(for: .milliseconds(300))
+      #expect(other.isRunning)
+      await supervisor.stop()
+      #expect(other.isRunning)
+      #expect(HostLock.read(home: home) == record)
+    }
   }
 #endif
