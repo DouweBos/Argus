@@ -212,11 +212,45 @@ reports it and offers a single "How to install" link to the docs.
   hierarchy, debugging.
 
 **Swift, honestly.** sourcekit-lsp works well for SPM packages. For `.xcodeproj`
-and `.xcworkspace` apps it needs build settings from a build server
-(`xcode-build-server` or BSP). Without that, Swift support in those apps will be
-weak: highlighting yes, cross-file intelligence no. Many Argus users are in
-exactly this case. M3 ships SPM support and spikes the Xcode-project path
-separately; we don't promise it in v1.
+and `.xcworkspace` apps it needs build settings from a build server. Measured
+with Xcode 27.1 (sourcekit-lsp 6.4) on an iOS fixture: rooted at the worktree
+without one, it reports only `No such module 'UIKit'` and answers neither
+hover nor definition; with `xcode-build-server` and one build it reports
+nothing false and resolves definitions across files and into local packages.
+Decided:
+
+- **Classify per file** (`services/lsp/swift/`). Nearest `Package.swift` →
+  a server rooted at that package (handles are keyed by session, language
+  and root; `LspServerStatus.root` tells the client which one a file has).
+  A worktree with an Xcode project (ignoring `Pods`, `.build`,
+  `DerivedData`, `node_modules`, embedded `project.xcworkspace`) → one
+  server at the worktree root through the build server; once
+  `xcode-build-server` is installed it covers the app's local packages too,
+  since SwiftPM would build iOS-only ones for the Mac. A lone file →
+  single-file mode; several loose files in one folder → nothing, since
+  single-file mode reports each other's types as missing.
+- **Never start what would lie.** A new `needs_setup` server state, with a
+  `message` and an `action` (`install_build_server`, `build_once`), instead
+  of a running server with false errors. The Mac status bar says
+  "Swift: needs a build server" / "Swift: build once to enable" with Retry
+  and a docs link.
+- **xcode-build-server**, found on the login-shell `PATH` or in Homebrew's
+  dirs. Argus runs `xcode-build-server config` at the worktree root only
+  when there's no `buildServer.json` or `.bsp/` (sourcekit-lsp only looks at
+  its root, so the file has to live there), and adds it to
+  `info/exclude`, never `.gitignore`. The scheme: the run command's
+  `-scheme`, else the shared app scheme named like the project, else the
+  first app scheme, else the first; a run command's `-derivedDataPath`
+  becomes `--build_root`. Readiness is "the build root's
+  `LogStoreManifest.plist` has a log for that scheme"; while it hasn't, the
+  manifest is polled every 3 s and the server starts when it appears. After
+  that, xcode-build-server follows new build logs on its own.
+- Telemetry: `lsp_server_started.project` (`swiftpm`, `xcode`, `files`) and
+  `lsp_setup_needed.reason`.
+
+Left: several Xcode projects in one worktree share one `buildServer.json`
+(the first file opened picks); a different scheme means deleting the file;
+iOS-only Swift packages outside an app still build for the Mac.
 
 ## 5. Files
 
@@ -557,7 +591,8 @@ as CLAUDE.md requires.
   - diagnostics (squiggles, gutter, Problems strip), hover, go to definition
     and completion;
   - "Ask agent to fix" and "Send to agent";
-  - a separate spike on the Xcode-project Swift path.
+  - the Xcode-project Swift path through xcode-build-server (§4), with a
+    `needs_setup` state instead of false errors when it isn't there.
 - **Accept when:**
   - a TS error introduced by an agent appears as a diagnostic in the open file
     without user action;
@@ -581,7 +616,7 @@ as CLAUDE.md requires.
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | CodeEditTextView is pre-1.0 and its API churns                      | Exact pin, the facade (§2), STTextView as the measured fallback                                                     |
 | Grammar and binary size, iOS compile time                           | Measured in M0; a separate package so only the targets that highlight pay the cost; trim to a second wave if needed |
-| Swift intelligence in Xcode projects                                | Promise SPM only; the build-server path is a separate spike                                                         |
+| Swift intelligence in Xcode projects                                | xcode-build-server after one build; until then no server and a status that says why (§4)                            |
 | tsserver memory across many worktrees                               | Lazy start, idle shutdown, a cap of 6 with LRU eviction                                                             |
 | Agent and user write races                                          | Hash-checked atomic writes, a banner instead of a silent overwrite, no autosave                                     |
 | Watching too much (EMFILE)                                          | Watch only open files, never recursively                                                                            |

@@ -5,7 +5,7 @@
  * goes first), and restarted with backoff when they crash.
  */
 
-import type { LspProject, Route } from "./route";
+import type { GateResult, LspProject, Route } from "./route";
 import type {
   LspLanguage,
   LspServerSource,
@@ -245,7 +245,7 @@ function watchGate(handle: ServerHandle, file: string): void {
 }
 
 /** Try a server held back for setup again. */
-export function recheck(handle: ServerHandle): void {
+function recheck(handle: ServerHandle): void {
   if (handle.state !== "needs_setup" || handle.proc) {
     return;
   }
@@ -257,9 +257,14 @@ export function recheck(handle: ServerHandle): void {
 async function start(handle: ServerHandle): Promise<ServerProcess | null> {
   setState(handle, "starting");
   let readyMessage: string | undefined;
-  let extraArgs: string[] = [];
   if (handle.route.gate) {
-    const gate = await handle.route.gate();
+    const gate = await handle.route.gate().catch(
+      (err: unknown): GateResult => ({
+        ok: false,
+        reason: "no_build_server",
+        message: String(err).slice(0, 200),
+      }),
+    );
     if (!gate.ok) {
       if (handle.setupReason !== gate.reason) {
         handle.setupReason = gate.reason;
@@ -278,13 +283,8 @@ async function start(handle: ServerHandle): Promise<ServerProcess | null> {
     unwatch(handle);
     handle.setupReason = undefined;
     readyMessage = gate.message;
-    extraArgs = gate.args ?? [];
   }
-  const found = await resolveServer(handle.language);
-  const resolved =
-    "missing" in found
-      ? found
-      : { ...found, args: [...found.args, ...extraArgs] };
+  const resolved = await resolveServer(handle.language);
   if ("missing" in resolved) {
     handle.source = undefined;
     setState(handle, "missing", resolved.missing);

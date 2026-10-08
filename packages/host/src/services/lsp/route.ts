@@ -18,7 +18,7 @@ export type GateResult =
       /** A file whose change is worth checking the gate again for. */
       watch?: string;
     }
-  | { ok: true; message?: string; args?: string[] };
+  | { ok: true; message?: string };
 
 /** Where a document's server runs, and what has to hold before it starts. */
 export interface Route {
