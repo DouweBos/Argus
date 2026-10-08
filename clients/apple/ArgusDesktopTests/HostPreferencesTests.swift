@@ -69,7 +69,7 @@ struct HostPreferencesTests {
     #expect(f.prefs.displaySize == .large)
     #expect(f.prefs.customEditors.map(\.command) == ["zed"])
     #expect(f.defaults.string(forKey: "telemetryMode") == "full")
-    #expect(f.defaults.string(forKey: GitPreferences.diffLayoutKey) == "inline")
+    #expect(f.home.string(forKey: GitPreferences.diffLayoutKey) == "inline")
     #expect(f.home.dictionary(forKey: RuntimeModel.Keys.ios) as? [String: String] == ["s1": "UDID"])
     #expect(HomeRecents.entries(from: f.home.array(forKey: HomeRecents.openedKey) ?? []) == [.init(path: "/a", lastOpened: 5)])
     // Theme, display size, permission mode and model always have a value here.

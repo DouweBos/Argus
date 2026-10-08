@@ -8,9 +8,12 @@ import SwiftUI
 struct GitSettingsTab: View {
   @Environment(DesktopModel.self) private var model
   @AppStorage(GitPreferences.fileViewModeKey) private var fileViewMode = FileViewMode.flatModified.rawValue
-  @AppStorage(GitPreferences.diffLayoutKey) private var diffLayout: DiffLayout = .inline
   @AppStorage(GitPreferences.ignoreWhitespaceKey) private var ignoreWhitespace = false
   @State private var signingSession: String?
+
+  private var diffLayout: Binding<DiffLayout> {
+    Binding(get: { DiffLayoutSetting.shared.layout }, set: { DiffLayoutSetting.shared.set($0, via: .settings) })
+  }
 
   /// One session per project: a repository's sessions share its config.
   private var projects: [RemoteSession] {
@@ -28,7 +31,7 @@ struct GitSettingsTab: View {
           Text("Tree").tag(FileViewMode.treeModified.rawValue)
           Text("All files").tag(FileViewMode.allFiles.rawValue)
         }
-        Picker("Diff layout", selection: $diffLayout) {
+        Picker("Diff layout", selection: diffLayout) {
           ForEach(DiffLayout.allCases) { Text($0.title).tag($0) }
         }
         Toggle("Ignore whitespace in diffs", isOn: $ignoreWhitespace)
