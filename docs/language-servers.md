@@ -12,7 +12,10 @@ a session stops its servers.
 
 The status bar shows each server's state. **Not found** means the server
 isn't installed; **Failed** means it crashed more than three times in five
-minutes — click **Retry** once you've fixed whatever was wrong.
+minutes — click **Retry** once you've fixed whatever was wrong. A server
+that **needs setup** wasn't started on purpose, because its answers would be
+wrong — hover over it to see why (so far only Swift does this, see
+[Swift](#swift)).
 
 ## Which languages, and where the server comes from
 
@@ -50,12 +53,33 @@ Swift and C-family files use the servers in your active Xcode toolchain (the
 one `xcode-select -p` points at), found with `xcrun`. If you don't have Xcode,
 Argus also looks for `sourcekit-lsp` and `clangd` on your `PATH`.
 
-Swift support is best in Swift packages (`Package.swift`). In `.xcodeproj` or
-`.xcworkspace` apps, `sourcekit-lsp` can't see your build settings, so you'll
-get highlighting and single-file help but not much across files.
-
 `clangd` reads `compile_commands.json` at the root of your project when there
 is one.
+
+### Swift
+
+`sourcekit-lsp` only gives honest answers when it knows how your code is
+built, so Argus looks at what each Swift file belongs to:
+
+- **A Swift package.** Files under a `Package.swift` get a server rooted at
+  that package, so a repository with several packages gets one per package.
+  Diagnostics, completion and go to definition work across the package.
+- **An Xcode project.** Files in a repository with an `.xcodeproj` or
+  `.xcworkspace` (outside `Pods`, `DerivedData`, `node_modules` and `.build`)
+  need a build server — see below. A package inside the app that lists only
+  iOS-family platforms counts as part of the app.
+- **A lone Swift file**, outside any package or project, runs in single-file
+  mode. Several loose files in one folder don't: `sourcekit-lsp` can't see
+  how they fit together and would report each other's types as missing. The
+  status bar says **Swift: limited here**.
+
+#### Swift in Xcode projects
+
+On its own, `sourcekit-lsp` doesn't know an Xcode project's SDK, targets or
+modules, so it reports errors like `No such module 'UIKit'` for code that
+builds fine. Rather than show those, Argus doesn't start it for files in an
+Xcode project, and the status bar says **Swift: needs a build server**.
+Highlighting, folding and search keep working.
 
 ### Servers on your PATH
 

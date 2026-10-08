@@ -182,9 +182,11 @@ export type LspCodeAction = z.infer<typeof LspCodeAction>;
 export const LspWorkspaceEdit = z.object({ files: z.array(LspFileEdit) });
 export type LspWorkspaceEdit = z.infer<typeof LspWorkspaceEdit>;
 
+/** `needs_setup`: deliberately not started, because its answers would be wrong. */
 export const LspServerState = z.enum([
   "failed",
   "missing",
+  "needs_setup",
   "ready",
   "starting",
   "stopped",
@@ -195,12 +197,23 @@ export type LspServerState = z.infer<typeof LspServerState>;
 export const LspServerSource = z.enum(["bundled", "path", "toolchain"]);
 export type LspServerSource = z.infer<typeof LspServerSource>;
 
+/** What would get a `needs_setup` server going. */
+export const LspSetupAction = z.enum(["build_once", "install_build_server"]);
+export type LspSetupAction = z.infer<typeof LspSetupAction>;
+
 export const LspServerStatus = z.object({
   language: LspLanguage,
   state: LspServerState,
   source: LspServerSource.optional(),
-  /** Why it is missing or failed, for the status bar. */
+  /** Why it is missing, failed or needs setup; on a ready server, what it runs against. */
   message: z.string().optional(),
+  action: LspSetupAction.optional(),
+  /**
+   * The session-relative directory the server covers, when not the whole
+   * session (one Swift package of several). A file's status is the entry of
+   * its language with the longest root containing it.
+   */
+  root: z.string().optional(),
 });
 export type LspServerStatus = z.infer<typeof LspServerStatus>;
 

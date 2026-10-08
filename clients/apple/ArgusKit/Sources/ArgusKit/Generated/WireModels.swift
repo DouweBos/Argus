@@ -6848,6 +6848,7 @@ extension ArgusProtocol {
 
     public static let failed = LspServerState(rawValue: "failed")
     public static let missing = LspServerState(rawValue: "missing")
+    public static let needsSetup = LspServerState(rawValue: "needs_setup")
     public static let ready = LspServerState(rawValue: "ready")
     public static let starting = LspServerState(rawValue: "starting")
     public static let stopped = LspServerState(rawValue: "stopped")
@@ -6858,19 +6859,25 @@ extension ArgusProtocol {
     public var state: LspServerState
     public var source: LspServerSource?
     public var message: String?
+    public var action: LspSetupAction?
+    public var root: String?
 
     enum CodingKeys: String, CodingKey {
       case language = "language"
       case state = "state"
       case source = "source"
       case message = "message"
+      case action = "action"
+      case root = "root"
     }
 
-    public init(language: LspLanguage, state: LspServerState, source: LspServerSource? = nil, message: String? = nil) {
+    public init(language: LspLanguage, state: LspServerState, source: LspServerSource? = nil, message: String? = nil, action: LspSetupAction? = nil, root: String? = nil) {
       self.language = language
       self.state = state
       self.source = source
       self.message = message
+      self.action = action
+      self.root = root
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -6879,7 +6886,24 @@ extension ArgusProtocol {
       try c.encode(state, forKey: .state)
       try c.encodeIfPresent(source, forKey: .source)
       try c.encodeIfPresent(message, forKey: .message)
+      try c.encodeIfPresent(action, forKey: .action)
+      try c.encodeIfPresent(root, forKey: .root)
     }
+  }
+
+  public struct LspSetupAction: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let buildOnce = LspSetupAction(rawValue: "build_once")
+    public static let installBuildServer = LspSetupAction(rawValue: "install_build_server")
   }
 
   public struct LspSignature: Codable, Sendable {

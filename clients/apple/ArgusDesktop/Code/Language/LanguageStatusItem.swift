@@ -13,6 +13,8 @@ struct LanguageStatusItem: View {
   let file: CodeFile
 
   static let installHelp = URL(string: "https://houwert.dev/argus/docs/language-servers")!
+  static let swiftHelp = URL(string: "https://houwert.dev/argus/docs/language-servers#swift")!
+  static let xcodeHelp = URL(string: "https://houwert.dev/argus/docs/language-servers#swift-in-xcode-projects")!
 
   var body: some View {
     HStack(spacing: 10) {
@@ -49,10 +51,20 @@ struct LanguageStatusItem: View {
 
   @ViewBuilder private func server(_ language: LspDocumentLanguage) -> some View {
     let name = LspLanguageMap.displayName(language.server)
-    let status = client.status(of: language.server)
+    let status = client.status(of: language.server, path: file.path)
     switch status?.state {
     case .ready?:
-      Text(name).help(Self.readyHelp(status))
+      Text(name).help(status?.message ?? Self.readyHelp(status))
+    case .needsSetup?:
+      HStack(spacing: 4) {
+        Text(Self.setupTitle(name, status?.action)).foregroundStyle(theme.warning)
+        Link("Learn more", destination: status?.action == nil ? Self.swiftHelp : Self.xcodeHelp)
+        if status?.action != nil {
+          Button("Retry") { Task { await client.restart(language.server) } }
+            .buttonStyle(.accentLink)
+        }
+      }
+      .help(status?.message ?? "Argus didn't start the \(name) server here because its results would be wrong")
     case .missing?:
       HStack(spacing: 4) {
         Text("\(name) server not found").foregroundStyle(theme.warning)
@@ -73,6 +85,14 @@ struct LanguageStatusItem: View {
         ProgressView().controlSize(.mini)
         Text("\(name) starting…")
       }
+    }
+  }
+
+  static func setupTitle(_ name: String, _ action: ArgusProtocol.LspSetupAction?) -> String {
+    switch action {
+    case .buildOnce?: "\(name): build once to enable"
+    case .installBuildServer?: "\(name): needs a build server"
+    default: "\(name): limited here"
     }
   }
 

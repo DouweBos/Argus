@@ -10,8 +10,9 @@ import Observation
 @Observable
 final class LanguageClient {
   let sessionId: String
-  /// Each server's state, from `lsp_status` and `lsp:status:<id>`.
-  private(set) var statuses: [ArgusProtocol.LspLanguage: ArgusProtocol.LspServerStatus] = [:]
+  /// Each server's state, from `lsp_status` and `lsp:status:<id>`. A language can have several
+  /// (one per Swift package), told apart by `root`.
+  private(set) var statuses: [ArgusProtocol.LspLanguage: [ArgusProtocol.LspServerStatus]] = [:]
   var problemsExpanded = false
   @ObservationIgnored private weak var sink: LspSink?
   @ObservationIgnored private let isEnabled: (LspDocumentLanguage) -> Bool
@@ -41,8 +42,20 @@ final class LanguageClient {
     tracked[path].flatMap { $0.provider != nil ? $0.language : nil }
   }
 
-  func status(of server: ArgusProtocol.LspLanguage) -> ArgusProtocol.LspServerStatus? {
-    statuses[server]
+  /// The state of the server that has `path`: the one whose root contains it most closely.
+  func status(of server: ArgusProtocol.LspLanguage, path: String) -> ArgusProtocol.LspServerStatus? {
+    Self.status(for: path, in: statuses[server] ?? [])
+  }
+
+  nonisolated static func status(
+    for path: String, in candidates: [ArgusProtocol.LspServerStatus]
+  ) -> ArgusProtocol.LspServerStatus? {
+    candidates
+      .filter { status in
+        let root = status.root ?? ""
+        return root.isEmpty || path.hasPrefix(root + "/")
+      }
+      .max { ($0.root ?? "").count < ($1.root ?? "").count }
   }
 
   var hasOpenDocuments: Bool { tracked.values.contains { $0.provider != nil } }
@@ -118,7 +131,7 @@ final class LanguageClient {
   }
 
   func receive(_ status: ArgusProtocol.LspStatus) {
-    statuses = Dictionary(status.servers.map { ($0.language, $0) }, uniquingKeysWith: { _, last in last })
+    statuses = Dictionary(grouping: status.servers, by: \.language)
   }
 
   /// The connection dropped and came back: the host forgot this connection's documents.
