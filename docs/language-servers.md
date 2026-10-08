@@ -66,8 +66,11 @@ built, so Argus looks at what each Swift file belongs to:
   Diagnostics, completion and go to definition work across the package.
 - **An Xcode project.** Files in a repository with an `.xcodeproj` or
   `.xcworkspace` (outside `Pods`, `DerivedData`, `node_modules` and `.build`)
-  need a build server — see below. A package inside the app that lists only
-  iOS-family platforms counts as part of the app.
+  go through a build server — see below. Once xcode-build-server is
+  installed, the app's local packages go through it too, since Xcode builds
+  them for the app's platform. Without it, a local package still gets its own
+  server unless it lists only iOS-family platforms (it would fail to import
+  `UIKit` when built for the Mac).
 - **A lone Swift file**, outside any package or project, runs in single-file
   mode. Several loose files in one folder don't: `sourcekit-lsp` can't see
   how they fit together and would report each other's types as missing. The
@@ -77,9 +80,44 @@ built, so Argus looks at what each Swift file belongs to:
 
 On its own, `sourcekit-lsp` doesn't know an Xcode project's SDK, targets or
 modules, so it reports errors like `No such module 'UIKit'` for code that
-builds fine. Rather than show those, Argus doesn't start it for files in an
-Xcode project, and the status bar says **Swift: needs a build server**.
-Highlighting, folding and search keep working.
+builds fine. Argus gets those build settings from
+[xcode-build-server](https://github.com/SolaWing/xcode-build-server), which
+reads them from your project's Xcode build logs. Until it can, Argus doesn't
+start `sourcekit-lsp` for the project at all — highlighting, folding and
+search keep working, and the status bar says what's missing:
+
+1. **Swift: needs a build server** — install it, then click **Retry**:
+
+   ```sh
+   brew install xcode-build-server
+   ```
+
+   Argus finds it on your `PATH` or in Homebrew's usual places.
+
+2. **Swift: build once to enable** — build the app once in this session,
+   with its run command or in Xcode. xcode-build-server needs a build log
+   for this worktree; a build in another checkout doesn't count. Argus
+   notices the build by itself and starts Swift intelligence a few seconds
+   after it finishes.
+
+Then you get diagnostics, completion, hover, go to definition, references and
+rename across the app and its local packages. Build again after adding files
+or changing build settings; xcode-build-server picks up the new log on its
+own.
+
+To set things up, Argus writes a `buildServer.json` at the root of the
+worktree, unless there already is one (or a `.bsp` folder) — then it uses
+yours as it is. It keeps the file out of git through the repository's
+`.git/info/exclude`, not your `.gitignore`. The file follows one scheme:
+
+- the one your `xcodebuild` run command builds (`-scheme`), when it has one;
+- else the shared scheme that builds an app and has the project's name;
+- else the first scheme that builds an app, else the first scheme.
+
+A `-derivedDataPath` in that run command is followed too. When Argus had to
+pick among several schemes, hovering the status bar item says which. To
+switch, delete `buildServer.json` and click **Retry**, or run
+`xcode-build-server config -scheme <name>` in the worktree yourself.
 
 ### Servers on your PATH
 

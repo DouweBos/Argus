@@ -32,6 +32,7 @@ import {
 } from "./manager";
 import { routeFor } from "./routing";
 import { languageForId } from "./servers";
+import { forgetSwiftContext } from "./swift/context";
 
 /** A request over local IPC has no connection; it holds until closed. */
 const LOCAL_HOLDER = "local";
@@ -213,6 +214,7 @@ export function restartLanguage(
 
     return;
   }
+  forgetSwiftContext();
   const own = allHandles().filter(
     (h) => h.sessionId === sessionId && h.language === language,
   );

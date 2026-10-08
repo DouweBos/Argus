@@ -1,13 +1,17 @@
 /**
  * The real sourcekit-lsp: a Swift package gets cross-file answers and no
  * false errors, and an Xcode project without a build server gets no server at
- * all (it would report `No such module 'UIKit'`). Skipped without Xcode.
+ * all (it would report `No such module 'UIKit'`). Skipped without Xcode. With
+ * xcode-build-server installed, an iOS app is built once and then gets the
+ * same answers through it.
  */
 
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { addHostEventSink, resetHostEventSinks } from "@argus/host/bus";
 
@@ -24,6 +28,14 @@ const { appState } = await import("../../state");
 const manager = await import("./manager");
 const documents = await import("./documents");
 const features = await import("./features");
+const { findXcodeBuildServer, setXcodeBuildServerForTest } =
+  await import("./swift/buildServer");
+
+const xcodeBuildServer = findXcodeBuildServer();
+const APP_FIXTURE = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "fixtures/swift-app",
+);
 
 function hasSourceKit(): boolean {
   try {
@@ -36,6 +48,36 @@ function hasSourceKit(): boolean {
 }
 
 let tmp: string;
+
+/**
+ * `xcodebuild -list` leaves a DerivedData folder named for the project's path,
+ * and xcode-build-server a cache folder for its root: remove this run's.
+ */
+async function forgetApp(app: string): Promise<void> {
+  if (!fs.existsSync(app)) {
+    return;
+  }
+  fs.rmSync(
+    path.join(
+      os.homedir(),
+      "Library/Caches/xcode-build-server",
+      app.replaceAll("/", "-"),
+    ),
+    { recursive: true, force: true },
+  );
+  const { stdout } = await promisify(execFile)(
+    "xcodebuild",
+    ["-showBuildSettings", "-json", "-scheme", "Fixture"],
+    { cwd: app, timeout: 60_000, maxBuffer: 32 << 20 },
+  ).catch(() => ({ stdout: "[]" }));
+  const symroot = (
+    JSON.parse(stdout) as { buildSettings?: { SYMROOT?: string } }[]
+  )[0]?.buildSettings?.SYMROOT;
+  const derived = symroot && path.resolve(symroot, "../..");
+  if (derived?.includes("/DerivedData/Fixture-")) {
+    fs.rmSync(derived, { recursive: true, force: true });
+  }
+}
 const diagnostics = new Map<string, unknown[]>();
 
 function write(rel: string, text: string): string {
@@ -92,6 +134,7 @@ describe.skipIf(process.platform !== "darwin" || !hasSourceKit())(
     afterAll(async () => {
       manager.stopLanguageServers();
       resetHostEventSinks();
+      await forgetApp(path.join(tmp, "app"));
       await fs.promises.rm(tmp, {
         recursive: true,
         force: true,
@@ -140,6 +183,7 @@ let package = Package(name: "Lib", targets: [.target(name: "Lib")])
       fs.mkdirSync(path.join(tmp, "plain/App.xcodeproj"), { recursive: true });
       const text = write("plain/App/AppDelegate.swift", APP);
       session("plain", "plain");
+      setXcodeBuildServerForTest(null);
       await documents.lspDidOpen(
         "plain",
         "App/AppDelegate.swift",
@@ -159,6 +203,83 @@ let package = Package(name: "Lib", targets: [.target(name: "Lib")])
           .every((h) => h.proc === null),
       ).toBe(true);
       expect(diagnostics.has("plain:App/AppDelegate.swift")).toBe(false);
+      setXcodeBuildServerForTest(undefined);
     });
+
+    it.skipIf(!xcodeBuildServer)(
+      "uses xcode-build-server once the app has been built",
+      async () => {
+        const app = path.join(tmp, "app");
+        fs.cpSync(APP_FIXTURE, app, { recursive: true });
+        execFileSync("git", ["init", "-q"], { cwd: app });
+        const build = [
+          "-scheme",
+          "Fixture",
+          "-destination",
+          "generic/platform=iOS Simulator",
+          "-derivedDataPath",
+          "dd",
+          "build",
+        ];
+        fs.writeFileSync(
+          path.join(app, ".argus.json"),
+          JSON.stringify({
+            run: [{ title: "Build", command: `xcodebuild ${build.join(" ")}` }],
+          }),
+        );
+        session("app", "app");
+        const rel = "App/AppDelegate.swift";
+        const text = fs.readFileSync(path.join(app, rel), "utf8");
+        await documents.lspDidOpen("app", rel, "swift", 1, text);
+        await vi.waitFor(
+          () =>
+            expect(manager.lspStatus("app").servers).toEqual([
+              expect.objectContaining({
+                state: "needs_setup",
+                action: "build_once",
+              }),
+            ]),
+          { timeout: 60_000, interval: 200 },
+        );
+        expect(
+          JSON.parse(
+            fs.readFileSync(path.join(app, "buildServer.json"), "utf8"),
+          ),
+        ).toMatchObject({
+          kind: "xcode",
+          scheme: "Fixture",
+          build_root: path.join(app, "dd"),
+        });
+        expect(
+          execFileSync("git", ["status", "--porcelain"], {
+            cwd: app,
+          }).toString(),
+        ).not.toContain("buildServer.json");
+
+        await promisify(execFile)("xcodebuild", [...build, "-quiet"], {
+          cwd: app,
+          timeout: 300_000,
+        });
+        await vi.waitFor(
+          () => expect(diagnostics.has(`app:${rel}`)).toBe(true),
+          { timeout: 90_000, interval: 300 },
+        );
+        expect(manager.lspStatus("app").servers).toEqual([
+          expect.objectContaining({ state: "ready", source: "toolchain" }),
+        ]);
+        await vi.waitFor(
+          async () => {
+            expect(diagnostics.get(`app:${rel}`)).toEqual([]);
+            const found = await features.lspDefinition("app", rel, {
+              line: 11,
+              character: 32,
+            });
+            expect(found[0]?.relativePath).toBe("App/Helper.swift");
+          },
+          { timeout: 60_000, interval: 1000 },
+        );
+      },
+      600_000,
+    );
   },
 );

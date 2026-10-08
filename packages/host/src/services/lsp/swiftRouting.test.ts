@@ -24,6 +24,7 @@ const { capture } = await import("../telemetry/telemetry");
 const servers = await import("./servers");
 const manager = await import("./manager");
 const documents = await import("./documents");
+const { setXcodeBuildServerForTest } = await import("./swift/buildServer");
 
 const FAKE = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -56,11 +57,13 @@ describe("swift routing", () => {
     resolver.mockClear();
     vi.mocked(capture).mockClear();
     servers.setServerResolverForTest(resolver);
+    setXcodeBuildServerForTest(null);
   });
 
   afterEach(() => {
     manager.stopLanguageServers();
     servers.setServerResolverForTest(null);
+    setXcodeBuildServerForTest(undefined);
     appState.sessions.clear();
     fs.rmSync(root, { recursive: true, force: true });
   });
@@ -94,10 +97,14 @@ describe("swift routing", () => {
     await open("App/AppDelegate.swift");
     await vi.waitFor(() =>
       expect(status()).toEqual([
-        expect.objectContaining({ language: "swift", state: "needs_setup" }),
+        expect.objectContaining({
+          language: "swift",
+          state: "needs_setup",
+          action: "install_build_server",
+        }),
       ]),
     );
-    expect(status()[0].message).toMatch(/build server/);
+    expect(status()[0].message).toMatch(/brew install xcode-build-server/);
     expect(resolver).not.toHaveBeenCalled();
     expect(manager.allHandles().every((h) => !h.proc)).toBe(true);
     expect(capture).toHaveBeenCalledWith("lsp_setup_needed", {
@@ -136,5 +143,62 @@ describe("swift routing", () => {
         { language: "swift", state: "ready", source: "toolchain" },
       ]),
     );
+  });
+
+  it.skipIf(process.platform !== "darwin")(
+    "waits for a first build, then starts through the build server",
+    async () => {
+      const buildRoot = path.join(root, "dd");
+      fs.mkdirSync(path.join(root, "App.xcodeproj"));
+      write(
+        "buildServer.json",
+        JSON.stringify({ kind: "xcode", scheme: "App", build_root: buildRoot }),
+      );
+      await open("App/AppDelegate.swift");
+      await vi.waitFor(() =>
+        expect(status()).toEqual([
+          expect.objectContaining({
+            state: "needs_setup",
+            action: "build_once",
+          }),
+        ]),
+      );
+      expect(status()[0].message).toContain("“App”");
+      expect(resolver).not.toHaveBeenCalled();
+      write(
+        "dd/Logs/Build/LogStoreManifest.plist",
+        `<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict><key>logs</key><dict><key>L</key><dict>
+<key>fileName</key><string>L.xcactivitylog</string>
+<key>schemeIdentifier-schemeName</key><string>App</string>
+</dict></dict></dict></plist>`,
+      );
+      await vi.waitFor(
+        () =>
+          expect(status()).toEqual([
+            expect.objectContaining({ state: "ready", source: "toolchain" }),
+          ]),
+        { timeout: 10_000, interval: 200 },
+      );
+      expect(status()[0].message).toContain("xcode-build-server");
+      expect(capture).toHaveBeenCalledWith(
+        "lsp_server_started",
+        expect.objectContaining({ project: "xcode", success: true }),
+      );
+    },
+    15_000,
+  );
+
+  it("hands an app's packages to the project once a build server is set up", async () => {
+    fs.mkdirSync(path.join(root, "App.xcodeproj"));
+    write("Packages/Core/Package.swift");
+    write("buildServer.json", JSON.stringify({ kind: "manual" }));
+    await open("Packages/Core/Sources/Core/a.swift");
+    await vi.waitFor(() =>
+      expect(status()).toEqual([
+        expect.objectContaining({ state: "ready", source: "toolchain" }),
+      ]),
+    );
+    expect(manager.allHandles()[0].root).toBe(root);
   });
 });
