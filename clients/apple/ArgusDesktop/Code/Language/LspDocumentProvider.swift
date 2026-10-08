@@ -72,6 +72,12 @@ final class LspDocumentProvider: EditorLanguageProvider {
     return true
   }
 
+  func rename(at position: EditorPosition, to name: String) async -> ArgusProtocol.LspWorkspaceEdit? {
+    let params = ArgusProtocol.CommandsTypes.LspRenameParams(
+      id: sessionId, relativePath: path, position: LspConvert.position(position), newName: name)
+    return await current(ArgusProtocol.Commands.LspRename.self, params)
+  }
+
   /// Sends `command` once the host has every edit so far; nil when it failed or the text moved on.
   private func current<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async -> C.Result? {
     // The position is in the text as of now.
