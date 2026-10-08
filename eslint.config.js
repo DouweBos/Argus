@@ -184,6 +184,8 @@ export default tseslint.config(
       "release",
       "release-server",
       "vendor",
+      // The Mac app run command's derived data.
+      ".build",
       "**/storybook-static/**",
       "packages/peacock/vite.config.ts",
       "packages/peacock/.storybook/**",
