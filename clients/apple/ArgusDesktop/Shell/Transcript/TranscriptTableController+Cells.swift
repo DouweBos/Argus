@@ -30,9 +30,11 @@ extension TranscriptTableController {
       row(index), id: id, agentKey: agentKey, model: model, selection: selection, environment: environment,
       onHeight: { [weak self] height in self?.rowLaidOut(id, revision: revision, height: height) })
     cell.show(root, id: id, revision: revision, environmentKey: environmentKey)
-    if case .segment(.single(let message)) = row(index), !TranscriptModel.textBlocks(message).isEmpty {
-      cell.hover = (message, model, environment)
+    if case .segment(.single(let message)) = row(index) {
+      cell.tip = TranscriptMessageRow.timestamp(message)
+      cell.hover = TranscriptModel.textBlocks(message).isEmpty ? nil : (message, model, environment)
     } else {
+      cell.tip = nil
       cell.hover = nil
     }
   }
@@ -40,11 +42,9 @@ extension TranscriptTableController {
   func configure(_ cell: TranscriptTextCell, _ index: Int, message: RemoteMessage, text: TranscriptRendered) {
     let id = id(index)
     if cell.rowId != id || cell.revision != revision(id) || cell.environmentKey != environmentKey {
-      let tip = message.timestamp.map {
-        Date(timeIntervalSince1970: $0 / 1000).formatted(date: .abbreviated, time: .shortened)
-      }
       cell.show(
-        text, unit: message.id, id: id, revision: revision(id), environmentKey: environmentKey, tip: tip ?? "")
+        text, unit: message.id, id: id, revision: revision(id), environmentKey: environmentKey,
+        tip: TranscriptMessageRow.timestamp(message))
     }
     if cell.text.links !== environment.transcriptLinks { cell.text.links = environment.transcriptLinks }
     if cell.text.selection !== selection { cell.text.selection = selection }

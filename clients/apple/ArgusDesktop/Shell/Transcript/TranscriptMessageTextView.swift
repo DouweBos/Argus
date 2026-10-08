@@ -17,7 +17,7 @@ final class TranscriptMessageTextView: NSView {
 
   private(set) var rendered: TranscriptRendered?
   private var unit: String?
-  private var proseViews: [TranscriptNSTextView] = []
+  private var proseViews: [TranscriptProseView] = []
   private var codeViews: [TranscriptCodeBlockView] = []
   /// The part views in order, prose or code.
   private var partViews: [NSView] = []
@@ -28,7 +28,7 @@ final class TranscriptMessageTextView: NSView {
 
   /// Every text view, in reading order.
   var textViews: [TranscriptNSTextView] {
-    partViews.compactMap { ($0 as? TranscriptNSTextView) ?? ($0 as? TranscriptCodeBlockView)?.text }
+    partViews.compactMap { ($0 as? TranscriptProseView)?.text ?? ($0 as? TranscriptCodeBlockView)?.text }
   }
 
   func setContent(_ rendered: TranscriptRendered, unit: String?) {
@@ -52,9 +52,9 @@ final class TranscriptMessageTextView: NSView {
       switch part {
       case .prose(let text):
         if prose == proseViews.count {
-          let view = TranscriptNSTextView.make()
-          view.links = links
-          view.selection = selection
+          let view = TranscriptProseView()
+          view.text.links = links
+          view.text.selection = selection
           proseViews.append(view)
         }
         proseViews[prose].setContent(text)
@@ -142,6 +142,41 @@ final class TranscriptMessageTextView: NSView {
 
   func reveal(_ range: NSRange) {
     for view in textViews where view.reveal(range) { return }
+  }
+}
+
+/// A prose run's text view in a scroll view of its own that never scrolls. A
+/// TextKit 2 view re-lays out its viewport whenever its enclosing scroll view
+/// moves; inside the transcript's, that was every text on screen, every frame.
+final class TranscriptProseView: NSScrollView {
+  let text = TranscriptNSTextView.make()
+
+  init() {
+    super.init(frame: .zero)
+    drawsBackground = false
+    hasVerticalScroller = false
+    hasHorizontalScroller = false
+    verticalScrollElasticity = .none
+    horizontalScrollElasticity = .none
+    text.autoresizingMask = [.width]
+    documentView = text
+  }
+
+  @available(*, unavailable)
+  required init?(coder: NSCoder) { fatalError() }
+
+  func setContent(_ content: NSAttributedString) {
+    text.setContent(content)
+  }
+
+  /// Nothing to scroll here: the wheel belongs to the transcript.
+  override func scrollWheel(with event: NSEvent) {
+    nextResponder?.scrollWheel(with: event)
+  }
+
+  override func layout() {
+    super.layout()
+    if text.frame.size != bounds.size { text.frame = NSRect(origin: .zero, size: bounds.size) }
   }
 }
 

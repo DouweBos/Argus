@@ -174,7 +174,7 @@ final class TranscriptTextCell: TranscriptHoverCell {
     rowId = id
     self.revision = revision
     self.environmentKey = environmentKey
-    toolTip = tip.isEmpty ? nil : tip
+    self.tip = tip.isEmpty ? nil : tip
     text.setContent(content, unit: unit)
     needsLayout = true
   }
@@ -209,6 +209,11 @@ class TranscriptHoverCell: NSTableCellView {
     didSet { if hover == nil { hoverBar.hide() } }
   }
   private(set) lazy var hoverBar = TranscriptHoverBarHost(cell: self)
+  /// Shown as the tooltip while the pointer is on the row only: AppKit
+  /// re-evaluates every view's tooltip on each scrolled frame.
+  var tip: String? {
+    didSet { if toolTip != nil { toolTip = tip } }
+  }
 
   override init(frame: NSRect) {
     super.init(frame: frame)
@@ -222,12 +227,19 @@ class TranscriptHoverCell: NSTableCellView {
 
   override var isFlipped: Bool { true }
 
-  override func mouseEntered(with event: NSEvent) { showHoverBar() }
+  override func mouseEntered(with event: NSEvent) {
+    toolTip = tip
+    showHoverBar()
+  }
   override func mouseMoved(with event: NSEvent) { showHoverBar() }
-  override func mouseExited(with event: NSEvent) { hoverBar.hide() }
+  override func mouseExited(with event: NSEvent) {
+    toolTip = nil
+    hoverBar.hide()
+  }
 
   override func prepareForReuse() {
     super.prepareForReuse()
+    toolTip = nil
     hoverBar.hide()
   }
 
