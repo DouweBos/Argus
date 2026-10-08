@@ -185,7 +185,10 @@
       let new = source(lines: rng.next(5...40), &rng)
       return Call(
         id: "c-\(turn)-edit", name: "Edit",
-        input: ["file_path": "/tmp/argus/Sources/Module\(turn % 23)/View.swift", "old_string": old, "new_string": new],
+        input: [
+          "file_path": turn % 2 == 0 ? "/Users/someone/Work/Projects/Argus/.gitignore" : "/tmp/argus/Sources/Module\(turn % 23)/View.swift",
+          "old_string": old, "new_string": new,
+        ],
         output: "The file has been updated.")
     }
 
@@ -230,8 +233,29 @@
             + (0..<rng.next(3...10)).map { "| File\($0).swift | \(sentence(&rng, words: 4)) | \($0 * 13) |" }
             .joined(separator: "\n"))
       }
+      if !short {
+        parts.append("To reclaim the space, run:\n\n```sh\nrm -rf ~/Work/Projects/Argus/clients/argus-\(turn)\n```")
+        parts.append(fence(turn))
+      }
       parts.append("The needle for step \(turn) is fixed.")
       return parts.joined(separator: "\n\n")
+    }
+
+    /// Fences in the languages chats show most, one unknown, one bare, and
+    /// lines too long to wrap.
+    private static func fence(_ turn: Int) -> String {
+      switch turn % 5 {
+      case 0:
+        return "```json\n{\n  \"name\": \"argus\",\n  \"version\": \(turn),\n  \"private\": true,\n  \"scripts\": { \"build\": \"tsc --noEmit && vite build --mode production --config vite.config.ts --emptyOutDir\" }\n}\n```"
+      case 1:
+        return "```ts\n// step \(turn)\nexport async function load(id: string): Promise<number> {\n  const value = await fetch(`/api/items/${id}?include=children,parents,siblings,cousins,ancestors,descendants`);\n  return value.status === 200 ? 1 : 0;\n}\n```"
+      case 2:
+        return "```diff\n- let old = \(turn)\n+ let new = \(turn + 1)\n```"
+      case 3:
+        return "```brainfuck\n++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.\n```"
+      default:
+        return "```\nplain fenced output \(turn) with no language at all, and a line long enough that it should scroll sideways rather than wrap\n```"
+      }
     }
 
     // MARK: Images
