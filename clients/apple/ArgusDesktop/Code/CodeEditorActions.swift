@@ -9,6 +9,8 @@ import Foundation
 final class CodeEditorActions: EditorActions {
   private weak var session: CodeSession?
   private let path: String
+  /// Commands already counted for this buffer: once each, so held keys don't flood telemetry.
+  private var reported: Set<EditorCommand> = []
 
   init(session: CodeSession, path: String) {
     self.session = session
@@ -53,6 +55,11 @@ final class CodeEditorActions: EditorActions {
   func completionAccepted() {
     let language = session?.files[path]?.language
     MacTelemetry.capture(.editorCompletionAccepted(language: MacTelemetryEvent.languageName(language)))
+  }
+
+  func commandPerformed(_ command: EditorCommand) {
+    guard reported.insert(command).inserted else { return }
+    MacTelemetry.capture(.editorCommand(command: command.telemetryName))
   }
 
   // MARK: Chat

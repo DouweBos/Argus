@@ -9,7 +9,7 @@ import AppKit
 import Carbon.HIToolbox
 
 extension TextView {
-    override public func keyDown(with event: NSEvent) {
+    override open func keyDown(with event: NSEvent) {
         guard isEditable else {
             super.keyDown(with: event)
             return

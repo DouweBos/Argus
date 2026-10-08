@@ -17,17 +17,65 @@ import AppKit
     if completion.isVisible, completion.handle(selector) { return true }
     switch selector {
     case #selector(NSResponder.insertTab(_:)):
+      if spansSeveralLines(textView) {
+        document.perform(.indentLines)
+        return true
+      }
       return insertIndent(textView)
+    case #selector(NSResponder.insertBacktab(_:)):
+      document.perform(.outdentLines)
+      return true
     case #selector(NSResponder.insertNewline(_:)):
       return insertNewlineWithIndent(textView)
     case #selector(NSResponder.cancelOperation(_:)):
-      if document.find.isVisible {
-        document.find.hide()
-        return true
-      }
-      return false
+      return cancel(textView)
     default:
       return false
+    }
+  }
+
+  /// Editor keys, VS Code's first, then the host's. Called from the key equivalent pass (⌘, ⌃,
+  /// arrows, F-keys) and from `keyDown` (⌥ letters); whichever sees the key first wins.
+  func handleKey(_ event: NSEvent) -> Bool {
+    let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+    let isFunctionKey = (event.charactersIgnoringModifiers?.unicodeScalars.first?.value ?? 0) >= 0xF700
+    guard !flags.subtracting(.shift).isEmpty || isFunctionKey else { return false }
+    if let command = EditorCommand.matching(event) {
+      document.perform(command)
+      return true
+    }
+    if let action = document.hostShortcuts.first(where: { $0.key.matches(event) })?.value { return action() }
+    switch (flags, EditorShortcut.baseKey(of: event)) {
+    case ([.command, .option], "l"): document.sendSelectionToAgent()
+    case ([.command], "f"): document.showFind(replace: false)
+    case ([.command, .option], "f"): document.showFind(replace: true)
+    case ([.command], "g"): document.findNext()
+    case ([.command, .shift], "g"): document.findPrevious()
+    default: return false
+    }
+    return true
+  }
+
+  func textView(_ textView: ArgusTextView, keyDown event: NSEvent) -> Bool {
+    handleKey(event)
+  }
+
+  /// Esc: closes the find bar, else drops every caret but the first.
+  private func cancel(_ textView: ArgusTextView) -> Bool {
+    if document.find.isVisible {
+      document.find.hide()
+      return true
+    }
+    let selections = textView.selectionManager.textSelections
+    guard selections.count > 1, let first = selections.first?.range else { return false }
+    textView.selectionManager.setSelectedRange(first)
+    return true
+  }
+
+  private func spansSeveralLines(_ textView: ArgusTextView) -> Bool {
+    let lines = document.lineIndex
+    return textView.selectionManager.textSelections.contains { selection in
+      lines.line(containing: selection.range.location) != lines.line(containing: NSMaxRange(selection.range))
     }
   }
 
@@ -74,18 +122,29 @@ import AppKit
       item.isEnabled = enabled
     }
     menu.addItem(.separator())
-    let send = MenuAction.item("Send Selection to Agent", key: "l", modifiers: [.command, .shift]) { [weak self] in
+    for command in [EditorCommand.toggleLineComment, .selectAllOccurrences] {
+      let item = commandItem(command)
+      item.isEnabled = command != .toggleLineComment || textView.isEditable
+      menu.addItem(item)
+    }
+    menu.addItem(.separator())
+    let definition = commandItem(.goToDefinition)
+    definition.isEnabled = document.languageProvider != nil
+    menu.addItem(definition)
+    menu.addItem(.separator())
+    let send = MenuAction.item("Send Selection to Agent", key: "l", modifiers: [.command, .option]) { [weak self] in
       self?.document.sendSelectionToAgent()
     }
     send.isEnabled = document.selectedText != nil && document.actions != nil
     menu.addItem(send)
-    let definition = MenuAction.item("Go to Definition", key: "j", modifiers: [.command, .control]) { [weak self] in
-      self?.document.goToDefinition()
-    }
-    definition.isEnabled = document.languageProvider != nil
-    menu.addItem(definition)
     menu.autoenablesItems = false
     return menu
+  }
+
+  private func commandItem(_ command: EditorCommand) -> NSMenuItem {
+    MenuAction.item(command.title, key: command.shortcut.menuKey, modifiers: command.shortcut.eventFlags) {
+      [weak self] in self?.document.perform(command)
+    }
   }
 
   // MARK: Pointer
@@ -126,7 +185,13 @@ import AppKit
     return true
   }
 
-  func textViewDidBecomeFirstResponder(_ textView: ArgusTextView) {}
+  func textViewDidBecomeFirstResponder(_ textView: ArgusTextView) {
+    document.hasFocus = true
+  }
+
+  func textViewDidResignFirstResponder(_ textView: ArgusTextView) {
+    document.hasFocus = false
+  }
 
   // MARK: Document events
 

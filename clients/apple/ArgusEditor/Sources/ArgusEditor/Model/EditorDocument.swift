@@ -30,10 +30,19 @@ import Observation
   }
   /// The in-editor find bar's state.
   public let find: FindModel
+  /// The "Go to Line…" field is up.
+  public var isGoToLineVisible = false
+  /// The text view is its window's first responder: editor keys and menu items apply.
+  public internal(set) var hasFocus = false
+  /// Picks the comment tokens.
+  public let language: SyntaxLanguage?
 
   @ObservationIgnored public var onTextChange: ((EditorTextChange) -> Void)?
   @ObservationIgnored public weak var languageProvider: EditorLanguageProvider?
   @ObservationIgnored public weak var actions: EditorActions?
+  /// The app's own keys the editor takes ahead of typing: ⌥ shortcuts (⌥Z, ⇧⌥F) would otherwise
+  /// insert a character before any menu saw them. Return false to let the key through.
+  @ObservationIgnored public var hostShortcuts: [EditorShortcut: () -> Bool] = [:]
 
   @ObservationIgnored let engine: EditorEngine
   @ObservationIgnored var lineIndex: LineIndex
@@ -54,6 +63,7 @@ import Observation
 
   public init(text: String, language: SyntaxLanguage?, configuration: EditorConfiguration) {
     self.configuration = configuration
+    self.language = language
     engine = EditorEngine(text: text, configuration: configuration)
     let storage = engine.textStorage.string as NSString
     lineIndex = LineIndex(storage)
