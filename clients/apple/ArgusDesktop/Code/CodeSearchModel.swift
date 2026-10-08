@@ -71,6 +71,26 @@ final class CodeSearchModel {
     }
   }
 
+  /// Results that came from elsewhere (Find References), shown as if searched for `title`.
+  func show(_ matches: [ArgusProtocol.CodeSearchMatch], title: String) {
+    cancel()
+    query = title
+    isRegex = false
+    error = nil
+    truncated = false
+    results = []
+    index = [:]
+    for match in matches {
+      if let position = index[match.relativePath] {
+        results[position].matches.append(match)
+      } else {
+        index[match.relativePath] = results.count
+        results.append(FileResult(path: match.relativePath, matches: [match]))
+      }
+    }
+    matchCount = matches.count
+  }
+
   /// Stops the running search, if any.
   func cancel() {
     guard let id = searchId else { return }
