@@ -10,7 +10,7 @@ enum TranscriptStress {
   #if DEBUG
     static let count = ProcessInfo.processInfo.environment["ARGUS_TRANSCRIPT_STRESS"].flatMap(Int.init)
     nonisolated(unsafe) static var createdAt: CFTimeInterval = 0
-    static let fixture: [RemoteMessage]? = count.map(makeMessages)
+    nonisolated(unsafe) static var fixture: [RemoteMessage]? = count.map(makeMessages)
   #else
     static let fixture: [RemoteMessage]? = nil
   #endif

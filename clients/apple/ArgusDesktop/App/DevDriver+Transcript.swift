@@ -206,7 +206,7 @@
           "footprint_mb": Memory.footprintMB(),
         ]
       default:
-        return nil
+        return TranscriptInputDriver.run(command, window: window)
       }
     }
 
@@ -220,9 +220,9 @@
     private static var meter: HangMeter?
 
 
-    private static var prepared: [Int: ([RemoteMessage], [String: String])] = [:]
+    static var prepared: [Int: ([RemoteMessage], [String: String])] = [:]
 
-    private static func prepare(_ count: Int) -> ([RemoteMessage], [String: String]) {
+    static func prepare(_ count: Int) -> ([RemoteMessage], [String: String]) {
       let fixture = TranscriptFixture.messages(count: count)
       let messages = TranscriptFixture.remote(fixture)
       var images: [String: String] = [:]
@@ -240,7 +240,7 @@
       return (messages, images)
     }
 
-    private static func write(_ report: [String: Any], to path: String) {
+    static func write(_ report: [String: Any], to path: String) {
       if let data = try? JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]) {
         try? data.write(to: URL(fileURLWithPath: path))
       }
@@ -470,6 +470,7 @@
       let screenHeight = NSScreen.screens.first?.frame.height ?? 0
       cg.location = CGPoint(x: center.x, y: screenHeight - center.y)
       guard let event = NSEvent(cgEvent: cg) else { return }
+      if !lines { TranscriptInputDriver.sentDelta += Double(Int32(delta.rounded())) }
       // What the transcript's event monitor does with real input, which a
       // window-addressed event never passes through.
       if (scrollView as? TranscriptScrollView)?.takeWheel(event) == true { return }

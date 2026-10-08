@@ -44,7 +44,7 @@ final class TranscriptLinkHandler {
       openFile(ref)
     } else {
       MacTelemetry.capture(.transcriptLinkOpened(action: .openUrl, relative: false))
-      NSWorkspace.shared.open(url)
+      TranscriptSystem.open(url)
     }
   }
 
@@ -62,7 +62,7 @@ final class TranscriptLinkHandler {
         item("Open Link") { [weak self] in self?.open(url) },
         item("Copy Link") {
           MacTelemetry.capture(.transcriptLinkOpened(action: .copyLink, relative: false))
-          Clipboard.copy(url.absoluteString)
+          TranscriptSystem.copy(url.absoluteString)
         },
       ]
     }
@@ -109,7 +109,7 @@ final class TranscriptLinkHandler {
 
   func copyPath(_ ref: FileLinks.FileRef) {
     capture(.copyPath, ref)
-    Clipboard.copy(resolve(ref) ?? ref.path)
+    TranscriptSystem.copy(resolve(ref) ?? ref.path)
   }
 
   // MARK: Internals
@@ -129,6 +129,7 @@ final class TranscriptLinkHandler {
 
   private func send<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) {
     guard let store, let backend = store.backend else { return }
+    if TranscriptSystem.stubbed("\(C.self) \(params)") { return }
     Task {
       do {
         try await backend.request(command, params)
