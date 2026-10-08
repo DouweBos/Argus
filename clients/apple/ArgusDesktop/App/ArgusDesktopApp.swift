@@ -39,6 +39,9 @@ struct ArgusDesktopApp: App {
       CommandGroup(after: .sidebar) {
         NavigationCommands(model: delegate.model)
       }
+      CommandMenu("Editor") {
+        CodeCommands(model: delegate.model)
+      }
     }
 
     Settings {

@@ -40,8 +40,14 @@ final class CodeEditorActions: EditorActions {
     Task { await session.revertHunk(mark, in: path) }
   }
 
+  /// Go to definition. A location in another project comes back absolute: it opens in its default app.
   func open(_ location: EditorLocation) {
-    session?.navigate(to: location.relativePath, line: location.range.start.line + 1, source: .diagnostic)
+    guard let session else { return }
+    if location.relativePath.hasPrefix("/") {
+      Task { await session.openAbsolute(location.relativePath) }
+    } else {
+      session.navigate(to: location.relativePath, line: location.range.start.line + 1, source: .definition)
+    }
   }
 
   func completionAccepted() {

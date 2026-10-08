@@ -24,6 +24,8 @@ import Observation
   private var debounceTask: Task<Void, Never>?
   private var resolveTask: Task<Void, Never>?
   private var generation = 0
+  /// Items the provider has resolved, by id: their documentation and any auto-import edits.
+  private var resolved: [String: EditorCompletionItem] = [:]
   private lazy var panel = CompletionPanel(model: model)
   private(set) var isVisible = false
 
@@ -82,6 +84,7 @@ import Observation
       let items = await provider.completions(at: position, trigger: trigger)
       guard let self, !Task.isCancelled, requested == generation else { return }
       allItems = items
+      resolved = [:]
       if items.isEmpty {
         if explicit { NSSound.beep() }
         dismiss()
@@ -154,22 +157,55 @@ import Observation
     resolveTask = Task { [weak self] in
       try? await Task.sleep(for: .milliseconds(80))
       guard !Task.isCancelled else { return }
-      let resolved = await provider.resolve(item)
+      let full = await provider.resolve(item)
       guard let self, !Task.isCancelled else { return }
-      let docs = [resolved.detail, resolved.documentation].compactMap { $0 }.joined(separator: "\n\n")
+      resolved[item.id] = full
+      let docs = [full.detail, full.documentation].compactMap { $0 }.joined(separator: "\n\n")
       model.documentation[item.id] = docs
     }
   }
 
   func accept() {
-    guard let item = model.selectedItem else { return dismiss() }
+    guard let selected = model.selectedItem else { return dismiss() }
+    let item = resolved[selected.id] ?? selected
     let caret = caretOffset
-    let start = item.replaceRange.map { document.offset(of: $0.start) } ?? anchor
+    let start = min(item.replaceRange.map { document.offset(of: $0.start) } ?? anchor, caret)
     let end = max(caret, item.replaceRange.map { document.offset(of: $0.end) } ?? caret)
     let text = item.kind == .snippet ? CompletionFilter.plainText(fromSnippet: item.insertText) : item.insertText
+    let main = NSRange(location: start, length: end - start)
+    let extra = item.additionalEdits.map { (document.nsRange($0.range), $0.text) }.filter {
+      NSMaxRange($0.0) <= main.location || $0.0.location >= NSMaxRange(main)
+    }
     dismiss()
-    document.replace([(NSRange(location: min(start, caret), length: end - min(start, caret)), text)], selectAfter: true)
+    document.replace([(main, text)] + extra, selectAfter: false)
+    setCaret(start + Self.shift(extra.filter { $0.0.location < start }) + (text as NSString).length)
     document.actions?.completionAccepted()
+    if resolved[selected.id] == nil { applyLateEdits(of: selected, before: start) }
+  }
+
+  /// Servers often send auto-imports only on resolve: take the ones above the insertion once it
+  /// arrives, unless the user typed on meanwhile.
+  private func applyLateEdits(of item: EditorCompletionItem, before offset: Int) {
+    guard let provider = document.languageProvider else { return }
+    let version = document.version
+    Task { [weak self] in
+      let full = await provider.resolve(item)
+      guard let self, document.version == version else { return }
+      let edits = full.additionalEdits.map { (document.nsRange($0.range), $0.text) }.filter { NSMaxRange($0.0) <= offset }
+      guard !edits.isEmpty else { return }
+      let caret = caretOffset
+      document.replace(edits, selectAfter: false)
+      setCaret(caret + Self.shift(edits))
+    }
+  }
+
+  private static func shift(_ edits: [(NSRange, String)]) -> Int {
+    edits.reduce(0) { $0 + ($1.1 as NSString).length - $1.0.length }
+  }
+
+  private func setCaret(_ offset: Int) {
+    document.engine.textView.selectionManager.setSelectedRange(
+      NSRange(location: min(max(0, offset), document.storage.length), length: 0))
   }
 
   // MARK: Text helpers
