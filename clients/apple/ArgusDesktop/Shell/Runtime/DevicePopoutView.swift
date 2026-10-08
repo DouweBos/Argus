@@ -27,7 +27,8 @@ struct DevicePopoutView: View {
   var body: some View {
     VStack(spacing: 0) {
       RuntimeDeviceActions(
-        platform: remote, deviceId: target.deviceKey, sessionId: nil, clearsSelection: false)
+        platform: remote, deviceId: target.deviceKey, sessionId: nil, isTv: isTv,
+        clearsSelection: false)
       Divider()
       RuntimeDeviceView(deviceId: target.deviceKey, platform: remote, isTv: isTv)
     }

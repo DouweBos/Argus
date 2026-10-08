@@ -22,6 +22,9 @@ struct RuntimeDeviceView: View {
   @State private var detach: (() -> Void)?
   @State private var watchStart: Date?
   @State private var interacted = false
+  @State private var width: CGFloat = 0
+
+  private static let remoteBesideMinWidth: CGFloat = 640
 
   private static let noVideoTimeout = Duration.seconds(10)
   private static let startAttempts = 6
@@ -43,14 +46,19 @@ struct RuntimeDeviceView: View {
   }
 
   var body: some View {
-    HStack(spacing: 0) {
+    // A TV picture is landscape: in a narrow column the remote goes under it
+    // rather than beside it, or the picture shrinks to a sliver.
+    let remoteBeside = width >= Self.remoteBesideMinWidth
+    (remoteBeside ? AnyLayout(HStackLayout(spacing: 0)) : AnyLayout(VStackLayout(spacing: 0))) {
       stage
       if isTv {
         TVRemoteView(press: sendButton, isAndroid: platform == .android)
-          .frame(width: 240)
+          .frame(width: remoteBeside ? 240 : nil)
+          .frame(maxWidth: remoteBeside ? nil : .infinity)
           .background(theme.bgSecondary)
       }
     }
+    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
     .task(id: SubscribeKey(device: deviceId, host: runtime.hostId, ready: store.connection == .ready)) {
       guard store.connection == .ready else { return }
       await subscribe()
