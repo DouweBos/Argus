@@ -30,8 +30,13 @@ import {
   applyActiveAccountToProcessEnv,
   ensureDefaultAccountSeeded,
 } from "./services/claudeAuth/accounts";
+import { initCodeService, stopCodeService } from "./services/code/lifecycle";
 import { stopAllDebugStreams } from "./services/conductor/debug";
 import { initConductorOverride } from "./services/conductor/override";
+import {
+  initLanguageServers,
+  stopAllLanguageServers,
+} from "./services/lsp/watchedFiles";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { installRemoteStatusBroadcast } from "./services/remote/remoteAdmin";
 import {
@@ -130,6 +135,10 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   initAutomationOutcomes();
   startAutomationScheduler();
 
+  // The code editor's watches, searches and language servers end with their session.
+  initCodeService();
+  initLanguageServers();
+
   // node-pty spawn-helpers and claude subprocesses from prior runs that never
   // got to clean up reparent to launchd and pile up across restarts.
   reapOrphanedSpawnHelpers().catch((err) => {
@@ -200,6 +209,8 @@ export function stopHostServices(): void {
   stopMjpegServer();
   stopAllScreencasts();
   stopAllDebugStreams();
+  stopCodeService();
+  stopAllLanguageServers();
   stopPowerAssertion();
   webBrowserPool.releaseAll().catch((err) => {
     log.error("webBrowserPool.releaseAll failed:", err);
@@ -238,6 +249,11 @@ export function syncHostCleanup(): void {
   try {
     // Kill the tunnel child too, else cloudflared/tailscale orphans.
     stopRemote();
+  } catch {
+    // Best-effort; we're on the way out.
+  }
+  try {
+    stopAllLanguageServers();
   } catch {
     // Best-effort; we're on the way out.
   }

@@ -71,6 +71,12 @@
           "file": "app-settings.md",
           "title": "App settings",
           "summary": "Per-developer machine-local preferences. Theme, agent defaults, remote access, telemetry level, and other personal toggles."
+        },
+        {
+          "slug": "language-servers",
+          "file": "language-servers.md",
+          "title": "Language servers",
+          "summary": "Which languages the code editor understands, which servers ship with Argus, and how to install the ones that don't."
         }
       ]
     },

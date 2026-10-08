@@ -7,12 +7,14 @@
 import { registerAgentCommands } from "./agents";
 import { registerAutomationCommands } from "./automations";
 import { registerBrowserCommands } from "./browser";
+import { registerCodeCommands } from "./code";
 import { registerDeviceCommands } from "./devices";
 import { registerFileCommands } from "./files";
 import { registerGitCommands } from "./git";
 import { registerGitRunnerCommands } from "./gitRunner";
 import { registerGithubCommands } from "./github";
 import { registerLlmCommands } from "./llm";
+import { registerLspCommands } from "./lsp";
 import { registerMcpCommands } from "./mcp";
 import { registerOnboardingCommands } from "./onboarding";
 import { registerRemoteCommands } from "./remote";
@@ -22,6 +24,8 @@ import { registerTerminalCommands } from "./terminals";
 
 export function registerHostCommands(): void {
   registerFileCommands();
+  registerCodeCommands();
+  registerLspCommands();
   registerGitCommands();
   registerSessionCommands();
   registerAgentCommands();

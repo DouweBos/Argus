@@ -2589,6 +2589,314 @@ extension ArgusProtocol {
     }
   }
 
+  public struct CodeFileEol: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let crlf = CodeFileEol(rawValue: "crlf")
+    public static let lf = CodeFileEol(rawValue: "lf")
+  }
+
+  public struct CodeFile: Codable, Sendable {
+    public var content: String
+    public var hash: String
+    public var mtimeMs: Double
+    public var size: Int
+    public var eol: CodeFileEol
+    public var readOnlyReason: CodeReadOnlyReason?
+
+    enum CodingKeys: String, CodingKey {
+      case content = "content"
+      case hash = "hash"
+      case mtimeMs = "mtimeMs"
+      case size = "size"
+      case eol = "eol"
+      case readOnlyReason = "readOnlyReason"
+    }
+
+    public init(content: String, hash: String, mtimeMs: Double, size: Int, eol: CodeFileEol, readOnlyReason: CodeReadOnlyReason? = nil) {
+      self.content = content
+      self.hash = hash
+      self.mtimeMs = mtimeMs
+      self.size = size
+      self.eol = eol
+      self.readOnlyReason = readOnlyReason
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(content, forKey: .content)
+      try c.encode(hash, forKey: .hash)
+      try c.encode(mtimeMs, forKey: .mtimeMs)
+      try c.encode(size, forKey: .size)
+      try c.encode(eol, forKey: .eol)
+      try c.encodeIfPresent(readOnlyReason, forKey: .readOnlyReason)
+    }
+  }
+
+  public struct CodeFileChanged: Codable, Sendable {
+    public var relativePath: String
+    public var hash: String?
+    public var mtimeMs: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case relativePath = "relativePath"
+      case hash = "hash"
+      case mtimeMs = "mtimeMs"
+    }
+
+    public init(relativePath: String, hash: String? = nil, mtimeMs: Double? = nil) {
+      self.relativePath = relativePath
+      self.hash = hash
+      self.mtimeMs = mtimeMs
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(relativePath, forKey: .relativePath)
+      try c.encode(hash, forKey: .hash)
+      try c.encode(mtimeMs, forKey: .mtimeMs)
+    }
+  }
+
+  public struct CodeReadOnlyReason: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let binary = CodeReadOnlyReason(rawValue: "binary")
+    public static let encoding = CodeReadOnlyReason(rawValue: "encoding")
+    public static let tooLarge = CodeReadOnlyReason(rawValue: "too_large")
+  }
+
+  public struct CodeSearchEventMatches: Codable, Sendable {
+    public var kind: String
+    public var searchId: String
+    public var matches: [CodeSearchMatch]
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case searchId = "searchId"
+      case matches = "matches"
+    }
+
+    public init(kind: String, searchId: String, matches: [CodeSearchMatch]) {
+      self.kind = kind
+      self.searchId = searchId
+      self.matches = matches
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(searchId, forKey: .searchId)
+      try c.encode(matches, forKey: .matches)
+    }
+  }
+
+  public struct CodeSearchEventDone: Codable, Sendable {
+    public var kind: String
+    public var searchId: String
+    public var count: Int
+    public var truncated: Bool
+    public var cancelled: Bool
+    public var error: String?
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case searchId = "searchId"
+      case count = "count"
+      case truncated = "truncated"
+      case cancelled = "cancelled"
+      case error = "error"
+    }
+
+    public init(kind: String, searchId: String, count: Int, truncated: Bool, cancelled: Bool, error: String? = nil) {
+      self.kind = kind
+      self.searchId = searchId
+      self.count = count
+      self.truncated = truncated
+      self.cancelled = cancelled
+      self.error = error
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(searchId, forKey: .searchId)
+      try c.encode(count, forKey: .count)
+      try c.encode(truncated, forKey: .truncated)
+      try c.encode(cancelled, forKey: .cancelled)
+      try c.encodeIfPresent(error, forKey: .error)
+    }
+  }
+
+  public enum CodeSearchEvent: Codable, Sendable {
+    case matches(CodeSearchEventMatches)
+    case done(CodeSearchEventDone)
+    case unknown(JSONValue)
+
+    private enum Tag: String, CodingKey { case tag = "kind" }
+
+    public init(from decoder: Decoder) throws {
+      let tag = try decoder.container(keyedBy: Tag.self).decodeIfPresent(String.self, forKey: .tag)
+      switch tag {
+      case "matches": self = .matches(try CodeSearchEventMatches(from: decoder))
+      case "done": self = .done(try CodeSearchEventDone(from: decoder))
+      default: self = .unknown(try JSONValue(from: decoder))
+      }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      switch self {
+      case .matches(let value): try value.encode(to: encoder)
+      case .done(let value): try value.encode(to: encoder)
+      case .unknown(let value): try value.encode(to: encoder)
+      }
+    }
+  }
+
+  public struct CodeSearchMatch: Codable, Sendable {
+    public var relativePath: String
+    public var line: Int
+    public var column: Int
+    public var length: Int
+    public var preview: String
+    public var previewOffset: Int
+
+    enum CodingKeys: String, CodingKey {
+      case relativePath = "relativePath"
+      case line = "line"
+      case column = "column"
+      case length = "length"
+      case preview = "preview"
+      case previewOffset = "previewOffset"
+    }
+
+    public init(relativePath: String, line: Int, column: Int, length: Int, preview: String, previewOffset: Int) {
+      self.relativePath = relativePath
+      self.line = line
+      self.column = column
+      self.length = length
+      self.preview = preview
+      self.previewOffset = previewOffset
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(relativePath, forKey: .relativePath)
+      try c.encode(line, forKey: .line)
+      try c.encode(column, forKey: .column)
+      try c.encode(length, forKey: .length)
+      try c.encode(preview, forKey: .preview)
+      try c.encode(previewOffset, forKey: .previewOffset)
+    }
+  }
+
+  public struct CodeSearchQuery: Codable, Sendable {
+    public var query: String
+    public var regex: Bool
+    public var caseSensitive: Bool
+    public var wholeWord: Bool
+    public var include: [String]?
+    public var exclude: [String]?
+    public var maxResults: Int?
+
+    enum CodingKeys: String, CodingKey {
+      case query = "query"
+      case regex = "regex"
+      case caseSensitive = "caseSensitive"
+      case wholeWord = "wholeWord"
+      case include = "include"
+      case exclude = "exclude"
+      case maxResults = "maxResults"
+    }
+
+    public init(query: String, regex: Bool, caseSensitive: Bool, wholeWord: Bool, include: [String]? = nil, exclude: [String]? = nil, maxResults: Int? = nil) {
+      self.query = query
+      self.regex = regex
+      self.caseSensitive = caseSensitive
+      self.wholeWord = wholeWord
+      self.include = include
+      self.exclude = exclude
+      self.maxResults = maxResults
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(query, forKey: .query)
+      try c.encode(regex, forKey: .regex)
+      try c.encode(caseSensitive, forKey: .caseSensitive)
+      try c.encode(wholeWord, forKey: .wholeWord)
+      try c.encodeIfPresent(include, forKey: .include)
+      try c.encodeIfPresent(exclude, forKey: .exclude)
+      try c.encodeIfPresent(maxResults, forKey: .maxResults)
+    }
+  }
+
+  public struct CodeWriteConflict: Codable, Sendable {
+    public var hash: String?
+    public var mtimeMs: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case hash = "hash"
+      case mtimeMs = "mtimeMs"
+    }
+
+    public init(hash: String? = nil, mtimeMs: Double? = nil) {
+      self.hash = hash
+      self.mtimeMs = mtimeMs
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(hash, forKey: .hash)
+      try c.encode(mtimeMs, forKey: .mtimeMs)
+    }
+  }
+
+  public struct CodeWriteResult: Codable, Sendable {
+    public var ok: Bool
+    public var hash: String?
+    public var mtimeMs: Double?
+    public var conflict: CodeWriteConflict?
+
+    enum CodingKeys: String, CodingKey {
+      case ok = "ok"
+      case hash = "hash"
+      case mtimeMs = "mtimeMs"
+      case conflict = "conflict"
+    }
+
+    public init(ok: Bool, hash: String? = nil, mtimeMs: Double? = nil, conflict: CodeWriteConflict? = nil) {
+      self.ok = ok
+      self.hash = hash
+      self.mtimeMs = mtimeMs
+      self.conflict = conflict
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(ok, forKey: .ok)
+      try c.encodeIfPresent(hash, forKey: .hash)
+      try c.encodeIfPresent(mtimeMs, forKey: .mtimeMs)
+      try c.encodeIfPresent(conflict, forKey: .conflict)
+    }
+  }
+
   public struct ConductorLogEntry: Codable, Sendable {
     public var args: String
     public var command: String
@@ -4094,6 +4402,7 @@ extension ArgusProtocol {
     public static let hostEndpoints = EventEnvelopeEvent(rawValue: "host.endpoints")
     public static let terminalData = EventEnvelopeEvent(rawValue: "terminal.data")
     public static let terminalExit = EventEnvelopeEvent(rawValue: "terminal.exit")
+    public static let filesSearch = EventEnvelopeEvent(rawValue: "files.search")
     public static let huddleState = EventEnvelopeEvent(rawValue: "huddle.state")
     public static let huddleChat = EventEnvelopeEvent(rawValue: "huddle.chat")
     public static let ipc = EventEnvelopeEvent(rawValue: "ipc")
@@ -6109,6 +6418,597 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(commits, forKey: .commits)
       try c.encode(nextCursor, forKey: .nextCursor)
+    }
+  }
+
+  public struct LspCodeAction: Codable, Sendable {
+    public var actionId: String
+    public var title: String
+    public var kind: String?
+    public var isPreferred: Bool?
+    public var diagnostics: [String]?
+    public var disabledReason: String?
+
+    enum CodingKeys: String, CodingKey {
+      case actionId = "actionId"
+      case title = "title"
+      case kind = "kind"
+      case isPreferred = "isPreferred"
+      case diagnostics = "diagnostics"
+      case disabledReason = "disabledReason"
+    }
+
+    public init(actionId: String, title: String, kind: String? = nil, isPreferred: Bool? = nil, diagnostics: [String]? = nil, disabledReason: String? = nil) {
+      self.actionId = actionId
+      self.title = title
+      self.kind = kind
+      self.isPreferred = isPreferred
+      self.diagnostics = diagnostics
+      self.disabledReason = disabledReason
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(actionId, forKey: .actionId)
+      try c.encode(title, forKey: .title)
+      try c.encodeIfPresent(kind, forKey: .kind)
+      try c.encodeIfPresent(isPreferred, forKey: .isPreferred)
+      try c.encodeIfPresent(diagnostics, forKey: .diagnostics)
+      try c.encodeIfPresent(disabledReason, forKey: .disabledReason)
+    }
+  }
+
+  public struct LspCompletionItemInsertTextFormat: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let plain = LspCompletionItemInsertTextFormat(rawValue: "plain")
+    public static let snippet = LspCompletionItemInsertTextFormat(rawValue: "snippet")
+  }
+
+  public struct LspCompletionItem: Codable, Sendable {
+    public var resolveId: String
+    public var label: String
+    public var kind: LspCompletionKind?
+    public var detail: String?
+    public var documentation: String?
+    public var insertText: String?
+    public var insertTextFormat: LspCompletionItemInsertTextFormat?
+    public var textEdit: LspTextEdit?
+    public var additionalTextEdits: [LspTextEdit]?
+    public var sortText: String?
+    public var filterText: String?
+    public var preselect: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case resolveId = "resolveId"
+      case label = "label"
+      case kind = "kind"
+      case detail = "detail"
+      case documentation = "documentation"
+      case insertText = "insertText"
+      case insertTextFormat = "insertTextFormat"
+      case textEdit = "textEdit"
+      case additionalTextEdits = "additionalTextEdits"
+      case sortText = "sortText"
+      case filterText = "filterText"
+      case preselect = "preselect"
+    }
+
+    public init(resolveId: String, label: String, kind: LspCompletionKind? = nil, detail: String? = nil, documentation: String? = nil, insertText: String? = nil, insertTextFormat: LspCompletionItemInsertTextFormat? = nil, textEdit: LspTextEdit? = nil, additionalTextEdits: [LspTextEdit]? = nil, sortText: String? = nil, filterText: String? = nil, preselect: Bool? = nil) {
+      self.resolveId = resolveId
+      self.label = label
+      self.kind = kind
+      self.detail = detail
+      self.documentation = documentation
+      self.insertText = insertText
+      self.insertTextFormat = insertTextFormat
+      self.textEdit = textEdit
+      self.additionalTextEdits = additionalTextEdits
+      self.sortText = sortText
+      self.filterText = filterText
+      self.preselect = preselect
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(resolveId, forKey: .resolveId)
+      try c.encode(label, forKey: .label)
+      try c.encodeIfPresent(kind, forKey: .kind)
+      try c.encodeIfPresent(detail, forKey: .detail)
+      try c.encodeIfPresent(documentation, forKey: .documentation)
+      try c.encodeIfPresent(insertText, forKey: .insertText)
+      try c.encodeIfPresent(insertTextFormat, forKey: .insertTextFormat)
+      try c.encodeIfPresent(textEdit, forKey: .textEdit)
+      try c.encodeIfPresent(additionalTextEdits, forKey: .additionalTextEdits)
+      try c.encodeIfPresent(sortText, forKey: .sortText)
+      try c.encodeIfPresent(filterText, forKey: .filterText)
+      try c.encodeIfPresent(preselect, forKey: .preselect)
+    }
+  }
+
+  public struct LspCompletionKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let `class` = LspCompletionKind(rawValue: "class")
+    public static let color = LspCompletionKind(rawValue: "color")
+    public static let constant = LspCompletionKind(rawValue: "constant")
+    public static let constructor = LspCompletionKind(rawValue: "constructor")
+    public static let `enum` = LspCompletionKind(rawValue: "enum")
+    public static let enumMember = LspCompletionKind(rawValue: "enum_member")
+    public static let event = LspCompletionKind(rawValue: "event")
+    public static let field = LspCompletionKind(rawValue: "field")
+    public static let file = LspCompletionKind(rawValue: "file")
+    public static let folder = LspCompletionKind(rawValue: "folder")
+    public static let function = LspCompletionKind(rawValue: "function")
+    public static let interface = LspCompletionKind(rawValue: "interface")
+    public static let keyword = LspCompletionKind(rawValue: "keyword")
+    public static let method = LspCompletionKind(rawValue: "method")
+    public static let module = LspCompletionKind(rawValue: "module")
+    public static let `operator` = LspCompletionKind(rawValue: "operator")
+    public static let property = LspCompletionKind(rawValue: "property")
+    public static let reference = LspCompletionKind(rawValue: "reference")
+    public static let snippet = LspCompletionKind(rawValue: "snippet")
+    public static let `struct` = LspCompletionKind(rawValue: "struct")
+    public static let text = LspCompletionKind(rawValue: "text")
+    public static let typeParameter = LspCompletionKind(rawValue: "type_parameter")
+    public static let unit = LspCompletionKind(rawValue: "unit")
+    public static let value = LspCompletionKind(rawValue: "value")
+    public static let variable = LspCompletionKind(rawValue: "variable")
+  }
+
+  public struct LspCompletionList: Codable, Sendable {
+    public var isIncomplete: Bool
+    public var items: [LspCompletionItem]
+
+    enum CodingKeys: String, CodingKey {
+      case isIncomplete = "isIncomplete"
+      case items = "items"
+    }
+
+    public init(isIncomplete: Bool, items: [LspCompletionItem]) {
+      self.isIncomplete = isIncomplete
+      self.items = items
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(isIncomplete, forKey: .isIncomplete)
+      try c.encode(items, forKey: .items)
+    }
+  }
+
+  public struct LspContentChange: Codable, Sendable {
+    public var range: LspRange?
+    public var text: String
+
+    enum CodingKeys: String, CodingKey {
+      case range = "range"
+      case text = "text"
+    }
+
+    public init(range: LspRange? = nil, text: String) {
+      self.range = range
+      self.text = text
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(range, forKey: .range)
+      try c.encode(text, forKey: .text)
+    }
+  }
+
+  public struct LspDiagnostic: Codable, Sendable {
+    public var range: LspRange
+    public var severity: LspDiagnosticSeverity
+    public var message: String
+    public var source: String?
+    public var code: String?
+
+    enum CodingKeys: String, CodingKey {
+      case range = "range"
+      case severity = "severity"
+      case message = "message"
+      case source = "source"
+      case code = "code"
+    }
+
+    public init(range: LspRange, severity: LspDiagnosticSeverity, message: String, source: String? = nil, code: String? = nil) {
+      self.range = range
+      self.severity = severity
+      self.message = message
+      self.source = source
+      self.code = code
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(range, forKey: .range)
+      try c.encode(severity, forKey: .severity)
+      try c.encode(message, forKey: .message)
+      try c.encodeIfPresent(source, forKey: .source)
+      try c.encodeIfPresent(code, forKey: .code)
+    }
+  }
+
+  public struct LspDiagnosticsEvent: Codable, Sendable {
+    public var relativePath: String
+    public var version: Int?
+    public var diagnostics: [LspDiagnostic]
+
+    enum CodingKeys: String, CodingKey {
+      case relativePath = "relativePath"
+      case version = "version"
+      case diagnostics = "diagnostics"
+    }
+
+    public init(relativePath: String, version: Int? = nil, diagnostics: [LspDiagnostic]) {
+      self.relativePath = relativePath
+      self.version = version
+      self.diagnostics = diagnostics
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(relativePath, forKey: .relativePath)
+      try c.encode(version, forKey: .version)
+      try c.encode(diagnostics, forKey: .diagnostics)
+    }
+  }
+
+  public struct LspDiagnosticSeverity: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let error = LspDiagnosticSeverity(rawValue: "error")
+    public static let hint = LspDiagnosticSeverity(rawValue: "hint")
+    public static let information = LspDiagnosticSeverity(rawValue: "information")
+    public static let warning = LspDiagnosticSeverity(rawValue: "warning")
+  }
+
+  public struct LspFileEdit: Codable, Sendable {
+    public var relativePath: String
+    public var edits: [LspTextEdit]
+
+    enum CodingKeys: String, CodingKey {
+      case relativePath = "relativePath"
+      case edits = "edits"
+    }
+
+    public init(relativePath: String, edits: [LspTextEdit]) {
+      self.relativePath = relativePath
+      self.edits = edits
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(relativePath, forKey: .relativePath)
+      try c.encode(edits, forKey: .edits)
+    }
+  }
+
+  public struct LspHover: Codable, Sendable {
+    public var contents: String
+    public var range: LspRange?
+
+    enum CodingKeys: String, CodingKey {
+      case contents = "contents"
+      case range = "range"
+    }
+
+    public init(contents: String, range: LspRange? = nil) {
+      self.contents = contents
+      self.range = range
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(contents, forKey: .contents)
+      try c.encodeIfPresent(range, forKey: .range)
+    }
+  }
+
+  public struct LspLanguage: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let c = LspLanguage(rawValue: "c")
+    public static let css = LspLanguage(rawValue: "css")
+    public static let go = LspLanguage(rawValue: "go")
+    public static let html = LspLanguage(rawValue: "html")
+    public static let json = LspLanguage(rawValue: "json")
+    public static let kotlin = LspLanguage(rawValue: "kotlin")
+    public static let python = LspLanguage(rawValue: "python")
+    public static let ruby = LspLanguage(rawValue: "ruby")
+    public static let rust = LspLanguage(rawValue: "rust")
+    public static let swift = LspLanguage(rawValue: "swift")
+    public static let typescript = LspLanguage(rawValue: "typescript")
+    public static let yaml = LspLanguage(rawValue: "yaml")
+  }
+
+  public struct LspLocation: Codable, Sendable {
+    public var relativePath: String
+    public var range: LspRange
+
+    enum CodingKeys: String, CodingKey {
+      case relativePath = "relativePath"
+      case range = "range"
+    }
+
+    public init(relativePath: String, range: LspRange) {
+      self.relativePath = relativePath
+      self.range = range
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(relativePath, forKey: .relativePath)
+      try c.encode(range, forKey: .range)
+    }
+  }
+
+  public struct LspPosition: Codable, Sendable {
+    public var line: Int
+    public var character: Int
+
+    enum CodingKeys: String, CodingKey {
+      case line = "line"
+      case character = "character"
+    }
+
+    public init(line: Int, character: Int) {
+      self.line = line
+      self.character = character
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(line, forKey: .line)
+      try c.encode(character, forKey: .character)
+    }
+  }
+
+  public struct LspRange: Codable, Sendable {
+    public var start: LspPosition
+    public var end: LspPosition
+
+    enum CodingKeys: String, CodingKey {
+      case start = "start"
+      case end = "end"
+    }
+
+    public init(start: LspPosition, end: LspPosition) {
+      self.start = start
+      self.end = end
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(start, forKey: .start)
+      try c.encode(end, forKey: .end)
+    }
+  }
+
+  public struct LspServerSource: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let bundled = LspServerSource(rawValue: "bundled")
+    public static let path = LspServerSource(rawValue: "path")
+    public static let toolchain = LspServerSource(rawValue: "toolchain")
+  }
+
+  public struct LspServerState: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let failed = LspServerState(rawValue: "failed")
+    public static let missing = LspServerState(rawValue: "missing")
+    public static let ready = LspServerState(rawValue: "ready")
+    public static let starting = LspServerState(rawValue: "starting")
+    public static let stopped = LspServerState(rawValue: "stopped")
+  }
+
+  public struct LspServerStatus: Codable, Sendable {
+    public var language: LspLanguage
+    public var state: LspServerState
+    public var source: LspServerSource?
+    public var message: String?
+
+    enum CodingKeys: String, CodingKey {
+      case language = "language"
+      case state = "state"
+      case source = "source"
+      case message = "message"
+    }
+
+    public init(language: LspLanguage, state: LspServerState, source: LspServerSource? = nil, message: String? = nil) {
+      self.language = language
+      self.state = state
+      self.source = source
+      self.message = message
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(language, forKey: .language)
+      try c.encode(state, forKey: .state)
+      try c.encodeIfPresent(source, forKey: .source)
+      try c.encodeIfPresent(message, forKey: .message)
+    }
+  }
+
+  public struct LspSignature: Codable, Sendable {
+    public var label: String
+    public var documentation: String?
+    public var parameters: [LspSignatureParameter]
+    public var activeParameter: Int?
+
+    enum CodingKeys: String, CodingKey {
+      case label = "label"
+      case documentation = "documentation"
+      case parameters = "parameters"
+      case activeParameter = "activeParameter"
+    }
+
+    public init(label: String, documentation: String? = nil, parameters: [LspSignatureParameter], activeParameter: Int? = nil) {
+      self.label = label
+      self.documentation = documentation
+      self.parameters = parameters
+      self.activeParameter = activeParameter
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(label, forKey: .label)
+      try c.encodeIfPresent(documentation, forKey: .documentation)
+      try c.encode(parameters, forKey: .parameters)
+      try c.encodeIfPresent(activeParameter, forKey: .activeParameter)
+    }
+  }
+
+  public struct LspSignatureHelp: Codable, Sendable {
+    public var signatures: [LspSignature]
+    public var activeSignature: Int
+    public var activeParameter: Int
+
+    enum CodingKeys: String, CodingKey {
+      case signatures = "signatures"
+      case activeSignature = "activeSignature"
+      case activeParameter = "activeParameter"
+    }
+
+    public init(signatures: [LspSignature], activeSignature: Int, activeParameter: Int) {
+      self.signatures = signatures
+      self.activeSignature = activeSignature
+      self.activeParameter = activeParameter
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(signatures, forKey: .signatures)
+      try c.encode(activeSignature, forKey: .activeSignature)
+      try c.encode(activeParameter, forKey: .activeParameter)
+    }
+  }
+
+  public struct LspSignatureParameter: Codable, Sendable {
+    public var label: String
+    public var documentation: String?
+
+    enum CodingKeys: String, CodingKey {
+      case label = "label"
+      case documentation = "documentation"
+    }
+
+    public init(label: String, documentation: String? = nil) {
+      self.label = label
+      self.documentation = documentation
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(label, forKey: .label)
+      try c.encodeIfPresent(documentation, forKey: .documentation)
+    }
+  }
+
+  public struct LspStatus: Codable, Sendable {
+    public var servers: [LspServerStatus]
+
+    enum CodingKeys: String, CodingKey {
+      case servers = "servers"
+    }
+
+    public init(servers: [LspServerStatus]) {
+      self.servers = servers
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(servers, forKey: .servers)
+    }
+  }
+
+  public struct LspTextEdit: Codable, Sendable {
+    public var range: LspRange
+    public var newText: String
+
+    enum CodingKeys: String, CodingKey {
+      case range = "range"
+      case newText = "newText"
+    }
+
+    public init(range: LspRange, newText: String) {
+      self.range = range
+      self.newText = newText
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(range, forKey: .range)
+      try c.encode(newText, forKey: .newText)
+    }
+  }
+
+  public struct LspWorkspaceEdit: Codable, Sendable {
+    public var files: [LspFileEdit]
+
+    enum CodingKeys: String, CodingKey {
+      case files = "files"
+    }
+
+    public init(files: [LspFileEdit]) {
+      self.files = files
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(files, forKey: .files)
     }
   }
 

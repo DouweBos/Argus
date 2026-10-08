@@ -26,6 +26,19 @@ type SessionKind =
 type MergePhase = "attempt" | "continue";
 type MergeAbortKind = "merge" | "rebase";
 type MergeStrategy = "keep" | "squash";
+type LspLanguage =
+  | "c"
+  | "css"
+  | "go"
+  | "html"
+  | "json"
+  | "kotlin"
+  | "python"
+  | "ruby"
+  | "rust"
+  | "swift"
+  | "typescript"
+  | "yaml";
 
 /**
  * Events are alphabetized (lint enforces this). Group by prefix when adding:
@@ -74,6 +87,25 @@ export interface EventMap {
     outcome: "ok" | "rate_limited" | "reauth" | "unknown";
   };
   host_lock_handover: { holder: "cli" | "electron" | "mac" };
+  lsp_feature_used: {
+    feature:
+      | "code_action"
+      | "definition"
+      | "format"
+      | "hover"
+      | "references"
+      | "rename"
+      | "signature_help";
+    language: LspLanguage;
+    success: boolean;
+  };
+  lsp_server_crashed: { gave_up: boolean; language: LspLanguage };
+  lsp_server_started: {
+    duration_bucket: "<1s" | "<5s" | "<30s" | ">=30s";
+    language: LspLanguage;
+    source: "bundled" | "none" | "path" | "toolchain";
+    success: boolean;
+  };
   onboarding_completed: undefined;
   prefs_imported: { keys: number };
   proposal_start_failed: {

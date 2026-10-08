@@ -7,7 +7,7 @@
  *   ├── node_modules/node-pty        the addon + spawn-helper for this arch
  *   └── resources/                   ARGUS_RESOURCES: sim-bridge, sim-input, conductor,
  *                                    scrcpy jar, emulator proto, prompts, docs,
- *                                    argus-web
+ *                                    argus-web, rg, language-servers
  *
  * Driven by the ArgusDesktop target's build phase, which passes `--out` and the
  * identity Xcode is signing with. Xcode never signs code nested in Resources,
@@ -21,6 +21,7 @@
  * fails verification.
  */
 
+import * as esbuild from "esbuild";
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -123,6 +124,82 @@ const RESOURCES: { from: string; to: string; optional?: boolean }[] = [
   { from: "clients/argus-web/dist", to: "argus-web", optional: true },
 ];
 
+const HOST_MODULES = path.join(ROOT, "packages/host/node_modules");
+
+/**
+ * Language servers that ship as many small modules, bundled to one file each
+ * (`module` first: their UMD builds `require` dynamically, which esbuild can't
+ * follow). Resolved by `services/lsp/servers.ts` under `language-servers/`.
+ */
+const LANGUAGE_SERVER_BUNDLES: Record<string, string> = {
+  json: "vscode-langservers-extracted/lib/json-language-server/node/jsonServerMain.js",
+  css: "vscode-langservers-extracted/lib/css-language-server/node/cssServerMain.js",
+  html: "vscode-langservers-extracted/lib/html-language-server/node/htmlServerMain.js",
+  yaml: "yaml-language-server/out/server/src/server.js",
+};
+
+/** ripgrep and the bundled language servers, as `services/code/bundled.ts` finds them. */
+function stageCodeTools(out: string): boolean {
+  const resources = path.join(out, "resources");
+  const servers = path.join(resources, "language-servers");
+  const rgPackage = fs.realpathSync(path.join(HOST_MODULES, "@vscode/ripgrep"));
+  let changed = sync(
+    path.join(
+      path.dirname(rgPackage),
+      `ripgrep-${process.platform}-${process.arch}`,
+      "bin/rg",
+    ),
+    path.join(resources, "rg"),
+  );
+  const tsls = fs.realpathSync(
+    path.join(HOST_MODULES, "typescript-language-server"),
+  );
+  for (const file of ["package.json", "lib/cli.mjs"]) {
+    changed =
+      sync(
+        path.join(tsls, file),
+        path.join(servers, "typescript-language-server", file),
+      ) || changed;
+  }
+  const typescript = fs.realpathSync(
+    path.join(HOST_MODULES, "bundled-typescript"),
+  );
+  for (const entry of ["package.json", "lib"]) {
+    changed =
+      sync(
+        path.join(typescript, entry),
+        path.join(servers, "typescript", entry),
+      ) || changed;
+  }
+  changed =
+    sync(
+      path.join(HOST_MODULES, "yaml-language-server/l10n"),
+      path.join(servers, "yaml-l10n"),
+    ) || changed;
+
+  const built = path.join(ROOT, "dist-host/language-servers");
+  for (const [name, entry] of Object.entries(LANGUAGE_SERVER_BUNDLES)) {
+    esbuild.buildSync({
+      entryPoints: [path.join(HOST_MODULES, entry)],
+      outfile: path.join(built, `${name}.js`),
+      bundle: true,
+      platform: "node",
+      target: "node22",
+      format: "cjs",
+      mainFields: ["module", "main"],
+      logLevel: "warning",
+    });
+    changed =
+      sync(
+        path.join(built, `${name}.js`),
+        path.join(servers, `${name}.js`),
+        true,
+      ) || changed;
+  }
+
+  return changed;
+}
+
 function stage(options: Options): boolean {
   if (!options.skipBuild) {
     execFileSync(process.execPath, ["build-host.mjs"], {
@@ -169,6 +246,8 @@ function stage(options: Options): boolean {
   const prebuild = `prebuilds/${process.platform}-${process.arch}`;
   changed =
     sync(path.join(pty, prebuild), path.join(ptyOut, prebuild)) || changed;
+
+  changed = stageCodeTools(out) || changed;
 
   for (const resource of RESOURCES) {
     const src = path.join(ROOT, resource.from);

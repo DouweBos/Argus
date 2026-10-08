@@ -270,6 +270,39 @@ describe("raw broadcast forwarding", () => {
     ).toEqual([{ channel: "git-runner:progress:r1", args: [{ chunk: "a" }] }]);
   });
 
+  it("scopes the code editor's streams to their subscriptions", async () => {
+    const { conn, send, fromGateway } = connect(["admin"]);
+    await send({ type: "sub", action: "subscribe", agent_id: "code:s1" });
+    await send({ type: "sub", action: "subscribe", agent_id: "lsp:s1" });
+    await send({
+      type: "sub",
+      action: "subscribe",
+      agent_id: "code-search:q1",
+    });
+    for (const channel of [
+      "code:file-changed:s1",
+      "code:file-changed:s2",
+      "lsp:diagnostics:s1",
+      "lsp:status:s1",
+      "lsp:status:s2",
+      "code:search:q1",
+      "code:search:q2",
+    ]) {
+      conn.handleBroadcast(channel, [{}]);
+    }
+    expect(
+      ipcEvents(fromGateway).map(
+        (e) =>
+          (e as unknown as { payload: { channel: string } }).payload.channel,
+      ),
+    ).toEqual([
+      "code:file-changed:s1",
+      "lsp:diagnostics:s1",
+      "lsp:status:s1",
+      "code:search:q1",
+    ]);
+  });
+
   it("tells typed clients when the device claim changes", () => {
     const { conn, fromGateway } = connect(["monitor", "control"]);
     conn.handleBroadcast("devices:claim-changed", [
