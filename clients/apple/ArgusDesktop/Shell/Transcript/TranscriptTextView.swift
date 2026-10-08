@@ -95,11 +95,16 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
   /// The size for a proposed width; nil asks for the natural (unwrapped) width.
   /// Measured off to the side: resizing this view's own container mid-layout
   /// invalidates the hosting view and can keep SwiftUI laying out forever.
+  /// Stacks also probe with zero and unbounded widths; laying out at those (a 1pt
+  /// container puts every glyph on its own line) tells a filling view nothing.
   func size(forWidth proposed: CGFloat?, fills: Bool) -> CGSize {
     guard let content else { return .zero }
-    let width = proposed.map { $0.isFinite ? max(($0 * 2).rounded(.down) / 2, 1) : nil } ?? nil
+    guard let proposed, proposed.isFinite else {
+      return fills ? CGSize(width: 10_000, height: 0) : TextMeasurer.size(of: content, width: nil)
+    }
+    guard proposed >= 24 else { return CGSize(width: max(proposed, 0), height: 0) }
+    let width = (proposed * 2).rounded(.down) / 2
     let used = TextMeasurer.size(of: content, width: width)
-    guard let width else { return used }
     return CGSize(width: fills ? width : min(used.width, width), height: used.height)
   }
 

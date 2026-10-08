@@ -286,7 +286,8 @@ cutover gate.
 - **Host lock and Electron:** two hosts on one `~/.argus` would corrupt state.
   The lock must land in Electron before any Mac beta reaches users.
 - **Transcript performance in SwiftUI.** Budget the TextKit 2 path from the start
-  rather than retrofitting it.
+  rather than retrofitting it. A `LazyVStack` transcript froze on long chats (a
+  layout loop on scroll); the list is now an `NSTableView` with cached row heights.
 - **Scope.** This is ~140k lines of React at parity. The milestones are ordered so
   the beta is useful after M2 (core loop plus terminals), even though the cutover
   waits for M5.

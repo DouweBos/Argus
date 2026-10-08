@@ -8,8 +8,14 @@ import Testing
 
 @testable import Argus
 
-/// A long chat laid out the way the Mac shows an agent, then resized like a
-/// sidebar drag. Opt-in, two paths, timings to stdout and `<file>.perf.json`:
+/// A long chat laid out the way the Mac shows an agent.
+///
+/// `scrollThroughHistory` always runs: a synthetic 3000-message chat paged in
+/// from a stand-in host, read from the newest message to the very first, then
+/// resized while deep in history. It fails on a main-thread stall or if the
+/// top is never reached — the long-chat freeze this table replaced.
+///
+/// `longChat` is opt-in, two paths, timings to stdout and `<file>.perf.json`:
 ///
 /// - `ARGUS_TRANSCRIPT_PAGE` (via `TEST_RUNNER_…`): an `agents.transcript`
 ///   tail page, opened through the store the way the app opens an agent, then
@@ -18,14 +24,63 @@ import Testing
 ///   fold from it are gone with the reducer, so the whole chat is the page's
 ///   rows repeated to the saved count — what holding every row costs.
 @MainActor
-@Suite(
-  .serialized,
-  .enabled(if: ProcessInfo.processInfo.environment["ARGUS_TRANSCRIPT_PAGE"] != nil))
+@Suite(.serialized)
 struct TranscriptPerfTests {
   private var pagePath: String { ProcessInfo.processInfo.environment["ARGUS_TRANSCRIPT_PAGE"] ?? "" }
   private var savedPath: String? { ProcessInfo.processInfo.environment["ARGUS_TRANSCRIPT_PERF"] }
 
-  @Test func longChat() async throws {
+  @Test(.timeLimit(.minutes(2))) func scrollThroughHistory() async throws {
+    let fixture = TranscriptFixture.messages(count: 3000)
+    let messages = TranscriptFixture.remote(fixture)
+    let store = HostStore()
+    await store.attach(FixtureBackend(messages: messages, images: [:]))
+    let key = HostStore.stoppedKey(repoRoot: "/fixture", historyId: "perf")
+    let (window, hosting) = Self.window(
+      TranscriptView(agentKey: key, sessionId: "perf").environment(store).environment(Self.viewer))
+    defer { window.orderOut(nil) }
+    var start = CACurrentMediaTime()
+    pass(window)
+    let firstLayout = ms(since: start)
+    try await settle(window)
+    let scrollView = try #require(Self.scrollViews(in: hosting).first { $0 is TranscriptScrollView })
+
+    // Wheel-sized steps up, as long as there is anything above: the table
+    // measures rows as they come near and pages older history in on the way.
+    var steps: [Double] = []
+    var stalled = 0
+    while stalled < 40, steps.count < 5000 {
+      let clip = scrollView.contentView
+      let before = clip.bounds.origin.y
+      start = CACurrentMediaTime()
+      clip.scroll(to: NSPoint(x: 0, y: max(0, before - 120)))
+      scrollView.reflectScrolledClipView(clip)
+      pass(window)
+      steps.append(ms(since: start))
+      // Suspend, so main-actor work the scroll started (paging older history in) runs.
+      try await Task.sleep(for: .milliseconds(2))
+      let atTop = clip.bounds.origin.y <= 0.5 && !store.hasOlderMessages(for: key)
+      stalled = atTop ? stalled + 1 : 0
+    }
+    let loaded = store.messagesByAgent[key]?.count ?? 0
+    let resize = drag(window)
+    let report: [String: Any] = [
+      "first_layout_ms": firstLayout, "scroll": Self.stats(steps), "resize_in_history": resize,
+      "loaded": loaded, "content_height": scrollView.documentView?.frame.height ?? 0,
+    ]
+    let json = try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
+    print("[transcript-scroll-perf] \(String(decoding: json, as: UTF8.self))")
+
+    #expect(loaded == messages.count, "reached the first message")
+    #expect(scrollView.contentView.bounds.origin.y <= 0.5)
+    // A frame's budget with room for a loaded CI machine; the freeze this
+    // guards against never came back at all.
+    #expect((Self.stats(steps)["max_ms"] ?? .infinity) < 150)
+    #expect((Self.stats(steps)["p95_ms"] ?? .infinity) < 33)
+    #expect((resize["max_ms"] ?? .infinity) < 150)
+  }
+
+  @Test(.enabled(if: ProcessInfo.processInfo.environment["ARGUS_TRANSCRIPT_PAGE"] != nil))
+  func longChat() async throws {
     var report: [String: Any] = [:]
     let pageData = try Data(contentsOf: URL(fileURLWithPath: pagePath))
     report["page"] = try await openViaPage(pageData)

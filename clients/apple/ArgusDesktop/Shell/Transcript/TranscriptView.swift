@@ -2,12 +2,11 @@ import ArgusUI
 import SwiftUI
 
 /// The Mac transcript: newest at the bottom and pinned there while following,
-/// older rows revealed (or fetched) on reaching the top without losing your
-/// place, TextKit text you can select and search, file links, and the agent's
-/// pending decisions at the foot. Only the window's rows exist, so a long chat
-/// costs a page of rows on a resize, not all of them.
+/// older pages fetched on nearing the top without losing your place, TextKit
+/// text you can select and search, file links, and the agent's pending
+/// decisions at the foot. The list is an `NSTableView` of recycled rows
+/// (`TranscriptTable`), so a long chat costs the rows on screen.
 struct TranscriptView: View {
-  @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
 
   let agentKey: String
@@ -16,121 +15,35 @@ struct TranscriptView: View {
   var fixture: [RemoteMessage]?
 
   @State private var model = TranscriptModel()
+  @State private var table = TableBox()
   @State private var links: TranscriptLinkHandler?
-  /// Whether the reader is following the tail. Written on every scroll, so it
-  /// is observed only by the jump button — the transcript itself re-rendering
-  /// on each flip feeds back into the lazy stack's layout.
-  @State private var follow = FollowState()
   @State private var landed = false
   @State private var loadingOlder = false
-  @State private var window = TranscriptWindow()
-
-  private static let bottom = "transcript-bottom"
 
   private var messages: [RemoteMessage] { fixture ?? host.visibleMessages(for: agentKey) }
+  private var controller: TranscriptTableController { table.controller(model) }
+  private var hasOlder: Bool { fixture == nil && host.hasOlderMessages(for: agentKey) }
 
   var body: some View {
     let messages = messages
-    let segments = ToolGroups.group(messages)
-    let windowStart = window.start(segments)
-    let shown = segments[windowStart...]
     let pending = pendingCalls(messages)
-    ScrollViewReader { proxy in
-      ScrollView {
-        LazyVStack(alignment: .leading, spacing: 14) {
-          topSentinel(first: shown.first?.id, hidden: windowStart > 0, segments: segments, proxy: proxy)
-          if messages.isEmpty, landed || fixture != nil {
-            EmptyState(
-              icon: Icon.agent, title: "Nothing yet",
-              body: "Send this agent a message to get it going.")
-          }
-          ForEach(shown) { segment in
-            row(segment).id(segment.id)
-          }
-          footer(pending: pending)
-          Color.clear.frame(height: 1).id(Self.bottom)
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .frame(maxWidth: 920)
-        .frame(maxWidth: .infinity)
+    TranscriptTable(
+      controller: controller, agentKey: agentKey, messages: messages,
+      top: .init(hasOlder: hasOlder, loading: loadingOlder),
+      footer: .init(pending: pending, showEmpty: messages.isEmpty && (landed || fixture != nil))
+    )
+    .onChange(of: pending.map(\.id)) { _, ids in
+      // A new decision always comes into view — it's what the agent waits on.
+      if !ids.isEmpty { controller.jumpToLatest() }
+    }
+    .onChange(of: model.revealToken) { _, _ in reveal() }
+    .overlay(alignment: .top) {
+      if model.findOpen {
+        TranscriptFindBar().padding(.top, 8)
       }
-      .defaultScrollAnchor(.bottom, for: .initialOffset)
-      // Rows re-measure at a new width and the lazy stack's estimates move the
-      // offset; someone following the tail stays on it through a resize.
-      .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { _ in
-        guard follow.atBottom else { return }
-        window.trim(segments)
-        proxy.scrollTo(Self.bottom, anchor: .bottom)
-      }
-      .onScrollGeometryChange(for: ScrollState.self) { geometry in
-        ScrollState(
-          offset: geometry.contentOffset.y, content: geometry.contentSize.height,
-          container: geometry.containerSize.height)
-      } action: { _, new in
-        // Only the reader's own scrolling says where they want to be. The
-        // lazy stack shifts the offset as it re-measures rows, and new output
-        // grows the content; neither should end following.
-        if follow.userScrolling { follow.atBottom = new.isAtBottom }
-        // The sentinel's `onAppear` misses a top it never left; reaching it does not.
-        if new.offset < 80, new.content > new.container {
-          loadOlder(first: shown.first?.id, hidden: windowStart > 0, segments: segments, proxy: proxy)
-        }
-      }
-      .onScrollPhaseChange { _, phase, context in
-        let wasUser = follow.userScrolling
-        follow.userScrolling = phase == .interacting || phase == .decelerating || phase == .tracking
-        // Settling after our own `scrollTo` while rows are still measuring
-        // says nothing about where the reader wants to be.
-        if phase == .idle, wasUser {
-          let geometry = context.geometry
-          follow.atBottom =
-            geometry.contentOffset.y + geometry.containerSize.height >= geometry.contentSize.height - 40
-        }
-      }
-      .onChange(of: tail(messages, pending: pending), initial: true) { _, _ in
-        guard !messages.isEmpty else { return }
-        if !landed {
-          landed = true
-          // Pinned from here on, so output arriving below never slides the
-          // window out from under someone reading near its top.
-          if window.pinned == nil { window.pinned = shown.first?.firstMessageId }
-          proxy.scrollTo(Self.bottom, anchor: .bottom)
-          return
-        }
-        // Follow the tail only while the reader is at it; someone reading
-        // history shouldn't be yanked down by new output.
-        guard follow.atBottom else { return }
-        window.trim(segments)
-        proxy.scrollTo(Self.bottom, anchor: .bottom)
-      }
-      .onChange(of: pending.map(\.id)) { _, ids in
-        // A new decision always comes into view — it's what the agent waits on.
-        // Again once the card has laid out: the lazy stack measures it late, and
-        // the first scroll stops short of a form taller than its estimate.
-        guard !ids.isEmpty else { return }
-        follow.atBottom = true
-        withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(Self.bottom, anchor: .bottom) }
-        Task { @MainActor in
-          try? await Task.sleep(for: .milliseconds(250))
-          withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(Self.bottom, anchor: .bottom) }
-        }
-      }
-      .onChange(of: model.revealToken) { _, _ in
-        reveal(segments: segments, proxy: proxy)
-      }
-      .overlay(alignment: .top) {
-        if model.findOpen {
-          TranscriptFindBar().padding(.top, 8)
-        }
-      }
-      .overlay(alignment: .bottomTrailing) {
-        JumpToLatest(follow: follow) {
-          follow.atBottom = true
-          window.trim(segments, limit: TranscriptWindow.page)
-          withAnimation { proxy.scrollTo(Self.bottom, anchor: .bottom) }
-        }
-      }
+    }
+    .overlay(alignment: .bottomTrailing) {
+      JumpToLatest(follow: controller.follow) { controller.jumpToLatest() }
     }
     .background { shortcuts }
     .task(id: SearchKey(query: model.query, open: model.findOpen, count: messages.count, last: messages.last?.id)) {
@@ -142,8 +55,11 @@ struct TranscriptView: View {
     .environment(model)
     .environment(\.transcriptLinks, links)
     .environment(\.toolTextRenderer, toolTextRenderer)
-    .task(id: agentKey) { await start() }
-    .onChange(of: agentKey) { window = TranscriptWindow() }
+    .task(id: agentKey) {
+      landed = false
+      controller.onNeedOlder = { loadOlder() }
+      await start()
+    }
     #if DEBUG
       .task {
         if let fixture, TranscriptStress.count != nil {
@@ -156,80 +72,13 @@ struct TranscriptView: View {
     }
   }
 
-  // MARK: Rows
-
-  @ViewBuilder
-  private func row(_ segment: ToolGroups.Segment) -> some View {
-    switch segment {
-    case .single(let message):
-      TranscriptMessageRow(agentKey: agentKey, message: message).equatable()
-    case .collapsed(let messages):
-      TranscriptToolGroup(agentKey: agentKey, id: segment.id, messages: messages).equatable()
-    }
-  }
-
-  @ViewBuilder
-  private func footer(pending: [RemoteToolCall]) -> some View {
-    WorkingIndicator(
-      status: host.statusByAgent[agentKey]?.status,
-      pendingToolName: host.pendingToolByAgent[agentKey],
-      pendingToolInput: nil,
-      hasPendingPermission: !pending.isEmpty)
-
-    if let tasks = host.tasksByAgent[agentKey], !tasks.isEmpty {
-      TaskListView(
-        title: "Tasks", items: tasks.map { ($0.activeForm ?? $0.subject, $0.status, $0.owner) })
-    }
-    if let todos = host.todosByAgent[agentKey], !todos.isEmpty {
-      TaskListView(title: "Todos", items: todos.map { ($0.activeForm ?? $0.content, $0.status, nil) })
-    }
-
-    TranscriptPrompts(agentKey: agentKey, pending: pending)
-
-    let queued = host.queuedByAgent[agentKey] ?? []
-    if !queued.isEmpty {
-      SectionHeader(title: "Queued", count: queued.count)
-      ForEach(queued) { QueuedMessageCard(agentKey: agentKey, message: $0) }
-    }
-    let failed = host.failedByAgent[agentKey] ?? []
-    if !failed.isEmpty {
-      SectionHeader(title: "Not sent", count: failed.count)
-      ForEach(failed) { FailedSendCard(agentKey: agentKey, item: $0) }
-    }
-  }
-
-  /// Reaching this means the reader wants older history: the next page above
-  /// the window, or once none is left here, the host's. Once it lands the row
-  /// that was first goes back to the top, so the view doesn't jump.
-  @ViewBuilder
-  private func topSentinel(
-    first: String?, hidden: Bool, segments: [ToolGroups.Segment], proxy: ScrollViewProxy
-  ) -> some View {
-    if hidden || (fixture == nil && host.hasOlderMessages(for: agentKey)) {
-      HStack(spacing: 8) {
-        Spacer()
-        if loadingOlder {
-          ProgressView().controlSize(.small)
-          MutedText("Loading earlier messages…")
-        }
-        Spacer()
-      }
-      .frame(height: 28)
-      .onAppear { loadOlder(first: first, hidden: hidden, segments: segments, proxy: proxy) }
-    }
-  }
-
-  private func loadOlder(first: String?, hidden: Bool, segments: [ToolGroups.Segment], proxy: ScrollViewProxy) {
-    guard !loadingOlder, landed, hidden || (fixture == nil && host.hasOlderMessages(for: agentKey)) else { return }
+  /// The next page of older history from the host; the table keeps the
+  /// reader's place as it lands above them.
+  private func loadOlder() {
+    guard !loadingOlder, landed, hasOlder else { return }
     loadingOlder = true
     Task {
-      if hidden {
-        window.grow(segments)
-      } else {
-        await host.loadOlderMessages(agentId: agentKey)
-        window.pinned = host.visibleMessages(for: agentKey).first?.id
-      }
-      if let first { scroll(to: first, anchor: .top, proxy: proxy) }
+      await host.loadOlderMessages(agentId: agentKey)
       loadingOlder = false
     }
   }
@@ -252,25 +101,11 @@ struct TranscriptView: View {
     .accessibilityHidden(true)
   }
 
-  /// Scrolls the current match's row into view, rendering it and opening its
-  /// tool group first.
-  private func reveal(segments: [ToolGroups.Segment], proxy: ScrollViewProxy) {
-    guard let hit = model.currentHit, let messageId = Self.messageId(of: hit.unitId),
-      let segment = segments.first(where: { $0.holds(messageId) })
-    else { return }
-    window.include(messageId, in: segments)
-    if case .collapsed = segment {
-      model.expandedGroups.insert(segment.id)
-      scroll(to: segment.id, anchor: .top, proxy: proxy)
-    } else {
-      scroll(to: segment.id, anchor: .center, proxy: proxy)
-    }
-  }
-
-  /// A row revealed by this same change only exists after the next pass.
-  private func scroll(to id: String, anchor: UnitPoint, proxy: ScrollViewProxy) {
-    proxy.scrollTo(id, anchor: anchor)
-    DispatchQueue.main.async { proxy.scrollTo(id, anchor: anchor) }
+  /// Scrolls the current match's row into view, opening its tool group first;
+  /// the row's text view then brings the match's line on screen.
+  private func reveal() {
+    guard let hit = model.currentHit, let messageId = Self.messageId(of: hit.unitId) else { return }
+    controller.reveal(messageId: messageId, openGroup: true)
   }
 
   private static func messageId(of unit: String) -> String? {
@@ -280,14 +115,6 @@ struct TranscriptView: View {
       return rest.lastIndex(of: ":").map { String(rest[..<$0]) }
     }
     return nil
-  }
-
-  private struct ScrollState: Equatable {
-    let offset: CGFloat
-    let content: CGFloat
-    let container: CGFloat
-
-    var isAtBottom: Bool { offset + container >= content - 40 }
   }
 
   private struct SearchKey: Equatable {
@@ -306,21 +133,6 @@ struct TranscriptView: View {
     }
   }
 
-  /// Changes whenever something lands at the bottom: a message, more text in
-  /// the last one, a decision, or a queued send.
-  private func tail(_ messages: [RemoteMessage], pending: [RemoteToolCall]) -> [Int] {
-    let last = messages.last
-    return [
-      messages.count,
-      last?.textBlocks.reduce(0) { $0 + $1.utf16.count } ?? 0,
-      last?.toolCalls.count ?? 0,
-      last?.toolCalls.last?.resultBlocks.count ?? 0,
-      pending.count,
-      host.queuedByAgent[agentKey]?.count ?? 0,
-      host.failedByAgent[agentKey]?.count ?? 0,
-    ]
-  }
-
   private var toolTextRenderer: ToolTextRenderer {
     ToolTextRenderer(
       render: { text, role in
@@ -337,7 +149,7 @@ struct TranscriptView: View {
     // A saved chat has no queue, subscription or anything left to catch up on.
     if HostStore.parseStoppedKey(agentKey) != nil {
       await host.loadTranscript(agentId: agentKey)
-      if !landed, messages.isEmpty { landed = true }
+      landed = true
       return
     }
     await host.loadQueue(agentId: agentKey)
@@ -346,18 +158,33 @@ struct TranscriptView: View {
     // catch-up fetch closes that window.
     try? await Task.sleep(for: .milliseconds(600))
     await host.loadTranscript(agentId: agentKey)
-    if !landed, messages.isEmpty { landed = true }
+    landed = true
   }
 }
 
+/// Whether the reader is following the tail. Written on every scroll, so only
+/// the jump button observes it.
 @MainActor
 @Observable
 final class FollowState {
   @ObservationIgnored var atBottom = true {
     didSet { if atBottom != oldValue { showJump = !atBottom } }
   }
-  @ObservationIgnored var userScrolling = false
   private(set) var showJump = false
+}
+
+/// Holds the table across view updates: a `@State` initial value is built on
+/// every one, and the controller owns AppKit views.
+@MainActor
+private final class TableBox {
+  private var made: TranscriptTableController?
+
+  func controller(_ model: TranscriptModel) -> TranscriptTableController {
+    if let made { return made }
+    let controller = TranscriptTableController(model: model)
+    made = controller
+    return controller
+  }
 }
 
 private struct JumpToLatest: View {
@@ -378,13 +205,18 @@ private struct JumpToLatest: View {
 /// A tool's command or output as selectable, linkified monospaced text. Long
 /// output shows its head until expanded, so a huge log costs 40 lines of layout.
 struct TranscriptToolText: View {
+  @Environment(TranscriptModel.self) private var model
   let text: String
   let role: ToolTextRenderer.Role
 
-  @State private var expanded = false
+  private var expanded: Bool { model.expandedOutputs.contains(TranscriptModel.outputKey(text, role: role)) }
 
   private static let clipLines = 40
-  private static let cache = NSCache<NSString, NSAttributedString>()
+  private static let cache: NSCache<NSString, NSAttributedString> = {
+    let cache = NSCache<NSString, NSAttributedString>()
+    cache.countLimit = 400
+    return cache
+  }()
 
   var body: some View {
     let lines = text.utf8.count(where: { $0 == 10 }) + 1
@@ -392,7 +224,10 @@ struct TranscriptToolText: View {
     VStack(alignment: .leading, spacing: 4) {
       TranscriptText(text: rendered(clipped ? head : text))
       if lines > Self.clipLines {
-        Button(expanded ? "Show less" : "Show all \(lines) lines") { expanded.toggle() }
+        Button(expanded ? "Show less" : "Show all \(lines) lines") {
+          let key = TranscriptModel.outputKey(text, role: role)
+          if expanded { model.expandedOutputs.remove(key) } else { model.expandedOutputs.insert(key) }
+        }
           .buttonStyle(.accentLink)
           .font(.scaled(size: 11))
       }
