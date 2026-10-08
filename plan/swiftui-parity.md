@@ -27,6 +27,11 @@ How to tick a row:
 - M6 rows were verified on 2026-10-04 by pairing the Mac app (scratch Argus
   home) with a second `argus-host` started on its own scratch home and port,
   with a throwaway simulator; never with a real host or device.
+- Device rows were re-verified on 2026-10-08 against throwaway simulators (an
+  iPhone, two Apple TVs, one with its data folder removed) and a throwaway
+  API 36 AVD: taps had been landing up-before-down (read as long presses) and
+  the bundle's input helper was missing or couldn't launch (no keys or
+  hardware buttons); both are fixed, and the rows below say what was seen.
 - M6.5 rows were verified on 2026-10-05 the same way (scratch homes, a second
   throwaway host, a fake `claude` and `gh`).
 - The iOS column follows the CLAUDE.md rule: a ☐ there is a gap to close, not a
@@ -45,7 +50,7 @@ How to tick a row:
 | `/automations/quick/runs/:runId` | ✅ | ✅ | ✅ | M5 | iOS: shared run screen; save-as-automation via `automations.save_scratch_run`. Mac: save-as-automation verified. |
 | `/automations/:automationId` | ✅ | ✅ | ✅ | M5 | iOS: detail plus a separate editor screen, memories editable. |
 | `/automations/:automationId/runs/:runId` | ✅ | ✅ | ✅ | M5 | Mac: Open transcript opens the run's host session. |
-| `/devices` | ✅ | ✅ | ◐ | M3 | Mac: table and live grid; boot, shut down, pop out; rows link to their session and agent; `/devices/:platform/:deviceKey` opens as a sheet. iOS: lists booted devices only; no boot/shutdown or AVD lifecycle. |
+| `/devices` | ✅ | ✅ | ◐ | M3 | Mac: table and live grid; boot, shut down, pop out; rows link to their session and agent; `/devices/:platform/:deviceKey` opens as a sheet; a simulator that can't boot is flagged, with Erase / Delete in its sheet; boot and shutdown failures show above the table. iOS: lists booted devices only; no boot/shutdown or AVD lifecycle. |
 | `/inbox` | ✅ | ✅ | ✅ | M5 | |
 | `/inbox/proposals/:proposalId` | ✅ | ✅ | ✅ | M5 | iOS: proposal screen, request-revision included. |
 | `/notifications` | ✅ | ✅ | ✅ | M5 | Warnings & errors list. OS notifications are a separate M1 row. Mac: in-memory list fed by every store error, with an unseen badge in the sidebar. iOS: in-memory warnings & errors under Settings. |
@@ -117,21 +122,21 @@ How to tick a row:
 
 ### iOS simulators
 
-| Feature                                     | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                   |
-| ------------------------------------------- | -------- | --- | --- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Boot a runtime per session                  | ✅       | ✅  | ☐   | M3        | Mac: picking a shut-down simulator boots it; a Boot button otherwise. iOS: no boot method on the gateway.                                                               |
-| Live mirror in the runtime panel            | ✅       | ✅  | ✅  | M3        | Mac: H.264 into `AVSampleBufferDisplayLayer` (ArgusUI's `DeviceVideoView`); panel, popout and devices grid share one stream.                                            |
-| Tap, swipe, type, buttons, rotate, gestures | ✅       | ✅  | ✅  | M3        | Mac: mouse as touches, hardware keyboard (⌘⇧H for Home), Home/rotate/fold/deep links, claims with Take Control; tvOS gets the remote. iOS: no system-gesture shortcuts. |
-| Per-session isolation                       | ✅       | ✅  | ✅  | M3        | Mac: each session keeps its own pick; two sessions held an iOS simulator and an emulator at once. Host-side.                                                            |
+| Feature                                     | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------- | -------- | --- | --- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Boot a runtime per session                  | ✅       | ✅  | ☐   | M3        | Mac: picking a shut-down simulator boots it; a Boot button otherwise. A simulator with its data missing or its runtime gone says so in a line, with Erase (data missing) and Delete behind a confirmation — verified on a throwaway device whose data folder was removed: erase, then boot. Other simctl failures read as one sentence. iOS: no boot method on the gateway, so no erase/delete either. |
+| Live mirror in the runtime panel            | ✅       | ✅  | ✅  | M3        | Mac: H.264 into `AVSampleBufferDisplayLayer` (ArgusUI's `DeviceVideoView`); panel, popout and devices grid share one stream; ⌘W closes a popout. Re-verified 2026-10-08 for an iPhone, an Apple TV and an AVD; the Chromium runtime too.                                                                                                                                                               |
+| Tap, swipe, type, buttons, rotate, gestures | ✅       | ✅  | ✅  | M3        | Mac: mouse as touches, hardware keyboard (⌘⇧H for Home), Home/rotate/fold/deep links, claims with Take Control; tvOS gets the remote (under the picture in a narrow panel, no Rotate). Re-verified 2026-10-08: taps open apps, typing into Safari, Home, rotate, the tvOS remote navigating Settings. iOS: no system-gesture shortcuts; input now keeps its order there too.                           |
+| Per-session isolation                       | ✅       | ✅  | ✅  | M3        | Mac: each session keeps its own pick; two sessions held an iOS simulator and an emulator at once. Host-side.                                                                                                                                                                                                                                                                                           |
 
 ### Android emulators
 
-| Feature                     | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                         |
-| --------------------------- | -------- | --- | --- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Boot an AVD per session     | ✅       | ✅  | ☐   | M3        | Mac: Boot on an offline AVD; the stream retries while the emulator finishes booting. iOS: no boot method on the gateway.                                                                                      |
-| Live mirror                 | ✅       | ✅  | ✅  | M3        | Mac: verified with the test AVD.                                                                                                                                                                              |
-| Tap, swipe, type, hard keys | ✅       | ◐   | ✅  | M3        | Mac: wired as on iOS; the host accepted touches, keys and Back/Home/Recents but the API 36 test AVD ignored them over gRPC (ADB input worked) — a host-side issue shared with Electron. iOS: also fold poses. |
-| Per-session isolation       | ✅       | ✅  | ✅  | M3        | Mac: as for simulators. Host-side.                                                                                                                                                                            |
+| Feature                     | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                                                                                            |
+| --------------------------- | -------- | --- | --- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Boot an AVD per session     | ✅       | ✅  | ☐   | M3        | Mac: Boot on an offline AVD; the stream retries while the emulator finishes booting. iOS: no boot method on the gateway.                                                                                                                                                         |
+| Live mirror                 | ✅       | ✅  | ✅  | M3        | Mac: verified with the test AVD.                                                                                                                                                                                                                                                 |
+| Tap, swipe, type, hard keys | ✅       | ◐   | ✅  | M3        | Mac: taps (opened Chrome) and Home verified on 2026-10-08 with a throwaway API 36 AVD, once input stopped arriving out of order — the earlier "AVD ignored touches" was most likely that. Typing not re-verified: first-run dialogs kept taking the field. iOS: also fold poses. |
+| Per-session isolation       | ✅       | ✅  | ✅  | M3        | Mac: as for simulators. Host-side.                                                                                                                                                                                                                                               |
 
 ### Embedded Chromium browser
 
@@ -255,13 +260,13 @@ How to tick a row:
 
 ### Tools
 
-| Feature                         | Electron | Mac | iOS | Milestone | Notes                                                                                                                           |
-| ------------------------------- | -------- | --- | --- | --------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Tool toggles (Settings → Tools) | ✅       | ✅  | ☐   | M5        | Also `.argus.json#tools.disabled`.                                                                                              |
-| Device recording                | ✅       | ✅  | ✅  | M3        | Mac: the capture behind every mirror.                                                                                           |
-| Device UI inspector             | ✅       | ✅  | ☐   | M3        | Mac: probe, restart with injection, capture, overlay, tree with search, metadata and live property edits.                       |
-| Device control                  | ✅       | ✅  | ✅  | M3        | Mac: touch, keys, buttons and deep links. iOS: touch and keys, not deep links.                                                  |
-| Device debug (logs, probes)     | ✅       | ✅  | ☐   | M3        | Mac: a Logs mode streams `conductor logs` with filter, errors-only, pause, copy; needs the Conductor release with the logs fix. |
+| Feature                         | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                                                                                            |
+| ------------------------------- | -------- | --- | --- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tool toggles (Settings → Tools) | ✅       | ✅  | ☐   | M5        | Also `.argus.json#tools.disabled`.                                                                                                                                                                                                                                               |
+| Device recording                | ✅       | ✅  | ✅  | M3        | Mac: the capture behind every mirror.                                                                                                                                                                                                                                            |
+| Device UI inspector             | ✅       | ✅  | ☐   | M3        | Mac: probe, restart with injection, capture, overlay, tree with search, metadata and live property edits.                                                                                                                                                                        |
+| Device control                  | ✅       | ✅  | ✅  | M3        | Mac: touch, keys, buttons and deep links. iOS: touch and keys, not deep links.                                                                                                                                                                                                   |
+| Device debug (logs, probes)     | ✅       | ✅  | ☐   | M3        | Mac: a Logs mode streams `conductor logs` with filter, errors-only, pause, copy; needs the Conductor release with the logs fix. On 2026-10-08 the stream started but no entries arrived for Safari in a minute; `conductor logs --json` printed none either, so not re-verified. |
 
 ### Auto-update and telemetry
 
