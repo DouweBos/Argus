@@ -279,7 +279,7 @@ const TYPED_AGENT_KINDS = new Set([
 
 export class DeviceConnection implements DeviceMediaController {
   /** Identifies this connection for claims; a reconnect is a new holder. */
-  private readonly connectionId = crypto.randomUUID();
+  readonly connectionId = crypto.randomUUID();
   private sendSeq = 0;
   private recvSeq = -1;
   private readonly subscriptions = new Set<string>();

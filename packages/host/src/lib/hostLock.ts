@@ -28,6 +28,12 @@ export interface HostLockRecord {
   owner_pid: number;
   owner: HostLockOwner;
   started_at: number;
+  /**
+   * The local UI socket another window may attach to as a viewer, and the
+   * `LOCAL_UI_PROTOCOL` it speaks. Absent until the host is listening.
+   */
+  socket?: string;
+  protocol?: number;
 }
 
 export type HostLockResult =
@@ -68,6 +74,9 @@ function parseRecord(raw: string): HostLockRecord | null {
           ? value.owner
           : "cli",
       started_at: typeof value.started_at === "number" ? value.started_at : 0,
+      ...(typeof value.socket === "string" && typeof value.protocol === "number"
+        ? { socket: value.socket, protocol: value.protocol }
+        : {}),
     };
   } catch {
     return null;
@@ -153,6 +162,35 @@ export function releaseHostLock(home = argusHomeDir()): void {
   } catch {
     // Already gone.
   }
+}
+
+/**
+ * Advertise this host's UI socket in the lock it holds, so a second window can
+ * attach instead of being turned away. Replaced atomically: a reader never sees
+ * a half-written lock. A no-op unless this process holds it.
+ */
+export function advertiseHostSocket(
+  socket: string,
+  protocol: number,
+  home = argusHomeDir(),
+): boolean {
+  const file = hostLockPath(home);
+  let record: HostLockRecord | null;
+  try {
+    record = parseRecord(fs.readFileSync(file, "utf8"));
+  } catch {
+    return false;
+  }
+  if (record?.pid !== process.pid) {
+    return false;
+  }
+  const temp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(temp, JSON.stringify({ ...record, socket, protocol }), {
+    mode: 0o600,
+  });
+  fs.renameSync(temp, file);
+
+  return true;
 }
 
 /** Resolves true once nobody holds the lock, false on timeout. */

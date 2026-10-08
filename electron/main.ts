@@ -5,6 +5,7 @@
  * index.html (prod), and wires up IPC handlers.
  */
 
+import type { LocalUiServer } from "@argus/host/services/remote/localUiSocket";
 import {
   app,
   BrowserWindow,
@@ -32,6 +33,7 @@ import { writeLogLine } from "@argus/host/lib/logFile";
 import { isServerMode, startPowerAssertion } from "@argus/host/serverMode";
 import { setColorScheme } from "@argus/host/services/browser/conductorInput";
 import { LOCAL_GATEWAY_PORT } from "@argus/host/services/remote/remoteService";
+import { serveLocalUi } from "@argus/host/services/remote/serveLocalUi";
 import { refreshAllBranches } from "@argus/host/services/session/watcher";
 import { stopAndroidCapture } from "@argus/host/services/simulator/android";
 import { stopSimulatorCapture } from "@argus/host/services/simulator/ios";
@@ -703,6 +705,14 @@ app.on("window-all-closed", () => {
   }
 });
 
+/** The UI socket the Mac app attaches to as a second window. */
+let uiServer: LocalUiServer | null = null;
+
+function closeUiSocket(): void {
+  uiServer?.close().catch(() => undefined);
+  uiServer = null;
+}
+
 // macOS: Cmd+Q triggers before-quit before closing windows. Track it so
 // window-all-closed (which fires after) knows not to keep the app alive.
 let isQuitting = false;
@@ -755,6 +765,7 @@ app.on("before-quit", (e) => {
   bypassRunningAgentsGuard = false;
   log("before-quit fired, setting isQuitting=true");
   isQuitting = true;
+  closeUiSocket();
   stopHostServices();
   destroyTray();
   stopDevTrust();
@@ -782,10 +793,17 @@ app.on("before-quit", (e) => {
 
 // Fallback cleanup for shutdown paths that bypass `before-quit`:
 // `window-all-closed` (non-macOS), POSIX signals, and uncaught exits.
-app.on("will-quit", syncHostCleanup);
-process.on("exit", syncHostCleanup);
+app.on("will-quit", () => {
+  closeUiSocket();
+  syncHostCleanup();
+});
+process.on("exit", () => {
+  closeUiSocket();
+  syncHostCleanup();
+});
 for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
   process.on(sig, () => {
+    closeUiSocket();
     syncHostCleanup();
     // Re-raise default behavior so Electron exits.
     app.quit();
@@ -914,6 +932,19 @@ app.whenReady().then(async () => {
     .remoteReady.then(() => startDevTrust())
     .catch((e) => log("Failed to start dev trust: %s", String(e)));
   reportHostLockHandover();
+
+  // Argus for Mac can open next to this app as a second window on its host.
+  // Electron stays the platform: banners and focus remain this app's.
+  serveLocalUi().then(
+    (server) => {
+      if (isQuitting) {
+        server.close().catch(() => undefined);
+      } else {
+        uiServer = server;
+      }
+    },
+    (e) => log("Failed to start the local UI socket: %s", String(e)),
+  );
 
   // Sync system dark/light theme to all active Conductor-managed browsers.
   nativeTheme.on("updated", () => {

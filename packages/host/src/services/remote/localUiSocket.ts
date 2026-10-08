@@ -53,28 +53,63 @@ export interface NotificationCallbacks {
 /** Banners whose callbacks we still remember; older clicks just do nothing. */
 const MAX_NOTIFICATIONS = 200;
 
+/** What one attached UI told us about itself (`ui.state`). */
+interface UiPeer {
+  conn: DeviceConnection;
+  foreground: boolean;
+  /** Null until its first `ui.state`: not asked anything before it says. */
+  role: LocalUiRole | null;
+}
+
+export type LocalUiRole = "platform" | "viewer";
+
 /**
- * The host's side of platform delegation: who is attached, whether its window
- * has focus, and the callbacks for banners it was asked to show.
+ * The host's side of platform delegation: who is attached, which of them
+ * answers platform requests, whose window has focus, and the callbacks for
+ * banners it was asked to show.
+ *
+ * Only `platform` UIs (the app supervising this host) get the host's own asks —
+ * banners, raising the window. A `viewer` (a window attached to a host another
+ * app runs) gets only what it asked for itself and what every window must hear.
  */
 export class LocalUiChannel {
-  private readonly connections = new Set<DeviceConnection>();
+  private readonly peers = new Map<string, UiPeer>();
   private readonly notifications = new Map<string, NotificationCallbacks>();
-  private foreground = false;
   private nextId = 1;
 
   get attached(): boolean {
-    return this.connections.size > 0;
+    return this.peers.size > 0;
   }
 
+  /** Some attached UI answers platform requests. */
+  get hasPlatform(): boolean {
+    return this.platformPeers().length > 0;
+  }
+
+  /** Any attached window has focus: the user is looking at Argus. */
   isForeground(): boolean {
-    return this.attached && this.foreground;
+    return [...this.peers.values()].some((peer) => peer.foreground);
   }
 
-  /** Ask every attached UI; false when there is none to ask. */
+  /** The attached UI the running request came from, if it came from one. */
+  requester(connectionId: string | null): DeviceConnection | null {
+    return connectionId ? (this.peers.get(connectionId)?.conn ?? null) : null;
+  }
+
+  /** Ask the platform UIs; false when there is none to ask. */
   send(request: PlatformRequest): boolean {
-    for (const conn of this.connections) {
-      conn.pushPlatformRequest(request);
+    const targets = this.platformPeers();
+    for (const peer of targets) {
+      peer.conn.pushPlatformRequest(request);
+    }
+
+    return targets.length > 0;
+  }
+
+  /** Tell every attached window, viewers included. */
+  sendAll(request: PlatformRequest): boolean {
+    for (const peer of this.peers.values()) {
+      peer.conn.pushPlatformRequest(request);
     }
 
     return this.attached;
@@ -101,7 +136,11 @@ export class LocalUiChannel {
   }
 
   /** `ui.*` methods; null for anything else, which falls through to dispatch. */
-  route(method: string, params: unknown): Promise<unknown> | null {
+  route(
+    conn: DeviceConnection,
+    method: string,
+    params: unknown,
+  ): Promise<unknown> | null {
     if (!(method in LocalUiMethods)) {
       return null;
     }
@@ -113,7 +152,12 @@ export class LocalUiChannel {
     }
     const data = parsed.data as Record<string, unknown>;
     if (method === "ui.state") {
-      this.foreground = Boolean(data.foreground);
+      const peer = this.peers.get(conn.connectionId);
+      if (peer) {
+        peer.foreground = Boolean(data.foreground);
+        // An app from before roles always supervised its host.
+        peer.role = (data.role as LocalUiRole | undefined) ?? "platform";
+      }
     } else {
       const id = String(data.id);
       const callbacks = this.notifications.get(id);
@@ -130,20 +174,21 @@ export class LocalUiChannel {
   }
 
   add(conn: DeviceConnection): void {
-    this.connections.add(conn);
+    this.peers.set(conn.connectionId, { conn, foreground: false, role: null });
   }
 
   remove(conn: DeviceConnection): void {
-    this.connections.delete(conn);
-    if (!this.attached) {
-      this.foreground = false;
-    }
+    this.peers.delete(conn.connectionId);
   }
 
   broadcast(channel: string, args: unknown[]): void {
-    for (const conn of this.connections) {
-      conn.handleBroadcast(channel, args);
+    for (const peer of this.peers.values()) {
+      peer.conn.handleBroadcast(channel, args);
     }
+  }
+
+  private platformPeers(): UiPeer[] {
+    return [...this.peers.values()].filter((peer) => peer.role === "platform");
   }
 }
 
@@ -186,7 +231,7 @@ export function encodeFrame(bytes: Uint8Array): Buffer {
 }
 
 function attach(socket: net.Socket, channel: LocalUiChannel): void {
-  const conn = new DeviceConnection(
+  const conn: DeviceConnection = new DeviceConnection(
     consoleDevice(),
     PASS_THROUGH,
     (bytes) => {
@@ -197,7 +242,7 @@ function attach(socket: net.Socket, channel: LocalUiChannel): void {
     undefined,
     {
       console: true,
-      localRoute: (method, params) => channel.route(method, params),
+      localRoute: (method, params) => channel.route(conn, method, params),
     },
   );
   conn.setCloser(() => socket.destroy());

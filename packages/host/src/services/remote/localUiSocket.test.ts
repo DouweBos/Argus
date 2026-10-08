@@ -284,6 +284,67 @@ describe("local UI socket", () => {
     expect(platform.isForeground()).toBe(false);
   });
 
+  it("keeps the host's own asks from a viewer and answers it alone", async () => {
+    const base = nodeHostPlatform();
+    const baseNotify = vi.spyOn(base, "notify");
+    const baseFocus = vi.spyOn(base, "focusUi");
+    const baseOpen = vi.spyOn(base, "openExternal");
+    const platform = uiHostPlatform(server.channel, base, {});
+    defineCommand("local_ui_open_cmd", {
+      tier: "admin",
+      handler: () => platform.openExternal("https://example.com/viewer"),
+    });
+    const viewer = await connectClient(socketPath);
+    const other = await connectClient(socketPath);
+    await viewer.request("ui.state", { foreground: false, role: "viewer" });
+    await other.request("ui.state", { foreground: true, role: "viewer" });
+
+    // The base app (Electron) keeps banners and focus; no window doubles them.
+    platform.notify({ title: "t", body: "b" });
+    platform.focusUi();
+    expect(baseNotify).toHaveBeenCalledOnce();
+    expect(baseFocus).toHaveBeenCalledOnce();
+    // Any Argus window in front counts as looking at Argus.
+    expect(platform.isForeground()).toBe(true);
+
+    // A link opened from a viewer opens over that viewer, not the base.
+    await viewer.request("local_ui_open_cmd");
+    await viewer.waitFor(
+      (e) =>
+        (e.payload as { url?: string } | undefined)?.url ===
+        "https://example.com/viewer",
+    );
+    expect(baseOpen).not.toHaveBeenCalled();
+
+    // Each window keeps its own popouts, so all of them hear the close.
+    platform.closeDevicePopout("ios:abc");
+    for (const client of [viewer, other]) {
+      await client.waitFor(
+        (e) =>
+          (e.payload as { kind?: string } | undefined)?.kind ===
+          "close_device_popout",
+      );
+    }
+    const kinds = other.inbox
+      .filter((e) => e.event === "platform.request")
+      .map((e) => (e.payload as { kind: string }).kind);
+    expect(kinds).toEqual(["close_device_popout"]);
+    viewer.socket.destroy();
+    other.socket.destroy();
+  });
+
+  it("asks nothing of a UI that hasn't said what it is yet", async () => {
+    const base = nodeHostPlatform();
+    const baseNotify = vi.spyOn(base, "notify");
+    const platform = uiHostPlatform(server.channel, base);
+    const client = await connectClient(socketPath);
+    await vi.waitFor(() => expect(server.channel.attached).toBe(true));
+
+    platform.notify({ title: "t", body: "b" });
+    expect(baseNotify).toHaveBeenCalledOnce();
+    client.socket.destroy();
+  });
+
   it("rejects malformed ui.* params", async () => {
     const client = await connectClient(socketPath);
     const res = await client.request("ui.notification_action", { id: 1 });

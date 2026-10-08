@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   acquireHostLock,
+  advertiseHostSocket,
   hostLockPath,
   readHostLock,
   releaseHostLock,
@@ -76,5 +77,22 @@ describe("host lock", () => {
     writeLockFor(child.pid!);
     await expect(waitForHostLockRelease(50, home)).resolves.toBe(false);
     await expect(waitForHostLockRelease(5000, home)).resolves.toBe(true);
+  });
+
+  it("advertises the UI socket only in a lock it holds", () => {
+    const result = acquireHostLock("electron", { home });
+    expect(result.ok).toBe(true);
+    expect(advertiseHostSocket("/x/host.sock", 1, home)).toBe(true);
+    expect(readHostLock(home)).toMatchObject({
+      pid: process.pid,
+      owner: "electron",
+      socket: "/x/host.sock",
+      protocol: 1,
+    });
+    expect(fs.statSync(hostLockPath(home)).mode & 0o777).toBe(0o600);
+    expect(fs.readdirSync(home)).toEqual(["host.lock"]);
+
+    writeLockFor(process.pid + 1_000_000);
+    expect(advertiseHostSocket("/x/host.sock", 1, home)).toBe(false);
   });
 });
