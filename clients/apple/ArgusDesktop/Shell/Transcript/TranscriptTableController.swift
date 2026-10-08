@@ -64,10 +64,14 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
       self, selector: #selector(frameChanged), name: NSView.frameDidChangeNotification, object: scrollView.contentView)
     observeFind()
     wireSelection()
+    scrollView.onScrollUp = { [weak self] in self?.follow.atBottom = false }
     wheelMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
       // Delivered on the main thread, with the event being dispatched.
       nonisolated(unsafe) let event = event
-      let redirected = MainActor.assumeIsolated { self?.scrollView.takeWheel(event) == true }
+      let redirected = MainActor.assumeIsolated {
+        self?.noteWheel(event)
+        return self?.scrollView.takeWheel(event) == true
+      }
       return redirected ? nil : event
     }
   }
@@ -360,8 +364,16 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
       return
     }
     let top = clip.bounds.minY
-    // Never the strip above the history: older pages land right below it.
-    let anchor = min(max(1, table.row(at: NSPoint(x: 1, y: top))), table.numberOfRows - 1)
+    // The first row that starts on screen, so a row cut off at the top that
+    // changes height grows upward, out of sight. Never the strip above the
+    // history: older pages land right below it.
+    var anchor = table.row(at: NSPoint(x: 1, y: top))
+    if anchor >= 0, table.rect(ofRow: anchor).minY < top, anchor + 1 < table.numberOfRows,
+      table.rect(ofRow: anchor + 1).minY < clip.bounds.maxY
+    {
+      anchor += 1
+    }
+    anchor = min(max(1, anchor), table.numberOfRows - 1)
     let anchorId = id(anchor)
     let offset = top - table.rect(ofRow: anchor).minY
     body()
@@ -425,13 +437,28 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     measureAroundViewport()
   }
 
-  private var isAtBottom: Bool {
-    scrollView.contentView.bounds.maxY >= table.frame.height - 40
+  private func distanceFromBottom() -> CGFloat {
+    table.frame.height - scrollView.contentView.bounds.maxY
+  }
+
+  /// A wheel toward older messages stops following at once, however close to
+  /// the bottom: otherwise the next streamed row snaps the reader back down.
+  /// The monitor sees a gesture that a sideways block redirects, too.
+  private func noteWheel(_ event: NSEvent) {
+    guard event.scrollingDeltaY > 0.5, let window = scrollView.window, event.window === window,
+      scrollView.bounds.contains(scrollView.convert(event.locationInWindow, from: nil))
+    else { return }
+    follow.atBottom = false
   }
 
   @objc private func boundsChanged() {
     guard adjusting == 0 else { return }
-    follow.atBottom = isAtBottom
+    // Following ends a little way up; it resumes only at the very bottom.
+    if follow.atBottom {
+      if distanceFromBottom() > 40 { follow.atBottom = false }
+    } else if distanceFromBottom() <= 2 {
+      follow.atBottom = true
+    }
     measureAroundViewport()
     loadOlderIfNeeded()
   }

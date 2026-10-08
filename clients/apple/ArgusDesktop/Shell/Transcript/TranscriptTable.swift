@@ -70,6 +70,14 @@ final class TranscriptHostingView: NSHostingView<AnyView> {
 /// Code blocks, tables and diffs scroll sideways in scroll views of their own,
 /// which swallow a vertical wheel; `takeWheel` hands that to the transcript.
 final class TranscriptScrollView: NSScrollView {
+  /// A wheel toward older messages, which ends following the tail.
+  var onScrollUp: () -> Void = {}
+
+  override func scrollWheel(with event: NSEvent) {
+    if event.scrollingDeltaY > 0.5 { onScrollUp() }
+    super.scrollWheel(with: event)
+  }
+
   /// Hit-testing hosted rows is not free and a wheel sends ~120 events a second.
   private var lastCheck: (point: NSPoint, time: TimeInterval, take: Bool)?
 
