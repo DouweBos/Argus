@@ -6,7 +6,7 @@ import Foundation
 import Observation
 
 enum CodeNavigatorMode: String, CaseIterable {
-  case changes, files, search
+  case files, changes, search
 
   var title: String {
     switch self {
