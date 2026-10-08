@@ -38,7 +38,11 @@ release
 # Native build artifacts
 native/argus-sim-bridge/argus-sim-bridge
 native/argus-sim-bridge/.build/
-/.build/
+# SwiftPM and Xcode output and per-user state, wherever a package lives
+.build/
+.swiftpm/
+xcuserdata/
+DerivedData/
 native/argus-sim-input/argus-sim-input
 native/scrcpy-server/
 native/conductor/
