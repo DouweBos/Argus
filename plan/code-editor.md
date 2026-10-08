@@ -495,6 +495,28 @@ as CLAUDE.md requires.
   licence.
 - The outcome is recorded in this file.
 
+> **M0 outcome (2026-10-08): CodeEditTextView passes.**
+>
+> - **Measurements** (release build, a 50k-line TS file of 1.9 MB with
+>   highlighting on):
+>   - open to first layout: 50 ms;
+>   - open to first highlight: 233 ms;
+>   - typing, including the highlight paint, p95: 6.7 ms;
+>   - keystroke to recoloured off the main actor, p95: 31 ms;
+>   - scroll layout per viewport, p95: 1.1 ms;
+>   - memory: about 100 MB more with highlighting on, mostly the tree-sitter
+>     tree.
+> - **IME and accessibility** are covered by tests.
+> - **CodeEditTextView is vendored**, not pinned. Its 0.12.1 sources are in
+>   `ArgusEditor/Vendor/` with the MIT licence, because its SwiftLint build
+>   plugin breaks `xcodebuild` without `-skipPackagePluginValidation`. The
+>   editor lives in its own `clients/apple/ArgusEditor` package (macOS only)
+>   instead of `ArgusDesktop/Code/Editor/`.
+> - **The grammars are over the size budget:** 24.5 MB installed, about 2.5 MB
+>   compressed. ObjC (5 MB), Swift (4 MB) and Kotlin (3.9 MB) dominate. We ship
+>   all 17 languages anyway, because the Mac app already bundles Node and about
+>   43 MB of language servers. Revisit if the iOS app's size becomes a concern.
+
 **M1 — Code panel, read and write, no LSP.**
 
 - **Scope:**
