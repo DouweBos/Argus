@@ -34,6 +34,8 @@ enum TranscriptRow {
       .frame(maxWidth: .infinity)
       .fixedSize(horizontal: false, vertical: true)
       .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onHeight?($0) }
+      // A recycled row swaps in new content; nothing in it may animate that in.
+      .transaction { if case .segment = row { $0.disablesAnimations = true; $0.animation = nil } }
     // No identity for measuring: the sizer keeps no state, and diffing one row
     // into the next is far cheaper than building a graph per row.
     let rooted = id.map { AnyView(laidOut.id($0)) } ?? AnyView(laidOut)
