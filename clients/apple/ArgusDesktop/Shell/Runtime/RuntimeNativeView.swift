@@ -26,7 +26,8 @@ struct RuntimeNativeView: View {
         if target.online {
           VStack(spacing: 0) {
             RuntimeDeviceActions(
-              platform: target.remote, deviceId: target.id, sessionId: sessionId)
+              platform: target.remote, deviceId: target.id, sessionId: sessionId,
+              isTv: target.isTv)
             Divider()
             RuntimeDeviceView(deviceId: target.id, platform: target.remote, isTv: target.isTv)
               // A fresh view per host: the same simulator can be listed by two.
@@ -150,6 +151,8 @@ struct RuntimeDeviceActions: View {
   let platform: RemotePlatform
   let deviceId: String
   let sessionId: String?
+  /// A TV has its remote for Home, and nothing to rotate.
+  var isTv = false
   /// A popout has no runtime target to clear when the device goes.
   var clearsSelection = true
 
@@ -159,7 +162,9 @@ struct RuntimeDeviceActions: View {
 
   var body: some View {
     HStack(spacing: 2) {
-      if platform == .ios {
+      if isTv {
+        EmptyView()
+      } else if platform == .ios {
         action("Home (⌘⇧H)", Icon.home) { button("ios_home") }
         action("Rotate device", Icon.rotate) { rotate() }.disabled(busy)
       } else {
