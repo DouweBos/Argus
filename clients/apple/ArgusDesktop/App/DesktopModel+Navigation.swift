@@ -70,6 +70,7 @@ extension DesktopModel {
   /// A session from the sidebar: the panel it was last on, else its home.
   func open(session id: String) {
     if gitPanelSessions.contains(id) { return openGit(session: id) }
+    if codePanelSessions.contains(id) { return openCode(session: id) }
     if agentsPanelSessions.contains(id) { return openAgents(session: id) }
     navigate(.sessionHome(id: id))
   }
@@ -92,17 +93,19 @@ extension DesktopModel {
     case .session: .agents
     case .sessionGit: .git
     case .sessionHome: .home
+    case .sessionCode: .code
     default: nil
     }
   }
 
-  /// Home, Agents or Git of the session on screen, from the toolbar or the View menu.
+  /// Home, Agents, Git or Code of the session on screen, from the toolbar or the View menu.
   func show(_ panel: SessionPanel, via: MacTelemetryEvent.PanelSwitchSource) {
     guard let id = route.sessionId, panel != sessionPanel else { return }
     switch panel {
     case .home: navigate(.sessionHome(id: id))
     case .agents: openAgents(session: id)
     case .git: openGit(session: id)
+    case .code: openCode(session: id)
     }
     MacTelemetry.capture(.sessionPanelSwitched(panel: panel.rawValue, via: via))
   }
@@ -110,6 +113,17 @@ extension DesktopModel {
   /// A session's git panel, on the sub-view it was last left on.
   func openGit(session id: String) {
     navigate(.sessionGit(id: id, view: gitViews[id] ?? .working))
+  }
+
+  /// A session's code view, on the file it was last left on.
+  func openCode(session id: String) {
+    navigate(.sessionCode(id: id, path: lastCodePaths[id] ?? code.session(id).tabs.tabs.last?.path, line: nil))
+  }
+
+  /// A file in the code view at a 1-based line: one navigation, rendered by the route.
+  func openCode(session id: String, path: String, line: Int? = nil, source: MacTelemetryEvent.EditorOpenSource) {
+    code.session(id).pendingSource = source
+    navigate(.sessionCode(id: id, path: path, line: line))
   }
 
   func navigate(_ next: DesktopRoute) {
@@ -151,13 +165,20 @@ extension DesktopModel {
     case .session(let id, let agentId):
       agentsPanelSessions.insert(id)
       gitPanelSessions.remove(id)
+      codePanelSessions.remove(id)
       if let agentId { lastAgents[id] = agentId }
     case .sessionHome(let id):
       agentsPanelSessions.remove(id)
       gitPanelSessions.remove(id)
+      codePanelSessions.remove(id)
     case .sessionGit(let id, let view):
       gitPanelSessions.insert(id)
+      codePanelSessions.remove(id)
       gitViews[id] = view
+    case .sessionCode(let id, let path, _):
+      codePanelSessions.insert(id)
+      gitPanelSessions.remove(id)
+      if let path { lastCodePaths[id] = path }
     default: break
     }
   }
@@ -200,13 +221,14 @@ extension DesktopModel {
 
 /// The panels a session switches between.
 enum SessionPanel: String, CaseIterable {
-  case home, agents, git
+  case home, agents, git, code
 
   var title: String {
     switch self {
     case .home: "Home"
     case .agents: "Agents"
     case .git: "Git"
+    case .code: "Code"
     }
   }
 
@@ -215,6 +237,7 @@ enum SessionPanel: String, CaseIterable {
     case .home: "house"
     case .agents: "sparkles"
     case .git: "arrow.triangle.branch"
+    case .code: "chevron.left.forwardslash.chevron.right"
     }
   }
 }

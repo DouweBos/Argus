@@ -20,12 +20,17 @@ struct SettingsWindow: View {
         ToolsSettingsTab()
       }
       Tab("Git", systemImage: "arrow.triangle.branch", value: SettingsTab.git) { GitSettingsTab() }
+      Tab("Editor", systemImage: "chevron.left.forwardslash.chevron.right", value: SettingsTab.editor) {
+        EditorTab()
+      }
+      Group {
       Tab("Remote", systemImage: "antenna.radiowaves.left.and.right", value: SettingsTab.remote) {
         RemoteSettingsTab()
       }
       Tab("Hosts", systemImage: "desktopcomputer", value: SettingsTab.hosts) { HostsSettingsTab() }
       Tab("Advanced", systemImage: "slider.horizontal.3", value: SettingsTab.advanced) {
         AdvancedSettingsTab()
+      }
       }
     }
     .frame(minWidth: 640, idealWidth: 720, minHeight: 480, idealHeight: 620)
@@ -42,7 +47,7 @@ struct SettingsWindow: View {
 }
 
 enum SettingsTab: String, Hashable, CaseIterable {
-  case general, accounts, agents, llm, mcp, tools, git, remote, hosts, advanced
+  case general, accounts, agents, llm, mcp, tools, git, editor, remote, hosts, advanced
 
   var title: String {
     switch self {
@@ -53,6 +58,7 @@ enum SettingsTab: String, Hashable, CaseIterable {
     case .mcp: "MCP"
     case .tools: "Tools"
     case .git: "Git"
+    case .editor: "Editor"
     case .remote: "Remote"
     case .hosts: "Hosts"
     case .advanced: "Advanced"

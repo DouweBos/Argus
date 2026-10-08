@@ -23,6 +23,7 @@ enum MacTelemetryEvent {
   enum LinkAction: String {
     case open
     case openInEditor = "open_in_editor"
+    case openInArgus = "open_in_argus"
     case reveal
     case copyPath = "copy_path"
     case openUrl = "open_url"
@@ -158,115 +159,6 @@ enum MacTelemetryEvent {
     case patchApply = "patch_apply"
   }
 
-  enum PullRequestAction: String {
-    case open
-    case merge
-    case comment
-    case close
-  }
-
-  enum ProjectSource: String {
-    case openPanel = "open_panel"
-    case example
-    case recent
-  }
-
-  enum ArgusJsonMethod: String {
-    case quick
-    case claude
-  }
-
-  enum ArgusJsonOutcome: String {
-    case saved
-    case discarded
-    case failed
-  }
-
-  enum RemoteSetting: String {
-    case enabled
-    case tailscale
-    case cloudflare
-    case tunnelMode = "tunnel_mode"
-    case tunnelToken = "tunnel_token"
-    case publicUrl = "public_url"
-    case notifyWhenFocused = "notify_when_focused"
-    case push
-    case pushContact = "push_contact"
-  }
-
-  enum PairingStage: String {
-    case started
-    case confirmed
-    case completed
-    case cancelled
-    case failed
-  }
-
-  enum RemoteDeviceAction: String {
-    case grants
-    case revoke
-    case testPush = "test_push"
-  }
-
-  enum HuddleAction: String {
-    case start
-    case blocked
-    case stop
-    case approve
-    case deny
-    case remove
-    case say
-    case copyInvite = "copy_invite"
-  }
-
-  enum LinkOutcome: String {
-    /// Its screen was there to open.
-    case direct
-    /// It named a session whose host connected later.
-    case waited
-    /// Its session never turned up.
-    case abandoned
-  }
-
-  enum HomeCard: String {
-    case notifications
-    case recentProject = "recent_project"
-    case legacySecrets = "legacy_secrets"
-  }
-
-  enum HomeCardAction: String {
-    case open
-    case dismiss
-    case fixed
-    case failed
-  }
-
-  enum TabAction: String {
-    case open
-    case close
-    case `switch`
-  }
-
-  /// How a session's Home / Agents / Git switch was made.
-  enum PanelSwitchSource: String {
-    case toolbar
-    case menu
-    case shortcut
-  }
-
-  enum FolderPickStage: String {
-    case opened
-    case picked
-    case cancelled
-  }
-
-  enum ChatHistoryAction: String {
-    case view
-    case resume
-    case delete
-    case clear
-  }
-
   case launched
   case quit(hadRunningAgents: Bool)
   case hostStarted(restarts: Int)
@@ -361,6 +253,16 @@ enum MacTelemetryEvent {
   case runActed(action: StoreEvent.RunAction)
   case proposalHandled(action: StoreEvent.ProposalAction)
   case memoryEdited(action: StoreEvent.MemoryAction)
+  /// The code view read a file into a tab; `language` is a bundled grammar or `other`.
+  case editorFileOpened(source: EditorOpenSource, language: String, sizeBucket: String, readOnly: Bool)
+  case editorFileSaved(formatted: Bool, hadConflict: Bool)
+  case editorConflictResolved(action: EditorConflictAction)
+  /// A clean buffer took an agent's (or anyone's) change from disk; once per file per session.
+  case editorExternalReload(agentRunning: Bool)
+  case editorHighlightUnavailable(language: String, reason: String)
+  case editorSearchRun(scope: EditorSearchScope, regex: Bool, resultBucket: String, truncated: Bool)
+  case editorAskAgent(source: EditorAskSource, startedAgent: Bool)
+  case editorCompletionAccepted(language: String)
 
   var name: String {
     switch self {
@@ -419,6 +321,14 @@ enum MacTelemetryEvent {
     case .runActed: "mac_run_acted"
     case .proposalHandled: "mac_proposal_handled"
     case .memoryEdited: "mac_memory_edited"
+    case .editorFileOpened: "mac_editor_file_opened"
+    case .editorFileSaved: "mac_editor_file_saved"
+    case .editorConflictResolved: "mac_editor_conflict_resolved"
+    case .editorExternalReload: "mac_editor_external_reload"
+    case .editorHighlightUnavailable: "mac_editor_highlight_unavailable"
+    case .editorSearchRun: "mac_editor_search_run"
+    case .editorAskAgent: "mac_editor_ask_agent"
+    case .editorCompletionAccepted: "mac_editor_completion_accepted"
     }
   }
 
@@ -534,6 +444,22 @@ enum MacTelemetryEvent {
       ["action": action.rawValue]
     case .memoryEdited(let action):
       ["action": action.rawValue]
+    case .editorFileOpened(let source, let language, let sizeBucket, let readOnly):
+      ["source": source.rawValue, "language": language, "size_bucket": sizeBucket, "read_only": readOnly]
+    case .editorFileSaved(let formatted, let hadConflict):
+      ["formatted": formatted, "had_conflict": hadConflict]
+    case .editorConflictResolved(let action):
+      ["action": action.rawValue]
+    case .editorExternalReload(let agentRunning):
+      ["agent_running": agentRunning]
+    case .editorHighlightUnavailable(let language, let reason):
+      ["language": language, "reason": reason]
+    case .editorSearchRun(let scope, let regex, let resultBucket, let truncated):
+      ["scope": scope.rawValue, "regex": regex, "result_bucket": resultBucket, "truncated": truncated]
+    case .editorAskAgent(let source, let startedAgent):
+      ["source": source.rawValue, "started_agent": startedAgent]
+    case .editorCompletionAccepted(let language):
+      ["language": language]
     }
   }
 

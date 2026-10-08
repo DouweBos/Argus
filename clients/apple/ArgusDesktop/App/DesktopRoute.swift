@@ -18,6 +18,8 @@ enum DesktopRoute: Hashable {
   case session(id: String, agentId: String?)
   /// `/sessions/:sessionId/git/:gitView`.
   case sessionGit(id: String, view: GitRoute)
+  /// `/sessions/:sessionId/code?path=&line=`: the code view, on a file and 1-based line.
+  case sessionCode(id: String, path: String?, line: Int?)
   /// `/pull-requests`: the PRs of interest across open projects.
   case pullRequests
   /// `/pull-requests/:owner/:repo/:number`; `repo` is `owner/repo`.
@@ -37,7 +39,7 @@ enum DesktopRoute: Hashable {
 
   var sessionId: String? {
     switch self {
-    case .session(let id, _), .sessionHome(let id), .sessionGit(let id, _): id
+    case .session(let id, _), .sessionHome(let id), .sessionGit(let id, _), .sessionCode(let id, _, _): id
     default: nil
     }
   }
@@ -70,6 +72,7 @@ enum DesktopRoute: Hashable {
     case .device: "/devices/:platform/:deviceKey"
     case .session: "/sessions/:sessionId/agents"
     case .sessionGit(_, let view): "/sessions/:sessionId/git/\(view.segment)"
+    case .sessionCode: "/sessions/:sessionId/code"
     case .pullRequests: "/pull-requests"
     case .pullRequest: "/pull-requests/:owner/:repo/:number"
     case .automations: "/automations"

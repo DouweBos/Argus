@@ -1,0 +1,49 @@
+import ArgusSyntax
+import Foundation
+
+/// The code view's telemetry enums; the cases are in `MacTelemetryEvent`.
+extension MacTelemetryEvent {
+  /// Where a file was opened from.
+  enum EditorOpenSource: String {
+    case chatLink = "chat_link"
+    case diff
+    case blame
+    case changes
+    case tree
+    case quickOpen = "quick_open"
+    case search
+    case diagnostic
+    /// Back/forward, a restored tab, a deep link: no click opened it.
+    case history
+  }
+
+  enum EditorConflictAction: String {
+    case compare
+    case keepMine = "keep_mine"
+    case reload
+  }
+
+  enum EditorSearchScope: String {
+    case file
+    case worktree
+  }
+
+  enum EditorAskSource: String {
+    case diagnostic
+    case selection
+  }
+
+  /// A grammar's name, or `other` for a file none covers.
+  static func languageName(_ language: SyntaxLanguage?) -> String {
+    language?.telemetryName ?? "other"
+  }
+
+  static func fileSizeBucket(_ bytes: Int) -> String {
+    switch bytes {
+    case ..<10_000: "<10k"
+    case ..<100_000: "<100k"
+    case ..<1_000_000: "<1m"
+    default: "1m+"
+    }
+  }
+}

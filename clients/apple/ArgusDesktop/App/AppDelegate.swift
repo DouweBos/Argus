@@ -38,6 +38,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   /// down the way the signal path does.
   func quit() {
     guard !terminating else { return }
+    // Unsaved code first: Save may need the host, so it runs before anything stops.
+    if !model.code.dirtyFiles.isEmpty {
+      Task {
+        guard await model.confirmUnsavedCode() else { return }
+        model.code.discardAllForQuit()
+        quit()
+      }
+      return
+    }
     guard NSApp.windows.contains(where: { $0.attachedSheet != nil || ($0.isSheet && $0.isVisible) }) else {
       NSApp.terminate(nil)
       return
@@ -80,6 +89,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     if terminating { return .terminateLater }
+    if !model.code.dirtyFiles.isEmpty {
+      Task {
+        guard await model.confirmUnsavedCode() else { return NSApp.reply(toApplicationShouldTerminate: false) }
+        model.code.discardAllForQuit()
+        NSApp.reply(toApplicationShouldTerminate: false)
+        NSApp.terminate(nil)
+      }
+      return .terminateLater
+    }
     let running = model.runningAgentCount
     if running > 0, !confirmQuit(runningAgents: running) {
       return .terminateCancel

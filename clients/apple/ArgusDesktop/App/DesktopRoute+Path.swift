@@ -33,6 +33,9 @@ extension DesktopRoute {
     case ("sessions", 3...) where parts[2] == "git":
       guard let view = GitRoute(segments: Array(parts.dropFirst(3)), query: query) else { return nil }
       self = .sessionGit(id: parts[1], view: view)
+    case ("sessions", 3) where parts[2] == "code":
+      let path = query["path"].flatMap(\.nonEmpty)
+      self = .sessionCode(id: parts[1], path: path, line: path == nil ? nil : query["line"].flatMap { Int($0) })
     default: return nil
     }
   }
@@ -69,7 +72,16 @@ extension DesktopRoute {
     case .session(let id, let agentId):
       "/sessions/\(Self.encode(id))/agents" + (agentId.map { "/\(Self.encode($0))" } ?? "")
     case .sessionGit(let id, let view): "/sessions/\(Self.encode(id))/git/\(view.pathSuffix)"
+    case .sessionCode(let id, let path, let line):
+      "/sessions/\(Self.encode(id))/code" + Self.query([("path", path), ("line", path == nil ? nil : line.map(String.init))])
     }
+  }
+
+  /// `?a=1&b=2` from the items that have a value; empty when none do.
+  static func query(_ items: [(String, String?)]) -> String {
+    var components = URLComponents()
+    components.queryItems = items.compactMap { name, value in value.map { URLQueryItem(name: name, value: $0) } }
+    return components.percentEncodedQuery.map { $0.isEmpty ? "" : "?\($0)" } ?? ""
   }
 
   static func encode(_ segment: String) -> String {
@@ -153,13 +165,7 @@ extension GitRoute {
 
   /// What follows `/git/` in a path, query included.
   var pathSuffix: String {
-    func query(_ items: [(String, String?)]) -> String {
-      var components = URLComponents()
-      components.queryItems = items.compactMap { name, value in
-        value.map { URLQueryItem(name: name, value: $0) }
-      }
-      return components.percentEncodedQuery.map { $0.isEmpty ? "" : "?\($0)" } ?? ""
-    }
+    let query = DesktopRoute.query
     switch self {
     case .branches(let name?): return "branches/\(DesktopRoute.encode(name))"
     case .tags(let name): return "tags/\(DesktopRoute.encode(name))"
