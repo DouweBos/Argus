@@ -14,14 +14,18 @@ struct TranscriptView: View {
   /// Replaces the host's messages — the debug stress fixture renders through here.
   var fixture: [RemoteMessage]?
 
-  @State private var model = TranscriptModel()
-  @State private var table = TableBox()
-  @State private var links: TranscriptLinkHandler?
+  @State private var owner = TranscriptSessions.Owner()
   @State private var landed = false
   @State private var loadingOlder = false
 
   private var messages: [RemoteMessage] { fixture ?? host.visibleMessages(for: agentKey) }
-  private var controller: TranscriptTableController { table.controller(model) }
+  /// This agent's transcript, kept from the last time it was on screen.
+  private var session: TranscriptSession {
+    TranscriptSessions.shared.session(for: agentKey, owner: owner, store: host, sessionId: sessionId)
+  }
+  private var model: TranscriptModel { session.model }
+  private var controller: TranscriptTableController { session.controller }
+  private var links: TranscriptLinkHandler { session.links }
   private var hasOlder: Bool { fixture == nil && host.hasOlderMessages(for: agentKey) }
 
   var body: some View {
@@ -32,6 +36,8 @@ struct TranscriptView: View {
       top: .init(hasOlder: hasOlder, loading: loadingOlder),
       footer: .init(pending: pending, showEmpty: messages.isEmpty && (landed || fixture != nil))
     )
+    // Each agent has its own table; another agent's can't be updated into this one.
+    .id(agentKey)
     .onChange(of: pending.map(\.id)) { _, ids in
       // A new decision always comes into view — it's what the agent waits on.
       if !ids.isEmpty { controller.jumpToLatest() }
@@ -138,15 +144,12 @@ struct TranscriptView: View {
       render: { text, role in
         AnyView(TranscriptToolText(text: text, role: role))
       },
-      openPath: { [links] path in links?.openFile(FileLinks.parseFileRef(path)) })
+      openPath: { [links] path in links.openFile(FileLinks.parseFileRef(path)) })
   }
 
   private func start() async {
-    if links == nil {
-      links = TranscriptLinkHandler(store: host, sessionId: sessionId)
-    }
     // Saved chats link to files in the worktree too.
-    Task { [links] in await links?.load() }
+    Task { [links] in await links.load() }
     guard fixture == nil else { return }
     // A saved chat has no queue, subscription or anything left to catch up on.
     if HostStore.parseStoppedKey(agentKey) != nil {
@@ -172,20 +175,6 @@ final class FollowState {
     didSet { if atBottom != oldValue { showJump = !atBottom } }
   }
   private(set) var showJump = false
-}
-
-/// Holds the table across view updates: a `@State` initial value is built on
-/// every one, and the controller owns AppKit views.
-@MainActor
-private final class TableBox {
-  private var made: TranscriptTableController?
-
-  func controller(_ model: TranscriptModel) -> TranscriptTableController {
-    if let made { return made }
-    let controller = TranscriptTableController(model: model)
-    made = controller
-    return controller
-  }
 }
 
 private struct JumpToLatest: View {
