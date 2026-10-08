@@ -31,7 +31,7 @@ struct TranscriptTable: NSViewRepresentable {
 final class TranscriptCell: NSTableCellView {
   static let identifier = NSUserInterfaceItemIdentifier("transcript-row")
 
-  let host = NSHostingView(rootView: AnyView(EmptyView()))
+  let host = TranscriptHostingView(rootView: AnyView(EmptyView()))
   private(set) var rowId = ""
   private(set) var revision = -1
   private(set) var environmentKey = ""
@@ -59,6 +59,12 @@ final class TranscriptCell: NSTableCellView {
     super.layout()
     host.frame = bounds
   }
+}
+
+/// Takes the click that brings a background window forward, so a tool card
+/// opens on the first click rather than the second.
+final class TranscriptHostingView: NSHostingView<AnyView> {
+  override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 
 /// Code blocks, tables and diffs scroll sideways in scroll views of their own,
