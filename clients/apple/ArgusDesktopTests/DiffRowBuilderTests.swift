@@ -75,4 +75,25 @@ struct DiffRowBuilderTests {
   @Test func theWidestLineIsCountedAcrossHunks() {
     #expect(DiffRowBuilder.widestLine(in: diff("  ", String(repeating: " ", count: 11))) == "line 10".count)
   }
+
+  @Test func onlyAdditionsOrOnlyDeletionsAreOneSided() {
+    #expect(DiffRowBuilder.isOneSided(diff(" ++ ", "+")))
+    #expect(DiffRowBuilder.isOneSided(diff("--", " - ")))
+    #expect(!DiffRowBuilder.isOneSided(diff("+", "-")))
+    #expect(!DiffRowBuilder.isOneSided(diff(" -+ ")))
+  }
+
+  private func numbered(old: Int?, new: Int?) -> DiffResult {
+    let line = DiffLine(id: "0", type: old == nil ? .addition : .deletion, content: "x", oldLineNumber: old, newLineNumber: new)
+    return DiffResult(
+      filePath: "a.txt",
+      hunks: [HunkData(id: "0", header: "@@", oldStart: 1, oldCount: 1, newStart: 1, newCount: 1, lines: [line])],
+      stats: DiffStats(additions: 0, deletions: 0))
+  }
+
+  @Test func aNewOrDeletedFileHasOneGutter() {
+    #expect(DiffRowBuilder.gutters(for: numbered(old: nil, new: 1)) == .new)
+    #expect(DiffRowBuilder.gutters(for: numbered(old: 1, new: nil)) == .old)
+    #expect(DiffRowBuilder.gutters(for: numbered(old: 1, new: 1)) == .both)
+  }
 }

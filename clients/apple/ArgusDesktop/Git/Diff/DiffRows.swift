@@ -14,6 +14,16 @@ enum DiffLayout: String, CaseIterable, Identifiable {
   var telemetryName: String { self == .inline ? "unified" : "split" }
 }
 
+/// The unified layout's line-number gutters: a new file's lines have no old
+/// numbers, a deleted file's no new ones, so it drops the empty gutter.
+enum DiffGutters: Equatable {
+  case both
+  case old
+  case new
+
+  var count: Int { self == .both ? 2 : 1 }
+}
+
 /// Which hunk actions a diff offers: the working copy's two sides, or none.
 enum DiffActions {
   case unstaged
@@ -78,6 +88,28 @@ enum DiffRowBuilder {
       }
     }
     return result
+  }
+
+  /// Only additions or only deletions: nothing to set side by side, so even
+  /// the split layout shows one column.
+  static func isOneSided(_ diff: DiffResult) -> Bool {
+    var additions = false
+    var deletions = false
+    for hunk in diff.hunks {
+      for line in hunk.lines {
+        if line.type == .addition { additions = true }
+        if line.type == .deletion { deletions = true }
+        if additions && deletions { return false }
+      }
+    }
+    return true
+  }
+
+  static func gutters(for diff: DiffResult) -> DiffGutters {
+    let lines = diff.hunks.lazy.flatMap(\.lines)
+    if !lines.contains(where: { $0.oldLineNumber != nil }) { return .new }
+    if !lines.contains(where: { $0.newLineNumber != nil }) { return .old }
+    return .both
   }
 
   /// The longest line, in characters, for the inline layout's scroll width.

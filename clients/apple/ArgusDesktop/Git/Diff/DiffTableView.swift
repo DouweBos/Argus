@@ -56,6 +56,7 @@ struct DiffTableView: NSViewRepresentable {
     private(set) var diff: DiffResult?
     private(set) var rows: [DiffRow] = []
     private var layout: DiffLayout = .inline
+    private var gutters = DiffGutters.both
     private var actions: DiffActions?
     private var palette: DiffPalette?
     private var signature: [String] = []
@@ -77,11 +78,12 @@ struct DiffTableView: NSViewRepresentable {
       self.diff = diff
       self.layout = layout
       self.actions = actions
+      gutters = DiffRowBuilder.gutters(for: diff)
       rows = DiffRowBuilder.rows(for: diff, layout: layout)
       guard let table else { return }
       if let column = table.tableColumns.first {
         let chars = layout == .inline ? DiffRowBuilder.widestLine(in: diff) : 0
-        column.minWidth = layout == .inline ? DiffMetrics.textX(layout: .inline) + CGFloat(chars) * DiffMetrics.charWidth + 24 : 200
+        column.minWidth = layout == .inline ? DiffMetrics.textX(gutters: gutters) + CGFloat(chars) * DiffMetrics.charWidth + 24 : 200
         column.width = max(column.minWidth, table.enclosingScrollView?.contentSize.width ?? 0)
       }
       let selection = sameFile ? table.selectedRowIndexes : IndexSet()
@@ -118,7 +120,7 @@ struct DiffTableView: NSViewRepresentable {
       }
       let view =
         tableView.makeView(withIdentifier: DiffLineView.identifier, owner: nil) as? DiffLineView ?? DiffLineView()
-      view.configure(row: item, hunk: hunk, palette: palette)
+      view.configure(row: item, hunk: hunk, palette: palette, gutters: gutters)
       return view
     }
 

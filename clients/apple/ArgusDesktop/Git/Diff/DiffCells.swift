@@ -13,9 +13,9 @@ enum DiffMetrics {
   static var charWidth: CGFloat { ("M" as NSString).size(withAttributes: [.font: font]).width }
   static var gutterWidth: CGFloat { TextScale.shared(40).rounded() }
 
-  /// Where a line's text starts: two gutters (inline) or one per side (split).
-  static func textX(layout: DiffLayout) -> CGFloat {
-    layout == .inline ? gutterWidth * 2 + 20 : gutterWidth + 16
+  /// Where a unified line's text starts, after its gutters.
+  static func textX(gutters: DiffGutters) -> CGFloat {
+    gutterWidth * CGFloat(gutters.count) + 20
   }
 }
 
@@ -48,6 +48,7 @@ final class DiffLineView: NSView {
   private var row: DiffRow?
   private var lines: [GroveKit.DiffLine] = []
   private var palette: DiffPalette?
+  private var gutters = DiffGutters.both
 
   convenience init() {
     self.init(frame: .zero)
@@ -56,10 +57,11 @@ final class DiffLineView: NSView {
 
   override var isFlipped: Bool { true }
 
-  func configure(row: DiffRow, hunk: HunkData, palette: DiffPalette) {
+  func configure(row: DiffRow, hunk: HunkData, palette: DiffPalette, gutters: DiffGutters) {
     self.row = row
     lines = hunk.lines
     self.palette = palette
+    self.gutters = gutters
     needsDisplay = true
   }
 
@@ -69,7 +71,13 @@ final class DiffLineView: NSView {
     case .header: break
     case .line(let i):
       let line = lines[i]
-      draw(line, in: bounds, palette: palette, gutters: [line.oldLineNumber, line.newLineNumber])
+      let numbers: [Int?] =
+        switch gutters {
+        case .both: [line.oldLineNumber, line.newLineNumber]
+        case .old: [line.oldLineNumber]
+        case .new: [line.newLineNumber]
+        }
+      draw(line, in: bounds, palette: palette, gutters: numbers)
     case .pair(let left, let right):
       let half = floor(bounds.width / 2)
       let leftRect = NSRect(x: 0, y: 0, width: half, height: bounds.height)
