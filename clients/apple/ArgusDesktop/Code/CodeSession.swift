@@ -34,6 +34,7 @@ final class CodeSession {
   var navigatorMode: CodeNavigatorMode = .changes
   var navigatorVisible = true
   var quickOpenVisible = false
+  let quickOpen = QuickOpenModel()
   /// The worktree's files (`list_session_files`), for the tree and quick open.
   private(set) var fileList: [String] = []
   private(set) var fileTree: [CodeTreeNode] = []
@@ -55,6 +56,7 @@ final class CodeSession {
     tabs = CodeTabList.restored(sessionId: sessionId)
     search = CodeSearchModel(sessionId: sessionId)
     search.session = self
+    quickOpen.code = self
   }
 
   var model: DesktopModel? { store?.model }

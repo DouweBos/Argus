@@ -2,119 +2,206 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// ⌘P: open a worktree file by fuzzy name, the session's changed files first.
+/// ⌘P / ⇧⌘O / ⌘T: open a file or jump to a symbol or line by fuzzy name, changed files first.
 struct QuickOpenView: View {
   @Environment(\.theme) private var theme
   let code: CodeSession
-  @State private var query = ""
-  @State private var selected = 0
   @FocusState private var focused: Bool
 
+  private var model: QuickOpenModel { code.quickOpen }
+
   var body: some View {
-    let results = matches
+    @Bindable var model = model
+    let results = model.results
     VStack(spacing: 0) {
-      TextField("Open a file by name…", text: $query)
+      TextField(placeholder, text: $model.text)
         .textFieldStyle(.plain)
         .font(.scaled(.title3))
         .padding(12)
         .focused($focused)
-        .onSubmit { open(results) }
+        .onSubmit { model.submit() }
         .onKeyPress(.downArrow) { move(1, in: results) }
         .onKeyPress(.upArrow) { move(-1, in: results) }
         .onKeyPress(.escape) {
-          close()
+          model.dismiss()
           return .handled
         }
         .accessibilityLabel("Quick open")
       Divider()
       ScrollViewReader { proxy in
         List {
-          if results.isEmpty {
-            Text(code.fileListLoading ? "Loading files…" : "No matching files").foregroundStyle(.secondary)
+          if let message = message(for: results) {
+            Text(message).foregroundStyle(.secondary)
           }
-          ForEach(Array(results.enumerated()), id: \.element.path) { index, match in
-            QuickOpenRow(match: match, selected: index == selected)
+          ForEach(Array(results.enumerated()), id: \.element.id) { index, result in
+            row(result, selected: index == model.selected)
               .id(index)
               .contentShape(Rectangle())
-              .onTapGesture { pick(match.path) }
+              .onTapGesture { model.open(result) }
           }
         }
         .listStyle(.plain)
-        .onChange(of: selected) { _, index in proxy.scrollTo(index) }
+        .onChange(of: model.selected) { _, index in proxy.scrollTo(index) }
       }
       .frame(height: 340)
     }
-    .frame(width: 560)
+    .frame(width: 600)
     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(theme.border))
     .shadow(radius: 24)
     .onAppear { focused = true }
-    .onChange(of: query) { selected = 0 }
-    .task { await code.loadFileList() }
   }
 
-  private var matches: [FuzzyFileMatcher.Match] {
-    code.matcher.search(query, boost: Set(code.changedEntries.map(\.path)), limit: 50)
+  @ViewBuilder private func row(_ result: QuickOpenResult, selected: Bool) -> some View {
+    switch result {
+    case .file(let path, let indices, let boosted):
+      QuickOpenFileRow(path: path, indices: indices, boosted: boosted)
+        .listRowBackground(selected ? theme.accentSoft : Color.clear)
+    case .symbol(let symbol, let indices, _):
+      QuickOpenSymbolRow(symbol: symbol, indices: indices)
+        .listRowBackground(selected ? theme.accentSoft : Color.clear)
+    }
   }
 
-  private func move(_ delta: Int, in results: [FuzzyFileMatcher.Match]) -> KeyPress.Result {
+  private var placeholder: String {
+    switch model.base {
+    case .files: "Open a file by name…"
+    case .mixed: "Open Quickly: files and symbols…"
+    }
+  }
+
+  /// The line above the rows: how to use the prefixes, or why there are none.
+  private func message(for results: [QuickOpenResult]) -> String? {
+    switch model.query {
+    case .files(let text) where text.isEmpty:
+      return "@ symbols in this file   # symbols in the workspace   : go to line"
+    case .line(let line, _):
+      guard model.activePath != nil else { return "Open a file to go to a line" }
+      return line.map { "Press Return to go to line \($0)" } ?? "Type a line number, and a column after a colon"
+    case .workspaceSymbols(let text) where text.isEmpty:
+      return "Type the name of a class, function or other symbol"
+    case .fileSymbols where model.activePath == nil:
+      return "Open a file to list its symbols"
+    default:
+      guard results.isEmpty else { return nil }
+      if code.fileListLoading || model.searching { return "Searching…" }
+      return "No matches"
+    }
+  }
+
+  private func move(_ delta: Int, in results: [QuickOpenResult]) -> KeyPress.Result {
     guard !results.isEmpty else { return .handled }
-    selected = (selected + delta + results.count) % results.count
+    model.selected = (model.selected + delta + results.count) % results.count
     return .handled
-  }
-
-  private func open(_ results: [FuzzyFileMatcher.Match]) {
-    guard results.indices.contains(selected) else { return }
-    pick(results[selected].path)
-  }
-
-  private func pick(_ path: String) {
-    close()
-    code.pin(path)
-    code.navigate(to: path, source: .quickOpen)
-  }
-
-  private func close() {
-    code.quickOpenVisible = false
   }
 }
 
-/// A match with its matched characters in bold, the changed files marked.
-private struct QuickOpenRow: View {
+/// A file with its matched characters in bold, the changed ones marked.
+private struct QuickOpenFileRow: View {
   @Environment(\.theme) private var theme
-  let match: FuzzyFileMatcher.Match
-  let selected: Bool
+  let path: String
+  let indices: [Int]
+  let boosted: Bool
 
   var body: some View {
-    let name = (match.path as NSString).lastPathComponent
-    let nameStart = (match.path as NSString).length - (name as NSString).length
+    let name = (path as NSString).lastPathComponent
+    let nameStart = (path as NSString).length - (name as NSString).length
     HStack(spacing: 8) {
       Image(systemName: "doc").foregroundStyle(.secondary).frame(width: 18)
-      Text(highlighted(match.path, from: nameStart, to: nil))
-      Text(highlighted(match.path, from: 0, to: max(0, nameStart - 1)))
+      Text(QuickOpenHighlight.text(path, hits: indices, from: nameStart, to: nil, theme: theme))
+      Text(QuickOpenHighlight.text(path, hits: indices, from: 0, to: max(0, nameStart - 1), theme: theme))
         .font(.scaled(.caption))
         .foregroundStyle(theme.textSecondary)
         .lineLimit(1)
         .truncationMode(.head)
       Spacer()
-      if match.isBoosted {
+      if boosted {
         Text("Changed").font(.scaled(.caption)).foregroundStyle(theme.warning)
       }
     }
     .padding(.vertical, 3)
-    .listRowBackground(selected ? theme.accentSoft : Color.clear)
+  }
+}
+
+/// A symbol: its kind, its name highlighted, then where it lives.
+private struct QuickOpenSymbolRow: View {
+  @Environment(\.theme) private var theme
+  let symbol: ArgusProtocol.CodeSymbol
+  let indices: [Int]
+
+  var body: some View {
+    HStack(spacing: 8) {
+      SymbolKindBadge(kind: symbol.kind).frame(width: 18)
+      Text(QuickOpenHighlight.text(symbol.name, hits: indices, from: 0, to: nil, theme: theme))
+        .lineLimit(1)
+      if let container = symbol.container {
+        Text(container).font(.scaled(.caption)).foregroundStyle(theme.textSecondary).lineLimit(1)
+      }
+      Spacer(minLength: 8)
+      Text("\(symbol.relativePath):\(symbol.line)")
+        .font(.scaled(.caption))
+        .foregroundStyle(theme.textMuted)
+        .lineLimit(1)
+        .truncationMode(.head)
+    }
+    .padding(.vertical, 3)
+  }
+}
+
+/// Xcode's letter badges, in the completion list's colours.
+struct SymbolKindBadge: View {
+  @Environment(\.theme) private var theme
+  let kind: ArgusProtocol.CodeSymbolKind
+
+  var body: some View {
+    Text(letter)
+      .font(.system(size: 10, weight: .bold, design: .monospaced))
+      .foregroundStyle(theme.onAccent)
+      .frame(width: 16, height: 16)
+      .background(tone.color(theme), in: RoundedRectangle(cornerRadius: 3))
+      .accessibilityLabel(kind.rawValue.replacingOccurrences(of: "_", with: " "))
   }
 
-  /// `path`'s UTF-16 range `from..<to`, the matched characters emphasised.
-  private func highlighted(_ path: String, from start: Int, to end: Int?) -> AttributedString {
-    let text = path as NSString
-    let end = end ?? text.length
-    let hits = Set(match.indices)
+  private var letter: String {
+    switch kind {
+    case .class: "C"
+    case .struct: "S"
+    case .enum: "E"
+    case .enumMember: "e"
+    case .protocol, .interface: "P"
+    case .extension: "X"
+    case .typeAlias: "T"
+    case .module: "M"
+    case .method, .constructor: "m"
+    case .function: "f"
+    case .property: "p"
+    case .constant: "c"
+    case .variable: "v"
+    default: "·"
+    }
+  }
+
+  private var tone: Tone {
+    switch kind {
+    case .method, .function, .constructor: .accent
+    case .class, .struct, .enum, .protocol, .interface, .typeAlias, .extension: .success
+    case .module: .warning
+    default: .muted
+    }
+  }
+}
+
+/// `text`'s UTF-16 range `from..<to`, the matched characters in the accent colour.
+enum QuickOpenHighlight {
+  static func text(_ text: String, hits: [Int], from start: Int, to end: Int?, theme: Theme) -> AttributedString {
+    let source = text as NSString
+    let end = end ?? source.length
+    let hits = Set(hits)
     var result = AttributedString()
     var index = start
     while index < end {
-      let range = text.rangeOfComposedCharacterSequence(at: index)
-      var piece = AttributedString(text.substring(with: range))
+      let range = source.rangeOfComposedCharacterSequence(at: index)
+      var piece = AttributedString(source.substring(with: range))
       if hits.contains(index) {
         piece.foregroundColor = theme.accent
         piece.inlinePresentationIntent = .stronglyEmphasized

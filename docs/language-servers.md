@@ -34,6 +34,10 @@ wrong — hover over it to see why (so far only Swift does this, see
 
 Argus never downloads a language server for you.
 
+Open Quickly (⇧⌘O) and workspace symbol search (⌘T) work without any
+server: Argus keeps its own index of the definitions in a session's files,
+and merges in what a running server knows on top.
+
 ### Bundled servers
 
 These ship inside the app and need nothing from you.

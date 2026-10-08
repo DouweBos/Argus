@@ -15,8 +15,23 @@ extension MacTelemetryEvent {
     case search
     case diagnostic
     case definition
+    /// A symbol picked in quick open.
+    case symbol
     /// Back/forward, a restored tab, a deep link: no click opened it.
     case history
+  }
+
+  enum EditorQuickOpenMode: String {
+    case files
+    case mixed
+    case symbols
+    case fileSymbols = "file_symbols"
+    case line
+  }
+
+  enum EditorQuickOpenResult: String {
+    case opened
+    case dismissed
   }
 
   enum EditorConflictAction: String {
