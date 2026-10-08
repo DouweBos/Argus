@@ -209,4 +209,12 @@ enum SessionPanel: String, CaseIterable {
     case .git: "Git"
     }
   }
+
+  var symbol: String {
+    switch self {
+    case .home: "house"
+    case .agents: "sparkles"
+    case .git: "arrow.triangle.branch"
+    }
+  }
 }
