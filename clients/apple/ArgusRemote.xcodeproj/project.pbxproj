@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		A5C0DE0000000000000C0007 /* ArgusCore in Frameworks */ = {isa = PBXBuildFile; productRef = A5C0DE0000000000000C0005 /* ArgusCore */; };
 		A5C0DE0000000000000C0008 /* ArgusUI in Frameworks */ = {isa = PBXBuildFile; productRef = A5C0DE0000000000000C0006 /* ArgusUI */; };
+		5E7A00000000000000000007 /* ArgusSyntax in Frameworks */ = {isa = PBXBuildFile; productRef = 5E7A00000000000000000005 /* ArgusSyntax */; };
 		FEED000100000000000000A3 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = FEED000100000000000000A2 /* PostHog */; };
 		FEED000100000000000000C1 /* Telemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEED000100000000000000B1 /* Telemetry.swift */; };
 		FEED000100000000000000C2 /* TelemetryEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEED000100000000000000B2 /* TelemetryEvent.swift */; };
@@ -60,6 +61,7 @@
 		DE5C0000000000000000000E /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000B /* ArgusKit */; };
 		DE5C0000000000000000000F /* ArgusCore in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000C /* ArgusCore */; };
 		DE5C00000000000000000010 /* ArgusUI in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000D /* ArgusUI */; };
+		5E7A00000000000000000008 /* ArgusSyntax in Frameworks */ = {isa = PBXBuildFile; productRef = 5E7A00000000000000000006 /* ArgusSyntax */; };
 		7E2A00000000000000000003 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 7E2A00000000000000000002 /* SwiftTerm */; };
 		6B0F00000000000000000003 /* GroveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6B0F00000000000000000002 /* GroveKit */; };
 /* End PBXBuildFile section */
@@ -110,6 +112,7 @@
 		1D00B47DC68F09613A0A0769 /* ArgusKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ArgusKit; path = ArgusKit; sourceTree = SOURCE_ROOT; };
 		A5C0DE0000000000000C0003 /* ArgusCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ArgusCore; path = ArgusCore; sourceTree = SOURCE_ROOT; };
 		A5C0DE0000000000000C0004 /* ArgusUI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ArgusUI; path = ArgusUI; sourceTree = SOURCE_ROOT; };
+		5E7A00000000000000000003 /* ArgusSyntax */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ArgusSyntax; path = ArgusSyntax; sourceTree = SOURCE_ROOT; };
 		20BFB66C676863B8775FDB91 /* ArgusRemoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArgusRemoteApp.swift; sourceTree = "<group>"; };
 		21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationView.swift; sourceTree = "<group>"; };
 		D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationEditorView.swift; sourceTree = "<group>"; };
@@ -197,6 +200,7 @@
 				792DC62433CAABA830D81267 /* ArgusKit in Frameworks */,
 				A5C0DE0000000000000C0007 /* ArgusCore in Frameworks */,
 				A5C0DE0000000000000C0008 /* ArgusUI in Frameworks */,
+				5E7A00000000000000000007 /* ArgusSyntax in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -207,6 +211,7 @@
 				DE5C0000000000000000000E /* ArgusKit in Frameworks */,
 				DE5C0000000000000000000F /* ArgusCore in Frameworks */,
 				DE5C00000000000000000010 /* ArgusUI in Frameworks */,
+				5E7A00000000000000000008 /* ArgusSyntax in Frameworks */,
 				7E2A00000000000000000003 /* SwiftTerm in Frameworks */,
 				6B0F00000000000000000003 /* GroveKit in Frameworks */,
 			);
@@ -280,6 +285,7 @@
 				1D00B47DC68F09613A0A0769 /* ArgusKit */,
 				A5C0DE0000000000000C0003 /* ArgusCore */,
 				A5C0DE0000000000000C0004 /* ArgusUI */,
+				5E7A00000000000000000003 /* ArgusSyntax */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -416,6 +422,7 @@
 				FEED000100000000000000A2 /* PostHog */,
 				A5C0DE0000000000000C0005 /* ArgusCore */,
 				A5C0DE0000000000000C0006 /* ArgusUI */,
+				5E7A00000000000000000005 /* ArgusSyntax */,
 			);
 			productName = ArgusRemote;
 			productReference = 22BC770CA5DFEDFB0344DB2D /* ArgusRemote.app */;
@@ -442,6 +449,7 @@
 				DE5C0000000000000000000B /* ArgusKit */,
 				DE5C0000000000000000000C /* ArgusCore */,
 				DE5C0000000000000000000D /* ArgusUI */,
+				5E7A00000000000000000006 /* ArgusSyntax */,
 				7E2A00000000000000000002 /* SwiftTerm */,
 				6B0F00000000000000000002 /* GroveKit */,
 			);
@@ -509,6 +517,7 @@
 				B68ECC6C3B58529FD4EC56FE /* XCLocalSwiftPackageReference "ArgusKit" */,
 				A5C0DE0000000000000C0001 /* XCLocalSwiftPackageReference "ArgusCore" */,
 				A5C0DE0000000000000C0002 /* XCLocalSwiftPackageReference "ArgusUI" */,
+				5E7A00000000000000000001 /* XCLocalSwiftPackageReference "ArgusSyntax" */,
 				FEED000100000000000000A1 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				7E2A00000000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 				6B0F00000000000000000001 /* XCRemoteSwiftPackageReference "Grove" */,
@@ -1017,6 +1026,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ArgusUI;
 		};
+		5E7A00000000000000000001 /* XCLocalSwiftPackageReference "ArgusSyntax" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ArgusSyntax;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -1094,6 +1107,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6B0F00000000000000000001 /* XCRemoteSwiftPackageReference "Grove" */;
 			productName = GroveKit;
+		};
+		5E7A00000000000000000005 /* ArgusSyntax */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5E7A00000000000000000001 /* XCLocalSwiftPackageReference "ArgusSyntax" */;
+			productName = ArgusSyntax;
+		};
+		5E7A00000000000000000006 /* ArgusSyntax */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5E7A00000000000000000001 /* XCLocalSwiftPackageReference "ArgusSyntax" */;
+			productName = ArgusSyntax;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
