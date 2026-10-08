@@ -68,42 +68,57 @@ final class TranscriptHostingView: NSHostingView<AnyView> {
 }
 
 /// Code blocks, tables and diffs scroll sideways in scroll views of their own,
-/// which swallow a vertical wheel; `takeWheel` hands that to the transcript.
+/// AppKit's or SwiftUI's, which swallow a vertical wheel and its momentum;
+/// `takeWheel` hands a vertical gesture over any row to the transcript.
 final class TranscriptScrollView: NSScrollView {
   /// A wheel toward older messages, which ends following the tail.
   var onScrollUp: () -> Void = {}
 
+  #if DEBUG
+    /// Wheel events that reached the transcript, for the dev driver's fling probe.
+    static var wheelsReceived = 0
+  #endif
+
   override func scrollWheel(with event: NSEvent) {
+    #if DEBUG
+      Self.wheelsReceived += 1
+    #endif
     if event.scrollingDeltaY > 0.5 { onScrollUp() }
     super.scrollWheel(with: event)
   }
 
-  /// Hit-testing hosted rows is not free and a wheel sends ~120 events a second.
-  private var lastCheck: (point: NSPoint, time: TimeInterval, take: Bool)?
+  /// Decided on a gesture's first moving event and kept through its momentum,
+  /// so a fling never changes hands when a card passes under the pointer.
+  private var latched: Bool?
 
   func takeWheel(_ event: NSEvent) -> Bool {
-    guard let window, event.window == nil || event.window === window,
-      abs(event.scrollingDeltaY) >= abs(event.scrollingDeltaX)
-    else { return false }
-    let point = event.locationInWindow
-    let now = ProcessInfo.processInfo.systemUptime
-    let take: Bool
-    if let last = lastCheck, last.point == point, now - last.time < 0.1 {
-      take = last.take
-    } else {
-      take = overSidewaysScroller(point, in: window)
-      lastCheck = (point, now, take)
+    guard let window, event.window == nil || event.window === window else { return false }
+    let fresh = event.phase.contains(.began) || event.phase.contains(.mayBegin)
+      || (event.phase.isEmpty && event.momentumPhase.isEmpty)
+    if fresh { latched = nil }
+    let moving = event.scrollingDeltaX != 0 || event.scrollingDeltaY != 0
+    if latched == nil, moving {
+      latched = abs(event.scrollingDeltaY) >= abs(event.scrollingDeltaX) && overRow(event, in: window)
+    }
+    let take = latched ?? false
+    if event.momentumPhase.contains(.ended) || event.momentumPhase.contains(.cancelled)
+      || (event.momentumPhase.isEmpty && event.phase.isEmpty)
+    {
+      latched = nil
     }
     if take { scrollWheel(with: event) }
     return take
   }
 
-  private func overSidewaysScroller(_ point: NSPoint, in window: NSWindow) -> Bool {
-    guard let table = documentView, convert(point, from: nil).y >= 0, bounds.contains(convert(point, from: nil)),
-      let hit = window.contentView?.superview?.hitTest(point), hit.isDescendant(of: table),
-      let inner = hit.enclosingScrollView, inner !== self, let document = inner.documentView
+  /// Inside a row, where something other than the table may take the wheel.
+  private func overRow(_ event: NSEvent, in window: NSWindow) -> Bool {
+    // A windowless event carries a screen point.
+    let point = event.window == nil ? window.convertPoint(fromScreen: event.locationInWindow) : event.locationInWindow
+    let local = convert(point, from: nil)
+    guard let table = documentView, bounds.contains(local),
+      let hit = window.contentView?.superview?.hitTest(point)
     else { return false }
-    return document.frame.height <= inner.contentView.bounds.height + 1
+    return hit !== table && hit.isDescendant(of: table)
   }
 }
 
