@@ -27,20 +27,22 @@ extension TranscriptTableController {
     let id = id(index)
     let revision = revision(id)
     let root = TranscriptRow.root(
-      row(index), id: id, agentKey: agentKey, model: model, environment: environment,
+      row(index), id: id, agentKey: agentKey, model: model, selection: selection, environment: environment,
       onHeight: { [weak self] height in self?.rowLaidOut(id, revision: revision, height: height) })
     cell.show(root, id: id, revision: revision, environmentKey: environmentKey)
   }
 
-  func configure(_ cell: TranscriptTextCell, _ index: Int, message: RemoteMessage, text: NSAttributedString) {
+  func configure(_ cell: TranscriptTextCell, _ index: Int, message: RemoteMessage, text: TranscriptRendered) {
     let id = id(index)
     if cell.rowId != id || cell.revision != revision(id) || cell.environmentKey != environmentKey {
       let tip = message.timestamp.map {
         Date(timeIntervalSince1970: $0 / 1000).formatted(date: .abbreviated, time: .shortened)
       }
-      cell.show(text, id: id, revision: revision(id), environmentKey: environmentKey, tip: tip ?? "")
+      cell.show(
+        text, unit: message.id, id: id, revision: revision(id), environmentKey: environmentKey, tip: tip ?? "")
     }
-    cell.text.links = environment.transcriptLinks
+    if cell.text.links !== environment.transcriptLinks { cell.text.links = environment.transcriptLinks }
+    if cell.text.selection !== selection { cell.text.selection = selection }
     applyFind(cell)
   }
 

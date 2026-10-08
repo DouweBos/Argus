@@ -45,9 +45,9 @@ final class TranscriptModel {
   private final class Rendered {
     let source: [String]
     let scale: CGFloat
-    let text: NSAttributedString
+    let text: TranscriptRendered
 
-    init(source: [String], scale: CGFloat, text: NSAttributedString) {
+    init(source: [String], scale: CGFloat, text: TranscriptRendered) {
       self.source = source
       self.scale = scale
       self.text = text
@@ -62,8 +62,8 @@ final class TranscriptModel {
 
   // MARK: Rendering
 
-  /// The message's text as one attributed string, cached until its blocks or the text scale change.
-  func text(for message: RemoteMessage) -> NSAttributedString? {
+  /// The message's text as it's laid out, cached until its blocks or the text scale change.
+  func text(for message: RemoteMessage) -> TranscriptRendered? {
     let blocks = Self.textBlocks(message)
     guard !blocks.isEmpty else { return nil }
     let scale = TextScale.shared.factor

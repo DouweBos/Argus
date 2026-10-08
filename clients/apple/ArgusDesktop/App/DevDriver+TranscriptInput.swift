@@ -98,13 +98,56 @@
         guard let x = command["x"] as? Double, let y = command["y"] as? Double,
           let event = mouse(.mouseMoved, at: point(x, y, in: window), in: window, flags: [])
         else { return ["error": "x, y?"] }
-        let at = window.contentView?.superview?.hitTest(event.locationInWindow)
+        var at = window.contentView?.superview?.hitTest(event.locationInWindow)
+        while let view = at, !(view is TranscriptNSTextView), let parent = view.superview { at = parent }
         at?.mouseMoved(with: event)
-        at?.cursorUpdate(with: event)
         let cursor = NSCursor.current
         let name =
           cursor == .pointingHand ? "pointingHand" : cursor == .iBeam ? "iBeam" : cursor == .arrow ? "arrow" : "other"
         return ["cursor": name, "view": at.map { "\(type(of: $0))" } ?? "-"]
+      case "action":
+        // An edit action (`copy:`, `selectAll:`) to the first responder, as its
+        // menu item sends it; menus validate against a key window this app never has.
+        guard let name = command["selector"] as? String, let responder = window.firstResponder else {
+          return ["error": "selector? / no responder"]
+        }
+        return ["ok": NSApp.sendAction(Selector(name), to: responder, from: nil), "to": "\(type(of: responder))"]
+      case "wheel":
+        // A trackpad-precise wheel event at a point, through the transcript's
+        // wheel monitor as a real one passes, then the window.
+        guard let x = command["x"] as? Double, let y = command["y"] as? Double,
+          let cg = CGEvent(
+            scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
+            wheel1: Int32(command["dy"] as? Int ?? 0), wheel2: Int32(command["dx"] as? Int ?? 0), wheel3: 0)
+        else { return ["error": "x, y?"] }
+        cg.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+        cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis1, value: command["dy"] as? Double ?? 0)
+        cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis2, value: command["dx"] as? Double ?? 0)
+        let screenHeight = NSScreen.screens.first?.frame.height ?? 0
+        cg.location = CGPoint(x: x, y: screenHeight - (window.frame.height - y))
+        guard let event = NSEvent(cgEvent: cg) else { return ["error": "event"] }
+        if let scroll = TranscriptDriver.transcriptScrollView(in: window) as? TranscriptScrollView,
+          scroll.takeWheel(event)
+        {
+          return ["ok": true, "redirected": true]
+        }
+        window.sendEvent(event)
+        return ["ok": true, "redirected": false]
+      case "tCode":
+        // Each code block on screen: its sideways scroll position and sizes.
+        func blocks(_ view: NSView) -> [TranscriptCodeBlockView] {
+          (view as? TranscriptCodeBlockView).map { [$0] } ?? view.subviews.flatMap(blocks)
+        }
+        return [
+          "blocks": (window.contentView.map(blocks) ?? []).filter { $0.visibleRect.height > 0 }.map { block in
+            let scroll = block.text.enclosingScrollView
+            return [
+              "text": String(block.text.string.prefix(24)), "x": scroll?.contentView.bounds.minX ?? -1,
+              "document": block.text.frame.width, "clip": scroll?.contentView.bounds.width ?? -1,
+              "height": block.frame.height, "scroller": scroll?.horizontalScroller?.isHidden == false,
+            ] as [String: Any]
+          }
+        ]
       case "pasteboard":
         return ["string": TranscriptSystem.pasteboard.string(forType: .string) ?? NSNull()]
       case "clearPasteboard":
@@ -129,13 +172,19 @@
         probe = nil
         if let out = command["out"] as? String { TranscriptDriver.write(report, to: out) }
         return report.filter { $0.key != "frames" }
+      case "tBottom":
+        guard let (_, table) = transcript(in: window), let controller = table.delegate as? TranscriptTableController
+        else { return ["error": "no transcript"] }
+        controller.jumpToLatest()
+        return ["ok": true]
       case "tScrollTo":
         guard let (scroll, table) = transcript(in: window),
           let controller = table.delegate as? TranscriptTableController, let row = command["row"] as? String,
           let index = (0..<table.numberOfRows).first(where: { controller.id($0) == row })
         else { return ["error": "row?"] }
         controller.follow.atBottom = false
-        scroll.contentView.scroll(to: NSPoint(x: 0, y: table.rect(ofRow: index).minY))
+        let limit = max(0, table.frame.height - scroll.contentView.bounds.height)
+        scroll.contentView.scroll(to: NSPoint(x: 0, y: min(table.rect(ofRow: index).minY, limit)))
         scroll.reflectScrolledClipView(scroll.contentView)
         return ["ok": true]
       default:

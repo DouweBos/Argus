@@ -29,6 +29,12 @@ enum MacTelemetryEvent {
     case copyLink = "copy_link"
   }
 
+  /// How much of the transcript a copy took.
+  enum CopySpan: String {
+    case selection
+    case acrossMessages = "across_messages"
+  }
+
   enum TerminalAction: String {
     case newShell = "new_shell"
     case close
@@ -275,6 +281,8 @@ enum MacTelemetryEvent {
   case transcriptLinkOpened(action: LinkAction, relative: Bool)
   /// Find in chat was closed after a search. Counts are bucketed, never the query.
   case transcriptFindUsed(matches: String, navigated: Bool)
+  /// Transcript text was copied with ⌘C or the context menu.
+  case transcriptCopied(span: CopySpan)
   /// A chat-input feature the host can't tell from a plain send.
   case inputUsed(affordance: String)
   /// Something done to a terminal from the panel or the run control.
@@ -352,6 +360,7 @@ enum MacTelemetryEvent {
     case .prefsSupplied: "mac_prefs_supplied"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
+    case .transcriptCopied: "mac_transcript_copied"
     case .inputUsed: "mac_input_used"
     case .terminalUsed: "mac_terminal_used"
     case .terminalReplayed: "mac_terminal_replayed"
@@ -429,6 +438,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "relative": relative]
     case .transcriptFindUsed(let matches, let navigated):
       ["matches_bucket": matches, "navigated": navigated]
+    case .transcriptCopied(let span):
+      ["span": span.rawValue]
     case .inputUsed(let affordance):
       ["affordance": affordance]
     case .terminalUsed(let action):
