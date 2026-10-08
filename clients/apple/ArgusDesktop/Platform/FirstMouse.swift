@@ -20,6 +20,8 @@ enum FirstMouse {
         let row = table.row(at: table.convert(event.locationInWindow, from: nil))
         guard row >= 0, event.clickCount == 1, event.modifierFlags.intersection([.command, .shift]).isEmpty
         else { return false }
+        // A table that never selects (the transcript) wants the click on its row's own controls.
+        if table.delegate?.tableView?(table, shouldSelectRow: row) == false { return false }
         guard NSApp.isActive else {
           // AppKit brings a background app forward from the click itself;
           // swallowing it left the app inactive until a double click. Let it
