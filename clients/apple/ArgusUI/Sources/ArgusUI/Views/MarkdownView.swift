@@ -77,10 +77,13 @@ public struct MarkdownView: View {
   }
 }
 
+/// A fenced code block, coloured by `ArgusSyntax` when the info string names a bundled
+/// grammar; plain monospaced text until (or unless) that lands.
 public struct CodeBlockView: View {
   @Environment(\.theme) private var theme
   let language: String?
   let code: String
+  @State private var highlighted: AttributedString?
 
   public init(language: String? = nil, code: String) {
     self.language = language
@@ -97,7 +100,7 @@ public struct CodeBlockView: View {
           .padding(.vertical, 4)
       }
       ScrollView(.horizontal, showsIndicators: false) {
-        Text(code)
+        codeText
           .font(.scaled(size: 12, design: .monospaced))
           .foregroundStyle(theme.textSecondary)
           .padding(8)
@@ -107,6 +110,19 @@ public struct CodeBlockView: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(theme.bgTertiary)
     .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
+    .task(id: HighlightKey(code: code, language: language, scheme: theme.scheme)) {
+      highlighted = await CodeBlockHighlighting.highlight(code, languageHint: language, theme: theme)
+    }
+  }
+
+  private var codeText: Text {
+    if let highlighted { Text(highlighted) } else { Text(code) }
+  }
+
+  private struct HighlightKey: Equatable {
+    let code: String
+    let language: String?
+    let scheme: ColorScheme
   }
 }
 
@@ -145,4 +161,10 @@ private struct MarkdownTable: View {
       }
     }
   }
+}
+
+#Preview("Highlighted code block") {
+  MarkdownView(text: "Run this:\n\n```ts\nconst answer: number = 42; // the answer\n```")
+    .padding()
+    .frame(width: 360)
 }

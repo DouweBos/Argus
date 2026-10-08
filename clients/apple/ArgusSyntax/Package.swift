@@ -60,7 +60,7 @@ let package = Package(
         exclude: ["LICENSE"],
         sources: ["src/parser.c", "src/scanner.c"],
         publicHeadersPath: "include",
-        cSettings: [.headerSearchPath("src")]
+        cSettings: [.headerSearchPath("src"), .unsafeFlags(["-Wno-shorten-64-to-32"])]
       )
     }
 )
