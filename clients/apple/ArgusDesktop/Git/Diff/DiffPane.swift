@@ -11,6 +11,8 @@ struct DiffPane: View {
   var isLoading = false
   var actions: DiffActions?
   var onAction: ((HunkAction, HunkData, [GroveKit.DiffLine]) -> Void)?
+  /// "Open in Editor at Line" on the rows: the new side's 1-based line.
+  var openLine: ((Int) -> Void)?
   var ignoreWhitespace: Binding<Bool>?
   /// Extra controls on the header's trailing side.
   var accessory: AnyView?
@@ -82,7 +84,8 @@ struct DiffPane: View {
         ContentUnavailableView("No changes", systemImage: "equal", description: Text(emptyReason(diff)))
       } else {
         DiffTableView(
-          diff: diff, layout: DiffRowBuilder.isOneSided(diff) ? .inline : layout, actions: actions, onAction: onAction)
+          diff: diff, layout: DiffRowBuilder.isOneSided(diff) ? .inline : layout, actions: actions, onAction: onAction,
+          openLine: openLine)
       }
     } else if isLoading {
       ProgressView().controlSize(.small)

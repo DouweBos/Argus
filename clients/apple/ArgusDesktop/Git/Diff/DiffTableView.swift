@@ -11,6 +11,8 @@ struct DiffTableView: NSViewRepresentable {
   var layout: DiffLayout = .inline
   var actions: DiffActions?
   var onAction: ((HunkAction, HunkData, [GroveKit.DiffLine]) -> Void)?
+  /// Opens the file in the code view at a 1-based line of the new side.
+  var openLine: ((Int) -> Void)?
   @Environment(\.theme) private var theme
 
   func makeCoordinator() -> Coordinator { Coordinator() }
@@ -44,6 +46,7 @@ struct DiffTableView: NSViewRepresentable {
   func updateNSView(_ scroll: NSScrollView, context: Context) {
     let coordinator = context.coordinator
     coordinator.onAction = onAction
+    coordinator.openLine = openLine
     coordinator.update(diff: diff, layout: layout, actions: actions, palette: DiffPalette(theme))
     if coordinator.textScale.changed() { coordinator.table?.reloadData() }
   }
@@ -53,6 +56,7 @@ struct DiffTableView: NSViewRepresentable {
     weak var table: NSTableView?
     var textScale = TextScaleTracker()
     var onAction: ((HunkAction, HunkData, [GroveKit.DiffLine]) -> Void)?
+    var openLine: ((Int) -> Void)?
     private(set) var diff: DiffResult?
     private(set) var rows: [DiffRow] = []
     private var layout: DiffLayout = .inline
@@ -189,6 +193,13 @@ struct DiffTableView: NSViewRepresentable {
       copy.target = table
       menu.addItem(copy)
       guard clicked >= 0, clicked < rows.count else { return }
+      if openLine != nil, let line = newLine(at: clicked) {
+        let open = NSMenuItem(title: "Open in Editor at Line", action: #selector(openAtLine(_:)), keyEquivalent: "")
+        open.target = self
+        open.tag = line
+        menu.insertItem(open, at: 0)
+        menu.insertItem(.separator(), at: 1)
+      }
       let hunk = rows[clicked].hunk
       let buttons = headerButtons(hunk: hunk)
       if !buttons.isEmpty { menu.addItem(.separator()) }
@@ -207,6 +218,33 @@ struct DiffTableView: NSViewRepresentable {
         self.action = action
         self.hunk = hunk
       }
+    }
+
+    /// The new-side line a row shows; a removed line maps to where it was.
+    func newLine(at row: Int) -> Int? {
+      guard let diff, rows.indices.contains(row) else { return nil }
+      let hunk = diff.hunks[rows[row].hunk]
+      let index: Int?
+      switch rows[row].kind {
+      case .header: index = hunk.lines.firstIndex { $0.newLineNumber != nil }
+      case .line(let i): index = i
+      case .pair(let left, let right): index = right ?? left
+      }
+      guard let index else { return nil }
+      if let number = hunk.lines[index].newLineNumber { return number }
+      return hunk.lines[..<index].last { $0.newLineNumber != nil }?.newLineNumber.map { $0 + 1 }
+        ?? hunk.lines.first { $0.newLineNumber != nil }?.newLineNumber
+    }
+
+    @objc private func openAtLine(_ sender: NSMenuItem) {
+      openLine?(sender.tag)
+    }
+
+    /// ⌥-click opens the line in the code view.
+    func optionClicked(row: Int) -> Bool {
+      guard let openLine, let line = newLine(at: row) else { return false }
+      openLine(line)
+      return true
     }
 
     @objc private func menuAction(_ sender: NSMenuItem) {
@@ -233,6 +271,14 @@ struct DiffTableView: NSViewRepresentable {
 /// ⌘C copies the selected lines' text.
 final class DiffNSTableView: NSTableView {
   weak var coordinator: DiffTableView.Coordinator?
+
+  override func mouseDown(with event: NSEvent) {
+    if event.modifierFlags.contains(.option) {
+      let row = self.row(at: convert(event.locationInWindow, from: nil))
+      if row >= 0, coordinator?.optionClicked(row: row) == true { return }
+    }
+    super.mouseDown(with: event)
+  }
 
   @objc func copy(_ sender: Any?) {
     guard let text = coordinator?.copySelection(), !text.isEmpty else { return }

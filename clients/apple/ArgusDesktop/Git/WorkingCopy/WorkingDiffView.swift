@@ -27,10 +27,19 @@ struct WorkingDiffView: View {
         onAction: { action, hunk, lines in
           Task { await WorkingCopyActions(workspace: workspace).hunk(action, hunk, lines) }
         },
+        openLine: openLine,
         ignoreWhitespace: Binding(
           get: { vm.ignoreWhitespace }, set: { on in Task { await vm.setIgnoreWhitespace(on) } }),
         accessory: vm.canSwitchDiffSide ? AnyView(sidePicker) : nil
       )
+    }
+  }
+
+  /// A deleted file has no lines to open.
+  private var openLine: ((Int) -> Void)? {
+    guard let entry = vm.selectedEntry, entry.workdirStatus != .deleted, entry.indexStatus != .deleted else { return nil }
+    return { line in
+      model.openCode(session: workspace.sessionId, path: entry.path, line: line, source: .diff)
     }
   }
 
