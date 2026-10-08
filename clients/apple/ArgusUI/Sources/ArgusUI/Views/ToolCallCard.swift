@@ -10,13 +10,14 @@ public struct ToolCallCard: View {
   @Environment(\.autoExpandImageReads) private var autoExpandImageReads
   @Environment(\.toolTextRenderer) private var toolTextRenderer
   @Environment(HostStore.self) private var host
+  @Environment(\.toolCardExpansion) private var expansion
 
   let agentKey: String
   let call: RemoteToolCall
   let depth: Int
 
   /// Nil until tapped, so the auto-expand setting decides the starting state.
-  @State private var userExpanded: Bool?
+  @State private var localExpanded: Bool?
   @State private var showingFullPlan = false
 
   private var isPending: Bool {
@@ -25,6 +26,14 @@ public struct ToolCallCard: View {
 
   private var autoExpanded: Bool {
     autoExpandImageReads && call.name == "Read" && !resultImageIds.isEmpty
+  }
+
+  /// Kept in the list's store when it gives one: a recycled row has no state of its own.
+  private var userExpanded: Bool? {
+    get { expansion.map { $0.expanded[call.id] } ?? localExpanded }
+    nonmutating set {
+      if let expansion { expansion.expanded[call.id] = newValue } else { localExpanded = newValue }
+    }
   }
 
   private var expanded: Bool {
@@ -363,4 +372,14 @@ public struct ToolTextRenderer: @unchecked Sendable {
 
 extension EnvironmentValues {
   @Entry public var toolTextRenderer: ToolTextRenderer?
+  @Entry public var toolCardExpansion: ToolCardExpansion?
+}
+
+/// Which tool cards were opened or closed, for a list that recycles its rows.
+@MainActor
+@Observable
+public final class ToolCardExpansion {
+  public var expanded: [String: Bool] = [:]
+
+  public init() {}
 }

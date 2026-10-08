@@ -602,7 +602,7 @@
         guard item.isEnabled, let action = item.action else { return ["error": "disabled"] }
         return ["ok": NSApp.sendAction(action, to: item.target, from: item)]
       default:
-        return ["error": "unknown op"]
+        return TranscriptDriver.run(command, window: window) ?? ["error": "unknown op"]
       }
     }
 

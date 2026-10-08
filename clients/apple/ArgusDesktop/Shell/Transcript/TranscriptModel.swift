@@ -30,14 +30,31 @@ final class TranscriptModel {
   // MARK: Rows
 
   var expandedGroups: Set<String> = []
+  /// Tool outputs opened past their first lines, by `outputKey`.
+  var expandedOutputs: Set<String> = []
+  /// Tool cards opened or closed; the table recycles rows, so this can't be row state.
+  @ObservationIgnored let toolCards = ToolCardExpansion()
 
-  @ObservationIgnored private var rendered: [String: Rendered] = [:]
+  /// Bounded: reading back through a long chat renders every message once.
+  @ObservationIgnored private let rendered: NSCache<NSString, Rendered> = {
+    let cache = NSCache<NSString, Rendered>()
+    cache.countLimit = 600
+    return cache
+  }()
 
-  private struct Rendered {
+  private final class Rendered {
     let source: [String]
     let scale: CGFloat
     let text: NSAttributedString
+
+    init(source: [String], scale: CGFloat, text: NSAttributedString) {
+      self.source = source
+      self.scale = scale
+      self.text = text
+    }
   }
+
+  static func outputKey(_ text: String, role: ToolTextRenderer.Role) -> String { "\(role)|\(text.hashValue)" }
 
   var currentHit: TranscriptSearch.Hit? {
     current.flatMap { hits.indices.contains($0) ? hits[$0] : nil }
@@ -50,12 +67,14 @@ final class TranscriptModel {
     let blocks = Self.textBlocks(message)
     guard !blocks.isEmpty else { return nil }
     let scale = TextScale.shared.factor
-    if let cached = rendered[message.id], cached.source == blocks, cached.scale == scale { return cached.text }
+    if let cached = rendered.object(forKey: message.id as NSString), cached.source == blocks, cached.scale == scale {
+      return cached.text
+    }
     let text =
       message.role == .user
       ? TranscriptMarkdown.render(userText: blocks.joined(separator: "\n\n"))
       : TranscriptMarkdown.render(markdown: blocks.joined(separator: "\n\n"))
-    rendered[message.id] = Rendered(source: blocks, scale: scale, text: text)
+    rendered.setObject(Rendered(source: blocks, scale: scale, text: text), forKey: message.id as NSString)
     return text
   }
 
