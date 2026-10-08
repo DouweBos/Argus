@@ -81,7 +81,8 @@ struct DiffPane: View {
       } else if diff.hunks.isEmpty {
         ContentUnavailableView("No changes", systemImage: "equal", description: Text(emptyReason(diff)))
       } else {
-        DiffTableView(diff: diff, layout: layout, actions: actions, onAction: onAction)
+        DiffTableView(
+          diff: diff, layout: DiffRowBuilder.isOneSided(diff) ? .inline : layout, actions: actions, onAction: onAction)
       }
     } else if isLoading {
       ProgressView().controlSize(.small)
