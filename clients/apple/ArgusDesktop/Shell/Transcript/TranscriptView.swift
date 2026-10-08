@@ -145,6 +145,8 @@ struct TranscriptView: View {
     if links == nil {
       links = TranscriptLinkHandler(store: host, sessionId: sessionId)
     }
+    // Saved chats link to files in the worktree too.
+    Task { [links] in await links?.load() }
     guard fixture == nil else { return }
     // A saved chat has no queue, subscription or anything left to catch up on.
     if HostStore.parseStoppedKey(agentKey) != nil {
@@ -153,7 +155,6 @@ struct TranscriptView: View {
       return
     }
     await host.loadQueue(agentId: agentKey)
-    await links?.load()
     // Events emitted before our subscription registered are lost; one
     // catch-up fetch closes that window.
     try? await Task.sleep(for: .milliseconds(600))

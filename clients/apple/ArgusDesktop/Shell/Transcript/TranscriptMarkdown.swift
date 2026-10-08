@@ -11,23 +11,47 @@ import ArgusUI
 enum TranscriptMarkdown {
   static let lineSeparator = "\u{2028}"
 
-  static func render(markdown source: String) -> NSAttributedString {
-    let out = NSMutableAttributedString()
-    for block in MarkdownBlock.parse(source) {
-      if out.length > 0 { out.append(NSAttributedString(string: "\n")) }
-      out.append(render(block))
+  static func render(markdown source: String) -> TranscriptRendered {
+    var parts: [TranscriptRendered.Part] = []
+    var prose = NSMutableAttributedString()
+    func flush() {
+      guard prose.length > 0 else { return }
+      linkify(prose, mentions: false)
+      parts.append(.prose(prose))
+      prose = NSMutableAttributedString()
     }
-    linkify(out, mentions: false)
-    return out
+    for block in MarkdownBlock.parse(source) {
+      if case .code(let language, let body) = block {
+        flush()
+        parts.append(.code(language: language.flatMap { $0.isEmpty ? nil : $0 }, text: code(body, language: language)))
+        continue
+      }
+      if prose.length > 0 { prose.append(NSAttributedString(string: "\n")) }
+      prose.append(render(block))
+    }
+    flush()
+    return TranscriptRendered(parts: parts)
   }
 
   /// What the user typed, verbatim: markdown in a prompt is usually literal.
-  static func render(userText: String) -> NSAttributedString {
+  static func render(userText: String) -> TranscriptRendered {
     let out = NSMutableAttributedString(
       string: userText,
       attributes: [.font: TranscriptStyle.body, .foregroundColor: TranscriptStyle.text,
                    .paragraphStyle: TranscriptStyle.paragraph()])
     linkify(out, mentions: true)
+    return TranscriptRendered(parts: [.prose(out)])
+  }
+
+  /// A fenced block's body, highlighted for its language and never wrapped.
+  static func code(_ body: String, language: String?) -> NSAttributedString {
+    let style = NSMutableParagraphStyle()
+    style.lineHeightMultiple = 1.08
+    let out = NSMutableAttributedString(
+      string: body.hasSuffix("\n") ? String(body.dropLast()) : body,
+      attributes: [.font: TranscriptStyle.code, .foregroundColor: TranscriptStyle.secondary, .paragraphStyle: style])
+    TranscriptSyntax.highlight(out, language: language)
+    linkify(out, mentions: false)
     return out
   }
 
@@ -51,7 +75,8 @@ enum TranscriptMarkdown {
     case .paragraph(let text):
       return inline(text, font: TranscriptStyle.body)
     case .code(_, let body):
-      return codeBlock(body)
+      // Split out by `render(markdown:)`; a fence never reaches here.
+      return NSAttributedString(string: body)
     case .quote(let text):
       let out = NSMutableAttributedString(attributedString: inline(text, font: TranscriptStyle.body, indent: 12))
       out.addAttributes(
@@ -83,21 +108,6 @@ enum TranscriptMarkdown {
         attributes: [.transcriptBlock: TranscriptBlock.rule.rawValue, .font: TranscriptStyle.body,
                      .paragraphStyle: TranscriptStyle.paragraph()])
     }
-  }
-
-  private static func codeBlock(_ body: String) -> NSAttributedString {
-    let style = NSMutableParagraphStyle()
-    style.headIndent = 10
-    style.firstLineHeadIndent = 10
-    style.tailIndent = -10
-    style.paragraphSpacingBefore = 10
-    style.paragraphSpacing = 14
-    return NSAttributedString(
-      string: body.replacingOccurrences(of: "\n", with: lineSeparator),
-      attributes: [
-        .font: TranscriptStyle.code, .foregroundColor: TranscriptStyle.secondary,
-        .paragraphStyle: style, .transcriptBlock: TranscriptBlock.code.rawValue,
-      ])
   }
 
   /// Columns on tab stops sized to their widest cell, so a table reads as one
@@ -160,6 +170,7 @@ enum TranscriptMarkdown {
       if intent.contains(.code) {
         attributes[.font] = NSFont.monospacedSystemFont(ofSize: font.pointSize - 1, weight: .regular)
         attributes[.backgroundColor] = TranscriptStyle.inlineCodeBackground
+        attributes[.foregroundColor] = TranscriptStyle.accent
       } else if !traits.isEmpty {
         let descriptor = font.fontDescriptor.withSymbolicTraits(font.fontDescriptor.symbolicTraits.union(traits))
         attributes[.font] = NSFont(descriptor: descriptor, size: font.pointSize) ?? font
@@ -191,4 +202,39 @@ enum TranscriptMarkdown {
       if let url { string.addAttribute(.link, value: url, range: match.range) }
     }
   }
+}
+
+/// A message's text as the transcript lays it out: prose runs, and fenced code
+/// in blocks of its own that scroll sideways. `string` is all of it joined by
+/// newlines, the space find and selection count in.
+final class TranscriptRendered {
+  enum Part {
+    case prose(NSAttributedString)
+    case code(language: String?, text: NSAttributedString)
+
+    var text: NSAttributedString {
+      switch self {
+      case .prose(let text), .code(_, let text): text
+      }
+    }
+  }
+
+  let parts: [Part]
+  /// Where each part starts in `string`.
+  let offsets: [Int]
+  let string: String
+
+  init(parts: [Part]) {
+    self.parts = parts
+    var offsets: [Int] = []
+    var offset = 0
+    for part in parts {
+      offsets.append(offset)
+      offset += part.text.length + 1
+    }
+    self.offsets = offsets
+    string = parts.map(\.text.string).joined(separator: "\n")
+  }
+
+  var length: Int { (string as NSString).length }
 }

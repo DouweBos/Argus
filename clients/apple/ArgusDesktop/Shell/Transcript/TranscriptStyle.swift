@@ -22,6 +22,20 @@ enum TranscriptStyle {
   static let error = dynamic(light: Theme.light.error, dark: Theme.dark.error)
 
   static let accent = dynamic(light: Theme.light.accent, dark: Theme.dark.accent)
+  /// Links underline softly and in full on hover, as on the desktop.
+  static let linkUnderline = dynamic(light: Theme.light.accent.opacity(0.45), dark: Theme.dark.accent.opacity(0.45))
+
+  /// A fenced block: a scrim under the text and a hairline round it, as on the desktop.
+  static let codeBlockBackground = dynamic(light: Theme.light.mediaBg.opacity(0.045), dark: Theme.dark.mediaBg.opacity(0.32))
+  static let codeBlockBorder = NSColor.separatorColor
+  static let syntaxString = dynamic(light: Theme.light.success, dark: Theme.dark.success)
+  static let syntaxNumber = dynamic(light: Theme.light.warning, dark: Theme.dark.warning)
+  static let syntaxKeyword = NSColor(name: nil) { appearance in
+    let purple = NSColor(Theme.dark.brandPurple)
+    // The brand purple is too dark to read on a dark background as it is.
+    return appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+      ? purple.blended(withFraction: 0.35, of: .white) ?? purple : purple
+  }
   static let matchBackground = dynamic(
     light: Theme.light.accent.opacity(0.22), dark: Theme.dark.accent.opacity(0.25))
   /// Strong enough to find at a glance, light enough to keep the text readable.

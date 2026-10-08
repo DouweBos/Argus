@@ -44,9 +44,20 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
   weak var links: TranscriptLinkHandler?
   var lastReveal = 0
 
+  /// The message this text belongs to, for selections that run across
+  /// messages; nil for tool output, which selects on its own.
+  private(set) var unit: String?
+  /// Where this text starts in its message's rendered string, and that string's length.
+  private(set) var base = 0
+  private(set) var messageLength = 0
+  weak var selection: TranscriptSelection? {
+    didSet { selection?.register(self) }
+  }
+
   private var content: NSAttributedString?
   private var highlighted: ([NSRange], NSRange?) = ([], nil)
   private let blocks = BlockLayoutDelegate()
+  var cursorArea: NSTrackingArea?
 
   static func make() -> TranscriptNSTextView {
     let view = TranscriptNSTextView(usingTextLayoutManager: true)
@@ -62,8 +73,12 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
     view.isAutomaticLinkDetectionEnabled = false
     view.linkTextAttributes = [
       .foregroundColor: TranscriptStyle.accent,
+      .underlineStyle: NSUnderlineStyle.single.rawValue,
+      .underlineColor: TranscriptStyle.linkUnderline,
       .cursor: NSCursor.pointingHand,
     ]
+    // Only a background: highlighted code keeps its colours when selected.
+    view.selectedTextAttributes = [.backgroundColor: NSColor.selectedTextBackgroundColor]
     view.textLayoutManager?.delegate = view.blocks
     view.delegate = view
     view.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -76,6 +91,16 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
     highlighted = ([], nil)
     textStorage?.setAttributedString(text)
     layoutWholeDocument()
+    showSelection()
+  }
+
+  /// Which message this text is part of, and where in it.
+  func setUnit(_ unit: String?, base: Int, messageLength: Int) {
+    guard unit != self.unit || base != self.base || messageLength != self.messageLength else { return }
+    self.unit = unit
+    self.base = base
+    self.messageLength = messageLength
+    showSelection()
   }
 
   /// Each row is its own view sized to all of its text, so lay all of it out.
@@ -99,6 +124,10 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
   /// container puts every glyph on its own line) tells a filling view nothing.
   func size(forWidth proposed: CGFloat?, fills: Bool) -> CGSize {
     guard let content else { return .zero }
+    return Self.size(of: content, forWidth: proposed, fills: fills)
+  }
+
+  static func size(of content: NSAttributedString, forWidth proposed: CGFloat?, fills: Bool) -> CGSize {
     guard let proposed, proposed.isFinite else {
       return fills ? CGSize(width: 10_000, height: 0) : TextMeasurer.size(of: content, width: nil)
     }
@@ -108,11 +137,90 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
     return CGSize(width: fills ? width : min(used.width, width), height: used.height)
   }
 
+  // MARK: Selection
+
+  /// This view's share of the transcript's selection.
+  func showSelection() {
+    guard let unit, let selection, let storage = textStorage else { return }
+    let length = storage.length
+    var local = NSRange(location: min(selectedRange().location, length), length: 0)
+    if let range = selection.range(in: unit, length: messageLength) {
+      let mine = NSRange(location: base, length: length)
+      let overlap = NSIntersectionRange(range, mine)
+      if overlap.length > 0 || (range.length == 0 && NSLocationInRange(range.location, mine)) {
+        local = NSRange(location: overlap.location - base, length: overlap.length)
+      }
+    } else {
+      local.length = 0
+    }
+    if selectedRange() != local { setSelectedRange(local) }
+  }
+
+  var startPosition: TranscriptSelection.Position? {
+    unit.map { TranscriptSelection.Position(unit: $0, index: base) }
+  }
+
+  var endPosition: TranscriptSelection.Position? {
+    unit.map { TranscriptSelection.Position(unit: $0, index: base + (textStorage?.length ?? 0)) }
+  }
+
+  func position(atWindowPoint point: NSPoint) -> TranscriptSelection.Position? {
+    guard let unit else { return nil }
+    return TranscriptSelection.Position(unit: unit, index: base + localIndex(atWindowPoint: point))
+  }
+
+  func localIndex(atWindowPoint point: NSPoint) -> Int {
+    let local = convert(point, from: nil)
+    let length = textStorage?.length ?? 0
+    if local.y < bounds.minY { return 0 }
+    if local.y > bounds.maxY { return length }
+    return min(max(characterIndexForInsertion(at: local), 0), length)
+  }
+
+  override func selectAll(_ sender: Any?) {
+    guard let unit, let selection else { return super.selectAll(sender) }
+    selection.select(unit: unit, length: messageLength)
+  }
+
+  override func copy(_ sender: Any?) {
+    let text: String?
+    var span = MacTelemetryEvent.CopySpan.selection
+    if let selection, unit != nil, !selection.isEmpty {
+      text = selection.selectedText
+      if selection.spansMessages { span = .acrossMessages }
+    } else {
+      text = selectedRanges.map { (string as NSString).substring(with: $0.rangeValue) }.joined(separator: "\n")
+    }
+    guard let text, !text.isEmpty else { return NSSound.beep() }
+    TranscriptSystem.copy(Self.clipboardText(text))
+    MacTelemetry.capture(.transcriptCopied(span: span))
+  }
+
+  /// Tables are laid out on line separators; the clipboard wants newlines.
+  static func clipboardText(_ text: String) -> String {
+    text.replacingOccurrences(of: TranscriptMarkdown.lineSeparator, with: "\n")
+      .replacingOccurrences(of: "\u{00A0}", with: "")
+  }
+
+  override func validateMenuItem(_ item: NSMenuItem) -> Bool {
+    if item.action == #selector(copy(_:)), let selection, unit != nil { return !selection.isEmpty }
+    return super.validateMenuItem(item)
+  }
+
   // MARK: Find highlights
 
+  /// Ranges are in the message's string; only those in this text are drawn.
   func setHighlights(_ ranges: [NSRange], current: NSRange?) {
-    guard highlighted.0 != ranges || highlighted.1 != current else { return }
-    highlighted = (ranges, current)
+    let length = textStorage?.length ?? 0
+    let mine = NSRange(location: base, length: length)
+    func local(_ range: NSRange) -> NSRange? {
+      let overlap = NSIntersectionRange(range, mine)
+      return overlap.length > 0 ? NSRange(location: overlap.location - base, length: overlap.length) : nil
+    }
+    let shifted = ranges.compactMap(local)
+    let current = current.flatMap(local)
+    guard highlighted.0 != shifted || highlighted.1 != current else { return }
+    highlighted = (shifted, current)
     needsDisplay = true
   }
 
@@ -125,8 +233,9 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
         guard let textRange = textRange(range) else { continue }
         let color = range == highlighted.1 ? TranscriptStyle.currentMatchBackground : TranscriptStyle.matchBackground
         color.setFill()
+        let origin = textContainerOrigin
         layout.enumerateTextSegments(in: textRange, type: .highlight, options: []) { _, frame, _, _ in
-          let rect = frame.insetBy(dx: -1, dy: 0)
+          let rect = frame.offsetBy(dx: origin.x, dy: origin.y).insetBy(dx: -1, dy: 0)
           if rect.intersects(dirtyRect) {
             NSBezierPath(roundedRect: rect, xRadius: 3, yRadius: 3).fill()
           }
@@ -137,22 +246,33 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
     super.draw(dirtyRect)
   }
 
-  /// Scrolls the enclosing transcript so `range` is on screen — a long message
-  /// can hold its match well below the row's top.
-  func reveal(_ range: NSRange) {
-    guard let layout = textLayoutManager, let textRange = textRange(range) else { return }
+  /// Scrolls the enclosing transcript so `range` (in the message's string) is
+  /// on screen; false when the range isn't in this text.
+  @discardableResult
+  func reveal(_ range: NSRange) -> Bool {
+    let length = textStorage?.length ?? 0
+    guard range.location >= base, range.location < base + max(length, 1) else { return false }
+    let local = NSRange(location: range.location - base, length: min(range.length, length - (range.location - base)))
+    guard let layout = textLayoutManager, let textRange = textRange(local) else { return false }
     var rect = CGRect.null
     layout.enumerateTextSegments(in: textRange, type: .standard, options: []) { _, frame, _, _ in
       rect = rect.union(frame)
       return true
     }
-    guard !rect.isNull else { return }
+    guard !rect.isNull else { return false }
+    rect = rect.offsetBy(dx: textContainerOrigin.x, dy: textContainerOrigin.y)
     DispatchQueue.main.async { [weak self] in
-      self?.scrollToVisible(rect.insetBy(dx: 0, dy: -60))
+      guard let self else { return }
+      // A code block scrolls sideways itself; the transcript scrolls for the rest.
+      self.scrollToVisible(rect.insetBy(dx: 0, dy: -60))
+      if let table = self.transcriptTable, self.enclosingScrollView?.documentView !== table {
+        table.scrollToVisible(self.convert(rect.insetBy(dx: 0, dy: -60), to: table))
+      }
     }
+    return true
   }
 
-  private func textRange(_ range: NSRange) -> NSTextRange? {
+  func textRange(_ range: NSRange) -> NSTextRange? {
     guard let manager = textLayoutManager?.textContentManager,
       let start = manager.location(manager.documentRange.location, offsetBy: range.location),
       let end = manager.location(start, offsetBy: range.length)
@@ -169,29 +289,14 @@ final class TranscriptNSTextView: NSTextView, NSTextViewDelegate {
   }
 
   override func menu(for event: NSEvent) -> NSMenu? {
+    // Copy and friends act on the first responder.
+    if window?.firstResponder !== self { window?.makeFirstResponder(self) }
     let menu = super.menu(for: event) ?? NSMenu()
-    let point = convert(event.locationInWindow, from: nil)
-    let index = characterIndexForInsertion(at: point)
-    guard let storage = textStorage, index < storage.length,
-      let url = storage.attribute(.link, at: index, effectiveRange: nil) as? URL,
-      let items = links?.menuItems(for: url), !items.isEmpty
+    guard let url = link(atWindowPoint: event.locationInWindow), let items = links?.menuItems(for: url), !items.isEmpty
     else { return menu }
     for item in items.reversed() { menu.insertItem(item, at: 0) }
     menu.insertItem(.separator(), at: items.count)
     return menu
-  }
-
-  // MARK: Copy
-
-  /// Code fences are laid out on line separators; the clipboard wants newlines.
-  override func writeSelection(to pboard: NSPasteboard, types: [NSPasteboard.PasteboardType]) -> Bool {
-    let text = selectedRanges.map { (string as NSString).substring(with: $0.rangeValue) }
-      .joined(separator: "\n")
-      .replacingOccurrences(of: TranscriptMarkdown.lineSeparator, with: "\n")
-      .replacingOccurrences(of: "\u{00A0}", with: "")
-    guard !text.isEmpty else { return false }
-    pboard.clearContents()
-    return pboard.setString(text, forType: .string)
   }
 
   override var writablePasteboardTypes: [NSPasteboard.PasteboardType] { [.string] }

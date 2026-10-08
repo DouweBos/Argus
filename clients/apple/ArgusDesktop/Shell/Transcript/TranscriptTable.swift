@@ -101,6 +101,14 @@ final class TranscriptScrollView: NSScrollView {
 
 /// Clicks land on the rows' own controls and text; the table never selects.
 final class TranscriptTableView: NSTableView {
+  weak var textSelection: TranscriptSelection?
+
+  /// A click between messages drops the text selection, as in a document.
+  override func mouseDown(with event: NSEvent) {
+    textSelection?.clear()
+    super.mouseDown(with: event)
+  }
+
   #if DEBUG
     /// `ARGUS_TRANSCRIPT_SYNC_SCROLL`: every wheel event handled on the main
     /// thread, so a driven build can send trackpad phases in-process.
@@ -118,12 +126,12 @@ final class TranscriptTableView: NSTableView {
   }
 }
 
-/// A text-only message as plain AppKit: the same text view the hosted rows
+/// A text-only message as plain AppKit: the same message view the hosted rows
 /// use, laid out by the table, so the tallest rows cost no SwiftUI layout.
 final class TranscriptTextCell: NSTableCellView {
   static let identifier = NSUserInterfaceItemIdentifier("transcript-text")
 
-  let text = TranscriptNSTextView.make()
+  let text = TranscriptMessageTextView()
   private(set) var rowId = ""
   private(set) var revision = -1
   private(set) var environmentKey = ""
@@ -138,12 +146,14 @@ final class TranscriptTextCell: NSTableCellView {
 
   override var isFlipped: Bool { true }
 
-  func show(_ content: NSAttributedString, id: String, revision: Int, environmentKey: String, tip: String) {
+  func show(
+    _ content: TranscriptRendered, unit: String, id: String, revision: Int, environmentKey: String, tip: String
+  ) {
     rowId = id
     self.revision = revision
     self.environmentKey = environmentKey
     toolTip = tip.isEmpty ? nil : tip
-    text.setContent(content)
+    text.setContent(content, unit: unit)
     needsLayout = true
   }
 
@@ -164,7 +174,7 @@ final class TranscriptTextCell: NSTableCellView {
     max(((min(width, 920) - 40) * 2).rounded(.down) / 2, 1)
   }
 
-  static func height(of content: NSAttributedString, width: CGFloat) -> CGFloat {
-    ceil(TextMeasurer.size(of: content, width: textWidth(for: width)).height) + 14
+  static func height(of content: TranscriptRendered, width: CGFloat) -> CGFloat {
+    ceil(TranscriptMessageTextView.height(of: content, width: textWidth(for: width))) + 14
   }
 }

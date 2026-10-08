@@ -10,6 +10,7 @@ import SwiftUI
 final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableViewDelegate {
   let follow = FollowState()
   let model: TranscriptModel
+  let selection = TranscriptSelection()
   /// The reader neared the top and the host has older pages.
   var onNeedOlder: () -> Void = {}
 
@@ -62,6 +63,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     center.addObserver(
       self, selector: #selector(frameChanged), name: NSView.frameDidChangeNotification, object: scrollView.contentView)
     observeFind()
+    wireSelection()
     wheelMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
       // Delivered on the main thread, with the event being dispatched.
       nonisolated(unsafe) let event = event
@@ -94,14 +96,15 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
 
   /// What the sizer measures.
   private func root(_ index: Int) -> AnyView {
-    TranscriptRow.root(row(index), id: nil, agentKey: agentKey, model: model, environment: environment)
+    TranscriptRow.root(
+      row(index), id: nil, agentKey: agentKey, model: model, selection: selection, environment: environment)
   }
 
   private var width: CGFloat { max(scrollView.contentView.bounds.width, 1) }
 
   /// A message that is only text — no badges, attachments or tool calls — and
   /// so can be drawn by a plain AppKit text cell.
-  func plainText(_ index: Int) -> (RemoteMessage, NSAttributedString)? {
+  func plainText(_ index: Int) -> (RemoteMessage, TranscriptRendered)? {
     guard case .segment(.single(let message)) = row(index), message.role != .user, message.toolCalls.isEmpty,
       (message.images ?? []).isEmpty, message.isError != true, message.source == nil, message.author == nil,
       let text = model.text(for: message)
@@ -121,6 +124,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     let restyled = key != environmentKey
     environmentKey = key
     let change = segments.update(messages)
+    if !change.isEmpty { messageOrder = nil }
     let topChanged = top != self.top
     let footerChanged = footer != self.footer
     self.top = top
@@ -175,6 +179,8 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     heights = TranscriptRowHeights()
     landed = false
     follow.atBottom = true
+    messageOrder = nil
+    selection.clear()
     if table.numberOfRows > 0 { table.reloadData() }
   }
 
@@ -182,6 +188,33 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   private static func environmentKey(_ environment: EnvironmentValues) -> String {
     let links = environment.transcriptLinks.map { "\(ObjectIdentifier($0))" } ?? "-"
     return "\(environment.colorScheme)|\(environment.dynamicTypeSize)|\(TextScale.shared.factor)|\(links)"
+  }
+
+  // MARK: Selection
+
+  private var messageOrder: [String: Int]?
+
+  private func order(_ messageId: String) -> Int? {
+    if messageOrder == nil {
+      messageOrder = Dictionary(
+        segments.messages.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+    return messageOrder?[messageId]
+  }
+
+  private func wireSelection() {
+    table.textSelection = selection
+    selection.order = { [weak self] in self?.order($0) }
+    selection.text = { [weak self] id in
+      guard let self, let index = self.order(id) else { return nil }
+      return self.model.text(for: self.segments.messages[index])?.string
+    }
+    selection.unitsBetween = { [weak self] first, last in
+      guard let self, first <= last, last < self.segments.messages.count else { return [] }
+      return self.segments.messages[first...last]
+        .filter { !TranscriptModel.textBlocks($0).isEmpty }
+        .map(\.id)
+    }
   }
 
   // MARK: Table

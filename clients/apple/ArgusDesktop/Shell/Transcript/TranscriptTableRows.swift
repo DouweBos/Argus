@@ -24,7 +24,8 @@ enum TranscriptRow {
   /// `onHeight` hears a row that resizes itself (an image landing, a card opening).
   @MainActor
   static func root(
-    _ row: TranscriptRow, id: String?, agentKey: String, model: TranscriptModel, environment: EnvironmentValues,
+    _ row: TranscriptRow, id: String?, agentKey: String, model: TranscriptModel, selection: TranscriptSelection,
+    environment: EnvironmentValues,
     onHeight: ((CGFloat) -> Void)? = nil
   ) -> AnyView {
     let laidOut = content(row, agentKey: agentKey)
@@ -39,6 +40,7 @@ enum TranscriptRow {
     return AnyView(
       rooted
         .environment(\.toolCardExpansion, model.toolCards)
+        .environment(\.transcriptSelection, selection)
         .environment(\.self, environment))
   }
 

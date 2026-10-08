@@ -43,11 +43,11 @@ struct TranscriptMessageRow: View, Equatable {
     .help(timestamp)
   }
 
-  private func textView(_ text: NSAttributedString) -> some View {
+  private func textView(_ text: TranscriptRendered) -> some View {
     let unit = TranscriptModel.textUnit(message.id)
     let current = model.currentHit.flatMap { $0.unitId == unit ? $0.range : nil }
-    return TranscriptText(
-      text: text, highlights: model.hitsByUnit[unit] ?? [], current: current,
+    return TranscriptMessageText(
+      rendered: text, unit: message.id, highlights: model.hitsByUnit[unit] ?? [], current: current,
       revealToken: current == nil ? 0 : model.pendingReveal, fills: !isUser,
       onRevealed: { model.revealedToken = $0 }
     )
