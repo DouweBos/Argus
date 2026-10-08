@@ -6,14 +6,16 @@ import SwiftUI
 /// (`open_path`, `open_in_editor`, `reveal_in_finder`) like the desktop app;
 /// relative paths resolve against the session's worktree first.
 ///
-/// None of the host's open commands take a line, so `:line:col` only narrows
-/// the match — the file opens at its top, as it does in the desktop app.
+/// A file inside the worktree opens in the code view at its line, unless
+/// Settings sends links to the default app; anything else goes to `open_path`.
 @MainActor
 final class TranscriptLinkHandler {
   private weak var store: HostStore?
   private let sessionId: String
   private(set) var worktree: String?
   private var editors: [ArgusProtocol.EditorDescriptor] = []
+  /// The code view, at a worktree-relative path and 1-based line.
+  var openInCode: ((String, Int?) -> Void)?
 
   init(store: HostStore, sessionId: String) {
     self.store = store
@@ -49,6 +51,7 @@ final class TranscriptLinkHandler {
   }
 
   func openFile(_ ref: FileLinks.FileRef) {
+    if AppPreferences.shared.openFileLinksIn == .argus, openInArgus(ref) { return }
     guard let path = existingPath(ref) else { return NSSound.beep() }
     capture(.open, ref)
     send(ArgusProtocol.Commands.OpenPath.self, .init(path: path))
@@ -68,6 +71,9 @@ final class TranscriptLinkHandler {
     }
     let exists = existingPath(ref) != nil
     var items = [item("Open", enabled: exists) { [weak self] in self?.openFile(ref) }]
+    if relativePath(ref) != nil {
+      items.append(item("Open in Argus", enabled: exists) { [weak self] in _ = self?.openInArgus(ref) })
+    }
     let custom = AppPreferences.shared.customEditors
     if !editors.isEmpty || !custom.isEmpty {
       let submenu = NSMenu()
@@ -110,6 +116,23 @@ final class TranscriptLinkHandler {
   func copyPath(_ ref: FileLinks.FileRef) {
     capture(.copyPath, ref)
     TranscriptSystem.copy(resolve(ref) ?? ref.path)
+  }
+
+  /// The code view, when the file is in this session's worktree.
+  @discardableResult
+  func openInArgus(_ ref: FileLinks.FileRef) -> Bool {
+    guard let openInCode, let relative = relativePath(ref), existingPath(ref) != nil else { return false }
+    capture(.openInArgus, ref)
+    openInCode(relative, ref.line)
+    return true
+  }
+
+  /// `ref` relative to the worktree; nil outside it.
+  func relativePath(_ ref: FileLinks.FileRef) -> String? {
+    guard let worktree, let path = resolve(ref) else { return nil }
+    let root = (worktree as NSString).standardizingPath
+    guard path.hasPrefix(root + "/") else { return nil }
+    return String(path.dropFirst(root.count + 1))
   }
 
   // MARK: Internals
@@ -166,4 +189,6 @@ private final class ClosureMenuItem: NSMenuItem {
 
 extension EnvironmentValues {
   @Entry var transcriptLinks: TranscriptLinkHandler?
+  /// A chat file link into the code view: session, worktree-relative path, 1-based line.
+  @Entry var openInCode: (@MainActor (String, String, Int?) -> Void)?
 }
