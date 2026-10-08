@@ -27,29 +27,8 @@ struct SessionView: View {
 
   private func startAgent(mode: RemotePermissionMode?) {
     Task {
-      // Settings' default applies unless the caller picked a mode, as on the desktop.
-      let fallback = AppPreferences.shared.defaultPermissionMode
-      if let remoteMode = mode ?? RemotePermissionMode(rawValue: fallback.rawValue) {
-        guard let agent = await store.spawnAgent(sessionId: sessionId, permissionMode: remoteMode)
-        else { return }
-        model.open(spawned: agent.agentId, session: sessionId)
-      } else {
-        await startTrusted(fallback.rawValue)
-      }
-    }
-  }
-
-  /// `trusted` is a CLI flag fixed at launch, and the gateway's spawn refuses
-  /// it; the admin command takes any mode and announces the agent the same way.
-  private func startTrusted(_ mode: String) async {
-    guard let backend = store.backend else { return }
-    do {
-      let info = try await backend.request(
-        ArgusProtocol.Commands.StartAgent.self, .init(sessionId: sessionId, permissionMode: mode))
-      if let repoRoot = session?.repoRoot { await store.loadAgents(repoRoot: repoRoot) }
-      model.open(spawned: info.agentId, session: sessionId)
-    } catch {
-      store.report(error)
+      guard let agentId = await model.startAgent(sessionId: sessionId, mode: mode) else { return }
+      model.open(spawned: agentId, session: sessionId)
     }
   }
 
@@ -86,6 +65,12 @@ struct SessionView: View {
         if case .sessionHome = model.route, let session {
           SessionHomeView(session: session, sessionAgents: agents, startAgent: startAgent(mode:))
             .id(session.id)
+        } else if case .sessionCode(_, let path, let line) = model.route, let session {
+          if session.status == .ready {
+            CodePanel(session: session, path: path, line: line)
+          } else {
+            SessionSetupView(session: session, progress: session.progress)
+          }
         } else if let gitView = model.route.gitView, let session {
           if session.status == .ready {
             GitScreen(session: session, view: gitView)

@@ -16,6 +16,15 @@ final class AppPreferences {
     static let permissionMode = "argus:settings.defaultPermissionMode"
     static let defaultModel = "argus:settings.defaultModel"
     static let customEditors = "argus:settings.customEditors"
+    static let editorFontName = "argus:editor.fontName"
+    static let editorFontSize = "argus:editor.fontSize"
+    static let editorTabWidth = "argus:editor.tabWidth"
+    static let editorInsertSpaces = "argus:editor.insertSpaces"
+    static let editorWrapLines = "argus:editor.wrapLines"
+    static let editorShowInvisibles = "argus:editor.showInvisibles"
+    static let openFileLinksIn = "argus:editor.openFileLinksIn"
+    static let languageServers = "argus:editor.languageServers"
+    static let disabledLanguageServers = "argus:editor.languageServers.disabled"
   }
 
   private let defaults: UserDefaults
@@ -50,6 +59,59 @@ final class AppPreferences {
     }
   }
 
+  // MARK: Editor
+
+  /// The code view's font family; empty is the system monospaced font (SF Mono).
+  var editorFontName: String {
+    didSet { defaults.set(editorFontName, forKey: Key.editorFontName) }
+  }
+
+  var editorFontSize: Double {
+    didSet { defaults.set(editorFontSize, forKey: Key.editorFontSize) }
+  }
+
+  /// `.editorconfig` wins over these two where it says something.
+  var editorTabWidth: Int {
+    didSet { defaults.set(editorTabWidth, forKey: Key.editorTabWidth) }
+  }
+
+  var editorInsertSpaces: Bool {
+    didSet { defaults.set(editorInsertSpaces, forKey: Key.editorInsertSpaces) }
+  }
+
+  var editorWrapLines: Bool {
+    didSet { defaults.set(editorWrapLines, forKey: Key.editorWrapLines) }
+  }
+
+  var editorShowInvisibles: Bool {
+    didSet { defaults.set(editorShowInvisibles, forKey: Key.editorShowInvisibles) }
+  }
+
+  /// Where a file link in chat opens.
+  var openFileLinksIn: FileLinkTarget {
+    didSet { defaults.set(openFileLinksIn.rawValue, forKey: Key.openFileLinksIn) }
+  }
+
+  /// Language servers for the code view, all at once; `disabledLanguageServers` turns single ones off.
+  var languageServersEnabled: Bool {
+    didSet { defaults.set(languageServersEnabled, forKey: Key.languageServers) }
+  }
+
+  /// `SyntaxLanguage` raw values whose server stays off.
+  var disabledLanguageServers: Set<String> {
+    didSet { defaults.set(disabledLanguageServers.sorted(), forKey: Key.disabledLanguageServers) }
+  }
+
+  func languageServerEnabled(for language: String) -> Bool {
+    languageServersEnabled && !disabledLanguageServers.contains(language)
+  }
+
+  var editorSettings: CodeEditorSettings {
+    CodeEditorSettings(
+      fontName: editorFontName.isEmpty ? nil : editorFontName, fontSize: editorFontSize, tabWidth: editorTabWidth,
+      insertSpaces: editorInsertSpaces, wrapLines: editorWrapLines, showInvisibles: editorShowInvisibles)
+  }
+
   init(defaults: UserDefaults = .standard) {
     self.defaults = defaults
     theme = .sanitize(defaults.string(forKey: Key.theme))
@@ -57,6 +119,15 @@ final class AppPreferences {
     defaultPermissionMode = .sanitize(defaults.string(forKey: Key.permissionMode))
     defaultModel = defaults.string(forKey: Key.defaultModel) ?? ""
     customEditors = CustomEditor.sanitize(defaults.data(forKey: Key.customEditors))
+    editorFontName = defaults.string(forKey: Key.editorFontName) ?? ""
+    editorFontSize = (defaults.object(forKey: Key.editorFontSize) as? Double).map { min(max($0, 8), 32) } ?? 13
+    editorTabWidth = (defaults.object(forKey: Key.editorTabWidth) as? Int).map { min(max($0, 1), 16) } ?? 4
+    editorInsertSpaces = defaults.object(forKey: Key.editorInsertSpaces) as? Bool ?? true
+    editorWrapLines = defaults.bool(forKey: Key.editorWrapLines)
+    editorShowInvisibles = defaults.bool(forKey: Key.editorShowInvisibles)
+    openFileLinksIn = FileLinkTarget(rawValue: defaults.string(forKey: Key.openFileLinksIn) ?? "") ?? .argus
+    languageServersEnabled = defaults.object(forKey: Key.languageServers) as? Bool ?? true
+    disabledLanguageServers = Set(defaults.stringArray(forKey: Key.disabledLanguageServers) ?? [])
   }
 
   /// Every window follows `NSApp.appearance`, sheets and popouts included.
@@ -109,6 +180,21 @@ final class AppPreferences {
     case .default: .regular
     case .small: .small
     case .smaller: .mini
+    }
+  }
+}
+
+/// Where a chat file link opens.
+enum FileLinkTarget: String, CaseIterable {
+  /// The session's code view, at the line.
+  case argus
+  /// The app macOS opens the file with.
+  case defaultApp = "default_app"
+
+  var title: String {
+    switch self {
+    case .argus: "Argus"
+    case .defaultApp: "Default App"
     }
   }
 }

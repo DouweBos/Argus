@@ -727,6 +727,23 @@ state folder, and has the same Hosts tab in its Settings window.
 
 ---
 
+## Editor (Mac app)
+
+The Mac app's code view (⌘4 in a session). These live on this Mac only.
+
+| Setting                | Default | Description                                                                                                                                                                     |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Font**               | SF Mono | Any installed monospaced font.                                                                                                                                                  |
+| **Font size**          | `13`    | In points, 8–32.                                                                                                                                                                |
+| **Tab width**          | `4`     | Columns per indent. A project's `.editorconfig` (`indent_size`, `tab_width`) wins for the files it covers.                                                                      |
+| **Insert spaces**      | `true`  | Tab inserts spaces. `.editorconfig`'s `indent_style` wins; its `trim_trailing_whitespace` and `insert_final_newline` apply on save.                                             |
+| **Wrap lines**         | `false` | Soft-wrap long lines.                                                                                                                                                           |
+| **Show invisibles**    | `false` | Draw tabs, spaces and line endings.                                                                                                                                             |
+| **Open file links in** | Argus   | `Argus` opens a file an agent mentions in chat in the session's code view, at the line; `Default App` hands it to macOS. Files outside the worktree always use the default app. |
+| **Language servers**   | on      | Diagnostics, hover, go to definition and completion. Each language can also be turned off on its own.                                                                           |
+
+---
+
 ## Where things are stored
 
 Argus keeps everything under `~/.argus/`:

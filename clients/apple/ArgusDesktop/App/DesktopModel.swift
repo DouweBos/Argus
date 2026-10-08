@@ -21,6 +21,8 @@ final class DesktopModel {
   /// The inbox in full, from the host's catalog — the Mac's inbox and proposal screens.
   let inbox: InboxStore
   let palette = CommandPaletteModel()
+  /// Each session's open files in the code view.
+  let code: CodeStore
   let notificationsLog: NotificationsLog
   let huddles: HuddleStore
   /// Paired hosts this window drives besides its own.
@@ -53,6 +55,9 @@ final class DesktopModel {
   var gitViews: [String: GitRoute] = [:]
   /// Sessions last left on their git panel.
   var gitPanelSessions: Set<String> = []
+  /// Sessions last left on their code view, and the file each showed.
+  var codePanelSessions: Set<String> = []
+  var lastCodePaths: [String: String] = [:]
   /// The agent each session last showed.
   var lastAgents: [String: String] = [:]
   /// An agent opened the moment it was spawned, before any list names it.
@@ -97,6 +102,7 @@ final class DesktopModel {
     terminals = TerminalsStore(backend: { [store] in store.backend })
     pullRequests = PullRequestsStore(host: store)
     git = GitWorkspaces(host: store)
+    code = CodeStore(host: store)
     automations = AutomationsStore(host: store)
     proposals = ProposalsStore(host: store)
     inbox = InboxStore(host: store)
@@ -117,6 +123,7 @@ final class DesktopModel {
     }
     supervisor.onEvent = { [weak self] event in self?.supervisorEvent(event) }
     platform.focusWindow = { NSApp.activate() }
+    code.model = self
     BuiltinPalette.register(in: palette)
     SettingsPalette.register(in: palette)
     platform.closeDevicePopout = { [runtime] key in runtime.closePopout(key) }
@@ -218,6 +225,7 @@ final class DesktopModel {
         self?.platform.reportState()
         await self?.reload()
         await self?.terminals.reconnected()
+        await self?.code.reconnected()
         while await backend.transport.state == .ready {
           try? await Task.sleep(for: .milliseconds(500))
         }

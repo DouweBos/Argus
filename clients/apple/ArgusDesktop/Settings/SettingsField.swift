@@ -34,6 +34,14 @@ enum SettingsField: String {
   case prereqFixed = "prereq_fixed"
   case conductorVersion = "conductor_version"
   case updateChannel = "update_channel"
+  case editorFont = "editor_font"
+  case editorFontSize = "editor_font_size"
+  case editorTabWidth = "editor_tab_width"
+  case editorInsertSpaces = "editor_insert_spaces"
+  case editorWrapLines = "editor_wrap_lines"
+  case editorShowInvisibles = "editor_show_invisibles"
+  case openFileLinksIn = "open_file_links_in"
+  case languageServers = "language_servers"
 
   var section: SettingsTab {
     switch self {
@@ -49,6 +57,9 @@ enum SettingsField: String {
     case .mcpServers, .mcpTested, .mcpSignedIn, .mcpSignedOut: .mcp
     case .toolToggled, .prereqFixed, .conductorVersion: .tools
     case .updateChannel: .advanced
+    case .editorFont, .editorFontSize, .editorTabWidth, .editorInsertSpaces, .editorWrapLines,
+      .editorShowInvisibles, .openFileLinksIn, .languageServers:
+      .editor
     }
   }
 }
