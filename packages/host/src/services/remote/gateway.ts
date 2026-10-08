@@ -992,6 +992,16 @@ export class DeviceConnection implements DeviceMediaController {
       return;
     }
 
+    // A typed reader following a worktree search it subscribed to.
+    const search = /^code:search:(.+)$/.exec(channel);
+    if (search) {
+      if (!this.raw && this.subscriptions.has(`code-search:${search[1]}`)) {
+        this.pushEvent("files.search", null, args[0]);
+      }
+
+      return;
+    }
+
     const parsed = parseAgentChannel(channel);
     if (!parsed) {
       return;

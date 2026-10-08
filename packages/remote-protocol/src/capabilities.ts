@@ -156,6 +156,12 @@ export const REMOTE_METHODS = {
   "sessions.mark_ready": "control",
   /** List a session's files for the @-mention picker. */
   "sessions.files": "control",
+  /** Read a session file and search its worktree, for the read-only viewer.
+   *  File contents are more sensitive than the transcript, so control — the
+   *  same tier as listing them. */
+  "files.read": "control",
+  "files.search": "control",
+  "files.search_cancel": "control",
   /** Resolve a directory path for the @-mention browse mode. */
   "sessions.resolve_mention_path": "control",
   /** Read a session's git status (ahead/behind/dirty/conflicts). */
@@ -346,6 +352,8 @@ export const REMOTE_EVENTS = [
   /** Output of a terminal this device subscribed to as `terminal:<id>`. */
   "terminal.data",
   "terminal.exit",
+  /** Matches of a worktree search this device subscribed to as `code-search:<id>`. */
+  "files.search",
   /** A huddle guest's standing changed — approved, denied, or the room ended. */
   "huddle.state",
   /** Someone in the huddle said something to the room (not to the agent). */

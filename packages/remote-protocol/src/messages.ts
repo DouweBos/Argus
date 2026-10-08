@@ -50,6 +50,7 @@ import {
   RemoteTodo,
 } from "./models";
 import { AutomationCalibration } from "./models/automations";
+import { CodeFile, CodeSearchEvent } from "./models/code";
 import { GitStashEntry } from "./models/git/history";
 import { GitTag } from "./models/git/remotes";
 import { ReportBlock } from "./report";
@@ -239,6 +240,27 @@ export const MethodParams = {
     prompt: z.string().max(100_000).optional(),
   }),
   "sessions.files": z.object({ session_id: z.string() }),
+  /** One file's contents, read-only: the phone views, it never writes. */
+  "files.read": z.object({ session_id: z.string(), path: z.string() }),
+  /**
+   * Search the worktree. Subscribe to `code-search:<search_id>` first: matches
+   * arrive as `files.search` events, ending with one `kind: "done"`.
+   */
+  "files.search": z.object({
+    session_id: z.string(),
+    search_id: z.string().regex(/^[\w-]{1,64}$/),
+    query: z.string().min(1),
+    regex: z.boolean().default(false),
+    case_sensitive: z.boolean().default(false),
+    whole_word: z.boolean().default(false),
+    include: z.array(z.string()).optional(),
+    exclude: z.array(z.string()).optional(),
+    max_results: z.number().int().positive().optional(),
+  }),
+  "files.search_cancel": z.object({
+    session_id: z.string(),
+    search_id: z.string(),
+  }),
   "sessions.resolve_mention_path": z.object({
     session_id: z.string(),
     query: z.string(),
@@ -667,6 +689,9 @@ export const MethodResult = {
   "sessions.create": z.object({ session: RemoteSession }),
   "scratch_pads.create": z.object({ session: RemoteSession }),
   "sessions.files": z.object({ files: z.array(z.string()) }),
+  "files.read": CodeFile,
+  "files.search": z.object({ search_id: z.string() }),
+  "files.search_cancel": z.object({ accepted: z.boolean() }),
   "sessions.resolve_mention_path": RemoteMentionPathResult,
   "sessions.delete": z.object({ accepted: z.boolean() }),
   "sessions.rename": z.object({ accepted: z.boolean() }),
@@ -1025,6 +1050,8 @@ export const EventPayloads = {
   /** Base64 output, in the order the terminal produced it. */
   "terminal.data": z.object({ terminal_id: z.string(), data: z.string() }),
   "terminal.exit": z.object({ terminal_id: z.string(), exit_code: z.number() }),
+  /** Results of a search this device subscribed to as `code-search:<id>`. */
+  "files.search": CodeSearchEvent,
   /** Carries the new state outright — the list is small, and a rate limit or a
    *  finished login landing on the account screen should not need a refetch. */
   "claude_accounts.changed": z.object({

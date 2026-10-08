@@ -169,6 +169,9 @@ const CONTROL_METHODS = [
   "sessions.pin_branch",
   "sessions.files",
   "sessions.resolve_mention_path",
+  "files.read",
+  "files.search",
+  "files.search_cancel",
   "agents.capabilities",
   "permission.respond",
 ] as const;

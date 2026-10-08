@@ -3107,6 +3107,131 @@ extension ArgusProtocol {
       }
     }
 
+    public struct FilesReadParams: Codable, Sendable {
+      public var sessionId: String
+      public var path: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case path = "path"
+      }
+
+      public init(sessionId: String, path: String) {
+        self.sessionId = sessionId
+        self.path = path
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(path, forKey: .path)
+      }
+    }
+
+    public struct FilesSearchParams: Codable, Sendable {
+      public var sessionId: String
+      public var searchId: String
+      public var query: String
+      public var regex: Bool?
+      public var caseSensitive: Bool?
+      public var wholeWord: Bool?
+      public var include: [String]?
+      public var exclude: [String]?
+      public var maxResults: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case searchId = "search_id"
+        case query = "query"
+        case regex = "regex"
+        case caseSensitive = "case_sensitive"
+        case wholeWord = "whole_word"
+        case include = "include"
+        case exclude = "exclude"
+        case maxResults = "max_results"
+      }
+
+      public init(sessionId: String, searchId: String, query: String, regex: Bool? = nil, caseSensitive: Bool? = nil, wholeWord: Bool? = nil, include: [String]? = nil, exclude: [String]? = nil, maxResults: Int? = nil) {
+        self.sessionId = sessionId
+        self.searchId = searchId
+        self.query = query
+        self.regex = regex
+        self.caseSensitive = caseSensitive
+        self.wholeWord = wholeWord
+        self.include = include
+        self.exclude = exclude
+        self.maxResults = maxResults
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(searchId, forKey: .searchId)
+        try c.encode(query, forKey: .query)
+        try c.encodeIfPresent(regex, forKey: .regex)
+        try c.encodeIfPresent(caseSensitive, forKey: .caseSensitive)
+        try c.encodeIfPresent(wholeWord, forKey: .wholeWord)
+        try c.encodeIfPresent(include, forKey: .include)
+        try c.encodeIfPresent(exclude, forKey: .exclude)
+        try c.encodeIfPresent(maxResults, forKey: .maxResults)
+      }
+    }
+
+    public struct FilesSearchResult: Codable, Sendable {
+      public var searchId: String
+
+      enum CodingKeys: String, CodingKey {
+        case searchId = "search_id"
+      }
+
+      public init(searchId: String) {
+        self.searchId = searchId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(searchId, forKey: .searchId)
+      }
+    }
+
+    public struct FilesSearchCancelParams: Codable, Sendable {
+      public var sessionId: String
+      public var searchId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case searchId = "search_id"
+      }
+
+      public init(sessionId: String, searchId: String) {
+        self.sessionId = sessionId
+        self.searchId = searchId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(searchId, forKey: .searchId)
+      }
+    }
+
+    public struct FilesSearchCancelResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct GithubCommentPullRequestParams: Codable, Sendable {
       public var repo: String
       public var number: Int
@@ -5695,6 +5820,24 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.DevicesWatchParams
       public typealias Result = ArgusProtocol.MethodsTypes.DevicesWatchResult
       public static let name = "devices.watch"
+    }
+
+    public enum FilesRead: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.FilesReadParams
+      public typealias Result = ArgusProtocol.CodeFile
+      public static let name = "files.read"
+    }
+
+    public enum FilesSearch: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.FilesSearchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.FilesSearchResult
+      public static let name = "files.search"
+    }
+
+    public enum FilesSearchCancel: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.FilesSearchCancelParams
+      public typealias Result = ArgusProtocol.MethodsTypes.FilesSearchCancelResult
+      public static let name = "files.search_cancel"
     }
 
     public enum GithubCommentPullRequest: RemoteCommand {
