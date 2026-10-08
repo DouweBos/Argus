@@ -265,6 +265,8 @@ enum MacTelemetryEvent {
   case editorCompletionAccepted(language: String)
   /// An editor command ran (comment, move line, add cursor, …); once per command per open file.
   case editorCommand(command: String)
+  /// Quick open closed: what it was asked for, and whether something was opened.
+  case editorQuickOpenUsed(mode: EditorQuickOpenMode, result: EditorQuickOpenResult)
 
   var name: String {
     switch self {
@@ -332,6 +334,7 @@ enum MacTelemetryEvent {
     case .editorAskAgent: "mac_editor_ask_agent"
     case .editorCompletionAccepted: "mac_editor_completion_accepted"
     case .editorCommand: "mac_editor_command"
+    case .editorQuickOpenUsed: "mac_editor_quick_open_used"
     }
   }
 
@@ -465,6 +468,8 @@ enum MacTelemetryEvent {
       ["language": language]
     case .editorCommand(let command):
       ["command": command]
+    case .editorQuickOpenUsed(let mode, let result):
+      ["mode": mode.rawValue, "result": result.rawValue]
     }
   }
 

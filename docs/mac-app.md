@@ -117,6 +117,8 @@ each change undoes in one step.
 | Keys       | Action                                             |
 | ---------- | -------------------------------------------------- |
 | ⌘P         | Open a file by name                                |
+| ⇧⌘O        | Open Quickly: files and symbols together           |
+| ⌘T         | Go to a symbol anywhere in the session             |
 | ⇧⌘F        | Find in files                                      |
 | ⌘F / ⌥⌘F   | Find / replace in the file                         |
 | ⌘G / ⇧⌘G   | Next / previous match                              |
@@ -149,6 +151,13 @@ each change undoes in one step.
 | ⌥Z         | Toggle word wrap                                   |
 | ⌃\`        | Show or hide the terminal                          |
 | ⌥⌘L        | Send the selection to the session's agent          |
+
+In ⌘P, a prefix changes what you're looking for, as in VS Code: `@` lists
+the symbols in the open file (`@:` groups them by kind), `#` searches symbols
+across the session, and `:` goes to a line (`:42`, or `:42:7` for a column).
+Symbols come from Argus's own index of definitions, so they work before any
+language server has started, and from the session's running language servers
+when there are some. Changed files rank first.
 
 ## How it relates to the Electron app
 

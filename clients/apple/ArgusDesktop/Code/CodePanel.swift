@@ -29,7 +29,7 @@ struct CodePanel: View {
           ContentUnavailableView {
             Label("No file open", systemImage: "doc.text")
           } description: {
-            Text("Pick a file from the navigator, or press ⌘P to open one by name.")
+            Text("Pick a file from the navigator, press ⌘P to open one by name, or ⇧⌘O to open a file or symbol.")
           }
           .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -58,11 +58,6 @@ struct CodePanel: View {
         .keyboardShortcut("s", modifiers: .command)
       Button("Save All") { Task { _ = await code.saveAll() } }
         .keyboardShortcut("s", modifiers: [.command, .option])
-      Button("Quick Open") {
-        code.quickOpenVisible.toggle()
-        if code.quickOpenVisible { Task { await code.loadFileList() } }
-      }
-      .keyboardShortcut("p", modifiers: .command)
       Button("Find in Files") {
         code.navigatorVisible = true
         code.navigatorMode = .search

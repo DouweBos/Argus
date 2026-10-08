@@ -26,6 +26,8 @@ struct CodeGoCommands: View {
     let code = model.activeCodeSession
     let document = model.activeCodeDocument
     let language = document?.languageProvider != nil
+    QuickOpenCommands(model: model)
+    Divider()
     Button("Back") { model.goBack() }
       .keyboardShortcut("-", modifiers: .control)
       .disabled(code == nil || !model.canGoBack)
@@ -52,6 +54,20 @@ struct CodeGoCommands: View {
     Divider()
     EditorCommandButton(command: .nextProblem, document: document, enabled: document?.diagnostics.isEmpty == false)
     EditorCommandButton(command: .previousProblem, document: document, enabled: document?.diagnostics.isEmpty == false)
+  }
+}
+
+/// Quick open's three ways in, in the Go menu.
+private struct QuickOpenCommands: View {
+  let model: DesktopModel
+
+  var body: some View {
+    let code = model.activeCodeSession
+    ForEach(QuickOpenModel.Entry.allCases, id: \.self) { entry in
+      Button(entry.title) { model.toggleQuickOpen(entry) }
+        .keyboardShortcut(entry.shortcut.key, modifiers: entry.shortcut.modifiers)
+        .disabled(code == nil)
+    }
   }
 }
 
@@ -92,13 +108,21 @@ struct CodeViewCommands: View {
   }
 }
 
-/// The app's keys the editor must take before typing: on ⌥ they'd insert a character first.
+/// App keys the editor hands back before its own handling: on ⌥ they'd type a character first, and
+/// quick open's must open from inside the editor too.
 enum CodeShortcuts {
   static let wordWrap = EditorShortcut("z", .option)
   static let format = EditorShortcut("f", [.shift, .option])
 
   @MainActor static func install(on document: EditorDocument, store: CodeStore?) {
-    document.hostShortcuts = [
+    var quickOpen: [EditorShortcut: () -> Bool] = [:]
+    for entry in QuickOpenModel.Entry.allCases {
+      quickOpen[entry.shortcut] = { [weak store] in
+        store?.model?.toggleQuickOpen(entry)
+        return store != nil
+      }
+    }
+    document.hostShortcuts = quickOpen.merging([
       wordWrap: { [weak store] in
         store?.toggleWordWrap()
         return store != nil
@@ -108,7 +132,7 @@ enum CodeShortcuts {
         Task { _ = await provider.format() }
         return true
       },
-    ]
+    ]) { first, _ in first }
   }
 }
 
@@ -120,7 +144,38 @@ extension CodeStore {
   }
 }
 
+extension QuickOpenModel.Entry: CaseIterable {
+  static let allCases: [Self] = [.files, .openQuickly, .workspaceSymbols]
+
+  var title: String {
+    switch self {
+    case .files: "Go to File…"
+    case .openQuickly: "Open Quickly…"
+    case .workspaceSymbols: "Go to Symbol in Workspace…"
+    }
+  }
+
+  /// ⌘P and ⌘T as VS Code has them, ⇧⌘O as Xcode does.
+  var shortcut: EditorShortcut {
+    switch self {
+    case .files: EditorShortcut("p", .command)
+    case .openQuickly: EditorShortcut("o", [.shift, .command])
+    case .workspaceSymbols: EditorShortcut("t", .command)
+    }
+  }
+}
+
 extension DesktopModel {
+  /// Shows quick open in the code view; the same key again closes it.
+  func toggleQuickOpen(_ entry: QuickOpenModel.Entry) {
+    guard let code = activeCodeSession else { return }
+    if code.quickOpenVisible, code.quickOpen.entry == entry {
+      code.quickOpen.dismiss()
+    } else {
+      code.quickOpen.present(entry, activePath: activeCodePath)
+    }
+  }
+
   /// The file the code view shows.
   var activeCodePath: String? {
     guard case .sessionCode(_, let path, _) = route else { return nil }
