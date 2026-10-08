@@ -14,6 +14,12 @@ enum Route: Hashable {
   case agent(id: String, label: String)
   case stoppedAgent(historyId: String, repoRoot: String, label: String, branch: String, runnerSessionId: String)
   case changes(sessionId: String, label: String)
+  /// One session file, read-only. `path` may be absolute; `line` is 1-based.
+  case file(sessionId: String, path: String, line: Int?, source: FileViewSource)
+  /// Fuzzy file finder over a session's worktree.
+  case quickOpen(sessionId: String, label: String)
+  /// Text search across a session's worktree.
+  case fileSearch(sessionId: String, label: String)
   /// A session's terminals, read-only.
   case terminals(sessionId: String, label: String)
   case terminal(id: String, label: String)
@@ -58,6 +64,9 @@ enum Route: Hashable {
     case .agent: "agent"
     case .stoppedAgent: "stopped_agent"
     case .changes: "changes"
+    case .file: "file"
+    case .quickOpen: "quick_open"
+    case .fileSearch: "file_search"
     case .terminals: "terminals"
     case .terminal: "terminal"
     case .stashes: "stashes"

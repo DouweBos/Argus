@@ -56,6 +56,7 @@ struct AgentView: View {
       activity.isEligibleForHandoff = true
       activity.addUserInfoEntries(from: handoff.userInfo)
     }
+    .environment(\.openFileLink, fileLinkAction)
     .navigationTitle(label)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
@@ -63,6 +64,19 @@ struct AgentView: View {
         if let sessionId {
           IconBtn(systemName: Icon.branch, label: "View changes") {
             router.push(.changes(sessionId: sessionId, label: label))
+          }
+          if host.hasControl {
+            Menu {
+              Button("Open File…", systemImage: Icon.file) {
+                router.push(.quickOpen(sessionId: sessionId, label: label))
+              }
+              Button("Search Files…", systemImage: Icon.search) {
+                router.push(.fileSearch(sessionId: sessionId, label: label))
+              }
+            } label: {
+              Image(systemName: Icon.search)
+            }
+            .accessibilityLabel("Files")
           }
         }
         IconBtn(systemName: Icon.simulator, label: "Devices") { openDevices() }
@@ -95,6 +109,14 @@ struct AgentView: View {
         isRunning
           ? "It stops mid-turn and anything still queued for it is discarded."
           : "Its process ends and anything still queued for it is discarded.")
+    }
+  }
+
+  /// File paths in the transcript open the viewer; reading needs control.
+  private var fileLinkAction: OpenFileLinkAction? {
+    guard let sessionId, host.hasControl else { return nil }
+    return OpenFileLinkAction { [router] ref in
+      router.push(.file(sessionId: sessionId, path: ref.path, line: ref.line, source: .chatLink))
     }
   }
 

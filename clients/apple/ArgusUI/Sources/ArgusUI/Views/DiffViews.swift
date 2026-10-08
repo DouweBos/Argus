@@ -5,6 +5,8 @@ import SwiftUI
 public struct FileDiffCard: View {
   @Environment(\.theme) private var theme
   let file: DiffFile
+  /// Shown as "View file" unless the file was deleted; gets the first changed line.
+  let onViewFile: ((Int?) -> Void)?
   @State private var expanded = false
 
   private var tone: Tone {
@@ -15,8 +17,14 @@ public struct FileDiffCard: View {
     }
   }
 
-  public init(file: DiffFile) {
+  public init(file: DiffFile, onViewFile: ((Int?) -> Void)? = nil) {
     self.file = file
+    self.onViewFile = onViewFile
+  }
+
+  private var firstChangedLine: Int? {
+    file.hunks.lazy.flatMap(\.lines).first { $0.kind == .add }?.newNumber
+      ?? file.hunks.first?.lines.first?.newNumber
   }
 
   public var body: some View {
@@ -50,6 +58,15 @@ public struct FileDiffCard: View {
 
       if file.status == .renamed {
         MutedText("from \(file.oldPath)", lineLimit: 1)
+      }
+
+      if let onViewFile, file.status != .deleted {
+        Button {
+          onViewFile(firstChangedLine)
+        } label: {
+          Label("View file", systemImage: Icon.file).font(.scaled(size: 12, weight: .medium))
+        }
+        .buttonStyle(.accentLink)
       }
 
       if expanded {

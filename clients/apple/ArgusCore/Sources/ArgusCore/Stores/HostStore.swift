@@ -131,6 +131,8 @@ public final class HostStore {
   @ObservationIgnored var terminalObservers: [String: @MainActor (TerminalFeed.Live, Int) -> Void] = [:]
   /// Where each agent's applied queue sits among the host's events; see `applyQueue`.
   @ObservationIgnored var queueSeq: [String: Int] = [:]
+  /// Running worktree searches, by search id; see `startFileSearch`.
+  @ObservationIgnored var fileSearchObservers: [String: @MainActor (ArgusProtocol.CodeSearchEvent) -> Void] = [:]
 
   public static let transcriptPage = 80
 
@@ -353,6 +355,17 @@ public final class HostStore {
       guard let payload = try? ProtocolCodec.convert(envelope.payload, to: Payload.self)
       else { return }
       terminalObservers[payload.terminal_id]?(.exit(payload.exit_code), envelope.seq)
+
+    case .filesSearch:
+      guard let event = try? ProtocolCodec.convert(
+        envelope.payload, to: ArgusProtocol.CodeSearchEvent.self) else { return }
+      let searchId: String
+      switch event {
+      case .matches(let batch): searchId = batch.searchId
+      case .done(let done): searchId = done.searchId
+      case .unknown: return
+      }
+      fileSearchObservers[searchId]?(event)
 
     case .ipc:
       // Raw broadcasts reach admin devices only.

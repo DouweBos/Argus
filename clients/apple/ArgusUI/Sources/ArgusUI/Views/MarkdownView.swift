@@ -8,6 +8,7 @@ import SwiftUI
 /// and autolinks correctly — hand-rolling that again would only add bugs.
 public struct MarkdownView: View {
   @Environment(\.theme) private var theme
+  @Environment(\.openFileLink) private var openFileLink
   let text: String
   var baseSize: CGFloat = 15
 
@@ -22,6 +23,7 @@ public struct MarkdownView: View {
         view(for: block)
       }
     }
+    .modifier(FileLinkHandling())
   }
 
   @ViewBuilder
@@ -70,9 +72,10 @@ public struct MarkdownView: View {
   private func inline(_ source: String) -> Text {
     var options = AttributedString.MarkdownParsingOptions()
     options.interpretedSyntax = .inlineOnlyPreservingWhitespace
-    guard let attributed = try? AttributedString(markdown: source, options: options) else {
+    guard var attributed = try? AttributedString(markdown: source, options: options) else {
       return Text(source).foregroundColor(theme.text)
     }
+    if openFileLink != nil { attributed = attributed.linkingFilePaths() }
     return Text(attributed).foregroundColor(theme.text)
   }
 }

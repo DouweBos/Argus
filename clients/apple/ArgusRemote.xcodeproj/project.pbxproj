@@ -46,6 +46,9 @@
 		5891A5D53C0F0C7CEF4DE90D /* QuickRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */; };
 		61D0A65B0EF57B4FB152AFF6 /* StashesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF27D5904269DE56D427462 /* StashesView.swift */; };
 		F70136FC258ED77D2D4D337A /* WarningsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */; };
+		A1E0F1000000000000000005 /* FileSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E0F1000000000000000006 /* FileSearchView.swift */; };
+		A1E0F1000000000000000003 /* QuickOpenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E0F1000000000000000004 /* QuickOpenView.swift */; };
+		A1E0F1000000000000000001 /* FileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E0F1000000000000000002 /* FileView.swift */; };
 		91BEB5E2000254899FF02DBF /* DescribeAutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 894443D21C1F9129A450074B /* DescribeAutomationView.swift */; };
 		13A4F4FA7A12EE9750CF8397 /* ProposalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 265F66754A83F20EA323B6C6 /* ProposalView.swift */; };
 		97AF0DF41C25983BAD9692C1 /* PullRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74103E5844EC73EB127B8F8A /* PullRequestView.swift */; };
@@ -121,6 +124,9 @@
 		15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickRunView.swift; sourceTree = "<group>"; };
 		0EF27D5904269DE56D427462 /* StashesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StashesView.swift; sourceTree = "<group>"; };
 		2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WarningsView.swift; sourceTree = "<group>"; };
+		A1E0F1000000000000000006 /* FileSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchView.swift; sourceTree = "<group>"; };
+		A1E0F1000000000000000004 /* QuickOpenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickOpenView.swift; sourceTree = "<group>"; };
+		A1E0F1000000000000000002 /* FileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileView.swift; sourceTree = "<group>"; };
 		894443D21C1F9129A450074B /* DescribeAutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescribeAutomationView.swift; sourceTree = "<group>"; };
 		265F66754A83F20EA323B6C6 /* ProposalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProposalView.swift; sourceTree = "<group>"; };
 		74103E5844EC73EB127B8F8A /* PullRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestView.swift; sourceTree = "<group>"; };
@@ -304,6 +310,9 @@
 				15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */,
 				0EF27D5904269DE56D427462 /* StashesView.swift */,
 				2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */,
+				A1E0F1000000000000000006 /* FileSearchView.swift */,
+				A1E0F1000000000000000004 /* QuickOpenView.swift */,
+				A1E0F1000000000000000002 /* FileView.swift */,
 				894443D21C1F9129A450074B /* DescribeAutomationView.swift */,
 				265F66754A83F20EA323B6C6 /* ProposalView.swift */,
 				74103E5844EC73EB127B8F8A /* PullRequestView.swift */,
@@ -610,6 +619,9 @@
 				5891A5D53C0F0C7CEF4DE90D /* QuickRunView.swift in Sources */,
 				61D0A65B0EF57B4FB152AFF6 /* StashesView.swift in Sources */,
 				F70136FC258ED77D2D4D337A /* WarningsView.swift in Sources */,
+				A1E0F1000000000000000005 /* FileSearchView.swift in Sources */,
+				A1E0F1000000000000000003 /* QuickOpenView.swift in Sources */,
+				A1E0F1000000000000000001 /* FileView.swift in Sources */,
 				91BEB5E2000254899FF02DBF /* DescribeAutomationView.swift in Sources */,
 				13A4F4FA7A12EE9750CF8397 /* ProposalView.swift in Sources */,
 				97AF0DF41C25983BAD9692C1 /* PullRequestView.swift in Sources */,
