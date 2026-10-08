@@ -205,6 +205,20 @@ initial attempt from a `continue` after the user resolved conflicts.
 | -------------------------- | ------ | ------------------------------------------------------- | --------------------------------------------------------------------------- |
 | `claude_account_rechecked` | main   | An account badged Limit reached or Signed out re-probed | `outcome: "ok" \| "rate_limited" \| "reauth" \| "unknown"`, `badge_cleared` |
 
+## Language servers
+
+The host runs language servers for the code editor. These events carry the
+language family and outcomes only — never paths, file contents, symbol names
+or server messages. `language` is one of `typescript`, `json`, `css`, `html`,
+`yaml`, `swift`, `c` (C, C++ and Objective-C), `kotlin`, `python`, `go`,
+`rust` or `ruby`.
+
+| Event                | Source | When                                                                                          | Extra props                                                                                                                                                                                    |
+| -------------------- | ------ | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lsp_server_started` | main   | A language server was started for a session, or couldn't be                                   | `language`, `source` (`bundled`, `toolchain`, `path`, or `none` when no server is installed), `success` — whether it finished its handshake, `duration_bucket` (`<1s`, `<5s`, `<30s`, `>=30s`) |
+| `lsp_server_crashed` | main   | A language server exited on its own                                                           | `language`, `gave_up` — it crashed more than three times in five minutes and won't restart until the user retries                                                                              |
+| `lsp_feature_used`   | main   | The editor asked a language server something (completion is left out: it fires per keystroke) | `feature` (`hover`, `definition`, `references`, `rename`, `format`, `code_action`, `signature_help`), `language`, `success`                                                                    |
+
 ## Onboarding
 
 | Event                  | Source | When                             | Extra props |

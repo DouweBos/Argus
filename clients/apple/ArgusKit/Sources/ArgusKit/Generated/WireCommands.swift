@@ -1201,6 +1201,185 @@ extension ArgusProtocol {
       }
     }
 
+    public struct CodeReadFileParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+      }
+
+      public init(id: String, relativePath: String) {
+        self.id = id
+        self.relativePath = relativePath
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+      }
+    }
+
+    public struct CodeSearchParams: Codable, Sendable {
+      public var query: String
+      public var regex: Bool
+      public var caseSensitive: Bool
+      public var wholeWord: Bool
+      public var include: [String]?
+      public var exclude: [String]?
+      public var maxResults: Int?
+      public var id: String
+      public var searchId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case query = "query"
+        case regex = "regex"
+        case caseSensitive = "caseSensitive"
+        case wholeWord = "wholeWord"
+        case include = "include"
+        case exclude = "exclude"
+        case maxResults = "maxResults"
+        case id = "id"
+        case searchId = "searchId"
+      }
+
+      public init(query: String, regex: Bool, caseSensitive: Bool, wholeWord: Bool, include: [String]? = nil, exclude: [String]? = nil, maxResults: Int? = nil, id: String, searchId: String? = nil) {
+        self.query = query
+        self.regex = regex
+        self.caseSensitive = caseSensitive
+        self.wholeWord = wholeWord
+        self.include = include
+        self.exclude = exclude
+        self.maxResults = maxResults
+        self.id = id
+        self.searchId = searchId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(query, forKey: .query)
+        try c.encode(regex, forKey: .regex)
+        try c.encode(caseSensitive, forKey: .caseSensitive)
+        try c.encode(wholeWord, forKey: .wholeWord)
+        try c.encodeIfPresent(include, forKey: .include)
+        try c.encodeIfPresent(exclude, forKey: .exclude)
+        try c.encodeIfPresent(maxResults, forKey: .maxResults)
+        try c.encode(id, forKey: .id)
+        try c.encodeIfPresent(searchId, forKey: .searchId)
+      }
+    }
+
+    public struct CodeSearchResult: Codable, Sendable {
+      public var searchId: String
+
+      enum CodingKeys: String, CodingKey {
+        case searchId = "searchId"
+      }
+
+      public init(searchId: String) {
+        self.searchId = searchId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(searchId, forKey: .searchId)
+      }
+    }
+
+    public struct CodeSearchCancelParams: Codable, Sendable {
+      public var searchId: String
+
+      enum CodingKeys: String, CodingKey {
+        case searchId = "searchId"
+      }
+
+      public init(searchId: String) {
+        self.searchId = searchId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(searchId, forKey: .searchId)
+      }
+    }
+
+    public struct CodeUnwatchFilesParams: Codable, Sendable {
+      public var id: String
+      public var paths: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case paths = "paths"
+      }
+
+      public init(id: String, paths: [String]) {
+        self.id = id
+        self.paths = paths
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(paths, forKey: .paths)
+      }
+    }
+
+    public struct CodeWatchFilesParams: Codable, Sendable {
+      public var id: String
+      public var paths: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case paths = "paths"
+      }
+
+      public init(id: String, paths: [String]) {
+        self.id = id
+        self.paths = paths
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(paths, forKey: .paths)
+      }
+    }
+
+    public struct CodeWriteFileParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var content: String
+      public var baseHash: String?
+      public var force: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case content = "content"
+        case baseHash = "baseHash"
+        case force = "force"
+      }
+
+      public init(id: String, relativePath: String, content: String, baseHash: String? = nil, force: Bool? = nil) {
+        self.id = id
+        self.relativePath = relativePath
+        self.content = content
+        self.baseHash = baseHash
+        self.force = force
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(content, forKey: .content)
+        try c.encode(baseHash, forKey: .baseHash)
+        try c.encodeIfPresent(force, forKey: .force)
+      }
+    }
+
     public struct CreateCheckpointParams: Codable, Sendable {
       public var sessionId: String
 
@@ -5434,6 +5613,397 @@ extension ArgusProtocol {
       }
     }
 
+    public struct LspCodeActionsParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var range: LspRange
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case range = "range"
+      }
+
+      public init(id: String, relativePath: String, range: LspRange) {
+        self.id = id
+        self.relativePath = relativePath
+        self.range = range
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(range, forKey: .range)
+      }
+    }
+
+    public struct LspCompletionParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var position: LspPosition
+      public var triggerCharacter: String?
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case position = "position"
+        case triggerCharacter = "triggerCharacter"
+      }
+
+      public init(id: String, relativePath: String, position: LspPosition, triggerCharacter: String? = nil) {
+        self.id = id
+        self.relativePath = relativePath
+        self.position = position
+        self.triggerCharacter = triggerCharacter
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(position, forKey: .position)
+        try c.encodeIfPresent(triggerCharacter, forKey: .triggerCharacter)
+      }
+    }
+
+    public struct LspCompletionResolveParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var resolveId: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case resolveId = "resolveId"
+      }
+
+      public init(id: String, relativePath: String, resolveId: String) {
+        self.id = id
+        self.relativePath = relativePath
+        self.resolveId = resolveId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(resolveId, forKey: .resolveId)
+      }
+    }
+
+    public struct LspDefinitionParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var position: LspPosition
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case position = "position"
+      }
+
+      public init(id: String, relativePath: String, position: LspPosition) {
+        self.id = id
+        self.relativePath = relativePath
+        self.position = position
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(position, forKey: .position)
+      }
+    }
+
+    public struct LspDidChangeParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var version: Int
+      public var changes: [LspContentChange]
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case version = "version"
+        case changes = "changes"
+      }
+
+      public init(id: String, relativePath: String, version: Int, changes: [LspContentChange]) {
+        self.id = id
+        self.relativePath = relativePath
+        self.version = version
+        self.changes = changes
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(version, forKey: .version)
+        try c.encode(changes, forKey: .changes)
+      }
+    }
+
+    public struct LspDidCloseParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+      }
+
+      public init(id: String, relativePath: String) {
+        self.id = id
+        self.relativePath = relativePath
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+      }
+    }
+
+    public struct LspDidOpenParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var languageId: String
+      public var version: Int
+      public var text: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case languageId = "languageId"
+        case version = "version"
+        case text = "text"
+      }
+
+      public init(id: String, relativePath: String, languageId: String, version: Int, text: String) {
+        self.id = id
+        self.relativePath = relativePath
+        self.languageId = languageId
+        self.version = version
+        self.text = text
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(languageId, forKey: .languageId)
+        try c.encode(version, forKey: .version)
+        try c.encode(text, forKey: .text)
+      }
+    }
+
+    public struct LspExecuteCodeActionParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var actionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case actionId = "actionId"
+      }
+
+      public init(id: String, relativePath: String, actionId: String) {
+        self.id = id
+        self.relativePath = relativePath
+        self.actionId = actionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(actionId, forKey: .actionId)
+      }
+    }
+
+    public struct LspFormatParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var tabSize: Int
+      public var insertSpaces: Bool
+      public var range: LspRange?
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case tabSize = "tabSize"
+        case insertSpaces = "insertSpaces"
+        case range = "range"
+      }
+
+      public init(id: String, relativePath: String, tabSize: Int, insertSpaces: Bool, range: LspRange? = nil) {
+        self.id = id
+        self.relativePath = relativePath
+        self.tabSize = tabSize
+        self.insertSpaces = insertSpaces
+        self.range = range
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(tabSize, forKey: .tabSize)
+        try c.encode(insertSpaces, forKey: .insertSpaces)
+        try c.encodeIfPresent(range, forKey: .range)
+      }
+    }
+
+    public struct LspHoverParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var position: LspPosition
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case position = "position"
+      }
+
+      public init(id: String, relativePath: String, position: LspPosition) {
+        self.id = id
+        self.relativePath = relativePath
+        self.position = position
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(position, forKey: .position)
+      }
+    }
+
+    public struct LspReferencesParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var position: LspPosition
+      public var includeDeclaration: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case position = "position"
+        case includeDeclaration = "includeDeclaration"
+      }
+
+      public init(id: String, relativePath: String, position: LspPosition, includeDeclaration: Bool? = nil) {
+        self.id = id
+        self.relativePath = relativePath
+        self.position = position
+        self.includeDeclaration = includeDeclaration
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(position, forKey: .position)
+        try c.encodeIfPresent(includeDeclaration, forKey: .includeDeclaration)
+      }
+    }
+
+    public struct LspRenameParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var position: LspPosition
+      public var newName: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case position = "position"
+        case newName = "newName"
+      }
+
+      public init(id: String, relativePath: String, position: LspPosition, newName: String) {
+        self.id = id
+        self.relativePath = relativePath
+        self.position = position
+        self.newName = newName
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(position, forKey: .position)
+        try c.encode(newName, forKey: .newName)
+      }
+    }
+
+    public struct LspRestartParams: Codable, Sendable {
+      public var id: String
+      public var language: LspLanguage
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case language = "language"
+      }
+
+      public init(id: String, language: LspLanguage) {
+        self.id = id
+        self.language = language
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(language, forKey: .language)
+      }
+    }
+
+    public struct LspSignatureHelpParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var position: LspPosition
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case position = "position"
+      }
+
+      public init(id: String, relativePath: String, position: LspPosition) {
+        self.id = id
+        self.relativePath = relativePath
+        self.position = position
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encode(position, forKey: .position)
+      }
+    }
+
+    public struct LspStatusParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
     public struct MakeDirectoryParams: Codable, Sendable {
       public var id: String
       public var relativePath: String
@@ -8721,6 +9291,48 @@ extension ArgusProtocol {
       public static let tier = "host"
     }
 
+    public enum CodeReadFile: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.CodeReadFileParams
+      public typealias Result = ArgusProtocol.CodeFile
+      public static let name = "code_read_file"
+      public static let tier = "admin"
+    }
+
+    public enum CodeSearch: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.CodeSearchParams
+      public typealias Result = ArgusProtocol.CommandsTypes.CodeSearchResult
+      public static let name = "code_search"
+      public static let tier = "admin"
+    }
+
+    public enum CodeSearchCancel: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.CodeSearchCancelParams
+      public typealias Result = IgnoredResult
+      public static let name = "code_search_cancel"
+      public static let tier = "admin"
+    }
+
+    public enum CodeUnwatchFiles: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.CodeUnwatchFilesParams
+      public typealias Result = IgnoredResult
+      public static let name = "code_unwatch_files"
+      public static let tier = "admin"
+    }
+
+    public enum CodeWatchFiles: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.CodeWatchFilesParams
+      public typealias Result = IgnoredResult
+      public static let name = "code_watch_files"
+      public static let tier = "admin"
+    }
+
+    public enum CodeWriteFile: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.CodeWriteFileParams
+      public typealias Result = ArgusProtocol.CodeWriteResult
+      public static let name = "code_write_file"
+      public static let tier = "admin"
+    }
+
     public enum CreateCheckpoint: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.CreateCheckpointParams
       public typealias Result = ArgusProtocol.Checkpoint
@@ -10216,6 +10828,111 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.LoadChatHistoryParams
       public typealias Result = ArgusProtocol.SavedConversation?
       public static let name = "load_chat_history"
+      public static let tier = "admin"
+    }
+
+    public enum LspCodeActions: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspCodeActionsParams
+      public typealias Result = [ArgusProtocol.LspCodeAction]
+      public static let name = "lsp_code_actions"
+      public static let tier = "admin"
+    }
+
+    public enum LspCompletion: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspCompletionParams
+      public typealias Result = ArgusProtocol.LspCompletionList
+      public static let name = "lsp_completion"
+      public static let tier = "admin"
+    }
+
+    public enum LspCompletionResolve: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspCompletionResolveParams
+      public typealias Result = ArgusProtocol.LspCompletionItem
+      public static let name = "lsp_completion_resolve"
+      public static let tier = "admin"
+    }
+
+    public enum LspDefinition: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspDefinitionParams
+      public typealias Result = [ArgusProtocol.LspLocation]
+      public static let name = "lsp_definition"
+      public static let tier = "admin"
+    }
+
+    public enum LspDidChange: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspDidChangeParams
+      public typealias Result = IgnoredResult
+      public static let name = "lsp_did_change"
+      public static let tier = "admin"
+    }
+
+    public enum LspDidClose: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspDidCloseParams
+      public typealias Result = IgnoredResult
+      public static let name = "lsp_did_close"
+      public static let tier = "admin"
+    }
+
+    public enum LspDidOpen: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspDidOpenParams
+      public typealias Result = IgnoredResult
+      public static let name = "lsp_did_open"
+      public static let tier = "admin"
+    }
+
+    public enum LspExecuteCodeAction: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspExecuteCodeActionParams
+      public typealias Result = ArgusProtocol.LspWorkspaceEdit
+      public static let name = "lsp_execute_code_action"
+      public static let tier = "admin"
+    }
+
+    public enum LspFormat: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspFormatParams
+      public typealias Result = [ArgusProtocol.LspTextEdit]
+      public static let name = "lsp_format"
+      public static let tier = "admin"
+    }
+
+    public enum LspHover: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspHoverParams
+      public typealias Result = ArgusProtocol.LspHover?
+      public static let name = "lsp_hover"
+      public static let tier = "admin"
+    }
+
+    public enum LspReferences: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspReferencesParams
+      public typealias Result = [ArgusProtocol.LspLocation]
+      public static let name = "lsp_references"
+      public static let tier = "admin"
+    }
+
+    public enum LspRename: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspRenameParams
+      public typealias Result = ArgusProtocol.LspWorkspaceEdit
+      public static let name = "lsp_rename"
+      public static let tier = "admin"
+    }
+
+    public enum LspRestart: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspRestartParams
+      public typealias Result = IgnoredResult
+      public static let name = "lsp_restart"
+      public static let tier = "admin"
+    }
+
+    public enum LspSignatureHelp: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspSignatureHelpParams
+      public typealias Result = ArgusProtocol.LspSignatureHelp?
+      public static let name = "lsp_signature_help"
+      public static let tier = "admin"
+    }
+
+    public enum LspStatus: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LspStatusParams
+      public typealias Result = ArgusProtocol.LspStatus
+      public static let name = "lsp_status"
       public static let tier = "admin"
     }
 

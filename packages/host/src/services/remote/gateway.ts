@@ -167,9 +167,9 @@ const VIDEO_CHANNEL_RE = /^(?:ios|android)_video_/;
 
 /**
  * The subscription id a raw channel is scoped to, or null when it fans out to
- * every raw connection. Agent, terminal and git-runner streams are per-id so a
- * desktop watching four agents doesn't receive a fifth's tokens (or another
- * PTY's, or another run's progress).
+ * every raw connection. Agent, terminal, git-runner and code-editor streams are
+ * per-id so a desktop watching four agents doesn't receive a fifth's tokens (or
+ * another PTY's, another run's progress, another session's diagnostics).
  */
 function rawSubscriptionScope(channel: string): string | null {
   const agent = parseAgentChannel(channel);
@@ -181,8 +181,22 @@ function rawSubscriptionScope(channel: string): string | null {
     return `terminal:${terminal[1]}`;
   }
   const gitRun = /^git-runner:progress:(.+)$/.exec(channel);
+  if (gitRun) {
+    return `git-runner:${gitRun[1]}`;
+  }
+  // The code editor's streams: per search, and per session for file changes
+  // and language-server traffic.
+  const search = /^code:search:(.+)$/.exec(channel);
+  if (search) {
+    return `code-search:${search[1]}`;
+  }
+  const fileChanged = /^code:file-changed:(.+)$/.exec(channel);
+  if (fileChanged) {
+    return `code:${fileChanged[1]}`;
+  }
+  const lsp = /^lsp:(?:diagnostics|status):(.+)$/.exec(channel);
 
-  return gitRun ? `git-runner:${gitRun[1]}` : null;
+  return lsp ? `lsp:${lsp[1]}` : null;
 }
 
 /** Parsed agent channel, e.g. `agent:permission:<id>` → kind + agentId. */

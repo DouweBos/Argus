@@ -7,12 +7,14 @@ import type { z } from "zod";
 import { AGENT_COMMANDS } from "./agents";
 import { AUTOMATION_COMMANDS } from "./automations";
 import { BROWSER_COMMANDS } from "./browser";
+import { CODE_COMMANDS } from "./code";
 import { DEVICE_COMMANDS } from "./devices";
 import { FILE_COMMANDS } from "./files";
 import { GIT_COMMANDS } from "./git";
 import { GIT_RUNNER_COMMANDS } from "./gitRunner";
 import { GITHUB_COMMANDS } from "./github";
 import { LLM_COMMANDS } from "./llm";
+import { LSP_COMMANDS } from "./lsp";
 import { MCP_COMMANDS } from "./mcp";
 import { ONBOARDING_COMMANDS } from "./onboarding";
 import { REMOTE_COMMANDS } from "./remote";
@@ -40,10 +42,14 @@ export * from "../models/remote";
 export * from "../models/mcp";
 export * from "../models/github";
 export * from "../models/gitRunner";
+export * from "../models/code";
+export * from "../models/lsp";
 
 /** Each domain's entries, kept apart so a test can prove no name repeats. */
 export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
   files: FILE_COMMANDS,
+  code: CODE_COMMANDS,
+  lsp: LSP_COMMANDS,
   git: GIT_COMMANDS,
   sessions: SESSION_COMMANDS,
   agents: AGENT_COMMANDS,
@@ -63,6 +69,8 @@ export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
 
 export const COMMANDS = {
   ...FILE_COMMANDS,
+  ...CODE_COMMANDS,
+  ...LSP_COMMANDS,
   ...GIT_COMMANDS,
   ...SESSION_COMMANDS,
   ...AGENT_COMMANDS,

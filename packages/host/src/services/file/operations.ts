@@ -415,7 +415,7 @@ function sessionPath(id: string): string {
  * in scope because the chat's edit/undo actions replay absolute paths from tool
  * events, which legitimately land in a linked project.
  */
-async function allowedFileRoots(): Promise<string[]> {
+export async function allowedFileRoots(): Promise<string[]> {
   const roots = await canonicalSessionRoots();
   for (const repoRoot of appState.repoRoots) {
     try {
