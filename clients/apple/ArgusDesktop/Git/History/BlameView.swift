@@ -38,7 +38,8 @@ struct BlameView: View {
       BlameTableView(
         lines: blame.lines,
         onBlameBefore: { sha in Task { await blame.blameBefore(sha) } },
-        onReveal: reveal)
+        onReveal: reveal,
+        onOpenLine: openLineHandler)
     }
   }
 
@@ -81,6 +82,14 @@ struct BlameView: View {
     let revision = ref.flatMap { $0.isEmpty ? nil : $0 }
     if blame.selectedFile == path, blame.revision == revision, !blame.lines.isEmpty { return }
     await blame.open(file: path, revision: revision)
+  }
+
+  /// Only the working tree's lines are the file's lines now.
+  private var openLineHandler: ((Int) -> Void)? {
+    guard blame.isAtWorkingTree, let path else { return nil }
+    let model = model
+    let sessionId = workspace.sessionId
+    return { line in model.openCode(session: sessionId, path: path, line: line, source: .blame) }
   }
 
   private func reveal(_ sha: String) {

@@ -9,6 +9,8 @@ struct BlameTableView: NSViewRepresentable {
   let lines: [BlameLine]
   let onBlameBefore: (String) -> Void
   let onReveal: (String) -> Void
+  /// Opens the file in the code view at a 1-based line; nil when blaming an older revision.
+  var onOpenLine: ((Int) -> Void)?
   @Environment(\.theme) private var theme
 
   func makeCoordinator() -> Coordinator { Coordinator() }
@@ -44,6 +46,7 @@ struct BlameTableView: NSViewRepresentable {
     let coordinator = context.coordinator
     coordinator.onBlameBefore = onBlameBefore
     coordinator.onReveal = onReveal
+    coordinator.onOpenLine = onOpenLine
     coordinator.update(lines: lines, palette: BlamePalette(theme))
     if coordinator.textScale.changed(), let table = coordinator.table {
       table.rowHeight = BlameLineView.height
@@ -57,6 +60,7 @@ struct BlameTableView: NSViewRepresentable {
     var textScale = TextScaleTracker()
     var onBlameBefore: ((String) -> Void)?
     var onReveal: ((String) -> Void)?
+    var onOpenLine: ((Int) -> Void)?
     private var lines: [BlameLine] = []
     private var palette: BlamePalette?
     private var dateRange: (Date, Date) = (.distantPast, .distantFuture)
@@ -90,6 +94,13 @@ struct BlameTableView: NSViewRepresentable {
       return span > 0 ? CGFloat(date.timeIntervalSince(dateRange.0) / span) : 1
     }
 
+    /// ⌥-click opens the line in the code view.
+    func openLine(row: Int) -> Bool {
+      guard let onOpenLine, lines.indices.contains(row) else { return false }
+      onOpenLine(lines[row].number)
+      return true
+    }
+
     /// A click in the gutter re-blames from before that line's commit.
     func clicked(row: Int, x: CGFloat) {
       guard x < BlameLineView.gutterWidth, lines.indices.contains(row), let sha = lines[row].entry?.commitSHA
@@ -100,9 +111,13 @@ struct BlameTableView: NSViewRepresentable {
     func menuNeedsUpdate(_ menu: NSMenu) {
       menu.removeAllItems()
       menu.autoenablesItems = false
-      guard let table, lines.indices.contains(table.clickedRow), let entry = lines[table.clickedRow].entry else {
-        return
+      guard let table, lines.indices.contains(table.clickedRow) else { return }
+      if let onOpenLine {
+        let number = lines[table.clickedRow].number
+        menu.addItem(ActionMenuItem("Open in Editor at Line") { onOpenLine(number) })
       }
+      guard let entry = lines[table.clickedRow].entry else { return }
+      if onOpenLine != nil { menu.addItem(.separator()) }
       let sha = entry.commitSHA
       menu.addItem(ActionMenuItem("Blame Before \(sha.prefix(7))") { [weak self] in self?.onBlameBefore?(sha) })
       menu.addItem(ActionMenuItem("Show Commit in History") { [weak self] in self?.onReveal?(sha) })
@@ -121,6 +136,7 @@ final class BlameNSTableView: NSTableView {
   override func mouseDown(with event: NSEvent) {
     let point = convert(event.locationInWindow, from: nil)
     let row = self.row(at: point)
+    if event.modifierFlags.contains(.option), row >= 0, let coordinator, coordinator.openLine(row: row) { return }
     guard point.x < BlameLineView.gutterWidth, row >= 0 else { return super.mouseDown(with: event) }
     coordinator?.clicked(row: row, x: point.x)
   }

@@ -80,6 +80,9 @@ struct ChangeRowMenu: View {
         vm.requestDiscard(entries)
       }
     }
+    if entries.count == 1, entry.workdirStatus != .deleted, entry.indexStatus != .deleted {
+      Button("Open File") { model.openCode(session: workspace.sessionId, path: entry.path, source: .changes) }
+    }
     Divider()
     ChangeFileActionsMenu(workspace: workspace, entries: entries)
     ChangeLFSAndPatchMenu(workspace: workspace, entry: entry, section: section, entries: entries)
