@@ -162,11 +162,15 @@ public struct EditorCompletionItem: Identifiable, @unchecked Sendable {
   public var filterText: String?
   /// Whatever the provider needs to resolve the item later.
   public var opaque: AnyHashable?
+  /// Edits elsewhere in the file applied with the item, such as an auto-import; ranges in the text
+  /// as it was when the list opened.
+  public var additionalEdits: [EditorTextEdit]
 
   public init(
     id: String = UUID().uuidString, label: String, detail: String? = nil, documentation: String? = nil,
     kind: EditorCompletionKind = .text, insertText: String? = nil, replaceRange: EditorRange? = nil,
-    sortText: String? = nil, filterText: String? = nil, opaque: AnyHashable? = nil
+    sortText: String? = nil, filterText: String? = nil, opaque: AnyHashable? = nil,
+    additionalEdits: [EditorTextEdit] = []
   ) {
     self.id = id
     self.label = label
@@ -178,6 +182,18 @@ public struct EditorCompletionItem: Identifiable, @unchecked Sendable {
     self.sortText = sortText
     self.filterText = filterText
     self.opaque = opaque
+    self.additionalEdits = additionalEdits
+  }
+}
+
+/// Replace `range` (in the current text) with `text`.
+public struct EditorTextEdit: Hashable, Sendable {
+  public var range: EditorRange
+  public var text: String
+
+  public init(range: EditorRange, text: String) {
+    self.range = range
+    self.text = text
   }
 }
 

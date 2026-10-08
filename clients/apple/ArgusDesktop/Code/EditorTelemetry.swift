@@ -13,6 +13,7 @@ extension MacTelemetryEvent {
     case quickOpen = "quick_open"
     case search
     case diagnostic
+    case definition
     /// Back/forward, a restored tab, a deep link: no click opened it.
     case history
   }

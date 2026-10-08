@@ -141,6 +141,21 @@ final class EditorDocumentTests: XCTestCase {
     XCTAssertEqual(textView.accessibilityNumberOfCharacters(), 4)
   }
 
+  func testAcceptingACompletionAppliesItsImports() {
+    let document = EditorDocument(text: "\nuse", language: nil, configuration: .default)
+    caretAt(4, document)
+    let completion = document.interaction.completion
+    completion.model.items = [
+      EditorCompletionItem(
+        label: "useState",
+        replaceRange: EditorRange(start: EditorPosition(line: 1, utf16Column: 0), end: EditorPosition(line: 1, utf16Column: 3)),
+        additionalEdits: [EditorTextEdit(range: EditorRange(EditorPosition(line: 0, utf16Column: 0)), text: "import x\n")])
+    ]
+    completion.accept()
+    XCTAssertEqual(document.text, "import x\n\nuseState")
+    XCTAssertEqual(document.engine.textView.selectionManager.textSelections.first?.range.location, 18, "caret after the insertion")
+  }
+
   static func apply(_ change: EditorTextChange, to text: String) -> String {
     let ns = text as NSString
     let index = LineIndex(ns)

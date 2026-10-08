@@ -23,6 +23,8 @@ final class DesktopModel {
   let palette = CommandPaletteModel()
   /// Each session's open files in the code view.
   let code: CodeStore
+  /// Language servers behind the code view: diagnostics, hover, completion, definitions.
+  let languages: LanguageSupport
   let notificationsLog: NotificationsLog
   let huddles: HuddleStore
   /// Paired hosts this window drives besides its own.
@@ -103,6 +105,7 @@ final class DesktopModel {
     pullRequests = PullRequestsStore(host: store)
     git = GitWorkspaces(host: store)
     code = CodeStore(host: store)
+    languages = LanguageSupport.install(on: code)
     automations = AutomationsStore(host: store)
     proposals = ProposalsStore(host: store)
     inbox = InboxStore(host: store)
@@ -226,6 +229,7 @@ final class DesktopModel {
         await self?.reload()
         await self?.terminals.reconnected()
         await self?.code.reconnected()
+        await self?.languages.reconnected()
         while await backend.transport.state == .ready {
           try? await Task.sleep(for: .milliseconds(500))
         }

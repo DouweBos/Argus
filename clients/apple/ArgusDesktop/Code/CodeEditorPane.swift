@@ -21,6 +21,10 @@ struct CodeEditorPane: View {
         Divider()
       }
       content.frame(maxWidth: .infinity, maxHeight: .infinity)
+      if let client = model.languages.clients[code.sessionId], client.problemsExpanded {
+        Divider()
+        ProblemsList(client: client, code: code)
+      }
       if let document = file.document {
         Divider()
         CodeStatusBar(code: code, file: file, document: document)

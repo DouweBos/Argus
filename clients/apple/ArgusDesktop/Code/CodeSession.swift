@@ -155,6 +155,16 @@ final class CodeSession {
     }
   }
 
+  /// A path outside the worktree, in the app its machine opens it with.
+  func openAbsolute(_ path: String) async {
+    guard let store else { return }
+    do {
+      _ = try await store.request(ArgusProtocol.Commands.OpenPath.self, .init(path: path), session: sessionId)
+    } catch {
+      store.host.report(error, scope: "code.open_externally")
+    }
+  }
+
   // MARK: Files list
 
   /// The worktree's files, fetched once and again after git reports a change.
