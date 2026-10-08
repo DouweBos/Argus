@@ -97,3 +97,46 @@ export const CodeSearchQuery = z.object({
   maxResults: z.number().int().positive().optional(),
 });
 export type CodeSearchQuery = z.infer<typeof CodeSearchQuery>;
+
+/** What a symbol is, from the host's definition index or a language server. */
+export const CodeSymbolKind = z.enum([
+  "class",
+  "struct",
+  "enum",
+  "interface",
+  "protocol",
+  "extension",
+  "function",
+  "method",
+  "constructor",
+  "property",
+  "constant",
+  "variable",
+  "type_alias",
+  "enum_member",
+  "module",
+  "other",
+]);
+export type CodeSymbolKind = z.infer<typeof CodeSymbolKind>;
+
+/** A definition somewhere in the worktree. */
+export const CodeSymbol = z.object({
+  name: z.string(),
+  kind: CodeSymbolKind,
+  /** The enclosing type or module, e.g. `Store` for `Store.load`. */
+  container: z.string().optional(),
+  relativePath: z.string(),
+  /** 1-based. */
+  line: z.number().int(),
+  /** 0-based, UTF-16 units into the line. */
+  column: z.number().int(),
+});
+export type CodeSymbol = z.infer<typeof CodeSymbol>;
+
+export const CodeSymbolSearchResult = z.object({
+  /** Best matches first. */
+  symbols: z.array(CodeSymbol),
+  /** False while the index is still being built: ask again for the rest. */
+  complete: z.boolean(),
+});
+export type CodeSymbolSearchResult = z.infer<typeof CodeSymbolSearchResult>;

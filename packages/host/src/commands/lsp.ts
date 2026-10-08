@@ -18,6 +18,10 @@ import {
   lspSignatureHelp,
 } from "../services/lsp/features";
 import { lspStatus } from "../services/lsp/manager";
+import {
+  lspDocumentSymbols,
+  lspWorkspaceSymbols,
+} from "../services/lsp/symbols";
 
 export function registerLspCommands(): void {
   defineTypedCommand("lsp_did_open", (p) =>
@@ -64,4 +68,10 @@ export function registerLspCommands(): void {
   );
   defineTypedCommand("lsp_status", (p) => lspStatus(p.id));
   defineTypedCommand("lsp_restart", (p) => restartLanguage(p.id, p.language));
+  defineTypedCommand("lsp_workspace_symbols", (p) =>
+    lspWorkspaceSymbols(p.id, p.query),
+  );
+  defineTypedCommand("lsp_document_symbols", (p) =>
+    lspDocumentSymbols(p.id, p.relativePath),
+  );
 }

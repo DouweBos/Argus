@@ -72,6 +72,8 @@ connection.onRequest("initialize", async (params) => {
       completionProvider: { resolveProvider: true, triggerCharacters: ["."] },
       codeActionProvider: true,
       executeCommandProvider: { commands: ["fake.fix"] },
+      workspaceSymbolProvider: true,
+      documentSymbolProvider: true,
     },
     serverInfo: { name: "fake", version: String(params.processId) },
   };
@@ -174,6 +176,49 @@ connection.onRequest(
     return null;
   },
 );
+const at = (line, character) => ({
+  start: { line, character },
+  end: { line, character: character + 1 },
+});
+connection.onRequest("workspace/symbol", ({ query }) => [
+  ...[...docs.keys()].map((uri) => ({
+    name: `${query}Thing`,
+    kind: 5,
+    containerName: "Module",
+    location: { uri, range: at(2, 4) },
+  })),
+  {
+    name: "Outside",
+    kind: 12,
+    location: { uri: "file:///etc/hosts", range: at(0, 0) },
+  },
+]);
+connection.onRequest("textDocument/documentSymbol", () => [
+  {
+    name: "Store",
+    kind: 5,
+    range: at(0, 0),
+    selectionRange: at(0, 6),
+    children: [
+      {
+        name: "load",
+        kind: 6,
+        range: at(1, 2),
+        selectionRange: at(1, 2),
+        children: [
+          {
+            name: "local",
+            kind: 13,
+            range: at(2, 4),
+            selectionRange: at(2, 4),
+          },
+        ],
+      },
+      { name: "items", kind: 7, range: at(4, 2), selectionRange: at(4, 2) },
+    ],
+  },
+  { name: "helper", kind: 12, range: at(6, 0), selectionRange: at(6, 9) },
+]);
 connection.onRequest("shutdown", () => null);
 connection.onNotification("exit", () => process.exit(0));
 connection.listen();

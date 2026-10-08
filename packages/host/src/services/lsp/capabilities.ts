@@ -1,6 +1,14 @@
 /** What the host tells servers it can do — only what `convert.ts` can carry. */
 
-import type { ClientCapabilities } from "vscode-languageserver-protocol";
+import type {
+  ClientCapabilities,
+  SymbolKind,
+} from "vscode-languageserver-protocol";
+
+/** Every `SymbolKind` up to LSP 3.17's last, TypeParameter. */
+const SYMBOL_KINDS = {
+  valueSet: Array.from({ length: 26 }, (_, i) => (i + 1) as SymbolKind),
+};
 
 const CODE_ACTION_KINDS = [
   "",
@@ -25,6 +33,7 @@ export const CLIENT_CAPABILITIES: ClientCapabilities = {
     didChangeConfiguration: { dynamicRegistration: true },
     didChangeWatchedFiles: { dynamicRegistration: true },
     executeCommand: { dynamicRegistration: true },
+    symbol: { symbolKind: SYMBOL_KINDS },
   },
   textDocument: {
     synchronization: { didSave: false, dynamicRegistration: true },
@@ -52,6 +61,10 @@ export const CLIENT_CAPABILITIES: ClientCapabilities = {
     },
     definition: { linkSupport: true },
     references: {},
+    documentSymbol: {
+      hierarchicalDocumentSymbolSupport: true,
+      symbolKind: SYMBOL_KINDS,
+    },
     rename: { prepareSupport: false },
     formatting: {},
     rangeFormatting: {},
