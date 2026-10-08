@@ -5,7 +5,7 @@
  *   ├── node                         the pinned runtime (mise.toml), hardened
  *   ├── argus-host.js                the dist-host bundle
  *   ├── node_modules/node-pty        the addon + spawn-helper for this arch
- *   └── resources/                   ARGUS_RESOURCES: sim-bridge, conductor,
+ *   └── resources/                   ARGUS_RESOURCES: sim-bridge, sim-input, conductor,
  *                                    scrcpy jar, emulator proto, prompts, docs,
  *                                    argus-web
  *
@@ -30,6 +30,10 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ENTITLEMENTS = path.join(
   ROOT,
   "clients/apple/ArgusDesktop/Host.entitlements",
+);
+const SIM_INPUT_ENTITLEMENTS = path.join(
+  ROOT,
+  "build/entitlements.sim-input.plist",
 );
 
 interface Options {
@@ -95,11 +99,7 @@ function sync(src: string, dest: string, byContent = false): boolean {
 /** Resources the host resolves through `ARGUS_RESOURCES`, as electron-builder ships them. */
 const RESOURCES: { from: string; to: string; optional?: boolean }[] = [
   { from: "native/argus-sim-bridge/argus-sim-bridge", to: "argus-sim-bridge" },
-  {
-    from: "native/argus-sim-input/argus-sim-input",
-    to: "argus-sim-input",
-    optional: true,
-  },
+  { from: "native/argus-sim-input/argus-sim-input", to: "argus-sim-input" },
   { from: "native/scrcpy-server/scrcpy-server.jar", to: "scrcpy-server.jar" },
   {
     from: "native/emulator-proto/emulator_controller.proto",
@@ -129,6 +129,11 @@ function stage(options: Options): boolean {
       cwd: ROOT,
       stdio: "inherit",
     });
+    // Neither helper is checked in, and a build without the input helper has
+    // no keyboard or hardware buttons on any simulator. Make is incremental.
+    for (const dir of ["native/argus-sim-bridge", "native/argus-sim-input"]) {
+      execFileSync("make", ["-C", dir], { cwd: ROOT, stdio: "inherit" });
+    }
     // The gateway serves the browser client; build it once rather than ship
     // an app whose web address answers 404.
     if (!fs.existsSync(path.join(ROOT, "clients/argus-web/dist/index.html"))) {
@@ -205,14 +210,18 @@ function stageNode(out: string, identity: string | null): boolean {
   fs.copyFileSync(src, dest);
   fs.chmodSync(dest, 0o755);
   if (identity) {
-    signFile(dest, identity, true);
+    signFile(dest, identity, ENTITLEMENTS);
   }
   fs.writeFileSync(stampFile, stamp);
 
   return true;
 }
 
-function signFile(file: string, identity: string, jit: boolean): void {
+function signFile(
+  file: string,
+  identity: string,
+  entitlements: string | null,
+): void {
   execFileSync("codesign", [
     "--force",
     "--sign",
@@ -220,9 +229,29 @@ function signFile(file: string, identity: string, jit: boolean): void {
     "--options",
     "runtime",
     identity === "-" ? "--timestamp=none" : "--timestamp",
-    ...(jit ? ["--entitlements", ENTITLEMENTS] : []),
+    ...(entitlements ? ["--entitlements", entitlements] : []),
     file,
   ]);
+}
+
+function entitlementsFor(file: string): string | null {
+  return path.basename(file) === "argus-sim-input"
+    ? SIM_INPUT_ENTITLEMENTS
+    : null;
+}
+
+/** Signed before the helper had its entitlement, it can't launch. */
+function hasEntitlements(file: string, entitlements: string | null): boolean {
+  if (!entitlements) {
+    return true;
+  }
+  const info = spawnSync(
+    "codesign",
+    ["-d", "--entitlements", "-", "--xml", file],
+    { encoding: "utf8" },
+  );
+
+  return info.stdout.includes("allow-dyld-environment-variables");
 }
 
 function isMachO(file: string): boolean {
@@ -325,8 +354,9 @@ function signNested(out: string, identity: string): number {
   let signed = 0;
   for (const file of files) {
     // rsync only replaced what changed, and a replaced file fails verification.
-    if (!isSignedBy(file, identity)) {
-      signFile(file, identity, false);
+    const entitlements = entitlementsFor(file);
+    if (!isSignedBy(file, identity) || !hasEntitlements(file, entitlements)) {
+      signFile(file, identity, entitlements);
       signed += 1;
     }
   }
