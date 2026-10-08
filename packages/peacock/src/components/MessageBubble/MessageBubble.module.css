@@ -1,12 +1,13 @@
-/* Hover-revealed timestamp overlaid at the top-left of every message. */
+/* Hover-revealed timestamp, kept inside the row's top padding so it never
+   covers the content's first line. */
 .timestamp {
   position: absolute;
-  top: 4px;
+  top: 0;
   left: 6px;
-  padding: 2px 16px 2px 6px;
+  padding: 0 16px 0 6px;
   font-family: var(--font-mono);
   font-size: 10px;
-  line-height: 1.4;
+  line-height: 14px;
   color: var(--text-muted);
   background: radial-gradient(
     ellipse 140% 160% at 15% 50%,
@@ -18,6 +19,34 @@
   transition: opacity var(--transition-base);
   user-select: none;
   z-index: 4;
+}
+
+/* Tool-call-only rows stack with no padding, so there is nowhere to put it. */
+.assistantMsgToolOnly .timestamp {
+  display: none;
+}
+
+/* System and MCP rows lead with their own text, so the time goes on the
+   empty trailing edge instead. */
+.systemMsg .timestamp,
+.mcpMsg .timestamp {
+  left: auto;
+  right: 6px;
+  padding: 0 6px 0 16px;
+  background: radial-gradient(
+    ellipse 140% 160% at 85% 50%,
+    var(--bg-primary-85) 0%,
+    var(--bg-primary-0) 100%
+  );
+}
+
+.systemMsg .timestamp {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.mcpMsg .timestamp {
+  top: 12px;
 }
 
 .userMsg:hover .timestamp,
