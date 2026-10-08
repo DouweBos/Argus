@@ -78,6 +78,12 @@ final class LspDocumentProvider: EditorLanguageProvider {
     return await current(ArgusProtocol.Commands.LspRename.self, params)
   }
 
+  func references(at position: EditorPosition) async -> [ArgusProtocol.LspLocation]? {
+    let params = ArgusProtocol.CommandsTypes.LspReferencesParams(
+      id: sessionId, relativePath: path, position: LspConvert.position(position), includeDeclaration: true)
+    return await current(ArgusProtocol.Commands.LspReferences.self, params)
+  }
+
   /// Sends `command` once the host has every edit so far; nil when it failed or the text moved on.
   private func current<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async -> C.Result? {
     // The position is in the text as of now.

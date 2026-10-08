@@ -52,4 +52,19 @@ struct LspEditTests {
     #expect(LspRename.word(at: EditorPosition(line: 0, utf16Column: 6), in: "let fooBar = 1") == "fooBar")
     #expect(LspRename.word(at: EditorPosition(line: 3, utf16Column: 0), in: "x") == "")
   }
+
+  @Test func referencesBecomeSearchMatchesWithTheirLines() async {
+    let locations: [ArgusProtocol.LspLocation] = [
+      .init(relativePath: "b.ts", range: .init(start: .init(line: 1, character: 6), end: .init(line: 1, character: 9))),
+      .init(relativePath: "a.ts", range: .init(start: .init(line: 0, character: 4), end: .init(line: 0, character: 7))),
+      .init(relativePath: "/elsewhere/c.ts", range: .init(start: .init(line: 0, character: 0), end: .init(line: 0, character: 1))),
+    ]
+    let files = ["a.ts": "let foo = 1\r\n", "b.ts": "x\nconst foo = 2\n"]
+    let matches = await LspReferences.matches(for: locations) { files[$0] }
+    #expect(matches.map(\.relativePath) == ["a.ts", "b.ts"])
+    #expect(matches.map(\.line) == [1, 2])
+    #expect(matches.map(\.preview) == ["let foo = 1", "const foo = 2"])
+    #expect(matches.map(\.column) == [4, 6])
+    #expect(matches.map(\.length) == [3, 3])
+  }
 }

@@ -28,6 +28,12 @@ struct CodeCommands: View {
     }
     .keyboardShortcut("e", modifiers: [.command, .control])
     .disabled(document?.languageProvider == nil)
+    Button("Find References") {
+      guard let document, let code = model.activeCodeSession else { return }
+      Task { await LspReferences.run(in: code, document: document) }
+    }
+    .keyboardShortcut("f", modifiers: [.command, .control, .shift])
+    .disabled(document?.languageProvider == nil)
     Divider()
     Button("Send Selection to Agent") { document?.sendSelectionToAgent() }
       .keyboardShortcut("l", modifiers: [.command, .shift])

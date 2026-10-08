@@ -139,7 +139,8 @@ private struct CodeSearchMatchRow: View {
 
   private var highlighted: AttributedString {
     let preview = match.preview as NSString
-    let start = min(max(0, match.previewOffset), preview.length)
+    // `column` counts from the line's start, the preview from `previewOffset`.
+    let start = min(max(0, match.column - match.previewOffset), preview.length)
     let length = min(max(0, match.length), preview.length - start)
     var text = AttributedString(preview.substring(to: start))
     var hit = AttributedString(preview.substring(with: NSRange(location: start, length: length)))
