@@ -1,13 +1,13 @@
-/* Hover-revealed timestamp overlaid at the top-left of the edit bubble,
-   mirroring the HoverActionBar reveal pattern. */
+/* Hover-revealed timestamp in the edit row's top padding, matching
+   MessageBubble. */
 .timestamp {
   position: absolute;
-  top: 4px;
+  top: 0;
   left: 6px;
-  padding: 2px 16px 2px 6px;
+  padding: 0 16px 0 6px;
   font-family: var(--font-mono);
   font-size: 10px;
-  line-height: 1.4;
+  line-height: 14px;
   color: var(--text-muted);
   background: radial-gradient(
     ellipse 140% 160% at 15% 50%,
