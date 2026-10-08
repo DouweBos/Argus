@@ -178,6 +178,7 @@ final class DesktopModel {
   private func hostCameUp(_ hostId: HostId) async {
     await reloadLists()
     store.followAgents()
+    store.resyncQueues()
     await terminals.reconnected()
     for project in store.projects where backend?.host(of: .project, project.repoRoot) == hostId {
       await openProject(project.repoRoot)

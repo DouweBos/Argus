@@ -378,6 +378,14 @@ public final class HostRouter: HostBackend {
     return try ProtocolCodec.convert(result, to: Result.self)
   }
 
+  public func sequencedRequest<Params: Encodable & Sendable, Result: Decodable & Sendable>(
+    _ method: RemoteMethod, _ params: Params, as: Result.Type
+  ) async throws -> (result: Result, seq: Int) {
+    let json = try ProtocolCodec.convert(params)
+    let (result, seq, _) = try await dispatch(method.rawValue, json, tier: nil)
+    return (try ProtocolCodec.convert(result, to: Result.self), seq)
+  }
+
   public func request<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws
     -> C.Result
   {
