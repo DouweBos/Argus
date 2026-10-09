@@ -137,6 +137,7 @@ export function InspectionPanel({
           deviceKey={deviceKey}
           foregroundApp={launchPrompt.foregroundApp}
           isSpringboard={launchPrompt.isSpringboard}
+          unavailableReason={launchPrompt.unavailableReason}
           installedApps={installedApps}
           launching={launching}
         />

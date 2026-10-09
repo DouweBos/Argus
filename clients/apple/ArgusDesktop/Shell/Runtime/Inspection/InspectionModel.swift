@@ -13,6 +13,8 @@ final class InspectionModel {
   struct LaunchPrompt: Equatable {
     var foregroundApp: String?
     var isSpringboard: Bool
+    /// Why relaunching with inspection can't work on this device.
+    var unavailableReason: String?
   }
 
   struct Snapshot: Identifiable {
@@ -93,7 +95,8 @@ final class InspectionModel {
         (try? await backend.request(
           ArgusProtocol.Commands.InspectionListApps.self, .init(deviceKey: deviceKey))) ?? []
       launchPrompt = LaunchPrompt(
-        foregroundApp: probe.foregroundApp, isSpringboard: probe.isSpringboard)
+        foregroundApp: probe.foregroundApp, isSpringboard: probe.isSpringboard,
+        unavailableReason: probe.injectUnavailableReason)
     } catch {
       captureError = HostStore.describe(error)
       MacTelemetry.capture(.inspectionUsed(action: .capture, success: false))

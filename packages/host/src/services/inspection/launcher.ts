@@ -11,7 +11,13 @@
 
 import { execFile } from "node:child_process";
 import { createLogger } from "@argus/host/logger";
+import { capture } from "../telemetry/telemetry";
 import { runConductor } from "./capture";
+import {
+  friendlyInjectError,
+  inprocUnavailableReason,
+  simulatorPlatform,
+} from "./inprocSupport";
 
 const log = createLogger("inspection:launcher");
 
@@ -24,6 +30,8 @@ export interface InjectionProbe {
   foregroundApp: string | null;
   /** True when nothing inspectable is foregrounded (SpringBoard / home screen). */
   isSpringboard: boolean;
+  /** Why the app can't be relaunched with inspection here, or null. */
+  injectUnavailableReason: string | null;
 }
 
 export interface InstalledApp {
@@ -84,11 +92,15 @@ export async function probeInjection(
   }
 
   const isSpringboard = !foregroundApp || foregroundApp === SPRINGBOARD;
+  const injectUnavailableReason = injected
+    ? null
+    : inprocUnavailableReason(await simulatorPlatform(deviceKey));
 
   return {
     injected,
     foregroundApp: isSpringboard ? null : foregroundApp,
     isSpringboard,
+    injectUnavailableReason,
   };
 }
 
@@ -160,6 +172,15 @@ export async function launchInjected(
   if (!deviceKey || !bundleId) {
     throw "Missing device or app id.";
   }
+  const platform = await simulatorPlatform(deviceKey);
+  const unavailable = inprocUnavailableReason(platform);
+  if (unavailable) {
+    capture("simulator_inspection_launched", {
+      platform,
+      outcome: "unavailable",
+    });
+    throw unavailable;
+  }
   const res = await runConductor([
     "launch-app",
     bundleId,
@@ -170,10 +191,14 @@ export async function launchInjected(
   ]);
   if (res.code !== 0) {
     const msg = parseJsonLine(res.stdout)?.message;
-    throw typeof msg === "string" && msg
-      ? msg
-      : res.stderr.trim() || `launch-app ${bundleId} --inject failed`;
+    const raw =
+      typeof msg === "string" && msg
+        ? msg
+        : res.stderr.trim() || `launch-app ${bundleId} --inject failed`;
+    capture("simulator_inspection_launched", { platform, outcome: "failed" });
+    throw friendlyInjectError(raw, platform);
   }
+  capture("simulator_inspection_launched", { platform, outcome: "ok" });
 
   return { ok: true };
 }

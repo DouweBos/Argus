@@ -24,6 +24,8 @@ interface ViewState {
 interface LaunchPrompt {
   foregroundApp: string | null;
   isSpringboard: boolean;
+  /** Why relaunching with inspection can't work on this device, or null. */
+  unavailableReason: string | null;
 }
 
 interface InspectionState {
@@ -122,6 +124,7 @@ export async function capture(deviceKey: string | null): Promise<void> {
       launchPrompt: {
         foregroundApp: probe.foregroundApp,
         isSpringboard: probe.isSpringboard,
+        unavailableReason: probe.injectUnavailableReason,
       },
     });
   } catch (e) {

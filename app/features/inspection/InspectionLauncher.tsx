@@ -10,6 +10,7 @@ interface InspectionLauncherProps {
   installedApps: InstalledApp[] | null;
   isSpringboard: boolean;
   launching: boolean;
+  unavailableReason: string | null;
 }
 
 /**
@@ -24,7 +25,24 @@ export function InspectionLauncher({
   installedApps,
   isSpringboard,
   launching,
+  unavailableReason,
 }: InspectionLauncherProps) {
+  if (unavailableReason) {
+    return (
+      <div className={styles.root}>
+        <div className={styles.card}>
+          <div className={styles.iconBadge}>
+            <Icons.SearchIcon size={22} />
+          </div>
+          <div className={styles.title}>Can&apos;t inspect this app</div>
+          <div className={styles.hint}>{unavailableReason}</div>
+          {foregroundApp && (
+            <div className={styles.bundle}>{foregroundApp}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
   if (!isSpringboard && foregroundApp) {
     const name =
       installedApps?.find((a) => a.bundleId === foregroundApp)?.name ??

@@ -143,6 +143,8 @@ export const InjectionProbe = z.object({
   injected: z.boolean(),
   /** True when nothing inspectable is foregrounded (SpringBoard / home screen). */
   isSpringboard: z.boolean(),
+  /** Why the app can't be relaunched with inspection here, or null. */
+  injectUnavailableReason: z.string().nullable(),
 });
 export type InjectionProbe = z.infer<typeof InjectionProbe>;
 

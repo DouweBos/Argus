@@ -152,6 +152,10 @@ export interface EventMap {
       | "timeout"
       | "unknown";
   };
+  simulator_inspection_launched: {
+    platform: "ios" | "tvos";
+    outcome: "failed" | "ok" | "unavailable";
+  };
   simulator_repaired: { action: "delete" | "erase"; success: boolean };
   telemetry_disabled: undefined;
   telemetry_enabled: undefined;
