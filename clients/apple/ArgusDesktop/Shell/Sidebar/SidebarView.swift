@@ -9,6 +9,25 @@ struct SidebarView: View {
   @Environment(RemoteHostsStore.self) private var hosts
 
   var body: some View {
+    // The footer sits under the list, not in its safe area: a sidebar List
+    // scrolls its rows beneath a bottom inset, so the last ones were covered.
+    VStack(spacing: 0) {
+      projectList
+      addRepositoryFooter
+    }
+    .sheet(item: newSessionProject) { project in
+      NewSessionSheet(project: project) { session in
+        model.navigate(.sessionHome(id: session.id))
+      }
+    }
+    .sheet(item: deletingSession) { session in
+      DeleteSessionSheet(session: session) {
+        if model.route.sessionId == session.id { model.navigate(.home) }
+      }
+    }
+  }
+
+  private var projectList: some View {
     List(selection: selection) {
       Section {
         SidebarLabel("Home", systemImage: "house").tag(Self.homeTag).help("App home (⇧⌘H)")
@@ -86,17 +105,6 @@ struct SidebarView: View {
     .listStyle(.sidebar)
     .safeAreaInset(edge: .top) {
       if showsHosts { MachinesMenu().padding(.horizontal, 10).padding(.top, 4) }
-    }
-    .safeAreaInset(edge: .bottom, spacing: 0) { addRepositoryFooter }
-    .sheet(item: newSessionProject) { project in
-      NewSessionSheet(project: project) { session in
-        model.navigate(.sessionHome(id: session.id))
-      }
-    }
-    .sheet(item: deletingSession) { session in
-      DeleteSessionSheet(session: session) {
-        if model.route.sessionId == session.id { model.navigate(.home) }
-      }
     }
   }
 
