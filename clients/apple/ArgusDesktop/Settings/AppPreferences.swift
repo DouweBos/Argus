@@ -23,7 +23,9 @@ final class AppPreferences {
     static let editorWrapLines = "argus:editor.wrapLines"
     static let editorShowInvisibles = "argus:editor.showInvisibles"
     static let openFileLinksIn = "argus:editor.openFileLinksIn"
-    static let editorFormatOnSave = "argus:editor.formatOnSave"
+    /// The boolean before the tri-state; read once to migrate.
+    static let legacyEditorFormatOnSave = "argus:editor.formatOnSave"
+    static let editorFormatOnSave = "argus:editor.formatOnSaveMode"
     static let languageServers = "argus:editor.languageServers"
     static let disabledLanguageServers = "argus:editor.languageServers.disabled"
   }
@@ -88,9 +90,9 @@ final class AppPreferences {
     didSet { defaults.set(editorShowInvisibles, forKey: Key.editorShowInvisibles) }
   }
 
-  /// Run the language server's formatter before each save.
-  var editorFormatOnSave: Bool {
-    didSet { defaults.set(editorFormatOnSave, forKey: Key.editorFormatOnSave) }
+  /// Format before each save: with the project's formatter, else (Always) the language server's.
+  var editorFormatOnSave: FormatOnSave {
+    didSet { defaults.set(editorFormatOnSave.rawValue, forKey: Key.editorFormatOnSave) }
   }
 
   /// Where a file link in chat opens.
@@ -131,10 +133,19 @@ final class AppPreferences {
     editorInsertSpaces = defaults.object(forKey: Key.editorInsertSpaces) as? Bool ?? true
     editorWrapLines = defaults.bool(forKey: Key.editorWrapLines)
     editorShowInvisibles = defaults.bool(forKey: Key.editorShowInvisibles)
-    editorFormatOnSave = defaults.bool(forKey: Key.editorFormatOnSave)
+    editorFormatOnSave = Self.formatOnSave(in: defaults)
     openFileLinksIn = FileLinkTarget(rawValue: defaults.string(forKey: Key.openFileLinksIn) ?? "") ?? .argus
     languageServersEnabled = defaults.object(forKey: Key.languageServers) as? Bool ?? true
     disabledLanguageServers = Set(defaults.stringArray(forKey: Key.disabledLanguageServers) ?? [])
+  }
+
+  /// The tri-state, or the boolean it replaced: on (every save) is Always; off becomes Automatic,
+  /// which only formats where the project itself configures a formatter.
+  static func formatOnSave(in defaults: UserDefaults) -> FormatOnSave {
+    if let mode = defaults.string(forKey: Key.editorFormatOnSave).flatMap(FormatOnSave.init(rawValue:)) {
+      return mode
+    }
+    return defaults.object(forKey: Key.legacyEditorFormatOnSave) as? Bool == true ? .always : .automatic
   }
 
   /// Every window follows `NSApp.appearance`, sheets and popouts included.
@@ -187,6 +198,23 @@ final class AppPreferences {
     case .default: .regular
     case .small: .small
     case .smaller: .mini
+    }
+  }
+}
+
+/// Settings → Editor → Format on save.
+enum FormatOnSave: String, CaseIterable {
+  /// Only files the project has a formatter for (Prettier, SwiftFormat, swift-format, …).
+  case automatic
+  /// Every file: the project's formatter, else the language server's.
+  case always
+  case never
+
+  var title: String {
+    switch self {
+    case .automatic: "Automatic"
+    case .always: "Always"
+    case .never: "Never"
     }
   }
 }

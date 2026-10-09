@@ -23,6 +23,8 @@ final class CodeFile {
   var eol: ArgusProtocol.CodeFileEol = .lf
   var language: SyntaxLanguage?
   var isSaving = false
+  /// The project's formatter for this file, once asked; `formatter == .none` when it has none.
+  var format: CodeFormatStatus?
   /// Disk on the left, the buffer on the right, while Compare is open.
   var comparison: CodeHunks?
   /// `HEAD`'s text, for the gutter; nil when unknown, `""` for a file `HEAD` doesn't have.

@@ -21,6 +21,7 @@ struct CodeStatusBar: View {
       if let accessory = model.code.statusBarAccessory { accessory(code, file) }
       Text("Ln \(document.caret.line + 1), Col \(document.caret.utf16Column + 1)")
         .monospacedDigit()
+      if let format = file.format, format.formatter != .none { CodeFormatterItem(status: format) }
       Text(document.configuration.insertSpaces ? "Spaces: \(document.configuration.tabWidth)" : "Tab Size: \(document.configuration.tabWidth)")
       Text(file.eol == .crlf ? "CRLF" : "LF")
     }
@@ -53,6 +54,22 @@ struct CodeStatusBar: View {
     switch reason {
     case .tooLarge: "file over 2 MB"
     case .longLines: "very long lines"
+    }
+  }
+}
+
+/// The project's formatter next to indentation; amber with the reason when its last run failed.
+struct CodeFormatterItem: View {
+  @Environment(\.theme) private var theme
+  let status: CodeFormatStatus
+
+  var body: some View {
+    if let error = status.error {
+      Label(status.name, systemImage: "exclamationmark.triangle.fill")
+        .foregroundStyle(theme.warning)
+        .help("\(status.name) didn't format this file; it was saved as typed.\n\(error)")
+    } else {
+      Text(status.name).help("Formats with the project's \(status.name) (⇧⌥F, and on save)")
     }
   }
 }

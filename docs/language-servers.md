@@ -137,6 +137,24 @@ Install with your usual tool, then reopen the file (or click **Retry**):
 | Ruby     | `gem install ruby-lsp`                                                                  |
 | Kotlin   | `brew install JetBrains/utils/kotlin-lsp` (pre-release; heavy on large Gradle projects) |
 
+## Formatting
+
+Format Document (⇧⌥F) and format on save use the project's own formatter
+first, the version installed in the worktree with the project's config, run in
+the worktree. The status bar shows which one applies to the open file next to
+the indentation, and turns amber with the reason when its last run failed.
+
+| Formatter     | Files                                                                       | Used when                                                                                                                                                                                                                                                                                                                    |
+| ------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prettier      | JS, TS, JSX, TSX, JSON, CSS, SCSS, Less, HTML, Vue, Markdown, YAML, GraphQL | A Prettier config file or a `"prettier"` key in `package.json` (a shareable config like `"@acme/prettier-config"` works), or `prettier` in the package's dependencies. Argus runs the `prettier` in the worktree's `node_modules`, nearest the file first, so monorepo packages get their own; `.prettierignore` is honoured |
+| SwiftFormat   | Swift                                                                       | A `.swiftformat` file, with `swiftformat` installed (`brew install swiftformat`)                                                                                                                                                                                                                                             |
+| swift-format  | Swift                                                                       | A `.swift-format` file; uses `swift-format` on your `PATH`, else the one in Xcode 16 and later                                                                                                                                                                                                                               |
+| gofmt         | Go                                                                          | A `go.mod`, with `gofmt` on your `PATH`                                                                                                                                                                                                                                                                                      |
+| Ruff or Black | Python                                                                      | `ruff.toml`, `.ruff.toml` or `[tool.ruff]` in `pyproject.toml` (Ruff); `[tool.black]` (Black)                                                                                                                                                                                                                                |
+
+Anything else falls back to the file's language server. Argus never installs a
+formatter, and organize imports or `eslint --fix` on save aren't supported.
+
 ## Turning servers off
 
 Language servers can be switched off altogether, or per language, in the Mac

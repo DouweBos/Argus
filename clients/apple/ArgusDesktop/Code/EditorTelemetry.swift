@@ -34,6 +34,16 @@ extension MacTelemetryEvent {
     case dismissed
   }
 
+  /// What formatted a save: the project's own tool, the language server, or nothing.
+  enum EditorFormatter: String {
+    case prettier
+    case swiftformat
+    case swiftFormat = "swift_format"
+    case lsp
+    case other
+    case none
+  }
+
   enum EditorConflictAction: String {
     case compare
     case keepMine = "keep_mine"

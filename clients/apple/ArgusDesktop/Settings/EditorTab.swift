@@ -27,12 +27,14 @@ struct EditorTab: View {
         Toggle("Insert spaces for tabs", isOn: $prefs.editorInsertSpaces.tracked(.editorInsertSpaces))
         Toggle("Wrap lines", isOn: $prefs.editorWrapLines.tracked(.editorWrapLines))
         Toggle("Show invisibles", isOn: $prefs.editorShowInvisibles.tracked(.editorShowInvisibles))
-        Toggle("Format on save", isOn: $prefs.editorFormatOnSave.tracked(.editorFormatOnSave))
+        Picker("Format on save", selection: $prefs.editorFormatOnSave.tracked(.editorFormatOnSave)) {
+          ForEach(FormatOnSave.allCases, id: \.self) { Text($0.title).tag($0) }
+        }
       } header: {
         Text("Code view")
       } footer: {
         SettingsCaption(
-          "A project's .editorconfig overrides tab width and spaces for the files it covers. Format on save uses the file's language server.")
+          "A project's .editorconfig overrides tab width and spaces for the files it covers. Automatic formats on save only when the project has a formatter (Prettier, SwiftFormat, swift-format, gofmt, Ruff, Black); Always falls back to the file's language server.")
       }
       Section {
         Picker("Open file links in", selection: $prefs.openFileLinksIn.tracked(.openFileLinksIn)) {

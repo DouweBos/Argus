@@ -127,10 +127,9 @@ enum CodeShortcuts {
         store?.toggleWordWrap()
         return store != nil
       },
-      format: { [weak document] in
-        guard let provider = document?.languageProvider as? LspDocumentProvider else { return false }
-        Task { _ = await provider.format() }
-        return true
+      format: { [weak store] in
+        store?.model?.formatActiveCodeDocument()
+        return store != nil
       },
     ]) { first, _ in first }
   }

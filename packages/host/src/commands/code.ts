@@ -1,4 +1,5 @@
 import { readCodeFile, writeCodeFile } from "../services/code/files";
+import { formatCode } from "../services/code/format";
 import { cancelCodeSearch, startCodeSearch } from "../services/code/search";
 import { searchSymbols } from "../services/code/symbols";
 import { unwatchCodeFiles, watchCodeFiles } from "../services/code/watch";
@@ -19,6 +20,9 @@ export function registerCodeCommands(): void {
     startCodeSearch(id, query, searchId),
   );
   defineTypedCommand("code_search_cancel", (p) => cancelCodeSearch(p.searchId));
+  defineTypedCommand("code_format", (p) =>
+    formatCode(p.id, p.relativePath, p.content),
+  );
   defineTypedCommand("code_symbol_search", (p) =>
     searchSymbols(p.id, p.query, p.limit, p.kinds),
   );

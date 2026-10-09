@@ -16,12 +16,9 @@ struct CodeCommands: View {
     }
     .keyboardShortcut(.function(2), modifiers: [])
     .disabled(!language)
-    Button("Format Document") {
-      guard let provider = document?.languageProvider as? LspDocumentProvider else { return }
-      Task { _ = await provider.format() }
-    }
-    .keyboardShortcut(CodeShortcuts.format.key, modifiers: CodeShortcuts.format.modifiers)
-    .disabled(!language)
+    Button("Format Document") { model.formatActiveCodeDocument() }
+      .keyboardShortcut(CodeShortcuts.format.key, modifiers: CodeShortcuts.format.modifiers)
+      .disabled(document?.isEditable != true)
     Button("Show Completions") {
       document?.focus()
       document?.perform(.triggerCompletion)
