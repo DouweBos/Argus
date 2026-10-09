@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.25.1
+
+### Patch Changes
+
+- 39f8459: Message timestamps in the agent chat no longer cover the start of a message or a tool call's title when you hover it.
+
 ## 0.25.0
 
 ### Minor Changes
