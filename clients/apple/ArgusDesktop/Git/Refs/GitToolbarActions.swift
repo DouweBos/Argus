@@ -23,7 +23,8 @@ private struct GitToolbarButtons: View {
   let session: RemoteSession
 
   var body: some View {
-    PillActionGroup(actions: items) {
+    // What doesn't fit beside the switcher overflows, so the switcher never moves.
+    PillActionGroup(actions: items, width: model.toolbarLayout.panelActionsWidth - (workspace.hostBusy == nil ? 0 : 32)) {
       if let label = workspace.hostBusy {
         ProgressView().controlSize(.small).frame(width: 30).help(label).accessibilityLabel(label)
       }

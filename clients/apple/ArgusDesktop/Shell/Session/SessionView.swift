@@ -65,6 +65,7 @@ struct SessionView: View {
           },
           selection: model.sessionPanel ?? .home, compact: true
         ) { model.show($0, via: .toolbar) }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.switcherWidth = $0 }
       }
       if let session, session.status == .ready {
         // One item, so the toolbar draws one capsule around flat controls, as around the switcher.
@@ -80,6 +81,7 @@ struct SessionView: View {
             .help(model.terminalPanelVisible ? "Hide terminal (⇧⌘T)" : "Show terminal (⇧⌘T)")
             .accessibilityLabel("Terminal")
           }
+          .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.sessionToolsWidth = $0 }
         }
       }
     }

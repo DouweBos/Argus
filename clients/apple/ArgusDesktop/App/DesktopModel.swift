@@ -21,6 +21,8 @@ final class DesktopModel {
   /// The inbox in full, from the host's catalog — the Mac's inbox and proposal screens.
   let inbox: InboxStore
   let palette = CommandPaletteModel()
+  /// Widths the session toolbar lays its items out by.
+  let toolbarLayout = ToolbarLayout()
   /// Each session's open files in the code view.
   let code: CodeStore
   /// Language servers behind the code view: diagnostics, hover, completion, definitions.
