@@ -63,6 +63,13 @@ import AppKit
     scheduleRefresh()
   }
 
+  /// Fold regions once every queued edit is parsed; nil without a grammar.
+  func folds() async -> [SyntaxFold]? {
+    guard let syntax else { return nil }
+    await editChain?.value
+    return await syntax.folds()
+  }
+
   func viewportChanged() {
     guard syntax != nil, let visible = targetRange() else { return }
     if paintedGeneration == generation, NSIntersectionRange(paintedRange, visible) == visible { return }

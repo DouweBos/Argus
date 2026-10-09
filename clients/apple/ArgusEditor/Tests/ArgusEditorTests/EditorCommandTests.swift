@@ -260,7 +260,9 @@ final class EditorCommandTests: XCTestCase {
     document.engine.textView.keyDown(with: try event(6, "Ω", .option))
     XCTAssertEqual(wrapped, 1)
     XCTAssertEqual(document.text, "/* x */", "the host's key didn't type")
-    let shortcuts = EditorCommand.allCases.map(\.shortcut)
+    let shortcuts = EditorCommand.allCases.map { [$0.chordPrefix, $0.shortcut] }
     XCTAssertEqual(Set(shortcuts).count, shortcuts.count, "no two commands share a key")
+    let prefixes = Set(EditorCommand.allCases.compactMap(\.chordPrefix))
+    XCTAssertTrue(EditorCommand.allCases.allSatisfy { !prefixes.contains($0.shortcut) }, "a chord's first key isn't a command")
   }
 }

@@ -10,6 +10,7 @@ public enum EditorCommand: String, CaseIterable, Sendable {
   case selectLine, addNextOccurrence, selectAllOccurrences, addCursorAbove, addCursorBelow
   case jumpToBracket, goToLine, nextProblem, previousProblem
   case goToDefinition, triggerCompletion
+  case fold, unfold, foldAll, unfoldAll
 
   public var title: String {
     switch self {
@@ -35,6 +36,10 @@ public enum EditorCommand: String, CaseIterable, Sendable {
     case .previousProblem: "Previous Problem"
     case .goToDefinition: "Go to Definition"
     case .triggerCompletion: "Show Completions"
+    case .fold: "Fold"
+    case .unfold: "Unfold"
+    case .foldAll: "Fold All"
+    case .unfoldAll: "Unfold All"
     }
   }
 
@@ -62,12 +67,34 @@ public enum EditorCommand: String, CaseIterable, Sendable {
     case .previousProblem: EditorShortcut(.function(8), .shift)
     case .goToDefinition: EditorShortcut(.function(12), [])
     case .triggerCompletion: EditorShortcut(.space, .control)
+    case .fold: EditorShortcut("[", [.option, .command])
+    case .unfold: EditorShortcut("]", [.option, .command])
+    case .foldAll: EditorShortcut("0", .command)
+    case .unfoldAll: EditorShortcut("j", .command)
     }
   }
 
-  /// The command `event` is the shortcut for.
+  /// The first key of a two-key chord (⌘K ⌘0); `shortcut` is then the second. A menu can't show
+  /// a chord, so menus list these without a key.
+  public var chordPrefix: EditorShortcut? {
+    switch self {
+    case .foldAll, .unfoldAll: EditorShortcut("k", .command)
+    default: nil
+    }
+  }
+
+  /// The single-key command `event` is the shortcut for.
   static func matching(_ event: NSEvent) -> EditorCommand? {
-    allCases.first { $0.shortcut.matches(event) }
+    allCases.first { $0.chordPrefix == nil && $0.shortcut.matches(event) }
+  }
+
+  /// The chord command `event` completes after `prefix`.
+  static func matching(_ event: NSEvent, after prefix: EditorShortcut) -> EditorCommand? {
+    allCases.first { $0.chordPrefix == prefix && $0.shortcut.matches(event) }
+  }
+
+  static func isChordPrefix(_ event: NSEvent) -> EditorShortcut? {
+    allCases.lazy.compactMap(\.chordPrefix).first { $0.matches(event) }
   }
 }
 

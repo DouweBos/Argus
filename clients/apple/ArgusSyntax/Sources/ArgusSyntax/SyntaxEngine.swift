@@ -8,10 +8,10 @@ final class SyntaxEngine {
   private static let maxInjectionDepth = 3
 
   let grammar: Grammar
-  private let assets: GrammarAssets
+  let assets: GrammarAssets
   private let parser = Parser()
   private(set) var buffer: TextBuffer
-  private var tree: MutableTree?
+  private(set) var tree: MutableTree?
   private var needsParse = true
   private var injectionTrees: [InjectionKey: MutableTree] = [:]
 

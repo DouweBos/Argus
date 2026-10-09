@@ -49,6 +49,7 @@ import Observation
   @ObservationIgnored let highlighter: HighlightCoordinator
   @ObservationIgnored let gutter = GutterView()
   @ObservationIgnored private(set) lazy var interaction = EditorInteraction(document: self)
+  @ObservationIgnored private(set) lazy var folding = FoldingController(document: self)
   @ObservationIgnored var savedText: NSString
   @ObservationIgnored var pendingReveal: PendingReveal?
   @ObservationIgnored var pendingChange: EditorRange?
@@ -80,6 +81,8 @@ import Observation
     engine.onViewportChange = { [weak self] in self?.viewportChanged() }
     gutter.document = self
     engine.install(gutter)
+    engine.willReveal = { [weak self] range in self?.folding.reveal([range]) }
+    folding.scheduleRefresh(after: .zero)
     selectionObserver = NotificationCenter.default.addObserver(
       forName: TextSelectionManager.selectionChangedNotification, object: engine.textView.selectionManager,
       queue: .main
@@ -154,6 +157,7 @@ import Observation
     if newSelection != selection { selection = newSelection }
     let newCaret = newSelection.end
     if newCaret != caret { caret = newCaret }
+    folding.selectionChanged(engine.textView.selectionManager.textSelections.map(\.range))
     interaction.selectionChanged()
     onDecorationsChange?()
   }

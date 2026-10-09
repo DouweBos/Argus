@@ -30,6 +30,11 @@ public actor SyntaxDocument {
     engine.highlights(in: range)
   }
 
+  /// Foldable regions of the whole document, in document order.
+  public func folds() -> [SyntaxFold] {
+    engine.folds()
+  }
+
   /// Parses now rather than on the next `highlights(in:)`, e.g. right after opening a file.
   public func prepare() {
     engine.parseIfNeeded()
@@ -41,6 +46,10 @@ public enum SyntaxHighlighter {
   public static func highlight(_ text: String, language: SyntaxLanguage) -> [SyntaxRun] {
     guard let engine = SyntaxEngine(grammar: .language(language), text: text) else { return [] }
     return engine.highlights(in: NSRange(location: 0, length: engine.buffer.count))
+  }
+
+  public static func folds(_ text: String, language: SyntaxLanguage) -> [SyntaxFold] {
+    SyntaxEngine(grammar: .language(language), text: text)?.folds() ?? []
   }
 
   /// Whether the bundled grammar and its queries load. False means "Plain Text".

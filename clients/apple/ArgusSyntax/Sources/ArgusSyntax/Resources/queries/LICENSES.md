@@ -2,7 +2,7 @@
 
 The `highlights.scm` files here are vendored from each grammar's upstream repository and
 rewritten to the Argus capture vocabulary by `Scripts/vendor-queries.sh`. The
-`injections.scm` files are Argus's own. All upstream queries are MIT licensed; Kotlin's and
+`injections.scm` and `folds.scm` files are Argus's own. All upstream queries are MIT licensed; Kotlin's and
 Markdown's are themselves derived from nvim-treesitter (Apache-2.0).
 
 | Directory | Upstream | Version | Licence |

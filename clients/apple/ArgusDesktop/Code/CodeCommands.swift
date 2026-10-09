@@ -48,8 +48,10 @@ struct EditorCommandButton: View {
   var enabled = true
 
   var body: some View {
+    // A chord (⌘K ⌘0) can't be a menu key; the editor handles it itself.
     Button(command.title) { document?.perform(command) }
-      .keyboardShortcut(command.shortcut.key, modifiers: command.shortcut.modifiers)
+      .keyboardShortcut(
+        command.chordPrefix == nil ? KeyboardShortcut(command.shortcut.key, modifiers: command.shortcut.modifiers) : nil)
       .disabled(document == nil || !enabled)
   }
 }
