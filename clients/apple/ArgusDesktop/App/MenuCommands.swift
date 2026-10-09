@@ -11,7 +11,6 @@ enum MenuCommand {
   case selectAgent(Int)
   case interruptAgent
   case focusComposer
-  case toggleRuntime
   case quickSwitcher
   case goHome
   case goTo(DesktopRoute)
@@ -33,7 +32,6 @@ enum MenuCommand {
     case .selectAgent(let index): model.selectAgent(at: index)
     case .interruptAgent: model.interruptAgentInFront()
     case .focusComposer: model.focusComposer()
-    case .toggleRuntime: model.runtimePanelVisible.toggle()
     case .quickSwitcher: model.palette.present(switcher: true)
     case .goHome: model.navigate(.home)
     case .goTo(let route): model.navigate(route)
@@ -49,7 +47,6 @@ enum MenuCommand {
     case .selectAgent: .selectAgent
     case .interruptAgent: .interruptAgent
     case .focusComposer: .focusComposer
-    case .toggleRuntime: .toggleRuntime
     case .quickSwitcher: .quickSwitcher
     case .goHome: .goHome
     case .goTo: .goToScreen

@@ -108,7 +108,6 @@ extension MacTelemetryEvent {
     case selectAgent = "select_agent"
     case interruptAgent = "interrupt_agent"
     case focusComposer = "focus_composer"
-    case toggleRuntime = "toggle_runtime"
     case quickSwitcher = "quick_switcher"
     case goHome = "go_home"
     case goToScreen = "go_to_screen"
@@ -127,6 +126,14 @@ extension MacTelemetryEvent {
     case menu
     case palette
     case mouse
+  }
+
+  /// Where the device panel was shown or hidden from.
+  enum DevicePanelToggleSource: String {
+    case button
+    case shortcut
+    case menu
+    case palette
   }
 
   /// Whether a menu command came from its key equivalent or a click.

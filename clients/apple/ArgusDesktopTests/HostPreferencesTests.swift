@@ -109,6 +109,20 @@ struct HostPreferencesTests {
     #expect(host.settingWrites == writes + 1)
   }
 
+  @Test func keepsHiddenDevicePanelsOnTheHost() async {
+    let f = Fixture()
+    defer { f.cleanUp() }
+    let host = FakeHost()
+    host.ui["runtime.hidden_panels"] = #"["s1"]"#
+    await f.sync.attach(host.io)
+    #expect(f.home.stringArray(forKey: RuntimeModel.Keys.hiddenPanels) == ["s1"])
+
+    f.home.set(["s1", "s2"], forKey: RuntimeModel.Keys.hiddenPanels)
+    f.sync.localChanged()
+    await f.sync.flush()
+    #expect(host.ui["runtime.hidden_panels"].flatMap(HostPreferences.decode) == .array([.string("s1"), .string("s2")]))
+  }
+
   @Test func leavesAnElectronOnlyPickAlone() async {
     let f = Fixture()
     defer { f.cleanUp() }

@@ -48,6 +48,8 @@ final class RuntimeModel {
   private var projectDisabledTools: Set<String> { Set(projectConfig?.tools?.disabled ?? []) }
 
   private var iosBySession: [String: String]
+  /// Sessions (or `globalKey`) whose device panel is hidden; shown unless hidden.
+  private var hiddenPanels: Set<String>
   private var androidBySession: [String: String]
   /// The page each session's browser was last on, so returning to it doesn't reload.
   var browserUrls: [String: String] = [:]
@@ -69,6 +71,7 @@ final class RuntimeModel {
     static let ios = "runtime.iosBySession"
     static let android = "runtime.androidBySession"
     static let browserPreset = "runtime.browserPreset"
+    static let hiddenPanels = "runtime.hiddenPanels"
   }
 
   init(store: HostStore, defaults: HomeDefaults = .shared) {
@@ -79,6 +82,7 @@ final class RuntimeModel {
     iosBySession = defaults.dictionary(forKey: Keys.ios) as? [String: String] ?? [:]
     androidBySession = defaults.dictionary(forKey: Keys.android) as? [String: String] ?? [:]
     browserPreset = defaults.string(forKey: Keys.browserPreset) ?? "desktop"
+    hiddenPanels = Set(defaults.stringArray(forKey: Keys.hiddenPanels) ?? [])
   }
 
   /// Picks up the picks the host handed over on connect.
@@ -91,6 +95,20 @@ final class RuntimeModel {
     if let preset = defaults.string(forKey: Keys.browserPreset), preset != browserPreset {
       browserPreset = preset
     }
+    let hidden = Set(defaults.stringArray(forKey: Keys.hiddenPanels) ?? [])
+    if hidden != hiddenPanels { hiddenPanels = hidden }
+  }
+
+  // MARK: Panel
+
+  func panelVisible(session: String?) -> Bool {
+    !hiddenPanels.contains(session ?? Self.globalKey)
+  }
+
+  func setPanelVisible(_ visible: Bool, session: String?) {
+    let key = session ?? Self.globalKey
+    if visible { hiddenPanels.remove(key) } else { hiddenPanels.insert(key) }
+    defaults.set(hiddenPanels.sorted(), forKey: Keys.hiddenPanels)
   }
 
   private var backend: (any HostBackend)? { store.backend }

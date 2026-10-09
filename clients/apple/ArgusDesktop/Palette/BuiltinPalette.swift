@@ -71,6 +71,10 @@ enum BuiltinPalette {
         id: "session.terminal", title: model.terminalPanelVisible ? "Hide Terminal" : "Show Terminal",
         section: "Session", systemImage: "terminal", shortcut: "⇧⌘T"
       ) { model.terminalPanelVisible.toggle() },
+      PaletteCommand(
+        id: "session.device-panel", title: model.runtimePanelVisible ? "Hide Device Panel" : "Show Device Panel",
+        section: "Session", systemImage: "iphone.gen3", shortcut: "⌥⌘B"
+      ) { model.toggleRuntimePanel(via: .palette) },
     ]
     if model.sessionReadyForAgent != nil {
       commands.append(

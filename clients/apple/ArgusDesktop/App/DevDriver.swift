@@ -145,6 +145,11 @@
         // What ⇧⌘T does; menu commands only enable while the app is active.
         AppDelegate.current?.model.terminalPanelVisible.toggle()
         return ["panel": AppDelegate.current?.model.terminalPanelVisible ?? false]
+      case "toggleDevicePanel":
+        // What ⌥⌘B does, for the session on screen.
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        model.toggleRuntimePanel(via: .shortcut)
+        return ["panel": model.runtimePanelVisible]
       case "terminals":
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
         let tabs = model.terminals.tabsBySession.values.joined().map {

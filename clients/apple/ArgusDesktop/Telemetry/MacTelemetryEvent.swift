@@ -218,6 +218,8 @@ enum MacTelemetryEvent {
   /// A device picture was closed after being shown.
   case deviceWatched(platform: String, durationMs: Int, interacted: Bool)
   case devicePopoutOpened(platform: String)
+  /// The device panel was shown or hidden for the session on screen.
+  case devicePanelToggled(shown: Bool, via: DevicePanelToggleSource)
   case devicePower(action: PowerAction, platform: String)
   case browserUsed(action: BrowserAction)
   case inspectionUsed(action: InspectionAction, success: Bool)
@@ -309,6 +311,7 @@ enum MacTelemetryEvent {
     case .runtimeTargetPicked: "mac_runtime_target_picked"
     case .deviceWatched: "mac_device_watched"
     case .devicePopoutOpened: "mac_device_popout_opened"
+    case .devicePanelToggled: "mac_device_panel_toggled"
     case .devicePower: "mac_device_power"
     case .browserUsed: "mac_browser_used"
     case .inspectionUsed: "mac_inspection_used"
@@ -415,6 +418,8 @@ enum MacTelemetryEvent {
       ["platform": platform, "duration_ms": durationMs, "interacted": interacted]
     case .devicePopoutOpened(let platform):
       ["platform": platform]
+    case .devicePanelToggled(let shown, let via):
+      ["shown": shown, "via": via.rawValue]
     case .devicePower(let action, let platform):
       ["action": action.rawValue, "platform": platform]
     case .browserUsed(let action):

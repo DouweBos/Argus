@@ -29,7 +29,8 @@ lives in the repository (`plan/swiftui-parity.md`).
   permission prompts.
 - The runtime panel: each session's simulator, emulator or browser, live, to
   tap, type, scroll and rotate; Simulate, Inspect (the iOS UI inspector) and
-  Logs modes; devices in their own floating windows. DevTools for the
+  Logs modes; devices in their own floating windows. The toolbar's device
+  button (⌥⌘B) shows and hides the panel, remembered for each session. DevTools for the
   session's browser open in a window of their own.
 - The Devices screen: every simulator and emulator, with boot, shut down, a
   live grid, and each device's details with a live picture.
@@ -96,7 +97,7 @@ except where macOS or the Mac app's own layout already uses the keys.
 | ⌥⌘1 – ⌥⌘5             | Agents, Devices, Runtimes, Pull Requests, Notifications    | View  |
 | ⇧⌘I                   | Inbox                                                      | View  |
 | ⇧⌘T                   | Show or hide the terminal                                  | View  |
-| ⌥⌘B                   | Show or hide the runtime panel                             | View  |
+| ⌥⌘B                   | Show or hide the device panel (per session)                | View  |
 | ⌥⌘T, ⌘W, ⌃Tab / ⌃⇧Tab | New, close and cycle window tabs                           | View  |
 
 Back and forward step through the window tab's history, as in Finder: every

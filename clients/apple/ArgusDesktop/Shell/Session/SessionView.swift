@@ -80,6 +80,13 @@ struct SessionView: View {
             }
             .help(model.terminalPanelVisible ? "Hide terminal (⇧⌘T)" : "Show terminal (⇧⌘T)")
             .accessibilityLabel("Terminal")
+            Button {
+              model.toggleRuntimePanel(via: .button)
+            } label: {
+              Label("Device Panel", systemImage: "iphone.gen3")
+            }
+            .help(model.runtimePanelVisible ? "Hide device panel (⌥⌘B)" : "Show device panel (⌥⌘B)")
+            .accessibilityLabel("Device Panel")
           }
           .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.sessionToolsWidth = $0 }
         }
