@@ -10,8 +10,9 @@
   ///
   /// `ARGUS_DEV_DRIVER=<dir>`: each `cmd-<n>.json` is run once and answered in
   /// `out-<n>.json`. Ops: `tree`, `press` / `click` (by accessibility label or
-  /// title, optional `index`), `key` (`key`, `mods`), `type` (`text`), `menu`
-  /// (`title`), `mainMenu` (`title`: a menu bar menu's items and shortcuts).
+  /// title, optional `index`), `key` (`key`, `mods`, `viaQueue`), `type` (`text`), `menu`
+  /// (`title`), `mainMenu` (`title`: a menu bar menu's items and shortcuts),
+  /// `mouseButton` (`button`: 3 back, 4 forward).
   @MainActor
   final class DevDriver {
     private let dir: URL
@@ -120,7 +121,8 @@
         case "runtimes": model.navigate(.runtimes)
         case "devices": model.navigate(.devices)
         case "pull-requests": model.navigate(.pullRequests)
-        case "back": model.goBack()
+        case "back": model.goBack(via: .button)
+        case "forward": model.goForward(via: .button)
         default: return ["error": "to?"]
         }
         return ["route": "\(model.route)"]
@@ -197,8 +199,26 @@
         // A context menu tracks until it closes; answer first.
         DispatchQueue.main.async { window.sendEvent(event) }
         return ["ok": true]
+      case "mouseButton":
+        // A mouse's side button (3 back, 4 forward) released over the window,
+        // through this app's own event queue so local monitors see it.
+        guard let button = command["button"] as? Int,
+          let base = NSEvent.mouseEvent(
+            with: .otherMouseUp, location: NSPoint(x: 400, y: 400), modifierFlags: [],
+            timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil,
+            eventNumber: 0, clickCount: 1, pressure: 0),
+          let cg = base.cgEvent
+        else { return ["error": "button?"] }
+        cg.setIntegerValueField(.mouseEventButtonNumber, value: Int64(button))
+        guard let event = NSEvent(cgEvent: cg) else { return ["error": "event"] }
+        NSApp.postEvent(event, atStart: false)
+        return ["ok": true, "button": event.buttonNumber, "window": event.windowNumber == window.windowNumber]
       case "key":
-        return ["ok": key(command["key"] as? String ?? "", mods: command["mods"] as? [String] ?? [], code: command["code"] as? Int, in: window)]
+        return [
+          "ok": key(
+            command["key"] as? String ?? "", mods: command["mods"] as? [String] ?? [], code: command["code"] as? Int,
+            viaQueue: command["viaQueue"] as? Bool ?? false, in: window)
+        ]
       case "type":
         guard let text = command["text"] as? String,
           let input = window.firstResponder as? NSTextInputClient
@@ -451,7 +471,7 @@
       case "history":
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
         return [
-          "location": model.location.path, "back": model.back.map(\.path), "forward": model.forward.map(\.path),
+          "location": model.location.path, "back": model.history.back.map(\.path), "forward": model.history.forward.map(\.path),
           "pending": model.pendingLocation?.path ?? "",
           "log": model.notificationsLog.entries.map(\.message),
         ]
@@ -757,7 +777,8 @@
       return true
     }
 
-    private func key(_ key: String, mods: [String], code keyCode: Int? = nil, in window: NSWindow) -> Bool {
+    /// `viaQueue` posts the press to this app's own event queue, so local monitors see it as they do a real one.
+    private func key(_ key: String, mods: [String], code keyCode: Int? = nil, viaQueue: Bool = false, in window: NSWindow) -> Bool {
       var flags: NSEvent.ModifierFlags = []
       if mods.contains("cmd") { flags.insert(.command) }
       if mods.contains("shift") { flags.insert(.shift) }
@@ -777,6 +798,10 @@
             context: nil, characters: characters, charactersIgnoringModifiers: characters,
             isARepeat: false, keyCode: code)
         else { return false }
+        if viaQueue {
+          NSApp.postEvent(event, atStart: false)
+          continue
+        }
         // Key equivalents (⌘F, ⌘G) go to the view tree, then the menu, the
         // way AppKit routes them.
         if type == .keyDown, !flags.isEmpty,

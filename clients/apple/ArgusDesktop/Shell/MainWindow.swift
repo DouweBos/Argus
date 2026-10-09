@@ -67,7 +67,10 @@ struct MainWindow: View {
     .environment(\.openInCode) { [model] session, path, line in
       model.openCode(session: session, path: path, line: line, source: .chatLink)
     }
-    .toolbar { AttachedHostBadge() }
+    .toolbar {
+      HistoryButtons()
+      AttachedHostBadge()
+    }
     .themed()
     // A project added while we're up arrives as `projects.changed` alone.
     .task(id: store.projects.map(\.repoRoot)) {

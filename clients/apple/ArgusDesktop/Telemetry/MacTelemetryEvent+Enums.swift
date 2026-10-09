@@ -113,6 +113,21 @@ extension MacTelemetryEvent {
     case goToScreen = "go_to_screen"
   }
 
+  enum HistoryDirection: String {
+    case back
+    case forward
+  }
+
+  /// What moved through history: the toolbar chevrons, ⌘[ / ⌘] (or ⌃- / ⌃⇧- in
+  /// the code view), a click on the Go menu item or palette entry, or a mouse's side buttons.
+  enum HistorySource: String {
+    case button
+    case shortcut
+    case menu
+    case palette
+    case mouse
+  }
+
   /// Whether a menu command came from its key equivalent or a click.
   enum MenuCommandSource: String {
     case menu

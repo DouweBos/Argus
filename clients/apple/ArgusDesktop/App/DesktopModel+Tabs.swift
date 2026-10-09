@@ -8,8 +8,7 @@ struct WindowTab: Identifiable, Equatable {
 
   let id: String
   var location: DesktopLocation
-  var back: [DesktopLocation] = []
-  var forward: [DesktopLocation] = []
+  var history = NavigationHistory()
   var pinned: Bool { id == Self.localId }
 
   /// What persists: the path (its host rides in `?host=`), never the history.
@@ -116,14 +115,12 @@ extension DesktopModel {
   private func stashActiveTab() {
     guard let index = tabs.firstIndex(where: { $0.id == activeTabId }) else { return }
     tabs[index].location = location
-    tabs[index].back = back
-    tabs[index].forward = forward
+    tabs[index].history = history
   }
 
   private func load(_ tab: WindowTab) {
     activeTabId = tab.id
-    back = tab.back
-    forward = tab.forward
+    history = tab.history
     let host = tab.location.host ?? Hosts.local
     if host != hosts.focused {
       hosts.focus(host)

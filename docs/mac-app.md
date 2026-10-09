@@ -91,13 +91,17 @@ except where macOS or the Mac app's own layout already uses the keys.
 | ⌃⌘1 – ⌃⌘9             | The session's first to ninth agent                         | Agent |
 | ⌘F, ⌘G, ⇧⌘G           | Find in the chat (or the focused terminal), next, previous | —     |
 | ⌘1 – ⌘4               | The session's Home, Agents, Git and Code                   | View  |
-| ⌘[ / ⌘]               | Back / forward                                             | View  |
+| ⌘[ / ⌘]               | Back / forward                                             | Go    |
 | ⇧⌘H                   | App home                                                   | View  |
 | ⌥⌘1 – ⌥⌘5             | Agents, Devices, Runtimes, Pull Requests, Notifications    | View  |
 | ⇧⌘I                   | Inbox                                                      | View  |
 | ⇧⌘T                   | Show or hide the terminal                                  | View  |
 | ⌥⌘B                   | Show or hide the runtime panel                             | View  |
 | ⌥⌘T, ⌘W, ⌃Tab / ⌃⇧Tab | New, close and cycle window tabs                           | View  |
+
+Back and forward step through the window tab's history, as in Finder: every
+screen, session panel, agent, git view and code-view file you open is a step.
+The toolbar's chevrons and a mouse's side buttons do the same.
 
 Where they differ from the Electron app:
 

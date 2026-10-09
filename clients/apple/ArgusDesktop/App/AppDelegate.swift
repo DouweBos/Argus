@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationDidFinishLaunching(_ notification: Notification) {
     Self.current = self
     FirstMouse.install()
+    HistoryInput.install(model)
     // Unit tests run inside the app; they must not start a host.
     if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil { return }
     // Another app taking over this Argus home asks us to quit with SIGTERM;
