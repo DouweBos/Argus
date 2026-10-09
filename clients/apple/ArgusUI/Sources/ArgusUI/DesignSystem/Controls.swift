@@ -121,15 +121,21 @@ public struct ThemedTextField: View {
     self.onSubmit = onSubmit
   }
 
+  private var font: Font { mono ? .scaled(size: 14, design: .monospaced) : .scaled(size: 15) }
+
   public var body: some View {
     Group {
       if multiline {
-        TextField(placeholder, text: $text, axis: .vertical).lineLimit(lines)
+        #if os(macOS)
+          GrowingTextEditor(placeholder: placeholder, text: $text, lines: lines, font: font)
+        #else
+          TextField(placeholder, text: $text, axis: .vertical).lineLimit(lines)
+        #endif
       } else {
         TextField(placeholder, text: $text)
       }
     }
-    .font(mono ? .scaled(size: 14, design: .monospaced) : .scaled(size: 15))
+    .font(font)
     .foregroundStyle(theme.text)
     .platformKeyboard(keyboard, input: input)
     .autocorrectionDisabled(input == .code)
