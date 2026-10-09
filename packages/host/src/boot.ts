@@ -49,6 +49,10 @@ import { restoreScratchPads } from "./services/scratchPad/manager";
 import { migrateLegacySecretStores } from "./services/secrets/legacyStores";
 import { restoreRepoRoots } from "./services/session/manager";
 import {
+  startVolumeWatcher,
+  stopVolumeWatcher,
+} from "./services/session/volumeWatcher";
+import {
   capture as telemetryCapture,
   captureWhenEnabled,
   initTelemetry,
@@ -130,6 +134,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   // and on a headless host nothing else would ever fill it.
   restoreRepoRoots();
   restoreScratchPads();
+  startVolumeWatcher();
 
   initAutomations();
   initAutomationOutcomes();
@@ -203,6 +208,7 @@ export function stopHostServices(): void {
   telemetryCapture("app_quit");
   shutdownTelemetry().catch(() => undefined);
   stopAutomationScheduler();
+  stopVolumeWatcher();
   stopHostConversations();
   stopMcpServer();
   stopRemote();

@@ -24,6 +24,7 @@ struct ProjectSidebarSection: View {
             .padding(.leading, ProjectGuide.indent)
             .overlay(alignment: .leading) { ProjectGuide() }
             .tag(session.id)
+            .selectionDisabled(session.isUnavailable)
             .contextMenu { sessionMenu(session) }
         }
         newSessionRow
@@ -40,7 +41,7 @@ struct ProjectSidebarSection: View {
     )
     .contextMenu { projectMenu }
     if let root {
-      row.tag(root.id)
+      row.tag(root.id).selectionDisabled(root.isUnavailable)
     } else {
       row
     }
@@ -73,7 +74,9 @@ struct ProjectSidebarSection: View {
   }
 
   @ViewBuilder private func sessionMenu(_ session: RemoteSession) -> some View {
-    Button("Open in New Tab") { openInTab(session) }
+    if !session.isUnavailable {
+      Button("Open in New Tab") { openInTab(session) }
+    }
     if session.kind == .worktree {
       Button("Delete Session…") { model.deletingSession = session }
     }

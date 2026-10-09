@@ -8,10 +8,13 @@ import { pushError } from "../stores/notificationsStore";
 import {
   addSession,
   getSessionState,
+  mergeSessionsForProject,
   updateSession,
 } from "../stores/sessionStore";
 import { listen } from "./events";
+import { listSessions } from "./ipc";
 import { openProject, purgeAgentsForSession } from "./projectsService";
+import { LOCAL_HOST_ID } from "./transport/hostId";
 
 let initialized = false;
 
@@ -92,6 +95,18 @@ export function initSessionEventListeners(): void {
     }
     updateSession(id, patch);
   });
+
+  // A drive came or went: relist so its sessions show as (un)available.
+  listen<{ repo_root: string }>(
+    "session:volumes-changed",
+    (event) => {
+      const repoRoot = event.payload.repo_root;
+      listSessions(repoRoot)
+        .then((sessions) => mergeSessionsForProject(repoRoot, sessions))
+        .catch(() => {});
+    },
+    { hostId: LOCAL_HOST_ID },
+  );
 
   listen<string>("session:deleted", (event) => {
     purgeAgentsForSession(event.payload);
