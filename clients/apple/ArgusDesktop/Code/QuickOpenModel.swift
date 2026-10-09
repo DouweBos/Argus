@@ -86,6 +86,32 @@ final class QuickOpenModel {
     }
   }
 
+  // MARK: Selection
+
+  enum Move {
+    case next, previous, pageDown, pageUp, first, last
+  }
+
+  nonisolated static let pageSize = 8
+
+  /// ↑/↓ wrap around the ends, as VS Code's; paging and Home/End stop at them.
+  nonisolated static func moved(_ selected: Int, _ move: Move, count: Int) -> Int {
+    guard count > 0 else { return 0 }
+    let current = min(max(selected, 0), count - 1)
+    switch move {
+    case .next: return (current + 1) % count
+    case .previous: return (current - 1 + count) % count
+    case .pageDown: return min(current + pageSize, count - 1)
+    case .pageUp: return max(current - pageSize, 0)
+    case .first: return 0
+    case .last: return count - 1
+    }
+  }
+
+  func move(_ move: Move) {
+    selected = Self.moved(selected, move, count: results.count)
+  }
+
   // MARK: Opening
 
   /// Return: the selected row, or the line `:` names.

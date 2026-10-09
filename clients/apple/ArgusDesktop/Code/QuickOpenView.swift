@@ -1,3 +1,4 @@
+import AppKit
 import ArgusCore
 import ArgusUI
 import SwiftUI
@@ -6,7 +7,6 @@ import SwiftUI
 struct QuickOpenView: View {
   @Environment(\.theme) private var theme
   let code: CodeSession
-  @FocusState private var focused: Bool
 
   private var model: QuickOpenModel { code.quickOpen }
 
@@ -14,19 +14,11 @@ struct QuickOpenView: View {
     @Bindable var model = model
     let results = model.results
     VStack(spacing: 0) {
-      TextField(placeholder, text: $model.text)
-        .textFieldStyle(.plain)
-        .font(.scaled(.title3))
-        .padding(12)
-        .focused($focused)
-        .onSubmit { model.submit() }
-        .onKeyPress(.downArrow) { move(1, in: results) }
-        .onKeyPress(.upArrow) { move(-1, in: results) }
-        .onKeyPress(.escape) {
-          model.dismiss()
-          return .handled
-        }
-        .accessibilityLabel("Quick open")
+      QuickOpenField(
+        text: $model.text, placeholder: placeholder, fontSize: Self.fontSize,
+        move: { model.move($0) }, submit: { model.submit() }, cancel: { model.dismiss() }
+      )
+      .padding(12)
       Divider()
       ScrollViewReader { proxy in
         List {
@@ -49,7 +41,6 @@ struct QuickOpenView: View {
     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(theme.border))
     .shadow(radius: 24)
-    .onAppear { focused = true }
   }
 
   @ViewBuilder private func row(_ result: QuickOpenResult, selected: Bool) -> some View {
@@ -89,10 +80,8 @@ struct QuickOpenView: View {
     }
   }
 
-  private func move(_ delta: Int, in results: [QuickOpenResult]) -> KeyPress.Result {
-    guard !results.isEmpty else { return .handled }
-    model.selected = (model.selected + delta + results.count) % results.count
-    return .handled
+  @MainActor private static var fontSize: CGFloat {
+    NSFont.preferredFont(forTextStyle: .title3).pointSize * AppPreferences.shared.textScale
   }
 }
 
