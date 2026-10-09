@@ -13,3 +13,5 @@ Local patches, each marked `Argus patch` where it isn't a one-line fix (reapply 
   widest line never reached `maxLineWidth` and the view never grew past the viewport (no
   horizontal scrolling with wrapping off).
 
+- `TextView+ScrollToVisible.swift`: scrolling the caret into view keeps it clear of the leading
+  inset, which the gutter floats over.

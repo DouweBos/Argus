@@ -40,7 +40,7 @@ struct EditorHost: NSViewRepresentable {
     if document.engine.theme.base != theme {
       document.engine.apply(EditorTheme(theme))
       document.highlighter.themeChanged()
-      view.gutter.needsDisplay = true
+      document.gutter.needsDisplay = true
     }
   }
 

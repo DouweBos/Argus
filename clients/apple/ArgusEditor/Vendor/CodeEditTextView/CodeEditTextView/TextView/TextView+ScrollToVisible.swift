@@ -31,7 +31,12 @@ extension TextView {
             selectionManager.drawSelections(in: visibleRect)
 
             if lastFrame != .zero {
-                scrollView.contentView.scrollToVisible(lastFrame)
+                // Argus patch: content drawn over the leading inset (a floating gutter) hides text, so keep the
+                // caret clear of it when scrolling sideways.
+                var target = lastFrame
+                target.origin.x -= layoutManager.edgeInsets.left
+                target.size.width += layoutManager.edgeInsets.horizontal
+                scrollView.contentView.scrollToVisible(target)
                 scrollView.reflectScrolledClipView(scrollView.contentView)
             }
         }
