@@ -1,19 +1,24 @@
 import AppKit
 
-/// Gutter + the document's scroll view. The scroll view belongs to the document; this view only
-/// borrows it while on screen.
+/// Hosts the document's scroll view (gutter included) while on screen. The scroll view belongs to
+/// the document; this view only borrows it.
 final class EditorContainerView: NSView {
-  let gutter = GutterView()
   private(set) var document: EditorDocument?
 
   override var isFlipped: Bool { true }
+
+  override init(frame: NSRect) {
+    super.init(frame: frame)
+    // Nothing the editor draws may spill onto the panes around it.
+    clipsToBounds = true
+  }
+
+  required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
   func attach(_ document: EditorDocument) {
     guard self.document !== document else { return }
     detach()
     self.document = document
-    gutter.document = document
-    addSubview(gutter)
     addSubview(document.engine.scrollView)
     document.onDecorationsChange = { [weak self] in self?.decorationsChanged() }
     decorationsChanged()
@@ -26,16 +31,13 @@ final class EditorContainerView: NSView {
     document.interaction.hover.dismiss()
     document.onDecorationsChange = nil
     if document.engine.scrollView.superview === self { document.engine.scrollView.removeFromSuperview() }
-    gutter.removeFromSuperview()
     self.document = nil
   }
 
   override func layout() {
     super.layout()
     guard let document else { return }
-    let gutterWidth = gutter.preferredWidth
-    gutter.frame = NSRect(x: 0, y: 0, width: gutterWidth, height: bounds.height)
-    document.engine.scrollView.frame = NSRect(x: gutterWidth, y: 0, width: max(0, bounds.width - gutterWidth), height: bounds.height)
+    document.engine.scrollView.frame = bounds
     document.engine.textView.updateFrameIfNeeded()
     document.engine.viewportChanged()
     if window != nil { document.applyPendingRevealIfAttached() }
@@ -48,7 +50,8 @@ final class EditorContainerView: NSView {
 
   private func decorationsChanged() {
     guard let document else { return }
-    if abs(gutter.frame.width - gutter.preferredWidth) > 0.5 { needsLayout = true }
+    let gutter = document.gutter
+    if abs(gutter.frame.width - gutter.preferredWidth) > 0.5 { document.engine.layoutGutter() }
     gutter.decorationsChanged()
     document.engine.decorations.squiggles = document.diagnostics.map { diagnostic in
       .init(range: document.nsRange(diagnostic.range), color: document.engine.theme.severity(diagnostic.severity))

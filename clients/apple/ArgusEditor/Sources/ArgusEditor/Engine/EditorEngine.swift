@@ -12,6 +12,10 @@ import AppKit
   private let invisibles = InvisiblesProvider()
   private var observers: [NSObjectProtocol] = []
   var onViewportChange: (() -> Void)?
+  /// Floats over the text's leading edge: scrolls vertically with it, stays put sideways.
+  private weak var gutter: GutterView?
+  /// Between the gutter and the first character.
+  static let textGap: CGFloat = 6
 
   init(text: String, configuration: EditorConfiguration) {
     self.configuration = configuration
@@ -27,8 +31,12 @@ import AppKit
     scrollView.drawsBackground = true
     scrollView.contentView.postsBoundsChangedNotifications = true
     scrollView.documentView = textView
+    // Content insets for a titlebar would shift the text view's visible rect away from what's drawn.
+    scrollView.automaticallyAdjustsContentInsets = false
+    scrollView.contentInsets = NSEdgeInsetsZero
     textView.setText(text)
-    textView.edgeInsets = HorizontalEdgeInsets(left: 6, right: 12)
+    textView.edgeInsets = HorizontalEdgeInsets(left: 0, right: 12)
+    textView.textInsets = HorizontalEdgeInsets(left: Self.textGap, right: 0)
     textView.overscrollAmount = 0.3
     textView.typingAttributes[.paragraphStyle] = paragraphStyle(configuration)
     textView.installGestures()
@@ -58,7 +66,35 @@ import AppKit
 
   func viewportChanged() {
     decorations.follow(textView.visibleRect)
+    layoutGutter()
     onViewportChange?()
+  }
+
+  // MARK: Gutter
+
+  func install(_ gutter: GutterView) {
+    self.gutter = gutter
+    scrollView.addFloatingSubview(gutter, for: .horizontal)
+    layoutGutter()
+  }
+
+  /// Sizes the gutter to the visible rows (never the whole document) and reserves its width as the
+  /// text view's leading inset, so text starts after it and scrolls under it sideways.
+  func layoutGutter() {
+    guard let gutter else { return }
+    let width = gutter.preferredWidth
+    if textView.edgeInsets.left != width {
+      textView.edgeInsets = HorizontalEdgeInsets(left: width, right: 12)
+      textView.textInsets = HorizontalEdgeInsets(left: Self.textGap, right: 0)
+      textView.layoutManager.setNeedsLayout()
+      textView.needsLayout = true
+      textView.updateFrameIfNeeded()
+    }
+    let frame = GutterRow.frame(visible: textView.visibleRect, width: width)
+    if gutter.frame != frame {
+      gutter.frame = frame
+    }
+    gutter.needsDisplay = true
   }
 
   // MARK: Configuration
@@ -150,10 +186,16 @@ import AppKit
   func center(_ range: NSRange) {
     textView.layoutManager.layoutLines()
     guard let rect = textView.layoutManager.rectForOffset(range.location) else { return }
-    let visible = textView.visibleRect
+    var visible = textView.visibleRect
+    // The gutter covers the viewport's leading edge.
+    let leading = textView.edgeInsets.left + Self.textGap
+    visible.origin.x += leading
+    visible.size.width = max(0, visible.width - leading)
     if visible.insetBy(dx: 0, dy: rect.height).contains(rect) { return }
     let y = max(0, rect.minY - visible.height / 3)
-    let x = rect.minX < visible.minX || rect.maxX > visible.maxX ? max(0, rect.minX - visible.width / 2) : visible.minX
+    let x =
+      rect.minX < visible.minX || rect.maxX > visible.maxX
+      ? max(0, rect.minX - leading - visible.width / 2) : visible.minX - leading
     scrollView.contentView.scroll(to: NSPoint(x: x, y: y))
     scrollView.reflectScrolledClipView(scrollView.contentView)
   }

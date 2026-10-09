@@ -2,7 +2,9 @@ import AppKit
 @preconcurrency import CodeEditTextView
 import SwiftUI
 
-/// Line numbers, git change bars and diagnostic dots, kept in step with the text view's scroll.
+/// Line numbers, git change bars and diagnostic dots. A floating subview of the editor's scroll
+/// view (`EditorEngine.install`): its frame is the visible rows in text view coordinates, so it
+/// scrolls with the text, is clipped with it, and stays put when the text scrolls sideways.
 final class GutterView: NSView {
   weak var document: EditorDocument?
   private var markPopover: NSPopover?
@@ -11,6 +13,20 @@ final class GutterView: NSView {
   private var marksByLine: [GutterRow.Mark] = []
 
   override var isFlipped: Bool { true }
+
+  override init(frame: NSRect) {
+    super.init(frame: frame)
+    clipsToBounds = true
+  }
+
+  required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+  /// The document y of the gutter's top edge.
+  private var top: CGFloat { frame.minY }
+
+  override func resetCursorRects() {
+    addCursorRect(bounds, cursor: .arrow)
+  }
 
   var preferredWidth: CGFloat {
     guard let document else { return 40 }
@@ -35,16 +51,15 @@ final class GutterView: NSView {
     guard let document else { return }
     let engine = document.engine
     let theme = engine.theme
+    let dirtyRect = dirtyRect.intersection(bounds)
     theme.background.setFill()
     dirtyRect.fill()
     guard let layout = engine.textView.layoutManager else { return }
-    let top = engine.textView.visibleRect.minY
     let font = numberFont(document)
     let caretLine = document.caret.line
     let lineHeight = layout.estimateLineHeight()
     let numberRight = bounds.width - GutterRow.markColumn - 6
-    for line in layout.lineStorage.linesStartingAt(top + dirtyRect.minY, until: top + dirtyRect.maxY) {
-      let y = line.yPos - top
+    for (line, y) in rows(in: dirtyRect) {
       let rowHeight = min(line.height, lineHeight)
       let isCaret = line.index == caretLine
       let label = String(line.index + 1) as NSString
@@ -60,6 +75,13 @@ final class GutterView: NSView {
       }
     }
     drawMarks(layout, top: top, dirtyRect: dirtyRect, theme: theme)
+  }
+
+  /// The rows intersecting `rect` (gutter coordinates) with their y in the gutter. The layout
+  /// manager's iterator, not the line storage's: lines folded away come back merged into one row.
+  func rows(in rect: NSRect) -> [(line: TextLineStorage<TextLine>.TextLinePosition, y: CGFloat)] {
+    guard let layout = document?.engine.textView.layoutManager else { return [] }
+    return layout.linesStartingAt(max(0, top + rect.minY), until: top + rect.maxY).map { ($0, $0.yPos - top) }
   }
 
   private func drawMarks(_ layout: TextLayoutManager, top: CGFloat, dirtyRect: NSRect, theme: EditorTheme) {
@@ -106,7 +128,6 @@ final class GutterView: NSView {
   override func mouseDown(with event: NSEvent) {
     guard let document, let layout = document.engine.textView.layoutManager else { return }
     let point = convert(event.locationInWindow, from: nil)
-    let top = document.engine.textView.visibleRect.minY
     let x = bounds.width - GutterRow.markColumn
     if point.x >= x - 4,
       let hit = marksByLine.first(where: { markRect($0, layout: layout, top: top, x: x)?.insetBy(dx: -4, dy: -1).contains(point) == true }),
@@ -145,6 +166,11 @@ final class GutterView: NSView {
 enum GutterRow {
   static let dotColumn: CGFloat = 12
   static let markColumn: CGFloat = 5
+
+  /// The gutter's frame in text view coordinates: the visible rows, at the leading edge.
+  static func frame(visible: NSRect, width: CGFloat) -> NSRect {
+    NSRect(x: 0, y: visible.minY, width: width, height: visible.height)
+  }
 
   struct Mark: Equatable {
     var id: String

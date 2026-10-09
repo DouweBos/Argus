@@ -47,6 +47,7 @@ import Observation
   @ObservationIgnored let engine: EditorEngine
   @ObservationIgnored var lineIndex: LineIndex
   @ObservationIgnored let highlighter: HighlightCoordinator
+  @ObservationIgnored let gutter = GutterView()
   @ObservationIgnored private(set) lazy var interaction = EditorInteraction(document: self)
   @ObservationIgnored var savedText: NSString
   @ObservationIgnored var pendingReveal: PendingReveal?
@@ -77,6 +78,8 @@ import Observation
     engine.textView.delegate = self
     engine.textView.host = interaction
     engine.onViewportChange = { [weak self] in self?.viewportChanged() }
+    gutter.document = self
+    engine.install(gutter)
     selectionObserver = NotificationCenter.default.addObserver(
       forName: TextSelectionManager.selectionChangedNotification, object: engine.textView.selectionManager,
       queue: .main
