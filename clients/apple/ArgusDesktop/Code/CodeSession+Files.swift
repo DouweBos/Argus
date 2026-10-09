@@ -54,6 +54,7 @@ extension CodeSession {
       }
       store.languageSupport?.documentOpened(
         session: sessionId, path: file.path, document: document, language: language)
+      Task { await detectFormatter(file) }
       await watch(file.path)
       await refreshGitBase(file)
     } catch {
@@ -96,7 +97,7 @@ extension CodeSession {
     guard let store, let file = files[path], let document = file.document, !file.isSaving else { return false }
     file.isSaving = true
     defer { file.isSaving = false }
-    let formatted = await store.languageSupport?.willSave(session: sessionId, path: path, document: document) ?? false
+    let format = await self.format(path, trigger: .save)
     let text = document.textForSaving()
     let version = document.version
     let request = file.disk.saveRequest
@@ -116,7 +117,8 @@ extension CodeSession {
       if document.version == version { document.markSaved() }
       file.disk.saved(hash: hash)
       tabs.open(path, preview: false)
-      MacTelemetry.capture(.editorFileSaved(formatted: formatted, hadConflict: hadConflict))
+      MacTelemetry.capture(
+        .editorFileSaved(formatted: format.changed, formatter: format.formatter, hadConflict: hadConflict))
       store.languageSupport?.documentSaved(session: sessionId, path: path, document: document)
       if file.name == ".editorconfig" {
         editorConfigs.invalidate()

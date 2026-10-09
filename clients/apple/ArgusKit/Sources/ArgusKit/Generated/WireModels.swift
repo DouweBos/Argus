@@ -2666,6 +2666,51 @@ extension ArgusProtocol {
     }
   }
 
+  public struct CodeFormatResult: Codable, Sendable {
+    public var formatter: CodeFormatter
+    public var formatted: String?
+    public var error: String?
+
+    enum CodingKeys: String, CodingKey {
+      case formatter = "formatter"
+      case formatted = "formatted"
+      case error = "error"
+    }
+
+    public init(formatter: CodeFormatter, formatted: String? = nil, error: String? = nil) {
+      self.formatter = formatter
+      self.formatted = formatted
+      self.error = error
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(formatter, forKey: .formatter)
+      try c.encode(formatted, forKey: .formatted)
+      try c.encodeIfPresent(error, forKey: .error)
+    }
+  }
+
+  public struct CodeFormatter: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let prettier = CodeFormatter(rawValue: "prettier")
+    public static let swiftformat = CodeFormatter(rawValue: "swiftformat")
+    public static let swiftFormat = CodeFormatter(rawValue: "swift-format")
+    public static let gofmt = CodeFormatter(rawValue: "gofmt")
+    public static let ruff = CodeFormatter(rawValue: "ruff")
+    public static let black = CodeFormatter(rawValue: "black")
+    public static let none = CodeFormatter(rawValue: "none")
+  }
+
   public struct CodeReadOnlyReason: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }

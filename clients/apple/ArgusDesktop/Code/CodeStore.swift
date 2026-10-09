@@ -11,8 +11,8 @@ import SwiftUI
 protocol CodeDocumentObserver: AnyObject {
   func documentOpened(session: String, path: String, document: EditorDocument, language: SyntaxLanguage?)
   func documentChanged(session: String, path: String, change: EditorTextChange)
-  /// Before a save reads the buffer: true when it formatted it.
-  func willSave(session: String, path: String, document: EditorDocument) async -> Bool
+  /// The file's language server formats the buffer: true when it changed it. A slow server is skipped.
+  func formatWithServer(session: String, path: String, document: EditorDocument) async -> Bool
   func documentSaved(session: String, path: String, document: EditorDocument)
   func documentClosed(session: String, path: String)
 }
@@ -30,6 +30,11 @@ final class CodeStore {
   /// Extra status-bar items after the built-in ones (language server state, problems).
   @ObservationIgnored var statusBarAccessory: (@MainActor (CodeSession, CodeFile) -> AnyView)?
   @ObservationIgnored private var stopObserving: (() -> Void)?
+  @ObservationIgnored lazy var formatting = CodeFormatting(
+    sink: self, mode: { AppPreferences.shared.editorFormatOnSave },
+    languageServer: { [weak self] session, path, document in
+      await self?.languageSupport?.formatWithServer(session: session, path: path, document: document) ?? false
+    })
 
   init(host: HostStore) {
     self.host = host

@@ -255,7 +255,7 @@ enum MacTelemetryEvent {
   case memoryEdited(action: StoreEvent.MemoryAction)
   /// The code view read a file into a tab; `language` is a bundled grammar or `other`.
   case editorFileOpened(source: EditorOpenSource, language: String, sizeBucket: String, readOnly: Bool)
-  case editorFileSaved(formatted: Bool, hadConflict: Bool)
+  case editorFileSaved(formatted: Bool, formatter: EditorFormatter, hadConflict: Bool)
   case editorConflictResolved(action: EditorConflictAction)
   /// A clean buffer took an agent's (or anyone's) change from disk; once per file per session.
   case editorExternalReload(agentRunning: Bool)
@@ -452,8 +452,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue]
     case .editorFileOpened(let source, let language, let sizeBucket, let readOnly):
       ["source": source.rawValue, "language": language, "size_bucket": sizeBucket, "read_only": readOnly]
-    case .editorFileSaved(let formatted, let hadConflict):
-      ["formatted": formatted, "had_conflict": hadConflict]
+    case .editorFileSaved(let formatted, let formatter, let hadConflict):
+      ["formatted": formatted, "formatter": formatter.rawValue, "had_conflict": hadConflict]
     case .editorConflictResolved(let action):
       ["action": action.rawValue]
     case .editorExternalReload(let agentRunning):

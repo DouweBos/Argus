@@ -140,3 +140,24 @@ export const CodeSymbolSearchResult = z.object({
   complete: z.boolean(),
 });
 export type CodeSymbolSearchResult = z.infer<typeof CodeSymbolSearchResult>;
+
+/** The project's own formatter for a file; `none` when it has none (the editor falls back to its language server). */
+export const CodeFormatter = z.enum([
+  "prettier",
+  "swiftformat",
+  "swift-format",
+  "gofmt",
+  "ruff",
+  "black",
+  "none",
+]);
+export type CodeFormatter = z.infer<typeof CodeFormatter>;
+
+export const CodeFormatResult = z.object({
+  formatter: CodeFormatter,
+  /** Null when nothing changed, the formatter failed, or only detection was asked. */
+  formatted: z.string().nullable(),
+  /** Why it didn't format: a syntax error, a timeout, the formatter isn't installed. */
+  error: z.string().optional(),
+});
+export type CodeFormatResult = z.infer<typeof CodeFormatResult>;

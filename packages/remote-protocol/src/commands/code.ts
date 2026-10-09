@@ -6,6 +6,7 @@
 import { z } from "zod";
 import {
   CodeFile,
+  CodeFormatResult,
   CodeSearchQuery,
   CodeSymbolKind,
   CodeSymbolSearchResult,
@@ -72,5 +73,15 @@ export const CODE_COMMANDS = {
       kinds: z.array(CodeSymbolKind).optional(),
     }),
     result: CodeSymbolSearchResult,
+  },
+  /**
+   * Formats `content` as `relativePath` with the project's own formatter
+   * (prettier, swiftformat, swift-format, …), run in the worktree. Never
+   * writes the file. Omit `content` to only ask which formatter applies.
+   */
+  code_format: {
+    tier: "admin",
+    params: SessionFile.extend({ content: z.string().optional() }),
+    result: CodeFormatResult,
   },
 } as const satisfies Record<string, CommandSpec>;

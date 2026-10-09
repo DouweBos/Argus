@@ -1201,6 +1201,31 @@ extension ArgusProtocol {
       }
     }
 
+    public struct CodeFormatParams: Codable, Sendable {
+      public var id: String
+      public var relativePath: String
+      public var content: String?
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case relativePath = "relativePath"
+        case content = "content"
+      }
+
+      public init(id: String, relativePath: String, content: String? = nil) {
+        self.id = id
+        self.relativePath = relativePath
+        self.content = content
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(relativePath, forKey: .relativePath)
+        try c.encodeIfPresent(content, forKey: .content)
+      }
+    }
+
     public struct CodeReadFileParams: Codable, Sendable {
       public var id: String
       public var relativePath: String
@@ -9360,6 +9385,13 @@ extension ArgusProtocol {
       public typealias Result = IgnoredResult
       public static let name = "close_window"
       public static let tier = "host"
+    }
+
+    public enum CodeFormat: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.CodeFormatParams
+      public typealias Result = ArgusProtocol.CodeFormatResult
+      public static let name = "code_format"
+      public static let tier = "admin"
     }
 
     public enum CodeReadFile: RemoteCommand {

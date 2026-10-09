@@ -13,21 +13,18 @@ final class LanguageSupport: CodeDocumentObserver {
   private(set) var clients: [String: LanguageClient] = [:]
   @ObservationIgnored private let sink: LspSink
   @ObservationIgnored private let isEnabled: (LspDocumentLanguage) -> Bool
-  @ObservationIgnored private let formatOnSave: () -> Bool
   @ObservationIgnored private var stopObserving: (() -> Void)?
 
-  init(sink: LspSink, isEnabled: @escaping (LspDocumentLanguage) -> Bool, formatOnSave: @escaping () -> Bool = { false }) {
+  init(sink: LspSink, isEnabled: @escaping (LspDocumentLanguage) -> Bool) {
     self.sink = sink
     self.isEnabled = isEnabled
-    self.formatOnSave = formatOnSave
   }
 
   /// Hooks into the app's code store, its host's broadcasts and Settings.
   static func install(on code: CodeStore) -> LanguageSupport {
     let preferences = AppPreferences.shared
     let support = LanguageSupport(
-      sink: code, isEnabled: { preferences.languageServerEnabled(for: $0.settingsKey) },
-      formatOnSave: { preferences.editorFormatOnSave })
+      sink: code, isEnabled: { preferences.languageServerEnabled(for: $0.settingsKey) })
     code.languageSupport = support
     code.statusBarAccessory = { [weak support] session, file in
       guard let client = support?.clients[session.sessionId] else { return AnyView(EmptyView()) }
@@ -57,9 +54,9 @@ final class LanguageSupport: CodeDocumentObserver {
     clients[session]?.changed(path: path, change: change)
   }
 
-  /// Format on save, when it's on and the file's server is up. A slow server doesn't hold the save.
-  func willSave(session: String, path: String, document: EditorDocument) async -> Bool {
-    guard formatOnSave(), let provider = document.languageProvider as? LspDocumentProvider,
+  /// When the file's server is up. A slow server doesn't hold the save.
+  func formatWithServer(session: String, path: String, document: EditorDocument) async -> Bool {
+    guard let provider = document.languageProvider as? LspDocumentProvider,
       clients[session]?.status(of: provider.language.server, path: path)?.state == .ready
     else { return false }
     return await withTaskGroup(of: Bool?.self) { group in
