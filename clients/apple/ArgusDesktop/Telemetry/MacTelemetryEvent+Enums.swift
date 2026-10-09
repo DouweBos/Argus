@@ -92,11 +92,12 @@ extension MacTelemetryEvent {
     case `switch`
   }
 
-  /// How a session's Home / Agents / Git switch was made.
+  /// How a session's Home / Agents / Code / Git switch was made.
   enum PanelSwitchSource: String {
     case toolbar
     case menu
     case shortcut
+    case palette
   }
 
   /// A keyboard command from the Agent, File or View menu.

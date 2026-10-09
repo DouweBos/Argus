@@ -16,8 +16,8 @@ lives in the repository (`plan/swiftui-parity.md`).
 - Agents in a session as tabs, with their transcript.
 - A home for each session: its setup progress (or why it failed), the
   agents working in it, and committing, pushing and merging its branch.
-  A session's Home, Agents, Git and Code views switch from the toolbar, the
-  View menu or ⌘1–⌘4; the Agent menu starts, switches and interrupts
+  A session's Home, Agents, Code and Git views switch from the toolbar, the
+  View menu, the command palette or ⌘1–⌘4; the Agent menu starts, switches and interrupts
   agents (see [Keyboard shortcuts](#keyboard-shortcuts)).
 - **Home** at the top of the sidebar (⇧⌘H): the app's home screen.
 - **Agents** and **Runtimes** in the sidebar: every agent, and every run
@@ -90,7 +90,7 @@ except where macOS or the Mac app's own layout already uses the keys.
 | ⇧⌘] / ⇧⌘[             | Next / previous agent                                      | Agent |
 | ⌃⌘1 – ⌃⌘9             | The session's first to ninth agent                         | Agent |
 | ⌘F, ⌘G, ⇧⌘G           | Find in the chat (or the focused terminal), next, previous | —     |
-| ⌘1 – ⌘4               | The session's Home, Agents, Git and Code                   | View  |
+| ⌘1 – ⌘4               | The session's Home, Agents, Code and Git                   | View  |
 | ⌘[ / ⌘]               | Back / forward                                             | Go    |
 | ⇧⌘H                   | App home                                                   | View  |
 | ⌥⌘1 – ⌥⌘5             | Agents, Devices, Runtimes, Pull Requests, Notifications    | View  |
@@ -105,7 +105,7 @@ The toolbar's chevrons and a mouse's side buttons do the same.
 
 Where they differ from the Electron app:
 
-- **⌘1–⌘4** switch the session's Home, Agents, Git and Code views, as Xcode
+- **⌘1–⌘4** switch the session's Home, Agents, Code and Git views, as Xcode
   and Finder number theirs, so agents are on ⌃⌘1–⌃⌘9 and window tabs have no
   number keys.
 - **⌘T** starts an agent (agents are the session's tabs) and **⌥⌘T** opens
@@ -122,7 +122,7 @@ editor has focus. ⌘W closes the editor tab before the window tab.
 
 ### In the code view
 
-The code view (⌘4) uses VS Code's default macOS keys, listed in the Editor,
+The code view (⌘3) uses VS Code's default macOS keys, listed in the Editor,
 Selection, Go and View menus. Editing keys work on every caret at once, and
 each change undoes in one step.
 

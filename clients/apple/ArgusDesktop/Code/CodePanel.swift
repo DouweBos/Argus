@@ -2,7 +2,7 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// A session's code view (⌘4): navigator, tabs, the editor and its status
+/// A session's code view (⌘3): navigator, tabs, the editor and its status
 /// bar. The route names the file and line; everything here follows it.
 struct CodePanel: View {
   @Environment(DesktopModel.self) private var model

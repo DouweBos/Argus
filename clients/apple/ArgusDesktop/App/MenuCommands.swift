@@ -90,7 +90,7 @@ struct AgentMenuCommands: View {
       .keyboardShortcut("{", modifiers: .command)
       .disabled(!onAgents || agentCount < 2)
     Divider()
-    // ⌘1–⌘3 are the session's panels, so agents take ⌃⌘ instead.
+    // ⌘1–⌘4 are the session's panels, so agents take ⌃⌘ instead.
     ForEach(0..<9, id: \.self) { index in
       Button("Agent \(index + 1)") { MenuCommand.selectAgent(index).run(model) }
         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command, .control])
