@@ -48,6 +48,8 @@ final class GitWorkspace {
   }
   /// A host-run command is in flight (fetch, pull, push, checkout, …).
   private(set) var hostBusy: String?
+  /// The sidebar's Tags section, collapsed by default as on the desktop.
+  var tagsExpanded = false
   /// Bumped by every refresh, so a view can key work on it.
   private(set) var generation = 0
 
@@ -118,6 +120,12 @@ final class GitWorkspace {
     }
     self.watcher = watcher
     await watcher.start()
+    await refreshAll()
+  }
+
+  /// The first read, before the panel is ever shown; later ones come from `start`.
+  func warm() async {
+    guard generation == 0 else { return }
     await refreshAll()
   }
 

@@ -690,7 +690,7 @@
         guard item.isEnabled, let action = item.action else { return ["error": "disabled"] }
         return ["ok": NSApp.sendAction(action, to: item.target, from: item)]
       default:
-        return TranscriptDriver.run(command, window: window) ?? ["error": "unknown op"]
+        return StallDriver.run(command) ?? TranscriptDriver.run(command, window: window) ?? ["error": "unknown op"]
       }
     }
 

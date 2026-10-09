@@ -91,11 +91,13 @@ struct SessionView: View {
     .task(id: session?.repoRoot) {
       if let repoRoot = session?.repoRoot { await store.loadAgents(repoRoot: repoRoot) }
     }
-    // The run control reads the project's run commands and which are going.
+    // The run control reads the project's run commands and which are going;
+    // the git panel's lists load ahead so switching to it is instant.
     .task(id: session?.status == .ready ? sessionId : nil) {
       guard let session, session.status == .ready else { return }
       await terminals.loadConfig(repoRoot: session.repoRoot)
       await terminals.refresh(sessionId: sessionId)
+      await model.git.prefetch(session)
     }
   }
 
