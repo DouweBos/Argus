@@ -43,8 +43,14 @@ final class DesktopModel {
   var deletingSession: RemoteSession?
   /// The bottom terminal panel under a session (⇧⌘T).
   var terminalPanelVisible = false
-  /// The runtime panel on the right (⌥⌘B).
-  var runtimePanelVisible = true
+  /// The device panel on the right (⌥⌘B), shown or hidden per session as the desktop keeps it.
+  var runtimePanelVisible: Bool { runtime.panelVisible(session: route.sessionId) }
+
+  func toggleRuntimePanel(via: MacTelemetryEvent.DevicePanelToggleSource) {
+    let shown = !runtimePanelVisible
+    runtime.setPanelVisible(shown, session: route.sessionId)
+    MacTelemetry.capture(.devicePanelToggled(shown: shown, via: via))
+  }
   /// Bumped to put the caret in the chat input in front (⌘L).
   var composerFocusRequest = 0
   /// The tab the Settings window shows.

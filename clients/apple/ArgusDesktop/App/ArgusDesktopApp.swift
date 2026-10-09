@@ -156,7 +156,9 @@ private struct NavigationCommands: View {
     }
     .keyboardShortcut("t", modifiers: [.command, .shift])
     .disabled(model.route.sessionId == nil)
-    Button(model.runtimePanelVisible ? "Hide Runtime" : "Show Runtime") { MenuCommand.toggleRuntime.run(model) }
-      .keyboardShortcut("b", modifiers: [.command, .option])
+    Button(model.runtimePanelVisible ? "Hide Device Panel" : "Show Device Panel") {
+      model.toggleRuntimePanel(via: NSApp.currentEvent?.type == .keyDown ? .shortcut : .menu)
+    }
+    .keyboardShortcut("b", modifiers: [.command, .option])
   }
 }
