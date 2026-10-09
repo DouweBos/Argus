@@ -41,6 +41,10 @@ final class DesktopModel {
   var deletingSession: RemoteSession?
   /// The bottom terminal panel under a session (⇧⌘T).
   var terminalPanelVisible = false
+  /// The runtime panel on the right (⌥⌘B).
+  var runtimePanelVisible = true
+  /// Bumped to put the caret in the chat input in front (⌘L).
+  var composerFocusRequest = 0
   /// The tab the Settings window shows.
   var settingsTab: SettingsTab = .general
   /// The project the Project Settings sheet is open for.

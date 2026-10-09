@@ -30,6 +30,8 @@ final class CommandPaletteModel {
   typealias Source = @MainActor (DesktopModel) -> [PaletteCommand]
 
   var isPresented = false
+  /// The quick switcher (⇧⌘O): the palette narrowed to sessions.
+  private(set) var switcher = false
   @ObservationIgnored private var sources: [(id: String, provide: Source)] = []
 
   /// Adds a source, or replaces the one already registered under `id`.
@@ -37,6 +39,8 @@ final class CommandPaletteModel {
     sources.removeAll { $0.id == id }
     sources.append((id, provide))
   }
+
+  static let sessionsSection = "Sessions"
 
   func unregister(_ id: String) {
     sources.removeAll { $0.id == id }
@@ -46,8 +50,14 @@ final class CommandPaletteModel {
     sources.flatMap { $0.provide(model) }
   }
 
+  func present(switcher: Bool = false) {
+    self.switcher = switcher
+    isPresented = true
+  }
+
   func matching(_ query: String, for model: DesktopModel) -> [PaletteCommand] {
-    PaletteMatch.rank(commands(for: model), query: query) {
+    let commands = commands(for: model).filter { !switcher || $0.section == Self.sessionsSection }
+    return PaletteMatch.rank(commands, query: query) {
       [$0.title, "\($0.section) \($0.title)"] + $0.keywords + ($0.subtitle.map { [$0] } ?? [])
     }
   }

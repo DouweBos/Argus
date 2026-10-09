@@ -16,8 +16,9 @@ lives in the repository (`plan/swiftui-parity.md`).
 - Agents in a session as tabs, with their transcript.
 - A home for each session: its setup progress (or why it failed), the
   agents working in it, and committing, pushing and merging its branch.
-  A session's Home, Agents and Git views switch from the toolbar, the View
-  menu or ⌘1, ⌘2 and ⌘3.
+  A session's Home, Agents, Git and Code views switch from the toolbar, the
+  View menu or ⌘1–⌘4; the Agent menu starts, switches and interrupts
+  agents (see [Keyboard shortcuts](#keyboard-shortcuts)).
 - **Agents** and **Runtimes** in the sidebar: every agent, and every run
   command's process, across all your sessions.
 - Terminals under each session (⇧⌘T): tabs, the project's run commands in
@@ -68,47 +69,53 @@ go through the host, exactly as in the Electron app.
 - The command palette (⇧⌘P), and Handoff of the session on screen to your
   phone.
 
-## Other hosts
-
-Argus for Mac can drive other machines running Argus — another Mac, a
-headless Argus server, or `argus-host` — as well as its own:
-
-- **Settings → Hosts** pairs with one: paste the pairing code from that
-  machine's Remote screen, compare the 6-digit code, and approve it there with
-  **Admin** ticked. Paired hosts can be renamed, attached, detached, shown or
-  forgotten.
-- Attached hosts' projects sit in the sidebar beside this Mac's, each marked
-  with its machine and whether it's connected. The machines menu at the top
-  of the sidebar narrows it to one machine and shows that machine on the
-  screens that aren't about one session (Home, Devices, Automations, Inbox,
-  Settings).
-- Window tabs keep machines apart: **Open in New Tab** from the machines menu
-  or a session's menu (⌥⌘T for a new tab, ⌃Tab to cycle). Each tab has its
-  own back and forward, and the tabs come back when the app restarts.
-- **Add Project…** and **Browse…** for worktree locations pick a folder on
-  the machine you're looking at, browsing that machine's disk.
-- Files dropped on a remote session's chat are sent to its machine first
-  (up to 8 MB each).
-- Sessions, agents, terminals and the runtime panel of a remote project run
-  on its host; the connection is end-to-end encrypted. Links still open on
-  this Mac; Reveal in Finder and Open in editor aren't available for files on
-  another machine.
-- The git views work on a remote session too: git runs on its host, and the
-  views refresh when the host reports a change.
-- If a host drops, its agents keep running there. Its projects stay in the
-  sidebar marked offline, and the app reconnects and catches up on its own.
-  The app remembers each host's last projects and sessions, so one that is
-  down when the app starts still shows them, offline.
-- Two machines holding a repository at the same path show as two projects,
-  each under its own machine.
-
-The keys for paired hosts are kept in a file in the app's state folder that
-only your user can read.
-
 ## Keyboard shortcuts
 
-The app's own keys are in its menus: ⌘1–⌘4 switch a session's views, ⌘[ and
-⌘] go back and forward, ⇧⌘P opens the command palette and ⇧⌘T the terminal.
+Every shortcut is a menu item, so the menu bar lists them all and greys out
+the ones that don't apply where you are. They match the Electron app's,
+except where macOS or the Mac app's own layout already uses the keys.
+
+| Shortcut              | Does                                                       | Menu  |
+| --------------------- | ---------------------------------------------------------- | ----- |
+| ⌘N                    | New session                                                | File  |
+| ⇧⌘O                   | Open a session (quick switcher)                            | File  |
+| ⌘O                    | Add project                                                | File  |
+| ⇧⌘P                   | Command palette                                            | File  |
+| ⌘⌫                    | Delete session                                             | File  |
+| ⌘,                    | Settings                                                   | Argus |
+| ⇧⌘A, ⌘T               | New agent in the session on screen                         | Agent |
+| ⌘.                    | Interrupt the agent in front                               | Agent |
+| ⌘L                    | Focus the chat input                                       | Agent |
+| ⇧⌘] / ⇧⌘[             | Next / previous agent                                      | Agent |
+| ⌃⌘1 – ⌃⌘9             | The session's first to ninth agent                         | Agent |
+| ⌘F, ⌘G, ⇧⌘G           | Find in the chat (or the focused terminal), next, previous | —     |
+| ⌘1 – ⌘4               | The session's Home, Agents, Git and Code                   | View  |
+| ⌘[ / ⌘]               | Back / forward                                             | View  |
+| ⇧⌘H                   | App home                                                   | View  |
+| ⌥⌘1 – ⌥⌘5             | Agents, Devices, Runtimes, Pull Requests, Notifications    | View  |
+| ⇧⌘I                   | Inbox                                                      | View  |
+| ⇧⌘T                   | Show or hide the terminal                                  | View  |
+| ⌥⌘B                   | Show or hide the runtime panel                             | View  |
+| ⌥⌘T, ⌘W, ⌃Tab / ⌃⇧Tab | New, close and cycle window tabs                           | View  |
+
+Where they differ from the Electron app:
+
+- **⌘1–⌘4** switch the session's Home, Agents, Git and Code views, as Xcode
+  and Finder number theirs, so agents are on ⌃⌘1–⌃⌘9 and window tabs have no
+  number keys.
+- **⌘T** starts an agent (agents are the session's tabs) and **⌥⌘T** opens
+  a window tab, where Electron uses ⌘T for window tabs.
+- **⌘J** and **⌥⌘H** aren't used: the terminal is the only bottom panel
+  (⇧⌘T), and ⌥⌘H is macOS's Hide Others, so there is no project-home
+  shortcut. **⌘B** is the code view's navigator, not the app sidebar.
+
+The code view takes a few of these keys for its own, as VS Code and Xcode
+do, only while it's on screen: ⇧⌘O is Open Quickly there instead of Open
+Session, ⌘T goes to a symbol rather than starting an agent, ⌘L selects a line
+(there's no chat input to focus), and ⌘[ / ⌘] outdent and indent while the
+editor has focus. ⌘W closes the editor tab before the window tab.
+
+### In the code view
 
 The code view (⌘4) uses VS Code's default macOS keys, listed in the Editor,
 Selection, Go and View menus. Editing keys work on every caret at once, and
@@ -159,6 +166,43 @@ Symbols come from Argus's own index of definitions, so they work before any
 language server has started, and from the session's running language servers
 when there are some. Changed files rank first. ↑/↓ (or ⌃P/⌃N), Page Up/Down
 and Home/End move through the results while you keep typing; Return opens one.
+
+## Other hosts
+
+Argus for Mac can drive other machines running Argus — another Mac, a
+headless Argus server, or `argus-host` — as well as its own:
+
+- **Settings → Hosts** pairs with one: paste the pairing code from that
+  machine's Remote screen, compare the 6-digit code, and approve it there with
+  **Admin** ticked. Paired hosts can be renamed, attached, detached, shown or
+  forgotten.
+- Attached hosts' projects sit in the sidebar beside this Mac's, each marked
+  with its machine and whether it's connected. The machines menu at the top
+  of the sidebar narrows it to one machine and shows that machine on the
+  screens that aren't about one session (Home, Devices, Automations, Inbox,
+  Settings).
+- Window tabs keep machines apart: **Open in New Tab** from the machines menu
+  or a session's menu (⌥⌘T for a new tab, ⌃Tab to cycle). Each tab has its
+  own back and forward, and the tabs come back when the app restarts.
+- **Add Project…** and **Browse…** for worktree locations pick a folder on
+  the machine you're looking at, browsing that machine's disk.
+- Files dropped on a remote session's chat are sent to its machine first
+  (up to 8 MB each).
+- Sessions, agents, terminals and the runtime panel of a remote project run
+  on its host; the connection is end-to-end encrypted. Links still open on
+  this Mac; Reveal in Finder and Open in editor aren't available for files on
+  another machine.
+- The git views work on a remote session too: git runs on its host, and the
+  views refresh when the host reports a change.
+- If a host drops, its agents keep running there. Its projects stay in the
+  sidebar marked offline, and the app reconnects and catches up on its own.
+  The app remembers each host's last projects and sessions, so one that is
+  down when the app starts still shows them, offline.
+- Two machines holding a repository at the same path show as two projects,
+  each under its own machine.
+
+The keys for paired hosts are kept in a file in the app's state folder that
+only your user can read.
 
 ## How it relates to the Electron app
 

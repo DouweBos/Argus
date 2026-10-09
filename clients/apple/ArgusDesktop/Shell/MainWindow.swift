@@ -34,7 +34,8 @@ struct MainWindow: View {
       // with the window and leave the chat squeezed.
       ResizableHSplit(
         key: "runtime.width", leadingMin: contentMinWidth,
-        trailingMin: Self.runtimeMinWidth, trailingIdeal: Self.runtimeIdealWidth, trailingMax: Self.runtimeMaxWidth
+        trailingMin: Self.runtimeMinWidth, trailingIdeal: Self.runtimeIdealWidth, trailingMax: Self.runtimeMaxWidth,
+        showsTrailing: model.runtimePanelVisible
       ) {
         centre
       } trailing: {

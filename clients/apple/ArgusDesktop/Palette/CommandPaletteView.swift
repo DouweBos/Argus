@@ -13,7 +13,7 @@ struct CommandPaletteView: View {
   var body: some View {
     let results = model.palette.matching(query, for: model)
     VStack(spacing: 0) {
-      TextField("Type a command…", text: $query)
+      TextField(model.palette.switcher ? "Open a session…" : "Type a command…", text: $query)
         .textFieldStyle(.plain)
         .font(.scaled(.title3))
         .padding(12)
@@ -30,7 +30,7 @@ struct CommandPaletteView: View {
       ScrollViewReader { proxy in
         List {
           if results.isEmpty {
-            Text("No matching commands").foregroundStyle(.secondary)
+            Text(model.palette.switcher ? "No matching sessions" : "No matching commands").foregroundStyle(.secondary)
           }
           ForEach(Array(results.enumerated()), id: \.element.id) { index, command in
             PaletteRow(command: command, selected: index == selected)

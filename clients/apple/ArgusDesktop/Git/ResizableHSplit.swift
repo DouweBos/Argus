@@ -35,11 +35,13 @@ struct ResizableHSplit<Leading: View, Trailing: View>: View {
 
   init(
     key: String, leadingMin: CGFloat, trailingMin: CGFloat, trailingIdeal: CGFloat, trailingMax: CGFloat,
+    showsTrailing: Bool = true,
     @ViewBuilder leading: @escaping () -> Leading, @ViewBuilder trailing: @escaping () -> Trailing
   ) {
     self.init(
       key: key, pinned: .trailing, min: trailingMin, ideal: trailingIdeal, max: trailingMax, otherMin: leadingMin,
       leading: leading, trailing: trailing)
+    showsPinned = showsTrailing
   }
 
   private init(

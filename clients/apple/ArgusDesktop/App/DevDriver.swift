@@ -11,7 +11,7 @@
   /// `ARGUS_DEV_DRIVER=<dir>`: each `cmd-<n>.json` is run once and answered in
   /// `out-<n>.json`. Ops: `tree`, `press` / `click` (by accessibility label or
   /// title, optional `index`), `key` (`key`, `mods`), `type` (`text`), `menu`
-  /// (`title`).
+  /// (`title`), `mainMenu` (`title`: a menu bar menu's items and shortcuts).
   @MainActor
   final class DevDriver {
     private let dir: URL
@@ -236,6 +236,22 @@
         menu.cancelTracking()
         menu.performActionForItem(at: index)
         return ["ok": true]
+      case "mainMenu":
+        // A menu bar menu's items with their key equivalents and enabled state.
+        guard let title = command["title"] as? String,
+          let menu = NSApp.mainMenu?.items.first(where: { $0.title == title })?.submenu
+        else { return ["error": "no such menu", "menus": NSApp.mainMenu?.items.map(\.title) ?? []] }
+        menu.delegate?.menuNeedsUpdate?(menu)
+        menu.update()
+        return [
+          "items": menu.items.filter { !$0.isSeparatorItem }.map { item in
+            let mods = item.keyEquivalentModifierMask
+            let keys = (mods.contains(.control) ? "⌃" : "") + (mods.contains(.option) ? "⌥" : "")
+              + (mods.contains(.shift) ? "⇧" : "") + (mods.contains(.command) ? "⌘" : "")
+            let shortcut = item.keyEquivalent.isEmpty ? "" : " " + keys + item.keyEquivalent.uppercased()
+            return item.title + shortcut + (item.isEnabled ? "" : " (disabled)")
+          }
+        ]
       case "dropFiles":
         // A drag onto the chat input from a private pasteboard: the general
         // one belongs to whoever is using this machine.
@@ -442,7 +458,11 @@
       case "palette":
         // What ⇧⌘P does; menu shortcuts only fire while the app is active.
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
-        model.palette.isPresented = command["open"] as? Bool ?? !model.palette.isPresented
+        if command["open"] as? Bool ?? !model.palette.isPresented {
+          model.palette.present(switcher: command["switcher"] as? Bool ?? false)
+        } else {
+          model.palette.isPresented = false
+        }
         let query = command["query"] as? String ?? ""
         return [
           "open": model.palette.isPresented,
@@ -529,6 +549,9 @@
           let input = textViews(in: content).last(where: { $0.isEditable && !$0.isFieldEditor })
         else { return ["error": "no editable text view"] }
         return ["ok": window.makeFirstResponder(input)]
+      case "firstResponder":
+        let responder = window.firstResponder
+        return ["class": responder.map { String(describing: type(of: $0)) } ?? "", "route": "\(AppDelegate.current?.model.route as Any)"]
       case "textViews":
         guard let content = window.contentView else { return [:] }
         return ["views": textViews(in: content).map {

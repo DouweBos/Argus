@@ -52,6 +52,9 @@ struct ArgusDesktopApp: App {
       CommandMenu("Editor") {
         CodeCommands(model: delegate.model)
       }
+      CommandMenu("Agent") {
+        AgentMenuCommands(model: delegate.model)
+      }
     }
 
     Settings {
@@ -100,8 +103,14 @@ private struct ProjectCommands: View {
     Button("Add Project…") { model.addingProject = true }
       .keyboardShortcut("o", modifiers: .command)
     Divider()
-    Button("Command Palette…") { model.palette.isPresented.toggle() }
-      .keyboardShortcut("p", modifiers: [.command, .shift])
+    // The code view's Open Quickly owns ⇧⌘O while it's on screen, as in Xcode.
+    Button("Open Session…") { MenuCommand.quickSwitcher.run(model) }
+      .keyboardShortcut("o", modifiers: [.command, .shift])
+      .disabled(model.store.projects.isEmpty || model.activeCodeSession != nil)
+    Button("Command Palette…") {
+      if model.palette.isPresented { model.palette.isPresented = false } else { model.palette.present() }
+    }
+    .keyboardShortcut("p", modifiers: [.command, .shift])
   }
 }
 
@@ -156,15 +165,17 @@ private struct NavigationCommands: View {
       .keyboardShortcut(.tab, modifiers: [.control, .shift])
       .disabled(model.tabs.count < 2)
     Divider()
+    GoMenuCommands(model: model)
     Button("Inbox") { model.navigate(.inbox) }
       .keyboardShortcut("i", modifiers: [.command, .shift])
     Button("Automations") { model.navigate(.automations) }
-    Button("Notifications") { model.navigate(.notifications) }
     Divider()
     Button(model.terminalPanelVisible ? "Hide Terminal" : "Show Terminal") {
       model.terminalPanelVisible.toggle()
     }
     .keyboardShortcut("t", modifiers: [.command, .shift])
     .disabled(model.route.sessionId == nil)
+    Button(model.runtimePanelVisible ? "Hide Runtime" : "Show Runtime") { MenuCommand.toggleRuntime.run(model) }
+      .keyboardShortcut("b", modifiers: [.command, .option])
   }
 }

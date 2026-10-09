@@ -49,7 +49,7 @@ enum BuiltinPalette {
         let name = session.displayName ?? session.branch
         commands.append(
           PaletteCommand(
-            id: "navigate.session.\(session.id)", title: name, section: "Sessions",
+            id: "navigate.session.\(session.id)", title: name, section: CommandPaletteModel.sessionsSection,
             subtitle: project.name, keywords: [session.branch], systemImage: "arrow.triangle.branch"
           ) { model.open(session: session.id) })
       }
@@ -71,6 +71,34 @@ enum BuiltinPalette {
         section: "Session", systemImage: "terminal", shortcut: "⇧⌘T"
       ) { model.terminalPanelVisible.toggle() },
     ]
+    if model.sessionReadyForAgent != nil {
+      commands.append(
+        PaletteCommand(
+          id: "session.new-agent", title: "New Agent", section: "Session", systemImage: "plus", shortcut: "⇧⌘A"
+        ) {
+          model.startAgent(inSession: id)
+        })
+    }
+    if model.agentInFront?.status == .running {
+      commands.append(
+        PaletteCommand(
+          id: "session.interrupt", title: "Interrupt Agent", section: "Session", systemImage: "stop", shortcut: "⌘."
+        ) {
+          model.interruptAgentInFront()
+        })
+    }
+    if model.sessionPanel == .agents, model.agents(inSession: id).count > 1 {
+      commands += [
+        PaletteCommand(id: "session.next-agent", title: "Show Next Agent", section: "Session", shortcut: "⇧⌘]") {
+          model.cycleAgent(by: 1)
+        },
+        PaletteCommand(
+          id: "session.previous-agent", title: "Show Previous Agent", section: "Session", shortcut: "⇧⌘["
+        ) {
+          model.cycleAgent(by: -1)
+        },
+      ]
+    }
     if model.deletableSession != nil {
       commands.append(
         PaletteCommand(id: "session.delete", title: "Delete Session…", section: "Session", systemImage: "trash") {
@@ -109,6 +137,10 @@ enum BuiltinPalette {
         id: "app.new-session", title: "New Session…", section: "App", systemImage: "plus",
         shortcut: "⌘N"
       ) { model.requestNewSession() },
+      PaletteCommand(
+        id: "app.open-session", title: "Open Session…", section: "App", keywords: ["quick switcher"],
+        systemImage: "arrow.triangle.branch", shortcut: "⇧⌘O"
+      ) { model.palette.present(switcher: true) },
     ]
   }
 }
