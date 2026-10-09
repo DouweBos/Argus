@@ -191,6 +191,8 @@ enum MacTelemetryEvent {
   case hostFolderPicked(stage: FolderPickStage)
   /// A session's branch was renamed from its home.
   case branchRenamed(success: Bool)
+  /// A project in the sidebar was folded shut or opened.
+  case sidebarProjectToggled(collapsed: Bool)
   /// A deep link or launch route was opened; `screen` is its route pattern.
   case linkOpened(screen: String, outcome: LinkOutcome)
   /// A transcript link was used; `relative` is whether the path needed the worktree.
@@ -286,6 +288,7 @@ enum MacTelemetryEvent {
     case .linkOpened: "mac_link_opened"
     case .chatHistoryUsed: "mac_chat_history_used"
     case .branchRenamed: "mac_branch_renamed"
+    case .sidebarProjectToggled: "mac_sidebar_project_toggled"
     case .homeCardActed: "mac_home_card_acted"
     case .hostFolderPicked: "mac_host_folder_picked"
     case .tabUsed: "mac_tab_used"
@@ -370,6 +373,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue]
     case .branchRenamed(let success):
       ["success": success]
+    case .sidebarProjectToggled(let collapsed):
+      ["collapsed": collapsed]
     case .homeCardActed(let card, let action):
       ["card": card.rawValue, "action": action.rawValue]
     case .hostFolderPicked(let stage):
