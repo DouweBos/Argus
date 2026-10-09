@@ -80,11 +80,14 @@ public struct ToolCallCard: View {
     }
   }
 
-  private var displayName: String {
-    if call.name == "Agent", let type = call.input["subagent_type"]?.stringValue {
-      return type
+  private var displayName: String { ToolCallSummary.label(name: call.name, input: call.input) }
+
+  /// The type is already the name, so an Agent call's summary is just its task.
+  private var summary: String {
+    if call.name == "Agent", let description = call.input["description"]?.stringValue, !description.isEmpty {
+      return description
     }
-    return call.name
+    return ToolCallSummary.summary(name: call.name, input: call.input)
   }
 
   private var header: some View {
@@ -104,7 +107,7 @@ public struct ToolCallCard: View {
       userExpanded = !expanded
     } label: {
       HStack(spacing: 6) {
-        if call.status == .running && (call.name == "Agent" || call.name == "Task") {
+        if call.status == .running && ToolCallSummary.isSubagent(call.name) {
           ProgressView().controlSize(.mini)
         } else {
           Image(systemName: expanded ? Icon.chevronDown : Icon.chevronRight)
@@ -115,7 +118,7 @@ public struct ToolCallCard: View {
           .font(.scaled(size: 12, weight: .semibold))
           .foregroundStyle(theme.text)
         MonoText(
-          text: ToolCallSummary.summary(name: call.name, input: call.input),
+          text: summary,
           size: 11, lineLimit: 1,
           truncateHead: ToolCallSummary.isPathTool(call.name))
         Spacer(minLength: 4)
@@ -162,12 +165,17 @@ public struct ToolCallCard: View {
     }
   }
 
-  /// Even collapsed, an edit shows what it changed — that is the one thing
-  /// worth seeing without opening it.
+  /// Even collapsed, an edit shows what it changed and a subagent its latest
+  /// calls — the things worth seeing without opening them.
   @ViewBuilder
   private var collapsedPreview: some View {
     if let lines = inlineDiffLines {
       DiffLinesView(lines: lines)
+    } else if ToolCallSummary.isSubagent(call.name) {
+      let preview = ToolCallSummary.subagentPreview(call)
+      if !preview.calls.isEmpty {
+        SubagentPreview(calls: preview.calls, earlier: preview.earlier) { userExpanded = true }
+      }
     }
   }
 

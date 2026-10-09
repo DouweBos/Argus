@@ -34,4 +34,26 @@ public enum ToolCallSummary {
       return ""
     }
   }
+
+  /// Agent and Task calls run a subagent whose own calls nest under them.
+  public static func isSubagent(_ name: String) -> Bool { name == "Agent" || name == "Task" }
+
+  /// What a call is called in a row: an Agent call goes by its subagent type.
+  public static func label(name: String, input: [String: JSONValue]) -> String {
+    guard name == "Agent" else { return name }
+    let type = input["subagent_type"]?.stringValue ?? ""
+    return type.isEmpty ? "Agent" : type
+  }
+
+  /// A subagent's newest calls for its collapsed preview, and how many came before them.
+  public static func subagentPreview(
+    _ call: RemoteToolCall, limit: Int = 5
+  ) -> (calls: [RemoteToolCall], earlier: Int) {
+    let calls = (call.children ?? []).compactMap { child -> RemoteToolCall? in
+      if case .toolUse(let nested) = child { return nested }
+      return nil
+    }
+    let shown = Array(calls.suffix(limit))
+    return (shown, calls.count - shown.count)
+  }
 }
