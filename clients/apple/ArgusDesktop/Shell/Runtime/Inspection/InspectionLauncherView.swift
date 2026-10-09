@@ -17,7 +17,13 @@ struct InspectionLauncherView: View {
         .foregroundStyle(theme.accent)
         .frame(width: 44, height: 44)
         .background(theme.accentSoft, in: RoundedRectangle(cornerRadius: theme.radiusSmall))
-      if !prompt.isSpringboard, let bundleId = prompt.foregroundApp {
+      if let reason = prompt.unavailableReason {
+        title("Can't inspect this app")
+        hint(reason)
+        if let bundleId = prompt.foregroundApp {
+          Text(bundleId).font(.scaled(.caption).monospaced()).foregroundStyle(theme.textMuted)
+        }
+      } else if !prompt.isSpringboard, let bundleId = prompt.foregroundApp {
         restart(bundleId)
       } else {
         picker

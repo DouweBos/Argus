@@ -188,10 +188,11 @@ initial attempt from a `continue` after the user resolved conflicts.
 
 ## Simulators
 
-| Event                   | Source | When                                                       | Extra props                                                                                  |
-| ----------------------- | ------ | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `simulator_boot_failed` | main   | Booting an iOS simulator failed                            | `reason` (`missing_data`, `runtime_missing`, `not_found`, `disk_full`, `timeout`, `unknown`) |
-| `simulator_repaired`    | main   | A simulator was erased or deleted from Argus (fires after) | `action` (`erase` \| `delete`), `success`                                                    |
+| Event                           | Source | When                                                                     | Extra props                                                                                  |
+| ------------------------------- | ------ | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `simulator_boot_failed`         | main   | Booting an iOS simulator failed                                          | `reason` (`missing_data`, `runtime_missing`, `not_found`, `disk_full`, `timeout`, `unknown`) |
+| `simulator_repaired`            | main   | A simulator was erased or deleted from Argus (fires after)               | `action` (`erase` \| `delete`), `success`                                                    |
+| `simulator_inspection_launched` | main   | An app was (re)launched with the inspection library injected, or refused | `platform` (`ios` \| `tvos`), `outcome` (`ok`, `unavailable`, `failed`)                      |
 
 ## Browser
 

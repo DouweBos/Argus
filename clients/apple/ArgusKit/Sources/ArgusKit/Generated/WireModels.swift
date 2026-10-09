@@ -6251,17 +6251,20 @@ extension ArgusProtocol {
     public var foregroundApp: String?
     public var injected: Bool
     public var isSpringboard: Bool
+    public var injectUnavailableReason: String?
 
     enum CodingKeys: String, CodingKey {
       case foregroundApp = "foregroundApp"
       case injected = "injected"
       case isSpringboard = "isSpringboard"
+      case injectUnavailableReason = "injectUnavailableReason"
     }
 
-    public init(foregroundApp: String? = nil, injected: Bool, isSpringboard: Bool) {
+    public init(foregroundApp: String? = nil, injected: Bool, isSpringboard: Bool, injectUnavailableReason: String? = nil) {
       self.foregroundApp = foregroundApp
       self.injected = injected
       self.isSpringboard = isSpringboard
+      self.injectUnavailableReason = injectUnavailableReason
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -6269,6 +6272,7 @@ extension ArgusProtocol {
       try c.encode(foregroundApp, forKey: .foregroundApp)
       try c.encode(injected, forKey: .injected)
       try c.encode(isSpringboard, forKey: .isSpringboard)
+      try c.encode(injectUnavailableReason, forKey: .injectUnavailableReason)
     }
   }
 
