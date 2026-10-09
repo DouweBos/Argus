@@ -93,6 +93,14 @@ final class GitWorkspaces {
     }
   }
 
+  /// Opens a local session's repository and reads it once in the background, so
+  /// its git panel shows at once with these lists rather than a spinner.
+  func prefetch(_ session: RemoteSession) async {
+    if let router = host.backend as? HostRouter, router.host(of: .session, session.id) != Hosts.local { return }
+    guard slots[session.id] == nil, let workspace = await open(session) else { return }
+    await workspace.warm()
+  }
+
   /// Forget a failed open so the next look tries again.
   func retry(_ sessionId: String) {
     if case .failed = slots[sessionId] { slots[sessionId] = nil }

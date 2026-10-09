@@ -13,11 +13,20 @@ struct RefActions {
   let session: RemoteSession
   let model: DesktopModel
   let theme: Theme
+  /// Read once: every row's context menu names it, and a scan per row is slow with thousands of refs.
+  let currentBranch: BranchInfo?
+
+  init(workspace: GitWorkspace, session: RemoteSession, model: DesktopModel, theme: Theme) {
+    self.workspace = workspace
+    self.session = session
+    self.model = model
+    self.theme = theme
+    currentBranch = workspace.refs.localBranches.first(where: \.isHEAD)
+  }
 
   var marks: GitRefMarks { GitRefMarks.marks(for: session.repoRoot) }
   private var id: String { session.id }
 
-  var currentBranch: BranchInfo? { workspace.refs.localBranches.first(where: \.isHEAD) }
   var currentName: String { currentBranch?.name ?? "HEAD" }
   var remoteNames: [String] { workspace.refs.remotes.map(\.name) }
 

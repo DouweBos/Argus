@@ -48,8 +48,15 @@ struct GitRefSections: View {
       }
     }
     if !refs.tags.isEmpty {
-      Section("Tags") {
+      // Collapsed until asked for, as Electron's: thousands of tag rows make opening the panel slow.
+      Section(isExpanded: Binding(get: { workspace.tagsExpanded }, set: { workspace.tagsExpanded = $0 })) {
         ForEach(refs.tags) { TagRow(tag: $0, actions: actions) }
+      } header: {
+        HStack {
+          Text("Tags")
+          Spacer()
+          Text(refs.tags.count, format: .number).foregroundStyle(theme.textMuted).monospacedDigit()
+        }
       }
     }
     Section {

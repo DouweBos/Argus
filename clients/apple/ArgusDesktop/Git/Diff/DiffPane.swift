@@ -16,6 +16,7 @@ struct DiffPane: View {
   var ignoreWhitespace: Binding<Bool>?
   /// Extra controls on the header's trailing side.
   var accessory: AnyView?
+  @State private var headerWidth: CGFloat = .infinity
   private var setting: DiffLayoutSetting { .shared }
   private var layout: DiffLayout { setting.layout }
 
@@ -30,15 +31,17 @@ struct DiffPane: View {
 
   private var header: some View {
     // Large text makes the controls wider than a narrow pane; they give way
-    // rather than push the panes beside it out of the window.
-    ViewThatFits(in: .horizontal) {
-      headerRow(compact: false)
-      headerRow(compact: true)
-    }
-    .padding(.horizontal, 10)
-    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 34, maxHeight: 34, alignment: .leading)
-    .clipped()
+    // rather than push the panes beside it out of the window. A width check,
+    // not ViewThatFits: measuring both rows made opening the git panel slow.
+    headerRow(compact: headerWidth < compactBelow)
+      .padding(.horizontal, 10)
+      .frame(minWidth: 0, maxWidth: .infinity, minHeight: 34, maxHeight: 34, alignment: .leading)
+      .clipped()
+      .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { headerWidth = $0 }
   }
+
+  /// Where the stats and the whitespace label give way, at the current text size.
+  private var compactBelow: CGFloat { TextScale.shared(460) }
 
   private func headerRow(compact: Bool) -> some View {
     HStack(spacing: 8) {
