@@ -140,7 +140,7 @@ each change undoes in one step.
 | ⌃G         | Go to line (`line` or `line:column`)               |
 | F12 / ⇧F12 | Go to definition / find references                 |
 | F2         | Rename symbol                                      |
-| ⇧⌥F        | Format document                                    |
+| ⇧⌥F        | Format document (the project's formatter first)    |
 | ⌃Space     | Show completions                                   |
 | F8 / ⇧F8   | Next / previous problem                            |
 | ⇧⌘M        | Show or hide the problems list                     |
@@ -157,7 +157,8 @@ the symbols in the open file (`@:` groups them by kind), `#` searches symbols
 across the session, and `:` goes to a line (`:42`, or `:42:7` for a column).
 Symbols come from Argus's own index of definitions, so they work before any
 language server has started, and from the session's running language servers
-when there are some. Changed files rank first.
+when there are some. Changed files rank first. ↑/↓ (or ⌃P/⌃N), Page Up/Down
+and Home/End move through the results while you keep typing; Return opens one.
 
 ## How it relates to the Electron app
 
