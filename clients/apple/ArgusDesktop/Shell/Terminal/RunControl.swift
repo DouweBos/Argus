@@ -1,8 +1,9 @@
 import ArgusCore
+import ArgusUI
 import SwiftUI
 
-/// The project's `.argus.json` run commands, in the toolbar: one button, or a
-/// split button when there are several. Pressing a running one stops it.
+/// The project's `.argus.json` run commands, in the toolbar: one button, and a
+/// chevron menu beside it when there are several. Pressing a running one stops it.
 struct RunControl: View {
   @Environment(TerminalsStore.self) private var terminals
   @Environment(HostStore.self) private var store
@@ -16,26 +17,29 @@ struct RunControl: View {
   }
 
   var body: some View {
+    // Flat items in the toolbar's one capsule, not a split button's bezel inside it.
     Group {
-      if runs.count == 1, let only = runs.first {
-        Button { toggle(only.title) } label: { label(only.title) }
-          .help(running(only.title) ? "Stop \(only.title)" : only.command)
-      } else if let primary = runs.first(where: { running($0.title) }) ?? runs.first {
-        Menu {
-          ForEach(runs) { run in
-            Button { toggle(run.title) } label: { label(run.title) }
+      if let primary = runs.first(where: { running($0.title) }) ?? runs.first {
+        Button { toggle(primary.title) } label: { label(primary.title) }
+          .buttonStyle(PillItemButtonStyle(iconOnly: false))
+          .labelStyle(.titleAndIcon)
+          .help(running(primary.title) ? "Stop \(primary.title)" : primary.command)
+        if runs.count > 1 {
+          Menu {
+            ForEach(runs) { run in
+              Button { toggle(run.title) } label: { label(run.title) }
+            }
+          } label: {
+            Label("Run Commands", systemImage: "chevron.down")
           }
-        } label: {
-          label(primary.title)
-        } primaryAction: {
-          toggle(primary.title)
+          .menuStyle(.button)
+          .menuIndicator(.hidden)
+          .help("Run commands")
+          // A toolbar menu keeps the items it was first built with.
+          .id(runs.map { running($0.title) })
         }
-        .help(running(primary.title) ? "Stop \(primary.title)" : primary.command)
-        // A toolbar menu keeps the items it was first built with.
-        .id(runs.map { running($0.title) })
       }
     }
-    .labelStyle(.titleAndIcon)
     .disabled(session.status != .ready)
     .confirmationDialog(
       "Another runtime is running", isPresented: isConfirming, titleVisibility: .visible

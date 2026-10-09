@@ -67,15 +67,19 @@ struct SessionView: View {
         ) { model.show($0, via: .toolbar) }
       }
       if let session, session.status == .ready {
-        ToolbarItemGroup {
-          HuddleToolbarButton(sessionId: session.id)
-          RunControl(session: session) { model.terminalPanelVisible = true }
-          Button {
-            model.terminalPanelVisible.toggle()
-          } label: {
-            Label("Terminal", systemImage: "terminal")
+        // One item, so the toolbar draws one capsule around flat controls, as around the switcher.
+        ToolbarItem {
+          PillGroup {
+            HuddleToolbarButton(sessionId: session.id)
+            RunControl(session: session) { model.terminalPanelVisible = true }
+            Button {
+              model.terminalPanelVisible.toggle()
+            } label: {
+              Label("Terminal", systemImage: "terminal")
+            }
+            .help(model.terminalPanelVisible ? "Hide terminal (⇧⌘T)" : "Show terminal (⇧⌘T)")
+            .accessibilityLabel("Terminal")
           }
-          .help(model.terminalPanelVisible ? "Hide terminal (⇧⌘T)" : "Show terminal (⇧⌘T)")
         }
       }
     }
