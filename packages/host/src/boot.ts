@@ -47,6 +47,7 @@ import {
 } from "./services/remote/remoteService";
 import { restoreScratchPads } from "./services/scratchPad/manager";
 import { migrateLegacySecretStores } from "./services/secrets/legacyStores";
+import { stopAllBranchTracking } from "./services/session/branchTracker";
 import { restoreRepoRoots } from "./services/session/manager";
 import {
   startVolumeWatcher,
@@ -209,6 +210,7 @@ export function stopHostServices(): void {
   shutdownTelemetry().catch(() => undefined);
   stopAutomationScheduler();
   stopVolumeWatcher();
+  stopAllBranchTracking();
   stopHostConversations();
   stopMcpServer();
   stopRemote();

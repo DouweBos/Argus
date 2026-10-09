@@ -22,7 +22,6 @@ import { initPendingSessionPrompts } from "./lib/pendingSessionPrompts";
 import { initPrewarm } from "./lib/prewarmService";
 import { bootstrapProjects } from "./lib/projectsService";
 import { initPushNotificationsListener } from "./lib/pushNotificationsService";
-import { initRepoBranchSync } from "./lib/repoBranchSync";
 import { initSessionEventListeners } from "./lib/sessionEventListeners";
 import { initTelemetry, capture as telemetryCapture } from "./lib/telemetry";
 import { initConductorLogListener } from "./stores/conductorLogStore";
@@ -114,7 +113,6 @@ export function boot(popoutMode: string | null, params: URLSearchParams): void {
     initSessionEventListeners();
     // Refetch the repo branch whenever the project_root session's git state
     // changes — replaces per-component getRepoBranch polls.
-    initRepoBranchSync();
     // Hydrate this Mac's projects exactly once. Attached hosts bring their own
     // in as they connect — their registered roots are paths on another disk.
     // Lives outside React so StrictMode / HMR can't re-trigger it.

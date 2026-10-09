@@ -23,7 +23,9 @@ interface GitWatcherHandle {
 }
 
 /** Resolve real `.git` directory for a worktree (handles pointer files). */
-async function resolveGitDir(worktreePath: string): Promise<string | null> {
+export async function resolveGitDir(
+  worktreePath: string,
+): Promise<string | null> {
   const gitPath = path.join(worktreePath, ".git");
   try {
     const stat = fs.statSync(gitPath);

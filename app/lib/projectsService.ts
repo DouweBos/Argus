@@ -41,7 +41,6 @@ import {
   listScratchPads,
   listSessions,
 } from "./ipc";
-import { refreshRepoBranch } from "./repoBranchSync";
 import { LOCAL_HOST_ID, hostScopedKey, type HostId } from "./transport/hostId";
 import { projectHost, rememberProjectHost } from "./transport/hostIndex";
 import { runOnHost } from "./transport/hostRouting";
@@ -81,8 +80,6 @@ export async function openProject(
 
     const sessions = await listSessions(path);
     mergeSessionsForProject(path, sessions, hostId);
-
-    await refreshRepoBranch(path, hostId);
 
     const shouldAutoSelect = options?.autoSelect !== false;
     const projectSessions = getSessionState().sessions.filter(

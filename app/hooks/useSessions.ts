@@ -11,7 +11,6 @@ import {
   deleteSessionById,
   openProject as openProjectService,
 } from "../lib/projectsService";
-import { refreshRepoBranch } from "../lib/repoBranchSync";
 import { startListening } from "../lib/terminalBufferService";
 import { LOCAL_HOST_ID } from "../lib/transport/hostId";
 import {
@@ -19,7 +18,6 @@ import {
   mergeSessionsForProject,
   selectSession,
   setDeleteProgress,
-  setProjectBranch,
   setSetupProgress,
   updateSession,
   useSelectedSessionId,
@@ -140,7 +138,6 @@ export function useProjectSessions(
   hostId: HostId = LOCAL_HOST_ID,
 ) {
   const allSessions = useSessions();
-  const allProjects = useSessionProjects();
   const listenersRef = useRef<Map<string, () => void>>(new Map());
 
   // Two hosts can hold this path; only the sessions belonging to this one.
@@ -151,18 +148,14 @@ export function useProjectSessions(
       ),
     [allSessions, repoRoot, hostId],
   );
-  const project = useMemo(
-    () =>
-      allProjects.find((p) => p.repoRoot === repoRoot && p.hostId === hostId),
-    [allProjects, repoRoot, hostId],
-  );
-  const repoBranch = project?.repoBranch ?? null;
+  // The host keeps the root session's branch current (`session:updated`).
+  const repoBranch =
+    sessions.find((w) => w.kind === "project_root")?.branch ?? null;
 
   const refresh = useCallback(async () => {
     try {
       const ws = await listSessions(repoRoot);
       mergeSessionsForProject(repoRoot, ws, hostId);
-      refreshRepoBranch(repoRoot, hostId).catch(() => {});
     } catch {
       // Ignore refresh errors
     }
@@ -187,27 +180,6 @@ export function useProjectSessions(
 
     return () => clearInterval(interval);
   }, [hasInitializing, repoRoot, hostId]);
-
-  const repoRootSession = sessions.find((w) => w.kind === "project_root");
-  const repoRootId = repoRootSession?.id ?? null;
-  useEffect(() => {
-    if (!repoRootId) {
-      return;
-    }
-    const unlisten = listen<{ branch: string }>(
-      `session:branch-changed:${repoRootId}`,
-      (event) => {
-        const { branch } = event.payload;
-        setProjectBranch(repoRoot, branch, hostId);
-        updateSession(repoRootId, { branch });
-      },
-      { hostId },
-    );
-
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [repoRootId, repoRoot, hostId]);
 
   const sessionIds = sessions
     .map((w) => w.id)

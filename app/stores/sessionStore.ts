@@ -16,7 +16,6 @@ export interface Project {
   /** Machine this repo lives on — two hosts may hold the same path. */
   hostId: HostId;
   isCollapsed: boolean;
-  repoBranch: string | null;
   repoRoot: string;
 }
 
@@ -88,7 +87,6 @@ export const addProject = (
         {
           repoRoot,
           hostId,
-          repoBranch: null,
           isCollapsed: false,
           addedAt: Date.now(),
         },
@@ -180,20 +178,6 @@ export const reorderSessions = (
 
     return { sessions: next };
   });
-};
-
-export const setProjectBranch = (
-  repoRoot: string,
-  branch: string | null,
-  hostId: HostId = LOCAL_HOST_ID,
-) => {
-  sessionStore.setState((state) => ({
-    projects: state.projects.map((p) =>
-      p.repoRoot === repoRoot && p.hostId === hostId
-        ? { ...p, repoBranch: branch }
-        : p,
-    ),
-  }));
 };
 
 export const toggleProjectCollapsed = (
