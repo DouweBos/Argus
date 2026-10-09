@@ -19,6 +19,7 @@ lives in the repository (`plan/swiftui-parity.md`).
   A session's Home, Agents, Git and Code views switch from the toolbar, the
   View menu or ⌘1–⌘4; the Agent menu starts, switches and interrupts
   agents (see [Keyboard shortcuts](#keyboard-shortcuts)).
+- **Home** at the top of the sidebar (⇧⌘H): the app's home screen.
 - **Agents** and **Runtimes** in the sidebar: every agent, and every run
   command's process, across all your sessions.
 - Terminals under each session (⇧⌘T): tabs, the project's run commands in
