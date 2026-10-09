@@ -34,7 +34,7 @@ import { isServerMode, startPowerAssertion } from "@argus/host/serverMode";
 import { setColorScheme } from "@argus/host/services/browser/conductorInput";
 import { LOCAL_GATEWAY_PORT } from "@argus/host/services/remote/remoteService";
 import { serveLocalUi } from "@argus/host/services/remote/serveLocalUi";
-import { refreshAllBranches } from "@argus/host/services/session/watcher";
+import { refreshAllSessionBranches } from "@argus/host/services/session/branchTracker";
 import { stopAndroidCapture } from "@argus/host/services/simulator/android";
 import { stopSimulatorCapture } from "@argus/host/services/simulator/ios";
 import { getVideoDims } from "@argus/host/services/simulator/videoForward";
@@ -1082,10 +1082,9 @@ app.whenReady().then(async () => {
   // flow instead. No-ops on the desktop.
   initServerUpdates();
 
-  // Refresh branch names when the window regains focus — fallback for cases
-  // where fs.watch on .git/HEAD misses events (network drives, sleep/wake).
+  // Fallback for git-dir watch events missed on network drives or sleep/wake.
   app.on("browser-window-focus", () => {
-    refreshAllBranches();
+    refreshAllSessionBranches().catch(() => {});
   });
 });
 

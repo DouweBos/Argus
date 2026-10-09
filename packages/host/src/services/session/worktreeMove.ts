@@ -21,6 +21,7 @@ import {
   loadUserProjectSettings,
   saveUserProjectSettings,
 } from "../userProjectSettings/store";
+import { trackSessionBranch } from "./branchTracker";
 import { git, worktreesRoot } from "./git";
 import { loadMetadata, normalizeMetaKey, saveMetadata } from "./metadata";
 import {
@@ -446,6 +447,7 @@ export async function executeWorktreeMove(
       if (live) {
         live.path = session.to;
         live.volume = volume;
+        trackSessionBranch(session.id);
       }
       emitHostEvent("session:updated", {
         id: session.id,

@@ -1,4 +1,3 @@
-import type { Project } from "./sessionStore";
 import type { Session } from "../lib/types";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
@@ -10,7 +9,6 @@ import {
   removeProject,
   removeSession,
   selectSession,
-  setProjectBranch,
   setSetupProgress,
   setSessionState,
   toggleProjectCollapsed,
@@ -135,48 +133,6 @@ describe("sessionStore", () => {
 
       const updated = getSessionState().sessions[0];
       expect(updated.branch).toBe("feature/new-branch");
-    });
-
-    it("setProjectBranch + updateSession keep branch in sync", () => {
-      const repoRoot = "/home/user/Projects/MyApp";
-      addProject(repoRoot);
-      const ws = session({
-        kind: "project_root",
-        branch: "main",
-        path: repoRoot,
-      });
-      addSession(ws);
-
-      const newBranch = "claude/str-3696-firetv-deeplink-focus";
-      setProjectBranch(repoRoot, newBranch);
-      updateSession("ws-1", { branch: newBranch });
-
-      const project = getSessionState().projects.find(
-        (p: Project) => p.repoRoot === repoRoot,
-      );
-      const wsResult = getSessionState().sessions[0];
-      expect(project?.repoBranch).toBe(newBranch);
-      expect(wsResult.branch).toBe(newBranch);
-    });
-
-    it("session.branch stays stale if only setProjectBranch is called (old behavior)", () => {
-      const repoRoot = "/home/user/Projects/MyApp";
-      addProject(repoRoot);
-      const ws = session({
-        kind: "project_root",
-        branch: "main",
-        path: repoRoot,
-      });
-      addSession(ws);
-
-      setProjectBranch(repoRoot, "new-branch");
-
-      const project = getSessionState().projects.find(
-        (p: Project) => p.repoRoot === repoRoot,
-      );
-      const wsState = getSessionState().sessions[0];
-      expect(project?.repoBranch).toBe("new-branch");
-      expect(wsState.branch).toBe("main");
     });
   });
 

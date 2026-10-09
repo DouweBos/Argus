@@ -3,16 +3,23 @@
  * Integration test: external branch switch → event → store → ToolPanel props.
  *
  * Simulates the full pipeline when a user switches git branches outside the
- * app: the backend emits `session:branch-changed`, the frontend listener
- * updates both `project.repoBranch` and `session.branch` in the store, and
- * ToolPanel re-renders its children with the new branch name.
+ * app: the host emits `session:updated`, the renderer patches `session.branch`
+ * in the store, and the project header and ToolPanel read the new name.
  */
 
 import type { Session } from "../../../lib/types";
-import type { Project } from "../../../stores/sessionStore";
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { useProjectSessions } from "../../../hooks/useSessions";
+import { initSessionEventListeners } from "../../../lib/sessionEventListeners";
 import { setLayoutState } from "../../../stores/layoutStore";
 import {
   addProject,
@@ -20,7 +27,6 @@ import {
   getSelectedSessionId,
   getSessionState,
   selectSession,
-  setProjectBranch,
   setSessionState,
 } from "../../../stores/sessionStore";
 
@@ -95,8 +101,11 @@ function makeSession(overrides: Partial<Session> = {}): Session {
 // ---------------------------------------------------------------------------
 
 describe("external branch switch → full pipeline", () => {
+  beforeAll(() => {
+    initSessionEventListeners();
+  });
+
   beforeEach(() => {
-    eventListeners.clear();
     setSessionState({
       projects: [],
       sessions: [],
@@ -126,38 +135,21 @@ describe("external branch switch → full pipeline", () => {
     vi.clearAllMocks();
   });
 
-  it("session.branch updates when backend emits branch-changed", () => {
-    // Set up initial state: a project with a repo_root session on "main"
-    const ws = makeSession();
+  it("session.branch and the header's repoBranch follow session:updated", () => {
     addProject(REPO_ROOT);
-    addSession(ws);
-    setProjectBranch(REPO_ROOT, "main");
+    addSession(makeSession());
     selectSession("ws-root");
 
-    // Render the hook so it registers the branch-changed listener
-    const { unmount } = renderHook(() => useProjectSessions(REPO_ROOT));
-
-    // Verify initial state
-    expect(getSessionState().sessions[0].branch).toBe("main");
-    const project = getSessionState().projects.find(
-      (p: Project) => p.repoRoot === REPO_ROOT,
-    );
-    expect(project?.repoBranch).toBe("main");
+    const { result, unmount } = renderHook(() => useProjectSessions(REPO_ROOT));
+    expect(result.current.repoBranch).toBe("main");
 
     // Simulate: user runs `git checkout feature-branch` outside the app
     act(() => {
-      emitEvent("session:branch-changed:ws-root", {
-        branch: "feature-branch",
-      });
+      emitEvent("session:updated", { id: "ws-root", branch: "feature-branch" });
     });
 
-    // Both sources of truth should reflect the new branch
-    const updatedWs = getSessionState().sessions[0];
-    const updatedProject = getSessionState().projects.find(
-      (p: Project) => p.repoRoot === REPO_ROOT,
-    );
-    expect(updatedWs.branch).toBe("feature-branch");
-    expect(updatedProject?.repoBranch).toBe("feature-branch");
+    expect(getSessionState().sessions[0].branch).toBe("feature-branch");
+    expect(result.current.repoBranch).toBe("feature-branch");
 
     unmount();
   });
@@ -167,7 +159,6 @@ describe("external branch switch → full pipeline", () => {
     const ws = makeSession();
     addProject(REPO_ROOT);
     addSession(ws);
-    setProjectBranch(REPO_ROOT, "main");
     selectSession("ws-root");
 
     // Render the hook
@@ -175,7 +166,8 @@ describe("external branch switch → full pipeline", () => {
 
     // Simulate branch switch
     act(() => {
-      emitEvent("session:branch-changed:ws-root", {
+      emitEvent("session:updated", {
+        id: "ws-root",
         branch: "claude/str-3696-firetv-deeplink-focus",
       });
     });
@@ -196,15 +188,14 @@ describe("external branch switch → full pipeline", () => {
     const ws = makeSession();
     addProject(REPO_ROOT);
     addSession(ws);
-    setProjectBranch(REPO_ROOT, "main");
     selectSession("ws-root");
 
     const { unmount } = renderHook(() => useProjectSessions(REPO_ROOT));
 
     act(() => {
-      emitEvent("session:branch-changed:ws-root", { branch: "branch-a" });
-      emitEvent("session:branch-changed:ws-root", { branch: "branch-b" });
-      emitEvent("session:branch-changed:ws-root", { branch: "branch-c" });
+      emitEvent("session:updated", { id: "ws-root", branch: "branch-a" });
+      emitEvent("session:updated", { id: "ws-root", branch: "branch-b" });
+      emitEvent("session:updated", { id: "ws-root", branch: "branch-c" });
     });
 
     const session = getSessionState().sessions[0];
@@ -225,15 +216,12 @@ describe("external branch switch → full pipeline", () => {
     addProject(REPO_ROOT);
     addSession(repoWs);
     addSession(worktreeWs);
-    setProjectBranch(REPO_ROOT, "main");
 
     const { unmount } = renderHook(() => useProjectSessions(REPO_ROOT));
 
     // Switch the repo root branch
     act(() => {
-      emitEvent("session:branch-changed:ws-root", {
-        branch: "develop",
-      });
+      emitEvent("session:updated", { id: "ws-root", branch: "develop" });
     });
 
     // Repo root updated
@@ -266,9 +254,7 @@ describe("external branch switch → full pipeline", () => {
 
     // Simulate: backend sends both branch-changed and diff-changed
     act(() => {
-      emitEvent("session:branch-changed:ws-root", {
-        branch: "new-branch",
-      });
+      emitEvent("session:updated", { id: "ws-root", branch: "new-branch" });
       emitEvent("session:diff-changed:ws-root", {
         files: 3,
         additions: 10,

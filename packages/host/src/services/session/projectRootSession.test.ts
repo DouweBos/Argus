@@ -7,7 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appState } from "../../state";
 import { createHeadSession, renameSession } from "./manager";
 
-vi.mock("./watcher", () => ({ startBranchWatcher: () => ({ stop() {} }) }));
+vi.mock("./watcher", () => ({ startWatcher: () => ({ stop() {} }) }));
+vi.mock("./branchTracker", () => ({
+  trackSessionBranch: vi.fn(),
+  untrackSessionBranch: vi.fn(),
+  refreshSessionBranch: vi.fn(async () => null),
+}));
 vi.mock("./gitWatcher", () => ({
   attachGitWatcher: vi.fn(async () => {}),
   detachGitWatcher: vi.fn(),

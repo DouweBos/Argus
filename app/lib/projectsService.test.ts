@@ -24,9 +24,6 @@ vi.mock("./ipc", () => ({
   listSessions: vi.fn(async () => []),
   listProjects: vi.fn(async () => []),
 }));
-vi.mock("./repoBranchSync", () => ({
-  refreshRepoBranch: vi.fn(async () => {}),
-}));
 vi.mock("./agentEventService", () => ({ stopAgentListening: vi.fn() }));
 
 const REMOTE = "host-b";

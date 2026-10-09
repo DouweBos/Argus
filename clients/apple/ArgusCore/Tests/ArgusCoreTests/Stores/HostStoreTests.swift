@@ -83,6 +83,29 @@ struct HostStoreTests {
     #expect(store.repoRoot(forSessionId: "s1") == "/repo")
   }
 
+  @Test("a branch switched outside Argus re-reads the session's git status")
+  func branchSwitchRefreshesGitStatus() async throws {
+    func status(_ branch: String, ahead: Int) -> String {
+      #"{"status":{"branch":"\#(branch)","upstream":"origin/\#(branch)","ahead":\#(ahead),"behind":0,"dirty_count":0,"stash_count":0,"conflict_count":0,"detached":false}}"#
+    }
+    let store = HostStore()
+    let backend = FakeBackend()
+    await store.attach(backend)
+    backend.reply(.sessionsList, #"{"sessions":[\#(Self.session)]}"#)
+    await store.loadSessions(repoRoot: "/repo")
+    backend.reply(.sessionsGitStatus, status("main", ahead: 0))
+    await store.loadGitStatus(sessionId: "s1")
+
+    backend.reply(.sessionsGitStatus, status("feature", ahead: 2))
+    backend.reply(
+      .sessionsList, #"{"sessions":[\#(Self.session.replacingOccurrences(of: "\"main\"", with: "\"feature\""))]}"#)
+    try backend.emit("sessions.changed", payload: #"{"repo_root":"/repo"}"#)
+
+    #expect(await eventually { store.gitStatusBySession["s1"]?.branch == "feature" })
+    #expect(store.gitStatusBySession["s1"]?.ahead == 2)
+    #expect(store.sessionsByRepo["/repo"]?.first?.branch == "feature")
+  }
+
   @Test("sessions.changed ignores a repo nobody listed")
   func sessionsChangedUnknown() async throws {
     let store = HostStore()

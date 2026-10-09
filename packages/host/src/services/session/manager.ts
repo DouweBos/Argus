@@ -38,6 +38,11 @@ import {
   stopAutoFetch,
 } from "./autoFetch";
 import {
+  refreshSessionBranch,
+  trackSessionBranch,
+  untrackSessionBranch,
+} from "./branchTracker";
+import {
   addWorktree,
   branchToDir,
   git,
@@ -67,7 +72,7 @@ import {
   mountRootFor,
   pathAvailability,
 } from "./volumeAvailability";
-import { startBranchWatcher } from "./watcher";
+import { startWatcher } from "./watcher";
 import { isKnownWorktreePath } from "./worktreeLocation";
 
 // ---------------------------------------------------------------------------
@@ -182,6 +187,7 @@ export function removeRepoRoot(dirPath: string): void {
       appState.watchers.delete(wsId);
     }
     detachGitWatcher(wsId);
+    untrackSessionBranch(wsId);
     stopAutoFetch(wsId);
   }
 
@@ -267,6 +273,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
         livePaths.add(ws.path);
       } else {
         appState.sessions.delete(id);
+        untrackSessionBranch(id);
       }
     }
   }
@@ -301,6 +308,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
     if (!appState.sessions.has(ws.id)) {
       appState.sessions.set(ws.id, { ...ws });
     }
+    trackSessionBranch(ws.id);
 
     return ws;
   });
@@ -369,14 +377,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
   // Include repo-root sessions (not discovered via git worktree list).
   for (const ws of appState.sessions.values()) {
     if (ws.kind === "project_root" && ws.repo_root === repoRoot) {
-      try {
-        ws.branch = (
-          await git(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"])
-        ).trim();
-        appState.sessions.set(ws.id, ws);
-      } catch {
-        // Keep existing branch name on failure.
-      }
+      await refreshSessionBranch(ws.id);
       merged.push({ ...ws });
     }
   }
@@ -700,6 +701,7 @@ async function finalizeSession(
     ws.display_name = displayName;
     ws.status = "initializing";
     appState.sessions.set(id, ws);
+    trackSessionBranch(id);
 
     emitHostEvent("session:updated", {
       id,
@@ -1259,9 +1261,9 @@ export function createHeadSession(repoRoot: string): Session {
     }
   }
 
-  // Watch .git/HEAD for external branch switches.
-  const branchHandle = startBranchWatcher(repoRoot, ws.id);
-  appState.watchers.set(ws.id, branchHandle);
+  appState.watchers.set(ws.id, startWatcher(ws.id, repoRoot));
+  // Follow branch switches made outside Argus.
+  trackSessionBranch(ws.id);
 
   // Attach git-status FS watcher (independent of the per-consumer diff-stats
   // watcher — see `attachGitWatcher`).
@@ -1537,6 +1539,7 @@ export async function deleteSession(
     appState.watchers.delete(id);
   }
   detachGitWatcher(id);
+  untrackSessionBranch(id);
   stopAutoFetch(id);
 
   // Notify the renderer that agents were killed.

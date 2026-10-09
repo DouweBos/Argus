@@ -87,7 +87,21 @@ extension HostStore {
     let listed = Set(result.sessions.map(\.id))
     for id in creatingSessions.keys where listed.contains(id) { creatingSessions[id] = nil }
     let creating = creatingSessions.values.filter { $0.repoRoot == repoRoot }
+    let previous = sessionsByRepo[repoRoot] ?? []
     sessionsByRepo[repoRoot] = creating + result.sessions
+    await refreshGitStatusOnBranchChange(from: previous, to: result.sessions)
+  }
+
+  /// A checkout switched outside Argus: the cached status (branch name,
+  /// ahead/behind) describes the old branch until it is re-read.
+  private func refreshGitStatusOnBranchChange(
+    from previous: [RemoteSession], to current: [RemoteSession]
+  ) async {
+    let before = Dictionary(previous.map { ($0.id, $0.branch) }, uniquingKeysWith: { a, _ in a })
+    for session in current
+    where gitStatusBySession[session.id] != nil && before[session.id].map({ $0 != session.branch }) == true {
+      await loadGitStatus(sessionId: session.id)
+    }
   }
 
   public func loadAgents(repoRoot: String) async {
