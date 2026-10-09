@@ -237,12 +237,27 @@ class TranscriptHoverCell: NSTableCellView {
 
   override var isFlipped: Bool { true }
 
-  override func mouseEntered(with event: NSEvent) {
-    toolTip = tip
+  override func mouseEntered(with event: NSEvent) { follow(event) }
+  override func mouseMoved(with event: NSEvent) { follow(event) }
+  override func mouseExited(with event: NSEvent) { leave() }
+
+  /// Leaving the window never sends an exit; a tip left set would show wherever it lands next.
+  override func viewWillMove(toWindow newWindow: NSWindow?) {
+    super.viewWillMove(toWindow: newWindow)
+    if newWindow == nil { leave() }
+  }
+
+  /// Tracking areas fire under whatever covers the row (the sidebar, the
+  /// palette), so the tip and bar only show while the row is what's under the pointer.
+  private func follow(_ event: NSEvent) {
+    guard window?.contentView?.superview?.hitTest(event.locationInWindow)?.isDescendant(of: self) == true else {
+      return leave()
+    }
+    if toolTip != tip { toolTip = tip }
     showHoverBar()
   }
-  override func mouseMoved(with event: NSEvent) { showHoverBar() }
-  override func mouseExited(with event: NSEvent) {
+
+  private func leave() {
     toolTip = nil
     hoverBar.hide()
   }
