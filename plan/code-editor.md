@@ -256,12 +256,13 @@ iOS-only Swift packages outside an app still build for the Mac.
 
 **Layout of the Code panel.** From left to right:
 
-- A **navigator** (collapsible) with two modes:
-  - **Changes**, the default: files the session has modified, from the existing
-    `session:diff-changed` stats and git status. This is what you'll open 80% of
-    the time in an agent workflow.
-  - **Files**: a tree built client-side from `list_session_files` (git-tracked
-    plus untracked-not-ignored), refreshed on `git_status_changed`.
+- A **navigator** (collapsible) with three modes, in this order:
+  - **Files**, the default: a tree built client-side from `list_session_files`
+    (git-tracked plus untracked-not-ignored), refreshed on
+    `git_status_changed`.
+  - **Search**: worktree search (§6).
+  - **Changes**: files the session has modified, from the existing
+    `session:diff-changed` stats and git status.
 - The **tab bar** and editor.
 - The terminal split below, unchanged.
 
