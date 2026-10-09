@@ -13,6 +13,8 @@ struct ResizableHSplit<Leading: View, Trailing: View>: View {
   let pinnedMax: CGFloat
   /// The flexible pane's minimum.
   let otherMin: CGFloat
+  /// False hides the pinned pane and its divider; its width is kept for when it's back.
+  var showsPinned = true
   @ViewBuilder let leading: () -> Leading
   @ViewBuilder let trailing: () -> Trailing
 
@@ -22,11 +24,13 @@ struct ResizableHSplit<Leading: View, Trailing: View>: View {
 
   init(
     key: String, leadingMin: CGFloat, leadingIdeal: CGFloat, leadingMax: CGFloat, trailingMin: CGFloat,
+    showsLeading: Bool = true,
     @ViewBuilder leading: @escaping () -> Leading, @ViewBuilder trailing: @escaping () -> Trailing
   ) {
     self.init(
       key: key, pinned: .leading, min: leadingMin, ideal: leadingIdeal, max: leadingMax, otherMin: trailingMin,
       leading: leading, trailing: trailing)
+    showsPinned = showsLeading
   }
 
   init(
@@ -58,13 +62,17 @@ struct ResizableHSplit<Leading: View, Trailing: View>: View {
   var body: some View {
     HStack(spacing: 0) {
       if pinned == .leading {
-        leading().frame(width: width)
-        divider
+        if showsPinned {
+          leading().frame(width: width)
+          divider
+        }
         trailing().frame(maxWidth: .infinity)
       } else {
         leading().frame(maxWidth: .infinity)
-        divider
-        trailing().frame(width: width)
+        if showsPinned {
+          divider
+          trailing().frame(width: width)
+        }
       }
     }
     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { total = $0 }

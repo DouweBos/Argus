@@ -20,7 +20,8 @@ struct CodeEditorPane: View {
           reload: { Task { await code.resolveWithReload(file.path) } })
         Divider()
       }
-      content.frame(maxWidth: .infinity, maxHeight: .infinity)
+      // The AppKit editor may draw past its bounds; never over the navigator or the tab bar.
+      content.frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
       if let client = model.languages.clients[code.sessionId], client.problemsExpanded {
         Divider()
         ProblemsList(client: client, code: code)

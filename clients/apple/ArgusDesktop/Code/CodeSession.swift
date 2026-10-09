@@ -32,7 +32,11 @@ final class CodeSession {
   /// How the next route change came about, for `mac_editor_file_opened`.
   @ObservationIgnored var pendingSource: MacTelemetryEvent.EditorOpenSource?
   var navigatorMode: CodeNavigatorMode = .changes
-  var navigatorVisible = true
+  /// App-wide and remembered: the route moving between files never hides it.
+  var navigatorVisible: Bool {
+    get { CodeLayout.shared.navigatorVisible }
+    set { CodeLayout.shared.navigatorVisible = newValue }
+  }
   var quickOpenVisible = false
   let quickOpen = QuickOpenModel()
   /// The worktree's files (`list_session_files`), for the tree and quick open.
