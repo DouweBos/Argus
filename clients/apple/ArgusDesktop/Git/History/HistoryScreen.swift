@@ -53,11 +53,11 @@ struct HistoryScreen: View {
   @ViewBuilder
   private func list(_ actions: HistoryActions) -> some View {
     if history.filteredCommits.isEmpty && !history.isLoading {
-      ContentUnavailableView(
-        history.isFiltering ? "No matching commits" : "No commits",
-        systemImage: history.isFiltering ? "magnifyingglass" : "clock",
-        description: Text(
-          history.isFiltering ? "Nothing loaded matches \u{201C}\(history.searchText)\u{201D}." : "Commits show up here."))
+      EmptyState(
+        icon: history.isFiltering ? "magnifyingglass" : "clock",
+        title: history.isFiltering ? "No matching commits" : "No commits",
+        body: history.isFiltering ? "Nothing loaded matches \u{201C}\(history.searchText)\u{201D}." : "Commits show up here."
+      )
     } else {
       CommitTableView(history: history, ownCommits: ownCommits) { menu, commit, selected in
         actions.fill(menu, commit: commit, selected: selected)

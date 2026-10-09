@@ -17,12 +17,6 @@ public struct SessionTerminalsList: View {
   public var body: some View {
     List {
       if let terminals {
-        if terminals.isEmpty {
-          EmptyState(
-            icon: Icon.terminal, title: "No terminals running",
-            body: "Shells and run commands started on the computer show up here.")
-          .listRowBackground(Color.clear)
-        }
         ForEach(terminals, id: \.id) { terminal in
           Button { open(terminal) } label: {
             Label(
@@ -30,8 +24,18 @@ public struct SessionTerminalsList: View {
               systemImage: terminal.runTitle == nil ? Icon.terminal : Icon.play)
           }
         }
+      }
+    }
+    // Over the list, not in it: a row only gets its own height.
+    .overlay {
+      if let terminals {
+        if terminals.isEmpty {
+          EmptyState(
+            icon: Icon.terminal, title: "No terminals running",
+            body: "Shells and run commands started on the computer show up here.")
+        }
       } else {
-        Loading(label: "Reading terminals…").listRowBackground(Color.clear)
+        Loading(label: "Reading terminals…")
       }
     }
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) {

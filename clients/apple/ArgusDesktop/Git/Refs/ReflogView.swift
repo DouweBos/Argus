@@ -88,7 +88,7 @@ struct ReflogView: View {
         FileDiffsView(files: diffs, isLoading: loadingDiffs)
       }
     } else {
-      ContentUnavailableView("Select an Entry", systemImage: "clock.arrow.circlepath")
+      EmptyState(icon: "clock.arrow.circlepath", title: "Select an Entry")
     }
   }
 

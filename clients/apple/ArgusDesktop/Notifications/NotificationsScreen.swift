@@ -9,9 +9,10 @@ struct NotificationsScreen: View {
     let log = model.notificationsLog
     Group {
       if log.entries.isEmpty {
-        ContentUnavailableView(
-          "No warnings or errors", systemImage: "checkmark.circle",
-          description: Text("Anything that goes wrong shows up here."))
+        EmptyState(
+          icon: "checkmark.circle", title: "No warnings or errors",
+          body: "Anything that goes wrong shows up here."
+        )
       } else {
         List(log.entries) { entry in
           NotificationRow(entry: entry) { log.dismiss(entry.id) }

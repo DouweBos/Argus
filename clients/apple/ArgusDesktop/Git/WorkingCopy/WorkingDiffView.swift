@@ -11,11 +11,10 @@ struct WorkingDiffView: View {
 
   var body: some View {
     if let entry = vm.selectedEntry, entry.isConflicted {
-      ContentUnavailableView {
-        Label("\(entry.fileName) has conflicts", systemImage: "exclamationmark.triangle")
-      } description: {
-        Text("Pick a side or edit the merged result in Conflicts.")
-      } actions: {
+      EmptyState(
+        icon: "exclamationmark.triangle", title: "\(entry.fileName) has conflicts",
+        body: "Pick a side or edit the merged result in Conflicts."
+      ) {
         Button("Resolve in Conflicts") { model.navigate(.sessionGit(id: workspace.sessionId, view: .conflicts)) }
       }
     } else {

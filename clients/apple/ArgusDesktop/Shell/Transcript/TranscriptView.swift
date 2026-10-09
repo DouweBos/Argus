@@ -27,6 +27,9 @@ struct TranscriptView: View {
   private var model: TranscriptModel { session.model }
   private var controller: TranscriptTableController { session.controller }
   private var links: TranscriptLinkHandler { session.links }
+  private var hasQueue: Bool {
+    !(host.queuedByAgent[agentKey] ?? []).isEmpty || !(host.failedByAgent[agentKey] ?? []).isEmpty
+  }
   private var hasOlder: Bool { fixture == nil && host.hasOlderMessages(for: agentKey) }
 
   var body: some View {
@@ -35,7 +38,7 @@ struct TranscriptView: View {
     TranscriptTable(
       controller: controller, agentKey: agentKey, messages: messages,
       top: .init(hasOlder: hasOlder, loading: loadingOlder),
-      footer: .init(pending: pending, showEmpty: messages.isEmpty && (landed || fixture != nil))
+      footer: .init(pending: pending)
     )
     // Each agent has its own table; another agent's can't be updated into this one.
     .id(agentKey)
@@ -44,6 +47,13 @@ struct TranscriptView: View {
       if !ids.isEmpty { controller.jumpToLatest() }
     }
     .onChange(of: model.revealToken) { _, _ in reveal() }
+    // Over the table, not in it: a row is as tall as its content, so only the pane can centre it.
+    .overlay {
+      if messages.isEmpty && (landed || fixture != nil) && !hasQueue {
+        EmptyState(icon: Icon.agent, title: "Nothing yet", body: "Send this agent a message to get it going.")
+          .allowsHitTesting(false)
+      }
+    }
     .overlay(alignment: .top) {
       if model.findOpen {
         TranscriptFindBar().padding(.top, 8)

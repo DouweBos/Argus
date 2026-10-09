@@ -78,7 +78,7 @@ struct StashesView: View {
     }
     .overlay {
       if stashes.stashes.isEmpty && !stashes.isLoading {
-        ContentUnavailableView("No Stashes", systemImage: "tray", description: Text("Stashed changes show up here."))
+        EmptyState(icon: "tray", title: "No Stashes", body: "Stashed changes show up here.")
       }
     }
   }
@@ -110,7 +110,7 @@ struct StashesView: View {
         FileDiffsView(files: stashes.stashDiffs, isLoading: stashes.isLoadingDiff)
       }
     } else {
-      ContentUnavailableView("Select a Stash", systemImage: "tray.full")
+      EmptyState(icon: "tray.full", title: "Select a Stash")
     }
   }
 

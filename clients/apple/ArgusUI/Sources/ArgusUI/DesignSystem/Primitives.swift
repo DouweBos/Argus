@@ -446,19 +446,44 @@ public struct StatusDot: View {
   }
 }
 
-public struct EmptyState: View {
+/// A pane with nothing to show, centred in all the room it's given. Inside a
+/// scroll view or list it only gets its own height, so put it over one instead.
+public struct EmptyState<Actions: View>: View {
   let icon: String
   let title: String
-  let body_: String
+  let body_: String?
+  /// An error worth copying: its body can be selected.
+  let selectable: Bool
+  let actions: Actions
 
-  public init(icon: String, title: String, body: String) {
+  public init(
+    icon: String, title: String, body: String? = nil, selectable: Bool = false,
+    @ViewBuilder actions: () -> Actions
+  ) {
     self.icon = icon
     self.title = title
     self.body_ = body
+    self.selectable = selectable
+    self.actions = actions()
   }
 
   public var body: some View {
-    ContentUnavailableView(title, systemImage: icon, description: Text(body_))
+    ContentUnavailableView {
+      Label(title, systemImage: icon)
+    } description: {
+      if let body_ {
+        if selectable { Text(body_).textSelection(.enabled) } else { Text(body_) }
+      }
+    } actions: {
+      actions
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+}
+
+extension EmptyState where Actions == EmptyView {
+  public init(icon: String, title: String, body: String? = nil, selectable: Bool = false) {
+    self.init(icon: icon, title: title, body: body, selectable: selectable) { EmptyView() }
   }
 }
 

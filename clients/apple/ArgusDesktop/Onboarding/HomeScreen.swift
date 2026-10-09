@@ -10,46 +10,17 @@ struct HomeScreen: View {
   @Environment(HostStore.self) private var store
   @Environment(\.theme) private var theme
 
+  private var isEmpty: Bool { store.projectsLoaded && store.projects.isEmpty }
+
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 24) {
-        SetupCards()
-        HomeEnvironmentCards()
-        if !store.projectsLoaded {
-          ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
-        } else if store.projects.isEmpty {
-          empty
-        } else {
-          HStack(spacing: 10) {
-            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 32, height: 32)
-            Text("Argus").font(.scaled(size: 24, weight: .semibold))
-          }
-          HomeNeedsYouSection()
-          section("Projects") {
-            Button("Add Project…") { model.addingProject = true }.buttonStyle(.accentLink)
-          } content: {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 12)], spacing: 12) {
-              ForEach(projects) { HomeProjectCard(project: $0) }
-            }
-          }
-          HStack(alignment: .top, spacing: 20) {
-            section("Active agents") {
-              Button("View all") { model.navigate(.agents) }.buttonStyle(.accentLink)
-            } content: {
-              HomeAgentsList()
-            }
-            section("Devices") {
-              Button("View all") { model.navigate(.devices) }.buttonStyle(.accentLink)
-            } content: {
-              HomeDevicesList()
-            }
-          }
-          HomeRecentRunsSection()
-        }
+    Group {
+      // A scroll view only offers its content's own height; with nothing to
+      // list, the empty state needs the whole screen to centre in.
+      if isEmpty {
+        column.frame(maxHeight: .infinity)
+      } else {
+        ScrollView { column }
       }
-      .padding(28)
-      .frame(maxWidth: 960, alignment: .leading)
-      .frame(maxWidth: .infinity)
     }
     .background(theme.bg)
     .navigationTitle("Home")
@@ -61,6 +32,47 @@ struct HomeScreen: View {
         await store.refreshDevices()
       }
     }
+  }
+
+  private var column: some View {
+    VStack(alignment: .leading, spacing: 24) {
+      SetupCards()
+      HomeEnvironmentCards()
+      if !store.projectsLoaded {
+        ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
+      } else if store.projects.isEmpty {
+        empty
+      } else {
+        HStack(spacing: 10) {
+          Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 32, height: 32)
+          Text("Argus").font(.scaled(size: 24, weight: .semibold))
+        }
+        HomeNeedsYouSection()
+        section("Projects") {
+          Button("Add Project…") { model.addingProject = true }.buttonStyle(.accentLink)
+        } content: {
+          LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 12)], spacing: 12) {
+            ForEach(projects) { HomeProjectCard(project: $0) }
+          }
+        }
+        HStack(alignment: .top, spacing: 20) {
+          section("Active agents") {
+            Button("View all") { model.navigate(.agents) }.buttonStyle(.accentLink)
+          } content: {
+            HomeAgentsList()
+          }
+          section("Devices") {
+            Button("View all") { model.navigate(.devices) }.buttonStyle(.accentLink)
+          } content: {
+            HomeDevicesList()
+          }
+        }
+        HomeRecentRunsSection()
+      }
+    }
+    .padding(28)
+    .frame(maxWidth: 960, alignment: .leading)
+    .frame(maxWidth: .infinity)
   }
 
   /// Most recently opened first (in either desktop app), then the newest
@@ -81,25 +93,25 @@ struct HomeScreen: View {
   }
 
   private var empty: some View {
-    VStack(spacing: 14) {
-      Image(systemName: "folder.badge.plus").font(.scaled(size: 40)).foregroundStyle(theme.textMuted)
-      Text("No projects yet").font(.scaled(.title2).weight(.semibold))
-      Text("Add a git repository to start sessions and agents in it.").foregroundStyle(theme.textSecondary)
-      Button {
-        model.addingProject = true
-      } label: {
-        Label("Add repository", systemImage: "folder")
+    EmptyState(
+      icon: "folder.badge.plus", title: "No projects yet",
+      body: "Add a git repository to start sessions and agents in it."
+    ) {
+      // Actions sit in a row on macOS; the shortcuts go under the button.
+      VStack(spacing: 14) {
+        Button {
+          model.addingProject = true
+        } label: {
+          Label("Add repository", systemImage: "folder")
+        }
+        .buttonStyle(.borderedProminent)
+        VStack(alignment: .leading, spacing: 6) {
+          shortcut("⌘O", "Add project")
+          shortcut("⌘N", "New session")
+          shortcut("⇧⌘P", "Command palette")
+        }
       }
-      .buttonStyle(.borderedProminent)
-      VStack(alignment: .leading, spacing: 6) {
-        shortcut("⌘O", "Add project")
-        shortcut("⌘N", "New session")
-        shortcut("⇧⌘P", "Command palette")
-      }
-      .padding(.top, 6)
     }
-    .frame(maxWidth: .infinity)
-    .padding(.top, 60)
   }
 
   private func shortcut(_ keys: String, _ label: String) -> some View {

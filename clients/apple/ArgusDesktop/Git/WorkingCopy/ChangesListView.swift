@@ -76,9 +76,10 @@ struct ChangesListView: View {
         } else if !filter.isEmpty {
           ContentUnavailableView.search(text: filter)
         } else {
-          ContentUnavailableView(
-            vm.fileViewMode == .allFiles ? "No files" : "No changes", systemImage: "checkmark.circle",
-            description: Text(vm.fileViewMode == .allFiles ? "Nothing is tracked yet." : "The working tree is clean."))
+          EmptyState(
+            icon: "checkmark.circle", title: vm.fileViewMode == .allFiles ? "No files" : "No changes",
+            body: vm.fileViewMode == .allFiles ? "Nothing is tracked yet." : "The working tree is clean."
+          )
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)

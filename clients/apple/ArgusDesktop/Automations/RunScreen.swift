@@ -33,11 +33,10 @@ struct RunScreen: View {
       if let run {
         content(run)
       } else if looked {
-        ContentUnavailableView {
-          Label("Run not found", systemImage: "questionmark.circle")
-        } description: {
-          Text("Runs are pruned once an automation has fifty of them.")
-        } actions: {
+        EmptyState(
+          icon: "questionmark.circle", title: "Run not found",
+          body: "Runs are pruned once an automation has fifty of them."
+        ) {
           Button(automationId == nil ? "Back to Quick Runs" : "Back to the Automation") { back() }
         }
       } else {

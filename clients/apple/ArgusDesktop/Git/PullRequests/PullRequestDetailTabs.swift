@@ -112,7 +112,7 @@ struct PullRequestCommits: View {
 
   var body: some View {
     if commits.isEmpty {
-      ContentUnavailableView("No commits", systemImage: "circle.dashed")
+      EmptyState(icon: "circle.dashed", title: "No commits")
     } else {
       List(commits, id: \.oid) { commit in
         HStack(spacing: 10) {
@@ -151,7 +151,7 @@ struct PullRequestChecks: View {
 
   var body: some View {
     if checks.isEmpty {
-      ContentUnavailableView("No checks", systemImage: "checkmark.seal", description: Text("No CI reported on this pull request."))
+      EmptyState(icon: "checkmark.seal", title: "No checks", body: "No CI reported on this pull request.")
     } else {
       List(Array(checks.enumerated()), id: \.offset) { _, check in
         HStack(spacing: 10) {

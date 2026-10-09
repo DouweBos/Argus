@@ -27,11 +27,10 @@ struct ProposalScreen: View {
           .frame(maxWidth: .infinity)
         }
       } else if looked || model.inbox.loaded {
-        ContentUnavailableView {
-          Label("This proposal is gone", systemImage: "tray")
-        } description: {
-          Text("It was decided on, or the host that raised it is no longer attached.")
-        } actions: {
+        EmptyState(
+          icon: "tray", title: "This proposal is gone",
+          body: "It was decided on, or the host that raised it is no longer attached."
+        ) {
           Button("Back to the Inbox") { model.navigate(.inbox) }
         }
       } else {

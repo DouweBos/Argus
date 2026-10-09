@@ -33,11 +33,10 @@ struct InspectionMetadataView: View {
       }
       .background(theme.bg)
     } else {
-      ContentUnavailableView {
-        Label("No element selected", systemImage: "cursorarrow.rays")
-      } description: {
-        Text("Click an element in the capture to see its metadata here.")
-      }
+      EmptyState(
+        icon: "cursorarrow.rays", title: "No element selected",
+        body: "Click an element in the capture to see its metadata here."
+      )
       .background(theme.bg)
     }
   }

@@ -57,19 +57,13 @@ struct CodeEditorPane: View {
               resultBucket: MacTelemetryEvent.countBucket(document.find.matches.count), truncated: false))
         }
     case .readOnly(let reason):
-      ContentUnavailableView {
-        Label(Self.title(reason), systemImage: "doc.questionmark")
-      } description: {
-        Text("Argus only edits UTF-8 text files up to 5 MB.")
-      } actions: {
+      EmptyState(
+        icon: "doc.questionmark", title: Self.title(reason), body: "Argus only edits UTF-8 text files up to 5 MB."
+      ) {
         Button("Open Externally") { Task { await code.openExternally(file.path) } }
       }
     case .failed(let message):
-      ContentUnavailableView {
-        Label("Couldn't open \(file.name)", systemImage: "exclamationmark.triangle")
-      } description: {
-        Text(message)
-      } actions: {
+      EmptyState(icon: "exclamationmark.triangle", title: "Couldn't open \(file.name)", body: message) {
         Button("Try Again") { code.retry(file.path) }
       }
     }

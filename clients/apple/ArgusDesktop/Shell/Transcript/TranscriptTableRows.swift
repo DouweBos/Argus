@@ -16,7 +16,6 @@ enum TranscriptRow {
 
   struct FooterState: Equatable {
     var pending: [RemoteToolCall] = []
-    var showEmpty = false
   }
 
   /// A hosting view's root: the column, the pane's environment (AppKit hosting
@@ -89,9 +88,6 @@ private struct TranscriptFooter: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
-      if state.showEmpty {
-        EmptyState(icon: Icon.agent, title: "Nothing yet", body: "Send this agent a message to get it going.")
-      }
       WorkingIndicator(
         status: host.statusByAgent[agentKey]?.status,
         pendingToolName: host.pendingToolByAgent[agentKey],

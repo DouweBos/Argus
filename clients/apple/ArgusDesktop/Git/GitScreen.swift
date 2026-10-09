@@ -16,11 +16,7 @@ struct GitScreen: View {
         GitWorkspaceView(workspace: workspace, session: session, view: view)
           .id(session.id)
       case .failed(let message):
-        ContentUnavailableView {
-          Label("Couldn't open the repository", systemImage: "exclamationmark.triangle")
-        } description: {
-          Text(message)
-        } actions: {
+        EmptyState(icon: "exclamationmark.triangle", title: "Couldn't open the repository", body: message) {
           Button("Try Again") {
             model.git.retry(session.id)
             Task { await model.git.open(session) }

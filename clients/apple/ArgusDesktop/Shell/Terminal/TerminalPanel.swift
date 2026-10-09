@@ -21,9 +21,7 @@ struct TerminalPanel: View {
       Divider()
       ZStack {
         if tabs.isEmpty {
-          ContentUnavailableView {
-            Label("No terminals open", systemImage: "terminal")
-          } actions: {
+          EmptyState(icon: "terminal", title: "No terminals open") {
             Button("New Terminal", action: newShell)
           }
         }

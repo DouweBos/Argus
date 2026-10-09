@@ -36,11 +36,10 @@ private struct AutomationDetail: View {
       if let automation {
         form(automation)
       } else if store.loaded {
-        ContentUnavailableView {
-          Label("Automation not found", systemImage: "clock.badge.questionmark")
-        } description: {
-          Text("It may have been deleted on this host.")
-        } actions: {
+        EmptyState(
+          icon: "clock.badge.questionmark", title: "Automation not found",
+          body: "It may have been deleted on this host."
+        ) {
           Button("Back to Automations") { model.navigate(.automations) }
         }
       } else {

@@ -18,11 +18,7 @@ struct InteractiveRebaseView: View {
       if let planner {
         editor(planner)
       } else if let problem {
-        ContentUnavailableView {
-          Label("Can't rebase from here", systemImage: "list.bullet.indent")
-        } description: {
-          Text(problem)
-        } actions: {
+        EmptyState(icon: "list.bullet.indent", title: "Can't rebase from here", body: problem) {
           Button("Back to History") { navigate(.history) }
         }
       } else {

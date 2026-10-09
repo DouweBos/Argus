@@ -55,11 +55,10 @@ private struct PullRequestDetailContent: View {
         .navigationSubtitle("\(detail.repoNameWithOwner) #\(Int(detail.number))")
         .toolbar { toolbar(detail) }
       } else if let error = model.loadError {
-        ContentUnavailableView {
-          Label("Couldn't load pull request", systemImage: "exclamationmark.triangle")
-        } description: {
-          Text(PullRequestLabels.explain(error)).textSelection(.enabled)
-        } actions: {
+        EmptyState(
+          icon: "exclamationmark.triangle", title: "Couldn't load pull request",
+          body: PullRequestLabels.explain(error), selectable: true
+        ) {
           Button("Try Again") { Task { await model.load() } }
           Button("Back to Pull Requests") { desktop.navigate(.pullRequests) }
         }
@@ -109,10 +108,10 @@ private struct PullRequestDetailContent: View {
       }
       .overlay {
         if model.diffLoaded, let error = model.diffError {
-          ContentUnavailableView("Couldn't load diff", systemImage: "exclamationmark.triangle", description: Text(error))
+          EmptyState(icon: "exclamationmark.triangle", title: "Couldn't load diff", body: error)
             .background(.background)
         } else if model.diffLoaded, model.files.isEmpty {
-          ContentUnavailableView("No textual diff", systemImage: "doc.text").background(.background)
+          EmptyState(icon: "doc.text", title: "No textual diff").background(.background)
         }
       }
       .task { await model.loadDiffIfNeeded() }

@@ -26,12 +26,9 @@ struct CodePanel: View {
           CodeEditorPane(code: code, file: file)
             .id(path)
         } else {
-          ContentUnavailableView {
-            Label("No file open", systemImage: "doc.text")
-          } description: {
-            Text("Pick a file from the navigator, press ⌘P to open one by name, or ⇧⌘O to open a file or symbol.")
-          }
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          EmptyState(
+            icon: "doc.text", title: "No file open",
+            body: "Pick a file from the navigator, press ⌘P to open one by name, or ⇧⌘O to open a file or symbol.")
         }
       }
     }

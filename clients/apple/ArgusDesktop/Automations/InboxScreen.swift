@@ -45,15 +45,14 @@ struct InboxScreen: View {
 
   private var empty: some View {
     let none = model.automations.automations.isEmpty
-    return ContentUnavailableView {
-      Label("Nothing needs you", systemImage: "tray")
-    } description: {
-      Text(
+    return EmptyState(
+      icon: "tray", title: "Nothing needs you",
+      body:
         none
-          ? "Turn on an automation and whatever it finds — issues to pick up, work it has already "
-            + "started — shows up here."
-          : "Your automations have nothing waiting on you. This is what a quiet inbox looks like.")
-    } actions: {
+        ? "Turn on an automation and whatever it finds — issues to pick up, work it has already "
+        + "started — shows up here."
+        : "Your automations have nothing waiting on you. This is what a quiet inbox looks like."
+    ) {
       Button(none ? "Set Up an Automation" : "Automations") { model.navigate(.automations) }
     }
   }

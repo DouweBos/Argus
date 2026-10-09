@@ -40,7 +40,7 @@ struct CommitDetailView: View {
         }
       }
     } else {
-      ContentUnavailableView("No commit selected", systemImage: "point.3.connected.trianglepath.dotted")
+      EmptyState(icon: "point.3.connected.trianglepath.dotted", title: "No commit selected")
     }
   }
 

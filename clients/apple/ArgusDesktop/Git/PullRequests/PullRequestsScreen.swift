@@ -93,15 +93,14 @@ struct PullRequestList: View {
     if !loaded {
       ProgressView("Asking GitHub…").controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
     } else if let error, pullRequests.isEmpty {
-      ContentUnavailableView {
-        Label("Couldn't fetch pull requests", systemImage: "exclamationmark.triangle")
-      } description: {
-        Text(PullRequestLabels.explain(error)).textSelection(.enabled)
-      } actions: {
+      EmptyState(
+        icon: "exclamationmark.triangle", title: "Couldn't fetch pull requests",
+        body: PullRequestLabels.explain(error), selectable: true
+      ) {
         Button("Try Again", action: retry)
       }
     } else if pullRequests.isEmpty {
-      ContentUnavailableView(emptyTitle, systemImage: "arrow.triangle.pull", description: Text(emptyText))
+      EmptyState(icon: "arrow.triangle.pull", title: emptyTitle, body: emptyText)
     } else {
       list
     }
