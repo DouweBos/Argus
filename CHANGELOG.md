@@ -1,5 +1,77 @@
 # argus
 
+## 0.68.0
+
+### Minor Changes
+
+- 40343ff: The Mac code view folds code: hover the line numbers for fold arrows, or use ⌥⌘[ and ⌥⌘] to fold and unfold, and ⌘K ⌘0 / ⌘K ⌘J to fold or unfold everything.
+- 1b86c6c: Files and folders in the Mac code view, the Git panel, quick open and the iPhone's file screens show VS Code-style file type icons, and folders in the Files tree open and close with their icon.
+- 6fb0848: Code blocks in chat are syntax highlighted in Argus for Mac and on iPhone, for Swift, TypeScript, Kotlin, Python and a dozen more languages.
+- a9ec6f2: The iOS app can open a session's files with syntax highlighting: tap a file path in the chat, view a changed file from Changes, find a file by name, or search the whole worktree.
+- 9a8f7f3: The Mac app has an Agent menu with the desktop's keyboard shortcuts: start an agent (⇧⌘A), switch agents (⇧⌘] / ⇧⌘[, ⌃⌘1–9), interrupt (⌘.) and focus the chat input (⌘L). Open Session (⇧⌘O), App Home (⇧⌘H), ⌥⌘1–5 for the main screens and ⌥⌘B for the runtime panel join them.
+- c425112: Format Document (⇧⌥F) tidies a file in the Mac code view with its language server, and a new Format on save setting does it every time you save.
+- d947811: The Mac code view shows errors and warnings as you type, with hover info, completion and go to definition from language servers. A Problems list collects the open files' issues, each one a click from its line or from asking the agent to fix it.
+- 29f63b5: Find References (⇧⌃⌘F) in the Mac code view lists every use of a symbol in the navigator's search results.
+- 10b5ee0: Rename Symbol (⌃⌘E) in the Mac code view renames a symbol everywhere its language server finds it, leaving any file that changed on disk meanwhile untouched.
+- d02921a: The code view in Argus for Mac uses VS Code's keyboard shortcuts: toggle comments, move, copy and delete lines, add cursors and the next match, go to line, step through problems and more, all listed in the Editor, Selection and Go menus.
+- 5a17274: The Mac app has a Code view (⌘4) for reading and editing a session's files: chat, diff and blame links open it at the line, ⌘P opens files by name, ⇧⌘F searches the worktree, and agent edits show up live without overwriting yours.
+- 4a46a25: Argus for Mac has a device button in the session toolbar that shows and hides the device panel, also on ⌥⌘B, the View menu and the command palette. Each session remembers whether its panel is open, across relaunches.
+- 13557d1: Images in Argus for Mac open in a card over the window, sized to the image, with Copy, Save and Open in Preview; Esc or a click outside closes it, and the arrow keys page through a message's images.
+- 632d2e7: Hovering a message in Argus for Mac shows its actions, as on the desktop: copy it, edit one of your own and rewind the chat to it, or fork the chat from it into a new session or a new agent.
+- 58bd7e8: The Mac app has Back and Forward chevrons in the toolbar, and a mouse's side buttons go back and forward too. ⌘[ and ⌘] now live in the Go menu.
+- 6e4aec3: The Mac code view gains Open Quickly (⇧⌘O) for jumping to any file or symbol, and ⌘T for symbols across the session. ⌘P understands `@` for symbols in the file, `#` for symbols in the session and `:` for a line.
+- f535c54: The Mac app's code view formats with your project's own Prettier, SwiftFormat or swift-format, on save and with Format Document. Format on save is now Automatic, Always or Never; Automatic formats only when the project has a formatter, and a file that fails to format is still saved.
+- 751c0b1: Argus for Mac shows fenced code in its own tinted box with syntax colours, scrolling long lines sideways instead of wrapping them.
+- 751c0b1: In Argus for Mac you can drag to select chat text across several messages and copy it with ⌘C or the context menu; ⌘A selects a whole message.
+- d30313f: Diffs in the Mac app's Git panel switch between a Unified view, with every addition and deletion inline, and Split from the diff header. The choice is remembered per Argus home and no longer flips back when another Argus build is open.
+- 76ffa45: Queued messages have a Send now button on the desktop, the Mac app and the phone: it interrupts what the agent is doing and delivers that message straight away. Two queued messages no longer go out together when a turn ends.
+- ab03038: A simulator that can't boot because its data is missing, or whose runtime isn't installed, now says so in a short message with Erase and Delete buttons instead of showing the raw simctl error. Other boot failures are summed up in one line too.
+- d1908a0: Swift files in Xcode projects get diagnostics, completion, go to definition and rename in the code editor once xcode-build-server is installed and the app has been built in the session. The status bar tells you which of the two is missing.
+- 82affb9: Symbol search finds classes, functions and other definitions across a session in Swift, TypeScript, JavaScript, Kotlin, Java, Objective-C, Python, Ruby, Go and Rust, even when no language server is running.
+
+### Patch Changes
+
+- 140f4c3: The account picker in the chat input now always shows the account you switched to in Settings, and accounts that hit their usage limit no longer look selected.
+- aeceec7: The project root and every session now show the branch they are actually on, even after you switch branches in another git tool or a terminal.
+- 39f8459: Message timestamps in the agent chat no longer cover the start of a message or a tool call's title when you hover it.
+- c821da1: Images you attach to a message now stay in the chat input with your draft when you switch views or agents, or relaunch the app, on the Mac and the phone.
+- f651bf6: Clicking a simulator or emulator on the Mac or the phone taps it, instead of sometimes registering as a long press.
+- fa30ab0: The Mac code view shows line numbers from the start, keeps them inside the editor as it scrolls, and scrolls long lines sideways when wrapping is off.
+- 0cde9ca: Empty screens in the Mac app, like a new agent's "Nothing yet", now sit in the middle of their pane at any window size.
+- 6ae506d: ⌘W closes a device popout or any other secondary window in the Mac app, instead of only ever closing tabs in the main window.
+- b8201d9: The Mac app's code navigator stays open when you open a file, and remembers whether it was shown and how wide it was.
+- 29f4ac2: The Mac app marks projects whose sessions live on an external drive, and greys out sessions whose drive is disconnected so they can't be opened. Plugging a drive in or ejecting it now updates the sidebar right away, on every client.
+- c7ec868: One click on the Mac app's window while it's in the background brings it forward, instead of needing a double click.
+- 9f661e3: Switching to a session's Git tab in Argus for Mac is much faster in large repositories: its changes, branches, tags and stashes load ahead of time, and the Tags list starts collapsed, as on the desktop.
+- 704d1e4: In the Mac app, editing a queued message (and other multi-line fields such as feedback and commit messages) wraps the existing text, grows with it and then scrolls, instead of showing one long line.
+- 45a700e: A diff in the Mac app's Git panel that only adds or only removes lines shows as a single column, even in Split, and a new or deleted file shows one line-number gutter.
+- 225f051: The Mac app's Home, Agents and Git switcher is now a pill tab bar with icons, and Git shows how many files have changed.
+- 05198ba: The view switcher at the top of an Argus for Mac session window stays in place when you switch between Home, Agents, Code and Git; git actions that don't fit beside it move into a More menu.
+- 93a1840: The Mac app's sidebar shows each project's root checkout in the project header, with its branch, agents and commits ahead or behind, and the project's sessions fold away under it.
+- b601a8b: A queued message no longer lingers in the Mac and iPhone chat after the agent has picked it up.
+- 5840465: In the Mac app's Open Quickly, the arrow keys move through the results while you type, and Return opens the selected one.
+- d24ec50: The device panel in Argus for Mac switches between Simulate, Inspect and Logs with pill buttons like the view switcher's, instead of a pop-up menu when the panel is narrow.
+- 0c17203: Argus for Mac now orders a session's views Home, Agents, Code, Git, with ⌘3 for Code and ⌘4 for Git, and lists all four in the command palette.
+- b838766: The Mac app's sidebar now has an Add repository button at the bottom.
+- 0c083cc: The Mac app's Add repository button no longer covers the last project in the sidebar.
+- f01d6c1: The Mac app's sidebar has a Home item at the top that takes you back to the app home.
+- 47ba957: Typing into a simulator and its Home, Apple TV remote and other hardware buttons work in the Mac app.
+- f259c37: The Mac app's code view status bar names the file's language once instead of twice.
+- 8066eff: In Argus for Mac, a tool call or tool group opens on the first click even when another app was in front.
+- f802c83: Argus for Mac's session toolbar controls — sharing, the run button, the terminal toggle and the git actions — now share the view switcher's look: one capsule with flat buttons, instead of a smaller pill inside a pill.
+- 908b969: Going back to a chat in Argus for Mac shows it exactly where you left it, without flashing while it lays the conversation out again.
+- 751c0b1: Links in the Argus for Mac chat are underlined, show a pointing hand, and open on click: web links in your browser, file links the way the desktop opens them, saved chats included.
+- b1e59f8: Scrolling up in an Argus for Mac chat while the agent writes keeps you where you are instead of snapping back to the newest message, and rows that finish measuring above you no longer push the text you're reading.
+- eedf6d8: Scrolling a long chat in the Mac app keeps its momentum over code blocks and diff cards, rows no longer slide or jump into place while you scroll, and fast scrolling stutters far less.
+- e130689: The Mac app no longer shows a chat message's timestamp tooltip over the sidebar or other panels.
+- f5a6a2b: An Apple TV or Android TV in a narrow runtime panel on the Mac shows its remote under the picture, so the picture keeps its size, and no longer offers Rotate.
+- 1b542fa: The Mac app's window title no longer repeats the branch when a session is named after it.
+- d0637a6: In the Mac and iPhone apps, a subagent shows its task and a live list of its latest tool calls while collapsed, like the desktop does. Click it to see every call.
+- 12e7104: The code editor no longer shows false Swift errors such as "No such module 'UIKit'" in Xcode projects; the status bar explains why Swift intelligence is unavailable there. Each Swift package in a repository now gets its own language server.
+- bbe1eaa: Inspecting a tvOS app now says plainly that inspection isn't available for tvOS yet, instead of offering a restart that fails with a build error.
+- Updated dependencies [39f8459]
+  - @argus/peacock@0.25.1
+
 ## 0.67.0
 
 ### Minor Changes
