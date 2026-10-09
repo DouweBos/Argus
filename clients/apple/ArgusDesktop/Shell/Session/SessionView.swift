@@ -8,29 +8,12 @@ struct SessionView: View {
   @Environment(TerminalsStore.self) private var terminals
   let sessionId: String
 
-  private var session: RemoteSession? {
-    store.sessionsByRepo.values.joined().first { $0.id == sessionId }
-      ?? store.scratchPads.first { $0.id == sessionId } ?? store.adoptedSessions[sessionId]
-  }
+  private var session: RemoteSession? { model.session(sessionId) }
+  private var agents: [RemoteAgentStatus] { model.agents(inSession: sessionId) }
+  private var focusedAgentId: String? { model.focusedAgentId(inSession: sessionId, agents: agents) }
 
-  /// The host's agents in this session, oldest first, each with the latest
-  /// status (and title) it announced laid over the listed one.
-  private var agents: [RemoteAgentStatus] {
-    guard let session else { return [] }
-    return (store.agentsByRepo[session.repoRoot] ?? [])
-      .filter { $0.sessionId == sessionId }
-      .map { store.statusByAgent[$0.agentId] ?? $0 }
-      .sorted { ($0.createdAt ?? 0) < ($1.createdAt ?? 0) }
-  }
-
-  private func startAgent() { startAgent(mode: nil) }
-
-  private func startAgent(mode: RemotePermissionMode?) {
-    Task {
-      guard let agentId = await model.startAgent(sessionId: sessionId, mode: mode) else { return }
-      model.open(spawned: agentId, session: sessionId)
-    }
-  }
+  private func startAgent() { model.startAgent(inSession: sessionId) }
+  private func startAgent(mode: RemotePermissionMode?) { model.startAgent(inSession: sessionId, mode: mode) }
 
   /// Closing a tab stops its agent, as in the desktop app; its transcript is
   /// saved first.
@@ -42,18 +25,6 @@ struct SessionView: View {
       model.navigate(.session(id: sessionId, agentId: next))
     }
     Task { await store.stopAgent(agentId: agentId) }
-  }
-
-  /// The routed agent, else the first — a session always shows something.
-  /// One just spawned (a resumed chat) is routed to before any list has it.
-  private var focusedAgentId: String? {
-    model.route.agentId.flatMap { id in
-      agents.contains { $0.agentId == id } || justSpawned(id) ? id : nil
-    } ?? agents.first?.agentId
-  }
-
-  private func justSpawned(_ agentId: String) -> Bool {
-    model.spawnedAgent == agentId
   }
 
   var body: some View {
@@ -165,8 +136,8 @@ struct SessionView: View {
     }
     .frame(maxHeight: .infinity, alignment: .top)
     .background {
-      // ⌘T, as for a new tab.
-      Button("New Agent", action: startAgent)
+      // ⌘T too, as the Mac app always had it: agents are this panel's tabs.
+      Button("New Agent") { MenuCommand.newAgent.run(model, via: .shortcut) }
         .keyboardShortcut("t", modifiers: .command)
         .hidden()
     }
@@ -200,7 +171,7 @@ struct AgentTabBar: View {
       }
       .buttonStyle(.borderless)
       .disabled(!canStart)
-      .help("New agent (⌘T)")
+      .help("New agent (⇧⌘A)")
     }
     .padding(.horizontal, 8)
     // A scroll view takes all the height it's offered; a tab bar is one row.
@@ -284,6 +255,7 @@ struct AgentTab: View {
 /// The focused agent: its transcript, kept live, and the input that drives it.
 struct AgentPane: View {
   @Environment(\.theme) private var theme
+  @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
   let agentId: String
   let sessionId: String
@@ -306,6 +278,7 @@ struct AgentPane: View {
       }
     }
     .environment(\.composerDropInbox, drops)
+    .environment(\.composerFocusRequest, model.composerFocusRequest)
     .huddleAgent(agentId)
     .task {
       await store.watchAgent(agentId, on: true)

@@ -13,6 +13,7 @@
     @Environment(HostStore.self) var host
     @Environment(\.composerTyping) var composerTyping
     @Environment(\.composerDropInbox) var dropInbox
+    @Environment(\.composerFocusRequest) var focusRequest
     let preferences = Preferences()
 
     let agentId: String
@@ -75,6 +76,7 @@
       .background(theme.bgSecondary)
       .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
       .task(id: agentId) { await load() }
+      .onChange(of: focusRequest) { _, _ in controller.focus() }
       .onChange(of: text) { _, value in
         preferences.set(value, for: PreferenceKey.draft(agentId: agentId))
         if dismissedText != value { dismissedText = nil }

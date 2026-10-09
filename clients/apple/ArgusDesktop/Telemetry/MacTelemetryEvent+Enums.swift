@@ -99,6 +99,26 @@ extension MacTelemetryEvent {
     case shortcut
   }
 
+  /// A keyboard command from the Agent, File or View menu.
+  enum MenuCommandAction: String {
+    case newAgent = "new_agent"
+    case nextAgent = "next_agent"
+    case previousAgent = "previous_agent"
+    case selectAgent = "select_agent"
+    case interruptAgent = "interrupt_agent"
+    case focusComposer = "focus_composer"
+    case toggleRuntime = "toggle_runtime"
+    case quickSwitcher = "quick_switcher"
+    case goHome = "go_home"
+    case goToScreen = "go_to_screen"
+  }
+
+  /// Whether a menu command came from its key equivalent or a click.
+  enum MenuCommandSource: String {
+    case menu
+    case shortcut
+  }
+
   enum FolderPickStage: String {
     case opened
     case picked
