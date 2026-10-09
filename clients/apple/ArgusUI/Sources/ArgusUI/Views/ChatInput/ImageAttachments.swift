@@ -46,6 +46,12 @@ public enum ImageAttachments {
       attachment: RemoteImageAttachment(data: png.base64EncodedString(), mediaType: "image/png"))
   }
 
+  /// A saved draft's image back in the composer, as it was attached.
+  public static func pending(restoring attachment: RemoteImageAttachment) -> PendingImage? {
+    guard let data = Data(base64Encoded: attachment.data), let image = PlatformImage(data: data) else { return nil }
+    return PendingImage(preview: image, attachment: attachment)
+  }
+
   private static func pngData(_ image: PlatformImage) -> Data? {
     #if canImport(UIKit)
       image.pngData()

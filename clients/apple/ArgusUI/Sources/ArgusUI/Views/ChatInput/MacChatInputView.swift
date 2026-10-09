@@ -15,6 +15,7 @@
     @Environment(\.composerDropInbox) var dropInbox
     @Environment(\.composerFocusRequest) var focusRequest
     let preferences = Preferences()
+    let draftImages = DraftAttachments()
 
     let agentId: String
     let sessionId: String?
@@ -66,7 +67,10 @@
           ) { acceptMention($0) }
         }
         if !images.isEmpty {
-          AttachmentStrip(images: images) { id in images.removeAll { $0.id == id } }
+          AttachmentStrip(images: images) { id in
+            images.removeAll { $0.id == id }
+            saveImages()
+          }
         }
         inputRow
         controlRow
@@ -222,12 +226,14 @@
       case .images(let pending, let pasted):
         onAffordance?(pasted ? .imagePaste : .imageDrop)
         images.append(contentsOf: pending)
+        saveImages()
       case .files(let urls):
         let pending = urls.filter(ImageAttachments.isImage).compactMap(
           ImageAttachments.pending(fromFile:))
         if !pending.isEmpty {
           onAffordance?(.imageDrop)
           images.append(contentsOf: pending)
+          saveImages()
         }
         let others = urls.filter { !ImageAttachments.isImage($0) }
         guard !others.isEmpty else { return }
@@ -255,6 +261,7 @@
         let pending = panel.urls.compactMap(ImageAttachments.pending(fromFile:))
         if !pending.isEmpty { onAffordance?(.imageAttach) }
         images.append(contentsOf: pending)
+        saveImages()
         controller.focus()
       }
       if let window = NSApp.keyWindow {
@@ -312,7 +319,13 @@
       images = []
       height = ComposerField.minHeight
       preferences.remove(PreferenceKey.draft(agentId: agentId))
+      draftImages.remove(agentId: agentId)
       controller.focus()
+    }
+
+    /// Images ride the draft as its text does, so a switch away or a relaunch keeps them.
+    private func saveImages() {
+      draftImages.save(images.map(\.attachment), agentId: agentId)
     }
 
     func interrupt() {
@@ -321,6 +334,7 @@
 
     private func load() async {
       text = preferences.string(PreferenceKey.draft(agentId: agentId)) ?? ""
+      images = draftImages.load(agentId: agentId).compactMap(ImageAttachments.pending(restoring:))
       linkedProjects =
         preferences.decode(PreferenceKey.linkedProjects(agentId: agentId), as: [String].self)
         ?? []

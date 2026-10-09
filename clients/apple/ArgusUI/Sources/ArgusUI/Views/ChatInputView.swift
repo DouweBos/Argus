@@ -16,6 +16,7 @@ public struct ChatInputView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
   private let preferences = Preferences()
+  private let draftImages = DraftAttachments()
 
   let agentId: String
   let sessionId: String?
@@ -206,6 +207,7 @@ public struct ChatInputView: View {
               Button {
                 previews.remove(at: index)
                 attachments.remove(at: index)
+                draftImages.save(attachments, agentId: agentId)
               } label: {
                 Image(systemName: Icon.close)
                   .font(.scaled(size: 9, weight: .bold))
@@ -516,6 +518,7 @@ public struct ChatInputView: View {
     // easy to get wrong, and the answer for no text is never in doubt.
     inputHeight = PastingTextView.collapsedHeight
     preferences.remove(PreferenceKey.draft(agentId: agentId))
+    draftImages.remove(agentId: agentId)
     // A link rides one message, like the desktop — not every one after it.
     linkedProjects = []
     preferences.remove(PreferenceKey.linkedProjects(agentId: agentId))
@@ -533,6 +536,11 @@ public struct ChatInputView: View {
 
   private func load() async {
     text = preferences.string(PreferenceKey.draft(agentId: agentId)) ?? ""
+    let restored = draftImages.load(agentId: agentId).compactMap { attachment in
+      Data(base64Encoded: attachment.data).flatMap(PlatformImage.init(data:)).map { (attachment, $0) }
+    }
+    attachments = restored.map(\.0)
+    previews = restored.map(\.1)
     linkedProjects =
       preferences.decode(PreferenceKey.linkedProjects(agentId: agentId), as: [String].self)
       ?? []
@@ -565,5 +573,6 @@ public struct ChatInputView: View {
     previews.append(image)
     attachments.append(
       RemoteImageAttachment(data: jpeg.base64EncodedString(), mediaType: "image/jpeg"))
+    draftImages.save(attachments, agentId: agentId)
   }
 }
