@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import SwiftUI
 
 /// The window before the host is up says why; once it is, the three panels.
@@ -49,15 +50,13 @@ struct HostLockedView: View {
   let holder: HostLockRecord
 
   var body: some View {
-    ContentUnavailableView {
-      Label("\(holder.holderName) is already running", systemImage: "lock")
-    } description: {
-      Text(
+    EmptyState(
+      icon: "lock", title: "\(holder.holderName) is already running",
+      body:
         "It is using \(model.supervisor.configuration.home.path). Only one app can run the Argus host on it at a time"
-          + (model.supervisor.configuration.attachOnly
-            ? ", and this window only attaches to one that lets it." : ".")
-      )
-    } actions: {
+        + (model.supervisor.configuration.attachOnly
+          ? ", and this window only attaches to one that lets it." : ".")
+    ) {
       if !model.supervisor.configuration.attachOnly {
         Button("Quit \(holder.holderName) and Continue") { model.supervisor.takeOver() }
           .buttonStyle(.borderedProminent)
@@ -74,13 +73,11 @@ struct HostExitedView: View {
   let holder: HostLockRecord
 
   var body: some View {
-    ContentUnavailableView {
-      Label("\(holder.appName) quit", systemImage: "link.badge.plus")
-    } description: {
-      Text(
+    EmptyState(
+      icon: "link.badge.plus", title: "\(holder.appName) quit",
+      body:
         "This window was attached to its Argus host. It reconnects when \(holder.appName) opens again."
-      )
-    } actions: {
+    ) {
       if !model.supervisor.configuration.attachOnly {
         Button("Start Argus Here") { model.supervisor.start() }
           .buttonStyle(.borderedProminent)
@@ -95,13 +92,11 @@ struct HostWaitingView: View {
   @Environment(DesktopModel.self) private var model
 
   var body: some View {
-    ContentUnavailableView {
-      Label("Waiting for Argus", systemImage: "hourglass")
-    } description: {
-      Text(
+    EmptyState(
+      icon: "hourglass", title: "Waiting for Argus",
+      body:
         "This window only attaches to an Argus already running on \(model.supervisor.configuration.home.path). Open Argus and it connects."
-      )
-    } actions: {
+    ) {
       Button("Quit Argus") { AppDelegate.current?.quit() }
     }
   }
@@ -112,11 +107,7 @@ struct HostFailedView: View {
   let message: String
 
   var body: some View {
-    ContentUnavailableView {
-      Label("The Argus host stopped", systemImage: "exclamationmark.triangle")
-    } description: {
-      Text(message)
-    } actions: {
+    EmptyState(icon: "exclamationmark.triangle", title: "The Argus host stopped", body: message) {
       Button("Try Again") { model.supervisor.retry() }
         .buttonStyle(.borderedProminent)
       Button("Show Log") {

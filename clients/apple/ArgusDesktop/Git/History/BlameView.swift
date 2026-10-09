@@ -29,10 +29,10 @@ struct BlameView: View {
   @ViewBuilder
   private var content: some View {
     if let error = blame.errorMessage {
-      ContentUnavailableView("Can't blame this", systemImage: "exclamationmark.triangle", description: Text(error))
+      EmptyState(icon: "exclamationmark.triangle", title: "Can't blame this", body: error)
     } else if blame.lines.isEmpty {
       if blame.isLoadingBlame { ProgressView().controlSize(.small).frame(maxHeight: .infinity) } else {
-        ContentUnavailableView("Empty file", systemImage: "doc")
+        EmptyState(icon: "doc", title: "Empty file")
       }
     } else {
       BlameTableView(

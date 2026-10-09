@@ -15,16 +15,18 @@ struct HuddleChatPanel: View {
       ScrollViewReader { proxy in
         ScrollView {
           LazyVStack(alignment: .leading, spacing: 10) {
-            if room.chat.isEmpty {
-              Text("Nothing said yet. This stays between the people here — the agent never sees it.")
-                .font(.scaled(.callout)).foregroundStyle(theme.textSecondary)
-                .padding(.top, 8)
-            }
             ForEach(room.chat, id: \.id) { message in
               bubble(message).id(message.id)
             }
           }
           .padding(12)
+        }
+        .overlay {
+          if room.chat.isEmpty {
+            EmptyState(
+              icon: "bubble.left.and.bubble.right", title: "Nothing said yet",
+              body: "This stays between the people here — the agent never sees it.")
+          }
         }
         .onChange(of: room.chat.count, initial: true) {
           huddles.markRead(room)

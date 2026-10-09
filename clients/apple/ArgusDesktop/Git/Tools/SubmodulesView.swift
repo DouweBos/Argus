@@ -52,18 +52,12 @@ struct SubmodulesView: View {
   @ViewBuilder
   private var content: some View {
     if let loadError {
-      ContentUnavailableView {
-        Label("Couldn't list submodules", systemImage: "exclamationmark.triangle")
-      } description: {
-        Text(loadError)
-      } actions: {
+      EmptyState(icon: "exclamationmark.triangle", title: "Couldn't list submodules", body: loadError) {
         Button("Try Again") { Task { await load() } }
       }
     } else if let submodules {
       if submodules.isEmpty {
-        ContentUnavailableView(
-          "No submodules", systemImage: "shippingbox",
-          description: Text("This repository doesn't use git submodules."))
+        EmptyState(icon: "shippingbox", title: "No submodules", body: "This repository doesn't use git submodules.")
       } else {
         List(submodules, id: \.path) { submodule in
           SubmoduleRow(submodule: submodule, busy: workspace.hostBusy != nil) { action in

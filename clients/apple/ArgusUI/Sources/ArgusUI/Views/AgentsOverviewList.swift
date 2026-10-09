@@ -21,12 +21,7 @@ public struct AgentsOverviewList: View {
   public var body: some View {
     let agents = agents
     List {
-      if agents.isEmpty {
-        EmptyState(
-          icon: Icon.agent, title: "No agents",
-          body: "Start one from a session to see it here.")
-        .listRowBackground(Color.clear)
-      } else {
+      if !agents.isEmpty {
         Section {
           ForEach(agents) { agent in
             Button { open(agent) } label: {
@@ -41,6 +36,12 @@ public struct AgentsOverviewList: View {
         } header: {
           Text(Self.summary(agents))
         }
+      }
+    }
+    // Over the list, not in it: a row only gets its own height.
+    .overlay {
+      if agents.isEmpty {
+        EmptyState(icon: Icon.agent, title: "No agents", body: "Start one from a session to see it here.")
       }
     }
     .refreshable { await host.loadRecentAgents() }

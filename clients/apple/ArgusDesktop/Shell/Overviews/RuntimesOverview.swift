@@ -33,9 +33,10 @@ struct RuntimesOverview: View {
         title: "Runtimes",
         summary: "\(rows.count) total · \(running) running · \(rows.count - running) stopped")
       if rows.isEmpty {
-        ContentUnavailableView(
-          "No runtimes", systemImage: "play.rectangle",
-          description: Text("No dev servers running. Start one from a session to see it here."))
+        EmptyState(
+          icon: "play.rectangle", title: "No runtimes",
+          body: "No dev servers running. Start one from a session to see it here."
+        )
       } else {
         Table(rows, selection: $selection) {
           TableColumn("Process") { row in

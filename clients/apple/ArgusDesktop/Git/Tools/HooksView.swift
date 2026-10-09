@@ -32,18 +32,15 @@ struct HooksView: View {
   @ViewBuilder
   private var content: some View {
     if let loadError {
-      ContentUnavailableView {
-        Label("Couldn't list hooks", systemImage: "exclamationmark.triangle")
-      } description: {
-        Text(loadError)
-      } actions: {
+      EmptyState(icon: "exclamationmark.triangle", title: "Couldn't list hooks", body: loadError) {
         Button("Try Again") { Task { await load() } }
       }
     } else if let hooks {
       if hooks.isEmpty {
-        ContentUnavailableView(
-          "No hooks installed", systemImage: "link",
-          description: Text("Add an executable file under .git/hooks to run it from here."))
+        EmptyState(
+          icon: "link", title: "No hooks installed",
+          body: "Add an executable file under .git/hooks to run it from here."
+        )
       } else {
         ResizableVSplit(key: "git.hooks", topMin: 120, bottomMin: 160, bottomIdeal: 240, showsBottom: true) {
           List(hooks, id: \.name, selection: $selected) { hook in
@@ -164,9 +161,10 @@ private struct HookOutputPane: View {
         }
         .background(theme.bgSecondary)
       } else {
-        ContentUnavailableView(
-          "Not run yet", systemImage: "terminal",
-          description: Text(hook == nil ? "Select a hook." : "Run it to see its output here."))
+        EmptyState(
+          icon: "terminal", title: "Not run yet",
+          body: hook == nil ? "Select a hook." : "Run it to see its output here."
+        )
       }
     }
   }

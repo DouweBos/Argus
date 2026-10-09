@@ -261,9 +261,10 @@ private struct BaseBranchSheet: View {
 
   var body: some View {
     NavigationStack {
-      Screen {
+      // Unscrolled until there's a list, so the placeholders can centre.
+      Screen(scroll: loaded && !branches.isEmpty) {
         if !loaded {
-          Loading(label: "Reading branches…")
+          Loading(label: "Reading branches…").frame(maxHeight: .infinity)
         } else if branches.isEmpty {
           EmptyState(
             icon: Icon.branch, title: "No local branches",

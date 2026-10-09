@@ -39,15 +39,6 @@ public struct AgentTranscriptView: View {
         LazyVStack(alignment: .leading, spacing: 10) {
           topSentinel
 
-          if messages.isEmpty {
-            EmptyState(
-              icon: Icon.agent,
-              title: "Nothing yet",
-              body: isLive
-                ? "Send this agent a message to get it going."
-                : "This conversation has no saved messages.")
-          }
-
           if let tasks = host.tasksByAgent[agentKey], !tasks.isEmpty {
             TaskListView(
               title: "Tasks",
@@ -99,6 +90,18 @@ public struct AgentTranscriptView: View {
       .onChange(of: agentKey) { _, _ in
         hasLandedAtBottom = false
         atBottom = true
+      }
+      // Over the scroll view, not in it: only the pane can centre it.
+      .overlay {
+        if messages.isEmpty {
+          EmptyState(
+            icon: Icon.agent,
+            title: "Nothing yet",
+            body: isLive
+              ? "Send this agent a message to get it going."
+              : "This conversation has no saved messages.")
+          .allowsHitTesting(false)
+        }
       }
       .overlay(alignment: .bottomTrailing) {
         if !atBottom {

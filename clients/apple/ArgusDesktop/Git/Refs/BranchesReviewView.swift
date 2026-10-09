@@ -117,7 +117,7 @@ struct BranchesReviewView: View {
     }
     .overlay {
       if review.branches.isEmpty && !review.isLoading {
-        ContentUnavailableView("No Branches", systemImage: "arrow.triangle.branch")
+        EmptyState(icon: "arrow.triangle.branch", title: "No Branches")
       }
     }
   }

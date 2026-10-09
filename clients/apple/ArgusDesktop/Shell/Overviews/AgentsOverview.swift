@@ -32,9 +32,10 @@ struct AgentsOverview: View {
     VStack(alignment: .leading, spacing: 0) {
       OverviewHeader(title: "Agents", summary: AgentsOverviewList.summary(rows.map(\.agent)))
       if rows.isEmpty {
-        ContentUnavailableView(
-          "No agents", systemImage: "sparkles",
-          description: Text("No agents running. Start one from a session to see it here."))
+        EmptyState(
+          icon: "sparkles", title: "No agents",
+          body: "No agents running. Start one from a session to see it here."
+        )
       } else {
         // Double-click (or Return) opens the agent.
         Table(rows, selection: $selection) {

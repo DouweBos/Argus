@@ -58,15 +58,13 @@ struct InspectionView: View {
         Text("Reading the live view and layer tree from inside the running app.")
       }
     } else {
-      ContentUnavailableView {
-        Label("Inspect a live screen", systemImage: "square.3.layers.3d")
-      } description: {
-        Text(
+      EmptyState(
+        icon: "square.3.layers.3d", title: "Inspect a live screen",
+        body:
           deviceKey == nil
-            ? "Pick an iOS simulator, boot it in Simulate, then come back and press Inspect."
-            : "Read the running app's native view tree: real classes, colors, fonts and text."
-        )
-      } actions: {
+          ? "Pick an iOS simulator, boot it in Simulate, then come back and press Inspect."
+          : "Read the running app's native view tree: real classes, colors, fonts and text."
+      ) {
         Button("Inspect", action: inspect).disabled(deviceKey == nil)
       }
     }

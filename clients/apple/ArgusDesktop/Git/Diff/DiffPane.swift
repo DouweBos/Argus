@@ -79,9 +79,9 @@ struct DiffPane: View {
   private var content: some View {
     if let diff {
       if diff.isBinary {
-        ContentUnavailableView("Binary file", systemImage: "doc.zipper", description: Text("No text diff to show."))
+        EmptyState(icon: "doc.zipper", title: "Binary file", body: "No text diff to show.")
       } else if diff.hunks.isEmpty {
-        ContentUnavailableView("No changes", systemImage: "equal", description: Text(emptyReason(diff)))
+        EmptyState(icon: "equal", title: "No changes", body: emptyReason(diff))
       } else {
         DiffTableView(
           diff: diff, layout: DiffRowBuilder.isOneSided(diff) ? .inline : layout, actions: actions, onAction: onAction,
@@ -90,7 +90,7 @@ struct DiffPane: View {
     } else if isLoading {
       ProgressView().controlSize(.small)
     } else {
-      ContentUnavailableView("No file selected", systemImage: "doc.text.magnifyingglass")
+      EmptyState(icon: "doc.text.magnifyingglass", title: "No file selected")
     }
   }
 

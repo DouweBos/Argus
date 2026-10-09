@@ -57,7 +57,7 @@ private struct CodeChangesList: View {
     .listStyle(.sidebar)
     .overlay {
       if entries.isEmpty {
-        ContentUnavailableView("No changes", systemImage: "checkmark.circle", description: Text("Files the session changes show here."))
+        EmptyState(icon: "checkmark.circle", title: "No changes", body: "Files the session changes show here.")
       }
     }
   }
@@ -79,7 +79,11 @@ private struct CodeFilesTree: View {
     .listStyle(.sidebar)
     .overlay {
       if code.fileTree.isEmpty {
-        if code.fileListLoading { ProgressView().controlSize(.small) } else { Text("No files").foregroundStyle(.secondary) }
+        if code.fileListLoading {
+          ProgressView().controlSize(.small)
+        } else {
+          EmptyState(icon: "doc", title: "No files")
+        }
       }
     }
     .task { await code.loadFileList() }

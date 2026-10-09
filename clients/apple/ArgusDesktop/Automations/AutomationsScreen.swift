@@ -48,13 +48,12 @@ struct AutomationsScreen: View {
   }
 
   private var empty: some View {
-    ContentUnavailableView {
-      Label("No automations yet", systemImage: "clock")
-    } description: {
-      Text(
+    EmptyState(
+      icon: "clock", title: "No automations yet",
+      body:
         "An automation is a playbook plus a clock: it wakes an agent up on a schedule, or when "
-          + "you press Run. To run something once without saving it, use a quick run.")
-    } actions: {
+        + "you press Run. To run something once without saving it, use a quick run."
+    ) {
       Button("Describe It…") { describing = true }
       Button("New Automation") { create() }.disabled(creating)
     }

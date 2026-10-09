@@ -17,9 +17,7 @@ struct CompareView: View {
       header
       Divider()
       if left.isEmpty || right.isEmpty {
-        ContentUnavailableView(
-          "Pick two refs", systemImage: "arrow.left.arrow.right",
-          description: Text("Compare branches, tags or commits."))
+        EmptyState(icon: "arrow.left.arrow.right", title: "Pick two refs", body: "Compare branches, tags or commits.")
       } else if let error = compare.errorMessage {
         GitErrorBanner(message: error) {}
         Spacer()

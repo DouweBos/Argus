@@ -156,16 +156,11 @@ struct SessionView: View {
         AgentPane(agentId: agentId, sessionId: sessionId)
           .id(agentId)
       } else {
-        ContentUnavailableView {
-          Label("No agents", systemImage: "sparkles")
-        } description: {
-          Text("Start an agent to work in this session.")
-        } actions: {
+        EmptyState(icon: "sparkles", title: "No agents", body: "Start an agent to work in this session.") {
           Button("Start Agent", action: startAgent)
             .buttonStyle(.borderedProminent)
             .disabled(session?.status != .ready)
         }
-        .frame(maxHeight: .infinity)
       }
     }
     .frame(maxHeight: .infinity, alignment: .top)
