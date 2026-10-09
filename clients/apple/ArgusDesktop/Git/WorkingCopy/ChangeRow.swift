@@ -22,7 +22,7 @@ struct ChangeRow: View {
 
   var body: some View {
     HStack(spacing: 6) {
-      FileStatusBadge(status: status)
+      FileTypeIcon(path: entry.path)
       Text(entry.fileName)
         .lineLimit(1)
       if showsDirectory, !entry.directory.isEmpty {
@@ -32,6 +32,7 @@ struct ChangeRow: View {
           .truncationMode(.head)
       }
       Spacer(minLength: 4)
+      FileStatusBadge(status: status)
       if isLFS {
         Text("LFS")
           .font(.scaled(size: 9, weight: .semibold))

@@ -329,9 +329,13 @@ public struct ChatInputView: View {
               select(item)
             } label: {
               HStack(spacing: 6) {
-                Image(systemName: icon(for: item.kind))
-                  .font(.scaled(size: 11))
-                  .foregroundStyle(theme.textMuted)
+                if item.kind == .useDirectory {
+                  Image(systemName: Icon.check)
+                    .font(.scaled(size: 11))
+                    .foregroundStyle(theme.textMuted)
+                } else {
+                  FileTypeIcon(path: item.path, isDirectory: item.kind == .directory, size: 14)
+                }
                 Text(item.label)
                   .font(.scaled(size: 14))
                   .foregroundStyle(item.kind == .useDirectory ? theme.accent : theme.text)
@@ -358,14 +362,6 @@ public struct ChatInputView: View {
     .padding(.bottom, 4)
     .background(theme.bgTertiary)
     .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
-  }
-
-  private func icon(for kind: MentionItem.Kind) -> String {
-    switch kind {
-    case .useDirectory: Icon.check
-    case .directory: Icon.folder
-    case .file: Icon.file
-    }
   }
 
   /// A directory drills in and keeps the picker open; anything else inserts

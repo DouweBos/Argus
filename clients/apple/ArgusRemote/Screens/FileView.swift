@@ -88,10 +88,13 @@ struct FileView: View {
 
   private var title: some View {
     VStack(spacing: 0) {
-      Text(SessionFilePaths.fileName(shownPath))
-        .font(.scaled(size: 15, weight: .semibold))
-        .foregroundStyle(theme.text)
-        .lineLimit(1)
+      HStack(spacing: 6) {
+        FileTypeIcon(path: shownPath)
+        Text(SessionFilePaths.fileName(shownPath))
+          .font(.scaled(size: 15, weight: .semibold))
+          .foregroundStyle(theme.text)
+          .lineLimit(1)
+      }
       let directory = SessionFilePaths.directory(shownPath)
       if !directory.isEmpty || language != nil {
         Text([directory, language?.displayName].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))

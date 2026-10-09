@@ -42,6 +42,8 @@ final class CodeSession {
   /// The worktree's files (`list_session_files`), for the tree and quick open.
   private(set) var fileList: [String] = []
   private(set) var fileTree: [CodeTreeNode] = []
+  /// Folder paths open in the Files tree.
+  var expandedFolders: Set<String> = []
   private(set) var fileListLoading = false
   @ObservationIgnored private var fileListStale = true
   @ObservationIgnored private(set) var matcher = FuzzyFileMatcher(paths: [])

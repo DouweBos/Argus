@@ -180,7 +180,7 @@ struct TrackedFileRow: View {
 
   var body: some View {
     HStack(spacing: 6) {
-      Image(systemName: "doc").foregroundStyle(.tertiary).frame(width: 16)
+      FileTypeIcon(path: path)
       Text((path as NSString).lastPathComponent).lineLimit(1)
       let directory = (path as NSString).deletingLastPathComponent
       if !directory.isEmpty {

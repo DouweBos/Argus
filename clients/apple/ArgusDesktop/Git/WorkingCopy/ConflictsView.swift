@@ -48,10 +48,11 @@ struct ConflictsView: View {
             Task { await vm.select(entry) }
           } label: {
             HStack(spacing: 6) {
-              FileStatusBadge(status: .conflicted)
+              FileTypeIcon(path: entry.path)
               Text(entry.fileName).lineLimit(1)
               Text(entry.directory).foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
               Spacer(minLength: 0)
+              FileStatusBadge(status: .conflicted)
             }
             .contentShape(.rect)
           }

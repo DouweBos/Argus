@@ -123,7 +123,7 @@ private struct BlameFilePicker: View {
       List(blame.filteredFiles, id: \.self) { file in
         Button { pick(file) } label: {
           HStack(spacing: 6) {
-            Image(systemName: "doc").foregroundStyle(.secondary)
+            FileTypeIcon(path: file)
             Text((file as NSString).lastPathComponent)
             Text((file as NSString).deletingLastPathComponent).foregroundStyle(.secondary).lineLimit(1)
             Spacer()

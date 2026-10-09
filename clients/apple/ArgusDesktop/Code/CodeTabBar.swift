@@ -68,6 +68,7 @@ private struct CodeTabItem: View {
 
   var body: some View {
     HStack(spacing: 6) {
+      FileTypeIcon(path: tab.path, size: 14).opacity(deleted ? 0.5 : 1)
       Text(name)
         .italic(tab.isPreview)
         .strikethrough(deleted)

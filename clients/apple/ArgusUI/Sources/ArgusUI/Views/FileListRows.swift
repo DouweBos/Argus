@@ -15,9 +15,7 @@ public struct FuzzyFileRow: View {
     let path = match.path
     let nameStart = path.utf16.count - SessionFilePaths.fileName(path).utf16.count
     HStack(spacing: 8) {
-      Image(systemName: Icon.file)
-        .font(.scaled(size: 13))
-        .foregroundStyle(theme.textMuted)
+      FileTypeIcon(path: path)
       VStack(alignment: .leading, spacing: 2) {
         Text(highlighted(path, from: nameStart, to: path.utf16.count))
           .font(.scaled(size: 14, weight: .medium, design: .monospaced))
