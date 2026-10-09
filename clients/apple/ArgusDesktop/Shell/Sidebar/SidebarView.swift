@@ -86,6 +86,7 @@ struct SidebarView: View {
     .safeAreaInset(edge: .top) {
       if showsHosts { MachinesMenu().padding(.horizontal, 10).padding(.top, 4) }
     }
+    .safeAreaInset(edge: .bottom, spacing: 0) { addRepositoryFooter }
     .sheet(item: newSessionProject) { project in
       NewSessionSheet(project: project) { session in
         model.navigate(.sessionHome(id: session.id))
@@ -96,10 +97,27 @@ struct SidebarView: View {
         if model.route.sessionId == session.id { model.navigate(.home) }
       }
     }
-    .overlay(alignment: .bottom) {
+  }
+
+  private var addRepositoryFooter: some View {
+    VStack(spacing: 0) {
       if store.connection != .ready {
         ConnectionBadge(state: store.connection).padding(8)
       }
+      Divider()
+      Button {
+        model.addingProject = true
+      } label: {
+        Label("Add repository", systemImage: "plus")
+          .font(.sidebarScaled(.body))
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.borderless)
+      .foregroundStyle(.secondary)
+      .help("Add a git repository (⌘O)")
+      .padding(.horizontal, 14)
+      .padding(.vertical, 10)
     }
   }
 
