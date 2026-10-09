@@ -98,7 +98,10 @@ struct FileSearchView: View {
             }
           }
         } header: {
-          MonoText(text: group.path, size: 11, color: theme.textSecondary, lineLimit: 1, truncateHead: true)
+          HStack(spacing: 6) {
+            FileTypeIcon(path: group.path, size: 14)
+            MonoText(text: group.path, size: 11, color: theme.textSecondary, lineLimit: 1, truncateHead: true)
+          }
         }
       }
     }

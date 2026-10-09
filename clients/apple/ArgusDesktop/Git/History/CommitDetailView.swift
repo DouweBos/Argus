@@ -165,7 +165,7 @@ private struct CommitTreeList<Menu: View>: View {
         if changed { history.revealInChangeset(path) }
       } label: {
         HStack(spacing: 6) {
-          Image(systemName: "doc").foregroundStyle(.secondary)
+          FileTypeIcon(path: path)
           Text(path).font(.scaled(size: 12)).foregroundStyle(changed ? .primary : .secondary)
           Spacer()
           if changed { Image(systemName: "circle.fill").font(.scaled(size: 5)).foregroundStyle(.tint) }

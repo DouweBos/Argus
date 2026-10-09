@@ -36,6 +36,7 @@ public struct FileDiffCard: View {
           Image(systemName: expanded ? Icon.chevronDown : Icon.chevronRight)
             .font(.scaled(size: 11, weight: .semibold))
             .foregroundStyle(theme.textMuted)
+          FileTypeIcon(path: file.displayPath, size: 14)
           MonoText(
             text: file.displayPath, size: 12, color: theme.text, lineLimit: 1,
             truncateHead: true)

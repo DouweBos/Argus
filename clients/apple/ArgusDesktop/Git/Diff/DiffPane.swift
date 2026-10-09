@@ -43,7 +43,7 @@ struct DiffPane: View {
   private func headerRow(compact: Bool) -> some View {
     HStack(spacing: 8) {
       if let name = path ?? diff?.filePath {
-        Image(systemName: "doc.text").foregroundStyle(.secondary)
+        FileTypeIcon(path: name)
         Text(name)
           .font(.scaled(size: 12, design: .monospaced))
           .lineLimit(1)
@@ -174,7 +174,7 @@ struct FileDiffsView: View {
     ResizableHSplit(key: "git.files", leadingMin: 180, leadingIdeal: 260, leadingMax: 420, trailingMin: 280) {
       List(files, id: \.path, selection: $selected) { file in
         HStack(spacing: 6) {
-          FileStatusBadge(status: file.status)
+          FileTypeIcon(path: file.path)
           Text((file.path as NSString).lastPathComponent).lineLimit(1)
           Text((file.path as NSString).deletingLastPathComponent)
             .foregroundStyle(.secondary)
@@ -182,6 +182,7 @@ struct FileDiffsView: View {
             .truncationMode(.head)
           Spacer(minLength: 4)
           DiffStatsLabel(stats: file.stats)
+          FileStatusBadge(status: file.status)
         }
         .font(.scaled(size: 12))
         .contextMenu { fileMenu?(file) }

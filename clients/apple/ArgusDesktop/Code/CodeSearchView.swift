@@ -85,6 +85,7 @@ struct CodeSearchView: View {
           }
         } header: {
           HStack(spacing: 4) {
+            FileTypeIcon(path: file.path, size: 14)
             Text((file.path as NSString).lastPathComponent).font(.scaled(size: 12, weight: .semibold))
             Text((file.path as NSString).deletingLastPathComponent)
               .font(.scaled(size: 11)).foregroundStyle(theme.textSecondary).lineLimit(1).truncationMode(.head)

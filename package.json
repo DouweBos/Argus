@@ -44,6 +44,7 @@
     "lint:css-modules": "tsx scripts/check-css-module-usage.ts",
     "lint:cycles": "tsx scripts/check-import-cycles.ts",
     "lint:swift": "tsx scripts/check-swift-styles.ts",
+    "gen:file-icons": "tsx scripts/gen-file-icons.ts",
     "gen:protocol": "tsx scripts/gen-protocol.ts",
     "lint:ts": "pnpm typecheck:app && pnpm typecheck:electron && eslint . && prettier --check .",
     "lint:fix": "eslint . --fix && prettier --write .",

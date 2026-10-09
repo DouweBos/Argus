@@ -96,7 +96,7 @@ private struct QuickOpenFileRow: View {
     let name = (path as NSString).lastPathComponent
     let nameStart = (path as NSString).length - (name as NSString).length
     HStack(spacing: 8) {
-      Image(systemName: "doc").foregroundStyle(.secondary).frame(width: 18)
+      FileTypeIcon(path: path).frame(width: 18)
       Text(QuickOpenHighlight.text(path, hits: indices, from: nameStart, to: nil, theme: theme))
       Text(QuickOpenHighlight.text(path, hits: indices, from: 0, to: max(0, nameStart - 1), theme: theme))
         .font(.scaled(.caption))

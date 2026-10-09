@@ -74,15 +74,7 @@ private struct CodeFilesTree: View {
 
   var body: some View {
     List {
-      OutlineGroup(code.fileTree, children: \.children) { node in
-        if node.isFolder {
-          Label(node.name, systemImage: "folder").font(.scaled(size: 12)).lineLimit(1)
-        } else {
-          CodeFileRow(
-            path: node.path, selected: node.path == activePath, showsDirectory: false,
-            open: { code.navigate(to: node.path, source: .tree) }, pin: { code.pin(node.path) })
-        }
-      }
+      CodeTreeRows(nodes: code.fileTree, code: code, activePath: activePath)
     }
     .listStyle(.sidebar)
     .overlay {
@@ -91,6 +83,41 @@ private struct CodeFilesTree: View {
       }
     }
     .task { await code.loadFileList() }
+  }
+}
+
+/// One level of the Files tree; folders remember whether they're open so their icon can follow.
+private struct CodeTreeRows: View {
+  let nodes: [CodeTreeNode]
+  @Bindable var code: CodeSession
+  let activePath: String?
+
+  var body: some View {
+    ForEach(nodes) { node in
+      if let children = node.children {
+        DisclosureGroup(isExpanded: expanded(node.path)) {
+          CodeTreeRows(nodes: children, code: code, activePath: activePath)
+        } label: {
+          HStack(spacing: 6) {
+            FileTypeIcon(path: node.path, isDirectory: true, isExpanded: code.expandedFolders.contains(node.path))
+            Text(node.name).lineLimit(1)
+          }
+          .font(.scaled(size: 12))
+        }
+      } else {
+        CodeFileRow(
+          path: node.path, selected: node.path == activePath, showsDirectory: false,
+          open: { code.navigate(to: node.path, source: .tree) }, pin: { code.pin(node.path) })
+      }
+    }
+  }
+
+  private func expanded(_ path: String) -> Binding<Bool> {
+    Binding(
+      get: { code.expandedFolders.contains(path) },
+      set: { open in
+        if open { code.expandedFolders.insert(path) } else { code.expandedFolders.remove(path) }
+      })
   }
 }
 
@@ -106,7 +133,7 @@ struct CodeFileRow: View {
 
   var body: some View {
     HStack(spacing: 6) {
-      if let status { FileStatusBadge(status: status) } else { Image(systemName: "doc").foregroundStyle(.secondary) }
+      FileTypeIcon(path: path)
       Text((path as NSString).lastPathComponent).lineLimit(1)
       if showsDirectory {
         Text((path as NSString).deletingLastPathComponent)
@@ -115,6 +142,7 @@ struct CodeFileRow: View {
           .truncationMode(.head)
       }
       Spacer(minLength: 0)
+      if let status { FileStatusBadge(status: status) }
     }
     .font(.scaled(size: 12))
     .contentShape(Rectangle())

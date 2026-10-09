@@ -5,7 +5,7 @@ struct CodeTreeNode: Identifiable, Hashable {
   let name: String
   /// Worktree-relative; a folder's has no trailing slash.
   let path: String
-  /// Nil for a file, so `OutlineGroup` shows no disclosure.
+  /// Nil for a file.
   var children: [CodeTreeNode]?
 
   var id: String { path }

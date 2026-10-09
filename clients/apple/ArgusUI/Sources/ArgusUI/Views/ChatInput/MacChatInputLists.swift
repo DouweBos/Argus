@@ -105,10 +105,14 @@
     var body: some View {
       SuggestionList(header: header, items: items, selected: selected, pick: pick) { item in
         HStack(spacing: 6) {
-          Image(systemName: icon(item))
-            .font(.scaled(size: 11))
-            .foregroundStyle(theme.textMuted)
-            .frame(width: 14)
+          Group {
+            if item.isLinkAction {
+              Image(systemName: Icon.link).font(.scaled(size: 11)).foregroundStyle(theme.textMuted)
+            } else {
+              FileTypeIcon(path: item.display, isDirectory: item.isDirectory, size: 14)
+            }
+          }
+          .frame(width: 14)
           Text(item.isLinkAction ? "Link \(item.display)" : item.display)
             .font(.scaled(size: 13))
             .foregroundStyle(item.isLinkAction ? theme.accent : theme.text)
@@ -128,11 +132,6 @@
           }
         }
       }
-    }
-
-    private func icon(_ item: MentionPicker.Item) -> String {
-      if item.isLinkAction { return Icon.link }
-      return item.isDirectory ? Icon.folder : Icon.file
     }
   }
 

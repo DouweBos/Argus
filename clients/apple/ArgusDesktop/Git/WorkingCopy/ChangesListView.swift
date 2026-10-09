@@ -122,7 +122,7 @@ struct ChangesListView: View {
     case .header(let section, let count):
       header(section, count: count).selectionDisabled()
     case .directory(let directory, _):
-      Label(directory, systemImage: "folder")
+      Label { Text(directory) } icon: { FileTypeIcon(path: directory, isDirectory: true, isExpanded: true, size: 14) }
         .font(.scaled(size: 11, design: .monospaced))
         .foregroundStyle(.secondary)
         .lineLimit(1)
