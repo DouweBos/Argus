@@ -28,18 +28,21 @@ public struct PillTabBar<ID: Hashable>: View {
   var compact: Bool
   /// Unselected tabs show only their icon, for narrow windows.
   var iconsOnly: Bool
+  /// Its own capsule around the tabs, where no toolbar draws one (a panel's header).
+  var framed: Bool
   let onSelect: (ID) -> Void
 
   @Namespace private var namespace
 
   public init(
-    tabs: [PillTab<ID>], selection: ID?, compact: Bool = false, iconsOnly: Bool = false,
+    tabs: [PillTab<ID>], selection: ID?, compact: Bool = false, iconsOnly: Bool = false, framed: Bool = false,
     onSelect: @escaping (ID) -> Void
   ) {
     self.tabs = tabs
     self.selection = selection
     self.compact = compact
     self.iconsOnly = iconsOnly
+    self.framed = framed
     self.onSelect = onSelect
   }
 
@@ -85,6 +88,12 @@ public struct PillTabBar<ID: Hashable>: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
       }
     }
+    .padding(framed ? 3 : 0)
+    .background {
+      if framed {
+        Capsule().fill(theme.bgSecondary).overlay(Capsule().strokeBorder(theme.border, lineWidth: 1))
+      }
+    }
     .animation(.snappy(duration: 0.25), value: selection)
   }
 }
@@ -98,6 +107,19 @@ public struct PillTabBar<ID: Hashable>: View {
       PillTab(id: "git", title: "Git", symbol: "arrow.triangle.branch", indicator: true),
     ],
     selection: selection
+  ) { selection = $0 }
+  .padding()
+}
+
+#Preview("Framed, icons only") {
+  @Previewable @State var selection = "simulate"
+  PillTabBar(
+    tabs: [
+      PillTab(id: "simulate", title: "Simulate", symbol: "iphone"),
+      PillTab(id: "inspect", title: "Inspect", symbol: "viewfinder"),
+      PillTab(id: "logs", title: "Logs", symbol: "text.alignleft"),
+    ],
+    selection: selection, compact: true, iconsOnly: true, framed: true
   ) { selection = $0 }
   .padding()
 }

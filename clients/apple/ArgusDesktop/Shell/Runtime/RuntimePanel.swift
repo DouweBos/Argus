@@ -11,6 +11,7 @@ struct RuntimePanel: View {
   @Environment(RuntimeModel.self) private var runtime
   @Environment(DesktopModel.self) private var model
   let sessionId: String?
+  @State private var titleBarWidth: CGFloat = 0
 
   /// How often the device lists are refetched while the panel is up.
   private static let pollInterval = Duration.seconds(5)
@@ -90,26 +91,26 @@ struct RuntimePanel: View {
     }
   }
 
+  /// The modes as the view switcher's pills; unselected ones drop their titles when the column is narrow.
   private var modePicker: some View {
-    @Bindable var runtime = runtime
-    return Picker("Runtime mode", selection: $runtime.mode) {
-      Text("Simulate").tag(RuntimeModel.Mode.simulate)
-      if inspectorAvailable { Text("Inspect").tag(RuntimeModel.Mode.inspect) }
-      if logsAvailable { Text("Logs").tag(RuntimeModel.Mode.logs) }
-    }
-    .labelsHidden()
+    var modes: [PillTab<RuntimeModel.Mode>] = [PillTab(id: .simulate, title: "Simulate", symbol: "iphone")]
+    if inspectorAvailable { modes.append(PillTab(id: .inspect, title: "Inspect", symbol: "viewfinder")) }
+    if logsAvailable { modes.append(PillTab(id: .logs, title: "Logs", symbol: "text.alignleft")) }
+    return PillTabBar(
+      tabs: modes, selection: runtime.mode, compact: true, iconsOnly: titleBarWidth < Self.titledModesWidth,
+      framed: true
+    ) { runtime.mode = $0 }
+    .accessibilityLabel("Runtime mode")
   }
+
+  /// Below this the device picker and titled modes don't fit side by side.
+  private static let titledModesWidth: CGFloat = 520
 
   private var titleBar: some View {
     HStack(spacing: 8) {
       RuntimeTargetPicker(sessionId: sessionId)
       if inspectorAvailable || logsAvailable {
-        // Segments while they fit; a pop-up once the column is narrow.
-        ViewThatFits(in: .horizontal) {
-          modePicker.pickerStyle(.segmented).fixedSize()
-          modePicker.pickerStyle(.menu).fixedSize()
-        }
-        .layoutPriority(-1)
+        modePicker.fixedSize()
       }
       Spacer(minLength: 0)
       // The browser belongs to its session's panel; everything else detaches.
@@ -127,6 +128,7 @@ struct RuntimePanel: View {
     }
     .padding(.horizontal, 10)
     .frame(height: 38)
+    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { titleBarWidth = $0 }
   }
 }
 
