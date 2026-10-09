@@ -11,6 +11,7 @@ struct SidebarView: View {
   var body: some View {
     List(selection: selection) {
       Section {
+        SidebarLabel("Home", systemImage: "house").tag(Self.homeTag).help("App home (⇧⌘H)")
         SidebarLabel("Agents", systemImage: "sparkles").tag(Self.agentsTag)
         SidebarLabel("Runtimes", systemImage: "play.rectangle").tag(Self.runtimesTag)
         SidebarLabel("Devices", systemImage: "iphone.gen3").tag(Self.devicesTag)
@@ -129,6 +130,7 @@ struct SidebarView: View {
     Binding(get: { model.newSessionProject }, set: { model.newSessionProject = $0 })
   }
 
+  private static let homeTag = "nav:home"
   private static let agentsTag = "nav:agents"
   private static let runtimesTag = "nav:runtimes"
   private static let devicesTag = "nav:devices"
@@ -141,6 +143,7 @@ struct SidebarView: View {
     Binding(
       get: {
         switch model.route {
+        case .home: Self.homeTag
         case .agents: Self.agentsTag
         case .runtimes: Self.runtimesTag
         case .devices, .device: Self.devicesTag
@@ -153,6 +156,7 @@ struct SidebarView: View {
       },
       set: { tag in
         switch tag {
+        case Self.homeTag?: model.navigate(.home)
         case Self.agentsTag?: model.navigate(.agents)
         case Self.runtimesTag?: model.navigate(.runtimes)
         case Self.devicesTag?: model.navigate(.devices)
