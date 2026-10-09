@@ -6,7 +6,7 @@ import Foundation
 import Observation
 
 enum CodeNavigatorMode: String, CaseIterable {
-  case files, changes, search
+  case files, search, changes
 
   var title: String {
     switch self {
@@ -31,7 +31,7 @@ final class CodeSession {
   var files: [String: CodeFile] = [:]
   /// How the next route change came about, for `mac_editor_file_opened`.
   @ObservationIgnored var pendingSource: MacTelemetryEvent.EditorOpenSource?
-  var navigatorMode: CodeNavigatorMode = .changes
+  var navigatorMode: CodeNavigatorMode = .files
   /// App-wide and remembered: the route moving between files never hides it.
   var navigatorVisible: Bool {
     get { CodeLayout.shared.navigatorVisible }
