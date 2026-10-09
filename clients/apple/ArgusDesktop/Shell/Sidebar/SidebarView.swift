@@ -143,7 +143,10 @@ struct SidebarView: View {
         case Self.inboxTag?: model.navigate(.inbox)
         case Self.automationsTag?: model.navigate(.automations)
         case Self.notificationsTag?: model.navigate(.notifications)
-        case let id?: model.open(session: id)
+        case let id?:
+          // A session on an unplugged drive has nothing to open.
+          let session = store.sessionsByRepo.values.joined().first { $0.id == id }
+          if session?.isUnavailable != true { model.open(session: id) }
         case nil: break
         }
       })

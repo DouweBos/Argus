@@ -12,6 +12,7 @@ struct SessionActivity {
   }
 
   var tone: Tone {
+    if session.isUnavailable { return .muted }
     switch session.status {
     case .error: return .danger
     case .initializing, .deleting: return .muted
@@ -39,18 +40,34 @@ struct SessionRow: View {
 
   var body: some View {
     HStack(spacing: 8) {
-      StatusDot(tone: activity.tone, pulse: activity.isBusy)
+      StatusDot(tone: activity.tone, pulse: activity.isBusy && !session.isUnavailable)
       VStack(alignment: .leading, spacing: 2) {
         Text(session.displayName ?? session.branch).font(.sidebarScaled(.body)).lineLimit(1)
-        if let subtitle {
+        if session.isUnavailable {
+          HStack(spacing: 3) {
+            Image(systemName: Icon.drive)
+            Text("unavailable")
+          }
+          .font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
+        } else if let subtitle {
           Text(subtitle).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
         }
       }
       Spacer(minLength: 4)
       if let fraction = session.progress?.fraction, session.status != .ready {
         ProgressView(value: fraction).progressViewStyle(.circular).controlSize(.mini)
+      } else if let volume = session.volume, !session.isUnavailable {
+        Image(systemName: Icon.drive).font(.scaled(.caption)).foregroundStyle(.tertiary)
+          .help("Stored on \(volume)")
       }
     }
+    .opacity(session.isUnavailable ? 0.5 : 1)
+    .help(unavailableHelp ?? "")
+  }
+
+  private var unavailableHelp: String? {
+    guard session.isUnavailable else { return nil }
+    return "\(session.unavailableVolume ?? "Its drive") isn't connected"
   }
 
   private var subtitle: String? {

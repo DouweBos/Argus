@@ -118,6 +118,11 @@ function mountedCached(volume: string): boolean {
   return present;
 }
 
+/** A drive just came or went: the next check must look again. */
+export function forgetMountedVolumes(): void {
+  volumeCache.clear();
+}
+
 export function pathAvailability(target: string): PathAvailability {
   // Only the mount root is cached — the target itself is cheap and changes
   // for reasons that have nothing to do with the volume.

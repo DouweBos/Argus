@@ -28,15 +28,17 @@ struct ProjectHeader: View {
         Text(project.name).font(.sidebarScaled(.body)).fontWeight(.semibold).lineLimit(1)
           .layoutPriority(1)
         if showsHost { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
+        if let drive { VolumeBadge(label: drive.name, connected: drive.connected) }
         if let git { SyncCounts(status: git).fixedSize() }
         Spacer(minLength: 4)
         newSessionButton
       }
       if let root { rootLine(root) }
     }
+    .opacity(root?.isUnavailable == true ? 0.5 : 1)
     .help(project.repoRoot)
     .task(id: root?.id) {
-      guard let root, root.status == .ready else { return }
+      guard let root, root.status == .ready, !root.isUnavailable else { return }
       await store.loadGitStatus(sessionId: root.id)
     }
   }
@@ -82,6 +84,36 @@ struct ProjectHeader: View {
     }
     .font(.scaled(.caption))
     .foregroundStyle(root.status == .error ? theme.error : theme.textSecondary)
+  }
+
+  /// The drive the worktrees live on; one that has gone missing wins.
+  private var drive: (name: String, connected: Bool)? {
+    if let missing = worktrees.first(where: \.isUnavailable) {
+      return (missing.unavailableVolume ?? "Drive", false)
+    }
+    return worktrees.lazy.compactMap(\.volume).first.map { ($0, true) }
+  }
+}
+
+/// Which drive a project's worktrees are on, and whether it's plugged in.
+struct VolumeBadge: View {
+  @Environment(\.theme) private var theme
+  let label: String
+  let connected: Bool
+
+  var body: some View {
+    HStack(spacing: 3) {
+      Image(systemName: Icon.drive)
+      Text(label).lineLimit(1)
+      if !connected { StatusDot(tone: .danger).fixedSize() }
+    }
+    .font(.scaled(size: 10, weight: .medium))
+    .foregroundStyle(theme.textSecondary)
+    .padding(.horizontal, 5)
+    .padding(.vertical, 1)
+    .background(theme.bgTertiary, in: Capsule())
+    .help(connected ? "Worktrees are stored on \(label)" : "\(label) isn't connected — showing the last known state")
+    .accessibilityLabel(connected ? "On \(label)" : "\(label) disconnected")
   }
 }
 

@@ -235,6 +235,7 @@ const SESSION_LIST_CHANNELS = new Set([
   "session:merged",
   "session:progress",
   "session:updated",
+  "session:volumes-changed",
   "session:worktrees-moved",
 ]);
 
