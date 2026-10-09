@@ -7,6 +7,7 @@ struct SidebarView: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
   @Environment(RemoteHostsStore.self) private var hosts
+  @State private var collapse = SidebarCollapse()
 
   var body: some View {
     // The footer sits under the list, not in its safe area: a sidebar List
@@ -45,37 +46,7 @@ struct SidebarView: View {
         Text("No projects yet").foregroundStyle(.secondary)
       }
       ForEach(projects) { project in
-        Section {
-          ForEach(store.sessionsByRepo[project.repoRoot] ?? []) { session in
-            SessionRow(session: session, agents: agents(in: session))
-              .tag(session.id)
-              .contextMenu {
-                Button("Open in New Tab") {
-                  model.openTab(DesktopLocation(route: .sessionHome(id: session.id), host: model.host(ofSession: session.id)))
-                }
-                if session.kind == .worktree {
-                  Button("Delete Session…") { model.deletingSession = session }
-                }
-              }
-          }
-        } header: {
-          HStack {
-            Text(project.name).font(.sidebarScaled(.subheadline))
-            if showsHosts { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
-            Spacer()
-            Button {
-              model.newSessionProject = project
-            } label: {
-              Image(systemName: "plus")
-            }
-            .buttonStyle(.borderless)
-            .help("New session in \(project.name)")
-          }
-          .contextMenu {
-            Button("New Session…") { model.newSessionProject = project }
-            Button("Project Settings…") { model.projectSettingsRepo = project.repoRoot }
-          }
-        }
+        ProjectSidebarSection(project: project, showsHost: showsHosts, collapsed: collapse.binding(project.repoRoot))
       }
       Section {
         ForEach(scratchPads) { pad in
@@ -214,50 +185,5 @@ private struct NotificationsSidebarRow: View {
   var body: some View {
     SidebarLabel("Notifications", systemImage: "exclamationmark.triangle")
       .badge(model.notificationsLog.unseenCount)
-  }
-}
-
-struct SessionRow: View {
-  let session: RemoteSession
-  let agents: [RemoteAgentStatus]
-
-  var body: some View {
-    HStack(spacing: 8) {
-      StatusDot(tone: tone, pulse: isBusy)
-      VStack(alignment: .leading, spacing: 2) {
-        Text(session.displayName ?? session.branch).font(.sidebarScaled(.body)).lineLimit(1)
-        if let subtitle {
-          Text(subtitle).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
-        }
-      }
-      Spacer(minLength: 4)
-      if let fraction = session.progress?.fraction, session.status != .ready {
-        ProgressView(value: fraction).progressViewStyle(.circular).controlSize(.mini)
-      }
-    }
-  }
-
-  private var isBusy: Bool {
-    session.status == .initializing || agents.contains { $0.status == .running }
-  }
-
-  private var tone: Tone {
-    switch session.status {
-    case .error: .danger
-    case .initializing, .deleting: .muted
-    case .ready:
-      agents.contains { $0.awaiting != nil } ? .warning : (isBusy ? .accent : .muted)
-    }
-  }
-
-  private var subtitle: String? {
-    switch session.status {
-    case .initializing: "Setting up…"
-    case .deleting: "Deleting…"
-    case .error: session.setupError ?? "Setup failed"
-    case .ready:
-      agents.isEmpty ? (session.displayName == nil ? nil : session.branch)
-        : "\(agents.count) agent\(agents.count == 1 ? "" : "s")"
-    }
   }
 }
