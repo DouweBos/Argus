@@ -13,12 +13,12 @@ struct CodePanel: View {
   private var code: CodeSession { model.code.session(session.id) }
 
   var body: some View {
-    HStack(spacing: 0) {
-      if code.navigatorVisible {
-        CodeNavigator(code: code, activePath: path)
-          .frame(width: 260)
-        Divider()
-      }
+    ResizableHSplit(
+      key: "code.navigator", leadingMin: 180, leadingIdeal: 260, leadingMax: 520, trailingMin: 320,
+      showsLeading: code.navigatorVisible
+    ) {
+      CodeNavigator(code: code, activePath: path)
+    } trailing: {
       VStack(spacing: 0) {
         CodeTabBar(code: code, activePath: path)
         Divider()
@@ -34,7 +34,6 @@ struct CodePanel: View {
           .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
       }
-      .frame(minWidth: 320)
     }
     .overlay(alignment: .top) {
       if code.quickOpenVisible {
