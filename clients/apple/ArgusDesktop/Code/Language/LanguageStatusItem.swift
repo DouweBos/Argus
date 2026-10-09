@@ -54,7 +54,16 @@ struct LanguageStatusItem: View {
     let status = client.status(of: language.server, path: file.path)
     switch status?.state {
     case .ready?:
-      Text(name).help(status?.message ?? Self.readyHelp(status))
+      // The bar already names the file's language on the left: a running server is a dot, unless it's another language's.
+      if name == file.language?.displayName {
+        Image(systemName: "circle.fill")
+          .font(.scaled(size: 6))
+          .foregroundStyle(theme.success)
+          .help(status?.message ?? Self.readyHelp(status))
+          .accessibilityLabel("\(name) language server running")
+      } else {
+        Text(name).help(status?.message ?? Self.readyHelp(status))
+      }
     case .needsSetup?:
       HStack(spacing: 4) {
         Text(Self.setupTitle(name, status?.action)).foregroundStyle(theme.warning)
