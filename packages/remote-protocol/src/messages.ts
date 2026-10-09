@@ -227,6 +227,7 @@ export const MethodParams = {
     id: z.string(),
     message: z.string().max(100_000),
   }),
+  "agents.queue_send_now": z.object({ agent_id: z.string(), id: z.string() }),
   "scratch_pads.create": z.object({
     name: z.string().trim().max(80).optional(),
   }),
@@ -686,6 +687,8 @@ export const MethodResult = {
   "agents.queue_add": z.object({ message: RemoteQueuedMessage }),
   "agents.queue_remove": z.object({ accepted: z.boolean() }),
   "agents.queue_update": z.object({ accepted: z.boolean() }),
+  /** `interrupted`: the agent was mid-turn, so its turn was cut short. */
+  "agents.queue_send_now": z.object({ interrupted: z.boolean() }),
   "sessions.create": z.object({ session: RemoteSession }),
   "scratch_pads.create": z.object({ session: RemoteSession }),
   "sessions.files": z.object({ files: z.array(z.string()) }),

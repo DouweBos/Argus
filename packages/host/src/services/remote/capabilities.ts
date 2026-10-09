@@ -1177,6 +1177,15 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { accepted: true };
   },
 
+  "agents.queue_send_now": async (params) => {
+    const { agent_id, id } = parse("agents.queue_send_now", params);
+    requireAgent(agent_id);
+    const { sendQueuedMessageNow } =
+      await import("../agent/conversation/hostDriver");
+
+    return control(() => sendQueuedMessageNow(agent_id, id));
+  },
+
   "sessions.create": async (params) => {
     const {
       repo_root,

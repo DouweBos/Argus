@@ -5,6 +5,7 @@ import {
   dequeueMessage,
   enqueueMessage,
   listQueue,
+  promoteQueuedMessage,
   removeQueuedMessage,
   updateQueuedMessage,
 } from "./messageQueue";
@@ -32,6 +33,15 @@ describe("messageQueue", () => {
     expect(dequeueMessage("a1")?.text).toBe("first");
     expect(dequeueMessage("a1")?.text).toBe("second");
     expect(dequeueMessage("a1")).toBeUndefined();
+  });
+
+  it("moves a message to the head of the queue", () => {
+    enqueueMessage("a1", { text: "first" });
+    const second = enqueueMessage("a1", { text: "second" });
+
+    expect(promoteQueuedMessage("a1", second.id)).toBe(true);
+    expect(listQueue("a1").map((m) => m.text)).toEqual(["second", "first"]);
+    expect(promoteQueuedMessage("a1", "missing")).toBe(false);
   });
 
   it("keeps each agent's queue separate", () => {

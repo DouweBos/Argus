@@ -15,6 +15,7 @@ import {
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import {
   removeQueuedMessage,
+  sendQueuedMessageNow,
   updateQueuedMessage,
 } from "../../../stores/queueStore";
 import styles from "./AgentChat.module.css";
@@ -77,6 +78,10 @@ function QueuedMessageItem({
     removeQueuedMessage(agentId, message.id);
   }, [agentId, message.id]);
 
+  const handleSendNow = useCallback(() => {
+    sendQueuedMessageNow(agentId, message.id);
+  }, [agentId, message.id]);
+
   return (
     <QueuedMessage
       author={message.author}
@@ -84,6 +89,11 @@ function QueuedMessageItem({
       actions={
         editing ? undefined : (
           <>
+            <QueuedMessageAction
+              icon={<Icons.SendIcon size={11} />}
+              label="Send now (interrupts the current turn)"
+              onClick={handleSendNow}
+            />
             <QueuedMessageAction
               icon={<Icons.PencilIcon size={11} />}
               label="Edit queued message"

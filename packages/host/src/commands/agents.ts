@@ -35,6 +35,7 @@ import {
   setConversationTitle,
   submitAgentMessage,
 } from "../services/agent/conversation/actions";
+import { sendQueuedMessageNow } from "../services/agent/conversation/hostDriver";
 import {
   isLive,
   livePage,
@@ -151,6 +152,9 @@ export function registerAgentCommands(): void {
   );
   defineTypedCommand("update_queued_message", (p) =>
     updateQueuedMessage(p.agentId, p.id, p.text),
+  );
+  defineTypedCommand("send_queued_message_now", (p) =>
+    sendQueuedMessageNow(p.agentId, p.id),
   );
   defineTypedCommand("clear_queued_messages", (p) => clearQueue(p.agentId));
   defineTypedCommand(

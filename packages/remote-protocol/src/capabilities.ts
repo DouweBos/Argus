@@ -140,6 +140,8 @@ export const REMOTE_METHODS = {
   "agents.queue_add": "control",
   "agents.queue_remove": "control",
   "agents.queue_update": "control",
+  /** Interrupts a busy agent to deliver a queued message first. */
+  "agents.queue_send_now": "control",
   /** Create a new session inside an existing project (never a new project). */
   "sessions.create": "control",
   /** Create a scratch pad: a session in its own directory, outside any project. */

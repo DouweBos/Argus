@@ -15,9 +15,14 @@ import type {
 import { addHostEventSink } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
-import { sendAgentMessage } from "../agentService";
+import { capture as telemetryCapture } from "../../telemetry/telemetry";
+import { interruptAgent, sendAgentMessage } from "../agentService";
 import { createCheckpoint } from "../checkpoints";
-import { dequeueMessage, listQueue } from "../messageQueue";
+import {
+  dequeueMessage,
+  listQueue,
+  promoteQueuedMessage,
+} from "../messageQueue";
 import { parseCliDiagnostic } from "./cliDiagnostics";
 import {
   conversationOf,
@@ -345,6 +350,37 @@ function stderr(agentId: string, entry: Tracked, line: string): void {
 }
 
 /**
+ * Send a queued message ahead of the rest. A busy agent is interrupted, and
+ * the message goes out as the interrupted turn ends, like any queued send.
+ */
+export async function sendQueuedMessageNow(
+  agentId: string,
+  id: string,
+): Promise<{ interrupted: boolean }> {
+  const agent = appState.agents.get(agentId);
+  if (!agent) {
+    throw `No agent found: ${agentId}`;
+  }
+  if (!promoteQueuedMessage(agentId, id)) {
+    throw `No queued message ${id} for ${agentId}`;
+  }
+  const entry = trackedEntry(agentId);
+  const busy = agent.status !== "idle" || Boolean(entry?.inflight);
+  if (!busy) {
+    if (entry) {
+      trySendNextQueued(agentId, entry);
+    }
+    telemetryCapture("queued_message_sent_now", { interrupted: false });
+
+    return { interrupted: false };
+  }
+  await interruptAgent(agentId);
+  telemetryCapture("queued_message_sent_now", { interrupted: true });
+
+  return { interrupted: true };
+}
+
+/**
  * Send the next queued message, if the agent has nothing in flight. Claims
  * `inflight` before anything awaits, so overlapping idle and capability
  * signals can't dispatch two messages into one turn.
@@ -353,11 +389,14 @@ function trySendNextQueued(agentId: string, entry: Tracked): boolean {
   if (entry.inflight || listQueue(agentId).length === 0) {
     return false;
   }
+  // Claimed before the dequeue: its queue event re-enters here synchronously.
+  entry.inflight = true;
   const next = dequeueMessage(agentId);
   if (!next) {
+    entry.inflight = false;
+
     return false;
   }
-  entry.inflight = true;
   (async () => {
     let checkpointId: string | undefined;
     try {
