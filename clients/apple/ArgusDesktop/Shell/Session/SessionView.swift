@@ -115,8 +115,8 @@ struct SessionView: View {
     .onChange(of: agents.map(\.agentId)) { _, ids in
       if let spawned = model.spawnedAgent, ids.contains(spawned) { model.spawnedAgent = nil }
     }
-    .navigationTitle(session?.displayName ?? session?.branch ?? "Session")
-    .navigationSubtitle(session?.branch ?? "")
+    .navigationTitle(session.map(Self.title) ?? "Session")
+    .navigationSubtitle(session.map(Self.subtitle) ?? "")
     .task(id: session?.repoRoot) {
       if let repoRoot = session?.repoRoot { await store.loadAgents(repoRoot: repoRoot) }
     }
@@ -126,6 +126,15 @@ struct SessionView: View {
       await terminals.loadConfig(repoRoot: session.repoRoot)
       await terminals.refresh(sessionId: sessionId)
     }
+  }
+
+  /// The session's name; the branch only as a subtitle, and only when it adds something.
+  static func title(_ session: RemoteSession) -> String {
+    session.displayName.flatMap { $0.isEmpty ? nil : $0 } ?? session.branch
+  }
+
+  static func subtitle(_ session: RemoteSession) -> String {
+    title(session) == session.branch ? "" : session.branch
   }
 
   /// The open repository's changed files, as Grove badges its Changes tab.
