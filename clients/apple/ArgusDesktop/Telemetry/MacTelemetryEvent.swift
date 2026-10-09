@@ -185,6 +185,8 @@ enum MacTelemetryEvent {
   case sessionPanelSwitched(panel: String, via: PanelSwitchSource)
   /// One of the keyboard commands for agents, panels and screens was used.
   case menuCommandUsed(action: MenuCommandAction, via: MenuCommandSource)
+  /// Back or Forward through the window tab's history.
+  case navigatedHistory(direction: HistoryDirection, via: HistorySource)
   /// A folder was browsed for on a paired host's disk.
   case hostFolderPicked(stage: FolderPickStage)
   /// A session's branch was renamed from its home.
@@ -289,6 +291,7 @@ enum MacTelemetryEvent {
     case .tabUsed: "mac_tab_used"
     case .sessionPanelSwitched: "mac_session_panel_switched"
     case .menuCommandUsed: "mac_menu_command_used"
+    case .navigatedHistory: "mac_navigated_history"
     case .scratchPadCreated: "mac_scratch_pad_created"
     case .prefsSupplied: "mac_prefs_supplied"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
@@ -377,6 +380,8 @@ enum MacTelemetryEvent {
       ["panel": panel, "via": via.rawValue]
     case .menuCommandUsed(let action, let via):
       ["action": action.rawValue, "via": via.rawValue]
+    case .navigatedHistory(let direction, let via):
+      ["direction": direction.rawValue, "via": via.rawValue]
     case .prefsSupplied(let keys):
       ["keys": keys]
     case .scratchPadCreated:

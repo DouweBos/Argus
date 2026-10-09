@@ -18,7 +18,7 @@ struct CodeSelectionCommands: View {
   }
 }
 
-/// The Go menu: history, editor tabs, definitions, lines and problems in the code view.
+/// The Go menu's code view half: quick open, editor tabs, definitions, lines and problems.
 struct CodeGoCommands: View {
   let model: DesktopModel
 
@@ -27,13 +27,6 @@ struct CodeGoCommands: View {
     let document = model.activeCodeDocument
     let language = document?.languageProvider != nil
     QuickOpenCommands(model: model)
-    Divider()
-    Button("Back") { model.goBack() }
-      .keyboardShortcut("-", modifiers: .control)
-      .disabled(code == nil || !model.canGoBack)
-    Button("Forward") { model.goForward() }
-      .keyboardShortcut("-", modifiers: [.control, .shift])
-      .disabled(code == nil || !model.canGoForward)
     Divider()
     Button("Next Editor") { code?.cycleEditor(by: 1, active: model.activeCodePath) }
       .keyboardShortcut(.rightArrow, modifiers: [.option, .command])

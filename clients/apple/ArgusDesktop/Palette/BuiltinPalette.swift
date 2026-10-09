@@ -34,13 +34,13 @@ enum BuiltinPalette {
     if model.canGoBack {
       commands.append(
         PaletteCommand(id: "navigate.back", title: "Back", section: "Navigate", shortcut: "⌘[") {
-          model.goBack()
+          model.goBack(via: .palette)
         })
     }
     if model.canGoForward {
       commands.append(
         PaletteCommand(id: "navigate.forward", title: "Forward", section: "Navigate", shortcut: "⌘]") {
-          model.goForward()
+          model.goForward(via: .palette)
         })
     }
     // Every session, by name, as the desktop's palette jumps to them.

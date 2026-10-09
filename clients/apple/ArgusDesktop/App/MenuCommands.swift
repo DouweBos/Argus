@@ -1,4 +1,5 @@
 import AppKit
+import ArgusEditor
 import SwiftUI
 
 /// The keyboard commands for agents, panels and screens, shared by the menus
@@ -110,4 +111,35 @@ struct GoMenuCommands: View {
         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command, .option])
     }
   }
+}
+
+/// Back and Forward at the top of the Go menu, as in Finder.
+struct HistoryCommands: View {
+  let model: DesktopModel
+
+  var body: some View {
+    // In the code editor ⌘[ and ⌘] outdent and indent, as in VS Code; the editor takes the key
+    // first, and this covers the menu seeing it before the window does.
+    Button("Back") {
+      if model.codeEditorFocused, Self.isKey {
+        model.activeCodeDocument?.perform(.outdentLines)
+      } else {
+        model.goBack(via: Self.isKey ? .shortcut : .menu)
+      }
+    }
+    .keyboardShortcut("[", modifiers: .command)
+    .disabled(!model.canGoBack && !model.codeEditorFocused)
+    Button("Forward") {
+      if model.codeEditorFocused, Self.isKey {
+        model.activeCodeDocument?.perform(.indentLines)
+      } else {
+        model.goForward(via: Self.isKey ? .shortcut : .menu)
+      }
+    }
+    .keyboardShortcut("]", modifiers: .command)
+    .disabled(!model.canGoForward && !model.codeEditorFocused)
+  }
+
+  /// A key equivalent arrives as the current event; a click doesn't.
+  @MainActor private static var isKey: Bool { NSApp.currentEvent?.type == .keyDown }
 }

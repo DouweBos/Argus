@@ -138,8 +138,7 @@ extension DesktopModel {
     machineFilter = hostId
     hosts.focus(hostId ?? Hosts.local)
     guard location != current else { return }
-    back.append(current)
-    forward = []
+    step(from: current)
     persistTabs()
   }
 
@@ -147,11 +146,27 @@ extension DesktopModel {
     let current = location
     guard next != current else { return }
     remember(next.route)
-    back.append(current)
-    forward = []
+    if !names(current.route, as: next.route) { step(from: current) }
     apply(next)
+    history.settle(at: next)
     persistTabs()
     MacTelemetry.capture(.screenViewed(screen: next.route.pattern))
+  }
+
+  /// One step of history per user action: a second navigation in the same
+  /// run-loop pass (a selection that then picks a panel) replaces the first.
+  private func step(from current: DesktopLocation) {
+    guard !historyStepOpen else { return }
+    history.leave(current)
+    historyStepOpen = true
+    DispatchQueue.main.async { [weak self] in self?.historyStepOpen = false }
+  }
+
+  /// A session's agents with none named, then naming the agent already in
+  /// front: the same screen, so not a step back.
+  private func names(_ current: DesktopRoute, as next: DesktopRoute) -> Bool {
+    guard case .session(let id, nil) = current, case .session(id, let agentId?) = next else { return false }
+    return agentId == focusedAgentId(inSession: id, agents: agents(inSession: id))
   }
 
   /// Which panel and git view each session was last left on.
@@ -194,21 +209,21 @@ extension DesktopModel {
     route = location.route
   }
 
-  var canGoBack: Bool { !back.isEmpty }
-  var canGoForward: Bool { !forward.isEmpty }
+  var canGoBack: Bool { history.canGoBack }
+  var canGoForward: Bool { history.canGoForward }
 
-  func goBack() {
-    guard let previous = back.popLast() else { return }
-    forward.append(location)
+  func goBack(via: MacTelemetryEvent.HistorySource) {
+    guard let previous = history.goBack(from: location) else { return }
     apply(previous)
     persistTabs()
+    MacTelemetry.capture(.navigatedHistory(direction: .back, via: via))
   }
 
-  func goForward() {
-    guard let next = forward.popLast() else { return }
-    back.append(location)
+  func goForward(via: MacTelemetryEvent.HistorySource) {
+    guard let next = history.goForward(from: location) else { return }
     apply(next)
     persistTabs()
+    MacTelemetry.capture(.navigatedHistory(direction: .forward, via: via))
   }
 
   /// A scratch pad on the machine on screen, opened on its first agent.

@@ -70,14 +70,17 @@ final class DesktopModel {
   var spawnedAgent: String?
   private var launchRouteApplied = false
   private var tabRestored = false
-  var back: [DesktopLocation] = []
-  var forward: [DesktopLocation] = []
+  /// The active tab's back and forward.
+  var history = NavigationHistory()
+  /// A navigation already made a history step this run-loop pass: a second
+  /// one in the same user action replaces it rather than stacking.
+  var historyStepOpen = false
   /// A launch route or deep link to a session no host has listed yet, held
   /// until its host connects (`resolvePendingLocation`).
   var pendingLocation: DesktopLocation?
   var pendingTimeout: Task<Void, Never>?
   /// The window's tabs, each a saved location with its own history; the
-  /// active one's live state is `route`, `back`, `forward` and the focused host.
+  /// active one's live state is `route`, `history` and the focused host.
   var tabs: [WindowTab] = WindowTab.restored()
   var activeTabId = WindowTab.restoredActive()
 
