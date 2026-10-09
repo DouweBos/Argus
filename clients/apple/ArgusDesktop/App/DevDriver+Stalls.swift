@@ -6,6 +6,7 @@
   /// longest gap and the total of gaps over 50 ms since the last call, then resets.
   /// `switchPanel` (`panel`): what the toolbar switcher does, for the session on screen.
   /// `repoState`: what the session's repository has loaded so far.
+  /// `toolbarFrames`: the toolbar items' frames, to see the switcher keep its place.
   @MainActor
   enum StallDriver {
     private static var timer: Timer?
@@ -45,9 +46,22 @@
           "open": true, "tags": workspace.refs.tags.count, "branches": workspace.refs.localBranches.count,
           "stashes": workspace.stashes.stashes.count, "changed": workspace.workingCopy.changedCount,
         ]
+      case "toolbarFrames":
+        // Each toolbar item's frame in the window, left to right: where the switcher sits.
+        guard let frame = NSApp.windows.first(where: { $0.identifier?.rawValue.hasPrefix("main") == true })?
+          .contentView?.superview
+        else { return ["error": "no window"] }
+        return ["items": viewers(in: frame).map { "\(Int($0.minX))-\(Int($0.maxX))" }]
       default:
         return nil
       }
+    }
+
+    private static func viewers(in view: NSView) -> [NSRect] {
+      if NSStringFromClass(type(of: view)).contains("ToolbarItemViewer") {
+        return view.isHidden || view.frame.width == 0 ? [] : [view.convert(view.bounds, to: nil)]
+      }
+      return view.subviews.flatMap(viewers).sorted { $0.minX < $1.minX }
     }
 
     private static func tick() {
