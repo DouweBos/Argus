@@ -83,6 +83,8 @@ struct GrammarAssets: Sendable {
   let language: Language
   let highlights: Query
   let injections: Query?
+  /// Fold regions beyond bracket pairs; optional, and a bad query only costs folding.
+  let folds: Query?
   let styles: [Int8?]
 
   init(grammar: Grammar) throws {
@@ -93,6 +95,9 @@ struct GrammarAssets: Sendable {
       injections = try Query(language: language, data: data)
     } else {
       injections = nil
+    }
+    folds = (try? Self.optionalQueryData(grammar, "folds")).flatMap { $0 }.flatMap {
+      try? Query(language: language, data: $0)
     }
     self.highlights = highlights
     styles = (0..<highlights.captureCount).map { index in

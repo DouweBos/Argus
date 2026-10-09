@@ -81,6 +81,12 @@ struct CodeViewCommands: View {
     Toggle("Word Wrap", isOn: wordWrap)
       .keyboardShortcut(CodeShortcuts.wordWrap.key, modifiers: CodeShortcuts.wordWrap.modifiers)
       .disabled(code == nil)
+    Divider()
+    let document = model.activeCodeDocument
+    ForEach([EditorCommand.fold, .unfold, .foldAll, .unfoldAll], id: \.self) {
+      EditorCommandButton(command: $0, document: document, enabled: document?.hasFocus == true)
+    }
+    Divider()
     Button("Toggle Navigator") { code?.navigatorVisible.toggle() }
       .keyboardShortcut("b", modifiers: .command)
       .disabled(code == nil)

@@ -65,6 +65,7 @@ public final class TextAttachmentManager {
         }
 
         let attachment = orderedAttachments.remove(at: index)
+        restoreHiddenLines(in: attachment.range)
         layoutManager?.invalidateLayoutForRange(attachment.range)
 
         delegate?.textAttachmentDidRemove(attachment.attachment, for: attachment.range)
@@ -134,10 +135,27 @@ public final class TextAttachmentManager {
         for (idx, attachment) in orderedAttachments.enumerated().reversed() {
             if attachment.range.contains(atOffset) {
                 orderedAttachments.remove(at: idx)
+                restoreHiddenLines(in: attachment.range)
             } else if attachment.range.location > atOffset {
                 orderedAttachments[idx].range.location += delta
             }
         }
+    }
+
+    /// Argus patch: gives lines an attachment collapsed back a height right away, so geometry (scrolling to a line
+    /// that was hidden) is right before the next layout pass measures them.
+    private func restoreHiddenLines(in range: NSRange) {
+        guard let layoutManager else { return }
+        let length = layoutManager.lineStorage.length
+        let clamped = NSRange(start: min(range.location, length), end: min(range.max + 1, length))
+        for line in layoutManager.lineStorage.linesInRange(clamped).dropFirst() where line.height == 0 {
+            if orderedAttachments.contains(where: { $0.range.location < line.range.location && $0.range.max >= line.range.location }) {
+                continue
+            }
+            layoutManager.lineStorage.update(
+                atOffset: line.range.location, delta: 0, deltaHeight: layoutManager.estimateLineHeight())
+        }
+        layoutManager.setNeedsLayout()
     }
 
     /// Set up the attachment manager to listen to selection updates, giving text attachments a chance to respond to

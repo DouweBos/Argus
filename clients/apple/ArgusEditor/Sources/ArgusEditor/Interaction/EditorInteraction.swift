@@ -6,6 +6,8 @@ import AppKit
   unowned let document: EditorDocument
   private(set) lazy var completion = CompletionController(document: document)
   private(set) lazy var hover = HoverController(document: document)
+  /// ⌘K was pressed: the next key completes a chord (or is swallowed, as in VS Code).
+  private var pendingChord: EditorShortcut?
 
   init(document: EditorDocument) {
     self.document = document
@@ -37,6 +39,15 @@ import AppKit
   /// Editor keys, VS Code's first, then the host's. Called from the key equivalent pass (⌘, ⌃,
   /// arrows, F-keys) and from `keyDown` (⌥ letters); whichever sees the key first wins.
   func handleKey(_ event: NSEvent) -> Bool {
+    if event.type == .keyDown, let prefix = pendingChord {
+      pendingChord = nil
+      if let command = EditorCommand.matching(event, after: prefix) { document.perform(command) }
+      return true
+    }
+    if let prefix = EditorCommand.isChordPrefix(event) {
+      pendingChord = prefix
+      return true
+    }
     let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
     let isFunctionKey = (event.charactersIgnoringModifiers?.unicodeScalars.first?.value ?? 0) >= 0xF700
     guard !flags.subtracting(.shift).isEmpty || isFunctionKey else { return false }

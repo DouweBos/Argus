@@ -2,7 +2,7 @@ import AppKit
 @preconcurrency import CodeEditTextView
 import SwiftUI
 
-/// Line numbers, git change bars and diagnostic dots. A floating subview of the editor's scroll
+/// Line numbers, fold chevrons, git change bars and diagnostic dots. A floating subview of the editor's scroll
 /// view (`EditorEngine.install`): its frame is the visible rows in text view coordinates, so it
 /// scrolls with the text, is clipped with it, and stays put when the text scrolls sideways.
 final class GutterView: NSView {
@@ -11,6 +11,11 @@ final class GutterView: NSView {
   /// Worst severity per 0-based line.
   private var severities: [Int: DiagnosticSeverity] = [:]
   private var marksByLine: [GutterRow.Mark] = []
+  /// Open folds' chevrons show while the pointer is over the gutter, as in VS Code.
+  private var isHovering = false {
+    didSet { if isHovering != oldValue { needsDisplay = true } }
+  }
+  private var trackingArea: NSTrackingArea?
 
   override var isFlipped: Bool { true }
 
@@ -28,12 +33,24 @@ final class GutterView: NSView {
     addCursorRect(bounds, cursor: .arrow)
   }
 
+  override func updateTrackingAreas() {
+    super.updateTrackingAreas()
+    if let trackingArea { removeTrackingArea(trackingArea) }
+    let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self)
+    addTrackingArea(area)
+    trackingArea = area
+  }
+
+  override func mouseEntered(with event: NSEvent) { isHovering = true }
+
+  override func mouseExited(with event: NSEvent) { isHovering = false }
+
   var preferredWidth: CGFloat {
     guard let document else { return 40 }
     let digits = max(3, String(document.lineIndex.lineCount).count)
     let font = numberFont(document)
     let digitWidth = ("8" as NSString).size(withAttributes: [.font: font]).width
-    return ceil(CGFloat(digits) * digitWidth) + GutterRow.dotColumn + GutterRow.markColumn + 10
+    return ceil(CGFloat(digits) * digitWidth) + GutterRow.dotColumn + GutterRow.foldColumn + GutterRow.markColumn + 6
   }
 
   func decorationsChanged() {
@@ -58,7 +75,8 @@ final class GutterView: NSView {
     let font = numberFont(document)
     let caretLine = document.caret.line
     let lineHeight = layout.estimateLineHeight()
-    let numberRight = bounds.width - GutterRow.markColumn - 6
+    let numberRight = bounds.width - GutterRow.markColumn - GutterRow.foldColumn - 2
+    let folding = document.folding
     for (line, y) in rows(in: dirtyRect) {
       let rowHeight = min(line.height, lineHeight)
       let isCaret = line.index == caretLine
@@ -68,6 +86,10 @@ final class GutterView: NSView {
       ]
       let size = label.size(withAttributes: attributes)
       label.draw(at: NSPoint(x: numberRight - size.width, y: y + (rowHeight - size.height) / 2), withAttributes: attributes)
+      if folding.region(startingAt: line.index) != nil {
+        let folded = folding.isFolded(line: line.index)
+        if folded || isHovering { drawChevron(folded: folded, y: y, rowHeight: rowHeight, theme: theme) }
+      }
       if let severity = severities[line.index] {
         theme.severity(severity).setFill()
         let d: CGFloat = 6
@@ -75,6 +97,20 @@ final class GutterView: NSView {
       }
     }
     drawMarks(layout, top: top, dirtyRect: dirtyRect, theme: theme)
+  }
+
+  private func drawChevron(folded: Bool, y: CGFloat, rowHeight: CGFloat, theme: EditorTheme) {
+    let configuration = NSImage.SymbolConfiguration(pointSize: 9, weight: .semibold)
+      .applying(.init(hierarchicalColor: folded ? theme.lineNumberActive : theme.lineNumber))
+    guard
+      let image = NSImage(systemSymbolName: folded ? "chevron.right" : "chevron.down", accessibilityDescription: nil)?
+        .withSymbolConfiguration(configuration)
+    else { return }
+    let size = image.size
+    let column = GutterRow.foldColumnRect(width: bounds.width)
+    let rect = NSRect(
+      x: column.midX - size.width / 2, y: y + (rowHeight - size.height) / 2, width: size.width, height: size.height)
+    image.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
   }
 
   /// The rows intersecting `rect` (gutter coordinates) with their y in the gutter. The layout
@@ -136,9 +172,16 @@ final class GutterView: NSView {
       showPeek(mark, at: markRect(hit, layout: layout, top: top, x: x) ?? .zero)
       return
     }
-    // Clicking a number selects its line.
     guard let line = layout.textLineForPosition(top + point.y) else { return }
-    document.engine.textView.selectionManager.setSelectedRange(document.lineIndex.lineRange(line.index))
+    if GutterRow.foldColumnRect(width: bounds.width).insetBy(dx: -2, dy: 0).contains(NSPoint(x: point.x, y: 1)),
+      document.folding.region(startingAt: line.index) != nil
+    {
+      document.actions?.commandPerformed(document.folding.isFolded(line: line.index) ? .unfold : .fold)
+      document.folding.toggle(line: line.index)
+      return
+    }
+    // Clicking a number selects its row: a folded one's range runs through the fold, so it stays shut.
+    document.engine.textView.selectionManager.setSelectedRange(line.range)
     document.focus()
   }
 
@@ -166,6 +209,12 @@ final class GutterView: NSView {
 enum GutterRow {
   static let dotColumn: CGFloat = 12
   static let markColumn: CGFloat = 5
+  static let foldColumn: CGFloat = 14
+
+  /// Between the numbers and the change bars, full height (y is ignored).
+  static func foldColumnRect(width: CGFloat) -> NSRect {
+    NSRect(x: width - markColumn - foldColumn, y: 0, width: foldColumn, height: 2)
+  }
 
   /// The gutter's frame in text view coordinates: the visible rows, at the leading edge.
   static func frame(visible: NSRect, width: CGFloat) -> NSRect {

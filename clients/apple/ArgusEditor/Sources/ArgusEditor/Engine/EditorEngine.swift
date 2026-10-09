@@ -12,6 +12,8 @@ import AppKit
   private let invisibles = InvisiblesProvider()
   private var observers: [NSObjectProtocol] = []
   var onViewportChange: (() -> Void)?
+  /// Before scrolling to a range: folds hiding it open.
+  var willReveal: ((NSRange) -> Void)?
   /// Floats over the text's leading edge: scrolls vertically with it, stays put sideways.
   private weak var gutter: GutterView?
   /// Between the gutter and the first character.
@@ -184,6 +186,7 @@ import AppKit
 
   /// Puts `range` on screen, a third of the way down when it has to move.
   func center(_ range: NSRange) {
+    willReveal?(range)
     textView.layoutManager.layoutLines()
     guard let rect = textView.layoutManager.rectForOffset(range.location) else { return }
     var visible = textView.visibleRect

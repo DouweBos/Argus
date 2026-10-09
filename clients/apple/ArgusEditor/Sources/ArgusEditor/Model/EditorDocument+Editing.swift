@@ -9,6 +9,7 @@ extension EditorDocument: @preconcurrency TextViewDelegate {
   public func textView(_ textView: TextView, didReplaceContentsIn range: NSRange, with string: String) {
     let newLength = (string as NSString).length
     lineIndex.apply(location: range.location, oldLength: range.length, newLength: newLength, text: storage)
+    folding.textDidChange(range: range, newLength: newLength)
     version += 1
     highlighter.didEdit(range: range, newText: string, fullText: storage)
     recomputeDirty()

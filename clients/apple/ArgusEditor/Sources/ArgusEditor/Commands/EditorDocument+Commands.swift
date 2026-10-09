@@ -12,6 +12,10 @@ extension EditorDocument {
     case .goToDefinition: goToDefinition()
     case .triggerCompletion: triggerCompletion()
     case .jumpToBracket: jumpToBracket()
+    case .fold: folding.foldAtCaret()
+    case .unfold: folding.unfoldAtCaret()
+    case .foldAll: folding.foldAll()
+    case .unfoldAll: folding.unfoldAll()
     default:
       guard let plan = plan(for: command, in: editContext()) else { return }
       run(plan)
@@ -47,7 +51,9 @@ extension EditorDocument {
     case .addNextOccurrence: return SelectionCommands.addNextOccurrence(context)
     case .selectAllOccurrences: return SelectionCommands.selectAllOccurrences(context)
     case .addCursorAbove, .addCursorBelow: return SelectionCommands.addCursor(context, up: command == .addCursorAbove)
-    case .jumpToBracket, .goToLine, .nextProblem, .previousProblem, .goToDefinition, .triggerCompletion: return nil
+    case .jumpToBracket, .goToLine, .nextProblem, .previousProblem, .goToDefinition, .triggerCompletion,
+      .fold, .unfold, .foldAll, .unfoldAll:
+      return nil
     }
   }
 

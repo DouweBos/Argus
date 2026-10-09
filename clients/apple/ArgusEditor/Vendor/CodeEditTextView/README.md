@@ -15,3 +15,5 @@ Local patches, each marked `Argus patch` where it isn't a one-line fix (reapply 
 
 - `TextView+ScrollToVisible.swift`: scrolling the caret into view keeps it clear of the leading
   inset, which the gutter floats over.
+- `TextAttachmentManager.swift`: removing an attachment (unfolding) gives the lines it collapsed
+  their height back immediately, so jumping to a line that was folded lands in the right place.
