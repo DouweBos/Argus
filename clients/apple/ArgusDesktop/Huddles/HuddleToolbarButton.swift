@@ -28,7 +28,7 @@ struct HuddleToolbarButton: View {
     } label: {
       Label(room == nil ? "Share" : "Sharing", systemImage: room == nil ? "person.2" : "person.2.fill")
     }
-    .badge(waiting)
+    .overlay(alignment: .topTrailing) { PillBadge(waiting) }
     .help(help(room: room, waiting: waiting))
     .disabled(agentId == nil)
     .sheet(isPresented: $sheetOpen) {
@@ -42,7 +42,7 @@ struct HuddleToolbarButton: View {
       } label: {
         Label("Huddle Chat", systemImage: "bubble.left.and.bubble.right")
       }
-      .badge(huddles.chatOpen ? 0 : huddles.unread(room))
+      .overlay(alignment: .topTrailing) { PillBadge(huddles.chatOpen ? 0 : huddles.unread(room)) }
       .help("Huddle chat — just the people here, not the agent")
     }
   }
