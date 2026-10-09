@@ -16,6 +16,7 @@ import {
   listQueuedMessages as apiList,
   queueMessage as apiQueue,
   removeQueuedMessage as apiRemove,
+  sendQueuedMessageNow as apiSendNow,
   updateQueuedMessage as apiUpdate,
 } from "../lib/ipc";
 
@@ -104,6 +105,10 @@ export function updateQueuedMessage(
   text: string,
 ): void {
   apiUpdate(agentId, id, text).catch(() => {});
+}
+
+export function sendQueuedMessageNow(agentId: string, id: string): void {
+  apiSendNow(agentId, id).catch(() => {});
 }
 
 /** Drop everything queued — the turns they were written against are gone. */

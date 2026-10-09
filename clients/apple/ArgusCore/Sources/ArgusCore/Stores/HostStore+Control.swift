@@ -234,6 +234,21 @@ extension HostStore {
     } catch { report(error) }
   }
 
+  /// Send one queued message ahead of the rest. The host interrupts a busy
+  /// agent and delivers it as that turn ends.
+  public func sendQueuedNow(agentId: String, id: String) async {
+    guard let backend else { return }
+    struct Params: Encodable {
+      let agent_id: String
+      let id: String
+    }
+    do {
+      try await backend.request(
+        .agentsQueueSendNow, Params(agent_id: agentId, id: id), as: IgnoredResult.self)
+    } catch { report(error, scope: "agent:queue") }
+    await loadQueue(agentId: agentId)
+  }
+
   // MARK: Permissions
 
   /// `alwaysAllow` is an "Always allow" rule for the rest of the session. Only

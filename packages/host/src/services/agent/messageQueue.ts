@@ -116,6 +116,24 @@ export function updateQueuedMessage(
   emit(agentId);
 }
 
+/** Move a message to the head of the queue, so it is the next one sent. */
+export function promoteQueuedMessage(agentId: string, id: string): boolean {
+  const existing = appState.agentQueues.get(agentId);
+  const message = existing?.find((m) => m.id === id);
+  if (!existing || !message) {
+    return false;
+  }
+  if (existing[0] !== message) {
+    appState.agentQueues.set(agentId, [
+      message,
+      ...existing.filter((m) => m.id !== id),
+    ]);
+    emit(agentId);
+  }
+
+  return true;
+}
+
 /** Pop the oldest queued message, or undefined when the queue is empty. */
 export function dequeueMessage(agentId: string): QueuedMessage | undefined {
   const existing = appState.agentQueues.get(agentId);

@@ -164,6 +164,12 @@ export const AGENT_COMMANDS = {
     params: QueuedRef.extend({ text: z.string() }),
     result: Void,
   },
+  /** Send one queued message ahead of the rest, interrupting a busy agent. */
+  send_queued_message_now: {
+    tier: "admin",
+    params: QueuedRef,
+    result: z.object({ interrupted: z.boolean() }),
+  },
   clear_queued_messages: { tier: "admin", params: AgentId, result: Void },
   dequeue_message: {
     tier: "admin",

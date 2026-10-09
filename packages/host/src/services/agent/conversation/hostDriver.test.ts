@@ -13,10 +13,14 @@ import { enqueueMessage } from "../messageQueue";
 
 const sent = vi.hoisted(() => [] as { agentId: string; text: string }[]);
 const saved = vi.hoisted(() => [] as { messageCount: number }[]);
+const interrupted = vi.hoisted(() => [] as string[]);
 
 vi.mock("../agentService", () => ({
   sendAgentMessage: (agentId: string, text: string) => {
     sent.push({ agentId, text });
+  },
+  interruptAgent: async (agentId: string) => {
+    interrupted.push(agentId);
   },
 }));
 vi.mock("../chatHistory", () => ({
@@ -34,7 +38,7 @@ vi.mock("../../notifications/osNotification", () => ({
   showAgentNotification: () => false,
 }));
 
-const { startHostConversations, stopHostConversations } =
+const { sendQueuedMessageNow, startHostConversations, stopHostConversations } =
   await import("./hostDriver");
 const { readConversation, resetLive, stageConversation } =
   await import("./live");
@@ -118,6 +122,7 @@ describe("host conversation driver", () => {
     appState.agentQueues.clear();
     sent.length = 0;
     saved.length = 0;
+    interrupted.length = 0;
     vi.useRealTimers();
   });
 
@@ -147,6 +152,39 @@ describe("host conversation driver", () => {
     expect(texts()).toEqual(["user: and the signup"]);
     expect(snapshot()?.messages[0]?.author).toBe("Sam");
     expect(appState.agentQueues.get(AGENT)).toEqual([]);
+  });
+
+  it("interrupts a busy agent to send a queued message ahead of the rest", async () => {
+    addAgent("running");
+    started();
+    enqueueMessage(AGENT, { text: "first in line" });
+    const urgent = enqueueMessage(AGENT, { text: "look at this instead" });
+
+    await expect(sendQueuedMessageNow(AGENT, urgent.id)).resolves.toEqual({
+      interrupted: true,
+    });
+    expect(interrupted).toEqual([AGENT]);
+    expect(sent).toEqual([]);
+
+    // The host marks the agent idle before it announces it.
+    appState.agents.get(AGENT)!.status = "idle";
+    emitHostEvent(`agent:status:${AGENT}`, "idle");
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(sent).toEqual([{ agentId: AGENT, text: "look at this instead" }]);
+    expect(appState.agentQueues.get(AGENT)?.map((m) => m.text)).toEqual([
+      "first in line",
+    ]);
+  });
+
+  it("refuses to send a message that is no longer queued", async () => {
+    addAgent("running");
+    started();
+
+    await expect(sendQueuedMessageNow(AGENT, "gone")).rejects.toMatch(
+      /No queued message/,
+    );
+    expect(interrupted).toEqual([]);
   });
 
   it("saves chat history when the agent exits", async () => {

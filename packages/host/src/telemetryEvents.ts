@@ -119,6 +119,7 @@ export interface EventMap {
   proposal_start_failed: {
     stage: "creating_worktree" | "setting_up" | "starting_agent";
   };
+  queued_message_sent_now: { interrupted: boolean };
   renderer_started: { popout: string };
   secret_store_migrated: {
     outcome: "failed" | "migrated";

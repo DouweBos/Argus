@@ -7630,6 +7630,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SendQueuedMessageNowParams: Codable, Sendable {
+      public var agentId: String
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agentId"
+        case id = "id"
+      }
+
+      public init(agentId: String, id: String) {
+        self.agentId = agentId
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
+    public struct SendQueuedMessageNowResult: Codable, Sendable {
+      public var interrupted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case interrupted = "interrupted"
+      }
+
+      public init(interrupted: Bool) {
+        self.interrupted = interrupted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(interrupted, forKey: .interrupted)
+      }
+    }
+
     public struct SetAgentEffortParams: Codable, Sendable {
       public var agentId: String
       public var level: String?
@@ -11659,6 +11697,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.SendAgentMessageParams
       public typealias Result = IgnoredResult
       public static let name = "send_agent_message"
+      public static let tier = "admin"
+    }
+
+    public enum SendQueuedMessageNow: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.SendQueuedMessageNowParams
+      public typealias Result = ArgusProtocol.CommandsTypes.SendQueuedMessageNowResult
+      public static let name = "send_queued_message_now"
       public static let tier = "admin"
     }
 

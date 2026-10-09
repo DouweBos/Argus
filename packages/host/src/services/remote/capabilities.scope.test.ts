@@ -271,6 +271,7 @@ describe("a scoped context reaching anything else", () => {
       "agents.queue_add",
       "agents.queue_remove",
       "agents.queue_update",
+      "agents.queue_send_now",
       "permission.respond",
     ];
     const results = await Promise.all(
