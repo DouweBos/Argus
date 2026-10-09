@@ -59,13 +59,14 @@ enum BuiltinPalette {
 
   private static func session(_ model: DesktopModel) -> [PaletteCommand] {
     guard let id = model.route.sessionId else { return [] }
-    var commands = [
-      PaletteCommand(id: "session.home", title: "Session Home", section: "Session", systemImage: "house") {
-        model.navigate(.sessionHome(id: id))
-      },
-      PaletteCommand(id: "session.agents", title: "Session Agents", section: "Session", systemImage: "sparkles") {
-        model.openAgents(session: id)
-      },
+    // The switcher's order and the View menu's ⌘1–⌘4.
+    var commands = SessionPanel.allCases.enumerated().map { index, panel in
+      PaletteCommand(
+        id: "session.\(panel.rawValue)", title: "Session \(panel.title)", section: "Session",
+        systemImage: panel.symbol, shortcut: "⌘\(index + 1)"
+      ) { model.show(panel, via: .palette) }
+    }
+    commands += [
       PaletteCommand(
         id: "session.terminal", title: model.terminalPanelVisible ? "Hide Terminal" : "Show Terminal",
         section: "Session", systemImage: "terminal", shortcut: "⇧⌘T"

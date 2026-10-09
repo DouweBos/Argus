@@ -181,7 +181,7 @@ enum MacTelemetryEvent {
   case prefsSupplied(keys: Int)
   /// A window tab was opened, closed or switched to.
   case tabUsed(action: TabAction)
-  /// A session's Home, Agents or Git panel was picked from the toolbar or the View menu.
+  /// A session's Home, Agents, Code or Git panel was picked from the toolbar, the View menu or the palette.
   case sessionPanelSwitched(panel: String, via: PanelSwitchSource)
   /// One of the keyboard commands for agents, panels and screens was used.
   case menuCommandUsed(action: MenuCommandAction, via: MenuCommandSource)

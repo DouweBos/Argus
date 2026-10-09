@@ -98,14 +98,14 @@ extension DesktopModel {
     }
   }
 
-  /// Home, Agents, Git or Code of the session on screen, from the toolbar or the View menu.
+  /// Home, Agents, Code or Git of the session on screen, from the toolbar or the View menu.
   func show(_ panel: SessionPanel, via: MacTelemetryEvent.PanelSwitchSource) {
     guard let id = route.sessionId, panel != sessionPanel else { return }
     switch panel {
     case .home: navigate(.sessionHome(id: id))
     case .agents: openAgents(session: id)
-    case .git: openGit(session: id)
     case .code: openCode(session: id)
+    case .git: openGit(session: id)
     }
     MacTelemetry.capture(.sessionPanelSwitched(panel: panel.rawValue, via: via))
   }
@@ -236,14 +236,14 @@ extension DesktopModel {
 
 /// The panels a session switches between.
 enum SessionPanel: String, CaseIterable {
-  case home, agents, git, code
+  case home, agents, code, git
 
   var title: String {
     switch self {
     case .home: "Home"
     case .agents: "Agents"
-    case .git: "Git"
     case .code: "Code"
+    case .git: "Git"
     }
   }
 
@@ -251,8 +251,8 @@ enum SessionPanel: String, CaseIterable {
     switch self {
     case .home: "house"
     case .agents: "sparkles"
-    case .git: "arrow.triangle.branch"
     case .code: "chevron.left.forwardslash.chevron.right"
+    case .git: "arrow.triangle.branch"
     }
   }
 }
