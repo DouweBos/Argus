@@ -44,6 +44,7 @@ export type RemoteMethod =
   | "agents.queue_add"
   | "agents.queue_remove"
   | "agents.queue_update"
+  | "agents.queue_send_now"
   | "sessions.create"
   | "sessions.delete"
   | "sessions.rename"
