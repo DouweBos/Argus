@@ -219,6 +219,8 @@ interface AppState {
   /** Drop a still-queued message before it's sent. */
   removeQueued: (agentId: string, id: string) => Promise<void>;
   updateQueued: (agentId: string, id: string, message: string) => Promise<void>;
+  /** Send one queued message ahead of the rest, interrupting a busy agent. */
+  sendQueuedNow: (agentId: string, id: string) => Promise<void>;
   /** Fetch the computer's queue for an agent (then follow `agent.queue`). */
   loadQueue: (agentId: string) => Promise<void>;
   interrupt: (agentId: string) => Promise<void>;
@@ -1245,6 +1247,13 @@ export const useAppStore = create<AppState>((set, get) => {
         agent_id: agentId,
         id,
         message,
+      });
+    },
+
+    sendQueuedNow: async (agentId, id) => {
+      await get().transport?.request("agents.queue_send_now", {
+        agent_id: agentId,
+        id,
       });
     },
 

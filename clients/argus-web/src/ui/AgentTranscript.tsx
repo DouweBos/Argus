@@ -509,6 +509,7 @@ function QueuedRow({
 }) {
   const removeQueued = useAppStore((s) => s.removeQueued);
   const updateQueued = useAppStore((s) => s.updateQueued);
+  const sendQueuedNow = useAppStore((s) => s.sendQueuedNow);
 
   // `text` carries the linked-projects preamble; the editor only ever shows
   // what the user typed, and the preamble is rebuilt around whatever they save.
@@ -535,6 +536,13 @@ function QueuedRow({
       actions={
         editing ? undefined : (
           <>
+            <QueuedMessageAction
+              icon={<Icons.SendIcon size={11} />}
+              label="Send now (interrupts the current turn)"
+              onClick={() => {
+                sendQueuedNow(agentId, message.id).catch(() => {});
+              }}
+            />
             <QueuedMessageAction
               icon={<Icons.PencilIcon size={11} />}
               label="Edit queued message"
