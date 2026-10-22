@@ -136,6 +136,31 @@ struct RefActions {
       track: .rebase)
   }
 
+  /// The Git menu's Merge… and Rebase…: pick the other branch first, as Grove's dialogs.
+  func chooseMerge() {
+    pickBranch(title: "Merge into \(currentName)", primary: "Merge", squashOption: true) { branch, squash in
+      Task { await merge(branch, squash: squash) }
+    }
+  }
+
+  func chooseRebase() {
+    pickBranch(title: "Rebase \(currentName)", primary: "Rebase") { branch, _ in
+      Task { await rebaseCurrent(onto: branch) }
+    }
+  }
+
+  private func pickBranch(
+    title: String, primary: String, squashOption: Bool = false, submit: @escaping (String, Bool) -> Void
+  ) {
+    var names = workspace.refs.localBranches.filter { !$0.isHEAD }.map(\.name)
+    // A session's base is the usual pick, so it leads.
+    if let base = session.baseBranch.flatMap(names.firstIndex(of:)) { names.insert(names.remove(at: base), at: 0) }
+    GitDialogs.sheet(theme: theme) { dismiss in
+      BranchPickSheet(
+        title: title, primary: primary, branches: names, squashOption: squashOption, dismiss: dismiss, submit: submit)
+    }
+  }
+
   func setUpstream(_ branch: BranchInfo) {
     let initial = branch.upstream ?? "\(remoteNames.first ?? "origin")/\(branch.name)"
     GitDialogs.sheet(theme: theme) { dismiss in
