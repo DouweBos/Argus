@@ -126,7 +126,7 @@ export function boot(popoutMode: string | null, params: URLSearchParams): void {
     // Dispatch captured initial prompts once their session's worktree is ready.
     initPendingSessionPrompts();
     // Keep at most one Claude subprocess warmed up — for the currently
-    // selected, agent-less session — so its StartAgentDialog gets real
+    // selected, agent-less session — so its start composer gets real
     // model + slash-command lists ahead of time and the first send skips
     // the spawn + initialize wait.
     initPrewarm();

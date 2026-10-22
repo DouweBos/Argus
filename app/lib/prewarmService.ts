@@ -16,7 +16,7 @@ import { getCurrentRoute } from "./router";
  *
  * Keeps at most one Claude subprocess warmed up — for the currently selected
  * session, when it's `ready` and has no agent yet. That's the only spot where
- * the warmup actually pays off: the StartAgentDialog gets real models +
+ * the warmup actually pays off: the start composer gets real models +
  * slash commands without a spinner, and the first send skips the 1–3s
  * spawn handshake. Every other session can pay the spawn cost on demand
  * when the user navigates to it.

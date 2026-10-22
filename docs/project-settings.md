@@ -320,8 +320,8 @@ The default `.argus.json` Argus generates includes `["main", "master"]`.
 
 ## `default_base_branch` — preselected source branch for new sessions
 
-The branch preselected as the source when creating a new session in the
-Create-Session dialog. Useful when your team's default integration
+The branch preselected as the base when a prompt starts in a new worktree.
+Useful when your team's default integration
 branch is something other than `main` (for example, `staging` or
 `develop`).
 

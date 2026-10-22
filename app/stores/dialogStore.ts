@@ -1,11 +1,8 @@
 import { create } from "zustand";
 import { getSessionState } from "./sessionStore";
+import { openStartDraft } from "./startDraftStore";
 
 interface DialogState {
-  /** Shows the CreateSessionDialog rooted at this repo path when non-null. */
-  /** Prefills the new session's prompt (e.g. an approved plan handed off). */
-  createSessionPrompt: string | null;
-  createSessionRepoRoot: string | null;
   /** Shows the NewSessionPicker (repo chooser) when true. */
   newSessionPickerOpen: boolean;
   openProjectVisible: boolean;
@@ -14,8 +11,6 @@ interface DialogState {
 const store = create<DialogState>(() => ({
   openProjectVisible: false,
   newSessionPickerOpen: false,
-  createSessionRepoRoot: null,
-  createSessionPrompt: null,
 }));
 
 export const showOpenProjectDialog = () =>
@@ -28,43 +23,36 @@ export const showNewSessionPicker = () =>
 export const hideNewSessionPicker = () =>
   store.setState({ newSessionPickerOpen: false });
 
-export const showCreateSessionDialog = (repoRoot: string, prompt?: string) =>
-  store.setState({
-    createSessionRepoRoot: repoRoot,
-    createSessionPrompt: prompt ?? null,
-  });
-export const hideCreateSessionDialog = () =>
-  store.setState({ createSessionRepoRoot: null, createSessionPrompt: null });
+/**
+ * Start something new in `repoRoot`: its home, with the start composer set to
+ * a fresh worktree and focused. `prompt` prefills it (e.g. a handed-off plan).
+ */
+export const startNewSession = (repoRoot: string, prompt?: string) => {
+  openStartDraft(repoRoot, { prompt, workspace: "worktree" });
+};
 
 /**
- * Smart "new session" trigger: routes to the right dialog based on how many
- * projects are open. With 0 projects we need a repo first; with 1 we skip the
- * picker; with 2+ we show the picker.
+ * Smart "new session" trigger: with 0 projects we need a repo first; with 1 we
+ * go straight to it; with 2+ we ask which.
  */
 export const triggerNewSession = () => {
   const { projects } = getSessionState();
   if (projects.length === 0) {
-    store.setState({ openProjectVisible: true, createSessionPrompt: null });
+    store.setState({ openProjectVisible: true });
 
     return;
   }
   if (projects.length === 1) {
     const only = projects[0];
     if (only) {
-      store.setState({
-        createSessionRepoRoot: only.repoRoot,
-        createSessionPrompt: null,
-      });
+      startNewSession(only.repoRoot);
     }
 
     return;
   }
-  store.setState({ newSessionPickerOpen: true, createSessionPrompt: null });
+  store.setState({ newSessionPickerOpen: true });
 };
 
 export const useOpenProjectVisible = () => store((s) => s.openProjectVisible);
 export const useNewSessionPickerOpen = () =>
   store((s) => s.newSessionPickerOpen);
-export const useCreateSessionRepoRoot = () =>
-  store((s) => s.createSessionRepoRoot);
-export const useCreateSessionPrompt = () => store((s) => s.createSessionPrompt);

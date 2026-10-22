@@ -23,7 +23,7 @@ import {
   getToolDraft,
   setToolDraft,
 } from "../../../stores/conversationStore";
-import { showCreateSessionDialog } from "../../../stores/dialogStore";
+import { startNewSession } from "../../../stores/dialogStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { getSessionState } from "../../../stores/sessionStore";
 import { Markdown } from "../../shared/Markdown";
@@ -274,7 +274,7 @@ export function ToolCallCard({
     if (!planRepoRoot) {
       return;
     }
-    showCreateSessionDialog(
+    startNewSession(
       planRepoRoot,
       `Implement the following plan:\n\n${planText}`,
     );

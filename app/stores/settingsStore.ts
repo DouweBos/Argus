@@ -69,6 +69,8 @@ export interface DefaultLlm {
 
 export const DEFAULT_LLM_RUNNER = "claude-code";
 
+export type StartWorkspace = "current" | "worktree";
+
 interface SettingsState {
   /**
    * Hosts attached at launch. Several can be live at once — a Mac mini for
@@ -122,6 +124,8 @@ interface SettingsState {
    */
   showIgnoredFiles: boolean;
   showNonModifiedFiles: boolean;
+  /** Where a prompt typed on a project's home starts: a fresh worktree, or the checkout itself. */
+  startWorkspace: StartWorkspace;
   telemetryMode: TelemetryMode;
   /** Working-copy file list — flat list or tree by path (Phase 2 W2). */
   workingCopyView: WorkingCopyView;
@@ -314,6 +318,8 @@ function load(): SettingsState {
         showIgnoredFiles: parsed.showIgnoredFiles === true,
         showAssumeUnchangedFiles: parsed.showAssumeUnchangedFiles === true,
         showNonModifiedFiles: parsed.showNonModifiedFiles === true,
+        startWorkspace:
+          parsed.startWorkspace === "current" ? "current" : "worktree",
         lastEffortByRunner: sanitizeLastEffortByRunner(
           parsed.lastEffortByRunner,
         ),
@@ -347,6 +353,7 @@ function load(): SettingsState {
     showIgnoredFiles: false,
     showAssumeUnchangedFiles: false,
     showNonModifiedFiles: false,
+    startWorkspace: "worktree",
     lastEffortByRunner: {},
     remoteHosts: [],
     attachedRemoteHostIds: [],
@@ -375,6 +382,15 @@ export const useDefaultPermissionMode = () =>
 
 export const getDefaultPermissionMode = () =>
   store.getState().defaultPermissionMode;
+
+export const setStartWorkspace = (startWorkspace: StartWorkspace) => {
+  store.setState({ startWorkspace });
+  persist(store.getState());
+};
+
+export const useStartWorkspace = () => store((s) => s.startWorkspace);
+
+export const getStartWorkspace = () => store.getState().startWorkspace;
 
 export const setDefaultModel = (model: string) => {
   store.setState({ defaultModel: model });

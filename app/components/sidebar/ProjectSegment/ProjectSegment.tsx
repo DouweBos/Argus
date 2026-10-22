@@ -19,6 +19,7 @@ import { LOCAL_HOST_ID } from "../../../lib/transport/hostId";
 import { isSessionReady, sessionStatusLabel } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useUnreadByAgent } from "../../../stores/conversationStore";
+import { startNewSession } from "../../../stores/dialogStore";
 import {
   reorderSessions,
   selectSession,
@@ -27,7 +28,6 @@ import {
 } from "../../../stores/sessionStore";
 import { useSessionIsRunning } from "../../../stores/terminalStore";
 import { BranchSwitcher } from "../BranchSwitcher";
-import { CreateSessionDialog } from "../CreateSessionDialog";
 import { DeleteSessionDialog } from "../DeleteSessionDialog";
 import { RenameSessionDialog } from "../RenameSessionDialog";
 import { SessionCard } from "../SessionCard";
@@ -71,7 +71,6 @@ export function ProjectSegment({
     hostId,
   );
   const selectedId = useSelectedSessionId();
-  const [showCreate, setShowCreate] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
   const [sessionToRename, setSessionToRename] = useState<Session | null>(null);
@@ -336,7 +335,7 @@ export function ProjectSegment({
               title="New session"
               onClick={(e) => {
                 stop(e);
-                setShowCreate(true);
+                startNewSession(repoRoot);
               }}
             >
               <Icons.PlusIcon size={10} />
@@ -406,21 +405,12 @@ export function ProjectSegment({
         </div>
         <button
           className={styles.newSessionBtn}
-          onClick={() => setShowCreate(true)}
+          onClick={() => startNewSession(repoRoot)}
         >
           <Icons.PlusIcon size={10} />
           <span>New session</span>
         </button>
       </SidebarRepoGroup>
-
-      {showCreate &&
-        createPortal(
-          <CreateSessionDialog
-            repoRoot={repoRoot}
-            onClose={() => setShowCreate(false)}
-          />,
-          document.body,
-        )}
 
       {showConfig &&
         createPortal(
