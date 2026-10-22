@@ -538,7 +538,7 @@ function QueuedRow({
           <>
             <QueuedMessageAction
               icon={<Icons.SendIcon size={11} />}
-              label="Send now (interrupts the current turn)"
+              label="Send now (joins the current turn)"
               onClick={() => {
                 sendQueuedNow(agentId, message.id).catch(() => {});
               }}

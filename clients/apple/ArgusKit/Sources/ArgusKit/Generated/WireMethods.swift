@@ -328,19 +328,19 @@ extension ArgusProtocol {
     }
 
     public struct AgentsQueueSendNowResult: Codable, Sendable {
-      public var interrupted: Bool
+      public var midTurn: Bool
 
       enum CodingKeys: String, CodingKey {
-        case interrupted = "interrupted"
+        case midTurn = "mid_turn"
       }
 
-      public init(interrupted: Bool) {
-        self.interrupted = interrupted
+      public init(midTurn: Bool) {
+        self.midTurn = midTurn
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(interrupted, forKey: .interrupted)
+        try c.encode(midTurn, forKey: .midTurn)
       }
     }
 

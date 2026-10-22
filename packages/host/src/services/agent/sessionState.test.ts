@@ -72,6 +72,16 @@ describe("agent status from the CLI's session state", () => {
     expect(statuses()).toEqual(["idle"]);
   });
 
+  it("settles a prompt sent mid-turn, which shares the turn's one result", () => {
+    const session = addAgent({ inflightPrompts: 2 });
+    onStreamLine("a1", state("running"));
+    onStreamLine("a1", result);
+    expect(session.inflightPrompts).toBe(1);
+
+    onStreamLine("a1", state("idle"));
+    expect(session.inflightPrompts).toBe(0);
+  });
+
   it("reports a pending permission as requires_action", () => {
     const session = addAgent();
     onStreamLine("a1", state("requires_action"));

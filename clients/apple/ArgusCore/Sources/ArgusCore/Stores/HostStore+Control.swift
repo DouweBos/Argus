@@ -234,8 +234,8 @@ extension HostStore {
     } catch { report(error) }
   }
 
-  /// Send one queued message ahead of the rest. The host interrupts a busy
-  /// agent and delivers it as that turn ends.
+  /// Send one queued message ahead of the rest. A busy agent takes it into its
+  /// running turn rather than being interrupted.
   public func sendQueuedNow(agentId: String, id: String) async {
     guard let backend else { return }
     struct Params: Encodable {

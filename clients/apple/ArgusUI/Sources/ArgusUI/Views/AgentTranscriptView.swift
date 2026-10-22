@@ -333,7 +333,7 @@ public struct QueuedMessageCard: View {
             IconBtn(systemName: Icon.send, label: "Send now", size: 13) {
               Task { await host.sendQueuedNow(agentId: agentKey, id: message.id) }
             }
-            .help("Send now, interrupting the agent's current turn")
+            .help("Send now, into the agent's current turn")
           }
           IconBtn(systemName: Icon.pencil, label: "Edit queued message", size: 13) {
             draft = displayText
