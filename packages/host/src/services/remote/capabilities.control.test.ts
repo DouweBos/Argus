@@ -530,6 +530,48 @@ describe("sessions.create with a prompt", () => {
     await vi.waitFor(() =>
       expect(sendAgentMessage).toHaveBeenCalledWith("a1", "Implement the plan"),
     );
-    expect(startAgent).toHaveBeenCalledWith("s2");
+    expect(vi.mocked(startAgent).mock.calls[0]?.[0]).toBe("s2");
+  });
+
+  it("starts that agent on the model, mode and runner the phone picked", async () => {
+    const { createSession } = vi.mocked(await import("../session/manager"));
+    createSession.mockResolvedValueOnce({
+      id: "s3",
+      status: "ready",
+    } as never);
+    appState.sessions.set("s3", { id: "s3", status: "ready" } as never);
+
+    await dispatch(
+      "sessions.create",
+      {
+        repo_root: "/repo",
+        branch: "",
+        description: "Fix the test",
+        prompt: "Fix the test",
+        model: "opus",
+        permission_mode: "plan",
+      },
+      makeCtx(["monitor", "control"]),
+    );
+
+    await vi.waitFor(() => expect(startAgent).toHaveBeenCalled());
+    const args = vi.mocked(startAgent).mock.calls.at(-1) ?? [];
+    expect(args.slice(0, 3)).toEqual(["s3", "opus", "plan"]);
+  });
+
+  it("refuses a permission mode the phone may not grant", async () => {
+    await expect(
+      dispatch(
+        "sessions.create",
+        {
+          repo_root: "/repo",
+          branch: "",
+          description: "x",
+          prompt: "x",
+          permission_mode: "trusted",
+        },
+        makeCtx(["monitor", "control"]),
+      ),
+    ).rejects.toThrow();
   });
 });

@@ -239,6 +239,10 @@ export const MethodParams = {
     base_branch: z.string().optional(),
     /** Start an agent on this once setup finishes — the host waits, not the client. */
     prompt: z.string().max(100_000).optional(),
+    /** What that agent starts on; each falls back to the host's default. */
+    model: z.string().optional(),
+    permission_mode: RemotePermissionMode.optional(),
+    runner_id: z.string().optional(),
   }),
   "sessions.files": z.object({ session_id: z.string() }),
   /** One file's contents, read-only: the phone views, it never writes. */

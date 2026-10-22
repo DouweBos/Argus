@@ -226,11 +226,23 @@ struct RootView: View {
     }
     .listStyle(.sidebar)
     .sheet(item: $newSessionProject) { project in
-      NewSessionSheet(
+      StartAgentSheet(
         repoRoot: project.repoRoot,
-        branchSessionId: app.host.sessionsByRepo[project.repoRoot]?
-          .first { $0.kind == .projectRoot }?.id
-      ) { _ in
+        sessionId: app.host.sessionsByRepo[project.repoRoot]?
+          .first { $0.kind == .projectRoot }?.id,
+        currentLabel: "Current checkout",
+        workspace: .worktree,
+        models: [],
+        defaultMode: app.defaultPermissionMode
+      ) { started, chosen in
+        Telemetry.capture(
+          .agentStartSubmitted(workspace: chosen.rawValue, changedWorkspace: chosen != .worktree))
+        if case .agent(let agent) = started {
+          router.apply(
+            .agent(
+              id: agent.agentId, label: Labels.agentName(agent),
+              repoRoot: project.repoRoot, projectName: project.name))
+        }
         Task {
           // Show it straight away rather than waiting for the next poll.
           await app.host.loadSessions(repoRoot: project.repoRoot)

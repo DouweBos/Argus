@@ -402,10 +402,26 @@ function androidToRemoteDevice(d: {
 export async function startAgentWhenReady(
   sessionId: string,
   prompt: string,
+  options: {
+    model?: string;
+    permissionMode?: string;
+    runnerId?: string;
+  } = {},
 ): Promise<void> {
   try {
     await waitForSessionReady(sessionId);
-    const agent = await startAgent(sessionId);
+    const agent = await startAgent(
+      sessionId,
+      options.model,
+      options.permissionMode,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      options.runnerId,
+    );
     // Backend-initiated spawns are invisible to the UI without this.
     emitHostEvent("agent:started", {
       agent_id: agent.agent_id,
@@ -1195,8 +1211,13 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       use_existing_branch,
       base_branch,
       prompt,
+      model,
+      permission_mode,
+      runner_id,
     } = parse("sessions.create", params);
     requireKnownRepoRoot(repo_root);
+    requireRemotePermissionMode(permission_mode);
+    requireKnownRunner(runner_id);
     const session = await control(() =>
       createSession(
         repo_root,
@@ -1207,7 +1228,11 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       ),
     );
     if (prompt?.trim()) {
-      startAgentWhenReady(session.id, prompt).catch(() => {});
+      startAgentWhenReady(session.id, prompt, {
+        model,
+        permissionMode: permission_mode,
+        runnerId: runner_id,
+      }).catch(() => {});
     }
 
     return { session: toRemoteSession(session) };
