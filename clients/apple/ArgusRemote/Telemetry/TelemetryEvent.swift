@@ -77,6 +77,9 @@ enum TelemetryEvent {
   case settingChanged(setting: Setting, enabled: Bool)
   /// `value` is the enum's raw value, or `computer` / `none` when cleared.
   case defaultChanged(setting: DefaultSetting, value: String)
+  /// The start sheet sent its agent off. `workspace` is `current`, `worktree`
+  /// or `existing`; `changedWorkspace` says it isn't the one the sheet opened on.
+  case agentStartSubmitted(workspace: String, changedWorkspace: Bool)
   /// The warnings list was opened; `count` is how many it held.
   case warningsOpened(count: Int)
   /// A session file opened in the read-only viewer.
@@ -113,6 +116,7 @@ enum TelemetryEvent {
     case .followUpUsed: "ios_follow_up_used"
     case .settingChanged: "ios_setting_changed"
     case .defaultChanged: "ios_default_changed"
+    case .agentStartSubmitted: "ios_agent_start_submitted"
     case .warningsOpened: "ios_warnings_opened"
     case .fileViewed: "ios_file_viewed"
     case .fileSearchRun: "ios_file_search_run"
@@ -167,6 +171,8 @@ enum TelemetryEvent {
       ["setting": setting.rawValue, "enabled": enabled]
     case .defaultChanged(let setting, let value):
       ["setting": setting.rawValue, "value": value]
+    case .agentStartSubmitted(let workspace, let changedWorkspace):
+      ["workspace": workspace, "changed_workspace": changedWorkspace]
     case .warningsOpened(let count):
       ["count": count]
     case .fileViewed(let source, let language):

@@ -4234,6 +4234,9 @@ extension ArgusProtocol {
       public var useExistingBranch: Bool?
       public var baseBranch: String?
       public var prompt: String?
+      public var model: String?
+      public var permissionMode: RemotePermissionMode?
+      public var runnerId: String?
 
       enum CodingKeys: String, CodingKey {
         case repoRoot = "repo_root"
@@ -4242,15 +4245,21 @@ extension ArgusProtocol {
         case useExistingBranch = "use_existing_branch"
         case baseBranch = "base_branch"
         case prompt = "prompt"
+        case model = "model"
+        case permissionMode = "permission_mode"
+        case runnerId = "runner_id"
       }
 
-      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil) {
+      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil, model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil) {
         self.repoRoot = repoRoot
         self.branch = branch
         self.description = description
         self.useExistingBranch = useExistingBranch
         self.baseBranch = baseBranch
         self.prompt = prompt
+        self.model = model
+        self.permissionMode = permissionMode
+        self.runnerId = runnerId
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -4261,6 +4270,9 @@ extension ArgusProtocol {
         try c.encodeIfPresent(useExistingBranch, forKey: .useExistingBranch)
         try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
         try c.encodeIfPresent(prompt, forKey: .prompt)
+        try c.encodeIfPresent(model, forKey: .model)
+        try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
+        try c.encodeIfPresent(runnerId, forKey: .runnerId)
       }
     }
 

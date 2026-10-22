@@ -103,23 +103,16 @@ struct ProjectView: View {
           Button {
             creatingSession = true
           } label: {
-            Label("New session", systemImage: Icon.plus)
+            Label("Start agent", systemImage: Icon.plus)
           }
         }
       }
     }
     .sheet(isPresented: $creatingSession) {
-      NewSessionSheet(repoRoot: repoRoot, branchSessionId: branchSessionId) { _ in
-        Task { await refresh() }
-      }
+      startSheet(sessionId: branchSessionId, workspace: .worktree)
     }
     .sheet(item: $spawningIn) { target in
-      NewAgentSheet(
-        sessionId: target.id, models: knownModels, defaultMode: app.defaultPermissionMode
-      ) { agent in
-        router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
-        Task { await refresh() }
-      }
+      startSheet(sessionId: target.id, workspace: .current)
     }
     .alert(
       renameKind == .branch ? "Rename branch" : "Rename session",
@@ -400,6 +393,26 @@ struct ProjectView: View {
 
   /// Branches are addressed by session; the project root is the one that is
   /// always there, so it answers for the whole project.
+  /// One sheet for both: a new worktree from the toolbar, this session from
+  /// a session's "New agent" — either can switch to the other.
+  private func startSheet(
+    sessionId: String?, workspace: StartAgentSheet.Workspace
+  ) -> some View {
+    let isRoot = sessions.first { $0.id == sessionId }?.kind == .projectRoot
+    return StartAgentSheet(
+      repoRoot: repoRoot, sessionId: sessionId,
+      currentLabel: isRoot ? "Current checkout" : "This session",
+      workspace: workspace, models: knownModels, defaultMode: app.defaultPermissionMode
+    ) { started, chosen in
+      Telemetry.capture(
+        .agentStartSubmitted(workspace: chosen.rawValue, changedWorkspace: chosen != workspace))
+      if case .agent(let agent) = started {
+        router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
+      }
+      Task { await refresh() }
+    }
+  }
+
   private var branchSessionId: String? {
     (sessions.first { $0.kind == .projectRoot } ?? sessions.first)?.id
   }

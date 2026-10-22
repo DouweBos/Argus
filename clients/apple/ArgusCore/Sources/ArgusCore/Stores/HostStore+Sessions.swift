@@ -9,7 +9,8 @@ extension HostStore {
   @discardableResult
   public func createSession(
     repoRoot: String, branch: String, description: String,
-    useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil
+    useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil,
+    model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil
   ) async -> RemoteSession? {
     guard let backend else { return nil }
     struct Params: Encodable {
@@ -19,6 +20,10 @@ extension HostStore {
       let use_existing_branch: Bool?
       let base_branch: String?
       let prompt: String?
+      /// What the prompted agent starts on; nil leaves it to the computer.
+      let model: String?
+      let permission_mode: String?
+      let runner_id: String?
     }
     struct Result: Decodable { let session: RemoteSession }
     do {
@@ -26,7 +31,8 @@ extension HostStore {
         .sessionsCreate,
         Params(
           repo_root: repoRoot, branch: branch, description: description,
-          use_existing_branch: useExistingBranch, base_branch: baseBranch, prompt: prompt),
+          use_existing_branch: useExistingBranch, base_branch: baseBranch, prompt: prompt,
+          model: model, permission_mode: permissionMode?.rawValue, runner_id: runnerId),
         as: Result.self
       ).session
       creatingSessions[session.id] = session
