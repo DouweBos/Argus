@@ -72,6 +72,8 @@ enum TelemetryEvent {
   case memoryEdited(action: MemoryAction)
   /// The inbox's shortcut into the run a proposal came out of.
   case proposalOpenedAsRun
+  /// A suggested reply filled the message field.
+  case followUpUsed
   case settingChanged(setting: Setting, enabled: Bool)
   /// `value` is the enum's raw value, or `computer` / `none` when cleared.
   case defaultChanged(setting: DefaultSetting, value: String)
@@ -108,6 +110,7 @@ enum TelemetryEvent {
     case .sessionRenamed: "ios_session_renamed"
     case .memoryEdited: "ios_memory_edited"
     case .proposalOpenedAsRun: "ios_proposal_opened"
+    case .followUpUsed: "ios_follow_up_used"
     case .settingChanged: "ios_setting_changed"
     case .defaultChanged: "ios_default_changed"
     case .warningsOpened: "ios_warnings_opened"
@@ -121,7 +124,7 @@ enum TelemetryEvent {
 
   var properties: [String: Any] {
     switch self {
-    case .launched, .telemetryEnabled, .telemetryDisabled, .proposalOpenedAsRun:
+    case .launched, .telemetryEnabled, .telemetryDisabled, .proposalOpenedAsRun, .followUpUsed:
       [:]
     case .paired(let endpointKind, let hasControl):
       ["endpoint_kind": endpointKind, "has_control": hasControl]

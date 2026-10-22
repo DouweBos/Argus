@@ -178,6 +178,8 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `agent_limit_auto_continue` | main     | An agent stalled on a usage limit got a continue scheduled, sent, cancelled by a send, dismissed, or given up on                     | `action` (`scheduled`, `sent`, `cancelled`, `dismissed`, `gave_up`), `has_reset_time`                         |
 | `agent_transcript_paged`    | renderer | The desktop loaded an older page of a chat as the reader scrolled up                                                                 | `success` — whether the page arrived and lined up with what was shown                                         |
 | `agent_transcript_resynced` | renderer | A desktop window had to reload a chat's newest page because a live update didn't follow the one before (lost, or the host restarted) | `new_epoch` — the host started the conversation over (restart, fork seed) rather than an update going missing |
+| `follow_ups_suggested`      | main     | A small model was asked for suggested replies after a turn ended                                                                     | `count` (suggestions returned, 0–3), `success` — whether the call answered at all                             |
+| `follow_up_used`            | renderer | A suggested reply was put in the desktop chat input                                                                                  | `method` (`click`, `tab`)                                                                                     |
 
 ## Automations
 
@@ -285,6 +287,7 @@ stay honest.
 | `ios_claude_account_changed`               | A Claude account was picked, added, removed, renamed or pinned to a session             | `action` (`select`, `add`, `remove`, `rename`, `pin`)                                                |
 | `ios_memory_edited`                        | An automation's memory was saved or deleted                                             | `action` (`save`, `delete`)                                                                          |
 | `ios_proposal_opened`                      | The inbox opened the run behind a proposal                                              | —                                                                                                    |
+| `ios_follow_up_used`                       | A suggested reply was tapped into the message field                                     | —                                                                                                    |
 | `ios_setting_changed`                      | A phone-local setting was toggled                                                       | `setting` (`auto_expand_image_reads`), `enabled`                                                     |
 | `ios_default_changed`                      | A default new work starts from was changed                                              | `setting` (`permission_mode`, `autonomy`), `value`                                                   |
 | `ios_warnings_opened`                      | The Warnings & errors list was opened                                                   | `count`                                                                                              |
@@ -363,7 +366,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_transcript_copied` | Transcript text was copied with ⌘C or the context menu | `span` (`selection` within one message, `across_messages`) |
 | `mac_image_viewer_used` | The image viewer was opened, paged, or an image was copied, saved or opened in Preview from it | `action` (`open`, `page`, `copy`, `save`, `open_preview`) |
 | `mac_message_action` | A message's hover action was used | `action` (`copy`, `edit`, `fork_session`, `fork_agent`), `role` (`user`, `assistant`), `success` (the host took the edit or fork; always true for copy) |
-| `mac_input_used` | A chat-input feature was used | `affordance` (`slash_command`, `mention`, `image_paste`, `image_drop`, `image_attach`, `file_mention`, `permission_cycle`, `interrupt_shortcut`) |
+| `mac_input_used` | A chat-input feature was used | `affordance` (`slash_command`, `mention`, `image_paste`, `image_drop`, `image_attach`, `file_mention`, `permission_cycle`, `interrupt_shortcut`, `follow_up`) |
 | `mac_terminal_used` | Something was done to a terminal from the panel or the run control | `action` (`new_shell`, `close`, `rename`, `run`, `stop`, `stop_others_and_run`, `open_link`) |
 | `mac_terminal_replayed` | A terminal view attached and replayed what the host had captured | `bytes_bucket` (`0`, `<4k`, `<64k`, `64k+`), `truncated` (the host had already dropped older output) |
 | `mac_terminal_find_used` | Find in a terminal closed after a search | `matches_bucket` (`0`, `1-9`, `10-99`, `100+`), `navigated` |
@@ -415,7 +418,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 `launch_route`, `worktree_location`, `automation_worktree_location`,
 `custom_editors`, `telemetry_mode`, `account_selected`, `account_added`,
 `account_removed`, `account_renamed`, `account_reauth`, `default_model`,
-`permission_mode`, `automations_enabled`, `default_autonomy`, `concurrency`,
+`permission_mode`, `automations_enabled`, `follow_up_suggestions`, `default_autonomy`, `concurrency`,
 `daily_budget`, `allowed_commands`, `allowed_tools`, `refusal_allowed`,
 `refusal_dismissed`, `runner`, `llm_model`, `custom_runner_saved`,
 `custom_runner_deleted`, `mcp_servers`, `mcp_tested`, `mcp_signed_in`,

@@ -21,12 +21,15 @@ struct TranscriptDelta: Decodable, Sendable {
   let pendingToolName: String?
   let tasks: [RemoteTask]?
   let todos: [RemoteTodo]?
+  /// Nil from an older host.
+  let followUps: [String]?
 
   enum CodingKeys: String, CodingKey {
     case epoch, revision, total, messages, title, model, tasks, todos
     case agentId = "agent_id"
     case removedIds = "removed_ids"
     case pendingToolName = "pending_tool_name"
+    case followUps = "follow_ups"
   }
 }
 
@@ -103,9 +106,17 @@ extension HostStore {
 
     if tasksByAgent[key] != delta.tasks { tasksByAgent[key] = delta.tasks }
     if todosByAgent[key] != delta.todos { todosByAgent[key] = delta.todos }
+    setFollowUps(delta.followUps, for: key)
     if pendingToolByAgent[key] != delta.pendingToolName { pendingToolByAgent[key] = delta.pendingToolName }
     if let title = delta.title { patchStatus(key) { $0.title = title } }
     if let model = delta.model { patchStatus(key) { $0.model = model } }
+  }
+
+  /// An empty or missing list clears the agent's suggestions.
+  func setFollowUps(_ followUps: [String]?, for key: String) {
+    let next = followUps ?? []
+    guard followUpsByAgent[key] ?? [] != next else { return }
+    followUpsByAgent[key] = next.isEmpty ? nil : next
   }
 
   /// Upsert by id, keeping the held element wherever it is unchanged so views

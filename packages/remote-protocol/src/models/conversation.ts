@@ -131,6 +131,8 @@ export const AgentConversationMeta = z.object({
   contextWindow: z.number().optional(),
   /** The first user message's text, for a title before one is generated. */
   firstUserText: z.string().optional(),
+  /** Replies the user might send next, suggested once a turn ends. */
+  followUps: z.array(z.string()).optional(),
   lastEventType: z.string().optional(),
   model: z.string().optional(),
   pendingToolInput: z.record(z.string(), z.unknown()).nullable().optional(),

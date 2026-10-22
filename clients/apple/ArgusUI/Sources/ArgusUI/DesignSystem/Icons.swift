@@ -25,6 +25,8 @@ public enum Icon {
   public static let simulator = "iphone"
   public static let stop = "stop.circle"
   public static let send = "arrow.up.circle.fill"
+  /// A suggested reply to the agent.
+  public static let reply = "arrowshape.turn.up.left"
   public static let paperclip = "paperclip"
   public static let camera = "camera"
   public static let plus = "plus"

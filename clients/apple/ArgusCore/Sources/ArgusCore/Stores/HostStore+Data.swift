@@ -251,6 +251,7 @@ extension HostStore {
 
     if let tasks = transcript.tasks, tasksByAgent[key] != tasks { tasksByAgent[key] = tasks }
     if let todos = transcript.todos, todosByAgent[key] != todos { todosByAgent[key] = todos }
+    if !isOlderPage { setFollowUps(transcript.followUps, for: key) }
     pendingToolByAgent[key] = transcript.pendingToolName
 
     // Only the first load establishes where "older" starts; scrolling up walks

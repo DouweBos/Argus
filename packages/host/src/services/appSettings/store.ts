@@ -58,6 +58,11 @@ export interface AppSettings {
    */
   automations_enabled?: boolean;
   /**
+   * Suggest replies after an agent's turn ends, from its last message, using
+   * a small model. Defaults to true.
+   */
+  follow_up_suggestions?: boolean;
+  /**
    * Screen Argus opens on. `home` is the project picker; `inbox` is the
    * briefing. Defaults to `home` — the inbox only earns the launch slot once
    * automations are actually producing proposals.

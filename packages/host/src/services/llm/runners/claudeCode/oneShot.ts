@@ -42,6 +42,8 @@ export interface RunClaudePrintOptions {
   model?: string;
   /** Environment for the child. Defaults to the main process env. */
   env?: NodeJS.ProcessEnv;
+  /** Log a failure without telling the user — for one-shots nobody asked for. */
+  quiet?: boolean;
 }
 
 let lastBroadcastAt = 0;
@@ -150,7 +152,9 @@ export async function runClaudePrint(
     return parsed.result;
   } catch (e) {
     warn(`${opts.source} failed:`, e);
-    broadcastFailure(opts.source, e);
+    if (!opts.quiet) {
+      broadcastFailure(opts.source, e);
+    }
 
     return null;
   }

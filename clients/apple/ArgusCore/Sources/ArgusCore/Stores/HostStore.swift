@@ -58,6 +58,8 @@ public final class HostStore {
   public internal(set) var sendingQueuedByAgent: [String: [RemoteQueuedMessage]] = [:]
   public internal(set) var tasksByAgent: [String: [RemoteTask]] = [:]
   public internal(set) var todosByAgent: [String: [RemoteTodo]] = [:]
+  /// Replies suggested once each agent's last turn ended; absent when none.
+  public internal(set) var followUpsByAgent: [String: [String]] = [:]
   /// Name of the tool currently executing per agent — drives the activity row.
   public internal(set) var pendingToolByAgent: [String: String] = [:]
   /// Cursor for the next older page per agent; nil means the start is reached.
@@ -202,6 +204,7 @@ public final class HostStore {
     queueSeq = [:]
     tasksByAgent = [:]
     todosByAgent = [:]
+    followUpsByAgent = [:]
     pendingToolByAgent = [:]
     prevBeforeByAgent = [:]
     gitStatusBySession = [:]

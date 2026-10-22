@@ -892,6 +892,7 @@ extension ArgusProtocol {
       public var total: Int?
       public var tasks: [RemoteTask]?
       public var todos: [RemoteTodo]?
+      public var followUps: [String]?
       public var model: String?
       public var pendingToolName: String?
       public var epoch: String?
@@ -904,19 +905,21 @@ extension ArgusProtocol {
         case total = "total"
         case tasks = "tasks"
         case todos = "todos"
+        case followUps = "follow_ups"
         case model = "model"
         case pendingToolName = "pending_tool_name"
         case epoch = "epoch"
         case revision = "revision"
       }
 
-      public init(messages: [RemoteMessage], nextAfter: Int? = nil, prevBefore: Int? = nil, total: Int? = nil, tasks: [RemoteTask]? = nil, todos: [RemoteTodo]? = nil, model: String? = nil, pendingToolName: String? = nil, epoch: String? = nil, revision: Int? = nil) {
+      public init(messages: [RemoteMessage], nextAfter: Int? = nil, prevBefore: Int? = nil, total: Int? = nil, tasks: [RemoteTask]? = nil, todos: [RemoteTodo]? = nil, followUps: [String]? = nil, model: String? = nil, pendingToolName: String? = nil, epoch: String? = nil, revision: Int? = nil) {
         self.messages = messages
         self.nextAfter = nextAfter
         self.prevBefore = prevBefore
         self.total = total
         self.tasks = tasks
         self.todos = todos
+        self.followUps = followUps
         self.model = model
         self.pendingToolName = pendingToolName
         self.epoch = epoch
@@ -931,6 +934,7 @@ extension ArgusProtocol {
         try c.encodeIfPresent(total, forKey: .total)
         try c.encodeIfPresent(tasks, forKey: .tasks)
         try c.encodeIfPresent(todos, forKey: .todos)
+        try c.encodeIfPresent(followUps, forKey: .followUps)
         try c.encodeIfPresent(model, forKey: .model)
         try c.encodeIfPresent(pendingToolName, forKey: .pendingToolName)
         try c.encodeIfPresent(epoch, forKey: .epoch)

@@ -13,6 +13,7 @@ import {
   ContextMeter,
   createTypingReporter,
   FileMentionPicker,
+  FollowUpSuggestions,
   Icons,
   ImageAttachmentStrip,
   PickerPopover,
@@ -59,6 +60,8 @@ function canonicalMode(mode: string | null | undefined): RemotePermissionMode {
     ? (mode as RemotePermissionMode)
     : "auto";
 }
+
+const NO_FOLLOW_UPS: string[] = [];
 
 function draftKey(agentId: string): string {
   return `argus.draft.${agentId}`;
@@ -131,6 +134,9 @@ export function ChatInput({
   const status = useAppStore((s) => s.statusByAgent[agentId]);
   const caps = useAppStore((s) => s.capabilitiesByAgent[agentId]);
   const effort = useAppStore((s) => s.effortByAgent[agentId] ?? null);
+  const followUps = useAppStore(
+    (s) => s.followUpsByAgent[agentId] ?? NO_FOLLOW_UPS,
+  );
   const loadCapabilities = useAppStore((s) => s.loadCapabilities);
   const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
   const sendMessage = useAppStore((s) => s.sendMessage);
@@ -332,6 +338,24 @@ export function ChatInput({
     [adjustHeight, agentId],
   );
 
+  // Fills the input, never sends: the user reads it over first.
+  const fillFollowUp = useCallback(
+    (text: string) => {
+      const el = textareaRef.current;
+      if (!el) {
+        return;
+      }
+      el.value = text;
+      el.focus();
+      el.setSelectionRange(text.length, text.length);
+      setHasText(true);
+      adjustHeight();
+      localStorage.setItem(draftKey(agentId), text);
+    },
+    [adjustHeight, agentId],
+  );
+  const shownFollowUps = hasText || isRunning ? NO_FOLLOW_UPS : followUps;
+
   const addImageFiles = useCallback(async (files: File[]) => {
     const next = await filesToPendingImages(files);
     if (next.length > 0) {
@@ -404,6 +428,13 @@ export function ChatInput({
         }
       }
 
+      if (e.key === "Tab" && !e.shiftKey && shownFollowUps[0]) {
+        e.preventDefault();
+        fillFollowUp(shownFollowUps[0]);
+
+        return;
+      }
+
       if (e.key === "Tab" && e.shiftKey) {
         e.preventDefault();
         const next =
@@ -447,6 +478,8 @@ export function ChatInput({
       agentId,
       sendsOnEnter,
       setPermissionMode,
+      shownFollowUps,
+      fillFollowUp,
     ],
   );
 
@@ -458,6 +491,14 @@ export function ChatInput({
         onSelect={(i) => applySuggestion(suggestions[i])}
         onSelectedIndexChange={setSelectedIndex}
       />
+
+      {suggestions.length === 0 && !mentionContext && (
+        <FollowUpSuggestions
+          items={shownFollowUps}
+          tabHint={sendsOnEnter}
+          onSelect={(i) => fillFollowUp(shownFollowUps[i]!)}
+        />
+      )}
 
       {mentionContext && suggestions.length === 0 && (
         <FileMentionPicker

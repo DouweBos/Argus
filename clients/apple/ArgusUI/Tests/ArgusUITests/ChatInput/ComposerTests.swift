@@ -84,6 +84,22 @@ struct ComposerKeymapTests {
     #expect(action(.escape, running: true) == .ignore)
   }
 
+  @Test("Tab takes a suggested reply, after any open menu")
+  func followUp() {
+    #expect(
+      ComposerKeymap.action(
+        for: .tab(shift: false), menuOpen: false, isRunning: false, hasFollowUp: true)
+        == .acceptFollowUp)
+    #expect(
+      ComposerKeymap.action(
+        for: .tab(shift: false), menuOpen: true, isRunning: false, hasFollowUp: true)
+        == .menuAccept)
+    #expect(
+      ComposerKeymap.action(
+        for: .tab(shift: true), menuOpen: false, isRunning: false, hasFollowUp: true)
+        == .cyclePermissionMode)
+  }
+
   @Test("menus clamp")
   func clamp() {
     #expect(ComposerKeymap.move(0, by: -1, count: 3) == 0)
@@ -158,5 +174,28 @@ struct ImageAttachmentsTests {
     #expect(ImageAttachments.pending(data: Data("nope".utf8), type: .png) == nil)
     #expect(ImageAttachments.isImage(URL(fileURLWithPath: "/a/b.webp")))
     #expect(!ImageAttachments.isImage(URL(fileURLWithPath: "/a/b.swift")))
+  }
+}
+
+@Suite("FollowUps")
+struct FollowUpsTests {
+  private let items = ["Yes, add the tests", "Commit it"]
+
+  @Test("a typed prefix completes, case-insensitively")
+  func completion() {
+    #expect(FollowUps.completion(for: "yes, add", in: items) == " the tests")
+    #expect(FollowUps.completion(for: "Comm", in: items) == "it it")
+    #expect(FollowUps.completion(for: "", in: items) == nil)
+    #expect(FollowUps.completion(for: "Please", in: items) == nil)
+    #expect(FollowUps.completion(for: "Commit it", in: items) == nil)
+    #expect(FollowUps.completion(for: "Yes\n", in: items) == nil)
+  }
+
+  @Test("Tab fills the completion, or the first reply into an empty input")
+  func accepted() {
+    #expect(FollowUps.accepted(for: "", in: items) == "Yes, add the tests")
+    #expect(FollowUps.accepted(for: "Comm", in: items) == "Commit it")
+    #expect(FollowUps.accepted(for: "Please", in: items) == nil)
+    #expect(FollowUps.accepted(for: "", in: []) == nil)
   }
 }

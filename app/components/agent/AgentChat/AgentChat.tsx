@@ -1156,6 +1156,7 @@ export function AgentChat({
           models={modelOptions}
           permissionMode={permissionMode}
           effort={agentSnapshot?.effort ?? null}
+          followUps={conversation?.followUps}
           supportedEffortLevels={supportedEffortLevels}
           slashCommands={allCommands}
           textareaRef={chatInputRef}

@@ -853,6 +853,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       ...(cursor ?? {}),
       tasks: toRemoteTasks(conv),
       todos: toRemoteTodos(conv),
+      follow_ups: conv.followUps ?? [],
       model: conv.model ?? null,
       pending_tool_name: conv.pendingToolName ?? null,
     };

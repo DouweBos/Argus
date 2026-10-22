@@ -89,6 +89,7 @@ import { PrereqList } from "../PrereqList";
 import { AutomationDefaults } from "./AutomationDefaults";
 import { ClaudeAccountSection } from "./ClaudeAccountSection";
 import { CustomRunnersSection } from "./CustomRunnersSection";
+import { FollowUpSuggestionsToggle } from "./FollowUpSuggestionsToggle";
 import { HostsSection } from "./HostsSection";
 import { RemoteAccessSection } from "./RemoteAccessSection";
 import styles from "./SettingsDialog.module.css";
@@ -443,6 +444,7 @@ function PermissionsSection() {
             ))}
           </div>
         </SettingsScreenField>
+        <FollowUpSuggestionsToggle />
         <AutomationsToggle />
         <AutomationDefaults />
       </SettingsScreenDetailBody>
