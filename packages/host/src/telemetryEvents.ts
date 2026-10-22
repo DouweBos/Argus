@@ -86,6 +86,8 @@ export interface EventMap {
     badge_cleared: boolean;
     outcome: "ok" | "rate_limited" | "reauth" | "unknown";
   };
+  follow_up_used: { method: "click" | "tab" };
+  follow_ups_suggested: { count: number; success: boolean };
   host_lock_handover: { holder: "cli" | "electron" | "mac" };
   lsp_feature_used: {
     feature:

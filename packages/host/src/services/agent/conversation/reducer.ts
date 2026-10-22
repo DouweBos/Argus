@@ -297,6 +297,7 @@ export function withUserMessage(
 
   return {
     ...existing,
+    followUps: undefined,
     resuming: false,
     lastEventType: "user_sent",
     messages: [...existing.messages, msg],

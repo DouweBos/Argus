@@ -9,4 +9,6 @@ public enum ChatInputAffordance: String, Sendable {
   case fileMention = "file_mention"
   case permissionCycle = "permission_cycle"
   case interruptShortcut = "interrupt_shortcut"
+  /// A suggested reply filled the input, by tap, click or Tab.
+  case followUp = "follow_up"
 }

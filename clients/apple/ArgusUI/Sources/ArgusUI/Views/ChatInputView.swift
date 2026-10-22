@@ -48,6 +48,11 @@ public struct ChatInputView: View {
   private var hasContent: Bool {
     !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !attachments.isEmpty
   }
+  /// Offered only while the input is empty and the agent waits on the user.
+  private var followUps: [String] {
+    guard !hasContent, !isRunning else { return [] }
+    return host.followUpsByAgent[agentId] ?? []
+  }
 
   /// `onAffordance` reports the input affordances the host can't see (slash
   /// commands, mentions, image paste/drop). Only the Mac input reports them.
@@ -85,6 +90,11 @@ public struct ChatInputView: View {
         suggestionList(slashSuggestions.map(\.name), hint: slashSuggestions.map(\.description))
       } else if !mentionItems.isEmpty {
         mentionList
+      } else if !followUps.isEmpty {
+        FollowUpSuggestionRow(items: followUps) { reply in
+          text = reply
+          onAffordance?(.followUp)
+        }
       }
 
       if !previews.isEmpty { attachmentStrip }

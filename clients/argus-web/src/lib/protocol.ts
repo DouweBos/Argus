@@ -362,6 +362,8 @@ export interface RemoteTranscript {
   total?: number;
   tasks?: RemoteTask[] | null;
   todos?: RemoteTodo[] | null;
+  /** Replies suggested once the last turn ended. Absent on older hosts. */
+  follow_ups?: string[];
   model?: string | null;
   pending_tool_name?: string | null;
   /** Line the page up with `agent.transcript` deltas. Absent on older hosts. */
@@ -384,6 +386,8 @@ export interface RemoteTranscriptDelta {
   pending_tool_name: string | null;
   tasks: RemoteTask[] | null;
   todos: RemoteTodo[] | null;
+  /** Absent on older hosts. */
+  follow_ups?: string[];
 }
 
 export interface RemoteImageData {

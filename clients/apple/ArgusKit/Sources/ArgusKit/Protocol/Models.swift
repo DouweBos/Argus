@@ -424,8 +424,9 @@ public struct RemoteTranscript: Codable, Sendable {
   public init(
     messages: [RemoteMessage], nextAfter: Double?, prevBefore: Double?, total: Int?,
     tasks: [RemoteTask]?, todos: [RemoteTodo]?, model: String?, pendingToolName: String?,
-    epoch: String? = nil, revision: Int? = nil
+    epoch: String? = nil, revision: Int? = nil, followUps: [String]? = nil
   ) {
+    self.followUps = followUps
     self.epoch = epoch
     self.revision = revision
     self.messages = messages
@@ -444,6 +445,8 @@ public struct RemoteTranscript: Codable, Sendable {
   public var total: Int?
   public var tasks: [RemoteTask]?
   public var todos: [RemoteTodo]?
+  /// Replies suggested once the last turn ended; nil from an older host.
+  public var followUps: [String]?
   public var model: String?
   public var pendingToolName: String?
   /// Where the page sits among `agent.transcript` deltas; nil from a host that sends none.
@@ -455,6 +458,7 @@ public struct RemoteTranscript: Codable, Sendable {
     case nextAfter = "next_after"
     case prevBefore = "prev_before"
     case pendingToolName = "pending_tool_name"
+    case followUps = "follow_ups"
   }
 }
 

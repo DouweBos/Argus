@@ -8,6 +8,7 @@ import {
   Chip,
   ContextMeter,
   FileMentionPicker,
+  FollowUpSuggestions,
   SlashCommandList,
   Icons,
   ImageAttachmentStrip,
@@ -62,6 +63,7 @@ import {
 import { PermissionModePicker } from "../PermissionModePicker";
 import { ProjectPicker } from "../ProjectPicker";
 import styles from "./ChatInput.module.css";
+import { useFollowUps } from "./useFollowUps";
 import { useMentionPicker } from "./useMentionPicker";
 
 interface ChatInputProps {
@@ -89,6 +91,8 @@ interface ChatInputProps {
   disabledPlaceholder?: string;
   /** Current reasoning-effort level (e.g. "high"). `null`/undefined = model default. */
   effort?: string | null;
+  /** Replies suggested once the agent's last turn ended. */
+  followUps?: string[];
   model?: string;
   modelPickerOpen?: boolean;
   models?: ModelOption[];
@@ -153,6 +157,7 @@ export function ChatInput({
   onSetEffort,
   textareaRef: externalTextareaRef,
   sessionId,
+  followUps,
 }: ChatInputProps) {
   const canonicalMode = toCanonicalPermissionMode(permissionMode);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -308,6 +313,16 @@ export function ChatInput({
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, []);
 
+  const followUp = useFollowUps(textareaRef, followUps, (value) => {
+    adjustHeight();
+    setArgHint(null);
+    if (agentId) {
+      setDraft(agentId, value);
+    }
+  });
+  const syncFollowUp = followUp.sync;
+  const ghost = argHint ?? followUp.ghost;
+
   const updateArgHint = useCallback(() => {
     setArgHint(argHintFor(textareaRef.current?.value ?? "", slashCommands));
   }, [slashCommands]);
@@ -329,7 +344,8 @@ export function ChatInput({
     }
     el.value = agentId ? getDraft(agentId) : "";
     adjustHeight();
-  }, [agentId, adjustHeight]);
+    syncFollowUp();
+  }, [agentId, adjustHeight, syncFollowUp]);
 
   const updateSuggestions = useCallback(() => {
     const el = textareaRef.current;
@@ -356,6 +372,7 @@ export function ChatInput({
     adjustHeight();
     updateSuggestions();
     updateArgHint();
+    syncFollowUp();
     updateMentions(textareaRef.current);
     huddleTyping.keystroke();
     if (agentId) {
@@ -365,6 +382,7 @@ export function ChatInput({
     adjustHeight,
     updateSuggestions,
     updateArgHint,
+    syncFollowUp,
     updateMentions,
     huddleTyping,
     agentId,
@@ -392,6 +410,7 @@ export function ChatInput({
       adjustHeight();
     }
     setArgHint(null);
+    syncFollowUp();
     if (agentId) {
       clearDraft(agentId);
     }
@@ -416,6 +435,7 @@ export function ChatInput({
     huddleTyping,
     agentId,
     linkedProjects,
+    syncFollowUp,
   ]);
 
   const addImageFiles = useCallback(
@@ -459,11 +479,12 @@ export function ChatInput({
       el.selectionEnd = newCursor;
       el.focus();
       adjustHeight();
+      syncFollowUp();
       if (agentId) {
         setDraft(agentId, el.value);
       }
     },
-    [adjustHeight, agentId],
+    [adjustHeight, agentId, syncFollowUp],
   );
 
   const [isDragOver, setIsDragOver] = useState(false);
@@ -562,11 +583,12 @@ export function ChatInput({
       setSuggestions([]);
       adjustHeight();
       updateArgHint();
+      syncFollowUp();
       if (agentId) {
         setDraft(agentId, textareaRef.current.value);
       }
     },
-    [adjustHeight, updateArgHint, agentId],
+    [adjustHeight, updateArgHint, agentId, syncFollowUp],
   );
 
   const handleKeyDown = useCallback(
@@ -636,6 +658,18 @@ export function ChatInput({
         }
       }
 
+      if (
+        e.key === "Tab" &&
+        !e.shiftKey &&
+        !argHint &&
+        !disabled &&
+        followUp.acceptWithTab()
+      ) {
+        e.preventDefault();
+
+        return;
+      }
+
       if (e.key === "Tab" && e.shiftKey && onSetPermissionMode) {
         e.preventDefault();
         onSetPermissionMode(nextPermissionMode(canonicalMode));
@@ -662,6 +696,9 @@ export function ChatInput({
       adjustHeight,
       canonicalMode,
       onSetPermissionMode,
+      argHint,
+      disabled,
+      followUp,
     ],
   );
 
@@ -690,6 +727,14 @@ export function ChatInput({
         onSelect={(i) => applySuggestion(suggestions[i])}
         onSelectedIndexChange={setSelectedIndex}
       />
+
+      {!disabled && suggestions.length === 0 && !mentionContext && (
+        <FollowUpSuggestions
+          tabHint
+          items={followUp.chips}
+          onSelect={(i) => followUp.fill(followUp.chips[i]!, "click")}
+        />
+      )}
 
       {mentionContext && suggestions.length === 0 && (
         <FileMentionPicker
@@ -942,7 +987,8 @@ export function ChatInput({
           placeholder={
             disabled
               ? (disabledPlaceholder ?? "Agent is not running")
-              : "Message the agent… (Enter to send, / for commands, @ for files)"
+              : (followUp.placeholder ??
+                "Message the agent… (Enter to send, / for commands, @ for files)")
           }
           rows={1}
           onBlur={() => setIsFocused(false)}
@@ -957,10 +1003,10 @@ export function ChatInput({
           onPaste={handlePaste}
           onSelect={() => updateMentions(textareaRef.current)}
         />
-        {argHint && !disabled && (
+        {ghost && !disabled && (
           <div className={styles.argHint} aria-hidden="true">
-            <span className={styles.argHintSpacer}>{argHint.text}</span>
-            <span className={styles.argHintText}>{argHint.hint}</span>
+            <span className={styles.argHintSpacer}>{ghost.text}</span>
+            <span className={styles.argHintText}>{ghost.hint}</span>
           </div>
         )}
         {!isFocused &&

@@ -65,6 +65,8 @@
           MentionSuggestionList(
             header: MentionPicker.header(for: mention), items: mentionItems, selected: menuIndex
           ) { acceptMention($0) }
+        } else if !hasContent, !followUps.isEmpty {
+          FollowUpSuggestionRow(items: followUps) { acceptFollowUp($0) }
         }
         if !images.isEmpty {
           AttachmentStrip(images: images) { id in
@@ -106,9 +108,11 @@
           text: $text, caret: $caret, height: $height, isDropTarget: $isDropTarget,
           controller: controller,
           placeholder: isEnabled
-            ? "Message the agent… (Enter to send, / for commands, @ for files)"
+            ? followUps.first.map { "\($0)  (Tab)" }
+              ?? "Message the agent… (Enter to send, / for commands, @ for files)"
             : "Agent is not running",
-          argumentHint: SlashCommandMenu.argumentHint(for: text, in: commands),
+          argumentHint: SlashCommandMenu.argumentHint(for: text, in: commands)
+            ?? FollowUps.completion(for: text, in: followUps),
           isEnabled: isEnabled,
           onKey: handle,
           onDrop: receive)
@@ -161,8 +165,17 @@
 
     private var menuCount: Int { slashItems.isEmpty ? mentionItems.count : slashItems.count }
 
+    /// Replies suggested once the last turn ended, while the agent waits.
+    var followUps: [String] {
+      guard isEnabled, !isRunning else { return [] }
+      return host.followUpsByAgent[agentId] ?? []
+    }
+
     private func handle(_ key: ComposerKey) -> Bool {
-      switch ComposerKeymap.action(for: key, menuOpen: menuCount > 0, isRunning: isRunning) {
+      let followUp = FollowUps.accepted(for: text, in: followUps)
+      switch ComposerKeymap.action(
+        for: key, menuOpen: menuCount > 0, isRunning: isRunning, hasFollowUp: followUp != nil)
+      {
       case .passThrough:
         return false
       case .ignore:
@@ -187,8 +200,16 @@
       case .interrupt:
         onAffordance?(.interruptShortcut)
         interrupt()
+      case .acceptFollowUp:
+        if let followUp { acceptFollowUp(followUp) }
       }
       return true
+    }
+
+    private func acceptFollowUp(_ reply: String) {
+      onAffordance?(.followUp)
+      controller.replace(with: reply)
+      controller.focus()
     }
 
     private func acceptSlash(_ command: SlashCommandMenu.Command) {

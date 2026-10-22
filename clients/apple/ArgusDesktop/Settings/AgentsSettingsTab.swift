@@ -37,6 +37,19 @@ struct AgentsSettingsTab: View {
         SettingsCaption("Defaults applied when starting a new agent. Both can be overridden per session.")
       }
 
+      Section("Follow-up suggestions") {
+        if let settings = host.settings {
+          VStack(alignment: .leading, spacing: 4) {
+            Toggle("Suggest replies", isOn: followUpSuggestions(settings))
+            SettingsCaption(
+              "When an agent finishes, a small model reads its last message and suggests replies "
+                + "you can pick in the chat input.")
+          }
+        } else {
+          SettingsLoading()
+        }
+      }
+
       Section("Automations") {
         if let settings = host.settings {
           VStack(alignment: .leading, spacing: 4) {
@@ -95,6 +108,18 @@ struct AgentsSettingsTab: View {
         Task {
           await host.save(.automationsEnabled, ["automations_enabled": .bool(next)]) {
             $0.automationsEnabled = next
+          }
+        }
+      })
+  }
+
+  private func followUpSuggestions(_ settings: ArgusProtocol.AppSettings) -> Binding<Bool> {
+    Binding(
+      get: { settings.followUpSuggestions != false },
+      set: { next in
+        Task {
+          await host.save(.followUpSuggestions, ["follow_up_suggestions": .bool(next)]) {
+            $0.followUpSuggestions = next
           }
         }
       })

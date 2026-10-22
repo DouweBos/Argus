@@ -91,6 +91,7 @@ export interface RawConversation {
   tasks?: Record<string, RawTask> | null;
   taskOrder?: string[];
   todos?: RawTodo[] | null;
+  followUps?: string[];
   model?: string | null;
   pendingToolName?: string | null;
   title?: string;
@@ -408,6 +409,7 @@ export function toRemoteTranscriptDelta(
     pending_tool_name: meta.pendingToolName ?? null,
     tasks: toRemoteTasks(meta),
     todos: toRemoteTodos(meta),
+    follow_ups: meta.followUps ?? [],
   };
   remoteDeltas.set(delta, out);
 
