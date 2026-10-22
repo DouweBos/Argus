@@ -21,14 +21,11 @@ import { useAutomationsSync } from "../../../stores/automationStore";
 import { useCenterView } from "../../../stores/centerViewStore";
 import { toggleCommandPalette } from "../../../stores/commandPaletteStore";
 import {
-  hideCreateSessionDialog,
   hideNewSessionPicker,
   hideOpenProjectDialog,
-  showCreateSessionDialog,
   showOpenProjectDialog,
+  startNewSession,
   triggerNewSession,
-  useCreateSessionPrompt,
-  useCreateSessionRepoRoot,
   useNewSessionPickerOpen,
   useOpenProjectVisible,
 } from "../../../stores/dialogStore";
@@ -77,7 +74,6 @@ import { BranchPickerDialog } from "../../shared/BranchPickerDialog";
 import { CommandPalette } from "../../shared/CommandPalette";
 import { OpenPalette } from "../../shared/OpenPalette";
 import { SettingsDialog } from "../../shared/SettingsDialog";
-import { CreateSessionDialog } from "../../sidebar/CreateSessionDialog";
 import { OpenProjectDialog } from "../../sidebar/OpenProjectDialog";
 import { SessionSidebar } from "../../sidebar/SessionSidebar";
 import { ToolPanel } from "../../toolrail/ToolPanel";
@@ -323,8 +319,6 @@ export function AppShell() {
 
   const openProjectVisible = useOpenProjectVisible();
   const newSessionPickerOpen = useNewSessionPickerOpen();
-  const createSessionRepoRoot = useCreateSessionRepoRoot();
-  const createSessionPrompt = useCreateSessionPrompt();
   const homeData = useHomeData();
   const { openProject } = useProjects();
 
@@ -421,16 +415,8 @@ export function AppShell() {
           onClose={hideNewSessionPicker}
           onPick={(p) => {
             hideNewSessionPicker();
-            showCreateSessionDialog(p.path);
+            startNewSession(p.path);
           }}
-        />
-      )}
-
-      {createSessionRepoRoot && (
-        <CreateSessionDialog
-          prefilledPrompt={createSessionPrompt ?? undefined}
-          repoRoot={createSessionRepoRoot}
-          onClose={hideCreateSessionDialog}
         />
       )}
     </div>

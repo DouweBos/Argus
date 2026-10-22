@@ -1,10 +1,11 @@
 import type { ImageAttachment } from "../lib/ipc";
+import type { CanonicalPermissionMode } from "../lib/permissionModes";
 import type { DeleteProgress, SetupProgress } from "../lib/sessionProgress";
 import type { HostId } from "../lib/transport/hostId";
 import type { Session } from "../lib/types";
 import { create } from "zustand";
 import { useRouteSessionId } from "../lib/routeHooks";
-import { appNavigate, getCurrentRoute } from "../lib/router";
+import { appNavigate, getCurrentRoute, type SessionPanel } from "../lib/router";
 import { LOCAL_HOST_ID, hostScopedKey } from "../lib/transport/hostId";
 import { rememberSessionHost, sessionHost } from "../lib/transport/hostIndex";
 import { forgetSessionPanel, getLastPanelForSession } from "./editorStore";
@@ -42,17 +43,7 @@ interface SessionStoreData {
    * subscription in `app/lib/pendingSessionPrompts.ts` picks it up when
    * the session transitions to `ready`.
    */
-  pendingPromptBySessionId: Record<
-    string,
-    {
-      images?: ImageAttachment[];
-      /** Extra project roots to attach to the agent before the prompt is sent. */
-      linkedProjects?: string[];
-      /** CLI model identifier (e.g. `claude-opus-4-7`) — undefined uses the default. */
-      model?: string;
-      prompt: string;
-    }
-  >;
+  pendingPromptBySessionId: Record<string, PendingPrompt>;
   projects: Project[];
   sessions: Session[];
   /** Current item and progress during setup. Cleared when setup completes. */
@@ -318,7 +309,8 @@ export const updateSession = (id: string, patch: Partial<Session>) => {
   }));
 };
 
-export const selectSession = (id: string | null) => {
+/** `panel` opens that panel instead of the one the session was last left on. */
+export const selectSession = (id: string | null, panel?: SessionPanel) => {
   if (id !== null) {
     appNavigate({
       view: "session",
@@ -326,7 +318,7 @@ export const selectSession = (id: string | null) => {
       // Selecting a session on another machine moves the view there too —
       // the session and everything it opens belong to that host.
       hostId: sessionHostId(id),
-      panel: getLastPanelForSession(id) ?? "home",
+      panel: panel ?? getLastPanelForSession(id) ?? "home",
     });
   } else {
     appNavigate({ view: "home" });
@@ -374,8 +366,16 @@ export const setDeleteProgress = (
 
 export interface PendingPromptOptions {
   images?: ImageAttachment[];
+  /** Extra project roots to attach to the agent before the prompt is sent. */
   linkedProjects?: string[];
+  /** CLI model identifier (e.g. `claude-opus-4-7`) — undefined uses the default. */
   model?: string;
+  /** Undefined uses the app-level default. */
+  permissionMode?: CanonicalPermissionMode;
+}
+
+export interface PendingPrompt extends PendingPromptOptions {
+  prompt: string;
 }
 
 export const setPendingPrompt = (
@@ -383,7 +383,7 @@ export const setPendingPrompt = (
   prompt: string,
   options?: PendingPromptOptions,
 ) => {
-  const { images, linkedProjects, model } = options ?? {};
+  const { images, linkedProjects, model, permissionMode } = options ?? {};
   sessionStore.setState((state) => ({
     pendingPromptBySessionId: {
       ...state.pendingPromptBySessionId,
@@ -392,6 +392,7 @@ export const setPendingPrompt = (
         images: images?.length ? images : undefined,
         linkedProjects: linkedProjects?.length ? linkedProjects : undefined,
         model,
+        permissionMode,
       },
     },
   }));
@@ -399,12 +400,7 @@ export const setPendingPrompt = (
 
 export const consumePendingPrompt = (
   sessionId: string,
-): {
-  images?: ImageAttachment[];
-  linkedProjects?: string[];
-  model?: string;
-  prompt: string;
-} | null => {
+): PendingPrompt | null => {
   const state = sessionStore.getState();
   const entry = state.pendingPromptBySessionId[sessionId];
   if (entry === undefined) {

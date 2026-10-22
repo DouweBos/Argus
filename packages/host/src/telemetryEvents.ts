@@ -71,6 +71,11 @@ export interface EventMap {
   };
   agent_nudged: { critical: boolean; tagged: boolean };
   agent_stopped: undefined;
+  agent_start_submitted: {
+    /** The picked workspace differs from the one the composer opened with. */
+    changed_workspace: boolean;
+    workspace: "current" | "worktree";
+  };
   agent_transcript_paged: { success: boolean };
   agent_transcript_resynced: { new_epoch: boolean };
   app_error: { message: string; scope: string };

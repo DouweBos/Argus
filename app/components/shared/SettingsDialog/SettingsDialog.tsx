@@ -34,6 +34,7 @@ import {
   setDefaultLlmRunner,
   setDefaultModel,
   setDefaultPermissionMode,
+  setStartWorkspace,
   setDefaultPullStrategy,
   setDiffView,
   setDiffWhitespace,
@@ -49,6 +50,7 @@ import {
   useDefaultLlm,
   useDefaultModel,
   useDefaultPermissionMode,
+  useStartWorkspace,
   useDefaultPullStrategy,
   useDiffView,
   useDiffWhitespace,
@@ -64,6 +66,7 @@ import {
   type PermissionMode,
   type TelemetryMode,
   type WorkingCopyView,
+  type StartWorkspace,
 } from "../../../stores/settingsStore";
 import {
   THEME_PREFERENCE_LABELS,
@@ -108,6 +111,11 @@ export function SettingsDialog() {
 
   return <SettingsDialogContent />;
 }
+
+const START_WORKSPACES: [StartWorkspace, string][] = [
+  ["worktree", "New worktree"],
+  ["current", "Current checkout"],
+];
 
 function SettingsDialogContent() {
   const initialSection = useSettingsInitialSection();
@@ -385,6 +393,7 @@ function AutomationsToggle() {
 
 function PermissionsSection() {
   const mode = useDefaultPermissionMode();
+  const startWorkspace = useStartWorkspace();
   const defaultModel = useDefaultModel();
   const knownModels = useMemo(() => getLastKnownCapabilities().models, []);
 
@@ -445,6 +454,23 @@ function PermissionsSection() {
           </div>
         </SettingsScreenField>
         <FollowUpSuggestionsToggle />
+        <SettingsScreenField
+          label="Start new agents in"
+          caption="What a prompt on a project's home runs in. You can switch it per prompt."
+        >
+          <div className={styles.segmented}>
+            {START_WORKSPACES.map(([value, label]) => (
+              <button
+                key={value}
+                className={`${styles.segment} ${startWorkspace === value ? styles.segmentActive : ""}`}
+                type="button"
+                onClick={() => setStartWorkspace(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </SettingsScreenField>
         <AutomationsToggle />
         <AutomationDefaults />
       </SettingsScreenDetailBody>

@@ -15,7 +15,7 @@ import { setCenterView } from "../../../stores/centerViewStore";
 import { useHostConnections } from "../../../stores/connectionStore";
 import { deviceKeyFor, useDevicePoller } from "../../../stores/deviceStore";
 import {
-  showCreateSessionDialog,
+  startNewSession,
   showOpenProjectDialog,
 } from "../../../stores/dialogStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
@@ -208,7 +208,7 @@ export function HomeScreen() {
                           handleOpenProject(p).catch(() => {});
                         }}
                         onNewSession={() => {
-                          showCreateSessionDialog(p.path);
+                          startNewSession(p.path);
                         }}
                         onContextMenu={(e) => {
                           e.preventDefault();

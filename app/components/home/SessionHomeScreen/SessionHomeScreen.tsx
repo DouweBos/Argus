@@ -11,6 +11,7 @@ import { clearSessionSetupError, retrySessionSetup } from "../../../lib/ipc";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { setPendingPrompt, useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
+import { StartComposer } from "../../agent/StartComposer";
 import { ActiveAgentsPanel } from "../ActiveAgentsPanel";
 import { ChangeBaseBranchDialog } from "../ChangeBaseBranchDialog";
 import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
@@ -21,11 +22,7 @@ import styles from "../homeLayout.module.css";
 import { InitializationStatus } from "./InitializationStatus";
 
 interface SessionHomeScreenProps {
-  canStart: boolean;
-  isStarting: boolean;
   onResumeHistory: (sessionId: string) => void;
-  onStart: () => void;
-  onStartPlan: () => void;
   onViewHistory: (historyId: string) => void;
   repoRoot: string | null;
   sessionId: string;
@@ -38,10 +35,6 @@ function basename(p: string): string {
 export function SessionHomeScreen({
   sessionId,
   repoRoot,
-  isStarting,
-  canStart,
-  onStart,
-  onStartPlan,
   onViewHistory,
   onResumeHistory,
 }: SessionHomeScreenProps) {
@@ -162,27 +155,12 @@ export function SessionHomeScreen({
           <div className={styles.heroSpacer} />
           <div className={styles.ctas}>
             {session?.path && <OpenInEditorButton path={session.path} />}
-            <Button
-              variant="ghost"
-              leading={<Icons.AgentStartIcon size={12} />}
-              disabled={!canStart || isStarting}
-              onClick={onStartPlan}
-              title="Start in plan mode — agent must present a plan for approval before any writes"
-            >
-              Plan mode
-            </Button>
-            <Button
-              variant="primary"
-              leading={<Icons.AgentStartIcon size={12} />}
-              disabled={!canStart || isStarting}
-              onClick={onStart}
-            >
-              {isStarting ? "Starting…" : "Start agent"}
-            </Button>
           </div>
         </div>
 
         {session?.path && <PathLink path={session.path} />}
+
+        <StartComposer autoFocus sessionId={sessionId} />
 
         {session?.status === "initializing" && (
           <InitializationStatus sessionId={sessionId} />

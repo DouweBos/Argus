@@ -69,10 +69,12 @@ terminals) attached to it.
 To start one:
 
 1. Open the project from the home screen.
-2. Click **New session**.
-3. Type a goal in plain English — the agent picks up from there.
+2. Type a goal in plain English in the prompt box.
+3. Leave the workspace on **New worktree** (or pick **Current checkout** to
+   work in the project itself) and press Enter.
 
-Argus creates a fresh worktree under `~/.argus/worktrees/`, runs your
+For a new worktree, Argus names the branch from your prompt, creates the
+worktree under `~/.argus/worktrees/`, runs your
 project's setup commands, allocates ports if your `.argus.json` declares a
 `workspace_env`, boots simulators per-platform, and starts the agent. You
 can fan out five sessions in parallel and they won't step on each other.

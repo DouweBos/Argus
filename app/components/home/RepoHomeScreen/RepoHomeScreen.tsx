@@ -13,14 +13,10 @@ import { useArgusVersionCheck } from "../../../hooks/useArgusVersionCheck";
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { createHeadSession } from "../../../lib/ipc";
 import { useAgentsRecord } from "../../../stores/agentStore";
-import {
-  showCreateSessionDialog,
-  triggerNewSession,
-} from "../../../stores/dialogStore";
-import { setActiveCenterView } from "../../../stores/editorStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
+import { StartComposer } from "../../agent/StartComposer";
 import { SetupConfigDialog } from "../../sidebar/SetupConfigDialog";
 import { ActiveAgentsPanel } from "../ActiveAgentsPanel";
 import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
@@ -30,11 +26,7 @@ import { NoArgusJsonCard } from "./NoArgusJsonCard";
 import { OutdatedArgusVersionCard } from "./OutdatedArgusVersionCard";
 
 interface RepoHomeScreenProps {
-  canStart: boolean;
-  isStarting: boolean;
   onResumeHistory: (sessionId: string) => void;
-  onStart: () => void;
-  onStartPlan: () => void;
   onViewHistory: (historyId: string) => void;
   repoRoot: string | null;
   sessionId: string;
@@ -47,10 +39,6 @@ function basename(p: string): string {
 export function RepoHomeScreen({
   sessionId,
   repoRoot,
-  isStarting,
-  canStart,
-  onStart,
-  onStartPlan,
   onResumeHistory,
   onViewHistory,
 }: RepoHomeScreenProps) {
@@ -100,25 +88,13 @@ export function RepoHomeScreen({
     [repoRoot],
   );
 
-  const handleNewSession = () => {
-    if (repoRoot) {
-      showCreateSessionDialog(repoRoot);
-    } else {
-      triggerNewSession();
-    }
-  };
-
   const handleOpenGit = useCallback(async () => {
     if (!repoRoot) {
       return;
     }
     try {
       const head = await createHeadSession(repoRoot);
-      selectSession(head.id);
-      // Wait one tick for the route to switch to the session before
-      // flipping the panel — `setActiveCenterView` is a no-op outside a
-      // session route.
-      requestAnimationFrame(() => setActiveCenterView("git"));
+      selectSession(head.id, "git");
     } catch {
       // Surfaced via the standard error toasts when ipc fails.
     }
@@ -165,32 +141,10 @@ export function RepoHomeScreen({
                 Git
               </Button>
             )}
-            <Button
-              variant="ghost"
-              leading={<Icons.PlusIcon size={12} />}
-              onClick={handleNewSession}
-            >
-              New session
-            </Button>
-            <Button
-              variant="ghost"
-              leading={<Icons.AgentStartIcon size={12} />}
-              disabled={!canStart || isStarting}
-              onClick={onStartPlan}
-              title="Start in plan mode — agent must present a plan for approval before any writes"
-            >
-              Plan mode
-            </Button>
-            <Button
-              variant="primary"
-              leading={<Icons.AgentStartIcon size={12} />}
-              disabled={!canStart || isStarting}
-              onClick={onStart}
-            >
-              {isStarting ? "Starting…" : "Start agent"}
-            </Button>
           </div>
         </div>
+
+        <StartComposer autoFocus sessionId={sessionId} />
 
         {repoRoot && argusJson.exists === false && (
           <NoArgusJsonCard
@@ -206,22 +160,10 @@ export function RepoHomeScreen({
           />
         )}
 
-        <SectionPanel
-          title="Sessions"
-          meta={`${visibleSessions.length} total`}
-          action={
-            <button
-              type="button"
-              className={styles.linkBtn}
-              onClick={handleNewSession}
-            >
-              New
-            </button>
-          }
-        >
+        <SectionPanel title="Sessions" meta={`${visibleSessions.length} total`}>
           {visibleSessions.length === 0 ? (
             <div className={styles.emptyCell}>
-              No sessions yet. Create one to start a branch.
+              No sessions yet. Start an agent in a new worktree to make one.
             </div>
           ) : (
             <div className={styles.wsGrid}>

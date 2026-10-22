@@ -1,4 +1,3 @@
-import type { ImageAttachment } from "./ipc";
 import type { Session } from "./types";
 import { setLinkedProjects } from "../stores/conversationStore";
 import { pushError } from "../stores/notificationsStore";
@@ -6,6 +5,7 @@ import {
   clearPendingPrompt,
   consumePendingPrompt,
   getSessionState,
+  type PendingPrompt,
   subscribeSessionStore,
 } from "../stores/sessionStore";
 import { startAgentInSession, sendUserMessageToAgent } from "./agentLifecycle";
@@ -34,15 +34,14 @@ function isFailed(status: Session["status"]): boolean {
 
 async function dispatchPrompt(
   session: Session,
-  prompt: string,
-  images?: ImageAttachment[],
-  model?: string,
-  linkedProjects?: string[],
+  pending: PendingPrompt,
 ): Promise<void> {
+  const { images, linkedProjects, model, permissionMode, prompt } = pending;
   try {
     const agentInfo = await startAgentInSession(session.id, {
       focus: false,
       model: model && model !== "default" ? model : undefined,
+      permissionMode,
     });
     if (linkedProjects?.length) {
       setLinkedProjects(agentInfo.agent_id, linkedProjects);
@@ -94,13 +93,7 @@ export function initPendingSessionPrompts(): () => void {
         continue;
       }
       dispatching.add(session.id);
-      dispatchPrompt(
-        session,
-        consumed.prompt,
-        consumed.images,
-        consumed.model,
-        consumed.linkedProjects,
-      ).finally(() => {
+      dispatchPrompt(session, consumed).finally(() => {
         dispatching.delete(session.id);
       });
     }

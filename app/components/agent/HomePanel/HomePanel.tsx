@@ -12,7 +12,6 @@ import { useSessions } from "../../../stores/sessionStore";
 import { RepoHomeScreen } from "../../home/RepoHomeScreen";
 import { SessionHomeScreen } from "../../home/SessionHomeScreen";
 import { AgentChat } from "../AgentChat";
-import { StartAgentDialog } from "../StartAgentDialog";
 
 interface HomePanelProps {
   sessionId: string;
@@ -27,25 +26,10 @@ export function HomePanel({ sessionId }: HomePanelProps) {
 
   const repoRoot = session?.repo_root ?? null;
 
-  const { startNew, isStarting } = useSessionAgents(sessionId, {
+  const { startNew } = useSessionAgents(sessionId, {
     autoStart: false,
     sessionReady: session ? isSessionReady(session.status) : false,
   });
-
-  // The session's worktree exists as soon as `createSession` resolves, so
-  // agents can be spawned while the setup pipeline (copy/symlink/install)
-  // is still running in the background. Only block the start buttons when
-  // the session is in a terminal bad state.
-  const canStart = useMemo(() => {
-    if (!session) {
-      return false;
-    }
-    if (typeof session.status === "object") {
-      return false;
-    }
-
-    return session.status !== "deleting";
-  }, [session]);
 
   const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
@@ -109,48 +93,21 @@ export function HomePanel({ sessionId }: HomePanelProps) {
 
   const isRepoHome = session?.kind === "project_root";
 
-  const [startDialogMode, setStartDialogMode] = useState<
-    "auto" | "plan" | null
-  >(null);
-
-  const handleStart = () => {
-    setStartDialogMode("auto");
-  };
-
-  const handleStartPlan = () => {
-    setStartDialogMode("plan");
-  };
-
   return (
     <>
       {isRepoHome ? (
         <RepoHomeScreen
-          canStart={canStart}
-          isStarting={isStarting}
           repoRoot={repoRoot}
           sessionId={sessionId}
           onResumeHistory={handleResumeHistory}
-          onStart={handleStart}
-          onStartPlan={handleStartPlan}
           onViewHistory={handleViewHistory}
         />
       ) : (
         <SessionHomeScreen
-          canStart={canStart}
-          isStarting={isStarting}
           repoRoot={repoRoot}
           sessionId={sessionId}
           onResumeHistory={handleResumeHistory}
-          onStart={handleStart}
-          onStartPlan={handleStartPlan}
           onViewHistory={handleViewHistory}
-        />
-      )}
-      {startDialogMode && (
-        <StartAgentDialog
-          initialMode={startDialogMode}
-          sessionId={sessionId}
-          onClose={() => setStartDialogMode(null)}
         />
       )}
       {viewingHistoryId && historyAgentId && (
