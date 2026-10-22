@@ -128,6 +128,37 @@ struct BranchSheet: View {
   }
 }
 
+/// Merge or rebase: the other branch, and for a merge whether to squash.
+struct BranchPickSheet: View {
+  let title: String
+  let primary: String
+  let branches: [String]
+  var squashOption = false
+  let dismiss: () -> Void
+  let submit: (_ branch: String, _ squash: Bool) -> Void
+  @State private var branch = ""
+  @State private var squash = false
+
+  var body: some View {
+    GitSheetLayout(
+      title: title, primary: primary, canSubmit: !branch.isEmpty, cancel: dismiss,
+      submit: {
+        dismiss()
+        submit(branch, squash)
+      }
+    ) {
+      Form {
+        Picker("Branch", selection: $branch) {
+          ForEach(branches, id: \.self) { Text($0).tag($0) }
+        }
+        if squashOption { Toggle("Squash into one commit", isOn: $squash) }
+      }
+      .formStyle(.grouped)
+    }
+    .onAppear { branch = branches.first ?? "" }
+  }
+}
+
 /// Stash: message, untracked files, keep the index.
 struct StashSheet: View {
   let dismiss: () -> Void

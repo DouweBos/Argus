@@ -57,6 +57,9 @@ struct ArgusDesktopApp: App {
       CommandMenu("Agent") {
         AgentMenuCommands(model: delegate.model)
       }
+      CommandMenu("Git") {
+        GitMenuCommands(model: delegate.model)
+      }
     }
 
     Settings {
@@ -109,10 +112,11 @@ private struct ProjectCommands: View {
     Button("Open Session…") { MenuCommand.quickSwitcher.run(model) }
       .keyboardShortcut("o", modifiers: [.command, .shift])
       .disabled(model.store.projects.isEmpty || model.activeCodeSession != nil)
+    // The git panel's Pull owns ⇧⌘P while it's on screen, as on the desktop.
     Button("Command Palette…") {
       if model.palette.isPresented { model.palette.isPresented = false } else { model.palette.present() }
     }
-    .keyboardShortcut("p", modifiers: [.command, .shift])
+    .keyboardShortcut(model.gitInFront != nil ? nil : KeyboardShortcut("p", modifiers: [.command, .shift]))
   }
 }
 

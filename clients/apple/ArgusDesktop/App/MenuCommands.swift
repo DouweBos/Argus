@@ -2,7 +2,7 @@ import AppKit
 import ArgusEditor
 import SwiftUI
 
-/// The keyboard commands for agents, panels and screens, shared by the menus
+/// The keyboard commands for agents, panels, screens and git, shared by the menus
 /// and the hidden ⌘T, each counted once in `mac_menu_command_used`.
 enum MenuCommand {
   case newAgent
@@ -14,6 +14,7 @@ enum MenuCommand {
   case quickSwitcher
   case goHome
   case goTo(DesktopRoute)
+  case git(GitMenuAction)
 
   /// The screens ⌥⌘1–⌥⌘5 reach, in the desktop app's order.
   static let screens: [(title: String, route: DesktopRoute)] = [
@@ -35,6 +36,9 @@ enum MenuCommand {
     case .quickSwitcher: model.palette.present(switcher: true)
     case .goHome: model.navigate(.home)
     case .goTo(let route): model.navigate(route)
+    case .git(let action):
+      guard let workspace = model.gitInFront else { return }
+      action.post(to: workspace.sessionId)
     }
     MacTelemetry.capture(.menuCommandUsed(action: action, via: via ?? Self.source))
   }
@@ -50,6 +54,7 @@ enum MenuCommand {
     case .quickSwitcher: .quickSwitcher
     case .goHome: .goHome
     case .goTo: .goToScreen
+    case .git(let action): action.telemetry
     }
   }
 

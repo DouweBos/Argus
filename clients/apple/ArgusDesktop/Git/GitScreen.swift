@@ -37,6 +37,7 @@ struct GitScreen: View {
 /// The open repository: sidebar, banner and sub-view.
 struct GitWorkspaceView: View {
   @Environment(DesktopModel.self) private var model
+  @Environment(\.theme) private var theme
   let workspace: GitWorkspace
   let session: RemoteSession
   let view: GitRoute
@@ -69,12 +70,32 @@ struct GitWorkspaceView: View {
     }
     .onChange(of: view) { _, next in workspace.visible = next }
     .onDisappear { workspace.pause() }
+    .onReceive(NotificationCenter.default.publisher(for: GitMenuAction.notification)) { note in
+      if let action = GitMenuAction(note, sessionId: workspace.sessionId) { perform(action) }
+    }
     .background {
       // ⌘Z / ⇧⌘Z undo the last git action, as in Grove.
       Button("Undo") { Task { await workspace.undoLast(redo: false) } }
         .keyboardShortcut("z", modifiers: [.command, .option])
         .disabled(!workspace.undo.canUndo)
         .hidden()
+    }
+  }
+
+  private func perform(_ action: GitMenuAction) {
+    let actions = RefActions(workspace: workspace, session: session, model: model, theme: theme)
+    switch action {
+    case .fetch: Task { await actions.fetch() }
+    case .pull: Task { await actions.pull() }
+    case .push: actions.push()
+    case .branch: if workspace.isProjectRoot { actions.newBranch() } else { actions.renameSessionBranch() }
+    case .merge: actions.chooseMerge()
+    case .rebase: actions.chooseRebase()
+    case .createPullRequest: actions.createPullRequest()
+    case .commit:
+      guard workspace.workingCopy.canCommit else { return }
+      Task { await WorkingCopyActions(workspace: workspace).commit() }
+    case .stash: actions.stash()
     }
   }
 

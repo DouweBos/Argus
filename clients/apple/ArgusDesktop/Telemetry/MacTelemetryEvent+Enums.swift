@@ -100,7 +100,7 @@ extension MacTelemetryEvent {
     case palette
   }
 
-  /// A keyboard command from the Agent, File or View menu.
+  /// A keyboard command from the Agent, Git, File or View menu.
   enum MenuCommandAction: String {
     case newAgent = "new_agent"
     case nextAgent = "next_agent"
@@ -111,6 +111,15 @@ extension MacTelemetryEvent {
     case quickSwitcher = "quick_switcher"
     case goHome = "go_home"
     case goToScreen = "go_to_screen"
+    case gitFetch = "git_fetch"
+    case gitPull = "git_pull"
+    case gitPush = "git_push"
+    case gitBranch = "git_branch"
+    case gitMerge = "git_merge"
+    case gitRebase = "git_rebase"
+    case gitCreatePullRequest = "git_create_pull_request"
+    case gitCommit = "git_commit"
+    case gitStash = "git_stash"
   }
 
   enum HistoryDirection: String {
