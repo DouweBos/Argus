@@ -1909,11 +1909,11 @@ export const updateQueuedMessage = (
   text: string,
 ): Promise<void> => invoke("update_queued_message", { agentId, id, text });
 
-/** Send a queued message ahead of the rest, interrupting a busy agent. */
+/** Send a queued message ahead of the rest, into a busy agent's turn. */
 export const sendQueuedMessageNow = (
   agentId: string,
   id: string,
-): Promise<{ interrupted: boolean }> =>
+): Promise<{ mid_turn: boolean }> =>
   invoke("send_queued_message_now", { agentId, id });
 
 export const clearQueuedMessages = (agentId: string): Promise<void> =>

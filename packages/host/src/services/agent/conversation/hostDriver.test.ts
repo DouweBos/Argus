@@ -226,24 +226,70 @@ describe("host conversation driver", () => {
     expect(appState.agentQueues.get(AGENT)).toEqual([]);
   });
 
-  it("interrupts a busy agent to send a queued message ahead of the rest", async () => {
+  it("sends a queued message into a busy agent's turn without interrupting it", async () => {
     addAgent("running");
     started();
     enqueueMessage(AGENT, { text: "first in line" });
-    const urgent = enqueueMessage(AGENT, { text: "look at this instead" });
+    const urgent = enqueueMessage(AGENT, {
+      text: "look at this too",
+      author: "Sam",
+    });
 
     await expect(sendQueuedMessageNow(AGENT, urgent.id)).resolves.toEqual({
-      interrupted: true,
+      mid_turn: true,
     });
-    expect(interrupted).toEqual([AGENT]);
-    expect(sent).toEqual([]);
+    expect(interrupted).toEqual([]);
+    expect(sent).toEqual([{ agentId: AGENT, text: "look at this too" }]);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(texts()).toEqual(["user: look at this too"]);
+    expect(snapshot()?.messages[0]?.author).toBe("Sam");
+    expect(appState.agentQueues.get(AGENT)?.map((m) => m.text)).toEqual([
+      "first in line",
+    ]);
 
-    // The host marks the agent idle before it announces it.
+    // The merged turn ends with one idle; the rest of the queue goes out once.
     appState.agents.get(AGENT)!.status = "idle";
     emitHostEvent(`agent:status:${AGENT}`, "idle");
     await vi.advanceTimersByTimeAsync(100);
 
-    expect(sent).toEqual([{ agentId: AGENT, text: "look at this instead" }]);
+    expect(sent.map((s) => s.text)).toEqual([
+      "look at this too",
+      "first in line",
+    ]);
+    expect(appState.agentQueues.get(AGENT)).toEqual([]);
+  });
+
+  it("holds back the rest of the queue while a mid-turn send is out", async () => {
+    addAgent("running");
+    started();
+    const urgent = enqueueMessage(AGENT, { text: "look at this too" });
+    enqueueMessage(AGENT, { text: "after that" });
+
+    await sendQueuedMessageNow(AGENT, urgent.id);
+    // A queue change while the agent reads idle mustn't dispatch a second one.
+    appState.agents.get(AGENT)!.status = "idle";
+    emitHostEvent(`agent:queue:${AGENT}`, []);
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(sent.map((s) => s.text)).toEqual(["look at this too"]);
+  });
+
+  it("sends a queued message straight away to an idle agent", async () => {
+    addAgent();
+    started();
+    const urgent = { id: "q2", text: "this one", queued_at: 2 };
+    // Staged directly: enqueueing to an idle agent would drain it at once.
+    appState.agentQueues.set(AGENT, [
+      { id: "q1", text: "first in line", queued_at: 1 },
+      urgent,
+    ]);
+
+    await expect(sendQueuedMessageNow(AGENT, urgent.id)).resolves.toEqual({
+      mid_turn: false,
+    });
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(sent).toEqual([{ agentId: AGENT, text: "this one" }]);
     expect(appState.agentQueues.get(AGENT)?.map((m) => m.text)).toEqual([
       "first in line",
     ]);

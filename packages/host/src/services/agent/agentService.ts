@@ -821,6 +821,11 @@ export function onStreamLine(agentId: string, line: string): void {
         }
         // `result` counts turns; `idle` is the turn really being over — it
         // only lands once held-back results and background work have drained.
+        if (parsed.state === "idle") {
+          // A prompt written mid-turn joins that turn and gets no `result`
+          // of its own; idle means every prompt has been answered.
+          session.inflightPrompts = 0;
+        }
         if (parsed.state === "idle" && prev !== "idle") {
           for (const resolve of session.turnWaiters) {
             resolve("idle");

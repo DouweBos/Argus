@@ -16,7 +16,7 @@ import { addHostEventSink } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { capture as telemetryCapture } from "../../telemetry/telemetry";
-import { interruptAgent, sendAgentMessage } from "../agentService";
+import { sendAgentMessage } from "../agentService";
 import { createCheckpoint } from "../checkpoints";
 import {
   dequeueMessage,
@@ -359,34 +359,58 @@ function stderr(agentId: string, entry: Tracked, line: string): void {
 }
 
 /**
- * Send a queued message ahead of the rest. A busy agent is interrupted, and
- * the message goes out as the interrupted turn ends, like any queued send.
+ * Send a queued message ahead of the rest. A busy agent gets it mid-turn: the
+ * CLI folds it in at the next tool boundary, or runs it straight after.
  */
 export async function sendQueuedMessageNow(
   agentId: string,
   id: string,
-): Promise<{ interrupted: boolean }> {
+): Promise<{ mid_turn: boolean }> {
   const agent = appState.agents.get(agentId);
   if (!agent) {
     throw `No agent found: ${agentId}`;
   }
+  const entry = trackedEntry(agentId);
+  // Read before the promote: its queue event drains an idle agent at once.
+  const busy = agent.status !== "idle" || Boolean(entry?.inflight);
   if (!promoteQueuedMessage(agentId, id)) {
     throw `No queued message ${id} for ${agentId}`;
   }
-  const entry = trackedEntry(agentId);
-  const busy = agent.status !== "idle" || Boolean(entry?.inflight);
-  if (!busy) {
-    if (entry) {
-      trySendNextQueued(agentId, entry);
+  const live = agent.status !== "stopped" && agent.status !== "error";
+  if (live && entry) {
+    if (busy) {
+      sendMidTurn(agentId, entry);
+      telemetryCapture("queued_message_sent_now", { mid_turn: true });
+
+      return { mid_turn: true };
     }
-    telemetryCapture("queued_message_sent_now", { interrupted: false });
-
-    return { interrupted: false };
+    trySendNextQueued(agentId, entry);
   }
-  await interruptAgent(agentId);
-  telemetryCapture("queued_message_sent_now", { interrupted: true });
+  telemetryCapture("queued_message_sent_now", { mid_turn: false });
 
-  return { interrupted: true };
+  return { mid_turn: false };
+}
+
+/**
+ * Write the head of the queue into the running turn. No checkpoint: the turn
+ * is mid-edit. The CLI reports one idle for the lot, and the queue drains then.
+ */
+function sendMidTurn(agentId: string, entry: Tracked): void {
+  const next = listQueue(agentId)[0];
+  if (!next) {
+    return;
+  }
+  // Sent before the dequeue, so a failed write leaves it queued.
+  sendAgentMessage(agentId, next.text, next.images);
+  entry.inflight = true;
+  dequeueMessage(agentId);
+  userMessage(
+    agentId,
+    entry,
+    next.display_text ?? next.text,
+    next.images,
+    next.author,
+  );
 }
 
 /**
