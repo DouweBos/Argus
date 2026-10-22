@@ -17,15 +17,18 @@ struct TranscriptDeltaTests {
 
   private static func delta(
     _ revision: Int, epoch: String = "e1", messages: [String] = [], removed: [String] = [],
-    title: String? = nil, pendingTool: String? = nil
+    title: String? = nil, pendingTool: String? = nil, followUps: [String]? = nil
   ) -> String {
     let title = title.map { #""\#($0)""# } ?? "null"
     let tool = pendingTool.map { #""\#($0)""# } ?? "null"
+    let replies = followUps.map { items in
+      #","follow_ups":[\#(items.map { #""\#($0)""# }.joined(separator: ","))]"#
+    } ?? ""
     return #"""
       {"agent_id":"a1","epoch":"\#(epoch)","revision":\#(revision),"total":100,\#
       "messages":[\#(messages.joined(separator: ","))],\#
       "removed_ids":[\#(removed.map { #""\#($0)""# }.joined(separator: ","))],\#
-      "title":\#(title),"model":null,"pending_tool_name":\#(tool),"tasks":null,"todos":null}
+      "title":\#(title),"model":null,"pending_tool_name":\#(tool),"tasks":null,"todos":null\#(replies)}
       """#
   }
 
@@ -72,6 +75,17 @@ struct TranscriptDeltaTests {
     try backend.emit("agent.transcript", agentId: "a1", payload: Self.delta(4, title: "Fix the build"))
     #expect(await eventually { store.statusByAgent["a1"]?.title == "Fix the build" })
     #expect(store.recentAgents.first?.title == "Fix the build")
+  }
+
+  @Test("a delta's suggested replies replace the last, and an empty list clears them")
+  func followUps() async throws {
+    let (store, backend) = await following()
+    try backend.emit(
+      "agent.transcript", agentId: "a1", payload: Self.delta(4, followUps: ["Add tests", "Commit it"]))
+    #expect(await eventually { store.followUpsByAgent["a1"] == ["Add tests", "Commit it"] })
+
+    try backend.emit("agent.transcript", agentId: "a1", payload: Self.delta(5, followUps: []))
+    #expect(await eventually { store.followUpsByAgent["a1"] == nil })
   }
 
   @Test("a stale delta is dropped")

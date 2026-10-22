@@ -45,7 +45,9 @@ struct AgentView: View {
           .background(theme.bgSecondary)
           .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
       } else if host.hasControl {
-        ChatInputView(agentId: agentId, sessionId: sessionId)
+        ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
+          if affordance == .followUp { Telemetry.capture(.followUpUsed) }
+        }
       }
     }
     .background(theme.bg.ignoresSafeArea())

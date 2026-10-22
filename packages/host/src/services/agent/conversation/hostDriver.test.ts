@@ -14,6 +14,11 @@ import { enqueueMessage } from "../messageQueue";
 const sent = vi.hoisted(() => [] as { agentId: string; text: string }[]);
 const saved = vi.hoisted(() => [] as { messageCount: number }[]);
 const interrupted = vi.hoisted(() => [] as string[]);
+const followUps = vi.hoisted(() => ({
+  asked: [] as string[],
+  reply: ["Add the tests", "Commit it"] as string[] | null,
+  enabled: true,
+}));
 
 vi.mock("../agentService", () => ({
   sendAgentMessage: (agentId: string, text: string) => {
@@ -33,6 +38,16 @@ vi.mock("../checkpoints", () => ({
 }));
 vi.mock("../../llm/titleGenerator", () => ({
   generateChatTitle: async () => "Fix the login",
+}));
+vi.mock("../../llm/followUps", () => ({
+  generateFollowUps: async (text: string) => {
+    followUps.asked.push(text);
+
+    return followUps.reply;
+  },
+}));
+vi.mock("../../appSettings/store", () => ({
+  loadAppSettings: () => ({ follow_up_suggestions: followUps.enabled }),
 }));
 vi.mock("../../notifications/osNotification", () => ({
   showAgentNotification: () => false,
@@ -123,6 +138,9 @@ describe("host conversation driver", () => {
     sent.length = 0;
     saved.length = 0;
     interrupted.length = 0;
+    followUps.asked.length = 0;
+    followUps.reply = ["Add the tests", "Commit it"];
+    followUps.enabled = true;
     vi.useRealTimers();
   });
 
@@ -139,6 +157,60 @@ describe("host conversation driver", () => {
 
     expect(texts()).toEqual(["user: fix the login", "assistant: Done."]);
     expect(snapshot()?.title).toBe("Fix the login");
+  });
+
+  function finishTurn(text: string): void {
+    line(INIT);
+    line(reply(text));
+    line({ type: "result", subtype: "success", duration_ms: 20_000 });
+    emitHostEvent(`agent:status:${AGENT}`, "idle");
+  }
+
+  it("suggests follow-ups from the last message once a turn ends", async () => {
+    addAgent();
+    started();
+    emitHostEvent(`agent:remote-message:${AGENT}`, { message: "fix it" });
+    finishTurn("Fixed. Want me to add tests?");
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(followUps.asked).toEqual(["Fixed. Want me to add tests?"]);
+    expect(snapshot()?.followUps).toEqual(["Add the tests", "Commit it"]);
+  });
+
+  it("clears follow-ups as soon as the next message goes in", async () => {
+    addAgent();
+    started();
+    emitHostEvent(`agent:remote-message:${AGENT}`, { message: "fix it" });
+    finishTurn("Fixed. Want me to add tests?");
+    await vi.advanceTimersByTimeAsync(100);
+    emitHostEvent(`agent:remote-message:${AGENT}`, { message: "commit" });
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(snapshot()?.followUps).toBeUndefined();
+  });
+
+  it("drops follow-ups that arrive after the next turn started", async () => {
+    addAgent();
+    started();
+    emitHostEvent(`agent:remote-message:${AGENT}`, { message: "fix it" });
+    finishTurn("Fixed.");
+    emitHostEvent(`agent:remote-message:${AGENT}`, { message: "commit" });
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(followUps.asked).toEqual(["Fixed."]);
+    expect(snapshot()?.followUps).toBeUndefined();
+  });
+
+  it("suggests nothing when the setting is off", async () => {
+    followUps.enabled = false;
+    addAgent();
+    started();
+    emitHostEvent(`agent:remote-message:${AGENT}`, { message: "fix it" });
+    finishTurn("Fixed.");
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(followUps.asked).toEqual([]);
+    expect(snapshot()?.followUps).toBeUndefined();
   });
 
   it("sends a queued message once the turn ends and shows it", async () => {

@@ -110,6 +110,8 @@ interface AppState {
   queuedByAgent: Record<string, RemoteQueuedMessage[]>;
   tasksByAgent: Record<string, RemoteTask[] | null>;
   todosByAgent: Record<string, RemoteTodo[] | null>;
+  /** Replies suggested once each agent's last turn ended. */
+  followUpsByAgent: Record<string, string[]>;
   /** Name of the tool currently executing per agent (drives the activity row). */
   pendingToolByAgent: Record<string, string | null>;
   /** Cursor to fetch the next older page per agent (null = start reached). */
@@ -327,6 +329,19 @@ export function imageKey(agentId: string, imageId: string): string {
 /** Messages fetched per transcript page (tail on open, older on scroll-up). */
 const TRANSCRIPT_PAGE = 80;
 
+/** The map with this agent's follow-ups replaced, or itself when unchanged. */
+function withFollowUps(
+  byAgent: Record<string, string[]>,
+  agentId: string,
+  followUps: string[] | undefined,
+): Record<string, string[]> {
+  const next = followUps ?? [];
+
+  return jsonEq(byAgent[agentId] ?? [], next)
+    ? byAgent
+    : { ...byAgent, [agentId]: next };
+}
+
 export const useAppStore = create<AppState>((set, get) => {
   // Binary media routing (kept out of reactive state — hot path, no re-render).
   const media = new MediaRouter();
@@ -368,6 +383,11 @@ export const useAppStore = create<AppState>((set, get) => {
         todosByAgent: jsonEq(s.todosByAgent[agentId], delta.todos)
           ? s.todosByAgent
           : { ...s.todosByAgent, [agentId]: delta.todos },
+        followUpsByAgent: withFollowUps(
+          s.followUpsByAgent,
+          agentId,
+          delta.follow_ups,
+        ),
         pendingToolByAgent: {
           ...s.pendingToolByAgent,
           [agentId]: delta.pending_tool_name,
@@ -684,6 +704,7 @@ export const useAppStore = create<AppState>((set, get) => {
     queuedByAgent: {},
     tasksByAgent: {},
     todosByAgent: {},
+    followUpsByAgent: {},
     pendingToolByAgent: {},
     prevBeforeByAgent: {},
     gitStatusBySession: {},
@@ -852,6 +873,7 @@ export const useAppStore = create<AppState>((set, get) => {
         queuedByAgent: {},
         tasksByAgent: {},
         todosByAgent: {},
+        followUpsByAgent: {},
         pendingToolByAgent: {},
         prevBeforeByAgent: {},
         gitStatusBySession: {},
@@ -1016,6 +1038,11 @@ export const useAppStore = create<AppState>((set, get) => {
             todos === s.todosByAgent[agentId]
               ? s.todosByAgent
               : { ...s.todosByAgent, [agentId]: todos },
+          followUpsByAgent: withFollowUps(
+            s.followUpsByAgent,
+            agentId,
+            res.follow_ups,
+          ),
           pendingToolByAgent: {
             ...s.pendingToolByAgent,
             [agentId]: res.pending_tool_name ?? null,

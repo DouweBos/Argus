@@ -99,6 +99,7 @@ extension ArgusProtocol {
     public var capabilities: AgentCapabilities?
     public var contextWindow: Double?
     public var firstUserText: String?
+    public var followUps: [String]?
     public var lastEventType: String?
     public var model: String?
     public var pendingToolInput: [String: JSONValue]?
@@ -119,6 +120,7 @@ extension ArgusProtocol {
       case capabilities = "capabilities"
       case contextWindow = "contextWindow"
       case firstUserText = "firstUserText"
+      case followUps = "followUps"
       case lastEventType = "lastEventType"
       case model = "model"
       case pendingToolInput = "pendingToolInput"
@@ -136,10 +138,11 @@ extension ArgusProtocol {
       case totalDuration = "totalDuration"
     }
 
-    public init(capabilities: AgentCapabilities? = nil, contextWindow: Double? = nil, firstUserText: String? = nil, lastEventType: String? = nil, model: String? = nil, pendingToolInput: [String: JSONValue]? = nil, pendingToolName: String? = nil, resuming: Bool? = nil, runningSubagents: Bool? = nil, sessionId: String? = nil, slashCommands: [AgentSlashCommand]? = nil, taskOrder: [String]? = nil, tasks: [String: ConversationTask]? = nil, title: String? = nil, todos: [ConversationTodo]? = nil, tools: [String]? = nil, totalCost: Double? = nil, totalDuration: Double? = nil) {
+    public init(capabilities: AgentCapabilities? = nil, contextWindow: Double? = nil, firstUserText: String? = nil, followUps: [String]? = nil, lastEventType: String? = nil, model: String? = nil, pendingToolInput: [String: JSONValue]? = nil, pendingToolName: String? = nil, resuming: Bool? = nil, runningSubagents: Bool? = nil, sessionId: String? = nil, slashCommands: [AgentSlashCommand]? = nil, taskOrder: [String]? = nil, tasks: [String: ConversationTask]? = nil, title: String? = nil, todos: [ConversationTodo]? = nil, tools: [String]? = nil, totalCost: Double? = nil, totalDuration: Double? = nil) {
       self.capabilities = capabilities
       self.contextWindow = contextWindow
       self.firstUserText = firstUserText
+      self.followUps = followUps
       self.lastEventType = lastEventType
       self.model = model
       self.pendingToolInput = pendingToolInput
@@ -162,6 +165,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(capabilities, forKey: .capabilities)
       try c.encodeIfPresent(contextWindow, forKey: .contextWindow)
       try c.encodeIfPresent(firstUserText, forKey: .firstUserText)
+      try c.encodeIfPresent(followUps, forKey: .followUps)
       try c.encodeIfPresent(lastEventType, forKey: .lastEventType)
       try c.encodeIfPresent(model, forKey: .model)
       try c.encodeIfPresent(pendingToolInput, forKey: .pendingToolInput)
@@ -765,6 +769,7 @@ extension ArgusProtocol {
     public var updaterChannel: AppSettingsUpdaterChannel?
     public var serverAutoInstallUpdates: Bool?
     public var automationsEnabled: Bool?
+    public var followUpSuggestions: Bool?
     public var launchRoute: AppSettingsLaunchRoute?
     public var defaultAutonomy: AutonomyLevel?
     public var maxConcurrentAutomationSessions: Double?
@@ -798,6 +803,7 @@ extension ArgusProtocol {
       case updaterChannel = "updater_channel"
       case serverAutoInstallUpdates = "server_auto_install_updates"
       case automationsEnabled = "automations_enabled"
+      case followUpSuggestions = "follow_up_suggestions"
       case launchRoute = "launch_route"
       case defaultAutonomy = "default_autonomy"
       case maxConcurrentAutomationSessions = "max_concurrent_automation_sessions"
@@ -824,7 +830,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, launchRoute: AppSettingsLaunchRoute? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, defaultModel: String? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, launchRoute: AppSettingsLaunchRoute? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, defaultModel: String? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.defaultLlm = defaultLlm
@@ -832,6 +838,7 @@ extension ArgusProtocol {
       self.updaterChannel = updaterChannel
       self.serverAutoInstallUpdates = serverAutoInstallUpdates
       self.automationsEnabled = automationsEnabled
+      self.followUpSuggestions = followUpSuggestions
       self.launchRoute = launchRoute
       self.defaultAutonomy = defaultAutonomy
       self.maxConcurrentAutomationSessions = maxConcurrentAutomationSessions
@@ -867,6 +874,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(updaterChannel, forKey: .updaterChannel)
       try c.encodeIfPresent(serverAutoInstallUpdates, forKey: .serverAutoInstallUpdates)
       try c.encodeIfPresent(automationsEnabled, forKey: .automationsEnabled)
+      try c.encodeIfPresent(followUpSuggestions, forKey: .followUpSuggestions)
       try c.encodeIfPresent(launchRoute, forKey: .launchRoute)
       try c.encodeIfPresent(defaultAutonomy, forKey: .defaultAutonomy)
       try c.encodeIfPresent(maxConcurrentAutomationSessions, forKey: .maxConcurrentAutomationSessions)

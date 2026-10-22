@@ -60,6 +60,7 @@ extension ArgusProtocol {
       public var pendingToolName: String?
       public var tasks: [RemoteTask]?
       public var todos: [RemoteTodo]?
+      public var followUps: [String]?
 
       enum CodingKeys: String, CodingKey {
         case agentId = "agent_id"
@@ -73,9 +74,10 @@ extension ArgusProtocol {
         case pendingToolName = "pending_tool_name"
         case tasks = "tasks"
         case todos = "todos"
+        case followUps = "follow_ups"
       }
 
-      public init(agentId: String, epoch: String, revision: Int, total: Int, messages: [RemoteMessage], removedIds: [String], title: String? = nil, model: String? = nil, pendingToolName: String? = nil, tasks: [RemoteTask]? = nil, todos: [RemoteTodo]? = nil) {
+      public init(agentId: String, epoch: String, revision: Int, total: Int, messages: [RemoteMessage], removedIds: [String], title: String? = nil, model: String? = nil, pendingToolName: String? = nil, tasks: [RemoteTask]? = nil, todos: [RemoteTodo]? = nil, followUps: [String]? = nil) {
         self.agentId = agentId
         self.epoch = epoch
         self.revision = revision
@@ -87,6 +89,7 @@ extension ArgusProtocol {
         self.pendingToolName = pendingToolName
         self.tasks = tasks
         self.todos = todos
+        self.followUps = followUps
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -102,6 +105,7 @@ extension ArgusProtocol {
         try c.encode(pendingToolName, forKey: .pendingToolName)
         try c.encode(tasks, forKey: .tasks)
         try c.encode(todos, forKey: .todos)
+        try c.encodeIfPresent(followUps, forKey: .followUps)
       }
     }
 

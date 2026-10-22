@@ -60,6 +60,7 @@ export * from "./components/FeedbackDialog/FeedbackDialog";
 export * from "./components/FeedItem/FeedItem";
 export * from "./components/FormField/FormField";
 export * from "./components/FileTree/FileTree";
+export * from "./components/FollowUpSuggestions/FollowUpSuggestions";
 export * from "./components/FileTypeBadge/FileTypeBadge";
 export * from "./components/FileDiffCard/FileDiffCard";
 export * from "./components/GitErrorBanner/GitErrorBanner";

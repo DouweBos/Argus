@@ -86,13 +86,16 @@ public enum ComposerKeyAction: Equatable, Sendable {
   case menuDismiss
   case cyclePermissionMode
   case interrupt
+  /// Tab takes the suggested reply.
+  case acceptFollowUp
 }
 
 public enum ComposerKeymap {
   /// Return sends whatever modifier is held, ⇧Return is a newline, as on the
-  /// desktop. An open menu takes ↑/↓/Tab/Return/Esc first.
+  /// desktop. An open menu takes ↑/↓/Tab/Return/Esc first, then Tab takes a
+  /// suggested reply when there is one.
   public static func action(
-    for key: ComposerKey, menuOpen: Bool, isRunning: Bool
+    for key: ComposerKey, menuOpen: Bool, isRunning: Bool, hasFollowUp: Bool = false
   ) -> ComposerKeyAction {
     if menuOpen {
       switch key {
@@ -105,6 +108,7 @@ public enum ComposerKeymap {
     }
     switch key {
     case .returnKey(shift: false): return .send
+    case .tab(shift: false) where hasFollowUp: return .acceptFollowUp
     case .tab(shift: true): return .cyclePermissionMode
     case .commandPeriod: return isRunning ? .interrupt : .ignore
     case .escape: return .ignore

@@ -40,6 +40,8 @@ export const AppSettings = z.object({
    * work regardless.
    */
   automations_enabled: z.boolean().optional(),
+  /** Suggest replies after a turn ends, from the agent's last message. Defaults to true. */
+  follow_up_suggestions: z.boolean().optional(),
   /** Screen Argus opens on: the project picker, or the inbox. Defaults to home. */
   launch_route: z.enum(["home", "inbox"]).optional(),
   /**

@@ -620,6 +620,8 @@ export const MethodResult = {
     tasks: z.array(RemoteTask).nullable().optional(),
     /** Latest todo list, null when none/dismissed. */
     todos: z.array(RemoteTodo).nullable().optional(),
+    /** Replies suggested once the last turn ended. Absent on older hosts. */
+    follow_ups: z.array(z.string()).optional(),
     /** Model driving the conversation, if known. */
     model: z.string().nullable().optional(),
     /** Name of the tool currently executing, if any. */
@@ -1024,6 +1026,8 @@ export const EventPayloads = {
     pending_tool_name: z.string().nullable(),
     tasks: z.array(RemoteTask).nullable(),
     todos: z.array(RemoteTodo).nullable(),
+    /** Replies suggested once the last turn ended. Absent on older hosts. */
+    follow_ups: z.array(z.string()).optional(),
   }),
   "agent.queue": z.object({
     agent_id: z.string(),

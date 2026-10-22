@@ -229,6 +229,11 @@ export interface AgentConversation {
   capabilities?: AgentCapabilities | null;
   /** Context window the CLI reported on its last `result`, in tokens. */
   contextWindow?: number;
+  /**
+   * Replies the user might send next, suggested by a small model once a turn
+   * ends. Cleared as soon as the next message goes in.
+   */
+  followUps?: string[];
   /** Tracks the type of the most recent Claude CLI event for thinking-state derivation. */
   lastEventType?: string;
   messages: ConversationMessage[];

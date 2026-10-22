@@ -36,6 +36,7 @@ import {
   update,
   userMessage,
 } from "./folded";
+import { clearFollowUps, suggestFollowUps } from "./followUps";
 import {
   isAwaitingAnswerTool,
   notifyFinished,
@@ -218,7 +219,12 @@ function streamLine(agentId: string, entry: Tracked, line: string): void {
 }
 
 function statusChanged(agentId: string, entry: Tracked, status: string): void {
-  if (status === "running" || status === "requires_action") {
+  if (status === "running") {
+    clearFollowUps(agentId, entry);
+
+    return;
+  }
+  if (status === "requires_action") {
     return;
   }
   if (status === "stopped" || status === "error") {
@@ -246,6 +252,9 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
       finished.durationMs,
       finished.failed,
     );
+    if (!finished.failed) {
+      suggestFollowUps(agentId, entry);
+    }
   }
 }
 
