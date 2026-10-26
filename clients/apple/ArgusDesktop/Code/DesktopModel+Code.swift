@@ -14,10 +14,14 @@ extension DesktopModel {
     return false
   }
 
-  /// ⌘W in the code view closes the editor tab on screen; anywhere else, the window tab.
+  /// ⌘W closes the editor tab or agent tab on screen first, then the window tab.
   func closeTabOrEditor() {
     if case .sessionCode(let id, let path?, _) = route {
       Task { await code.session(id).close(path, active: path) }
+      return
+    }
+    if case .session(let id, _) = route, let agent = agentInFront {
+      closeAgent(agent.agentId, inSession: id)
       return
     }
     closeTab()

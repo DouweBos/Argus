@@ -15,17 +15,7 @@ struct SessionView: View {
   private func startAgent() { model.startAgent(inSession: sessionId) }
   private func startAgent(mode: RemotePermissionMode?) { model.startAgent(inSession: sessionId, mode: mode) }
 
-  /// Closing a tab stops its agent, as in the desktop app; its transcript is
-  /// saved first.
-  private func closeAgent(_ agentId: String) {
-    // The neighbour takes over, as on the desktop; the route never names a closed agent.
-    if agentId == focusedAgentId, let index = agents.firstIndex(where: { $0.agentId == agentId }) {
-      let rest = agents.filter { $0.agentId != agentId }
-      let next = rest.isEmpty ? nil : rest[min(max(index - 1, 0), rest.count - 1)].agentId
-      model.navigate(.session(id: sessionId, agentId: next))
-    }
-    Task { await store.stopAgent(agentId: agentId) }
-  }
+  private func closeAgent(_ agentId: String) { model.closeAgent(agentId, inSession: sessionId) }
 
   var body: some View {
     ResizableVSplit(
