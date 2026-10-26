@@ -73,6 +73,8 @@ public struct SegmentedControl<Value: Hashable>: View {
             .foregroundStyle(value == option.value ? theme.onAccent : theme.textSecondary)
             .background(value == option.value ? theme.accent : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall - 2))
+            // A plain button only hits its opaque pixels; the unselected segment is clear.
+            .contentShape(RoundedRectangle(cornerRadius: theme.radiusSmall - 2))
         }
         .buttonStyle(.plain)
       }
