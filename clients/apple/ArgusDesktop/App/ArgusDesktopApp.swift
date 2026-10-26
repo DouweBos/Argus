@@ -142,7 +142,9 @@ private struct NavigationCommands: View {
       if !KeyWindow.shared.closeOther() { model.closeTabOrEditor() }
     }
     .keyboardShortcut("w", modifiers: .command)
-    .disabled(KeyWindow.shared.isMain && model.activeTab?.pinned ?? true && !model.showsEditorTab)
+    .disabled(
+      KeyWindow.shared.isMain && model.activeTab?.pinned ?? true && !model.showsEditorTab
+        && model.agentInFront == nil)
     Button("Show Next Tab") { model.cycleTab(by: 1) }
       .keyboardShortcut(.tab, modifiers: .control)
       .disabled(model.tabs.count < 2)

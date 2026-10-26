@@ -30,6 +30,21 @@ extension DesktopModel {
     return agents.first { $0.agentId == focused }
   }
 
+  /// Closing an agent tab stops its agent, as in the desktop app; its
+  /// transcript is saved first.
+  func closeAgent(_ agentId: String, inSession sessionId: String) {
+    let agents = agents(inSession: sessionId)
+    // The neighbour takes over, as on the desktop; the route never names a closed agent.
+    if agentId == focusedAgentId(inSession: sessionId, agents: agents),
+      let index = agents.firstIndex(where: { $0.agentId == agentId })
+    {
+      let rest = agents.filter { $0.agentId != agentId }
+      let next = rest.isEmpty ? nil : rest[min(max(index - 1, 0), rest.count - 1)].agentId
+      navigate(.session(id: sessionId, agentId: next))
+    }
+    Task { await store.stopAgent(agentId: agentId) }
+  }
+
   /// The session on screen, when it can take a new agent.
   var sessionReadyForAgent: String? {
     guard let id = route.sessionId, session(id)?.status == .ready else { return nil }
