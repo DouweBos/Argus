@@ -33,9 +33,19 @@ struct TranscriptMessageRow: View, Equatable {
     if tip { row.help(timestamp) } else { row }
   }
 
+  private static let userMargin: CGFloat = 80
+  private static let bubblePadding = EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
+
+  /// How wide a user bubble lays out in a row this wide.
+  static func bubbleWidth(of text: TranscriptRendered, in width: CGFloat) -> CGFloat {
+    let inset = bubblePadding.leading + bubblePadding.trailing
+    let fitted = TranscriptMessageTextView.size(of: text, forWidth: width - userMargin - inset, fills: false)
+    return fitted.width + inset
+  }
+
   private var row: some View {
     HStack(alignment: .top, spacing: 0) {
-      if isUser { Spacer(minLength: 80) }
+      if isUser { Spacer(minLength: Self.userMargin) }
       VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
         badges
         chips
@@ -59,8 +69,7 @@ struct TranscriptMessageRow: View, Equatable {
       revealToken: current == nil ? 0 : model.pendingReveal, fills: !isUser,
       onRevealed: { model.revealedToken = $0 }
     )
-    .padding(.horizontal, isUser ? 12 : 0)
-    .padding(.vertical, isUser ? 8 : 0)
+    .padding(isUser ? Self.bubblePadding : EdgeInsets())
     .background {
       if isUser {
         RoundedRectangle(cornerRadius: theme.radius)
