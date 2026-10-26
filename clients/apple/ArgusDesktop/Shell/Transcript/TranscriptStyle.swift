@@ -51,13 +51,14 @@ enum TranscriptStyle {
   }
 
   static func paragraph(
-    spacing: CGFloat = 6, indent: CGFloat = 0, tabStops: [CGFloat] = []
+    spacing: CGFloat = 8, indent: CGFloat = 0, tabStops: [CGFloat] = [], lineHeight: CGFloat = 1.2
   ) -> NSParagraphStyle {
     let style = NSMutableParagraphStyle()
     style.paragraphSpacing = spacing
     style.headIndent = indent
     style.firstLineHeadIndent = tabStops.isEmpty ? indent : 0
-    style.lineHeightMultiple = 1.08
+    // Prose gets room between lines; tool output stays dense.
+    style.lineHeightMultiple = lineHeight
     if !tabStops.isEmpty {
       style.tabStops = tabStops.map { NSTextTab(textAlignment: .left, location: $0) }
       style.defaultTabInterval = 0

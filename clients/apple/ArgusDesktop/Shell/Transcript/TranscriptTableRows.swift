@@ -2,12 +2,24 @@ import ArgusUI
 import SwiftUI
 
 /// What one transcript table row shows: the loading strip above the history,
-/// a message or folded tool run, or the foot (working indicator, tasks, the
+/// a message, a turn's folded work, or the foot (working indicator, tasks, the
 /// decisions the agent waits on, queued and unsent messages).
 enum TranscriptRow {
   case top(TopState)
   case segment(ToolGroups.Segment)
+  case work(WorkLog)
   case footer(FooterState)
+
+  /// A turn's folded work and the span it took.
+  struct WorkLog: Equatable {
+    var id: String
+    var messages: [RemoteMessage]
+    /// When the turn began: the message before the log, epoch milliseconds.
+    var started: Double?
+    /// When the work ended: the reply after it, else its own last message;
+    /// nil while it's the newest thing in the chat.
+    var ended: Double?
+  }
 
   struct TopState: Equatable {
     var hasOlder = false
@@ -28,13 +40,11 @@ enum TranscriptRow {
     onHeight: ((CGFloat) -> Void)? = nil
   ) -> AnyView {
     let laidOut = content(row, agentKey: agentKey)
-      .padding(.horizontal, 20)
-      .frame(maxWidth: 920, alignment: .leading)
-      .frame(maxWidth: .infinity)
+      .readingColumn()
       .fixedSize(horizontal: false, vertical: true)
       .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onHeight?($0) }
       // A recycled row swaps in new content; nothing in it may animate that in.
-      .transaction { if case .segment = row { $0.disablesAnimations = true; $0.animation = nil } }
+      .transaction { if row.isContent { $0.disablesAnimations = true; $0.animation = nil } }
     // No identity for measuring: the sizer keeps no state, and diffing one row
     // into the next is far cheaper than building a graph per row.
     let rooted = id.map { AnyView(laidOut.id($0)) } ?? AnyView(laidOut)
@@ -52,12 +62,31 @@ enum TranscriptRow {
       TranscriptTopRow(state: state)
     case .segment(.single(let message)):
       TranscriptMessageRow(agentKey: agentKey, message: message).equatable()
-        .padding(.bottom, 14)
+        .padding(.bottom, TranscriptRow.spacing)
     case .segment(let segment):
-      TranscriptToolGroup(agentKey: agentKey, id: segment.id, messages: segment.messages).equatable()
-        .padding(.bottom, 14)
+      // Turns fold work into `.work`; a run segment only arrives unfolded.
+      VStack(alignment: .leading, spacing: TranscriptRow.spacing) {
+        ForEach(segment.messages) { TranscriptMessageRow(agentKey: agentKey, message: $0, tip: true) }
+      }
+      .padding(.bottom, TranscriptRow.spacing)
+    case .work(let log):
+      TranscriptWorkLog(agentKey: agentKey, log: log).equatable()
+        .padding(.bottom, TranscriptRow.spacing)
     case .footer(let state):
       TranscriptFooter(agentKey: agentKey, state: state)
+    }
+  }
+}
+
+extension TranscriptRow {
+  /// Between one message (or work log) and the next.
+  static let spacing: CGFloat = 18
+
+  /// A message or work log, as opposed to the strips above and below them.
+  var isContent: Bool {
+    switch self {
+    case .segment, .work: true
+    case .top, .footer: false
     }
   }
 }

@@ -38,6 +38,7 @@ extension TranscriptTableController {
         self?.rowLaidOut(id, revision: revision, height: height)
       })
     cell.show(root, id: id, revision: revision, environmentKey: environmentKey)
+    cell.reserve = reserve
     cell.host.kind = kind(index)
     if case .segment(.single(let message)) = row(index) {
       cell.tip = TranscriptMessageRow.timestamp(message)
@@ -55,6 +56,7 @@ extension TranscriptTableController {
         text, unit: message.id, id: id, revision: revision(id), environmentKey: environmentKey,
         tip: TranscriptMessageRow.timestamp(message))
     }
+    cell.reserve = reserve
     if cell.text.links !== environment.transcriptLinks { cell.text.links = environment.transcriptLinks }
     if cell.text.selection !== selection { cell.text.selection = selection }
     cell.hover = (message, model, environment)
@@ -134,7 +136,8 @@ extension TranscriptTableController {
     case .top: "top"
     case .footer: "footer"
     case .segment(.single(let message)): message.toolCalls.isEmpty ? "message" : "message+\(message.toolCalls.first?.name ?? "")"
-    case .segment: "group"
+    case .segment: "run"
+    case .work: "work"
     }
   }
 }

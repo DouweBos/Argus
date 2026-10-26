@@ -30,6 +30,15 @@ public enum ChromeText {
     let days = hours / 24
     return days < 14 ? "\(days)d" : "\(days / 7)w"
   }
+
+  /// "29s", "5m 29s", "1h 4m": how long something took.
+  public static func duration(_ seconds: Double) -> String {
+    let total = Int(max(0, seconds).rounded(.down))
+    if total < 60 { return "\(total)s" }
+    let minutes = total / 60
+    if minutes < 60 { return "\(minutes)m \(total % 60)s" }
+    return "\(minutes / 60)h \(minutes % 60)m"
+  }
 }
 
 // MARK: - Icon buttons

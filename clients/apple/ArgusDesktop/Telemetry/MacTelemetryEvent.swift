@@ -232,6 +232,8 @@ enum MacTelemetryEvent {
   case transcriptFindUsed(matches: String, navigated: Bool)
   /// Transcript text was copied with ⌘C or the context menu.
   case transcriptCopied(span: CopySpan)
+  /// A turn's folded work log was opened; `working` is whether the agent was still at it.
+  case transcriptWorkLogOpened(working: Bool)
   /// The image viewer was opened, paged, or an image copied, saved or opened in Preview from it.
   case imageViewerUsed(action: ImageViewerAction)
   /// A message's hover action was used; edit and fork report whether the host took it.
@@ -337,6 +339,7 @@ enum MacTelemetryEvent {
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
     case .transcriptCopied: "mac_transcript_copied"
+    case .transcriptWorkLogOpened: "mac_transcript_work_log_opened"
     case .imageViewerUsed: "mac_image_viewer_used"
     case .messageAction: "mac_message_action"
     case .inputUsed: "mac_input_used"
@@ -440,6 +443,8 @@ enum MacTelemetryEvent {
       ["matches_bucket": matches, "navigated": navigated]
     case .transcriptCopied(let span):
       ["span": span.rawValue]
+    case .transcriptWorkLogOpened(let working):
+      ["working": working]
     case .imageViewerUsed(let action):
       ["action": action.rawValue]
     case .messageAction(let action, let role, let success):

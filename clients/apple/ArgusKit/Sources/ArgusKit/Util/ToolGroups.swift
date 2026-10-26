@@ -95,6 +95,69 @@ public enum ToolGroups {
     return segments
   }
 
+  // MARK: Turns
+
+  /// How a chat folds: runs of tool-only messages, or each turn's work as one log.
+  public enum Folding: Sendable {
+    case runs
+    case turns
+  }
+
+  /// What a turn's work log never folds away: errors, decisions waiting on
+  /// you, a push to your phone, and messages from another agent or tool.
+  public static func staysOpen(_ message: RemoteMessage, hoistImageReads: Bool = false) -> Bool {
+    message.isError == true || message.source != nil || message.author != nil
+      || message.toolCalls.contains {
+        isPushNotification($0) || awaitsDecision($0) || (hoistImageReads && isImageRead($0))
+      }
+  }
+
+  /// Text and nothing else: what the agent says rather than does.
+  public static func isReply(_ message: RemoteMessage) -> Bool {
+    message.role == .assistant && message.toolCalls.isEmpty && (message.images ?? []).isEmpty
+      && message.textBlocks.contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+  }
+
+  /// Each assistant turn's tool calls and the narration between them as one
+  /// collapsed segment; the user's messages, the turn's closing reply and
+  /// whatever `staysOpen` stand on their own. Work with no tool call isn't folded.
+  public static func groupTurns(_ messages: [RemoteMessage], hoistImageReads: Bool = false) -> [Segment] {
+    foldTurns(messages.enumerated().map { ($0.offset, $0.element) }, hoistImageReads: hoistImageReads).map(\.segment)
+  }
+
+  /// `groupTurns` over indexed messages, with each segment's first index.
+  public static func foldTurns(
+    _ messages: [(Int, RemoteMessage)], hoistImageReads: Bool = false
+  ) -> [(start: Int, segment: Segment)] {
+    var segments: [(start: Int, segment: Segment)] = []
+    var work: [(Int, RemoteMessage)] = []
+
+    func flush() {
+      guard !work.isEmpty else { return }
+      var tail = work.count
+      while tail > 0, isReply(work[tail - 1].1) { tail -= 1 }
+      let folded = work[..<tail]
+      if folded.contains(where: { !$0.1.toolCalls.isEmpty }) {
+        segments.append((folded[folded.startIndex].0, .collapsed(folded.map(\.1))))
+      } else {
+        segments.append(contentsOf: folded.map { ($0.0, .single($0.1)) })
+      }
+      segments.append(contentsOf: work[tail...].map { ($0.0, .single($0.1)) })
+      work = []
+    }
+
+    for (index, message) in messages where hasVisibleContent(message) {
+      if message.role != .assistant || staysOpen(message, hoistImageReads: hoistImageReads) {
+        flush()
+        segments.append((index, .single(message)))
+      } else {
+        work.append((index, message))
+      }
+    }
+    flush()
+    return segments
+  }
+
   public enum ToolCategory: String, CaseIterable, Sendable {
     case read, search, bash, edit, web, agent, other
   }

@@ -25,4 +25,21 @@ struct ChromeTextTests {
     #expect(ChromeText.shortAge(now.timeIntervalSince1970 - 7200, now: now) == "2h")
     #expect(ChromeText.shortAge(ms + 60_000, now: now) == "now")
   }
+
+  @Test("durations read as seconds, minutes and seconds, or hours and minutes")
+  func duration() {
+    #expect(ChromeText.duration(29.7) == "29s")
+    #expect(ChromeText.duration(329) == "5m 29s")
+    #expect(ChromeText.duration(3_840) == "1h 4m")
+    #expect(ChromeText.duration(-3) == "0s")
+  }
+
+  @Test("the reading column centres, and steps left of a trailing reserve")
+  func readingColumn() {
+    #expect(ReadingColumn.frame(in: 1400).x == 350)
+    #expect(ReadingColumn.frame(in: 1400, reserve: 260).x == 350)
+    let shifted = ReadingColumn.frame(in: 1000, reserve: 260)
+    #expect(shifted.x + shifted.width == 740)
+    #expect(ReadingColumn.frame(in: 600).width == 560)
+  }
 }

@@ -60,7 +60,7 @@ enum TranscriptMarkdown {
     let out = NSMutableAttributedString(
       string: text,
       attributes: [.font: TranscriptStyle.code, .foregroundColor: color,
-                   .paragraphStyle: TranscriptStyle.paragraph(spacing: 0)])
+                   .paragraphStyle: TranscriptStyle.paragraph(spacing: 0, lineHeight: 1.08)])
     linkify(out, mentions: false)
     return out
   }

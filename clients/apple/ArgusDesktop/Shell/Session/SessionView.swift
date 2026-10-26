@@ -101,6 +101,7 @@ struct SessionView: View {
       } else if let agentId = focusedAgentId {
         AgentPane(agentId: agentId, sessionId: sessionId)
           .id(agentId)
+          .environment(\.readingColumnReserve, cardShown ? SessionContextCardOverlay.reserve : 0)
           .sessionContextCard(cardShown ? session : nil)
       } else {
         EmptyState(icon: "sparkles", title: "No agents", body: "Start an agent to work in this session.") {
@@ -233,6 +234,7 @@ struct AgentTab: View {
 }
 
 /// The focused agent: its transcript, kept live, and the input that drives it.
+/// Before the first message the composer sits mid-pane under a title instead.
 struct AgentPane: View {
   @Environment(\.theme) private var theme
   @Environment(DesktopModel.self) private var model
@@ -242,20 +244,37 @@ struct AgentPane: View {
   /// Images and files dropped on the transcript go to the composer.
   @State private var drops = ComposerDropInbox()
   @State private var dropTargeted = false
+  @State private var loaded = false
+
+  /// Nothing said yet, nothing queued, and the agent isn't at work.
+  private var fresh: Bool {
+    loaded && store.visibleMessages(for: agentId).isEmpty
+      && (store.queuedByAgent[agentId] ?? []).isEmpty && (store.failedByAgent[agentId] ?? []).isEmpty
+      && store.statusByAgent[agentId]?.status != .running
+  }
 
   var body: some View {
+    let fresh = fresh
     VStack(spacing: 0) {
-      TranscriptView(agentKey: agentId, sessionId: sessionId, fixture: TranscriptStress.fixture)
+      TranscriptView(
+        agentKey: agentId, sessionId: sessionId, fixture: TranscriptStress.fixture,
+        showsEmptyState: TranscriptStress.fixture != nil
+      )
         .onDrop(of: ComposerDropInbox.types, isTargeted: $dropTargeted, perform: drops.accept)
         .overlay {
           if dropTargeted {
             Rectangle().strokeBorder(theme.accent, lineWidth: 2).allowsHitTesting(false)
           }
         }
+        .overlay(alignment: .bottom) {
+          if fresh { AgentStartTitle(sessionId: sessionId).padding(.bottom, 18) }
+        }
       HuddleTypingBar(agentId: agentId)
       ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
         MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))
       }
+      // Shares the height with the transcript above, which centres the composer.
+      if fresh { Color.clear.frame(maxHeight: .infinity) }
     }
     .environment(\.composerDropInbox, drops)
     .environment(\.composerFocusRequest, model.composerFocusRequest)
@@ -263,6 +282,7 @@ struct AgentPane: View {
     .task {
       await store.watchAgent(agentId, on: true)
       await store.loadTranscript(agentId: agentId)
+      loaded = true
       await store.loadCapabilities(agentId: agentId)
       // A new agent has no status until its first event; the input's mode,
       // model and effort pills read it.
@@ -271,6 +291,38 @@ struct AgentPane: View {
     .onDisappear {
       Task { await store.watchAgent(agentId, on: false) }
     }
+  }
+}
+
+/// "What should we work on?" over a new agent's composer, with where it works.
+private struct AgentStartTitle: View {
+  @Environment(\.theme) private var theme
+  @Environment(DesktopModel.self) private var model
+  @Environment(HostStore.self) private var store
+  let sessionId: String
+
+  private var place: String {
+    guard let session = model.session(sessionId) else { return "" }
+    if session.kind == .scratchPad { return "Scratch pad" }
+    return store.projects.first { $0.repoRoot == session.repoRoot }?.name
+      ?? URL(fileURLWithPath: session.repoRoot).lastPathComponent
+  }
+
+  var body: some View {
+    VStack(spacing: 6) {
+      Text("What should we work on?")
+        .font(.scaled(size: 26, weight: .medium))
+        .foregroundStyle(theme.text)
+      if !place.isEmpty {
+        Text(place)
+          .font(.scaled(size: 13))
+          .foregroundStyle(theme.textSecondary)
+      }
+    }
+    .multilineTextAlignment(.center)
+    .frame(maxWidth: .infinity)
+    .readingColumn()
+    .allowsHitTesting(false)
   }
 }
 

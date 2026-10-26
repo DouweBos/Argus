@@ -2,16 +2,18 @@ import Foundation
 
 /// A chat's tool-group segments, regrouped only around what changed, so a stream
 /// update or an older page costs the segments at that edge. Matches
-/// `ToolGroups.group` exactly; `update` says which segments changed.
+/// `ToolGroups.group` (or `groupTurns`) exactly; `update` says which segments changed.
 public struct TranscriptSegments: Sendable {
   public private(set) var messages: [RemoteMessage] = []
   public private(set) var segments: [ToolGroups.Segment] = []
   /// Index in `messages` of each segment's first message.
   private var starts: [Int] = []
   private let hoistImageReads: Bool
+  private let folding: ToolGroups.Folding
 
-  public init(hoistImageReads: Bool = false) {
+  public init(hoistImageReads: Bool = false, folding: ToolGroups.Folding = .runs) {
     self.hoistImageReads = hoistImageReads
+    self.folding = folding
   }
 
   /// What `update` replaced: `removed` in the old segments became `inserted`
@@ -56,11 +58,18 @@ public struct TranscriptSegments: Sendable {
     }
 
     // The segments either side of the change, widened over neighbouring
-    // tool-only runs a changed message could join or split.
+    // tool-only runs a changed message could join or split, or to the whole
+    // turn when turns fold.
     var first = segment(containing: max(0, prefix - 1))
     var last = segment(containing: min(old.count - 1, old.count - suffix))
-    while first > 0, isToolRun(segments[first - 1]) { first -= 1 }
-    while last < segments.count - 1, isToolRun(segments[last + 1]) { last += 1 }
+    switch folding {
+    case .runs:
+      while first > 0, isToolRun(segments[first - 1]) { first -= 1 }
+      while last < segments.count - 1, isToolRun(segments[last + 1]) { last += 1 }
+    case .turns:
+      while first > 0, !startsTurn(segments[first]) { first -= 1 }
+      while last < segments.count - 1, !startsTurn(segments[last + 1]) { last += 1 }
+    }
     let oldStart = first == 0 ? 0 : starts[first]
     let oldEnd = last + 1 < starts.count ? starts[last + 1] : old.count
     let delta = new.count - old.count
@@ -103,8 +112,18 @@ public struct TranscriptSegments: Sendable {
     }
   }
 
+  /// A message of the user's (or the system's): a turn's work never folds across one.
+  private func startsTurn(_ segment: ToolGroups.Segment) -> Bool {
+    guard case .single(let message) = segment else { return false }
+    return message.role != .assistant
+  }
+
   /// `ToolGroups.group` over `range`, with each segment's first index.
   private func group(_ messages: [RemoteMessage], _ range: Range<Int>) -> ([ToolGroups.Segment], [Int]) {
+    if folding == .turns {
+      let folded = ToolGroups.foldTurns(range.map { ($0, messages[$0]) }, hoistImageReads: hoistImageReads)
+      return (folded.map(\.segment), folded.map(\.start))
+    }
     var segments: [ToolGroups.Segment] = []
     var starts: [Int] = []
     var run: [(Int, RemoteMessage)] = []

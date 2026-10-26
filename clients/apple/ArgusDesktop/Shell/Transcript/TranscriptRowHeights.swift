@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import Foundation
 
 /// Row heights by row id, content revision and width. Only rows near the viewport
@@ -49,8 +50,13 @@ struct TranscriptRowHeights {
   mutating func guess(_ id: String, revision: Int, width: CGFloat, row: TranscriptRow) -> CGFloat {
     if let exact = exact(id, revision: revision, width: width) { return exact }
     if let entry = entries[id] { return entry.last }
-    guard case .segment(let segment) = row else { return 40 }
-    if estimates[id]?.revision != revision { estimates[id] = (revision, Shape(segment)) }
+    let shape: () -> Shape
+    switch row {
+    case .segment(let segment): shape = { Shape(segment.messages, collapsed: false) }
+    case .work(let log): shape = { Shape(log.messages, collapsed: true) }
+    case .top, .footer: return 40
+    }
+    if estimates[id]?.revision != revision { estimates[id] = (revision, shape()) }
     return estimates[id]!.shape.height(width: width)
   }
 
@@ -66,12 +72,12 @@ struct TranscriptRowHeights {
     /// Your own words sit in a padded bubble, narrower than the column.
     var bubble = false
 
-    init(_ segment: ToolGroups.Segment) {
-      if case .collapsed = segment {
-        collapsed = true
+    init(_ messages: [RemoteMessage], collapsed: Bool) {
+      if collapsed {
+        self.collapsed = true
         return
       }
-      for message in segment.messages {
+      for message in messages {
         for block in message.textBlocks {
           characters += block.utf16.count
           lines += block.utf8.count(where: { $0 == 10 }) + 1
@@ -88,9 +94,10 @@ struct TranscriptRowHeights {
     }
 
     func height(width: CGFloat) -> CGFloat {
-      let spacing: CGFloat = 14
+      let spacing = TranscriptRow.spacing
       if collapsed { return 30 + spacing }
-      let content = max(min(width, 920) - 40 - (bubble ? 104 : 0), 100)
+      let column = max(min(width - ReadingColumn.gutter * 2, ReadingColumn.maxWidth), 100)
+      let content = max(bubble ? column * 0.7 - 24 : column, 100)
       let wrapped = CGFloat(characters) * 7 / content
       let text = (CGFloat(lines) + wrapped) * 17
       return spacing + text + CGFloat(calls) * 40 + CGFloat(diffLines) * 15 + CGFloat(images) * 170

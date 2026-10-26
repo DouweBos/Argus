@@ -229,8 +229,10 @@ struct SessionContextCard: View {
 struct SessionContextCardOverlay: ViewModifier {
   let session: RemoteSession?
 
-  /// Narrower than this and the card would cover what it sits on.
-  static let minWidth: CGFloat = 640
+  /// Narrower than this and the reading column couldn't step clear of the card.
+  static let minWidth: CGFloat = 760
+  /// What the reading column keeps clear of: the card, its margin and a gap.
+  @MainActor static var reserve: CGFloat { TextScale.shared(236) + 12 + 16 }
 
   func body(content: Content) -> some View {
     content.overlay(alignment: .topTrailing) {

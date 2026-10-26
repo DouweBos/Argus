@@ -2,22 +2,21 @@
   import ArgusCore
   import SwiftUI
 
-  /// The row under the input: context, model (and account), permission mode,
-  /// effort and linked projects — each a native menu over the agent's state.
+  /// The pills along the composer's foot: model (and account), effort,
+  /// permission mode and linked projects — each a native menu over the agent's state.
   extension MacChatInputView {
     var controlRow: some View {
       // Wraps instead of growing: a fixed-size row widened the middle column
       // and squeezed the sidebar.
-      ChipFlowLayout {
-        if contextTokens > 0 {
-          ContextMeter(
-            tokens: contextTokens,
-            limit: status?.contextWindow
-              ?? ContextWindow.limit(forModel: status?.model, capabilities: capabilities))
-        }
+      ChipFlowLayout(spacing: 2) {
         modelMenu
+        if !effortLevels.isEmpty {
+          ComposerPillDivider()
+          effortMenu
+        }
+        ComposerPillDivider()
         permissionMenu
-        if !effortLevels.isEmpty { effortMenu }
+        ComposerPillDivider()
         projectMenu
       }
       .frame(maxWidth: .infinity, alignment: .leading)
@@ -38,7 +37,7 @@
           .pickerStyle(.inline)
         }
       } label: {
-        Chip(label: modelLabel, icon: Icon.agent)
+        ComposerPillLabel(icon: Icon.agent, title: modelLabel)
       }
       .chipMenu()
       .help("Switch model")
@@ -74,9 +73,8 @@
         }
         .pickerStyle(.inline)
       } label: {
-        Chip(
-          label: ComposerPermissionMode.label(permissionMode), icon: Icon.lock,
-          tone: permissionMode == .auto ? nil : .accent)
+        ComposerPillLabel(
+          icon: Icon.lock, title: ComposerPermissionMode.label(permissionMode), accent: permissionMode != .auto)
       }
       .chipMenu()
       .help("\(ComposerPermissionMode.description(permissionMode)) (⇧Tab to cycle)")
@@ -92,7 +90,7 @@
         }
         .pickerStyle(.inline)
       } label: {
-        Chip(label: ComposerEffort.label(host.effortByAgent[agentId]), icon: Icon.clock)
+        ComposerPillLabel(icon: Icon.clock, title: ComposerEffort.label(host.effortByAgent[agentId]))
       }
       .chipMenu()
       .help("Reasoning effort")
@@ -107,12 +105,13 @@
           Toggle(project.name, isOn: linkBinding(project.repoRoot))
         }
       } label: {
-        Chip(
-          label: linkedProjects.isEmpty ? "Link other project" : "\(linkedProjects.count) linked",
-          icon: Icon.link, tone: linkedProjects.isEmpty ? nil : .accent)
+        ComposerPillLabel(
+          icon: Icon.link, title: linkedProjects.isEmpty ? nil : "\(linkedProjects.count) linked",
+          accent: !linkedProjects.isEmpty, chevron: !linkedProjects.isEmpty)
       }
       .chipMenu()
-      .help("Give the agent another project for this message")
+      .help(linkedProjects.isEmpty ? "Link another project to this message" : "Projects linked to this message")
+      .accessibilityLabel("Link other project")
     }
 
     // MARK: State

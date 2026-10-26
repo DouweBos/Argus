@@ -4,10 +4,10 @@
   import SwiftUI
   import UniformTypeIdentifiers
 
-  /// The Mac chat input, matching the desktop's: Return sends (or queues while
-  /// the agent works), ⇧Return breaks the line, `/` and `@` open keyboard-driven
-  /// menus, images paste, drop or attach, and the agent's model, permission
-  /// mode and effort sit in menus underneath.
+  /// The Mac chat input, one box in the reading column: Return sends (or queues
+  /// while the agent works), ⇧Return breaks the line, `/` and `@` open
+  /// keyboard-driven menus, images paste, drop or attach, and the agent's
+  /// model, effort and permission mode sit in pills along its foot.
   struct MacChatInputView: View {
     @Environment(\.theme) var theme
     @Environment(HostStore.self) var host
@@ -68,19 +68,11 @@
         } else if !hasContent, !followUps.isEmpty {
           FollowUpSuggestionRow(items: followUps) { acceptFollowUp($0) }
         }
-        if !images.isEmpty {
-          AttachmentStrip(images: images) { id in
-            images.removeAll { $0.id == id }
-            saveImages()
-          }
-        }
-        inputRow
-        controlRow
+        box
       }
-      .padding(.horizontal, theme.space)
-      .padding(.vertical, 8)
-      .background(theme.bgSecondary)
-      .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
+      .readingColumn()
+      .padding(.top, 6)
+      .padding(.bottom, 14)
       .task(id: agentId) { await load() }
       .onChange(of: focusRequest) { _, _ in controller.focus() }
       .onChange(of: text) { _, value in
@@ -96,20 +88,25 @@
       }
     }
 
-    // MARK: Rows
+    // MARK: Box
 
-    private var inputRow: some View {
-      HStack(alignment: .bottom, spacing: 6) {
-        IconBtn(systemName: Icon.paperclip, label: "Attach images", size: 15) { pickImages() }
-          .help("Attach images")
-          .disabled(!isEnabled)
-
+    /// One rounded box: attachments, the text, then the agent's settings as
+    /// pills and the attach and send buttons.
+    private var box: some View {
+      VStack(alignment: .leading, spacing: 0) {
+        if !images.isEmpty {
+          AttachmentStrip(images: images) { id in
+            images.removeAll { $0.id == id }
+            saveImages()
+          }
+          .padding(.horizontal, 10)
+          .padding(.top, 10)
+        }
         ComposerField(
           text: $text, caret: $caret, height: $height, isDropTarget: $isDropTarget,
           controller: controller,
           placeholder: isEnabled
-            ? followUps.first.map { "\($0)  (Tab)" }
-              ?? "Message the agent… (Enter to send, / for commands, @ for files)"
+            ? followUps.first.map { "\($0)  (Tab)" } ?? "Ask anything, @ for files, / for commands"
             : "Agent is not running",
           argumentHint: SlashCommandMenu.argumentHint(for: text, in: commands)
             ?? FollowUps.completion(for: text, in: followUps),
@@ -117,27 +114,52 @@
           onKey: handle,
           onDrop: receive)
           .frame(height: height)
-          .background(theme.bgTertiary)
-          .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
-          .overlay {
-            RoundedRectangle(cornerRadius: theme.radiusSmall)
-              .strokeBorder(isDropTarget ? theme.accent : theme.border, lineWidth: 1)
-          }
+          .padding(.horizontal, 6)
+          .padding(.top, 4)
+        HStack(alignment: .bottom, spacing: 6) {
+          controlRow
+          actions
+        }
+        .padding(.leading, 8)
+        .padding(.trailing, 8)
+        .padding(.bottom, 8)
+      }
+      .background(theme.surface, in: .rect(cornerRadius: Self.radius))
+      .overlay {
+        RoundedRectangle(cornerRadius: Self.radius)
+          .strokeBorder(isDropTarget ? theme.accent : theme.border, lineWidth: 1)
+      }
+    }
 
+    private static let radius: CGFloat = 16
+
+    /// Attach, then send — or, while the agent works, queue and stop.
+    private var actions: some View {
+      HStack(spacing: 6) {
+        if contextTokens > 0 {
+          ContextMeter(
+            tokens: contextTokens,
+            limit: status?.contextWindow
+              ?? ContextWindow.limit(forModel: status?.model, capabilities: capabilities))
+        }
+        Button(action: pickImages) { Label("Attach images", systemImage: Icon.paperclip) }
+          .buttonStyle(FlatIconButtonStyle(size: 26))
+          .help("Attach images")
+          .disabled(!isEnabled)
         if isRunning {
           if hasContent {
-            IconBtn(systemName: Icon.send, label: "Queue message", tint: theme.accent) { submit() }
+            ComposerRoundButton(kind: .send, label: "Queue message") { submit() }
               .help("Queue — sent when the agent finishes its turn")
           }
-          IconBtn(systemName: Icon.stop, label: "Interrupt", tint: theme.error) { interrupt() }
+          ComposerRoundButton(kind: .stop, label: "Interrupt") { interrupt() }
             .help("Interrupt (⌘.)")
         } else {
-          IconBtn(systemName: Icon.send, label: "Send", tint: theme.accent) { submit() }
+          ComposerRoundButton(kind: .send, label: "Send") { submit() }
             .disabled(!hasContent || !isEnabled)
-            .opacity(hasContent && isEnabled ? 1 : 0.4)
             .help("Send (Return)")
         }
       }
+      .frame(height: TextScale.shared(26))
     }
 
     // MARK: Menus

@@ -14,6 +14,8 @@ struct TranscriptView: View {
   let sessionId: String
   /// Replaces the host's messages — the debug stress fixture renders through here.
   var fixture: [RemoteMessage]?
+  /// "Nothing yet" over an empty chat; off where the pane draws its own.
+  var showsEmptyState = true
 
   @State private var owner = TranscriptSessions.Owner()
   @State private var landed = false
@@ -49,7 +51,7 @@ struct TranscriptView: View {
     .onChange(of: model.revealToken) { _, _ in reveal() }
     // Over the table, not in it: a row is as tall as its content, so only the pane can centre it.
     .overlay {
-      if messages.isEmpty && (landed || fixture != nil) && !hasQueue {
+      if showsEmptyState && messages.isEmpty && (landed || fixture != nil) && !hasQueue {
         EmptyState(icon: Icon.agent, title: "Nothing yet", body: "Send this agent a message to get it going.")
           .allowsHitTesting(false)
       }

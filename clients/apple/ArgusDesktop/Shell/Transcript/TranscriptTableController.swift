@@ -31,11 +31,13 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   private var lastOffset: CGFloat = 0
 
   private(set) var agentKey = ""
-  private var segments = TranscriptSegments()
+  private var segments = TranscriptSegments(folding: .turns)
   private var revisions: [String: Int] = [:]
   private var top = TranscriptRow.TopState()
   private var footer = TranscriptRow.FooterState()
   private(set) var environment = EnvironmentValues()
+  /// What the reading column keeps clear of: the pane's context card.
+  var reserve: CGFloat { environment.readingColumnReserve }
   private(set) var environmentKey = ""
   var heights = TranscriptRowHeights()
   private var landed = false
@@ -101,7 +103,33 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   func row(_ index: Int) -> TranscriptRow {
     if index == 0 { return .top(top) }
     if index == rowCount - 1 { return .footer(footer) }
-    return .segment(segments.segments[index - 1])
+    let segment = segments.segments[index - 1]
+    if case .collapsed(let messages) = segment { return .work(workLog(index - 1, messages)) }
+    return .segment(segment)
+  }
+
+  /// A work log's span reads its neighbours: the message before it, and the reply after.
+  private func workLog(_ position: Int, _ messages: [RemoteMessage]) -> TranscriptRow.WorkLog {
+    let all = segments.segments
+    let before = position > 0 ? all[position - 1].messages.last?.timestamp : nil
+    var ended: Double?
+    if position + 1 < all.count, let next = all[position + 1].messages.first {
+      ended = next.role == .assistant ? next.timestamp : messages.last?.timestamp
+    }
+    return .init(id: all[position].id, messages: messages, started: before, ended: ended)
+  }
+
+  /// A work log next to an inserted or removed row has a new span to show.
+  private func withNeighbouringLogs(_ change: TranscriptSegments.Change) -> TranscriptSegments.Change {
+    guard !change.removed.isEmpty || !change.inserted.isEmpty else { return change }
+    var change = change
+    for index in [change.inserted.lowerBound - 1, change.inserted.upperBound]
+    where segments.segments.indices.contains(index) && !change.inserted.contains(index)
+      && !change.reloaded.contains(index)
+    {
+      if case .collapsed = segments.segments[index] { change.reloaded.append(index) }
+    }
+    return change
   }
 
   func id(_ index: Int) -> String {
@@ -141,7 +169,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     let key = Self.environmentKey(environment)
     let restyled = key != environmentKey
     environmentKey = key
-    let change = segments.update(messages)
+    let change = withNeighbouringLogs(segments.update(messages))
     if !change.isEmpty { messageOrder = nil }
     let topChanged = top != self.top
     let footerChanged = footer != self.footer
@@ -206,7 +234,7 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
 
   private func reset(_ key: String) {
     agentKey = key
-    segments = TranscriptSegments()
+    segments = TranscriptSegments(folding: .turns)
     revisions = [:]
     heights = TranscriptRowHeights()
     forgetPrepared()
@@ -220,7 +248,8 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
   /// What a hosted row looks like depends on these beyond the row itself.
   private static func environmentKey(_ environment: EnvironmentValues) -> String {
     let links = environment.transcriptLinks.map { "\(ObjectIdentifier($0))" } ?? "-"
-    return "\(environment.colorScheme)|\(environment.dynamicTypeSize)|\(TextScale.shared.factor)|\(links)"
+    return
+      "\(environment.colorScheme)|\(environment.dynamicTypeSize)|\(TextScale.shared.factor)|\(links)|\(environment.readingColumnReserve)"
   }
 
   // MARK: Selection
@@ -283,7 +312,9 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
       if always || heights.exact(id, revision: revision, width: width) == nil {
         let height: CGFloat
         if let (_, text) = plainText(index) {
-          height = TranscriptPerfLog.time("measure.text") { TranscriptTextCell.height(of: text, width: width) }
+          height = TranscriptPerfLog.time("measure.text") {
+            TranscriptTextCell.height(of: text, width: width, reserve: reserve)
+          }
         } else {
           height = TranscriptPerfLog.time("measure.\(kind(index))") {
             if let laidOut = layOutHosted(index, width: width) { return ceil(laidOut) }
