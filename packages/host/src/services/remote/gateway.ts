@@ -54,6 +54,7 @@ import {
   startSimulatorCapture,
   stopSimulatorCapture,
 } from "../simulator/ios";
+import { watchRemoteVideo } from "../simulator/remoteVideo";
 import { onVideo } from "../simulator/videoForward";
 import { TransferHub } from "../transfer/hub";
 import { TAG_XFER } from "../transfer/protocol";
@@ -482,26 +483,43 @@ export class DeviceConnection implements DeviceMediaController {
     const streamId = allocStreamId();
     log(`[remote] watch ${platform} ${deviceId} → stream ${String(streamId)}`);
     let loggedFirst = false;
-    const unsub = onVideo(deviceId, {
-      onConfig: (config) => this.emitMedia(buildConfigBody(streamId, config)),
-      onFrame: (data, keyFrame, timestamp) => {
-        // Never drop config/keyframes; shed delta frames under backpressure.
-        if (
-          !keyFrame &&
-          this.bufferedProbe &&
-          this.bufferedProbe() > BACKPRESSURE_LIMIT
-        ) {
-          return;
-        }
-        if (!loggedFirst) {
-          loggedFirst = true;
-          log(
-            `[remote] forwarding frames for ${deviceId} (stream ${String(streamId)})`,
-          );
-        }
-        this.emitMedia(buildFrameBody(streamId, data, keyFrame, timestamp));
-      },
-    });
+    const onConfig = (config: H264Config): void =>
+      this.emitMedia(buildConfigBody(streamId, config));
+    const forward = (
+      data: Uint8Array,
+      keyFrame: boolean,
+      timestamp: number,
+    ): void => {
+      if (!loggedFirst) {
+        loggedFirst = true;
+        log(
+          `[remote] forwarding frames for ${deviceId} (stream ${String(streamId)})`,
+        );
+      }
+      this.emitMedia(buildFrameBody(streamId, data, keyFrame, timestamp));
+    };
+    // The local UI socket gets the full-quality stream; anything over the
+    // network shares the adaptive one, so a slow phone can't degrade it.
+    const unsub = this.console
+      ? onVideo(deviceId, {
+          onConfig,
+          onFrame: (data, keyFrame, timestamp) => {
+            // Never drop config/keyframes; shed deltas under backpressure.
+            if (
+              !keyFrame &&
+              this.bufferedProbe &&
+              this.bufferedProbe() > BACKPRESSURE_LIMIT
+            ) {
+              return;
+            }
+            forward(data, keyFrame, timestamp);
+          },
+        })
+      : watchRemoteVideo(deviceId, platform, {
+          onConfig,
+          onFrame: forward,
+          buffered: () => this.bufferedProbe?.() ?? 0,
+        });
     this.watched.set(deviceId, { streamId, platform, unsub });
 
     return streamId;

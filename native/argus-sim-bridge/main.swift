@@ -7,6 +7,11 @@
 // Protocol:
 //   {"cmd":"start_capture","udid":"..."}              → {"ok":true,"port":12345}
 //   {"cmd":"stop_capture"}                            → {"ok":true}
+//   {"cmd":"start_remote_stream","bitrate":3000000,"maxDim":1280,"fps":30}
+//                                                     → {"ok":true,"port":12346}
+//   {"cmd":"set_stream_params","bitrate":800000,"maxDim":960,"fps":30}
+//                                                     → {"ok":true}
+//   {"cmd":"stop_remote_stream"}                      → {"ok":true}
 //   {"cmd":"refresh_display"}                         → {"ok":true}
 //   {"cmd":"display_info"}    → {"ok":true,"width":..,"height":..,"uiOrientation":..}
 //   {"cmd":"touch","udid":"...","x":0.5,"y":0.5,"type":0}  → {"ok":true}
@@ -45,13 +50,18 @@ signal(SIGPIPE, SIG_IGN)
 private final class StreamHub {
     private var clients: [Int32] = []
     private let lock = NSLock()
+    private let requestKeyframe: () -> Void
+
+    init(requestKeyframe: @escaping () -> Void) {
+        self.requestKeyframe = requestKeyframe
+    }
 
     func addClient(_ fd: Int32) {
         lock.lock()
         clients.append(fd)
         lock.unlock()
         // A new subscriber needs a keyframe (SPS/PPS + IDR) to start decoding.
-        SHRequestKeyframe()
+        requestKeyframe()
     }
 
     /// Write one encoded chunk to every connected client, in order. Clients
@@ -75,7 +85,12 @@ private final class StreamHub {
     }
 }
 
-private let streamHub = StreamHub()
+private let streamHub = StreamHub(requestKeyframe: { SHRequestKeyframe() })
+
+/// The bitrate-capped stream for remote viewers, on its own port so the host
+/// can parse it independently of the full-quality local stream.
+private let remoteHub = StreamHub(requestKeyframe: { SHRequestRemoteKeyframe() })
+private var remotePort: UInt16?
 
 /// C-callable frame callback invoked by cs_start_framebuffer at ~30fps with
 /// H.264 Annex B chunks (one access unit per call).
@@ -83,6 +98,21 @@ private let frameCallback: @convention(c) (UnsafePointer<UInt8>, UInt) -> Void =
     ptr, len in
     let bytes = Data(bytes: ptr, count: Int(len))
     streamHub.broadcast(bytes)
+}
+
+private let remoteFrameCallback: @convention(c) (UnsafePointer<UInt8>?, UInt) -> Void = {
+    ptr, len in
+    guard let ptr else { return }
+    remoteHub.broadcast(Data(bytes: ptr, count: Int(len)))
+}
+
+/// The remote stream's target, as sent by the host's congestion controller.
+private func remoteParams(_ obj: [String: Any]) -> (bitrate: Int32, maxDim: Int32, fps: Int32)? {
+    guard let bitrate = obj["bitrate"] as? Int, let maxDim = obj["maxDim"] as? Int else {
+        return nil
+    }
+    let fps = obj["fps"] as? Int ?? 30
+    return (Int32(clamping: bitrate), Int32(clamping: maxDim), Int32(clamping: fps))
 }
 
 /// Write all bytes to a file descriptor, handling short writes.
@@ -101,7 +131,7 @@ private func writeAll(_ fd: Int32, _ data: Data) -> Bool {
 
 /// Bind a TCP listener on a random port, start accepting raw H.264 stream
 /// clients, and return the bound port number.
-private func startStreamServer() throws -> UInt16 {
+private func startStreamServer(hub: StreamHub) throws -> UInt16 {
     // Create a TCP socket
     let serverFd = socket(AF_INET, SOCK_STREAM, 0)
     guard serverFd >= 0 else {
@@ -152,7 +182,7 @@ private func startStreamServer() throws -> UInt16 {
         while true {
             let clientFd = accept(serverFd, nil, nil)
             guard clientFd >= 0 else { break }
-            streamHub.addClient(clientFd)
+            hub.addClient(clientFd)
         }
         close(serverFd)
     }
@@ -278,7 +308,7 @@ private func dispatch(_ obj: [String: Any]) {
         // Start the raw H.264 TCP server first so we have a port to report
         let port: UInt16
         do {
-            port = try startStreamServer()
+            port = try startStreamServer(hub: streamHub)
         } catch {
             respondError("start_capture: failed to start stream server: \(error)")
             return
@@ -322,6 +352,47 @@ private func dispatch(_ obj: [String: Any]) {
     // ------------------------------------------------------------------
     case "stop_capture":
         csStopFramebuffer()
+        respond(ok: true)
+
+    // ------------------------------------------------------------------
+    // start_remote_stream — second, bitrate-capped encoder for remote viewers
+    // ------------------------------------------------------------------
+    case "start_remote_stream":
+        guard let params = remoteParams(obj) else {
+            respondError("start_remote_stream: missing 'bitrate'/'maxDim'")
+            return
+        }
+        let port: UInt16
+        if let existing = remotePort {
+            port = existing
+        } else {
+            do {
+                port = try startStreamServer(hub: remoteHub)
+            } catch {
+                respondError("start_remote_stream: failed to start stream server: \(error)")
+                return
+            }
+            remotePort = port
+        }
+        SHStartRemoteStream(remoteFrameCallback, params.bitrate, params.maxDim, params.fps)
+        respond(ok: true, extras: ["port": port])
+
+    // ------------------------------------------------------------------
+    // set_stream_params — retarget the remote stream live
+    // ------------------------------------------------------------------
+    case "set_stream_params":
+        guard let params = remoteParams(obj) else {
+            respondError("set_stream_params: missing 'bitrate'/'maxDim'")
+            return
+        }
+        SHSetRemoteStreamParams(params.bitrate, params.maxDim, params.fps)
+        respond(ok: true)
+
+    // ------------------------------------------------------------------
+    // stop_remote_stream — the last remote viewer left
+    // ------------------------------------------------------------------
+    case "stop_remote_stream":
+        SHStopRemoteStream()
         respond(ok: true)
 
     // ------------------------------------------------------------------

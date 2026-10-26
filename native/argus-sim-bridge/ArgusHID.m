@@ -19,6 +19,7 @@
 #import <VideoToolbox/VideoToolbox.h>
 #import <CoreMedia/CoreMedia.h>
 #import <CoreVideo/CoreVideo.h>
+#import "ArgusEncoder.h"
 
 // ---------------------------------------------------------------------------
 // MARK: - HID touch injection
@@ -518,7 +519,7 @@ void SHEnableHardwareKeyboard(id device) {
 // MARK: - Framebuffer capture via SimDeviceIOClient + IOSurface
 // ---------------------------------------------------------------------------
 
-typedef void (*SHFrameCallback)(const uint8_t *, size_t);
+typedef SHEncodedCallback SHFrameCallback;
 
 // Forward declaration
 void SHStopFramebuffer(void);
@@ -533,200 +534,6 @@ static id g_captureDevice = nil;       // SimDevice retained for IOClient recrea
 /// A foldable lights a different panel as the hinge moves, so the live one is
 /// re-picked from this list rather than pinned at capture start.
 static NSArray *g_displayCandidates = nil;
-
-// ---------------------------------------------------------------------------
-// MARK: - VideoToolbox H.264 encoder
-//
-// Replaces the old per-frame CPU JPEG path: the IOSurface is wrapped
-// zero-copy in a CVPixelBuffer and fed to a VTCompressionSession. The output
-// callback converts the AVCC (length-prefixed) NAL units to an Annex B
-// elementary stream (with SPS/PPS on keyframes) and emits it via
-// g_frameCallback — matching what the Node-side H264AccessUnitParser expects.
-// ---------------------------------------------------------------------------
-
-static VTCompressionSessionRef g_vtSession = NULL;
-static int32_t g_vtWidth = 0;   // source (IOSurface) dims — for change detection
-static int32_t g_vtHeight = 0;
-static int64_t g_frameIndex = 0;
-static _Atomic(bool) g_forceKeyframe = false;
-
-static const uint8_t kAnnexBStartCode[4] = {0x00, 0x00, 0x00, 0x01};
-
-// Cap the longest ENCODED dimension for performance (consistent with the
-// Android capture path's maxSize default). The framebuffer is captured at
-// native resolution and VideoToolbox scales it down to fit; 0 disables the
-// cap. 1920 keeps Retina mirrors crisp while roughly halving the encode cost
-// of the largest devices.
-static int32_t g_maxEncodeDim = 1920;
-
-/// Compute the (aspect-preserving, even) H.264 encode dimensions for a source
-/// framebuffer, applying the resolution cap.
-static void _encodeDims(int32_t sw, int32_t sh, int32_t *ew, int32_t *eh) {
-    int32_t longest = sw > sh ? sw : sh;
-    if (g_maxEncodeDim > 0 && longest > g_maxEncodeDim) {
-        double scale = (double)g_maxEncodeDim / (double)longest;
-        sw = (int32_t)(sw * scale);
-        sh = (int32_t)(sh * scale);
-    }
-    sw &= ~1;  // H.264 requires even dimensions
-    sh &= ~1;
-    *ew = sw < 2 ? 2 : sw;
-    *eh = sh < 2 ? 2 : sh;
-}
-
-/// VT output callback — runs on a VideoToolbox-managed thread. Serializes the
-/// compressed access unit as Annex B and hands it to the frame callback.
-static void _vtOutputCallback(void *outputCallbackRefCon,
-                              void *sourceFrameRefCon,
-                              OSStatus status,
-                              VTEncodeInfoFlags infoFlags,
-                              CMSampleBufferRef sampleBuffer) {
-    SHFrameCallback cb = g_frameCallback;
-    if (status != noErr || !sampleBuffer || !cb) return;
-    if (!CMSampleBufferDataIsReady(sampleBuffer)) return;
-
-    // A frame is a keyframe unless it is explicitly flagged NotSync.
-    bool isKeyframe = true;
-    CFArrayRef attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, false);
-    if (attachments && CFArrayGetCount(attachments) > 0) {
-        CFDictionaryRef dict = (CFDictionaryRef)CFArrayGetValueAtIndex(attachments, 0);
-        isKeyframe = !CFDictionaryContainsKey(dict, kCMSampleAttachmentKey_NotSync);
-    }
-
-    NSMutableData *out = [NSMutableData data];
-
-    // Prepend SPS/PPS (as Annex B) ahead of every keyframe so late joiners can
-    // configure their decoder.
-    if (isKeyframe) {
-        CMFormatDescriptionRef fmt = CMSampleBufferGetFormatDescription(sampleBuffer);
-        if (fmt) {
-            size_t paramCount = 0;
-            if (CMVideoFormatDescriptionGetH264ParameterSetAtIndex(
-                    fmt, 0, NULL, NULL, &paramCount, NULL) == noErr) {
-                for (size_t i = 0; i < paramCount; i++) {
-                    const uint8_t *ps = NULL;
-                    size_t psLen = 0;
-                    if (CMVideoFormatDescriptionGetH264ParameterSetAtIndex(
-                            fmt, i, &ps, &psLen, NULL, NULL) == noErr && ps) {
-                        [out appendBytes:kAnnexBStartCode length:4];
-                        [out appendBytes:ps length:psLen];
-                    }
-                }
-            }
-        }
-    }
-
-    // Convert the AVCC block buffer (4-byte length prefixes) to Annex B.
-    CMBlockBufferRef bb = CMSampleBufferGetDataBuffer(sampleBuffer);
-    if (bb) {
-        size_t totalLen = 0;
-        char *dataPtr = NULL;
-        if (CMBlockBufferGetDataPointer(bb, 0, NULL, &totalLen, &dataPtr) == noErr && dataPtr) {
-            size_t offset = 0;
-            while (offset + 4 <= totalLen) {
-                uint32_t nalLen = ((uint32_t)(uint8_t)dataPtr[offset] << 24) |
-                                  ((uint32_t)(uint8_t)dataPtr[offset + 1] << 16) |
-                                  ((uint32_t)(uint8_t)dataPtr[offset + 2] << 8) |
-                                  ((uint32_t)(uint8_t)dataPtr[offset + 3]);
-                offset += 4;
-                if (offset + nalLen > totalLen) break;
-                [out appendBytes:kAnnexBStartCode length:4];
-                [out appendBytes:(dataPtr + offset) length:nalLen];
-                offset += nalLen;
-            }
-        }
-    }
-
-    if (out.length > 0) {
-        cb((const uint8_t *)out.bytes, out.length);
-    }
-}
-
-/// Tear down the compression session and reset encoder state.
-static void _teardownVTSession(void) {
-    if (g_vtSession) {
-        VTCompressionSessionCompleteFrames(g_vtSession, kCMTimeInvalid);
-        VTCompressionSessionInvalidate(g_vtSession);
-        CFRelease(g_vtSession);
-        g_vtSession = NULL;
-    }
-    g_vtWidth = 0;
-    g_vtHeight = 0;
-    g_frameIndex = 0;
-}
-
-/// Create the compression session lazily, recreating it if the surface
-/// dimensions changed. Returns NO on failure.
-static BOOL _ensureVTSession(int32_t w, int32_t h) {
-    if (g_vtSession && g_vtWidth == w && g_vtHeight == h) return YES;
-    _teardownVTSession();
-
-    int32_t ew, eh;
-    _encodeDims(w, h, &ew, &eh);
-
-    OSStatus st = VTCompressionSessionCreate(
-        kCFAllocatorDefault, ew, eh, kCMVideoCodecType_H264,
-        NULL, NULL, NULL, _vtOutputCallback, NULL, &g_vtSession);
-    if (st != noErr || !g_vtSession) {
-        NSLog(@"[Framebuffer] VTCompressionSessionCreate failed: %d", (int)st);
-        g_vtSession = NULL;
-        return NO;
-    }
-
-    VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_RealTime, kCFBooleanTrue);
-    VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_AllowFrameReordering, kCFBooleanFalse);
-    VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_ProfileLevel,
-                         kVTProfileLevel_H264_Main_AutoLevel);
-
-    // Quality-driven VBR instead of a fixed average bitrate: crisp text,
-    // near-zero bytes on static screens, and the bitrate rises only under
-    // motion. No bitrate cap — the transport is localhost.
-    // Kept below 1.0: at 1.0 VideoToolbox preserves the BGRA source's full
-    // chroma and emits High 4:4:4 (profile 244), which WebCodecs can't decode;
-    // 0.8 keeps it 4:2:0 / decodable while still visually lossless for UI.
-    float quality = 0.8f;
-    CFNumberRef qNum = CFNumberCreate(NULL, kCFNumberFloat32Type, &quality);
-    VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_Quality, qNum);
-    CFRelease(qNum);
-
-    // Keyframe every 1s (time-based) for fast recovery and late-joiner
-    // startup, independent of frame rate.
-    double kfDur = 1.0;
-    CFNumberRef kfNum = CFNumberCreate(NULL, kCFNumberFloat64Type, &kfDur);
-    VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, kfNum);
-    CFRelease(kfNum);
-
-    int32_t fps = 30;
-    CFNumberRef fpsNum = CFNumberCreate(NULL, kCFNumberSInt32Type, &fps);
-    VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_ExpectedFrameRate, fpsNum);
-    CFRelease(fpsNum);
-
-    // When encoding below native resolution, let VideoToolbox scale the source
-    // pixel buffer down (aspect preserved by _encodeDims, so Trim never crops).
-    if (ew != w || eh != h) {
-        const void *ks[] = { kVTPixelTransferPropertyKey_ScalingMode };
-        const void *vs[] = { kVTScalingMode_Trim };
-        CFDictionaryRef xfer = CFDictionaryCreate(NULL, ks, vs, 1,
-            &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-        VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_PixelTransferProperties, xfer);
-        CFRelease(xfer);
-    }
-
-    VTCompressionSessionPrepareToEncodeFrames(g_vtSession);
-
-    g_vtWidth = w;
-    g_vtHeight = h;
-    g_frameIndex = 0;
-    NSLog(@"[Framebuffer] VTCompressionSession source %dx%d → encode %dx%d (quality VBR)",
-          w, h, ew, eh);
-    return YES;
-}
-
-/// Force the next encoded frame to be a keyframe. Called when a new streaming
-/// client connects so it gets a decodable stream (SPS/PPS + IDR) promptly.
-void SHRequestKeyframe(void) {
-    atomic_store(&g_forceKeyframe, true);
-}
 
 /// Read a descriptor's framebufferSurface, or NULL.
 static IOSurfaceRef _surfaceForDescriptor(id desc) {
@@ -1020,6 +827,7 @@ int32_t SHStartFramebuffer(id device, SHFrameCallback callback) {
     if (!device || !callback) return -1;
     g_frameCallback = callback;
     g_captureDevice = device;
+    SHEncoderSetLocalCallback(callback);
 
     if (!_rebuildIOClient()) {
         NSLog(@"[Framebuffer] Initial IOClient setup failed");
@@ -1103,8 +911,6 @@ int32_t SHStartFramebuffer(id device, SHFrameCallback callback) {
         int32_t w = (int32_t)IOSurfaceGetWidth(surface);
         int32_t h = (int32_t)IOSurfaceGetHeight(surface);
 
-        if (!_ensureVTSession(w, h)) return;
-
         // Wrap the IOSurface (32BGRA) zero-copy in a CVPixelBuffer and encode.
         CVPixelBufferRef pb = NULL;
         CVReturn cvret = CVPixelBufferCreateWithIOSurface(NULL, surface, NULL, &pb);
@@ -1112,21 +918,7 @@ int32_t SHStartFramebuffer(id device, SHFrameCallback callback) {
             if (pb) CVPixelBufferRelease(pb);
             return;
         }
-
-        CMTime pts = CMTimeMake(g_frameIndex++, 30);
-
-        CFDictionaryRef frameProps = NULL;
-        if (atomic_exchange(&g_forceKeyframe, false)) {
-            const void *keys[1] = { kVTEncodeFrameOptionKey_ForceKeyFrame };
-            const void *vals[1] = { kCFBooleanTrue };
-            frameProps = CFDictionaryCreate(NULL, keys, vals, 1,
-                &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-        }
-
-        VTCompressionSessionEncodeFrame(g_vtSession, pb, pts, kCMTimeInvalid,
-                                        frameProps, NULL, NULL);
-
-        if (frameProps) CFRelease(frameProps);
+        SHEncoderEncode(pb, w, h);
         CVPixelBufferRelease(pb);
     });
 
@@ -1142,8 +934,7 @@ void SHStopFramebuffer(void) {
         g_captureTimer = NULL;
     }
 
-    _teardownVTSession();
-    atomic_store(&g_forceKeyframe, false);
+    SHEncoderStopAll();
 
     g_displayDescriptor = nil;
     g_ioClient = nil;

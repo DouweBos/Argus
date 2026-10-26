@@ -1,7 +1,7 @@
 # Makefile — builds the argus-sim-bridge binary.
 #
 # Compiles main.swift + ArgusBridge.swift with swiftc, compiles
-# ArgusHID.m with clang, and links everything into a single macOS
+# ArgusHID.m + ArgusEncoder.m with clang, and links everything into a single macOS
 # command-line binary.
 #
 # Usage:
@@ -14,6 +14,7 @@
 
 BRIDGE_SWIFT    := ArgusBridge.swift
 HID_OBJC        := ArgusHID.m
+ENCODER_OBJC    := ArgusEncoder.m
 BRIDGE_HEADER   := ArgusBridge.h
 
 BUILD_DIR       := .build
@@ -68,7 +69,10 @@ FRAMEWORKS      := \
 all: $(BINARY)
 
 # Step 1 — compile ArgusHID.m to an object file
-$(BUILD_DIR)/ArgusHID.o: $(HID_OBJC) | $(BUILD_DIR)
+$(BUILD_DIR)/ArgusHID.o: $(HID_OBJC) ArgusEncoder.h | $(BUILD_DIR)
+	$(CLANG) $(CLANG_FLAGS) -o $@ $<
+
+$(BUILD_DIR)/ArgusEncoder.o: $(ENCODER_OBJC) ArgusEncoder.h | $(BUILD_DIR)
 	$(CLANG) $(CLANG_FLAGS) -o $@ $<
 
 # Step 2 — compile the Swift sources and link everything into the final binary.
@@ -76,10 +80,10 @@ $(BUILD_DIR)/ArgusHID.o: $(HID_OBJC) | $(BUILD_DIR)
 # swiftc is used as the linker driver here so it automatically links the Swift
 # standard library and runtime. The ObjC object is passed directly as an extra
 # input so swiftc forwards it to the linker.
-$(BINARY): main.swift $(BRIDGE_SWIFT) $(BUILD_DIR)/ArgusHID.o
+$(BINARY): main.swift $(BRIDGE_SWIFT) $(BRIDGE_HEADER) ArgusEncoder.h $(BUILD_DIR)/ArgusHID.o $(BUILD_DIR)/ArgusEncoder.o
 	$(SWIFTC) $(SWIFT_FLAGS) \
 	    main.swift $(BRIDGE_SWIFT) \
-	    $(BUILD_DIR)/ArgusHID.o \
+	    $(BUILD_DIR)/ArgusHID.o $(BUILD_DIR)/ArgusEncoder.o \
 	    $(FRAMEWORKS) \
 	    -o $@
 

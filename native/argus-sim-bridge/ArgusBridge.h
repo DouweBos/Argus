@@ -16,9 +16,8 @@ int32_t cs_start_framebuffer(const char *udid, FrameCallback callback);
 /// Stop the active framebuffer capture.
 void cs_stop_framebuffer(void);
 
-/// Force the next encoded frame to be a keyframe (SPS/PPS + IDR). Called when
-/// a new streaming client connects so it can start decoding promptly.
-void SHRequestKeyframe(void);
+// Keyframe requests and the bitrate-capped remote stream.
+#include "ArgusEncoder.h"
 
 /// Inject a touch event into the simulator via the Indigo HID protocol.
 /// norm_x, norm_y: normalized screen coordinates in [0.0, 1.0].
