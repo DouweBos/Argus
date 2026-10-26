@@ -17,6 +17,15 @@ struct WorkingDiffView: View {
       ) {
         Button("Resolve in Conflicts") { model.navigate(.sessionGit(id: workspace.sessionId, view: .conflicts)) }
       }
+    } else if vm.selectedEntry == nil && !vm.isDiffLoading {
+      // Grove's empty states; the file list keeps only a quiet line.
+      if !vm.hasLoadedStatus {
+        ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
+      } else if vm.statusEntries.isEmpty {
+        EmptyState(icon: "checkmark.seal", title: "Nothing to Commit", body: "Your working tree is clean.")
+      } else {
+        EmptyState(icon: "doc.text.magnifyingglass", title: "Select a File", body: "Choose a file to see its changes.")
+      }
     } else {
       DiffPane(
         diff: vm.currentDiff,

@@ -41,7 +41,6 @@ struct MainWindow: View {
       } trailing: {
         RuntimePanel(sessionId: model.route.sessionId)
       }
-      .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.detailWidth = $0 }
     }
     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
       windowWidth = width

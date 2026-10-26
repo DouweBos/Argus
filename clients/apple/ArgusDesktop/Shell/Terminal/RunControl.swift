@@ -10,6 +10,8 @@ struct RunControl: View {
   let session: RemoteSession
   /// Bring the terminal panel up so the run's output is in view.
   let reveal: () -> Void
+  /// Icon only, for a toolbar too narrow for the run's title; the title moves to the tooltip.
+  var compact = false
   @State private var pending: (title: String, conflicts: [TerminalsStore.Conflict])?
 
   private var runs: [TerminalsStore.RunCommand] {
@@ -21,9 +23,9 @@ struct RunControl: View {
     Group {
       if let primary = runs.first(where: { running($0.title) }) ?? runs.first {
         Button { toggle(primary.title) } label: { label(primary.title) }
-          .buttonStyle(PillItemButtonStyle(iconOnly: false))
-          .labelStyle(.titleAndIcon)
-          .help(running(primary.title) ? "Stop \(primary.title)" : primary.command)
+          .buttonStyle(PillItemButtonStyle(iconOnly: compact))
+          .labelStyle(compact ? AnyLabelStyle(.iconOnly) : AnyLabelStyle(.titleAndIcon))
+          .help(running(primary.title) ? "Stop \(primary.title)" : compact ? primary.title : primary.command)
         if runs.count > 1 {
           Menu {
             ForEach(runs) { run in
@@ -106,5 +108,18 @@ struct RunControl: View {
       return "\(conflict.title) in \(session?.displayName ?? session?.branch ?? "another session")"
     }
     return "This project allows one runtime at a time. Still running: \(names.joined(separator: ", ")). Stop \(names.count == 1 ? "it" : "them") and start \(pending.title) here?"
+  }
+}
+
+/// `labelStyle` wants one static type; the run control switches at run time.
+private struct AnyLabelStyle: LabelStyle {
+  private let make: (Configuration) -> AnyView
+
+  init(_ style: some LabelStyle) {
+    make = { AnyView(style.makeBody(configuration: $0)) }
+  }
+
+  func makeBody(configuration: Configuration) -> some View {
+    make(configuration)
   }
 }

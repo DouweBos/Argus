@@ -34,7 +34,7 @@ struct GitScreen: View {
   }
 }
 
-/// The open repository: sidebar, banner and sub-view.
+/// The open repository: sidebar, banners, the views' pill bar and the sub-view, in cards.
 struct GitWorkspaceView: View {
   @Environment(DesktopModel.self) private var model
   @Environment(\.theme) private var theme
@@ -58,10 +58,15 @@ struct GitWorkspaceView: View {
         if let error = workspace.undo.errorMessage {
           GitErrorBanner(message: "\(workspace.undo.errorTitle): \(error)") { workspace.undo.dismissError() }
         }
+        GitTabBar(workspace: workspace, view: view)
+          .padding(.vertical, 10)
+          .padding(.horizontal, 12)
         content
           .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .padding([.horizontal, .bottom], 12)
       }
       .frame(minWidth: 420)
+      .background(theme.bg)
     }
     .toolbar { GitToolbarActions(workspace: workspace, session: session) }
     .task {
@@ -99,25 +104,34 @@ struct GitWorkspaceView: View {
     }
   }
 
+  /// Changes, History and Stashes lay out their own cards, as Grove's; the rest sit in one.
   @ViewBuilder
   private var content: some View {
     switch view {
     case .working:
       WorkingCopyView(workspace: workspace)
-    case .conflicts:
-      ConflictsView(workspace: workspace)
     case .branch, .history, .branches, .tags:
       HistoryScreen(
         workspace: workspace, history: workspace.visibleHistory ?? workspace.history, ref: view.historyRef,
         baseBranch: view == .branch ? session.baseBranch : nil)
+    case .stashes:
+      StashesView(workspace: workspace)
+    default:
+      single.panel()
+    }
+  }
+
+  @ViewBuilder
+  private var single: some View {
+    switch view {
+    case .conflicts:
+      ConflictsView(workspace: workspace)
     case .compare(let left, let right):
       CompareView(workspace: workspace, left: left, right: right)
     case .blame(let path, let ref):
       BlameView(workspace: workspace, path: path, ref: ref)
     case .interactiveRebase(let from):
       InteractiveRebaseView(workspace: workspace, from: from)
-    case .stashes:
-      StashesView(workspace: workspace)
     case .reflog:
       ReflogView(workspace: workspace)
     case .branchesReview:
@@ -132,6 +146,8 @@ struct GitWorkspaceView: View {
       GitSettingsView(workspace: workspace)
     case .pullRequests:
       ProjectPullRequestsView(repoRoot: session.repoRoot)
+    case .working, .branch, .history, .branches, .tags, .stashes:
+      EmptyView()
     }
   }
 }

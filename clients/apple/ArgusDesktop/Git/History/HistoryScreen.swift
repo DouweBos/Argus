@@ -24,17 +24,20 @@ struct HistoryScreen: View {
 
   var body: some View {
     let actions = actions
-    ResizableVSplit(key: "git.history.detail", topMin: 160, bottomMin: 300, bottomIdeal: 480, showsBottom: true) {
+    // Grove's list and detail cards; stacked, since the graph's columns want the width.
+    ResizableVSplit(
+      key: "git.history.detail", topMin: 160, bottomMin: 300, bottomIdeal: 480, showsBottom: true, gap: 12
+    ) {
       VStack(spacing: 0) {
         HistoryToolbar(history: history, title: title)
-        Divider()
         if let error = history.errorMessage, history.pendingAction == nil {
           GitErrorBanner(message: error) { history.dismissError() }
         }
         list(actions)
       }
+      .panel()
     } bottom: {
-      CommitDetailView(actions: actions)
+      CommitDetailView(actions: actions).panel()
     }
     .sheet(item: sheetBinding) { HistoryActionSheet(actions: actions, action: $0) }
     .confirmationDialog(
@@ -119,8 +122,9 @@ private struct HistoryToolbar: View {
       .labelsHidden()
       .fixedSize()
     }
-    .padding(.horizontal, 10)
-    .frame(height: 36)
+    .padding(.horizontal, 14)
+    .frame(height: 40)
+    .overlay(alignment: .bottom) { Divider() }
   }
 
   private var count: String {

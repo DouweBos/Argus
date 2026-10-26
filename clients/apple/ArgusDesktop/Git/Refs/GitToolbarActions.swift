@@ -2,7 +2,8 @@ import ArgusUI
 import GroveKit
 import SwiftUI
 
-/// The git panel's toolbar: fetch, pull, push, branch, stash, tag.
+/// The git panel's toolbar, as Grove's: refresh, pull, push and sync, with
+/// fetch, branch, stash, tag, undo and redo in the ⋯ menu.
 struct GitToolbarActions: ToolbarContent {
   let workspace: GitWorkspace
   let session: RemoteSession
@@ -23,24 +24,24 @@ private struct GitToolbarButtons: View {
   let session: RemoteSession
 
   var body: some View {
+    let actions = RefActions(workspace: workspace, session: session, model: model, theme: theme)
     // What doesn't fit beside the switcher overflows, so the switcher never moves.
-    PillActionGroup(actions: items, width: model.toolbarLayout.panelActionsWidth - (workspace.hostBusy == nil ? 0 : 32)) {
+    PillActionGroup(
+      actions: primary(actions), menu: menu(actions),
+      width: model.toolbarLayout.panelActionsWidth - (workspace.hostBusy == nil ? 0 : PillMetrics.iconWidth)
+    ) {
       if let label = workspace.hostBusy {
-        ProgressView().controlSize(.small).frame(width: 30).help(label).accessibilityLabel(label)
+        ProgressView().controlSize(.small).frame(width: PillMetrics.iconWidth).help(label).accessibilityLabel(label)
       }
     }
   }
 
-  private var items: [PillAction] {
-    let actions = RefActions(workspace: workspace, session: session, model: model, theme: theme)
-    let undo = workspace.undo
+  private func primary(_ actions: RefActions) -> [PillAction] {
     let busy = workspace.hostBusy != nil
     let current = actions.currentBranch
     let noRemotes = workspace.refs.remotes.isEmpty
-    var items = [
-      PillAction(id: "fetch", title: "Fetch", symbol: "arrow.down.circle", help: "Fetch from all remotes", disabled: busy) {
-        Task { await actions.fetch() }
-      },
+    return [
+      PillAction(id: "refresh", title: "Refresh", symbol: "arrow.clockwise") { Task { await workspace.refreshAll() } },
       PillAction(id: "pull", title: "Pull", symbol: "arrow.down.to.line", help: "Pull…", disabled: busy || noRemotes) {
         Task { await actions.pull() }
       },
@@ -48,31 +49,42 @@ private struct GitToolbarButtons: View {
         id: "push", title: current?.upstream == nil ? "Publish" : "Push", symbol: "arrow.up.to.line",
         help: current?.upstream == nil ? "Publish the branch…" : "Push…", disabled: busy || current == nil || noRemotes
       ) { actions.push() },
-      workspace.isProjectRoot
-        ? PillAction(id: "branch", title: "Branch", symbol: "arrow.triangle.branch", help: "New branch…") {
-          actions.newBranch()
-        }
-        : PillAction(
-          id: "branch", title: "Branch", symbol: "arrow.triangle.branch", help: "Rename the session's branch…"
-        ) { actions.renameSessionBranch() },
       PillAction(
-        id: "stash", title: "Stash", symbol: "tray.and.arrow.down", help: "Stash changes…",
+        id: "sync", title: "Sync", symbol: "arrow.triangle.2.circlepath", help: "Sync: fetch, pull, then push",
+        disabled: busy || current == nil || noRemotes
+      ) { Task { await actions.sync() } },
+    ]
+  }
+
+  private func menu(_ actions: RefActions) -> [PillAction] {
+    let undo = workspace.undo
+    let busy = workspace.hostBusy != nil
+    var items = [
+      PillAction(id: "fetch", title: "Fetch", symbol: "arrow.down.circle", help: "Fetch from all remotes", disabled: busy) {
+        Task { await actions.fetch() }
+      },
+      workspace.isProjectRoot
+        ? PillAction(id: "branch", title: "New Branch…", symbol: "arrow.triangle.branch") { actions.newBranch() }
+        : PillAction(id: "branch", title: "Rename Branch…", symbol: "arrow.triangle.branch") {
+          actions.renameSessionBranch()
+        },
+      PillAction(
+        id: "stash", title: "Stash Changes…", symbol: "tray.and.arrow.down",
         disabled: busy || workspace.workingCopy.changedCount == 0
       ) { actions.stash() },
     ]
     if workspace.isProjectRoot {
-      items.append(PillAction(id: "tag", title: "Tag", symbol: "tag", help: "New tag…") { actions.newTag() })
+      items.append(PillAction(id: "tag", title: "New Tag…", symbol: "tag") { actions.newTag() })
     }
     items += [
       PillAction(
-        id: "undo", title: "Undo", symbol: "arrow.uturn.backward",
-        help: undo.undoDescription.map { "Undo \($0)" } ?? "Nothing to undo", disabled: !undo.canUndo
+        id: "undo", title: undo.undoDescription.map { "Undo \($0)" } ?? "Undo", symbol: "arrow.uturn.backward",
+        disabled: !undo.canUndo
       ) { Task { await workspace.undoLast(redo: false) } },
       PillAction(
-        id: "redo", title: "Redo", symbol: "arrow.uturn.forward",
-        help: undo.redoDescription.map { "Redo \($0)" } ?? "Nothing to redo", disabled: !undo.canRedo
+        id: "redo", title: undo.redoDescription.map { "Redo \($0)" } ?? "Redo", symbol: "arrow.uturn.forward",
+        disabled: !undo.canRedo
       ) { Task { await workspace.undoLast(redo: true) } },
-      PillAction(id: "refresh", title: "Refresh", symbol: "arrow.clockwise") { Task { await workspace.refreshAll() } },
     ]
     return items
   }

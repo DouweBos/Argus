@@ -7,6 +7,7 @@
   /// `switchPanel` (`panel`): what the toolbar switcher does, for the session on screen.
   /// `repoState`: what the session's repository has loaded so far.
   /// `toolbarFrames`: the toolbar items' frames, to see the switcher keep its place.
+  /// `resizeWindow` (`width`, `height`): the main window's content size.
   @MainActor
   enum StallDriver {
     private static var timer: Timer?
@@ -51,7 +52,23 @@
         guard let frame = NSApp.windows.first(where: { $0.identifier?.rawValue.hasPrefix("main") == true })?
           .contentView?.superview
         else { return ["error": "no window"] }
-        return ["items": viewers(in: frame).map { "\(Int($0.minX))-\(Int($0.maxX))" }]
+        return [
+          "items": viewers(in: frame).map { "\(Int($0.minX))-\(Int($0.maxX))" },
+          "width": Int(frame.bounds.width),
+          "layout": (AppDelegate.current?.model).map { model -> String in
+            let layout = model.toolbarLayout
+            return "switcherMaxX=\(Int(layout.switcherMaxX)) window=\(Int(layout.windowWidth)) "
+              + "session=\(Int(layout.sessionToolsWidth)) panel=\(Int(layout.panelActionsWidth))"
+          } ?? "",
+        ]
+      case "resizeWindow":
+        // The main window's content width, to see the toolbar at a narrow and a wide window.
+        guard let window = NSApp.windows.first(where: { $0.identifier?.rawValue.hasPrefix("main") == true }),
+          let width = command["width"] as? Double
+        else { return ["error": "width? / no window"] }
+        let height = (command["height"] as? Double).map { CGFloat($0) } ?? window.contentLayoutRect.height
+        window.setContentSize(NSSize(width: width, height: height))
+        return ["ok": true, "frame": "\(window.frame)", "window": window.windowNumber]
       default:
         return nil
       }

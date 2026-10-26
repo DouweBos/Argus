@@ -25,15 +25,17 @@ struct GitRefSections: View {
     let tree = BranchTreeNode.build(local.filter { !topNames.contains($0.name) })
 
     if !pinned.isEmpty {
-      Section("Pinned") {
+      Section {
         ForEach(pinned) { BranchRow(branch: $0, actions: actions) }
+      } header: {
+        SectionLabel("Pinned", count: pinned.count)
       }
     }
     Section {
       ForEach(top) { BranchRow(branch: $0, actions: actions) }
       ForEach(tree) { BranchFolderRow(node: $0, actions: actions, expanded: $expanded) }
     } header: {
-      Text("Branches")
+      SectionLabel("Branches", count: local.count)
         .contextMenu { Button("New Branch…") { actions.newBranch() } }
         .task(id: workspace.generation) {
           await marks.load(repoRoot: session.repoRoot, backend: model.store.backend)
@@ -43,39 +45,41 @@ struct GitRefSections: View {
         }
     }
     if !marks.archived.isEmpty {
-      Section("Archived") {
+      Section {
         ForEach(marks.archived, id: \.self) { name in archivedRow(name, actions: actions) }
+      } header: {
+        SectionLabel("Archived", count: marks.archived.count)
       }
+    }
+    Section {
+      ForEach(refs.remotes) { remote in remoteGroup(remote, actions: actions) }
+    } header: {
+      SectionLabel("Remotes", count: refs.remotes.count).contextMenu { Button("Add Remote…") { actions.addRemote() } }
     }
     if !refs.tags.isEmpty {
       // Collapsed until asked for, as Electron's: thousands of tag rows make opening the panel slow.
       Section(isExpanded: Binding(get: { workspace.tagsExpanded }, set: { workspace.tagsExpanded = $0 })) {
         ForEach(refs.tags) { TagRow(tag: $0, actions: actions) }
       } header: {
-        HStack {
-          Text("Tags")
-          Spacer()
-          Text(refs.tags.count, format: .number).foregroundStyle(theme.textMuted).monospacedDigit()
-        }
+        SectionLabel("Tags", count: refs.tags.count)
       }
     }
-    Section {
-      ForEach(refs.remotes) { remote in remoteGroup(remote, actions: actions) }
-    } header: {
-      Text("Remotes").contextMenu { Button("Add Remote…") { actions.addRemote() } }
-    }
     if !refs.submodules.isEmpty {
-      Section("Submodules") {
+      Section {
         ForEach(refs.submodules) { submodule in
           SidebarLabel(submodule.path, systemImage: submodule.state == .upToDate ? "shippingbox" : "shippingbox.fill")
             .help(submodule.url ?? submodule.path)
             .tag(GitSidebarTag.view(GitRoute.submodules.segment))
         }
+      } header: {
+        SectionLabel("Submodules", count: refs.submodules.count)
       }
     }
     if refs.worktrees.count > 1 {
-      Section("Worktrees") {
+      Section {
         ForEach(refs.worktrees) { worktreeRow($0) }
+      } header: {
+        SectionLabel("Worktrees", count: refs.worktrees.count)
       }
     }
   }
@@ -105,6 +109,7 @@ struct GitRefSections: View {
       ForEach(branches) { RemoteBranchRow(branch: $0, actions: actions) }
     } label: {
       SidebarLabel(remote.name, systemImage: "network")
+        .badge(branches.count)
         .help(remote.url)
         .contextMenu {
           Button("Fetch \(remote.name)") { Task { await actions.fetch(remote: remote.name) } }

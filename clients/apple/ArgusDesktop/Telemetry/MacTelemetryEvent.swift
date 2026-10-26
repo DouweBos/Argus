@@ -97,6 +97,11 @@ enum MacTelemetryEvent {
     case pair, attach, detach, forget, rename, focus
   }
 
+  enum GitViewSource: String {
+    case tabs
+    case more
+  }
+
   enum GitAction: String {
     case stage
     case unstage
@@ -131,6 +136,8 @@ enum MacTelemetryEvent {
     case fetch
     case pull
     case push
+    /// Fetch, pull and push in one go, from the toolbar's Sync.
+    case sync
     case resolveConflict = "resolve_conflict"
     case continueOperation = "continue_operation"
     case abortOperation = "abort_operation"
@@ -228,6 +235,8 @@ enum MacTelemetryEvent {
   case gitUsed(action: GitAction, scope: String, remote: Bool, success: Bool)
   /// A fix was picked from a git error banner; `kind` and `action` are the banner's enums.
   case gitRecoveryUsed(kind: String, action: String)
+  /// A git view was picked from the panel's pill bar or its More menu; `view` is the route segment.
+  case gitViewPicked(view: String, via: GitViewSource)
   /// Diffs switched between unified and split, from a diff's header or Settings.
   case diffLayoutChanged(layout: String, via: DiffLayoutSetting.Source)
   /// Another host was paired, attached, detached, forgotten, renamed or shown.
@@ -317,6 +326,7 @@ enum MacTelemetryEvent {
     case .inspectionUsed: "mac_inspection_used"
     case .gitUsed: "mac_git_used"
     case .gitRecoveryUsed: "mac_git_recovery_used"
+    case .gitViewPicked: "mac_git_view_picked"
     case .diffLayoutChanged: "mac_diff_layout_changed"
     case .hostsUsed: "mac_hosts_used"
     case .pullRequestActed: "mac_pull_request_acted"
@@ -430,6 +440,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "scope": scope, "remote": remote, "success": success]
     case .gitRecoveryUsed(let kind, let action):
       ["kind": kind, "action": action]
+    case .gitViewPicked(let view, let via):
+      ["view": view, "via": via.rawValue]
     case .diffLayoutChanged(let layout, let via):
       ["layout": layout, "via": via.rawValue]
     case .hostsUsed(let action, let success):

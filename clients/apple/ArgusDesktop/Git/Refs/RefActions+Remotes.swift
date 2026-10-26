@@ -11,6 +11,32 @@ extension RefActions {
     }
   }
 
+  /// Grove's Sync: fetch, then pull what's behind and push what's ahead, through
+  /// the host so its branch rules apply. An unpublished branch opens Publish instead.
+  func sync() async {
+    guard let branch = currentBranch else { return }
+    guard branch.upstream != nil else { return push(branch) }
+    let id = session.id
+    guard await workspace.host(GitCommands.GitFetch.self, .init(id: id), label: "Syncing…") != nil else {
+      return workspace.track(.sync, success: false)
+    }
+    var head = workspace.refs.localBranches.first(where: \.isHEAD)
+    if (head?.behind ?? 0) > 0 {
+      let strategy = await workspace.repository.defaultPullStrategy().wire
+      guard
+        await workspace.host(GitCommands.GitPullV2.self, .init(id: id, strategy: strategy), label: "Syncing…")
+          != nil
+      else { return workspace.track(.sync, success: false) }
+      head = workspace.refs.localBranches.first(where: \.isHEAD)
+    }
+    if (head?.ahead ?? 0) > 0 {
+      guard await workspace.host(GitCommands.GitPushV2.self, .init(id: id), label: "Syncing…") != nil else {
+        return workspace.track(.sync, success: false)
+      }
+    }
+    workspace.track(.sync, success: true)
+  }
+
   func addRemote() {
     GitDialogs.sheet(theme: theme) { dismiss in
       RemoteSheet(dismiss: dismiss) { name, url in

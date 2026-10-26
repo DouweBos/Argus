@@ -17,16 +17,23 @@ struct ChangesListView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      toolbar
-      Divider()
+      PanelHeader(title: "Files", detail: vm.changedCount == 0 ? nil : "\(vm.changedCount) changed") {
+        viewModeMenu
+        optionsMenu
+      }
+      if vm.changedCount > 0 || vm.fileViewMode == .allFiles || !filter.isEmpty {
+        TextField("Filter", text: $filter)
+          .textFieldStyle(.roundedBorder)
+          .controlSize(.small)
+          .padding(8)
+      }
       if vm.lfs.status.isMissing {
         Text(LFSStatus.missingMessage)
           .font(.scaled(size: 11))
           .foregroundStyle(theme.textSecondary)
           .padding(8)
           .frame(maxWidth: .infinity, alignment: .leading)
-          .background(theme.warning.opacity(0.12))
-        Divider()
+          .background(theme.warningSoft)
       }
       content
     }
@@ -35,31 +42,46 @@ struct ChangesListView: View {
     }
   }
 
-  private var toolbar: some View {
-    HStack(spacing: 6) {
-      TextField("Filter", text: $filter)
-        .textFieldStyle(.roundedBorder)
-        .controlSize(.small)
+  /// List, tree or every tracked file, as Grove's Files header picks it.
+  private var viewModeMenu: some View {
+    Menu {
       Picker("View", selection: viewMode) {
-        Image(systemName: FileViewMode.flatModified.symbol).help("List").tag(FileViewMode.flatModified)
-        Image(systemName: FileViewMode.treeModified.symbol).help("Tree").tag(FileViewMode.treeModified)
-        Image(systemName: FileViewMode.allFiles.symbol).help("All Files").tag(FileViewMode.allFiles)
+        Label("List", systemImage: FileViewMode.flatModified.symbol).tag(FileViewMode.flatModified)
+        Label("Tree", systemImage: FileViewMode.treeModified.symbol).tag(FileViewMode.treeModified)
+        Label("All Files", systemImage: FileViewMode.allFiles.symbol).tag(FileViewMode.allFiles)
       }
-      .pickerStyle(.segmented)
-      .labelsHidden()
-      .fixedSize()
+      .pickerStyle(.inline)
+    } label: {
+      Image(systemName: vm.fileViewMode.symbol)
+    }
+    .menuStyle(.borderlessButton)
+    .menuIndicator(.hidden)
+    .fixedSize()
+    .foregroundStyle(theme.textSecondary)
+    .help("View Mode")
+    .accessibilityLabel("View Mode")
+  }
+
+  private var optionsMenu: some View {
+    Menu {
+      Button("Stage All") { Task { await actions.stageAll() } }
+        .disabled(vm.unstagedFiles.isEmpty)
+      Button("Unstage All") { Task { await actions.unstageAll() } }
+        .disabled(vm.stagedFiles.isEmpty)
       // The patch file is on this Mac; a remote session's git can't read it.
       if !workspace.isRemote {
-        Button { PatchPanels.chooseToApply(workspace: workspace) } label: {
-          Image(systemName: "doc.badge.arrow.up")
-        }
-        .buttonStyle(.borderless)
-        .help("Apply Patch…")
-        .accessibilityLabel("Apply Patch")
+        Divider()
+        Button("Apply Patch…") { PatchPanels.chooseToApply(workspace: workspace) }
       }
+    } label: {
+      Image(systemName: "ellipsis.circle")
     }
-    .padding(.horizontal, 8)
-    .frame(height: 34)
+    .menuStyle(.borderlessButton)
+    .menuIndicator(.hidden)
+    .fixedSize()
+    .foregroundStyle(theme.textSecondary)
+    .help("File Options")
+    .accessibilityLabel("File Options")
   }
 
   private var viewMode: Binding<FileViewMode> {
@@ -76,10 +98,10 @@ struct ChangesListView: View {
         } else if !filter.isEmpty {
           ContentUnavailableView.search(text: filter)
         } else {
-          EmptyState(
-            icon: "checkmark.circle", title: vm.fileViewMode == .allFiles ? "No files" : "No changes",
-            body: vm.fileViewMode == .allFiles ? "Nothing is tracked yet." : "The working tree is clean."
-          )
+          // The diff card carries the big "Nothing to Commit" state, as in Grove.
+          Text(vm.fileViewMode == .allFiles ? "Nothing is tracked yet" : "No changed files")
+            .font(.scaled(size: 13))
+            .foregroundStyle(theme.textSecondary)
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -93,6 +115,7 @@ struct ChangesListView: View {
           row(item)
         }
         .listStyle(.inset)
+        .scrollContentBackground(.hidden)
         .focused($listFocused)
         .onKeyPress(.space) {
           Task { await actions.toggleSelection() }
