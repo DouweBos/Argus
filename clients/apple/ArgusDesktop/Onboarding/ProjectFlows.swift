@@ -16,6 +16,9 @@ struct ProjectFlows: ViewModifier {
       .sheet(item: $adding) { repo in
         AddProjectSheet(path: repo.path)
       }
+      .sheet(isPresented: importingCliProjects) {
+        CliProjectImportSheet()
+      }
       // On a ready connection: the backend exists before its socket does, and
       // a request made in between fails without a retry.
       .task(id: model.store.connection == .ready) {
@@ -37,6 +40,10 @@ struct ProjectFlows: ViewModifier {
           if let path = note.object as? String { adding = RepoPath(path: path) }
         }
       #endif
+  }
+
+  private var importingCliProjects: Binding<Bool> {
+    Binding(get: { model.importingCliProjects }, set: { model.importingCliProjects = $0 })
   }
 
   private var onboardingVisible: Binding<Bool> {

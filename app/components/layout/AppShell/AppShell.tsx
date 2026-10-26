@@ -74,6 +74,7 @@ import { BranchPickerDialog } from "../../shared/BranchPickerDialog";
 import { CommandPalette } from "../../shared/CommandPalette";
 import { OpenPalette } from "../../shared/OpenPalette";
 import { SettingsDialog } from "../../shared/SettingsDialog";
+import { CliProjectImportDialog } from "../../sidebar/CliProjectImportDialog";
 import { OpenProjectDialog } from "../../sidebar/OpenProjectDialog";
 import { SessionSidebar } from "../../sidebar/SessionSidebar";
 import { ToolPanel } from "../../toolrail/ToolPanel";
@@ -405,6 +406,7 @@ export function AppShell() {
       <CommandPalette />
       <OpenPalette />
       <SettingsDialog />
+      <CliProjectImportDialog />
       <BranchPickerDialog />
 
       {openProjectVisible && (

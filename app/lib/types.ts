@@ -291,6 +291,11 @@ export type {
 
 export type { ProjectEntry } from "@argus/remote-protocol";
 
+export type {
+  CliProjectCandidate,
+  CliProjectScan,
+} from "@argus/remote-protocol";
+
 export type { ExampleProject } from "@argus/remote-protocol";
 
 export type {

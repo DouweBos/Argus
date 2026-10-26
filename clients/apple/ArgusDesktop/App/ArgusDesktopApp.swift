@@ -107,6 +107,7 @@ private struct ProjectCommands: View {
   var body: some View {
     Button("Add Project…") { model.addingProject = true }
       .keyboardShortcut("o", modifiers: .command)
+    Button("Import Projects from Claude Code…") { model.importingCliProjects = true }
     Divider()
     // The code view's Open Quickly owns ⇧⌘O while it's on screen, as in Xcode.
     Button("Open Session…") { MenuCommand.quickSwitcher.run(model) }

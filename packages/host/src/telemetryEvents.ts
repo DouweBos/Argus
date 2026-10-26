@@ -96,6 +96,11 @@ export interface EventMap {
     project_count: number;
     trigger: "boot" | "interval" | "manual" | "project_added";
   };
+  cli_projects_imported: { count: number };
+  cli_projects_scanned: {
+    candidate_bucket: "0" | "1-5" | "6-20" | "21-100" | "100+";
+    truncated: boolean;
+  };
   color_theme_changed: {
     theme: "amber" | "ember" | "grove" | "iris" | "ocean" | "rose";
   };

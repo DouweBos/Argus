@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  CliProjectScan,
   ForkChatResult,
   ForkReplayOp,
   ForkSessionResult,
@@ -16,6 +17,18 @@ const SessionId = z.object({ id: z.string() });
 export const SESSION_COMMANDS = {
   add_repo_root: { tier: "admin", params: RepoPath, result: Void },
   remove_repo_root: { tier: "admin", params: RepoPath, result: Void },
+  /** Directories the Claude Code CLI has chats for, newest first. */
+  scan_cli_projects: {
+    tier: "admin",
+    params: NoParams,
+    result: CliProjectScan,
+  },
+  /** Add the picked directories as projects; their CLI chats import on add. */
+  import_cli_projects: {
+    tier: "admin",
+    params: z.object({ paths: z.array(z.string()) }),
+    result: z.object({ added: z.number() }),
+  },
   list_projects: {
     tier: "admin",
     params: NoParams,

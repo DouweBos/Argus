@@ -4,6 +4,7 @@ import { Button, DialogBody, Icons } from "@argus/peacock";
 import { showOpenDirectoryDialog } from "../../../lib/ipc";
 import { LOCAL_HOST_ID, type HostId } from "../../../lib/transport/hostId";
 import { useFocusedConnection } from "../../../stores/connectionStore";
+import { showCliImportDialog } from "../../../stores/dialogStore";
 import {
   removeRecentProject,
   useRecentProjects,
@@ -78,6 +79,20 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
             onClick={handleBrowse}
           >
             Browse...
+          </Button>
+        )}
+
+        {!browsingHost && (
+          <Button
+            variant="ghost"
+            className={projectStyles.browseBtn}
+            leading={<Icons.DownloadIcon size={13} />}
+            onClick={() => {
+              onClose();
+              showCliImportDialog();
+            }}
+          >
+            Import from Claude Code...
           </Button>
         )}
 

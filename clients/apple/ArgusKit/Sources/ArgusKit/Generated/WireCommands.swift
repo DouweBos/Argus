@@ -5249,6 +5249,40 @@ extension ArgusProtocol {
       }
     }
 
+    public struct ImportCliProjectsParams: Codable, Sendable {
+      public var paths: [String]
+
+      enum CodingKeys: String, CodingKey {
+        case paths = "paths"
+      }
+
+      public init(paths: [String]) {
+        self.paths = paths
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(paths, forKey: .paths)
+      }
+    }
+
+    public struct ImportCliProjectsResult: Codable, Sendable {
+      public var added: Double
+
+      enum CodingKeys: String, CodingKey {
+        case added = "added"
+      }
+
+      public init(added: Double) {
+        self.added = added
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(added, forKey: .added)
+      }
+    }
+
     public struct InspectionCaptureParams: Codable, Sendable {
       public var deviceKey: String
 
@@ -10796,6 +10830,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum ImportCliProjects: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.ImportCliProjectsParams
+      public typealias Result = ArgusProtocol.CommandsTypes.ImportCliProjectsResult
+      public static let name = "import_cli_projects"
+      public static let tier = "admin"
+    }
+
     public enum InspectionCapture: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.InspectionCaptureParams
       public typealias Result = JSONValue
@@ -11759,6 +11800,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.SaveChatHistoryParams
       public typealias Result = IgnoredResult
       public static let name = "save_chat_history"
+      public static let tier = "admin"
+    }
+
+    public enum ScanCliProjects: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.CliProjectScan
+      public static let name = "scan_cli_projects"
       public static let tier = "admin"
     }
 

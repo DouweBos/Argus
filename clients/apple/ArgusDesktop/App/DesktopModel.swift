@@ -59,6 +59,8 @@ final class DesktopModel {
   var projectSettingsRepo: String?
   /// The Add Project flow (⌘O).
   var addingProject = false
+  /// The Import from Claude Code sheet.
+  var importingCliProjects = false
   /// A folder pick on a paired host's disk (`pickFolder`).
   var hostFolderRequest: HostFolderRequest?
   /// The machine the sidebar is narrowed to; nil shows every attached one.

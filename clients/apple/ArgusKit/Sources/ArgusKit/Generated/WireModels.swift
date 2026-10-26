@@ -2769,6 +2769,60 @@ extension ArgusProtocol {
     }
   }
 
+  public struct CliProjectCandidate: Codable, Sendable {
+    public var path: String
+    public var name: String
+    public var chatCount: Double
+    public var lastActiveAt: Double
+    public var added: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case path = "path"
+      case name = "name"
+      case chatCount = "chat_count"
+      case lastActiveAt = "last_active_at"
+      case added = "added"
+    }
+
+    public init(path: String, name: String, chatCount: Double, lastActiveAt: Double, added: Bool) {
+      self.path = path
+      self.name = name
+      self.chatCount = chatCount
+      self.lastActiveAt = lastActiveAt
+      self.added = added
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(path, forKey: .path)
+      try c.encode(name, forKey: .name)
+      try c.encode(chatCount, forKey: .chatCount)
+      try c.encode(lastActiveAt, forKey: .lastActiveAt)
+      try c.encode(added, forKey: .added)
+    }
+  }
+
+  public struct CliProjectScan: Codable, Sendable {
+    public var candidates: [CliProjectCandidate]
+    public var truncated: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case candidates = "candidates"
+      case truncated = "truncated"
+    }
+
+    public init(candidates: [CliProjectCandidate], truncated: Bool) {
+      self.candidates = candidates
+      self.truncated = truncated
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(candidates, forKey: .candidates)
+      try c.encode(truncated, forKey: .truncated)
+    }
+  }
+
   public struct CodeFileEol: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }

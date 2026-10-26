@@ -263,6 +263,10 @@ telemetry choice. Everything else happens in place.
   writes a sensible default (Quick generate) or asks the `claude` CLI
   for a tailored config (Generate with Claude). Both modes show the
   proposed file for review before writing.
+- **Import from Claude Code** — next to Add repository, Argus lists the
+  repositories you've used the Claude Code CLI in, with their chat count
+  and last activity, and adds the ones you tick as projects. Their CLI
+  chats then show up in each project's history.
 
 ---
 
