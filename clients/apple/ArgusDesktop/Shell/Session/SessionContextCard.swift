@@ -63,10 +63,10 @@ struct SessionContextCard: View {
       }
     } menu: {
       if isLocal, path != nil {
-        Button("Reveal in Finder") { reveal() }
+        ChromeMenuItem("Reveal in Finder", icon: AppIcons.finder) { reveal() }
       }
       if path != nil {
-        Button("Copy Path") { copyPath() }
+        ChromeMenuItem("Copy Path", icon: .symbol(Icon.copy)) { copyPath() }
       }
     }
     .help(path.map { isLocal ? "Reveal \(Self.tilde($0)) in Finder" : "\(Self.tilde($0)) on \(hosts.label(hostId))" } ?? "")
@@ -76,10 +76,10 @@ struct SessionContextCard: View {
     ContextSplitRow {
       open(editor, path: path)
     } row: {
-      ContextCardRow(icon: Icon.openExternal, title: "Open in \(editor.name)")
+      ContextCardRow(icon: editor.icon, title: "Open in \(editor.name)")
     } menu: {
-      ForEach(editorChoices) { choice in
-        Button(choice.name) { open(choice, path: path) }
+      for choice in editorChoices {
+        ChromeMenuItem(choice.name, icon: choice.icon) { open(choice, path: path) }
       }
     }
   }
@@ -93,13 +93,13 @@ struct SessionContextCard: View {
     } row: {
       ContextCardRow(icon: Icon.branch, title: git?.branch ?? session.branch)
     } menu: {
-      Button("Show Branch History") {
+      ChromeMenuItem("Show Branch History", icon: .symbol(Icon.history)) {
         model.navigate(.sessionGit(id: session.id, view: .branches(git?.branch ?? session.branch)))
       }
       if session.kind == .worktree {
-        Button("Rename Branch…") { renamingBranch = true }
+        ChromeMenuItem("Rename Branch…", icon: .symbol(Icon.pencil)) { renamingBranch = true }
       }
-      Button("Copy Branch Name") { Clipboard.copy(git?.branch ?? session.branch) }
+      ChromeMenuItem("Copy Branch Name", icon: .symbol(Icon.copy)) { Clipboard.copy(git?.branch ?? session.branch) }
     }
     .help(session.baseBranch.map { "\(session.branch) from \($0)" } ?? session.branch)
   }
@@ -205,6 +205,13 @@ struct SessionContextCard: View {
     let id: String
     let name: String
     let kind: Kind
+
+    @MainActor var icon: ChromeIcon {
+      switch kind {
+      case .builtIn(let id): AppIcons.icon(editorId: id)
+      case .custom: .symbol(Icon.openExternal)
+      }
+    }
   }
 
   private var editorChoices: [EditorChoice] {

@@ -37,7 +37,7 @@
     @State var browseEntries: [(name: String, isDirectory: Bool)] = []
     /// Browse lookups race the typing; only the newest may land.
     @State var browseRequest = 0
-    @State var showingModelPopover = false
+    @State var showingModelMenu = false
 
     var status: RemoteAgentStatus? { host.statusByAgent[agentId] }
     var isRunning: Bool { status?.status == .running }
@@ -331,7 +331,7 @@
         case .setModel(let model):
           Task { await host.setModel(agentId: agentId, model: model) }
         case .openModelPicker:
-          showingModelPopover = true
+          showingModelMenu = true
         }
         return
       }

@@ -56,63 +56,53 @@ struct SidebarTopBar: View {
   }
 
   private var projectFilter: some View {
-    Menu {
-      Button {
-        pick(nil)
-      } label: {
-        checked(filter.project == nil, "All Projects")
-      }
-      Divider()
-      ForEach(store.projects) { project in
-        Button {
+    SidebarMenuButton(
+      "Filter by Project",
+      systemImage: filter.project == nil ? "line.3.horizontal.decrease" : "line.3.horizontal.decrease.circle.fill",
+      selected: filter.project != nil
+    ) {
+      ChromeMenuItem("All Projects", icon: .symbol("square.grid.2x2"), checked: filter.project == nil) { pick(nil) }
+      ChromeMenuEntry.divider
+      for project in store.projects {
+        ChromeMenuItem(project.name, icon: .badge(project.name), checked: filter.project == project.repoRoot) {
           pick(project.repoRoot)
-        } label: {
-          checked(filter.project == project.repoRoot, project.name)
         }
       }
       if let repo = filter.project {
-        Divider()
-        Button("Project Settings…") { model.projectSettingsRepo = repo }
+        ChromeMenuEntry.divider
+        ChromeMenuItem("Project Settings…", icon: .symbol(Icon.gear)) { model.projectSettingsRepo = repo }
       }
-    } label: {
-      Label(
-        "Filter by Project",
-        systemImage: filter.project == nil
-          ? "line.3.horizontal.decrease" : "line.3.horizontal.decrease.circle.fill")
     }
-    .modifier(SidebarMenuStyle(selected: filter.project != nil))
     .help(filter.project.flatMap { root in store.projects.first { $0.repoRoot == root }?.name }
       .map { "Showing \($0) only" } ?? "Filter by project")
   }
 
   private var addProject: some View {
-    Menu {
-      Button("Add Project…") { model.addingProject = true }
-      Button("Import Projects from Claude Code…") { model.importingCliProjects = true }
-    } label: {
-      Label("Add Project", systemImage: "folder.badge.plus")
+    SidebarMenuButton("Add Project", systemImage: "folder.badge.plus") {
+      ChromeMenuItem("Add Project…", icon: .symbol("folder.badge.plus"), shortcut: "⌘O") { model.addingProject = true }
+      ChromeMenuItem("Import Projects from Claude Code…", icon: .symbol(Icon.download)) {
+        model.importingCliProjects = true
+      }
     }
-    .modifier(SidebarMenuStyle())
     .help("Add a project (⌘O)")
   }
 
   private var newSession: some View {
-    Menu {
-      ForEach(store.projects) { project in
-        Button("New Session in \(project.name)…") { model.newSessionProject = project }
-      }
-      if !store.projects.isEmpty { Divider() }
-      Button("New Scratch Pad") { Task { await model.newScratchPad() } }
-    } label: {
-      Label("New Session", systemImage: "square.and.pencil")
-    } primaryAction: {
+    SidebarMenuButton("New Session", systemImage: "square.and.pencil") {
       if store.projects.isEmpty {
         Task { await model.newScratchPad() }
       } else {
         model.requestNewSession()
       }
+    } entries: {
+      for project in store.projects {
+        ChromeMenuItem("New Session in \(project.name)…", icon: .badge(project.name)) {
+          model.newSessionProject = project
+        }
+      }
+      ChromeMenuEntry.divider
+      ChromeMenuItem("New Scratch Pad", icon: .symbol(Icon.scratchPad)) { Task { await model.newScratchPad() } }
     }
-    .modifier(SidebarMenuStyle())
     .help("New session (⌘N) — hold for more")
   }
 
@@ -121,21 +111,34 @@ struct SidebarTopBar: View {
     filter.project = repoRoot
     MacTelemetry.capture(.sidebarFiltered(kind: .project))
   }
-
-  @ViewBuilder private func checked(_ on: Bool, _ title: String) -> some View {
-    if on { Label(title, systemImage: Icon.check) } else { Text(title) }
-  }
 }
 
-/// A menu drawn as a flat icon button.
-struct SidebarMenuStyle: ViewModifier {
+/// A dropdown behind a flat icon button, lit while it's open or narrowing the list.
+/// Given a primary action, a click runs it and a long press opens the dropdown.
+struct SidebarMenuButton: View {
+  let title: String
+  let systemImage: String
   var selected = false
+  var primaryAction: (() -> Void)?
+  let entries: () -> [ChromeMenuEntry]
+  @State private var open = false
 
-  func body(content: Content) -> some View {
-    content
-      .menuStyle(.button)
-      .menuIndicator(.hidden)
-      .buttonStyle(FlatIconButtonStyle(selected: selected))
-      .fixedSize()
+  init(
+    _ title: String, systemImage: String, selected: Bool = false, primaryAction: (() -> Void)? = nil,
+    @ChromeMenuBuilder entries: @escaping () -> [ChromeMenuEntry]
+  ) {
+    self.title = title
+    self.systemImage = systemImage
+    self.selected = selected
+    self.primaryAction = primaryAction
+    self.entries = entries
+  }
+
+  var body: some View {
+    ChromeMenuButton(isPresented: $open, primaryAction: primaryAction, entries: entries) { _ in
+      Label(title, systemImage: systemImage)
+    }
+    .buttonStyle(FlatIconButtonStyle(selected: selected || open))
+    .fixedSize()
   }
 }

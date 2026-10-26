@@ -47,12 +47,10 @@ struct RunControl: View {
           title: running(primary.title) ? "Stop \(primary.title)" : "Run \(primary.title)")
       } menu: {
         if runs.count > 1 {
-          ForEach(runs) { run in
-            Button { toggle(run.title) } label: { label(run.title) }
-          }
-          Divider()
+          runItems
+          ChromeMenuEntry.divider
         }
-        Button("Edit Run Commands…") { model.projectSettingsRepo = session.repoRoot }
+        ChromeMenuItem("Edit Run Commands…", icon: .symbol(Icon.gear)) { model.projectSettingsRepo = session.repoRoot }
       }
       .help(running(primary.title) ? "Stop \(primary.title)" : primary.command)
     } else if session.kind != .scratchPad {
@@ -75,20 +73,23 @@ struct RunControl: View {
           .labelStyle(compact ? AnyLabelStyle(.iconOnly) : AnyLabelStyle(.titleAndIcon))
           .help(running(primary.title) ? "Stop \(primary.title)" : compact ? primary.title : primary.command)
         if runs.count > 1 {
-          Menu {
-            ForEach(runs) { run in
-              Button { toggle(run.title) } label: { label(run.title) }
-            }
-          } label: {
+          ChromeMenuButton {
+            runItems
+          } label: { _ in
             Label("Run Commands", systemImage: "chevron.down")
           }
-          .menuStyle(.button)
-          .menuIndicator(.hidden)
           .help("Run commands")
-          // A toolbar menu keeps the items it was first built with.
-          .id(runs.map { running($0.title) })
         }
       }
+    }
+  }
+
+  private var runItems: [ChromeMenuEntry] {
+    runs.map { run in
+      .item(
+        ChromeMenuItem(
+          running(run.title) ? "Stop \(run.title)" : run.title, icon: .symbol(running(run.title) ? "stop.fill" : Icon.play)
+        ) { toggle(run.title) })
     }
   }
 

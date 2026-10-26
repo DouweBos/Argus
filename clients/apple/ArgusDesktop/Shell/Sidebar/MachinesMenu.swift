@@ -10,31 +10,31 @@ struct MachinesMenu: View {
   @Environment(\.openSettings) private var openSettings
 
   var body: some View {
-    Menu {
-      Button("All Machines") { model.showMachine(nil) }
-      Divider()
-      ForEach(hosts.machines, id: \.self) { id in
-        Button {
-          model.showMachine(id)
-        } label: {
-          Text("\(hosts.label(id)) — \(hosts.state(id).title)")
-        }
+    SidebarMenuButton(
+      model.machineFilter.map(hosts.label) ?? "All Machines", systemImage: "desktopcomputer",
+      selected: model.machineFilter != nil
+    ) {
+      ChromeMenuItem("All Machines", icon: .symbol("square.grid.2x2"), checked: model.machineFilter == nil) {
+        model.showMachine(nil)
       }
-      Divider()
-      Menu("Open in New Tab") {
-        ForEach(hosts.machines, id: \.self) { id in
-          Button(hosts.label(id)) { model.openHostTab(id) }
-        }
+      ChromeMenuEntry.divider
+      for id in hosts.machines {
+        ChromeMenuItem(
+          hosts.label(id), subtitle: hosts.state(id).title,
+          icon: .symbol(id == Hosts.local ? "laptopcomputer" : Icon.desktop), checked: model.machineFilter == id
+        ) { model.showMachine(id) }
       }
-      Divider()
-      Button("Hosts Settings…") {
+      ChromeMenuEntry.divider
+      ChromeMenuEntry.header("Open in New Tab")
+      for id in hosts.machines {
+        ChromeMenuItem(hosts.label(id), icon: .symbol("plus.rectangle.on.rectangle")) { model.openHostTab(id) }
+      }
+      ChromeMenuEntry.divider
+      ChromeMenuItem("Hosts Settings…", icon: .symbol(Icon.gear)) {
         model.settingsTab = .hosts
         openSettings()
       }
-    } label: {
-      Label(model.machineFilter.map(hosts.label) ?? "All Machines", systemImage: "desktopcomputer")
     }
-    .modifier(SidebarMenuStyle(selected: model.machineFilter != nil))
     .overlay(alignment: .topTrailing) {
       if let id = model.machineFilter { StatusDot(tone: hosts.state(id).tone).scaleEffect(0.8).allowsHitTesting(false) }
     }

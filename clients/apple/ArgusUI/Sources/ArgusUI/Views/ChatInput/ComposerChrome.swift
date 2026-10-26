@@ -9,6 +9,8 @@
     var title: String?
     var accent = false
     var chevron = true
+    /// Its dropdown is showing.
+    var open = false
     @State private var hovering = false
 
     var body: some View {
@@ -22,11 +24,11 @@
         }
       }
       .foregroundStyle(
-        !isEnabled ? theme.textMuted : accent ? theme.accent : hovering ? theme.text : theme.textSecondary)
+        !isEnabled ? theme.textMuted : accent ? theme.accent : hovering || open ? theme.text : theme.textSecondary)
       .padding(.horizontal, 7)
       .frame(height: TextScale.shared(24))
       .background {
-        if hovering && isEnabled { RoundedRectangle(cornerRadius: 6).fill(theme.selection) }
+        if (hovering || open) && isEnabled { RoundedRectangle(cornerRadius: 6).fill(theme.selection) }
       }
       .contentShape(.rect(cornerRadius: 6))
       .onHover { hovering = $0 }
