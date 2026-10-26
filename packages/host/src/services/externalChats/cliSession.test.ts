@@ -98,6 +98,51 @@ describe("readCliSession", () => {
   });
 });
 
+describe("oneShotPrint", () => {
+  const sdk = { ...base, entrypoint: "sdk-cli", promptSource: "sdk" };
+  const reply = (content: object[]) => ({
+    ...sdk,
+    type: "assistant",
+    message: { content },
+  });
+
+  it("flags a single SDK prompt answered without tools", async () => {
+    const file = write([
+      { ...sdk, type: "user", message: { content: "Summarise this" } },
+      reply([{ type: "text", text: "Done" }]),
+    ]);
+    expect((await readCliSession(file, "x")).oneShotPrint).toBe(true);
+  });
+
+  it("keeps interactive, multi-turn and tool-using chats", async () => {
+    const cli = { ...base, entrypoint: "cli" };
+    const interactive = write([
+      { ...cli, type: "user", message: { content: "Fix it" } },
+      { ...cli, type: "assistant", message: { content: "Ok" } },
+    ]);
+    const multiTurn = write([
+      { ...sdk, type: "user", message: { content: "Fix it" } },
+      reply([{ type: "text", text: "Ok" }]),
+      { ...sdk, type: "user", message: { content: "Now test it" } },
+    ]);
+    const tools = write([
+      { ...sdk, type: "user", message: { content: "Fix it" } },
+      reply([
+        { type: "text", text: "Looking" },
+        { type: "tool_use", name: "Read" },
+      ]),
+      {
+        ...sdk,
+        type: "user",
+        message: { content: [{ type: "tool_result", content: "x" }] },
+      },
+    ]);
+    for (const file of [interactive, multiTurn, tools]) {
+      expect((await readCliSession(file, "x")).oneShotPrint).toBe(false);
+    }
+  });
+});
+
 describe("trimMessages", () => {
   it("keeps the opening user message and the newest tail", () => {
     const messages = Array.from({ length: 10 }, (_, i) => ({

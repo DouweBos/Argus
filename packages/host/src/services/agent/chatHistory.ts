@@ -442,6 +442,32 @@ export function deleteHistoryEntry(repoRoot: string, historyId: string): void {
   }
 }
 
+/** Drop imported chats by history id; Argus's own history is never touched. */
+export function removeImportedEntries(
+  repoRoot: string,
+  historyIds: Iterable<string>,
+): number {
+  const ids = new Set(historyIds);
+  const entries = loadHistoryIndex(repoRoot);
+  const gone = entries.filter((e) => e.importedFrom && ids.has(e.id));
+  if (gone.length === 0) {
+    return 0;
+  }
+  for (const e of gone) {
+    try {
+      fs.unlinkSync(conversationPath(repoRoot, e.id));
+    } catch {
+      // Already gone.
+    }
+  }
+  saveIndex(
+    repoRoot,
+    entries.filter((e) => !gone.includes(e)),
+  );
+
+  return gone.length;
+}
+
 /**
  * Load a saved conversation by its runner session id (the id a resume spawn
  * passes to `--resume`). Returns null when nothing was saved for it.

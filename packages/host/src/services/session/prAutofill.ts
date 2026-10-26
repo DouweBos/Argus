@@ -18,6 +18,12 @@ interface AutofillParams {
   baseBranch: string;
 }
 
+/** Openings of the two prompts, for the CLI chat importer to recognise. */
+export const PR_TEMPLATE_PROMPT =
+  "Fill in the pull-request template below for this branch.";
+export const PR_DESCRIPTION_PROMPT =
+  "Write a concise pull-request description for this branch.";
+
 /**
  * Build a user prompt that asks Claude to fill in the project's PR template
  * based on the session's commits and diff. Returns the filled body, or
@@ -59,8 +65,8 @@ export async function autofillPullRequestBody(
   const sections: string[] = [];
   sections.push(
     template
-      ? `Fill in the pull-request template below for this branch. Replace placeholder text and check off any checklist items that the changes complete. Keep the template's structure (headings, lists, formatting). Do not add a wrapping code block. Do not add any commentary outside the template — output ONLY the filled-in markdown body.`
-      : `Write a concise pull-request description for this branch. Use markdown. Start with a "## Summary" section (2–4 bullets) and a "## Changes" section listing the notable changes. Output ONLY the markdown body.`,
+      ? `${PR_TEMPLATE_PROMPT} Replace placeholder text and check off any checklist items that the changes complete. Keep the template's structure (headings, lists, formatting). Do not add a wrapping code block. Do not add any commentary outside the template — output ONLY the filled-in markdown body.`
+      : `${PR_DESCRIPTION_PROMPT} Use markdown. Start with a "## Summary" section (2–4 bullets) and a "## Changes" section listing the notable changes. Output ONLY the markdown body.`,
   );
 
   sections.push(`PR title: ${title}`);

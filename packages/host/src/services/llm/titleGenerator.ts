@@ -8,6 +8,14 @@
 import { tmpdir } from "node:os";
 import { runClaudePrint } from "./oneShot";
 
+/** Openings of these prompts; the CLI chat importer skips transcripts that start with them. */
+export const SESSION_TITLE_PROMPT =
+  "Generate a concise 3-5 word title for a coding session.";
+export const BRANCH_AND_TITLE_PROMPT =
+  "Given a developer's description of a coding task, produce a short git branch name";
+export const CHAT_TITLE_PROMPT =
+  "Produce a title (3-6 words, no trailing punctuation, no quotes, title case)";
+
 const MAX_TITLE_CHARS = 60;
 const MAX_CHAT_TITLE_CHARS = 80;
 const MAX_CHAT_INPUT_CHARS = 2000;
@@ -43,7 +51,7 @@ export async function generateSessionTitle(
   opts: GenerateOptions,
 ): Promise<string | null> {
   const desc = (opts.description ?? "").trim() || "none";
-  const prompt = `Generate a concise 3-5 word title for a coding session. Respond with only the title, no punctuation, no quotes. Branch: ${opts.branch}. Description: ${desc}.`;
+  const prompt = `${SESSION_TITLE_PROMPT} Respond with only the title, no punctuation, no quotes. Branch: ${opts.branch}. Description: ${desc}.`;
 
   const result = await runClaudePrint({
     prompt,
@@ -73,7 +81,7 @@ export async function generateBranchAndTitle(
     return null;
   }
   const instruction =
-    `Given a developer's description of a coding task, produce a short git branch name and a 3-5 word session title. ` +
+    `${BRANCH_AND_TITLE_PROMPT} and a 3-5 word session title. ` +
     `Reply with ONLY a JSON object like {"branch":"kebab-case-branch","title":"Short Title Here"}. ` +
     `The branch must be lowercase kebab-case, max 40 chars, no slashes. ` +
     `The title must be 3-5 words, title-cased, no trailing punctuation. ` +
@@ -124,7 +132,7 @@ export async function generateChatTitle(
       ? trimmed.slice(0, MAX_CHAT_INPUT_CHARS)
       : trimmed;
 
-  const prompt = `Produce a title (3-6 words, no trailing punctuation, no quotes, title case) that summarises this chat's topic based on the user's first message. Respond with ONLY the title text, nothing else.\n\nUser message:\n${snippet}`;
+  const prompt = `${CHAT_TITLE_PROMPT} that summarises this chat's topic based on the user's first message. Respond with ONLY the title text, nothing else.\n\nUser message:\n${snippet}`;
 
   const result = await runClaudePrint({
     prompt,

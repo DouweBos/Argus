@@ -115,11 +115,13 @@ export async function runClaudePrint(
     // auto-memory and trying to "fix" the project with Bash. Loading `user`
     // also pulled in the user-level memory bank, which routinely pushed the
     // prompt past haiku's input limit and surfaced as a "Prompt is too long"
-    // error.
+    // error. No session persistence: these helpers would otherwise leave a
+    // transcript per call in ~/.claude/projects.
     const child = execFileAsync(
       CLAUDE_BIN,
       [
         "-p",
+        "--no-session-persistence",
         "--model",
         opts.model ?? "haiku",
         "--output-format",

@@ -20,6 +20,8 @@ export interface CliSession {
   model: string | null;
   /** Another Argus wrote it: its agents carry Argus's own MCP tools. */
   ranInArgus: boolean;
+  /** One SDK/print-mode prompt, one reply, no tools: a scripted `claude -p` call, not a chat. */
+  oneShotPrint: boolean;
   messages: CliSessionMessage[];
   firstAt: number | null;
   lastAt: number | null;
@@ -59,6 +61,26 @@ function textOf(content: unknown): string {
     .join("\n\n");
 }
 
+function hasToolUse(content: unknown): boolean {
+  return (
+    Array.isArray(content) &&
+    content.some(
+      (b) =>
+        typeof b === "object" &&
+        b !== null &&
+        (b as { type?: unknown }).type === "tool_use",
+    )
+  );
+}
+
+/** Sent by a program (`claude -p`, the SDK) rather than typed in the CLI. */
+function isSdkPrompt(rec: Record<string, unknown>): boolean {
+  return (
+    rec.promptSource === "sdk" ||
+    (typeof rec.entrypoint === "string" && rec.entrypoint.startsWith("sdk"))
+  );
+}
+
 function titleFrom(text: string): string {
   const first = text.trim().split("\n")[0]?.trim() ?? "";
 
@@ -90,12 +112,16 @@ export async function readCliSession(
     gitBranch: "",
     model: null,
     ranInArgus: false,
+    oneShotPrint: false,
     messages: [],
     firstAt: null,
     lastAt: null,
   };
   let customTitle: string | null = null;
   let aiTitle: string | null = null;
+  let userTurns = 0;
+  let allSdkPrompts = true;
+  let usedTools = false;
   const lines = readline.createInterface({
     input: fs.createReadStream(file, "utf8"),
     crlfDelay: Infinity,
@@ -145,6 +171,9 @@ export async function readCliSession(
     ) {
       session.model = message.model;
     }
+    if (rec.type === "assistant" && hasToolUse(message?.content)) {
+      usedTools = true;
+    }
     const text = textOf(message?.content).trim();
     if (!text || NOISE.test(text)) {
       continue;
@@ -155,6 +184,10 @@ export async function readCliSession(
     session.firstAt ??= stamp;
     session.lastAt = stamp;
     const role = rec.type;
+    if (role === "user") {
+      userTurns += 1;
+      allSdkPrompts &&= isSdkPrompt(rec);
+    }
     const last = session.messages.at(-1);
     // The CLI writes one assistant record per content block.
     if (last && last.role === "assistant" && role === "assistant") {
@@ -173,6 +206,7 @@ export async function readCliSession(
   if (!session.title) {
     session.title = "Imported chat";
   }
+  session.oneShotPrint = userTurns === 1 && allSdkPrompts && !usedTools;
   session.messages = trimMessages(session.messages);
 
   return session;

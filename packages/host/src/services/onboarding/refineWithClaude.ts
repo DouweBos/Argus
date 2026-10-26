@@ -38,12 +38,16 @@ function loadSchemaDoc(): string {
   return cachedSchemaDoc;
 }
 
+/** Opening of the prompt, for the CLI chat importer to recognise. */
+export const REFINE_ARGUS_JSON_PROMPT =
+  "You are helping configure an Argus project.";
+
 export async function refineArgusJsonWithClaude(
   repoRoot: string,
   currentConfig: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   const prompt = [
-    "You are helping configure an Argus project. Argus runs Claude Code agents in isolated git worktrees for parallel mobile/web development.",
+    `${REFINE_ARGUS_JSON_PROMPT} Argus runs Claude Code agents in isolated git worktrees for parallel mobile/web development.`,
     "",
     "Inspect the project in the current working directory — read package.json, lockfiles, ios/Podfile, android/build.gradle, pnpm-workspace.yaml, turbo.json, Makefile, .env.example, and any run scripts. Detect the package manager, frameworks (Expo, RN, Next, Vite, etc.), native targets, and dev/build commands.",
     "",
@@ -70,7 +74,13 @@ export async function refineArgusJsonWithClaude(
 
   const stdout = await execWithTimeout(
     CLAUDE_BIN,
-    ["--print", "--permission-mode", "bypassPermissions", prompt],
+    [
+      "--print",
+      "--no-session-persistence",
+      "--permission-mode",
+      "bypassPermissions",
+      prompt,
+    ],
     repoRoot,
   );
 

@@ -29,7 +29,15 @@ function execClaudePing(id: string): Promise<{ stdout: string }> {
 
   return execFileAsync(
     "claude",
-    ["--print", "--model", "haiku", "--output-format", "json", "ping"],
+    [
+      "--print",
+      "--no-session-persistence",
+      "--model",
+      "haiku",
+      "--output-format",
+      "json",
+      "ping",
+    ],
     { env, maxBuffer: 4 * 1024 * 1024, timeout: PROBE_TIMEOUT_MS },
   );
 }
