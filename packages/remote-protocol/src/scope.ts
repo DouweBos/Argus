@@ -73,6 +73,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "claude_accounts.rename": DENIED,
   // The host owner's plan usage, per account.
   "usage.limits": DENIED,
+  "usage.summary": DENIED,
   "claude_accounts.login_start": DENIED,
   "claude_accounts.login_cancel": DENIED,
   "claude_accounts.login_submit_code": DENIED,

@@ -53,7 +53,11 @@ import { AutomationCalibration } from "./models/automations";
 import { CodeFile, CodeSearchEvent } from "./models/code";
 import { GitStashEntry } from "./models/git/history";
 import { GitTag } from "./models/git/remotes";
-import { ClaudeUsageLimits } from "./models/usage";
+import {
+  ClaudeUsageLimits,
+  ClaudeUsageSummary,
+  UsageRange,
+} from "./models/usage";
 import { ReportBlock } from "./report";
 
 /**
@@ -589,6 +593,7 @@ export const MethodParams = {
   }),
   "claude_accounts.list": z.object({}),
   "usage.limits": z.object({ refresh: z.boolean().optional() }),
+  "usage.summary": z.object({ range: UsageRange }),
   "claude_accounts.set_active": z.object({ id: z.string() }),
   "claude_accounts.add": z.object({
     use_console: z.boolean().optional(),
@@ -874,6 +879,7 @@ export const MethodResult = {
     active_id: z.string(),
   }),
   "usage.limits": ClaudeUsageLimits,
+  "usage.summary": ClaudeUsageSummary,
   "claude_accounts.set_active": z.object({ accepted: z.boolean() }),
   /** The sign-in URL. It opens in the host owner's browser; the code still has
    *  to be pasted back here for the browser callback to be seen. */

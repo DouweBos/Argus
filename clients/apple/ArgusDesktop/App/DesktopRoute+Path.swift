@@ -16,7 +16,11 @@ extension DesktopRoute {
     case ("inbox", 1): self = .inbox
     case ("inbox", 3) where parts[1] == "proposals": self = .proposal(id: parts[2])
     case ("notifications", 1): self = .notifications
-    case ("usage", 1): self = .usage
+    case ("usage", 1): self = .usage(.limits)
+    case ("usage", 2):
+      // An unknown tab falls back to limits, as in Electron.
+      let tab = UsageTab(rawValue: parts[1]) ?? .limits
+      self = .usage(tab, range: tab == .limits ? nil : Self.usageRange(query["range"]))
     case ("pull-requests", 1): self = .pullRequests
     case ("pull-requests", 4):
       guard let number = Int(parts[3]) else { return nil }
@@ -63,7 +67,7 @@ extension DesktopRoute {
     case .inbox: "/inbox"
     case .proposal(let id): "/inbox/proposals/\(Self.encode(id))"
     case .notifications: "/notifications"
-    case .usage: "/usage"
+    case .usage(let tab, let range): pattern + Self.query([("range", tab == .limits ? nil : range?.rawValue)])
     case .pullRequests: "/pull-requests"
     case .pullRequest(let repo, let number): "/pull-requests/\(repo)/\(number)"
     case .automations: "/automations"
@@ -77,6 +81,14 @@ extension DesktopRoute {
     case .sessionCode(let id, let path, let line):
       "/sessions/\(Self.encode(id))/code" + Self.query([("path", path), ("line", path == nil ? nil : line.map(String.init))])
     }
+  }
+
+  /// A known range other than the default; anything else reads as the default.
+  static func usageRange(_ raw: String?) -> ArgusProtocol.UsageRange? {
+    guard let range = raw.map(ArgusProtocol.UsageRange.init(rawValue:)),
+      ArgusProtocol.UsageRange.all.contains(range), range != .default
+    else { return nil }
+    return range
   }
 
   /// `?a=1&b=2` from the items that have a value; empty when none do.

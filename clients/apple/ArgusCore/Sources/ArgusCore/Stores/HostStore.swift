@@ -89,6 +89,11 @@ public final class HostStore {
   /// Why the last usage load failed, cleared by the next success.
   public internal(set) var usageLimitsError: String?
   public internal(set) var usageLimitsLoading = false
+  /// Tokens and cost for the last range loaded; `nil` until the first load.
+  public internal(set) var usageSummary: ArgusProtocol.ClaudeUsageSummary?
+  public internal(set) var usageSummaryError: String?
+  /// The range a summary request is in flight for.
+  public internal(set) var usageSummaryLoadingRange: ArgusProtocol.UsageRange?
   /// The computer's in-flight Claude sign-in, if any.
   public internal(set) var claudeLogin: RemoteClaudeLoginState?
   /// Fold and orientation for watched devices, keyed by device id.
@@ -226,6 +231,9 @@ public final class HostStore {
     usageLimits = nil
     usageLimitsError = nil
     usageLimitsLoading = false
+    usageSummary = nil
+    usageSummaryError = nil
+    usageSummaryLoadingRange = nil
     claudeLogin = nil
     deviceStates = [:]
     deviceClaims = [:]

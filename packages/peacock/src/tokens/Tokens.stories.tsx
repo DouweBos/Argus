@@ -179,9 +179,9 @@ export const Colors: Story = {
             color: "var(--text-muted)",
           }}
         >
-          Data-viz roles used by SeriesChart and ReportView. Aliases, so each
-          resolves against the active theme — charts never reach for a raw
-          colour or for --accent directly.
+          Data-viz roles used by SeriesChart, StackedBar and ReportView.
+          Aliases, so each resolves against the active theme — charts never
+          reach for a raw colour or for --accent directly.
         </p>
         <div style={row}>
           <Token
@@ -213,6 +213,26 @@ export const Colors: Story = {
             name="--chart-label"
             value="var(--text-muted)"
             preview={<div style={swatch("var(--chart-label)")} />}
+          />
+          <Token
+            name="--chart-series-1"
+            value="#3987e5 / #2a78d6"
+            preview={<div style={swatch("var(--chart-series-1)")} />}
+          />
+          <Token
+            name="--chart-series-2"
+            value="#d95926 / #eb6834"
+            preview={<div style={swatch("var(--chart-series-2)")} />}
+          />
+          <Token
+            name="--chart-series-3"
+            value="#199e70 / #1baf7a"
+            preview={<div style={swatch("var(--chart-series-3)")} />}
+          />
+          <Token
+            name="--chart-series-4"
+            value="#c98500 / #eda100"
+            preview={<div style={swatch("var(--chart-series-4)")} />}
           />
         </div>
       </section>

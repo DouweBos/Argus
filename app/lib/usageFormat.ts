@@ -1,5 +1,5 @@
 /**
- * Pure formatting for the usage screen's plan limits.
+ * Pure formatting for the usage screen: plan limits, tokens and cost.
  */
 
 import type { UsageLimitWindow, UsagePace } from "./types";
@@ -65,4 +65,70 @@ export function limitTone(window: UsageLimitWindow): UsageLimitTone {
   return window.used_percent >= 75 || window.pace === "ahead"
     ? "warning"
     : "accent";
+}
+
+// ---------------------------------------------------------------------------
+// Cost and tokens tabs
+// ---------------------------------------------------------------------------
+
+const UNITS: { size: number; unit: string }[] = [
+  { size: 1e9, unit: "B" },
+  { size: 1e6, unit: "M" },
+  { size: 1e3, unit: "K" },
+];
+
+/** Three significant digits with a unit: `8.90B`, `19.5M`, `49.1K`, `812`. */
+export function formatTokens(value: number): string {
+  const abs = Math.abs(value);
+  // 0.9995 of a unit rounds up to "1.00" of it, so 999,960 reads 1.00M, not 1000K.
+  const match = UNITS.find(({ size }) => abs >= size * 0.9995);
+
+  return match
+    ? `${(value / match.size).toPrecision(3)}${match.unit}`
+    : String(Math.round(value));
+}
+
+const USD = new Intl.NumberFormat("en-US", {
+  currency: "USD",
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 2,
+  style: "currency",
+});
+
+/** `$2,789.77`. */
+export function formatUsd(value: number): string {
+  return USD.format(value);
+}
+
+/** Axis labels: `$1.2K`, `$40`, `$0.5`. */
+export function formatUsdCompact(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 1000) {
+    return `$${formatTokens(value)}`;
+  }
+
+  return `$${String(Math.round(value * 100) / 100)}`;
+}
+
+/** Share of a whole: `43.2%`, `<0.1%` for a sliver, `0%` for nothing. */
+export function formatShare(part: number, total: number): string {
+  if (total <= 0 || part <= 0) {
+    return "0%";
+  }
+  const pct = (part / total) * 100;
+  if (pct < 0.1) {
+    return "<0.1%";
+  }
+
+  return `${Number(pct.toFixed(1))}%`;
+}
+
+/** A chart's x label for one bucket: `Oct 3` per day, `14:00` per hour. */
+export function bucketLabel(start: number, bucket: "day" | "hour"): string {
+  const date = new Date(start);
+  if (bucket === "hour") {
+    return `${String(date.getHours()).padStart(2, "0")}:00`;
+  }
+
+  return date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
 }

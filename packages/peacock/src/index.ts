@@ -132,6 +132,7 @@ export * from "./components/RebaseEditor/RebaseEditor";
 export * from "./components/ResetDialog/ResetDialog";
 export * from "./components/Slider/Slider";
 export * from "./components/Spinner/Spinner";
+export * from "./components/StackedBar/StackedBar";
 export * from "./components/StatsStrip/StatsStrip";
 export * from "./components/StatusBulb/StatusBulb";
 export * from "./components/StatusDots/StatusDots";

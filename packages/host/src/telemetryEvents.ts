@@ -170,6 +170,10 @@ export interface EventMap {
   simulator_repaired: { action: "delete" | "erase"; success: boolean };
   telemetry_disabled: undefined;
   telemetry_enabled: undefined;
+  usage_summary_loaded: {
+    prices_available: boolean;
+    range: "7d" | "24h" | "30d" | "90d";
+  };
   usage_limits_fetched: {
     outcome: "failed" | "ok" | "unsupported";
     window_count: number;

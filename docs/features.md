@@ -205,6 +205,13 @@ command palette, or from the Projects screen on the iOS app.
 and whether you are spending ahead of or under pace. Every signed-in account
 gets its own section. API-key and Console sign-ins have no plan limits.
 
+The **Cost** and **Tokens** tabs read the Claude Code sessions on this
+machine and show what they used over the past 24 hours, 7, 30 or 90 days:
+a daily (or hourly) chart, totals, how much caching saved, a split by
+input, cache reads, cache writes and output, and a per-model breakdown.
+Costs are estimates at API list prices — what the same work would cost
+billed per token — and appear once the price list has downloaded.
+
 ---
 
 ## MCP server

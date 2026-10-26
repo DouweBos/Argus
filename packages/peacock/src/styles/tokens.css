@@ -103,14 +103,21 @@ html[data-theme="dark"] {
   /* ─── Chart palette ─── data-viz roles for SeriesChart / ReportView.
      Aliases on purpose: each resolves against whichever theme block is
      active, so a chart never reaches for --accent (or a raw colour) itself.
-     Reports carry one series at a time; a second hue would have to be
-     validated for CVD separation before it is added here. */
+     Single-series charts use --chart-mark; a fifth series hue would have to
+     be validated for CVD separation before it is added here. */
   --chart-mark: var(--accent);
   --chart-mark-hover: var(--accent-hover);
   --chart-mark-soft: var(--accent-overlay-2xl);
   --chart-grid: var(--border-subtle);
   --chart-axis: var(--border);
   --chart-label: var(--text-muted);
+  /* Categorical series, in fixed order, for charts that compare a whole split
+     into parts (StackedBar). Validated for CVD separation on both surfaces;
+     always paired with a labelled legend. */
+  --chart-series-1: #3987e5;
+  --chart-series-2: #d95926;
+  --chart-series-3: #199e70;
+  --chart-series-4: #c98500;
 
   /* ─── Git file status badges ─── solid-fill chips.
      Background uses the semantic palette so the badge reads identically
@@ -323,6 +330,12 @@ html[data-theme="light"] {
   --brand-purple-overlay-sm: rgba(90, 61, 212, 0.08);
   --brand-purple-overlay-md: rgba(90, 61, 212, 0.14);
   --brand-purple-overlay-lg: rgba(90, 61, 212, 0.22);
+
+  /* Chart series — the same four hues stepped for the light surface */
+  --chart-series-1: #2a78d6;
+  --chart-series-2: #eb6834;
+  --chart-series-3: #1baf7a;
+  --chart-series-4: #eda100;
 
   /* ─── Opacity ─── one value for "switched off or out of reach": a disabled
      button, a session whose drive is disconnected. */

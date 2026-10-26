@@ -24,7 +24,7 @@ enum BuiltinPalette {
       (.runtimes, "Runtimes", "play.rectangle"),
       (.devices, "Devices", "iphone.gen3"),
       (.notifications, "Notifications", "exclamationmark.triangle"),
-      (.usage, "Usage", "gauge.with.dots.needle.33percent"),
+      (.usage(.limits), "Usage", "gauge.with.dots.needle.33percent"),
     ]
     var commands = screens.map { route, title, image in
       PaletteCommand(

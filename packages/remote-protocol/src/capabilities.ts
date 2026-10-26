@@ -308,6 +308,8 @@ export const REMOTE_METHODS = {
   "claude_accounts.rename": "control",
   /** Plan limits per account: how much quota is left, read-only. */
   "usage.limits": "monitor",
+  /** Tokens and estimated cost from this machine's Claude Code transcripts. */
+  "usage.summary": "monitor",
   /** Sign an existing account back in. The browser opens on the host and the
    *  login completes there; the client just drives it and reads the result. */
   "claude_accounts.login_start": "control",

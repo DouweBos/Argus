@@ -52,6 +52,18 @@ export const LargeValues: Story = {
   },
 };
 
+export const CustomFormat: Story = {
+  args: {
+    kind: "line",
+    caption: "Daily cost",
+    labels: Array.from({ length: 14 }, (_, i) => `Oct ${i + 1}`),
+    values: Array.from({ length: 14 }, (_, i) =>
+      Math.round(4000 + 2500 * Math.sin(i / 2) + i * 120),
+    ).map((v) => v / 100),
+    formatValue: (value: number) => `$${value.toFixed(0)}`,
+  },
+};
+
 export const SinglePoint: Story = {
   args: { labels: ["Today"], values: [3], caption: "Proposals" },
 };

@@ -1,3 +1,4 @@
+import ArgusCore
 import Foundation
 
 /// Which screen the window shows — the single source of truth, mirroring
@@ -36,8 +37,9 @@ enum DesktopRoute: Hashable {
   case proposal(id: String)
   /// `/notifications`: warnings and errors.
   case notifications
-  /// `/usage`: Claude plan limits per account.
-  case usage
+  /// `/usage` (plan limits), `/usage/cost` or `/usage/tokens`, with `?range=`
+  /// on the last two; nil is the default 30 days and stays off the URL.
+  case usage(UsageTab, range: ArgusProtocol.UsageRange? = nil)
 
   var sessionId: String? {
     switch self {
@@ -84,7 +86,7 @@ enum DesktopRoute: Hashable {
     case .inbox: "/inbox"
     case .proposal: "/inbox/proposals/:proposalId"
     case .notifications: "/notifications"
-    case .usage: "/usage"
+    case .usage(let tab, _): tab == .limits ? "/usage" : "/usage/\(tab.rawValue)"
     }
   }
 }
