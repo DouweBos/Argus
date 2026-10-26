@@ -51,6 +51,19 @@ describe("contextLimitForModel", () => {
     expect(contextLimitForModel("claude-opus-4-8", MODELS)).toBe(1_000_000);
   });
 
+  it("gives the Claude 5 family 1M, by id or by what an alias resolves to", () => {
+    expect(contextLimitForModel("claude-opus-5-5", null)).toBe(1_000_000);
+    expect(contextLimitForModel("claude-haiku-4-5-20251001", null)).toBe(
+      200_000,
+    );
+    const models = [
+      { value: "opus", resolvedModel: "claude-opus-5-5" },
+      { value: "haiku", resolvedModel: "claude-haiku-4-5-20251001" },
+    ];
+    expect(contextLimitForModel("opus", models)).toBe(1_000_000);
+    expect(contextLimitForModel("haiku", models)).toBe(200_000);
+  });
+
   it("defaults to 200k when nothing is known", () => {
     expect(contextLimitForModel("claude-opus-4-8", null)).toBe(200_000);
     expect(contextLimitForModel(undefined, [])).toBe(200_000);
@@ -78,5 +91,11 @@ describe("resolveContextLimit", () => {
 
   it("guesses when nothing was reported", () => {
     expect(resolveContextLimit({ resolvedModel: "claude-x" })).toBe(200_000);
+    expect(
+      resolveContextLimit({
+        resolvedModel: "claude-sonnet-5",
+        selectedModel: "sonnet",
+      }),
+    ).toBe(1_000_000);
   });
 });

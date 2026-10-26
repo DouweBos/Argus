@@ -269,6 +269,7 @@ extension ArgusProtocol {
   public struct AgentModelInfo: Codable, Sendable {
     public var description: String
     public var displayName: String
+    public var resolvedModel: String?
     public var supportedEffortLevels: [String]?
     public var supportsEffort: Bool?
     public var supportsFastMode: Bool?
@@ -277,15 +278,17 @@ extension ArgusProtocol {
     enum CodingKeys: String, CodingKey {
       case description = "description"
       case displayName = "displayName"
+      case resolvedModel = "resolvedModel"
       case supportedEffortLevels = "supportedEffortLevels"
       case supportsEffort = "supportsEffort"
       case supportsFastMode = "supportsFastMode"
       case value = "value"
     }
 
-    public init(description: String, displayName: String, supportedEffortLevels: [String]? = nil, supportsEffort: Bool? = nil, supportsFastMode: Bool? = nil, value: String) {
+    public init(description: String, displayName: String, resolvedModel: String? = nil, supportedEffortLevels: [String]? = nil, supportsEffort: Bool? = nil, supportsFastMode: Bool? = nil, value: String) {
       self.description = description
       self.displayName = displayName
+      self.resolvedModel = resolvedModel
       self.supportedEffortLevels = supportedEffortLevels
       self.supportsEffort = supportsEffort
       self.supportsFastMode = supportsFastMode
@@ -296,6 +299,7 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(description, forKey: .description)
       try c.encode(displayName, forKey: .displayName)
+      try c.encodeIfPresent(resolvedModel, forKey: .resolvedModel)
       try c.encodeIfPresent(supportedEffortLevels, forKey: .supportedEffortLevels)
       try c.encodeIfPresent(supportsEffort, forKey: .supportsEffort)
       try c.encodeIfPresent(supportsFastMode, forKey: .supportsFastMode)

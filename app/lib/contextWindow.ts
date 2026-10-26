@@ -10,7 +10,19 @@ const ONE_MILLION_HINT = /\[1m\]|\b1\s*m(?:illion)?\s*context\b/i;
 interface ModelMeta {
   description?: string;
   displayName?: string;
+  /** The model id an alias (`opus`, `default`) currently runs. */
+  resolvedModel?: string;
   value?: string;
+}
+
+/** The Claude 5 family runs a 1M window; null for ids that aren't Claude's. */
+function claudeIdWindow(id?: string | null): number | null {
+  const major = id ? /^claude-(?:[a-z]+-)?(\d+)/i.exec(id)?.[1] : undefined;
+  if (!major) {
+    return null;
+  }
+
+  return Number(major) >= 5 ? ONE_MILLION_CONTEXT : DEFAULT_CONTEXT;
 }
 
 /**
@@ -32,7 +44,8 @@ interface ModelMeta {
  *   2. No match → fall back to the `default` capability entry, whose
  *      description advertises the CLI's default model + context (which is what
  *      a resumed default agent is actually running).
- * Everything else is 200k.
+ * Failing a hint, a Claude id (the model's own, or the one its alias
+ * resolves to) decides: the Claude 5 family is 1M. Everything else is 200k.
  */
 export function contextLimitForModel(
   modelId?: string | null,
@@ -56,7 +69,11 @@ export function contextLimitForModel(
     return ONE_MILLION_CONTEXT;
   }
 
-  return DEFAULT_CONTEXT;
+  return (
+    claudeIdWindow(modelId) ??
+    claudeIdWindow(matched?.resolvedModel ?? fallback?.resolvedModel) ??
+    DEFAULT_CONTEXT
+  );
 }
 
 function readKnownWindows(): Record<string, number> {
@@ -113,6 +130,10 @@ export function resolveContextLimit(opts: {
     : undefined;
   if (typeof known === "number" && known > 0) {
     return known;
+  }
+  const byId = claudeIdWindow(opts.resolvedModel);
+  if (byId) {
+    return byId;
   }
 
   return contextLimitForModel(opts.selectedModel, opts.models);
