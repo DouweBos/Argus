@@ -190,6 +190,11 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
       for index in changed { configureVisibleCell(index) }
       measure(changed.filter(isNearViewport), always: true)
       note(changed)
+      // A message just sent or streamed in lands below the viewport, then
+      // scrolls in: measured now, it never draws at the estimate.
+      if !wasEmpty, (1...4).contains(change.inserted.count) {
+        note(measure((change.inserted.lowerBound + 1)..<(change.inserted.upperBound + 1)))
+      }
     }
     if !landed, !empty {
       landed = true
