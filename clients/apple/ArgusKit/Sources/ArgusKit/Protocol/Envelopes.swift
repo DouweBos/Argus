@@ -149,6 +149,8 @@ public enum RemoteMethod: String, Codable, Sendable {
   case claudeAccountsLoginCancel = "claude_accounts.login_cancel"
   case claudeAccountsLoginSubmitCode = "claude_accounts.login_submit_code"
   case claudeAccountsLoginStatus = "claude_accounts.login_status"
+
+  case usageLimits = "usage.limits"
 }
 
 /// Events the gateway pushes. Only those this client acts on are modelled;

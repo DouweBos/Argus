@@ -22,6 +22,7 @@ import { SESSION_COMMANDS } from "./sessions";
 import { SETTINGS_COMMANDS } from "./settings";
 import { SHELL_COMMANDS } from "./shell";
 import { TERMINAL_COMMANDS } from "./terminals";
+import { USAGE_COMMANDS } from "./usage";
 
 export * from "./spec";
 export { SHELL_COMMANDS } from "./shell";
@@ -44,6 +45,7 @@ export * from "../models/github";
 export * from "../models/gitRunner";
 export * from "../models/code";
 export * from "../models/lsp";
+export * from "../models/usage";
 
 /** Each domain's entries, kept apart so a test can prove no name repeats. */
 export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
@@ -65,6 +67,7 @@ export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
   github: GITHUB_COMMANDS,
   gitRunner: GIT_RUNNER_COMMANDS,
   shell: SHELL_COMMANDS,
+  usage: USAGE_COMMANDS,
 };
 
 export const COMMANDS = {
@@ -86,6 +89,7 @@ export const COMMANDS = {
   ...GITHUB_COMMANDS,
   ...GIT_RUNNER_COMMANDS,
   ...SHELL_COMMANDS,
+  ...USAGE_COMMANDS,
 } as const;
 
 export type Commands = typeof COMMANDS;

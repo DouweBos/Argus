@@ -78,6 +78,7 @@ import { OpenProjectDialog } from "../../sidebar/OpenProjectDialog";
 import { SessionSidebar } from "../../sidebar/SessionSidebar";
 import { ToolPanel } from "../../toolrail/ToolPanel";
 import { ToolRail } from "../../toolrail/ToolRail";
+import { UsageScreen } from "../../usage";
 import { BottomPanel } from "../BottomPanel";
 import { ConnectionBanner } from "../ConnectionBanner";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -125,7 +126,8 @@ function renderCenter(
     | "notifications"
     | "pull-request-detail"
     | "pull-requests"
-    | "runtimes",
+    | "runtimes"
+    | "usage",
   isNotificationsRoute: boolean,
 ) {
   if (isNotificationsRoute) {
@@ -145,6 +147,9 @@ function renderCenter(
   }
   if (centerView === "inbox") {
     return <InboxRoot />;
+  }
+  if (centerView === "usage") {
+    return <UsageScreen />;
   }
   if (centerView === "runtimes") {
     return <RuntimeScreen />;

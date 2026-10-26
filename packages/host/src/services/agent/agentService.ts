@@ -63,6 +63,7 @@ import {
   resolveAccountForSession,
 } from "../claudeAuth/accounts";
 import { emitAccountsChanged } from "../claudeAuth/claudeAuth";
+import { noteUsageRateLimitLine } from "../claudeUsage/limits";
 import { getConductorBinDir } from "../cli/conductor";
 import { getRunnerById, resolveDefaultRunner } from "../llm/registry";
 import { resolveModelForAgent } from "../llm/resolve";
@@ -639,6 +640,7 @@ export async function startAgent(
     }
     if (line.includes('"rate_limit_event"')) {
       noteRateLimitLine(agentId, line);
+      noteUsageRateLimitLine(accountId, line);
     }
     // The line goes out first so a `result` reaches clients before the idle
     // it can trigger.

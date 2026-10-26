@@ -1914,3 +1914,25 @@ export function SparklesIcon({ size = 12, className, ...rest }: IconProps) {
     </svg>
   );
 }
+
+/** Plan limits and usage — how much of a budget is spent. */
+export function GaugeIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M2.4 12.5a6.25 6.25 0 1 1 11.2 0" />
+      <path d="M8 9.5 10.75 6" />
+      <circle cx="8" cy="9.75" r="0.9" />
+    </svg>
+  );
+}

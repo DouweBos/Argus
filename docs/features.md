@@ -198,6 +198,15 @@ command palette, or from the Projects screen on the iOS app.
 
 ---
 
+## Usage
+
+**Usage** in the sidebar shows how much of your Claude plan is left: the
+5-hour session, the weekly caps and monthly spend, each with when it resets
+and whether you are spending ahead of or under pace. Every signed-in account
+gets its own section. API-key and Console sign-ins have no plan limits.
+
+---
+
 ## MCP server
 
 Argus exposes its own primitives — sessions, agents, files, projects,

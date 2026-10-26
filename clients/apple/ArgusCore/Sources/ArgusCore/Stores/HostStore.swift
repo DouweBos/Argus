@@ -84,6 +84,11 @@ public final class HostStore {
   /// out everywhere" rather than "not fetched yet".
   public internal(set) var claudeAccounts: [RemoteClaudeAccount]?
   public internal(set) var activeClaudeAccountId: String?
+  /// Plan limits per Claude account; `nil` until the first load.
+  public internal(set) var usageLimits: ArgusProtocol.ClaudeUsageLimits?
+  /// Why the last usage load failed, cleared by the next success.
+  public internal(set) var usageLimitsError: String?
+  public internal(set) var usageLimitsLoading = false
   /// The computer's in-flight Claude sign-in, if any.
   public internal(set) var claudeLogin: RemoteClaudeLoginState?
   /// Fold and orientation for watched devices, keyed by device id.
@@ -218,6 +223,9 @@ public final class HostStore {
     devices = []
     claudeAccounts = nil
     activeClaudeAccountId = nil
+    usageLimits = nil
+    usageLimitsError = nil
+    usageLimitsLoading = false
     claudeLogin = nil
     deviceStates = [:]
     deviceClaims = [:]

@@ -212,9 +212,10 @@ initial attempt from a `continue` after the user resolved conflicts.
 
 ## Claude accounts
 
-| Event                      | Source | When                                                    | Extra props                                                                 |
-| -------------------------- | ------ | ------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `claude_account_rechecked` | main   | An account badged Limit reached or Signed out re-probed | `outcome: "ok" \| "rate_limited" \| "reauth" \| "unknown"`, `badge_cleared` |
+| Event                      | Source | When                                                                                           | Extra props                                                                 |
+| -------------------------- | ------ | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `claude_account_rechecked` | main   | An account badged Limit reached or Signed out re-probed                                        | `outcome: "ok" \| "rate_limited" \| "reauth" \| "unknown"`, `badge_cleared` |
+| `usage_limits_fetched`     | main   | The host asked the Claude CLI for an account's plan limits (at most once a minute per account) | `outcome: "ok" \| "failed" \| "unsupported"`, `window_count`                |
 
 ## Language servers
 

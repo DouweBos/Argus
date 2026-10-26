@@ -15,6 +15,7 @@ struct DesktopRouteTests {
     ("/inbox", .inbox),
     ("/inbox/proposals/p1", .proposal(id: "p1")),
     ("/notifications", .notifications),
+    ("/usage", .usage),
     ("/pull-requests", .pullRequests),
     ("/pull-requests/houwert/argus/42", .pullRequest(repo: "houwert/argus", number: 42)),
     ("/automations", .automations),
@@ -70,7 +71,7 @@ struct DesktopRouteTests {
   }
 
   @Test(arguments: [
-    DesktopRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox, .proposal(id: "p 1"), .notifications,
+    DesktopRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox, .proposal(id: "p 1"), .notifications, .usage,
     .pullRequests, .pullRequest(repo: "o/r", number: 7), .automations, .quickRun(runId: nil),
     .quickRun(runId: "r"), .automation(id: "a", runId: nil), .automation(id: "a", runId: "r"),
     .sessionHome(id: "s"), .session(id: "s", agentId: nil), .session(id: "s", agentId: "a"),

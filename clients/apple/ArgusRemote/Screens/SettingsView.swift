@@ -130,11 +130,12 @@ struct SettingsView: View {
 
       Section {
         Button("Claude accounts") { router.push(.claudeAccounts) }
+        Button("Usage") { router.push(.usage) }
       } header: {
         Text("Claude")
       } footer: {
-        Text("Choose which account new agents run as, and add or remove the ones "
-          + "signed in on this computer.")
+        Text("Choose which account new agents run as, add or remove the ones "
+          + "signed in on this computer, and see how much of each plan is left.")
       }
 
       Section {

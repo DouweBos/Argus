@@ -45,3 +45,36 @@ export const TextOnly: Story = {
     hint: "idle",
   },
 };
+
+export const Large: Story = {
+  args: {
+    size: "lg",
+    label: "Session",
+    value: "73% left",
+    progress: 0.27,
+    hint: "Resets in 4h 29m",
+    aside: "Under pace",
+  },
+};
+
+export const LargeAheadOfPace: Story = {
+  args: {
+    size: "lg",
+    label: "Weekly · Fable",
+    value: "18% left",
+    progress: 0.82,
+    tone: "warning",
+    hint: "Resets in 5d 1h",
+    aside: "Ahead of pace",
+  },
+};
+
+export const LargeNearlySpent: Story = {
+  args: {
+    size: "lg",
+    label: "Monthly spend",
+    value: "4% left",
+    progress: 0.96,
+    tone: "danger",
+  },
+};

@@ -306,6 +306,8 @@ export const REMOTE_METHODS = {
   "claude_accounts.add": "control",
   "claude_accounts.remove": "control",
   "claude_accounts.rename": "control",
+  /** Plan limits per account: how much quota is left, read-only. */
+  "usage.limits": "monitor",
   /** Sign an existing account back in. The browser opens on the host and the
    *  login completes there; the client just drives it and reads the result. */
   "claude_accounts.login_start": "control",

@@ -41,6 +41,7 @@ struct SidebarView: View {
         SidebarLabel("Inbox", systemImage: "tray").tag(Self.inboxTag)
         SidebarLabel("Automations", systemImage: "clock.arrow.circlepath").tag(Self.automationsTag)
         NotificationsSidebarRow().tag(Self.notificationsTag)
+        SidebarLabel("Usage", systemImage: Icon.usage).tag(Self.usageTag)
       }
       if projects.isEmpty, store.projectsLoaded {
         Text("No projects yet").foregroundStyle(.secondary)
@@ -117,6 +118,7 @@ struct SidebarView: View {
   private static let inboxTag = "nav:inbox"
   private static let automationsTag = "nav:automations"
   private static let notificationsTag = "nav:notifications"
+  private static let usageTag = "nav:usage"
 
   private var selection: Binding<String?> {
     Binding(
@@ -130,6 +132,7 @@ struct SidebarView: View {
         case .inbox, .proposal: Self.inboxTag
         case .automations, .automation, .quickRun: Self.automationsTag
         case .notifications: Self.notificationsTag
+        case .usage: Self.usageTag
         default: model.route.sessionId
         }
       },
@@ -143,6 +146,7 @@ struct SidebarView: View {
         case Self.inboxTag?: model.navigate(.inbox)
         case Self.automationsTag?: model.navigate(.automations)
         case Self.notificationsTag?: model.navigate(.notifications)
+        case Self.usageTag?: model.navigate(.usage)
         case let id?:
           // A session on an unplugged drive has nothing to open.
           let session = store.sessionsByRepo.values.joined().first { $0.id == id }

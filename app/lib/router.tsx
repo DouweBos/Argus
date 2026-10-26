@@ -26,6 +26,7 @@
  * - `/pull-requests`                             → outstanding PRs of interest
  * - `/pull-requests/:owner/:repo/:number`        → individual PR detail
  * - `/runtimes`                                  → runtimes overview
+ * - `/usage`                                     → usage, on the plan limits tab
  * - `/settings`                                  → settings (opened as dialog)
  * - `/sessions/:sessionId`                       → session (default home tab)
  * - `/sessions/:sessionId/agents`                → session agents view
@@ -62,7 +63,8 @@ export type AppView =
   | "pull-request-detail"
   | "pull-requests"
   | "runtimes"
-  | "session";
+  | "session"
+  | "usage";
 
 export type SessionPanel = "agents" | "git" | "home";
 
@@ -105,6 +107,11 @@ const VALID_GIT_SUB_VIEWS: GitSubView[] = [
   "working",
 ];
 
+/** Tabs of the usage screen. `limits` is the default and owns bare `/usage`. */
+export type UsageTab = "limits";
+
+const VALID_USAGE_TABS: UsageTab[] = ["limits"];
+
 export interface PullRequestRef {
   number: number;
   owner: string;
@@ -146,6 +153,8 @@ export interface ParsedRoute {
   /** Which proposal is open. Only meaningful when view === "inbox". */
   proposalId: string | null;
   sessionId: string | null;
+  /** Which usage tab is open. Only meaningful when view === "usage". */
+  usageTab: UsageTab | null;
   view: AppView;
 }
 
@@ -201,6 +210,14 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
     return { ...emptyRoute("inbox"), proposalId };
   }
 
+  if (segments[0] === "usage") {
+    const candidate = segments[1] as UsageTab | undefined;
+    const usageTab =
+      candidate && VALID_USAGE_TABS.includes(candidate) ? candidate : "limits";
+
+    return { ...emptyRoute("usage"), usageTab };
+  }
+
   if (segments[0] === "sessions" && segments[1]) {
     const panel = (segments[2] ?? "home") as SessionPanel;
     const validPanel: SessionPanel = VALID_PANELS.includes(panel)
@@ -235,6 +252,7 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
       gitRefName,
       proposalId: null,
       pr: null,
+      usageTab: null,
     };
   }
 
@@ -262,6 +280,7 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
           repo: decodeURIComponent(segments[2]),
           number,
         },
+        usageTab: null,
       };
     }
   }
@@ -299,6 +318,7 @@ function emptyRoute(view: AppView): Omit<ParsedRoute, "hostId"> {
     gitRefName: null,
     proposalId: null,
     pr: null,
+    usageTab: null,
   };
 }
 
@@ -327,6 +347,8 @@ export function routePattern(pathname: string): string {
       return route.automationId ? "/automations/:automationId" : "/automations";
     case "inbox":
       return route.proposalId ? "/inbox/proposals/:proposalId" : "/inbox";
+    case "usage":
+      return usagePathname(route.usageTab);
     case "agents":
     case "devices":
     case "notifications":
@@ -399,6 +421,9 @@ function routePathname(route: Partial<ParsedRoute>): string {
       ? `/inbox/proposals/${encodeURIComponent(route.proposalId)}`
       : "/inbox";
   }
+  if (route.view === "usage") {
+    return usagePathname(route.usageTab);
+  }
   if (
     route.view === "agents" ||
     route.view === "devices" ||
@@ -410,6 +435,11 @@ function routePathname(route: Partial<ParsedRoute>): string {
   }
 
   return "/";
+}
+
+/** The default tab keeps the bare `/usage` URL; the rest get a segment. */
+function usagePathname(tab: UsageTab | null | undefined): string {
+  return !tab || tab === "limits" ? "/usage" : `/usage/${tab}`;
 }
 
 // ---------------------------------------------------------------------------

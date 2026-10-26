@@ -34,6 +34,7 @@ import type {
   BranchList,
   ClaudeAccountsState,
   ClaudeAuthStatus,
+  ClaudeUsageLimits,
   ConductorLogEntry,
   ConductorStatus,
   DependencyReport,
@@ -2347,6 +2348,12 @@ export const listClaudeAccounts = (): Promise<ClaudeAccountsState> =>
 
 export const setActiveClaudeAccount = (id: string): Promise<null> =>
   invoke("claude_accounts_set_active", { id });
+
+/** Plan limits per Claude account; `refresh` skips the host's minute-long cache. */
+export const getClaudeUsageLimits = (
+  refresh?: boolean,
+): Promise<ClaudeUsageLimits> =>
+  invoke("get_claude_usage_limits", refresh ? { refresh } : {});
 
 /** Sign in an additional account without disturbing the ones already signed in. */
 export const addClaudeAccount = (

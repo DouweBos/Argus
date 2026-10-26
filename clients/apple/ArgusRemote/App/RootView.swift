@@ -475,6 +475,10 @@ struct RootView: View {
       HomeView()
     case .claudeAccounts:
       ClaudeAccountsView()
+    case .usage:
+      HostUsageLimitsView()
+        .navigationTitle("Usage")
+        .navigationBarTitleDisplayMode(.inline)
     }
   }
 

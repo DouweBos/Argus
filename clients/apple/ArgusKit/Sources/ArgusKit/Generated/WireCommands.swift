@@ -2134,6 +2134,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GetClaudeUsageLimitsParams: Codable, Sendable {
+      public var refresh: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case refresh = "refresh"
+      }
+
+      public init(refresh: Bool? = nil) {
+        self.refresh = refresh
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(refresh, forKey: .refresh)
+      }
+    }
+
     public struct GetCommandMetricsParams: Codable, Sendable {
       public var repoRoot: String
 
@@ -9723,6 +9740,13 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = String
       public static let name = "get_app_version"
+      public static let tier = "admin"
+    }
+
+    public enum GetClaudeUsageLimits: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GetClaudeUsageLimitsParams
+      public typealias Result = ArgusProtocol.ClaudeUsageLimits
+      public static let name = "get_claude_usage_limits"
       public static let tier = "admin"
     }
 

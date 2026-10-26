@@ -16,6 +16,7 @@ const VIEW_TITLES: Record<AppView, string> = {
   "pull-requests": "Pull requests",
   runtimes: "Runtimes",
   session: "Session",
+  usage: "Usage",
 };
 
 /** `sessionLabel` is the session's display name or branch, when it is known. */
