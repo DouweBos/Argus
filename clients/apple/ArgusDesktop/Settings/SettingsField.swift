@@ -1,6 +1,7 @@
 /// Which setting changed, for `mac_settings_changed` — the field, never its value.
 enum SettingsField: String {
   case theme
+  case colorTheme = "color_theme"
   case displaySize = "display_size"
   case launchRoute = "launch_route"
   case worktreeLocation = "worktree_location"
@@ -47,7 +48,7 @@ enum SettingsField: String {
 
   var section: SettingsTab {
     switch self {
-    case .theme, .displaySize, .launchRoute, .worktreeLocation, .automationWorktreeLocation,
+    case .theme, .colorTheme, .displaySize, .launchRoute, .worktreeLocation, .automationWorktreeLocation,
       .customEditors, .telemetryMode:
       .general
     case .accountSelected, .accountAdded, .accountRemoved, .accountRenamed, .accountReauth:

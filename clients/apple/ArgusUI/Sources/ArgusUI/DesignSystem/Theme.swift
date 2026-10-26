@@ -1,3 +1,4 @@
+import ArgusCore
 import SwiftUI
 
 /// Peacock's tokens, resolved for SwiftUI.
@@ -87,6 +88,46 @@ public struct Theme: Sendable, Equatable {
 
   public static func resolved(for scheme: ColorScheme) -> Theme {
     scheme == .light ? .light : .dark
+  }
+
+  /// The scheme's tokens with a colour theme's accent; surfaces stay the system's.
+  public static func resolved(for scheme: ColorScheme, colorTheme: ColorTheme) -> Theme {
+    let accent = colorTheme.accent(for: scheme)
+    let onAccent = scheme == .light ? Color.white : colorTheme.darkOnAccent
+    return base(
+      accent: accent,
+      accentSoft: accent.opacity(scheme == .light ? 0.14 : 0.12),
+      accentBorder: accent.opacity(scheme == .light ? 0.5 : 0.4),
+      onAccent: onAccent,
+      scheme: scheme)
+  }
+}
+
+/// Each preset's accent, twins of `html[data-color-theme]` in `tokens.css`.
+extension ColorTheme {
+  public func accent(for scheme: ColorScheme) -> Color {
+    let (light, dark): (UInt32, UInt32) =
+      switch self {
+      case .amber: (0xC7861F, 0xF5A623)
+      case .grove: (0x23875A, 0x5FD39A)
+      case .ocean: (0x2367B8, 0x5AA9F0)
+      case .ember: (0xC4501F, 0xF2784B)
+      case .iris: (0x6B4FD1, 0xA78BFA)
+      case .rose: (0xC23A73, 0xF27AA8)
+      }
+    return Color(hex: scheme == .light ? light : dark)
+  }
+
+  /// Text on a dark-scheme accent: each preset's own dark canvas.
+  var darkOnAccent: Color {
+    switch self {
+    case .amber: Color(hex: 0x15151C)
+    case .grove: Color(hex: 0x0F1512)
+    case .ocean: Color(hex: 0x0F141B)
+    case .ember: Color(hex: 0x1B1513)
+    case .iris: Color(hex: 0x15121C)
+    case .rose: Color(hex: 0x1C1418)
+    }
   }
 }
 

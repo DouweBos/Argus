@@ -13,6 +13,7 @@ extension HostPreferences {
   ) -> [Binding] {
     [
       enumSetting("theme", get: { prefs.theme }, set: { prefs.theme = $0 }),
+      enumSetting("color_theme", get: { prefs.colorTheme }, set: { prefs.colorTheme = $0 }),
       enumSetting("ui_scale", get: { prefs.displaySize }, set: { prefs.displaySize = $0 }),
       enumSetting(
         "default_permission_mode", get: { prefs.defaultPermissionMode }, set: { prefs.defaultPermissionMode = $0 }),

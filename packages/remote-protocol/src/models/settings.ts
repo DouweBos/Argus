@@ -2,6 +2,17 @@ import { z } from "zod";
 import { TOOL_IDS } from "../commands/spec";
 import { AutonomyLevel } from "./automations";
 
+/** Colour theme presets; ids match `html[data-color-theme]` in Peacock. */
+export const ColorTheme = z.enum([
+  "amber",
+  "ember",
+  "grove",
+  "iris",
+  "ocean",
+  "rose",
+]);
+export type ColorTheme = z.infer<typeof ColorTheme>;
+
 /** Machine-local app settings persisted in `~/.argus/app-settings.json`. */
 export const AppSettings = z.object({
   /**
@@ -96,6 +107,8 @@ export const AppSettings = z.object({
   remote_notify_when_focused: z.boolean().optional(),
   // Preferences both desktop apps (Electron and Argus for Mac) read and write.
   theme: z.enum(["dark", "light", "system"]).optional(),
+  /** Accent and surface tint layered on the scheme. */
+  color_theme: ColorTheme.optional(),
   /** Display size. */
   ui_scale: z
     .enum(["default", "large", "larger", "small", "smaller"])

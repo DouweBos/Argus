@@ -167,9 +167,10 @@ private struct Themed: ViewModifier {
 
   func body(content: Content) -> some View {
     let prefs = AppPreferences.shared
+    let theme = Theme.resolved(for: colorScheme, colorTheme: prefs.colorTheme)
     content
-      .environment(\.theme, colorScheme == .dark ? .dark : .light)
-      .tint(colorScheme == .dark ? Theme.dark.accent : Theme.light.accent)
+      .environment(\.theme, theme)
+      .tint(theme.accent)
       .dynamicTypeSize(prefs.dynamicTypeSize)
       .controlSize(prefs.controlSize)
       .font(prefs.bodyFont)

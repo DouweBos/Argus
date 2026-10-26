@@ -68,7 +68,9 @@ installFixtures()
     // their module first evaluates, which has to be after fixtures seed it.
     const { initTheme } = await import("./stores/themeStore");
     const { initUiScale } = await import("./stores/uiScaleStore");
+    const { initColorTheme } = await import("./stores/colorThemeStore");
     initTheme();
+    initColorTheme();
     initUiScale();
 
     return initTransport();

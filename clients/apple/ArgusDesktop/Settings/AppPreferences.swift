@@ -12,6 +12,7 @@ final class AppPreferences {
 
   private enum Key {
     static let theme = "argus:theme"
+    static let colorTheme = "argus:color-theme"
     static let displaySize = "argus:ui-scale"
     static let permissionMode = "argus:settings.defaultPermissionMode"
     static let defaultModel = "argus:settings.defaultModel"
@@ -37,6 +38,11 @@ final class AppPreferences {
       defaults.set(theme.rawValue, forKey: Key.theme)
       applyTheme()
     }
+  }
+
+  /// Accent layered on the scheme; `Themed` reads it.
+  var colorTheme: ColorTheme {
+    didSet { defaults.set(colorTheme.rawValue, forKey: Key.colorTheme) }
   }
 
   var displaySize: DisplaySize {
@@ -123,6 +129,7 @@ final class AppPreferences {
   init(defaults: UserDefaults = .standard) {
     self.defaults = defaults
     theme = .sanitize(defaults.string(forKey: Key.theme))
+    colorTheme = .sanitize(defaults.string(forKey: Key.colorTheme))
     displaySize = .sanitize(defaults.string(forKey: Key.displaySize))
     defaultPermissionMode = .sanitize(defaults.string(forKey: Key.permissionMode))
     defaultModel = defaults.string(forKey: Key.defaultModel) ?? ""

@@ -23,6 +23,7 @@ import {
   revealInFinder,
 } from "../services/shell/operations";
 import {
+  capture,
   captureClientException,
   captureFeedback,
   captureFromClient,
@@ -37,7 +38,14 @@ import { getUiState, setUiState } from "../services/uiState";
 
 export function registerSettingsCommands(): void {
   defineTypedCommand("get_app_settings", () => loadAppSettings());
-  defineTypedCommand("set_app_settings", (p) => saveAppSettings(p.settings));
+  defineTypedCommand("set_app_settings", (p) => {
+    const nextTheme = p.settings.color_theme;
+    if (nextTheme && nextTheme !== loadAppSettings().color_theme) {
+      capture("color_theme_changed", { theme: nextTheme });
+    }
+
+    return saveAppSettings(p.settings);
+  });
   defineTypedCommand("check_dependencies", () => checkDependencies());
   defineTypedCommand("ui_state_get", (p) => getUiState(p.key));
   defineTypedCommand("ui_state_set", (p) => {

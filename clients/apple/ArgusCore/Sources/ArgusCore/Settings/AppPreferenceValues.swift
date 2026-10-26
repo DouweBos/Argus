@@ -19,6 +19,17 @@ public enum ThemePreference: String, CaseIterable, Sendable {
   }
 }
 
+/// Colour theme presets, the ids of `html[data-color-theme]` in Peacock.
+public enum ColorTheme: String, CaseIterable, Sendable {
+  case amber, grove, ocean, ember, iris, rose
+
+  public var label: String { rawValue.capitalized }
+
+  public static func sanitize(_ raw: String?) -> ColorTheme {
+    raw.flatMap(ColorTheme.init(rawValue:)) ?? .amber
+  }
+}
+
 /// Ordered as the macOS Display Settings slider: large on the left.
 public enum DisplaySize: String, CaseIterable, Sendable {
   case larger, large, `default`, small, smaller

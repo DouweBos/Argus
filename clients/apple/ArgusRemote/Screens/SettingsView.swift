@@ -46,8 +46,10 @@ struct SettingsView: View {
           ForEach(ThemePreference.allCases, id: \.self) { Text($0.label).tag($0) }
         }
         .pickerStyle(.segmented)
+        ColorThemePicker(selection: colorThemeBinding)
+          .frame(maxWidth: .infinity)
       } footer: {
-        Text("Match your system, or force light or dark.")
+        Text("Match your system, or force light or dark, and pick an accent colour.")
       }
 
       Section {
@@ -167,6 +169,10 @@ struct SettingsView: View {
       guard host.connection == .ready else { return }
       defaultAutonomy = await automations.loadDefaultAutonomy()
     }
+  }
+
+  private var colorThemeBinding: Binding<ColorTheme> {
+    Binding(get: { app.colorTheme }, set: { app.setColorTheme($0) })
   }
 
   private var appearance: Binding<ThemePreference> {

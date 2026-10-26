@@ -6,6 +6,7 @@
  */
 
 import type { AppSettings } from "./types";
+import { COLOR_THEME_IDS } from "@argus/peacock";
 import { LOCAL_HOST_ID } from "./transport/hostId";
 
 export type HostSlot = { setting: keyof AppSettings } | { uiState: string };
@@ -163,6 +164,11 @@ export const PREF_BINDINGS: PrefBinding[] = [
     "argus:theme",
     { setting: "theme" },
     oneOf(["dark", "light", "system"]),
+  ),
+  plain(
+    "argus:color-theme",
+    { setting: "color_theme" },
+    oneOf(COLOR_THEME_IDS),
   ),
   plain(
     "argus:ui-scale",

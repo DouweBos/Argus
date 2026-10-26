@@ -8,6 +8,7 @@
    Token groups:
      - Backgrounds, borders, text            (theme-aware)
      - Accent (amber)                        (theme-aware accent surface/fg)
+     - Colour themes                         (`data-color-theme` presets)
      - Semantic (success / warning / error)  (hue fixed, surfaces shift)
      - Surface overlay scale                 (theme-aware: light overlays on
                                               dark, dark overlays on light)
@@ -400,4 +401,227 @@ code,
 pre,
 .mono {
   font: var(--type-code);
+}
+
+/* ==========================================================================
+   Colour themes — an accent plus a faint surface tint, layered on top of
+   the dark/light scheme via `html[data-color-theme]`. Amber is the base
+   palette above and needs no block. Derived tokens (overlays, glows,
+   translucent panels) are recomputed from the themed base colours.
+   ========================================================================== */
+
+/* Preset swatches for theme pickers — fixed per preset, follow the scheme. */
+html,
+html[data-theme="dark"] {
+  --color-theme-amber-canvas: #15151c;
+  --color-theme-amber-accent: #f5a623;
+  --color-theme-grove-canvas: #131a17;
+  --color-theme-grove-accent: #5fd39a;
+  --color-theme-ocean-canvas: #131820;
+  --color-theme-ocean-accent: #5aa9f0;
+  --color-theme-ember-canvas: #1b1513;
+  --color-theme-ember-accent: #f2784b;
+  --color-theme-iris-canvas: #17141f;
+  --color-theme-iris-accent: #a78bfa;
+  --color-theme-rose-canvas: #1c1418;
+  --color-theme-rose-accent: #f27aa8;
+}
+
+html[data-theme="light"] {
+  --color-theme-amber-canvas: #fafbfc;
+  --color-theme-amber-accent: #c7861f;
+  --color-theme-grove-canvas: #f7faf8;
+  --color-theme-grove-accent: #23875a;
+  --color-theme-ocean-canvas: #f7f9fc;
+  --color-theme-ocean-accent: #2367b8;
+  --color-theme-ember-canvas: #fcf8f6;
+  --color-theme-ember-accent: #c4501f;
+  --color-theme-iris-canvas: #f9f8fc;
+  --color-theme-iris-accent: #6b4fd1;
+  --color-theme-rose-canvas: #fcf7f9;
+  --color-theme-rose-accent: #c23a73;
+}
+
+html:not([data-theme="light"])[data-color-theme]:not(
+    [data-color-theme="amber"]
+  ) {
+  --bg-secondary-50: color-mix(in srgb, var(--bg-secondary) 50%, transparent);
+  --bg-secondary-85: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
+  --bg-secondary-90: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  --bg-secondary-0: color-mix(in srgb, var(--bg-secondary) 0%, transparent);
+  --bg-primary-60: color-mix(in srgb, var(--bg-primary) 60%, transparent);
+  --bg-primary-85: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+  --bg-primary-0: color-mix(in srgb, var(--bg-primary) 0%, transparent);
+  --text-inverse: var(--bg-primary);
+  --text-on-accent: var(--accent-fg);
+  --accent-glow: color-mix(in srgb, var(--accent) 20%, transparent);
+  --accent-glow-strong: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-overlay-sm: color-mix(in srgb, var(--accent) 4%, transparent);
+  --accent-overlay-md: color-mix(in srgb, var(--accent) 6%, transparent);
+  --accent-overlay-lg: color-mix(in srgb, var(--accent) 8%, transparent);
+  --accent-overlay-xl: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-overlay-2xl: color-mix(in srgb, var(--accent) 18%, transparent);
+  --accent-border-soft: color-mix(in srgb, var(--accent) 25%, transparent);
+  --accent-border-strong: color-mix(in srgb, var(--accent) 40%, transparent);
+  --surface-3-solid: color-mix(
+    in srgb,
+    var(--bg-tertiary) 85%,
+    var(--bg-secondary)
+  );
+  --surface-4-solid: color-mix(
+    in srgb,
+    var(--bg-hover) 70%,
+    var(--bg-tertiary)
+  );
+}
+
+html[data-theme="light"][data-color-theme]:not([data-color-theme="amber"]) {
+  --bg-secondary-50: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
+  --bg-secondary-85: color-mix(in srgb, var(--bg-secondary) 96%, transparent);
+  --bg-secondary-90: color-mix(in srgb, var(--bg-secondary) 98%, transparent);
+  --bg-secondary-0: color-mix(in srgb, var(--bg-secondary) 0%, transparent);
+  --bg-primary-60: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+  --bg-primary-85: color-mix(in srgb, var(--bg-primary) 96%, transparent);
+  --bg-primary-0: color-mix(in srgb, var(--bg-primary) 0%, transparent);
+  --text-inverse: var(--bg-primary);
+  --text-on-accent: var(--accent-fg);
+  --accent-glow: color-mix(in srgb, var(--accent) 18%, transparent);
+  --accent-glow-strong: color-mix(in srgb, var(--accent) 28%, transparent);
+  --accent-overlay-sm: color-mix(in srgb, var(--accent) 6%, transparent);
+  --accent-overlay-md: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-overlay-lg: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-overlay-xl: color-mix(in srgb, var(--accent) 20%, transparent);
+  --accent-overlay-2xl: color-mix(in srgb, var(--accent) 28%, transparent);
+  --accent-border-soft: color-mix(in srgb, var(--accent) 30%, transparent);
+  --accent-border-strong: color-mix(in srgb, var(--accent) 50%, transparent);
+  --surface-3-solid: color-mix(
+    in srgb,
+    var(--bg-tertiary) 90%,
+    var(--bg-hover)
+  );
+  --surface-4-solid: color-mix(
+    in srgb,
+    var(--bg-hover) 80%,
+    var(--bg-tertiary)
+  );
+}
+
+html:not([data-theme="light"])[data-color-theme="grove"] {
+  --bg-primary: #131a17;
+  --bg-secondary: #19221e;
+  --bg-tertiary: #222d28;
+  --bg-hover: #2a3831;
+  --accent: #5fd39a;
+  --accent-hover: #7fe0b0;
+  --accent-secondary: #3fa776;
+  --accent-fg: #0f1512;
+  --accent-gradient: linear-gradient(135deg, #5fd39a, #c9d36a);
+}
+
+html[data-theme="light"][data-color-theme="grove"] {
+  --bg-primary: #f7faf8;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e7efea;
+  --bg-hover: #d6e3db;
+  --accent: #23875a;
+  --accent-hover: #2a9d69;
+  --accent-secondary: #1b6b47;
+  --accent-fg: #ffffff;
+  --accent-gradient: linear-gradient(135deg, #23875a, #7a8f1f);
+}
+
+html:not([data-theme="light"])[data-color-theme="ocean"] {
+  --bg-primary: #131820;
+  --bg-secondary: #19202b;
+  --bg-tertiary: #222b39;
+  --bg-hover: #2a3546;
+  --accent: #5aa9f0;
+  --accent-hover: #7dbcf5;
+  --accent-secondary: #3b86c9;
+  --accent-fg: #0f141b;
+  --accent-gradient: linear-gradient(135deg, #5aa9f0, #5ce1d6);
+}
+
+html[data-theme="light"][data-color-theme="ocean"] {
+  --bg-primary: #f7f9fc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e6ecf4;
+  --bg-hover: #d4deeb;
+  --accent: #2367b8;
+  --accent-hover: #2b78d1;
+  --accent-secondary: #1b5292;
+  --accent-fg: #ffffff;
+  --accent-gradient: linear-gradient(135deg, #2367b8, #168a85);
+}
+
+html:not([data-theme="light"])[data-color-theme="ember"] {
+  --bg-primary: #1b1513;
+  --bg-secondary: #241c19;
+  --bg-tertiary: #302521;
+  --bg-hover: #3c2e29;
+  --accent: #f2784b;
+  --accent-hover: #f79670;
+  --accent-secondary: #c85a33;
+  --accent-fg: #1b1513;
+  --accent-gradient: linear-gradient(135deg, #f2784b, #f5c04a);
+}
+
+html[data-theme="light"][data-color-theme="ember"] {
+  --bg-primary: #fcf8f6;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f2e8e3;
+  --bg-hover: #e8d8d0;
+  --accent: #c4501f;
+  --accent-hover: #db5f2a;
+  --accent-secondary: #9c3f18;
+  --accent-fg: #ffffff;
+  --accent-gradient: linear-gradient(135deg, #c4501f, #b8841a);
+}
+
+html:not([data-theme="light"])[data-color-theme="iris"] {
+  --bg-primary: #17141f;
+  --bg-secondary: #1e1a29;
+  --bg-tertiary: #282237;
+  --bg-hover: #312a44;
+  --accent: #a78bfa;
+  --accent-hover: #bba5fb;
+  --accent-secondary: #8467e0;
+  --accent-fg: #15121c;
+  --accent-gradient: linear-gradient(135deg, #a78bfa, #f08bd0);
+}
+
+html[data-theme="light"][data-color-theme="iris"] {
+  --bg-primary: #f9f8fc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #ebe8f4;
+  --bg-hover: #ddd7ec;
+  --accent: #6b4fd1;
+  --accent-hover: #7c60e3;
+  --accent-secondary: #553caf;
+  --accent-fg: #ffffff;
+  --accent-gradient: linear-gradient(135deg, #6b4fd1, #b8459a);
+}
+
+html:not([data-theme="light"])[data-color-theme="rose"] {
+  --bg-primary: #1c1418;
+  --bg-secondary: #251a20;
+  --bg-tertiary: #31222a;
+  --bg-hover: #3d2a34;
+  --accent: #f27aa8;
+  --accent-hover: #f697bb;
+  --accent-secondary: #c95786;
+  --accent-fg: #1c1418;
+  --accent-gradient: linear-gradient(135deg, #f27aa8, #f7a26b);
+}
+
+html[data-theme="light"][data-color-theme="rose"] {
+  --bg-primary: #fcf7f9;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f3e6ec;
+  --bg-hover: #e9d5df;
+  --accent: #c23a73;
+  --accent-hover: #d84a85;
+  --accent-secondary: #9b2d5b;
+  --accent-fg: #ffffff;
+  --accent-gradient: linear-gradient(135deg, #c23a73, #c0612a);
 }

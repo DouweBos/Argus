@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import SwiftUI
 
 /// Appearance, where worktrees go, extra "Open in" apps, and telemetry.
@@ -13,9 +14,12 @@ struct GeneralSettingsTab: View {
     Form {
       Section("Appearance") {
         Picker("Theme", selection: $prefs.theme.tracked(.theme)) {
-          ForEach(ThemePreference.allCases, id: \.self) { Text($0.label).tag($0) }
+          ForEach(type(of: prefs.theme).allCases, id: \.self) { Text($0.label).tag($0) }
         }
         .pickerStyle(.segmented)
+        LabeledContent("Colour theme") {
+          ColorThemePicker(selection: $prefs.colorTheme.tracked(.colorTheme))
+        }
         VStack(alignment: .leading, spacing: 4) {
           Picker("Display size", selection: $prefs.displaySize.tracked(.displaySize)) {
             ForEach(DisplaySize.allCases, id: \.self) { Text($0.label).tag($0) }
