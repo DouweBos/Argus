@@ -130,6 +130,8 @@ export interface AppSettings {
   // Preferences both desktop apps (Electron and Argus for Mac) read and
   // write, so switching apps keeps them.
   theme?: "dark" | "light" | "system";
+  /** Accent and surface tint layered on the scheme. */
+  color_theme?: "amber" | "ember" | "grove" | "iris" | "ocean" | "rose";
   /** Display size. */
   ui_scale?: "default" | "large" | "larger" | "small" | "smaller";
   /** Permission mode for agents started without one. */

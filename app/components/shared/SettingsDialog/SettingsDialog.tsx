@@ -3,6 +3,7 @@ import type { PrereqId } from "../../../lib/types";
 import { useEffect, useMemo, useState } from "react";
 import {
   Button,
+  ColorThemePicker,
   Icons,
   Input,
   SegmentedControl,
@@ -22,6 +23,7 @@ import {
 } from "../../../lib/ipc";
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { setTelemetryMode } from "../../../lib/telemetry";
+import { setColorTheme, useColorTheme } from "../../../stores/colorThemeStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { useSelectedSessionId } from "../../../stores/sessionStore";
 import {
@@ -244,12 +246,13 @@ function SettingsDialogContent() {
 
 function AppearanceSection() {
   const theme = useThemePreference();
+  const colorTheme = useColorTheme();
   const scale = useUiScale();
 
   return (
     <SettingsScreenDetail>
       <SettingsScreenDetailHeader
-        description="Match your system theme and pick how dense Argus's UI feels."
+        description="Match your system theme, pick a colour theme and how dense Argus's UI feels."
         title="Appearance"
       />
       <SettingsScreenDetailBody>
@@ -266,6 +269,12 @@ function AppearanceSection() {
               </button>
             ))}
           </div>
+        </SettingsScreenField>
+        <SettingsScreenField
+          label="Colour theme"
+          caption="Accent colour and background tint, in both light and dark."
+        >
+          <ColorThemePicker value={colorTheme} onChange={setColorTheme} />
         </SettingsScreenField>
         <SettingsScreenField
           label="Display size"

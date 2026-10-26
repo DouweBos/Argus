@@ -1,0 +1,103 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px 10px;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-4);
+  border-radius: var(--border-radius-medium);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.card:hover {
+  background: var(--surface-3);
+  border-color: var(--surface-7);
+}
+
+.selected,
+.selected:hover {
+  border-color: var(--accent);
+  background: var(--accent-overlay-sm);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.preview {
+  position: relative;
+  width: 40px;
+  height: 40px;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: linear-gradient(
+    135deg,
+    var(--swatch-canvas) 0 52%,
+    var(--swatch-accent) 52%
+  );
+}
+
+.dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-secondary);
+  background: var(--swatch-accent);
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.card[data-preset="amber"] {
+  --swatch-canvas: var(--color-theme-amber-canvas);
+  --swatch-accent: var(--color-theme-amber-accent);
+}
+
+.card[data-preset="grove"] {
+  --swatch-canvas: var(--color-theme-grove-canvas);
+  --swatch-accent: var(--color-theme-grove-accent);
+}
+
+.card[data-preset="ocean"] {
+  --swatch-canvas: var(--color-theme-ocean-canvas);
+  --swatch-accent: var(--color-theme-ocean-accent);
+}
+
+.card[data-preset="ember"] {
+  --swatch-canvas: var(--color-theme-ember-canvas);
+  --swatch-accent: var(--color-theme-ember-accent);
+}
+
+.card[data-preset="iris"] {
+  --swatch-canvas: var(--color-theme-iris-canvas);
+  --swatch-accent: var(--color-theme-iris-accent);
+}
+
+.card[data-preset="rose"] {
+  --swatch-canvas: var(--color-theme-rose-canvas);
+  --swatch-accent: var(--color-theme-rose-accent);
+}

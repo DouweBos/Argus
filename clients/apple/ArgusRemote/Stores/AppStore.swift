@@ -24,6 +24,7 @@ final class AppStore {
   var loaded = false
   var deviceName: String = UIDeviceName.current
   var themePreference: ThemePreference = .system
+  var colorTheme: ColorTheme = .amber
   /// Opens Read calls that returned an image, so screenshots show without a tap.
   var autoExpandImageReads = false
   /// The mode new agents started from this phone begin in; nil leaves it to
@@ -80,6 +81,7 @@ final class AppStore {
     deviceName = preferences.string(PreferenceKey.deviceName) ?? UIDeviceName.current
     themePreference =
       ThemePreference(rawValue: preferences.string(PreferenceKey.theme) ?? "") ?? .system
+    colorTheme = .sanitize(preferences.string(PreferenceKey.colorTheme))
     autoExpandImageReads = preferences.string(PreferenceKey.autoExpandImageReads) == "on"
     defaultPermissionMode = preferences.string(PreferenceKey.defaultPermissionMode)
       .flatMap(RemotePermissionMode.init(rawValue:))
@@ -252,6 +254,13 @@ final class AppStore {
   func setThemePreference(_ preference: ThemePreference) {
     themePreference = preference
     preferences.set(preference.rawValue, for: PreferenceKey.theme)
+  }
+
+  func setColorTheme(_ theme: ColorTheme) {
+    guard theme != colorTheme else { return }
+    colorTheme = theme
+    preferences.set(theme.rawValue, for: PreferenceKey.colorTheme)
+    Telemetry.capture(.colorThemeChanged(theme: theme.rawValue))
   }
 
   func setAutoExpandImageReads(_ enabled: Bool) {

@@ -28,7 +28,7 @@ struct RootView: View {
     @State private var devDriver: DevDriver?
   #endif
   private var theme: Theme {
-    Theme.resolved(for: app.themePreference.colorScheme ?? systemScheme)
+    Theme.resolved(for: app.themePreference.colorScheme ?? systemScheme, colorTheme: app.colorTheme)
   }
 
   var body: some View {

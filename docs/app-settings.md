@@ -17,6 +17,7 @@ targets, related projects, …) see
 | Setting           | Default   | Description                                                                                                                                                                                                            |
 | ----------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Theme**         | `system`  | `system`, `light`, or `dark`. `system` follows the OS appearance.                                                                                                                                                      |
+| **Colour theme**  | `amber`   | Accent colour and a matching background tint: Amber, Grove, Ocean, Ember, Iris or Rose. Each has a light and a dark variant, so it follows the theme above.                                                            |
 | **Display size**  | `default` | One of `larger`, `large`, `default`, `small`, `smaller`. Scales the whole app — useful on very large or very small displays.                                                                                           |
 | **Launch screen** | `home`    | Which screen Argus opens on: **Home** (the project picker) or **Inbox** (what your automations want from you). A restored window tab still wins — the preference only applies when a window opens with no saved route. |
 

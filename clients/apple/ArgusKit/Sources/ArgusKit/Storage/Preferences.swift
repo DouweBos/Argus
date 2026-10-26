@@ -5,6 +5,7 @@ import Foundation
 public enum PreferenceKey {
   public static let deviceName = "device.name"
   public static let theme = "argus.theme"
+  public static let colorTheme = "argus.colorTheme"
   public static let pushEnabled = "push.enabled"
   public static let autoExpandImageReads = "transcript.autoExpandImageReads"
   public static let defaultPermissionMode = "agent.defaultPermissionMode"

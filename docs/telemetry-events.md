@@ -142,6 +142,12 @@ Both `$pathname` and `$current_url` carry the template. `$current_url` is
 prefixed with `argus://` so PostHog recognises it as a URL but the host
 is a fixed literal, not the user's machine or any external origin.
 
+## Appearance
+
+| Event                 | Source | When                                                                       | Extra props                                                           |
+| --------------------- | ------ | -------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `color_theme_changed` | main   | A desktop app (Electron or Argus for Mac) switches to another colour theme | `theme: "amber" \| "ember" \| "grove" \| "iris" \| "ocean" \| "rose"` |
+
 ## Sessions
 
 | Event                       | Source | When                                                                                                                   | Extra props                                                                                 |
@@ -290,6 +296,7 @@ stay honest.
 | `ios_proposal_opened`                      | The inbox opened the run behind a proposal                                              | —                                                                                                                           |
 | `ios_follow_up_used`                       | A suggested reply was tapped into the message field                                     | —                                                                                                                           |
 | `ios_setting_changed`                      | A phone-local setting was toggled                                                       | `setting` (`auto_expand_image_reads`), `enabled`                                                                            |
+| `ios_color_theme_changed`                  | The phone switched to another colour theme                                              | `theme` (`amber`, `grove`, `ocean`, `ember`, `iris`, `rose`)                                                                |
 | `ios_default_changed`                      | A default new work starts from was changed                                              | `setting` (`permission_mode`, `autonomy`), `value`                                                                          |
 | `ios_agent_start_submitted`                | The start sheet started an agent                                                        | `workspace` (`current`, `worktree`, `existing`), `changed_workspace` — picked something other than what the sheet opened on |
 | `ios_warnings_opened`                      | The Warnings & errors list was opened                                                   | `count`                                                                                                                     |
@@ -417,7 +424,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_navigated_history` | Back or Forward went through the window tab's history | `direction` (`back`, `forward`), `via` (`button` the toolbar chevrons, `shortcut` ⌘[ / ⌘] or the code view's ⌃- / ⌃⇧-, `menu` the Go menu clicked, `palette`, `mouse` the side buttons) |
 
 `mac_settings_changed`'s `section` is `general`, `accounts`, `agents`, `llm`,
-`mcp`, `tools`, `editor` or `advanced`, and `setting` is one of `theme`, `display_size`,
+`mcp`, `tools`, `editor` or `advanced`, and `setting` is one of `theme`, `color_theme`, `display_size`,
 `launch_route`, `worktree_location`, `automation_worktree_location`,
 `custom_editors`, `telemetry_mode`, `account_selected`, `account_added`,
 `account_removed`, `account_renamed`, `account_reauth`, `default_model`,

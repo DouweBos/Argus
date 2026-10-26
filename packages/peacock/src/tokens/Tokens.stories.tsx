@@ -107,6 +107,30 @@ export const Colors: Story = {
         </div>
       </section>
       <section>
+        <h3 className="eyebrow">Colour themes</h3>
+        <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          `html[data-color-theme]` swaps the accent family and tints the
+          backgrounds; derived overlays follow. Swatch tokens keep each preset's
+          own colours for pickers.
+        </p>
+        <div style={row}>
+          {["amber", "grove", "ocean", "ember", "iris", "rose"].map((id) => (
+            <Token
+              key={id}
+              name={`--color-theme-${id}-*`}
+              value="canvas / accent"
+              preview={
+                <div
+                  style={swatch(
+                    `linear-gradient(135deg, var(--color-theme-${id}-canvas) 50%, var(--color-theme-${id}-accent) 50%)`,
+                  )}
+                />
+              }
+            />
+          ))}
+        </div>
+      </section>
+      <section>
         <h3 className="eyebrow">Semantic</h3>
         <div style={row}>
           <Token
