@@ -20,6 +20,7 @@ struct ToolsSettingsTab: View {
         }
       }
       ConductorVersionSection()
+      DeviceHostsSection()
       SettingsError(text: host.error)
     }
     .task(id: host.loaded) {

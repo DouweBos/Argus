@@ -61,7 +61,7 @@ vi.mock("../session/sessionOps", () => ({
 }));
 vi.mock("../simulator/ios", () => ({
   isSimulatorCapturing: () => false,
-  listSimulators: async () => [
+  listAllSimulators: async () => [
     { udid: "udid-1", name: "iPhone", runtime: "iOS 18", booted: true },
     { udid: "udid-2", name: "iPad", runtime: "iOS 18", booted: true },
   ],

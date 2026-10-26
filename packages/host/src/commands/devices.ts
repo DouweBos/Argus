@@ -11,6 +11,12 @@ import {
   runConductorCommand,
 } from "../services/conductor/logger";
 import { openDeepLink } from "../services/conductor/openLink";
+import {
+  addDeviceHost,
+  listDeviceHosts,
+  removeDeviceHost,
+  testDeviceHost,
+} from "../services/deviceHosts/registry";
 import { captureUi } from "../services/inspection/capture";
 import { setNodeProperty } from "../services/inspection/edit";
 import {
@@ -37,7 +43,7 @@ import {
   bootSimulator,
   checkIosTools,
   disconnectSimulator,
-  listSimulators,
+  listAllSimulators,
   simulatorButton,
   simulatorDeviceState,
   simulatorKeyboard,
@@ -54,7 +60,7 @@ import {
 
 function registerSimulatorCommands(): void {
   defineTypedCommand("check_ios_tools", () => checkIosTools());
-  defineTypedCommand("list_simulators", () => listSimulators());
+  defineTypedCommand("list_simulators", () => listAllSimulators());
   defineTypedCommand("boot_simulator", (p) => bootSimulator(p.udid));
   defineTypedCommand("erase_simulator", (p) => eraseSimulator(p.udid));
   defineTypedCommand("delete_simulator", (p) => deleteSimulator(p.udid));
@@ -160,8 +166,16 @@ function registerConductorCommands(): void {
   );
 }
 
+function registerDeviceHostCommands(): void {
+  defineTypedCommand("list_device_hosts", () => listDeviceHosts());
+  defineTypedCommand("add_device_host", (p) => addDeviceHost(p));
+  defineTypedCommand("remove_device_host", (p) => removeDeviceHost(p.id));
+  defineTypedCommand("test_device_host", (p) => testDeviceHost(p));
+}
+
 export function registerDeviceCommands(): void {
   registerSimulatorCommands();
   registerAndroidCommands();
   registerConductorCommands();
+  registerDeviceHostCommands();
 }

@@ -208,6 +208,15 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `simulator_inspection_launched` | main   | An app was (re)launched with the inspection library injected, or refused           | `platform` (`ios` \| `tvos`), `outcome` (`ok`, `unavailable`, `failed`)                                                                                                                                                                                                                                                           |
 | `simulator_remote_stream_ended` | main   | The last remote viewer (phone, remote Mac, web) stopped watching a device's screen | `platform` (`ios` \| `android`), `adaptive` — whether the stream adapted its bitrate to the connection, `duration_bucket` (`<10s`, `<1m`, `<10m`, `>=10m`), `downshifts_bucket` — how often it stepped down in resolution (`0`, `1-2`, `3-10`, `10+`), `lowest_level` (`full`, `high`, `medium`, `low`; `full` when not adaptive) |
 
+## Device hosts
+
+| Event                   | Source | When                                                                                     | Extra props                                                                                                                                           |
+| ----------------------- | ------ | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `device_host_added`     | main   | A device host (another Mac reached over SSH) was saved                                   | `has_identity_file`, `has_port`                                                                                                                       |
+| `device_host_removed`   | main   | A device host was removed                                                                | —                                                                                                                                                     |
+| `device_host_tested`    | main   | "Test connection" finished for a device host                                             | `success`, `failure` (`none`, `auth`, `host_key`, `unreachable`, `timeout`, `not_macos`, `unsupported_arch`, `no_xcode`, `invalid_config`, `unknown`) |
+| `remote_device_watched` | main   | Streaming started (or failed to start) for a simulator on a device host, from any client | `success`                                                                                                                                             |
+
 ## Browser
 
 | Event                        | Source | When                                                            | Extra props                                         |

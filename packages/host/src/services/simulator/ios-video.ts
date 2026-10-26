@@ -11,14 +11,15 @@
  * popouts) and every tap (the remote gateway) sees them.
  */
 
-import * as net from "node:net";
+import type { Duplex } from "node:stream";
 import { emitHostEvent } from "@argus/host/bus";
 import { error, log } from "@argus/host/logger";
+import { machineForDevice } from "../deviceHosts/registry";
 import { H264AccessUnitParser } from "./h264-parser";
 import { clearVideo, emitVideoConfig, emitVideoFrame } from "./videoForward";
 
 interface IosVideoStream {
-  socket: net.Socket;
+  socket: Duplex;
   parser: H264AccessUnitParser;
 }
 
@@ -55,11 +56,9 @@ export function startIosVideoStream(udid: string, port: number): void {
     },
   });
 
-  const socket = net.connect(port, "127.0.0.1", () => {
-    log(
-      `[IosVideo] connected to bridge stream on port ${String(port)} (${udid})`,
-    );
-  });
+  // Loopback on this Mac, or `ssh -W` to the device host's loopback.
+  const socket = machineForDevice(udid).machine.connect(port);
+  log(`[IosVideo] opening bridge stream on port ${String(port)} (${udid})`);
 
   socket.on("data", (chunk: Buffer) => {
     parser.push(chunk);

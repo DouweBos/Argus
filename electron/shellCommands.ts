@@ -26,7 +26,7 @@ import {
   startAndroidCapture,
 } from "@argus/host/services/simulator/android";
 import {
-  listSimulators,
+  listAllSimulators,
   startSimulatorCapture,
 } from "@argus/host/services/simulator/ios";
 import { appState } from "@argus/host/state";
@@ -106,7 +106,7 @@ async function openDevicePopout(
   let capturing = false;
 
   if (platform === "ios") {
-    const devices = await listSimulators().catch(() => []);
+    const devices = await listAllSimulators().catch(() => []);
     const device = devices.find((d) => d.udid === deviceKey);
     const active = appState.simulators.get(deviceKey);
     deviceName = active?.deviceName ?? device?.name ?? deviceName;

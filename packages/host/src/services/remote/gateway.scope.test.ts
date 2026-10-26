@@ -35,7 +35,7 @@ vi.mock("../session/sessionOps", () => ({
 }));
 vi.mock("../simulator/ios", () => ({
   isSimulatorCapturing: vi.fn(() => false),
-  listSimulators: vi.fn(async () => []),
+  listAllSimulators: vi.fn(async () => []),
   simulatorTouch: vi.fn(async () => undefined),
   simulatorButton: vi.fn(async () => undefined),
   simulatorKeyboard: vi.fn(async () => undefined),

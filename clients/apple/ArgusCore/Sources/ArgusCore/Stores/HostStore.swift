@@ -79,6 +79,8 @@ public final class HostStore {
   /// Locally-chosen effort per agent; the monitor snapshot doesn't carry it.
   public internal(set) var effortByAgent: [String: String] = [:]
   public internal(set) var devices: [RemoteDevice] = []
+  /// Other Macs the computer streams simulators from over SSH. Read-only here.
+  public internal(set) var deviceHosts: [RemoteDeviceHost] = []
   /// Claude accounts signed in on the computer, and which one new agents run
   /// as. `nil` until the first load — an empty list would look like "signed
   /// out everywhere" rather than "not fetched yet".
@@ -226,6 +228,7 @@ public final class HostStore {
     goneAgents = []
     effortByAgent = [:]
     devices = []
+    deviceHosts = []
     claudeAccounts = nil
     activeClaudeAccountId = nil
     usageLimits = nil

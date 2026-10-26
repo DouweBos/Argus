@@ -1,5 +1,6 @@
 import type { DeviceInfo } from "../../../lib/types";
 import { Icons, Toggle } from "@argus/peacock";
+import { deviceDisplayName } from "../../../lib/deviceHost";
 import {
   removeGridSelected,
   setGridInteractive,
@@ -22,8 +23,8 @@ export function DeviceGridCell({ device, interactive }: DeviceGridCellProps) {
       className={`${styles.cell} ${interactive ? styles.cellInteractive : ""}`}
     >
       <div className={styles.head}>
-        <span className={styles.name} title={device.name}>
-          {device.name}
+        <span className={styles.name} title={deviceDisplayName(device)}>
+          {deviceDisplayName(device)}
         </span>
         <div className={styles.headActions}>
           <Toggle

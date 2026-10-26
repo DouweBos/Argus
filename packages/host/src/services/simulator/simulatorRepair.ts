@@ -3,20 +3,18 @@
  * boot, such as one whose data folder was removed.
  */
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { warn } from "@argus/host/logger";
+import { machineForDevice } from "../deviceHosts/registry";
 import { capture } from "../telemetry/telemetry";
 import { disconnectSimulator } from "./ios";
 import { describeSimctlFailure } from "./simctlProblems";
 
-const execFileAsync = promisify(execFile);
-
 /** Both need a shut-down device; one that already is says so, which is fine. */
 async function shutDown(udid: string): Promise<void> {
   disconnectSimulator(udid);
+  const target = machineForDevice(udid);
   try {
-    await execFileAsync("xcrun", ["simctl", "shutdown", udid]);
+    await target.machine.exec("xcrun", ["simctl", "shutdown", target.udid]);
   } catch {
     // Already shut down, or missing: erase/delete report what matters.
   }
@@ -24,8 +22,9 @@ async function shutDown(udid: string): Promise<void> {
 
 async function run(action: "delete" | "erase", udid: string): Promise<void> {
   await shutDown(udid);
+  const target = machineForDevice(udid);
   try {
-    await execFileAsync("xcrun", ["simctl", action, udid]);
+    await target.machine.exec("xcrun", ["simctl", action, target.udid]);
     capture("simulator_repaired", { action, success: true });
   } catch (e) {
     warn(`[Simulator] ${action} failed for ${udid}:`, e);

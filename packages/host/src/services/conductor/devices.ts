@@ -9,11 +9,12 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { appState } from "../../state";
 import { webBrowserPool } from "../browser/pool";
+import { machineForDevice } from "../deviceHosts/registry";
 import {
   disconnectAndroidDevice,
   listAndroidDevices,
 } from "../simulator/android";
-import { disconnectSimulator, listSimulators } from "../simulator/ios";
+import { disconnectSimulator, listAllSimulators } from "../simulator/ios";
 
 const execFileAsync = promisify(execFile);
 
@@ -22,6 +23,8 @@ export type DevicePlatform = "android" | "ios" | "web";
 export interface DeviceInfo {
   /** Stable key used for conductor log bucketing: UDID, serial, or browser deviceId. */
   deviceKey: string;
+  /** Label of the device host it runs on; absent for this machine. */
+  deviceHostLabel?: string;
   platform: DevicePlatform;
   name: string;
   /** iOS runtime string (e.g. "iOS 18.0"). Empty for other platforms. */
@@ -84,12 +87,13 @@ export async function listDevices(): Promise<DeviceInfo[]> {
 
   // iOS simulators
   try {
-    const sims = await listSimulators();
+    const sims = await listAllSimulators();
     for (const d of sims) {
       const agentId = simReservationByUdid.get(d.udid) ?? null;
       const owner = resolveAgentOwner(agentId);
       out.push({
         deviceKey: d.udid,
+        ...(d.deviceHostLabel ? { deviceHostLabel: d.deviceHostLabel } : {}),
         platform: "ios",
         name: d.name,
         runtime: d.runtime,
@@ -160,8 +164,9 @@ export async function stopDevice(
   deviceKey: string,
 ): Promise<void> {
   if (platform === "ios") {
+    const { machine, udid } = machineForDevice(deviceKey);
     try {
-      await execFileAsync("xcrun", ["simctl", "shutdown", deviceKey]);
+      await machine.exec("xcrun", ["simctl", "shutdown", udid]);
     } catch (e) {
       const msg = String(e);
       // Already shut down is not a real error.

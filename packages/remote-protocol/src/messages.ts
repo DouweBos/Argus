@@ -19,6 +19,7 @@ import {
   RemoteClaudeAccount,
   RemoteClaudeLoginState,
   RemoteDevice,
+  RemoteDeviceHost,
   RemoteDeviceClaim,
   RemoteDeviceClaimState,
   RemoteDeviceOrientation,
@@ -406,6 +407,7 @@ export const MethodParams = {
     strategy: z.enum(["keep", "squash"]),
   }),
   "devices.list": z.object({}),
+  "device_hosts.list": z.object({}),
   /** Begin streaming a device's screen; returns a stream id for binary frames. */
   "devices.watch": z.object({
     device_id: z.string(),
@@ -769,6 +771,7 @@ export const MethodResult = {
   "sessions.merge_blockers": z.object({ blockers: z.array(z.string()) }),
   "sessions.merge_base": z.object({ accepted: z.boolean() }),
   "devices.list": z.object({ devices: z.array(RemoteDevice) }),
+  "device_hosts.list": z.object({ hosts: z.array(RemoteDeviceHost) }),
   "devices.watch": z.object({ stream_id: z.number().int().nonnegative() }),
   "devices.unwatch": z.object({ accepted: z.boolean() }),
   "devices.state": z.object({ state: RemoteDeviceState.nullable() }),

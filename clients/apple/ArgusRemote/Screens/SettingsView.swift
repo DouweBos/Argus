@@ -148,6 +148,21 @@ struct SettingsView: View {
         )
       }
 
+      if !host.deviceHosts.isEmpty {
+        Section {
+          ForEach(host.deviceHosts) { entry in
+            LabeledContent(entry.label) {
+              Text(deviceHostStatusLabel(entry.status))
+                .foregroundStyle(entry.status == .unreachable ? theme.warning : theme.textMuted)
+            }
+          }
+        } header: {
+          Text("Device hosts")
+        } footer: {
+          Text("Other Macs this computer streams simulators from over SSH. Add or remove them in Argus on the computer.")
+        }
+      }
+
       Section {
         if let identity = app.identity {
           LabeledContent("Connected to", value: identity.label)
@@ -169,6 +184,15 @@ struct SettingsView: View {
     .task(id: host.connection == .ready) {
       guard host.connection == .ready else { return }
       defaultAutonomy = await automations.loadDefaultAutonomy()
+      await host.refreshDeviceHosts()
+    }
+  }
+
+  private func deviceHostStatusLabel(_ status: RemoteDeviceHost.Status) -> String {
+    switch status {
+    case .connected: "Connected"
+    case .unreachable: "Unreachable"
+    case .unknown: "Not checked yet"
     }
   }
 

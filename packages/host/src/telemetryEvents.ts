@@ -106,6 +106,22 @@ export interface EventMap {
   color_theme_changed: {
     theme: "amber" | "ember" | "grove" | "iris" | "ocean" | "rose";
   };
+  device_host_added: { has_identity_file: boolean; has_port: boolean };
+  device_host_removed: undefined;
+  device_host_tested: {
+    failure:
+      | "auth"
+      | "host_key"
+      | "invalid_config"
+      | "no_xcode"
+      | "none"
+      | "not_macos"
+      | "timeout"
+      | "unknown"
+      | "unreachable"
+      | "unsupported_arch";
+    success: boolean;
+  };
   follow_up_used: { method: "click" | "tab" };
   follow_ups_suggested: { count: number; success: boolean };
   host_lock_handover: { holder: "cli" | "electron" | "mac" };
@@ -142,6 +158,7 @@ export interface EventMap {
     stage: "creating_worktree" | "setting_up" | "starting_agent";
   };
   queued_message_sent_now: { mid_turn: boolean };
+  remote_device_watched: { success: boolean };
   renderer_started: { popout: string };
   secret_store_migrated: {
     outcome: "failed" | "migrated";

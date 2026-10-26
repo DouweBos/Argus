@@ -4,6 +4,7 @@ import { DeviceControlOverlay, Icons } from "@argus/peacock";
 import { error } from "@logger";
 import { useDeviceClaim } from "../../../hooks/useDeviceClaim";
 import { useSimulatorDeviceState } from "../../../hooks/useSimulatorDeviceState";
+import { deviceDisplayName } from "../../../lib/deviceHost";
 import {
   bootSimulator,
   checkIosTools,
@@ -410,13 +411,14 @@ export function IosSimulatorView({
         const similarCount = devices.filter(
           (x) =>
             x.runtime === d.runtime &&
+            x.deviceHostId === d.deviceHostId &&
             x.name.replace(/\s*-\s*\d+\s*$/, "") === baseName,
         ).length;
         const suffix = similarCount > 1 ? ` [${d.udid.slice(-8)}]` : "";
 
         return (
           <option key={d.udid} value={d.udid}>
-            {d.name}
+            {deviceDisplayName(d)}
             {suffix} ({d.runtime}){d.booted ? " - Booted" : ""}
           </option>
         );

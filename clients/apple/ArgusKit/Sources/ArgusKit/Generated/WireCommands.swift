@@ -7306,6 +7306,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct RemoveDeviceHostParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
     public struct RemovePathParams: Codable, Sendable {
       public var id: String
       public var relativePath: String
@@ -9035,6 +9052,13 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = String?
       public static let name = "active_simulator"
+      public static let tier = "admin"
+    }
+
+    public enum AddDeviceHost: RemoteCommand {
+      public typealias Params = ArgusProtocol.DeviceHostInput
+      public typealias Result = ArgusProtocol.DeviceHost
+      public static let name = "add_device_host"
       public static let tier = "admin"
     }
 
@@ -10970,6 +10994,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum ListDeviceHosts: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.DeviceHost]
+      public static let name = "list_device_hosts"
+      public static let tier = "admin"
+    }
+
     public enum ListDevices: RemoteCommand {
       public typealias Params = EmptyParams
       public typealias Result = [ArgusProtocol.DeviceInfo]
@@ -11712,6 +11743,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum RemoveDeviceHost: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.RemoveDeviceHostParams
+      public typealias Result = IgnoredResult
+      public static let name = "remove_device_host"
+      public static let tier = "admin"
+    }
+
     public enum RemovePath: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.RemovePathParams
       public typealias Result = IgnoredResult
@@ -12164,6 +12202,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.TerminalWriteParams
       public typealias Result = IgnoredResult
       public static let name = "terminal_write"
+      public static let tier = "admin"
+    }
+
+    public enum TestDeviceHost: RemoteCommand {
+      public typealias Params = ArgusProtocol.DeviceHostInput
+      public typealias Result = ArgusProtocol.DeviceHostTestResult
+      public static let name = "test_device_host"
       public static let tier = "admin"
     }
 

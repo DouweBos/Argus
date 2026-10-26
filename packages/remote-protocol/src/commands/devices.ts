@@ -4,6 +4,9 @@ import {
   ConductorLogEntry,
   DebugCommandResult,
   DebugStreamInfo,
+  DeviceHost,
+  DeviceHostInput,
+  DeviceHostTestResult,
   DeviceInfo,
   DeviceInputEndpoint,
   DeviceOrientation,
@@ -259,8 +262,36 @@ const CONDUCTOR_COMMANDS = {
   },
 } as const satisfies Record<string, CommandSpec>;
 
+// Adding or testing a host makes this machine open SSH connections with its
+// own keys, so these stay admin.
+const DEVICE_HOST_COMMANDS = {
+  list_device_hosts: {
+    tier: "admin",
+    params: NoParams,
+    result: z.array(DeviceHost),
+  },
+  add_device_host: {
+    tier: "admin",
+    params: DeviceHostInput,
+    result: DeviceHost,
+  },
+  /** Stops the host's captures and SSH connection; its simulators keep running. */
+  remove_device_host: {
+    tier: "admin",
+    params: z.object({ id: z.string() }),
+    result: Void,
+  },
+  /** Probes SSH and prerequisites without installing anything. */
+  test_device_host: {
+    tier: "admin",
+    params: DeviceHostInput,
+    result: DeviceHostTestResult,
+  },
+} as const satisfies Record<string, CommandSpec>;
+
 export const DEVICE_COMMANDS = {
   ...SIMULATOR_COMMANDS,
   ...ANDROID_COMMANDS,
   ...CONDUCTOR_COMMANDS,
+  ...DEVICE_HOST_COMMANDS,
 } as const satisfies Record<string, CommandSpec>;

@@ -24,6 +24,7 @@ import {
 } from "../../../tools/store";
 import { PrereqList } from "../PrereqList";
 import { ConductorVersionField } from "./ConductorVersionField";
+import { DeviceHostsField } from "./DeviceHostsField";
 import styles from "./ToolsSection.module.css";
 
 const GROUP_ORDER: ToolGroup[] = ["Device", "Agent", "Git", "Misc"];
@@ -67,6 +68,7 @@ export function ToolsSection() {
           </SettingsScreenField>
         ))}
         <ConductorVersionField />
+        <DeviceHostsField />
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
   );

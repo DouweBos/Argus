@@ -14,7 +14,7 @@ struct DevicePopoutView: View {
 
   private var name: String {
     remote == .ios
-      ? runtime.simulator(target.deviceKey)?.name ?? "Simulator"
+      ? runtime.simulator(target.deviceKey)?.displayName ?? "Simulator"
       : runtime.androidDevice(target.deviceKey)?.name ?? "Emulator"
   }
 

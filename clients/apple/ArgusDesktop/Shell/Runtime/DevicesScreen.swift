@@ -134,7 +134,7 @@ struct DevicesScreen: View {
       TableColumn("Device") { (row: Row) in
         HStack(spacing: 6) {
           StatusDot(tone: row.device.online ? .success : .muted, pulse: false)
-          Button(row.device.name) { selected = DeviceRef(row.device) }
+          Button(row.device.displayName) { selected = DeviceRef(row.device) }
             .buttonStyle(.plain)
             .lineLimit(1)
             .help("Show details")
@@ -229,7 +229,7 @@ struct DevicesScreen: View {
         HStack(spacing: 6) {
           ForEach(online.filter { $0.platform != .web }, id: \.rowId) { device in
             let on = gridKeys.contains(device.deviceKey)
-            Toggle(device.name, isOn: Binding(
+            Toggle(device.displayName, isOn: Binding(
               get: { on },
               set: { show in
                 if show { gridKeys.append(device.deviceKey) } else {
@@ -252,7 +252,7 @@ struct DevicesScreen: View {
                 isTv: device.runtime?.hasPrefix("tvOS") ?? false)
                 .frame(height: tileSize * 2)
                 .clipShape(.rect(cornerRadius: theme.radiusSmall))
-              Text(device.name).font(.scaled(size: 11)).foregroundStyle(theme.textMuted)
+              Text(device.displayName).font(.scaled(size: 11)).foregroundStyle(theme.textMuted)
             }
           }
         }

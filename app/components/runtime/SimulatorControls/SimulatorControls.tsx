@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { Button, Icons } from "@argus/peacock";
 import { error } from "@logger";
+import { deviceDisplayName } from "../../../lib/deviceHost";
 import {
   bootSimulator,
   disconnectSimulator,
@@ -177,13 +178,14 @@ export function SimulatorControls({ sessionId }: SimulatorControlsProps) {
             const similarCount = devices.filter(
               (x) =>
                 x.runtime === d.runtime &&
+                x.deviceHostId === d.deviceHostId &&
                 x.name.replace(/\s*-\s*\d+\s*$/, "") === baseName,
             ).length;
             const suffix = similarCount > 1 ? ` [${d.udid.slice(-8)}]` : "";
 
             return (
               <option key={d.udid} value={d.udid}>
-                {d.name}
+                {deviceDisplayName(d)}
                 {suffix} ({d.runtime}){d.booted ? " - Booted" : ""}
               </option>
             );

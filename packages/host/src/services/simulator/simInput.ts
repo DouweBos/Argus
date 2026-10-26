@@ -14,12 +14,10 @@
  * hundred milliseconds to every key.
  */
 
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import * as readline from "node:readline";
 import { error, warn } from "@argus/host/logger";
-import { resolveAssetPath } from "../tools/assets";
-
-const BINARY_NAME = "argus-sim-input";
+import { machineForDevice } from "../deviceHosts/registry";
 
 interface PendingRequest {
   resolve: (value: Record<string, unknown>) => void;
@@ -36,17 +34,18 @@ class SimInput {
 
   constructor(private readonly udid: string) {}
 
-  /** Launch the helper inside the simulator. Idempotent. */
-  spawn(): void {
+  /** Launch the helper inside the simulator, on whichever Mac runs it. Idempotent. */
+  async spawn(): Promise<void> {
     if (this.proc) {
       return;
     }
 
-    const child = spawn(
-      "xcrun",
-      ["simctl", "spawn", this.udid, resolveAssetPath(BINARY_NAME)],
-      { stdio: ["pipe", "pipe", "pipe"] },
-    );
+    const { machine, udid } = machineForDevice(this.udid);
+    const helper = await machine.toolPath("argus-sim-input");
+    if (this.proc) {
+      return;
+    }
+    const child = machine.spawn("xcrun", ["simctl", "spawn", udid, helper]);
 
     child.stderr.on("data", (chunk: Buffer) => {
       process.stderr.write(`[argus-sim-input] ${chunk.toString()}`);
@@ -127,13 +126,13 @@ class SimInput {
 
 const inputsByUdid = new Map<string, SimInput>();
 
-function inputFor(udid: string): SimInput {
+async function inputFor(udid: string): Promise<SimInput> {
   let input = inputsByUdid.get(udid);
   if (!input) {
     input = new SimInput(udid);
     inputsByUdid.set(udid, input);
   }
-  input.spawn();
+  await input.spawn();
 
   return input;
 }
@@ -153,10 +152,10 @@ async function send(
   // and retry once so the caller doesn't have to know about respawns.
   let response: Record<string, unknown>;
   try {
-    response = await inputFor(udid).send(cmd);
+    response = await (await inputFor(udid)).send(cmd);
   } catch {
     stopSimInput(udid);
-    response = await inputFor(udid).send(cmd);
+    response = await (await inputFor(udid)).send(cmd);
   }
   if (!response.ok) {
     throw `${what} failed: ${String(response.error ?? "unknown error")}`;

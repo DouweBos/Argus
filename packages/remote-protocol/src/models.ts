@@ -274,8 +274,18 @@ export const RemoteDevice = z.object({
   capturing: z.boolean(),
   width: z.number().optional(),
   height: z.number().optional(),
+  /** Label of the device host (another Mac over SSH) it runs on; absent here. */
+  device_host_label: z.string().optional(),
 });
 export type RemoteDevice = z.infer<typeof RemoteDevice>;
+
+/** A device host as a paired client sees it: no SSH target or key path. */
+export const RemoteDeviceHost = z.object({
+  id: z.string(),
+  label: z.string(),
+  status: z.enum(["connected", "unknown", "unreachable"]),
+});
+export type RemoteDeviceHost = z.infer<typeof RemoteDeviceHost>;
 
 /** Named hinge poses, matching conductor's vocabulary. */
 export const RemoteFoldPose = z.enum(["book", "closed", "open", "partial"]);

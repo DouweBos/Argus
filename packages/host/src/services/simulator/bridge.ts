@@ -75,16 +75,17 @@ export class SimBridge {
    *
    * Idempotent — if the process is already running this is a no-op.
    */
-  spawn(): void {
+  spawn(start?: () => ChildProcessWithoutNullStreams): void {
     if (this.proc) {
       return;
     }
 
-    const binaryPath = bridgeBinaryPath();
-
-    const child = spawn(binaryPath, [], {
-      stdio: ["pipe", "pipe", "pipe"],
-    });
+    // A device host passes its own launcher (the same binary, over ssh).
+    const child =
+      start?.() ??
+      spawn(bridgeBinaryPath(), [], {
+        stdio: ["pipe", "pipe", "pipe"],
+      });
 
     child.stderr.on("data", (chunk: Buffer) => {
       // Forward bridge stderr to the main process stderr for diagnostics
@@ -147,6 +148,11 @@ export class SimBridge {
         }
       });
     });
+  }
+
+  /** False once the process has exited, e.g. a device host's SSH dropped. */
+  isAlive(): boolean {
+    return this.proc !== null;
   }
 
   /**

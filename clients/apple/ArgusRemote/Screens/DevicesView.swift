@@ -30,7 +30,7 @@ struct DevicesView: View {
                 }
               } label: {
                 Label(device.name, systemImage: Icon.simulator)
-                Text(platformLabel(device.platform))
+                Text(subtitle(device))
               }
             }
           }
@@ -42,7 +42,8 @@ struct DevicesView: View {
     .liveRefresh(enabled: host.connection == .ready) { await host.refreshDevices() }
   }
 
-  private func platformLabel(_ platform: RemotePlatform) -> String {
-    platform == .ios ? "iOS simulator" : "Android emulator"
+  private func subtitle(_ device: RemoteDevice) -> String {
+    let kind = device.platform == .ios ? "iOS simulator" : "Android emulator"
+    return device.deviceHostLabel.map { "\(kind) on \($0)" } ?? kind
   }
 }

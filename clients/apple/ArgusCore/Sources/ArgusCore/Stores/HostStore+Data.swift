@@ -146,6 +146,16 @@ extension HostStore {
     devicesLoaded = true
   }
 
+  /// Device hosts can only be added or removed on the computer itself: doing
+  /// it from here would let a paired client make it open SSH with its keys.
+  public func refreshDeviceHosts() async {
+    guard let backend else { return }
+    struct Result: Decodable { let hosts: [RemoteDeviceHost] }
+    guard let result = try? await backend.request(
+      .deviceHostsList, EmptyParams(), as: Result.self) else { return }
+    deviceHosts = result.hosts
+  }
+
   // MARK: Transcript
 
   /// A stopped agent has no agent id — the process is gone and only the saved
