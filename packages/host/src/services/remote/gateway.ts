@@ -920,10 +920,15 @@ export class DeviceConnection implements DeviceMediaController {
     // Session and project lists have no other way to learn they went stale:
     // the typed client holds them and nothing in the agent channels mentions
     // them. A guest is skipped — it was handed one agent, not the tree.
-    if (SESSION_LIST_CHANNELS.has(channel)) {
+    // `session:status:<id>` is the only signal that setup finished (or failed),
+    // so without it a typed client shows the session initializing forever.
+    const statusOf = /^session:status:(.+)$/.exec(channel)?.[1];
+    if (SESSION_LIST_CHANNELS.has(channel) || statusOf) {
       if (!this.scope) {
         this.pushEvent("sessions.changed", null, {
-          repo_root: repoRootFromBroadcast(args),
+          repo_root: statusOf
+            ? (appState.sessions.get(statusOf)?.repo_root ?? null)
+            : repoRootFromBroadcast(args),
         });
       }
 
