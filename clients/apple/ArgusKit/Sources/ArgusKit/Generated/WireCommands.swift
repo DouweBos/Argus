@@ -5251,18 +5251,22 @@ extension ArgusProtocol {
 
     public struct ImportCliProjectsParams: Codable, Sendable {
       public var paths: [String]
+      public var source: CliProjectImportSource?
 
       enum CodingKeys: String, CodingKey {
         case paths = "paths"
+        case source = "source"
       }
 
-      public init(paths: [String]) {
+      public init(paths: [String], source: CliProjectImportSource? = nil) {
         self.paths = paths
+        self.source = source
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(paths, forKey: .paths)
+        try c.encodeIfPresent(source, forKey: .source)
       }
     }
 
@@ -7670,6 +7674,23 @@ extension ArgusProtocol {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(repoRoot, forKey: .repoRoot)
         try c.encode(conversation, forKey: .conversation)
+      }
+    }
+
+    public struct ScanCliProjectsParams: Codable, Sendable {
+      public var source: CliProjectImportSource?
+
+      enum CodingKeys: String, CodingKey {
+        case source = "source"
+      }
+
+      public init(source: CliProjectImportSource? = nil) {
+        self.source = source
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(source, forKey: .source)
       }
     }
 
@@ -11804,7 +11825,7 @@ extension ArgusProtocol {
     }
 
     public enum ScanCliProjects: RemoteCommand {
-      public typealias Params = EmptyParams
+      public typealias Params = ArgusProtocol.CommandsTypes.ScanCliProjectsParams
       public typealias Result = ArgusProtocol.CliProjectScan
       public static let name = "scan_cli_projects"
       public static let tier = "admin"

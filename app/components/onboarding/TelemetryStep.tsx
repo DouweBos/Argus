@@ -10,7 +10,7 @@ import { OnboardingLayout } from "./OnboardingLayout";
 import styles from "./TelemetryStep.module.css";
 
 export function TelemetryStep() {
-  const { complete } = useOnboarding();
+  const { advance } = useOnboarding();
   const [busy, setBusy] = useState(false);
 
   const choose = async (mode: TelemetryMode) => {
@@ -21,7 +21,7 @@ export function TelemetryStep() {
     setTelemetryModeSetting(mode);
     setTelemetryMode(mode);
     try {
-      await complete();
+      await advance("projects");
     } finally {
       setBusy(false);
     }
@@ -31,7 +31,7 @@ export function TelemetryStep() {
     <OnboardingLayout
       currentStep="telemetry"
       title="Help improve Argus"
-      subtitle="Pick how much you want to share, and Argus opens. Anything still missing on your Mac — the Claude CLI, a signed-in account, git identity — shows up as a card on the home screen. You can change this any time under Settings → Privacy."
+      subtitle="Pick how much you want to share. Anything still missing on your Mac — the Claude CLI, a signed-in account, git identity — shows up as a card on the home screen. You can change this any time under Settings → Privacy."
       footerRight={
         <div className={styles.choices}>
           <Button

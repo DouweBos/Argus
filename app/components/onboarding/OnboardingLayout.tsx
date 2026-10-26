@@ -11,6 +11,7 @@ import styles from "./OnboardingLayout.module.css";
 const STEP_LABELS: Record<OnboardingStep, string> = {
   welcome: "Welcome",
   telemetry: "Privacy",
+  projects: "Projects",
 };
 
 export interface OnboardingLayoutProps {

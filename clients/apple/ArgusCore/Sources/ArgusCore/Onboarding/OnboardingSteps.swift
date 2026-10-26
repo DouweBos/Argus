@@ -5,8 +5,8 @@ import Foundation
 /// checks it moved to home-screen cards and a first project, so a new user
 /// lands with something to work in.
 ///
-/// The host only stores the desktop's two steps, so a resume past them comes
-/// from the step this app remembered, as long as the host still says privacy.
+/// The host stores the desktop's steps (welcome, telemetry, projects), so a
+/// resume between privacy and the project step comes from what this app remembered.
 public enum OnboardingStepId: String, CaseIterable, Sendable {
   case welcome
   case privacy
@@ -24,7 +24,11 @@ public enum OnboardingStepId: String, CaseIterable, Sendable {
 
   /// What the host records for this step.
   public var hostStep: ArgusProtocol.OnboardingStep {
-    self == .welcome ? .welcome : .telemetry
+    switch self {
+    case .welcome: .welcome
+    case .privacy, .setup: .telemetry
+    case .project: .projects
+    }
   }
 
   public var next: OnboardingStepId? {
@@ -41,10 +45,13 @@ public enum OnboardingStepId: String, CaseIterable, Sendable {
 
   /// Where to pick up: the host's step, refined by what this app remembered.
   public static func resume(hostStep: ArgusProtocol.OnboardingStep, local: String?) -> OnboardingStepId {
-    guard hostStep == .telemetry else { return .welcome }
-    if let local = local.flatMap(OnboardingStepId.init(rawValue:)), local.hostStep == .telemetry {
-      return local
+    switch hostStep {
+    case .projects: return .project
+    case .telemetry:
+      // Older builds stored the project step as telemetry too.
+      if let local = local.flatMap(OnboardingStepId.init(rawValue:)), local != .welcome { return local }
+      return .privacy
+    default: return .welcome
     }
-    return .privacy
   }
 }

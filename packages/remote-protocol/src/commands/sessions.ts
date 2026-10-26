@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  CliProjectImportSource,
   CliProjectScan,
   ForkChatResult,
   ForkReplayOp,
@@ -20,13 +21,16 @@ export const SESSION_COMMANDS = {
   /** Directories the Claude Code CLI has chats for, newest first. */
   scan_cli_projects: {
     tier: "admin",
-    params: NoParams,
+    params: z.object({ source: CliProjectImportSource.optional() }),
     result: CliProjectScan,
   },
   /** Add the picked directories as projects; their CLI chats import on add. */
   import_cli_projects: {
     tier: "admin",
-    params: z.object({ paths: z.array(z.string()) }),
+    params: z.object({
+      paths: z.array(z.string()),
+      source: CliProjectImportSource.optional(),
+    }),
     result: z.object({ added: z.number() }),
   },
   list_projects: {

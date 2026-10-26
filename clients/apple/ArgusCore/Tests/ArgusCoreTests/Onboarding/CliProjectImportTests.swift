@@ -38,6 +38,20 @@ struct CliProjectImportTests {
     #expect(picked == ["/busy", "/edge"])
   }
 
+  @Test func suggestsOnlyNewProjectsAndOpensTheNewestPick() {
+    let candidates = [
+      candidate("/old", agoDays: 9),
+      candidate("/added", agoDays: 0, added: true),
+      candidate("/new", agoDays: 2),
+      candidate("/unpicked", agoDays: 1),
+    ]
+    let scan = ArgusProtocol.CliProjectScan(candidates: candidates, truncated: false)
+    #expect(CliProjectImport.suggestions(scan).map(\.path) == ["/old", "/new", "/unpicked"])
+    #expect(CliProjectImport.suggestions(nil).isEmpty)
+    #expect(CliProjectImport.mostRecent(["/old", "/new"], in: candidates) == "/new")
+    #expect(CliProjectImport.mostRecent([], in: candidates) == nil)
+  }
+
   @Test func pluralises() {
     #expect(CliProjectImport.chatCount(1) == "1 chat")
     #expect(CliProjectImport.chatCount(4) == "4 chats")

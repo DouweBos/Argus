@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const ONBOARDING_STEPS = ["welcome", "telemetry"] as const;
+export const ONBOARDING_STEPS = ["welcome", "telemetry", "projects"] as const;
 export const OnboardingStep = z.enum(ONBOARDING_STEPS);
 export type OnboardingStep = z.infer<typeof OnboardingStep>;
 

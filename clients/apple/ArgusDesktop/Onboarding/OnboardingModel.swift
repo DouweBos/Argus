@@ -18,6 +18,8 @@ final class OnboardingModel {
   var error: String?
   /// The project the last step added, reviewed before onboarding closes.
   var addedProject: String?
+  /// Projects found in Claude Code CLI history, kept across Back and forth.
+  let cliProjects = CliProjectPicker(source: .onboarding)
 
   private static let localStepKey = "onboardingStep"
 

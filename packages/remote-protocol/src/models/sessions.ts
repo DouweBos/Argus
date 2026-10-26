@@ -152,6 +152,10 @@ export const CliProjectCandidate = z.object({
 });
 export type CliProjectCandidate = z.infer<typeof CliProjectCandidate>;
 
+/** Where a Claude Code CLI project scan or import was started. */
+export const CliProjectImportSource = z.enum(["dialog", "onboarding"]);
+export type CliProjectImportSource = z.infer<typeof CliProjectImportSource>;
+
 export const CliProjectScan = z.object({
   candidates: z.array(CliProjectCandidate),
   /** The newest transcripts were read; older projects may be missing. */

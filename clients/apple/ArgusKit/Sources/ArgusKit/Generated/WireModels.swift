@@ -2802,6 +2802,21 @@ extension ArgusProtocol {
     }
   }
 
+  public struct CliProjectImportSource: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let dialog = CliProjectImportSource(rawValue: "dialog")
+    public static let onboarding = CliProjectImportSource(rawValue: "onboarding")
+  }
+
   public struct CliProjectScan: Codable, Sendable {
     public var candidates: [CliProjectCandidate]
     public var truncated: Bool
@@ -7894,6 +7909,7 @@ extension ArgusProtocol {
 
     public static let welcome = OnboardingStep(rawValue: "welcome")
     public static let telemetry = OnboardingStep(rawValue: "telemetry")
+    public static let projects = OnboardingStep(rawValue: "projects")
   }
 
   public struct PairedDeviceCapabilitiesItem: RawRepresentable, Codable, Hashable, Sendable {
