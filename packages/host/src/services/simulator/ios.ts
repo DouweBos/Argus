@@ -8,10 +8,16 @@
  */
 
 import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { warn } from "@argus/host/logger";
 import { hostPlatform } from "@argus/host/platform";
 import { appState } from "../../state";
+import { parseDeviceId, remoteDeviceId } from "../deviceHosts/deviceId";
+import { type DeviceMachine, localMachine } from "../deviceHosts/machine";
+import {
+  machineForDevice,
+  onDeviceHostRemoved,
+  reachableDeviceHosts,
+} from "../deviceHosts/registry";
 import { capture } from "../telemetry/telemetry";
 import { SimBridge } from "./bridge";
 import {
@@ -42,20 +48,23 @@ import {
   simulatorProblem,
 } from "./simctlProblems";
 
-const execFileAsync = promisify(execFile);
-
 // ---------------------------------------------------------------------------
 // Public types
 // ---------------------------------------------------------------------------
 
 /** A discovered iOS simulator device. */
 export interface SimulatorDevice {
+  /** Device id: the UDID here, `<hostId>~<udid>` on a device host. */
   udid: string;
   name: string;
   runtime: string;
   booted: boolean;
   /** Why it can't boot as it is, when simctl's listing already shows it. */
   problem?: SimulatorProblem;
+  /** Device host it runs on; absent for this machine. */
+  deviceHostId?: string;
+  /** That host's label. */
+  deviceHostLabel?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -137,28 +146,101 @@ export function fixupRuntimeVersion(s: string): string {
  */
 export async function checkIosTools(): Promise<void> {
   try {
-    await execFileAsync("xcrun", ["simctl", "help"]);
+    await localMachine.exec("xcrun", ["simctl", "help"]);
   } catch {
     throw "Xcode Command Line Tools not found. Install them by running: xcode-select --install";
   }
 }
 
 /**
- * List all available iOS simulator devices.
+ * List this Mac's iOS simulator devices. Agents' pool and conductor only drive
+ * local devices, so this stays local; pickers use {@link listAllSimulators}.
  *
  * Runs `xcrun simctl list devices --json`, converts runtime IDs to
  * human-readable strings (e.g. "iOS 18.0"), and sorts booted devices first,
  * then alphabetically by name (case-insensitive).
  */
-export async function listSimulators(): Promise<SimulatorDevice[]> {
+export function listSimulators(): Promise<SimulatorDevice[]> {
+  return listSimulatorsOn(localMachine);
+}
+
+/** How long one device host gets to answer before the list goes without it. */
+const REMOTE_LIST_TIMEOUT_MS = 15_000;
+
+/** How long a list waits on a device host before using its last answer. */
+const REMOTE_LIST_WAIT_MS = 1_500;
+
+/** Each host's last listing, plus the refresh in flight, so a slow or
+ *  offline Mac never holds up this Mac's devices. */
+const remoteListings = new Map<
+  string,
+  { devices: SimulatorDevice[]; inflight?: Promise<void> }
+>();
+
+function listDeviceHost({
+  config,
+  machine,
+}: ReturnType<typeof reachableDeviceHosts>[number]): Promise<
+  SimulatorDevice[]
+> {
+  let entry = remoteListings.get(config.id);
+  if (!entry) {
+    entry = { devices: [] };
+    remoteListings.set(config.id, entry);
+  }
+  const listing = entry;
+  listing.inflight ??= listSimulatorsOn(machine, REMOTE_LIST_TIMEOUT_MS)
+    .then((devices) => {
+      listing.devices = devices.map((d) => ({
+        ...d,
+        udid: remoteDeviceId(config.id, d.udid),
+        deviceHostId: config.id,
+        deviceHostLabel: config.label,
+      }));
+    })
+    .catch((e: unknown) => {
+      warn(`[Simulator] listing ${config.id} failed:`, e);
+      listing.devices = [];
+    })
+    .finally(() => {
+      listing.inflight = undefined;
+    });
+  const answered = listing.inflight;
+
+  return Promise.race([
+    answered,
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, REMOTE_LIST_WAIT_MS).unref?.();
+    }),
+  ]).then(() => listing.devices);
+}
+
+/**
+ * This Mac's simulators plus every reachable device host's, namespaced and
+ * labelled. An unreachable host contributes nothing rather than failing the list.
+ */
+export async function listAllSimulators(): Promise<SimulatorDevice[]> {
+  const hosts = reachableDeviceHosts();
+  const [local, ...remote] = await Promise.all([
+    // No Xcode here shouldn't hide a device host's simulators.
+    hosts.length > 0 ? listSimulators().catch(() => []) : listSimulators(),
+    ...hosts.map(listDeviceHost),
+  ]);
+
+  return [...local, ...remote.flat()];
+}
+
+async function listSimulatorsOn(
+  machine: DeviceMachine,
+  timeoutMs?: number,
+): Promise<SimulatorDevice[]> {
   let stdout: string;
   try {
-    ({ stdout } = await execFileAsync("xcrun", [
-      "simctl",
-      "list",
-      "devices",
-      "--json",
-    ]));
+    ({ stdout } = await machine.exec(
+      "xcrun",
+      ["simctl", "list", "devices", "--json"],
+      { timeoutMs },
+    ));
   } catch (e) {
     throw `Failed to run xcrun simctl: ${String(e)}`;
   }
@@ -205,8 +287,9 @@ export async function listSimulators(): Promise<SimulatorDevice[]> {
  * implementation's tolerance for the "Booted" error message from simctl.
  */
 export async function bootSimulator(udid: string): Promise<void> {
+  const target = machineForDevice(udid);
   try {
-    await execFileAsync("xcrun", ["simctl", "boot", udid]);
+    await target.machine.exec("xcrun", ["simctl", "boot", target.udid]);
   } catch (e) {
     const msg = String(e);
     // simctl exits non-zero with "Unable to boot device in current state: Booted"
@@ -225,6 +308,16 @@ export async function bootSimulator(udid: string): Promise<void> {
   activateSimulatorWindow(udid);
 }
 
+/** Find one simulator by device id, asking only the machine it lives on. */
+async function findSimulator(
+  deviceId: string,
+): Promise<SimulatorDevice | undefined> {
+  const { machine, udid } = machineForDevice(deviceId);
+  const devices = await listSimulatorsOn(machine, REMOTE_LIST_TIMEOUT_MS);
+
+  return devices.find((d) => d.udid === udid);
+}
+
 /** How long to wait for a freshly booted simulator to finish coming up. */
 const BOOT_WAIT_MS = 120_000;
 
@@ -233,10 +326,11 @@ const BOOT_WAIT_MS = 120_000;
  * as the request is accepted, and capture against a half-booted device only
  * ever sees a nil framebuffer surface.
  */
-async function waitForBoot(udid: string): Promise<void> {
+async function waitForBoot(deviceId: string): Promise<void> {
+  const { machine, udid } = machineForDevice(deviceId);
   try {
-    await execFileAsync("xcrun", ["simctl", "bootstatus", udid, "-b"], {
-      timeout: BOOT_WAIT_MS,
+    await machine.exec("xcrun", ["simctl", "bootstatus", udid, "-b"], {
+      timeoutMs: BOOT_WAIT_MS,
     });
   } catch (e) {
     // bootstatus is advisory — an older runtime may not support `-b`, and the
@@ -253,6 +347,10 @@ async function waitForBoot(udid: string): Promise<void> {
  * framebuffer directly either way. Fire-and-forget: failures are ignored.
  */
 function activateSimulatorWindow(udid: string): void {
+  // A device host's Simulator.app is on someone else's screen.
+  if (parseDeviceId(udid).hostId) {
+    return;
+  }
   execFile(
     "open",
     ["-g", "-a", "Simulator", "--args", "-CurrentDeviceUDID", udid],
@@ -357,7 +455,10 @@ export async function startSimulatorCapture(udid: string): Promise<number> {
   // Fast path: reuse existing capture for the same device.
   const existing = appState.simulators.get(udid);
   const existingBridge = bridgesByUdid.get(udid);
-  if (existing?.mjpegPort != null && existingBridge) {
+  if (existingBridge && !existingBridge.isAlive()) {
+    // The bridge died under us (a device host's SSH dropped): start over.
+    forceStopSimulatorCapture(udid);
+  } else if (existing?.mjpegPort != null && existingBridge) {
     captureRefsByUdid.set(udid, (captureRefsByUdid.get(udid) ?? 0) + 1);
 
     return existing.mjpegPort;
@@ -389,8 +490,7 @@ export async function startSimulatorCapture(udid: string): Promise<number> {
  *  in-flight guard in {@link startSimulatorCapture}; sets the ref count to 1. */
 async function spawnSimulatorCapture(udid: string): Promise<number> {
   // Resolve the human-readable device name for the session record
-  const devices = await listSimulators();
-  const device = devices.find((d) => d.udid === udid);
+  const device = await findSimulator(udid);
   if (!device) {
     throw `No simulator found with UDID ${udid}`;
   }
@@ -404,23 +504,42 @@ async function spawnSimulatorCapture(udid: string): Promise<number> {
     activateSimulatorWindow(udid);
   }
 
-  // Spawn a new bridge binary dedicated to this UDID.
+  // Spawn a new bridge binary dedicated to this UDID, on the Mac that runs it.
+  const target = machineForDevice(udid);
+  const remote = target.machine.hostId !== null;
   const bridge = new SimBridge();
   bridgesByUdid.set(udid, bridge);
-  bridge.spawn();
 
   let response: Record<string, unknown>;
   try {
-    response = await bridge.sendCommand({ cmd: "start_capture", udid });
+    if (remote) {
+      const binary = await target.machine.toolPath("argus-sim-bridge");
+      bridge.spawn(() => target.machine.spawn(binary, []));
+    } else {
+      bridge.spawn();
+    }
+    response = await bridge.sendCommand({
+      cmd: "start_capture",
+      udid: target.udid,
+    });
   } catch (err) {
     bridge.kill();
     bridgesByUdid.delete(udid);
+    if (remote) {
+      capture("remote_device_watched", { success: false });
+    }
     throw `Bridge start_capture failed: ${String(err)}`;
   }
   if (!response.ok) {
     bridge.kill();
     bridgesByUdid.delete(udid);
+    if (remote) {
+      capture("remote_device_watched", { success: false });
+    }
     throw `Bridge start_capture failed: ${String(response.error ?? "unknown error")}`;
+  }
+  if (remote) {
+    capture("remote_device_watched", { success: true });
   }
 
   const port = response.port as number;
@@ -523,7 +642,7 @@ export async function simulatorTouch(
 
   const response = await bridge.sendCommand({
     cmd: "touch",
-    udid,
+    udid: parseDeviceId(udid).udid,
     x,
     y,
     type: eventType,
@@ -563,7 +682,11 @@ export async function simulatorButton(
     throw "Simulator bridge is not running";
   }
 
-  const response = await bridge.sendCommand({ cmd: "button", udid, button });
+  const response = await bridge.sendCommand({
+    cmd: "button",
+    udid: parseDeviceId(udid).udid,
+    button,
+  });
   if (!response.ok) {
     throw `Button failed: ${String(response.error ?? "unknown error")}`;
   }
@@ -635,8 +758,17 @@ async function readDisplayInfo(udid: string): Promise<DisplayInfo | null> {
 export async function simulatorDeviceState(
   udid: string,
 ): Promise<SimulatorDeviceState> {
-  return getSimulatorDeviceState(udid, await readDisplayInfo(udid));
+  const display = await readDisplayInfo(udid);
+  // Fold and orientation come from conductor, which only sees this Mac.
+  if (parseDeviceId(udid).hostId) {
+    return { udid, fold: null, orientation: "portrait", display };
+  }
+
+  return getSimulatorDeviceState(udid, display);
 }
+
+const REMOTE_POSE_UNSUPPORTED =
+  "Rotating and folding aren't available for simulators on a device host yet.";
 
 /**
  * Watch a captured device. The hinge and orientation can be moved from Device
@@ -678,6 +810,9 @@ export async function simulatorSetFold(
   udid: string,
   pose: FoldPose | number,
 ): Promise<SimulatorDeviceState> {
+  if (parseDeviceId(udid).hostId) {
+    throw REMOTE_POSE_UNSUPPORTED;
+  }
   await setSimulatorFold(udid, pose);
   await bridgesByUdid.get(udid)?.sendCommand({ cmd: "refresh_display" });
   const state = await simulatorDeviceState(udid);
@@ -691,9 +826,22 @@ export async function simulatorSetOrientation(
   udid: string,
   orientation: DeviceOrientation,
 ): Promise<SimulatorDeviceState> {
+  if (parseDeviceId(udid).hostId) {
+    throw REMOTE_POSE_UNSUPPORTED;
+  }
   await setSimulatorOrientation(udid, orientation);
   const state = await simulatorDeviceState(udid);
   publishSimulatorDeviceState(state);
 
   return state;
 }
+
+// Removing a device host stops its captures; its simulators keep running.
+onDeviceHostRemoved((hostId) => {
+  remoteListings.delete(hostId);
+  for (const id of [...bridgesByUdid.keys(), ...appState.simulators.keys()]) {
+    if (parseDeviceId(id).hostId === hostId) {
+      forceStopSimulatorCapture(id);
+    }
+  }
+});

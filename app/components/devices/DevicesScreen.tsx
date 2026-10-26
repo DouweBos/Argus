@@ -12,6 +12,7 @@ import {
   useVideoInputDevicesState,
   videoInputLabel,
 } from "../../hooks/useVideoInputDevices";
+import { deviceDisplayName } from "../../lib/deviceHost";
 import { bootSimulator, openDevicePopout, stopDevice } from "../../lib/ipc";
 import {
   MAX_TILE_SIZE,
@@ -261,7 +262,7 @@ export function DevicesScreen() {
                   }
                   onClick={() => toggleGridSelected(d.deviceKey)}
                 >
-                  {d.name}
+                  {deviceDisplayName(d)}
                 </Chip>
               ))}
             </div>
@@ -300,7 +301,7 @@ export function DevicesScreen() {
                     className={`${styles.statusDot} ${d.online ? styles.on : ""}`}
                     aria-label={d.online ? "online" : "offline"}
                   />
-                  {d.name}
+                  {deviceDisplayName(d)}
                   {d.problem && (
                     <span className={styles.problem}>{d.problem.message}</span>
                   )}

@@ -10,6 +10,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { emitHostEvent } from "@argus/host/bus";
 import { getConductorBinPath } from "../cli/conductor";
+import { isRemoteDeviceId } from "../deviceHosts/deviceId";
 
 const execFileAsync = promisify(execFile);
 
@@ -108,6 +109,11 @@ export async function execConductor(
   args: string[],
   options?: { env?: NodeJS.ProcessEnv; maxBuffer?: number },
 ): Promise<{ stdout: string; stderr: string }> {
+  if (isRemoteDeviceId(deviceKey)) {
+    throw new Error(
+      "conductor only reaches this Mac's devices, not a device host's.",
+    );
+  }
   const t0 = Date.now();
   try {
     const result = await execFileAsync(getConductorBin(), args, {

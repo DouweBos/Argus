@@ -18,7 +18,7 @@ vi.mock("../../state", () => ({
 }));
 vi.mock("../simulator/ios", () => ({
   isSimulatorCapturing: vi.fn(() => false),
-  listSimulators: vi.fn(async () => []),
+  listAllSimulators: vi.fn(async () => []),
   simulatorButton: vi.fn(),
   simulatorKeyboard: vi.fn(),
   simulatorTouch: vi.fn(),

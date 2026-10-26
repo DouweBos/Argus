@@ -333,6 +333,29 @@ Argus ships with a bundled version of the `conductor` CLI (the tool agents use t
 - Installing requires **`npm` on your PATH** (Electron's Node has none) and registry access. If the install fails — npm missing, unknown version, offline — Argus keeps using the bundled version and shows the error.
 - The pinned version persists at `~/.argus/conductor.json` and is re-provisioned on next launch if needed. Machine-local; not shared with your team.
 
+### Device hosts
+
+Stream and drive iOS simulators that run on **another Mac** — a Mac mini in the closet, a beefier desktop — as if they were local. Add the Mac under **Settings → Tools → Device hosts** (desktop and Argus for Mac). Its simulators then show up in every device picker, the Devices screen and the phone app, labelled with the host's name, and stream to every viewer with touch, keyboard and hardware buttons.
+
+| Field             | Description                                                                                                    |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| **SSH target**    | An alias from your `~/.ssh/config`, or `user@host`. Resolved with this Mac's SSH config, keys and `ssh-agent`. |
+| **Port**          | Optional. Leave empty to use the SSH config's port (22 by default).                                            |
+| **Identity file** | Optional private key, as an absolute path or `~/…`. Leave empty to use your SSH config and agent.              |
+| **Label**         | Optional name shown next to the host's devices. Defaults to the host name.                                     |
+
+- **No password prompts.** Argus runs `ssh` in batch mode, so the key has to work without one (load it into `ssh-agent`, or point at an unencrypted key). New host keys are accepted on first use; a host key that _changed_ is refused — fix it with `ssh` in a terminal.
+- **Test connection** checks SSH and the prerequisites — macOS, Apple silicon, a working `xcrun simctl` — without installing anything.
+- **First use installs** Argus's simulator bridge and input helper into `~/.argus/remote-bin/<version>/` on the remote Mac. Each Argus build pins its own copy, so updates never mix versions.
+- **Nothing listens on the network.** The video comes back over the SSH connection itself (`ssh -W` to the remote's loopback), and Argus keeps one multiplexed SSH connection per host. A host that stops answering is retried with back-off.
+- **Removing a host** stops its streams and SSH connection. Its simulators keep running.
+- The remote Mac needs **Remote Login** turned on (System Settings → General → Sharing) and Xcode installed. Boot simulators from Argus or on that Mac; a user should be logged in there so simulators can render.
+- The phone app lists your device hosts (read-only) under Settings. Adding, testing and removing hosts is only possible on this Mac: it makes Argus open SSH connections with your keys, which a paired phone shouldn't be able to trigger.
+
+Not yet supported on device hosts: Android emulators, rotating and folding, the UI inspector, deep links and other `conductor`-driven tools, and agents — agents still reserve and drive simulators on this Mac only.
+
+Saved in `~/.argus/device-hosts.json`. Machine-local; not shared with your team.
+
 ---
 
 ## Advanced — Update channel
@@ -771,6 +794,7 @@ Argus keeps everything under `~/.argus/`:
   mcp-tokens.json             ← MCP sign-ins (encrypted)
   ui-state.json               ← Recent projects, the device each session last used, favourite branches, the Devices view
   user-project-settings.json  ← Per-developer project prefs (branch prefix, worktree locations, …)
+  device-hosts.json           ← Other Macs whose simulators Argus streams over SSH
   telemetry-id                ← Anonymous install id
 ```
 

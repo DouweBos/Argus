@@ -2672,6 +2672,33 @@ extension ArgusProtocol {
       }
     }
 
+    public struct DeviceHostsListParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct DeviceHostsListResult: Codable, Sendable {
+      public var hosts: [RemoteDeviceHost]
+
+      enum CodingKeys: String, CodingKey {
+        case hosts = "hosts"
+      }
+
+      public init(hosts: [RemoteDeviceHost]) {
+        self.hosts = hosts
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(hosts, forKey: .hosts)
+      }
+    }
+
     public struct DevicesButtonParams: Codable, Sendable {
       public var deviceId: String
       public var platform: RemotePlatform
@@ -5842,6 +5869,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.DeviceUnregisterPushParams
       public typealias Result = ArgusProtocol.MethodsTypes.DeviceUnregisterPushResult
       public static let name = "device.unregister_push"
+    }
+
+    public enum DeviceHostsList: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.DeviceHostsListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DeviceHostsListResult
+      public static let name = "device_hosts.list"
     }
 
     public enum DevicesButton: RemoteCommand {

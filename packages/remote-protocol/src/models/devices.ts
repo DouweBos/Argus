@@ -14,6 +14,10 @@ export type SimulatorProblem = z.infer<typeof SimulatorProblem>;
 /** A discovered iOS simulator device. */
 export const SimulatorDevice = z.object({
   booted: z.boolean(),
+  /** Device host (another Mac over SSH) it runs on; absent for this machine. */
+  deviceHostId: z.string().optional(),
+  /** That host's label, for "on <label>" in pickers. */
+  deviceHostLabel: z.string().optional(),
   name: z.string(),
   problem: SimulatorProblem.optional(),
   runtime: z.string(),
@@ -93,6 +97,8 @@ export const DeviceInfo = z.object({
   agentId: z.string().nullable(),
   /** Stable key used for conductor log bucketing: UDID, serial, or browser deviceId. */
   deviceKey: z.string(),
+  /** Label of the device host it runs on; absent for this machine. */
+  deviceHostLabel: z.string().optional(),
   name: z.string(),
   /** True if the device is booted/online. */
   online: z.boolean(),
@@ -184,3 +190,53 @@ export const DebugCommandResult = z.object({
   stdout: z.string(),
 });
 export type DebugCommandResult = z.infer<typeof DebugCommandResult>;
+
+/** Where a device host stood the last time Argus reached for it. */
+export const DeviceHostStatus = z.enum(["connected", "unknown", "unreachable"]);
+export type DeviceHostStatus = z.infer<typeof DeviceHostStatus>;
+
+/** Another Mac whose simulators Argus streams over SSH. */
+export const DeviceHost = z.object({
+  /** Last failure, ready to show; null after a success. */
+  error: z.string().nullable(),
+  id: z.string(),
+  identityFile: z.string().nullable(),
+  label: z.string(),
+  port: z.number().nullable(),
+  status: DeviceHostStatus,
+  /** SSH config alias or `user@host`. */
+  target: z.string(),
+});
+export type DeviceHost = z.infer<typeof DeviceHost>;
+
+export const DeviceHostInput = z.object({
+  identityFile: z.string().nullish(),
+  label: z.string().nullish(),
+  port: z.number().nullish(),
+  target: z.string(),
+});
+export type DeviceHostInput = z.infer<typeof DeviceHostInput>;
+
+/** Why a device host can't be used. */
+export const DeviceHostFailure = z.enum([
+  "auth",
+  "host_key",
+  "invalid_config",
+  "no_xcode",
+  "not_macos",
+  "timeout",
+  "unknown",
+  "unreachable",
+  "unsupported_arch",
+]);
+export type DeviceHostFailure = z.infer<typeof DeviceHostFailure>;
+
+export const DeviceHostTestResult = z.object({
+  arch: z.string().nullable(),
+  failure: DeviceHostFailure.nullable(),
+  macosVersion: z.string().nullable(),
+  /** One sentence, ready to show. */
+  message: z.string(),
+  ok: z.boolean(),
+});
+export type DeviceHostTestResult = z.infer<typeof DeviceHostTestResult>;

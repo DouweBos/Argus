@@ -34,6 +34,7 @@ import {
 import { initCodeService, stopCodeService } from "./services/code/lifecycle";
 import { stopAllDebugStreams } from "./services/conductor/debug";
 import { initConductorOverride } from "./services/conductor/override";
+import { stopDeviceHosts } from "./services/deviceHosts/registry";
 import {
   importCliChats,
   importEnabled,
@@ -235,6 +236,7 @@ export function stopHostServices(): void {
   stopMjpegServer();
   stopAllScreencasts();
   stopAllDebugStreams();
+  stopDeviceHosts();
   stopCodeService();
   stopAllLanguageServers();
   stopPowerAssertion();
@@ -280,6 +282,11 @@ export function syncHostCleanup(): void {
   }
   try {
     stopAllLanguageServers();
+  } catch {
+    // Best-effort; we're on the way out.
+  }
+  try {
+    stopDeviceHosts();
   } catch {
     // Best-effort; we're on the way out.
   }

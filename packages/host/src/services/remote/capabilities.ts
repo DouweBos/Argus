@@ -98,6 +98,7 @@ import {
   getCommand,
   invokeCommand,
 } from "../command/registry";
+import { listDeviceHosts } from "../deviceHosts/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
 import { getRunnerById } from "../llm/registry";
 import { collectAllProjects } from "../mcp/projectDiscovery";
@@ -148,7 +149,7 @@ import {
 } from "../simulator/android";
 import {
   isSimulatorCapturing,
-  listSimulators,
+  listAllSimulators,
   simulatorButton,
   simulatorDeviceState,
   simulatorKeyboard,
@@ -357,6 +358,7 @@ function iosToRemoteDevice(d: {
   name: string;
   runtime: string;
   booted: boolean;
+  deviceHostLabel?: string;
 }): RemoteDevice {
   const dims = getVideoDims(d.udid);
 
@@ -370,6 +372,7 @@ function iosToRemoteDevice(d: {
     capturing: isSimulatorCapturing(d.udid),
     width: dims?.width,
     height: dims?.height,
+    ...(d.deviceHostLabel ? { device_host_label: d.deviceHostLabel } : {}),
   };
 }
 
@@ -1984,7 +1987,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     // A missing toolchain (no Xcode / no Android SDK) contributes an empty
     // list rather than failing the whole call.
     const [ios, android] = await Promise.all([
-      listSimulators().catch(() => []),
+      listAllSimulators().catch(() => []),
       listAndroidDevices().catch(() => []),
     ]);
     const devices: RemoteDevice[] = [
@@ -1994,6 +1997,13 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
     return { devices };
   },
+  "device_hosts.list": async () => ({
+    hosts: listDeviceHosts().map(({ id, label, status }) => ({
+      id,
+      label,
+      status,
+    })),
+  }),
   "devices.watch": async (params, ctx) => {
     const { device_id, platform } = parse("devices.watch", params);
     if (!ctx.media) {

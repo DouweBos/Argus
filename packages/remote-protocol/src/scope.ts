@@ -85,6 +85,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "agents.list": FILTER,
   "agents.stopped": FILTER,
   "devices.list": FILTER,
+  // The host owner's other machines; nothing a guest has a claim on.
+  "device_hosts.list": DENIED,
 
   "agents.status": agent(),
   "agents.vitals": agent(),

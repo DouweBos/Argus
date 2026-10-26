@@ -4434,9 +4434,151 @@ extension ArgusProtocol {
     public static let tooling = DetectedSignalKind(rawValue: "tooling")
   }
 
+  public struct DeviceHost: Codable, Sendable {
+    public var error: String?
+    public var id: String
+    public var identityFile: String?
+    public var label: String
+    public var port: Double?
+    public var status: DeviceHostStatus
+    public var target: String
+
+    enum CodingKeys: String, CodingKey {
+      case error = "error"
+      case id = "id"
+      case identityFile = "identityFile"
+      case label = "label"
+      case port = "port"
+      case status = "status"
+      case target = "target"
+    }
+
+    public init(error: String? = nil, id: String, identityFile: String? = nil, label: String, port: Double? = nil, status: DeviceHostStatus, target: String) {
+      self.error = error
+      self.id = id
+      self.identityFile = identityFile
+      self.label = label
+      self.port = port
+      self.status = status
+      self.target = target
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(error, forKey: .error)
+      try c.encode(id, forKey: .id)
+      try c.encode(identityFile, forKey: .identityFile)
+      try c.encode(label, forKey: .label)
+      try c.encode(port, forKey: .port)
+      try c.encode(status, forKey: .status)
+      try c.encode(target, forKey: .target)
+    }
+  }
+
+  public struct DeviceHostFailure: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let auth = DeviceHostFailure(rawValue: "auth")
+    public static let hostKey = DeviceHostFailure(rawValue: "host_key")
+    public static let invalidConfig = DeviceHostFailure(rawValue: "invalid_config")
+    public static let noXcode = DeviceHostFailure(rawValue: "no_xcode")
+    public static let notMacos = DeviceHostFailure(rawValue: "not_macos")
+    public static let timeout = DeviceHostFailure(rawValue: "timeout")
+    public static let unknown = DeviceHostFailure(rawValue: "unknown")
+    public static let unreachable = DeviceHostFailure(rawValue: "unreachable")
+    public static let unsupportedArch = DeviceHostFailure(rawValue: "unsupported_arch")
+  }
+
+  public struct DeviceHostInput: Codable, Sendable {
+    public var identityFile: String?
+    public var label: String?
+    public var port: Double?
+    public var target: String
+
+    enum CodingKeys: String, CodingKey {
+      case identityFile = "identityFile"
+      case label = "label"
+      case port = "port"
+      case target = "target"
+    }
+
+    public init(identityFile: String? = nil, label: String? = nil, port: Double? = nil, target: String) {
+      self.identityFile = identityFile
+      self.label = label
+      self.port = port
+      self.target = target
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(identityFile, forKey: .identityFile)
+      try c.encodeIfPresent(label, forKey: .label)
+      try c.encodeIfPresent(port, forKey: .port)
+      try c.encode(target, forKey: .target)
+    }
+  }
+
+  public struct DeviceHostStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let connected = DeviceHostStatus(rawValue: "connected")
+    public static let unknown = DeviceHostStatus(rawValue: "unknown")
+    public static let unreachable = DeviceHostStatus(rawValue: "unreachable")
+  }
+
+  public struct DeviceHostTestResult: Codable, Sendable {
+    public var arch: String?
+    public var failure: DeviceHostFailure?
+    public var macosVersion: String?
+    public var message: String
+    public var ok: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case arch = "arch"
+      case failure = "failure"
+      case macosVersion = "macosVersion"
+      case message = "message"
+      case ok = "ok"
+    }
+
+    public init(arch: String? = nil, failure: DeviceHostFailure? = nil, macosVersion: String? = nil, message: String, ok: Bool) {
+      self.arch = arch
+      self.failure = failure
+      self.macosVersion = macosVersion
+      self.message = message
+      self.ok = ok
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(arch, forKey: .arch)
+      try c.encode(failure, forKey: .failure)
+      try c.encode(macosVersion, forKey: .macosVersion)
+      try c.encode(message, forKey: .message)
+      try c.encode(ok, forKey: .ok)
+    }
+  }
+
   public struct DeviceInfo: Codable, Sendable {
     public var agentId: String?
     public var deviceKey: String
+    public var deviceHostLabel: String?
     public var name: String
     public var online: Bool
     public var platform: DevicePlatform
@@ -4451,6 +4593,7 @@ extension ArgusProtocol {
     enum CodingKeys: String, CodingKey {
       case agentId = "agentId"
       case deviceKey = "deviceKey"
+      case deviceHostLabel = "deviceHostLabel"
       case name = "name"
       case online = "online"
       case platform = "platform"
@@ -4463,9 +4606,10 @@ extension ArgusProtocol {
       case sessionPath = "sessionPath"
     }
 
-    public init(agentId: String? = nil, deviceKey: String, name: String, online: Bool, platform: DevicePlatform, problem: SimulatorProblem? = nil, repoRoot: String? = nil, reservationKey: String, reserved: Bool, runtime: String? = nil, sessionId: String? = nil, sessionPath: String? = nil) {
+    public init(agentId: String? = nil, deviceKey: String, deviceHostLabel: String? = nil, name: String, online: Bool, platform: DevicePlatform, problem: SimulatorProblem? = nil, repoRoot: String? = nil, reservationKey: String, reserved: Bool, runtime: String? = nil, sessionId: String? = nil, sessionPath: String? = nil) {
       self.agentId = agentId
       self.deviceKey = deviceKey
+      self.deviceHostLabel = deviceHostLabel
       self.name = name
       self.online = online
       self.platform = platform
@@ -4482,6 +4626,7 @@ extension ArgusProtocol {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(agentId, forKey: .agentId)
       try c.encode(deviceKey, forKey: .deviceKey)
+      try c.encodeIfPresent(deviceHostLabel, forKey: .deviceHostLabel)
       try c.encode(name, forKey: .name)
       try c.encode(online, forKey: .online)
       try c.encode(platform, forKey: .platform)
@@ -10298,6 +10443,7 @@ extension ArgusProtocol {
     public var capturing: Bool
     public var width: Double?
     public var height: Double?
+    public var deviceHostLabel: String?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -10309,9 +10455,10 @@ extension ArgusProtocol {
       case capturing = "capturing"
       case width = "width"
       case height = "height"
+      case deviceHostLabel = "device_host_label"
     }
 
-    public init(id: String, platform: RemoteDevicePlatform, name: String, runtime: String? = nil, booted: Bool, isTv: Bool, capturing: Bool, width: Double? = nil, height: Double? = nil) {
+    public init(id: String, platform: RemoteDevicePlatform, name: String, runtime: String? = nil, booted: Bool, isTv: Bool, capturing: Bool, width: Double? = nil, height: Double? = nil, deviceHostLabel: String? = nil) {
       self.id = id
       self.platform = platform
       self.name = name
@@ -10321,6 +10468,7 @@ extension ArgusProtocol {
       self.capturing = capturing
       self.width = width
       self.height = height
+      self.deviceHostLabel = deviceHostLabel
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -10334,6 +10482,7 @@ extension ArgusProtocol {
       try c.encode(capturing, forKey: .capturing)
       try c.encodeIfPresent(width, forKey: .width)
       try c.encodeIfPresent(height, forKey: .height)
+      try c.encodeIfPresent(deviceHostLabel, forKey: .deviceHostLabel)
     }
   }
 
@@ -10384,6 +10533,47 @@ extension ArgusProtocol {
       try c.encode(deviceId, forKey: .deviceId)
       try c.encode(holder, forKey: .holder)
       try c.encodeIfPresent(waiting, forKey: .waiting)
+    }
+  }
+
+  public struct RemoteDeviceHostStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let connected = RemoteDeviceHostStatus(rawValue: "connected")
+    public static let unknown = RemoteDeviceHostStatus(rawValue: "unknown")
+    public static let unreachable = RemoteDeviceHostStatus(rawValue: "unreachable")
+  }
+
+  public struct RemoteDeviceHost: Codable, Sendable {
+    public var id: String
+    public var label: String
+    public var status: RemoteDeviceHostStatus
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case label = "label"
+      case status = "status"
+    }
+
+    public init(id: String, label: String, status: RemoteDeviceHostStatus) {
+      self.id = id
+      self.label = label
+      self.status = status
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(label, forKey: .label)
+      try c.encode(status, forKey: .status)
     }
   }
 
@@ -13522,6 +13712,8 @@ extension ArgusProtocol {
 
   public struct SimulatorDevice: Codable, Sendable {
     public var booted: Bool
+    public var deviceHostId: String?
+    public var deviceHostLabel: String?
     public var name: String
     public var problem: SimulatorProblem?
     public var runtime: String
@@ -13529,14 +13721,18 @@ extension ArgusProtocol {
 
     enum CodingKeys: String, CodingKey {
       case booted = "booted"
+      case deviceHostId = "deviceHostId"
+      case deviceHostLabel = "deviceHostLabel"
       case name = "name"
       case problem = "problem"
       case runtime = "runtime"
       case udid = "udid"
     }
 
-    public init(booted: Bool, name: String, problem: SimulatorProblem? = nil, runtime: String, udid: String) {
+    public init(booted: Bool, deviceHostId: String? = nil, deviceHostLabel: String? = nil, name: String, problem: SimulatorProblem? = nil, runtime: String, udid: String) {
       self.booted = booted
+      self.deviceHostId = deviceHostId
+      self.deviceHostLabel = deviceHostLabel
       self.name = name
       self.problem = problem
       self.runtime = runtime
@@ -13546,6 +13742,8 @@ extension ArgusProtocol {
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(booted, forKey: .booted)
+      try c.encodeIfPresent(deviceHostId, forKey: .deviceHostId)
+      try c.encodeIfPresent(deviceHostLabel, forKey: .deviceHostLabel)
       try c.encode(name, forKey: .name)
       try c.encodeIfPresent(problem, forKey: .problem)
       try c.encode(runtime, forKey: .runtime)

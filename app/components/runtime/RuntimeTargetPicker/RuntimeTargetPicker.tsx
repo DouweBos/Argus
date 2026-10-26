@@ -5,6 +5,7 @@ import {
   useVideoInputDevices,
   videoInputLabel,
 } from "../../../hooks/useVideoInputDevices";
+import { deviceDisplayName } from "../../../lib/deviceHost";
 import { listAndroidDevices, listSimulators } from "../../../lib/ipc";
 import {
   selectAndroidDevice,
@@ -65,7 +66,7 @@ export function RuntimeTargetPicker({ sessionId }: RuntimeTargetPickerProps) {
         header: "iOS Simulators",
         items: devices.map((d) => ({
           id: d.udid,
-          label: d.name,
+          label: deviceDisplayName(d),
           trailing: d.booted ? "booted" : undefined,
           selected: platform === "ios" && d.udid === iosUdid,
           onSelect: () => {

@@ -214,6 +214,9 @@ export const REMOTE_METHODS = {
   "sessions.tags": "monitor",
   /** List connected simulators/emulators. */
   "devices.list": "monitor",
+  /** Read-only: adding or testing one makes the host open SSH with its own
+   *  keys, which no paired client gets to trigger. */
+  "device_hosts.list": "monitor",
   /** Begin/stop streaming a device's screen (frames ride the binary channel). */
   "devices.watch": "monitor",
   "devices.unwatch": "monitor",

@@ -14,8 +14,8 @@
 
 import type { H264Config } from "./h264-parser";
 import type { RemotePlatform } from "@argus/remote-protocol";
-import * as net from "node:net";
 import { error, log } from "@argus/host/logger";
+import { machineForDevice } from "../deviceHosts/registry";
 import { capture } from "../telemetry/telemetry";
 import { H264AccessUnitParser } from "./h264-parser";
 import { getBridgeForUdid } from "./ios";
@@ -191,7 +191,10 @@ async function startAdaptive(stream: RemoteStream): Promise<void> {
     onFrame: (data, keyFrame, timestamp) =>
       emitFrame(stream, data, keyFrame, timestamp),
   });
-  const socket = net.connect(response.port, "127.0.0.1");
+  // Loopback here, or `ssh -W` to a device host's loopback.
+  const socket = machineForDevice(stream.deviceId).machine.connect(
+    response.port,
+  );
   socket.on("data", (chunk: Buffer) => parser.push(chunk));
   socket.on("error", (err) => {
     error(`[RemoteVideo] stream socket error (${stream.deviceId}):`, err);

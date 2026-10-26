@@ -522,11 +522,25 @@ public struct RemoteDevice: Codable, Hashable, Sendable, Identifiable {
   public var capturing: Bool
   public var width: Int?
   public var height: Int?
+  /// The other Mac it runs on, reached over SSH; nil when it's on the computer.
+  public var deviceHostLabel: String?
 
   enum CodingKeys: String, CodingKey {
     case id, platform, name, runtime, booted, capturing, width, height
     case isTv = "is_tv"
+    case deviceHostLabel = "device_host_label"
   }
+}
+
+/// Another Mac the computer streams simulators from over SSH.
+public struct RemoteDeviceHost: Codable, Hashable, Sendable, Identifiable {
+  public enum Status: String, Codable, Sendable {
+    case connected, unknown, unreachable
+  }
+
+  public var id: String
+  public var label: String
+  public var status: Status
 }
 
 /// Who is driving a device. The paired phone or Mac holding it, not the

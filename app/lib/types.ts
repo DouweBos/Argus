@@ -106,6 +106,9 @@ export type AgentStatus = Omit<
 
 export type {
   ConductorLogEntry,
+  DeviceHost,
+  DeviceHostInput,
+  DeviceHostTestResult,
   DevicePlatform as HostDevicePlatform,
   SimulatorDevice,
   SimulatorProblem,

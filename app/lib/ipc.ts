@@ -14,6 +14,9 @@ import type { RemoteDeviceClaimState } from "./deviceClaim";
 import type {
   AgentStatus,
   AndroidDevice,
+  DeviceHost,
+  DeviceHostInput,
+  DeviceHostTestResult,
   ArgusConfig,
   ArgusConfigSuggestion,
   AcceptProposalResult,
@@ -2038,6 +2041,21 @@ export type { TerminalScrollback };
 export const terminalScrollback = (
   sessionId: string,
 ): Promise<TerminalScrollback> => invoke("terminal_scrollback", { sessionId });
+
+// Device hosts (other Macs whose simulators stream over SSH)
+export const listDeviceHosts = (): Promise<DeviceHost[]> =>
+  invoke("list_device_hosts");
+
+export const addDeviceHost = (input: DeviceHostInput): Promise<DeviceHost> =>
+  invoke("add_device_host", input);
+
+export const removeDeviceHost = (id: string): Promise<void> =>
+  invoke("remove_device_host", { id });
+
+/** Probes SSH and prerequisites without installing anything. */
+export const testDeviceHost = (
+  input: DeviceHostInput,
+): Promise<DeviceHostTestResult> => invoke("test_device_host", input);
 
 // Simulator commands
 export const checkIosTools = (): Promise<void> => invoke("check_ios_tools");

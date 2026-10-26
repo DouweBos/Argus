@@ -91,6 +91,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case deviceUnregisterPush = "device.unregister_push"
 
   case devicesList = "devices.list"
+  case deviceHostsList = "device_hosts.list"
   case devicesClaim = "devices.claim"
   case devicesRelease = "devices.release"
   case devicesClaimStatus = "devices.claim_status"

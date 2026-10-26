@@ -150,7 +150,7 @@ struct RuntimeTargetPicker: View {
         if runtime.simulators.isEmpty { Text(runtime.iosToolsError == nil ? "None" : "Unavailable") }
         ForEach(runtime.simulators, id: \.udid) { device in
           toggle(
-            "\(device.name)\(device.booted ? " — booted" : device.problem != nil ? " — can't boot" : "")",
+            "\(device.displayName)\(device.booted ? " — booted" : device.problem != nil ? " — can't boot" : "")",
             on: isSelected(.ios, device.udid)
           ) { runtime.select(platform: .ios, device: device.udid, session: sessionId) }
         }
@@ -187,7 +187,7 @@ struct RuntimeTargetPicker: View {
     switch runtime.devicePlatform {
     case .web: return "Chromium"
     case .ios:
-      return runtime.simulator(runtime.selectedDevice(platform: .ios, session: sessionId))?.name
+      return runtime.simulator(runtime.selectedDevice(platform: .ios, session: sessionId))?.displayName
         ?? "Pick device"
     case .android:
       return runtime.androidDevice(runtime.selectedDevice(platform: .android, session: sessionId))?
