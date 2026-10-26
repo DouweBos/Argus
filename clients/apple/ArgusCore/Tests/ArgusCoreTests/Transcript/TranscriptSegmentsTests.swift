@@ -79,19 +79,38 @@ struct TranscriptSegmentsTests {
     #expect(segments.segmentIndex(holding: "h") == nil)
   }
 
-  @Test("random edits always match grouping the whole chat")
-  func randomEdits() {
+  private func user(_ id: String) -> RemoteMessage {
+    RemoteMessage(id: id, role: .user, textBlocks: ["go"], toolCalls: [])
+  }
+
+  @Test("a reply landing after a turn's work keeps the work folded")
+  func turnReply() {
+    var segments = TranscriptSegments(folding: .turns)
+    var messages = [user("u"), text("a", "looking"), tool("b")]
+    segments.update(messages)
+    #expect(segments.segments.map(\.id) == ["u", "group-a"])
+    messages.append(text("r", "done"))
+    let change = segments.update(messages)
+    #expect(segments.segments.map(\.id) == ["u", "group-a", "r"])
+    #expect(change.removed.isEmpty && change.inserted == 2..<3)
+  }
+
+  @Test(
+    "random edits always match grouping the whole chat",
+    arguments: [ToolGroups.Folding.runs, .turns])
+  func randomEdits(folding: ToolGroups.Folding) {
     var rng = SystemRandomNumberGenerator()
     for _ in 0..<200 {
-      var segments = TranscriptSegments()
+      var segments = TranscriptSegments(folding: folding)
       var messages: [RemoteMessage] = []
       var next = 0
       func make() -> RemoteMessage {
         next += 1
-        switch Int.random(in: 0..<6, using: &rng) {
+        switch Int.random(in: 0..<7, using: &rng) {
         case 0, 1: return text("n\(next)")
         case 2: return hidden("n\(next)")
         case 3: return tool("n\(next)", "Edit")
+        case 4: return user("n\(next)")
         default: return tool("n\(next)")
         }
       }
@@ -104,7 +123,7 @@ struct TranscriptSegmentsTests {
           let index = Int.random(in: 0..<messages.count, using: &rng)
           let replacement = make()
           messages[index] = RemoteMessage(
-            id: messages[index].id, role: .assistant, textBlocks: replacement.textBlocks,
+            id: messages[index].id, role: replacement.role, textBlocks: replacement.textBlocks,
             toolCalls: replacement.toolCalls)
         case 3 where !messages.isEmpty:
           messages.remove(at: Int.random(in: 0..<messages.count, using: &rng))
@@ -113,7 +132,13 @@ struct TranscriptSegmentsTests {
         default: messages.append(make())
         }
         let change = segments.update(messages)
-        expectMatchesFullGrouping(segments, messages)
+        if folding == .turns {
+          let full = ToolGroups.groupTurns(messages)
+          #expect(segments.segments.map(\.id) == full.map(\.id))
+          #expect(segments.segments.map(\.messages) == full.map(\.messages))
+        } else {
+          expectMatchesFullGrouping(segments, messages)
+        }
         // The change, applied to the old ids, gives the new ones.
         var ids = before.map(\.id)
         ids.replaceSubrange(change.removed, with: segments.segments[change.inserted].map(\.id))

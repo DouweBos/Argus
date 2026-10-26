@@ -378,6 +378,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_transcript_link_opened` | A file or URL link in a transcript was used | `action` (`open`, `open_in_editor`, `reveal`, `copy_path`, `open_url`, `copy_link`), `relative` (the path needed the session's worktree) |
 | `mac_transcript_find_used` | Find in chat closed after a search | `matches_bucket` (`0`, `1-9`, `10-99`, `100+`), `navigated` (stepped between matches) |
 | `mac_transcript_copied` | Transcript text was copied with ⌘C or the context menu | `span` (`selection` within one message, `across_messages`) |
+| `mac_transcript_work_log_opened` | A turn's folded work ("Worked for 5m 29s") was opened in a transcript | `working` (the agent was still on that turn) |
 | `mac_image_viewer_used` | The image viewer was opened, paged, or an image was copied, saved or opened in Preview from it | `action` (`open`, `page`, `copy`, `save`, `open_preview`) |
 | `mac_message_action` | A message's hover action was used | `action` (`copy`, `edit`, `fork_session`, `fork_agent`), `role` (`user`, `assistant`), `success` (the host took the edit or fork; always true for copy) |
 | `mac_input_used` | A chat-input feature was used | `affordance` (`slash_command`, `mention`, `image_paste`, `image_drop`, `image_attach`, `file_mention`, `permission_cycle`, `interrupt_shortcut`, `follow_up`) |

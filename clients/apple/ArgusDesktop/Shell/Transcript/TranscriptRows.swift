@@ -33,31 +33,39 @@ struct TranscriptMessageRow: View, Equatable {
     if tip { row.help(timestamp) } else { row }
   }
 
-  private static let userMargin: CGFloat = 80
+  /// A sent message's bubble takes at most this share of the column.
+  private static let bubbleFraction: CGFloat = 0.7
   private static let bubblePadding = EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
 
-  /// How wide a user bubble lays out in a row this wide.
+  /// How wide a user bubble lays out in a column this wide.
   static func bubbleWidth(of text: TranscriptRendered, in width: CGFloat) -> CGFloat {
     let inset = bubblePadding.leading + bubblePadding.trailing
-    let fitted = TranscriptMessageTextView.size(of: text, forWidth: width - userMargin - inset, fills: false)
+    let room = (width * bubbleFraction).rounded(.down) - inset
+    let fitted = TranscriptMessageTextView.size(of: text, forWidth: room, fills: false)
     return fitted.width + inset
   }
 
+  @ViewBuilder
   private var row: some View {
-    HStack(alignment: .top, spacing: 0) {
-      if isUser { Spacer(minLength: Self.userMargin) }
-      VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
-        badges
-        chips
-        images
-        if let text = model.text(for: message) {
-          textView(text)
-        }
-        ForEach(calls) { call in
-          TranscriptToolCall(agentKey: agentKey, messageId: message.id, call: call)
-        }
+    if isUser {
+      // A sent message: a quiet bubble at the trailing edge, at most 70% of the column.
+      TrailingFractionLayout(fraction: Self.bubbleFraction) { content }
+    } else {
+      content.frame(maxWidth: .infinity, alignment: .leading)
+    }
+  }
+
+  private var content: some View {
+    VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
+      badges
+      chips
+      images
+      if let text = model.text(for: message) {
+        textView(text)
       }
-      if !isUser { Spacer(minLength: 0) }
+      ForEach(calls) { call in
+        TranscriptToolCall(agentKey: agentKey, messageId: message.id, call: call)
+      }
     }
   }
 
@@ -72,9 +80,7 @@ struct TranscriptMessageRow: View, Equatable {
     .padding(isUser ? Self.bubblePadding : EdgeInsets())
     .background {
       if isUser {
-        RoundedRectangle(cornerRadius: theme.radius)
-          .fill(theme.accentSoft)
-          .overlay(RoundedRectangle(cornerRadius: theme.radius).stroke(theme.accentBorder, lineWidth: 1))
+        RoundedRectangle(cornerRadius: theme.radius).fill(theme.bgSecondary)
       }
     }
   }
@@ -165,75 +171,82 @@ struct TranscriptToolCall: View {
   }
 }
 
-/// A run of tool-only messages folded into one row. Open state lives in the
-/// model so find can open a group that holds the match.
-struct TranscriptToolGroup: View, Equatable {
+/// A turn's work — its tool calls and the narration between them — folded
+/// into one quiet line that opens in place. Open state lives in the model so
+/// find can open a log that holds the match.
+struct TranscriptWorkLog: View, Equatable {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
   @Environment(TranscriptModel.self) private var model
 
   let agentKey: String
-  let id: String
-  let messages: [RemoteMessage]
+  let log: TranscriptRow.WorkLog
 
-  private var expanded: Bool { model.expandedGroups.contains(id) }
+  private var expanded: Bool { model.expandedGroups.contains(log.id) }
+  /// The newest thing in the chat while the agent is still at it.
+  private var working: Bool { log.ended == nil && host.statusByAgent[agentKey]?.status == .running }
 
   nonisolated static func == (a: Self, b: Self) -> Bool {
-    a.agentKey == b.agentKey && a.id == b.id && a.messages == b.messages
+    a.agentKey == b.agentKey && a.log == b.log
   }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
       summary
       if expanded {
-        ForEach(messages) { message in
+        ForEach(log.messages) { message in
           TranscriptMessageRow(agentKey: agentKey, message: message, tip: true)
         }
       }
+      Rectangle().fill(theme.borderSubtle).frame(height: 1)
     }
   }
 
   private var summary: some View {
     Button {
-      if expanded { model.expandedGroups.remove(id) } else { model.expandedGroups.insert(id) }
-    } label: {
-      HStack(spacing: 8) {
-        Image(systemName: expanded ? Icon.chevronDown : Icon.chevronRight)
-          .font(.scaled(size: 10, weight: .semibold))
-          .foregroundStyle(theme.textMuted)
-        Text("\(ToolGroups.countToolCalls(messages)) tool calls · \(messages.count) messages")
-          .font(.scaled(size: 12))
-          .foregroundStyle(theme.textSecondary)
-        Spacer(minLength: 4)
-        ForEach(ToolGroups.categorize(messages), id: \.0) { category, count in
-          if let icon = icon(for: category) {
-            HStack(spacing: 2) {
-              Image(systemName: icon).font(.scaled(size: 9))
-              Text("\(count)").font(.scaled(size: 10))
-            }
-            .foregroundStyle(theme.textMuted)
-          }
-        }
+      if expanded {
+        model.expandedGroups.remove(log.id)
+      } else {
+        model.expandedGroups.insert(log.id)
+        MacTelemetry.capture(.transcriptWorkLogOpened(working: working))
       }
-      .padding(.horizontal, 10)
-      .padding(.vertical, 7)
-      .background(theme.bgSecondary, in: RoundedRectangle(cornerRadius: theme.radiusSmall))
+    } label: {
+      HStack(spacing: 4) {
+        if working {
+          TimelineView(.periodic(from: .now, by: 1)) { context in
+            Text(label(now: context.date))
+          }
+        } else {
+          Text(label(now: .now))
+        }
+        Image(systemName: Icon.chevronRight)
+          .font(.scaled(size: 9, weight: .semibold))
+          .rotationEffect(.degrees(expanded ? 90 : 0))
+      }
+      .font(.scaled(size: 12))
+      .foregroundStyle(theme.textMuted)
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .accessibilityLabel("Collapsed tool calls")
+    .help(Self.callCount(log.messages))
+    .accessibilityLabel(label(now: .now))
     .accessibilityValue(expanded ? "expanded" : "collapsed")
   }
 
-  private func icon(for category: ToolGroups.ToolCategory) -> String? {
-    switch category {
-    case .read: Icon.file
-    case .search: Icon.search
-    case .bash: Icon.terminal
-    case .edit: Icon.pencil
-    case .web: Icon.web
-    case .agent: Icon.agent
-    case .other: nil
+  private func label(now: Date) -> String {
+    if working {
+      guard let started = log.started else { return "Working…" }
+      return "Working for \(ChromeText.duration(now.timeIntervalSince1970 - started / 1000))"
     }
+    let end = log.ended ?? log.messages.last?.timestamp
+    guard let started = log.started ?? log.messages.first?.timestamp, let end, end > started else {
+      return Self.callCount(log.messages)
+    }
+    return "Worked for \(ChromeText.duration((end - started) / 1000))"
+  }
+
+  private static func callCount(_ messages: [RemoteMessage]) -> String {
+    let count = ToolGroups.countToolCalls(messages)
+    return "\(count) tool call\(count == 1 ? "" : "s")"
   }
 }

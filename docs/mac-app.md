@@ -21,7 +21,7 @@ lives in the repository (`plan/swiftui-parity.md`).
   machine, opening it in your editor, its run command and huddle, its branch,
   pushing it and how much it has changed. The toolbar's details button hides it.
 - Creating and deleting sessions, with setup progress.
-- Agents in a session as tabs, with their transcript.
+- Agents in a session as tabs, with their transcript: one centred column, each turn's tool calls folded into a "Worked for …" line that opens in place.
 - A home for each session: its setup progress (or why it failed), the
   agents working in it, and committing, pushing and merging its branch.
   A session's Home, Agents, Code and Git views switch from the toolbar's icons, the

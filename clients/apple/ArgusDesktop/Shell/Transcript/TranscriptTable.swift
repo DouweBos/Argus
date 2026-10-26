@@ -191,29 +191,29 @@ final class TranscriptTextCell: TranscriptHoverCell {
 
   override func layout() {
     super.layout()
-    text.frame = Self.textFrame(in: bounds)
+    text.frame = Self.textFrame(in: bounds, reserve: reserve)
   }
 
-  /// The hosted rows' column: at most 920 wide, centred, 20 in from each side,
-  /// with the 14 between rows below.
-  static func textFrame(in bounds: NSRect) -> NSRect {
-    let column = min(bounds.width, 920)
-    let width = textWidth(for: bounds.width)
-    return NSRect(x: (bounds.width - column) / 2 + 20, y: 0, width: width, height: max(bounds.height - 14, 0))
+  /// The hosted rows' column (`ReadingColumn`), with the space between rows below.
+  static func textFrame(in bounds: NSRect, reserve: CGFloat) -> NSRect {
+    let column = ReadingColumn.frame(in: bounds.width, reserve: reserve)
+    let width = max((column.width * 2).rounded(.down) / 2, 1)
+    return NSRect(x: column.x, y: 0, width: width, height: max(bounds.height - TranscriptRow.spacing, 0))
   }
 
-  static func textWidth(for width: CGFloat) -> CGFloat {
-    max(((min(width, 920) - 40) * 2).rounded(.down) / 2, 1)
-  }
-
-  static func height(of content: TranscriptRendered, width: CGFloat) -> CGFloat {
-    ceil(TranscriptMessageTextView.height(of: content, width: textWidth(for: width))) + 14
+  static func height(of content: TranscriptRendered, width: CGFloat, reserve: CGFloat) -> CGFloat {
+    let column = textFrame(in: NSRect(x: 0, y: 0, width: width, height: 0), reserve: reserve)
+    return ceil(TranscriptMessageTextView.height(of: content, width: column.width)) + TranscriptRow.spacing
   }
 }
 
 /// A row that shows its message's hover bar while the pointer is on it, at
 /// the top of the part on screen: a long message's top is often far above.
 class TranscriptHoverCell: NSTableCellView {
+  /// What the reading column keeps clear of at the trailing edge.
+  var reserve: CGFloat = 0 {
+    didSet { if reserve != oldValue { needsLayout = true } }
+  }
   /// What the bar acts on, when the row is one message with text.
   var hover: (message: RemoteMessage, model: TranscriptModel, environment: EnvironmentValues)? {
     didSet { if hover == nil { hoverBar.hide() } }
@@ -270,7 +270,7 @@ class TranscriptHoverCell: NSTableCellView {
 
   private func showHoverBar() {
     guard let hover else { return }
-    var frame = TranscriptTextCell.textFrame(in: bounds)
+    var frame = TranscriptTextCell.textFrame(in: bounds, reserve: reserve)
     frame.origin.y = max(frame.minY, visibleRect.minY + 4)
     // Your own message's bubble hugs the right edge; the bar sits beside it, not on it.
     if hover.message.role == .user, let text = hover.model.text(for: hover.message) {
