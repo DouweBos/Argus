@@ -96,10 +96,10 @@ struct RuntimesOverview: View {
     }
   }
 
-  /// The run's own tab, in its session's terminal panel.
+  /// The run's own tab, in its session's side panel.
   private func show(_ row: Row) {
-    terminals.select(row.tab.id, in: row.session.id)
-    model.terminalPanelVisible = true
+    model.showTerminal(row.tab.id, session: row.session.id)
+    MacTelemetry.capture(.panelTabOpened(kind: .terminal, via: .action))
     model.open(session: row.session.id)
   }
 

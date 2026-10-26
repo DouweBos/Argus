@@ -95,7 +95,7 @@ struct CodeViewCommands: View {
     }
     .keyboardShortcut("m", modifiers: [.shift, .command])
     .disabled(code == nil)
-    Button("Toggle Terminal") { model.terminalPanelVisible.toggle() }
+    Button("Toggle Terminal") { model.togglePanelTab(.terminal, via: .shortcut) }
       .keyboardShortcut("`", modifiers: .control)
       .disabled(code == nil)
   }

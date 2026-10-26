@@ -1,7 +1,7 @@
 import ArgusUI
 import SwiftUI
 
-/// The three panels: workspace sidebar, agent control, runtime.
+/// The three panels: workspace sidebar, agent control, and the side panel's tabs.
 struct MainWindow: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
@@ -30,17 +30,20 @@ struct MainWindow: View {
         // Room for the screens along the sidebar's foot.
         .navigationSplitViewColumnWidth(min: 256, ideal: 272, max: 380)
     } detail: {
-      // The runtime keeps the width it was given and the centre takes the
-      // rest, as on the desktop; a split view's detail column would grow
-      // with the window and leave the chat squeezed.
+      // The side panel keeps the width it was given and the centre takes the
+      // rest; a split view's detail column would grow with the window and
+      // leave the chat squeezed. Maximized, it covers the centre, which stays
+      // laid out underneath so the session's toolbar keeps its items.
       ResizableHSplit(
-        key: "runtime.width", leadingMin: contentMinWidth,
-        trailingMin: Self.runtimeMinWidth, trailingIdeal: Self.runtimeIdealWidth, trailingMax: Self.runtimeMaxWidth,
-        showsTrailing: model.runtimePanelVisible
+        width: panelWidth, leadingMin: contentMinWidth,
+        trailingMin: SidePanelModel.minWidth, trailingMax: SidePanelModel.maxWidth,
+        showsTrailing: model.sidePanelVisible && !panelMaximized
       ) {
-        centre
+        centre.overlay {
+          if panelMaximized { SidePanel(sessionId: model.route.sessionId) }
+        }
       } trailing: {
-        RuntimePanel(sessionId: model.route.sessionId)
+        SidePanel(sessionId: model.route.sessionId)
       }
       .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.detailWidth = $0 }
       .modifier(CanvasBackground())
@@ -125,17 +128,23 @@ extension MainWindow {
   /// the diff's (280); its panes narrow down to these, so nothing is clipped.
   static let gitContentMinWidth: CGFloat = 740
   static let contentMinWidth: CGFloat = 420
-  /// The runtime panel's bounds and first width, the desktop's right panel's.
-  static let runtimeMinWidth: CGFloat = 280
-  static let runtimeIdealWidth: CGFloat = 420
-  static let runtimeMaxWidth: CGFloat = 800
-  /// Centre and runtime minimums with the git panel open and the sidebar hidden.
-  static let minWindowWidth: CGFloat = gitContentMinWidth + runtimeMinWidth + 7
-  /// App sidebar, git panel and runtime panel at their minimums.
+  /// Centre and side panel minimums with the git panel open and the sidebar hidden.
+  static let minWindowWidth: CGFloat = gitContentMinWidth + SidePanelModel.minWidth + 7
+  /// App sidebar, git panel and side panel at their minimums.
   static let roomyGitWidth: CGFloat = 1260
 
+  private var panelMaximized: Bool { model.panels.isMaximized(model.route.sessionId) }
+
+  /// The width the panel was left at in the session on screen.
+  private var panelWidth: Binding<Double> {
+    let session = model.route.sessionId
+    return Binding(
+      get: { model.panels.width(session) },
+      set: { model.panels.setWidth($0, session: session) })
+  }
+
   /// The app sidebar gives way first when the git panel needs the room, so
-  /// the runtime panel keeps its place; it comes back once there's space.
+  /// the side panel keeps its place; it comes back once there's space.
   private func fitColumns() {
     let cramped = model.route.gitView != nil && windowWidth > 0 && windowWidth < Self.roomyGitWidth
     if cramped, columns == .all {

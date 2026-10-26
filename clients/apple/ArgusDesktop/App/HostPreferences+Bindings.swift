@@ -73,12 +73,17 @@ extension HostPreferences {
         }),
       homeStringMap("runtime.ios_by_session", key: RuntimeModel.Keys.ios, home),
       homeStringMap("runtime.android_by_session", key: RuntimeModel.Keys.android, home),
-      // The Mac's alone: Electron's right panel holds other tools too and isn't kept across launches.
+      // The Mac's alone: each session's side panel, its tabs and width.
       Binding(
-        slot: .uiState("runtime.hidden_panels"),
-        read: { home.stringArray(forKey: RuntimeModel.Keys.hiddenPanels).map { .array($0.map(JSONValue.string)) } },
+        slot: .uiState("mac.side_panels"),
+        read: {
+          home.string(forKey: SidePanelModel.key).flatMap { $0.data(using: .utf8) }
+            .flatMap { try? JSONDecoder().decode(JSONValue.self, from: $0) }
+        },
         write: { value in
-          if let keys: [String] = decoded(value) { home.set(keys, forKey: RuntimeModel.Keys.hiddenPanels) }
+          if let data = try? JSONEncoder().encode(value), let text = String(data: data, encoding: .utf8) {
+            home.set(text, forKey: SidePanelModel.key)
+          }
         }),
       Binding(
         slot: .uiState("runtime.browser_preset"),

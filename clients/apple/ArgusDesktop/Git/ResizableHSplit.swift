@@ -20,7 +20,9 @@ struct ResizableHSplit<Leading: View, Trailing: View>: View {
   @ViewBuilder let leading: () -> Leading
   @ViewBuilder let trailing: () -> Trailing
 
-  @AppStorage private var stored: Double
+  @AppStorage private var defaultsWidth: Double
+  /// Where the width lives instead of the defaults, e.g. per session.
+  var widthBinding: Binding<Double>?
   @State private var total: CGFloat = 0
   @State private var dragStart: CGFloat?
 
@@ -47,6 +49,26 @@ struct ResizableHSplit<Leading: View, Trailing: View>: View {
     showsPinned = showsTrailing
   }
 
+  /// A pinned trailing pane whose width is kept by the caller.
+  init(
+    width: Binding<Double>, leadingMin: CGFloat, trailingMin: CGFloat, trailingMax: CGFloat,
+    showsTrailing: Bool = true,
+    @ViewBuilder leading: @escaping () -> Leading, @ViewBuilder trailing: @escaping () -> Trailing
+  ) {
+    self.init(
+      key: "unused", pinned: .trailing, min: trailingMin, ideal: width.wrappedValue, max: trailingMax,
+      otherMin: leadingMin, leading: leading, trailing: trailing)
+    widthBinding = width
+    showsPinned = showsTrailing
+  }
+
+  private var stored: Double {
+    get { widthBinding?.wrappedValue ?? defaultsWidth }
+    nonmutating set {
+      if let widthBinding { widthBinding.wrappedValue = newValue } else { defaultsWidth = newValue }
+    }
+  }
+
   private init(
     key: String, pinned: HorizontalEdge, min: CGFloat, ideal: CGFloat, max: CGFloat, otherMin: CGFloat,
     leading: @escaping () -> Leading, trailing: @escaping () -> Trailing
@@ -57,7 +79,7 @@ struct ResizableHSplit<Leading: View, Trailing: View>: View {
     self.otherMin = otherMin
     self.leading = leading
     self.trailing = trailing
-    _stored = AppStorage(wrappedValue: Double(ideal), "split.\(key)")
+    _defaultsWidth = AppStorage(wrappedValue: Double(ideal), "split.\(key)")
   }
 
   private var width: CGFloat {

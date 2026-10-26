@@ -21,17 +21,20 @@
     public var disabled: Bool
     /// A toggle that stays open so several can be flipped in one go.
     public var keepsOpen: Bool
+    /// A letter that picks the row while the menu is open; shown as its hint when there's no shortcut.
+    public var key: Character?
     public var action: () -> Void
 
     public init(
       _ title: String, subtitle: String? = nil, icon: ChromeIcon? = nil, shortcut: String? = nil,
       checked: Bool = false, role: Role = .normal, disabled: Bool = false, keepsOpen: Bool = false,
-      action: @escaping () -> Void
+      key: Character? = nil, action: @escaping () -> Void
     ) {
       self.title = title
       self.subtitle = subtitle
       self.icon = icon
-      self.shortcut = shortcut
+      self.shortcut = shortcut ?? key.map { String($0).uppercased() }
+      self.key = key.map { Character(String($0).lowercased()) }
       self.checked = checked
       self.role = role
       self.disabled = disabled
@@ -94,6 +97,12 @@
 
     var selectable: [Int] {
       entries.indices.filter { entries[$0].item.map { !$0.disabled } ?? false }
+    }
+
+    /// The enabled row a typed letter picks.
+    func item(forKey key: Character) -> ChromeMenuItem? {
+      let key = Character(String(key).lowercased())
+      return entries.lazy.compactMap(\.item).first { $0.key == key && !$0.disabled }
     }
 
     func move(_ step: Int) {

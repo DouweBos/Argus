@@ -58,6 +58,23 @@ enum BuiltinPalette {
     return commands
   }
 
+  /// The side panel and a command per tab kind there's something to show for.
+  private static func panelCommands(_ model: DesktopModel) -> [PaletteCommand] {
+    let shortcuts: [PanelTabKind: String] = [.terminal: "⇧⌘T", .device: "⌥⌘B"]
+    return [
+      PaletteCommand(
+        id: "session.side-panel", title: model.sidePanelVisible ? "Hide Side Panel" : "Show Side Panel",
+        section: "Session", systemImage: "rectangle.righthalf.inset.filled", shortcut: "⌘J"
+      ) { model.toggleSidePanel(via: .palette) }
+    ]
+      + PanelTabKind.allCases.filter(model.panelKindAvailable).map { kind in
+        PaletteCommand(
+          id: "session.panel.\(kind.rawValue)", title: "Open \(kind.title) Tab", section: "Session",
+          systemImage: kind.symbol, shortcut: shortcuts[kind]
+        ) { model.focusPanelTab(kind, via: .palette) }
+      }
+  }
+
   private static func session(_ model: DesktopModel) -> [PaletteCommand] {
     guard let id = model.route.sessionId else { return [] }
     // The switcher's order and the View menu's ⌘1–⌘4.
@@ -67,16 +84,7 @@ enum BuiltinPalette {
         systemImage: panel.symbol, shortcut: "⌘\(index + 1)"
       ) { model.show(panel, via: .palette) }
     }
-    commands += [
-      PaletteCommand(
-        id: "session.terminal", title: model.terminalPanelVisible ? "Hide Terminal" : "Show Terminal",
-        section: "Session", systemImage: "terminal", shortcut: "⇧⌘T"
-      ) { model.terminalPanelVisible.toggle() },
-      PaletteCommand(
-        id: "session.device-panel", title: model.runtimePanelVisible ? "Hide Device Panel" : "Show Device Panel",
-        section: "Session", systemImage: "iphone.gen3", shortcut: "⌥⌘B"
-      ) { model.toggleRuntimePanel(via: .palette) },
-    ]
+    commands += panelCommands(model)
     if model.sessionReadyForAgent != nil {
       commands.append(
         PaletteCommand(

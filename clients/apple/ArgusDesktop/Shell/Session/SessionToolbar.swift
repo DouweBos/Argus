@@ -24,7 +24,7 @@ struct SessionToolbar: ToolbarContent {
       HStack(spacing: 2) {
         if let session, session.status == .ready, !cardShown {
           HuddleToolbarButton(sessionId: session.id).buttonStyle(FlatIconButtonStyle())
-          RunControl(session: session) { model.terminalPanelVisible = true }
+          RunControl(session: session)
             .buttonStyle(FlatIconButtonStyle())
           ToolbarSeparator()
         }
@@ -66,20 +66,12 @@ struct SessionToolbar: ToolbarContent {
     .disabled(model.sessionPanel != .home && model.sessionPanel != .agents)
     .help(cardPreferred ? "Hide session details" : "Show session details")
     Button {
-      model.terminalPanelVisible.toggle()
+      model.toggleSidePanel(via: .button)
     } label: {
-      Label("Terminal", systemImage: "rectangle.bottomthird.inset.filled")
+      Label("Side Panel", systemImage: "rectangle.righthalf.inset.filled")
     }
-    .buttonStyle(FlatIconButtonStyle(selected: model.terminalPanelVisible))
-    .disabled(session?.status != .ready)
-    .help(model.terminalPanelVisible ? "Hide terminal (⇧⌘T)" : "Show terminal (⇧⌘T)")
-    Button {
-      model.toggleRuntimePanel(via: .button)
-    } label: {
-      Label("Device Panel", systemImage: "rectangle.righthalf.inset.filled")
-    }
-    .buttonStyle(FlatIconButtonStyle(selected: model.runtimePanelVisible))
-    .help(model.runtimePanelVisible ? "Hide device panel (⌥⌘B)" : "Show device panel (⌥⌘B)")
+    .buttonStyle(FlatIconButtonStyle(selected: model.sidePanelVisible))
+    .help(model.sidePanelVisible ? "Hide side panel (⌘J)" : "Show side panel (⌘J)")
   }
 
   /// The open repository's changed files, badged on the Git panel.

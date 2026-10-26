@@ -143,20 +143,26 @@
         return ["ok": true]
       case "toggleTerminal":
         // What ⇧⌘T does; menu commands only enable while the app is active.
-        AppDelegate.current?.model.terminalPanelVisible.toggle()
-        return ["panel": AppDelegate.current?.model.terminalPanelVisible ?? false]
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        model.togglePanelTab(.terminal, via: .shortcut)
+        return ["panel": model.sidePanelVisible]
       case "toggleDevicePanel":
         // What ⌥⌘B does, for the session on screen.
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
-        model.toggleRuntimePanel(via: .shortcut)
-        return ["panel": model.runtimePanelVisible]
+        model.togglePanelTab(.device, via: .shortcut)
+        return ["panel": model.sidePanelVisible]
+      case "toggleSidePanel":
+        // What ⌘J does.
+        guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
+        model.toggleSidePanel(via: .shortcut)
+        return ["panel": model.sidePanelVisible]
       case "terminals":
         guard let model = AppDelegate.current?.model else { return ["error": "no model"] }
         let tabs = model.terminals.tabsBySession.values.joined().map {
           "\($0.sessionId.prefix(8)) \($0.title) run=\($0.runTitle ?? "-") exit=\($0.exitCode.map(String.init) ?? "-")"
         }
         return [
-          "tabs": tabs, "panel": model.terminalPanelVisible,
+          "tabs": tabs, "panel": model.sidePanelVisible,
           "text": terminalText(in: window.contentView), "dryOpen": TerminalLinks.lastDryOpen ?? "",
         ]
       case "focusTerminal":

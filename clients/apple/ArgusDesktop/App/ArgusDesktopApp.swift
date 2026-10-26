@@ -158,13 +158,17 @@ private struct NavigationCommands: View {
       .keyboardShortcut("i", modifiers: [.command, .shift])
     Button("Automations") { model.navigate(.automations) }
     Divider()
-    Button(model.terminalPanelVisible ? "Hide Terminal" : "Show Terminal") {
-      model.terminalPanelVisible.toggle()
+    Button(model.sidePanelVisible ? "Hide Side Panel" : "Show Side Panel") {
+      model.toggleSidePanel(via: NSApp.currentEvent?.type == .keyDown ? .shortcut : .menu)
+    }
+    .keyboardShortcut("j", modifiers: .command)
+    Button("Terminal Tab") {
+      model.togglePanelTab(.terminal, via: NSApp.currentEvent?.type == .keyDown ? .shortcut : .menu)
     }
     .keyboardShortcut("t", modifiers: [.command, .shift])
-    .disabled(model.route.sessionId == nil)
-    Button(model.runtimePanelVisible ? "Hide Device Panel" : "Show Device Panel") {
-      model.toggleRuntimePanel(via: NSApp.currentEvent?.type == .keyDown ? .shortcut : .menu)
+    .disabled(!model.panelKindAvailable(.terminal))
+    Button("Device Tab") {
+      model.togglePanelTab(.device, via: NSApp.currentEvent?.type == .keyDown ? .shortcut : .menu)
     }
     .keyboardShortcut("b", modifiers: [.command, .option])
   }

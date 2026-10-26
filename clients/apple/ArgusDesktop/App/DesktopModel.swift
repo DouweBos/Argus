@@ -21,6 +21,8 @@ final class DesktopModel {
   /// The inbox in full, from the host's catalog — the Mac's inbox and proposal screens.
   let inbox: InboxStore
   let palette = CommandPaletteModel()
+  /// Each session's side panel: terminals, device, browser, files, diff and pull request tabs.
+  let panels = SidePanelModel()
   /// Widths the session toolbar lays its items out by.
   let toolbarLayout = ToolbarLayout()
   /// Each session's open files in the code view.
@@ -41,16 +43,6 @@ final class DesktopModel {
   var newSessionProject: RemoteProject?
   /// The session the Delete sheet is open for.
   var deletingSession: RemoteSession?
-  /// The bottom terminal panel under a session (⇧⌘T).
-  var terminalPanelVisible = false
-  /// The device panel on the right (⌥⌘B), shown or hidden per session as the desktop keeps it.
-  var runtimePanelVisible: Bool { runtime.panelVisible(session: route.sessionId) }
-
-  func toggleRuntimePanel(via: MacTelemetryEvent.DevicePanelToggleSource) {
-    let shown = !runtimePanelVisible
-    runtime.setPanelVisible(shown, session: route.sessionId)
-    MacTelemetry.capture(.devicePanelToggled(shown: shown, via: via))
-  }
   /// Bumped to put the caret in the chat input in front (⌘L).
   var composerFocusRequest = 0
   /// The tab the Settings window shows.
@@ -189,6 +181,7 @@ final class DesktopModel {
     // A second window never hands its own values to the host it joined.
     let supplied = await HostPreferences.shared.attach(.local(local), supply: !isAttached)
     runtime.reloadPersisted()
+    panels.reloadPersisted()
     HomeRecents.shared.reload()
     _ = store.observeIpc { [weak self] channel, args, _ in
       guard channel == "prefs:changed", let change = args.first else { return }
@@ -332,6 +325,7 @@ final class DesktopModel {
     }
     await HostPreferences.shared.hostChanged(settings: keys("settings"), uiState: keys("ui_state"))
     runtime.reloadPersisted()
+    panels.reloadPersisted()
     HomeRecents.shared.reload()
   }
 
