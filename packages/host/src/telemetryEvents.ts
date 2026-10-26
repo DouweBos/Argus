@@ -96,8 +96,9 @@ export interface EventMap {
     project_count: number;
     trigger: "boot" | "interval" | "manual" | "project_added";
   };
-  cli_projects_imported: { count: number };
+  cli_projects_imported: { count: number; source: "dialog" | "onboarding" };
   cli_projects_scanned: {
+    source: "dialog" | "onboarding";
     candidate_bucket: "0" | "1-5" | "6-20" | "21-100" | "100+";
     truncated: boolean;
   };

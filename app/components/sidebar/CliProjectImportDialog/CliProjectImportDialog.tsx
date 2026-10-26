@@ -1,31 +1,20 @@
-import type { CliProjectScan } from "../../../lib/types";
-import { useEffect, useMemo, useState } from "react";
 import {
   Button,
-  CheckboxRow,
   Dialog,
   DialogBody,
   DialogFooter,
   EmptyState,
   Spinner,
 } from "@argus/peacock";
-import {
-  defaultSelection,
-  formatChatCount,
-  formatShortAge,
-  truncateMiddle,
-} from "../../../lib/cliProjectImport";
-import { importCliProjects, scanCliProjects } from "../../../lib/ipc";
 import { useFocusedConnection } from "../../../stores/connectionStore";
 import {
   hideCliImportDialog,
   useCliImportVisible,
 } from "../../../stores/dialogStore";
 import { pushError } from "../../../stores/notificationsStore";
-import { addRecentProject } from "../../../stores/recentProjectsStore";
 import styles from "./CliProjectImportDialog.module.css";
-
-const PATH_MAX = 64;
+import { CliProjectList } from "./CliProjectList";
+import { useCliProjectPicker } from "./useCliProjectPicker";
 
 /** Mounted once by the shell; opened via `showCliImportDialog()`. */
 export function CliProjectImportDialog() {
@@ -36,72 +25,21 @@ export function CliProjectImportDialog() {
 
 function ImportDialog() {
   const { hostId } = useFocusedConnection();
-  const [scan, setScan] = useState<CliProjectScan | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [importing, setImporting] = useState(false);
-  // Ages are relative to when the scan landed.
-  const [now, setNow] = useState(0);
-
-  useEffect(() => {
-    let live = true;
-    scanCliProjects()
-      .then((result) => {
-        if (live) {
-          const at = Date.now();
-          setNow(at);
-          setScan(result);
-          setPicked(defaultSelection(result.candidates, at));
-        }
-      })
-      .catch((err: unknown) => {
-        if (live) {
-          setError(err instanceof Error ? err.message : String(err));
-        }
-      });
-
-    return () => {
-      live = false;
-    };
-  }, []);
-
-  const selectable = useMemo(
-    () => (scan?.candidates ?? []).filter((c) => !c.added),
-    [scan],
-  );
-
-  const toggle = (path: string, on: boolean) => {
-    setPicked((prev) => {
-      const next = new Set(prev);
-      if (on) {
-        next.add(path);
-      } else {
-        next.delete(path);
-      }
-
-      return next;
-    });
-  };
+  const picker = useCliProjectPicker("dialog", hostId);
+  const { scan, error, importing } = picker;
+  const count = picker.picked.size;
 
   const handleImport = async () => {
-    const paths = [...picked];
-    setImporting(true);
     try {
-      await importCliProjects(paths);
-      for (const path of paths) {
-        addRecentProject(path, hostId);
-      }
+      await picker.importPicked();
       hideCliImportDialog();
     } catch (err) {
       pushError(
         err instanceof Error ? err.message : String(err),
         "import_cli_projects",
       );
-      setImporting(false);
     }
   };
-
-  const count = picked.size;
 
   return (
     <Dialog
@@ -126,62 +64,7 @@ function ImportDialog() {
           <EmptyState title="No Claude Code projects found" />
         )}
         {scan !== null && scan.candidates.length > 0 && (
-          <>
-            <div className={styles.header}>
-              <span>
-                {count} of {selectable.length} selected
-              </span>
-              <span className={styles.headerActions}>
-                <button
-                  type="button"
-                  className={styles.linkBtn}
-                  onClick={() =>
-                    setPicked(new Set(selectable.map((c) => c.path)))
-                  }
-                >
-                  Select all
-                </button>
-                <button
-                  type="button"
-                  className={styles.linkBtn}
-                  onClick={() => setPicked(new Set())}
-                >
-                  Select none
-                </button>
-              </span>
-            </div>
-            <div className={styles.list}>
-              {scan.candidates.map((c) => (
-                <CheckboxRow
-                  key={c.path}
-                  checked={c.added || picked.has(c.path)}
-                  disabled={c.added || importing}
-                  label={c.name}
-                  detail={truncateMiddle(c.path, PATH_MAX)}
-                  detailTitle={c.path}
-                  trailing={
-                    c.added ? (
-                      "Added"
-                    ) : (
-                      <>
-                        <span>{formatChatCount(c.chat_count)}</span>
-                        <span className={styles.age}>
-                          {formatShortAge(c.last_active_at, now)}
-                        </span>
-                      </>
-                    )
-                  }
-                  onChange={(on) => toggle(c.path, on)}
-                />
-              ))}
-            </div>
-            {scan.truncated && (
-              <p className={styles.note}>
-                Only the newest chats were scanned; some projects may be
-                missing.
-              </p>
-            )}
-          </>
+          <CliProjectList picker={picker} />
         )}
       </DialogBody>
       <DialogFooter>

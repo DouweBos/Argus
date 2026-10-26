@@ -3,7 +3,10 @@
  * `~/.claude/projects`, grouped by the directory it ran in.
  */
 
-import type { CliProjectScan as RemoteCliProjectScan } from "@argus/remote-protocol";
+import type {
+  CliProjectImportSource,
+  CliProjectScan as RemoteCliProjectScan,
+} from "@argus/remote-protocol";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -188,9 +191,12 @@ export async function scanCliProjects(
 }
 
 /** The scan, shaped for clients, with this host's projects marked. */
-export async function scanCliProjectsForClients(): Promise<RemoteCliProjectScan> {
+export async function scanCliProjectsForClients(
+  source: CliProjectImportSource = "dialog",
+): Promise<RemoteCliProjectScan> {
   const scan = await scanCliProjects();
   capture("cli_projects_scanned", {
+    source,
     candidate_bucket: bucket(scan.candidates.length),
     truncated: scan.truncated,
   });
@@ -208,7 +214,10 @@ export async function scanCliProjectsForClients(): Promise<RemoteCliProjectScan>
 }
 
 /** Register picked directories; anything no longer a git repo is skipped. */
-export function importCliProjects(paths: string[]): { added: number } {
+export function importCliProjects(
+  paths: string[],
+  source: CliProjectImportSource = "dialog",
+): { added: number } {
   let added = 0;
   for (const dir of new Set(paths.map((p) => path.resolve(p)))) {
     if (appState.repoRoots.has(dir) || !isProjectCandidate(dir)) {
@@ -217,7 +226,7 @@ export function importCliProjects(paths: string[]): { added: number } {
     addRepoRoot(dir);
     added += 1;
   }
-  capture("cli_projects_imported", { count: added });
+  capture("cli_projects_imported", { count: added, source });
 
   return { added };
 }

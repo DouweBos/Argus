@@ -36,6 +36,18 @@ public enum CliProjectImport {
     }
   }
 
+  /// Rows worth offering: directories that aren't projects here yet.
+  public static func suggestions(_ scan: ArgusProtocol.CliProjectScan?) -> [ArgusProtocol.CliProjectCandidate] {
+    (scan?.candidates ?? []).filter { !$0.added }
+  }
+
+  /// The most recently used of the picked paths, opened once they're added.
+  public static func mostRecent(_ picked: Set<String>, in candidates: [ArgusProtocol.CliProjectCandidate])
+    -> String?
+  {
+    candidates.filter { picked.contains($0.path) }.max { $0.lastActiveAt < $1.lastActiveAt }?.path
+  }
+
   public static func chatCount(_ count: Double) -> String {
     let n = Int(count)
     return n == 1 ? "1 chat" : "\(n) chats"

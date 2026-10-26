@@ -1,4 +1,4 @@
-export const ONBOARDING_STEPS = ["welcome", "telemetry"] as const;
+export const ONBOARDING_STEPS = ["welcome", "telemetry", "projects"] as const;
 
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 

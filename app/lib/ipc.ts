@@ -63,6 +63,7 @@ import type {
   PrereqId,
   PrereqResult,
   ProjectEntry,
+  CliProjectImportSource,
   CliProjectScan,
   SimulatorDevice,
   AppSettings,
@@ -308,13 +309,16 @@ export const listProjects = (): Promise<ProjectEntry[]> =>
   invoke("list_projects");
 
 /** Directories the Claude Code CLI has chats for, newest first. */
-export const scanCliProjects = (): Promise<CliProjectScan> =>
-  invoke("scan_cli_projects", {});
+export const scanCliProjects = (
+  source: CliProjectImportSource,
+): Promise<CliProjectScan> => invoke("scan_cli_projects", { source });
 
 /** Adds the picked directories as projects; their CLI chats import on add. */
 export const importCliProjects = (
   paths: string[],
-): Promise<{ added: number }> => invoke("import_cli_projects", { paths });
+  source: CliProjectImportSource,
+): Promise<{ added: number }> =>
+  invoke("import_cli_projects", { paths, source });
 
 /**
  * Everything the backend is running right now, in one round trip. Local mode

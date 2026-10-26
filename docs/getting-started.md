@@ -40,13 +40,18 @@ CLI authentication that's already on your machine.
 
 ## First launch
 
-The first time you open Argus you get a short welcome and a telemetry
-choice, then the app itself. From there:
+The first time you open Argus you get a short welcome, a telemetry
+choice and a project step, then the app itself. The project step lists the
+repos you've already used the Claude Code CLI in — with how many chats each
+has and when you last worked there — so you can tick the ones you want and
+add them in one go, chats included. Nothing found, or want something else?
+Choose a folder instead, or skip. From there:
 
 1. **Fix anything flagged** — the home screen shows a card for each
    missing piece (`claude` CLI, Claude sign-in, git identity, simulator
    support, notifications) with a one-click fix.
-2. **Pick a project** — point at a git repo on disk.
+2. **Pick a project** — point at a git repo on disk, or use **Import from
+   Claude Code** to add more of the repos you've used the CLI in.
 3. **Generate `.argus.json`** — Argus reads `package.json`, `Podfile`,
    `build.gradle`, and friends to infer how your project sets up. You can
    choose between **Quick generate** (fast, deterministic) and **Generate

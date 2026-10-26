@@ -60,6 +60,8 @@ struct SetupChecksTests {
     #expect(OnboardingStepId.resume(hostStep: .telemetry, local: nil) == .privacy)
     #expect(OnboardingStepId.resume(hostStep: .telemetry, local: "project") == .project)
     #expect(OnboardingStepId.resume(hostStep: .telemetry, local: "welcome") == .privacy)
+    #expect(OnboardingStepId.resume(hostStep: .projects, local: nil) == .project)
+    #expect(OnboardingStepId.project.hostStep == .projects)
     #expect(OnboardingStepId.setup.next == .project)
     #expect(OnboardingStepId.project.next == nil)
   }
