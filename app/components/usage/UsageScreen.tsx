@@ -1,20 +1,34 @@
-import type { UsageTab } from "../../lib/router";
+import type { UsageRange, UsageTab } from "../../lib/router";
 import { Button, Icons, SegmentedControl } from "@argus/peacock";
-import { useRouteUsageTab } from "../../lib/routeHooks";
-import { openUsage } from "../../stores/centerViewStore";
+import { useRouteUsageRange, useRouteUsageTab } from "../../lib/routeHooks";
+import { openUsage, setUsageRange } from "../../stores/centerViewStore";
 import { LimitsTab } from "./LimitsTab";
+import { SummaryView } from "./SummaryView";
 import styles from "./UsageScreen.module.css";
 import { useUsageLimits } from "./useUsageLimits";
+import { useUsageSummary } from "./useUsageSummary";
 
 const TABS: { label: string; value: UsageTab }[] = [
   { label: "Limits", value: "limits" },
+  { label: "Cost", value: "cost" },
+  { label: "Tokens", value: "tokens" },
 ];
 
-/** `/usage` — what your Claude plans allow, one tab per angle on it. */
+const RANGES: { label: string; value: UsageRange }[] = [
+  { label: "Past 24h", value: "24h" },
+  { label: "7 days", value: "7d" },
+  { label: "30 days", value: "30d" },
+  { label: "90 days", value: "90d" },
+];
+
+/** `/usage` — what your Claude plans allow and what you've spent, one tab per angle on it. */
 export function UsageScreen() {
   const tab = useRouteUsageTab();
+  const range = useRouteUsageRange();
   const limits = useUsageLimits();
-  const handleRefresh = limits.refresh;
+  const summary = useUsageSummary(range, tab !== "limits");
+  const active = tab === "limits" ? limits : summary;
+  const handleRefresh = active.refresh;
   const plan =
     limits.data?.accounts.length === 1
       ? limits.data.accounts[0]?.subscription_type
@@ -28,7 +42,7 @@ export function UsageScreen() {
           {plan && <span className={styles.sub}>{plan}</span>}
         </div>
         <Button
-          disabled={limits.refreshing || limits.loading}
+          disabled={active.refreshing || active.loading}
           leading={<Icons.RefreshIcon size={12} />}
           onClick={handleRefresh}
           size="sm"
@@ -38,15 +52,28 @@ export function UsageScreen() {
         </Button>
       </header>
 
-      <SegmentedControl
-        aria-label="Usage view"
-        className={styles.tabs}
-        onChange={(next) => openUsage(next)}
-        options={TABS}
-        value={tab}
-      />
+      <div className={styles.controls}>
+        <SegmentedControl
+          aria-label="Usage view"
+          onChange={(next) => openUsage(next)}
+          options={TABS}
+          value={tab}
+        />
+        {tab !== "limits" && (
+          <SegmentedControl
+            aria-label="Time range"
+            onChange={setUsageRange}
+            options={RANGES}
+            value={range}
+          />
+        )}
+      </div>
 
-      <LimitsTab limits={limits} />
+      {tab === "limits" ? (
+        <LimitsTab limits={limits} />
+      ) : (
+        <SummaryView metric={tab} summary={summary} />
+      )}
     </div>
   );
 }

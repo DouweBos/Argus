@@ -2151,6 +2151,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GetClaudeUsageSummaryParams: Codable, Sendable {
+      public var range: UsageRange
+
+      enum CodingKeys: String, CodingKey {
+        case range = "range"
+      }
+
+      public init(range: UsageRange) {
+        self.range = range
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(range, forKey: .range)
+      }
+    }
+
     public struct GetCommandMetricsParams: Codable, Sendable {
       public var repoRoot: String
 
@@ -9747,6 +9764,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.GetClaudeUsageLimitsParams
       public typealias Result = ArgusProtocol.ClaudeUsageLimits
       public static let name = "get_claude_usage_limits"
+      public static let tier = "admin"
+    }
+
+    public enum GetClaudeUsageSummary: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GetClaudeUsageSummaryParams
+      public typealias Result = ArgusProtocol.ClaudeUsageSummary
+      public static let name = "get_claude_usage_summary"
       public static let tier = "admin"
     }
 

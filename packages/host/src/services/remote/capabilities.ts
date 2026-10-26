@@ -92,6 +92,7 @@ import {
 } from "../claudeAuth/claudeAuth";
 import { recheckFlaggedAccounts } from "../claudeAuth/probe";
 import { getClaudeUsageLimits } from "../claudeUsage/limits";
+import { getClaudeUsageSummary } from "../claudeUsage/summary";
 import {
   CommandParamsError,
   getCommand,
@@ -2131,6 +2132,12 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { refresh } = parse("usage.limits", params);
 
     return getClaudeUsageLimits(refresh ?? false);
+  },
+
+  "usage.summary": async (params) => {
+    const { range } = parse("usage.summary", params);
+
+    return getClaudeUsageSummary(range);
   },
 
   "claude_accounts.set_active": async (params) => {

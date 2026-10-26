@@ -20,7 +20,7 @@ struct RouteScreen: View {
     case .inbox: InboxScreen()
     case .proposal(let id): ProposalScreen(proposalId: id).id(id)
     case .notifications: NotificationsScreen()
-    case .usage: UsageScreen()
+    case .usage(let tab, let range): UsageScreen(tab: tab, range: range)
     default: EmptyView()
     }
   }

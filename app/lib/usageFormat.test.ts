@@ -1,7 +1,12 @@
 import type { UsageLimitWindow } from "./types";
 import { describe, expect, it } from "vitest";
 import {
+  bucketLabel,
   formatCountdown,
+  formatShare,
+  formatTokens,
+  formatUsd,
+  formatUsdCompact,
   limitTone,
   paceLabel,
   percentLeft,
@@ -82,5 +87,53 @@ describe("limitTone", () => {
     );
     expect(limitTone(limitWindow({ used_percent: 80 }))).toBe("warning");
     expect(limitTone(limitWindow({ used_percent: 95 }))).toBe("danger");
+  });
+});
+
+describe("formatTokens", () => {
+  it("keeps three significant digits with a unit", () => {
+    expect(formatTokens(8_900_000_000)).toBe("8.90B");
+    expect(formatTokens(19_480_000)).toBe("19.5M");
+    expect(formatTokens(49_100)).toBe("49.1K");
+    expect(formatTokens(812)).toBe("812");
+    expect(formatTokens(0)).toBe("0");
+  });
+
+  it("promotes a value that rounds up into the next unit", () => {
+    expect(formatTokens(999_960)).toBe("1.00M");
+  });
+});
+
+describe("formatUsd", () => {
+  it("uses two decimals and thousands separators", () => {
+    expect(formatUsd(2789.771)).toBe("$2,789.77");
+    expect(formatUsd(0)).toBe("$0.00");
+  });
+
+  it("compacts axis labels", () => {
+    expect(formatUsdCompact(1200)).toBe("$1.20K");
+    expect(formatUsdCompact(40)).toBe("$40");
+    expect(formatUsdCompact(0.5)).toBe("$0.5");
+  });
+});
+
+describe("formatShare", () => {
+  it("rounds to one decimal", () => {
+    expect(formatShare(432, 1000)).toBe("43.2%");
+    expect(formatShare(1, 1)).toBe("100%");
+  });
+
+  it("marks a sliver and handles an empty whole", () => {
+    expect(formatShare(1, 10_000)).toBe("<0.1%");
+    expect(formatShare(0, 100)).toBe("0%");
+    expect(formatShare(5, 0)).toBe("0%");
+  });
+});
+
+describe("bucketLabel", () => {
+  it("names days by date and hours by clock time", () => {
+    const start = new Date(2026, 9, 3, 14).getTime();
+    expect(bucketLabel(start, "day")).toBe("Oct 3");
+    expect(bucketLabel(start, "hour")).toBe("14:00");
   });
 });

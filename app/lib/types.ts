@@ -262,8 +262,14 @@ export type {
 export type {
   ClaudeAccountLimits,
   ClaudeUsageLimits,
+  ClaudeUsageSummary,
+  UsageCostTotals,
   UsageLimitWindow,
+  UsageModelRow,
   UsagePace,
+  UsageRange,
+  UsageSeriesPoint,
+  UsageTokenTotals,
 } from "@argus/remote-protocol";
 
 // Onboarding

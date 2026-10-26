@@ -27,6 +27,8 @@
  * - `/pull-requests/:owner/:repo/:number`        → individual PR detail
  * - `/runtimes`                                  → runtimes overview
  * - `/usage`                                     → usage, on the plan limits tab
+ * - `/usage/cost`, `/usage/tokens`               → usage, estimated cost / tokens
+ *                                                  ?range=24h|7d|30d|90d (default 30d)
  * - `/settings`                                  → settings (opened as dialog)
  * - `/sessions/:sessionId`                       → session (default home tab)
  * - `/sessions/:sessionId/agents`                → session agents view
@@ -47,6 +49,7 @@
  * mount is selected on the renderer side from the session record.
  */
 
+import type { UsageRange } from "./types";
 import { useEffect } from "react";
 import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
@@ -108,9 +111,16 @@ const VALID_GIT_SUB_VIEWS: GitSubView[] = [
 ];
 
 /** Tabs of the usage screen. `limits` is the default and owns bare `/usage`. */
-export type UsageTab = "limits";
+export type UsageTab = "cost" | "limits" | "tokens";
 
-const VALID_USAGE_TABS: UsageTab[] = ["limits"];
+const VALID_USAGE_TABS: UsageTab[] = ["cost", "limits", "tokens"];
+
+export type { UsageRange };
+
+/** Time window of the cost and tokens tabs; `30d` owns the bare URL. */
+export const DEFAULT_USAGE_RANGE: UsageRange = "30d";
+
+const VALID_USAGE_RANGES: UsageRange[] = ["24h", "7d", "30d", "90d"];
 
 export interface PullRequestRef {
   number: number;
@@ -153,6 +163,8 @@ export interface ParsedRoute {
   /** Which proposal is open. Only meaningful when view === "inbox". */
   proposalId: string | null;
   sessionId: string | null;
+  /** `?range=` of the cost and tokens tabs; null everywhere else. */
+  usageRange: UsageRange | null;
   /** Which usage tab is open. Only meaningful when view === "usage". */
   usageTab: UsageTab | null;
   view: AppView;
@@ -168,15 +180,31 @@ export function parseRoute(url: string): ParsedRoute {
   const queryAt = url.indexOf("?");
   const pathname = queryAt === -1 ? url : url.slice(0, queryAt);
   const search = queryAt === -1 ? "" : url.slice(queryAt + 1);
-  const hostId = new URLSearchParams(search).get("host");
+  const params = new URLSearchParams(search);
+  const hostId = params.get("host");
+  const route = parsePathname(pathname);
 
   return {
-    ...parsePathname(pathname),
+    ...route,
     hostId: hostId && hostId.length > 0 ? hostId : LOCAL_HOST_ID,
+    usageRange: usageRangeFor(route.usageTab, params.get("range")),
   };
 }
 
-function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
+function usageRangeFor(
+  tab: UsageTab | null,
+  raw: string | null,
+): UsageRange | null {
+  if (tab !== "cost" && tab !== "tokens") {
+    return null;
+  }
+
+  return VALID_USAGE_RANGES.find((r) => r === raw) ?? DEFAULT_USAGE_RANGE;
+}
+
+function parsePathname(
+  pathname: string,
+): Omit<ParsedRoute, "hostId" | "usageRange"> {
   const clean = pathname.replace(/\/+$/, "") || "/";
   const segments = clean.split("/").filter(Boolean);
 
@@ -306,7 +334,7 @@ function decodeSegment(segment: string): string {
   }
 }
 
-function emptyRoute(view: AppView): Omit<ParsedRoute, "hostId"> {
+function emptyRoute(view: AppView): Omit<ParsedRoute, "hostId" | "usageRange"> {
   return {
     view,
     automationId: null,
@@ -422,7 +450,15 @@ function routePathname(route: Partial<ParsedRoute>): string {
       : "/inbox";
   }
   if (route.view === "usage") {
-    return usagePathname(route.usageTab);
+    const path = usagePathname(route.usageTab);
+    const range = usageRangeFor(
+      route.usageTab ?? null,
+      route.usageRange ?? null,
+    );
+
+    return range && range !== DEFAULT_USAGE_RANGE
+      ? `${path}?range=${range}`
+      : path;
   }
   if (
     route.view === "agents" ||

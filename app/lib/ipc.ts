@@ -35,6 +35,8 @@ import type {
   ClaudeAccountsState,
   ClaudeAuthStatus,
   ClaudeUsageLimits,
+  ClaudeUsageSummary,
+  UsageRange,
   ConductorLogEntry,
   ConductorStatus,
   DependencyReport,
@@ -2354,6 +2356,11 @@ export const getClaudeUsageLimits = (
   refresh?: boolean,
 ): Promise<ClaudeUsageLimits> =>
   invoke("get_claude_usage_limits", refresh ? { refresh } : {});
+
+/** Tokens and estimated cost from this machine's Claude Code transcripts; a cold scan can take seconds. */
+export const getClaudeUsageSummary = (
+  range: UsageRange,
+): Promise<ClaudeUsageSummary> => invoke("get_claude_usage_summary", { range });
 
 /** Sign in an additional account without disturbing the ones already signed in. */
 export const addClaudeAccount = (

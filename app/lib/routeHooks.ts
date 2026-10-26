@@ -10,12 +10,13 @@ import type {
   ParsedRoute,
   PullRequestRef,
   SessionPanel,
+  UsageRange,
   UsageTab,
 } from "./router";
 import type { HostId } from "./transport/hostId";
 import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
-import { parseRoute } from "./router";
+import { DEFAULT_USAGE_RANGE, parseRoute } from "./router";
 
 export function useCurrentRoute(): ParsedRoute {
   const { pathname, search } = useLocation();
@@ -59,4 +60,9 @@ export function useRouteGitRefName(): string | null {
 /** The usage tab in view; `limits` off the usage screen too, so callers need no fallback. */
 export function useRouteUsageTab(): UsageTab {
   return useCurrentRoute().usageTab ?? "limits";
+}
+
+/** The cost and tokens tabs' time window. */
+export function useRouteUsageRange(): UsageRange {
+  return useCurrentRoute().usageRange ?? DEFAULT_USAGE_RANGE;
 }

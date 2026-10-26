@@ -476,7 +476,7 @@ struct RootView: View {
     case .claudeAccounts:
       ClaudeAccountsView()
     case .usage:
-      HostUsageLimitsView()
+      HostUsageView()
         .navigationTitle("Usage")
         .navigationBarTitleDisplayMode(.inline)
     }

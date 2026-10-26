@@ -9,7 +9,7 @@ import {
   barPath,
   barWidth,
   domainFor,
-  formatValue,
+  formatValue as compactValue,
   labelStride,
   linePath,
   linePoints,
@@ -27,6 +27,8 @@ export interface SeriesChartProps {
   /** Names the measure. A single series needs no legend — this is the label. */
   caption?: string;
   className?: string;
+  /** Axis, label and tooltip text for a value; compact numbers by default. */
+  formatValue?: (value: number) => string;
 }
 
 /**
@@ -40,6 +42,7 @@ export function SeriesChart({
   kind = "bar",
   caption,
   className,
+  formatValue = compactValue,
 }: SeriesChartProps) {
   const count = Math.min(labels.length, values.length);
   if (count === 0) {

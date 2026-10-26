@@ -1,3 +1,4 @@
+import ArgusCore
 import Foundation
 import Testing
 
@@ -15,7 +16,14 @@ struct DesktopRouteTests {
     ("/inbox", .inbox),
     ("/inbox/proposals/p1", .proposal(id: "p1")),
     ("/notifications", .notifications),
-    ("/usage", .usage),
+    ("/usage", .usage(.limits)),
+    ("/usage/cost", .usage(.cost)),
+    ("/usage/tokens", .usage(.tokens)),
+    ("/usage/nonsense", .usage(.limits)),
+    ("/usage/cost?range=7d", .usage(.cost, range: ._7d)),
+    ("/usage/tokens?range=30d", .usage(.tokens)),
+    ("/usage/tokens?range=1y", .usage(.tokens)),
+    ("/usage?range=7d", .usage(.limits)),
     ("/pull-requests", .pullRequests),
     ("/pull-requests/houwert/argus/42", .pullRequest(repo: "houwert/argus", number: 42)),
     ("/automations", .automations),
@@ -71,7 +79,7 @@ struct DesktopRouteTests {
   }
 
   @Test(arguments: [
-    DesktopRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox, .proposal(id: "p 1"), .notifications, .usage,
+    DesktopRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox, .proposal(id: "p 1"), .notifications, .usage(.limits), .usage(.cost), .usage(.tokens, range: ._90d),
     .pullRequests, .pullRequest(repo: "o/r", number: 7), .automations, .quickRun(runId: nil),
     .quickRun(runId: "r"), .automation(id: "a", runId: nil), .automation(id: "a", runId: "r"),
     .sessionHome(id: "s"), .session(id: "s", agentId: nil), .session(id: "s", agentId: "a"),
@@ -85,6 +93,14 @@ struct DesktopRouteTests {
   ])
   func pathsRoundTrip(route: DesktopRoute) {
     #expect(DesktopRoute(path: route.path) == route, "\(route.path)")
+  }
+
+  @Test func usageTabsAreTheirOwnPatterns() {
+    #expect(DesktopRoute.usage(.limits).pattern == "/usage")
+    #expect(DesktopRoute.usage(.cost).pattern == "/usage/cost")
+    #expect(DesktopRoute.usage(.tokens).path == "/usage/tokens")
+    #expect(DesktopRoute.usage(.cost, range: ._24h).path == "/usage/cost?range=24h")
+    #expect(DesktopRoute.usage(.cost, range: ._24h).pattern == "/usage/cost")
   }
 
   @Test func deepLinksReadTheHostAsThePathsFirstSegment() {

@@ -37,4 +37,44 @@ describe("usage route", () => {
     expect(parseRoute("/inbox").usageTab).toBeNull();
     expect(parseRoute("/sessions/abc").usageTab).toBeNull();
   });
+
+  it("parses the cost and tokens tabs with a default range", () => {
+    const cost = parseRoute("/usage/cost");
+    expect(cost.usageTab).toBe("cost");
+    expect(cost.usageRange).toBe("30d");
+    expect(parseRoute("/usage/tokens").usageTab).toBe("tokens");
+  });
+
+  it("reads the range from the query and ignores one it does not know", () => {
+    expect(parseRoute("/usage/cost?range=7d").usageRange).toBe("7d");
+    expect(parseRoute("/usage/tokens?range=1y").usageRange).toBe("30d");
+  });
+
+  it("has no range off the cost and tokens tabs", () => {
+    expect(parseRoute("/usage").usageRange).toBeNull();
+    expect(parseRoute("/usage?range=7d").usageRange).toBeNull();
+    expect(parseRoute("/inbox").usageRange).toBeNull();
+  });
+
+  it("keeps the default range off the URL", () => {
+    expect(routeToPath({ view: "usage", usageTab: "cost" })).toBe(
+      "/usage/cost",
+    );
+    expect(
+      routeToPath({ view: "usage", usageTab: "cost", usageRange: "30d" }),
+    ).toBe("/usage/cost");
+    expect(
+      routeToPath({ view: "usage", usageTab: "limits", usageRange: "7d" }),
+    ).toBe("/usage");
+  });
+
+  it("round-trips a range alongside the focused host", () => {
+    const path = "/usage/tokens?range=24h&host=mini";
+    expect(routeToPath(parseRoute(path))).toBe(path);
+  });
+
+  it("reports tab patterns for telemetry", () => {
+    expect(routePattern("/usage/cost")).toBe("/usage/cost");
+    expect(routePattern("/usage/tokens")).toBe("/usage/tokens");
+  });
 });

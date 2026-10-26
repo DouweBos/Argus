@@ -212,10 +212,11 @@ initial attempt from a `continue` after the user resolved conflicts.
 
 ## Claude accounts
 
-| Event                      | Source | When                                                                                           | Extra props                                                                 |
-| -------------------------- | ------ | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `claude_account_rechecked` | main   | An account badged Limit reached or Signed out re-probed                                        | `outcome: "ok" \| "rate_limited" \| "reauth" \| "unknown"`, `badge_cleared` |
-| `usage_limits_fetched`     | main   | The host asked the Claude CLI for an account's plan limits (at most once a minute per account) | `outcome: "ok" \| "failed" \| "unsupported"`, `window_count`                |
+| Event                      | Source | When                                                                                           | Extra props                                                                                                           |
+| -------------------------- | ------ | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `claude_account_rechecked` | main   | An account badged Limit reached or Signed out re-probed                                        | `outcome: "ok" \| "rate_limited" \| "reauth" \| "unknown"`, `badge_cleared`                                           |
+| `usage_limits_fetched`     | main   | The host asked the Claude CLI for an account's plan limits (at most once a minute per account) | `outcome: "ok" \| "failed" \| "unsupported"`, `window_count`                                                          |
+| `usage_summary_loaded`     | main   | The Usage screen loaded token and cost totals for a range                                      | `range: "24h" \| "7d" \| "30d" \| "90d"`, `prices_available` — false until the model price list has been fetched once |
 
 ## Language servers
 

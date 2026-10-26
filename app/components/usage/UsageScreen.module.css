@@ -35,8 +35,12 @@
   text-transform: capitalize;
 }
 
-.tabs {
-  align-self: flex-start;
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .sections {
