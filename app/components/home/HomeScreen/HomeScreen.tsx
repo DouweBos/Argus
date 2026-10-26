@@ -16,6 +16,7 @@ import { useHostConnections } from "../../../stores/connectionStore";
 import { deviceKeyFor, useDevicePoller } from "../../../stores/deviceStore";
 import {
   startNewSession,
+  showCliImportDialog,
   showOpenProjectDialog,
 } from "../../../stores/dialogStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
@@ -152,13 +153,22 @@ export function HomeScreen() {
           {isEmpty ? (
             <EmptyHome
               actions={
-                <Button
-                  variant="primary"
-                  leading={<Icons.FolderIcon size={13} />}
-                  onClick={handleAddRepository}
-                >
-                  Add repository
-                </Button>
+                <>
+                  <Button
+                    variant="primary"
+                    leading={<Icons.FolderIcon size={13} />}
+                    onClick={handleAddRepository}
+                  >
+                    Add repository
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    leading={<Icons.DownloadIcon size={13} />}
+                    onClick={showCliImportDialog}
+                  >
+                    Import from Claude Code
+                  </Button>
+                </>
               }
               shortcuts={HOME_SHORTCUTS.slice(0, 3).map((s) => (
                 <span

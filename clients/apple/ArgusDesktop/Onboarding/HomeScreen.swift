@@ -49,7 +49,10 @@ struct HomeScreen: View {
         }
         HomeNeedsYouSection()
         section("Projects") {
-          Button("Add Project…") { model.addingProject = true }.buttonStyle(.accentLink)
+          HStack(spacing: 12) {
+            Button("Import from Claude Code…") { model.importingCliProjects = true }.buttonStyle(.accentLink)
+            Button("Add Project…") { model.addingProject = true }.buttonStyle(.accentLink)
+          }
         } content: {
           LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 12)], spacing: 12) {
             ForEach(projects) { HomeProjectCard(project: $0) }
@@ -105,6 +108,11 @@ struct HomeScreen: View {
           Label("Add repository", systemImage: "folder")
         }
         .buttonStyle(.borderedProminent)
+        Button {
+          model.importingCliProjects = true
+        } label: {
+          Label("Import from Claude Code", systemImage: "square.and.arrow.down")
+        }
         VStack(alignment: .leading, spacing: 6) {
           shortcut("⌘O", "Add project")
           shortcut("⌘N", "New session")

@@ -1,5 +1,9 @@
 import { pinSessionClaudeAccount } from "../services/agent/agentService";
 import { defineTypedCommand } from "../services/command/registry";
+import {
+  importCliProjects,
+  scanCliProjectsForClients,
+} from "../services/externalChats/projectScan";
 import { collectAllProjects } from "../services/mcp/projectDiscovery";
 import {
   createScratchPad,
@@ -25,6 +29,8 @@ export function registerSessionCommands(): void {
   defineTypedCommand("add_repo_root", (p) => addRepoRoot(p.path));
   defineTypedCommand("remove_repo_root", (p) => removeRepoRoot(p.path));
   defineTypedCommand("list_projects", () => collectAllProjects());
+  defineTypedCommand("scan_cli_projects", () => scanCliProjectsForClients());
+  defineTypedCommand("import_cli_projects", (p) => importCliProjects(p.paths));
   defineTypedCommand("state_hydrate", () => hydrateHostState());
   defineTypedCommand("list_sessions", (p) => listSessions(p.repoRoot));
   defineTypedCommand("list_scratch_pads", () => listScratchPads());

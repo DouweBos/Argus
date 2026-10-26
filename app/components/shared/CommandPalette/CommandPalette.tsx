@@ -25,6 +25,7 @@ import {
 } from "../../../stores/commandPaletteStore";
 import { useConversations } from "../../../stores/conversationStore";
 import {
+  showCliImportDialog,
   showOpenProjectDialog,
   triggerNewSession,
 } from "../../../stores/dialogStore";
@@ -144,6 +145,18 @@ function CommandPaletteContent() {
         run: () => {
           closeCommandPalette();
           showOpenProjectDialog();
+        },
+      },
+      {
+        group: "action",
+        id: "action:import-cli-projects",
+        title: "Import projects from Claude Code…",
+        sublabel: "Add projects you've used the Claude Code CLI in",
+        icon: <Icons.DownloadIcon size={13} />,
+        keywords: "import claude code cli projects history add",
+        run: () => {
+          closeCommandPalette();
+          showCliImportDialog();
         },
       },
       {

@@ -63,6 +63,7 @@ import type {
   PrereqId,
   PrereqResult,
   ProjectEntry,
+  CliProjectScan,
   SimulatorDevice,
   AppSettings,
   InheritedMcpServer,
@@ -305,6 +306,15 @@ export const removeRepoRoot = (path: string): Promise<void> =>
 
 export const listProjects = (): Promise<ProjectEntry[]> =>
   invoke("list_projects");
+
+/** Directories the Claude Code CLI has chats for, newest first. */
+export const scanCliProjects = (): Promise<CliProjectScan> =>
+  invoke("scan_cli_projects", {});
+
+/** Adds the picked directories as projects; their CLI chats import on add. */
+export const importCliProjects = (
+  paths: string[],
+): Promise<{ added: number }> => invoke("import_cli_projects", { paths });
 
 /**
  * Everything the backend is running right now, in one round trip. Local mode

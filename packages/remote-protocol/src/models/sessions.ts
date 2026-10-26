@@ -139,3 +139,22 @@ export type ForkChatResult = z.infer<typeof ForkChatResult>;
 
 export const ForkSessionResult = ForkChatResult.extend({ session: Session });
 export type ForkSessionResult = z.infer<typeof ForkSessionResult>;
+
+/** A directory the Claude Code CLI has chats for, offered as a project to add. */
+export const CliProjectCandidate = z.object({
+  path: z.string(),
+  name: z.string(),
+  chat_count: z.number(),
+  /** Unix ms of the newest chat there. */
+  last_active_at: z.number(),
+  /** Already one of this host's projects. */
+  added: z.boolean(),
+});
+export type CliProjectCandidate = z.infer<typeof CliProjectCandidate>;
+
+export const CliProjectScan = z.object({
+  candidates: z.array(CliProjectCandidate),
+  /** The newest transcripts were read; older projects may be missing. */
+  truncated: z.boolean(),
+});
+export type CliProjectScan = z.infer<typeof CliProjectScan>;

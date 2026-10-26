@@ -3,12 +3,15 @@ import { getSessionState } from "./sessionStore";
 import { openStartDraft } from "./startDraftStore";
 
 interface DialogState {
+  /** Shows the "Import projects from Claude Code" picker when true. */
+  cliImportVisible: boolean;
   /** Shows the NewSessionPicker (repo chooser) when true. */
   newSessionPickerOpen: boolean;
   openProjectVisible: boolean;
 }
 
 const store = create<DialogState>(() => ({
+  cliImportVisible: false,
   openProjectVisible: false,
   newSessionPickerOpen: false,
 }));
@@ -17,6 +20,11 @@ export const showOpenProjectDialog = () =>
   store.setState({ openProjectVisible: true });
 export const hideOpenProjectDialog = () =>
   store.setState({ openProjectVisible: false });
+
+export const showCliImportDialog = () =>
+  store.setState({ cliImportVisible: true, openProjectVisible: false });
+export const hideCliImportDialog = () =>
+  store.setState({ cliImportVisible: false });
 
 export const showNewSessionPicker = () =>
   store.setState({ newSessionPickerOpen: true });
@@ -53,6 +61,7 @@ export const triggerNewSession = () => {
   store.setState({ newSessionPickerOpen: true });
 };
 
+export const useCliImportVisible = () => store((s) => s.cliImportVisible);
 export const useOpenProjectVisible = () => store((s) => s.openProjectVisible);
 export const useNewSessionPickerOpen = () =>
   store((s) => s.newSessionPickerOpen);

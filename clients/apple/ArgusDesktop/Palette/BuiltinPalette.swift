@@ -140,6 +140,10 @@ enum BuiltinPalette {
         systemImage: "folder.badge.plus", shortcut: "⌘O"
       ) { model.addingProject = true },
       PaletteCommand(
+        id: "app.import-cli-projects", title: "Import Projects from Claude Code…", section: "App",
+        keywords: ["claude code", "cli", "history", "add project"], systemImage: "square.and.arrow.down"
+      ) { model.importingCliProjects = true },
+      PaletteCommand(
         id: "app.new-session", title: "New Session…", section: "App", systemImage: "plus",
         shortcut: "⌘N"
       ) { model.requestNewSession() },
