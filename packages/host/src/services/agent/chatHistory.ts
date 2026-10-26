@@ -39,6 +39,8 @@ export interface ChatHistoryEntry {
   runnerId?: string;
   totalCost?: number;
   totalDuration?: number;
+  /** Set when the chat was read in from another app's history, not run here. */
+  importedFrom?: "claude_code";
   messageCount: number;
   createdAt: number;
   endedAt: number;
@@ -175,6 +177,7 @@ export function saveConversation(
     runnerId: conversation.runnerId,
     totalCost: conversation.totalCost,
     totalDuration: conversation.totalDuration,
+    importedFrom: conversation.importedFrom,
     messageCount: conversation.messageCount,
     createdAt: conversation.createdAt,
     endedAt: conversation.endedAt,
@@ -195,6 +198,63 @@ export function saveConversation(
   }
 
   saveIndex(repoRoot, entries);
+}
+
+/**
+ * Merge chats read in from another app. Argus's own chats are never evicted
+ * for them: imports only fill what the retention cap leaves free.
+ */
+export function importConversations(
+  repoRoot: string,
+  conversations: SavedConversation[],
+): number {
+  if (conversations.length === 0) {
+    return 0;
+  }
+  const incoming = new Map(conversations.map((c) => [c.sessionId, c]));
+  const entries = loadHistoryIndex(repoRoot).filter(
+    (e) => !e.importedFrom || !incoming.has(e.sessionId),
+  );
+  const own = entries.filter((e) => !e.importedFrom);
+  const imported = [
+    ...entries.filter((e) => e.importedFrom),
+    ...conversations.map(({ messages: _messages, ...entry }) => entry),
+  ]
+    .sort((a, b) => b.endedAt - a.endedAt)
+    .slice(0, Math.max(0, MAX_ENTRIES - own.length));
+  const kept = new Set(imported.map((e) => e.id));
+  const dir = historyDir(repoRoot);
+  let written = 0;
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    for (const conversation of conversations) {
+      if (kept.has(conversation.id)) {
+        fs.writeFileSync(
+          conversationPath(repoRoot, conversation.id),
+          JSON.stringify(conversation),
+          "utf8",
+        );
+        written += 1;
+      }
+    }
+  } catch (e) {
+    warn("Failed to write imported chat history:", e);
+
+    return written;
+  }
+  for (const old of entries.filter((e) => e.importedFrom && !kept.has(e.id))) {
+    try {
+      fs.unlinkSync(conversationPath(repoRoot, old.id));
+    } catch {
+      // Already gone.
+    }
+  }
+  saveIndex(
+    repoRoot,
+    [...own, ...imported].sort((a, b) => b.endedAt - a.endedAt),
+  );
+
+  return written;
 }
 
 /**

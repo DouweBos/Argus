@@ -132,6 +132,8 @@ export interface AppSettings {
   theme?: "dark" | "light" | "system";
   /** Accent and surface tint layered on the scheme. */
   color_theme?: "amber" | "ember" | "grove" | "iris" | "ocean" | "rose";
+  /** Pull chats run with the plain Claude Code CLI into project history. On by default. */
+  import_cli_chats?: boolean;
   /** Display size. */
   ui_scale?: "default" | "large" | "larger" | "small" | "smaller";
   /** Permission mode for agents started without one. */

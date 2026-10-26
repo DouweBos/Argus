@@ -22,7 +22,11 @@ import { info } from "@argus/host/logger";
 import { ClaudeCodeHandle } from "./handle";
 import { runClaudePrint } from "./oneShot";
 import { toClaudePermissionMode } from "./permissionModes";
-import { forkClaudeSessionFile, latestClaudeSessionId } from "./transcriptFork";
+import {
+  ensureClaudeTranscriptAt,
+  forkClaudeSessionFile,
+  latestClaudeSessionId,
+} from "./transcriptFork";
 
 const execFileAsync = promisify(execFile);
 
@@ -88,6 +92,11 @@ export class ClaudeCodeRunner implements LlmRunner {
       cliArgs.push("--disallowed-tools", ...args.disallowedTools);
     }
     if (args.resumeRef) {
+      try {
+        ensureClaudeTranscriptAt(args.cwd, args.resumeRef);
+      } catch {
+        // The CLI reports a missing transcript itself.
+      }
       cliArgs.push("--resume", args.resumeRef);
     }
     if (Object.keys(args.mcpServers).length > 0) {

@@ -129,6 +129,12 @@ export const AGENT_COMMANDS = {
     result: SavedConversation.nullable(),
   },
   delete_chat_history: { tier: "admin", params: HistoryRef, result: Void },
+  /** Pull chats run with the plain Claude Code CLI into every project's history now. */
+  import_cli_chats: {
+    tier: "admin",
+    params: NoParams,
+    result: z.object({ imported: z.number(), projects: z.number() }),
+  },
   /** A short title for a chat from its first message; null on any failure. */
   generate_session_title: {
     tier: "admin",

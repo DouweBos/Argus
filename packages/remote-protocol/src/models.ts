@@ -94,6 +94,8 @@ export const RemoteStoppedAgent = z.object({
   message_count: z.number().int().nonnegative(),
   started_at: z.number(),
   ended_at: z.number(),
+  /** Set when the chat was read in from another app's history, not run here. */
+  imported_from: z.enum(["claude_code"]).optional(),
 });
 export type RemoteStoppedAgent = z.infer<typeof RemoteStoppedAgent>;
 

@@ -912,6 +912,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         message_count: e.messageCount,
         started_at: e.createdAt,
         ended_at: e.endedAt,
+        ...(e.importedFrom ? { imported_from: e.importedFrom } : {}),
       }),
     );
 

@@ -50,6 +50,8 @@ struct AgentsSettingsTab: View {
         }
       }
 
+      ImportCliChatsSection()
+
       Section("Automations") {
         if let settings = host.settings {
           VStack(alignment: .leading, spacing: 4) {

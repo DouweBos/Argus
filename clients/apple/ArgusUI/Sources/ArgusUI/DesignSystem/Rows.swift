@@ -85,13 +85,18 @@ public struct StoppedAgentRow: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: 2) {
       Label(agent.title, systemImage: Icon.history).lineLimit(1)
-      Text(
-        "\(Labels.timeAgo(agent.endedAt)) · \(agent.messageCount) messages"
-          + (showBranch ? " · \(agent.branch)" : "")
-      )
-      .font(.scaled(.footnote))
-      .foregroundStyle(.secondary)
-      .lineLimit(1)
+      HStack(spacing: 6) {
+        Text(
+          "\(Labels.timeAgo(agent.endedAt)) · \(agent.messageCount) messages"
+            + (showBranch ? " · \(agent.branch)" : "")
+        )
+        .font(.scaled(.footnote))
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        if agent.isImported {
+          Badge(label: "Imported").accessibilityLabel("Imported from Claude Code")
+        }
+      }
     }
   }
 }
