@@ -10,7 +10,7 @@
 
   extension View {
     /// Shows a dropdown anchored to this view, at least as wide as it, while `isPresented`.
-    /// ↑↓ move, Return picks, Esc or a click elsewhere closes.
+    /// ↑↓ move, Return or a row's letter picks, Esc or a click elsewhere closes.
     public func chromeMenu(
       isPresented: Binding<Bool>, edge: ChromeMenuEdge = .below,
       @ChromeMenuBuilder entries: @escaping () -> [ChromeMenuEntry]
@@ -283,7 +283,11 @@
       case 53:  // Esc
         dismiss(restoreFocus: true, notify: true)
       default:
-        return false
+        let modifiers = event.modifierFlags.intersection([.command, .control, .option])
+        guard modifiers.isEmpty, let typed = event.charactersIgnoringModifiers?.first,
+          let item = model.item(forKey: typed)
+        else { return false }
+        pick(item)
       }
       return true
     }

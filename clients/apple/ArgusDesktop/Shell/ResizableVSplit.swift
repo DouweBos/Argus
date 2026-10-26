@@ -70,6 +70,6 @@ struct ResizableVSplit<Top: View, Bottom: View>: View {
           stored = Double(max(start - value.translation.height, bottomMin))
         }
         .onEnded { _ in dragStart = nil })
-    .accessibilityLabel("Resize terminal")
+    .accessibilityLabel("Resize")
   }
 }

@@ -9,17 +9,19 @@ struct PullRequestDetailScreen: View {
   @Environment(HostStore.self) private var store
   let repo: String
   let number: Int
+  /// In a side panel tab: the actions sit in the view, not the window's toolbar or title.
+  var embedded = false
   @State private var model: PullRequestDetailModel?
 
   var body: some View {
     Group {
       if let model {
-        PullRequestDetailContent(model: model)
+        PullRequestDetailContent(model: model, embedded: embedded)
       } else {
         ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
       }
     }
-    .navigationTitle("#\(number)")
+    .modifier(PullRequestLoadingTitle(number: number, embedded: embedded))
     .task(id: "\(repo)#\(number)") {
       let model = PullRequestDetailModel(repo: repo, number: number, store: store, pullRequests: desktop.pullRequests)
       self.model = model
@@ -32,6 +34,7 @@ private struct PullRequestDetailContent: View {
   @Environment(DesktopModel.self) private var desktop
   @Environment(HostStore.self) private var store
   let model: PullRequestDetailModel
+  let embedded: Bool
   @State private var tab: Tab = .conversation
   @State private var merging = false
   @State private var confirmingClose = false
@@ -46,14 +49,19 @@ private struct PullRequestDetailContent: View {
             GitErrorBanner(message: error) { model.actionError = nil }
           }
           PullRequestHeader(detail: detail)
+          if embedded {
+            HStack(spacing: 8) { actions(detail) }
+              .controlSize(.small)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.horizontal, 16)
+              .padding(.top, 8)
+          }
           tabs(detail)
           Divider()
           tabContent(detail)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationTitle(detail.title)
-        .navigationSubtitle("\(detail.repoNameWithOwner) #\(Int(detail.number))")
-        .toolbar { toolbar(detail) }
+        .modifier(PullRequestWindowChrome(detail: detail, embedded: embedded) { actions(detail) })
       } else if let error = model.loadError {
         EmptyState(
           icon: "exclamationmark.triangle", title: "Couldn't load pull request",
@@ -118,9 +126,9 @@ private struct PullRequestDetailContent: View {
     }
   }
 
-  @ToolbarContentBuilder
-  private func toolbar(_ detail: ArgusProtocol.PullRequestDetail) -> some ToolbarContent {
-    ToolbarItemGroup {
+  @ViewBuilder
+  private func actions(_ detail: ArgusProtocol.PullRequestDetail) -> some View {
+    Group {
       if let busy = model.busy {
         ProgressView().controlSize(.small).help(busy)
       }
@@ -132,6 +140,34 @@ private struct PullRequestDetailContent: View {
           .disabled(model.busy != nil || detail.isDraft || detail.mergeable == "CONFLICTING")
           .help(detail.isDraft ? "Drafts can't be merged" : detail.mergeable == "CONFLICTING" ? "This branch conflicts with its base" : "Merge on GitHub")
       }
+    }
+  }
+}
+
+/// "#123" in the window's title until the pull request loads, unless it's in a panel.
+private struct PullRequestLoadingTitle: ViewModifier {
+  let number: Int
+  let embedded: Bool
+
+  func body(content: Content) -> some View {
+    if embedded { content } else { content.navigationTitle("#\(number)") }
+  }
+}
+
+/// The window's title and toolbar, for a pull request shown as a screen of its own.
+private struct PullRequestWindowChrome<Actions: View>: ViewModifier {
+  let detail: ArgusProtocol.PullRequestDetail
+  let embedded: Bool
+  @ViewBuilder let actions: () -> Actions
+
+  func body(content: Content) -> some View {
+    if embedded {
+      content
+    } else {
+      content
+        .navigationTitle(detail.title)
+        .navigationSubtitle("\(detail.repoNameWithOwner) #\(Int(detail.number))")
+        .toolbar { ToolbarItemGroup { actions() } }
     }
   }
 }

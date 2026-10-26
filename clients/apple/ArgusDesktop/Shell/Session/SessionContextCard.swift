@@ -34,7 +34,7 @@ struct SessionContextCard: View {
       machineRow
       if isLocal, let path, let editor = preferredEditor { editorRow(path: path, editor: editor) }
       if ready {
-        RunControl(session: session, inCard: true) { model.terminalPanelVisible = true }
+        RunControl(session: session, inCard: true)
         HuddleToolbarButton(sessionId: session.id, inCard: true)
           .buttonStyle(ContextRowButtonStyle())
       }

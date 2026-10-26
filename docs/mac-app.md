@@ -30,16 +30,22 @@ lives in the repository (`plan/swiftui-parity.md`).
 - **Home** in the sidebar (⇧⌘H): the app's home screen.
 - **Agents** and **Runtimes** in the sidebar: every agent, and every run
   command's process, across all your sessions.
-- Terminals under each session (⇧⌘T): tabs, the project's run commands in
-  the context card (the toolbar when it's hidden), find (⌘F), and links that open on this Mac. A terminal you
+- A side panel beside each session (⌘J), closed until you open it: tabs for
+  terminals, the device, the browser, the session's files, its diff and its
+  pull request. Its **+** menu opens a tab (press B, T, F, D, P or M while it's
+  open; kinds with nothing to show are dimmed), tabs drag to reorder, and the
+  panel can fill the window. It never opens by itself; open tabs, the one in
+  front and the width are remembered for each session.
+- Terminals as side panel tabs (⇧⌘T): several at once, the project's run
+  commands in the context card (the toolbar when it's hidden) opening their
+  output in a tab, find (⌘F), and links that open on this Mac. A terminal you
   reopen replays what it printed so far.
 - Banners for agents that finish or need you, with Approve/Deny buttons on
   permission prompts.
-- The runtime panel: each session's simulator, emulator or browser, live, to
-  tap, type, scroll and rotate; Simulate, Inspect (the iOS UI inspector) and
-  Logs modes; devices in their own floating windows. The toolbar's device
-  button (⌥⌘B) shows and hides the panel, remembered for each session. DevTools for the
-  session's browser open in a window of their own.
+- The Device and Browser tabs (⌥⌘B for the device): each session's simulator,
+  emulator or browser, live, to tap, type, scroll and rotate; Simulate,
+  Inspect (the iOS UI inspector) and Logs modes; devices in their own floating
+  windows. DevTools for the session's browser open in a window of their own.
 - The Devices screen: every simulator and emulator, with boot, shut down, a
   live grid, and each device's details with a live picture.
 - **Git** for each session (the Git tab): the working copy with file, hunk
@@ -107,8 +113,9 @@ except where macOS or the Mac app's own layout already uses the keys.
 | ⇧⌘H                   | App home                                                   | View  |
 | ⌥⌘1 – ⌥⌘5             | Agents, Devices, Runtimes, Pull Requests, Notifications    | View  |
 | ⇧⌘I                   | Inbox                                                      | View  |
-| ⇧⌘T                   | Show or hide the terminal                                  | View  |
-| ⌥⌘B                   | Show or hide the device panel (per session)                | View  |
+| ⌘J                    | Show or hide the side panel (per session)                  | View  |
+| ⇧⌘T                   | Open a terminal tab, or hide the panel when one's in front | View  |
+| ⌥⌘B                   | Open the device tab, or hide the panel when it's in front  | View  |
 | ⌥⌘T, ⌘W, ⌃Tab / ⌃⇧Tab | New, close and cycle window tabs                           | View  |
 
 Back and forward step through the window tab's history, as in Finder: every
@@ -122,9 +129,9 @@ Where they differ from the Electron app:
   number keys.
 - **⌘T** starts an agent (agents are the session's tabs) and **⌥⌘T** opens
   a window tab, where Electron uses ⌘T for window tabs.
-- **⌘J** and **⌥⌘H** aren't used: the terminal is the only bottom panel
-  (⇧⌘T), and ⌥⌘H is macOS's Hide Others, so there is no project-home
-  shortcut. **⌘B** is the code view's navigator, not the app sidebar.
+- **⌘J** shows the side panel, where terminals live too, as VS Code's does
+  its panel. **⌥⌘H** isn't used: it's macOS's Hide Others, so there is no
+  project-home shortcut. **⌘B** is the code view's navigator, not the app sidebar.
 
 The code view takes a few of these keys for its own, as VS Code and Xcode
 do, only while it's on screen: ⇧⌘O is Open Quickly there instead of Open
@@ -173,7 +180,7 @@ each change undoes in one step.
 | ⌥⌘→ / ⌥⌘←  | Next / previous editor tab                         |
 | ⌃- / ⌃⇧-   | Go back / forward                                  |
 | ⌥Z         | Toggle word wrap                                   |
-| ⌃\`        | Show or hide the terminal                          |
+| ⌃\`        | Open a terminal tab, or hide the panel             |
 | ⌥⌘L        | Send the selection to the session's agent          |
 
 In ⌘P, a prefix changes what you're looking for, as in VS Code: `@` lists
@@ -205,7 +212,7 @@ headless Argus server, or `argus-host` — as well as its own:
   the machine you're looking at, browsing that machine's disk.
 - Files dropped on a remote session's chat are sent to its machine first
   (up to 8 MB each).
-- Sessions, agents, terminals and the runtime panel of a remote project run
+- Sessions, agents, terminals and the side panel's device and browser of a remote project run
   on its host; the connection is end-to-end encrypted. Links still open on
   this Mac; Reveal in Finder and Open in editor aren't available for files on
   another machine.

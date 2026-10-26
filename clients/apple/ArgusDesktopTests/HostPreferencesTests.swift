@@ -110,18 +110,22 @@ struct HostPreferencesTests {
     #expect(host.settingWrites == writes + 1)
   }
 
-  @Test func keepsHiddenDevicePanelsOnTheHost() async {
+  @Test func keepsSidePanelsOnTheHost() async {
     let f = Fixture()
     defer { f.cleanUp() }
     let host = FakeHost()
-    host.ui["runtime.hidden_panels"] = #"["s1"]"#
+    host.ui["mac.side_panels"] = #"{"s1":{"open":true,"tabs":[{"kind":"device"}]}}"#
     await f.sync.attach(host.io)
-    #expect(f.home.stringArray(forKey: RuntimeModel.Keys.hiddenPanels) == ["s1"])
+    let panels = SidePanelModel(defaults: f.home)
+    #expect(panels.isOpen("s1"))
+    #expect(panels.tabs("s1", terminals: []).map(\.kind) == [.device])
 
-    f.home.set(["s1", "s2"], forKey: RuntimeModel.Keys.hiddenPanels)
+    panels.setOpen(false, session: "s1")
+    panels.save()
     f.sync.localChanged()
     await f.sync.flush()
-    #expect(host.ui["runtime.hidden_panels"].flatMap(HostPreferences.decode) == .array([.string("s1"), .string("s2")]))
+    let stored = host.ui["mac.side_panels"].flatMap(HostPreferences.decode)
+    #expect(stored == .object(["s1": .object(["open": .bool(false), "tabs": .array([.object(["kind": .string("device")])])])]))
   }
 
   @Test func leavesAnElectronOnlyPickAlone() async {

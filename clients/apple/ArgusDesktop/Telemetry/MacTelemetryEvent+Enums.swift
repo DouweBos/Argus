@@ -137,12 +137,17 @@ extension MacTelemetryEvent {
     case mouse
   }
 
-  /// Where the device panel was shown or hidden from.
-  enum DevicePanelToggleSource: String {
+  /// Where the side panel was shown, hidden or given a tab from.
+  enum PanelSource: String {
+    /// The toolbar's panel button, or the panel's own close button.
     case button
     case shortcut
     case menu
     case palette
+    /// The panel's "+" menu (a click or its letter key).
+    case tabMenu = "tab_menu"
+    /// Something that wants its output in view: a run command, a runtime's row.
+    case action
   }
 
   /// Whether a menu command came from its key equivalent or a click.

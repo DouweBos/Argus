@@ -11,8 +11,6 @@ struct RunControl: View {
   @Environment(DesktopModel.self) private var model
   let session: RemoteSession
   var inCard = false
-  /// Bring the terminal panel up so the run's output is in view.
-  let reveal: () -> Void
   /// Icon only, for a toolbar too narrow for the run's title; the title moves to the tooltip.
   var compact = false
   @State private var pending: (title: String, conflicts: [TerminalsStore.Conflict])?
@@ -121,9 +119,13 @@ struct RunControl: View {
     start(title)
   }
 
+  /// The run's output comes up in the side panel, in its own tab.
   private func start(_ title: String) {
-    reveal()
-    Task { await terminals.run(title, sessionId: session.id) }
+    model.panels.setOpen(true, session: session.id)
+    MacTelemetry.capture(.panelTabOpened(kind: .terminal, via: .action))
+    Task {
+      if let tab = await terminals.run(title, sessionId: session.id) { model.showTerminal(tab.id, session: session.id) }
+    }
   }
 
   /// Wait for the old run to exit before starting: it may still hold the port.

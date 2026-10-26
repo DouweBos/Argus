@@ -2,8 +2,8 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// The runtime column: a target picker over the picked simulator, emulator or
-/// the session's browser — the renderer's `RuntimeView`.
+/// A side panel's Device or Browser tab: a target picker over the picked
+/// simulator or emulator, or the session's browser — the renderer's `RuntimeView`.
 struct RuntimePanel: View {
   @Environment(\.theme) private var theme
   @Environment(\.openWindow) private var openWindow
@@ -11,12 +11,14 @@ struct RuntimePanel: View {
   @Environment(RuntimeModel.self) private var runtime
   @Environment(DesktopModel.self) private var model
   let sessionId: String?
+  /// The Browser tab; otherwise the Device tab.
+  var browser = false
   @State private var titleBarWidth: CGFloat = 0
 
   /// How often the device lists are refetched while the panel is up.
   private static let pollInterval = Duration.seconds(5)
 
-  private var platform: RuntimeModel.Platform { runtime.platform }
+  private var platform: RuntimeModel.Platform { browser ? .web : runtime.devicePlatform }
 
   /// Native inspection is Apple-only, and only while its tool is on.
   private var inspectorAvailable: Bool {
@@ -40,13 +42,16 @@ struct RuntimePanel: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      titleBar
-      Divider()
+      if !browser {
+        titleBar
+        Divider()
+      }
       content.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
     .background(theme.bg)
-    .task {
-      while !Task.isCancelled {
+    .task(id: browser) {
+      // The browser needs no device lists.
+      while !browser, !Task.isCancelled {
         await runtime.refresh()
         try? await Task.sleep(for: Self.pollInterval)
       }
@@ -132,7 +137,8 @@ struct RuntimePanel: View {
   }
 }
 
-/// Platform and device in one menu: picking a device implies its platform.
+/// Platform and device in one menu: picking a device implies its platform. The
+/// browser is a tab of its own.
 struct RuntimeTargetPicker: View {
   @Environment(RuntimeModel.self) private var runtime
   @Environment(DesktopModel.self) private var model
@@ -160,13 +166,8 @@ struct RuntimeTargetPicker: View {
           ) { runtime.select(platform: .android, device: device.serial, session: sessionId) }
         }
       }
-      Section("Web") {
-        toggle("Chromium", on: runtime.platform == .web) {
-          runtime.select(platform: .web, device: nil, session: sessionId)
-        }
-      }
     } label: {
-      Label(label, systemImage: runtime.platform == .web ? Icon.web : Icon.simulator)
+      Label(label, systemImage: Icon.simulator)
     }
     .menuStyle(.borderlessButton)
     // A long device name truncates rather than push the toolbar out.
@@ -175,7 +176,7 @@ struct RuntimeTargetPicker: View {
   }
 
   private func isSelected(_ platform: RuntimeModel.Platform, _ id: String) -> Bool {
-    runtime.platform == platform && runtime.selectedDevice(platform: platform, session: sessionId) == id
+    runtime.devicePlatform == platform && runtime.selectedDevice(platform: platform, session: sessionId) == id
   }
 
   private func toggle(_ title: String, on: Bool, run: @escaping () -> Void) -> some View {
@@ -183,7 +184,7 @@ struct RuntimeTargetPicker: View {
   }
 
   private var label: String {
-    switch runtime.platform {
+    switch runtime.devicePlatform {
     case .web: return "Chromium"
     case .ios:
       return runtime.simulator(runtime.selectedDevice(platform: .ios, session: sessionId))?.name

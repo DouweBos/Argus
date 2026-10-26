@@ -54,20 +54,16 @@ struct HomeDefaultsTests {
     #expect(runtime.startedBrowsers == ["s1"])
   }
 
-  @Test func theDevicePanelIsHiddenPerSessionAndRemembered() {
+  @Test func theDeviceTabKeepsTheLastDevicePlatformWhileTheBrowserIsPicked() {
     let home = tempHome()
     defer { try? FileManager.default.removeItem(at: home) }
-    let defaults = HomeDefaults(file: home.appendingPathComponent("x.plist"))
-    let runtime = RuntimeModel(store: HostStore(), defaults: defaults)
-    #expect(runtime.panelVisible(session: "s1"))
-
-    runtime.setPanelVisible(false, session: "s1")
-    #expect(!runtime.panelVisible(session: "s1"))
-    #expect(runtime.panelVisible(session: "s2"))
-    #expect(runtime.panelVisible(session: nil))
-
+    let runtime = RuntimeModel(store: HostStore(), defaults: HomeDefaults(file: home.appendingPathComponent("x.plist")))
+    runtime.select(platform: .android, device: nil, session: "s1")
+    runtime.select(platform: .web, device: nil, session: "s1")
+    #expect(runtime.devicePlatform == .android)
     let reopened = RuntimeModel(store: HostStore(), defaults: HomeDefaults(file: home.appendingPathComponent("x.plist")))
-    #expect(!reopened.panelVisible(session: "s1"))
+    #expect(reopened.platform == .web)
+    #expect(reopened.devicePlatform == .android)
   }
 
   @Test func aFreshHomeDefaultsToIOS() {

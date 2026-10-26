@@ -57,5 +57,16 @@
       model.move(-1)
       #expect(model.highlighted == 4)
     }
+
+    @Test("a row's letter picks it, shown as its hint, unless the row is disabled")
+    func letterKeys() {
+      let model = ChromeMenuModel()
+      let terminal = ChromeMenuItem("Terminal", key: "T") {}
+      model.entries = [.item(terminal), .item(ChromeMenuItem("Diff", disabled: true, key: "d") {})]
+      #expect(terminal.shortcut == "T")
+      #expect(model.item(forKey: "t")?.title == "Terminal")
+      #expect(model.item(forKey: "T")?.title == "Terminal")
+      #expect(model.item(forKey: "d") == nil)
+    }
   }
 #endif

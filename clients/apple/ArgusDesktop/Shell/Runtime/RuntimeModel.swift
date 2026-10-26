@@ -30,7 +30,14 @@ final class RuntimeModel {
   let streams: RuntimeStreamHub
 
   var platform: Platform {
-    didSet { defaults.set(platform.rawValue, forKey: Keys.platform) }
+    didSet {
+      defaults.set(platform.rawValue, forKey: Keys.platform)
+      if platform != .web, platform != devicePlatform { devicePlatform = platform }
+    }
+  }
+  /// The simulator or emulator side last picked: the Device tab's, while the browser has a tab of its own.
+  private(set) var devicePlatform: Platform {
+    didSet { defaults.set(devicePlatform.rawValue, forKey: Keys.devicePlatform) }
   }
   var mode: Mode = .simulate
   private(set) var simulators: [ArgusProtocol.SimulatorDevice] = []
@@ -48,8 +55,6 @@ final class RuntimeModel {
   private var projectDisabledTools: Set<String> { Set(projectConfig?.tools?.disabled ?? []) }
 
   private var iosBySession: [String: String]
-  /// Sessions (or `globalKey`) whose device panel is hidden; shown unless hidden.
-  private var hiddenPanels: Set<String>
   private var androidBySession: [String: String]
   /// The page each session's browser was last on, so returning to it doesn't reload.
   var browserUrls: [String: String] = [:]
@@ -71,18 +76,20 @@ final class RuntimeModel {
     static let ios = "runtime.iosBySession"
     static let android = "runtime.androidBySession"
     static let browserPreset = "runtime.browserPreset"
-    static let hiddenPanels = "runtime.hiddenPanels"
+    static let devicePlatform = "runtime.devicePlatform"
   }
 
   init(store: HostStore, defaults: HomeDefaults = .shared) {
     self.store = store
     self.defaults = defaults
     streams = RuntimeStreamHub(store: store)
-    platform = defaults.string(forKey: Keys.platform).flatMap(Platform.init) ?? .ios
+    let platform = defaults.string(forKey: Keys.platform).flatMap(Platform.init) ?? .ios
+    self.platform = platform
+    devicePlatform =
+      defaults.string(forKey: Keys.devicePlatform).flatMap(Platform.init) ?? (platform == .web ? .ios : platform)
     iosBySession = defaults.dictionary(forKey: Keys.ios) as? [String: String] ?? [:]
     androidBySession = defaults.dictionary(forKey: Keys.android) as? [String: String] ?? [:]
     browserPreset = defaults.string(forKey: Keys.browserPreset) ?? "desktop"
-    hiddenPanels = Set(defaults.stringArray(forKey: Keys.hiddenPanels) ?? [])
   }
 
   /// Picks up the picks the host handed over on connect.
@@ -95,20 +102,6 @@ final class RuntimeModel {
     if let preset = defaults.string(forKey: Keys.browserPreset), preset != browserPreset {
       browserPreset = preset
     }
-    let hidden = Set(defaults.stringArray(forKey: Keys.hiddenPanels) ?? [])
-    if hidden != hiddenPanels { hiddenPanels = hidden }
-  }
-
-  // MARK: Panel
-
-  func panelVisible(session: String?) -> Bool {
-    !hiddenPanels.contains(session ?? Self.globalKey)
-  }
-
-  func setPanelVisible(_ visible: Bool, session: String?) {
-    let key = session ?? Self.globalKey
-    if visible { hiddenPanels.remove(key) } else { hiddenPanels.insert(key) }
-    defaults.set(hiddenPanels.sorted(), forKey: Keys.hiddenPanels)
   }
 
   private var backend: (any HostBackend)? { store.backend }

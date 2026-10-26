@@ -26,42 +26,31 @@ struct SessionView: View {
   private func closeAgent(_ agentId: String) { model.closeAgent(agentId, inSession: sessionId) }
 
   var body: some View {
-    ResizableVSplit(
-      key: "session.terminal", topMin: 240, bottomMin: 120, bottomIdeal: 280,
-      showsBottom: model.terminalPanelVisible && session?.status == .ready
-    ) {
-      Group {
-        if case .sessionHome = model.route, let session {
-          SessionHomeView(session: session, sessionAgents: agents, startAgent: startAgent(mode:))
-            .id(session.id)
-            .sessionContextCard(cardShown ? session : nil)
-        } else if case .sessionCode(_, let path, let line) = model.route, let session {
-          if session.status == .ready {
-            CodePanel(session: session, path: path, line: line)
-          } else {
-            SessionSetupView(session: session, progress: session.progress)
-          }
-        } else if let gitView = model.route.gitView, let session {
-          if session.status == .ready {
-            GitScreen(session: session, view: gitView)
-          } else {
-            SessionSetupView(
-              session: session, progress: session.progress)
-          }
+    Group {
+      if case .sessionHome = model.route, let session {
+        SessionHomeView(session: session, sessionAgents: agents, startAgent: startAgent(mode:))
+          .id(session.id)
+          .sessionContextCard(cardShown ? session : nil)
+      } else if case .sessionCode(_, let path, let line) = model.route, let session {
+        if session.status == .ready {
+          CodePanel(session: session, path: path, line: line)
         } else {
-          agentsPane
+          SessionSetupView(session: session, progress: session.progress)
         }
+      } else if let gitView = model.route.gitView, let session {
+        if session.status == .ready {
+          GitScreen(session: session, view: gitView)
+        } else {
+          SessionSetupView(
+            session: session, progress: session.progress)
+        }
+      } else {
+        agentsPane
       }
-    } bottom: {
-      if let session { TerminalPanel(session: session) }
     }
     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
     .toolbar(removing: .title)
     .toolbar { SessionToolbar(session: session, sessionId: sessionId, cardShown: cardShown) }
-    // An agent's `trigger_run` shows its output, as the desktop app does.
-    .onChange(of: terminals.revealed) { _, reveal in
-      if reveal?.sessionId == sessionId { model.terminalPanelVisible = true }
-    }
     .onChange(of: agents.map(\.agentId)) { _, ids in
       if let spawned = model.spawnedAgent, ids.contains(spawned) { model.spawnedAgent = nil }
     }
