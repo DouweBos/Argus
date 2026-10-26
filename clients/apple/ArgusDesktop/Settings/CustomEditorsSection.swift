@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import SwiftUI
 
 /// Your own apps in the "Open In" menu: a CLI on PATH or a `.app` path.
@@ -8,7 +9,11 @@ struct CustomEditorsSection: View {
   @State private var adding = false
 
   var body: some View {
-    Section {
+    SettingsGroup(
+      "Open in apps",
+      footer: "Show your own apps in the \"Open In\" menu. Command is a CLI on PATH (e.g. zed, subl) or a "
+        + "path to a .app bundle."
+    ) {
       if prefs.customEditors.isEmpty {
         Text("No custom apps yet.").foregroundStyle(.secondary)
       }
@@ -26,13 +31,8 @@ struct CustomEditorsSection: View {
           }
         }
       }
-      Button("Add App…") { adding = true }
-    } header: {
-      Text("Open in apps")
-    } footer: {
-      SettingsCaption(
-        "Show your own apps in the \"Open In\" menu. Command is a CLI on PATH (e.g. zed, subl) or a "
-          + "path to a .app bundle.")
+    } accessory: {
+      SettingsHeaderButton("Add App…", systemImage: "plus") { adding = true }
     }
     .sheet(isPresented: $adding) {
       CustomEditorSheet(title: "Add App", editor: nil) { name, command in

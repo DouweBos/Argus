@@ -42,6 +42,9 @@ public struct Theme: Sendable, Equatable {
   public let radiusSmall: CGFloat = 8
   public let space: CGFloat = 12
 
+  /// Dims the window under a floating panel (the command palette).
+  public var scrim: Color { .black.opacity(scheme == .dark ? 0.45 : 0.18) }
+
   /// A selected pill tab: the label colour inverted, as Grove's tab bar draws it.
   public var pillSelected: Color { scheme == .light ? Color(hex: 0x1C1C1E) : .white }
   public var pillSelectedText: Color { scheme == .light ? .white : Color(hex: 0x1C1C1E) }

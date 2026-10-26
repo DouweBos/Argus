@@ -15,8 +15,16 @@ struct AccountsSettingsTab: View {
   private var accounts: [RemoteClaudeAccount] { store.claudeAccounts ?? [] }
 
   var body: some View {
-    Form {
-      Section {
+    SettingsPage {
+      SettingsGroup(
+        "Accounts",
+        footer: accounts.isEmpty
+          ? nil
+          : "Agents and terminals use the selected account. Sessions pinned to another account keep "
+            + "theirs, and running agents are never interrupted by a switch. An account marked Signed "
+            + "out has expired credentials — sign in again to renew them. Limit reached means the "
+            + "plan's quota is spent: nothing to fix, it clears on its own."
+      ) {
         if store.claudeAccounts == nil {
           SettingsLoading()
         } else if accounts.isEmpty {
@@ -36,25 +44,14 @@ struct AccountsSettingsTab: View {
             removing = account
           }
         }
-      } header: {
-        Text("Accounts")
-      } footer: {
-        if !accounts.isEmpty {
-          SettingsCaption(
-            "Agents and terminals use the selected account. Sessions pinned to another account keep "
-              + "theirs, and running agents are never interrupted by a switch. An account marked Signed "
-              + "out has expired credentials — sign in again to renew them. Limit reached means the "
-              + "plan's quota is spent: nothing to fix, it clears on its own.")
-        }
       }
 
       ClaudeLoginSection(login: login, firstAccount: accounts.isEmpty) {
         await store.refreshClaudeAccounts()
       }
 
-      Section { SettingsError(text: login.error ?? host.error) }
+      SettingsError(text: login.error ?? host.error)
     }
-    .formStyle(.grouped)
     .task {
       await store.refreshClaudeAccounts()
     }

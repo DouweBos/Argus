@@ -26,7 +26,7 @@ struct WorktreeLocationField: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
-      Text(label)
+      Text(label).font(.scaled(size: 13, weight: .medium))
       HStack {
         TextField(label, text: $draft, prompt: Text(defaultPath))
           .labelsHidden()

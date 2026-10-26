@@ -33,70 +33,66 @@ private struct RemoteSettingsForm: View {
   private var enabled: Bool { status?.enabled ?? false }
 
   var body: some View {
-    Form {
-      Section {
-        Toggle(isOn: toggle(\.enabled, .enabled) { .init(enabled: $0) }) {
-          HStack {
-            Text("Enable remote access")
-            Spacer()
+    SettingsPage {
+      SettingsGroup(
+        "Remote access",
+        footer: "Pair a phone to monitor your projects and agents from anywhere. Argus exposes a local, end-to-end-encrypted gateway through a Cloudflare or Tailscale tunnel — no inbound ports. Paired devices monitor and approve prompts by default; grant a device control to also let it drive agents. Creating projects always stays on this machine."
+      ) {
+        SettingsRow("Enable remote access") {
+          HStack(spacing: 10) {
             if let status {
               ToneLabel(
                 tone: enabled ? RemoteAccessLabels.reachabilityTone(status) : .idle,
                 text: enabled ? RemoteAccessLabels.reachabilityLabel(status) : "off")
             }
+            Toggle("Enable remote access", isOn: toggle(\.enabled, .enabled) { .init(enabled: $0) })
+              .toggleStyle(.switch)
+              .controlSize(.small)
+              .disabled(model.busy || status == nil)
           }
         }
-        .disabled(model.busy || status == nil)
-      } header: {
-        Text("Remote access")
-      } footer: {
-        Text(
-          "Pair a phone to monitor your projects and agents from anywhere. Argus exposes a local, end-to-end-encrypted gateway through a Cloudflare or Tailscale tunnel — no inbound ports. Paired devices monitor and approve prompts by default; grant a device control to also let it drive agents. Creating projects always stays on this machine."
-        )
       }
 
       RemoteTunnelSections(model: model, toggle: toggle)
 
-      Section {
+      SettingsGroup(
+        "Addresses",
+        footer: "Synced to every paired device on connect, in the order they're tried. Argus also serves the web client to other devices on your Wi-Fi — open it in a browser and pair it like any other device."
+      ) {
         let endpoints = status.map(RemoteAccessLabels.orderedEndpoints) ?? []
         if endpoints.isEmpty {
-          LabeledContent("Addresses", value: enabled ? "resolving…" : "—")
+          SettingsRow("Addresses") {
+            Text(enabled ? "resolving…" : "—").foregroundStyle(theme.textSecondary)
+          }
         } else {
           ForEach(Array(endpoints.enumerated()), id: \.offset) { index, endpoint in
-            LabeledContent("\(index + 1). \(RemoteAccessLabels.endpoint(endpoint.kind))") {
+            SettingsRow("\(index + 1). \(RemoteAccessLabels.endpoint(endpoint.kind))") {
               Text(endpoint.url).font(.system(.body, design: .monospaced)).textSelection(.enabled)
             }
           }
         }
         if enabled, let status {
-          LabeledContent("Web client on this network") {
+          SettingsRow("Web client on this network") {
             Text(RemoteAccessLabels.webClientUrl(status.lanUrl)).textSelection(.enabled)
           }
         }
-      } header: {
-        Text("Addresses")
-      } footer: {
-        Text(
-          "Synced to every paired device on connect, in the order they're tried. Argus also serves the web client to other devices on your Wi-Fi — open it in a browser and pair it like any other device."
-        )
       }
 
       RemotePushSection(model: model, gatewayOn: enabled)
 
-      Section {
-        Toggle(
+      SettingsGroup("Notifications") {
+        SettingsToggleRow(
           "Notify my devices while I'm using Argus",
+          description: "Off by default: your phone and browsers stay quiet whenever the Argus window is focused, so they only interrupt you when you've stepped away.",
           isOn: toggle(\.notifyWhenFocused, .notifyWhenFocused) { .init(notifyWhenFocused: $0) }
         )
         .disabled(model.busy || !enabled)
-      } footer: {
-        Text(
-          "Off by default: your phone and browsers stay quiet whenever the Argus window is focused, so they only interrupt you when you've stepped away."
-        )
       }
 
-      Section {
-        LabeledContent("Pair a device") {
+      SettingsGroup(
+        "Devices", footer: "Scan the QR on your phone, then confirm the 6-digit code matches on both screens."
+      ) {
+        SettingsRow("Pair a device") {
           Button(model.canPair ? "Start Pairing…" : "Waiting for the tunnel…") {
             Task { await model.startPairing() }
           }
@@ -107,23 +103,22 @@ private struct RemoteSettingsForm: View {
             model: model, device: device,
             connected: status?.connectedDeviceIds.contains(device.deviceId) ?? false)
         }
-      } header: {
-        Text("Devices")
-      } footer: {
-        Text("Scan the QR on your phone, then confirm the 6-digit code matches on both screens.")
       }
 
-      Section {
-        TextField("Your name on a huddle invite", text: $huddleName, prompt: Text("Your name"))
-      } footer: {
-        Text("Used in “… wants you to join”. Empty uses the name you commit under.")
+      SettingsGroup("Huddles") {
+        SettingsRow(
+          "Your name on a huddle invite", description: "Used in “… wants you to join”. Empty uses the name you commit under."
+        ) {
+          TextField("Your name on a huddle invite", text: $huddleName, prompt: Text("Your name"))
+            .textFieldStyle(.roundedBorder)
+            .frame(width: 200)
+        }
       }
 
       if let error = model.error {
-        Section { Text(error).foregroundStyle(theme.error).textSelection(.enabled) }
+        Text(error).foregroundStyle(theme.error).textSelection(.enabled)
       }
     }
-    .formStyle(.grouped)
     .sheet(isPresented: $model.pairingPresented) {
       PairingSheet(model: model)
     }

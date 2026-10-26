@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import SwiftUI
 
 /// An official runner re-pointed at another endpoint through its environment.
@@ -11,15 +12,13 @@ struct CustomRunnersSection: View {
   @State private var errors: [UUID: String] = [:]
 
   var body: some View {
-    Section {
-      HStack {
-        ForEach(presets, id: \.key) { preset in
-          Button(preset.label, systemImage: "plus") {
-            drafts.append(CustomRunnerDraft(preset: preset.draft))
-          }
-          .help(preset.description)
-        }
-      }
+    SettingsGroup(
+      "Custom runners",
+      footer: "Point an official runner at a different endpoint — a gateway like callstack.ai's Apex, a "
+        + "proxy, or a self-hosted model. Custom runners reuse the base runner's CLI and only "
+        + "override its environment and model list. Stored in ~/.argus/custom-runners.json; pick "
+        + "one per session in the runner picker or as the app default above."
+    ) {
       if drafts.isEmpty {
         Text("No custom runners yet. Start from a template above.").foregroundStyle(.secondary)
       }
@@ -33,14 +32,15 @@ struct CustomRunnersSection: View {
           delete(draft)
         }
       }
-    } header: {
-      Text("Custom runners")
-    } footer: {
-      SettingsCaption(
-        "Point an official runner at a different endpoint — a gateway like callstack.ai's Apex, a "
-          + "proxy, or a self-hosted model. Custom runners reuse the base runner's CLI and only "
-          + "override its environment and model list. Stored in ~/.argus/custom-runners.json; pick "
-          + "one per session in the runner picker or as the app default above.")
+    } accessory: {
+      HStack(spacing: 6) {
+        ForEach(presets, id: \.key) { preset in
+          SettingsHeaderButton(preset.label, systemImage: "plus") {
+            drafts.append(CustomRunnerDraft(preset: preset.draft))
+          }
+          .help(preset.description)
+        }
+      }
     }
     .task(id: host.loaded) {
       drafts = (await host.run(ArgusProtocol.Commands.LlmListCustomRunners.self, EmptyParams()) ?? [])

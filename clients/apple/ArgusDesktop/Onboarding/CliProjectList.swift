@@ -83,7 +83,8 @@ struct CliProjectList: View {
           rowStack(rows)
         }
       }
-      .background(theme.bgSecondary, in: RoundedRectangle(cornerRadius: theme.radiusSmall))
+      .background(theme.surface, in: RoundedRectangle(cornerRadius: theme.radiusSmall + 2))
+      .overlay(RoundedRectangle(cornerRadius: theme.radiusSmall + 2).strokeBorder(theme.border))
       if picker.scan?.truncated == true {
         Text("Only the newest chats were scanned; some projects may be missing.")
           .font(.scaled(.caption))
@@ -93,8 +94,11 @@ struct CliProjectList: View {
   }
 
   private func rowStack(_ rows: [ArgusProtocol.CliProjectCandidate]) -> some View {
-    LazyVStack(alignment: .leading, spacing: 2) {
-      ForEach(rows, id: \.path) { row($0) }
+    LazyVStack(alignment: .leading, spacing: 0) {
+      ForEach(rows, id: \.path) { candidate in
+        if candidate.path != rows.first?.path { SettingsHairline() }
+        row(candidate)
+      }
     }
   }
 
@@ -125,8 +129,8 @@ struct CliProjectList: View {
     }
     .toggleStyle(.checkbox)
     .disabled(candidate.added || picker.importing)
-    .padding(.horizontal, 10)
-    .padding(.vertical, 6)
+    .padding(.horizontal, 12)
+    .padding(.vertical, 8)
   }
 
   private func binding(_ candidate: ArgusProtocol.CliProjectCandidate) -> Binding<Bool> {

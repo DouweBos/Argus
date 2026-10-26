@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import SwiftUI
 
 /// Personal MCP servers merged into every agent on this machine, and the ones
@@ -10,8 +11,12 @@ struct MCPSettingsTab: View {
   @State private var saved = false
 
   var body: some View {
-    Form {
-      Section {
+    SettingsPage {
+      SettingsGroup(
+        "MCP servers",
+        footer: "Personal MCP servers merged into every Argus agent on this machine. Stored in "
+          + "~/.argus/app-settings.json. Use project settings for entries the whole team should get."
+      ) {
         if !host.loaded {
           SettingsLoading()
         } else if entries.isEmpty {
@@ -27,15 +32,12 @@ struct MCPSettingsTab: View {
             .buttonStyle(.borderedProminent)
             .disabled(!host.loaded || !McpServerEntry.allValid(entries))
         }
-      } header: {
-        Text("MCP servers")
-      } footer: {
-        SettingsCaption(
-          "Personal MCP servers merged into every Argus agent on this machine. Stored in "
-            + "~/.argus/app-settings.json. Use project settings for entries the whole team should get.")
       }
 
-      Section {
+      SettingsGroup(
+        "Inherited",
+        footer: "Argus already passes these servers through to every agent — listed for reference, not editable here."
+      ) {
         if let inherited {
           if inherited.isEmpty {
             Text("No servers inherited from Claude Code, plugins, or this project's .mcp.json.")
@@ -47,16 +49,10 @@ struct MCPSettingsTab: View {
         } else {
           SettingsLoading()
         }
-      } header: {
-        Text("Inherited")
-      } footer: {
-        SettingsCaption(
-          "Argus already passes these servers through to every agent — listed for reference, not editable here.")
       }
 
-      Section { SettingsError(text: host.error) }
+      SettingsError(text: host.error)
     }
-    .formStyle(.grouped)
     .task(id: host.loaded) {
       guard host.loaded else { return }
       entries = McpServerEntry.entries(from: host.settings?.mcpServers)
@@ -81,6 +77,7 @@ struct MCPSettingsTab: View {
 /// One editable server: name, JSON config with live validation, and a probe.
 private struct McpServerRow: View {
   @Environment(HostSettingsModel.self) private var host
+  @Environment(\.theme) private var theme
   @Binding var entry: McpServerEntry
   let remove: () -> Void
   @State private var probe = McpProbe()
@@ -97,6 +94,9 @@ private struct McpServerRow: View {
         .font(.scaled(.body).monospaced())
         .frame(minHeight: 96)
         .scrollContentBackground(.hidden)
+        .padding(6)
+        .background(theme.bg, in: .rect(cornerRadius: 6))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(theme.border))
         .autocorrectionDisabled()
         .accessibilityLabel("MCP server JSON config")
         .onChange(of: entry.json) { _, typed in

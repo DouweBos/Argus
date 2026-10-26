@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import SwiftUI
 
 /// Chats run with the plain Claude Code CLI, pulled into each project's history.
@@ -8,19 +9,15 @@ struct ImportCliChatsSection: View {
   @State private var result: String?
 
   var body: some View {
-    Section("Claude Code chats") {
+    SettingsGroup("Claude Code chats") {
       if let settings = host.settings {
-        VStack(alignment: .leading, spacing: 4) {
-          Toggle("Import chats from the Claude Code CLI", isOn: enabled(settings))
-          SettingsCaption(
-            "Show chats you ran with the Claude Code CLI in each project's history, so you can resume them here.")
-        }
-        HStack {
-          Button(importing ? "Importing…" : "Import now", action: runImport)
+        SettingsToggleRow(
+          "Import chats from the Claude Code CLI",
+          description: "Show chats you ran with the Claude Code CLI in each project's history, so you can resume them here.",
+          isOn: enabled(settings))
+        SettingsRow("Import now", description: result ?? "Pull in chats you've had since the last import.") {
+          Button(importing ? "Importing…" : "Import Now", action: runImport)
             .disabled(importing)
-          if let result {
-            Text(result).font(.callout).foregroundStyle(.secondary)
-          }
         }
       } else {
         SettingsLoading()

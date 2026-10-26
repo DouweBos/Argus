@@ -22,49 +22,45 @@ struct RemoteTunnelSections: View {
   private var mode: ArgusProtocol.RemoteTunnelMode { status?.tunnelMode ?? .quick }
 
   var body: some View {
-    Section {
+    SettingsGroup(
+      "Tunnels",
+      footer: "Devices on this network always connect directly. Tunnels add a way in from anywhere else — enable as many as you like. A paired phone syncs every address and connects over the simplest one that works: Wi-Fi first, then Tailscale, then Cloudflare."
+    ) {
       tunnelRow("Tailscale", on: tailscaleOn, state: status?.tunnels["tailscale"]) {
         toggle(\.tailscaleEnabled, .tailscale) { .init(tailscaleEnabled: $0) }
       }
       tunnelRow("Cloudflare", on: cloudflareOn, state: status?.tunnels["cloudflare"]) {
         toggle(\.cloudflareEnabled, .cloudflare) { .init(cloudflareEnabled: $0) }
       }
-    } header: {
-      Text("Tunnels")
-    } footer: {
-      Text(
-        "Devices on this network always connect directly. Tunnels add a way in from anywhere else — enable as many as you like. A paired phone syncs every address and connects over the simplest one that works: Wi-Fi first, then Tailscale, then Cloudflare."
-      )
     }
 
     if tailscaleOn {
-      Section {
+      SettingsGroup(
+        "Tailscale Funnel",
+        footer: "Exposes the gateway at your stable *.ts.net address — no domain or Cloudflare account. Argus checks each prerequisite and can fix them for you."
+      ) {
         TailscaleSetupView(model: model)
-      } header: {
-        Text("Tailscale Funnel")
-      } footer: {
-        Text(
-          "Exposes the gateway at your stable *.ts.net address — no domain or Cloudflare account. Argus checks each prerequisite and can fix them for you."
-        )
       }
     }
 
     if cloudflareOn {
-      Section {
-        Picker("Tunnel", selection: modeBinding) {
-          Text("Quick tunnel").tag(ArgusProtocol.RemoteTunnelMode.quick)
-          Text("Named tunnel").tag(ArgusProtocol.RemoteTunnelMode.token)
+      SettingsGroup("Cloudflare", footer: cloudflareFooter) {
+        SettingsRow("Tunnel") {
+          Picker("Tunnel", selection: modeBinding) {
+            Text("Quick tunnel").tag(ArgusProtocol.RemoteTunnelMode.quick)
+            Text("Named tunnel").tag(ArgusProtocol.RemoteTunnelMode.token)
+          }
+          .pickerStyle(.segmented)
         }
-        .pickerStyle(.segmented)
         if mode == .token {
-          LabeledContent("Connector token") {
+          SettingsRow("Connector token") {
             HStack {
               SecureField(
                 "Connector token", text: $token,
                 prompt: Text(status?.hasTunnelToken == true ? "••••••••" : "Paste token")
               )
-              .labelsHidden()
-              .frame(minWidth: 220)
+              .textFieldStyle(.roundedBorder)
+              .frame(width: 240)
               Button("Save") {
                 Task {
                   if await model.apply(.init(tunnelToken: token), setting: .tunnelToken) { token = "" }
@@ -73,11 +69,11 @@ struct RemoteTunnelSections: View {
               .disabled(model.busy || token.trimmingCharacters(in: .whitespaces).isEmpty)
             }
           }
-          LabeledContent("Public URL") {
+          SettingsRow("Public URL") {
             HStack {
               TextField("Public URL", text: $publicUrl, prompt: Text("wss://argus.example.com"))
-                .labelsHidden()
-                .frame(minWidth: 220)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 240)
               Button("Save") {
                 Task { _ = await model.apply(.init(publicUrl: publicUrl), setting: .publicUrl) }
               }
@@ -85,10 +81,6 @@ struct RemoteTunnelSections: View {
             }
           }
         }
-      } header: {
-        Text("Cloudflare")
-      } footer: {
-        Text(cloudflareFooter)
       }
       .onAppear(perform: seedPublicUrl)
       .onChange(of: status?.publicUrl) { seedPublicUrl() }
@@ -116,24 +108,25 @@ struct RemoteTunnelSections: View {
       set: { next in Task { _ = await model.apply(.init(tunnelMode: next), setting: .tunnelMode) } })
   }
 
-  @ViewBuilder
   private func tunnelRow(
     _ name: String, on: Bool, state: ArgusProtocol.RemoteTunnelState?, binding: () -> Binding<Bool>
   ) -> some View {
-    Toggle(isOn: binding()) {
-      HStack {
-        Text(name)
-        Spacer()
+    SettingsRow(name) {
+      HStack(spacing: 10) {
         if status != nil {
           ToneLabel(
             tone: on ? RemoteAccessLabels.tunnelTone(state) : .idle,
             text: on ? RemoteAccessLabels.tunnelLabel(state) : "off")
         }
+        Toggle(name, isOn: binding())
+          .toggleStyle(.switch)
+          .controlSize(.small)
+          .disabled(model.busy || status == nil)
       }
-    }
-    .disabled(model.busy || status == nil)
-    if on, let error = state?.error {
-      Text(error).font(.scaled(.callout)).foregroundStyle(theme.error).textSelection(.enabled)
+    } detail: {
+      if on, let error = state?.error {
+        Text(error).font(.scaled(.callout)).foregroundStyle(theme.error).textSelection(.enabled)
+      }
     }
   }
 }

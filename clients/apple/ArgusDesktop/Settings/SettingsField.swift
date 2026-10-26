@@ -49,8 +49,8 @@ enum SettingsField: String {
 
   var section: SettingsTab {
     switch self {
-    case .theme, .colorTheme, .displaySize, .launchRoute, .worktreeLocation, .automationWorktreeLocation,
-      .customEditors, .telemetryMode:
+    case .theme, .colorTheme, .displaySize: .appearance
+    case .launchRoute, .worktreeLocation, .automationWorktreeLocation, .customEditors, .telemetryMode:
       .general
     case .accountSelected, .accountAdded, .accountRemoved, .accountRenamed, .accountReauth:
       .accounts

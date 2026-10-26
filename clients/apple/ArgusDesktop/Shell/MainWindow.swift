@@ -59,7 +59,10 @@ struct MainWindow: View {
     }
     .overlay(alignment: .top) {
       if model.palette.isPresented {
-        CommandPaletteView().padding(.top, 60)
+        ZStack(alignment: .top) {
+          PaletteScrim { model.palette.isPresented = false }
+          CommandPaletteView().padding(.top, 72)
+        }
       }
     }
     .modifier(ProjectFlows())
@@ -184,6 +187,20 @@ private struct Themed: ViewModifier {
 
 extension View {
   func themed() -> some View { modifier(Themed()) }
+}
+
+/// Dims the window behind the palette; a click outside closes it.
+private struct PaletteScrim: View {
+  @Environment(\.theme) private var theme
+  let close: () -> Void
+
+  var body: some View {
+    theme.scrim
+      .ignoresSafeArea()
+      .contentShape(.rect)
+      .onTapGesture(perform: close)
+      .accessibilityHidden(true)
+  }
 }
 
 /// The window's flat canvas, up under the toolbar; a modifier so it reads the themed environment.

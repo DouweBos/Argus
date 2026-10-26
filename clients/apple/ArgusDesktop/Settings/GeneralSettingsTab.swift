@@ -2,43 +2,32 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// Appearance, where worktrees go, extra "Open in" apps, and telemetry.
+/// Where Argus opens, where worktrees go, extra "Open in" apps, and telemetry.
 struct GeneralSettingsTab: View {
   @Environment(HostSettingsModel.self) private var host
   @Environment(DesktopModel.self) private var model
-  @State private var prefs = AppPreferences.shared
   @State private var telemetry = TelemetryConsent.sanitize(MacTelemetry.mode)
   @State private var defaultWorktreeBase = ""
 
   var body: some View {
-    Form {
-      Section("Appearance") {
-        Picker("Theme", selection: $prefs.theme.tracked(.theme)) {
-          ForEach(type(of: prefs.theme).allCases, id: \.self) { Text($0.label).tag($0) }
-        }
-        .pickerStyle(.segmented)
-        LabeledContent("Colour theme") {
-          ColorThemePicker(selection: $prefs.colorTheme.tracked(.colorTheme))
-        }
-        VStack(alignment: .leading, spacing: 4) {
-          Picker("Display size", selection: $prefs.displaySize.tracked(.displaySize)) {
-            ForEach(DisplaySize.allCases, id: \.self) { Text($0.label).tag($0) }
-          }
-          .pickerStyle(.segmented)
-          SettingsCaption("Scale the entire UI larger for readability or smaller for more space.")
-        }
-        VStack(alignment: .leading, spacing: 4) {
+    SettingsPage {
+      SettingsGroup("Startup") {
+        SettingsRow("Launch screen", description: "Where Argus lands when it opens. Restored window tabs still win.") {
           Picker("Launch screen", selection: launchRoute) {
             Text("Home").tag(ArgusProtocol.AppSettingsLaunchRoute.home)
             Text("Inbox").tag(ArgusProtocol.AppSettingsLaunchRoute.inbox)
           }
           .pickerStyle(.segmented)
           .disabled(!host.loaded)
-          SettingsCaption("Where Argus lands when it opens. Restored window tabs still win.")
         }
       }
 
-      Section {
+      SettingsGroup(
+        "Worktrees",
+        footer: "A project can override either of these from its own settings — that override is personal "
+          + "and never written into the repository. If the automation drive isn't connected, "
+          + "scheduled runs skip that project instead of falling back to your boot disk."
+      ) {
         if let settings = host.settings {
           WorktreeLocationField(
             label: "Worktree location", defaultPath: defaultWorktreeBase,
@@ -64,30 +53,21 @@ struct GeneralSettingsTab: View {
         } else {
           SettingsLoading()
         }
-      } header: {
-        Text("Worktrees")
-      } footer: {
-        SettingsCaption(
-          "A project can override either of these from its own settings — that override is personal "
-            + "and never written into the repository. If the automation drive isn't connected, "
-            + "scheduled runs skip that project instead of falling back to your boot disk.")
       }
 
       CustomEditorsSection()
 
-      Section("Privacy") {
-        VStack(alignment: .leading, spacing: 4) {
+      SettingsGroup("Privacy") {
+        SettingsRow("Telemetry", description: telemetryCaption) {
           Picker("Telemetry", selection: telemetryMode) {
             ForEach(TelemetryConsent.allCases, id: \.self) { Text($0.label).tag($0) }
           }
           .pickerStyle(.segmented)
-          SettingsCaption(telemetryCaption)
         }
       }
 
-      Section { SettingsError(text: host.error) }
+      SettingsError(text: host.error)
     }
-    .formStyle(.grouped)
     .task(id: host.loaded) {
       guard let backend = model.backend else { return }
       defaultWorktreeBase =

@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import SwiftUI
 
 /// What a read-only automation may additionally do, and what it was refused
@@ -9,10 +10,10 @@ struct AutomationAllowlistSection: View {
   @State private var draft = ""
 
   var body: some View {
-    Section {
+    SettingsGroup("Read-only runs") {
       if let settings = host.settings {
         VStack(alignment: .leading, spacing: 6) {
-          Text("Extra commands for read-only runs")
+          Text("Extra commands for read-only runs").font(.scaled(size: 13, weight: .medium))
           EntryList(entries: settings.automationAllowedCommands ?? []) { remove(.command, $0) }
           HStack {
             TextField("Command", text: $draft, prompt: Text("conductor screenshot"))
@@ -28,7 +29,7 @@ struct AutomationAllowlistSection: View {
         }
         if let tools = settings.automationAllowedTools, !tools.isEmpty {
           VStack(alignment: .leading, spacing: 6) {
-            Text("Extra tools for read-only runs")
+            Text("Extra tools for read-only runs").font(.scaled(size: 13, weight: .medium))
             EntryList(entries: tools) { remove(.tool, $0) }
             SettingsCaption("Tools promoted from a refusal below.")
           }
@@ -36,11 +37,14 @@ struct AutomationAllowlistSection: View {
       } else {
         SettingsLoading()
       }
-    } header: {
-      Text("Read-only runs")
     }
 
-    Section {
+    SettingsGroup(
+      "Refused while running",
+      footer: refusals.isEmpty
+        ? "Nothing has been turned away. Anything a read-only run is refused shows up here to allow or ignore."
+        : "A read-only run tried these and was refused. Allow the ones that only read."
+    ) {
       ForEach(refusals, id: \.id) { entry in
         RefusalRow(entry: entry) {
           add(entry.kind, entry.suggestedEntry, field: .refusalAllowed)
@@ -49,21 +53,15 @@ struct AutomationAllowlistSection: View {
           dismiss(entry, field: .refusalDismissed)
         }
       }
+    } accessory: {
       if !refusals.isEmpty {
-        Button("Clear All") {
+        SettingsHeaderButton("Clear All") {
           Task {
             await host.run(ArgusProtocol.Commands.AutomationGateLogClear.self, EmptyParams())
             await loadRefusals()
           }
         }
       }
-    } header: {
-      Text("Refused while running")
-    } footer: {
-      SettingsCaption(
-        refusals.isEmpty
-          ? "Nothing has been turned away. Anything a read-only run is refused shows up here to allow or ignore."
-          : "A read-only run tried these and was refused. Allow the ones that only read.")
     }
     .task { await loadRefusals() }
   }

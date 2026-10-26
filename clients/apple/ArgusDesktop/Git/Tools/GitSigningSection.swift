@@ -16,30 +16,54 @@ struct GitSigningSection: View {
   @State private var error: String?
   @State private var saving = false
 
+  /// A `Form` section in the git panel, a settings group's rows in Settings.
+  var rows = false
+
   var body: some View {
-    Section {
-      Toggle("Sign every commit", isOn: $draft.enabled)
-      Picker("Format", selection: $draft.format) {
-        Text("Git default (GPG)").tag("")
-        Text("GPG").tag("openpgp")
-        Text("SSH").tag("ssh")
-        Text("X.509").tag("x509")
+    if rows {
+      SettingsToggleRow("Sign every commit", isOn: $draft.enabled)
+        .task(id: sessionId) { await load() }
+      SettingsRow("Format") { formatPicker }
+      SettingsRow("Signing key") { keyField.textFieldStyle(.roundedBorder).frame(width: 260) }
+      footer
+    } else {
+      Section {
+        Toggle("Sign every commit", isOn: $draft.enabled)
+        formatPicker
+        keyField
+      } header: {
+        Text("Commit signing")
+      } footer: {
+        footer
       }
-      TextField(
-        "Signing key", text: $draft.key,
-        prompt: Text(draft.format == "ssh" ? "Path to an SSH public key" : "GPG key id or fingerprint"))
-    } header: {
-      Text("Commit signing")
-    } footer: {
-      HStack {
-        Text(error ?? "Written to this repository's .git/config; an empty key falls back to the global one.")
-          .foregroundStyle(error == nil ? .secondary : .primary)
-        Spacer()
-        Button("Revert") { draft = saved }.disabled(draft == saved || saving)
-        Button("Save") { save() }.disabled(draft == saved || saving)
-      }
+      .task(id: sessionId) { await load() }
     }
-    .task(id: sessionId) { await load() }
+  }
+
+  private var formatPicker: some View {
+    Picker("Format", selection: $draft.format) {
+      Text("Git default (GPG)").tag("")
+      Text("GPG").tag("openpgp")
+      Text("SSH").tag("ssh")
+      Text("X.509").tag("x509")
+    }
+  }
+
+  private var keyField: some View {
+    TextField(
+      "Signing key", text: $draft.key,
+      prompt: Text(draft.format == "ssh" ? "Path to an SSH public key" : "GPG key id or fingerprint"))
+  }
+
+  private var footer: some View {
+    HStack {
+      Text(error ?? "Written to this repository's .git/config; an empty key falls back to the global one.")
+        .font(.scaled(.caption))
+        .foregroundStyle(error == nil ? .secondary : .primary)
+      Spacer()
+      Button("Revert") { draft = saved }.disabled(draft == saved || saving)
+      Button("Save") { save() }.disabled(draft == saved || saving)
+    }
   }
 
   private func load() async {

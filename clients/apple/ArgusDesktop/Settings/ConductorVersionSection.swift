@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import SwiftUI
 
 /// Pin the conductor CLI agents use: Bundled, or any published version at or
@@ -11,21 +12,20 @@ struct ConductorVersionSection: View {
   @State private var listError: String?
 
   var body: some View {
-    Section {
-      VStack(alignment: .leading, spacing: 4) {
+    SettingsGroup("Conductor") {
+      SettingsRow(
+        "Conductor version",
+        description: "Pin the conductor CLI version agents use. Installed on demand from npm into ~/.argus — no "
+          + "app update needed. Only versions at or above the bundled one are listed."
+      ) {
         Picker("Conductor version", selection: selection) {
           Text("Bundled" + (status?.bundledVersion.map { " (\($0))" } ?? "")).tag("")
           ForEach(options, id: \.self) { Text($0).tag($0) }
         }
         .disabled(status?.state == .installing || (options.isEmpty && pinned.isEmpty))
+      } detail: {
         statusLine
       }
-    } header: {
-      Text("Conductor")
-    } footer: {
-      SettingsCaption(
-        "Pin the conductor CLI version agents use. Installed on demand from npm into ~/.argus — no "
-          + "app update needed. Only versions at or above the bundled one are listed.")
     }
     .task(id: host.loaded) {
       guard let backend = host.backend else { return }

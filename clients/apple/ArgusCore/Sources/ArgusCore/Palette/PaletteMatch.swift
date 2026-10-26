@@ -45,4 +45,30 @@ public enum PaletteMatch {
       .sorted { $0.1 != $1.1 ? $0.1 > $1.1 : $0.2 < $1.2 }
       .map(\.0)
   }
+
+  /// `items` in runs by section, each run keeping the items' own order. Sections
+  /// listed in `order` come first, in that order; the rest follow as they appear.
+  public static func grouped<Item>(
+    _ items: [Item], order: [String] = [], section: (Item) -> String
+  ) -> [(section: String, items: [Item])] {
+    var runs: [(section: String, items: [Item])] = []
+    var index: [String: Int] = [:]
+    for item in items {
+      let name = section(item)
+      if let at = index[name] {
+        runs[at].items.append(item)
+      } else {
+        index[name] = runs.count
+        runs.append((name, [item]))
+      }
+    }
+    let rank = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+    return runs.enumerated()
+      .sorted { lhs, rhs in
+        let left = rank[lhs.element.section] ?? order.count + lhs.offset
+        let right = rank[rhs.element.section] ?? order.count + rhs.offset
+        return left < right
+      }
+      .map(\.element)
+  }
 }
