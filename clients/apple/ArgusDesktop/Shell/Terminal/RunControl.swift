@@ -2,12 +2,15 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// The project's `.argus.json` run commands, in the toolbar: one button, and a
-/// chevron menu beside it when there are several. Pressing a running one stops it.
+/// The project's `.argus.json` run commands: one button, and a chevron menu
+/// beside it when there are several. Pressing a running one stops it. In the
+/// toolbar it's a pill; in the context card a row, which offers adding one when there are none.
 struct RunControl: View {
   @Environment(TerminalsStore.self) private var terminals
   @Environment(HostStore.self) private var store
+  @Environment(DesktopModel.self) private var model
   let session: RemoteSession
+  var inCard = false
   /// Bring the terminal panel up so the run's output is in view.
   let reveal: () -> Void
   /// Icon only, for a toolbar too narrow for the run's title; the title moves to the tooltip.
@@ -19,6 +22,51 @@ struct RunControl: View {
   }
 
   var body: some View {
+    Group {
+      if inCard { cardRow } else { pills }
+    }
+    .disabled(session.status != .ready)
+    .confirmationDialog(
+      "Another runtime is running", isPresented: isConfirming, titleVisibility: .visible
+    ) {
+      Button("Stop Other & Run", role: .destructive) { stopOthersAndRun() }
+      Button("Cancel", role: .cancel) { pending = nil }
+    } message: {
+      Text(conflictMessage)
+    }
+  }
+
+  @ViewBuilder private var cardRow: some View {
+    if let primary = runs.first(where: { running($0.title) }) ?? runs.first {
+      ContextSplitRow {
+        MacTelemetry.capture(.contextCardUsed(action: .run))
+        toggle(primary.title)
+      } row: {
+        ContextCardRow(
+          icon: running(primary.title) ? "stop.fill" : Icon.play,
+          title: running(primary.title) ? "Stop \(primary.title)" : "Run \(primary.title)")
+      } menu: {
+        if runs.count > 1 {
+          ForEach(runs) { run in
+            Button { toggle(run.title) } label: { label(run.title) }
+          }
+          Divider()
+        }
+        Button("Edit Run Commands…") { model.projectSettingsRepo = session.repoRoot }
+      }
+      .help(running(primary.title) ? "Stop \(primary.title)" : primary.command)
+    } else if session.kind != .scratchPad {
+      Button {
+        model.projectSettingsRepo = session.repoRoot
+      } label: {
+        ContextCardRow(icon: Icon.plus, title: "Add run command", muted: true)
+      }
+      .buttonStyle(ContextRowButtonStyle())
+      .help("Add a run command in Project Settings")
+    }
+  }
+
+  private var pills: some View {
     // Flat items in the toolbar's one capsule, not a split button's bezel inside it.
     Group {
       if let primary = runs.first(where: { running($0.title) }) ?? runs.first {
@@ -41,15 +89,6 @@ struct RunControl: View {
           .id(runs.map { running($0.title) })
         }
       }
-    }
-    .disabled(session.status != .ready)
-    .confirmationDialog(
-      "Another runtime is running", isPresented: isConfirming, titleVisibility: .visible
-    ) {
-      Button("Stop Other & Run", role: .destructive) { stopOthersAndRun() }
-      Button("Cancel", role: .cancel) { pending = nil }
-    } message: {
-      Text(conflictMessage)
     }
   }
 

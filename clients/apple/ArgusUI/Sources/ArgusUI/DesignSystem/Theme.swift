@@ -31,6 +31,12 @@ public struct Theme: Sendable, Equatable {
   public var errorSoft: Color
   public var brandPurple: Color
   public var mediaBg: Color
+  /// The sidebar column, a step off the canvas.
+  public var sidebar: Color
+  /// A floating card over the canvas (the session context card, popovers).
+  public var surface: Color
+  /// A selected list row: a quiet fill, not the accent.
+  public var selection: Color
 
   public let radius: CGFloat = 12
   public let radiusSmall: CGFloat = 8
@@ -40,20 +46,21 @@ public struct Theme: Sendable, Equatable {
   public var pillSelected: Color { scheme == .light ? Color(hex: 0x1C1C1E) : .white }
   public var pillSelectedText: Color { scheme == .light ? .white : Color(hex: 0x1C1C1E) }
 
-  /// Neutral surfaces and text come from the system, so `List`, `Form` and
-  /// the sidebar look like themselves and adapt to light, dark, increased
-  /// contrast and Liquid Glass without being fought. Peacock keeps the colours
-  /// that carry meaning — the accent, and the status palette.
+  /// On iOS neutral surfaces come from the system, so `List`, `Form` and
+  /// navigation look like themselves. The Mac draws its own flat chrome: one
+  /// near-black (or white) canvas, hairlines instead of boxes. Peacock keeps
+  /// the colours that carry meaning — the accent, and the status palette.
   private static func base(accent: Color, accentSoft: Color, accentBorder: Color, onAccent: Color, scheme: ColorScheme) -> Theme {
-    Theme(
+    let neutrals = Neutrals.for(scheme)
+    return Theme(
       scheme: scheme,
-      bg: SystemColor.groupedBackground,
-      bgSecondary: SystemColor.secondaryGroupedBackground,
+      bg: neutrals.bg,
+      bgSecondary: neutrals.bgSecondary,
       bgTertiary: SystemColor.tertiaryFill,
       bgHover: SystemColor.quaternaryFill,
-      border: SystemColor.separator,
-      borderSubtle: SystemColor.separator.opacity(0.5),
-      borderStrong: SystemColor.opaqueSeparator,
+      border: neutrals.border,
+      borderSubtle: neutrals.borderSubtle,
+      borderStrong: neutrals.borderStrong,
       text: SystemColor.label,
       textSecondary: SystemColor.secondaryLabel,
       textMuted: SystemColor.tertiaryLabel,
@@ -68,7 +75,10 @@ public struct Theme: Sendable, Equatable {
       error: scheme == .light ? Color(hex: 0xDC2C49) : Color(hex: 0xFF4466),
       errorSoft: (scheme == .light ? Color(hex: 0xDC2C49) : Color(hex: 0xFF4466)).opacity(0.14),
       brandPurple: Color(hex: 0x7C5CFC),
-      mediaBg: .black
+      mediaBg: .black,
+      sidebar: neutrals.sidebar,
+      surface: neutrals.surface,
+      selection: neutrals.selection
     )
   }
 
@@ -197,6 +207,37 @@ public enum ThemePreference: String, CaseIterable, Sendable {
     case .light: .light
     case .dark: .dark
     }
+  }
+}
+
+/// The surfaces and hairlines a scheme draws its chrome with.
+private struct Neutrals {
+  var bg, bgSecondary, sidebar, surface, selection, border, borderSubtle, borderStrong: Color
+
+  static func `for`(_ scheme: ColorScheme) -> Neutrals {
+    #if os(macOS)
+      let dark = scheme == .dark
+      let ink: Color = dark ? .white : .black
+      return Neutrals(
+        bg: Color(hex: dark ? 0x0D0D0F : 0xFFFFFF),
+        bgSecondary: Color(hex: dark ? 0x161618 : 0xF6F6F7),
+        sidebar: Color(hex: dark ? 0x111113 : 0xF7F7F8),
+        surface: Color(hex: dark ? 0x141416 : 0xFFFFFF),
+        selection: ink.opacity(dark ? 0.07 : 0.055),
+        border: ink.opacity(dark ? 0.09 : 0.1),
+        borderSubtle: ink.opacity(0.05),
+        borderStrong: ink.opacity(dark ? 0.18 : 0.2))
+    #else
+      return Neutrals(
+        bg: SystemColor.groupedBackground,
+        bgSecondary: SystemColor.secondaryGroupedBackground,
+        sidebar: SystemColor.secondaryGroupedBackground,
+        surface: SystemColor.secondaryGroupedBackground,
+        selection: SystemColor.quaternaryFill,
+        border: SystemColor.separator,
+        borderSubtle: SystemColor.separator.opacity(0.5),
+        borderStrong: SystemColor.opaqueSeparator)
+    #endif
   }
 }
 

@@ -166,6 +166,26 @@ enum MacTelemetryEvent {
     case patchApply = "patch_apply"
   }
 
+  /// How the sidebar list was narrowed.
+  enum SidebarFilterKind: String {
+    case search
+    case project
+  }
+
+  /// What a session's context card was used for.
+  enum ContextCardAction: String {
+    case show
+    case hide
+    case openEditor = "open_editor"
+    case reveal
+    case copyPath = "copy_path"
+    case run
+    case share
+    case branch
+    case push
+    case changes
+  }
+
   case launched
   case quit(hadRunningAgents: Bool)
   case hostStarted(restarts: Int)
@@ -200,6 +220,10 @@ enum MacTelemetryEvent {
   case branchRenamed(success: Bool)
   /// A project in the sidebar was folded shut or opened.
   case sidebarProjectToggled(collapsed: Bool)
+  /// The sidebar was searched (once per search) or narrowed to one project.
+  case sidebarFiltered(kind: SidebarFilterKind)
+  /// A session's context card was shown, hidden, or one of its actions used.
+  case contextCardUsed(action: ContextCardAction)
   /// A deep link or launch route was opened; `screen` is its route pattern.
   case linkOpened(screen: String, outcome: LinkOutcome)
   /// A transcript link was used; `relative` is whether the path needed the worktree.
@@ -300,6 +324,8 @@ enum MacTelemetryEvent {
     case .chatHistoryUsed: "mac_chat_history_used"
     case .branchRenamed: "mac_branch_renamed"
     case .sidebarProjectToggled: "mac_sidebar_project_toggled"
+    case .sidebarFiltered: "mac_sidebar_filtered"
+    case .contextCardUsed: "mac_context_card_used"
     case .homeCardActed: "mac_home_card_acted"
     case .hostFolderPicked: "mac_host_folder_picked"
     case .tabUsed: "mac_tab_used"
@@ -388,6 +414,10 @@ enum MacTelemetryEvent {
       ["success": success]
     case .sidebarProjectToggled(let collapsed):
       ["collapsed": collapsed]
+    case .sidebarFiltered(let kind):
+      ["kind": kind.rawValue]
+    case .contextCardUsed(let action):
+      ["action": action.rawValue]
     case .homeCardActed(let card, let action):
       ["card": card.rawValue, "action": action.rawValue]
     case .hostFolderPicked(let stage):

@@ -33,7 +33,6 @@ struct SessionHomeView: View {
           session: session, projectName: projectName,
           canStart: session.status == .ready, startAgent: startAgent,
           renameBranch: session.kind == .worktree ? { renamingBranch = true } : nil)
-        SessionPathRow(sessionId: session.id, status: session.status)
         switch session.status {
         case .initializing:
           SetupProgressCard(session: session)
@@ -135,88 +134,6 @@ private struct SessionHomeHero: View {
     if let base = session.baseBranch { parts.append("from \(base)") }
     parts.append("in \(projectName)")
     return parts.joined(separator: " · ")
-  }
-}
-
-/// The worktree on disk: reveal it, open it in an editor, or copy the path.
-private struct SessionPathRow: View {
-  @Environment(HostStore.self) private var store
-  @Environment(DesktopModel.self) private var model
-  @Environment(\.theme) private var theme
-  let sessionId: String
-  /// The worktree only exists once setup has created it.
-  let status: RemoteSessionStatus
-  @State private var path: String?
-  @State private var editors: [ArgusProtocol.EditorDescriptor] = []
-
-  var body: some View {
-    HStack(spacing: 8) {
-      Text(path.map(Self.tilde) ?? " ")
-        .font(.scaled(size: 12, design: .monospaced))
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
-        .truncationMode(.middle)
-        .textSelection(.enabled)
-      Spacer(minLength: 8)
-      // Editors and Finder would open this Mac's disk, not the host's.
-      if let path, model.host(ofSession: sessionId) != Hosts.local {
-        Text("on \(model.hosts.label(model.host(ofSession: sessionId)))")
-          .font(.scaled(.caption)).foregroundStyle(.secondary)
-        copyButton(path)
-      } else if let path {
-        let custom = AppPreferences.shared.customEditors
-        if !editors.isEmpty || !custom.isEmpty {
-          Menu("Open In") {
-            ForEach(editors, id: \.id) { editor in
-              Button(editor.name) {
-                send(ArgusProtocol.Commands.OpenInEditor.self, .init(editorId: editor.id, path: path))
-              }
-            }
-            if !editors.isEmpty, !custom.isEmpty { Divider() }
-            ForEach(custom) { editor in
-              Button(editor.name) {
-                send(ArgusProtocol.Commands.OpenInCustomEditor.self, .init(command: editor.command, path: path))
-              }
-            }
-          }
-          .fixedSize()
-        }
-        Button {
-          send(ArgusProtocol.Commands.RevealInFinder.self, .init(path: path))
-        } label: {
-          Image(systemName: "folder")
-        }
-        .help("Reveal in Finder")
-        copyButton(path)
-      }
-    }
-    .controlSize(.small)
-    .task(id: "\(sessionId):\(status.rawValue)") {
-      guard let backend = store.backend else { return }
-      path = (try? await backend.request(ArgusProtocol.Commands.GetSession.self, .init(id: sessionId)))??.path
-      editors = (try? await backend.request(ArgusProtocol.Commands.ListEditors.self, EmptyParams()))?
-        .filter { $0.available && !["iterm", "terminal"].contains($0.id) } ?? []
-    }
-  }
-
-  private func copyButton(_ path: String) -> some View {
-    Button {
-      NSPasteboard.general.clearContents()
-      NSPasteboard.general.setString(path, forType: .string)
-    } label: {
-      Image(systemName: "doc.on.doc")
-    }
-    .help("Copy path")
-  }
-
-  private func send<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) {
-    guard let backend = store.backend else { return }
-    Task { _ = try? await backend.request(command, params) }
-  }
-
-  private static func tilde(_ path: String) -> String {
-    let home = NSHomeDirectory()
-    return path.hasPrefix(home) ? "~" + path.dropFirst(home.count) : path
   }
 }
 

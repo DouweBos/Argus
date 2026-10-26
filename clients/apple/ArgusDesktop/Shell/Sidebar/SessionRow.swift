@@ -21,6 +21,9 @@ struct SessionActivity {
     }
   }
 
+  /// Worth a dot: working, waiting on you, or broken. An idle session shows none.
+  var showsDot: Bool { tone != .muted || session.status == .initializing }
+
   /// "Setting up…", the error, or how many agents there are.
   var statusText: String? {
     switch session.status {
@@ -30,47 +33,70 @@ struct SessionActivity {
     case .ready: agents.isEmpty ? nil : "\(agents.count) agent\(agents.count == 1 ? "" : "s")"
     }
   }
+
+  /// When one of its agents last did something, in epoch milliseconds.
+  var lastActive: Double? {
+    agents.compactMap { $0.lastActivityAt ?? $0.createdAt }.max()
+  }
 }
 
+/// One session in the sidebar: a dot when something's happening, its title,
+/// and how long ago its agents were last active.
 struct SessionRow: View {
+  @Environment(\.theme) private var theme
   let session: RemoteSession
   let agents: [RemoteAgentStatus]
 
   private var activity: SessionActivity { SessionActivity(session: session, agents: agents) }
 
   var body: some View {
-    HStack(spacing: 8) {
+    HStack(spacing: 6) {
       StatusDot(tone: activity.tone, pulse: activity.isBusy && !session.isUnavailable)
-      VStack(alignment: .leading, spacing: 2) {
-        Text(session.displayName ?? session.branch).font(.sidebarScaled(.body)).lineLimit(1)
-        if session.isUnavailable {
-          HStack(spacing: 3) {
-            Image(systemName: Icon.drive)
-            Text("unavailable")
-          }
-          .font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
-        } else if let subtitle {
-          Text(subtitle).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
+        .opacity(activity.showsDot ? 1 : 0)
+        .frame(width: 8)
+      VStack(alignment: .leading, spacing: 1) {
+        Text(session.displayName ?? session.branch)
+          .font(.scaled(size: 13))
+          .foregroundStyle(theme.text)
+          .lineLimit(1)
+        if let detail {
+          Text(detail)
+            .font(.scaled(size: 11))
+            .foregroundStyle(session.status == .error ? theme.error : theme.textMuted)
+            .lineLimit(1)
         }
       }
       Spacer(minLength: 4)
-      if let fraction = session.progress?.fraction, session.status != .ready {
-        ProgressView(value: fraction).progressViewStyle(.circular).controlSize(.mini)
-      } else if let volume = session.volume, !session.isUnavailable {
-        Image(systemName: Icon.drive).font(.scaled(.caption)).foregroundStyle(.tertiary)
-          .help("Stored on \(volume)")
-      }
+      trailing
     }
+    .padding(.vertical, 4)
     .opacity(session.isUnavailable ? 0.5 : 1)
-    .help(unavailableHelp ?? "")
+    .help(help)
   }
 
-  private var unavailableHelp: String? {
-    guard session.isUnavailable else { return nil }
-    return "\(session.unavailableVolume ?? "Its drive") isn't connected"
+  @ViewBuilder private var trailing: some View {
+    if let fraction = session.progress?.fraction, session.status != .ready {
+      ProgressView(value: fraction).progressViewStyle(.circular).controlSize(.mini)
+    } else if session.isUnavailable {
+      Image(systemName: Icon.drive).font(.scaled(size: 10)).foregroundStyle(theme.textMuted)
+    } else if let lastActive = activity.lastActive {
+      Text(ChromeText.shortAge(lastActive))
+        .font(.scaled(size: 11).monospacedDigit())
+        .foregroundStyle(theme.textMuted)
+    }
   }
 
-  private var subtitle: String? {
-    activity.statusText ?? (session.displayName == nil ? nil : session.branch)
+  /// Only what needs saying: setup, an error, a missing drive.
+  private var detail: String? {
+    if session.isUnavailable { return "\(session.unavailableVolume ?? "Drive") unavailable" }
+    return session.status == .ready ? nil : activity.statusText
+  }
+
+  private var help: String {
+    var lines = [session.branch]
+    if let text = activity.statusText { lines.append(text) }
+    if let volume = session.volume { lines.append("Stored on \(volume)") }
+    if session.isUnavailable { lines.append("\(session.unavailableVolume ?? "Its drive") isn't connected") }
+    return lines.joined(separator: " · ")
   }
 }

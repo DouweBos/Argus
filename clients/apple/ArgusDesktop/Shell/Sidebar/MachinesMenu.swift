@@ -2,8 +2,8 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// The machines this window drives: narrows the sidebar to one and shows it
-/// on the screens that aren't about a session — the desktop's connection menu.
+/// The machines this window drives, as an icon in the sidebar's top bar:
+/// narrows the sidebar to one and shows it on the screens that aren't about a session.
 struct MachinesMenu: View {
   @Environment(DesktopModel.self) private var model
   @Environment(RemoteHostsStore.self) private var hosts
@@ -32,15 +32,13 @@ struct MachinesMenu: View {
         openSettings()
       }
     } label: {
-      HStack(spacing: 6) {
-        Image(systemName: "desktopcomputer")
-        Text(model.machineFilter.map(hosts.label) ?? "All Machines")
-        if let id = model.machineFilter { StatusDot(tone: hosts.state(id).tone) }
-      }
+      Label(model.machineFilter.map(hosts.label) ?? "All Machines", systemImage: "desktopcomputer")
     }
-    .menuStyle(.borderlessButton)
-    .fixedSize()
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .modifier(SidebarMenuStyle(selected: model.machineFilter != nil))
+    .overlay(alignment: .topTrailing) {
+      if let id = model.machineFilter { StatusDot(tone: hosts.state(id).tone).scaleEffect(0.8).allowsHitTesting(false) }
+    }
+    .help(model.machineFilter.map { "Showing \(hosts.label($0)) only" } ?? "All machines")
     .accessibilityLabel("Machines")
   }
 }

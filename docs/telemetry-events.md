@@ -426,6 +426,8 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_editor_command` | An editor command ran from its key, a menu or the gutter's fold chevrons; once per command per open file | `command` (`toggle_line_comment`, `toggle_block_comment`, `move_lines_up`, `move_lines_down`, `copy_lines_up`, `copy_lines_down`, `delete_lines`, `insert_line_below`, `insert_line_above`, `indent_lines`, `outdent_lines`, `select_line`, `add_next_occurrence`, `select_all_occurrences`, `add_cursor_above`, `add_cursor_below`, `jump_to_bracket`, `go_to_line`, `next_problem`, `previous_problem`, `go_to_definition`, `trigger_completion`, `fold`, `unfold`, `fold_all`, `unfold_all`) |
 | `mac_editor_quick_open_used` | Quick open closed | `mode` (`files`, `mixed`, `symbols`, `file_symbols`, `line`), `result` (`opened`, `dismissed`) |
 | `mac_sidebar_project_toggled` | A project in the sidebar was collapsed or expanded | `collapsed` |
+| `mac_sidebar_filtered` | The sidebar was searched (once per search, never the query) or narrowed to one project from its filter menu | `kind` (`search`, `project`) |
+| `mac_context_card_used` | A session's context card was shown or hidden from the toolbar, or one of its actions used | `action` (`show`, `hide`, `open_editor`, `reveal`, `copy_path`, `run`, `share`, `branch`, `push`, `changes`) |
 | `mac_navigated_history` | Back or Forward went through the window tab's history | `direction` (`back`, `forward`), `via` (`button` the toolbar chevrons, `shortcut` ⌘[ / ⌘] or the code view's ⌃- / ⌃⇧-, `menu` the Go menu clicked, `palette`, `mouse` the side buttons) |
 
 `mac_settings_changed`'s `section` is `general`, `accounts`, `agents`, `llm`,

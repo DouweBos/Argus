@@ -9,6 +9,8 @@ struct HuddleToolbarButton: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
   let sessionId: String
+  /// A row in the session's context card rather than a toolbar pill.
+  var inCard = false
   @State private var sheetOpen = false
 
   /// The agent on screen: the routed one, else the session's first.
@@ -24,11 +26,12 @@ struct HuddleToolbarButton: View {
     let room = huddles.room(forAgent: agentId)
     let waiting = Huddles.pending(room).count
     Button {
+      if inCard { MacTelemetry.capture(.contextCardUsed(action: .share)) }
       sheetOpen = true
     } label: {
-      Label(room == nil ? "Share" : "Sharing", systemImage: room == nil ? "person.2" : "person.2.fill")
+      label(room == nil ? "Share" : "Sharing", room == nil ? "person.2" : "person.2.fill", count: waiting)
     }
-    .overlay(alignment: .topTrailing) { PillBadge(waiting) }
+    .overlay(alignment: .topTrailing) { if !inCard { PillBadge(waiting) } }
     .help(help(room: room, waiting: waiting))
     .disabled(agentId == nil)
     .sheet(isPresented: $sheetOpen) {
@@ -40,10 +43,20 @@ struct HuddleToolbarButton: View {
       Button {
         huddles.chatOpen.toggle()
       } label: {
-        Label("Huddle Chat", systemImage: "bubble.left.and.bubble.right")
+        label("Huddle Chat", "bubble.left.and.bubble.right", count: huddles.chatOpen ? 0 : huddles.unread(room))
       }
-      .overlay(alignment: .topTrailing) { PillBadge(huddles.chatOpen ? 0 : huddles.unread(room)) }
+      .overlay(alignment: .topTrailing) { if !inCard { PillBadge(huddles.chatOpen ? 0 : huddles.unread(room)) } }
       .help("Huddle chat — just the people here, not the agent")
+    }
+  }
+
+  @ViewBuilder private func label(_ title: String, _ symbol: String, count: Int) -> some View {
+    if inCard {
+      ContextCardRow(icon: symbol, title: title) {
+        if count > 0 { PillBadge(count).offset(x: -4, y: 3) }
+      }
+    } else {
+      Label(title, systemImage: symbol)
     }
   }
 

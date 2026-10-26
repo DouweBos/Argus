@@ -21,5 +21,6 @@ struct HistoryButtons: ToolbarContent {
       .help("Forward (⌘])")
       .disabled(!model.canGoForward)
     }
+    .flatToolbarItem()
   }
 }

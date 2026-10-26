@@ -48,7 +48,7 @@
           "stashes": workspace.stashes.stashes.count, "changed": workspace.workingCopy.changedCount,
         ]
       case "toolbarFrames":
-        // Each toolbar item's frame in the window, left to right: where the switcher sits.
+        // Each toolbar item's frame in the window, left to right.
         guard let frame = NSApp.windows.first(where: { $0.identifier?.rawValue.hasPrefix("main") == true })?
           .contentView?.superview
         else { return ["error": "no window"] }
@@ -57,7 +57,7 @@
           "width": Int(frame.bounds.width),
           "layout": (AppDelegate.current?.model).map { model -> String in
             let layout = model.toolbarLayout
-            return "switcherMaxX=\(Int(layout.switcherMaxX)) window=\(Int(layout.windowWidth)) "
+            return "detail=\(Int(layout.detailWidth)) leading=\(Int(layout.leadingWidth)) "
               + "session=\(Int(layout.sessionToolsWidth)) panel=\(Int(layout.panelActionsWidth))"
           } ?? "",
         ]
