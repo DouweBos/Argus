@@ -25,11 +25,14 @@ public enum PillMetrics {
   public static let spacing: CGFloat = 2
 
   /// How many of `count` icon-only items fit in `width` beside a More menu
-  /// for the rest; all of them when they fit without one.
-  public static func visibleCount(_ count: Int, in width: CGFloat, scale: CGFloat = 1) -> Int {
+  /// for the rest; all of them when they fit without one, unless the menu
+  /// is always there.
+  public static func visibleCount(
+    _ count: Int, in width: CGFloat, scale: CGFloat = 1, alwaysMore: Bool = false
+  ) -> Int {
     let item = (iconWidth + spacing) * scale
     guard width.isFinite, item > 0 else { return count }
-    if CGFloat(count) * item - spacing * scale <= width { return count }
+    if !alwaysMore && CGFloat(count) * item - spacing * scale <= width { return count }
     let fitting = Int(((width - iconWidth * scale) / item).rounded(.down))
     return min(max(fitting, 0), count)
   }
@@ -127,20 +130,25 @@ public struct PillAction: Identifiable {
 }
 
 /// Icon actions in one capsule, as many as `width` allows; the rest go in a
-/// More menu at the end, as a toolbar overflows.
+/// More menu at the end, as a toolbar overflows. `menu` actions always live there.
 public struct PillActionGroup<Leading: View>: View {
   let actions: [PillAction]
+  let menu: [PillAction]
   let width: CGFloat
   let leading: Leading
 
-  public init(actions: [PillAction], width: CGFloat = .infinity, @ViewBuilder leading: () -> Leading) {
+  public init(
+    actions: [PillAction], menu: [PillAction] = [], width: CGFloat = .infinity, @ViewBuilder leading: () -> Leading
+  ) {
     self.actions = actions
+    self.menu = menu
     self.width = width
     self.leading = leading()
   }
 
   public var body: some View {
-    let shown = PillMetrics.visibleCount(actions.count, in: width, scale: TextScale.shared.factor)
+    let shown = PillMetrics.visibleCount(
+      actions.count, in: width, scale: TextScale.shared.factor, alwaysMore: !menu.isEmpty)
     PillGroup {
       leading
       ForEach(actions.prefix(shown)) { action in
@@ -149,12 +157,11 @@ public struct PillActionGroup<Leading: View>: View {
           .help(action.help)
           .accessibilityLabel(action.title)
       }
-      if shown < actions.count {
+      if shown < actions.count || !menu.isEmpty {
         Menu {
-          ForEach(actions.dropFirst(shown)) { action in
-            Button(action: action.run) { Label(action.title, systemImage: action.symbol) }
-              .disabled(action.disabled)
-          }
+          ForEach(actions.dropFirst(shown)) { item($0) }
+          if shown < actions.count && !menu.isEmpty { Divider() }
+          ForEach(menu) { item($0) }
         } label: {
           Label("More", systemImage: "ellipsis")
         }
@@ -165,11 +172,16 @@ public struct PillActionGroup<Leading: View>: View {
       }
     }
   }
+
+  private func item(_ action: PillAction) -> some View {
+    Button(action: action.run) { Label(action.title, systemImage: action.symbol) }
+      .disabled(action.disabled)
+  }
 }
 
 extension PillActionGroup where Leading == EmptyView {
-  public init(actions: [PillAction], width: CGFloat = .infinity) {
-    self.init(actions: actions, width: width) { EmptyView() }
+  public init(actions: [PillAction], menu: [PillAction] = [], width: CGFloat = .infinity) {
+    self.init(actions: actions, menu: menu, width: width) { EmptyView() }
   }
 }
 

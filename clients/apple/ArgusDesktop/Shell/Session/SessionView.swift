@@ -55,14 +55,19 @@ struct SessionView: View {
           },
           selection: model.sessionPanel ?? .home, compact: true
         ) { model.show($0, via: .toolbar) }
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.switcherWidth = $0 }
+        .background {
+          ToolbarItemProbe { maxX, windowWidth in
+            model.toolbarLayout.switcherMaxX = maxX
+            model.toolbarLayout.windowWidth = windowWidth
+          }
+        }
       }
       if let session, session.status == .ready {
         // One item, so the toolbar draws one capsule around flat controls, as around the switcher.
         ToolbarItem {
           PillGroup {
             HuddleToolbarButton(sessionId: session.id)
-            RunControl(session: session) { model.terminalPanelVisible = true }
+            RunControl(session: session, reveal: { model.terminalPanelVisible = true }, compact: model.toolbarLayout.compactSessionTools)
             Button {
               model.terminalPanelVisible.toggle()
             } label: {
@@ -78,7 +83,7 @@ struct SessionView: View {
             .help(model.runtimePanelVisible ? "Hide device panel (⌥⌘B)" : "Show device panel (⌥⌘B)")
             .accessibilityLabel("Device Panel")
           }
-          .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.sessionToolsWidth = $0 }
+          .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.measuredSessionTools($0) }
         }
       }
     }

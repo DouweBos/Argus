@@ -3,8 +3,8 @@ import ArgusUI
 import GroveKit
 import SwiftUI
 
-/// The working copy: changes and the commit composer beside the selected
-/// file's diff, under the in-progress operation's banner.
+/// The working copy: the commit composer over the changed files, beside the
+/// selected file's diff, under the in-progress operation's banner.
 struct WorkingCopyView: View {
   let workspace: GitWorkspace
   /// File history lives in the history view; nil hides the menu item.
@@ -13,7 +13,7 @@ struct WorkingCopyView: View {
   private var vm: WorkingCopyViewModel { workspace.workingCopy }
 
   var body: some View {
-    VStack(spacing: 0) {
+    VStack(spacing: 12) {
       if let error = vm.errorMessage {
         let typed = workspace.isRemote ? RemoteGitFailures.shared.recent(sessionId: workspace.sessionId) : nil
         GitFailureBanner(
@@ -24,18 +24,20 @@ struct WorkingCopyView: View {
         ) { vm.clearError() }
       }
       if vm.isInOperation {
-        OperationBanner(workspace: workspace)
-        Divider()
+        OperationBanner(workspace: workspace).panel()
       }
-      ResizableHSplit(key: "git.changes", leadingMin: 220, leadingIdeal: 320, leadingMax: 560, trailingMin: 280) {
-        VStack(spacing: 0) {
+      // Grove's Changes tab: the composer over the files, beside the diff, each a card.
+      ResizableHSplit(
+        key: "git.changes", leadingMin: 260, leadingIdeal: 360, leadingMax: 560, trailingMin: 280, gap: 12
+      ) {
+        VStack(spacing: 12) {
+          CommitComposerView(workspace: workspace).card(padding: 0)
           ChangesListView(workspace: workspace, onShowFileHistory: onShowFileHistory)
             .frame(maxHeight: .infinity)
-          Divider()
-          CommitComposerView(workspace: workspace)
+            .panel()
         }
       } trailing: {
-        WorkingDiffView(workspace: workspace)
+        WorkingDiffView(workspace: workspace).panel()
       }
     }
     .modifier(WorkingCopyDialogs(workspace: workspace))

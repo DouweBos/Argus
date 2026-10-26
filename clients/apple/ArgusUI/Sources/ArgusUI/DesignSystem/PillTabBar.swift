@@ -20,7 +20,7 @@ public struct PillTab<ID: Hashable>: Identifiable {
 
 /// Top-level tab switcher, as Grove's: the selected tab is a filled pill that
 /// slides between tabs.
-public struct PillTabBar<ID: Hashable>: View {
+public struct PillTabBar<ID: Hashable, Trailing: View>: View {
   @Environment(\.theme) private var theme
   let tabs: [PillTab<ID>]
   let selection: ID?
@@ -31,12 +31,14 @@ public struct PillTabBar<ID: Hashable>: View {
   /// Its own capsule around the tabs, where no toolbar draws one (a panel's header).
   var framed: Bool
   let onSelect: (ID) -> Void
+  /// Controls after the tabs inside the same capsule, e.g. a More menu.
+  let trailing: Trailing
 
   @Namespace private var namespace
 
   public init(
     tabs: [PillTab<ID>], selection: ID?, compact: Bool = false, iconsOnly: Bool = false, framed: Bool = false,
-    onSelect: @escaping (ID) -> Void
+    onSelect: @escaping (ID) -> Void, @ViewBuilder trailing: () -> Trailing
   ) {
     self.tabs = tabs
     self.selection = selection
@@ -44,6 +46,7 @@ public struct PillTabBar<ID: Hashable>: View {
     self.iconsOnly = iconsOnly
     self.framed = framed
     self.onSelect = onSelect
+    self.trailing = trailing()
   }
 
   public var body: some View {
@@ -87,6 +90,8 @@ public struct PillTabBar<ID: Hashable>: View {
         .accessibilityLabel(tab.title)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
       }
+      trailing
+        .buttonStyle(PillItemButtonStyle(iconOnly: false))
     }
     .padding(framed ? 3 : 0)
     .background {
@@ -95,6 +100,17 @@ public struct PillTabBar<ID: Hashable>: View {
       }
     }
     .animation(.snappy(duration: 0.25), value: selection)
+  }
+}
+
+extension PillTabBar where Trailing == EmptyView {
+  public init(
+    tabs: [PillTab<ID>], selection: ID?, compact: Bool = false, iconsOnly: Bool = false, framed: Bool = false,
+    onSelect: @escaping (ID) -> Void
+  ) {
+    self.init(
+      tabs: tabs, selection: selection, compact: compact, iconsOnly: iconsOnly, framed: framed, onSelect: onSelect
+    ) { EmptyView() }
   }
 }
 
@@ -121,5 +137,27 @@ public struct PillTabBar<ID: Hashable>: View {
     ],
     selection: selection, compact: true, iconsOnly: true, framed: true
   ) { selection = $0 }
+  .padding()
+}
+
+#Preview("Framed, with a More menu") {
+  @Previewable @State var selection = "changes"
+  PillTabBar(
+    tabs: [
+      PillTab(id: "changes", title: "Changes", symbol: "tray", badge: 4),
+      PillTab(id: "history", title: "History", symbol: "clock"),
+    ],
+    selection: selection, compact: true, framed: true
+  ) {
+    selection = $0
+  } trailing: {
+    Menu {
+      Button("Reflog") {}
+    } label: {
+      Label("More", systemImage: "ellipsis.circle").labelStyle(.titleAndIcon)
+    }
+    .menuStyle(.button)
+    .menuIndicator(.hidden)
+  }
   .padding()
 }

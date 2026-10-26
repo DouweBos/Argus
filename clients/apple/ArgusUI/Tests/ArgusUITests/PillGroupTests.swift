@@ -27,6 +27,12 @@ struct PillGroupTests {
     #expect(PillMetrics.visibleCount(4, in: -50) == 0)
   }
 
+  @Test("a menu that's always there keeps its slot even when the items fit")
+  func alwaysMore() {
+    #expect(PillMetrics.visibleCount(4, in: 4 * item + PillMetrics.iconWidth, alwaysMore: true) == 4)
+    #expect(PillMetrics.visibleCount(4, in: 4 * item - PillMetrics.spacing, alwaysMore: true) == 3)
+  }
+
   @Test("larger text fits fewer")
   func scaled() {
     let width = 6 * item

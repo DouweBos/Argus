@@ -12,14 +12,22 @@ struct StashesView: View {
   private var stashes: StashesViewModel { workspace.stashes }
 
   var body: some View {
-    VStack(spacing: 0) {
+    VStack(spacing: 12) {
       if let error = stashes.errorMessage {
         GitErrorBanner(message: error) { stashes.dismissError() }
       }
-      ResizableHSplit(key: "git.stashes", leadingMin: 200, leadingIdeal: 260, leadingMax: 460, trailingMin: 320) {
-        list.frame(maxHeight: .infinity)
+      // Grove's stash list card beside the selected stash's card.
+      ResizableHSplit(
+        key: "git.stashes", leadingMin: 220, leadingIdeal: 320, leadingMax: 460, trailingMin: 320, gap: 12
+      ) {
+        VStack(spacing: 0) {
+          listHeader
+          list
+        }
+        .frame(maxHeight: .infinity)
+        .panel()
       } trailing: {
-        detail.frame(maxHeight: .infinity)
+        detail.frame(maxHeight: .infinity).panel()
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -47,6 +55,21 @@ struct StashesView: View {
           if let commit = history.commit(withID: sha) { history.select(commit) }
         }
       }
+    }
+  }
+
+  private var listHeader: some View {
+    PanelHeader(title: "Stashes", detail: stashes.stashes.isEmpty ? nil : "\(stashes.stashes.count)") {
+      if stashes.isLoading && !stashes.stashes.isEmpty { ProgressView().controlSize(.small) }
+      Button {
+        GitMenuAction.stash.post(to: workspace.sessionId)
+      } label: {
+        Image(systemName: "plus")
+      }
+      .buttonStyle(.borderless)
+      .disabled(workspace.workingCopy.changedCount == 0)
+      .help("Stash Changes…")
+      .accessibilityLabel("Stash Changes")
     }
   }
 
@@ -104,9 +127,9 @@ struct StashesView: View {
         }
         .disabled(stashes.isPerforming)
         .controlSize(.small)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        Divider()
+        .padding(.horizontal, 14)
+        .frame(height: 40)
+        .overlay(alignment: .bottom) { Divider() }
         FileDiffsView(files: stashes.stashDiffs, isLoading: stashes.isLoadingDiff)
       }
     } else {

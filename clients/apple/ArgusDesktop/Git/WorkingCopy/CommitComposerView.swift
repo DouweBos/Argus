@@ -15,10 +15,12 @@ struct CommitComposerView: View {
 
   var body: some View {
     @Bindable var vm = vm
-    VStack(alignment: .leading, spacing: 6) {
-      HStack(spacing: 4) {
+    VStack(alignment: .leading, spacing: 10) {
+      // Summary and description share one field box, as Grove's composer.
+      VStack(alignment: .leading, spacing: 0) {
         TextField("Summary", text: $vm.commitSubject)
-          .textFieldStyle(.roundedBorder)
+          .textFieldStyle(.plain)
+          .font(.scaled(size: 13, weight: .medium))
           .focused($subjectFocused)
           .onSubmit { if !vm.acceptAutoComplete() { commit() } }
           .onKeyPress(.upArrow) { moveHighlight(-1) }
@@ -28,18 +30,30 @@ struct CommitComposerView: View {
             vm.dismissAutoComplete()
             return .handled
           }
-        gitmojiButton
-        templatesMenu
+          .padding(10)
+        if vm.isAutoCompleteVisible {
+          CommitAutoCompleteList(vm: vm) { track(vm.autoCompleteTrigger == .gitmoji ? .gitmoji : .template) }
+            .padding(.horizontal, 6)
+        }
+        Divider()
+        TextField("Description", text: $vm.commitBody, axis: .vertical)
+          .textFieldStyle(.plain)
+          .lineLimit(3...8)
+          .padding(10)
+        HStack(spacing: 6) {
+          Spacer()
+          gitmojiButton
+          templatesMenu
+        }
+        .foregroundStyle(theme.textSecondary)
+        .padding(.horizontal, 10)
+        .padding(.bottom, 8)
       }
-      if vm.isAutoCompleteVisible {
-        CommitAutoCompleteList(vm: vm) { track(vm.autoCompleteTrigger == .gitmoji ? .gitmoji : .template) }
-      }
-      TextField("Description", text: $vm.commitBody, axis: .vertical)
-        .textFieldStyle(.roundedBorder)
-        .lineLimit(3...8)
+      .background(theme.bg, in: RoundedRectangle(cornerRadius: theme.radiusSmall, style: .continuous))
+      .overlay(RoundedRectangle(cornerRadius: theme.radiusSmall, style: .continuous).strokeBorder(theme.border))
       HStack(spacing: 10) {
         Toggle("Amend", isOn: Binding(get: { vm.isAmend }, set: { on in Task { await vm.setAmend(on) } }))
-        Toggle("Sign-off", isOn: Binding(get: { vm.signOff }, set: { vm.setSignOff($0) }))
+        Toggle("Sign Off", isOn: Binding(get: { vm.signOff }, set: { vm.setSignOff($0) }))
           .help("Add a Signed-off-by trailer")
         if vm.isSigningAvailable {
           Toggle("Sign", isOn: Binding(get: { vm.signCommit }, set: { vm.setSignCommit($0) }))
@@ -60,7 +74,7 @@ struct CommitComposerView: View {
       }
     }
     .font(.scaled(size: 12))
-    .padding(10)
+    .padding(12)
     .sheet(isPresented: $managingTemplates) { CommitTemplatesSheet(store: CommitPreferences.templates) }
   }
 
