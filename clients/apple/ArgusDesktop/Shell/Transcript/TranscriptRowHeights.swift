@@ -63,6 +63,8 @@ struct TranscriptRowHeights {
     var images = 0
     var badges = false
     var collapsed = false
+    /// Your own words sit in a padded bubble, narrower than the column.
+    var bubble = false
 
     init(_ segment: ToolGroups.Segment) {
       if case .collapsed = segment {
@@ -81,17 +83,18 @@ struct TranscriptRowHeights {
         }
         images += (message.images ?? []).isEmpty ? 0 : 1
         badges = badges || message.isError == true || message.source != nil || message.author != nil
+        bubble = bubble || message.role == .user
       }
     }
 
     func height(width: CGFloat) -> CGFloat {
       let spacing: CGFloat = 14
       if collapsed { return 30 + spacing }
-      let content = max(min(width, 920) - 40, 100)
+      let content = max(min(width, 920) - 40 - (bubble ? 104 : 0), 100)
       let wrapped = CGFloat(characters) * 7 / content
       let text = (CGFloat(lines) + wrapped) * 17
       return spacing + text + CGFloat(calls) * 40 + CGFloat(diffLines) * 15 + CGFloat(images) * 170
-        + (badges ? 24 : 0)
+        + (badges ? 24 : 0) + (bubble ? 16 : 0)
     }
   }
 }
