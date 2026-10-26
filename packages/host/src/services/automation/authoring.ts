@@ -321,6 +321,12 @@ function templateExamples(): string {
     .join("\n\n");
 }
 
+/** Openings of the two prompts, for the CLI chat importer to recognise. */
+export const AUTHORING_PROMPT =
+  "Draft an Argus automation from the description below.";
+export const REVISION_PROMPT =
+  "Rewrite the playbook below to do what the instruction asks.";
+
 export function buildAuthoringPrompt(
   description: string,
   ctx: DraftContext,
@@ -341,7 +347,7 @@ export function buildAuthoringPrompt(
       : "- (none)";
 
   return [
-    "Draft an Argus automation from the description below.",
+    AUTHORING_PROMPT,
     "",
     "An automation is a markdown playbook plus a clock. When it fires, one agent is",
     "started in a neutral directory with the playbook as its instructions; it reads the",
@@ -462,7 +468,7 @@ export function sanitizeRevisedPlaybook(raw: string): string | null {
 
 export function buildRevisionPrompt(opts: RevisePlaybookOptions): string {
   return [
-    "Rewrite the playbook below to do what the instruction asks.",
+    REVISION_PROMPT,
     "",
     "A playbook is the markdown handed to the agent an automation starts. It says",
     "what to read, how to decide, what to `emit_proposal`, and what the final report",

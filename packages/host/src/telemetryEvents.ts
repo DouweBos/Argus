@@ -94,6 +94,7 @@ export interface EventMap {
   cli_chats_imported: {
     imported_bucket: "0" | "1-5" | "6-20" | "21-100" | "100+";
     project_count: number;
+    skipped_bucket: "0" | "1-5" | "6-20" | "21-100" | "100+";
     trigger: "boot" | "interval" | "manual" | "project_added";
   };
   cli_projects_imported: { count: number; source: "dialog" | "onboarding" };

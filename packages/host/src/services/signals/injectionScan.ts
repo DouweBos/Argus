@@ -22,6 +22,9 @@ import { info, warn } from "@argus/host/logger";
 import { runClaudePrint } from "../llm/oneShot";
 
 /** Long enough to carry an injection, short enough to keep the call cheap. */
+/** Opening of the prompt, for the CLI chat importer to recognise. */
+export const INJECTION_SCAN_PROMPT = "Classify each item below.";
+
 const MAX_SCANNED_CHARS = 4000;
 
 /** A run must not wait on this; the fence still applies if it times out. */
@@ -109,7 +112,7 @@ export async function scanForInjection(
   let raw: string | null;
   try {
     raw = await runClaudePrint({
-      prompt: `Classify each item below.\n\n${corpus}`,
+      prompt: `${INJECTION_SCAN_PROMPT}\n\n${corpus}`,
       systemPrompt: SYSTEM_PROMPT,
       source: "automation:injection-scan",
       timeoutMs: SCAN_TIMEOUT_MS,
