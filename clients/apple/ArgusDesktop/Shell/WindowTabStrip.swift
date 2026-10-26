@@ -37,8 +37,7 @@ struct WindowTabStrip: View {
       }
       .padding(.horizontal, 10)
       .padding(.vertical, 5)
-      .background(theme.bgSecondary)
-      .overlay(alignment: .bottom) { Divider() }
+      .overlay(alignment: .bottom) { Rectangle().fill(theme.border).frame(height: 1) }
     }
   }
 
@@ -82,7 +81,7 @@ private struct TabChip: View {
     .padding(.horizontal, 10)
     .padding(.vertical, 4)
     .frame(maxWidth: 220)
-    .background(active ? theme.bgHover : .clear, in: .rect(cornerRadius: theme.radiusSmall))
+    .background(active ? theme.selection : .clear, in: .rect(cornerRadius: theme.radiusSmall))
     .foregroundStyle(active ? theme.text : theme.textSecondary)
   }
 }

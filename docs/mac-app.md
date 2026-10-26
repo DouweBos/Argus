@@ -12,18 +12,26 @@ lives in the repository (`plan/swiftui-parity.md`).
 ## What works today
 
 - The three-panel window: projects and their sessions, live from the host.
+  The sidebar searches sessions and narrows to one project, lists Home, Inbox,
+  Agents, Devices, Runtimes and Automations under the search, and keeps
+  Settings, Pull Requests, Usage and Notifications as icons along its foot. The toolbar shows where you
+  are (**Project / Session**) and plain icons for the session's views and
+  panels.
+- A session's context card, top right of its Home and Agents views: its
+  machine, opening it in your editor, its run command and huddle, its branch,
+  pushing it and how much it has changed. The toolbar's details button hides it.
 - Creating and deleting sessions, with setup progress.
 - Agents in a session as tabs, with their transcript.
 - A home for each session: its setup progress (or why it failed), the
   agents working in it, and committing, pushing and merging its branch.
-  A session's Home, Agents, Code and Git views switch from the toolbar, the
+  A session's Home, Agents, Code and Git views switch from the toolbar's icons, the
   View menu, the command palette or ⌘1–⌘4; the Agent menu starts, switches and interrupts
   agents (see [Keyboard shortcuts](#keyboard-shortcuts)).
-- **Home** at the top of the sidebar (⇧⌘H): the app's home screen.
+- **Home** in the sidebar (⇧⌘H): the app's home screen.
 - **Agents** and **Runtimes** in the sidebar: every agent, and every run
   command's process, across all your sessions.
 - Terminals under each session (⇧⌘T): tabs, the project's run commands in
-  the toolbar, find (⌘F), and links that open on this Mac. A terminal you
+  the context card (the toolbar when it's hidden), find (⌘F), and links that open on this Mac. A terminal you
   reopen replays what it printed so far.
 - Banners for agents that finish or need you, with Approve/Deny buttons on
   permission prompts.
@@ -46,7 +54,7 @@ lives in the repository (`plan/swiftui-parity.md`).
   applying patches and an All Files list are in the working copy; when a git
   command fails, its banner offers the fix (pull then push, a lease-protected
   force push, publishing the branch, resolving conflicts, …).
-- **Pull Requests** in the sidebar: the pull requests that need you across
+- **Pull Requests** at the foot of the sidebar: the pull requests that need you across
   your projects, each with its conversation, checks and changes, and opening
   a new one for a session's branch.
 
@@ -183,7 +191,7 @@ headless Argus server, or `argus-host` — as well as its own:
   **Admin** ticked. Paired hosts can be renamed, attached, detached, shown or
   forgotten.
 - Attached hosts' projects sit in the sidebar beside this Mac's, each marked
-  with its machine and whether it's connected. The machines menu at the top
+  with its machine and whether it's connected. The machines button at the top
   of the sidebar narrows it to one machine and shows that machine on the
   screens that aren't about one session (Home, Devices, Automations, Inbox,
   Settings).

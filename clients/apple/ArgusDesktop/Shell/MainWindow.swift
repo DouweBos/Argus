@@ -27,7 +27,8 @@ struct MainWindow: View {
   var body: some View {
     NavigationSplitView(columnVisibility: $columns) {
       SidebarView()
-        .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
+        // Room for the screens along the sidebar's foot.
+        .navigationSplitViewColumnWidth(min: 256, ideal: 272, max: 380)
     } detail: {
       // The runtime keeps the width it was given and the centre takes the
       // rest, as on the desktop; a split view's detail column would grow
@@ -41,7 +42,11 @@ struct MainWindow: View {
       } trailing: {
         RuntimePanel(sessionId: model.route.sessionId)
       }
+      .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.detailWidth = $0 }
+      .modifier(CanvasBackground())
     }
+    // One flat canvas: the toolbar draws no bar of its own over it.
+    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
       windowWidth = width
       fitColumns()
@@ -179,4 +184,13 @@ private struct Themed: ViewModifier {
 
 extension View {
   func themed() -> some View { modifier(Themed()) }
+}
+
+/// The window's flat canvas, up under the toolbar; a modifier so it reads the themed environment.
+private struct CanvasBackground: ViewModifier {
+  @Environment(\.theme) private var theme
+
+  func body(content: Content) -> some View {
+    content.background(theme.bg.ignoresSafeArea())
+  }
 }

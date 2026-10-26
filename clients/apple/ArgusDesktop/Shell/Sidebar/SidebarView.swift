@@ -2,20 +2,29 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// Projects and their sessions, live from every attached host.
+/// Projects and their sessions, live from every attached host: search and
+/// actions on top, the everyday screens, a flat list, and the rest along the bottom.
 struct SidebarView: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
   @Environment(RemoteHostsStore.self) private var hosts
+  @Environment(\.theme) private var theme
   @State private var collapse = SidebarCollapse()
+  @State private var filter = SidebarFilter()
+  /// Clicking a row focuses the list, so ↑ and ↓ carry on from there.
+  @FocusState private var listFocused: Bool
 
   var body: some View {
-    // The footer sits under the list, not in its safe area: a sidebar List
-    // scrolls its rows beneath a bottom inset, so the last ones were covered.
     VStack(spacing: 0) {
-      projectList
-      addRepositoryFooter
+      SidebarTopBar(filter: filter, showsHosts: showsHosts)
+      SidebarNav()
+      sessionList
+      if store.connection != .ready {
+        ConnectionBadge(state: store.connection).padding(8)
+      }
+      SidebarBottomBar()
     }
+    .background(theme.sidebar.ignoresSafeArea())
     .sheet(item: newSessionProject) { project in
       NewSessionSheet(project: project) { session in
         model.navigate(.sessionHome(id: session.id))
@@ -28,78 +37,88 @@ struct SidebarView: View {
     }
   }
 
-  private var projectList: some View {
-    List(selection: selection) {
-      Section {
-        SidebarLabel("Home", systemImage: "house").tag(Self.homeTag).help("App home (⇧⌘H)")
-        SidebarLabel("Agents", systemImage: "sparkles").tag(Self.agentsTag)
-        SidebarLabel("Runtimes", systemImage: "play.rectangle").tag(Self.runtimesTag)
-        SidebarLabel("Devices", systemImage: "iphone.gen3").tag(Self.devicesTag)
-        SidebarLabel("Pull Requests", systemImage: "arrow.triangle.pull").tag(Self.pullRequestsTag)
-      }
-      Section {
-        SidebarLabel("Inbox", systemImage: "tray").tag(Self.inboxTag)
-        SidebarLabel("Automations", systemImage: "clock.arrow.circlepath").tag(Self.automationsTag)
-        NotificationsSidebarRow().tag(Self.notificationsTag)
-        SidebarLabel("Usage", systemImage: Icon.usage).tag(Self.usageTag)
-      }
-      if projects.isEmpty, store.projectsLoaded {
-        Text("No projects yet").foregroundStyle(.secondary)
-      }
-      ForEach(projects) { project in
-        ProjectSidebarSection(project: project, showsHost: showsHosts, collapsed: collapse.binding(project.repoRoot))
-      }
-      Section {
-        ForEach(scratchPads) { pad in
-          SessionRow(session: pad, agents: agents(in: pad)).tag(pad.id)
-            .contextMenu {
-              Button("Open in New Tab") {
-                model.openTab(DesktopLocation(route: .sessionHome(id: pad.id), host: model.host(ofSession: pad.id)))
-              }
-              Button("Delete Scratch Pad…") { model.deletingSession = pad }
-            }
+  private var sessionList: some View {
+    ScrollView {
+      LazyVStack(alignment: .leading, spacing: 10) {
+        if projects.isEmpty, store.projectsLoaded {
+          Text(filter.isActive ? "Nothing matches" : "No projects yet")
+            .font(.scaled(size: 12))
+            .foregroundStyle(theme.textMuted)
+            .padding(.horizontal, 8)
         }
-      } header: {
-        HStack {
-          Text("Scratch pads").font(.sidebarScaled(.subheadline))
-          Spacer()
-          Button {
-            Task { await model.newScratchPad() }
-          } label: {
-            Image(systemName: "plus")
-          }
-          .buttonStyle(.borderless)
-          .help("New scratch pad")
-          .accessibilityLabel("New scratch pad")
+        ForEach(projects) { project in
+          ProjectSidebarSection(
+            project: project, showsHost: showsHosts, shown: shownSessions,
+            collapsed: collapse.binding(project.repoRoot))
+        }
+        if !scratchPads.isEmpty || !filter.isActive {
+          scratchPadSection
         }
       }
+      .padding(.horizontal, 8)
+      .padding(.vertical, 6)
     }
-    .listStyle(.sidebar)
-    .safeAreaInset(edge: .top) {
-      if showsHosts { MachinesMenu().padding(.horizontal, 10).padding(.top, 4) }
+    .scrollIndicators(.never)
+    .focusable()
+    .focusEffectDisabled()
+    .focused($listFocused)
+    .simultaneousGesture(TapGesture().onEnded { listFocused = true })
+    .onMoveCommand(perform: move)
+  }
+
+  private var scratchPadSection: some View {
+    VStack(alignment: .leading, spacing: 1) {
+      HStack {
+        Text("Scratch pads")
+          .font(.scaled(size: 11, weight: .medium))
+          .foregroundStyle(theme.textMuted)
+        Rectangle().fill(theme.border).frame(height: 1)
+        Button {
+          Task { await model.newScratchPad() }
+        } label: {
+          Label("New scratch pad", systemImage: Icon.plus)
+        }
+        .buttonStyle(FlatIconButtonStyle(size: 20))
+        .help("New scratch pad")
+      }
+      .padding(.leading, 8)
+      ForEach(scratchPads) { pad in
+        SidebarRow(selected: model.route.sessionId == pad.id) {
+          model.open(session: pad.id)
+        } content: {
+          SessionRow(session: pad, agents: agents(in: pad))
+        }
+        .contextMenu {
+          Button("Open in New Tab") {
+            model.openTab(DesktopLocation(route: .sessionHome(id: pad.id), host: model.host(ofSession: pad.id)))
+          }
+          Button("Delete Scratch Pad…") { model.deletingSession = pad }
+        }
+      }
     }
   }
 
-  private var addRepositoryFooter: some View {
-    VStack(spacing: 0) {
-      if store.connection != .ready {
-        ConnectionBadge(state: store.connection).padding(8)
-      }
-      Divider()
-      Button {
-        model.addingProject = true
-      } label: {
-        Label("Add repository", systemImage: "plus")
-          .font(.sidebarScaled(.body))
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .contentShape(Rectangle())
-      }
-      .buttonStyle(.borderless)
-      .foregroundStyle(.secondary)
-      .help("Add a git repository (⌘O)")
-      .padding(.horizontal, 14)
-      .padding(.vertical, 10)
+  /// ↑ and ↓ step through the rows as they're shown.
+  private func move(_ direction: MoveCommandDirection) {
+    let step = direction == .down ? 1 : direction == .up ? -1 : 0
+    guard step != 0 else { return }
+    let ids = visibleSessionIds
+    guard !ids.isEmpty else { return }
+    let current = model.route.sessionId.flatMap { ids.firstIndex(of: $0) }
+    let next = current.map { min(max($0 + step, 0), ids.count - 1) } ?? (step > 0 ? 0 : ids.count - 1)
+    if ids[next] != model.route.sessionId { model.open(session: ids[next]) }
+  }
+
+  private var visibleSessionIds: [String] {
+    let listed = projects.flatMap { project -> [RemoteSession] in
+      let sessions = store.sessionsByRepo[project.repoRoot] ?? []
+      let root = sessions.filter { $0.kind == .projectRoot }
+      let worktrees = ProjectSidebarSection.visibleWorktrees(
+        sessions.filter { $0.kind != .projectRoot }, shown: shownSessions,
+        collapsed: collapse.isCollapsed(project.repoRoot))
+      return root + worktrees
     }
+    return (listed + scratchPads).filter { !$0.isUnavailable }.map(\.id)
   }
 
   private var deletingSession: Binding<RemoteSession?> {
@@ -110,61 +129,32 @@ struct SidebarView: View {
     Binding(get: { model.newSessionProject }, set: { model.newSessionProject = $0 })
   }
 
-  private static let homeTag = "nav:home"
-  private static let agentsTag = "nav:agents"
-  private static let runtimesTag = "nav:runtimes"
-  private static let devicesTag = "nav:devices"
-  private static let pullRequestsTag = "nav:pull-requests"
-  private static let inboxTag = "nav:inbox"
-  private static let automationsTag = "nav:automations"
-  private static let notificationsTag = "nav:notifications"
-  private static let usageTag = "nav:usage"
-
-  private var selection: Binding<String?> {
-    Binding(
-      get: {
-        switch model.route {
-        case .home: Self.homeTag
-        case .agents: Self.agentsTag
-        case .runtimes: Self.runtimesTag
-        case .devices, .device: Self.devicesTag
-        case .pullRequests, .pullRequest: Self.pullRequestsTag
-        case .inbox, .proposal: Self.inboxTag
-        case .automations, .automation, .quickRun: Self.automationsTag
-        case .notifications: Self.notificationsTag
-        case .usage: Self.usageTag
-        default: model.route.sessionId
-        }
-      },
-      set: { tag in
-        switch tag {
-        case Self.homeTag?: model.navigate(.home)
-        case Self.agentsTag?: model.navigate(.agents)
-        case Self.runtimesTag?: model.navigate(.runtimes)
-        case Self.devicesTag?: model.navigate(.devices)
-        case Self.pullRequestsTag?: model.navigate(.pullRequests)
-        case Self.inboxTag?: model.navigate(.inbox)
-        case Self.automationsTag?: model.navigate(.automations)
-        case Self.notificationsTag?: model.navigate(.notifications)
-        case Self.usageTag?: model.navigate(.usage(.limits))
-        case let id?:
-          // A session on an unplugged drive has nothing to open.
-          let session = store.sessionsByRepo.values.joined().first { $0.id == id }
-          if session?.isUnavailable != true { model.open(session: id) }
-        case nil: break
-        }
-      })
-  }
-
   /// Hosts are only worth naming once there is more than this Mac.
   private var showsHosts: Bool { !hosts.attached.isEmpty }
 
+  /// Sessions the search matches, by title, branch or project name; nil when not searching.
+  private var shownSessions: Set<String>? {
+    guard filter.isSearching else { return nil }
+    let all = store.projects.flatMap { project in
+      (store.sessionsByRepo[project.repoRoot] ?? []).filter {
+        filter.matches(project.name) || filter.matches($0.displayName ?? "") || filter.matches($0.branch)
+      }
+    }
+    return Set(all.map(\.id))
+  }
+
   /// This Mac's projects first, then each host's in pairing order, narrowed to
-  /// the machine picked in the sidebar.
+  /// the machine and project picked, and to the search's matches.
   private var projects: [RemoteProject] {
     let order = Dictionary(uniqueKeysWithValues: hosts.machines.enumerated().map { ($1, $0) })
+    let shown = shownSessions
     return store.projects
       .filter { model.machineFilter == nil || model.host(ofProject: $0.repoRoot) == model.machineFilter }
+      .filter { filter.project == nil || filter.project == $0.repoRoot }
+      .filter { project in
+        guard let shown else { return true }
+        return (store.sessionsByRepo[project.repoRoot] ?? []).contains { shown.contains($0.id) }
+      }
       .enumerated()
       .sorted { a, b in
         let ha = order[model.host(ofProject: a.element.repoRoot)] ?? .max
@@ -175,22 +165,14 @@ struct SidebarView: View {
   }
 
   private var scratchPads: [RemoteSession] {
-    store.scratchPads.filter {
-      model.machineFilter == nil || model.host(ofSession: $0.id) == model.machineFilter
+    guard filter.project == nil else { return [] }
+    return store.scratchPads.filter {
+      (model.machineFilter == nil || model.host(ofSession: $0.id) == model.machineFilter)
+        && (!filter.isSearching || filter.matches($0.displayName ?? "") || filter.matches($0.branch))
     }
   }
 
   private func agents(in session: RemoteSession) -> [RemoteAgentStatus] {
     (store.agentsByRepo[session.repoRoot] ?? []).filter { $0.sessionId == session.id }
-  }
-}
-
-/// Notifications, with a count of what you haven't looked at yet.
-private struct NotificationsSidebarRow: View {
-  @Environment(DesktopModel.self) private var model
-
-  var body: some View {
-    SidebarLabel("Notifications", systemImage: "exclamationmark.triangle")
-      .badge(model.notificationsLog.unseenCount)
   }
 }

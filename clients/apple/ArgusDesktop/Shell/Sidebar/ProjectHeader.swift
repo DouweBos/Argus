@@ -2,8 +2,8 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// A project's sidebar header: name, drive, sync counts and the branch its
-/// root checkout is on. Selecting it opens the project root.
+/// A project's sidebar header: badge, name, drive and sync counts, and the
+/// branch its root checkout is on. Selecting it opens the project root.
 struct ProjectHeader: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
@@ -12,29 +12,33 @@ struct ProjectHeader: View {
   let root: RemoteSession?
   let worktrees: [RemoteSession]
   let rootAgents: [RemoteAgentStatus]
-  let projectAgents: [RemoteAgentStatus]
   let showsHost: Bool
   @Binding var collapsed: Bool
+  @State private var hovering = false
 
   private var git: RemoteGitStatus? { root.flatMap { store.gitStatusBySession[$0.id] } }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 3) {
-      HStack(spacing: 5) {
-        chevron
-        Image(systemName: Icon.folder)
-          .font(.sidebarScaled(.subheadline))
-          .foregroundStyle(projectAgents.contains { $0.status == .running } ? theme.accent : theme.textSecondary)
-        Text(project.name).font(.sidebarScaled(.body)).fontWeight(.semibold).lineLimit(1)
-          .layoutPriority(1)
-        if showsHost { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
-        if let drive { VolumeBadge(label: drive.name, connected: drive.connected) }
-        if let git { SyncCounts(status: git).fixedSize() }
-        Spacer(minLength: 4)
+    HStack(spacing: 6) {
+      ProjectBadge(project.name)
+      Text(project.name)
+        .font(.scaled(size: 12, weight: .semibold))
+        .foregroundStyle(theme.textSecondary)
+        .lineLimit(1)
+        .layoutPriority(1)
+      if !worktrees.isEmpty && (hovering || collapsed) { chevron }
+      if showsHost { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
+      if let drive { VolumeBadge(label: drive.name, connected: drive.connected) }
+      if let git { SyncCounts(status: git).fixedSize() }
+      Spacer(minLength: 4)
+      if hovering {
         newSessionButton
+      } else if let root {
+        rootState(root)
       }
-      if let root { rootLine(root) }
     }
+    .frame(minHeight: TextScale.shared(24))
+    .onHover { hovering = $0 }
     .opacity(root?.isUnavailable == true ? 0.5 : 1)
     .help(project.repoRoot)
     .task(id: root?.id) {
@@ -48,14 +52,12 @@ struct ProjectHeader: View {
       collapsed.toggle()
     } label: {
       Image(systemName: collapsed ? Icon.chevronRight : Icon.chevronDown)
-        .font(.scaled(size: 9, weight: .semibold))
-        .foregroundStyle(theme.textSecondary)
+        .font(.scaled(size: 8, weight: .semibold))
+        .foregroundStyle(theme.textMuted)
         .frame(width: 12, height: 12)
         .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .opacity(worktrees.isEmpty ? 0 : 1)
-    .disabled(worktrees.isEmpty)
     .accessibilityLabel(collapsed ? "Expand \(project.name)" : "Collapse \(project.name)")
   }
 
@@ -63,27 +65,25 @@ struct ProjectHeader: View {
     Button {
       model.newSessionProject = project
     } label: {
-      Image(systemName: Icon.plus)
+      Label("New session in \(project.name)", systemImage: Icon.plus)
     }
-    .buttonStyle(.borderless)
+    .buttonStyle(FlatIconButtonStyle(size: 20))
     .help("New session in \(project.name)")
-    .accessibilityLabel("New session in \(project.name)")
   }
 
-  private func rootLine(_ root: RemoteSession) -> some View {
+  /// The root checkout's branch, with a dot while its agents work.
+  private func rootState(_ root: RemoteSession) -> some View {
     let activity = SessionActivity(session: root, agents: rootAgents)
-    return HStack(spacing: 5) {
-      StatusDot(tone: activity.tone, pulse: activity.isBusy)
-        .frame(width: 12)
-      Image(systemName: Icon.branch).font(.scaled(.caption2))
-      Text(git?.branch ?? root.branch).lineLimit(1).truncationMode(.middle)
-      if let text = activity.statusText {
-        Text("·")
-        Text(text).lineLimit(1)
-      }
+    return HStack(spacing: 4) {
+      if activity.showsDot { StatusDot(tone: activity.tone, pulse: activity.isBusy) }
+      Text(git?.branch ?? root.branch)
+        .lineLimit(1)
+        .truncationMode(.middle)
+        .frame(maxWidth: 90, alignment: .trailing)
     }
-    .font(.scaled(.caption))
-    .foregroundStyle(root.status == .error ? theme.error : theme.textSecondary)
+    .font(.scaled(size: 11))
+    .foregroundStyle(root.status == .error ? theme.error : theme.textMuted)
+    .help(activity.statusText.map { "\(git?.branch ?? root.branch) · \($0)" } ?? (git?.branch ?? root.branch))
   }
 
   /// The drive the worktrees live on; one that has gone missing wins.
@@ -104,14 +104,10 @@ struct VolumeBadge: View {
   var body: some View {
     HStack(spacing: 3) {
       Image(systemName: Icon.drive)
-      Text(label).lineLimit(1)
       if !connected { StatusDot(tone: .danger).fixedSize() }
     }
     .font(.scaled(size: 10, weight: .medium))
-    .foregroundStyle(theme.textSecondary)
-    .padding(.horizontal, 5)
-    .padding(.vertical, 1)
-    .background(theme.bgTertiary, in: Capsule())
+    .foregroundStyle(theme.textMuted)
     .help(connected ? "Worktrees are stored on \(label)" : "\(label) isn't connected — showing the last known state")
     .accessibilityLabel(connected ? "On \(label)" : "\(label) disconnected")
   }
@@ -131,7 +127,7 @@ private struct SyncCounts: View {
         if ahead > 0 { Text("↑\(ahead)") }
       }
       .font(.scaled(size: 10, weight: .medium).monospacedDigit())
-      .foregroundStyle(theme.textSecondary)
+      .foregroundStyle(theme.textMuted)
       .help(
         behind > 0
           ? "Behind \(upstream) by \(behind) commit\(behind == 1 ? "" : "s")"

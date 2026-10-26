@@ -3,31 +3,36 @@ import ArgusUI
 import SwiftUI
 
 /// One project in the sidebar: a header that is also its root checkout, then
-/// its worktree sessions under a guide line, as the desktop's sidebar does.
+/// its worktree sessions as flat rows.
 struct ProjectSidebarSection: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
   let project: RemoteProject
   let showsHost: Bool
+  /// The sessions the sidebar's search leaves; nil when not searching.
+  let shown: Set<String>?
   @Binding var collapsed: Bool
 
   private var sessions: [RemoteSession] { store.sessionsByRepo[project.repoRoot] ?? [] }
   private var root: RemoteSession? { sessions.first { $0.kind == .projectRoot } }
   private var worktrees: [RemoteSession] { sessions.filter { $0.kind != .projectRoot } }
 
+  /// Worktrees to list: the search's matches, else all unless folded shut.
+  static func visibleWorktrees(_ worktrees: [RemoteSession], shown: Set<String>?, collapsed: Bool) -> [RemoteSession] {
+    if let shown { return worktrees.filter { shown.contains($0.id) } }
+    return collapsed ? [] : worktrees
+  }
+
   var body: some View {
-    Section {
+    VStack(alignment: .leading, spacing: 1) {
       header
-      if !collapsed, !worktrees.isEmpty {
-        ForEach(worktrees) { session in
+      ForEach(Self.visibleWorktrees(worktrees, shown: shown, collapsed: collapsed)) { session in
+        SidebarRow(selected: model.route.sessionId == session.id, enabled: !session.isUnavailable) {
+          model.open(session: session.id)
+        } content: {
           SessionRow(session: session, agents: agents(in: session))
-            .padding(.leading, ProjectGuide.indent)
-            .overlay(alignment: .leading) { ProjectGuide() }
-            .tag(session.id)
-            .selectionDisabled(session.isUnavailable)
-            .contextMenu { sessionMenu(session) }
         }
-        newSessionRow
+        .contextMenu { sessionMenu(session) }
       }
     }
   }
@@ -36,30 +41,16 @@ struct ProjectSidebarSection: View {
     let row = ProjectHeader(
       project: project, root: root, worktrees: worktrees,
       rootAgents: root.map(agents(in:)) ?? [],
-      projectAgents: sessions.flatMap(agents(in:)),
-      showsHost: showsHost, collapsed: $collapsed
-    )
-    .contextMenu { projectMenu }
-    if let root {
-      row.tag(root.id).selectionDisabled(root.isUnavailable)
-    } else {
+      showsHost: showsHost, collapsed: $collapsed)
+    SidebarRow(
+      selected: root.map { model.route.sessionId == $0.id } ?? false,
+      enabled: root.map { !$0.isUnavailable } ?? false
+    ) {
+      if let root { model.open(session: root.id) }
+    } content: {
       row
     }
-  }
-
-  private var newSessionRow: some View {
-    Button {
-      model.newSessionProject = project
-    } label: {
-      Label("New session", systemImage: Icon.plus)
-        .font(.sidebarScaled(.subheadline))
-        .foregroundStyle(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .padding(.leading, ProjectGuide.indent)
-    .overlay(alignment: .leading) { ProjectGuide() }
+    .contextMenu { projectMenu }
   }
 
   @ViewBuilder private var projectMenu: some View {
@@ -91,18 +82,30 @@ struct ProjectSidebarSection: View {
   }
 }
 
-/// The vertical line a project's sessions hang from.
-private struct ProjectGuide: View {
+/// A clickable sidebar row: a quiet fill when selected, fainter on hover.
+/// A tap rather than a button, so the controls inside it still get their clicks.
+struct SidebarRow<Content: View>: View {
   @Environment(\.theme) private var theme
-  static let indent: CGFloat = 14
+  let selected: Bool
+  var enabled = true
+  let action: () -> Void
+  @ViewBuilder let content: Content
+  @State private var hovering = false
 
   var body: some View {
-    Rectangle()
-      .fill(theme.border)
-      .frame(width: 1)
-      // Past the row's own height, so consecutive rows join into one line.
-      .padding(.vertical, -12)
-      .padding(.leading, 5)
+    content
+      .padding(.horizontal, 8)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background {
+        if selected || (hovering && enabled) {
+          RoundedRectangle(cornerRadius: 6).fill(theme.selection.opacity(selected ? 1 : 0.55))
+        }
+      }
+      .contentShape(.rect(cornerRadius: 6))
+      .onHover { hovering = $0 }
+      .onTapGesture { if enabled { action() } }
+      .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+      .accessibilityAction { if enabled { action() } }
   }
 }
 
@@ -115,6 +118,8 @@ final class SidebarCollapse {
   init() {
     collapsed = Set(HomeDefaults.shared.stringArray(forKey: Self.key) ?? [])
   }
+
+  func isCollapsed(_ repoRoot: String) -> Bool { collapsed.contains(repoRoot) }
 
   func binding(_ repoRoot: String) -> Binding<Bool> {
     Binding(

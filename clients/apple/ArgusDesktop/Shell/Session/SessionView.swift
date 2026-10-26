@@ -7,8 +7,16 @@ struct SessionView: View {
   @Environment(HostStore.self) private var store
   @Environment(TerminalsStore.self) private var terminals
   let sessionId: String
+  @AppStorage(ContextCardPreference.key) private var cardPreferred = true
+  @State private var contentWidth: CGFloat = 0
 
   private var session: RemoteSession? { model.session(sessionId) }
+
+  /// The context card floats over Home and Agents when it's on and there's room for it.
+  private var cardShown: Bool {
+    cardPreferred && contentWidth >= SessionContextCardOverlay.minWidth
+      && (model.sessionPanel == .home || model.sessionPanel == .agents)
+  }
   private var agents: [RemoteAgentStatus] { model.agents(inSession: sessionId) }
   private var focusedAgentId: String? { model.focusedAgentId(inSession: sessionId, agents: agents) }
 
@@ -26,6 +34,7 @@ struct SessionView: View {
         if case .sessionHome = model.route, let session {
           SessionHomeView(session: session, sessionAgents: agents, startAgent: startAgent(mode:))
             .id(session.id)
+            .sessionContextCard(cardShown ? session : nil)
         } else if case .sessionCode(_, let path, let line) = model.route, let session {
           if session.status == .ready {
             CodePanel(session: session, path: path, line: line)
@@ -46,47 +55,9 @@ struct SessionView: View {
     } bottom: {
       if let session { TerminalPanel(session: session) }
     }
-    .toolbar {
-      // Centred, as Xcode and Finder place their view switchers.
-      ToolbarItem(placement: .principal) {
-        PillTabBar(
-          tabs: SessionPanel.allCases.map {
-            PillTab(id: $0, title: $0.title, symbol: $0.symbol, badge: $0 == .git ? gitChangeCount : nil)
-          },
-          selection: model.sessionPanel ?? .home, compact: true
-        ) { model.show($0, via: .toolbar) }
-        .background {
-          ToolbarItemProbe { maxX, windowWidth in
-            model.toolbarLayout.switcherMaxX = maxX
-            model.toolbarLayout.windowWidth = windowWidth
-          }
-        }
-      }
-      if let session, session.status == .ready {
-        // One item, so the toolbar draws one capsule around flat controls, as around the switcher.
-        ToolbarItem {
-          PillGroup {
-            HuddleToolbarButton(sessionId: session.id)
-            RunControl(session: session, reveal: { model.terminalPanelVisible = true }, compact: model.toolbarLayout.compactSessionTools)
-            Button {
-              model.terminalPanelVisible.toggle()
-            } label: {
-              Label("Terminal", systemImage: "terminal")
-            }
-            .help(model.terminalPanelVisible ? "Hide terminal (⇧⌘T)" : "Show terminal (⇧⌘T)")
-            .accessibilityLabel("Terminal")
-            Button {
-              model.toggleRuntimePanel(via: .button)
-            } label: {
-              Label("Device Panel", systemImage: "iphone.gen3")
-            }
-            .help(model.runtimePanelVisible ? "Hide device panel (⌥⌘B)" : "Show device panel (⌥⌘B)")
-            .accessibilityLabel("Device Panel")
-          }
-          .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.measuredSessionTools($0) }
-        }
-      }
-    }
+    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
+    .toolbar(removing: .title)
+    .toolbar { SessionToolbar(session: session, sessionId: sessionId, cardShown: cardShown) }
     // An agent's `trigger_run` shows its output, as the desktop app does.
     .onChange(of: terminals.revealed) { _, reveal in
       if reveal?.sessionId == sessionId { model.terminalPanelVisible = true }
@@ -118,30 +89,26 @@ struct SessionView: View {
     title(session) == session.branch ? "" : session.branch
   }
 
-  /// The open repository's changed files, as Grove badges its Changes tab.
-  private var gitChangeCount: Int? {
-    model.git.workspace(sessionId)?.workingCopy.changedCount
-  }
-
   private var agentsPane: some View {
     VStack(spacing: 0) {
       AgentTabBar(
         agents: agents, focused: focusedAgentId, canStart: session?.status == .ready,
         select: { model.navigate(.session(id: sessionId, agentId: $0)) },
         start: startAgent, close: closeAgent)
-      Divider()
       if let session, session.status != .ready {
         SessionSetupView(
           session: session, progress: session.progress)
       } else if let agentId = focusedAgentId {
         AgentPane(agentId: agentId, sessionId: sessionId)
           .id(agentId)
+          .sessionContextCard(cardShown ? session : nil)
       } else {
         EmptyState(icon: "sparkles", title: "No agents", body: "Start an agent to work in this session.") {
           Button("Start Agent", action: startAgent)
             .buttonStyle(.borderedProminent)
             .disabled(session?.status != .ready)
         }
+        .sessionContextCard(cardShown ? session : nil)
       }
     }
     .frame(maxHeight: .infinity, alignment: .top)
@@ -177,15 +144,15 @@ struct AgentTabBar: View {
         }
       }
       Button(action: start) {
-        Image(systemName: "plus")
+        Label("New Agent", systemImage: Icon.plus)
       }
-      .buttonStyle(.borderless)
+      .buttonStyle(FlatIconButtonStyle(size: 22))
       .disabled(!canStart)
       .help("New agent (⇧⌘A)")
     }
-    .padding(.horizontal, 8)
+    .padding(.horizontal, 10)
     // A scroll view takes all the height it's offered; a tab bar is one row.
-    .frame(height: 38)
+    .frame(height: 34)
   }
 
   /// Agents each agent spawned, across every agent the host has described.
@@ -208,6 +175,7 @@ struct AgentTabBar: View {
 /// One tab: status, title, and a close button that stops the agent, as in
 /// the desktop app.
 struct AgentTab: View {
+  @Environment(\.theme) private var theme
   let agent: RemoteAgentStatus
   let selected: Bool
   /// Agents this one spawned.
@@ -251,10 +219,12 @@ struct AgentTab: View {
       .opacity(selected || hovering ? 1 : 0)
       .help("Close agent")
     }
-    .padding(.leading, 10)
-    .padding(.trailing, 8)
-    .padding(.vertical, 5)
-    .background(selected ? AnyShapeStyle(.selection) : AnyShapeStyle(.clear), in: .rect(cornerRadius: 6))
+    .font(.scaled(size: 12))
+    .foregroundStyle(selected ? theme.text : theme.textSecondary)
+    .padding(.leading, 9)
+    .padding(.trailing, 7)
+    .padding(.vertical, 4)
+    .background(selected || hovering ? theme.selection.opacity(selected ? 1 : 0.55) : .clear, in: .rect(cornerRadius: 6))
     .onHover { hovering = $0 }
     .contextMenu {
       Button("Close Agent", action: close)
