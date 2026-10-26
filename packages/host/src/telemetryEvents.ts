@@ -179,6 +179,13 @@ export interface EventMap {
     platform: "ios" | "tvos";
     outcome: "failed" | "ok" | "unavailable";
   };
+  simulator_remote_stream_ended: {
+    adaptive: boolean;
+    downshifts_bucket: "0" | "1-2" | "3-10" | "10+";
+    duration_bucket: "<1m" | "<10m" | "<10s" | ">=10m";
+    lowest_level: "full" | "high" | "low" | "medium";
+    platform: "android" | "ios";
+  };
   simulator_repaired: { action: "delete" | "erase"; success: boolean };
   telemetry_disabled: undefined;
   telemetry_enabled: undefined;

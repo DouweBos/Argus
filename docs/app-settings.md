@@ -721,6 +721,10 @@ While reading from a host:
   connection as everything else — the simulator streams live video from the
   host, and taps and keystrokes go back to it. Nothing arbitrates who is
   driving a device yet, so avoid pointing two Macs at the same simulator.
+  iOS simulator video adapts to the connection: on a slow link it lowers its
+  bitrate, then resolution and frame rate, instead of stuttering, and climbs
+  back as the link recovers — without touching the full-quality picture on the
+  host itself. Android video keeps the fixed quality it starts with.
 - If the connection drops, agents keep running on the host. The window shows a
   disconnected banner, reconnects on its own, and re-pulls a fresh snapshot
   when it does. Only that host is affected; the rest keep working.
