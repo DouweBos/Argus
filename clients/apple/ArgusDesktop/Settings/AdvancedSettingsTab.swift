@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import SwiftUI
 
 /// The update channel. Kept on the host so the Mac app's updater reads the
@@ -7,29 +8,28 @@ struct AdvancedSettingsTab: View {
   @Environment(HostSettingsModel.self) private var host
 
   var body: some View {
-    Form {
-      Section {
+    SettingsPage {
+      SettingsGroup("Updates") {
         if host.loaded {
-          Picker("Channel", selection: channel) {
-            Text("Production").tag(ArgusProtocol.AppSettingsUpdaterChannel.latest)
-            Text("Beta").tag(ArgusProtocol.AppSettingsUpdaterChannel.beta)
+          SettingsRow(
+            "Update channel",
+            description: "Auto-updater feed. Leave on Production for stable releases. Switch to Beta to receive "
+              + "in-development builds of upcoming features — Beta builds should work, but they may "
+              + "contain bugs that haven't surfaced yet. Applies to updates once this app updates "
+              + "itself; for now the choice is only saved."
+          ) {
+            Picker("Channel", selection: channel) {
+              Text("Production").tag(ArgusProtocol.AppSettingsUpdaterChannel.latest)
+              Text("Beta").tag(ArgusProtocol.AppSettingsUpdaterChannel.beta)
+            }
+            .pickerStyle(.segmented)
           }
-          .pickerStyle(.radioGroup)
         } else {
           SettingsLoading()
         }
-      } header: {
-        Text("Update channel")
-      } footer: {
-        SettingsCaption(
-          "Auto-updater feed. Leave on Production for stable releases. Switch to Beta to receive "
-            + "in-development builds of upcoming features — Beta builds should work, but they may "
-            + "contain bugs that haven't surfaced yet. Applies to updates once this app updates "
-            + "itself; for now the choice is only saved.")
       }
-      Section { SettingsError(text: host.error) }
+      SettingsError(text: host.error)
     }
-    .formStyle(.grouped)
   }
 
   /// Legacy `alpha` reads as Production: it's no longer subscribable in-app.

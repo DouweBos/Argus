@@ -33,24 +33,25 @@ struct QuickOpenView: View {
           }
         }
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
         .onChange(of: model.selected) { _, index in proxy.scrollTo(index) }
       }
       .frame(height: 340)
     }
     .frame(width: 600)
-    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(theme.border))
-    .shadow(radius: 24)
+    .background(theme.surface, in: RoundedRectangle(cornerRadius: theme.radius))
+    .overlay(RoundedRectangle(cornerRadius: theme.radius).strokeBorder(theme.border))
+    .shadow(color: .black.opacity(theme.scheme == .dark ? 0.45 : 0.14), radius: 24, y: 10)
   }
 
   @ViewBuilder private func row(_ result: QuickOpenResult, selected: Bool) -> some View {
     switch result {
     case .file(let path, let indices, let boosted):
       QuickOpenFileRow(path: path, indices: indices, boosted: boosted)
-        .listRowBackground(selected ? theme.accentSoft : Color.clear)
+        .listRowBackground(selected ? theme.selection : Color.clear)
     case .symbol(let symbol, let indices, _):
       QuickOpenSymbolRow(symbol: symbol, indices: indices)
-        .listRowBackground(selected ? theme.accentSoft : Color.clear)
+        .listRowBackground(selected ? theme.selection : Color.clear)
     }
   }
 

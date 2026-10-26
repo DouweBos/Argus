@@ -9,8 +9,11 @@ struct HostsSettingsTab: View {
   @State private var code = ""
 
   var body: some View {
-    Form {
-      Section {
+    SettingsPage {
+      SettingsGroup(
+        "Pair a host",
+        footer: "Paste the pairing code shown on the other Mac's Remote screen (or by `argus-host`), compare the 6-digit code, and approve it there with Admin ticked. A headless Mac mini and a workstation look identical from here."
+      ) {
         HStack {
           TextField("Pairing code", text: $code)
             .textFieldStyle(.roundedBorder)
@@ -21,15 +24,12 @@ struct HostsSettingsTab: View {
             .disabled(code.trimmingCharacters(in: .whitespaces).isEmpty || isPairing)
         }
         PairingStatus(code: $code)
-      } header: {
-        Text("Pair a host")
-      } footer: {
-        Text(
-          "Paste the pairing code shown on the other Mac's Remote screen (or by `argus-host`), compare the 6-digit code, and approve it there with Admin ticked. A headless Mac mini and a workstation look identical from here."
-        )
       }
 
-      Section {
+      SettingsGroup(
+        "Paired hosts",
+        footer: "Attach brings a host's projects into the sidebar and keeps its agents streaming; Show points the screens that aren't about one session (Home, Devices, Automations, Settings) at it. Attached hosts come back on launch. Forget deletes this Mac's key for a host; revoke it there too to be thorough."
+      ) {
         if hosts.hosts.isEmpty {
           Text("No hosts paired yet.").foregroundStyle(.secondary)
         } else {
@@ -37,15 +37,8 @@ struct HostsSettingsTab: View {
             PairedHostRow(identity: identity)
           }
         }
-      } header: {
-        Text("Paired hosts")
-      } footer: {
-        Text(
-          "Attach brings a host's projects into the sidebar and keeps its agents streaming; Show points the screens that aren't about one session (Home, Devices, Automations, Settings) at it. Attached hosts come back on launch. Forget deletes this Mac's key for a host; revoke it there too to be thorough."
-        )
       }
     }
-    .formStyle(.grouped)
     .onDisappear { hosts.clearPairing() }
   }
 

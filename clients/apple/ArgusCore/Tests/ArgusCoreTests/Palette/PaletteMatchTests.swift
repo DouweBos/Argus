@@ -28,4 +28,17 @@ struct PaletteMatchTests {
     let ranked = PaletteMatch.rank([("Settings", "preferences")], query: "pref") { [$0.0, $0.1] }
     #expect(ranked.count == 1)
   }
+
+  @Test func groupsRunsBySectionKeepingOrder() {
+    let items = [("Go", "Navigate"), ("Delete", "Session"), ("Home", "Navigate"), ("Fix", "Git")]
+    let groups = PaletteMatch.grouped(items) { $0.1 }
+    #expect(groups.map(\.section) == ["Navigate", "Session", "Git"])
+    #expect(groups[0].items.map(\.0) == ["Go", "Home"])
+  }
+
+  @Test func preferredSectionsComeFirst() {
+    let items = [("Go", "Navigate"), ("Fix", "Git"), ("Delete", "Session")]
+    let groups = PaletteMatch.grouped(items, order: ["Session", "App"]) { $0.1 }
+    #expect(groups.map(\.section) == ["Session", "Navigate", "Git"])
+  }
 }

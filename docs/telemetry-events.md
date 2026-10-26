@@ -431,7 +431,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_context_card_used` | A session's context card was shown or hidden from the toolbar, or one of its actions used | `action` (`show`, `hide`, `open_editor`, `reveal`, `copy_path`, `run`, `share`, `branch`, `push`, `changes`) |
 | `mac_navigated_history` | Back or Forward went through the window tab's history | `direction` (`back`, `forward`), `via` (`button` the toolbar chevrons, `shortcut` ⌘[ / ⌘] or the code view's ⌃- / ⌃⇧-, `menu` the Go menu clicked, `palette`, `mouse` the side buttons) |
 
-`mac_settings_changed`'s `section` is `general`, `accounts`, `agents`, `llm`,
+`mac_settings_changed`'s `section` is `general`, `appearance`, `accounts`, `agents`, `llm`,
 `mcp`, `tools`, `editor` or `advanced`, and `setting` is one of `theme`, `color_theme`, `display_size`,
 `launch_route`, `worktree_location`, `automation_worktree_location`,
 `custom_editors`, `telemetry_mode`, `account_selected`, `account_added`,

@@ -207,9 +207,10 @@
     var body: some View {
       VStack(alignment: .leading, spacing: 2) {
         Text("Switch model")
-          .font(.scaled(size: 11, weight: .semibold))
+          .font(.scaled(size: 11, weight: .medium))
           .foregroundStyle(theme.textMuted)
           .padding(.horizontal, 8)
+          .padding(.vertical, 2)
         if models.isEmpty {
           Text("This agent hasn't reported its models yet.")
             .foregroundStyle(theme.textMuted)
@@ -235,13 +236,13 @@
               }
             }
             .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.vertical, 5)
             .contentShape(Rectangle())
           }
-          .buttonStyle(.plain)
+          .buttonStyle(ContextRowButtonStyle())
         }
       }
-      .padding(.vertical, 8)
+      .padding(6)
       .frame(minWidth: 260)
     }
   }

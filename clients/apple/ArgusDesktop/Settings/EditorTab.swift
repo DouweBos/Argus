@@ -1,5 +1,6 @@
 import AppKit
 import ArgusSyntax
+import ArgusUI
 import SwiftUI
 
 /// Settings → Editor: the code view's font and indentation, where chat file
@@ -11,53 +12,66 @@ struct EditorTab: View {
   @State private var fonts: [String] = []
 
   var body: some View {
-    Form {
-      Section {
-        Picker("Font", selection: $prefs.editorFontName.tracked(.editorFont)) {
-          Text("SF Mono").tag("")
-          Divider()
-          ForEach(fonts, id: \.self) { Text($0).tag($0) }
+    SettingsPage {
+      SettingsGroup(
+        "Code view",
+        footer: "A project's .editorconfig overrides tab width and spaces for the files it covers."
+      ) {
+        SettingsRow("Font", description: "The code view's monospaced font.") {
+          Picker("Font", selection: $prefs.editorFontName.tracked(.editorFont)) {
+            Text("SF Mono").tag("")
+            Divider()
+            ForEach(fonts, id: \.self) { Text($0).tag($0) }
+          }
         }
-        Stepper(value: $prefs.editorFontSize.tracked(.editorFontSize), in: 8...32, step: 1) {
-          LabeledContent("Font size", value: "\(Int(prefs.editorFontSize)) pt")
+        SettingsRow("Font size") {
+          HStack(spacing: 6) {
+            Text("\(Int(prefs.editorFontSize)) pt").monospacedDigit()
+            Stepper("Font size", value: $prefs.editorFontSize.tracked(.editorFontSize), in: 8...32, step: 1)
+          }
         }
-        Stepper(value: $prefs.editorTabWidth.tracked(.editorTabWidth), in: 1...16) {
-          LabeledContent("Tab width", value: "\(prefs.editorTabWidth)")
+        SettingsRow("Tab width") {
+          HStack(spacing: 6) {
+            Text("\(prefs.editorTabWidth)").monospacedDigit()
+            Stepper("Tab width", value: $prefs.editorTabWidth.tracked(.editorTabWidth), in: 1...16)
+          }
         }
-        Toggle("Insert spaces for tabs", isOn: $prefs.editorInsertSpaces.tracked(.editorInsertSpaces))
-        Toggle("Wrap lines", isOn: $prefs.editorWrapLines.tracked(.editorWrapLines))
-        Toggle("Show invisibles", isOn: $prefs.editorShowInvisibles.tracked(.editorShowInvisibles))
-        Picker("Format on save", selection: $prefs.editorFormatOnSave.tracked(.editorFormatOnSave)) {
-          ForEach(FormatOnSave.allCases, id: \.self) { Text($0.title).tag($0) }
+        SettingsToggleRow("Insert spaces for tabs", isOn: $prefs.editorInsertSpaces.tracked(.editorInsertSpaces))
+        SettingsToggleRow("Wrap lines", isOn: $prefs.editorWrapLines.tracked(.editorWrapLines))
+        SettingsToggleRow("Show invisibles", isOn: $prefs.editorShowInvisibles.tracked(.editorShowInvisibles))
+        SettingsRow(
+          "Format on save",
+          description: "Automatic formats on save only when the project has a formatter (Prettier, SwiftFormat, "
+            + "swift-format, gofmt, Ruff, Black); Always falls back to the file's language server."
+        ) {
+          Picker("Format on save", selection: $prefs.editorFormatOnSave.tracked(.editorFormatOnSave)) {
+            ForEach(FormatOnSave.allCases, id: \.self) { Text($0.title).tag($0) }
+          }
         }
-      } header: {
-        Text("Code view")
-      } footer: {
-        SettingsCaption(
-          "A project's .editorconfig overrides tab width and spaces for the files it covers. Automatic formats on save only when the project has a formatter (Prettier, SwiftFormat, swift-format, gofmt, Ruff, Black); Always falls back to the file's language server.")
       }
-      Section {
-        Picker("Open file links in", selection: $prefs.openFileLinksIn.tracked(.openFileLinksIn)) {
-          ForEach(FileLinkTarget.allCases, id: \.self) { Text($0.title).tag($0) }
+      SettingsGroup("Chat links") {
+        SettingsRow(
+          "Open file links in",
+          description: "Argus opens a file an agent mentions in the session's code view, at the line. Files "
+            + "outside the worktree always open in their default app."
+        ) {
+          Picker("Open file links in", selection: $prefs.openFileLinksIn.tracked(.openFileLinksIn)) {
+            ForEach(FileLinkTarget.allCases, id: \.self) { Text($0.title).tag($0) }
+          }
+          .pickerStyle(.segmented)
         }
-        .pickerStyle(.segmented)
-      } footer: {
-        SettingsCaption(
-          "Argus opens a file an agent mentions in the session's code view, at the line. Files outside the worktree always open in their default app.")
       }
-      Section {
-        Toggle("Language servers", isOn: $prefs.languageServersEnabled.tracked(.languageServers))
+      SettingsGroup("Language servers") {
+        SettingsToggleRow(
+          "Language servers",
+          description: "Diagnostics, hover, go to definition and completion in the code view, from servers your machine has.",
+          isOn: $prefs.languageServersEnabled.tracked(.languageServers))
         ForEach(EditorLanguageServers.languages, id: \.self) { language in
-          Toggle(language.displayName, isOn: serverBinding(language))
+          SettingsToggleRow(language.displayName, isOn: serverBinding(language))
             .disabled(!prefs.languageServersEnabled)
         }
-      } header: {
-        Text("Language servers")
-      } footer: {
-        SettingsCaption("Diagnostics, hover, go to definition and completion in the code view, from servers your machine has.")
       }
     }
-    .formStyle(.grouped)
     .task { fonts = Self.monospacedFonts() }
     .onChange(of: prefs.editorSettings) { model.code.applySettings() }
   }

@@ -1,3 +1,4 @@
+import ArgusCore
 import ArgusUI
 import SwiftUI
 
@@ -8,16 +9,20 @@ struct CommandPaletteView: View {
   @Environment(\.openSettings) private var openSettings
   @State private var query = ""
   @State private var selected = 0
+  @State private var contentHeight: CGFloat = 0
   @FocusState private var focused: Bool
 
+  /// With nothing typed, what you can do here comes before where you can go.
+  private static let sectionOrder = ["Session", "App", "Project", "Navigate", "Settings"]
+  private static let maxListHeight: CGFloat = 360
+
   var body: some View {
-    let results = model.palette.matching(query, for: model)
-    VStack(spacing: 0) {
-      TextField(model.palette.switcher ? "Open a session…" : "Type a command…", text: $query)
-        .textFieldStyle(.plain)
-        .font(.scaled(.title3))
-        .padding(12)
-        .focused($focused)
+    let groups = PaletteMatch.grouped(
+      model.palette.matching(query, for: model), order: query.isEmpty ? Self.sectionOrder : []
+    ) { $0.section }
+    let results = groups.flatMap(\.items)
+    CommandPanel {
+      CommandPanelField(placeholder, text: $query, focus: $focused)
         .onSubmit { run(results) }
         .onKeyPress(.downArrow) { move(1, in: results) }
         .onKeyPress(.upArrow) { move(-1, in: results) }
@@ -26,30 +31,66 @@ struct CommandPaletteView: View {
           return .handled
         }
         .accessibilityLabel("Command palette")
-      Divider()
-      ScrollViewReader { proxy in
-        List {
-          if results.isEmpty {
-            Text(model.palette.switcher ? "No matching sessions" : "No matching commands").foregroundStyle(.secondary)
-          }
-          ForEach(Array(results.enumerated()), id: \.element.id) { index, command in
-            PaletteRow(command: command, selected: index == selected)
-              .id(index)
-              .contentShape(Rectangle())
-              .onTapGesture { perform(command) }
-          }
-        }
-        .listStyle(.plain)
-        .onChange(of: selected) { _, index in proxy.scrollTo(index) }
-      }
-      .frame(height: 340)
+    } content: {
+      list(groups)
     }
-    .frame(width: 560)
-    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(theme.border))
-    .shadow(radius: 24)
     .onAppear { focused = true }
     .onChange(of: query) { selected = 0 }
+  }
+
+  private var placeholder: String {
+    model.palette.switcher ? "Open a session…" : "Search commands, projects and sessions…"
+  }
+
+  private func list(_ groups: [(section: String, items: [PaletteCommand])]) -> some View {
+    ScrollViewReader { proxy in
+      ScrollView {
+        LazyVStack(spacing: 0) {
+          if groups.isEmpty {
+            Text(model.palette.switcher ? "No matching sessions" : "No matching commands")
+              .font(.scaled(size: 13))
+              .foregroundStyle(theme.textMuted)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(10)
+          }
+          let starts = Self.offsets(groups)
+          ForEach(Array(groups.enumerated()), id: \.element.section) { groupIndex, group in
+            CommandPanelHeader(Self.title(group.section))
+            ForEach(Array(group.items.enumerated()), id: \.element.id) { offset, command in
+              let index = starts[groupIndex] + offset
+              CommandPanelRow(
+                systemImage: command.systemImage ?? "command", title: command.title, subtitle: command.subtitle,
+                shortcut: command.shortcut, selected: index == selected
+              )
+              .id(index)
+              .onTapGesture { perform(command) }
+            }
+          }
+        }
+        .padding(.horizontal, 6)
+        .padding(.bottom, 6)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+      }
+      .scrollIndicators(.automatic)
+      .frame(height: min(max(contentHeight, 40), Self.maxListHeight))
+      .onChange(of: selected) { _, index in proxy.scrollTo(index) }
+    }
+  }
+
+  /// Each group's first row in the flat list ↑↓ walks.
+  private static func offsets(_ groups: [(section: String, items: [PaletteCommand])]) -> [Int] {
+    var starts: [Int] = []
+    var total = 0
+    for group in groups {
+      starts.append(total)
+      total += group.items.count
+    }
+    return starts
+  }
+
+  /// The header a section reads as; the section name itself is what telemetry sees.
+  private static func title(_ section: String) -> String {
+    section == "App" ? "Actions" : section
   }
 
   private func move(_ delta: Int, in results: [PaletteCommand]) -> KeyPress.Result {
@@ -72,32 +113,5 @@ struct CommandPaletteView: View {
 
   private func close() {
     model.palette.isPresented = false
-  }
-}
-
-private struct PaletteRow: View {
-  @Environment(\.theme) private var theme
-  let command: PaletteCommand
-  let selected: Bool
-
-  var body: some View {
-    HStack(spacing: 10) {
-      Image(systemName: command.systemImage ?? "command")
-        .frame(width: 18)
-        .foregroundStyle(.secondary)
-      VStack(alignment: .leading, spacing: 1) {
-        Text(command.title)
-        if let subtitle = command.subtitle {
-          Text(subtitle).font(.scaled(.caption)).foregroundStyle(.secondary).lineLimit(1)
-        }
-      }
-      Spacer()
-      Text(command.section).font(.scaled(.caption)).foregroundStyle(.tertiary)
-      if let shortcut = command.shortcut {
-        KeyHint(shortcut, size: 10, boxed: false).foregroundStyle(.secondary)
-      }
-    }
-    .padding(.vertical, 3)
-    .listRowBackground(selected ? theme.accentSoft : Color.clear)
   }
 }

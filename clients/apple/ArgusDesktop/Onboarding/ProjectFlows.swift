@@ -5,6 +5,7 @@ import SwiftUI
 /// First-run onboarding and adding a project, presented over the main window.
 struct ProjectFlows: ViewModifier {
   @Environment(DesktopModel.self) private var model
+  @Environment(\.theme) private var theme
   @State private var onboarding = OnboardingModel()
   @State private var adding: RepoPath?
 
@@ -14,10 +15,10 @@ struct ProjectFlows: ViewModifier {
         OnboardingView(onboarding: onboarding).interactiveDismissDisabled()
       }
       .sheet(item: $adding) { repo in
-        AddProjectSheet(path: repo.path)
+        AddProjectSheet(path: repo.path).presentationBackground(theme.surface)
       }
       .sheet(isPresented: importingCliProjects) {
-        CliProjectImportSheet()
+        CliProjectImportSheet().presentationBackground(theme.surface)
       }
       // On a ready connection: the backend exists before its socket does, and
       // a request made in between fails without a retry.

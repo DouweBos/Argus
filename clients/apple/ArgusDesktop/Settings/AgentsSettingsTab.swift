@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import SwiftUI
 
 /// Defaults for new agents, and how far automations may go on their own.
@@ -15,9 +16,11 @@ struct AgentsSettingsTab: View {
   ]
 
   var body: some View {
-    Form {
-      Section {
-        VStack(alignment: .leading, spacing: 4) {
+    SettingsPage {
+      SettingsGroup(
+        "Agents", footer: "Defaults applied when starting a new agent. Both can be overridden per session."
+      ) {
+        SettingsRow("Default model", description: "Pre-selected in the launcher and new-session dialog.") {
           Picker("Default model", selection: $prefs.defaultModel.tracked(.defaultModel)) {
             Text("Use Claude CLI default").tag("")
             ForEach(knownModels, id: \.value) { Text($0.displayName).tag($0.value) }
@@ -25,16 +28,12 @@ struct AgentsSettingsTab: View {
               Text(prefs.defaultModel).tag(prefs.defaultModel)
             }
           }
-          SettingsCaption("Pre-selected in the launcher and new-session dialog.")
         }
-        Picker("Default permission mode", selection: $prefs.defaultPermissionMode.tracked(.permissionMode)) {
-          ForEach(DefaultPermissionMode.allCases, id: \.self) { Text($0.label).tag($0) }
+        SettingsRow("Default permission mode", description: "The mode new agents start in.") {
+          Picker("Default permission mode", selection: $prefs.defaultPermissionMode.tracked(.permissionMode)) {
+            ForEach(DefaultPermissionMode.allCases, id: \.self) { Text($0.label).tag($0) }
+          }
         }
-        .pickerStyle(.radioGroup)
-      } header: {
-        Text("Agents")
-      } footer: {
-        SettingsCaption("Defaults applied when starting a new agent. Both can be overridden per session.")
       }
 
       Section("Follow-up suggestions") {
@@ -52,18 +51,16 @@ struct AgentsSettingsTab: View {
 
       ImportCliChatsSection()
 
-      Section("Automations") {
+      SettingsGroup("Automations") {
         if let settings = host.settings {
-          VStack(alignment: .leading, spacing: 4) {
-            Toggle("Run automations on their schedule", isOn: automationsEnabled(settings))
-            SettingsCaption("Let automations start agents on their schedule. Running one by hand always works.")
-          }
-          VStack(alignment: .leading, spacing: 4) {
+          SettingsToggleRow(
+            "Run automations on their schedule",
+            description: "Let automations start agents on their schedule. Running one by hand always works.",
+            isOn: automationsEnabled(settings))
+          SettingsRow("Default autonomy", description: autonomyCaption(settings.defaultAutonomy)) {
             Picker("Default autonomy", selection: autonomy(settings)) {
               ForEach(Self.autonomyLevels, id: \.1) { level, label, _ in Text(label).tag(level) }
             }
-            .pickerStyle(.segmented)
-            SettingsCaption(autonomyCaption(settings.defaultAutonomy))
           }
           NumberSetting(
             label: "Concurrent automation sessions",
@@ -91,9 +88,8 @@ struct AgentsSettingsTab: View {
 
       AutomationAllowlistSection()
 
-      Section { SettingsError(text: host.error) }
+      SettingsError(text: host.error)
     }
-    .formStyle(.grouped)
   }
 
   /// What the default runner advertises; the desktop's list is whatever an
@@ -158,18 +154,18 @@ private struct NumberSetting: View {
   @State private var draft = 0
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
-      HStack {
+    SettingsRow(label, description: caption) {
+      HStack(spacing: 6) {
         TextField(label, value: $draft, format: .number)
           .multilineTextAlignment(.trailing)
-          .frame(maxWidth: .infinity)
+          .textFieldStyle(.roundedBorder)
+          .frame(width: 72)
           .onSubmit(commit)
         Stepper(label, value: $draft, in: minimum...Int.max, onEditingChanged: { editing in
           if !editing { commit() }
         })
         .labelsHidden()
       }
-      SettingsCaption(caption)
     }
     .onAppear { draft = value }
     .onChange(of: value) { _, next in draft = next }

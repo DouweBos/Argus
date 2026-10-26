@@ -1,41 +1,32 @@
 import ArgusCore
+import ArgusUI
 import SwiftUI
 
-/// App Settings (⌘,): every field in `docs/app-settings.md`, one tab per area.
+/// App Settings (⌘,): every field in `docs/app-settings.md`, a section per
+/// area in the list on the left, its groups in a centred column on the right.
 struct SettingsWindow: View {
   @Environment(DesktopModel.self) private var model
+  @Environment(\.theme) private var theme
   @State private var host = HostSettingsModel()
 
   var body: some View {
-    @Bindable var model = model
-    TabView(selection: $model.settingsTab) {
-      Tab("General", systemImage: "gearshape", value: SettingsTab.general) { GeneralSettingsTab() }
-      Tab("Accounts", systemImage: "person.crop.circle", value: SettingsTab.accounts) {
-        AccountsSettingsTab()
+    HStack(spacing: 0) {
+      SettingsNavList().layoutPriority(1)
+      Rectangle().fill(theme.border).frame(width: 1).ignoresSafeArea()
+      VStack(spacing: 0) {
+        FocusedHostBanner()
+        // minWidth 0: a wide section (Appearance's cards) must not push the
+        // row past the window and shift the list off its edge.
+        section(model.settingsTab)
+          .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+          .id(model.settingsTab)
       }
-      Tab("Agents", systemImage: "sparkles", value: SettingsTab.agents) { AgentsSettingsTab() }
-      Tab("LLM", systemImage: "cpu", value: SettingsTab.llm) { LLMSettingsTab() }
-      Tab("MCP", systemImage: "server.rack", value: SettingsTab.mcp) { MCPSettingsTab() }
-      Tab("Tools", systemImage: "wrench.and.screwdriver", value: SettingsTab.tools) {
-        ToolsSettingsTab()
-      }
-      Tab("Git", systemImage: "arrow.triangle.branch", value: SettingsTab.git) { GitSettingsTab() }
-      Tab("Editor", systemImage: "chevron.left.forwardslash.chevron.right", value: SettingsTab.editor) {
-        EditorTab()
-      }
-      Group {
-      Tab("Remote", systemImage: "antenna.radiowaves.left.and.right", value: SettingsTab.remote) {
-        RemoteSettingsTab()
-      }
-      Tab("Hosts", systemImage: "desktopcomputer", value: SettingsTab.hosts) { HostsSettingsTab() }
-      Tab("Advanced", systemImage: "slider.horizontal.3", value: SettingsTab.advanced) {
-        AdvancedSettingsTab()
-      }
-      }
+      .background(theme.bg.ignoresSafeArea())
     }
-    .frame(minWidth: 640, idealWidth: 720, minHeight: 480, idealHeight: 620)
+    .frame(minWidth: 780, idealWidth: 960, minHeight: 520, idealHeight: 680)
+    .navigationTitle(model.settingsTab.title)
+    .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
     .environment(host)
-    .safeAreaInset(edge: .top) { FocusedHostBanner() }
     // Settings that live on a host are the shown host's.
     .task(id: SettingsLoadKey(ready: model.store.connection == .ready, host: model.hosts.focused)) {
       guard model.store.connection == .ready else { return }
@@ -44,14 +35,54 @@ struct SettingsWindow: View {
     }
     .themed()
   }
+
+  @ViewBuilder private func section(_ tab: SettingsTab) -> some View {
+    switch tab {
+    case .general: GeneralSettingsTab()
+    case .appearance: AppearanceSettingsTab()
+    case .accounts: AccountsSettingsTab()
+    case .agents: AgentsSettingsTab()
+    case .llm: LLMSettingsTab()
+    case .mcp: MCPSettingsTab()
+    case .tools: ToolsSettingsTab()
+    case .git: GitSettingsTab()
+    case .editor: EditorTab()
+    case .remote: RemoteSettingsTab()
+    case .hosts: HostsSettingsTab()
+    case .advanced: AdvancedSettingsTab()
+    }
+  }
+}
+
+/// The sections, as a quiet list down the window's left edge.
+private struct SettingsNavList: View {
+  @Environment(DesktopModel.self) private var model
+  @Environment(\.theme) private var theme
+
+  var body: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 1) {
+        ForEach(SettingsTab.allCases, id: \.self) { tab in
+          SettingsNavItem(tab.title, systemImage: tab.systemImage, selected: model.settingsTab == tab) {
+            model.settingsTab = tab
+          }
+        }
+      }
+      .padding(.horizontal, 8)
+      .padding(.vertical, 10)
+    }
+    .frame(width: TextScale.shared(196))
+    .background(theme.sidebar.ignoresSafeArea())
+  }
 }
 
 enum SettingsTab: String, Hashable, CaseIterable {
-  case general, accounts, agents, llm, mcp, tools, git, editor, remote, hosts, advanced
+  case general, appearance, accounts, agents, llm, mcp, tools, git, editor, remote, hosts, advanced
 
   var title: String {
     switch self {
     case .general: "General"
+    case .appearance: "Appearance"
     case .accounts: "Accounts"
     case .agents: "Agents"
     case .llm: "LLM"
@@ -62,6 +93,23 @@ enum SettingsTab: String, Hashable, CaseIterable {
     case .remote: "Remote"
     case .hosts: "Hosts"
     case .advanced: "Advanced"
+    }
+  }
+
+  var systemImage: String {
+    switch self {
+    case .general: "gearshape"
+    case .appearance: "paintpalette"
+    case .accounts: "person.crop.circle"
+    case .agents: "sparkles"
+    case .llm: "cpu"
+    case .mcp: "server.rack"
+    case .tools: "wrench.and.screwdriver"
+    case .git: "arrow.triangle.branch"
+    case .editor: "chevron.left.forwardslash.chevron.right"
+    case .remote: "antenna.radiowaves.left.and.right"
+    case .hosts: "desktopcomputer"
+    case .advanced: "slider.horizontal.3"
     }
   }
 }

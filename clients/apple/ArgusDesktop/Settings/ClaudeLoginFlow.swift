@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import Observation
 import SwiftUI
 
@@ -106,46 +107,56 @@ struct ClaudeLoginSection: View {
   let refresh: () async -> Void
 
   var body: some View {
-    Section {
+    SettingsGroup(
+      login.phase == .idle ? (firstAccount ? "Sign in" : "Add another account") : "Complete sign-in",
+      footer: caption
+    ) {
       switch login.phase {
       case .idle:
-        Picker("Account type", selection: $login.useConsole) {
-          Text("Claude subscription").tag(false)
-          Text("Anthropic Console").tag(true)
+        SettingsRow("Account type") {
+          Picker("Account type", selection: $login.useConsole) {
+            Text("Claude subscription").tag(false)
+            Text("Anthropic Console").tag(true)
+          }
+          .pickerStyle(.segmented)
         }
-        .pickerStyle(.segmented)
-        Button(firstAccount ? "Log In" : "Add Account") {
-          login.start(accountId: nil, host: host, refresh: refresh)
+        HStack {
+          Spacer()
+          Button(firstAccount ? "Log In" : "Add Account") {
+            login.start(accountId: nil, host: host, refresh: refresh)
+          }
+          .buttonStyle(.borderedProminent)
         }
-        .buttonStyle(.borderedProminent)
       case .starting:
         HStack {
           ProgressView().controlSize(.small)
           Text("Opening browser…").foregroundStyle(.secondary)
         }
       case .awaitingBrowser:
-        Text("Waiting for you to approve in your browser…").foregroundStyle(.secondary)
-        HStack {
-          if login.url != nil { Button("Reopen Sign-in Page") { login.reopen() } }
-          Spacer()
-          Button("Cancel") { login.cancel(refresh: refresh) }
+        VStack(alignment: .leading, spacing: 8) {
+          Text("Waiting for you to approve in your browser…").foregroundStyle(.secondary)
+          HStack {
+            if login.url != nil { Button("Reopen Sign-in Page") { login.reopen() } }
+            Spacer()
+            Button("Cancel") { login.cancel(refresh: refresh) }
+          }
         }
       case .awaitingCode, .submitting:
-        TextField("Authorization code", text: $login.code, prompt: Text("Paste authorization code"))
-          .onSubmit { login.submit(refresh: refresh) }
-        HStack {
-          if login.url != nil { Button("Reopen Sign-in Page") { login.reopen() } }
-          Spacer()
-          Button("Cancel") { login.cancel(refresh: refresh) }
-          Button(login.phase == .submitting ? "Signing in…" : "Sign In") { login.submit(refresh: refresh) }
-            .buttonStyle(.borderedProminent)
-            .disabled(login.code.trimmingCharacters(in: .whitespaces).isEmpty || login.phase == .submitting)
+        VStack(alignment: .leading, spacing: 8) {
+          TextField("Authorization code", text: $login.code, prompt: Text("Paste authorization code"))
+            .labelsHidden()
+            .textFieldStyle(.roundedBorder)
+            .onSubmit { login.submit(refresh: refresh) }
+          HStack {
+            if login.url != nil { Button("Reopen Sign-in Page") { login.reopen() } }
+            Spacer()
+            Button("Cancel") { login.cancel(refresh: refresh) }
+            Button(login.phase == .submitting ? "Signing in…" : "Sign In") { login.submit(refresh: refresh) }
+              .buttonStyle(.borderedProminent)
+              .disabled(login.code.trimmingCharacters(in: .whitespaces).isEmpty || login.phase == .submitting)
+          }
         }
       }
-    } header: {
-      Text(login.phase == .idle ? (firstAccount ? "Sign in" : "Add another account") : "Complete sign-in")
-    } footer: {
-      SettingsCaption(caption)
     }
   }
 

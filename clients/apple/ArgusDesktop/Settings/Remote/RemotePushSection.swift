@@ -14,36 +14,40 @@ struct RemotePushSection: View {
   private var enabled: Bool { model.push?.enabled ?? false }
 
   var body: some View {
-    Section {
-      Toggle(isOn: binding) {
-        HStack {
-          Text("Background push")
-          Spacer()
+    SettingsGroup(
+      "Background push",
+      footer: "Wake paired phones and browsers with a real notification when they're not connected — agent finished, agent failed, or a prompt needs approval. Nothing to set up: every notification is encrypted for the device it's going to before it leaves this machine. The contact is what Mozilla, Google, and Apple use to reach you if a browser notification misbehaves."
+    ) {
+      SettingsRow("Background push") {
+        HStack(spacing: 10) {
           if model.push != nil {
             ToneLabel(tone: enabled ? .success : .idle, text: enabled ? "ready" : "off")
           }
+          Toggle("Background push", isOn: binding)
+            .toggleStyle(.switch)
+            .controlSize(.small)
+            .disabled(!gatewayOn || model.busy || model.push == nil)
         }
       }
-      .disabled(!gatewayOn || model.busy || model.push == nil)
       if enabled, let push = model.push {
-        LabeledContent("Push service contact") {
+        SettingsRow("Push service contact") {
           HStack {
             TextField("Push service contact", text: $contact, prompt: Text("mailto:you@example.com"))
-              .labelsHidden()
+              .textFieldStyle(.roundedBorder)
+              .frame(width: 220)
             Button("Save Contact") {
               Task { await model.setPush(.init(vapidSubject: contact), setting: .pushContact) }
             }
             .disabled(!gatewayOn || model.busy || contact.trimmingCharacters(in: .whitespaces).isEmpty)
           }
         }
-        LabeledContent("Browser push key", value: push.webPushConfigured ? "generated" : "made on first use")
-        Text("Phones are reached through \(push.relayUrl), which only ever handles ciphertext.")
-          .font(.scaled(.callout)).foregroundStyle(theme.textSecondary)
+        SettingsRow(
+          "Browser push key",
+          description: "Phones are reached through \(push.relayUrl), which only ever handles ciphertext."
+        ) {
+          Text(push.webPushConfigured ? "generated" : "made on first use").foregroundStyle(theme.textSecondary)
+        }
       }
-    } footer: {
-      Text(
-        "Wake paired phones and browsers with a real notification when they're not connected — agent finished, agent failed, or a prompt needs approval. Nothing to set up: every notification is encrypted for the device it's going to before it leaves this machine. The contact is what Mozilla, Google, and Apple use to reach you if a browser notification misbehaves."
-      )
     }
     .onChange(of: model.push?.vapidSubject, initial: true) { _, subject in
       if let subject { contact = subject }

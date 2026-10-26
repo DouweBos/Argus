@@ -24,40 +24,42 @@ struct GitSettingsTab: View {
   }
 
   var body: some View {
-    Form {
-      Section {
-        Picker("Changes list", selection: $fileViewMode) {
-          Text("List").tag(FileViewMode.flatModified.rawValue)
-          Text("Tree").tag(FileViewMode.treeModified.rawValue)
-          Text("All files").tag(FileViewMode.allFiles.rawValue)
+    SettingsPage {
+      SettingsGroup(
+        "Git",
+        footer: "Defaults for every repository the git panel opens. The panel's own toggles change only the one on screen."
+      ) {
+        SettingsRow("Changes list", description: "How the changes list shows a working copy.") {
+          Picker("Changes list", selection: $fileViewMode) {
+            Text("List").tag(FileViewMode.flatModified.rawValue)
+            Text("Tree").tag(FileViewMode.treeModified.rawValue)
+            Text("All files").tag(FileViewMode.allFiles.rawValue)
+          }
         }
-        Picker("Diff layout", selection: diffLayout) {
-          ForEach(DiffLayout.allCases) { Text($0.title).tag($0) }
+        SettingsRow("Diff layout", description: "Unified in one column, or split side by side.") {
+          Picker("Diff layout", selection: diffLayout) {
+            ForEach(DiffLayout.allCases) { Text($0.title).tag($0) }
+          }
         }
-        Toggle("Ignore whitespace in diffs", isOn: $ignoreWhitespace)
-      } header: {
-        Text("Git")
-      } footer: {
-        SettingsCaption("Defaults for every repository the git panel opens. The panel's own toggles change only the one on screen.")
+        SettingsToggleRow("Ignore whitespace in diffs", isOn: $ignoreWhitespace)
       }
-      Section {
+      SettingsGroup("Git signing") {
         if projects.isEmpty {
           Text("Add a project to set up its commit signing.").foregroundStyle(.secondary)
         } else {
-          Picker("Repository", selection: $signingSession) {
-            ForEach(projects) { session in
-              Text((session.repoRoot as NSString).lastPathComponent).tag(Optional(session.id))
+          SettingsRow("Repository", description: "Signing is set per repository.") {
+            Picker("Repository", selection: $signingSession) {
+              ForEach(projects) { session in
+                Text((session.repoRoot as NSString).lastPathComponent).tag(Optional(session.id))
+              }
             }
           }
         }
-      } header: {
-        Text("Git signing")
-      }
-      if let signingSession {
-        GitSigningSection(sessionId: signingSession)
+        if let signingSession {
+          GitSigningSection(sessionId: signingSession, rows: true)
+        }
       }
     }
-    .formStyle(.grouped)
     // Sessions arrive after the window does.
     .task(id: projects.map(\.id)) {
       guard signingSession == nil || !projects.contains(where: { $0.id == signingSession }) else { return }

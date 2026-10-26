@@ -67,7 +67,9 @@ go through the host, exactly as in the Electron app.
 - A first-run walkthrough (welcome, privacy, checking your Mac, a first
   project), a Home screen with cards that fix what's missing, and **Add
   Project…** (⌘O), which can write the project's `.argus.json` for you.
-- **Settings** (⌘,): appearance, Claude accounts, agents and automation
+- **Settings** (⌘,): a list of sections on the left and each section's
+  settings in one centred column — appearance (colour scheme and colour
+  theme as preview cards), Claude accounts, agents and automation
   defaults, LLM runners including custom ones, MCP servers, tools, git
   defaults and commit signing, the update channel, and remote access —
   pairing a phone, its grants, push and tunnels.
@@ -76,7 +78,8 @@ go through the host, exactly as in the Electron app.
 - **Automations**, **Quick Run**, the **Inbox** and its proposals, and
   **Notifications**, the warnings and errors list.
 - Hosting a huddle from a session, with guest approval and side chat.
-- The command palette (⇧⌘P), and Handoff of the session on screen to your
+- The command palette (⇧⌘P), its results grouped by kind with their
+  shortcuts, and Handoff of the session on screen to your
   phone.
 
 ## Keyboard shortcuts
