@@ -199,6 +199,47 @@ public struct ChromeSearchField: View {
   }
 }
 
+// MARK: - Icons
+
+/// What leads a row: an SF Symbol, an image such as an app's icon, or a project's badge.
+public enum ChromeIcon {
+  case symbol(String)
+  case image(Image)
+  case badge(String)
+}
+
+public struct ChromeIconView: View {
+  @Environment(\.theme) private var theme
+  let icon: ChromeIcon
+  var tint: Color?
+
+  public init(_ icon: ChromeIcon, tint: Color? = nil) {
+    self.icon = icon
+    self.tint = tint
+  }
+
+  public var body: some View {
+    Group {
+      switch icon {
+      case .symbol(let name):
+        Image(systemName: name)
+          .font(.scaled(size: 11))
+          .foregroundStyle(tint ?? theme.textSecondary)
+      case .image(let image):
+        image
+          .resizable()
+          .interpolation(.high)
+          .aspectRatio(contentMode: .fit)
+          .frame(width: TextScale.shared(16), height: TextScale.shared(16))
+      case .badge(let name):
+        ProjectBadge(name, size: 15)
+      }
+    }
+    .frame(width: TextScale.shared(16))
+    .accessibilityHidden(true)
+  }
+}
+
 // MARK: - Context card
 
 /// A small floating card of facts and actions about what's on screen.
@@ -223,24 +264,25 @@ public struct ContextCard<Content: View>: View {
 /// One line of a context card: icon, title, and whatever sits on the right.
 public struct ContextCardRow<Trailing: View>: View {
   @Environment(\.theme) private var theme
-  let icon: String
+  let icon: ChromeIcon
   let title: String
   var muted: Bool
   let trailing: Trailing
 
-  public init(icon: String, title: String, muted: Bool = false, @ViewBuilder trailing: () -> Trailing) {
+  public init(icon: ChromeIcon, title: String, muted: Bool = false, @ViewBuilder trailing: () -> Trailing) {
     self.icon = icon
     self.title = title
     self.muted = muted
     self.trailing = trailing()
   }
 
+  public init(icon: String, title: String, muted: Bool = false, @ViewBuilder trailing: () -> Trailing) {
+    self.init(icon: .symbol(icon), title: title, muted: muted, trailing: trailing)
+  }
+
   public var body: some View {
     HStack(spacing: 8) {
-      Image(systemName: icon)
-        .font(.scaled(size: 11))
-        .foregroundStyle(theme.textSecondary)
-        .frame(width: TextScale.shared(16))
+      ChromeIconView(icon)
       Text(title)
         .font(.scaled(size: 12))
         .foregroundStyle(muted ? theme.textSecondary : theme.text)
@@ -257,16 +299,24 @@ public struct ContextCardRow<Trailing: View>: View {
 
 extension ContextCardRow where Trailing == EmptyView {
   public init(icon: String, title: String, muted: Bool = false) {
+    self.init(icon: .symbol(icon), title: title, muted: muted) { EmptyView() }
+  }
+
+  public init(icon: ChromeIcon, title: String, muted: Bool = false) {
     self.init(icon: icon, title: title, muted: muted) { EmptyView() }
   }
 }
 
-/// A context card row as a button: highlighted on hover.
+/// A context card row as a button: highlighted on hover, and while its dropdown is open.
 public struct ContextRowButtonStyle: ButtonStyle {
-  public init() {}
+  var selected: Bool
+
+  public init(selected: Bool = false) {
+    self.selected = selected
+  }
 
   public func makeBody(configuration: Configuration) -> some View {
-    ContextRowHighlight(label: configuration.label, pressed: configuration.isPressed)
+    ContextRowHighlight(label: configuration.label, pressed: configuration.isPressed, selected: selected)
   }
 }
 
@@ -275,54 +325,18 @@ private struct ContextRowHighlight<Label: View>: View {
   @Environment(\.isEnabled) private var isEnabled
   let label: Label
   let pressed: Bool
+  let selected: Bool
   @State private var hovering = false
 
   var body: some View {
     label
       .opacity(isEnabled ? 1 : 0.5)
       .background {
-        if isEnabled && (hovering || pressed) {
+        if isEnabled && (hovering || pressed || selected) {
           RoundedRectangle(cornerRadius: 7).fill(pressed ? theme.bgHover : theme.selection)
         }
       }
       .onHover { hovering = $0 }
-  }
-}
-
-/// A context card row that does one thing on click, with a chevron menu of the rest.
-public struct ContextSplitRow<Row: View, MenuContent: View>: View {
-  @Environment(\.theme) private var theme
-  let action: () -> Void
-  let row: Row
-  let menu: MenuContent
-
-  public init(
-    action: @escaping () -> Void, @ViewBuilder row: () -> Row, @ViewBuilder menu: () -> MenuContent
-  ) {
-    self.action = action
-    self.row = row()
-    self.menu = menu()
-  }
-
-  public var body: some View {
-    HStack(spacing: 0) {
-      Button(action: action) { row }
-        .buttonStyle(ContextRowButtonStyle())
-      Menu {
-        menu
-      } label: {
-        Image(systemName: Icon.chevronDown)
-          .font(.scaled(size: 9, weight: .semibold))
-          .foregroundStyle(theme.textSecondary)
-          .frame(width: TextScale.shared(22), height: TextScale.shared(26))
-          .contentShape(.rect)
-      }
-      .menuStyle(.button)
-      .menuIndicator(.hidden)
-      .buttonStyle(ContextRowButtonStyle())
-      .fixedSize()
-      .accessibilityLabel("More")
-    }
   }
 }
 
