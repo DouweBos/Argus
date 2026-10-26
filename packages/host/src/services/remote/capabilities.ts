@@ -50,7 +50,7 @@ import {
   switchSessionClaudeAccount,
 } from "../agent/agentService";
 import { loadConversation, loadHistoryIndex } from "../agent/chatHistory";
-import { knownContextWindow } from "../agent/contextWindow";
+import { agentContextWindow } from "../agent/contextWindow";
 import { liveCursor, readConversation } from "../agent/conversation/live";
 import { dismissLimitResume, limitResumeAt } from "../agent/limitResume";
 import {
@@ -549,7 +549,7 @@ export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
     title: agentTitle(a.agentId),
     status: a.status,
     model: a.model,
-    context_window: a.contextWindow ?? knownContextWindow(a.resolvedModel),
+    context_window: agentContextWindow(a),
     permission_mode: a.permissionMode ?? null,
     parent_agent_id: a.parentAgentId,
     created_at: a.createdAt,

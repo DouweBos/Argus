@@ -172,6 +172,8 @@ export interface SlashCommandInfo {
 
 export interface ModelInfo {
   value: string;
+  /** The model id an alias (`opus`, `default`) currently runs. */
+  resolvedModel?: string;
   displayName: string;
   description: string;
   supportsEffort?: boolean;

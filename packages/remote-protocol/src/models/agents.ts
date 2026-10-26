@@ -23,6 +23,8 @@ export type AgentSlashCommand = z.infer<typeof AgentSlashCommand>;
 export const AgentModelInfo = z.object({
   description: z.string(),
   displayName: z.string(),
+  /** The model id an alias (`opus`, `default`) currently runs. */
+  resolvedModel: z.string().optional(),
   supportedEffortLevels: z.array(z.string()).optional(),
   supportsEffort: z.boolean().optional(),
   supportsFastMode: z.boolean().optional(),

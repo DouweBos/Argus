@@ -19,7 +19,16 @@ public enum ContextWindow {
     if haystack.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil {
       return oneMillion
     }
-    return defaultLimit
+    return claudeIdLimit(model) ?? defaultLimit
+  }
+
+  /// The Claude 5 family runs a 1M window; nil for ids that aren't Claude's.
+  static func claudeIdLimit(_ id: String?) -> Int? {
+    guard let id,
+      let match = id.range(of: #"^claude-([a-z]+-)?\d+"#, options: [.regularExpression, .caseInsensitive]),
+      let major = Int(id[match].split(separator: "-").last ?? "")
+    else { return nil }
+    return major >= 5 ? oneMillion : defaultLimit
   }
 
   /// All four counts occupy the window, cache reads included.
