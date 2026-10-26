@@ -790,6 +790,7 @@ extension ArgusProtocol {
     public var remoteNotifyWhenFocused: Bool?
     public var theme: AppSettingsTheme?
     public var colorTheme: ColorTheme?
+    public var importCliChats: Bool?
     public var uiScale: AppSettingsUiScale?
     public var defaultPermissionMode: AppSettingsDefaultPermissionMode?
     public var defaultModel: String?
@@ -825,6 +826,7 @@ extension ArgusProtocol {
       case remoteNotifyWhenFocused = "remote_notify_when_focused"
       case theme = "theme"
       case colorTheme = "color_theme"
+      case importCliChats = "import_cli_chats"
       case uiScale = "ui_scale"
       case defaultPermissionMode = "default_permission_mode"
       case defaultModel = "default_model"
@@ -836,7 +838,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, launchRoute: AppSettingsLaunchRoute? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, defaultModel: String? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, launchRoute: AppSettingsLaunchRoute? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, defaultModel: String? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.defaultLlm = defaultLlm
@@ -861,6 +863,7 @@ extension ArgusProtocol {
       self.remoteNotifyWhenFocused = remoteNotifyWhenFocused
       self.theme = theme
       self.colorTheme = colorTheme
+      self.importCliChats = importCliChats
       self.uiScale = uiScale
       self.defaultPermissionMode = defaultPermissionMode
       self.defaultModel = defaultModel
@@ -898,6 +901,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(remoteNotifyWhenFocused, forKey: .remoteNotifyWhenFocused)
       try c.encodeIfPresent(theme, forKey: .theme)
       try c.encodeIfPresent(colorTheme, forKey: .colorTheme)
+      try c.encodeIfPresent(importCliChats, forKey: .importCliChats)
       try c.encodeIfPresent(uiScale, forKey: .uiScale)
       try c.encodeIfPresent(defaultPermissionMode, forKey: .defaultPermissionMode)
       try c.encodeIfPresent(defaultModel, forKey: .defaultModel)
@@ -2218,12 +2222,27 @@ extension ArgusProtocol {
     public static let unknown = CameraAccessStatus(rawValue: "unknown")
   }
 
+  public struct ChatHistoryEntryImportedFrom: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let claudeCode = ChatHistoryEntryImportedFrom(rawValue: "claude_code")
+  }
+
   public struct ChatHistoryEntry: Codable, Sendable {
     public var agentId: String?
     public var argusSessionId: String?
     public var createdAt: Double
     public var endedAt: Double
     public var id: String
+    public var importedFrom: ChatHistoryEntryImportedFrom?
     public var messageCount: Double
     public var model: String?
     public var parentAgentId: String?
@@ -2241,6 +2260,7 @@ extension ArgusProtocol {
       case createdAt = "createdAt"
       case endedAt = "endedAt"
       case id = "id"
+      case importedFrom = "importedFrom"
       case messageCount = "messageCount"
       case model = "model"
       case parentAgentId = "parentAgentId"
@@ -2253,12 +2273,13 @@ extension ArgusProtocol {
       case totalDuration = "totalDuration"
     }
 
-    public init(agentId: String? = nil, argusSessionId: String? = nil, createdAt: Double, endedAt: Double, id: String, messageCount: Double, model: String? = nil, parentAgentId: String? = nil, runnerId: String? = nil, sessionBranch: String, sessionDescription: String, sessionId: String, title: String, totalCost: Double? = nil, totalDuration: Double? = nil) {
+    public init(agentId: String? = nil, argusSessionId: String? = nil, createdAt: Double, endedAt: Double, id: String, importedFrom: ChatHistoryEntryImportedFrom? = nil, messageCount: Double, model: String? = nil, parentAgentId: String? = nil, runnerId: String? = nil, sessionBranch: String, sessionDescription: String, sessionId: String, title: String, totalCost: Double? = nil, totalDuration: Double? = nil) {
       self.agentId = agentId
       self.argusSessionId = argusSessionId
       self.createdAt = createdAt
       self.endedAt = endedAt
       self.id = id
+      self.importedFrom = importedFrom
       self.messageCount = messageCount
       self.model = model
       self.parentAgentId = parentAgentId
@@ -2278,6 +2299,7 @@ extension ArgusProtocol {
       try c.encode(createdAt, forKey: .createdAt)
       try c.encode(endedAt, forKey: .endedAt)
       try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(importedFrom, forKey: .importedFrom)
       try c.encode(messageCount, forKey: .messageCount)
       try c.encodeIfPresent(model, forKey: .model)
       try c.encodeIfPresent(parentAgentId, forKey: .parentAgentId)
@@ -11890,6 +11912,20 @@ extension ArgusProtocol {
     }
   }
 
+  public struct RemoteStoppedAgentImportedFrom: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let claudeCode = RemoteStoppedAgentImportedFrom(rawValue: "claude_code")
+  }
+
   public struct RemoteStoppedAgent: Codable, Sendable {
     public var historyId: String
     public var runnerSessionId: String
@@ -11900,6 +11936,7 @@ extension ArgusProtocol {
     public var messageCount: Int
     public var startedAt: Double
     public var endedAt: Double
+    public var importedFrom: RemoteStoppedAgentImportedFrom?
 
     enum CodingKeys: String, CodingKey {
       case historyId = "history_id"
@@ -11911,9 +11948,10 @@ extension ArgusProtocol {
       case messageCount = "message_count"
       case startedAt = "started_at"
       case endedAt = "ended_at"
+      case importedFrom = "imported_from"
     }
 
-    public init(historyId: String, runnerSessionId: String, title: String, branch: String, description: String? = nil, model: String? = nil, messageCount: Int, startedAt: Double, endedAt: Double) {
+    public init(historyId: String, runnerSessionId: String, title: String, branch: String, description: String? = nil, model: String? = nil, messageCount: Int, startedAt: Double, endedAt: Double, importedFrom: RemoteStoppedAgentImportedFrom? = nil) {
       self.historyId = historyId
       self.runnerSessionId = runnerSessionId
       self.title = title
@@ -11923,6 +11961,7 @@ extension ArgusProtocol {
       self.messageCount = messageCount
       self.startedAt = startedAt
       self.endedAt = endedAt
+      self.importedFrom = importedFrom
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -11936,6 +11975,7 @@ extension ArgusProtocol {
       try c.encode(messageCount, forKey: .messageCount)
       try c.encode(startedAt, forKey: .startedAt)
       try c.encode(endedAt, forKey: .endedAt)
+      try c.encodeIfPresent(importedFrom, forKey: .importedFrom)
     }
   }
 
@@ -13001,12 +13041,27 @@ extension ArgusProtocol {
     }
   }
 
+  public struct SavedConversationImportedFrom: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let claudeCode = SavedConversationImportedFrom(rawValue: "claude_code")
+  }
+
   public struct SavedConversation: Codable, Sendable {
     public var agentId: String?
     public var argusSessionId: String?
     public var createdAt: Double
     public var endedAt: Double
     public var id: String
+    public var importedFrom: SavedConversationImportedFrom?
     public var messageCount: Double
     public var model: String?
     public var parentAgentId: String?
@@ -13025,6 +13080,7 @@ extension ArgusProtocol {
       case createdAt = "createdAt"
       case endedAt = "endedAt"
       case id = "id"
+      case importedFrom = "importedFrom"
       case messageCount = "messageCount"
       case model = "model"
       case parentAgentId = "parentAgentId"
@@ -13038,12 +13094,13 @@ extension ArgusProtocol {
       case messages = "messages"
     }
 
-    public init(agentId: String? = nil, argusSessionId: String? = nil, createdAt: Double, endedAt: Double, id: String, messageCount: Double, model: String? = nil, parentAgentId: String? = nil, runnerId: String? = nil, sessionBranch: String, sessionDescription: String, sessionId: String, title: String, totalCost: Double? = nil, totalDuration: Double? = nil, messages: [JSONValue]) {
+    public init(agentId: String? = nil, argusSessionId: String? = nil, createdAt: Double, endedAt: Double, id: String, importedFrom: SavedConversationImportedFrom? = nil, messageCount: Double, model: String? = nil, parentAgentId: String? = nil, runnerId: String? = nil, sessionBranch: String, sessionDescription: String, sessionId: String, title: String, totalCost: Double? = nil, totalDuration: Double? = nil, messages: [JSONValue]) {
       self.agentId = agentId
       self.argusSessionId = argusSessionId
       self.createdAt = createdAt
       self.endedAt = endedAt
       self.id = id
+      self.importedFrom = importedFrom
       self.messageCount = messageCount
       self.model = model
       self.parentAgentId = parentAgentId
@@ -13064,6 +13121,7 @@ extension ArgusProtocol {
       try c.encode(createdAt, forKey: .createdAt)
       try c.encode(endedAt, forKey: .endedAt)
       try c.encode(id, forKey: .id)
+      try c.encodeIfPresent(importedFrom, forKey: .importedFrom)
       try c.encode(messageCount, forKey: .messageCount)
       try c.encodeIfPresent(model, forKey: .model)
       try c.encodeIfPresent(parentAgentId, forKey: .parentAgentId)

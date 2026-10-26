@@ -91,6 +91,11 @@ export interface EventMap {
     badge_cleared: boolean;
     outcome: "ok" | "rate_limited" | "reauth" | "unknown";
   };
+  cli_chats_imported: {
+    imported_bucket: "0" | "1-5" | "6-20" | "21-100" | "100+";
+    project_count: number;
+    trigger: "boot" | "interval" | "manual" | "project_added";
+  };
   color_theme_changed: {
     theme: "amber" | "ember" | "grove" | "iris" | "ocean" | "rose";
   };

@@ -12,7 +12,7 @@ import path from "node:path";
 import { truncateClaudeJsonl } from "../../../session/truncateClaudeJsonl";
 
 /** Slug rule used by the Claude Code CLI for `~/.claude/projects/<slug>/`. */
-function claudeProjectSlug(cwd: string): string {
+export function claudeProjectSlug(cwd: string): string {
   return cwd.replace(/[^a-zA-Z0-9]/g, "-");
 }
 
@@ -118,4 +118,32 @@ export function latestClaudeSessionId(cwd: string): string | null {
   }
 
   return newest?.id ?? null;
+}
+
+/**
+ * `--resume` only finds a transcript under its cwd's project dir. A chat
+ * started elsewhere (the repo root, another app) is copied in, keeping its id.
+ */
+export function ensureClaudeTranscriptAt(cwd: string, sessionId: string): void {
+  const root = path.join(os.homedir(), ".claude", "projects");
+  const destDir = path.join(root, claudeProjectSlug(cwd));
+  const dest = path.join(destDir, `${sessionId}.jsonl`);
+  if (fs.existsSync(dest)) {
+    return;
+  }
+  let dirs: string[];
+  try {
+    dirs = fs.readdirSync(root);
+  } catch {
+    return;
+  }
+  for (const dir of dirs) {
+    const src = path.join(root, dir, `${sessionId}.jsonl`);
+    if (fs.existsSync(src)) {
+      fs.mkdirSync(destDir, { recursive: true });
+      fs.copyFileSync(src, dest);
+
+      return;
+    }
+  }
 }

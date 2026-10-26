@@ -4,6 +4,7 @@
  * and menu work; `bin/argus-host.ts` calls them and nothing else.
  */
 
+import { addHostEventSink } from "@argus/host/bus";
 import { registerHostCommands } from "./commands/index";
 import { createLogger } from "./logger";
 import { hostPlatform } from "./platform";
@@ -33,6 +34,11 @@ import {
 import { initCodeService, stopCodeService } from "./services/code/lifecycle";
 import { stopAllDebugStreams } from "./services/conductor/debug";
 import { initConductorOverride } from "./services/conductor/override";
+import {
+  importCliChats,
+  importEnabled,
+  startCliChatImport,
+} from "./services/externalChats/importer";
 import {
   initLanguageServers,
   stopAllLanguageServers,
@@ -140,6 +146,18 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   initAutomations();
   initAutomationOutcomes();
   startAutomationScheduler();
+
+  // Chats run with the plain CLI join each project's history.
+  startCliChatImport();
+  addHostEventSink((channel, args) => {
+    if (
+      channel === "project:added" &&
+      typeof args[0] === "string" &&
+      importEnabled()
+    ) {
+      importCliChats(args[0]).catch(() => undefined);
+    }
+  });
 
   // The code editor's watches, searches and language servers end with their session.
   initCodeService();

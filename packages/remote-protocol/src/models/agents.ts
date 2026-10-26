@@ -134,6 +134,8 @@ export const ChatHistoryEntry = z.object({
   createdAt: z.number(),
   endedAt: z.number(),
   id: z.string(),
+  /** Set when the chat was read in from another app's history, not run here. */
+  importedFrom: z.enum(["claude_code"]).optional(),
   messageCount: z.number(),
   model: z.string().optional(),
   /** Agent that spawned this one — absent on older records. */

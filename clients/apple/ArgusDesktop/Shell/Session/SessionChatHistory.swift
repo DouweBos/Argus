@@ -111,7 +111,12 @@ private struct ChatHistoryRow: View {
       Button(action: open) {
         VStack(alignment: .leading, spacing: 2) {
           Text(entry.title).lineLimit(1)
-          Text(meta).font(.scaled(.caption)).foregroundStyle(theme.textSecondary).lineLimit(1)
+          HStack(spacing: 6) {
+            Text(meta).font(.scaled(.caption)).foregroundStyle(theme.textSecondary).lineLimit(1)
+            if entry.importedFrom == .claudeCode {
+              Badge(label: "Imported").help("Imported · Claude Code")
+            }
+          }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)

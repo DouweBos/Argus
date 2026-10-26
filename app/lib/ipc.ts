@@ -1770,6 +1770,12 @@ export const deleteChatHistory = (
   historyId: string,
 ): Promise<void> => invoke("delete_chat_history", { repoRoot, historyId });
 
+/** Pull chats run with the plain Claude Code CLI into every project's history. */
+export const importCliChats = (): Promise<{
+  imported: number;
+  projects: number;
+}> => invoke("import_cli_chats", {});
+
 // Terminal commands.
 //
 // `createTerminal` only spawns the user's interactive login shell — it

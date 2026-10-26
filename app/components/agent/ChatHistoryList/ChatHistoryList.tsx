@@ -4,7 +4,7 @@ import type {
   ChatHistorySearchResult,
 } from "../../../lib/chatHistory";
 import { useEffect, useMemo, useState } from "react";
-import { Button, Icons, Input, SectionPanel } from "@argus/peacock";
+import { Badge, Button, Icons, Input, SectionPanel } from "@argus/peacock";
 import { searchChatHistory } from "../../../lib/ipc";
 import styles from "./ChatHistoryList.module.css";
 
@@ -91,6 +91,11 @@ function EntryRow({
         <span>
           {entry.messageCount} msg{entry.messageCount !== 1 ? "s" : ""}
         </span>
+        {entry.importedFrom === "claude_code" && (
+          <Badge size="tag" title="Imported · Claude Code" tone="neutral">
+            Imported
+          </Badge>
+        )}
       </div>
       {matches.length > 0 && (
         <div className={styles.snippets}>

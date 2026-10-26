@@ -54,6 +54,7 @@ import {
   updateQueuedMessage,
 } from "../services/agent/messageQueue";
 import { defineTypedCommand } from "../services/command/registry";
+import { importAllCliChats } from "../services/externalChats/importer";
 import { generateChatTitle } from "../services/llm/titleGenerator";
 import { showAgentNotification } from "../services/notifications/osNotification";
 
@@ -121,6 +122,7 @@ export function registerAgentCommands(): void {
     saveConversation(p.repoRoot, p.conversation);
   });
   defineTypedCommand("list_chat_history", (p) => loadHistoryIndex(p.repoRoot));
+  defineTypedCommand("import_cli_chats", () => importAllCliChats("manual"));
   defineTypedCommand("search_chat_history", (p) =>
     searchChatHistory(p.repoRoot, p.query),
   );

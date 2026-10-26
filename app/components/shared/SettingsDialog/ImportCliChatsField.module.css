@@ -1,0 +1,16 @@
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.status {
+  margin-top: var(--space-2);
+  font: var(--type-caption);
+  color: var(--text-muted);
+}
+
+.error {
+  color: var(--error);
+}

@@ -5228,6 +5228,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct ImportCliChatsResult: Codable, Sendable {
+      public var imported: Double
+      public var projects: Double
+
+      enum CodingKeys: String, CodingKey {
+        case imported = "imported"
+        case projects = "projects"
+      }
+
+      public init(imported: Double, projects: Double) {
+        self.imported = imported
+        self.projects = projects
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(imported, forKey: .imported)
+        try c.encode(projects, forKey: .projects)
+      }
+    }
+
     public struct InspectionCaptureParams: Codable, Sendable {
       public var deviceKey: String
 
@@ -10766,6 +10787,13 @@ extension ArgusProtocol {
       public typealias Result = Bool
       public static let name = "huddle_stop"
       public static let tier = "host"
+    }
+
+    public enum ImportCliChats: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.CommandsTypes.ImportCliChatsResult
+      public static let name = "import_cli_chats"
+      public static let tier = "admin"
     }
 
     public enum InspectionCapture: RemoteCommand {

@@ -109,6 +109,8 @@ export const AppSettings = z.object({
   theme: z.enum(["dark", "light", "system"]).optional(),
   /** Accent and surface tint layered on the scheme. */
   color_theme: ColorTheme.optional(),
+  /** Pull chats run with the plain Claude Code CLI into project history. On by default. */
+  import_cli_chats: z.boolean().optional(),
   /** Display size. */
   ui_scale: z
     .enum(["default", "large", "larger", "small", "smaller"])

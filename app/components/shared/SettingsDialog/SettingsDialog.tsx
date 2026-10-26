@@ -96,6 +96,7 @@ import { ClaudeAccountSection } from "./ClaudeAccountSection";
 import { CustomRunnersSection } from "./CustomRunnersSection";
 import { FollowUpSuggestionsToggle } from "./FollowUpSuggestionsToggle";
 import { HostsSection } from "./HostsSection";
+import { ImportCliChatsField } from "./ImportCliChatsField";
 import { RemoteAccessSection } from "./RemoteAccessSection";
 import styles from "./SettingsDialog.module.css";
 import { ToolsSection } from "./ToolsSection";
@@ -480,6 +481,7 @@ function PermissionsSection() {
             ))}
           </div>
         </SettingsScreenField>
+        <ImportCliChatsField />
         <AutomationsToggle />
         <AutomationDefaults />
       </SettingsScreenDetailBody>

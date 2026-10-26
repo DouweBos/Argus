@@ -149,8 +149,11 @@ public struct RemoteStoppedAgent: Codable, Hashable, Sendable, Identifiable {
   public var messageCount: Int
   public var startedAt: Double
   public var endedAt: Double
+  /// Another app the chat was read in from (`claude_code`); nil when it ran here.
+  public var importedFrom: String?
 
   public var id: String { historyId }
+  public var isImported: Bool { importedFrom != nil }
 
   enum CodingKeys: String, CodingKey {
     case historyId = "history_id"
@@ -159,6 +162,7 @@ public struct RemoteStoppedAgent: Codable, Hashable, Sendable, Identifiable {
     case messageCount = "message_count"
     case startedAt = "started_at"
     case endedAt = "ended_at"
+    case importedFrom = "imported_from"
   }
 }
 
