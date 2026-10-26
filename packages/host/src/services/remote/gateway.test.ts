@@ -9,6 +9,7 @@ vi.mock("../../state", () => ({
   appState: {
     agents: new Map(),
     agentPendingPermissions: new Map(),
+    sessions: new Map([["s1", { id: "s1", repo_root: "/r" }]]),
   },
 }));
 vi.mock("../agent/agentService", () => ({
@@ -431,6 +432,25 @@ describe("connection.typed_events", () => {
       "ipc:session:created",
       "sessions.changed",
     ]);
+  });
+
+  it("refreshes the session list when a session's setup finishes", async () => {
+    const { conn, send, fromGateway } = connect(["admin"]);
+    await send({
+      type: "req",
+      id: "t",
+      method: "connection.typed_events",
+      params: { on: true },
+    });
+    fromGateway.length = 0;
+    conn.handleBroadcast("session:status:s1", ["ready"]);
+    expect(eventNames(fromGateway)).toEqual([
+      "ipc:session:status:s1",
+      "sessions.changed",
+    ]);
+    expect(
+      (fromGateway[1] as unknown as { payload: { repo_root: string } }).payload,
+    ).toEqual({ repo_root: "/r" });
   });
 
   it("can be switched back off", async () => {
