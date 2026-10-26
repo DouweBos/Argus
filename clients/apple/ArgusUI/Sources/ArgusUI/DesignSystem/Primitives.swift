@@ -368,7 +368,11 @@ public struct Chip: View {
     .clipShape(Capsule())
 
     if let action {
-      Button(action: action) { content }.buttonStyle(.plain)
+      Button(action: action) { content }
+        .buttonStyle(.plain)
+        #if os(macOS)
+          .pointerStyle(.link)
+        #endif
     } else {
       content
     }
