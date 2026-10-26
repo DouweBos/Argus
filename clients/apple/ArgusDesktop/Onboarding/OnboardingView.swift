@@ -12,18 +12,15 @@ struct OnboardingView: View {
     VStack(spacing: 0) {
       Stepper(current: onboarding.step).padding(.vertical, 14)
       Divider()
-      ScrollView {
-        Group {
-          switch onboarding.step {
-          case .welcome: OnboardingWelcomeStep(onboarding: onboarding)
-          case .privacy: OnboardingPrivacyStep(onboarding: onboarding)
-          case .setup: OnboardingSetupStep(onboarding: onboarding)
-          case .project: OnboardingProjectStep(onboarding: onboarding)
-          }
+      Group {
+        switch onboarding.step {
+        case .welcome: OnboardingWelcomeStep(onboarding: onboarding)
+        case .privacy: OnboardingPrivacyStep(onboarding: onboarding)
+        case .setup: OnboardingSetupStep(onboarding: onboarding)
+        case .project: OnboardingProjectStep(onboarding: onboarding)
         }
-        .padding(28)
-        .frame(maxWidth: .infinity, alignment: .leading)
       }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     .frame(width: 680, height: 620)
     .background(theme.bg)
@@ -34,7 +31,7 @@ struct OnboardingView: View {
   }
 }
 
-/// Title, subtitle and the step's body, with the footer pinned under it.
+/// Title, subtitle and the step's body scroll; the footer stays pinned to the bottom.
 struct OnboardingPage<Content: View, Footer: View>: View {
   let title: String
   let subtitle: String
@@ -44,17 +41,25 @@ struct OnboardingPage<Content: View, Footer: View>: View {
   @Environment(\.theme) private var theme
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 18) {
-      VStack(alignment: .leading, spacing: 6) {
-        Text(title).font(.scaled(size: 24, weight: .semibold)).foregroundStyle(theme.text)
-        Text(subtitle).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
+    VStack(spacing: 0) {
+      ScrollView {
+        VStack(alignment: .leading, spacing: 18) {
+          VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.scaled(size: 24, weight: .semibold)).foregroundStyle(theme.text)
+            Text(subtitle).foregroundStyle(theme.textSecondary).fixedSize(horizontal: false, vertical: true)
+          }
+          content
+        }
+        .padding(28)
+        .frame(maxWidth: .infinity, alignment: .leading)
       }
-      content
+      Divider()
       HStack(spacing: 10) {
         if let onBack { Button("Back", action: onBack) }
         footer
       }
-      .padding(.top, 6)
+      .padding(.horizontal, 28)
+      .padding(.vertical, 16)
     }
   }
 }
