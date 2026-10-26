@@ -16,6 +16,7 @@ extension DesktopRoute {
     case ("inbox", 1): self = .inbox
     case ("inbox", 3) where parts[1] == "proposals": self = .proposal(id: parts[2])
     case ("notifications", 1): self = .notifications
+    case ("usage", 1): self = .usage
     case ("pull-requests", 1): self = .pullRequests
     case ("pull-requests", 4):
       guard let number = Int(parts[3]) else { return nil }
@@ -62,6 +63,7 @@ extension DesktopRoute {
     case .inbox: "/inbox"
     case .proposal(let id): "/inbox/proposals/\(Self.encode(id))"
     case .notifications: "/notifications"
+    case .usage: "/usage"
     case .pullRequests: "/pull-requests"
     case .pullRequest(let repo, let number): "/pull-requests/\(repo)/\(number)"
     case .automations: "/automations"

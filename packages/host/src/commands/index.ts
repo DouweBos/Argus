@@ -21,6 +21,7 @@ import { registerRemoteCommands } from "./remote";
 import { registerSessionCommands } from "./sessions";
 import { registerSettingsCommands } from "./settings";
 import { registerTerminalCommands } from "./terminals";
+import { registerUsageCommands } from "./usage";
 
 export function registerHostCommands(): void {
   registerFileCommands();
@@ -40,4 +41,5 @@ export function registerHostCommands(): void {
   registerMcpCommands();
   registerGithubCommands();
   registerGitRunnerCommands();
+  registerUsageCommands();
 }

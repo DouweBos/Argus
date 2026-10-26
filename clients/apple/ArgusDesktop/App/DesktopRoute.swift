@@ -36,6 +36,8 @@ enum DesktopRoute: Hashable {
   case proposal(id: String)
   /// `/notifications`: warnings and errors.
   case notifications
+  /// `/usage`: Claude plan limits per account.
+  case usage
 
   var sessionId: String? {
     switch self {
@@ -82,6 +84,7 @@ enum DesktopRoute: Hashable {
     case .inbox: "/inbox"
     case .proposal: "/inbox/proposals/:proposalId"
     case .notifications: "/notifications"
+    case .usage: "/usage"
     }
   }
 }

@@ -50,6 +50,7 @@ enum Route: Hashable {
   case notifications
   case computers
   case claudeAccounts
+  case usage
 
   /// The pattern only — never a project, branch, agent or device name. The
   /// desktop's `routePattern()` does the same thing for the same reason: a
@@ -91,6 +92,7 @@ enum Route: Hashable {
     case .notifications: "notifications"
     case .computers: "computers"
     case .claudeAccounts: "claude_accounts"
+    case .usage: "usage"
     }
   }
 }

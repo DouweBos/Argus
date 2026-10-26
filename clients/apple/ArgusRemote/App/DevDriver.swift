@@ -291,6 +291,7 @@
       case "proposal": self = .proposal(id: arg(1))
       case "describeAutomation": self = .describeAutomation
       case "notifications": self = .notifications
+      case "usage": self = .usage
       case "automations": self = .automations
       case "automation": self = .automation(id: arg(1), label: arg(2))
       case "run": self = .run(id: arg(1), label: arg(2))

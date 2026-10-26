@@ -2507,6 +2507,59 @@ extension ArgusProtocol {
     }
   }
 
+  public struct ClaudeAccountLimitsStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let failed = ClaudeAccountLimitsStatus(rawValue: "failed")
+    public static let ok = ClaudeAccountLimitsStatus(rawValue: "ok")
+    public static let unsupported = ClaudeAccountLimitsStatus(rawValue: "unsupported")
+  }
+
+  public struct ClaudeAccountLimits: Codable, Sendable {
+    public var accountId: String
+    public var label: String
+    public var status: ClaudeAccountLimitsStatus
+    public var subscriptionType: String?
+    public var windows: [UsageLimitWindow]
+    public var checkedAt: Double
+
+    enum CodingKeys: String, CodingKey {
+      case accountId = "account_id"
+      case label = "label"
+      case status = "status"
+      case subscriptionType = "subscription_type"
+      case windows = "windows"
+      case checkedAt = "checked_at"
+    }
+
+    public init(accountId: String, label: String, status: ClaudeAccountLimitsStatus, subscriptionType: String? = nil, windows: [UsageLimitWindow], checkedAt: Double) {
+      self.accountId = accountId
+      self.label = label
+      self.status = status
+      self.subscriptionType = subscriptionType
+      self.windows = windows
+      self.checkedAt = checkedAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(accountId, forKey: .accountId)
+      try c.encode(label, forKey: .label)
+      try c.encode(status, forKey: .status)
+      try c.encode(subscriptionType, forKey: .subscriptionType)
+      try c.encode(windows, forKey: .windows)
+      try c.encode(checkedAt, forKey: .checkedAt)
+    }
+  }
+
   public struct ClaudeAccountsState: Codable, Sendable {
     public var accounts: [ClaudeAccount]
     public var activeId: String
@@ -2602,6 +2655,23 @@ extension ArgusProtocol {
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(url, forKey: .url)
+    }
+  }
+
+  public struct ClaudeUsageLimits: Codable, Sendable {
+    public var accounts: [ClaudeAccountLimits]
+
+    enum CodingKeys: String, CodingKey {
+      case accounts = "accounts"
+    }
+
+    public init(accounts: [ClaudeAccountLimits]) {
+      self.accounts = accounts
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(accounts, forKey: .accounts)
     }
   }
 
@@ -13966,6 +14036,79 @@ extension ArgusProtocol {
       try c.encode(path, forKey: .path)
       try c.encode(size, forKey: .size)
     }
+  }
+
+  public struct UsageLimitWindowKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let monthly = UsageLimitWindowKind(rawValue: "monthly")
+    public static let session = UsageLimitWindowKind(rawValue: "session")
+    public static let weekly = UsageLimitWindowKind(rawValue: "weekly")
+  }
+
+  public struct UsageLimitWindow: Codable, Sendable {
+    public var id: String
+    public var kind: UsageLimitWindowKind
+    public var label: String
+    public var usedPercent: Double
+    public var resetsAt: Double?
+    public var windowMinutes: Double?
+    public var pace: UsagePace?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case kind = "kind"
+      case label = "label"
+      case usedPercent = "used_percent"
+      case resetsAt = "resets_at"
+      case windowMinutes = "window_minutes"
+      case pace = "pace"
+    }
+
+    public init(id: String, kind: UsageLimitWindowKind, label: String, usedPercent: Double, resetsAt: Double? = nil, windowMinutes: Double? = nil, pace: UsagePace? = nil) {
+      self.id = id
+      self.kind = kind
+      self.label = label
+      self.usedPercent = usedPercent
+      self.resetsAt = resetsAt
+      self.windowMinutes = windowMinutes
+      self.pace = pace
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(label, forKey: .label)
+      try c.encode(usedPercent, forKey: .usedPercent)
+      try c.encode(resetsAt, forKey: .resetsAt)
+      try c.encode(windowMinutes, forKey: .windowMinutes)
+      try c.encode(pace, forKey: .pace)
+    }
+  }
+
+  public struct UsagePace: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let ahead = UsagePace(rawValue: "ahead")
+    public static let on = UsagePace(rawValue: "on")
+    public static let under = UsagePace(rawValue: "under")
   }
 
   public struct UserProjectSettings: Codable, Sendable {

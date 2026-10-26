@@ -60,3 +60,61 @@
   color: var(--text-muted);
   white-space: nowrap;
 }
+
+.footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.aside {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.warning .aside {
+  color: var(--warning);
+}
+.danger .aside {
+  color: var(--error);
+}
+
+/* Large: a card's worth of meter — label on top, the figure big. */
+.lg {
+  gap: 10px;
+  min-width: 0;
+  padding: 0;
+}
+
+.lg .row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.lg .label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-secondary);
+}
+
+.lg .value {
+  font-family: inherit;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.lg .track {
+  height: 6px;
+}
+
+.lg .hint,
+.lg .aside {
+  font-family: inherit;
+  font-size: 11px;
+}

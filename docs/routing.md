@@ -37,6 +37,7 @@ switching tabs is a navigation, not a second source of truth. See
 | `/pull-requests`                                | Pull requests                           | GitHub PRs of interest across open projects.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `/pull-requests/:owner/:repo/:number`           | Pull request detail                     | Single PR view: description, checks, files, comments.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `/runtimes`                                     | Runtimes overview                       | All running dev servers / terminals.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `/usage`                                        | Usage → Limits                          | How much of each Claude plan limit is left — the 5-hour session, the weekly caps and monthly spend — per signed-in account, with reset countdowns and pace. Tabs are part of the URL; Limits owns the bare `/usage`, and further tabs get `/usage/:tab`.                                                                                                                                                                                                                                                                                 |
 | `/sessions/:sessionId`                          | Session (defaults to home)              | Equivalent to `/sessions/:sessionId/home`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `/sessions/:sessionId/agents`                   | Session → Agents panel                  | Claude Code agents for this session.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `/sessions/:sessionId/code`                     | Session → Code panel (Mac app)          | `?path=` the worktree-relative file on screen, `?line=` the 1-based line to reveal. Opening a file at a line from anywhere (chat links, diffs, blame, search) is one navigation to this route. The tab list itself is per-session view state, not a route.                                                                                                                                                                                                                                                                               |
@@ -65,7 +66,8 @@ interface ParsedRoute {
     | "pull-request-detail"
     | "pull-requests"
     | "runtimes"
-    | "session";
+    | "session"
+    | "usage";
   sessionId: string | null; // set when view === "session"
   panel: "agents" | "git" | "home"; // only meaningful when view === "session"
   gitView:
@@ -88,6 +90,7 @@ interface ParsedRoute {
     | null; // only meaningful when panel === "git"
   gitRefName: string | null; // set when gitView is "branches"/"tags" and a name segment follows
   proposalId: string | null; // set on /inbox/proposals/:proposalId
+  usageTab: "limits" | null; // set on /usage and below
   automationId: string | null; // set on /automations/:automationId and below
   automationQuick: boolean; // true on /automations/quick and below
   automationRunId: string | null; // set on either …/runs/:runId
@@ -147,6 +150,7 @@ whichever reads best:
 | `setCenterView(view)`        | `/{view}`                                                   |
 | `openInbox()`                | `/inbox`                                                    |
 | `openProposal(id)`           | `/inbox/proposals/{id}`                                     |
+| `openUsage(tab?)`            | `/usage` (Limits), `/usage/{tab}` for later tabs            |
 | `openAutomations()`          | `/automations`                                              |
 | `openAutomation(id)`         | `/automations/{id}`                                         |
 | `openAutomationRun(id, run)` | `/automations/{id}/runs/{run}`                              |

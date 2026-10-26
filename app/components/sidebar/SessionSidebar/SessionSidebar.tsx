@@ -223,6 +223,9 @@ export function SessionSidebar() {
         >
           Pull requests
         </SidebarNavItem>
+        <SidebarNavItem view="usage" leading={<Icons.GaugeIcon size={12} />}>
+          Usage
+        </SidebarNavItem>
       </SidebarNavGroup>
 
       <SidebarScroll>

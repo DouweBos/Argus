@@ -5422,6 +5422,23 @@ extension ArgusProtocol {
         try c.encode(exitCode, forKey: .exitCode)
       }
     }
+
+    public struct UsageLimitsParams: Codable, Sendable {
+      public var refresh: Bool?
+
+      enum CodingKeys: String, CodingKey {
+        case refresh = "refresh"
+      }
+
+      public init(refresh: Bool? = nil) {
+        self.refresh = refresh
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(refresh, forKey: .refresh)
+      }
+    }
   }
 
   /// The typed remote methods (`REMOTE_METHODS`), monitor and control tier.
@@ -6222,6 +6239,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.TerminalsScrollbackParams
       public typealias Result = ArgusProtocol.MethodsTypes.TerminalsScrollbackResult
       public static let name = "terminals.scrollback"
+    }
+
+    public enum UsageLimits: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.UsageLimitsParams
+      public typealias Result = ArgusProtocol.ClaudeUsageLimits
+      public static let name = "usage.limits"
     }
   }
 }

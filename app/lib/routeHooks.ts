@@ -10,6 +10,7 @@ import type {
   ParsedRoute,
   PullRequestRef,
   SessionPanel,
+  UsageTab,
 } from "./router";
 import type { HostId } from "./transport/hostId";
 import { useMemo } from "react";
@@ -53,4 +54,9 @@ export function useRouteGitView(): GitSubView | null {
 
 export function useRouteGitRefName(): string | null {
   return useCurrentRoute().gitRefName;
+}
+
+/** The usage tab in view; `limits` off the usage screen too, so callers need no fallback. */
+export function useRouteUsageTab(): UsageTab {
+  return useCurrentRoute().usageTab ?? "limits";
 }

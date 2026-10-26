@@ -4,6 +4,7 @@
  * reads). No local Zustand state lives here.
  */
 
+import type { UsageTab } from "../lib/router";
 import { useRouteView } from "../lib/routeHooks";
 import { appNavigate, getCurrentRoute } from "../lib/router";
 
@@ -16,10 +17,16 @@ export type CenterView =
   | "notifications"
   | "pull-request-detail"
   | "pull-requests"
-  | "runtimes";
+  | "runtimes"
+  | "usage";
 
 export const setCenterView = (view: CenterView): void => {
   appNavigate({ view });
+};
+
+/** `/usage` — plan limits, and later cost and tokens, each tab its own URL. */
+export const openUsage = (tab: UsageTab = "limits"): void => {
+  appNavigate({ view: "usage", usageTab: tab });
 };
 
 export const useCenterView = (): CenterView => {

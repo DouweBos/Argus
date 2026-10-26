@@ -3,6 +3,9 @@ import styles from "./UsageMeter.module.css";
 
 export type UsageTone = "accent" | "danger" | "warning";
 
+/** `sm` fits a status strip; `lg` is a card on a full screen. */
+export type UsageMeterSize = "lg" | "sm";
+
 export interface UsageMeterProps extends HTMLAttributes<HTMLDivElement> {
   label: ReactNode;
   value: ReactNode;
@@ -11,6 +14,9 @@ export interface UsageMeterProps extends HTMLAttributes<HTMLDivElement> {
   tone?: UsageTone;
   /** Optional trailing text (e.g. "resets in 2h 13m"). */
   hint?: ReactNode;
+  /** Right-aligned beside the hint (e.g. "On pace"). */
+  aside?: ReactNode;
+  size?: UsageMeterSize;
 }
 
 export function UsageMeter({
@@ -19,6 +25,8 @@ export function UsageMeter({
   progress,
   tone = "accent",
   hint,
+  aside,
+  size = "sm",
   className,
   ...rest
 }: UsageMeterProps) {
@@ -30,10 +38,13 @@ export function UsageMeter({
     warning: styles.warning,
   };
   const toneClass = toneClassMap[tone];
+  const sizeClass = size === "lg" ? styles.lg : "";
 
   return (
     <div
-      className={[styles.meter, toneClass, className].filter(Boolean).join(" ")}
+      className={[styles.meter, toneClass, sizeClass, className]
+        .filter(Boolean)
+        .join(" ")}
       {...rest}
     >
       <div className={styles.row}>
@@ -41,11 +52,22 @@ export function UsageMeter({
         <span className={styles.value}>{value}</span>
       </div>
       {pct != null && (
-        <div className={styles.track}>
+        <div
+          className={styles.track}
+          role="meter"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(pct)}
+        >
           <div className={styles.fill} style={{ width: `${pct}%` }} />
         </div>
       )}
-      {hint != null && <div className={styles.hint}>{hint}</div>}
+      {(hint != null || aside != null) && (
+        <div className={styles.footer}>
+          <span className={styles.hint}>{hint}</span>
+          {aside != null && <span className={styles.aside}>{aside}</span>}
+        </div>
+      )}
     </div>
   );
 }

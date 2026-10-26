@@ -259,6 +259,13 @@ export type {
   ClaudeAuthStatus,
 } from "@argus/remote-protocol";
 
+export type {
+  ClaudeAccountLimits,
+  ClaudeUsageLimits,
+  UsageLimitWindow,
+  UsagePace,
+} from "@argus/remote-protocol";
+
 // Onboarding
 // ---------------------------------------------------------------------------
 

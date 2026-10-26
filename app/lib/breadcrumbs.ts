@@ -13,6 +13,7 @@ const VIEW_TITLES: Record<string, string> = {
   "pull-request-detail": "Pull requests",
   "pull-requests": "Pull requests",
   runtimes: "Runtimes",
+  usage: "Usage",
 };
 
 /** Navigation the trail hands back to the caller, so this file stays pure. */

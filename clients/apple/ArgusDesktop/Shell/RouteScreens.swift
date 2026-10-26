@@ -7,7 +7,7 @@ struct RouteScreen: View {
 
   static func handles(_ route: DesktopRoute) -> Bool {
     switch route {
-    case .automations, .quickRun, .automation, .inbox, .proposal, .notifications: true
+    case .automations, .quickRun, .automation, .inbox, .proposal, .notifications, .usage: true
     default: false
     }
   }
@@ -20,6 +20,7 @@ struct RouteScreen: View {
     case .inbox: InboxScreen()
     case .proposal(let id): ProposalScreen(proposalId: id).id(id)
     case .notifications: NotificationsScreen()
+    case .usage: UsageScreen()
     default: EmptyView()
     }
   }
