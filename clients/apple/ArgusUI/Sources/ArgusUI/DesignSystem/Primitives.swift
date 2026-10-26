@@ -208,6 +208,8 @@ public struct Btn: View {
   var tone: ButtonTone = .primary
   var small = false
   var icon: String?
+  /// Sized to its label, for a row of buttons rather than a stack.
+  var hugs = false
   let action: () -> Void
 
   public init(
@@ -215,12 +217,14 @@ public struct Btn: View {
     tone: ButtonTone = .primary,
     small: Bool = false,
     icon: String? = nil,
+    hugs: Bool = false,
     action: @escaping () -> Void
   ) {
     self.label = label
     self.tone = tone
     self.small = small
     self.icon = icon
+    self.hugs = hugs
     self.action = action
   }
 
@@ -232,7 +236,7 @@ public struct Btn: View {
         }
         Text(label).font(.scaled(size: small ? 13 : 15, weight: .semibold))
       }
-      .frame(maxWidth: tone == .ghost ? nil : Layout.maxControlWidth)
+      .frame(maxWidth: tone == .ghost || hugs ? nil : Layout.maxControlWidth)
       .padding(.vertical, small ? 7 : 11)
       .padding(.horizontal, small ? 12 : 14)
       .foregroundStyle(foreground)
@@ -243,7 +247,7 @@ public struct Btn: View {
           .stroke(border, lineWidth: tone == .secondary ? 1 : 0))
       // Centre the capped button in whatever space it was given, rather than
       // letting it sit against the leading edge of a wide layout.
-      .frame(maxWidth: tone == .ghost ? nil : .infinity, alignment: .center)
+      .frame(maxWidth: tone == .ghost || hugs ? nil : .infinity, alignment: .center)
     }
     .buttonStyle(.plain)
     .opacity(isEnabled ? 1 : 0.4)

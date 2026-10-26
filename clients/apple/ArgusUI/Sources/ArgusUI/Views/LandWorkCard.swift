@@ -42,7 +42,7 @@ public struct LandWorkCard: View {
 
   public var body: some View {
     Card {
-      SectionHeader(title: "Land this work")
+      header
 
       if let note {
         MutedText(note, lineLimit: 3)
@@ -50,53 +50,49 @@ public struct LandWorkCard: View {
 
       if hasUncommitted {
         ThemedTextField(placeholder: "Commit message", text: $message, multiline: true)
-        if allowsAmend {
-          Toggle(isOn: $amend) { MutedText("Amend the last commit") }
-            .tint(theme.accent)
+        HStack(spacing: 12) {
+          MutedText(changeSummary)
+          if allowsAmend {
+            Toggle(isOn: $amend) { MutedText("Amend last commit") }
+              .tint(theme.accent)
+              .fixedSize()
+          }
+          Spacer(minLength: 0)
+          Btn(
+            label: busy == "commit" ? "Committing…" : amend ? "Amend" : "Commit all",
+            small: true, icon: Icon.check, hugs: true
+          ) { commit() }
+          .disabled(!canCommit)
         }
-        Btn(
-          label: busy == "commit"
-            ? "Committing…" : amend ? "Amend with all changes" : "Commit all changes",
-          small: true
-        ) {
-          commit()
-        }
-        .disabled(!canCommit)
       } else {
-        MutedText("Nothing uncommitted — the working tree is clean.")
-      }
-
-      Btn(
-        label: busy == "push" ? "Pushing…" : pushLabel, tone: .secondary, small: true,
-        icon: Icon.branch
-      ) { push() }
-        .disabled(busy != nil)
-
-      Btn(label: "Open pull request", tone: .secondary, small: true, icon: Icon.repo) {
-        openingPullRequest = true
-      }
-      .disabled(busy != nil)
-
-      // The base is what a merge lands on, and a session created against a
-      // remote ref can't merge at all until it points somewhere local.
-      HStack {
-        MutedText("Base branch: \(baseLabel)")
-        Spacer()
-        Btn(label: "Change", tone: .ghost, small: true) { changingBase = true }
-          .disabled(busy != nil)
-      }
-
-      if !blockers.isEmpty {
-        // The computer would refuse anyway; saying why beats a failed tap.
-        ForEach(blockers, id: \.self) { blocker in
-          Banner(text: blocker, tone: .warning)
+        HStack(spacing: 6) {
+          Image(systemName: Icon.check)
+            .font(.scaled(size: 11, weight: .semibold))
+            .foregroundStyle(theme.success)
+          MutedText("Working tree clean")
         }
       }
-      Btn(
-        label: busy == "merge" ? "Merging…" : "Merge into base branch",
-        tone: .secondary, small: true
-      ) { confirmingMerge = true }
-        .disabled(busy != nil || !blockers.isEmpty)
+
+      // The computer would refuse anyway; saying why beats a failed tap.
+      ForEach(blockers, id: \.self) { blocker in
+        Banner(text: blocker, tone: .warning)
+      }
+
+      Divider().overlay(theme.border).padding(.vertical, 2)
+
+      ViewThatFits(in: .horizontal) {
+        HStack(spacing: 8) {
+          pushButton(hugs: true)
+          pullRequestButton(hugs: true)
+          Spacer(minLength: 0)
+          mergeButton(hugs: true)
+        }
+        VStack(spacing: 8) {
+          pushButton(hugs: false)
+          pullRequestButton(hugs: false)
+          mergeButton(hugs: false)
+        }
+      }
     }
     // Two buttons, no default: a squash rewrites the commits the agent
     // wrote, which is not something to do on someone's behalf.
@@ -126,10 +122,59 @@ public struct LandWorkCard: View {
     .task(id: status?.dirtyCount) { blockers = await host.mergeBlockers(sessionId: sessionId) }
   }
 
-  private var pushLabel: String {
-    guard let ahead = status?.ahead, ahead > 0 else { return "Push branch" }
+  /// The branch and where it lands; the base is what a merge targets, and a
+  /// session created against a remote ref can't merge until it points somewhere local.
+  private var header: some View {
+    HStack(spacing: 8) {
+      SectionHeader(title: "Land this work")
+      Spacer(minLength: 8)
+      Chip(
+        label: "\(status?.branch ?? "branch") → \(baseLabel)", icon: Icon.branch, mono: true
+      ) { changingBase = true }
+      .help("Change the base branch")
+      .disabled(busy != nil)
+    }
+  }
 
-    return "Push branch (\(ahead) ahead)"
+  private var changeSummary: String {
+    let count = status?.dirtyCount ?? 0
+    var text = count == 1 ? "1 changed file" : "\(count) changed files"
+    if let added = status?.diffAdditions, let removed = status?.diffDeletions {
+      text += " · +\(added) −\(removed)"
+    }
+    return text
+  }
+
+  private func pushButton(hugs: Bool) -> some View {
+    Btn(
+      label: busy == "push" ? "Pushing…" : pushLabel, tone: .secondary, small: true,
+      icon: Icon.push, hugs: hugs
+    ) { push() }
+    .disabled(busy != nil)
+  }
+
+  private func pullRequestButton(hugs: Bool) -> some View {
+    Btn(
+      label: "Open pull request", tone: .secondary, small: true, icon: Icon.pullRequest,
+      hugs: hugs
+    ) { openingPullRequest = true }
+    .disabled(busy != nil)
+  }
+
+  /// The way out once everything is committed, so it leads then.
+  private func mergeButton(hugs: Bool) -> some View {
+    Btn(
+      label: busy == "merge" ? "Merging…" : "Merge into \(session?.baseBranch ?? "base")",
+      tone: hasUncommitted || !blockers.isEmpty ? .secondary : .primary, small: true,
+      icon: Icon.merge, hugs: hugs
+    ) { confirmingMerge = true }
+    .disabled(busy != nil || !blockers.isEmpty)
+  }
+
+  private var pushLabel: String {
+    guard let ahead = status?.ahead, ahead > 0 else { return "Push" }
+
+    return "Push \(ahead) commit\(ahead == 1 ? "" : "s")"
   }
 
   private func commit() {
