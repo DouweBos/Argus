@@ -72,6 +72,11 @@
   font-weight: 500;
 }
 
+.card[data-preset="muted"] {
+  --swatch-canvas: var(--color-theme-muted-canvas);
+  --swatch-accent: var(--color-theme-muted-accent);
+}
+
 .card[data-preset="amber"] {
   --swatch-canvas: var(--color-theme-amber-canvas);
   --swatch-accent: var(--color-theme-amber-accent);

@@ -3293,6 +3293,7 @@ extension ArgusProtocol {
     public static let ember = ColorTheme(rawValue: "ember")
     public static let grove = ColorTheme(rawValue: "grove")
     public static let iris = ColorTheme(rawValue: "iris")
+    public static let muted = ColorTheme(rawValue: "muted")
     public static let ocean = ColorTheme(rawValue: "ocean")
     public static let rose = ColorTheme(rawValue: "rose")
   }

@@ -57,7 +57,7 @@ struct BranchesView: View {
       Toggle(isOn: $checkoutAfterCreate) {
         MutedText("Check out after creating")
       }
-      .tint(theme.accent)
+      .tint(theme.tint)
       Btn(label: creating ? "Creating…" : "Create branch", tone: .secondary, small: true) {
         create()
       }

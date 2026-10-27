@@ -9,10 +9,11 @@ import SwiftUI
 @Observable
 final class AppPreferences {
   static let shared = AppPreferences()
+  nonisolated static let colorThemeKey = "argus:color-theme"
 
   private enum Key {
     static let theme = "argus:theme"
-    static let colorTheme = "argus:color-theme"
+    static let colorTheme = AppPreferences.colorThemeKey
     static let displaySize = "argus:ui-scale"
     static let permissionMode = "argus:settings.defaultPermissionMode"
     static let defaultModel = "argus:settings.defaultModel"

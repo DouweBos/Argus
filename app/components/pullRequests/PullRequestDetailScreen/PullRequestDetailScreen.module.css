@@ -205,10 +205,12 @@
 .markdown a {
   color: var(--accent);
   text-decoration: none;
+  border-bottom: 1px solid var(--accent-glow);
+  transition: border-color var(--transition-base);
 }
 
 .markdown a:hover {
-  text-decoration: underline;
+  border-bottom-color: var(--accent);
 }
 
 .markdown blockquote {

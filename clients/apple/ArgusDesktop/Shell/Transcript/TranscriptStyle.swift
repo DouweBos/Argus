@@ -21,9 +21,9 @@ enum TranscriptStyle {
   static let rule = NSColor.separatorColor
   static let error = dynamic(light: Theme.light.error, dark: Theme.dark.error)
 
-  static let accent = dynamic(light: Theme.light.accent, dark: Theme.dark.accent)
+  static let accent = themed { accent, _, _ in accent }
   /// Links underline softly and in full on hover, as on the desktop.
-  static let linkUnderline = dynamic(light: Theme.light.accent.opacity(0.45), dark: Theme.dark.accent.opacity(0.45))
+  static let linkUnderline = themed { accent, _, _ in accent.opacity(0.45) }
 
   /// A fenced block: a scrim under the text and a hairline round it, as on the desktop.
   static let codeBlockBackground = dynamic(light: Theme.light.mediaBg.opacity(0.045), dark: Theme.dark.mediaBg.opacity(0.32))
@@ -36,11 +36,23 @@ enum TranscriptStyle {
     return appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
       ? purple.blended(withFraction: 0.35, of: .white) ?? purple : purple
   }
-  static let matchBackground = dynamic(
-    light: Theme.light.accent.opacity(0.22), dark: Theme.dark.accent.opacity(0.25))
-  /// Strong enough to find at a glance, light enough to keep the text readable.
-  static let currentMatchBackground = dynamic(
-    light: Theme.light.accent.opacity(0.6), dark: Theme.dark.accent.opacity(0.65))
+  static let matchBackground = themed { accent, scheme, muted in
+    accent.opacity(muted ? 0.16 : scheme == .light ? 0.22 : 0.25)
+  }
+  /// Strong enough to find at a glance, light enough to keep the text readable;
+  /// a monochrome accent under same-coloured text has to stay fainter.
+  static let currentMatchBackground = themed { accent, scheme, muted in
+    accent.opacity(muted ? 0.4 : scheme == .light ? 0.6 : 0.65)
+  }
+
+  /// The picked colour theme's accent, resolved at draw time.
+  private static func themed(_ make: @escaping @Sendable (Color, ColorScheme, Bool) -> Color) -> NSColor {
+    NSColor(name: nil) { appearance in
+      let scheme: ColorScheme = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? .dark : .light
+      let colorTheme = ColorTheme.sanitize(UserDefaults.standard.string(forKey: AppPreferences.colorThemeKey))
+      return NSColor(make(colorTheme.accent(for: scheme), scheme, colorTheme == .muted))
+    }
+  }
 
   private static func dynamic(light: Color, dark: Color) -> NSColor {
     let light = NSColor(light)

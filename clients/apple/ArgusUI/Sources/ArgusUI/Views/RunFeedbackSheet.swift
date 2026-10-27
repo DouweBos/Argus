@@ -53,7 +53,7 @@ public struct RunFeedbackSheet: View {
         ) {
           Toggle("It may withdraw or supersede what your note names", isOn: $allowClearing)
             .font(.scaled(size: 14))
-            .tint(theme.accent)
+            .tint(theme.tint)
         }
       }
       .navigationTitle("Give feedback")

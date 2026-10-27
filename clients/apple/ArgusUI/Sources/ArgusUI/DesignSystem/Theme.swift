@@ -23,6 +23,8 @@ public struct Theme: Sendable, Equatable {
   public var accentSoft: Color
   public var accentBorder: Color
   public var onAccent: Color
+  /// For system controls (`.tint`), which draw white labels and knobs on it.
+  public var tint: Color
   public var success: Color
   public var successSoft: Color
   public var warning: Color
@@ -53,7 +55,9 @@ public struct Theme: Sendable, Equatable {
   /// navigation look like themselves. The Mac draws its own flat chrome: one
   /// near-black (or white) canvas, hairlines instead of boxes. Peacock keeps
   /// the colours that carry meaning — the accent, and the status palette.
-  private static func base(accent: Color, accentSoft: Color, accentBorder: Color, onAccent: Color, scheme: ColorScheme) -> Theme {
+  private static func base(
+    accent: Color, accentSoft: Color, accentBorder: Color, onAccent: Color, tint: Color? = nil, scheme: ColorScheme
+  ) -> Theme {
     let neutrals = Neutrals.for(scheme)
     return Theme(
       scheme: scheme,
@@ -71,6 +75,7 @@ public struct Theme: Sendable, Equatable {
       accentSoft: accentSoft,
       accentBorder: accentBorder,
       onAccent: onAccent,
+      tint: tint ?? accent,
       success: scheme == .light ? Color(hex: 0x00A884) : Color(hex: 0x00D4AA),
       successSoft: (scheme == .light ? Color(hex: 0x00A884) : Color(hex: 0x00D4AA)).opacity(0.16),
       warning: scheme == .light ? Color(hex: 0xD69A00) : Color(hex: 0xFFD54A),
@@ -85,19 +90,9 @@ public struct Theme: Sendable, Equatable {
     )
   }
 
-  public static let dark = base(
-    accent: Color(hex: 0xF5A623),
-    accentSoft: Color(hex: 0xF5A623).opacity(0.12),
-    accentBorder: Color(hex: 0xF5A623).opacity(0.4),
-    onAccent: Color(hex: 0x15151C),
-    scheme: .dark)
-
-  public static let light = base(
-    accent: Color(hex: 0xC7861F),
-    accentSoft: Color(hex: 0xC7861F).opacity(0.14),
-    accentBorder: Color(hex: 0xC7861F).opacity(0.5),
-    onAccent: .white,
-    scheme: .light)
+  /// The default colour theme's tokens, for anything not told the user's pick.
+  public static let dark = resolved(for: .dark, colorTheme: .sanitize(nil))
+  public static let light = resolved(for: .light, colorTheme: .sanitize(nil))
 
   public static func resolved(for scheme: ColorScheme) -> Theme {
     scheme == .light ? .light : .dark
@@ -112,6 +107,8 @@ public struct Theme: Sendable, Equatable {
       accentSoft: accent.opacity(scheme == .light ? 0.14 : 0.12),
       accentBorder: accent.opacity(scheme == .light ? 0.5 : 0.4),
       onAccent: onAccent,
+      // A near-white tint would hide those white labels and knobs.
+      tint: colorTheme == .muted && scheme == .dark ? Color(hex: 0x6E6E7A) : accent,
       scheme: scheme)
   }
 }
@@ -121,6 +118,7 @@ extension ColorTheme {
   public func accent(for scheme: ColorScheme) -> Color {
     let (light, dark): (UInt32, UInt32) =
       switch self {
+      case .muted: (0x18181F, 0xECECF1)
       case .amber: (0xC7861F, 0xF5A623)
       case .grove: (0x23875A, 0x5FD39A)
       case .ocean: (0x2367B8, 0x5AA9F0)
@@ -134,7 +132,7 @@ extension ColorTheme {
   /// Text on a dark-scheme accent: each preset's own dark canvas.
   var darkOnAccent: Color {
     switch self {
-    case .amber: Color(hex: 0x15151C)
+    case .muted, .amber: Color(hex: 0x15151C)
     case .grove: Color(hex: 0x0F1512)
     case .ocean: Color(hex: 0x0F141B)
     case .ember: Color(hex: 0x1B1513)

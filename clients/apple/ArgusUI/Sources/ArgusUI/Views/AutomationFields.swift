@@ -53,7 +53,7 @@ public struct AutomationFields: View {
         ThemedTextField(placeholder: "What it does", text: $draft.description, multiline: true)
         Toggle("Enabled", isOn: $draft.enabled)
           .font(.scaled(size: 15))
-          .tint(theme.accent)
+          .tint(theme.tint)
       }
     }
     .sheet(item: $sheet) { which in sheetContent(which) }
@@ -84,7 +84,7 @@ public struct AutomationFields: View {
         if let preview = draft.schedulePreviewText() { schedulePreview(preview) }
         Toggle("Catch up after the computer was asleep", isOn: $draft.catchUp)
           .font(.scaled(size: 14))
-          .tint(theme.accent)
+          .tint(theme.tint)
       }
     }
   }

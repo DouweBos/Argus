@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import type { CSSProperties, ReactNode } from "react";
+import { COLOR_THEME_IDS } from "../lib/colorThemes";
 
 const meta: Meta = {
   title: "Foundations/Tokens",
@@ -110,11 +111,13 @@ export const Colors: Story = {
         <h3 className="eyebrow">Colour themes</h3>
         <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
           `html[data-color-theme]` swaps the accent family and tints the
-          backgrounds; derived overlays follow. Swatch tokens keep each preset's
-          own colours for pickers.
+          backgrounds; derived overlays follow. Muted, the default, is
+          monochrome: a near-white accent in dark, near-black in light, on the
+          neutral canvas. Swatch tokens keep each preset's own colours for
+          pickers.
         </p>
         <div style={row}>
-          {["amber", "grove", "ocean", "ember", "iris", "rose"].map((id) => (
+          {COLOR_THEME_IDS.map((id) => (
             <Token
               key={id}
               name={`--color-theme-${id}-*`}
