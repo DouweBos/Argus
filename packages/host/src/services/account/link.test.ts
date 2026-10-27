@@ -244,12 +244,14 @@ describe("account link", () => {
     await waitFor(() => status.getLinkState().kind === "linked");
 
     const trust = await import("./trust");
-    expect(
-      await trust.findAccountDevice(phone.member.noise_pub),
-    ).not.toBeNull();
+    await expect(
+      trust.findAccountDevice(phone.member.noise_pub),
+    ).resolves.not.toBeNull();
     await trust.blockAccountDevice(phone.id);
 
-    expect(await trust.findAccountDevice(phone.member.noise_pub)).toBeNull();
+    await expect(
+      trust.findAccountDevice(phone.member.noise_pub),
+    ).resolves.toBeNull();
   });
 
   it("ignores a forged entry from the service and keeps its state", async () => {
