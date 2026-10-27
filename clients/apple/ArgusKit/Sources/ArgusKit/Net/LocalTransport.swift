@@ -14,6 +14,9 @@ public actor LocalTransport {
   private static let tagMedia: UInt8 = 0x01
   private static let maxFrame = 64 * 1024 * 1024
   private static let requestTimeout: Duration = .seconds(30)
+  /// Commands that legitimately wait longer: a simulator boot waits for the
+  /// device to come up, and an EAS Simulator session takes minutes to start.
+  private static let longRequests: [String: Duration] = ["boot_simulator": .seconds(16 * 60)]
   private static let maxBackoff: Duration = .seconds(5)
 
   public let path: String
@@ -241,7 +244,7 @@ public actor LocalTransport {
         return try await self.awaitResponse(method, json)
       }
       group.addTask {
-        try await Task.sleep(for: Self.requestTimeout)
+        try await Task.sleep(for: Self.longRequests[method] ?? Self.requestTimeout)
         throw Transport.TransportError.timedOut
       }
       guard let first = try await group.next() else { throw Transport.TransportError.timedOut }
