@@ -47,14 +47,14 @@ public struct GuardrailFields: View {
 
       Toggle("Require green CI before an auto-merge", isOn: $guardrails.requireCleanCi)
         .font(.scaled(size: 14))
-        .tint(theme.accent)
+        .tint(theme.tint)
 
       Toggle(
         "Retry on another Claude account when a usage limit is hit",
         isOn: $guardrails.retryOtherAccounts
       )
       .font(.scaled(size: 14))
-      .tint(theme.accent)
+      .tint(theme.tint)
     }
   }
 

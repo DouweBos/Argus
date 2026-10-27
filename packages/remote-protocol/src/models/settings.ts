@@ -8,6 +8,7 @@ export const ColorTheme = z.enum([
   "ember",
   "grove",
   "iris",
+  "muted",
   "ocean",
   "rose",
 ]);
@@ -107,7 +108,7 @@ export const AppSettings = z.object({
   remote_notify_when_focused: z.boolean().optional(),
   // Preferences both desktop apps (Electron and Argus for Mac) read and write.
   theme: z.enum(["dark", "light", "system"]).optional(),
-  /** Accent and surface tint layered on the scheme. */
+  /** Accent and surface tint layered on the scheme. Absent means muted. */
   color_theme: ColorTheme.optional(),
   /** Pull chats run with the plain Claude Code CLI into project history. On by default. */
   import_cli_chats: z.boolean().optional(),

@@ -184,7 +184,7 @@ private struct AppearanceCard<Content: View>: View {
 
 #Preview {
   VStack(alignment: .leading, spacing: 16) {
-    ColorSchemeCards(selection: .constant(ThemePreference.system), colorTheme: .amber)
+    ColorSchemeCards(selection: .constant(ThemePreference.system), colorTheme: .muted)
     ColorThemeCards(selection: .constant(.grove))
   }
   .padding()

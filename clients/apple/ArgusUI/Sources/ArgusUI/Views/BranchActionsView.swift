@@ -269,7 +269,7 @@ public struct BranchNameSheet: View {
         }
         if offerCheckout {
           Toggle(isOn: $checkout) { MutedText("Check out after creating") }
-            .tint(theme.accent)
+            .tint(theme.tint)
         }
       }
       .navigationTitle(title)

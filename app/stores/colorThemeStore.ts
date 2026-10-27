@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { type ColorThemeId, isColorThemeId } from "@argus/peacock";
+import {
+  type ColorThemeId,
+  DEFAULT_COLOR_THEME,
+  isColorThemeId,
+} from "@argus/peacock";
 import { mirrorToHost, onHostPrefChange } from "../lib/hostPrefs";
 
 const STORAGE_KEY = "argus:color-theme";
@@ -14,7 +18,7 @@ function load(): ColorThemeId {
     // storage unavailable
   }
 
-  return "amber";
+  return DEFAULT_COLOR_THEME;
 }
 
 const store = create<{ theme: ColorThemeId }>(() => ({ theme: load() }));

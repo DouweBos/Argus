@@ -187,7 +187,7 @@ private struct Themed: ViewModifier {
     let theme = Theme.resolved(for: colorScheme, colorTheme: prefs.colorTheme)
     content
       .environment(\.theme, theme)
-      .tint(theme.accent)
+      .tint(theme.tint)
       .dynamicTypeSize(prefs.dynamicTypeSize)
       .controlSize(prefs.controlSize)
       .font(prefs.bodyFont)

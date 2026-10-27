@@ -20,13 +20,14 @@ public enum ThemePreference: String, CaseIterable, Sendable {
 }
 
 /// Colour theme presets, the ids of `html[data-color-theme]` in Peacock.
+/// Muted, monochrome, is what an unset preference resolves to.
 public enum ColorTheme: String, CaseIterable, Sendable {
-  case amber, grove, ocean, ember, iris, rose
+  case muted, amber, grove, ocean, ember, iris, rose
 
   public var label: String { rawValue.capitalized }
 
   public static func sanitize(_ raw: String?) -> ColorTheme {
-    raw.flatMap(ColorTheme.init(rawValue:)) ?? .amber
+    raw.flatMap(ColorTheme.init(rawValue:)) ?? .muted
   }
 }
 

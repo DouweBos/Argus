@@ -22,6 +22,10 @@ function Interactive({ initial }: { initial: ColorThemeId }) {
 }
 
 export const Default: Story = {
+  render: () => <Interactive initial="muted" />,
+};
+
+export const AmberSelected: Story = {
   render: () => <Interactive initial="amber" />,
 };
 

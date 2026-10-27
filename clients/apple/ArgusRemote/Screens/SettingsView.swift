@@ -98,6 +98,7 @@ struct SettingsView: View {
 
       Section {
         Toggle("Expand image reads", isOn: autoExpandImageReadsBinding)
+          .tint(theme.tint)
       } header: {
         Text("Transcript")
       } footer: {
@@ -124,6 +125,7 @@ struct SettingsView: View {
 
       Section {
         Toggle("Background push", isOn: pushBinding)
+          .tint(theme.tint)
       } footer: {
         Text(app.pushState.explanation)
       }
@@ -140,6 +142,7 @@ struct SettingsView: View {
 
       Section {
         Toggle("Anonymous usage & crash reports", isOn: telemetryBinding)
+          .tint(theme.tint)
       } header: {
         Text("Privacy")
       } footer: {

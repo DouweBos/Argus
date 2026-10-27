@@ -104,7 +104,7 @@ export interface EventMap {
     truncated: boolean;
   };
   color_theme_changed: {
-    theme: "amber" | "ember" | "grove" | "iris" | "ocean" | "rose";
+    theme: "amber" | "ember" | "grove" | "iris" | "muted" | "ocean" | "rose";
   };
   device_host_added: { has_identity_file: boolean; has_port: boolean };
   device_host_removed: undefined;

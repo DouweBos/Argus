@@ -47,7 +47,7 @@
 }
 .current .bullet {
   background: var(--accent);
-  color: var(--media-bg);
+  color: var(--accent-fg);
 }
 
 .upcoming {

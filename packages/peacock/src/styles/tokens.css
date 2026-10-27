@@ -426,6 +426,8 @@ pre,
 /* Preset swatches for theme pickers — fixed per preset, follow the scheme. */
 html,
 html[data-theme="dark"] {
+  --color-theme-muted-canvas: #15151c;
+  --color-theme-muted-accent: #ececf1;
   --color-theme-amber-canvas: #15151c;
   --color-theme-amber-accent: #f5a623;
   --color-theme-grove-canvas: #131a17;
@@ -441,6 +443,8 @@ html[data-theme="dark"] {
 }
 
 html[data-theme="light"] {
+  --color-theme-muted-canvas: #fafbfc;
+  --color-theme-muted-accent: #18181f;
   --color-theme-amber-canvas: #fafbfc;
   --color-theme-amber-accent: #c7861f;
   --color-theme-grove-canvas: #f7faf8;
@@ -517,6 +521,23 @@ html[data-theme="light"][data-color-theme]:not([data-color-theme="amber"]) {
     var(--bg-hover) 80%,
     var(--bg-tertiary)
   );
+}
+
+/* Muted (the default): a monochrome accent on the base canvas. */
+html:not([data-theme="light"])[data-color-theme="muted"] {
+  --accent: #ececf1;
+  --accent-hover: #ffffff;
+  --accent-secondary: #b4b4c2;
+  --accent-fg: #15151c;
+  --accent-gradient: linear-gradient(135deg, #ececf1, #9d9daf);
+}
+
+html[data-theme="light"][data-color-theme="muted"] {
+  --accent: #18181f;
+  --accent-hover: #33333d;
+  --accent-secondary: #3d3d4a;
+  --accent-fg: #ffffff;
+  --accent-gradient: linear-gradient(135deg, #18181f, #5c5c72);
 }
 
 html:not([data-theme="light"])[data-color-theme="grove"] {

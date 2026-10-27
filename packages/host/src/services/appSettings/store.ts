@@ -130,8 +130,15 @@ export interface AppSettings {
   // Preferences both desktop apps (Electron and Argus for Mac) read and
   // write, so switching apps keeps them.
   theme?: "dark" | "light" | "system";
-  /** Accent and surface tint layered on the scheme. */
-  color_theme?: "amber" | "ember" | "grove" | "iris" | "ocean" | "rose";
+  /** Accent and surface tint layered on the scheme. Absent means muted. */
+  color_theme?:
+    | "amber"
+    | "ember"
+    | "grove"
+    | "iris"
+    | "muted"
+    | "ocean"
+    | "rose";
   /** Pull chats run with the plain Claude Code CLI into project history. On by default. */
   import_cli_chats?: boolean;
   /** Display size. */

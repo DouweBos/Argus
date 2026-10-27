@@ -144,9 +144,9 @@ is a fixed literal, not the user's machine or any external origin.
 
 ## Appearance
 
-| Event                 | Source | When                                                                       | Extra props                                                           |
-| --------------------- | ------ | -------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `color_theme_changed` | main   | A desktop app (Electron or Argus for Mac) switches to another colour theme | `theme: "amber" \| "ember" \| "grove" \| "iris" \| "ocean" \| "rose"` |
+| Event                 | Source | When                                                                       | Extra props                                                                      |
+| --------------------- | ------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `color_theme_changed` | main   | A desktop app (Electron or Argus for Mac) switches to another colour theme | `theme: "amber" \| "ember" \| "grove" \| "iris" \| "muted" \| "ocean" \| "rose"` |
 
 ## Sessions
 
@@ -311,7 +311,7 @@ stay honest.
 | `ios_proposal_opened`                      | The inbox opened the run behind a proposal                                              | —                                                                                                                           |
 | `ios_follow_up_used`                       | A suggested reply was tapped into the message field                                     | —                                                                                                                           |
 | `ios_setting_changed`                      | A phone-local setting was toggled                                                       | `setting` (`auto_expand_image_reads`), `enabled`                                                                            |
-| `ios_color_theme_changed`                  | The phone switched to another colour theme                                              | `theme` (`amber`, `grove`, `ocean`, `ember`, `iris`, `rose`)                                                                |
+| `ios_color_theme_changed`                  | The phone switched to another colour theme                                              | `theme` (`muted`, `amber`, `grove`, `ocean`, `ember`, `iris`, `rose`)                                                       |
 | `ios_default_changed`                      | A default new work starts from was changed                                              | `setting` (`permission_mode`, `autonomy`), `value`                                                                          |
 | `ios_agent_start_submitted`                | The start sheet started an agent                                                        | `workspace` (`current`, `worktree`, `existing`), `changed_workspace` — picked something other than what the sheet opened on |
 | `ios_warnings_opened`                      | The Warnings & errors list was opened                                                   | `count`                                                                                                                     |

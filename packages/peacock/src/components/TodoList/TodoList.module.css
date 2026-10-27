@@ -152,7 +152,7 @@
 .completed .checkbox {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--accent-fg);
 }
 
 .inProgress .checkbox {

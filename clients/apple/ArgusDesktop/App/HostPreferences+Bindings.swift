@@ -13,7 +13,14 @@ extension HostPreferences {
   ) -> [Binding] {
     [
       enumSetting("theme", get: { prefs.theme }, set: { prefs.theme = $0 }),
-      enumSetting("color_theme", get: { prefs.colorTheme }, set: { prefs.colorTheme = $0 }),
+      // Only a picked theme: an unset one stays unset, so it follows the default.
+      Binding(
+        slot: .setting("color_theme"),
+        read: {
+          defaults.string(forKey: AppPreferences.colorThemeKey).flatMap(ColorTheme.init(rawValue:))
+            .map { .string($0.rawValue) }
+        },
+        write: { if case .string(let raw) = $0, let value = ColorTheme(rawValue: raw) { prefs.colorTheme = value } }),
       enumSetting("ui_scale", get: { prefs.displaySize }, set: { prefs.displaySize = $0 }),
       enumSetting(
         "default_permission_mode", get: { prefs.defaultPermissionMode }, set: { prefs.defaultPermissionMode = $0 }),

@@ -24,7 +24,7 @@ final class AppStore {
   var loaded = false
   var deviceName: String = UIDeviceName.current
   var themePreference: ThemePreference = .system
-  var colorTheme: ColorTheme = .amber
+  var colorTheme: ColorTheme = .muted
   /// Opens Read calls that returned an image, so screenshots show without a tap.
   var autoExpandImageReads = false
   /// The mode new agents started from this phone begin in; nil leaves it to

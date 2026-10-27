@@ -78,6 +78,22 @@ struct HostPreferencesTests {
     #expect(host.settings["default_permission_mode"] == .string("auto"))
   }
 
+  @Test func leavesAnUnpickedColourThemeUnset() async {
+    let f = Fixture()
+    defer { f.cleanUp() }
+    let host = FakeHost()
+
+    await f.sync.attach(host.io)
+
+    #expect(f.prefs.colorTheme == .muted)
+    #expect(host.settings["color_theme"] == nil)
+
+    f.prefs.colorTheme = .amber
+    f.sync.localChanged()
+    await f.sync.flush()
+    #expect(host.settings["color_theme"] == .string("amber"))
+  }
+
   @Test func handsTheHostWhatItLacks() async {
     let f = Fixture()
     defer { f.cleanUp() }

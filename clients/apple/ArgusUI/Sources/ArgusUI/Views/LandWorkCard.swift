@@ -54,7 +54,7 @@ public struct LandWorkCard: View {
           MutedText(changeSummary)
           if allowsAmend {
             Toggle(isOn: $amend) { MutedText("Amend last commit") }
-              .tint(theme.accent)
+              .tint(theme.tint)
               .fixedSize()
           }
           Spacer(minLength: 0)
@@ -235,6 +235,7 @@ public struct LandWorkCard: View {
 public struct OpenPullRequestSheet: View {
   @Environment(PullRequestsStore.self) private var store
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.theme) private var theme
 
   let sessionId: String
   let defaultTitle: String
@@ -260,6 +261,7 @@ public struct OpenPullRequestSheet: View {
             placeholder: "Description", text: $summary, multiline: true, lines: 4...12)
           Toggle("Open as a draft", isOn: $draft)
             .font(.scaled(size: 14))
+            .tint(theme.tint)
         }
         Btn(label: opening ? "Opening…" : "Open pull request") { open() }
           .disabled(opening || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
