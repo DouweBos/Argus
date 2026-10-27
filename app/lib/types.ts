@@ -401,3 +401,17 @@ export interface MoveWorktreesProgress {
 }
 
 export type { MoveWorktreesResult } from "@argus/remote-protocol";
+
+export type {
+  AccountApprovalState,
+  AccountConfig,
+  AccountConfigPatch,
+  AccountDeviceKey,
+  AccountGrantSetting,
+  AccountHost,
+  AccountJoinRequest,
+  AccountLinkState,
+  AccountLinkSurface,
+  AccountMemberInfo,
+  AccountStatus,
+} from "@argus/remote-protocol";

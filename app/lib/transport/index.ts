@@ -69,10 +69,23 @@ export function isRemoteMode(): boolean {
 }
 
 /**
+ * Account computers may have moved (a quick tunnel restarts on a new URL), so
+ * pick up their current addresses first — but never hold the window up long.
+ */
+async function refreshAccountAddresses(): Promise<void> {
+  const { refreshAccountHosts } = await import("../accountHosts");
+  await Promise.race([
+    refreshAccountHosts().catch(() => undefined),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ]);
+}
+
+/**
  * Restore last session's attachments. Hosts come up in parallel and none of
  * them blocks the others — or the window — from booting.
  */
 export async function initTransport(): Promise<void> {
+  await refreshAccountAddresses();
   const hostIds = getAttachedHostIds();
   if (hostIds.length === 0) {
     return;
