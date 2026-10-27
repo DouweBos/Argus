@@ -888,6 +888,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct CheckEasAccountParams: Codable, Sendable {
+      public var hostId: String?
+      public var token: String?
+
+      enum CodingKeys: String, CodingKey {
+        case hostId = "hostId"
+        case token = "token"
+      }
+
+      public init(hostId: String? = nil, token: String? = nil) {
+        self.hostId = hostId
+        self.token = token
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(hostId, forKey: .hostId)
+        try c.encodeIfPresent(token, forKey: .token)
+      }
+    }
+
     public struct CheckSshKeysResult: Codable, Sendable {
       public var keys: [SshKey]
 
@@ -7323,6 +7344,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct RemoveEasDeviceHostParams: Codable, Sendable {
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: String) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
     public struct RemovePathParams: Codable, Sendable {
       public var id: String
       public var relativePath: String
@@ -8865,6 +8903,47 @@ extension ArgusProtocol {
       }
     }
 
+    public struct UpdateEasDeviceHostParams: Codable, Sendable {
+      public var appId: String?
+      public var idleMinutes: Double?
+      public var label: String?
+      public var maxConcurrentSessions: Double?
+      public var maxSessionMinutes: Double?
+      public var token: String?
+      public var id: String
+
+      enum CodingKeys: String, CodingKey {
+        case appId = "appId"
+        case idleMinutes = "idleMinutes"
+        case label = "label"
+        case maxConcurrentSessions = "maxConcurrentSessions"
+        case maxSessionMinutes = "maxSessionMinutes"
+        case token = "token"
+        case id = "id"
+      }
+
+      public init(appId: String? = nil, idleMinutes: Double? = nil, label: String? = nil, maxConcurrentSessions: Double? = nil, maxSessionMinutes: Double? = nil, token: String? = nil, id: String) {
+        self.appId = appId
+        self.idleMinutes = idleMinutes
+        self.label = label
+        self.maxConcurrentSessions = maxConcurrentSessions
+        self.maxSessionMinutes = maxSessionMinutes
+        self.token = token
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(appId, forKey: .appId)
+        try c.encodeIfPresent(idleMinutes, forKey: .idleMinutes)
+        try c.encodeIfPresent(label, forKey: .label)
+        try c.encodeIfPresent(maxConcurrentSessions, forKey: .maxConcurrentSessions)
+        try c.encodeIfPresent(maxSessionMinutes, forKey: .maxSessionMinutes)
+        try c.encodeIfPresent(token, forKey: .token)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
     public struct UpdateQueuedMessageParams: Codable, Sendable {
       public var agentId: String
       public var id: String
@@ -9059,6 +9138,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.DeviceHostInput
       public typealias Result = ArgusProtocol.DeviceHost
       public static let name = "add_device_host"
+      public static let tier = "admin"
+    }
+
+    public enum AddEasDeviceHost: RemoteCommand {
+      public typealias Params = ArgusProtocol.EasDeviceHostInput
+      public typealias Result = ArgusProtocol.EasDeviceHost
+      public static let name = "add_eas_device_host"
       public static let tier = "admin"
     }
 
@@ -9409,6 +9495,13 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = ArgusProtocol.DependencyReport
       public static let name = "check_dependencies"
+      public static let tier = "admin"
+    }
+
+    public enum CheckEasAccount: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.CheckEasAccountParams
+      public typealias Result = ArgusProtocol.EasAccount
+      public static let name = "check_eas_account"
       public static let tier = "admin"
     }
 
@@ -11015,6 +11108,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum ListEasDeviceHosts: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.EasDeviceHost]
+      public static let name = "list_eas_device_hosts"
+      public static let tier = "admin"
+    }
+
     public enum ListEditors: RemoteCommand {
       public typealias Params = EmptyParams
       public typealias Result = [ArgusProtocol.EditorDescriptor]
@@ -11750,6 +11850,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum RemoveEasDeviceHost: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.RemoveEasDeviceHostParams
+      public typealias Result = IgnoredResult
+      public static let name = "remove_eas_device_host"
+      public static let tier = "admin"
+    }
+
     public enum RemovePath: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.RemovePathParams
       public typealias Result = IgnoredResult
@@ -12258,6 +12365,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.UnwatchSessionParams
       public typealias Result = IgnoredResult
       public static let name = "unwatch_session"
+      public static let tier = "admin"
+    }
+
+    public enum UpdateEasDeviceHost: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.UpdateEasDeviceHostParams
+      public typealias Result = ArgusProtocol.EasDeviceHost
+      public static let name = "update_eas_device_host"
       public static let tier = "admin"
     }
 

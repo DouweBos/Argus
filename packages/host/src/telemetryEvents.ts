@@ -24,6 +24,21 @@ type SessionKind =
   | "scratch_pad"
   | "worktree";
 type MergePhase = "attempt" | "continue";
+/** Mirrors `EasFailure` in `services/deviceHosts/eas/credential.ts`. */
+type EasFailure =
+  | "api"
+  | "auth_rejected"
+  | "cancelled"
+  | "invalid_credential"
+  | "ledger"
+  | "limit"
+  | "network"
+  | "no_app"
+  | "no_credential"
+  | "not_enabled"
+  | "session_ended"
+  | "stream"
+  | "timeout";
 type MergeAbortKind = "merge" | "rebase";
 type MergeStrategy = "keep" | "squash";
 type LspLanguage =
@@ -122,6 +137,22 @@ export interface EventMap {
       | "unsupported_arch";
     success: boolean;
   };
+  eas_account_checked: {
+    credential_source: "eas-login" | "env" | "none" | "settings";
+    failure: EasFailure | "none";
+    success: boolean;
+  };
+  eas_device_host_added: { has_app_id: boolean; has_token: boolean };
+  eas_device_host_removed: {
+    left_outstanding: boolean;
+    running_sessions: number;
+  };
+  eas_session_ended: {
+    duration_bucket: "<10m" | "<30m" | "<60m" | ">=60m" | "unknown";
+    reason: "closed" | "expired" | "host_removed" | "leftover" | "shutdown";
+  };
+  eas_session_start_failed: { reason: EasFailure };
+  eas_session_started: { wait_bucket: "<1m" | "<3m" | "<10m" | ">=10m" };
   follow_up_used: { method: "click" | "tab" };
   follow_ups_suggested: { count: number; success: boolean };
   host_lock_handover: { holder: "cli" | "electron" | "mac" };

@@ -279,11 +279,18 @@ export const RemoteDevice = z.object({
 });
 export type RemoteDevice = z.infer<typeof RemoteDevice>;
 
-/** A device host as a paired client sees it: no SSH target or key path. */
+/**
+ * A device host as a paired client sees it: no SSH target, key path, Expo
+ * token or project. `kind` is absent from hosts that predate EAS hosts.
+ */
 export const RemoteDeviceHost = z.object({
   id: z.string(),
   label: z.string(),
   status: z.enum(["connected", "unknown", "unreachable"]),
+  kind: z.enum(["eas", "ssh"]).optional(),
+  /** EAS only: sessions running or starting, and the host's limit. */
+  running_sessions: z.number().int().nonnegative().optional(),
+  max_sessions: z.number().int().positive().optional(),
 });
 export type RemoteDeviceHost = z.infer<typeof RemoteDeviceHost>;
 

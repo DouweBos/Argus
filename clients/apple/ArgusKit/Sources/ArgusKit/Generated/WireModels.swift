@@ -4850,6 +4850,138 @@ extension ArgusProtocol {
     }
   }
 
+  public struct EasAccountAppsItem: Codable, Sendable {
+    public var fullName: String
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+      case fullName = "fullName"
+      case id = "id"
+    }
+
+    public init(fullName: String, id: String) {
+      self.fullName = fullName
+      self.id = id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(fullName, forKey: .fullName)
+      try c.encode(id, forKey: .id)
+    }
+  }
+
+  public struct EasAccount: Codable, Sendable {
+    public var apps: [EasAccountAppsItem]
+    public var credentialSource: ExpoCredentialSource
+    public var signedInAs: String
+
+    enum CodingKeys: String, CodingKey {
+      case apps = "apps"
+      case credentialSource = "credentialSource"
+      case signedInAs = "signedInAs"
+    }
+
+    public init(apps: [EasAccountAppsItem], credentialSource: ExpoCredentialSource, signedInAs: String) {
+      self.apps = apps
+      self.credentialSource = credentialSource
+      self.signedInAs = signedInAs
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(apps, forKey: .apps)
+      try c.encode(credentialSource, forKey: .credentialSource)
+      try c.encode(signedInAs, forKey: .signedInAs)
+    }
+  }
+
+  public struct EasDeviceHost: Codable, Sendable {
+    public var appId: String?
+    public var error: String?
+    public var hasToken: Bool
+    public var id: String
+    public var idleMinutes: Double
+    public var label: String
+    public var maxConcurrentSessions: Double
+    public var maxSessionMinutes: Double
+    public var runningSessions: Double
+
+    enum CodingKeys: String, CodingKey {
+      case appId = "appId"
+      case error = "error"
+      case hasToken = "hasToken"
+      case id = "id"
+      case idleMinutes = "idleMinutes"
+      case label = "label"
+      case maxConcurrentSessions = "maxConcurrentSessions"
+      case maxSessionMinutes = "maxSessionMinutes"
+      case runningSessions = "runningSessions"
+    }
+
+    public init(appId: String? = nil, error: String? = nil, hasToken: Bool, id: String, idleMinutes: Double, label: String, maxConcurrentSessions: Double, maxSessionMinutes: Double, runningSessions: Double) {
+      self.appId = appId
+      self.error = error
+      self.hasToken = hasToken
+      self.id = id
+      self.idleMinutes = idleMinutes
+      self.label = label
+      self.maxConcurrentSessions = maxConcurrentSessions
+      self.maxSessionMinutes = maxSessionMinutes
+      self.runningSessions = runningSessions
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(appId, forKey: .appId)
+      try c.encode(error, forKey: .error)
+      try c.encode(hasToken, forKey: .hasToken)
+      try c.encode(id, forKey: .id)
+      try c.encode(idleMinutes, forKey: .idleMinutes)
+      try c.encode(label, forKey: .label)
+      try c.encode(maxConcurrentSessions, forKey: .maxConcurrentSessions)
+      try c.encode(maxSessionMinutes, forKey: .maxSessionMinutes)
+      try c.encode(runningSessions, forKey: .runningSessions)
+    }
+  }
+
+  public struct EasDeviceHostInput: Codable, Sendable {
+    public var appId: String?
+    public var idleMinutes: Double?
+    public var label: String?
+    public var maxConcurrentSessions: Double?
+    public var maxSessionMinutes: Double?
+    public var token: String?
+
+    enum CodingKeys: String, CodingKey {
+      case appId = "appId"
+      case idleMinutes = "idleMinutes"
+      case label = "label"
+      case maxConcurrentSessions = "maxConcurrentSessions"
+      case maxSessionMinutes = "maxSessionMinutes"
+      case token = "token"
+    }
+
+    public init(appId: String? = nil, idleMinutes: Double? = nil, label: String? = nil, maxConcurrentSessions: Double? = nil, maxSessionMinutes: Double? = nil, token: String? = nil) {
+      self.appId = appId
+      self.idleMinutes = idleMinutes
+      self.label = label
+      self.maxConcurrentSessions = maxConcurrentSessions
+      self.maxSessionMinutes = maxSessionMinutes
+      self.token = token
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(appId, forKey: .appId)
+      try c.encodeIfPresent(idleMinutes, forKey: .idleMinutes)
+      try c.encodeIfPresent(label, forKey: .label)
+      try c.encodeIfPresent(maxConcurrentSessions, forKey: .maxConcurrentSessions)
+      try c.encodeIfPresent(maxSessionMinutes, forKey: .maxSessionMinutes)
+      try c.encodeIfPresent(token, forKey: .token)
+    }
+  }
+
   public struct EditorDescriptor: Codable, Sendable {
     public var id: String
     public var name: String
@@ -5035,6 +5167,22 @@ extension ArgusProtocol {
       try c.encode(platform, forKey: .platform)
       try c.encode(repo, forKey: .repo)
     }
+  }
+
+  public struct ExpoCredentialSource: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let settings = ExpoCredentialSource(rawValue: "settings")
+    public static let env = ExpoCredentialSource(rawValue: "env")
+    public static let easLogin = ExpoCredentialSource(rawValue: "eas-login")
   }
 
   public struct FileStat: Codable, Sendable {
@@ -10553,21 +10701,45 @@ extension ArgusProtocol {
     public static let unreachable = RemoteDeviceHostStatus(rawValue: "unreachable")
   }
 
+  public struct RemoteDeviceHostKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let eas = RemoteDeviceHostKind(rawValue: "eas")
+    public static let ssh = RemoteDeviceHostKind(rawValue: "ssh")
+  }
+
   public struct RemoteDeviceHost: Codable, Sendable {
     public var id: String
     public var label: String
     public var status: RemoteDeviceHostStatus
+    public var kind: RemoteDeviceHostKind?
+    public var runningSessions: Int?
+    public var maxSessions: Int?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
       case label = "label"
       case status = "status"
+      case kind = "kind"
+      case runningSessions = "running_sessions"
+      case maxSessions = "max_sessions"
     }
 
-    public init(id: String, label: String, status: RemoteDeviceHostStatus) {
+    public init(id: String, label: String, status: RemoteDeviceHostStatus, kind: RemoteDeviceHostKind? = nil, runningSessions: Int? = nil, maxSessions: Int? = nil) {
       self.id = id
       self.label = label
       self.status = status
+      self.kind = kind
+      self.runningSessions = runningSessions
+      self.maxSessions = maxSessions
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -10575,6 +10747,9 @@ extension ArgusProtocol {
       try c.encode(id, forKey: .id)
       try c.encode(label, forKey: .label)
       try c.encode(status, forKey: .status)
+      try c.encodeIfPresent(kind, forKey: .kind)
+      try c.encodeIfPresent(runningSessions, forKey: .runningSessions)
+      try c.encodeIfPresent(maxSessions, forKey: .maxSessions)
     }
   }
 

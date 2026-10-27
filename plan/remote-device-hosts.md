@@ -69,12 +69,55 @@ ride the shared stream), `input` (touch, named button, HID key), `displayInfo`,
   port goes through `readAnnexB`; a source producing frames itself calls the
   sink directly.
 
-### An EAS Simulator source
+### EAS Simulator hosts (`services/deviceHosts/eas/`)
 
-A provider claiming `eas:<sessionId>` ids. `list` reads the account's
-sessions; `open`/`close` create and stop the billed session; `session(id)`
-wraps serve-sim — `video.open` feeds WebRTC H.264 access units to the sink,
-`adaptiveVideo` null, `input` maps to serve-sim's touch/button/key, display
-info from its reported size. `capabilities` all false except whatever
-serve-sim supports. `onGone` fires when the account is signed out. Capture
-refcounting, the video bus, remote viewers and gating all work unchanged.
+Cloud simulators from Expo's EAS Simulator; the reference was T3 Code's
+`EasDeviceHost` (MIT), rewritten as plain TS.
+
+- **Config**: `easHosts` in `device-hosts.json`, apart from `hosts` so a
+  reader that predates it still parses the file (`writeDeviceHostsFile`
+  keeps the other key). Ids `eh` + 8 hex. Limits as T3/EAS: session 1–115
+  (30), idle 1–60 (10) and below session, concurrent 1–20 (2). Optional
+  `appId`; without one the account's only project is used.
+- **Credential** (`credential.ts`): saved token (sealed with
+  `HostPlatform.secretStorage` in `eas-tokens.json`, refused without OS-backed
+  storage), then `EXPO_TOKEN`, then `~/.expo/state.json`'s `sessionSecret`
+  (`expo-session` header). Every error goes through `scrub`; account-check
+  errors reach clients only as categories.
+- **Expo API** (`expoApi.ts`): eas-cli's GraphQL operations over `fetch`.
+  `rejected` follows eas-cli's rule (4xx, or USER errors with null data);
+  anything else may have run, so a failed create counts as uncertain.
+- **Devices are slots** (`host.ts`): `eas:<hostId>:<n>`. `list` = running and
+  starting slots + the next free one while under the limit; `open` starts a
+  billed session in that slot and waits (minutes) until serve-sim answers;
+  `close` stops it. Starting slots read "EAS Simulator · starting".
+- **Billing safety**: every create carries run/idle limits; the limit counts
+  running + starting + failed-stop (`unresolved`) + unknown-outcome creates
+  (`uncertain`). The session's unique name is written to
+  `eas-sessions/<hostId>.json` before the create; leftovers are found by
+  name via the app's active sessions and stopped at boot
+  (`initEasDeviceHosts`), every minute while listing, on removal and at
+  shutdown (bounded to 8 s in `terminateHostProcesses`). Sessions not in the
+  ledger are never touched. A removed host whose stops failed keeps its
+  ledger and token until a later sweep empties it.
+- **Video** (`serveSim.ts`): AVCC (`/helper/<udid>/stream.avcc`) first; on
+  409 `stream_transport_locked` the host terminates WebRTC itself with werift
+  (`simulator/webrtcVideo.ts`, pure TS) — one non-trickled offer with every
+  candidate, ICE servers from serve-sim's `/api` — and depacketizes H.264 RTP
+  (`h264Rtp.ts`: single NAL, STAP-A, FU-A, drop-to-keyframe on loss, PLI until
+  the first IDR). Both feed `AccessUnitWriter`, so clients see the same access
+  units as any source and the session token never leaves the host.
+- **Input**: serve-sim's tagged-JSON WebSocket (`/helper/ws`, token as
+  `serve-sim.token.<t>` subprotocol): touch 0x03, button 0x04
+  (home/lock/app_switcher), key 0x06; admitted 0x83, screen config 0x82.
+  Primed with one MJPEG request first.
+- **Capabilities**: all off (no simctl/conductor). Display info from the
+  stream's coded size, rotation 0.
+- **Phone**: `device_hosts.list` adds `kind`, `running_sessions`,
+  `max_sessions`. `device_hosts.start_eas_session` (control, guest-denied)
+  returns the slot id at once and starts in the background;
+  `device_hosts.stop_eas_session` (control). `devices.watch` (monitor) refuses
+  an EAS id that isn't running, so watching never starts a billed session.
+
+Not done: rotation through serve-sim's 0x07, Android sessions, MJPEG
+fallback, agent-device access.

@@ -110,6 +110,10 @@ export type {
   DeviceHostInput,
   DeviceHostTestResult,
   DevicePlatform as HostDevicePlatform,
+  EasAccount,
+  EasDeviceHost,
+  EasDeviceHostInput,
+  ExpoCredentialSource,
   SimulatorDevice,
   SimulatorProblem,
 } from "@argus/remote-protocol";

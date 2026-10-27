@@ -356,6 +356,27 @@ Not yet supported on device hosts: Android emulators, rotating and folding, the 
 
 Saved in `~/.argus/device-hosts.json`. Machine-local; not shared with your team.
 
+#### EAS Simulator hosts
+
+An **EAS Simulator** host gives you iOS simulators in Expo's cloud instead of on a Mac. Pick **EAS Simulator** above the add form. Each EAS device you open starts an [EAS Simulator](https://docs.expo.dev/) session that is **billed to your Expo account** until it stops, so every host bounds them:
+
+| Field                   | Description                                                                                                                                                                  |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Expo access token**   | Optional. Kept in this Mac's secure storage, never in a settings file, and never sent to the phone. Empty uses `EXPO_TOKEN` from Argus's environment, then your `eas login`. |
+| **Label**               | Optional name shown next to the host's devices. Defaults to "EAS Simulator".                                                                                                 |
+| **EAS project**         | The project sessions run under. Optional when the account has exactly one; **Check account** lists them to pick from.                                                        |
+| **Session minutes**     | Longest a session may run, 1–115 (default 30). Free Expo accounts allow at most 40.                                                                                          |
+| **Idle minutes**        | A session with no input for this long ends, 1–60 (default 10). Must be smaller than session minutes.                                                                         |
+| **Concurrent sessions** | Most sessions this host runs at once, 1–20 (default 2). Opening one more is refused with a message.                                                                          |
+
+- **Check account** shows who the credential signs in as, where it came from (saved token, `EXPO_TOKEN` or `eas login`) and the account's EAS projects.
+- **Devices are sessions.** The host lists its running sessions plus one more to open while under its limit. Opening that device starts a session; it can take a few minutes before it streams. Closing (shutting down) the device stops the session.
+- **Billing safety.** Every session is created with the run and idle limits above. Removing the host, or quitting Argus, stops its sessions. Argus records each session it starts in `~/.argus/eas-sessions/` before asking Expo for it, so if Argus dies the next launch finds and stops it. Sessions other tools started on the same account are never touched.
+- **On the phone**, EAS hosts are listed read-only under Settings with their running sessions. With control access you can start a session there (it says it costs money) and stop it; the token stays on this Mac.
+- Rotating, erasing, device settings, the UI inspector and other `conductor`-driven tools aren't available on EAS devices: EAS gives Argus no shell on the simulator's machine. The video and input go through the host, so EAS devices stream to every viewer like any other.
+
+EAS hosts are saved next to SSH hosts in `~/.argus/device-hosts.json` (under `easHosts`); tokens in `~/.argus/eas-tokens.json`, sealed.
+
 ---
 
 ## Advanced — Update channel

@@ -87,6 +87,10 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "devices.list": FILTER,
   // The host owner's other machines; nothing a guest has a claim on.
   "device_hosts.list": DENIED,
+  // Spends the owner's money; a guest never starts a billed session.
+  "device_hosts.start_eas_session": DENIED,
+  // Ending one only saves it, so a guest granted the device may.
+  "device_hosts.stop_eas_session": device(),
 
   "agents.status": agent(),
   "agents.vitals": agent(),

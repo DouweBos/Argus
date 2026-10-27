@@ -2699,6 +2699,74 @@ extension ArgusProtocol {
       }
     }
 
+    public struct DeviceHostsStartEasSessionParams: Codable, Sendable {
+      public var hostId: String
+
+      enum CodingKeys: String, CodingKey {
+        case hostId = "host_id"
+      }
+
+      public init(hostId: String) {
+        self.hostId = hostId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(hostId, forKey: .hostId)
+      }
+    }
+
+    public struct DeviceHostsStartEasSessionResult: Codable, Sendable {
+      public var deviceId: String
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+      }
+
+      public init(deviceId: String) {
+        self.deviceId = deviceId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+      }
+    }
+
+    public struct DeviceHostsStopEasSessionParams: Codable, Sendable {
+      public var deviceId: String
+
+      enum CodingKeys: String, CodingKey {
+        case deviceId = "device_id"
+      }
+
+      public init(deviceId: String) {
+        self.deviceId = deviceId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(deviceId, forKey: .deviceId)
+      }
+    }
+
+    public struct DeviceHostsStopEasSessionResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct DevicesButtonParams: Codable, Sendable {
       public var deviceId: String
       public var platform: RemotePlatform
@@ -5875,6 +5943,18 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.DeviceHostsListParams
       public typealias Result = ArgusProtocol.MethodsTypes.DeviceHostsListResult
       public static let name = "device_hosts.list"
+    }
+
+    public enum DeviceHostsStartEasSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.DeviceHostsStartEasSessionParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DeviceHostsStartEasSessionResult
+      public static let name = "device_hosts.start_eas_session"
+    }
+
+    public enum DeviceHostsStopEasSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.DeviceHostsStopEasSessionParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DeviceHostsStopEasSessionResult
+      public static let name = "device_hosts.stop_eas_session"
     }
 
     public enum DevicesButton: RemoteCommand {

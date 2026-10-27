@@ -17,6 +17,9 @@ import type {
   DeviceHost,
   DeviceHostInput,
   DeviceHostTestResult,
+  EasAccount,
+  EasDeviceHost,
+  EasDeviceHostInput,
   ArgusConfig,
   ArgusConfigSuggestion,
   AcceptProposalResult,
@@ -2056,6 +2059,30 @@ export const removeDeviceHost = (id: string): Promise<void> =>
 export const testDeviceHost = (
   input: DeviceHostInput,
 ): Promise<DeviceHostTestResult> => invoke("test_device_host", input);
+
+// EAS Simulator hosts (Expo cloud simulators, billed per session)
+export const listEasDeviceHosts = (): Promise<EasDeviceHost[]> =>
+  invoke("list_eas_device_hosts");
+
+export const addEasDeviceHost = (
+  input: EasDeviceHostInput,
+): Promise<EasDeviceHost> => invoke("add_eas_device_host", input);
+
+/** A null or absent token keeps the saved one; "" clears it. */
+export const updateEasDeviceHost = (
+  id: string,
+  input: EasDeviceHostInput,
+): Promise<EasDeviceHost> => invoke("update_eas_device_host", { ...input, id });
+
+/** Stops every session the host started, then forgets it. */
+export const removeEasDeviceHost = (id: string): Promise<void> =>
+  invoke("remove_eas_device_host", { id });
+
+/** Who a draft token, a saved host's token, or the fallbacks sign in as. */
+export const checkEasAccount = (params: {
+  hostId?: string | null;
+  token?: string | null;
+}): Promise<EasAccount> => invoke("check_eas_account", params);
 
 // Simulator commands
 export const checkIosTools = (): Promise<void> => invoke("check_ios_tools");
