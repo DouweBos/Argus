@@ -105,6 +105,7 @@ private struct CodeTabItem: View {
     .gesture(TapGesture(count: 2).onEnded(pin))
     .simultaneousGesture(TapGesture().onEnded(select))
     .onHover { hovering = $0 }
+    .pointerStyle(.link)
     .help(tab.path)
     .contextMenu {
       Button("Close", action: close)
