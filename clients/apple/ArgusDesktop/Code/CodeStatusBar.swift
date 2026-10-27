@@ -30,7 +30,6 @@ struct CodeStatusBar: View {
     .lineLimit(1)
     .padding(.horizontal, 10)
     .frame(height: 24)
-    .background(theme.bgSecondary)
   }
 
   private var language: String {
