@@ -21,6 +21,7 @@ struct MacHostLinkSection: View {
           Text("Put this Mac's host on your account.").foregroundStyle(.secondary)
           Spacer()
           Button("Get a Code") { Task { await link.start(model.localBackend) } }
+            .buttonStyle(.accent)
             .disabled(model.localBackend == nil)
         }
       case .awaitingClaim(let claim):
@@ -30,14 +31,15 @@ struct MacHostLinkSection: View {
             .textSelection(.enabled)
           Spacer()
           ProgressView().controlSize(.small)
-          Button("Cancel") { Task { await link.cancel() } }
+          Button("Cancel") { Task { await link.cancel() } }.buttonStyle(.secondary)
         }
       case .awaitingFirst:
         HStack {
           Text("Your account is empty. Make this Mac the first on it?")
           Spacer()
           Button("Make It the First") { Task { await link.confirm(true) } }
-          Button("Cancel") { Task { await link.cancel() } }
+            .buttonStyle(.accent)
+          Button("Cancel") { Task { await link.cancel() } }.buttonStyle(.secondary)
         }
       case .awaitingSas(let sas):
         VStack(alignment: .leading, spacing: 8) {
@@ -47,7 +49,9 @@ struct MacHostLinkSection: View {
             .font(.scaled(size: 28, weight: .semibold, design: .monospaced))
           HStack {
             Button("Codes Match") { Task { await link.confirm(true) } }
+              .buttonStyle(.accent)
             Button("They Don't Match", role: .destructive) { Task { await link.confirm(false) } }
+              .buttonStyle(.secondary)
           }
         }
       case .awaitingApproval:
@@ -63,6 +67,7 @@ struct MacHostLinkSection: View {
           SettingsError(text: error.message)
           Spacer()
           Button("Try Again") { Task { await link.start(model.localBackend) } }
+            .buttonStyle(.accent)
         }
       case .unknown:
         EmptyView()

@@ -18,27 +18,38 @@ struct AccountSignInSection: View {
       if Self.canSignInWithApple {
         appleButton
       } else {
-        Button("Sign in with Apple") { Task { await account.signIn(with: .apple) } }
+        Button {
+          Task { await account.signIn(with: .apple) }
+        } label: {
+          Label("Sign in with Apple", systemImage: "apple.logo")
+        }
+        .buttonStyle(.secondary)
       }
       Button("Sign in with GitHub") { Task { await account.signIn(with: .github) } }
+        .buttonStyle(.secondary)
 
       if account.awaitingEmailCode {
         HStack {
           TextField("Code from the email", text: $code)
             .textFieldStyle(.roundedBorder)
             .onSubmit(verify)
-          Button("Verify", action: verify).disabled(code.trimmingCharacters(in: .whitespaces).isEmpty)
+          Button("Verify", action: verify)
+            .buttonStyle(.accent)
+            .disabled(code.trimmingCharacters(in: .whitespaces).isEmpty)
           Button("Use Another Email") {
             code = ""
             account.cancelEmailCode()
           }
+          .buttonStyle(.secondary)
         }
       } else {
         HStack {
           TextField("you@example.com", text: $email)
             .textFieldStyle(.roundedBorder)
             .onSubmit(send)
-          Button("Email Me a Code", action: send).disabled(!email.contains("@"))
+          Button("Email Me a Code", action: send)
+            .buttonStyle(.accent)
+            .disabled(!email.contains("@"))
         }
       }
       SettingsError(text: account.error)

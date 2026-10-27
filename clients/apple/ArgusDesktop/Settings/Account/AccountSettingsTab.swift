@@ -28,6 +28,7 @@ struct AccountSettingsTab: View {
           Text("Your account already has devices, so this Mac can't add itself yet.")
             .foregroundStyle(.secondary)
           Button("Sign out") { Task { await account.signOut() } }
+            .buttonStyle(.secondary)
         }
         MacHostLinkSection()
       case .ready:
@@ -67,6 +68,7 @@ private struct AccountOverview: View {
           Text(account.localLinkError ?? "Not on your account yet.").foregroundStyle(.secondary)
           Spacer()
           Button("Add this Mac") { Task { await account.linkLocalHost() } }
+            .buttonStyle(.accent)
         }
       }
     }
@@ -88,6 +90,7 @@ private struct AccountOverview: View {
             .foregroundStyle(.secondary)
           Spacer()
           Button("Remove…", role: .destructive) { removing = host }
+            .buttonStyle(.secondary)
         }
       }
     }
@@ -100,6 +103,7 @@ private struct AccountOverview: View {
       HStack {
         Spacer()
         Button("Sign Out…", role: .destructive) { confirmingSignOut = true }
+          .buttonStyle(.secondary)
       }
       SettingsError(text: account.error)
     }
@@ -134,6 +138,7 @@ private struct AddHostByCode: View {
           .font(.system(.body, design: .monospaced))
           .onSubmit(submit)
         Button("Continue", action: submit)
+          .buttonStyle(.accent)
           .disabled(AccountCodec.normalizeUserCode(code).count != 9)
       }
       if case .failed(let message) = account.link { SettingsError(text: message) }
@@ -150,8 +155,10 @@ private struct AddHostByCode: View {
           .accessibilityLabel("Check code \(sas)")
         HStack {
           Button("Codes Match") { Task { await account.confirmLink() } }
+            .buttonStyle(.accent)
             .keyboardShortcut(.defaultAction)
           Button("They Don't Match", role: .destructive) { Task { await account.denyLink() } }
+            .buttonStyle(.secondary)
         }
       }
     case .done(let hostName):
@@ -162,6 +169,7 @@ private struct AddHostByCode: View {
           code = ""
           account.resetLink()
         }
+        .buttonStyle(.secondary)
       }
     }
   }
