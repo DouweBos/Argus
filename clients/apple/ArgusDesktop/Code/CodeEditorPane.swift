@@ -7,6 +7,7 @@ import SwiftUI
 /// editor (or why it can't be edited here), then the status bar.
 struct CodeEditorPane: View {
   @Environment(DesktopModel.self) private var model
+  @Environment(\.theme) private var theme
   let code: CodeSession
   @Bindable var file: CodeFile
 
@@ -18,16 +19,16 @@ struct CodeEditorPane: View {
           compare: { Task { await code.compare(file.path) } },
           keepMine: { code.resolveKeepingMine(file.path) },
           reload: { Task { await code.resolveWithReload(file.path) } })
-        Divider()
+        Rectangle().fill(theme.border).frame(height: 1)
       }
       // The AppKit editor may draw past its bounds; never over the navigator or the tab bar.
       content.frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
       if let client = model.languages.clients[code.sessionId], client.problemsExpanded {
-        Divider()
+        Rectangle().fill(theme.border).frame(height: 1)
         ProblemsList(client: client, code: code)
       }
       if let document = file.document {
-        Divider()
+        Rectangle().fill(theme.border).frame(height: 1)
         CodeStatusBar(code: code, file: file, document: document)
       }
     }

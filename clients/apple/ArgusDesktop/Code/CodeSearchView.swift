@@ -14,7 +14,7 @@ struct CodeSearchView: View {
   var body: some View {
     VStack(spacing: 0) {
       form
-      Divider()
+      Rectangle().fill(theme.border).frame(height: 1)
       results
     }
     .onChange(of: search.focusRequest, initial: true) { focused = true }
@@ -31,7 +31,7 @@ struct CodeSearchView: View {
     VStack(spacing: 6) {
       HStack(spacing: 4) {
         TextField("Search the worktree", text: $search.query)
-          .textFieldStyle(.roundedBorder)
+          .modifier(QuietField())
           .focused($focused)
           .onSubmit(search.run)
           .accessibilityLabel("Search query")
@@ -44,7 +44,7 @@ struct CodeSearchView: View {
           TextField("Include, e.g. src/**, *.swift", text: $search.include)
           TextField("Exclude, e.g. **/Generated/**", text: $search.exclude)
         }
-        .textFieldStyle(.roundedBorder)
+        .modifier(QuietField())
         .onSubmit(search.run)
       }
       .font(.scaled(size: 11))
@@ -95,16 +95,33 @@ struct CodeSearchView: View {
         }
       }
     }
-    .listStyle(.sidebar)
+    .navigatorList()
   }
 
   private func toggle(_ label: String, isOn: Binding<Bool>, help: String, underline: Bool = false) -> some View {
-    Toggle(isOn: isOn) {
+    Button {
+      isOn.wrappedValue.toggle()
+    } label: {
       Text(label).font(.scaled(size: 11, weight: .semibold, design: .monospaced)).underline(underline)
     }
-    .toggleStyle(.button)
+    .buttonStyle(FlatIconButtonStyle(selected: isOn.wrappedValue, size: 24))
     .help(help)
     .accessibilityLabel(help)
+    .accessibilityAddTraits(isOn.wrappedValue ? .isSelected : [])
+  }
+}
+
+/// A borderless field on a quiet fill, as the rest of the flat chrome draws inputs.
+private struct QuietField: ViewModifier {
+  @Environment(\.theme) private var theme
+
+  func body(content: Content) -> some View {
+    content
+      .textFieldStyle(.plain)
+      .font(.scaled(size: 12))
+      .padding(.horizontal, 7)
+      .padding(.vertical, 4)
+      .background(theme.selection, in: .rect(cornerRadius: 6))
   }
 }
 

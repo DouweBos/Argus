@@ -3,7 +3,8 @@ import GroveKit
 import SwiftUI
 
 /// The code view's left column: the session's changed files (the default),
-/// the worktree's tree, or worktree search.
+/// the worktree's tree, or worktree search. No background of its own, so it
+/// sits on the canvas of whichever pane holds it and stays below the toolbar.
 struct CodeNavigator: View {
   @Environment(\.theme) private var theme
   @Bindable var code: CodeSession
@@ -11,21 +12,113 @@ struct CodeNavigator: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      Picker("Navigator", selection: $code.navigatorMode) {
-        ForEach(CodeNavigatorMode.allCases, id: \.self) { Text($0.title).tag($0) }
-      }
-      .pickerStyle(.segmented)
-      .labelsHidden()
-      .controlSize(.small)
-      .padding(8)
-      Divider()
+      modeTabs
+      Rectangle().fill(theme.border).frame(height: 1)
       switch code.navigatorMode {
       case .changes: CodeChangesList(code: code, activePath: activePath)
       case .files: CodeFilesTree(code: code, activePath: activePath)
       case .search: CodeSearchView(search: code.search, code: code)
       }
     }
-    .background(theme.bgSecondary)
+  }
+
+  /// Quiet text tabs; icons alone when the column is too narrow for the titles.
+  private var modeTabs: some View {
+    ViewThatFits(in: .horizontal) {
+      tabs(titled: true)
+      tabs(titled: false)
+    }
+    .padding(.horizontal, 8)
+    .frame(height: 34)
+    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+
+  private func tabs(titled: Bool) -> some View {
+    HStack(spacing: 2) {
+      ForEach(CodeNavigatorMode.allCases, id: \.self) { mode in
+        Button {
+          code.navigatorMode = mode
+        } label: {
+          if titled {
+            Text(mode.title)
+          } else {
+            Image(systemName: mode.symbol).accessibilityLabel(mode.title)
+          }
+        }
+        .buttonStyle(NavigatorTabStyle(selected: code.navigatorMode == mode))
+        .help(mode.title)
+        .accessibilityAddTraits(code.navigatorMode == mode ? .isSelected : [])
+      }
+    }
+    .fixedSize()
+  }
+}
+
+extension CodeNavigatorMode {
+  fileprivate var symbol: String {
+    switch self {
+    case .files: Icon.folder
+    case .search: Icon.search
+    case .changes: "plusminus"
+    }
+  }
+}
+
+/// A navigator mode tab: muted until hovered, a quiet fill when selected.
+private struct NavigatorTabStyle: ButtonStyle {
+  let selected: Bool
+
+  func makeBody(configuration: Configuration) -> some View {
+    NavigatorTab(label: configuration.label, pressed: configuration.isPressed, selected: selected)
+  }
+}
+
+private struct NavigatorTab<Label: View>: View {
+  @Environment(\.theme) private var theme
+  let label: Label
+  let pressed: Bool
+  let selected: Bool
+  @State private var hovering = false
+
+  var body: some View {
+    label
+      .font(.scaled(size: 12, weight: .medium))
+      .lineLimit(1)
+      .padding(.horizontal, 8)
+      .padding(.vertical, 4)
+      .foregroundStyle(selected || hovering ? theme.text : theme.textSecondary)
+      .background {
+        if selected || hovering || pressed {
+          RoundedRectangle(cornerRadius: 6).fill(pressed ? theme.bgHover : theme.selection)
+        }
+      }
+      .contentShape(.rect(cornerRadius: 6))
+      .onHover { hovering = $0 }
+  }
+}
+
+/// The navigator's lists: compact rows straight on the canvas, no source-list material.
+extension View {
+  func navigatorList() -> some View {
+    listStyle(.inset)
+      .scrollContentBackground(.hidden)
+      .environment(\.defaultMinListRowHeight, 22)
+  }
+}
+
+/// A navigator row's highlight: the sidebar's quiet fill when selected, fainter on hover.
+struct NavigatorRowHighlight: ViewModifier {
+  @Environment(\.theme) private var theme
+  let selected: Bool
+  @State private var hovering = false
+
+  func body(content: Content) -> some View {
+    content
+      .onHover { hovering = $0 }
+      .listRowBackground(
+        RoundedRectangle(cornerRadius: 6)
+          .fill(selected || hovering ? theme.selection.opacity(selected ? 1 : 0.55) : .clear)
+          .padding(.horizontal, 6))
   }
 }
 
@@ -54,10 +147,10 @@ private struct CodeChangesList: View {
         Button("Copy Path") { Clipboard.copy(entry.path) }
       }
     }
-    .listStyle(.sidebar)
+    .navigatorList()
     .overlay {
       if entries.isEmpty {
-        EmptyState(icon: "checkmark.circle", title: "No changes", body: "Files the session changes show here.")
+        QuietEmptyState(icon: "checkmark.circle", title: "No changes", message: "Files the session changes show here.")
       }
     }
   }
@@ -76,13 +169,13 @@ private struct CodeFilesTree: View {
     List {
       CodeTreeRows(nodes: code.fileTree, code: code, activePath: activePath)
     }
-    .listStyle(.sidebar)
+    .navigatorList()
     .overlay {
       if code.fileTree.isEmpty {
         if code.fileListLoading {
           ProgressView().controlSize(.small)
         } else {
-          EmptyState(icon: "doc", title: "No files")
+          QuietEmptyState(icon: Icon.file, title: "No files")
         }
       }
     }
@@ -105,8 +198,11 @@ private struct CodeTreeRows: View {
           HStack(spacing: 6) {
             FileTypeIcon(path: node.path, isDirectory: true, isExpanded: code.expandedFolders.contains(node.path))
             Text(node.name).lineLimit(1)
+            Spacer(minLength: 0)
           }
           .font(.scaled(size: 12))
+          .contentShape(Rectangle())
+          .modifier(NavigatorRowHighlight(selected: false))
         }
       } else {
         CodeFileRow(
@@ -152,7 +248,7 @@ struct CodeFileRow: View {
     .contentShape(Rectangle())
     .gesture(TapGesture(count: 2).onEnded(pin))
     .simultaneousGesture(TapGesture().onEnded(open))
-    .listRowBackground(selected ? theme.accentSoft : Color.clear)
+    .modifier(NavigatorRowHighlight(selected: selected))
     .help(path)
   }
 }

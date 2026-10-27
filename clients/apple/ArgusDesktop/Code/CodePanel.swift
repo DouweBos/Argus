@@ -6,6 +6,7 @@ import SwiftUI
 /// bar. The route names the file and line; everything here follows it.
 struct CodePanel: View {
   @Environment(DesktopModel.self) private var model
+  @Environment(\.theme) private var theme
   let session: RemoteSession
   let path: String?
   let line: Int?
@@ -21,14 +22,14 @@ struct CodePanel: View {
     } trailing: {
       VStack(spacing: 0) {
         CodeTabBar(code: code, activePath: path)
-        Divider()
+        Rectangle().fill(theme.border).frame(height: 1)
         if let path, let file = code.files[path] {
           CodeEditorPane(code: code, file: file)
             .id(path)
         } else {
-          EmptyState(
+          QuietEmptyState(
             icon: "doc.text", title: "No file open",
-            body: "Pick a file from the navigator, press ⌘P to open one by name, or ⇧⌘O to open a file or symbol.")
+            message: "Pick a file from the navigator, press ⌘P to open one by name, or ⇧⌘O to open a file or symbol.")
         }
       }
     }

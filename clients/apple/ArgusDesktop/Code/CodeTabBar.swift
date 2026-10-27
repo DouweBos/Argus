@@ -13,11 +13,11 @@ struct CodeTabBar: View {
       Button {
         code.navigatorVisible.toggle()
       } label: {
-        Image(systemName: "sidebar.left")
+        Label("Toggle Navigator", systemImage: "sidebar.left")
       }
-      .buttonStyle(.borderless)
+      .buttonStyle(FlatIconButtonStyle(selected: code.navigatorVisible, size: 24))
       .help(code.navigatorVisible ? "Hide navigator (⌘B)" : "Show navigator (⌘B)")
-      .padding(.horizontal, 8)
+      .padding(.horizontal, 6)
       ScrollViewReader { proxy in
         ScrollView(.horizontal, showsIndicators: false) {
           HStack(spacing: 2) {
@@ -94,7 +94,11 @@ private struct CodeTabItem: View {
     .padding(.leading, 10)
     .padding(.trailing, 6)
     .padding(.vertical, 4)
-    .background(selected ? theme.bgTertiary : Color.clear, in: .rect(cornerRadius: 6))
+    .background {
+      if selected || hovering {
+        RoundedRectangle(cornerRadius: 6).fill(theme.selection.opacity(selected ? 1 : 0.55))
+      }
+    }
     .contentShape(Rectangle())
     .gesture(TapGesture(count: 2).onEnded(pin))
     .simultaneousGesture(TapGesture().onEnded(select))
