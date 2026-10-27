@@ -107,9 +107,9 @@ private struct HuddleAgentModifier: ViewModifier {
     let huddles = model.huddles
     let room = huddles.room(forAgent: agentId)
     content
-      .environment(\.composerTyping) { agentId, typing in
+      .environment(\.composerTyping, ComposerTyping { agentId, typing in
         huddles.composerTyping(agentId: agentId, typing: typing)
-      }
+      })
       .inspector(isPresented: Binding(get: { huddles.chatOpen && room != nil }, set: { huddles.chatOpen = $0 })) {
         if let room {
           HuddleChatPanel(huddles: huddles, room: room)

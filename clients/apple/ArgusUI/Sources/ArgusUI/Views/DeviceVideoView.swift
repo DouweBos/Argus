@@ -103,7 +103,7 @@ public struct DeviceVideoView {
 
       formatDescription = format
       awaitingKeyFrame = true
-      displayLayer.flush()
+      displayLayer.sampleBufferRenderer.flush()
     }
 
     public func enqueue(_ data: Data, isKeyFrame: Bool, timestampMillis: Double) {
@@ -114,8 +114,8 @@ public struct DeviceVideoView {
       }
       // A failed layer never recovers on its own; flush and wait for the next
       // keyframe rather than freezing on the last good frame.
-      if displayLayer.status == .failed {
-        displayLayer.flush()
+      if displayLayer.sampleBufferRenderer.status == .failed {
+        displayLayer.sampleBufferRenderer.flush()
         awaitingKeyFrame = true
         return
       }
@@ -171,7 +171,7 @@ public struct DeviceVideoView {
           Unmanaged.passUnretained(kCFBooleanTrue).toOpaque())
       }
 
-      displayLayer.enqueue(sampleBuffer)
+      displayLayer.sampleBufferRenderer.enqueue(sampleBuffer)
       if !firstFrameSent {
         firstFrameSent = true
         onFirstFrame?()
