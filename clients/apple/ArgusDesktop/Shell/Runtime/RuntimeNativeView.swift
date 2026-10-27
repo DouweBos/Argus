@@ -13,6 +13,8 @@ struct RuntimeNativeView: View {
   /// isn't retried on every refresh. Reselecting clears it.
   @State private var autoBooted: Set<String> = []
   @State private var bootError: String?
+  /// A boot of a stopped EAS Simulator device waiting on its cost prompt.
+  @State private var pendingEas: PendingEasStart?
 
   private var selected: String? { runtime.selectedDevice(platform: platform, session: sessionId) }
 
@@ -45,6 +47,7 @@ struct RuntimeNativeView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     // Again once the lists load: a launch restores the pick before it can be seen.
     .task(id: "\(selected ?? "")|\(selected.flatMap(target) != nil)") { await autoBoot() }
+    .easStartConfirmation($pendingEas)
   }
 
   private var toolsError: String? {
@@ -127,6 +130,18 @@ struct RuntimeNativeView: View {
 
   private func boot(_ target: Target) async {
     bootError = nil
+    if platform == .ios,
+      let prompt = await runtime.easStartPrompt(
+        target.id, running: target.online, start: { Task { await startBoot(target) } })
+    {
+      // Declining leaves the device shut down with its Boot button.
+      pendingEas = prompt
+      return
+    }
+    await startBoot(target)
+  }
+
+  private func startBoot(_ target: Target) async {
     do {
       if let avd = target.avdName, platform == .android {
         let serial = try await runtime.bootAvd(avd)

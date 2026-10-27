@@ -67,6 +67,12 @@ enum MacTelemetryEvent {
     case openLink = "open_link"
   }
 
+  /// How the cost prompt before an EAS Simulator session was answered.
+  enum EasPromptOutcome: String {
+    case confirmed
+    case cancelled
+  }
+
   enum PowerAction: String {
     case boot
     case shutdown
@@ -257,6 +263,8 @@ enum MacTelemetryEvent {
   /// A side panel tab was opened or brought to the front.
   case panelTabOpened(kind: PanelTabKind, via: PanelSource)
   case devicePower(action: PowerAction, platform: String)
+  /// The cost prompt before booting a stopped EAS Simulator device was answered.
+  case easSessionStartPrompted(outcome: EasPromptOutcome)
   case browserUsed(action: BrowserAction)
   case inspectionUsed(action: InspectionAction, success: Bool)
   /// A git action from the git panel; `scope` is `session` or `project`,
@@ -355,6 +363,7 @@ enum MacTelemetryEvent {
     case .panelToggled: "mac_panel_toggled"
     case .panelTabOpened: "mac_panel_tab_opened"
     case .devicePower: "mac_device_power"
+    case .easSessionStartPrompted: "mac_eas_session_start_prompted"
     case .browserUsed: "mac_browser_used"
     case .inspectionUsed: "mac_inspection_used"
     case .gitUsed: "mac_git_used"
@@ -473,6 +482,8 @@ enum MacTelemetryEvent {
       ["kind": kind.rawValue, "via": via.rawValue]
     case .devicePower(let action, let platform):
       ["action": action.rawValue, "platform": platform]
+    case .easSessionStartPrompted(let outcome):
+      ["outcome": outcome.rawValue]
     case .browserUsed(let action):
       ["action": action.rawValue]
     case .inspectionUsed(let action, let success):

@@ -24,6 +24,7 @@ import {
   isTvOS,
   useIosSimulatorViewState,
 } from "../../../stores/simulatorStore";
+import { useEasStartConfirm } from "../../devices/EasStartConfirm";
 import chrome from "../RuntimeChrome.module.css";
 import { AppleTVRemote } from "./AppleTVRemote";
 import { IosDeviceStreamView } from "./IosDeviceStreamView";
@@ -74,6 +75,7 @@ export function IosSimulatorView({
   // mid-flight — `capturing` only flips to true after the await resolves, so
   // rapid re-renders can otherwise enter the effect twice.
   const autoStartingRef = useRef<string | null>(null);
+  const { confirmStart, dialog: easConfirmDialog } = useEasStartConfirm();
 
   // --- Tool availability check ---
 
@@ -180,18 +182,24 @@ export function IosSimulatorView({
     const udid = selectedUdid;
     autoStartingRef.current = udid;
     setBootError(null);
-    (isBooted ? Promise.resolve() : bootSimulator(udid))
-      .then(() => startCapture(udid))
-      .then(() => {
-        refreshDevices();
-      })
-      .catch((err) => {
-        // Surface but don't wedge — user can retry via the boot button or by
-        // reselecting the device.
-        error("Auto-capture failed:", err);
-        setBootError(String(err));
-        refreshDevices();
-      });
+    const start = async () => {
+      if (!isBooted) {
+        // Declining leaves the device shut down with its Boot button.
+        if (!(await confirmStart(udid, false))) {
+          return;
+        }
+        await bootSimulator(udid);
+      }
+      await startCapture(udid);
+      refreshDevices();
+    };
+    start().catch((err) => {
+      // Surface but don't wedge — user can retry via the boot button or by
+      // reselecting the device.
+      error("Auto-capture failed:", err);
+      setBootError(String(err));
+      refreshDevices();
+    });
   }, [
     problem,
     isBooted,
@@ -201,6 +209,7 @@ export function IosSimulatorView({
     selectedUdid,
     startCapture,
     refreshDevices,
+    confirmStart,
   ]);
 
   // --- Title bar handlers ---
@@ -213,7 +222,11 @@ export function IosSimulatorView({
   );
 
   const handleBoot = useCallback(async () => {
-    if (!selectedUdid || booting) {
+    if (
+      !selectedUdid ||
+      booting ||
+      !(await confirmStart(selectedUdid, isBooted))
+    ) {
       return;
     }
     setBooting(true);
@@ -233,6 +246,8 @@ export function IosSimulatorView({
   }, [
     selectedUdid,
     booting,
+    isBooted,
+    confirmStart,
     setBooting,
     setDisconnected,
     startCapture,
@@ -571,7 +586,7 @@ export function IosSimulatorView({
         )
       : undefined;
 
-  return (
+  const stream = (
     <IosDeviceStreamView
       actionButtons={actionButtons}
       capturing={capturing}
@@ -599,5 +614,12 @@ export function IosSimulatorView({
     >
       {children}
     </IosDeviceStreamView>
+  );
+
+  return (
+    <>
+      {stream}
+      {easConfirmDialog}
+    </>
   );
 }
