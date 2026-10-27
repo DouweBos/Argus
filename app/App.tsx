@@ -4,6 +4,7 @@ import { DragLayer } from "@argus/peacock";
 import { AppShell } from "./components/layout/AppShell";
 import { NavigationDeepLinkBridge } from "./components/layout/NavigationDeepLinkBridge";
 import { OnboardingRoot } from "./components/onboarding/OnboardingRoot";
+import { AccountLinkPrompt } from "./components/shared/AccountLinkPrompt/AccountLinkPrompt";
 import { QuitGuard } from "./components/shared/ConfirmStopAgent/QuitGuard";
 import { StopAgentGuard } from "./components/shared/ConfirmStopAgent/stopAgentGuard";
 import { DiagramViewer } from "./components/shared/DiagramViewer/DiagramViewer";
@@ -54,6 +55,7 @@ export default function App() {
       <DiagramViewer />
       <StopAgentGuard />
       <QuitGuard />
+      <AccountLinkPrompt />
       <UpdaterHost />
       <DragLayer />
     </MemoryRouter>

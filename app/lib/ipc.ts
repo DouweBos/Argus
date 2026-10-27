@@ -12,6 +12,14 @@ import type {
 } from "./chatHistory";
 import type { RemoteDeviceClaimState } from "./deviceClaim";
 import type {
+  AccountApprovalState,
+  AccountConfigPatch,
+  AccountDeviceKey,
+  AccountHost,
+  AccountJoinRequest,
+  AccountLinkState,
+  AccountMemberInfo,
+  AccountStatus,
   AgentStatus,
   AndroidDevice,
   DeviceHost,
@@ -2615,3 +2623,51 @@ export const listConductorVersionsIpc = (): Promise<string[]> =>
 export const setConductorVersionIpc = (
   version: string | null,
 ): Promise<ConductorStatus> => invoke("set_conductor_version", { version });
+
+// --- Account (directory + signed log) -------------------------------------
+
+export const accountGetStatus = (): Promise<AccountStatus> =>
+  invoke("account_get_status", {});
+
+export const accountListHosts = (): Promise<AccountHost[]> =>
+  invoke("account_list_hosts", {});
+
+export const accountListMembers = (): Promise<AccountMemberInfo[]> =>
+  invoke("account_list_members", {});
+
+/** This window's own account device key, for dialing other account hosts. */
+export const accountDeviceKey = (): Promise<AccountDeviceKey | null> =>
+  invoke("account_device_key", {});
+
+/** Start a code link; the browser opens on the code. */
+export const accountLoginStart = (): Promise<AccountLinkState> =>
+  invoke("account_login_start", { surface: "electron" });
+
+export const accountLoginConfirm = (
+  match: boolean,
+): Promise<AccountLinkState> => invoke("account_login_confirm", { match });
+
+export const accountLoginCancel = (): Promise<AccountLinkState> =>
+  invoke("account_login_cancel", {});
+
+export const accountLogout = (): Promise<AccountStatus> =>
+  invoke("account_logout", {});
+
+export const accountListRequests = (): Promise<AccountJoinRequest[]> =>
+  invoke("account_list_requests", {});
+
+export const accountApproveJoin = (
+  requestId: string,
+): Promise<AccountApprovalState> =>
+  invoke("account_approve_join", { requestId });
+
+export const accountConfirmJoin = (
+  match: boolean,
+): Promise<AccountApprovalState> => invoke("account_confirm_join", { match });
+
+export const accountDenyJoin = (requestId: string): Promise<void> =>
+  invoke("account_deny_join", { requestId });
+
+export const accountSetConfig = (
+  patch: AccountConfigPatch,
+): Promise<AccountStatus> => invoke("account_set_config", { patch });

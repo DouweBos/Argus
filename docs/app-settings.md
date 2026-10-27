@@ -497,9 +497,39 @@ your repo.
 
 ---
 
+## Account
+
+Link this computer to your [Argus account](accounts.md) so your phone, your
+Mac and your other computers find it on its current address without a pairing
+code. **Link this computer** shows a short code and opens your browser on it;
+type the code into the Argus app on your phone or Mac (Settings → Account →
+**Add a computer**), or enter it on the page and approve it from your phone.
+A dialog then shows a six-digit number: confirm only if your phone shows the
+same one. On an empty account this computer becomes the first member instead.
+
+Once linked, this screen lists every computer on the account with online or
+offline, and folds them into **Hosts**, where you attach to them like a paired
+host. Other computers waiting to join appear under **Waiting to join** with
+Approve and Deny.
+
+| Setting                        | Default                                            | Description                                                                                                                                           |
+| ------------------------------ | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Use the account**            | On                                                 | Off stops publishing this computer's address and refuses account devices, while staying linked.                                                       |
+| **Publish addresses**          | All on                                             | Which of the LAN address, the Tailscale funnel and the Cloudflare tunnel go into the account directory. The account service can see what you publish. |
+| **Access for account devices** | iPhone: run agents · Mac and desktop: full control | What devices on the account may do here: the same grants as a pairing (`monitor`, `control`, `admin`).                                                |
+| **Approve from this computer** | On                                                 | Whether this computer may approve other computers joining.                                                                                            |
+| **Account service**            | empty (built-in)                                   | Another account service, for self-hosting or testing.                                                                                                 |
+| **Unlink**                     | —                                                  | Removes this computer and this window from the account. QR-paired devices keep working.                                                               |
+
+These live with the remote-access keys in the encrypted
+`~/.argus/remote-devices.json`, per machine. `argus-host` has the same
+settings as `account set …` (see [the server docs](server-app.md)).
+
 ## Remote Access
 
-Pair a phone to monitor your projects and agents from anywhere. With remote
+Pair a phone to monitor your projects and agents from anywhere — or skip the
+pairing and link this computer to your [account](#account) instead; pairing
+is the way in without one. With remote
 access on, Argus runs a gateway that devices on your network reach directly by
 IP; tunnels add a way in from outside your network. All traffic is end-to-end encrypted (Noise IK); the
 tunnel only ever sees ciphertext. Paired devices are **monitor + approve only** —

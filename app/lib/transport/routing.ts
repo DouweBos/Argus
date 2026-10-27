@@ -44,6 +44,8 @@ const UNAVAILABLE = new Set([
 const CLIENT_PREFIXES = [
   // Pairing, revocation and gateway config are this Mac's root of trust.
   "remote_",
+  // So is this computer's account link, and the device key it dials with.
+  "account_",
   // The client updates itself; `updater_get_state` on the host is not useful here.
   "updater_",
   // Telemetry is keyed to this install.

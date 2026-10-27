@@ -91,6 +91,7 @@ import {
   type McpEntry,
 } from "../McpServersField";
 import { PrereqList } from "../PrereqList";
+import { AccountSection } from "./AccountSection";
 import { AutomationDefaults } from "./AutomationDefaults";
 import { ClaudeAccountSection } from "./ClaudeAccountSection";
 import { CustomRunnersSection } from "./CustomRunnersSection";
@@ -187,6 +188,13 @@ function SettingsDialogContent() {
           description: "Personal servers",
           icon: <Icons.GearIcon size={12} />,
           render: () => <McpServersSection />,
+        },
+        {
+          id: "account",
+          label: "Account",
+          description: "Find and link your computers",
+          icon: <Icons.HostIcon size={12} />,
+          render: () => <AccountSection />,
         },
         {
           id: "remote-access",

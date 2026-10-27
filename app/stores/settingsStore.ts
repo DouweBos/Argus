@@ -33,6 +33,8 @@ export interface RemoteHost {
   /** User-facing name for the machine ("Mac mini"). */
   label: string;
   pairedAt: number;
+  /** A QR pairing (absent on older entries), or a computer on your account. */
+  source?: "account" | "pairing";
   /** `ws://` or `wss://` origin of that host's gateway. */
   url: string;
 }
