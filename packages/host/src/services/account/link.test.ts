@@ -232,6 +232,26 @@ describe("account link", () => {
     await expect(listDevices()).resolves.toEqual([]);
   });
 
+  it("keeps an account device out once this console revoked it", async () => {
+    const phone = phoneGenesis();
+    const { link, status } = await boot();
+    const started = await link.startLink("cli");
+    const request = fake.claim((started as { user_code: string }).user_code);
+    const { entries } = phoneApproves(phone, request.id);
+    await waitFor(() => status.getLinkState().kind === "awaiting_sas");
+    await link.confirmLink(true);
+    fake.append(entries);
+    await waitFor(() => status.getLinkState().kind === "linked");
+
+    const trust = await import("./trust");
+    expect(
+      await trust.findAccountDevice(phone.member.noise_pub),
+    ).not.toBeNull();
+    await trust.blockAccountDevice(phone.id);
+
+    expect(await trust.findAccountDevice(phone.member.noise_pub)).toBeNull();
+  });
+
   it("ignores a forged entry from the service and keeps its state", async () => {
     const phone = phoneGenesis();
     const { link, status } = await boot();
