@@ -86,6 +86,9 @@ public struct PillTabBar<ID: Hashable, Trailing: View>: View {
           .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        #if os(macOS)
+          .pointerStyle(.link)
+        #endif
         .help(tab.title)
         .accessibilityLabel(tab.title)
         .accessibilityAddTraits(isSelected ? .isSelected : [])

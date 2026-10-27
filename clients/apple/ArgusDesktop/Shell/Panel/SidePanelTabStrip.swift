@@ -166,6 +166,7 @@ struct SidePanelTabButton<Glyph: View>: View {
     .onTapGesture(perform: select)
     .simultaneousGesture(TapGesture(count: 2).onEnded { startRename?() })
     .onHover { hovering = $0 }
+    .pointerStyle(renaming ? nil : .link)
     .accessibilityElement(children: .combine)
     .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
     .contextMenu {
