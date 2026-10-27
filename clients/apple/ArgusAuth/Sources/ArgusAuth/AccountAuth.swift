@@ -33,7 +33,8 @@ public final class AccountAuth: AccountAuthenticating {
       // Signs up on first use, like the full flow.
       try await Clerk.shared.auth.signInWithIdToken(idToken, provider: .apple)
     } else {
-      try await Clerk.shared.auth.signInWithApple()
+      // Developer ID apps can't carry the entitlement, so Apple goes through the web.
+      try await Clerk.shared.auth.signInWithOAuth(provider: .apple)
     }
     try await requireSession()
   }
