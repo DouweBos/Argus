@@ -366,6 +366,13 @@ home. They are
 signed with your Apple Development identity: macOS refuses notifications to an
 ad-hoc signed app, and to one run from `/tmp`.
 
+Sign in with Apple needs a provisioning profile. Debug builds get one through
+Xcode's automatic signing (your Mac has to be registered with the team).
+Release builds are signed with Developer ID and a profile from fastlane match;
+create it once with `bundle exec fastlane mac mac_app_profile generate:true`,
+and on any other machine install it with `bundle exec fastlane mac
+mac_app_profile`.
+
 Telemetry needs a PostHog key at build time, as for the Electron app:
 `POSTHOG_KEY` in the environment `xcodebuild` runs in, or `POSTHOG_KEY = …` in
 a gitignored `clients/apple/Config/Argus.local.xcconfig`, which also covers

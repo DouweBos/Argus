@@ -21,10 +21,28 @@ platform :mac do
       type:                       "developer_id",
       readonly:                   !options.fetch(:generate, false),
       platform:                   "macos",
-      # Argus uses no entitlements that require a provisioning profile.
-      # Without this flag, recent fastlane tries to fetch a "Direct"
-      # provisioning profile and fails for Developer ID distribution.
+      # The Electron app has no profile-bound entitlements; without this
+      # flag match would try to fetch a "Direct" profile for it.
       skip_provisioning_profiles: true,
+    }
+    match_options[:api_key] = api_key if api_key
+
+    match(**match_options)
+  end
+
+  desc "Sync the Developer ID profile for Argus for Mac (dev.houwert.argus.mac), which Sign in with Apple needs. Pass generate:true once to create and upload it."
+  lane :mac_app_profile do |options|
+    api_key = ENV["APP_STORE_CONNECT_API_KEY_ID"] ? load_app_store_connect_api_key : nil
+    UI.user_error!("CI must authenticate via APP_STORE_CONNECT_API_KEY_* env vars") if is_ci && api_key.nil?
+
+    # Installs as "match Direct dev.houwert.argus.mac macos", the name the
+    # ArgusDesktop Release config pins.
+    match_options = {
+      type:                       "developer_id",
+      readonly:                   !options.fetch(:generate, false),
+      platform:                   "macos",
+      app_identifier:             "dev.houwert.argus.mac",
+      skip_provisioning_profiles: false,
     }
     match_options[:api_key] = api_key if api_key
 
