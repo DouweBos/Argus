@@ -62,7 +62,8 @@ struct SessionContextCard: View {
     ContextCardDivider()
     machineRow
     if isLocal, let path, let editor = preferredEditor { editorRow(path: path, editor: editor) }
-    if ready {
+    // Run and share belong to the agent view; Code and Git have their own tools.
+    if ready, (model.sessionPanel ?? .agents) == .agents {
       RunControl(session: session, inCard: true)
       HuddleToolbarButton(sessionId: session.id, inCard: true)
         .buttonStyle(ContextRowButtonStyle())

@@ -24,7 +24,7 @@ struct SessionToolbar: ToolbarContent {
     if #available(macOS 26.0, *) {
       ToolbarSpacer(.flexible)
     }
-    if let session, session.status == .ready, cardCollapsed {
+    if let session, session.status == .ready, cardCollapsed, (model.sessionPanel ?? .agents) == .agents {
       ToolbarItem {
         PillGroup {
           HuddleToolbarButton(sessionId: session.id)
