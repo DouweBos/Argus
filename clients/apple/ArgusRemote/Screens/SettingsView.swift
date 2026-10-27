@@ -154,15 +154,21 @@ struct SettingsView: View {
       if !host.deviceHosts.isEmpty {
         Section {
           ForEach(host.deviceHosts) { entry in
-            LabeledContent(entry.label) {
-              Text(deviceHostStatusLabel(entry.status))
-                .foregroundStyle(entry.status == .unreachable ? theme.warning : theme.textMuted)
+            if entry.isEas {
+              EasHostRow(entry: entry)
+            } else {
+              LabeledContent(entry.label) {
+                Text(deviceHostStatusLabel(entry.status))
+                  .foregroundStyle(entry.status == .unreachable ? theme.warning : theme.textMuted)
+              }
             }
           }
         } header: {
           Text("Device hosts")
         } footer: {
-          Text("Other Macs this computer streams simulators from over SSH. Add or remove them in Argus on the computer.")
+          Text(
+            "Other Macs this computer streams simulators from over SSH, and EAS Simulator hosts in Expo's cloud. Add or remove them, and set Expo tokens, in Argus on the computer."
+          )
         }
       }
 
@@ -262,6 +268,66 @@ struct SettingsView: View {
       // Permission is what gates the push token, so re-register right after.
       await app.setPushEnabled(true)
       notificationStatus = await NotificationRouter.shared.authorizationStatus()
+    }
+  }
+}
+
+/// An EAS Simulator host: its running sessions, and a way to start one. A
+/// session is billed to the Expo account on the computer, so starting one is
+/// control-only and asks first.
+private struct EasHostRow: View {
+  @Environment(\.theme) private var theme
+  @Environment(HostStore.self) private var host
+  let entry: RemoteDeviceHost
+  @State private var confirming = false
+  @State private var busy = false
+  @State private var note: String?
+  @State private var failed = false
+
+  private var running: Int { entry.runningSessions ?? 0 }
+  private var limit: Int { entry.maxSessions ?? 0 }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      LabeledContent(entry.label) {
+        Text("EAS · \(running) of \(limit) running")
+          .foregroundStyle(entry.status == .unreachable ? theme.warning : theme.textMuted)
+      }
+      if host.hasControl {
+        Button(busy ? "Starting…" : "Start a session") { confirming = true }
+          .disabled(busy || running >= limit)
+      }
+      if let note {
+        Text(note)
+          .font(.caption)
+          .foregroundStyle(failed ? theme.error : theme.textMuted)
+      }
+    }
+    .confirmationDialog(
+      "Start an EAS Simulator session?", isPresented: $confirming, titleVisibility: .visible
+    ) {
+      Button("Start session (billed)", action: start)
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text(
+        "It costs money: the session is billed to the Expo account on the computer until you end it, it sits idle, or it reaches its time limit. It can take a few minutes to start."
+      )
+    }
+  }
+
+  private func start() {
+    busy = true
+    failed = false
+    note = nil
+    Task {
+      defer { busy = false }
+      do {
+        _ = try await host.startEasSession(hostId: entry.id)
+        note = "Starting. The device shows up under Devices once it's ready."
+      } catch {
+        failed = true
+        note = HostStore.describe(error)
+      }
     }
   }
 }

@@ -532,7 +532,8 @@ public struct RemoteDevice: Codable, Hashable, Sendable, Identifiable {
   }
 }
 
-/// Another Mac the computer streams simulators from over SSH.
+/// Another Mac the computer streams simulators from over SSH, or an EAS
+/// Simulator host whose devices are billed cloud sessions.
 public struct RemoteDeviceHost: Codable, Hashable, Sendable, Identifiable {
   public enum Status: String, Codable, Sendable {
     case connected, unknown, unreachable
@@ -541,6 +542,31 @@ public struct RemoteDeviceHost: Codable, Hashable, Sendable, Identifiable {
   public var id: String
   public var label: String
   public var status: Status
+  /// "ssh" or "eas"; absent from computers that predate EAS hosts.
+  public var kind: String?
+  /// EAS only: sessions running or starting, and the host's limit.
+  public var runningSessions: Int?
+  public var maxSessions: Int?
+
+  public var isEas: Bool { kind == "eas" }
+
+  public init(
+    id: String, label: String, status: Status, kind: String? = nil, runningSessions: Int? = nil,
+    maxSessions: Int? = nil
+  ) {
+    self.id = id
+    self.label = label
+    self.status = status
+    self.kind = kind
+    self.runningSessions = runningSessions
+    self.maxSessions = maxSessions
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case id, label, status, kind
+    case runningSessions = "running_sessions"
+    case maxSessions = "max_sessions"
+  }
 }
 
 /// Who is driving a device. The paired phone or Mac holding it, not the

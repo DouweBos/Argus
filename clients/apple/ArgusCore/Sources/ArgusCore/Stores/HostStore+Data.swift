@@ -156,6 +156,29 @@ extension HostStore {
     deviceHosts = result.hosts
   }
 
+  /// Start a billed EAS Simulator session on the host's next free slot. The
+  /// computer returns at once; the device turns up in `devices` once ready.
+  public func startEasSession(hostId: String) async throws -> String {
+    guard let backend else { throw Self.offlineError }
+    struct Params: Encodable, Sendable { let host_id: String }
+    struct Result: Decodable { let device_id: String }
+    let result = try await backend.request(
+      .deviceHostsStartEasSession, Params(host_id: hostId), as: Result.self)
+    await refreshDeviceHosts()
+    return result.device_id
+  }
+
+  /// Stop an EAS Simulator session, which ends its device.
+  public func stopEasSession(deviceId: String) async throws {
+    guard let backend else { throw Self.offlineError }
+    struct Params: Encodable, Sendable { let device_id: String }
+    struct Result: Decodable { let accepted: Bool }
+    _ = try await backend.request(
+      .deviceHostsStopEasSession, Params(device_id: deviceId), as: Result.self)
+    await refreshDeviceHosts()
+    await refreshDevices()
+  }
+
   // MARK: Transcript
 
   /// A stopped agent has no agent id — the process is gone and only the saved

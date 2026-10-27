@@ -27,6 +27,10 @@ struct DeviceView: View {
   /// it — a glance and a working session are worth telling apart.
   @State private var watchStart: Date?
   @State private var interacted = false
+  @State private var confirmingEnd = false
+
+  /// An EAS Simulator session: a billed cloud device that can't rotate.
+  private var isEas: Bool { deviceId.hasPrefix("eas:") }
 
   /// Booted but producing nothing decodable — worth saying so rather than
   /// spinning forever.
@@ -78,6 +82,12 @@ struct DeviceView: View {
     .background(theme.bg)
     .navigationTitle(name)
     .navigationBarTitleDisplayMode(.inline)
+    .confirmationDialog("End this EAS Simulator session?", isPresented: $confirmingEnd, titleVisibility: .visible) {
+      Button("End session", role: .destructive, action: endSession)
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("The cloud device goes away and stops billing.")
+    }
     .task(id: host.connection) { await subscribe() }
     .onDisappear { teardown() }
   }
@@ -177,7 +187,11 @@ struct DeviceView: View {
         IconBtn(systemName: button.icon, label: button.label) { sendButton(button.id) }
       }
       IconBtn(systemName: Icon.keyboard, label: "Keyboard") { keyboardFocused = true }
-      if platform == .ios {
+      if isEas {
+        // Ending the session ends the device and its billing.
+        IconBtn(systemName: Icon.stop, label: "End session") { confirmingEnd = true }
+          .disabled(busy)
+      } else if platform == .ios {
         IconBtn(systemName: Icon.rotate, label: "Rotate") { rotate() }
           .disabled(busy)
       }
@@ -193,6 +207,14 @@ struct DeviceView: View {
     .padding(.vertical, 8)
     .background(theme.bgSecondary)
     .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
+  }
+
+  private func endSession() {
+    busy = true
+    Task {
+      defer { busy = false }
+      try? await host.stopEasSession(deviceId: deviceId)
+    }
   }
 
   private func rotate() {
