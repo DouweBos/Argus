@@ -31,7 +31,12 @@ public final class RemoteHostsStore {
     case pair, attach, detach, forget, rename, focus
   }
 
-  public private(set) var hosts: [DeviceIdentity] = []
+  /// QR-paired hosts, kept in the file.
+  public private(set) var pairedHosts: [DeviceIdentity] = []
+  /// Hosts on the signed-in account, rebuilt from its verified log.
+  public private(set) var accountHosts: [DeviceIdentity] = []
+  /// Every host this Mac can drive: paired ∪ account, one row per computer.
+  public var hosts: [DeviceIdentity] { .merging(paired: pairedHosts, account: accountHosts) }
   public private(set) var attached: Set<HostId> = []
   public private(set) var states: [HostId: LinkState] = [:]
   public private(set) var pairing: Pairing = .idle
@@ -43,6 +48,8 @@ public final class RemoteHostsStore {
   /// A host's lists went or came, so the merged lists should be refetched.
   @ObservationIgnored public var onHostsChanged: () -> Void = {}
   @ObservationIgnored public var onAction: (Action, Bool) -> Void = { _, _ in }
+  /// An attached account host can't be reached: poll the directory for a moved address.
+  @ObservationIgnored public var onAccountHostFailing: (Bool) -> Void = { _ in }
 
   @ObservationIgnored private let file: PairedHostsFile
   @ObservationIgnored private let clientInfo: PairingClientInfo
@@ -54,8 +61,11 @@ public final class RemoteHostsStore {
     self.file = file
     self.clientInfo = clientInfo
     let contents = file.load()
-    hosts = contents.hosts
-    attached = Set(contents.attached.filter { id in contents.hosts.contains { $0.deviceId == id } })
+    pairedHosts = contents.hosts
+    // Account hosts arrive later, from the account log; keep theirs too.
+    attached = Set(contents.attached.filter { id in
+      id.hasPrefix(Self.accountPrefix) || contents.hosts.contains { $0.deviceId == id }
+    })
   }
 
   public func label(_ hostId: HostId) -> String {
@@ -81,7 +91,26 @@ public final class RemoteHostsStore {
   /// them blocks the window or each other.
   public func bind(_ router: HostRouter) {
     self.router = router
-    for id in attached { connect(id) }
+    for id in attached where identity(id) != nil { connect(id) }
+  }
+
+  static let accountPrefix = "account:"
+
+  /// The account's hosts changed: new ones listed, moved ones redialled now
+  /// rather than at the end of their back-off.
+  public func setAccountHosts(_ identities: [DeviceIdentity]) {
+    let previous = Dictionary(accountHosts.map { ($0.deviceId, $0) }, uniquingKeysWith: { a, _ in a })
+    accountHosts = identities
+    for identity in identities where attached.contains(identity.deviceId) {
+      let moved = previous[identity.deviceId]?.endpoints != identity.endpoints
+      if previous[identity.deviceId] == nil || (moved && state(identity.deviceId) != .ready) {
+        connect(identity.deviceId)
+      }
+    }
+    for gone in previous.keys where !identities.contains(where: { $0.deviceId == gone }) {
+      if attached.contains(gone) { Task { await detach(gone) } }
+    }
+    onHostsChanged()
   }
 
   /// A paired host's connection changed (called from the router's thread).
@@ -105,12 +134,14 @@ public final class RemoteHostsStore {
   }
 
   private func connect(_ hostId: HostId) {
-    guard let identity = identity(hostId), let router else { return }
+    guard identity(hostId) != nil, let router else { return }
     states[hostId] = .connecting
     retries[hostId]?.cancel()
     retries[hostId] = Task { [weak self] in
       var delay: Duration = .seconds(5)
       while !Task.isCancelled {
+        // Re-read each try: an account host's addresses move with its presence.
+        guard let identity = self?.identity(hostId) else { return }
         if let (link, url) = try? await RemoteHostLink.connect(identity: identity) {
           guard let self, self.attached.contains(hostId), !Task.isCancelled else {
             await link.disconnect()
@@ -119,20 +150,31 @@ public final class RemoteHostsStore {
           await router.add(link, label: identity.label)
           self.remember(url: url, for: hostId)
           self.linkState(hostId, .ready)
+          self.reportAccountFailures()
           self.onHostsChanged()
           return
         }
         guard let self, self.attached.contains(hostId) else { return }
         self.states[hostId] = .unreachable
+        self.reportAccountFailures()
         try? await Task.sleep(for: delay)
         delay = min(delay * 2, .seconds(60))
       }
     }
   }
 
+  private func reportAccountFailures() {
+    onAccountHostFailing(
+      attached.contains { $0.hasPrefix(Self.accountPrefix) && states[$0] == .unreachable })
+  }
+
   private func remember(url: String, for hostId: HostId) {
-    guard let index = hosts.firstIndex(where: { $0.deviceId == hostId }) else { return }
-    hosts[index].url = url
+    if let index = accountHosts.firstIndex(where: { $0.deviceId == hostId }) {
+      accountHosts[index].url = url
+      return
+    }
+    guard let index = pairedHosts.firstIndex(where: { $0.deviceId == hostId }) else { return }
+    pairedHosts[index].url = url
     persist()
   }
 
@@ -165,7 +207,7 @@ public final class RemoteHostsStore {
   public func forget(_ hostId: HostId) async {
     await detach(hostId)
     await router?.forget(hostId)
-    hosts.removeAll { $0.deviceId == hostId }
+    pairedHosts.removeAll { $0.deviceId == hostId }
     states[hostId] = nil
     persist()
     onHostsChanged()
@@ -174,10 +216,10 @@ public final class RemoteHostsStore {
 
   public func rename(_ hostId: HostId, to label: String) {
     let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty, let index = hosts.firstIndex(where: { $0.deviceId == hostId }) else {
+    guard !trimmed.isEmpty, let index = pairedHosts.firstIndex(where: { $0.deviceId == hostId }) else {
       return
     }
-    hosts[index].hostName = trimmed
+    pairedHosts[index].hostName = trimmed
     router?.setLabel(trimmed, for: hostId)
     persist()
     onAction(.rename, true)
@@ -191,7 +233,10 @@ public final class RemoteHostsStore {
   }
 
   private func persist() {
-    try? file.save(.init(hosts: hosts, attached: hosts.map(\.deviceId).filter(attached.contains)))
+    let listed = hosts.map(\.deviceId).filter(attached.contains)
+    // An attached account host not listed yet (the log loads after launch) stays attached.
+    let pending = attached.subtracting(listed).sorted()
+    try? file.save(.init(hosts: pairedHosts, attached: listed + pending))
   }
 
   // MARK: Pairing
@@ -236,8 +281,8 @@ public final class RemoteHostsStore {
   private func paired(_ identity: DeviceIdentity) {
     pairingClient = nil
     // Re-pairing the same machine replaces its stale key.
-    hosts.removeAll { $0.deviceId == identity.deviceId || $0.desktopPubB64 == identity.desktopPubB64 }
-    hosts.append(identity)
+    pairedHosts.removeAll { $0.deviceId == identity.deviceId || $0.desktopPubB64 == identity.desktopPubB64 }
+    pairedHosts.append(identity)
     let admin = identity.capabilities.contains("admin")
     pairing = .paired(label: identity.label, admin: admin)
     persist()

@@ -41,6 +41,7 @@ struct SettingsWindow: View {
     case .general: GeneralSettingsTab()
     case .appearance: AppearanceSettingsTab()
     case .accounts: AccountsSettingsTab()
+    case .account: AccountSettingsTab()
     case .agents: AgentsSettingsTab()
     case .llm: LLMSettingsTab()
     case .mcp: MCPSettingsTab()
@@ -77,13 +78,14 @@ private struct SettingsNavList: View {
 }
 
 enum SettingsTab: String, Hashable, CaseIterable {
-  case general, appearance, accounts, agents, llm, mcp, tools, git, editor, remote, hosts, advanced
+  case general, appearance, account, accounts, agents, llm, mcp, tools, git, editor, remote, hosts, advanced
 
   var title: String {
     switch self {
     case .general: "General"
     case .appearance: "Appearance"
-    case .accounts: "Accounts"
+    case .account: "Argus Account"
+    case .accounts: "Claude Accounts"
     case .agents: "Agents"
     case .llm: "LLM"
     case .mcp: "MCP"
@@ -100,6 +102,7 @@ enum SettingsTab: String, Hashable, CaseIterable {
     switch self {
     case .general: "gearshape"
     case .appearance: "paintpalette"
+    case .account: "person.badge.key"
     case .accounts: "person.crop.circle"
     case .agents: "sparkles"
     case .llm: "cpu"
@@ -128,7 +131,7 @@ private struct FocusedHostBanner: View {
     if model.hosts.focused != Hosts.local {
       HStack(spacing: 8) {
         Image(systemName: "desktopcomputer")
-        Text("Showing \(model.hosts.label(model.hosts.focused))'s settings. Remote access and Hosts are always this Mac's.")
+        Text("Showing \(model.hosts.label(model.hosts.focused))'s settings. Remote access, Argus Account and Hosts are always this Mac's.")
         Spacer()
         Button("Show This Mac") { model.hosts.focus(Hosts.local) }
       }

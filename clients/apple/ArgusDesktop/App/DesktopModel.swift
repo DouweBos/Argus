@@ -1,4 +1,5 @@
 import AppKit
+import ArgusAuth
 import ArgusCore
 import Foundation
 import Observation
@@ -33,6 +34,10 @@ final class DesktopModel {
   let huddles: HuddleStore
   /// Paired hosts this window drives besides its own.
   let hosts: RemoteHostsStore
+  /// The Argus account: sign-in, and the hosts on it.
+  let account: AccountStore
+  /// The bundled host, linked to the account without a code.
+  let localAccountLink = LocalHostAccountLink()
   /// Every request, routed to the host that owns its subject.
   private(set) var backend: HostRouter?
   /// The supervised host alone: platform requests and telemetry are this Mac's.
@@ -91,6 +96,9 @@ final class DesktopModel {
       clientInfo: PairingClientInfo(
         product: "Argus for Mac", kind: "desktop", device: Host.current().localizedName,
         version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String))
+    let macName = Host.current().localizedName ?? "Mac"
+    account = AccountStore(
+      auth: AccountAuth(), deviceKind: "mac", deviceName: { macName }, localHost: localAccountLink)
     let notificationsLog = NotificationsLog()
     self.notificationsLog = notificationsLog
     store = HostStore(
@@ -143,6 +151,8 @@ final class DesktopModel {
     hosts.onAction = { action, success in
       MacTelemetry.capture(.hostsUsed(action: .init(action), success: success))
     }
+    account.onHostsChanged = { [hosts] identities in hosts.setAccountHosts(identities) }
+    hosts.onAccountHostFailing = { [account] failing in account.setConnectionFailing(failing) }
   }
 
   func start() {
@@ -188,6 +198,9 @@ final class DesktopModel {
     await MacTelemetry.attach(local, applyMode: !isAttached)
     if supplied > 0 { MacTelemetry.capture(.prefsSupplied(keys: supplied)) }
     hosts.bind(router)
+    // Only the app running the host may put it on an account.
+    if !isAttached { localAccountLink.backend = local }
+    Task { await account.start() }
     watchConnection(local)
   }
 
