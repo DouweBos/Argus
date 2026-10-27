@@ -14,7 +14,7 @@ Everything not on this list is ours to build and script. Nothing here needs the 
 2. Deploy it to **Production** on domain `houwert.dev`. Clerk lists about five DNS records
    (`clerk.`, `accounts.`, `clkmail.`, `clk._domainkey`, `clk2._domainkey`). Add them in
    Cloudflare DNS as **DNS only** (grey cloud), then wait until Clerk shows them verified and SSL issued.
-3. **GitHub**: at github.com/settings/developers → *New OAuth App* (homepage `https://houwert.dev`,
+3. **GitHub**: at github.com/settings/developers → _New OAuth App_ (homepage `https://houwert.dev`,
    callback URL = the one Clerk's GitHub setting shows). Paste the client ID and secret into Clerk.
    (Production instances can't use Clerk's shared GitHub credentials.)
 4. **Native applications**: turn on **Native API**, then add two Apple apps, both with
@@ -64,34 +64,34 @@ Everything not on this list is ours to build and script. Nothing here needs the 
 - An account sign-in for the LAN web client (`clients/argus-web`). It stays QR-paired; see phase 5.
 - Storing anything a host or agent produces. The service never sees prompts, names of projects or
   sessions, or paths.
-- Replacing Clerk sessions with our own tokens. Clerk gates *who may use the directory*; our keys
-  gate *who may connect*.
+- Replacing Clerk sessions with our own tokens. Clerk gates _who may use the directory_; our keys
+  gate _who may connect_.
 
 ## 2. Today (what this builds on)
 
-| Piece | Where | Relevant behaviour |
-|---|---|---|
-| Host identity | `packages/host/src/services/remote/deviceStore.ts` | One X25519 static key (`ds_priv`/`ds_pub`) in the encrypted `~/.argus/remote-devices.json`. `rotateDesktopIdentity()` wipes every device. |
-| Paired devices | same | `PairedDevice { device_id, dev_static_pub, capabilities, push }`, matched by `findDeviceByStaticKey`. |
-| Enrollment | `pairing.ts`, `serverPairing.ts`, `bin/consolePairing.ts` | Noise IKpsk1 on `/pair`. The PSK comes from the QR secret; a SAS (`derive.ts deriveSas`) is confirmed at the host console. |
-| Steady state | `localGatewayServer.ts handleDeviceSocket` | Noise IK on `/device`. An unknown key is closed unless a huddle room is open. |
-| Endpoints | `endpoints.ts getEndpoints`, `tunnelManager.ts` | Ranked list (lan 0, tailscale 1, cloudflare 2), synced to clients via `host.endpoints`. |
-| Tiers | `remote-protocol/src/capabilities.ts` | `monitor`/`control`/`admin`. `HOST_ONLY_COMMANDS` (pairing, revoke, grants, huddles) never cross the wire. |
-| Push | `push/relay.ts`, `push/seal.ts`, houwert.dev `functions/argus/push/[[path]].ts` (KV `ARGUS_PUSH`) | The device mints `push_key` (AES, sealing) and `auth_key` (HMAC), registers `auth_key` with the relay, and hands both to each host over the gateway (`device.register_push`). |
-| iOS store | `ArgusKit/Storage/Keystore.swift`, `DeviceIdentity.swift` | Keychain `PairedHosts`. **One keypair per pairing**, plus pinned `desktopPubB64`, `url`, `endpoints`. |
-| Mac app | `ArgusCore/Hosts/RemoteHostsStore.swift`, `PairedHostsFile.swift`, `ArgusDesktop/Settings/Hosts/HostsSettingsTab.swift` | Same `DeviceIdentity` records in a 0600 file. |
-| Electron | `app/stores/settingsStore.ts RemoteHost`, `app/lib/transport/registry.ts`, `SettingsDialog/HostsSection.tsx`, `RemoteAccessSection.tsx` | Per-host keypair in renderer settings. |
+| Piece          | Where                                                                                                                                   | Relevant behaviour                                                                                                                                                            |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Host identity  | `packages/host/src/services/remote/deviceStore.ts`                                                                                      | One X25519 static key (`ds_priv`/`ds_pub`) in the encrypted `~/.argus/remote-devices.json`. `rotateDesktopIdentity()` wipes every device.                                     |
+| Paired devices | same                                                                                                                                    | `PairedDevice { device_id, dev_static_pub, capabilities, push }`, matched by `findDeviceByStaticKey`.                                                                         |
+| Enrollment     | `pairing.ts`, `serverPairing.ts`, `bin/consolePairing.ts`                                                                               | Noise IKpsk1 on `/pair`. The PSK comes from the QR secret; a SAS (`derive.ts deriveSas`) is confirmed at the host console.                                                    |
+| Steady state   | `localGatewayServer.ts handleDeviceSocket`                                                                                              | Noise IK on `/device`. An unknown key is closed unless a huddle room is open.                                                                                                 |
+| Endpoints      | `endpoints.ts getEndpoints`, `tunnelManager.ts`                                                                                         | Ranked list (lan 0, tailscale 1, cloudflare 2), synced to clients via `host.endpoints`.                                                                                       |
+| Tiers          | `remote-protocol/src/capabilities.ts`                                                                                                   | `monitor`/`control`/`admin`. `HOST_ONLY_COMMANDS` (pairing, revoke, grants, huddles) never cross the wire.                                                                    |
+| Push           | `push/relay.ts`, `push/seal.ts`, houwert.dev `functions/argus/push/[[path]].ts` (KV `ARGUS_PUSH`)                                       | The device mints `push_key` (AES, sealing) and `auth_key` (HMAC), registers `auth_key` with the relay, and hands both to each host over the gateway (`device.register_push`). |
+| iOS store      | `ArgusKit/Storage/Keystore.swift`, `DeviceIdentity.swift`                                                                               | Keychain `PairedHosts`. **One keypair per pairing**, plus pinned `desktopPubB64`, `url`, `endpoints`.                                                                         |
+| Mac app        | `ArgusCore/Hosts/RemoteHostsStore.swift`, `PairedHostsFile.swift`, `ArgusDesktop/Settings/Hosts/HostsSettingsTab.swift`                 | Same `DeviceIdentity` records in a 0600 file.                                                                                                                                 |
+| Electron       | `app/stores/settingsStore.ts RemoteHost`, `app/lib/transport/registry.ts`, `SettingsDialog/HostsSection.tsx`, `RemoteAccessSection.tsx` | Per-host keypair in renderer settings.                                                                                                                                        |
 
 ## 3. Threat model
 
-| Adversary | Can | Cannot (by design) |
-|---|---|---|
+| Adversary                                                    | Can                                                                                                                                                                                                                                                                                 | Cannot (by design)                                                                                                                                                                                                                      |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Account service fully compromised (code + D1 + Clerk config) | Deny service; withhold or delay log entries (including revocations); show stale endpoints; learn metadata (who has how many hosts/devices, their names, IPs/tunnel URLs, last-seen); spam join requests; give a brand-new device a forked log on its very first sign-in (see below) | Add a device or host that any honest member accepts (no trusted signature); swap a host's Noise key (clients pin keys from signed log entries); read or alter traffic (Noise IK to pinned keys); read notifications (sealed per device) |
-| Clerk account takeover (attacker signs in as you) | Everything a compromised service can do *for your account*, including filing join requests | Get a request approved without someone confirming a code on a trusted device or host console |
-| Network attacker, tunnel provider (Cloudflare, Tailscale) | See ciphertext and timing | Same as today: nothing else |
-| Stolen phone (unlocked) | Act as that device until it's revoked | Survive revocation: hosts drop it once they see the signed entry (gateway push, or polling within 5 min) |
-| Compromised host | Everything on that host; approve new devices from its console (by design, see §4.4) | Read other hosts' traffic, or impersonate other hosts (separate keys) |
-| Someone holding a link code | Bind a pending host link to *their* account (an annoyance) | Get a host trusted by your devices without your SAS confirmation |
+| Clerk account takeover (attacker signs in as you)            | Everything a compromised service can do _for your account_, including filing join requests                                                                                                                                                                                          | Get a request approved without someone confirming a code on a trusted device or host console                                                                                                                                            |
+| Network attacker, tunnel provider (Cloudflare, Tailscale)    | See ciphertext and timing                                                                                                                                                                                                                                                           | Same as today: nothing else                                                                                                                                                                                                             |
+| Stolen phone (unlocked)                                      | Act as that device until it's revoked                                                                                                                                                                                                                                               | Survive revocation: hosts drop it once they see the signed entry (gateway push, or polling within 5 min)                                                                                                                                |
+| Compromised host                                             | Everything on that host; approve new devices from its console (by design, see §4.4)                                                                                                                                                                                                 | Read other hosts' traffic, or impersonate other hosts (separate keys)                                                                                                                                                                   |
+| Someone holding a link code                                  | Bind a pending host link to _their_ account (an annoyance)                                                                                                                                                                                                                          | Get a host trusted by your devices without your SAS confirmation                                                                                                                                                                        |
 
 Known residual risks, accepted for now:
 
@@ -109,11 +109,11 @@ Known residual risks, accepted for now:
 
 ### 4.1 Keys per member
 
-| Member | Signing key (Ed25519) | Noise static (X25519) | Stored in |
-|---|---|---|---|
-| Host | **new** `host_sign` | existing `ds_priv`/`ds_pub` (unchanged) | `remote-devices.json` encrypted blob, new `account` field |
-| iOS / Mac app device | **new** `dev_sign` | **new** account-wide `dev_noise`, one per install, used for every account host | Keychain (`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, not synced) |
-| Electron install | **new** `dev_sign` | **new** `dev_noise` | Host's encrypted blob (the renderer reads it through a host-tier command, as it reads `RemoteHost.devPrivB64` today) |
+| Member               | Signing key (Ed25519) | Noise static (X25519)                                                          | Stored in                                                                                                            |
+| -------------------- | --------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| Host                 | **new** `host_sign`   | existing `ds_priv`/`ds_pub` (unchanged)                                        | `remote-devices.json` encrypted blob, new `account` field                                                            |
+| iOS / Mac app device | **new** `dev_sign`    | **new** account-wide `dev_noise`, one per install, used for every account host | Keychain (`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, not synced)                                            |
+| Electron install     | **new** `dev_sign`    | **new** `dev_noise`                                                            | Host's encrypted blob (the renderer reads it through a host-tier command, as it reads `RemoteHost.devPrivB64` today) |
 
 Notes:
 
@@ -138,14 +138,14 @@ sig   = Ed25519(sign_priv, "argus-account-v1\n" + body)
 Signatures cover the exact `body` string, so no JSON canonicalization is needed in TS or Swift.
 Verifiers check the signature first, then parse.
 
-| `type` | Fields | Signed by | Valid when |
-|---|---|---|---|
-| `genesis` | `member: Member` | the member itself | `seq == 0`. Accepted on TOFU only (§5.1) |
-| `add_device` | `member: DeviceMember`, `request_id`, `sas_commit` | approver **and** the new device (proof of possession) | approver is a live device, or a live host (console approval) |
-| `add_host` | `member: HostMember`, `request_id`, `sas_commit` | approver **and** the host | approver is a live device or host |
-| `revoke` | `member_id`, `reason: "removed" \| "lost" \| "unlinked"` | any live device; a host only for itself | target exists and is live |
-| `rotate` | `member_id`, `sign_pub`, `noise_pub` | old **and** new signing key | target live, signer == target |
-| `rename` | `member_id`, `name` | any live device, or the member itself | target live |
+| `type`       | Fields                                                   | Signed by                                             | Valid when                                                   |
+| ------------ | -------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------ |
+| `genesis`    | `member: Member`                                         | the member itself                                     | `seq == 0`. Accepted on TOFU only (§5.1)                     |
+| `add_device` | `member: DeviceMember`, `request_id`, `sas_commit`       | approver **and** the new device (proof of possession) | approver is a live device, or a live host (console approval) |
+| `add_host`   | `member: HostMember`, `request_id`, `sas_commit`         | approver **and** the host                             | approver is a live device or host                            |
+| `revoke`     | `member_id`, `reason: "removed" \| "lost" \| "unlinked"` | any live device; a host only for itself               | target exists and is live                                    |
+| `rotate`     | `member_id`, `sign_pub`, `noise_pub`                     | old **and** new signing key                           | target live, signer == target                                |
+| `rename`     | `member_id`, `name`                                      | any live device, or the member itself                 | target live                                                  |
 
 ```
 DeviceMember = { id: uuid, role: "device", kind: "ios" | "mac" | "electron",
@@ -211,9 +211,9 @@ first sign-in on a Mac lists that Mac immediately.
 
 1. H generates `host_sign` if it has none. H → S `POST /v1/link/start`, signed with `host_sign`:
    `{ host: HostMember, device?: DeviceMember /* Electron: the window is also a device */,
-   proofs }` → `{ request_id, user_code: "WDJB-MJHT", verification_uri:
-   "https://houwert.dev/argus/link", verification_uri_complete: "…?code=WDJB-MJHT",
-   expires_in: 600, interval: 5 }`.
+proofs }` → `{ request_id, user_code: "WDJB-MJHT", verification_uri:
+"https://houwert.dev/argus/link", verification_uri_complete: "…?code=WDJB-MJHT",
+expires_in: 600, interval: 5 }`.
 2. H prints or shows the code and URL. Electron opens `verification_uri_complete` through
    `HostPlatform.openExternal`.
 3. The user claims the code in one of two places:
@@ -282,8 +282,8 @@ Requests expire after 10 minutes. `POST /v1/join/:id/deny` (any trusted device) 
   `setGatewayOnLan` change (debounced 2 s), and as a heartbeat every 5 min. `last_seen` is the
   service's receive time.
 - **Directory.** A client calls `GET /v1/directory` → `[{ host_id, presence_body, presence_sig,
-  last_seen }]`. The client verifies `presence_sig` against the host's `sign_pub` *from its own
-  verified log* and drops records older than the one it holds. A forged record can only fail the
+last_seen }]`. The client verifies `presence_sig` against the host's `sign_pub` _from its own
+  verified log_ and drops records older than the one it holds. A forged record can only fail the
   Noise handshake, but verifying it also stops the service from steering phones at arbitrary LAN
   addresses.
 - **Connect.** The client builds a `DeviceIdentity` from the log member (`desktopPubB64 = noise_pub`,
@@ -308,7 +308,7 @@ Requests expire after 10 minutes. `POST /v1/join/:id/deny` (any trusted device) 
 - **Client applies a host revoke:** drop it from the list and `AgentHostIndex.forget(hostId:)`.
 - **Local revoke** from the host console (existing `remote_revoke_device`) works without the
   service. For an account device it also appends `revoke` if the host can reach S, signed by the host
-  as approver of last resort. Open question 6 covers whether hosts may revoke *other* members.
+  as approver of last resort. Open question 6 covers whether hosts may revoke _other_ members.
 - **Sign out on a device** = self-`revoke` + delete keys + Clerk sign-out. Hosts it was QR-paired with
   are unaffected.
 
@@ -324,11 +324,11 @@ Requests expire after 10 minutes. `POST /v1/join/:id/deny` (any trusted device) 
 
 ### 5.8 Recover
 
-| You still have | Do |
-|---|---|
-| Any trusted device | Normal approval (§5.4) |
-| No device, but a linked host you can sit at (or SSH into) | Sign in on the new device → join request → approve it **from that host's console** (`argus-host approve`, the Electron prompt, or the Mac app's local host). If the console isn't handy, **QR-pair** with that host first (today's flow). The pairing confirm screen then offers "Also add to your account", which writes `add_device` signed by the host. |
-| Nothing at all | **Reset account trust**: the new device writes `genesis` for `epoch + 1` (S requires a fresh Clerk session with a reverification prompt, and emails the user). Old-epoch hosts **do not** follow automatically, because the service could forge a reset. Each host must be re-linked from its console (§5.2a). Re-linking drops that host's old-epoch account devices. |
+| You still have                                            | Do                                                                                                                                                                                                                                                                                                                                                                     |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Any trusted device                                        | Normal approval (§5.4)                                                                                                                                                                                                                                                                                                                                                 |
+| No device, but a linked host you can sit at (or SSH into) | Sign in on the new device → join request → approve it **from that host's console** (`argus-host approve`, the Electron prompt, or the Mac app's local host). If the console isn't handy, **QR-pair** with that host first (today's flow). The pairing confirm screen then offers "Also add to your account", which writes `add_device` signed by the host.             |
+| Nothing at all                                            | **Reset account trust**: the new device writes `genesis` for `epoch + 1` (S requires a fresh Clerk session with a reverification prompt, and emails the user). Old-epoch hosts **do not** follow automatically, because the service could forge a reset. Each host must be re-linked from its console (§5.2a). Re-linking drops that host's old-epoch account devices. |
 
 ### 5.9 Headless host login (`argus-host login`)
 
@@ -345,7 +345,7 @@ $ argus-host login
   `account`. `argus-host login` is also a one-shot CLI form for SSH.
 - The Argus Server menu bar drives the same state machine (`services/account/link.ts`), the way
   `serverPairing.ts` serves both today.
-- The browser is only needed to *claim* the code. Typing it into the phone app does claim and
+- The browser is only needed to _claim_ the code. Typing it into the phone app does claim and
   approve in one go.
 - We run our own device-code endpoint, not Clerk's OAuth device grant. The latter is a beta feature
   enabled per account on request, and needs an OAuth app. Ours needs nothing in Clerk.
@@ -374,11 +374,11 @@ Follow houwert.dev conventions: Biome with tabs, Tailwind, the dark zinc/emerald
 
 ### 6.2 Storage: D1
 
-| Option | Verdict |
-|---|---|
-| KV (what push uses) | Eventually consistent (~60 s). A stale read of the log head breaks CAS appends and could resurrect a revoked member. **No.** |
-| Durable Objects | Strongly consistent, but Pages Functions can't define them, only bind to one from a separate Worker. More deploy surface than we need. |
-| **D1** | Single primary, strongly consistent when read without the Sessions API. Can be bound to Pages directly, and supports SQL constraints for CAS (`PRIMARY KEY(account_id, epoch, seq)`). **Yes.** Don't enable read replication. |
+| Option              | Verdict                                                                                                                                                                                                                       |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| KV (what push uses) | Eventually consistent (~60 s). A stale read of the log head breaks CAS appends and could resurrect a revoked member. **No.**                                                                                                  |
+| Durable Objects     | Strongly consistent, but Pages Functions can't define them, only bind to one from a separate Worker. More deploy surface than we need.                                                                                        |
+| **D1**              | Single primary, strongly consistent when read without the Sessions API. Can be bound to Pages directly, and supports SQL constraints for CAS (`PRIMARY KEY(account_id, epoch, seq)`). **Yes.** Don't enable read replication. |
 
 ### 6.3 Schema (`0001_init.sql`)
 
@@ -491,26 +491,26 @@ S looks up `sign_pub` in `members` (not revoked) or in the pending `join_request
 
 Every response is JSON. Errors look like `{ error: "<code>" }`.
 
-| Method & path | Auth | Request | Response |
-|---|---|---|---|
-| `GET /config` | none | — | `{ clerk_publishable_key, frontend_api, min_client: { ios, mac, host } }` |
-| `POST /account` | Clerk | `{}` | `{ account_id, epoch, head_seq: number \| null }` (create-or-get) |
-| `GET /log?epoch&after` | Clerk or host | — | `{ epoch, entries: Entry[] }` (≤ 500 per page, `next_after`) |
-| `POST /log` | Clerk or host | `{ epoch, entries: Entry[] }` (a batch, in seq order) | `201 { head_seq }` / `409 { error: "conflict", head_seq }` / `422 { error: "invalid_entry", index }` |
-| `GET /directory` | Clerk or host | — | `{ hosts: [{ host_id, presence_body, presence_sig, last_seen }] }` |
-| `PUT /host/presence` | host | `{ presence_body, presence_sig }` | `204` |
-| `POST /link/start` | host key (pre-member) | `{ subject: { host, device? }, proofs }` | `{ request_id, user_code, verification_uri, verification_uri_complete, expires_in: 600, interval: 5 }` |
-| `GET /link/:id` | host key | — | `{ status, account_empty?, account_id?, epoch?, approver?: { id, sign_pub }, head?: { seq, hash }, through_seq? }` |
-| `POST /link/claim` | Clerk | `{ user_code }` | `{ request_id, kind, subject }` |
-| `POST /join` | Clerk | `{ member: DeviceMember, proof }` | `{ request_id, expires_at }` |
-| `GET /join` | Clerk or host | — | `{ requests: [{ request_id, kind, subject, status, created_at }] }` |
-| `GET /join/:id` | Clerk | — | same shape as `GET /link/:id` |
-| `POST /join/:id/approver` | Clerk or host | `{ approver_id }` | `{ head: { seq, hash } }` (moves to `approving`) |
-| `POST /join/:id/deny` | Clerk or host | `{}` | `204` |
-| `POST /account/reset` | Clerk + reverified ≤ 10 min | `{ genesis: Entry }` | `{ epoch }` |
-| `DELETE /account` | Clerk + reverified | `{}` | `204` (deletes everything) |
-| *phase 3* `PUT /push/registration` | Clerk | `{ device_id, service, token, environment, auth_key, sealed_keys: { [host_id]: string } }` | `204` |
-| *phase 3* `GET /host/push-keys` | host | — | `{ devices: [{ device_id, service, environment, sealed }] }` |
+| Method & path                      | Auth                        | Request                                                                                    | Response                                                                                                           |
+| ---------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `GET /config`                      | none                        | —                                                                                          | `{ clerk_publishable_key, frontend_api, min_client: { ios, mac, host } }`                                          |
+| `POST /account`                    | Clerk                       | `{}`                                                                                       | `{ account_id, epoch, head_seq: number \| null }` (create-or-get)                                                  |
+| `GET /log?epoch&after`             | Clerk or host               | —                                                                                          | `{ epoch, entries: Entry[] }` (≤ 500 per page, `next_after`)                                                       |
+| `POST /log`                        | Clerk or host               | `{ epoch, entries: Entry[] }` (a batch, in seq order)                                      | `201 { head_seq }` / `409 { error: "conflict", head_seq }` / `422 { error: "invalid_entry", index }`               |
+| `GET /directory`                   | Clerk or host               | —                                                                                          | `{ hosts: [{ host_id, presence_body, presence_sig, last_seen }] }`                                                 |
+| `PUT /host/presence`               | host                        | `{ presence_body, presence_sig }`                                                          | `204`                                                                                                              |
+| `POST /link/start`                 | host key (pre-member)       | `{ subject: { host, device? }, proofs }`                                                   | `{ request_id, user_code, verification_uri, verification_uri_complete, expires_in: 600, interval: 5 }`             |
+| `GET /link/:id`                    | host key                    | —                                                                                          | `{ status, account_empty?, account_id?, epoch?, approver?: { id, sign_pub }, head?: { seq, hash }, through_seq? }` |
+| `POST /link/claim`                 | Clerk                       | `{ user_code }`                                                                            | `{ request_id, kind, subject }`                                                                                    |
+| `POST /join`                       | Clerk                       | `{ member: DeviceMember, proof }`                                                          | `{ request_id, expires_at }`                                                                                       |
+| `GET /join`                        | Clerk or host               | —                                                                                          | `{ requests: [{ request_id, kind, subject, status, created_at }] }`                                                |
+| `GET /join/:id`                    | Clerk                       | —                                                                                          | same shape as `GET /link/:id`                                                                                      |
+| `POST /join/:id/approver`          | Clerk or host               | `{ approver_id }`                                                                          | `{ head: { seq, hash } }` (moves to `approving`)                                                                   |
+| `POST /join/:id/deny`              | Clerk or host               | `{}`                                                                                       | `204`                                                                                                              |
+| `POST /account/reset`              | Clerk + reverified ≤ 10 min | `{ genesis: Entry }`                                                                       | `{ epoch }`                                                                                                        |
+| `DELETE /account`                  | Clerk + reverified          | `{}`                                                                                       | `204` (deletes everything)                                                                                         |
+| _phase 3_ `PUT /push/registration` | Clerk                       | `{ device_id, service, token, environment, auth_key, sealed_keys: { [host_id]: string } }` | `204`                                                                                                              |
+| _phase 3_ `GET /host/push-keys`    | host                        | —                                                                                          | `{ devices: [{ device_id, service, environment, sealed }] }`                                                       |
 
 What `POST /log` checks (hygiene only, clients re-verify everything):
 
@@ -522,14 +522,14 @@ What `POST /log` checks (hygiene only, clients re-verify everything):
 
 ### 6.6 Rate limits
 
-| Bucket | Limit |
-|---|---|
-| `link/start` per IP (sha256 with a daily salt; IPs are never stored raw) | 10 / 10 min |
-| `link/claim` per account | 10 / 10 min. Per IP: 20 / 10 min. Codes are 8 chars from a 20-letter alphabet (~34 bits) and live 10 min |
-| `join` per account | 5 pending at once, 20 / day |
-| `log` appends per account | 60 / hour |
-| `host/presence` per host | 1 / 30 s (ignored, 204, beyond that) |
-| Any Clerk-authed route per account | 600 / 10 min |
+| Bucket                                                                   | Limit                                                                                                    |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `link/start` per IP (sha256 with a daily salt; IPs are never stored raw) | 10 / 10 min                                                                                              |
+| `link/claim` per account                                                 | 10 / 10 min. Per IP: 20 / 10 min. Codes are 8 chars from a 20-letter alphabet (~34 bits) and live 10 min |
+| `join` per account                                                       | 5 pending at once, 20 / day                                                                              |
+| `log` appends per account                                                | 60 / hour                                                                                                |
+| `host/presence` per host                                                 | 1 / 30 s (ignored, 204, beyond that)                                                                     |
+| Any Clerk-authed route per account                                       | 600 / 10 min                                                                                             |
 
 ### 6.7 Hosted page `/argus/link`
 
@@ -544,13 +544,13 @@ What `POST /log` checks (hygiene only, clients re-verify everything):
 
 ### 7.1 Protocol: `packages/remote-protocol`
 
-| Change | File |
-|---|---|
-| Log, member, presence, and SAS-transcript zod schemas, plus the pure verifier | **new** `src/account/{schema,log,sas}.ts` + `fixtures/` |
-| Host commands catalog (domain `account`) | **new** `src/commands/account.ts`; models in `src/models/account.ts` |
-| Remote methods `account.sync`, `account.request_link`, `account.status` | `src/messages.ts`; tiers in `src/capabilities.ts`; scope in `src/scope.ts` |
-| `HOST_ONLY_COMMANDS` += `account_login_start`, `account_login_confirm`, `account_login_cancel`, `account_logout`, `account_approve_join`, `account_deny_join`, `account_revoke_member`, `account_link_local`, `account_set_config` | `src/capabilities.ts` |
-| `PairedDevice` model gains `source: "pairing" \| "account"` | `src/models/remote.ts` |
+| Change                                                                                                                                                                                                                             | File                                                                       |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Log, member, presence, and SAS-transcript zod schemas, plus the pure verifier                                                                                                                                                      | **new** `src/account/{schema,log,sas}.ts` + `fixtures/`                    |
+| Host commands catalog (domain `account`)                                                                                                                                                                                           | **new** `src/commands/account.ts`; models in `src/models/account.ts`       |
+| Remote methods `account.sync`, `account.request_link`, `account.status`                                                                                                                                                            | `src/messages.ts`; tiers in `src/capabilities.ts`; scope in `src/scope.ts` |
+| `HOST_ONLY_COMMANDS` += `account_login_start`, `account_login_confirm`, `account_login_cancel`, `account_logout`, `account_approve_join`, `account_deny_join`, `account_revoke_member`, `account_link_local`, `account_set_config` | `src/capabilities.ts`                                                      |
+| `PairedDevice` model gains `source: "pairing" \| "account"`                                                                                                                                                                        | `src/models/remote.ts`                                                     |
 
 Remote method tiers:
 
@@ -565,15 +565,15 @@ Remote method tiers:
 
 **New `src/services/account/`**
 
-| File | Responsibility |
-|---|---|
-| `client.ts` | HTTP client for §6.5 and request signing. Base URL `DEFAULT_ACCOUNT_URL = "https://houwert.dev/argus/account/v1"`, overridable like `relay_url` |
-| `store.ts` | The `account` field in `remote-devices.json`'s encrypted `RemoteState` (`deviceStore.ts`): `host_sign`, Electron's `dev_sign`/`dev_noise`, pinned root, and verified entries. It reuses `readState`/`writeState`, so it's encrypted at rest |
-| `trust.ts` | In-memory verified state: `findAccountDevice(noisePubB64)`, `materialize()` → `saveDevice({ source: "account" })`, `applyEntries()`. Revocations go through `revokeDevice` + `disconnectDevice` |
-| `link.ts` | State machine for login/link (`idle → awaiting_claim(code) → awaiting_sas(sas, approver) → linked \| error`). Shared by Electron, the menu bar, and the CLI, like `serverPairing.ts` |
-| `approvals.ts` | Polls `GET /join` while a console surface is open, and handles console approval (§4.4) |
-| `presence.ts` | Signs and publishes endpoints from `getEndpoints()`. Hooks `subscribeTunnelChange` and `setGatewayOnLan`; heartbeat 5 min |
-| `sync.ts` | Log polling (5 min + on connect) and the `account.sync` handler |
+| File           | Responsibility                                                                                                                                                                                                                              |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `client.ts`    | HTTP client for §6.5 and request signing. Base URL `DEFAULT_ACCOUNT_URL = "https://houwert.dev/argus/account/v1"`, overridable like `relay_url`                                                                                             |
+| `store.ts`     | The `account` field in `remote-devices.json`'s encrypted `RemoteState` (`deviceStore.ts`): `host_sign`, Electron's `dev_sign`/`dev_noise`, pinned root, and verified entries. It reuses `readState`/`writeState`, so it's encrypted at rest |
+| `trust.ts`     | In-memory verified state: `findAccountDevice(noisePubB64)`, `materialize()` → `saveDevice({ source: "account" })`, `applyEntries()`. Revocations go through `revokeDevice` + `disconnectDevice`                                             |
+| `link.ts`      | State machine for login/link (`idle → awaiting_claim(code) → awaiting_sas(sas, approver) → linked \| error`). Shared by Electron, the menu bar, and the CLI, like `serverPairing.ts`                                                        |
+| `approvals.ts` | Polls `GET /join` while a console surface is open, and handles console approval (§4.4)                                                                                                                                                      |
+| `presence.ts`  | Signs and publishes endpoints from `getEndpoints()`. Hooks `subscribeTunnelChange` and `setGatewayOnLan`; heartbeat 5 min                                                                                                                   |
+| `sync.ts`      | Log polling (5 min + on connect) and the `account.sync` handler                                                                                                                                                                             |
 
 **Edits**
 
@@ -610,17 +610,17 @@ Remote method tiers:
 
 ### 7.4 Apple: `clients/apple`
 
-| Layer | Change |
-|---|---|
-| `ArgusKit/Account/` (new) | `AccountLog.swift` (verifier mirror), `AccountKeys.swift` (Ed25519 + X25519 in Keychain via `Keystore`), `AccountClient.swift` (HTTP §6.5, takes a token provider closure), `AccountSas.swift` (reuses `Crypto/Derive.swift`). Tests read the shared TS fixtures |
-| `ArgusKit/Storage/DeviceIdentity.swift` | `source: Source { paired, account }` (defaults to `.paired` when decoding old Keychain data), `accountHostId` |
-| **New SPM package** `ArgusAuth` | The only place that imports **ClerkKit** (`clerk-ios`: iOS 17 / macOS 14+, so our iOS 18 / macOS 15 floor is fine). Exposes `AccountAuth` (`signInWithApple()`, `signInWithGitHub()`, `sendEmailCode`/`verify`, `token()`, `signOut()`). ArgusCore stays free of the Clerk dependency, and its tests use a fake |
-| `ArgusCore/Account/` (new) | `AccountStore` (@Observable): sign-in state, verified members, directory merged with presence, pending requests, `approve(_:)`, `deny`, `revoke`, `link(code:)`, `requestLink(host:)` |
-| `ArgusCore/Hosts/RemoteHostsStore.swift` (Mac) and `ArgusRemote/Stores/AppStore.swift` (iOS) | Host list = paired ∪ account, deduped by `desktopPubB64`. `connect(to:)` is unchanged because an account host is just a `DeviceIdentity` built from the log. After `onReady`, call `account.sync` |
-| `ArgusRemote` | **New** `Screens/AccountView.swift` (sign-in: native SIWA button first, then GitHub, then email code), `Screens/ApproveJoinView.swift` (SAS + match/deny), `Screens/AddComputerView.swift` (enter code). Edits: `PairView.swift` (primary "Sign in", secondary "Scan QR"), `HomeView.swift`/`ComputerView.swift` (online/offline from presence), `SettingsView.swift`/`DevicesView.swift` (account devices, safety code, sign out). Each new file needs its four `project.pbxproj` entries. Add the *Sign in with Apple* entitlement to `ArgusRemote.entitlements` |
-| `ArgusDesktop` (synced group) | **New** `Settings/Account/AccountSettingsTab.swift`. `Settings/Hosts/HostsSettingsTab.swift` shows account hosts. On first sign-in, run `account_link_local` over `LocalTransport` (§5.2b). Add the SIWA entitlement and the regenerated Developer ID profile |
-| `ArgusRemote/Stores/AppStore+Push.swift` (phase 3) | Register with the account (`PUT /push/registration`, seal `push_key` to each account host's `noise_pub`) instead of per-host `device.register_push`. Keep the per-host path for paired-only hosts |
-| `Envelopes.swift` | `RemoteMethod` cases for `account.sync`, `account.request_link`, `account.status`. Run `pnpm gen:protocol` for the command catalog |
+| Layer                                                                                        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ArgusKit/Account/` (new)                                                                    | `AccountLog.swift` (verifier mirror), `AccountKeys.swift` (Ed25519 + X25519 in Keychain via `Keystore`), `AccountClient.swift` (HTTP §6.5, takes a token provider closure), `AccountSas.swift` (reuses `Crypto/Derive.swift`). Tests read the shared TS fixtures                                                                                                                                                                                                                                                                                                   |
+| `ArgusKit/Storage/DeviceIdentity.swift`                                                      | `source: Source { paired, account }` (defaults to `.paired` when decoding old Keychain data), `accountHostId`                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **New SPM package** `ArgusAuth`                                                              | The only place that imports **ClerkKit** (`clerk-ios`: iOS 17 / macOS 14+, so our iOS 18 / macOS 15 floor is fine). Exposes `AccountAuth` (`signInWithApple()`, `signInWithGitHub()`, `sendEmailCode`/`verify`, `token()`, `signOut()`). ArgusCore stays free of the Clerk dependency, and its tests use a fake                                                                                                                                                                                                                                                    |
+| `ArgusCore/Account/` (new)                                                                   | `AccountStore` (@Observable): sign-in state, verified members, directory merged with presence, pending requests, `approve(_:)`, `deny`, `revoke`, `link(code:)`, `requestLink(host:)`                                                                                                                                                                                                                                                                                                                                                                              |
+| `ArgusCore/Hosts/RemoteHostsStore.swift` (Mac) and `ArgusRemote/Stores/AppStore.swift` (iOS) | Host list = paired ∪ account, deduped by `desktopPubB64`. `connect(to:)` is unchanged because an account host is just a `DeviceIdentity` built from the log. After `onReady`, call `account.sync`                                                                                                                                                                                                                                                                                                                                                                  |
+| `ArgusRemote`                                                                                | **New** `Screens/AccountView.swift` (sign-in: native SIWA button first, then GitHub, then email code), `Screens/ApproveJoinView.swift` (SAS + match/deny), `Screens/AddComputerView.swift` (enter code). Edits: `PairView.swift` (primary "Sign in", secondary "Scan QR"), `HomeView.swift`/`ComputerView.swift` (online/offline from presence), `SettingsView.swift`/`DevicesView.swift` (account devices, safety code, sign out). Each new file needs its four `project.pbxproj` entries. Add the _Sign in with Apple_ entitlement to `ArgusRemote.entitlements` |
+| `ArgusDesktop` (synced group)                                                                | **New** `Settings/Account/AccountSettingsTab.swift`. `Settings/Hosts/HostsSettingsTab.swift` shows account hosts. On first sign-in, run `account_link_local` over `LocalTransport` (§5.2b). Add the SIWA entitlement and the regenerated Developer ID profile                                                                                                                                                                                                                                                                                                      |
+| `ArgusRemote/Stores/AppStore+Push.swift` (phase 3)                                           | Register with the account (`PUT /push/registration`, seal `push_key` to each account host's `noise_pub`) instead of per-host `device.register_push`. Keep the per-host path for paired-only hosts                                                                                                                                                                                                                                                                                                                                                                  |
+| `Envelopes.swift`                                                                            | `RemoteMethod` cases for `account.sync`, `account.request_link`, `account.status`. Run `pnpm gen:protocol` for the command catalog                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 App Store guideline 4.8: offering GitHub/email login on iOS requires an equivalent privacy-preserving
 option. Native Sign in with Apple satisfies it, and is shown first.
@@ -642,16 +642,16 @@ origin, and it already has a pairing. Phase 5 looks at a hosted client on houwer
 ## 8. Settings and docs
 
 **Host settings** (machine-local, stored with the other remote config in the encrypted blob; editable in
-Electron *Account* and Mac *Account* settings, and via `argus-host account set …`):
+Electron _Account_ and Mac _Account_ settings, and via `argus-host account set …`):
 
-| Setting | Default | Notes |
-|---|---|---|
-| `account.enabled` | on once linked | Off = stop presence and polling, refuse account devices; stay linked |
-| `account.service_url` | empty (built-in) | Self-hosting / staging, mirrors `push_config.relay_url` |
-| `account.grants.ios` | `control` | `monitor` / `control` |
-| `account.grants.desktop` | `control+admin` | For `mac`/`electron` devices |
-| `account.publish.lan` / `.tailscale` / `.cloudflare` | on / on / on | Which endpoint kinds go into presence. LAN IPs are metadata (§3) |
-| `account.hosts_can_approve` | on | Lets this host's console approve joins (§4.4) |
+| Setting                                              | Default          | Notes                                                                |
+| ---------------------------------------------------- | ---------------- | -------------------------------------------------------------------- |
+| `account.enabled`                                    | on once linked   | Off = stop presence and polling, refuse account devices; stay linked |
+| `account.service_url`                                | empty (built-in) | Self-hosting / staging, mirrors `push_config.relay_url`              |
+| `account.grants.ios`                                 | `control`        | `monitor` / `control`                                                |
+| `account.grants.desktop`                             | `control+admin`  | For `mac`/`electron` devices                                         |
+| `account.publish.lan` / `.tailscale` / `.cloudflare` | on / on / on     | Which endpoint kinds go into presence. LAN IPs are metadata (§3)     |
+| `account.hosts_can_approve`                          | on               | Lets this host's console approve joins (§4.4)                        |
 
 **Docs**
 
@@ -671,25 +671,25 @@ and counts. The host captures what it does. iOS captures only phone-local acts.
 
 **Host (`packages/host/src/telemetryEvents.ts`)**
 
-| Event | Props | Fires when | Answers |
-|---|---|---|---|
-| `account_link_started` | `surface: "electron" \| "mac" \| "cli" \| "menubar"` | `account_login_start` | Is linking used, and where? |
-| `account_linked` | `via: "browser" \| "app" \| "local" \| "paired"`, `first_member: boolean`, `kind: "host" \| "computer"` | Host pins the root | Does linking finish? |
-| `account_link_failed` | `stage: "start" \| "claim_timeout" \| "sas_rejected" \| "verify" \| "network"` | `link.ts` error | Where does it break? |
-| `account_join_resolved` | `action: "approved" \| "denied"`, `approver: "host"` | Console approval | Is console approval/recovery used? |
-| `account_member_revoked` | `role: "device" \| "host"`, `source: "local" \| "log"` | Host applies a revoke | Revocation volume and path |
-| `account_log_rejected` | `reason: "fork" \| "bad_signature" \| "unknown_signer" \| "sas_mismatch"` | Verifier refuses | Attacks or bugs |
-| `remote_connection_opened` | `trust: "paired" \| "account"` | Successful `/device` handshake, once per device per day | Do account hosts replace QR pairing? |
+| Event                      | Props                                                                                                   | Fires when                                              | Answers                              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------ |
+| `account_link_started`     | `surface: "electron" \| "mac" \| "cli" \| "menubar"`                                                    | `account_login_start`                                   | Is linking used, and where?          |
+| `account_linked`           | `via: "browser" \| "app" \| "local" \| "paired"`, `first_member: boolean`, `kind: "host" \| "computer"` | Host pins the root                                      | Does linking finish?                 |
+| `account_link_failed`      | `stage: "start" \| "claim_timeout" \| "sas_rejected" \| "verify" \| "network"`                          | `link.ts` error                                         | Where does it break?                 |
+| `account_join_resolved`    | `action: "approved" \| "denied"`, `approver: "host"`                                                    | Console approval                                        | Is console approval/recovery used?   |
+| `account_member_revoked`   | `role: "device" \| "host"`, `source: "local" \| "log"`                                                  | Host applies a revoke                                   | Revocation volume and path           |
+| `account_log_rejected`     | `reason: "fork" \| "bad_signature" \| "unknown_signer" \| "sas_mismatch"`                               | Verifier refuses                                        | Attacks or bugs                      |
+| `remote_connection_opened` | `trust: "paired" \| "account"`                                                                          | Successful `/device` handshake, once per device per day | Do account hosts replace QR pairing? |
 
 **iOS (`clients/apple/ArgusRemote/Telemetry/TelemetryEvent.swift`)**
 
-| Case → event | Props | Fires when |
-|---|---|---|
-| `accountSignedIn` → `ios_account_signed_in` | `provider: apple\|github\|email`, `firstDevice: Bool` | ClerkKit sign-in + account bootstrap |
-| `accountSignedOut` → `ios_account_signed_out` | — | Sign out |
-| `joinActed` → `ios_join_acted` | `action: requested\|approved\|denied\|expired`, `role: subject\|approver` | The phone's side of an approval |
-| `memberRemoved` → `ios_member_removed` | `role: device\|host` | The phone writes a revoke |
-| `computerAdded` → `ios_computer_added` | `via: code\|existing_pairing` | The phone approves a host link (the host's `account_linked` counts completion; this counts the phone-side entry point, so they don't double up) |
+| Case → event                                  | Props                                                                     | Fires when                                                                                                                                      |
+| --------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `accountSignedIn` → `ios_account_signed_in`   | `provider: apple\|github\|email`, `firstDevice: Bool`                     | ClerkKit sign-in + account bootstrap                                                                                                            |
+| `accountSignedOut` → `ios_account_signed_out` | —                                                                         | Sign out                                                                                                                                        |
+| `joinActed` → `ios_join_acted`                | `action: requested\|approved\|denied\|expired`, `role: subject\|approver` | The phone's side of an approval                                                                                                                 |
+| `memberRemoved` → `ios_member_removed`        | `role: device\|host`                                                      | The phone writes a revoke                                                                                                                       |
+| `computerAdded` → `ios_computer_added`        | `via: code\|existing_pairing`                                             | The phone approves a host link (the host's `account_linked` counts completion; this counts the phone-side entry point, so they don't double up) |
 
 **Mac app:** sign-in goes through ArgusAuth on the Mac, so it reports through whatever telemetry sink
 ArgusDesktop uses (open question 8). Its local-host link is captured by the host as `account_linked { via: "local" }`.
@@ -701,7 +701,7 @@ ArgusDesktop uses (open question 8). Its local-host link is captured by the host
 - Nothing breaks. Every existing pairing keeps working with `source: "pairing"`, and accounts are
   opt-in.
 - On first sign-in, a phone with QR-paired hosts sees "Add your paired computers to your account".
-  Per host, it calls `account.status` (are you linked to *this* account?), then `account.request_link`
+  Per host, it calls `account.status` (are you linked to _this_ account?), then `account.request_link`
   → console confirm (§5.2c).
 - **Identity merge.** Once a paired host is also an account host, the phone switches it to
   `dev_noise`. The first account connection calls `account.sync`, which carries
@@ -773,13 +773,13 @@ from https to `ws://` LAN is blocked, so only tunnel endpoints are possible).
 
 ### Test plan (all phases)
 
-| Layer | Tests |
-|---|---|
-| Verifier (TS + Swift) | Golden fixtures: valid chain; bad sig; wrong `prev`; unknown signer; host signs `add_device` without permission; `rotate` missing the old sig; `sas_commit` mismatch; epoch reset not followed; replayed old presence |
-| Service | Local `wrangler pages dev` + local D1 (no remote resources) driven by vitest scripts: CAS conflict on concurrent appends, rate limits, expired codes, Clerk JWT verify against a locally minted JWKS, host signature window |
-| Tamper suite | A fake service that (a) swaps a host's `noise_pub` in `/directory`, (b) injects an unsigned `add_device`, (c) serves a fork, (d) withholds a revoke, (e) points presence at a foreign URL. Expected: a, b, c, e are rejected by clients/hosts; d is caught by `account.sync` |
-| Host | `localGatewayServer` accepts an account device, rejects a revoked one, materializes and merges grants; `link.ts` state machine; `noElectron.test.ts` stays green |
-| E2E | Two hosts in `/tmp` `ARGUS_HOME`s launched by path (never the live Argus), against local Pages; iOS simulator build via `xcodebuild … ArgusRemote`; manual device test on a real phone for SIWA |
+| Layer                 | Tests                                                                                                                                                                                                                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Verifier (TS + Swift) | Golden fixtures: valid chain; bad sig; wrong `prev`; unknown signer; host signs `add_device` without permission; `rotate` missing the old sig; `sas_commit` mismatch; epoch reset not followed; replayed old presence                                                        |
+| Service               | Local `wrangler pages dev` + local D1 (no remote resources) driven by vitest scripts: CAS conflict on concurrent appends, rate limits, expired codes, Clerk JWT verify against a locally minted JWKS, host signature window                                                  |
+| Tamper suite          | A fake service that (a) swaps a host's `noise_pub` in `/directory`, (b) injects an unsigned `add_device`, (c) serves a fork, (d) withholds a revoke, (e) points presence at a foreign URL. Expected: a, b, c, e are rejected by clients/hosts; d is caught by `account.sync` |
+| Host                  | `localGatewayServer` accepts an account device, rejects a revoked one, materializes and merges grants; `link.ts` state machine; `noElectron.test.ts` stays green                                                                                                             |
+| E2E                   | Two hosts in `/tmp` `ARGUS_HOME`s launched by path (never the live Argus), against local Pages; iOS simulator build via `xcodebuild … ArgusRemote`; manual device test on a real phone for SIWA                                                                              |
 
 ## 12. Open questions
 
@@ -794,9 +794,9 @@ from https to `ws://` LAN is blocked, so only tunnel endpoints are possible).
    so the service sees no names. It costs a key-distribution step in every join.
 5. **Grant defaults.** Should a newly approved Mac get `admin` on every host automatically, or should
    each host confirm it once?
-6. **Host-written revokes of others.** Allow a host console to revoke *any* member (useful when your
+6. **Host-written revokes of others.** Allow a host console to revoke _any_ member (useful when your
    only remaining thing is a host), or only itself?
-7. **Clerk instance strategy.** Run phase-1 development against a Clerk *development* instance
+7. **Clerk instance strategy.** Run phase-1 development against a Clerk _development_ instance
    (shared OAuth credentials, no DNS) and switch keys at launch? The design is identical either way,
    since `/config` serves the key.
 8. **Mac telemetry sink.** Does ArgusDesktop have its own catalog, or should `account_signed_in`
