@@ -45,7 +45,7 @@ struct ChangeRow: View {
         Button(action: toggleStage) {
           Image(systemName: section == .staged ? "minus.circle" : "plus.circle")
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(FlatIconButtonStyle(size: 20))
         .help(section == .staged ? "Unstage" : "Stage")
         .accessibilityLabel("\(section == .staged ? "Unstage" : "Stage") \(entry.path)")
       }

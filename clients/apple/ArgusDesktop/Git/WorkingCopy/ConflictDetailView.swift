@@ -54,7 +54,7 @@ struct ConflictDetailView: View {
       } else if vm.isDiffLoading {
         ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
       } else {
-        EmptyState(icon: "trash", title: "Deleted on this side")
+        QuietEmptyState(icon: "trash", title: "Deleted on this side")
       }
     }
     .frame(minWidth: 200)

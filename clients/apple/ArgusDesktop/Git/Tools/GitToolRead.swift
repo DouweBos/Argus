@@ -23,23 +23,25 @@ enum GitToolRead {
 
 /// A tool view's own header: what it is, why it's there, and its actions.
 struct GitToolHeader<Actions: View>: View {
+  @Environment(\.theme) private var theme
   let title: String
   var caption: String?
   @ViewBuilder var actions: Actions
 
   var body: some View {
-    HStack(alignment: .firstTextBaseline, spacing: 10) {
-      VStack(alignment: .leading, spacing: 2) {
-        Text(title).font(.scaled(.headline))
+    HStack(alignment: .center, spacing: 10) {
+      VStack(alignment: .leading, spacing: 1) {
+        Text(title).font(.scaled(size: 12, weight: .medium)).foregroundStyle(theme.text)
         if let caption {
-          Text(caption).font(.scaled(.callout)).foregroundStyle(.secondary)
+          Text(caption).font(.scaled(size: 11)).foregroundStyle(theme.textMuted)
         }
       }
       Spacer()
       actions
     }
-    .padding(.horizontal, 16)
-    .padding(.vertical, 12)
+    .controlSize(.small)
+    .padding(.horizontal, 12)
+    .padding(.vertical, 8)
   }
 }
 

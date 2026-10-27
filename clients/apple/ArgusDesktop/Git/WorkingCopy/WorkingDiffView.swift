@@ -11,20 +11,20 @@ struct WorkingDiffView: View {
 
   var body: some View {
     if let entry = vm.selectedEntry, entry.isConflicted {
-      EmptyState(
+      QuietEmptyState(
         icon: "exclamationmark.triangle", title: "\(entry.fileName) has conflicts",
-        body: "Pick a side or edit the merged result in Conflicts."
+        message: "Pick a side or edit the merged result in Conflicts."
       ) {
         Button("Resolve in Conflicts") { model.navigate(.sessionGit(id: workspace.sessionId, view: .conflicts)) }
       }
     } else if vm.selectedEntry == nil && !vm.isDiffLoading {
-      // Grove's empty states; the file list keeps only a quiet line.
+      // The file list keeps only a quiet line; the diff pane says why it's empty.
       if !vm.hasLoadedStatus {
         ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
       } else if vm.statusEntries.isEmpty {
-        EmptyState(icon: "checkmark.seal", title: "Nothing to Commit", body: "Your working tree is clean.")
+        QuietEmptyState(icon: "checkmark.seal", title: "Nothing to commit", message: "Your working tree is clean.")
       } else {
-        EmptyState(icon: "doc.text.magnifyingglass", title: "Select a File", body: "Choose a file to see its changes.")
+        QuietEmptyState(icon: "doc.text.magnifyingglass", title: "Select a file", message: "Choose a file to see its changes.")
       }
     } else {
       DiffPane(
@@ -52,16 +52,15 @@ struct WorkingDiffView: View {
   }
 
   private var sidePicker: some View {
-    Picker(
-      "Side",
-      selection: Binding(get: { vm.selectedSide }, set: { side in Task { await vm.setDiffSide(side) } })
-    ) {
-      Text("Unstaged").tag(DiffSide.unstaged)
-      Text("Staged").tag(DiffSide.staged)
+    HStack(spacing: 2) {
+      ForEach([DiffSide.unstaged, .staged], id: \.self) { side in
+        Button(side == .staged ? "Staged" : "Unstaged") {
+          if side != vm.selectedSide { Task { await vm.setDiffSide(side) } }
+        }
+        .buttonStyle(QuietTabButtonStyle(selected: vm.selectedSide == side))
+        .accessibilityAddTraits(vm.selectedSide == side ? .isSelected : [])
+      }
     }
-    .pickerStyle(.segmented)
-    .labelsHidden()
-    .controlSize(.small)
     .fixedSize()
   }
 }

@@ -2,49 +2,85 @@ import ArgusUI
 import GroveKit
 import SwiftUI
 
-/// The git panel's own sidebar, as Grove's: a summary of the repository, then
-/// its refs. The views themselves are in the pill bar above the content.
+/// The git panel's own sidebar: a summary of the repository, then its refs.
+/// Flat on the canvas like the code navigator, so it stays below the toolbar
+/// rather than drawing a source-list material up under it.
 struct GitSidebar: View {
-  @Environment(DesktopModel.self) private var model
   let workspace: GitWorkspace
   let session: RemoteSession
   let view: GitRoute
 
   var body: some View {
-    List(selection: selection) {
-      Section {
-        GitRepositoryHeader(workspace: workspace, session: session)
-          .listRowSeparator(.hidden)
-          .selectionDisabled()
-      }
+    List {
+      GitRepositoryHeader(workspace: workspace, session: session)
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
       if workspace.isProjectRoot {
         GitRefSections(workspace: workspace, session: session, view: view)
+          .listRowSeparator(.hidden)
+          .listSectionSeparator(.hidden)
       }
     }
-    .listStyle(.sidebar)
+    .navigatorList()
+    .environment(\.gitSidebarContext, GitSidebarContext(sessionId: session.id, view: view))
   }
+}
+
+/// Which session's git view the sidebar rows select into, and what's showing.
+struct GitSidebarContext: Equatable {
+  let sessionId: String
+  let view: GitRoute
 
   /// Branch and tag rows select their history; submodule rows the submodules view.
-  private var selection: Binding<GitSidebarTag?> {
-    Binding(
-      get: {
-        switch view {
-        case .branches(let name?): .branch(name)
-        case .tags(let name): .tag(name)
-        case .submodules: .view(view.segment)
-        default: nil
-        }
-      },
-      set: { tag in
-        let route: GitRoute? =
-          switch tag {
-          case .view(let segment): GitRoute(devString: segment)
-          case .branch(let name): .branches(name)
-          case .tag(let name): .tags(name)
-          case nil: nil
-          }
-        if let route, route != view { model.navigate(.sessionGit(id: session.id, view: route)) }
-      })
+  var selected: GitSidebarTag? {
+    switch view {
+    case .branches(let name?): .branch(name)
+    case .tags(let name): .tag(name)
+    case .submodules: .view(view.segment)
+    default: nil
+    }
+  }
+
+  func route(for tag: GitSidebarTag) -> GitRoute? {
+    switch tag {
+    case .view(let segment): GitRoute(devString: segment)
+    case .branch(let name): .branches(name)
+    case .tag(let name): .tags(name)
+    }
+  }
+}
+
+extension EnvironmentValues {
+  @Entry var gitSidebarContext: GitSidebarContext?
+}
+
+/// A git sidebar row that selects `tag` on click, with the navigator's quiet highlight.
+private struct GitSidebarRow: ViewModifier {
+  @Environment(DesktopModel.self) private var model
+  @Environment(\.gitSidebarContext) private var context
+  let tag: GitSidebarTag
+
+  private var selected: Bool { context?.selected == tag }
+
+  func body(content: Content) -> some View {
+    content
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .contentShape(.rect)
+      .onTapGesture(perform: select)
+      .modifier(NavigatorRowHighlight(selected: selected))
+      .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+      .accessibilityAction { select() }
+  }
+
+  private func select() {
+    guard let context, let route = context.route(for: tag), route != context.view else { return }
+    model.navigate(.sessionGit(id: context.sessionId, view: route))
+  }
+}
+
+extension View {
+  func gitSidebarRow(_ tag: GitSidebarTag) -> some View {
+    modifier(GitSidebarRow(tag: tag))
   }
 }
 
@@ -55,8 +91,7 @@ enum GitSidebarTag: Hashable {
   case tag(String)
 }
 
-/// Repository name, the checked-out branch against its upstream, and how it
-/// stands: Grove's sidebar summary.
+/// Repository name, the checked-out branch against its upstream, and how it stands.
 private struct GitRepositoryHeader: View {
   @Environment(\.theme) private var theme
   let workspace: GitWorkspace
@@ -65,15 +100,15 @@ private struct GitRepositoryHeader: View {
   private var head: BranchInfo? { workspace.refs.localBranches.first(where: \.isHEAD) }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: 4) {
       Text(URL(fileURLWithPath: session.repoRoot).lastPathComponent)
-        .font(.scaled(size: 20, weight: .semibold, design: .rounded))
+        .font(.scaled(size: 14, weight: .semibold))
         .foregroundStyle(theme.text)
         .lineLimit(1)
         .truncationMode(.middle)
       HStack(spacing: 4) {
         Image(systemName: head == nil ? "exclamationmark.triangle" : "arrow.triangle.branch")
-          .font(.scaled(size: 11, weight: .semibold))
+          .font(.scaled(size: 10))
         Text(head?.name ?? "Detached HEAD")
           .lineLimit(1)
           .truncationMode(.middle)
@@ -84,27 +119,43 @@ private struct GitRepositoryHeader: View {
         }
       }
       .font(.scaled(size: 11, design: .monospaced))
-      .foregroundStyle(theme.textSecondary)
+      .foregroundStyle(theme.textMuted)
       .help(head?.upstreamShortName.map { "\(head?.name ?? "") tracks \($0)" } ?? "")
-      FlowRow(spacing: 4, rowSpacing: 4) { badges }
+      HStack(spacing: 10) { status }
+        .labelStyle(GitStatusLabelStyle())
+        .font(.scaled(size: 11).monospacedDigit())
+        .foregroundStyle(theme.textSecondary)
+        .lineLimit(1)
+        .padding(.top, 2)
     }
     .padding(.vertical, 6)
+    .padding(.horizontal, 2)
   }
 
   /// Without an upstream there's nothing to compare against, so "up to date" would be a guess.
   @ViewBuilder
-  private var badges: some View {
+  private var status: some View {
     let changes = workspace.workingCopy.changedCount
     let ahead = head?.ahead ?? 0
     let behind = head?.behind ?? 0
     let unpublished = head != nil && head?.upstream == nil
     if changes == 0 && ahead == 0 && behind == 0 && !unpublished {
-      Chip(label: "Up to date", icon: "checkmark.circle.fill", tone: .success)
+      Label("Up to date", systemImage: "checkmark").foregroundStyle(theme.textMuted)
     } else {
-      if changes > 0 { Chip(label: "\(changes) changed", icon: "pencil", tone: .warning) }
-      if unpublished { Chip(label: "Not published", icon: "icloud.slash") }
-      if ahead > 0 { Chip(label: "\(ahead) to push", icon: "arrow.up") }
-      if behind > 0 { Chip(label: "\(behind) to pull", icon: "arrow.down", tone: .warning) }
+      if changes > 0 { Label("\(changes) changed", systemImage: "pencil") }
+      if unpublished { Label("Not published", systemImage: "icloud.slash") }
+      if ahead > 0 { Label("\(ahead)", systemImage: "arrow.up").help("\(ahead) commits to push") }
+      if behind > 0 { Label("\(behind)", systemImage: "arrow.down").help("\(behind) commits to pull") }
+    }
+  }
+}
+
+/// Icon and text tight together, so the status fits one line in a narrow column.
+private struct GitStatusLabelStyle: LabelStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    HStack(spacing: 3) {
+      configuration.icon.font(.scaled(size: 9, weight: .semibold))
+      configuration.title
     }
   }
 }

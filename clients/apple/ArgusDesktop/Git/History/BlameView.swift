@@ -29,10 +29,10 @@ struct BlameView: View {
   @ViewBuilder
   private var content: some View {
     if let error = blame.errorMessage {
-      EmptyState(icon: "exclamationmark.triangle", title: "Can't blame this", body: error)
+      QuietEmptyState(icon: "exclamationmark.triangle", title: "Can't blame this", message: error)
     } else if blame.lines.isEmpty {
       if blame.isLoadingBlame { ProgressView().controlSize(.small).frame(maxHeight: .infinity) } else {
-        EmptyState(icon: "doc", title: "Empty file")
+        QuietEmptyState(icon: "doc", title: "Empty file")
       }
     } else {
       BlameTableView(
@@ -133,6 +133,7 @@ private struct BlameFilePicker: View {
         }
         .buttonStyle(.plain)
       }
+      .navigatorList()
       .overlay {
         if blame.isLoadingFiles && blame.trackedFiles.isEmpty { ProgressView().controlSize(.small) }
       }

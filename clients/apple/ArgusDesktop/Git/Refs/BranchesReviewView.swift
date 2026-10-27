@@ -19,7 +19,7 @@ struct BranchesReviewView: View {
         GitErrorBanner(message: "Couldn't tell which branches are merged, so deleting is off: \(error)") {}
       }
       header
-      Divider()
+      Rectangle().fill(theme.border).frame(height: 1)
       table
     }
     .alert(
@@ -50,19 +50,19 @@ struct BranchesReviewView: View {
   private var header: some View {
     HStack(spacing: 8) {
       ForEach(BranchCategory.allCases, id: \.self) { category in
-        Toggle(
-          isOn: Binding(get: { review.categoryFilter == category }, set: { _ in review.toggleFilter(category) })
-        ) {
-          Text("\(category.rawValue) \(review.count(of: category))")
-        }
-        .toggleStyle(.button)
-        .help(Self.help(category, staleDays: review.staleDays, primary: review.primaryBranch))
+        Button("\(category.rawValue) \(review.count(of: category))") { review.toggleFilter(category) }
+          .buttonStyle(QuietTabButtonStyle(selected: review.categoryFilter == category))
+          .accessibilityAddTraits(review.categoryFilter == category ? .isSelected : [])
+          .help(Self.help(category, staleDays: review.staleDays, primary: review.primaryBranch))
       }
       Spacer()
       if review.isLoading { ProgressView().controlSize(.small) }
       Text("\(review.selectedIDs.count) selected").foregroundStyle(theme.textSecondary)
-      Button("Select All") { review.selectAllVisible() }
-      Button("Clear") { review.clearSelection() }.disabled(review.selectedIDs.isEmpty)
+      Group {
+        Button("Select All") { review.selectAllVisible() }
+        Button("Clear") { review.clearSelection() }.disabled(review.selectedIDs.isEmpty)
+      }
+      .buttonStyle(QuietTabButtonStyle())
       Button("Delete Selected…", role: .destructive) { review.requestDelete(review.selectedBranches) }
         .disabled(review.selectedIDs.isEmpty || !review.canDelete)
     }
@@ -77,6 +77,7 @@ struct BranchesReviewView: View {
         Toggle(
           "", isOn: Binding(get: { review.selectedIDs.contains(branch.id) }, set: { _ in review.toggleSelection(branch) })
         )
+        .toggleStyle(.quietCheckbox)
         .labelsHidden()
         .disabled(!branch.isDeletable)
         .accessibilityLabel("Select \(branch.name)")
@@ -115,9 +116,10 @@ struct BranchesReviewView: View {
       }
       .width(min: 80, ideal: 110)
     }
+    .scrollContentBackground(.hidden)
     .overlay {
       if review.branches.isEmpty && !review.isLoading {
-        EmptyState(icon: "arrow.triangle.branch", title: "No Branches")
+        QuietEmptyState(icon: "arrow.triangle.branch", title: "No branches")
       }
     }
   }

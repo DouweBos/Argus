@@ -72,6 +72,7 @@ struct ReflogView: View {
       .tag(entry.id)
       .contextMenu { menu(entry) }
     }
+    .navigatorList()
     .overlay {
       if reflog.entries.isEmpty && reflog.isLoading { ProgressView().controlSize(.small) }
     }
@@ -88,7 +89,7 @@ struct ReflogView: View {
         FileDiffsView(files: diffs, isLoading: loadingDiffs)
       }
     } else {
-      EmptyState(icon: "clock.arrow.circlepath", title: "Select an Entry")
+      QuietEmptyState(icon: "clock.arrow.circlepath", title: "Select an entry")
     }
   }
 

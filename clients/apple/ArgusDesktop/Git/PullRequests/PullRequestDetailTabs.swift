@@ -112,7 +112,7 @@ struct PullRequestCommits: View {
 
   var body: some View {
     if commits.isEmpty {
-      EmptyState(icon: "circle.dashed", title: "No commits")
+      QuietEmptyState(icon: "circle.dashed", title: "No commits")
     } else {
       List(commits, id: \.oid) { commit in
         HStack(spacing: 10) {
@@ -130,7 +130,7 @@ struct PullRequestCommits: View {
           Button("Copy SHA") { Clipboard.copy(commit.oid) }
         }
       }
-      .listStyle(.inset)
+      .navigatorList()
     }
   }
 
@@ -151,7 +151,7 @@ struct PullRequestChecks: View {
 
   var body: some View {
     if checks.isEmpty {
-      EmptyState(icon: "checkmark.seal", title: "No checks", body: "No CI reported on this pull request.")
+      QuietEmptyState(icon: "checkmark.seal", title: "No checks", message: "No CI reported on this pull request.")
     } else {
       List(Array(checks.enumerated()), id: \.offset) { _, check in
         HStack(spacing: 10) {
@@ -170,7 +170,7 @@ struct PullRequestChecks: View {
           }
         }
       }
-      .listStyle(.inset)
+      .navigatorList()
     }
   }
 }

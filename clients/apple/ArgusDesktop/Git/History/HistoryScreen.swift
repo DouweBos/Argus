@@ -24,10 +24,8 @@ struct HistoryScreen: View {
 
   var body: some View {
     let actions = actions
-    // Grove's list and detail cards; stacked, since the graph's columns want the width.
-    ResizableVSplit(
-      key: "git.history.detail", topMin: 160, bottomMin: 300, bottomIdeal: 480, showsBottom: true, gap: 12
-    ) {
+    // The list over the detail, stacked since the graph's columns want the width.
+    ResizableVSplit(key: "git.history.detail", topMin: 160, bottomMin: 300, bottomIdeal: 480, showsBottom: true) {
       VStack(spacing: 0) {
         HistoryToolbar(history: history, title: title)
         if let error = history.errorMessage, history.pendingAction == nil {
@@ -35,9 +33,8 @@ struct HistoryScreen: View {
         }
         list(actions)
       }
-      .panel()
     } bottom: {
-      CommitDetailView(actions: actions).panel()
+      CommitDetailView(actions: actions)
     }
     .sheet(item: sheetBinding) { HistoryActionSheet(actions: actions, action: $0) }
     .confirmationDialog(
@@ -56,10 +53,10 @@ struct HistoryScreen: View {
   @ViewBuilder
   private func list(_ actions: HistoryActions) -> some View {
     if history.filteredCommits.isEmpty && !history.isLoading {
-      EmptyState(
+      QuietEmptyState(
         icon: history.isFiltering ? "magnifyingglass" : "clock",
         title: history.isFiltering ? "No matching commits" : "No commits",
-        body: history.isFiltering ? "Nothing loaded matches \u{201C}\(history.searchText)\u{201D}." : "Commits show up here."
+        message: history.isFiltering ? "Nothing loaded matches \u{201C}\(history.searchText)\u{201D}." : "Commits show up here."
       )
     } else {
       CommitTableView(history: history, ownCommits: ownCommits) { menu, commit, selected in
@@ -98,33 +95,38 @@ struct HistoryScreen: View {
 
 /// Title, commit count, search and the graph/table toggle.
 private struct HistoryToolbar: View {
+  @Environment(\.theme) private var theme
   let history: HistoryViewModel
   let title: String
 
   var body: some View {
     HStack(spacing: 8) {
-      Text(title).font(.scaled(size: 13, weight: .semibold)).lineLimit(1)
-      Text(count).font(.scaled(size: 11)).foregroundStyle(.secondary)
+      Text(title).font(.scaled(size: 12, weight: .medium)).lineLimit(1)
+      Text(count).font(.scaled(size: 11)).foregroundStyle(theme.textMuted)
       if history.isLoading { ProgressView().controlSize(.mini) }
       Spacer()
       TextField(
         "Filter commits", text: Binding(get: { history.searchText }, set: { history.setSearchText($0) })
       )
-      .textFieldStyle(.roundedBorder)
-      .controlSize(.small)
+      .quietField()
       .frame(maxWidth: 220)
-      Picker("Layout", selection: Binding(get: { history.layout }, set: { history.setLayout($0) })) {
+      HStack(spacing: 2) {
         ForEach(HistoryLayout.allCases) { layout in
-          Image(systemName: layout.symbol).help(layout.title).accessibilityLabel(layout.title).tag(layout)
+          Button {
+            history.setLayout(layout)
+          } label: {
+            Label(layout.title, systemImage: layout.symbol)
+          }
+          .buttonStyle(FlatIconButtonStyle(selected: history.layout == layout, size: 24))
+          .help(layout.title)
+          .accessibilityAddTraits(history.layout == layout ? .isSelected : [])
         }
       }
-      .pickerStyle(.segmented)
-      .labelsHidden()
       .fixedSize()
     }
-    .padding(.horizontal, 14)
-    .frame(height: 40)
-    .overlay(alignment: .bottom) { Divider() }
+    .padding(.horizontal, 12)
+    .frame(height: 34)
+    .overlay(alignment: .bottom) { Rectangle().fill(theme.border).frame(height: 1) }
   }
 
   private var count: String {

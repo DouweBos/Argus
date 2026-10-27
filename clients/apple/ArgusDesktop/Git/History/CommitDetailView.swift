@@ -5,6 +5,7 @@ import SwiftUI
 /// The selected commit: header, then its changeset or file tree. A
 /// multi-selection shows what it adds up to instead.
 struct CommitDetailView: View {
+  @Environment(\.theme) private var theme
   let actions: HistoryActions
   private var history: HistoryViewModel { actions.history }
 
@@ -14,22 +15,19 @@ struct CommitDetailView: View {
     } else if let commit = history.selectedCommit {
       VStack(spacing: 0) {
         CommitDetailHeader(actions: actions, commit: commit)
-        Divider()
-        HStack {
-          Picker(
-            "Detail", selection: Binding(get: { history.detailTab }, set: { history.selectDetailTab($0) })
-          ) {
-            ForEach(HistoryViewModel.DetailTab.allCases) { Text($0.rawValue).tag($0) }
+        Rectangle().fill(theme.border).frame(height: 1)
+        HStack(spacing: 2) {
+          ForEach(HistoryViewModel.DetailTab.allCases) { tab in
+            Button(tab.rawValue) { history.selectDetailTab(tab) }
+              .buttonStyle(QuietTabButtonStyle(selected: history.detailTab == tab))
+              .accessibilityAddTraits(history.detailTab == tab ? .isSelected : [])
           }
-          .pickerStyle(.segmented)
-          .labelsHidden()
-          .fixedSize()
           Spacer()
-          Text(fileCount).font(.scaled(size: 11)).foregroundStyle(.secondary)
+          Text(fileCount).font(.scaled(size: 11)).foregroundStyle(theme.textMuted)
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 6)
         .frame(height: 32)
-        Divider()
+        Rectangle().fill(theme.border).frame(height: 1)
         switch history.detailTab {
         case .changeset:
           FileDiffsView(files: history.commitDiffs, isLoading: history.isLoadingDiff) { file in
@@ -40,7 +38,7 @@ struct CommitDetailView: View {
         }
       }
     } else {
-      EmptyState(icon: "point.3.connected.trianglepath.dotted", title: "No commit selected")
+      QuietEmptyState(icon: "point.3.connected.trianglepath.dotted", title: "No commit selected")
     }
   }
 

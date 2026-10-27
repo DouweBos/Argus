@@ -23,7 +23,7 @@ struct DiffPane: View {
   var body: some View {
     VStack(spacing: 0) {
       header
-      Divider()
+      Rectangle().fill(theme.border).frame(height: 1)
       content
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -60,20 +60,26 @@ struct DiffPane: View {
       Spacer(minLength: 0)
       accessory
       if let ignoreWhitespace {
-        Toggle("Ignore Whitespace", isOn: ignoreWhitespace)
-          .toggleStyle(.checkbox)
-          .controlSize(.small)
-          .labelsHidden(compact)
-          .help("Ignore Whitespace")
-          .fixedSize()
+        Toggle(isOn: ignoreWhitespace) {
+          if !compact { Text("Ignore Whitespace") }
+        }
+        .toggleStyle(.quietCheckbox)
+        .help("Ignore Whitespace")
+        .accessibilityLabel("Ignore Whitespace")
+        .fixedSize()
       }
-      Picker("Layout", selection: Binding(get: { layout }, set: { setting.set($0, via: .diff) })) {
-        ForEach(DiffLayout.allCases) { layout in
-          Image(systemName: layout.symbol).help(layout.title).tag(layout)
+      HStack(spacing: 2) {
+        ForEach(DiffLayout.allCases) { option in
+          Button {
+            if option != layout { setting.set(option, via: .diff) }
+          } label: {
+            Label(option.title, systemImage: option.symbol)
+          }
+          .buttonStyle(FlatIconButtonStyle(selected: option == layout, size: 24))
+          .help(option.title)
+          .accessibilityAddTraits(option == layout ? .isSelected : [])
         }
       }
-      .pickerStyle(.segmented)
-      .labelsHidden()
       .fixedSize()
     }
   }
@@ -82,9 +88,9 @@ struct DiffPane: View {
   private var content: some View {
     if let diff {
       if diff.isBinary {
-        EmptyState(icon: "doc.zipper", title: "Binary file", body: "No text diff to show.")
+        QuietEmptyState(icon: "doc.zipper", title: "Binary file", message: "No text diff to show.")
       } else if diff.hunks.isEmpty {
-        EmptyState(icon: "equal", title: "No changes", body: emptyReason(diff))
+        QuietEmptyState(icon: "equal", title: "No changes", message: emptyReason(diff))
       } else {
         DiffTableView(
           diff: diff, layout: DiffRowBuilder.isOneSided(diff) ? .inline : layout, actions: actions, onAction: onAction,
@@ -93,7 +99,7 @@ struct DiffPane: View {
     } else if isLoading {
       ProgressView().controlSize(.small)
     } else {
-      EmptyState(icon: "doc.text.magnifyingglass", title: "No file selected")
+      QuietEmptyState(icon: "doc.text.magnifyingglass", title: "No file selected")
     }
   }
 
@@ -172,10 +178,11 @@ struct FileDiffsView: View {
   /// Context-menu extras per file (history, blame, restore, …).
   var fileMenu: ((FileDiff) -> AnyView)?
   @State private var selected: String?
+  @FocusState private var listFocused: Bool
 
   var body: some View {
     ResizableHSplit(key: "git.files", leadingMin: 180, leadingIdeal: 260, leadingMax: 420, trailingMin: 280) {
-      List(files, id: \.path, selection: $selected) { file in
+      List(files, id: \.path) { file in
         HStack(spacing: 6) {
           FileTypeIcon(path: file.path)
           Text((file.path as NSString).lastPathComponent).lineLimit(1)
@@ -188,9 +195,20 @@ struct FileDiffsView: View {
           FileStatusBadge(status: file.status)
         }
         .font(.scaled(size: 12))
+        .contentShape(.rect)
+        .onTapGesture {
+          selected = file.path
+          listFocused = true
+        }
+        .modifier(NavigatorRowHighlight(selected: selected == file.path))
         .contextMenu { fileMenu?(file) }
       }
-      .listStyle(.sidebar)
+      .navigatorList()
+      .focused($listFocused)
+      .onKeyPress(keys: [.upArrow, .downArrow]) { press in
+        move(by: press.key == .upArrow ? -1 : 1)
+        return .handled
+      }
       .overlay {
         if isLoading && files.isEmpty { ProgressView().controlSize(.small) }
       }
@@ -205,10 +223,9 @@ struct FileDiffsView: View {
   private var current: FileDiff? {
     files.first { $0.path == selected }
   }
-}
 
-extension View {
-  @ViewBuilder fileprivate func labelsHidden(_ hidden: Bool) -> some View {
-    if hidden { labelsHidden() } else { self }
+  private func move(by offset: Int) {
+    guard let index = files.firstIndex(where: { $0.path == selected }) else { return selected = files.first?.path }
+    selected = files[min(max(index + offset, 0), files.count - 1)].path
   }
 }
