@@ -5,6 +5,15 @@ import Foundation
 /// A phone can be paired with several computers; exactly one is connected at a
 /// time. Each pairing is its own identity.
 public struct DeviceIdentity: Codable, Hashable, Sendable, Identifiable {
+  /// How this device came to trust the computer.
+  public enum Source: String, Codable, Sendable {
+    /// A QR pairing: a keypair of its own, kept in the keystore.
+    case paired
+    /// A host on the signed-in account: the account's device key, built from
+    /// the verified log on every launch and never stored here.
+    case account
+  }
+
   public var deviceId: String
   /// This device's static X25519 keypair, standard base64.
   public var devPrivB64: String
@@ -23,8 +32,13 @@ public struct DeviceIdentity: Codable, Hashable, Sendable, Identifiable {
   public var capabilities: [String]
   public var hostName: String?
   public var pairedAt: Double?
+  public var source: Source
+  /// The host's member id in the account log; nil for a QR pairing.
+  public var accountHostId: String?
 
   public var id: String { deviceId }
+
+  public var isAccountHost: Bool { source == .account }
 
   public var hasControl: Bool { capabilities.contains("control") }
 
@@ -37,7 +51,9 @@ public struct DeviceIdentity: Codable, Hashable, Sendable, Identifiable {
     endpoints: [RemoteEndpoint]? = nil,
     capabilities: [String],
     hostName: String? = nil,
-    pairedAt: Double? = nil
+    pairedAt: Double? = nil,
+    source: Source = .paired,
+    accountHostId: String? = nil
   ) {
     self.deviceId = deviceId
     self.devPrivB64 = devPrivB64
@@ -48,6 +64,24 @@ public struct DeviceIdentity: Codable, Hashable, Sendable, Identifiable {
     self.capabilities = capabilities
     self.hostName = hostName
     self.pairedAt = pairedAt
+    self.source = source
+    self.accountHostId = accountHostId
+  }
+
+  /// Pairings stored before accounts existed have no `source`.
+  public init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    deviceId = try c.decode(String.self, forKey: .deviceId)
+    devPrivB64 = try c.decode(String.self, forKey: .devPrivB64)
+    devPubB64 = try c.decode(String.self, forKey: .devPubB64)
+    desktopPubB64 = try c.decode(String.self, forKey: .desktopPubB64)
+    url = try c.decode(String.self, forKey: .url)
+    endpoints = try c.decodeIfPresent([RemoteEndpoint].self, forKey: .endpoints)
+    capabilities = try c.decode([String].self, forKey: .capabilities)
+    hostName = try c.decodeIfPresent(String.self, forKey: .hostName)
+    pairedAt = try c.decodeIfPresent(Double.self, forKey: .pairedAt)
+    source = try c.decodeIfPresent(Source.self, forKey: .source) ?? .paired
+    accountHostId = try c.decodeIfPresent(String.self, forKey: .accountHostId)
   }
 
   public var keypair: NoiseKeypair? {
@@ -116,6 +150,25 @@ public struct DeviceIdentity: Codable, Hashable, Sendable, Identifiable {
       all.append(RemoteEndpoint(kind: kind, url: url, priority: kind.priority))
     }
     return all.sorted { $0.priority < $1.priority }
+  }
+}
+
+extension Array where Element == DeviceIdentity {
+  /// Paired hosts plus account hosts, one row per computer: a computer known
+  /// both ways keeps its pairing (its grant and key) and gains the account's
+  /// addresses, so a moved tunnel is still found.
+  public static func merging(paired: [DeviceIdentity], account: [DeviceIdentity]) -> [DeviceIdentity] {
+    var merged = paired
+    for host in account {
+      if let index = merged.firstIndex(where: { $0.desktopPubB64 == host.desktopPubB64 }) {
+        merged[index].endpoints = DeviceIdentity.mergedEndpoints(
+          known: merged[index].endpoints, live: host.endpoints ?? [])
+        merged[index].accountHostId = host.accountHostId
+      } else {
+        merged.append(host)
+      }
+    }
+    return merged
   }
 }
 

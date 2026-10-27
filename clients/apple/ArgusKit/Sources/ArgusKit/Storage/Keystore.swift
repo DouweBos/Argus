@@ -65,18 +65,34 @@ public actor Keystore {
     return current
   }
 
+  // MARK: - Other items
+
+  /// Another secret under this service, e.g. the account keys. Same access
+  /// class as the pairings: this device only, never synced.
+  public func readItem(_ account: String) -> Data? {
+    read(account: account)
+  }
+
+  public func writeItem(_ data: Data, account: String) {
+    write(data, account: account)
+  }
+
+  public func deleteItem(_ account: String) {
+    SecItemDelete(baseQuery(account: account) as CFDictionary)
+  }
+
   // MARK: - Keychain
 
-  private func baseQuery() -> [String: Any] {
+  private func baseQuery(account: String? = nil) -> [String: Any] {
     [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
-      kSecAttrAccount as String: account,
+      kSecAttrAccount as String: account ?? self.account,
     ]
   }
 
-  private func read() -> Data? {
-    var query = baseQuery()
+  private func read(account: String? = nil) -> Data? {
+    var query = baseQuery(account: account)
     query[kSecReturnData as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
     var item: CFTypeRef?
@@ -84,8 +100,8 @@ public actor Keystore {
     return item as? Data
   }
 
-  private func write(_ data: Data) {
-    let query = baseQuery()
+  private func write(_ data: Data, account: String? = nil) {
+    let query = baseQuery(account: account)
     let attributes: [String: Any] = [
       kSecValueData as String: data,
       // The keys are useless without this device, and a background push
