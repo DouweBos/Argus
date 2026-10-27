@@ -2,6 +2,8 @@
  * Device hosts: other Macs whose simulators Argus streams over SSH. They belong
  * to the machine running the host, which resolves the SSH config and keys, so
  * they persist in `$ARGUS_HOME/device-hosts.json` rather than a project file.
+ * EAS Simulator hosts sit in the same file under `easHosts`, apart from
+ * `hosts`, so a reader that predates them still parses the file.
  */
 
 import type { DeviceHostInput } from "@argus/remote-protocol";
@@ -136,13 +138,46 @@ export function loadDeviceHosts(): DeviceHostConfig[] {
 }
 
 export function saveDeviceHosts(hosts: DeviceHostConfig[]): void {
+  writeDeviceHostsFile({ hosts });
+}
+
+/** The file's other keys (EAS hosts), so a write of one list keeps the rest. */
+function readDeviceHostsFile(): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePath(), "utf8")) as unknown;
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      (parsed as { version?: unknown }).version === SCHEMA_VERSION
+    ) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Missing or unreadable: start over.
+  }
+
+  return {};
+}
+
+/** Raw value of a top-level key, for lists kept apart from `hosts`. */
+export function readDeviceHostsKey(key: string): unknown {
+  return readDeviceHostsFile()[key];
+}
+
+/** Replace some top-level keys and keep the others. */
+export function writeDeviceHostsFile(patch: Record<string, unknown>): void {
   const target = filePath();
   fs.mkdirSync(path.dirname(target), { recursive: true });
   const tmp = `${target}.tmp`;
-  fs.writeFileSync(
-    tmp,
-    JSON.stringify({ version: SCHEMA_VERSION, hosts }, null, 2),
-    { encoding: "utf8", mode: 0o600 },
-  );
+  const next = {
+    hosts: [],
+    ...readDeviceHostsFile(),
+    ...patch,
+    version: SCHEMA_VERSION,
+  };
+  fs.writeFileSync(tmp, JSON.stringify(next, null, 2), {
+    encoding: "utf8",
+    mode: 0o600,
+  });
   fs.renameSync(tmp, target);
 }

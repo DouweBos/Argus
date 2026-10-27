@@ -6,6 +6,9 @@ import {
   DebugStreamInfo,
   DeviceHost,
   DeviceHostInput,
+  EasAccount,
+  EasDeviceHost,
+  EasDeviceHostInput,
   DeviceHostTestResult,
   DeviceInfo,
   DeviceInputEndpoint,
@@ -289,9 +292,45 @@ const DEVICE_HOST_COMMANDS = {
   },
 } as const satisfies Record<string, CommandSpec>;
 
+// An EAS host spends money on the Expo account and holds its token, so it is
+// configured from this machine only.
+const EAS_DEVICE_HOST_COMMANDS = {
+  list_eas_device_hosts: {
+    tier: "admin",
+    params: NoParams,
+    result: z.array(EasDeviceHost),
+  },
+  add_eas_device_host: {
+    tier: "admin",
+    params: EasDeviceHostInput,
+    result: EasDeviceHost,
+  },
+  update_eas_device_host: {
+    tier: "admin",
+    params: EasDeviceHostInput.extend({ id: z.string() }),
+    result: EasDeviceHost,
+  },
+  /** Stops every session the host started, then forgets it. */
+  remove_eas_device_host: {
+    tier: "admin",
+    params: z.object({ id: z.string() }),
+    result: Void,
+  },
+  /** Who a credential signs in as: a draft token, a saved host's, or the fallbacks. */
+  check_eas_account: {
+    tier: "admin",
+    params: z.object({
+      hostId: z.string().nullish(),
+      token: z.string().nullish(),
+    }),
+    result: EasAccount,
+  },
+} as const satisfies Record<string, CommandSpec>;
+
 export const DEVICE_COMMANDS = {
   ...SIMULATOR_COMMANDS,
   ...ANDROID_COMMANDS,
   ...CONDUCTOR_COMMANDS,
   ...DEVICE_HOST_COMMANDS,
+  ...EAS_DEVICE_HOST_COMMANDS,
 } as const satisfies Record<string, CommandSpec>;

@@ -217,6 +217,9 @@ export const REMOTE_METHODS = {
   /** Read-only: adding or testing one makes the host open SSH with its own
    *  keys, which no paired client gets to trigger. */
   "device_hosts.list": "monitor",
+  /** An EAS session bills the host owner's Expo account until it stops. */
+  "device_hosts.start_eas_session": "control",
+  "device_hosts.stop_eas_session": "control",
   /** Begin/stop streaming a device's screen (frames ride the binary channel). */
   "devices.watch": "monitor",
   "devices.unwatch": "monitor",

@@ -209,6 +209,18 @@ function parseSps(spsNalBody: Uint8Array): SpsInfo {
 // Codec string + AVCC description builders
 // ---------------------------------------------------------------------------
 
+/** Decoder config for an SPS and PPS NAL (each with its header byte). */
+export function h264ConfigFor(sps: Uint8Array, pps: Uint8Array): H264Config {
+  const info = parseSps(sps.slice(1));
+
+  return {
+    codec: buildCodecString(info),
+    codedWidth: info.width,
+    codedHeight: info.height,
+    description: buildAvccDescription(sps, pps),
+  };
+}
+
 /** Build `avc1.PPCCLL` codec string from SPS info. */
 function buildCodecString(info: SpsInfo): string {
   const pp = info.profileIdc.toString(16).padStart(2, "0");

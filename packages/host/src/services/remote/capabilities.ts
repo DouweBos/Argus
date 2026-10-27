@@ -98,6 +98,13 @@ import {
   getCommand,
   invokeCommand,
 } from "../command/registry";
+import {
+  isEasDeviceId,
+  remoteEasDeviceHosts,
+  runningEasDevice,
+  startEasSession,
+  stopEasSession,
+} from "../deviceHosts/eas/registry";
 import { listDeviceHosts } from "../deviceHosts/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
 import { getRunnerById } from "../llm/registry";
@@ -1998,16 +2005,38 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { devices };
   },
   "device_hosts.list": async () => ({
-    hosts: listDeviceHosts().map(({ id, label, status }) => ({
-      id,
-      label,
-      status,
-    })),
+    hosts: [
+      ...listDeviceHosts().map(({ id, label, status }) => ({
+        id,
+        label,
+        status,
+        kind: "ssh" as const,
+      })),
+      ...remoteEasDeviceHosts(),
+    ],
   }),
+  "device_hosts.start_eas_session": async (params) => {
+    const { host_id } = parse("device_hosts.start_eas_session", params);
+
+    return { device_id: await control(() => startEasSession(host_id)) };
+  },
+  "device_hosts.stop_eas_session": async (params) => {
+    const { device_id } = parse("device_hosts.stop_eas_session", params);
+    await control(() => stopEasSession(device_id));
+
+    return { accepted: true };
+  },
   "devices.watch": async (params, ctx) => {
     const { device_id, platform } = parse("devices.watch", params);
     if (!ctx.media) {
       throw new GatewayError("internal", "media channel unavailable");
+    }
+    // Watching is monitor-tier; booting an EAS device would start a billed session.
+    if (isEasDeviceId(device_id) && !runningEasDevice(device_id)) {
+      throw new GatewayError(
+        "bad_request",
+        "That EAS Simulator session isn't running.",
+      );
     }
     const stream_id = await control(() =>
       ctx.media!.watch(device_id, platform),

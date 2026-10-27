@@ -408,6 +408,10 @@ export const MethodParams = {
   }),
   "devices.list": z.object({}),
   "device_hosts.list": z.object({}),
+  /** Start a billed EAS Simulator session on one of the host's free slots. */
+  "device_hosts.start_eas_session": z.object({ host_id: z.string() }),
+  /** Stop an EAS Simulator session, ending its device. */
+  "device_hosts.stop_eas_session": z.object({ device_id: z.string() }),
   /** Begin streaming a device's screen; returns a stream id for binary frames. */
   "devices.watch": z.object({
     device_id: z.string(),
@@ -772,6 +776,8 @@ export const MethodResult = {
   "sessions.merge_base": z.object({ accepted: z.boolean() }),
   "devices.list": z.object({ devices: z.array(RemoteDevice) }),
   "device_hosts.list": z.object({ hosts: z.array(RemoteDeviceHost) }),
+  "device_hosts.start_eas_session": z.object({ device_id: z.string() }),
+  "device_hosts.stop_eas_session": z.object({ accepted: z.boolean() }),
   "devices.watch": z.object({ stream_id: z.number().int().nonnegative() }),
   "devices.unwatch": z.object({ accepted: z.boolean() }),
   "devices.state": z.object({ state: RemoteDeviceState.nullable() }),

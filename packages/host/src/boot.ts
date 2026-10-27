@@ -34,6 +34,10 @@ import {
 import { initCodeService, stopCodeService } from "./services/code/lifecycle";
 import { stopAllDebugStreams } from "./services/conductor/debug";
 import { initConductorOverride } from "./services/conductor/override";
+import {
+  initEasDeviceHosts,
+  stopEasDeviceHosts,
+} from "./services/deviceHosts/eas/registry";
 import { stopDeviceHosts } from "./services/deviceHosts/registry";
 import {
   importCliChats,
@@ -189,6 +193,10 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
     log.error("Failed to start MCP server:", err);
   });
 
+  // Before any listing: EAS devices resolve through their own namespace, and
+  // billed sessions an earlier process left running get stopped.
+  initEasDeviceHosts();
+
   // Commands first, so nothing that attaches over the gateway finds a gap.
   registerHostCommands();
   // Until a UI claims them, the host folds agent conversations itself.
@@ -252,6 +260,8 @@ export function stopHostServices(): void {
  */
 export async function terminateHostProcesses(): Promise<void> {
   await Promise.allSettled([
+    // Every EAS session bills until it stops; bounded, the rest is swept next launch.
+    stopEasDeviceHosts(),
     destroyAllTerminalsAndWait(1500),
     // `kill()` escalates to SIGKILL after 2 s for a child ignoring SIGTERM.
     destroyAllAgents(),

@@ -37,6 +37,7 @@
     "vscode-jsonrpc": "9.0.3",
     "vscode-langservers-extracted": "4.10.0",
     "vscode-languageserver-protocol": "3.18.4",
+    "werift": "0.25.2",
     "ws": "^8.21.0",
     "yaml": "^2.8.3",
     "yaml-language-server": "1.24.0",

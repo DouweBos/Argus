@@ -12,6 +12,13 @@ import {
 } from "../services/conductor/logger";
 import { openDeepLink } from "../services/conductor/openLink";
 import {
+  addEasDeviceHost,
+  checkEasAccount,
+  listEasDeviceHosts,
+  removeEasDeviceHost,
+  updateEasDeviceHost,
+} from "../services/deviceHosts/eas/registry";
+import {
   addDeviceHost,
   listDeviceHosts,
   removeDeviceHost,
@@ -171,6 +178,13 @@ function registerDeviceHostCommands(): void {
   defineTypedCommand("add_device_host", (p) => addDeviceHost(p));
   defineTypedCommand("remove_device_host", (p) => removeDeviceHost(p.id));
   defineTypedCommand("test_device_host", (p) => testDeviceHost(p));
+  defineTypedCommand("list_eas_device_hosts", () => listEasDeviceHosts());
+  defineTypedCommand("add_eas_device_host", (p) => addEasDeviceHost(p));
+  defineTypedCommand("update_eas_device_host", (p) => updateEasDeviceHost(p));
+  defineTypedCommand("remove_eas_device_host", (p) =>
+    removeEasDeviceHost(p.id),
+  );
+  defineTypedCommand("check_eas_account", (p) => checkEasAccount(p));
 }
 
 export function registerDeviceCommands(): void {

@@ -1,18 +1,21 @@
 /**
  * Settings → Tools → Device hosts: other Macs whose iOS simulators Argus
- * streams over SSH. The host owns the config and the SSH connections; this
- * lists, adds, tests and removes them.
+ * streams over SSH, and EAS Simulator hosts (Expo's cloud simulators). The
+ * host owns the config, the SSH connections and the Expo token; this lists,
+ * adds, tests and removes them.
  */
 
 import type {
   DeviceHost,
   DeviceHostInput,
   DeviceHostTestResult,
+  EasDeviceHost,
 } from "../../../lib/types";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import {
   Button,
   Input,
+  SegmentedControl,
   SettingsScreenField,
   Spinner,
   StatusBulb,
@@ -21,10 +24,13 @@ import {
 import {
   addDeviceHost,
   listDeviceHosts,
+  listEasDeviceHosts,
   removeDeviceHost,
   testDeviceHost,
 } from "../../../lib/ipc";
 import styles from "./DeviceHostsField.module.css";
+import { EasHostForm } from "./EasHostForm";
+import { EasHostRow } from "./EasHostRow";
 
 const STATUS_TONE: Record<DeviceHost["status"], StatusBulbTone> = {
   connected: "success",
@@ -38,19 +44,26 @@ function describeTarget(h: Pick<DeviceHost, "port" | "target">): string {
   return h.port ? `${h.target}:${String(h.port)}` : h.target;
 }
 
+type HostKind = "eas" | "ssh";
+
 export function DeviceHostsField() {
   const [hosts, setHosts] = useState<DeviceHost[] | null>(null);
+  const [easHosts, setEasHosts] = useState<EasDeviceHost[]>([]);
+  const [kind, setKind] = useState<HostKind>("ssh");
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     listDeviceHosts().then(setHosts, (e: unknown) => setError(errorText(e)));
+    listEasDeviceHosts().then(setEasHosts, (e: unknown) =>
+      setError(errorText(e)),
+    );
   }, []);
 
   useEffect(reload, [reload]);
 
   return (
     <SettingsScreenField
-      caption="Stream and drive iOS simulators running on another Mac. Argus connects with this Mac's SSH config and keys, never prompts for a password, and installs its bridge on the other Mac on first use."
+      caption="Stream and drive iOS simulators running on another Mac, or on EAS Simulator in Expo's cloud. Argus connects to a Mac with this Mac's SSH config and keys, never prompts for a password, and installs its bridge there on first use. EAS Simulator devices are billed to your Expo account while their session runs."
       label="Device hosts"
     >
       <div className={styles.list}>
@@ -63,8 +76,24 @@ export function DeviceHostsField() {
             onTested={reload}
           />
         ))}
+        {easHosts.map((host) => (
+          <EasHostRow host={host} key={host.id} onChanged={reload} />
+        ))}
         {error && <p className={styles.error}>{error}</p>}
-        <AddHostForm onAdded={reload} />
+        <SegmentedControl
+          aria-label="Device host kind"
+          onChange={setKind}
+          options={[
+            { value: "ssh", label: "Mac over SSH" },
+            { value: "eas", label: "EAS Simulator" },
+          ]}
+          value={kind}
+        />
+        {kind === "ssh" ? (
+          <AddHostForm onAdded={reload} />
+        ) : (
+          <EasHostForm onSaved={reload} />
+        )}
       </div>
     </SettingsScreenField>
   );

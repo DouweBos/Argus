@@ -240,3 +240,47 @@ export const DeviceHostTestResult = z.object({
   ok: z.boolean(),
 });
 export type DeviceHostTestResult = z.infer<typeof DeviceHostTestResult>;
+
+/** Where an EAS host's Expo credential came from. */
+export const ExpoCredentialSource = z.enum(["settings", "env", "eas-login"]);
+export type ExpoCredentialSource = z.infer<typeof ExpoCredentialSource>;
+
+/**
+ * Cloud simulators from EAS Simulator. Every session bills the Expo account
+ * until it stops, so each host bounds them. The token itself never leaves the
+ * host: `hasToken` says whether one is saved.
+ */
+export const EasDeviceHost = z.object({
+  /** EAS project sessions run under; null uses the account's only project. */
+  appId: z.string().nullable(),
+  /** Last failure, ready to show; null after a success. */
+  error: z.string().nullable(),
+  hasToken: z.boolean(),
+  id: z.string(),
+  idleMinutes: z.number(),
+  label: z.string(),
+  maxConcurrentSessions: z.number(),
+  maxSessionMinutes: z.number(),
+  /** Sessions this host has running or starting right now. */
+  runningSessions: z.number(),
+});
+export type EasDeviceHost = z.infer<typeof EasDeviceHost>;
+
+export const EasDeviceHostInput = z.object({
+  appId: z.string().nullish(),
+  idleMinutes: z.number().nullish(),
+  label: z.string().nullish(),
+  maxConcurrentSessions: z.number().nullish(),
+  maxSessionMinutes: z.number().nullish(),
+  /** Absent or null keeps the saved token; "" clears it. */
+  token: z.string().nullish(),
+});
+export type EasDeviceHostInput = z.infer<typeof EasDeviceHostInput>;
+
+/** Who an Expo credential signs in as, and the projects it can run sessions under. */
+export const EasAccount = z.object({
+  apps: z.array(z.object({ fullName: z.string(), id: z.string() })),
+  credentialSource: ExpoCredentialSource,
+  signedInAs: z.string(),
+});
+export type EasAccount = z.infer<typeof EasAccount>;
