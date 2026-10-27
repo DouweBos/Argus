@@ -44,6 +44,7 @@ public enum PillMetrics {
 private struct PillItem<Label: View>: View {
   @Environment(\.theme) private var theme
   @Environment(\.isEnabled) private var isEnabled
+  @Environment(\.pillItemsInGlass) private var inGlass
   let label: Label
   let pressed: Bool
   let iconOnly: Bool
@@ -60,7 +61,10 @@ private struct PillItem<Label: View>: View {
       .padding(.vertical, PillMetrics.verticalPadding)
       .foregroundStyle(isEnabled ? theme.text : theme.textMuted)
       .background {
-        if isEnabled && (hovering || pressed) {
+        if inGlass {
+          // The toolbar's glass draws hover and press at its own size.
+          EmptyView()
+        } else if isEnabled && (hovering || pressed) {
           Capsule().fill(pressed ? theme.borderStrong : theme.bgHover)
         } else if selected {
           Capsule().fill(theme.selection)
@@ -209,4 +213,9 @@ extension PillActionGroup where Leading == EmptyView {
       width: 140)
   }
   .padding()
+}
+
+extension EnvironmentValues {
+  /// Pill items inside a toolbar's glass capsule leave hover and press to the glass.
+  @Entry public var pillItemsInGlass = false
 }

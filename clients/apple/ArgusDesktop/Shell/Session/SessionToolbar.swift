@@ -30,22 +30,25 @@ struct SessionToolbar: ToolbarContent {
           HuddleToolbarButton(sessionId: session.id)
           RunControl(session: session)
         }
+        .environment(\.pillItemsInGlass, true)
         .measured(slot: 0, in: model.toolbarLayout)
       }
     }
     ToolbarItem {
-      PillGroup { sidePanelToggle }
+      sidePanelToggle
         .measured(slot: 1, in: model.toolbarLayout)
     }
   }
 
+  /// A native toggle, so the toolbar's glass draws its hover, press and on state.
   private var sidePanelToggle: some View {
-    Button {
-      model.toggleSidePanel(via: .button)
-    } label: {
+    Toggle(
+      isOn: Binding(get: { model.sidePanelVisible }, set: { _ in model.toggleSidePanel(via: .button) })
+    ) {
       Label("Side Panel", systemImage: "rectangle.righthalf.inset.filled")
     }
-    .buttonStyle(PillItemButtonStyle(selected: model.sidePanelVisible))
+    .toggleStyle(.button)
+    .labelStyle(.iconOnly)
     .help(model.sidePanelVisible ? "Hide side panel (⌘J)" : "Show side panel (⌘J)")
   }
 }

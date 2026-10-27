@@ -11,6 +11,7 @@ struct GitToolbarActions: ToolbarContent {
   var body: some ToolbarContent {
     ToolbarItem {
       GitToolbarButtons(workspace: workspace, session: session)
+        .environment(\.pillItemsInGlass, true)
     }
   }
 }
