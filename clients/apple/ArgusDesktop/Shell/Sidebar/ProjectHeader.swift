@@ -20,13 +20,17 @@ struct ProjectHeader: View {
 
   var body: some View {
     HStack(spacing: 6) {
-      ProjectBadge(project.name, key: project.repoRoot)
+      // On hover the badge turns into the collapse chevron, in the same spot.
+      if hovering && !worktrees.isEmpty {
+        chevron
+      } else {
+        ProjectBadge(project.name, key: project.repoRoot)
+      }
       Text(project.name)
         .font(.scaled(size: 12, weight: .semibold))
         .foregroundStyle(theme.textSecondary)
         .lineLimit(1)
         .layoutPriority(1)
-      if !worktrees.isEmpty && (hovering || collapsed) { chevron }
       if showsHost { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
       if let drive { VolumeBadge(label: drive.name, connected: drive.connected) }
       if let git { SyncCounts(status: git).fixedSize() }
@@ -52,9 +56,9 @@ struct ProjectHeader: View {
       collapsed.toggle()
     } label: {
       Image(systemName: collapsed ? Icon.chevronRight : Icon.chevronDown)
-        .font(.scaled(size: 8, weight: .semibold))
-        .foregroundStyle(theme.textMuted)
-        .frame(width: 12, height: 12)
+        .font(.scaled(size: 9, weight: .semibold))
+        .foregroundStyle(theme.textSecondary)
+        .frame(width: TextScale.shared(16), height: TextScale.shared(16))
         .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
