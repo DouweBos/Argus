@@ -46,6 +46,8 @@ export interface AccountRecord {
   config: AccountConfig;
   /** Last time presence reached the service. */
   presence_at: number | null;
+  /** Account devices revoked from this console: never re-materialized here. */
+  blocked_devices?: string[];
 }
 
 export const DEFAULT_ACCOUNT_URL = "https://houwert.dev/argus/account/v1";

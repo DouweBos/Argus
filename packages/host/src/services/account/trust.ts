@@ -21,7 +21,7 @@ import {
   type PairedDevice,
 } from "../remote/deviceStore";
 import { capture } from "../telemetry/telemetry";
-import { readAccountRecord } from "./store";
+import { readAccountRecord, writeAccountRecord } from "./store";
 
 let record: AccountRecord | null = null;
 let state: LogState | null = null;
@@ -120,9 +120,11 @@ export async function findAccountDevice(
   if (!isLinked() || !record?.config.enabled || !state) {
     return null;
   }
+  const blocked = new Set(record.blocked_devices ?? []);
   const member = Object.values(state.members).find(
     (m) =>
       m.live &&
+      !blocked.has(m.member.id) &&
       m.member.role === "device" &&
       m.member.noise_pub === noisePubB64 &&
       m.member.id !== record?.device?.id,
@@ -170,6 +172,22 @@ export async function reconcileDevices(): Promise<void> {
       disconnect(device.device_id);
     }
   }
+}
+
+/**
+ * The console revoked an account device. A host may not write revokes for
+ * others (§4.2), so this only bars it here; its other computers still trust
+ * it until a device removes it from the account.
+ */
+export async function blockAccountDevice(deviceId: string): Promise<void> {
+  if (!record) {
+    return;
+  }
+  record.blocked_devices = [
+    ...new Set([...(record.blocked_devices ?? []), deviceId]),
+  ];
+  await writeAccountRecord(record);
+  capture("account_member_revoked", { role: "device", source: "local" });
 }
 
 /** Drop every materialized account device (on unlink). */

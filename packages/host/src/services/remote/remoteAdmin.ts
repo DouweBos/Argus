@@ -5,8 +5,10 @@
  */
 
 import { emitHostEvent } from "@argus/host/bus";
+import { blockAccountDevice } from "../account/trust";
 import { openExternalUrl } from "../shell/operations";
 import {
+  getDevice,
   listDevices,
   revokeDevice,
   setDeviceGrants,
@@ -43,6 +45,9 @@ export async function applyTailscaleFixAndOpen(
 export async function revokeRemoteDevice(
   deviceId: string,
 ): Promise<RemoteStatus> {
+  if ((await getDevice(deviceId))?.source === "account") {
+    await blockAccountDevice(deviceId);
+  }
   await revokeDevice(deviceId);
   disconnectDevice(deviceId);
 
