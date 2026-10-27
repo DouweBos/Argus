@@ -70,10 +70,27 @@ struct ComputerView: View {
       }
     }
 
-    Field(label: "Name", caption: "Only shown on this phone.") {
-      ThemedTextField(placeholder: "Computer name", text: $name, input: .name) { save(computer) }
-      Btn(label: saved ? "Saved" : "Save", tone: .secondary, small: true) { save(computer) }
-        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || name == computer.label)
+    if let presence = app.presence(of: computer) {
+      Field(label: "Account", caption: "On your Argus account, so it connects without a QR code.") {
+        MutedText(AccountPresenceLabel.text(online: presence.online, lastSeen: presence.lastSeen))
+      }
+    }
+
+    if !computer.isAccountHost {
+      nameField(computer)
+    }
+
+    if app.account.isSignedIn, computer.accountHostId == nil {
+      Field(
+        label: "Your account",
+        caption: "Add it to your Argus account so your other devices reach it without a QR code. Confirm the code on the computer too."
+      ) {
+        Btn(label: "Add to your account", tone: .secondary) {
+          router.push(.addComputer)
+          Task { await app.addConnectedHostToAccount() }
+        }
+        .disabled(!active || host.connection != .ready)
+      }
     }
 
     Field(
@@ -102,6 +119,33 @@ struct ComputerView: View {
       }
     }
 
+    if computer.isAccountHost {
+      Field(
+        label: "Remove from account",
+        caption: "Every device on your account stops connecting to it. Link it again with a new code."
+      ) {
+        Btn(label: "Remove from account", tone: .danger) {
+          guard let id = computer.accountHostId else { return }
+          Task {
+            await app.account.remove(memberId: id)
+            router.popToRoot()
+          }
+        }
+      }
+    } else {
+      unpairField
+    }
+  }
+
+  @ViewBuilder private func nameField(_ computer: DeviceIdentity) -> some View {
+    Field(label: "Name", caption: "Only shown on this phone.") {
+      ThemedTextField(placeholder: "Computer name", text: $name, input: .name) { save(computer) }
+      Btn(label: saved ? "Saved" : "Save", tone: .secondary, small: true) { save(computer) }
+        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || name == computer.label)
+    }
+  }
+
+  @ViewBuilder private var unpairField: some View {
     Field(
       label: "Unpair",
       caption:

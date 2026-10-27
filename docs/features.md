@@ -99,6 +99,11 @@ ciphertext.
   **Tailscale** (`tailscale funnel`) and **Cloudflare** (`cloudflared`)
   tunnels add access from anywhere and run side by side. Phones try the
   live addresses in order.
+- **Argus account** — sign in on the iPhone app or Argus for Mac (Apple,
+  GitHub or an emailed code) and the computers on your account show up
+  with their current addresses, online or offline, with no QR per
+  computer. Add one by typing the code it shows and comparing a 6-digit
+  code; see [Accounts](accounts.md).
 - **Grants per device** — paired devices are monitor + approve by
   default. **Control** lets a device drive agents and land their work —
   commit, push, merge, open a pull request, author an automation.

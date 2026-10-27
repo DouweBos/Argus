@@ -173,6 +173,19 @@ struct SettingsView: View {
       }
 
       Section {
+        Button(app.account.isSignedIn ? "Account and computers" : "Sign in") {
+          router.push(.account)
+        }
+      } header: {
+        Text("Argus account")
+      } footer: {
+        Text(
+          app.account.isSignedIn
+            ? "Safety code \(app.account.safetyCode ?? "—"). Computers on your account connect without a QR code."
+            : "Sign in once and the computers on your account show up here, with no QR code per computer.")
+      }
+
+      Section {
         if let identity = app.identity {
           LabeledContent("Connected to", value: identity.label)
         }

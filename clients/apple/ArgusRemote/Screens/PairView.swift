@@ -35,6 +35,14 @@ struct PairView: View {
 
   @ViewBuilder
   private var scanning: some View {
+    if !app.account.isSignedIn {
+      Card {
+        BodyText("Sign in to your Argus account")
+        MutedText("Computers on your account show up on their own — no code to scan for each one.")
+        Btn(label: "Sign in") { router.push(.account) }
+      }
+      SectionHeader(title: "Or scan a QR code")
+    }
     MutedText("In Argus, open Settings → Remote Access → Start pairing.")
 
     QRScannerView { code in begin(code) }
