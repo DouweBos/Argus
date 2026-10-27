@@ -72,6 +72,7 @@ struct MacHostLinkSection: View {
       case .unknown:
         EmptyView()
       }
+      SettingsError(text: link.failure)
     }
     .onDisappear { link.stopPolling() }
   }
@@ -82,25 +83,43 @@ struct MacHostLinkSection: View {
 @Observable
 final class MacHostLink {
   private(set) var state: ArgusProtocol.AccountLinkState?
+  /// Why the last request failed, shown under the group.
+  private(set) var failure: String?
   @ObservationIgnored private var backend: (any HostBackend)?
   @ObservationIgnored private var poll: Task<Void, Never>?
 
   func start(_ backend: (any HostBackend)?) async {
     guard let backend else { return }
     self.backend = backend
-    state = try? await backend.request(ArgusProtocol.Commands.AccountLoginStart.self, .init(surface: .mac))
+    guard await run({ try await backend.request(ArgusProtocol.Commands.AccountLoginStart.self, .init(surface: .mac)) })
+    else { return }
     startPolling()
   }
 
   func confirm(_ match: Bool) async {
     guard let backend else { return }
-    state = try? await backend.request(ArgusProtocol.Commands.AccountLoginConfirm.self, .init(match: match))
+    await run { try await backend.request(ArgusProtocol.Commands.AccountLoginConfirm.self, .init(match: match)) }
   }
 
   func cancel() async {
     stopPolling()
     guard let backend else { return }
-    state = try? await backend.request(ArgusProtocol.Commands.AccountLoginCancel.self, EmptyParams())
+    await run { try await backend.request(ArgusProtocol.Commands.AccountLoginCancel.self, EmptyParams()) }
+  }
+
+  /// A failed request says why instead of doing nothing. An older Argus running this
+  /// Mac's host has no account commands at all, so that's the likely cause.
+  @discardableResult
+  private func run(_ request: () async throws -> ArgusProtocol.AccountLinkState) async -> Bool {
+    do {
+      state = try await request()
+      failure = nil
+      return true
+    } catch {
+      failure =
+        "Couldn't reach this Mac's host for linking (\(error.localizedDescription)). If another Argus app is running it, that app may be too old for accounts: update or quit it, then try again."
+      return false
+    }
   }
 
   /// The host moves on its own (claimed, approver found); read where it is.
