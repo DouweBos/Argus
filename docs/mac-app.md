@@ -248,8 +248,9 @@ The keys for paired hosts are kept in a file in the app's state folder that
 only your user can read. The account key is kept in the Keychain, on this Mac
 only.
 
-A build signed ad hoc or not at all has no Sign in with Apple and offers
-GitHub and email only.
+Development builds use the system Sign in with Apple sheet. Released builds are
+signed with Developer ID, which Apple doesn't allow Sign in with Apple in, so
+they sign in with Apple in a browser sheet instead.
 
 ## How it relates to the Electron app
 
@@ -366,12 +367,10 @@ home. They are
 signed with your Apple Development identity: macOS refuses notifications to an
 ad-hoc signed app, and to one run from `/tmp`.
 
-Sign in with Apple needs a provisioning profile. Debug builds get one through
-Xcode's automatic signing (your Mac has to be registered with the team).
-Release builds are signed with Developer ID and a profile from fastlane match;
-create it once with `bundle exec fastlane mac mac_app_profile generate:true`,
-and on any other machine install it with `bundle exec fastlane mac
-mac_app_profile`.
+Debug builds carry the Sign in with Apple entitlement through Xcode's automatic
+signing (your Mac has to be registered with the team). Release builds are
+signed with Developer ID and no profile: Apple doesn't support Sign in with
+Apple for Developer ID apps, so Release signs in with Apple on the web instead.
 
 Telemetry needs a PostHog key at build time, as for the Electron app:
 `POSTHOG_KEY` in the environment `xcodebuild` runs in, or `POSTHOG_KEY = …` in

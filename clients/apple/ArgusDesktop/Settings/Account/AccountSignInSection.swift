@@ -17,6 +17,8 @@ struct AccountSignInSection: View {
     ) {
       if Self.canSignInWithApple {
         appleButton
+      } else {
+        Button("Sign in with Apple") { Task { await account.signIn(with: .apple) } }
       }
       Button("Sign in with GitHub") { Task { await account.signIn(with: .github) } }
 
@@ -59,8 +61,8 @@ struct AccountSignInSection: View {
     .clickable()
   }
 
-  /// Signed builds carry the Sign in with Apple entitlement; an ad-hoc or
-  /// unsigned one doesn't, so it offers GitHub and email only.
+  /// Development-signed builds carry the Sign in with Apple entitlement. Developer ID
+  /// builds can't (Apple doesn't support it there), so they sign in with Apple on the web.
   static let canSignInWithApple: Bool = {
     guard let task = SecTaskCreateFromSelf(nil) else { return false }
     return SecTaskCopyValueForEntitlement(task, "com.apple.developer.applesignin" as CFString, nil) != nil
