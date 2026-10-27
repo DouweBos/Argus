@@ -783,9 +783,8 @@ from https to `ws://` LAN is blocked, so only tunnel endpoints are possible).
 
 ## 12. Open questions
 
-1. **Mac app SIWA under Developer ID.** Sign in with Apple works for Developer ID apps with a
-   provisioning profile. Confirm with ClerkKit's native flow on the Mac build, or fall back to
-   GitHub/email there.
+1. **Mac app SIWA under Developer ID.** Resolved: Release signs with a match Developer ID profile
+   (`fastlane mac mac_app_profile`), Debug with Xcode's automatic one; both carry the entitlement.
 2. **Clerk production Apple toggle.** Does it insist on a Services ID + key even when only native
    apps sign in with Apple? If so, step 4 of the checklist grows by one Apple key.
 3. **Approver set.** Should host consoles be able to approve devices by default (§4.4)? It makes
