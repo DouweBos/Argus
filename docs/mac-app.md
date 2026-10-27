@@ -84,8 +84,9 @@ go through the host, exactly as in the Electron app.
   settings in one centred column — appearance (colour scheme and colour
   theme as preview cards), Claude accounts, agents and automation
   defaults, LLM runners including custom ones, MCP servers, tools, git
-  defaults and commit signing, the update channel, and remote access —
-  pairing a phone, its grants, push and tunnels.
+  defaults and commit signing, the update channel, remote access —
+  pairing a phone, its grants, push and tunnels — and your Argus account
+  (see [Other hosts](#other-hosts)).
 - **Project Settings** from a project's menu in the sidebar: every
   `.argus.json` field, plus your own branch prefix and worktree locations.
 - **Automations**, **Quick Run**, the **Inbox** and its proposals, and
@@ -203,10 +204,21 @@ and Home/End move through the results while you keep typing; Return opens one.
 Argus for Mac can drive other machines running Argus — another Mac, a
 headless Argus server, or `argus-host` — as well as its own:
 
-- **Settings → Hosts** pairs with one: paste the pairing code from that
-  machine's Remote screen, compare the 6-digit code, and approve it there with
-  **Admin** ticked. Paired hosts can be renamed, attached, detached, shown or
-  forgotten.
+- **Settings → Argus Account** signs in with Apple, GitHub or an emailed
+  code. The first sign-in on an empty account puts this Mac on it and links
+  its own host straight away, with no code, so your phone sees it. The tab
+  shows the account's safety code, every host on it as online or
+  "Offline · last seen …", and **Add a host**: type the code another
+  computer shows (`argus-host login`, or Sign in in Argus there) and compare
+  the 6-digit codes. Sign Out takes this Mac off the account.
+- If your account already has devices, this Mac can't add itself yet;
+  **Link this Mac with a code** shows a code to add from your phone instead.
+- **Settings → Hosts** lists the hosts on your account beside paired ones and
+  attaches them with no pairing code; a host whose tunnel address changed is
+  found again from the account. To pair without an account, paste the pairing
+  code from that machine's Remote screen, compare the 6-digit code, and approve
+  it there with **Admin** ticked. Paired hosts can be renamed, attached,
+  detached, shown or forgotten.
 - Attached hosts' projects sit in the sidebar beside this Mac's, each marked
   with its machine and whether it's connected. The machines button at the top
   of the sidebar narrows it to one machine and shows that machine on the
@@ -233,7 +245,11 @@ headless Argus server, or `argus-host` — as well as its own:
   each under its own machine.
 
 The keys for paired hosts are kept in a file in the app's state folder that
-only your user can read.
+only your user can read. The account key is kept in the Keychain, on this Mac
+only.
+
+Sign in with Apple needs the app's Sign in with Apple entitlement; a build
+signed without it offers GitHub and email only.
 
 ## How it relates to the Electron app
 

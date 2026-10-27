@@ -27,11 +27,12 @@ struct HostsSettingsTab: View {
       }
 
       SettingsGroup(
-        "Paired hosts",
+        "Hosts",
         footer: "Attach brings a host's projects into the sidebar and keeps its agents streaming; Show points the screens that aren't about one session (Home, Devices, Automations, Settings) at it. Attached hosts come back on launch. Forget deletes this Mac's key for a host; revoke it there too to be thorough."
       ) {
         if hosts.hosts.isEmpty {
-          Text("No hosts paired yet.").foregroundStyle(.secondary)
+          Text("No hosts yet. Pair one above, or sign in under Argus Account to list the hosts on your account.")
+            .foregroundStyle(.secondary)
         } else {
           ForEach(hosts.hosts) { identity in
             PairedHostRow(identity: identity)
@@ -102,6 +103,7 @@ private struct PairingStatus: View {
 
 private struct PairedHostRow: View {
   @Environment(RemoteHostsStore.self) private var hosts
+  @Environment(AccountStore.self) private var account
   @Environment(\.theme) private var theme
   let identity: DeviceIdentity
   @State private var label = ""
@@ -113,17 +115,26 @@ private struct PairedHostRow: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       HStack {
-        TextField("Host name", text: $label)
-          .textFieldStyle(.plain)
-          .font(.scaled(.headline))
-          .onSubmit { hosts.rename(id, to: label) }
-          .accessibilityLabel("Host name")
+        if identity.isAccountHost {
+          Text(identity.label).font(.scaled(.headline))
+        } else {
+          TextField("Host name", text: $label)
+            .textFieldStyle(.plain)
+            .font(.scaled(.headline))
+            .onSubmit { hosts.rename(id, to: label) }
+            .accessibilityLabel("Host name")
+        }
+        if let accountHost = identity.accountHostId.flatMap(account.host) {
+          Text("Account · \(AccountPresenceText.text(online: accountHost.online, lastSeen: accountHost.lastSeen))")
+            .font(.scaled(.caption))
+            .foregroundStyle(.secondary)
+        }
         Spacer()
         HostStateLabel(state: hosts.state(id))
       }
       HStack(spacing: 6) {
         Text(DeviceIdentity.gatewayHost(identity.url))
-        if !identity.capabilities.contains("admin") {
+        if !identity.isAccountHost, !identity.capabilities.contains("admin") {
           Text("· limited grant — this host will refuse most commands").foregroundStyle(theme.warning)
         }
       }
@@ -138,7 +149,9 @@ private struct PairedHostRow: View {
           Button("Attach") { hosts.attach(id) }
         }
         Spacer()
-        Button("Forget…", role: .destructive) { confirmingForget = true }
+        if !identity.isAccountHost {
+          Button("Forget…", role: .destructive) { confirmingForget = true }
+        }
       }
     }
     .padding(.vertical, 4)

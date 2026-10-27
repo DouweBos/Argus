@@ -84,6 +84,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
   }
 
+  /// Moved tunnels and new hosts on the account, picked up on the way back in.
+  func applicationDidBecomeActive(_ notification: Notification) {
+    Task { await model.account.refresh() }
+  }
+
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     false
   }
