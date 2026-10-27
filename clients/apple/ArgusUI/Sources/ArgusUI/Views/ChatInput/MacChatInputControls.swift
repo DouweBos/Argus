@@ -9,12 +9,15 @@
       // Wraps instead of growing: a fixed-size row widened the middle column
       // and squeezed the sidebar.
       ChipFlowLayout(spacing: 2) {
-        modelMenu
-        if !effortLevels.isEmpty {
+        // No agent yet to report its models; `/model` still picks one.
+        if starter == nil {
+          modelMenu
+          if !effortLevels.isEmpty {
+            ComposerPillDivider()
+            effortMenu
+          }
           ComposerPillDivider()
-          effortMenu
         }
-        ComposerPillDivider()
         permissionMenu
         ComposerPillDivider()
         projectMenu
@@ -59,7 +62,7 @@
       ChromeMenuButton(edge: .above) {
         for mode in RemotePermissionMode.allCases {
           ChromeMenuItem(ComposerPermissionMode.label(mode), checked: mode == permissionMode) {
-            Task { await host.setPermissionMode(agentId: agentId, mode: mode) }
+            setPermissionMode(mode)
           }
         }
       } label: { open in
@@ -114,7 +117,8 @@
     // MARK: State
 
     var permissionMode: RemotePermissionMode {
-      ComposerPermissionMode.canonical(status?.permissionMode)
+      if let starter { return draftMode ?? ComposerPermissionMode.canonical(starter.defaultMode) }
+      return ComposerPermissionMode.canonical(status?.permissionMode)
     }
 
     private var currentModel: RemoteModelInfo? {

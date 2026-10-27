@@ -20,6 +20,8 @@
     let agentId: String
     let sessionId: String?
     let onAffordance: ((ChatInputAffordance) -> Void)?
+    /// Set: there's no agent yet, and sending starts one.
+    let starter: ComposerStarter?
 
     @State var text = ""
     @State var caret = 0
@@ -38,11 +40,18 @@
     /// Browse lookups race the typing; only the newest may land.
     @State var browseRequest = 0
     @State var showingModelMenu = false
+    /// A start composer's picks, handed to the agent it starts.
+    @State var draftMode: RemotePermissionMode?
+    @State var draftModel: String?
+    @State var starting = false
 
     var status: RemoteAgentStatus? { host.statusByAgent[agentId] }
     var isRunning: Bool { status?.status == .running }
     /// The desktop only takes input from a live agent.
-    var isEnabled: Bool { status.map { $0.status != .stopped && $0.status != .error } ?? true }
+    var isEnabled: Bool {
+      if starter != nil { return !starting }
+      return status.map { $0.status != .stopped && $0.status != .error } ?? true
+    }
     var capabilities: RemoteAgentCapabilities { host.capabilitiesByAgent[agentId] ?? .empty }
     var hasContent: Bool {
       !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !images.isEmpty
@@ -79,7 +88,7 @@
         preferences.set(value, for: PreferenceKey.draft(agentId: agentId))
         if dismissedText != value { dismissedText = nil }
         menuIndex = 0
-        composerTyping?(agentId, !value.isEmpty)
+        if starter == nil { composerTyping?(agentId, !value.isEmpty) }
       }
       .onChange(of: mentionContext?.query) { _, _ in Task { await refreshBrowse() } }
       .onChange(of: dropInbox?.generation) { _, _ in
@@ -216,9 +225,7 @@
         dismissedText = text
       case .cyclePermissionMode:
         onAffordance?(.permissionCycle)
-        let next = ComposerPermissionMode.next(
-          after: ComposerPermissionMode.canonical(status?.permissionMode))
-        Task { await host.setPermissionMode(agentId: agentId, mode: next) }
+        setPermissionMode(ComposerPermissionMode.next(after: permissionMode))
       case .interrupt:
         onAffordance?(.interruptShortcut)
         interrupt()
@@ -324,14 +331,15 @@
         clearComposer()
         switch local {
         case .togglePlan:
-          let current = ComposerPermissionMode.canonical(status?.permissionMode)
-          Task {
-            await host.setPermissionMode(agentId: agentId, mode: current == .plan ? .auto : .plan)
-          }
+          setPermissionMode(permissionMode == .plan ? .auto : .plan)
         case .setModel(let model):
-          Task { await host.setModel(agentId: agentId, model: model) }
+          if starter != nil {
+            draftModel = model
+          } else {
+            Task { await host.setModel(agentId: agentId, model: model) }
+          }
         case .openModelPicker:
-          showingModelMenu = true
+          if starter == nil { showingModelMenu = true }
         }
         return
       }
@@ -339,6 +347,7 @@
       let display = typed.isEmpty ? "(see attached images)" : typed
       let body = LinkedProjects.buildPreamble(paths: linkedProjects, message: display)
       let attachments = images.map(\.attachment)
+      if let starter { return start(with: starter, body: body, display: display, images: attachments) }
       let queue = isRunning
       clearComposer()
       // A link rides one message, like the desktop — not every one after it.
@@ -353,6 +362,33 @@
           await host.sendMessage(
             agentId: agentId, message: body, images: attachments, displayText: display)
         }
+      }
+    }
+
+    /// Starts the agent; the draft stays put until it has.
+    private func start(
+      with starter: ComposerStarter, body: String, display: String, images attachments: [RemoteImageAttachment]
+    ) {
+      starting = true
+      let request = ComposerStart(
+        message: body, displayText: display, images: attachments, permissionMode: draftMode, model: draftModel)
+      Task {
+        let started = await starter.start(request)
+        starting = false
+        guard started else { return }
+        clearComposer()
+        linkedProjects = []
+        preferences.remove(PreferenceKey.linkedProjects(agentId: agentId))
+        draftMode = nil
+        draftModel = nil
+      }
+    }
+
+    func setPermissionMode(_ mode: RemotePermissionMode) {
+      if starter != nil {
+        draftMode = mode
+      } else {
+        Task { await host.setPermissionMode(agentId: agentId, mode: mode) }
       }
     }
 
@@ -388,6 +424,7 @@
         mentionDirectories = MentionPicker.directories(of: mentionFiles)
         if host.claudeAccounts == nil { await host.refreshClaudeAccounts() }
       }
+      guard starter == nil else { return }
       await host.loadQueue(agentId: agentId)
       await host.loadCapabilities(agentId: agentId)
     }

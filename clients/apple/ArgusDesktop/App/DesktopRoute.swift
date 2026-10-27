@@ -9,8 +9,6 @@ enum DesktopRoute: Hashable {
   case agents
   /// `/runtimes`: every run command's terminal across every session.
   case runtimes
-  /// `/sessions/:sessionId/home`: setup state, landing the work, the agents.
-  case sessionHome(id: String)
   /// `/devices`: every simulator, emulator and browser the host knows.
   case devices
   /// `/devices/:platform/:deviceKey`: the devices screen with one device's details open.
@@ -43,7 +41,7 @@ enum DesktopRoute: Hashable {
 
   var sessionId: String? {
     switch self {
-    case .session(let id, _), .sessionHome(let id), .sessionGit(let id, _), .sessionCode(let id, _, _): id
+    case .session(let id, _), .sessionGit(let id, _), .sessionCode(let id, _, _): id
     default: nil
     }
   }
@@ -71,7 +69,6 @@ enum DesktopRoute: Hashable {
     case .home: "/"
     case .agents: "/agents"
     case .runtimes: "/runtimes"
-    case .sessionHome: "/sessions/:sessionId/home"
     case .devices: "/devices"
     case .device: "/devices/:platform/:deviceKey"
     case .session: "/sessions/:sessionId/agents"

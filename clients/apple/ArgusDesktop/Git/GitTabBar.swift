@@ -2,7 +2,6 @@ import ArgusUI
 import SwiftUI
 
 /// The git panel's views as Grove's pill bar, with the rest in a More menu.
-/// It sits atop the panel because the toolbar's centre holds the session switcher.
 struct GitTabBar: View {
   @Environment(DesktopModel.self) private var model
   let workspace: GitWorkspace

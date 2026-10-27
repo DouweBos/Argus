@@ -74,7 +74,7 @@ struct ProjectSidebarSection: View {
   }
 
   private func openInTab(_ session: RemoteSession) {
-    model.openTab(DesktopLocation(route: .sessionHome(id: session.id), host: model.host(ofSession: session.id)))
+    model.openTab(DesktopLocation(route: .session(id: session.id, agentId: nil), host: model.host(ofSession: session.id)))
   }
 
   private func agents(in session: RemoteSession) -> [RemoteAgentStatus] {

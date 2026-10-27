@@ -35,7 +35,7 @@
         guard let model = AppDelegate.current?.model,
           let panel = (command["panel"] as? String).flatMap(SessionPanel.init(rawValue:))
         else { return ["error": "panel?"] }
-        model.show(panel, via: .toolbar)
+        model.show(panel, via: .card)
         return ["route": "\(model.route)"]
       case "repoState":
         // The session on screen's repository: whether it's open and what has loaded.

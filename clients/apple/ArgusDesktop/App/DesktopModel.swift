@@ -57,8 +57,6 @@ final class DesktopModel {
   var hostFolderRequest: HostFolderRequest?
   /// The machine the sidebar is narrowed to; nil shows every attached one.
   var machineFilter: HostId?
-  /// The panel each session was last left on, as the desktop app remembers.
-  var agentsPanelSessions: Set<String> = []
   /// The git sub-view each session was last left on.
   var gitViews: [String: GitRoute] = [:]
   /// Sessions last left on their git panel.
@@ -292,7 +290,6 @@ final class DesktopModel {
       let parts = raw.split(separator: ":").map(String.init)
       switch (parts.first, parts.count) {
       case ("session", 2...): open(.init(route: .session(id: parts[1], agentId: parts.count > 2 ? parts[2] : nil)))
-      case ("home", 2...): open(.init(route: .sessionHome(id: parts[1])))
       // `git:<sessionId>[:<view>[:<arg>…]]`
       case ("git", 2...):
         let view = parts.count > 2 ? GitRoute(devString: parts[2...].joined(separator: ":")) : nil

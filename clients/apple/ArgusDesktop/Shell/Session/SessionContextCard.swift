@@ -3,26 +3,39 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// Whether sessions show their context card; the toolbar's details button flips it.
+/// Whether each panel's context card is collapsed to its switcher, remembered per panel.
 enum ContextCardPreference {
-  static let key = "argus:contextCard.visible"
+  static func key(_ panel: SessionPanel) -> String { "argus:contextCard.collapsed.\(panel.rawValue)" }
+  /// Agent opens with the card out; Code and Git keep it to its switcher so their own bars stay clear.
+  static func collapsedByDefault(_ panel: SessionPanel) -> Bool { panel != .agents }
 }
 
-/// The session at a glance, floating at the top right of its panel: the
-/// machine it's on, opening it in an editor, its run command and huddle, then
-/// its branch, pushing it, and how much it has changed.
+/// The session at a glance, at the top right of its panel: the Agent / Code /
+/// Git switcher, then (unless collapsed) the machine it's on, opening it in an
+/// editor, its run command and huddle, its branch, pushing it, how much it has
+/// changed, and its recent chats.
 struct SessionContextCard: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
   @Environment(RemoteHostsStore.self) private var hosts
   @Environment(\.theme) private var theme
   let session: RemoteSession
+  let panel: SessionPanel
+  @AppStorage private var collapsed: Bool
   @State private var path: String?
   @State private var editors: [ArgusProtocol.EditorDescriptor] = []
   @State private var pushing = false
   @State private var pullRequestURL: URL?
   @State private var renamingBranch = false
+  @State private var showingChats = false
+  @State private var chatCount: Int?
   @AppStorage("argus:contextCard.editor") private var lastEditor = ""
+
+  init(session: RemoteSession, panel: SessionPanel) {
+    self.session = session
+    self.panel = panel
+    _collapsed = AppStorage(wrappedValue: ContextCardPreference.collapsedByDefault(panel), ContextCardPreference.key(panel))
+  }
 
   private var hostId: HostId { model.host(ofSession: session.id) }
   private var isLocal: Bool { hostId == Hosts.local }
@@ -30,26 +43,82 @@ struct SessionContextCard: View {
   private var ready: Bool { session.status == .ready && !session.isUnavailable }
 
   var body: some View {
-    ContextCard {
-      machineRow
-      if isLocal, let path, let editor = preferredEditor { editorRow(path: path, editor: editor) }
-      if ready {
-        RunControl(session: session, inCard: true)
-        HuddleToolbarButton(sessionId: session.id, inCard: true)
-          .buttonStyle(ContextRowButtonStyle())
-      }
-      if session.kind != .scratchPad {
-        ContextCardDivider()
-        branchRow
-        if ready { pushRow }
-        if ready { changesRow }
-      }
+    ContextCard(chrome: !collapsed) {
+      switcher
+      if !collapsed { details }
     }
     .sheet(isPresented: $renamingBranch) { RenameBranchSheet(session: session) }
+    .sheet(isPresented: $showingChats) {
+      RecentChatsSheet(session: session) { Task { await loadChatCount() } }
+    }
     .task(id: "\(session.id):\(session.status.rawValue)") { await loadPaths() }
-    .liveRefresh(enabled: ready && session.kind != .scratchPad, every: .seconds(10)) {
+    .task(id: SessionChats.reloadKey(session, store: store)) { await loadChatCount() }
+    .liveRefresh(enabled: !collapsed && ready && session.kind != .scratchPad, every: .seconds(10)) {
       await store.loadGitStatus(sessionId: session.id)
     }
+  }
+
+  @ViewBuilder private var details: some View {
+    ContextCardDivider()
+    machineRow
+    if isLocal, let path, let editor = preferredEditor { editorRow(path: path, editor: editor) }
+    if ready {
+      RunControl(session: session, inCard: true)
+      HuddleToolbarButton(sessionId: session.id, inCard: true)
+        .buttonStyle(ContextRowButtonStyle())
+    }
+    if session.kind != .scratchPad {
+      ContextCardDivider()
+      branchRow
+      if ready { pushRow }
+      if ready { changesRow }
+    }
+    ContextCardDivider()
+    chatsRow
+  }
+
+  // MARK: Switcher
+
+  /// Agent, Code and Git (⌘1–⌘3), and the chevron that folds the card down to them.
+  private var switcher: some View {
+    ContextCardSegments(
+      segments: SessionPanel.allCases.enumerated().map { index, panel in
+        ContextCardSegment(id: panel, title: panel.title, symbol: panel.symbol, help: "\(panel.title) (⌘\(index + 1))")
+      },
+      selection: model.sessionPanel ?? panel
+    ) { picked in
+      model.show(picked, via: .card)
+    } trailing: {
+      Button {
+        collapsed.toggle()
+        MacTelemetry.capture(.contextCardUsed(action: collapsed ? .collapse : .expand))
+      } label: {
+        Label(collapsed ? "Show Session Details" : "Hide Session Details", systemImage: collapsed ? "chevron.down" : "chevron.up")
+      }
+      .buttonStyle(FlatIconButtonStyle(size: 22))
+      .help(collapsed ? "Show session details" : "Hide session details")
+    }
+  }
+
+  // MARK: Chats
+
+  private var chatsRow: some View {
+    Button {
+      showingChats = true
+      MacTelemetry.capture(.contextCardUsed(action: .recentChats))
+    } label: {
+      ContextCardRow(icon: Icon.history, title: "Recent Chats", muted: chatCount == 0) {
+        if let chatCount, chatCount > 0 {
+          Text("\(chatCount)").font(.scaled(size: 11).monospacedDigit()).foregroundStyle(theme.textSecondary)
+        }
+      }
+    }
+    .buttonStyle(ContextRowButtonStyle())
+    .help("Search, read and resume this session's past chats")
+  }
+
+  private func loadChatCount() async {
+    if let entries = await SessionChats.load(session, store: store) { chatCount = entries.count }
   }
 
   // MARK: Machine and editor
@@ -232,28 +301,38 @@ struct SessionContextCard: View {
   }
 }
 
-/// The context card over a session panel; nil shows none.
+/// The context card at the top right of a session panel. Collapsed it sits
+/// in the panel's top bar, which keeps `barReserve` clear for it; expanded it
+/// hangs down over the panel from there.
 struct SessionContextCardOverlay: ViewModifier {
   let session: RemoteSession?
+  let panel: SessionPanel
+  /// The top bar's height, to centre the collapsed card in it.
+  var barHeight: CGFloat = ContextCardMetrics.collapsedHeight
 
+  static let margin: CGFloat = 8
   /// Narrower than this and the reading column couldn't step clear of the card.
   static let minWidth: CGFloat = 760
   /// What the reading column keeps clear of: the card, its margin and a gap.
-  @MainActor static var reserve: CGFloat { TextScale.shared(236) + 12 + 16 }
+  static var reserve: CGFloat { ContextCardMetrics.width + margin + 16 }
+  /// What a panel's top bar leaves free at its trailing end for the card.
+  static var barReserve: CGFloat { ContextCardMetrics.width + margin * 2 }
 
   func body(content: Content) -> some View {
     content.overlay(alignment: .topTrailing) {
       if let session {
-        SessionContextCard(session: session)
-          .padding(.top, 10)
-          .padding(.trailing, 12)
+        SessionContextCard(session: session, panel: panel)
+          .padding(.top, max(0, (barHeight - ContextCardMetrics.collapsedHeight) / 2))
+          .padding(.trailing, Self.margin)
       }
     }
   }
 }
 
 extension View {
-  func sessionContextCard(_ session: RemoteSession?) -> some View {
-    modifier(SessionContextCardOverlay(session: session))
+  func sessionContextCard(_ session: RemoteSession?, panel: SessionPanel, barHeight: CGFloat? = nil) -> some View {
+    modifier(
+      SessionContextCardOverlay(
+        session: session, panel: panel, barHeight: barHeight ?? ContextCardMetrics.collapsedHeight))
   }
 }

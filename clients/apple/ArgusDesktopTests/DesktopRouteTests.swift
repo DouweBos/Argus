@@ -31,8 +31,9 @@ struct DesktopRouteTests {
     ("/automations/quick/runs/r1", .quickRun(runId: "r1")),
     ("/automations/a1", .automation(id: "a1", runId: nil)),
     ("/automations/a1/runs/r1", .automation(id: "a1", runId: "r1")),
-    ("/sessions/s1", .sessionHome(id: "s1")),
-    ("/sessions/s1/home", .sessionHome(id: "s1")),
+    // The session home is gone; old links open the session's agents.
+    ("/sessions/s1", .session(id: "s1", agentId: nil)),
+    ("/sessions/s1/home", .session(id: "s1", agentId: nil)),
     ("/sessions/s1/agents", .session(id: "s1", agentId: nil)),
     ("/sessions/s1/agents/a1", .session(id: "s1", agentId: "a1")),
   ])
@@ -82,7 +83,7 @@ struct DesktopRouteTests {
     DesktopRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox, .proposal(id: "p 1"), .notifications, .usage(.limits), .usage(.cost), .usage(.tokens, range: ._90d),
     .pullRequests, .pullRequest(repo: "o/r", number: 7), .automations, .quickRun(runId: nil),
     .quickRun(runId: "r"), .automation(id: "a", runId: nil), .automation(id: "a", runId: "r"),
-    .sessionHome(id: "s"), .session(id: "s", agentId: nil), .session(id: "s", agentId: "a"),
+    .session(id: "s", agentId: nil), .session(id: "s", agentId: "a"),
     .sessionGit(id: "s", view: .working), .sessionGit(id: "s", view: .branches(nil)),
     .sessionGit(id: "s", view: .branches("feature/a b")), .sessionGit(id: "s", view: .tags("v1+2")),
     .sessionGit(id: "s", view: .compare(left: "a&b", right: "c=d")),

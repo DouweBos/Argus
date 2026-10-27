@@ -7,42 +7,51 @@ struct SessionView: View {
   @Environment(HostStore.self) private var store
   @Environment(TerminalsStore.self) private var terminals
   let sessionId: String
-  @AppStorage(ContextCardPreference.key) private var cardPreferred = true
+  @AppStorage(ContextCardPreference.key(.agents)) private var agentCardCollapsed =
+    ContextCardPreference.collapsedByDefault(.agents)
+  @AppStorage(ContextCardPreference.key(.code)) private var codeCardCollapsed =
+    ContextCardPreference.collapsedByDefault(.code)
+  @AppStorage(ContextCardPreference.key(.git)) private var gitCardCollapsed =
+    ContextCardPreference.collapsedByDefault(.git)
   @State private var contentWidth: CGFloat = 0
 
   private var session: RemoteSession? { model.session(sessionId) }
 
-  /// The context card floats over Home and Agents when it's on and there's room for it.
-  private var cardShown: Bool {
-    cardPreferred && contentWidth >= SessionContextCardOverlay.minWidth
-      && (model.sessionPanel == .home || model.sessionPanel == .agents)
+  /// The panel's card is folded to its switcher, so its run control and huddle sit in the toolbar.
+  private var cardCollapsed: Bool {
+    switch model.sessionPanel ?? .agents {
+    case .agents: agentCardCollapsed
+    case .code: codeCardCollapsed
+    case .git: gitCardCollapsed
+    }
+  }
+
+  /// The reading column steps clear of an open card when there's room to.
+  private var readingReserve: CGFloat {
+    !agentCardCollapsed && contentWidth >= SessionContextCardOverlay.minWidth ? SessionContextCardOverlay.reserve : 0
   }
   private var agents: [RemoteAgentStatus] { model.agents(inSession: sessionId) }
   private var focusedAgentId: String? { model.focusedAgentId(inSession: sessionId, agents: agents) }
 
   private func startAgent() { model.startAgent(inSession: sessionId) }
-  private func startAgent(mode: RemotePermissionMode?) { model.startAgent(inSession: sessionId, mode: mode) }
 
   private func closeAgent(_ agentId: String) { model.closeAgent(agentId, inSession: sessionId) }
 
   var body: some View {
     Group {
-      if case .sessionHome = model.route, let session {
-        SessionHomeView(session: session, sessionAgents: agents, startAgent: startAgent(mode:))
-          .id(session.id)
-          .sessionContextCard(cardShown ? session : nil)
-      } else if case .sessionCode(_, let path, let line) = model.route, let session {
+      if case .sessionCode(_, let path, let line) = model.route, let session {
         if session.status == .ready {
           CodePanel(session: session, path: path, line: line)
         } else {
           SessionSetupView(session: session, progress: session.progress)
+            .sessionContextCard(session, panel: .code)
         }
       } else if let gitView = model.route.gitView, let session {
         if session.status == .ready {
           GitScreen(session: session, view: gitView)
         } else {
-          SessionSetupView(
-            session: session, progress: session.progress)
+          SessionSetupView(session: session, progress: session.progress)
+            .sessionContextCard(session, panel: .git)
         }
       } else {
         agentsPane
@@ -50,7 +59,7 @@ struct SessionView: View {
     }
     .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
     .toolbar(removing: .title)
-    .toolbar { SessionToolbar(session: session, sessionId: sessionId, cardShown: cardShown) }
+    .toolbar { SessionToolbar(session: session, sessionId: sessionId, cardCollapsed: cardCollapsed) }
     .onChange(of: agents.map(\.agentId)) { _, ids in
       if let spawned = model.spawnedAgent, ids.contains(spawned) { model.spawnedAgent = nil }
     }
@@ -84,24 +93,22 @@ struct SessionView: View {
         agents: agents, focused: focusedAgentId, canStart: session?.status == .ready,
         select: { model.navigate(.session(id: sessionId, agentId: $0)) },
         start: startAgent, close: closeAgent)
-      if let session, session.status != .ready {
-        SessionSetupView(
-          session: session, progress: session.progress)
-      } else if let agentId = focusedAgentId {
-        AgentPane(agentId: agentId, sessionId: sessionId)
-          .id(agentId)
-          .environment(\.readingColumnReserve, cardShown ? SessionContextCardOverlay.reserve : 0)
-          .sessionContextCard(cardShown ? session : nil)
-      } else {
-        EmptyState(icon: "sparkles", title: "No agents", body: "Start an agent to work in this session.") {
-          Button("Start Agent", action: startAgent)
-            .buttonStyle(.borderedProminent)
-            .disabled(session?.status != .ready)
+      .padding(.trailing, SessionContextCardOverlay.barReserve)
+      Group {
+        if let session, session.status != .ready {
+          SessionSetupView(session: session, progress: session.progress)
+        } else if let agentId = focusedAgentId {
+          AgentPane(agentId: agentId, sessionId: sessionId)
+            .id(agentId)
+        } else {
+          SessionStartPane(sessionId: sessionId)
+            .id(sessionId)
         }
-        .sessionContextCard(cardShown ? session : nil)
       }
+      .environment(\.readingColumnReserve, readingReserve)
     }
     .frame(maxHeight: .infinity, alignment: .top)
+    .sessionContextCard(session, panel: .agents, barHeight: AgentTabBar.height)
     .background {
       // ⌘T too, as the Mac app always had it: agents are this panel's tabs.
       Button("New Agent") { MenuCommand.newAgent.run(model, via: .shortcut) }
@@ -142,8 +149,10 @@ struct AgentTabBar: View {
     }
     .padding(.horizontal, 10)
     // A scroll view takes all the height it's offered; a tab bar is one row.
-    .frame(height: 34)
+    .frame(height: Self.height)
   }
+
+  static let height: CGFloat = 34
 
   /// Agents each agent spawned, across every agent the host has described.
   private var childCounts: [String: Int] {
@@ -284,7 +293,7 @@ struct AgentPane: View {
 }
 
 /// "What should we work on?" over a new agent's composer, with where it works.
-private struct AgentStartTitle: View {
+struct AgentStartTitle: View {
   @Environment(\.theme) private var theme
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
@@ -312,37 +321,5 @@ private struct AgentStartTitle: View {
     .frame(maxWidth: .infinity)
     .readingColumn()
     .allowsHitTesting(false)
-  }
-}
-
-/// A session still being set up (or torn down), or one whose setup failed.
-struct SessionSetupView: View {
-  let session: RemoteSession
-  /// The listed session's progress, refreshed on each `session:progress`.
-  let progress: RemoteSessionProgress?
-
-  var body: some View {
-    VStack(spacing: 16) {
-      switch session.status {
-      case .error:
-        SetupFailedRow(session: session).frame(maxWidth: 520)
-      case .deleting:
-        progress("Deleting the worktree…")
-      default:
-        progress("Setting up the worktree…")
-      }
-    }
-    .padding(24)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-  }
-
-  @ViewBuilder
-  private func progress(_ title: String) -> some View {
-    Text(title).foregroundStyle(.secondary)
-    if let fraction = progress?.fraction {
-      ProgressView(value: fraction).frame(maxWidth: 320)
-    } else {
-      ProgressView()
-    }
   }
 }

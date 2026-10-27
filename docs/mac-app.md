@@ -15,18 +15,25 @@ lives in the repository (`plan/swiftui-parity.md`).
   The sidebar searches sessions and narrows to one project, lists Home, Inbox,
   Agents, Devices, Runtimes and Automations under the search, and keeps
   Settings, Pull Requests, Usage and Notifications as icons along its foot. The toolbar shows where you
-  are (**Project / Session**) and plain icons for the session's views and
-  panels.
-- A session's context card, top right of its Home and Agents views: its
-  machine, opening it in your editor, its run command and huddle, its branch,
-  pushing it and how much it has changed. The toolbar's details button hides it.
+  are (**Project / Session**) and the side panel toggle.
+- A session's context card, top right of its Agent, Code and Git views. Its
+  first row switches between them (**Agent | Code | Git**, ⌘1–⌘3); below
+  that, its machine, opening it in your editor, its run command and huddle,
+  its branch, pushing it, how much it has changed, and **Recent Chats**: a
+  dialog that searches the session's past chats (imported ones too), opens,
+  resumes or deletes them, or clears them all. The chevron folds the card
+  down to its switcher, which then sits in the view's top bar; each view
+  remembers its own choice. Agent starts with the card open, Code and Git
+  with it folded, so their tab bars stay clear. While it's folded, the run
+  command and huddle move to the toolbar.
 - Creating and deleting sessions, with setup progress.
 - Agents in a session as tabs, with their transcript: one centred column, each turn's tool calls folded into a "Worked for …" line that opens in place.
-- A home for each session: its setup progress (or why it failed), the
-  agents working in it, and committing, pushing and merging its branch.
-  A session's Home, Agents, Code and Git views switch from the toolbar's icons, the
-  View menu, the command palette or ⌘1–⌘4; the Agent menu starts, switches and interrupts
-  agents (see [Keyboard shortcuts](#keyboard-shortcuts)).
+- Opening a session shows its agents. With none running yet, it's the start
+  composer, "What should we work on?": sending starts an agent there, in the
+  permission mode its pill picks (plan mode included). A session that's
+  still being set up shows each setup step, or why it failed. The View menu,
+  the command palette and ⌘1–⌘3 switch views too; the Agent menu starts,
+  switches and interrupts agents (see [Keyboard shortcuts](#keyboard-shortcuts)).
 - **Home** in the sidebar (⇧⌘H): the app's home screen.
 - **Agents** and **Runtimes** in the sidebar: every agent, and every run
   command's process, across all your sessions.
@@ -37,7 +44,7 @@ lives in the repository (`plan/swiftui-parity.md`).
   panel can fill the window. It never opens by itself; open tabs, the one in
   front and the width are remembered for each session.
 - Terminals as side panel tabs (⇧⌘T): several at once, the project's run
-  commands in the context card (the toolbar when it's hidden) opening their
+  commands in the context card (the toolbar when it's folded) opening their
   output in a tab, find (⌘F), and links that open on this Mac. A terminal you
   reopen replays what it printed so far.
 - Banners for agents that finish or need you, with Approve/Deny buttons on
@@ -108,7 +115,7 @@ except where macOS or the Mac app's own layout already uses the keys.
 | ⇧⌘] / ⇧⌘[             | Next / previous agent                                      | Agent |
 | ⌃⌘1 – ⌃⌘9             | The session's first to ninth agent                         | Agent |
 | ⌘F, ⌘G, ⇧⌘G           | Find in the chat (or the focused terminal), next, previous | —     |
-| ⌘1 – ⌘4               | The session's Home, Agents, Code and Git                   | View  |
+| ⌘1 – ⌘3               | The session's Agent, Code and Git views                    | View  |
 | ⌘[ / ⌘]               | Back / forward                                             | Go    |
 | ⇧⌘H                   | App home                                                   | View  |
 | ⌥⌘1 – ⌥⌘5             | Agents, Devices, Runtimes, Pull Requests, Notifications    | View  |
@@ -124,7 +131,7 @@ The toolbar's chevrons and a mouse's side buttons do the same.
 
 Where they differ from the Electron app:
 
-- **⌘1–⌘4** switch the session's Home, Agents, Code and Git views, as Xcode
+- **⌘1–⌘3** switch the session's Agent, Code and Git views, as Xcode
   and Finder number theirs, so agents are on ⌃⌘1–⌃⌘9 and window tabs have no
   number keys.
 - **⌘T** starts an agent (agents are the session's tabs) and **⌥⌘T** opens

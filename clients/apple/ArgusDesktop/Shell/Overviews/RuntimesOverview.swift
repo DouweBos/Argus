@@ -115,6 +115,6 @@ struct RuntimesOverview: View {
   private func openProject(_ repoRoot: String) {
     guard let root = store.sessionsByRepo[repoRoot]?.first(where: { $0.kind == .projectRoot })
     else { return }
-    model.navigate(.sessionHome(id: root.id))
+    model.openAgents(session: root.id)
   }
 }

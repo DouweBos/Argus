@@ -174,8 +174,9 @@ enum MacTelemetryEvent {
 
   /// What a session's context card was used for.
   enum ContextCardAction: String {
-    case show
-    case hide
+    case collapse
+    case expand
+    case recentChats = "recent_chats"
     case openEditor = "open_editor"
     case reveal
     case copyPath = "copy_path"

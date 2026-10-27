@@ -118,14 +118,14 @@ struct AgentsOverview: View {
   }
 
   private func open(session: RemoteSession) {
-    model.navigate(.sessionHome(id: session.id))
+    model.openAgents(session: session.id)
   }
 
-  /// A project opens on its project-root session's home, as in the desktop app.
+  /// A project opens on its project-root session's agents.
   private func openProject(_ repoRoot: String) {
     guard let root = store.sessionsByRepo[repoRoot]?.first(where: { $0.kind == .projectRoot })
     else { return }
-    model.navigate(.sessionHome(id: root.id))
+    model.openAgents(session: root.id)
   }
 }
 

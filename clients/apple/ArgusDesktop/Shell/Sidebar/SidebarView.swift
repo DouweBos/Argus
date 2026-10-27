@@ -27,7 +27,7 @@ struct SidebarView: View {
     .background(theme.sidebar.ignoresSafeArea())
     .sheet(item: newSessionProject) { project in
       NewSessionSheet(project: project) { session in
-        model.navigate(.sessionHome(id: session.id))
+        model.openAgents(session: session.id)
       }
     }
     .sheet(item: deletingSession) { session in
@@ -90,7 +90,7 @@ struct SidebarView: View {
         }
         .contextMenu {
           Button("Open in New Tab") {
-            model.openTab(DesktopLocation(route: .sessionHome(id: pad.id), host: model.host(ofSession: pad.id)))
+            model.openTab(DesktopLocation(route: .session(id: pad.id, agentId: nil), host: model.host(ofSession: pad.id)))
           }
           Button("Delete Scratch Pad…") { model.deletingSession = pad }
         }
