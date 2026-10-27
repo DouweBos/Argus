@@ -39,8 +39,10 @@ struct CodeTabBar: View {
         }
       }
     }
-    .frame(height: 34)
+    .frame(height: Self.height)
   }
+
+  static let height: CGFloat = 34
 
   private func closeOthers(keeping path: String) {
     Task {

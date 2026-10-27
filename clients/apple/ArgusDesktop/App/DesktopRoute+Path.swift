@@ -31,8 +31,9 @@ extension DesktopRoute {
       self = .quickRun(runId: parts[3])
     case ("automations", 2): self = .automation(id: parts[1], runId: nil)
     case ("automations", 4) where parts[2] == "runs": self = .automation(id: parts[1], runId: parts[3])
-    case ("sessions", 2): self = .sessionHome(id: parts[1])
-    case ("sessions", 3...) where parts[2] == "home": self = .sessionHome(id: parts[1])
+    // A session's home is gone; old links land on its agents.
+    case ("sessions", 2): self = .session(id: parts[1], agentId: nil)
+    case ("sessions", 3...) where parts[2] == "home": self = .session(id: parts[1], agentId: nil)
     case ("sessions", 3...) where parts[2] == "agents":
       self = .session(id: parts[1], agentId: parts.count > 3 ? parts[3] : nil)
     case ("sessions", 3...) where parts[2] == "git":
@@ -74,7 +75,6 @@ extension DesktopRoute {
     case .quickRun(let runId): runId.map { "/automations/quick/runs/\(Self.encode($0))" } ?? "/automations/quick"
     case .automation(let id, let runId):
       "/automations/\(Self.encode(id))" + (runId.map { "/runs/\(Self.encode($0))" } ?? "")
-    case .sessionHome(let id): "/sessions/\(Self.encode(id))/home"
     case .session(let id, let agentId):
       "/sessions/\(Self.encode(id))/agents" + (agentId.map { "/\(Self.encode($0))" } ?? "")
     case .sessionGit(let id, let view): "/sessions/\(Self.encode(id))/git/\(view.pathSuffix)"

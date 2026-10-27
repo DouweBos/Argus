@@ -376,12 +376,12 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_host_connected` | The window connected to a host: the one it runs itself, or another app's it opened next to as a second window | `mode` (`own`, `attached`), `holder` (`electron`, `mac`, `cli`; only when attached) |
 | `mac_screen_viewed` | The window navigated | `screen` — the route pattern, never an id |
 | `mac_link_opened` | A deep link or the launch route was opened; one naming a session waits for its machine to connect | `screen` (route pattern), `outcome` (`direct`, `waited` — its machine connected later, `abandoned` — its session never turned up) |
-| `mac_chat_history_used` | A saved chat was opened, resumed in a new agent, deleted, or all of a session's were cleared, from the session home | `action` (`view`, `resume`, `delete`, `clear`) |
-| `mac_branch_renamed` | A session's branch was renamed from its home | `success` |
+| `mac_chat_history_used` | In a session's Recent Chats dialog: the search was first used, or a saved chat was opened, resumed in a new agent, deleted, or all of them cleared | `action` (`search`, `view`, `resume`, `delete`, `clear`) |
+| `mac_branch_renamed` | A session's branch was renamed from its context card | `success` |
 | `mac_home_card_acted` | A home card was used: notifications enabled, their settings opened or the card dismissed, a project removed from the recents grid, or the old-format secrets card checked again | `card` (`notifications`, `recent_project`, `legacy_secrets`), `action` (`open`, `dismiss`, `fixed`, `failed`) |
 | `mac_host_folder_picked` | A folder was browsed for on a paired host's disk (Add Project, a worktree location) | `stage` (`opened`, `picked`, `cancelled`) |
 | `mac_tab_used` | A window tab was opened (the + button, ⌥⌘T, Open in New Tab on a session or machine), closed, or switched to | `action` (`open`, `close`, `switch`) |
-| `mac_session_panel_switched` | A session's Home, Agents, Code or Git panel was picked from the toolbar switcher, the View menu (⌘1–⌘4) or the command palette | `panel` (`home`, `agents`, `code`, `git`), `via` (`toolbar`, `menu`, `shortcut`, `palette`) |
+| `mac_session_panel_switched` | A session's Agent, Code or Git view was picked from the context card's switcher, the View menu (⌘1–⌘3) or the command palette | `panel` (`agents`, `code`, `git`), `via` (`card`, `menu`, `shortcut`, `palette`) |
 | `mac_menu_command_used` | A keyboard command for agents, panels, screens or git ran from its menu item or shortcut: New Agent (⇧⌘A, ⌘T), Interrupt Agent (⌘.), Focus Chat Input (⌘L), next/previous agent (⇧⌘] / ⇧⌘[), Agent 1–9 (⌃⌘1–9), Open Session (⇧⌘O), App Home (⇧⌘H), ⌥⌘1–5, and the Git menu: Fetch (⇧⌘F), Pull (⇧⌘P), Push (⇧⌘U), New/Rename Branch (⌘B), Merge (⇧⌘M), Rebase (⇧⌘R), Create Pull Request, Commit (⌘↩) and Stash (⇧⌘S) | `action` (`new_agent`, `next_agent`, `previous_agent`, `select_agent`, `interrupt_agent`, `focus_composer`, `quick_switcher`, `go_home`, `go_to_screen`, `git_fetch`, `git_pull`, `git_push`, `git_branch`, `git_merge`, `git_rebase`, `git_create_pull_request`, `git_commit`, `git_stash`), `via` (`menu`, `shortcut`) |
 | `mac_scratch_pad_created` | A scratch pad was created from the sidebar (the host captures the agent it starts) | — |
 | `mac_prefs_supplied` | On connecting to its host, the app handed it preferences or picks the host had no value for yet (the host already held the rest, which the app took) | `keys` — how many |
@@ -439,7 +439,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_editor_quick_open_used` | Quick open closed | `mode` (`files`, `mixed`, `symbols`, `file_symbols`, `line`), `result` (`opened`, `dismissed`) |
 | `mac_sidebar_project_toggled` | A project in the sidebar was collapsed or expanded | `collapsed` |
 | `mac_sidebar_filtered` | The sidebar was searched (once per search, never the query) or narrowed to one project from its filter menu | `kind` (`search`, `project`) |
-| `mac_context_card_used` | A session's context card was shown or hidden from the toolbar, or one of its actions used | `action` (`show`, `hide`, `open_editor`, `reveal`, `copy_path`, `run`, `share`, `branch`, `push`, `changes`) |
+| `mac_context_card_used` | A session's context card was folded to its switcher or opened again, or one of its actions used (its view switcher counts as `mac_session_panel_switched`) | `action` (`collapse`, `expand`, `recent_chats`, `open_editor`, `reveal`, `copy_path`, `run`, `share`, `branch`, `push`, `changes`) |
 | `mac_navigated_history` | Back or Forward went through the window tab's history | `direction` (`back`, `forward`), `via` (`button` the toolbar chevrons, `shortcut` ⌘[ / ⌘] or the code view's ⌃- / ⌃⇧-, `menu` the Go menu clicked, `palette`, `mouse` the side buttons) |
 
 `mac_settings_changed`'s `section` is `general`, `appearance`, `accounts`, `agents`, `llm`,

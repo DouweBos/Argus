@@ -41,6 +41,7 @@ struct GitWorkspaceView: View {
   let workspace: GitWorkspace
   let session: RemoteSession
   let view: GitRoute
+  @State private var barHeight: CGFloat = 52
 
   var body: some View {
     // Not a split view: HSplitView holds its sidebar at full width and won't
@@ -58,12 +59,17 @@ struct GitWorkspaceView: View {
         if let error = workspace.undo.errorMessage {
           GitErrorBanner(message: "\(workspace.undo.errorTitle): \(error)") { workspace.undo.dismissError() }
         }
-        GitTabBar(workspace: workspace, view: view)
-          .padding(.vertical, 10)
-          .padding(.horizontal, 12)
-        content
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-          .padding([.horizontal, .bottom], 12)
+        VStack(spacing: 0) {
+          GitTabBar(workspace: workspace, view: view)
+            .padding(.vertical, 10)
+            .padding(.leading, 12)
+            .padding(.trailing, SessionContextCardOverlay.barReserve)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
+          content
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding([.horizontal, .bottom], 12)
+        }
+        .sessionContextCard(session, panel: .git, barHeight: barHeight)
       }
       .frame(minWidth: 420)
       .background(theme.bg)

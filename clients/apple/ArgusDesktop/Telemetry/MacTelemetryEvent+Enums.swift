@@ -92,9 +92,9 @@ extension MacTelemetryEvent {
     case `switch`
   }
 
-  /// How a session's Home / Agents / Code / Git switch was made.
+  /// How a session's Agent / Code / Git switch was made.
   enum PanelSwitchSource: String {
-    case toolbar
+    case card
     case menu
     case shortcut
     case palette
@@ -163,6 +163,7 @@ extension MacTelemetryEvent {
   }
 
   enum ChatHistoryAction: String {
+    case search
     case view
     case resume
     case delete

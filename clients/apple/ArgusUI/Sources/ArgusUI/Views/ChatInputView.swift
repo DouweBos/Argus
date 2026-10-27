@@ -21,6 +21,8 @@ public struct ChatInputView: View {
   let agentId: String
   let sessionId: String?
   let onAffordance: ((ChatInputAffordance) -> Void)?
+  /// Set: no agent yet, and sending starts one (Mac only).
+  var starter: ComposerStarter?
 
   @State private var text = ""
   @State private var linkedProjects: [String] = []
@@ -65,9 +67,22 @@ public struct ChatInputView: View {
     self.onAffordance = onAffordance
   }
 
+  #if os(macOS)
+    /// A start composer for a session with no agent yet: sending starts one there.
+    public init(
+      startingIn sessionId: String, starter: ComposerStarter,
+      onAffordance: ((ChatInputAffordance) -> Void)? = nil
+    ) {
+      self.agentId = ComposerStarter.draftKey(sessionId: sessionId)
+      self.sessionId = sessionId
+      self.onAffordance = onAffordance
+      self.starter = starter
+    }
+  #endif
+
   public var body: some View {
     #if os(macOS)
-      MacChatInputView(agentId: agentId, sessionId: sessionId, onAffordance: onAffordance)
+      MacChatInputView(agentId: agentId, sessionId: sessionId, onAffordance: onAffordance, starter: starter)
     #else
       phoneBody
     #endif

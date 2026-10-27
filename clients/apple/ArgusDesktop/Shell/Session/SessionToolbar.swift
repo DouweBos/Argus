@@ -3,15 +3,14 @@ import ArgusUI
 import SwiftUI
 
 /// A session's toolbar: where you are on the left ("Project / Session"), the
-/// panels and the panel toggles in native toolbar capsules on the right.
+/// side panel toggle on the right. The panels switch from the context card.
 struct SessionToolbar: ToolbarContent {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
-  @AppStorage(ContextCardPreference.key) private var cardPreferred = true
   let session: RemoteSession?
   let sessionId: String
-  /// The card carries the run command and huddle; without it they sit here.
-  let cardShown: Bool
+  /// The card carries the run command and huddle; folded, they sit here.
+  let cardCollapsed: Bool
 
   var body: some ToolbarContent {
     ToolbarItem(placement: .navigation) {
@@ -20,8 +19,9 @@ struct SessionToolbar: ToolbarContent {
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.leadingWidth = $0 }
     }
     .flatToolbarItem()
-    if let session, session.status == .ready, !cardShown {
-      ToolbarItem {
+    // primaryAction pins them to the trailing edge; automatic leaves them beside the breadcrumb.
+    if let session, session.status == .ready, cardCollapsed {
+      ToolbarItem(placement: .primaryAction) {
         PillGroup {
           HuddleToolbarButton(sessionId: session.id)
           RunControl(session: session)
@@ -29,42 +29,13 @@ struct SessionToolbar: ToolbarContent {
         .measured(slot: 0, in: model.toolbarLayout)
       }
     }
-    ToolbarItem {
-      PillGroup { panelSwitcher }
+    ToolbarItem(placement: .primaryAction) {
+      PillGroup { sidePanelToggle }
         .measured(slot: 1, in: model.toolbarLayout)
     }
-    ToolbarItem {
-      PillGroup { panelToggles }
-        .measured(slot: 2, in: model.toolbarLayout)
-    }
   }
 
-  /// Home, Agents, Code and Git (⌘1–⌘4), the one on screen lit.
-  private var panelSwitcher: some View {
-    ForEach(Array(SessionPanel.allCases.enumerated()), id: \.element) { index, panel in
-      Button {
-        model.show(panel, via: .toolbar)
-      } label: {
-        Label(panel.title, systemImage: panel.symbol)
-      }
-      .buttonStyle(PillItemButtonStyle(selected: model.sessionPanel == panel))
-      .overlay(alignment: .topTrailing) {
-        if panel == .git, let count = gitChangeCount, count > 0 { PillBadge(count).scaleEffect(0.8) }
-      }
-      .help("\(panel.title) (⌘\(index + 1))")
-    }
-  }
-
-  @ViewBuilder private var panelToggles: some View {
-    Button {
-      cardPreferred.toggle()
-      MacTelemetry.capture(.contextCardUsed(action: cardPreferred ? .show : .hide))
-    } label: {
-      Label("Session Details", systemImage: "list.bullet.rectangle")
-    }
-    .buttonStyle(PillItemButtonStyle(selected: cardPreferred))
-    .disabled(model.sessionPanel != .home && model.sessionPanel != .agents)
-    .help(cardPreferred ? "Hide session details" : "Show session details")
+  private var sidePanelToggle: some View {
     Button {
       model.toggleSidePanel(via: .button)
     } label: {
@@ -72,11 +43,6 @@ struct SessionToolbar: ToolbarContent {
     }
     .buttonStyle(PillItemButtonStyle(selected: model.sidePanelVisible))
     .help(model.sidePanelVisible ? "Hide side panel (⌘J)" : "Show side panel (⌘J)")
-  }
-
-  /// The open repository's changed files, badged on the Git panel.
-  private var gitChangeCount: Int? {
-    model.git.workspace(sessionId)?.workingCopy.changedCount
   }
 }
 
@@ -122,7 +88,7 @@ struct SessionBreadcrumb: View {
       let root = store.sessionsByRepo[session.repoRoot]?.first { $0.kind == .projectRoot }
       var openRoot: (() -> Void)?
       if let root, root.id != session.id {
-        openRoot = { [model] in model.navigate(.sessionHome(id: root.id)) }
+        openRoot = { [model] in model.openAgents(session: root.id) }
       }
       steps.append(.init(id: 0, title: name, badge: name, badgeKey: session.repoRoot, help: session.repoRoot, action: openRoot))
     }
@@ -130,7 +96,7 @@ struct SessionBreadcrumb: View {
     steps.append(
       .init(
         id: 1, title: title, help: SessionView.subtitle(session).isEmpty ? title : "\(title) — \(session.branch)",
-        action: model.sessionPanel == .home ? nil : { [model] in model.navigate(.sessionHome(id: session.id)) }))
+        action: onAgents ? nil : { [model] in model.openAgents(session: session.id) }))
     if onAgents, let agent = agentInFront, let agentTitle = agent.title, !agentTitle.isEmpty, agentTitle != title {
       steps.append(.init(id: 2, title: agentTitle))
     }

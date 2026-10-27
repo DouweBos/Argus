@@ -291,22 +291,40 @@ public struct QuietEmptyState: View {
 
 // MARK: - Context card
 
+/// A context card's size, for whatever has to keep clear of it.
+public enum ContextCardMetrics {
+  public static var width: CGFloat { TextScale.shared(236) }
+  /// The card's inset around its rows.
+  public static let padding: CGFloat = 5
+  /// A segment row's height, before the text scale.
+  public static let segmentHeight: CGFloat = 24
+  /// Collapsed to its segments: the row and the card's inset.
+  public static var collapsedHeight: CGFloat { TextScale.shared(segmentHeight) + padding * 2 }
+}
+
 /// A small floating card of facts and actions about what's on screen.
 public struct ContextCard<Content: View>: View {
   @Environment(\.theme) private var theme
   let content: Content
+  /// Collapsed into a bar: the same metrics, so nothing moves, without the card around it.
+  var chrome: Bool
 
-  public init(@ViewBuilder content: () -> Content) {
+  public init(chrome: Bool = true, @ViewBuilder content: () -> Content) {
+    self.chrome = chrome
     self.content = content()
   }
 
   public var body: some View {
     VStack(alignment: .leading, spacing: 0) { content }
-      .padding(5)
-      .frame(width: TextScale.shared(236))
-      .background(theme.surface, in: .rect(cornerRadius: theme.radius))
-      .overlay(RoundedRectangle(cornerRadius: theme.radius).stroke(theme.border, lineWidth: 1))
-      .shadow(color: .black.opacity(theme.scheme == .dark ? 0.35 : 0.08), radius: 12, y: 4)
+      .padding(ContextCardMetrics.padding)
+      .frame(width: ContextCardMetrics.width)
+      .background {
+        if chrome {
+          RoundedRectangle(cornerRadius: theme.radius).fill(theme.surface)
+            .overlay(RoundedRectangle(cornerRadius: theme.radius).stroke(theme.border, lineWidth: 1))
+            .shadow(color: .black.opacity(theme.scheme == .dark ? 0.35 : 0.08), radius: 12, y: 4)
+        }
+      }
   }
 }
 

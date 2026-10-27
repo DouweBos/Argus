@@ -107,7 +107,6 @@
         // that isn't key, and a driven window never is.
         switch command["panel"] as? String {
         case "agents": model.openAgents(session: id)
-        case "home": model.navigate(.sessionHome(id: id))
         case "git":
           let view = (command["gitView"] as? String).flatMap(GitRoute.init(devString:)) ?? .working
           model.navigate(.sessionGit(id: id, view: view))

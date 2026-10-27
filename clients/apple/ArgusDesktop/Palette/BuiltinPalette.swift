@@ -77,7 +77,7 @@ enum BuiltinPalette {
 
   private static func session(_ model: DesktopModel) -> [PaletteCommand] {
     guard let id = model.route.sessionId else { return [] }
-    // The switcher's order and the View menu's ⌘1–⌘4.
+    // The card switcher's order and the View menu's ⌘1–⌘3.
     var commands = SessionPanel.allCases.enumerated().map { index, panel in
       PaletteCommand(
         id: "session.\(panel.rawValue)", title: "Session \(panel.title)", section: "Session",

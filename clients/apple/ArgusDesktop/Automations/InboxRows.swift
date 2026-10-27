@@ -101,7 +101,7 @@ struct StartedRow: View {
 
   private func open() {
     guard let id = proposal.sessionId else { return }
-    model.navigate(.sessionHome(id: id))
+    model.openAgents(session: id)
   }
 }
 

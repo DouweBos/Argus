@@ -2,35 +2,100 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// The session's past chats, as the desktop's session home lists them: open
-/// one to read it, resume it in a new agent, or delete it.
-struct SessionChatHistoryCard: View {
+/// A session's past chats, imported ones included, as the host lists them by branch.
+@MainActor
+enum SessionChats {
+  static func load(_ session: RemoteSession, store: HostStore) async -> [ArgusProtocol.ChatHistoryEntry]? {
+    guard let backend = store.backend else { return nil }
+    let entries = try? await backend.request(
+      ArgusProtocol.Commands.ListChatHistory.self, .init(repoRoot: session.repoRoot))
+    return entries?.filter { $0.sessionBranch == session.branch }.sorted { $0.endedAt > $1.endedAt }
+  }
+
+  /// Reloads as agents come and go, since a stopped agent's chat lands here.
+  static func reloadKey(_ session: RemoteSession, store: HostStore) -> String {
+    "\(session.repoRoot)|\(session.branch)|\(store.agentsByRepo[session.repoRoot]?.count ?? 0)"
+  }
+}
+
+/// The context card's Recent Chats: search the session's chats, open one to
+/// read it, resume it in a new agent, or delete it.
+struct RecentChatsSheet: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
+  @Environment(\.dismiss) private var dismiss
+  @Environment(\.theme) private var theme
   let session: RemoteSession
+  /// Called after a delete, so the card's count follows.
+  let changed: () -> Void
 
   @State private var entries: [ArgusProtocol.ChatHistoryEntry] = []
+  @State private var loaded = false
+  @State private var query = ""
+  @State private var searched = false
   @State private var viewing: ViewedChat?
   @State private var confirmingClear = false
 
-  /// The desktop matches a session's chats by branch.
-  private var sessionEntries: [ArgusProtocol.ChatHistoryEntry] {
-    entries.filter { $0.sessionBranch == session.branch }.sorted { $0.endedAt > $1.endedAt }
+  private var shown: [ArgusProtocol.ChatHistoryEntry] {
+    let needle = query.trimmingCharacters(in: .whitespaces)
+    guard !needle.isEmpty else { return entries }
+    return entries.filter { $0.title.localizedCaseInsensitiveContains(needle) }
   }
 
   var body: some View {
-    // A stack, not a Group: an empty Group has nothing to hang `.task` on.
     VStack(spacing: 0) {
-      if !sessionEntries.isEmpty {
-        Card {
-          HStack {
-            SectionHeader(title: "Chat history", count: sessionEntries.count)
-            Spacer()
-            Button("Clear All…") { confirmingClear = true }
-              .buttonStyle(.borderless)
-              .controlSize(.small)
-          }
-          ForEach(sessionEntries, id: \.id) { entry in
+      header
+      Divider()
+      list
+    }
+    .frame(width: 520, height: 460)
+    .task(id: SessionChats.reloadKey(session, store: store)) { await load() }
+    .onChange(of: query) { _, value in
+      guard !searched, !value.isEmpty else { return }
+      searched = true
+      MacTelemetry.capture(.chatHistoryUsed(action: .search))
+    }
+    .sheet(item: $viewing) { chat in
+      ChatHistoryViewer(chat: chat, sessionId: session.id) {
+        viewing = nil
+        Task { await resume(chat.entry) }
+      }
+    }
+    .confirmationDialog("Delete every saved chat in this session?", isPresented: $confirmingClear) {
+      Button("Delete All", role: .destructive) { Task { await delete(entries) } }
+    }
+  }
+
+  private var header: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack {
+        Text("Recent Chats").font(.scaled(.headline))
+        Spacer()
+        Button("Clear All…") { confirmingClear = true }
+          .buttonStyle(.borderless)
+          .disabled(entries.isEmpty)
+        Button("Done") { dismiss() }
+          .keyboardShortcut(.cancelAction)
+      }
+      TextField("Search chats", text: $query)
+        .textFieldStyle(.roundedBorder)
+    }
+    .padding(16)
+  }
+
+  @ViewBuilder private var list: some View {
+    if !loaded {
+      ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
+    } else if shown.isEmpty {
+      QuietEmptyState(
+        icon: Icon.history, title: entries.isEmpty ? "No chats yet" : "No matches",
+        message: entries.isEmpty
+          ? "Chats this session's agents have finished show up here."
+          : "No chat title matches \u{201C}\(query)\u{201D}.")
+    } else {
+      ScrollView {
+        LazyVStack(spacing: 0) {
+          ForEach(shown, id: \.id) { entry in
             ChatHistoryRow(entry: entry) {
               view(entry)
             } resume: {
@@ -38,29 +103,17 @@ struct SessionChatHistoryCard: View {
             } delete: {
               Task { await delete([entry]) }
             }
+            .padding(.horizontal, 16)
           }
         }
+        .padding(.vertical, 6)
       }
-    }
-    .task(id: "\(session.repoRoot)|\(store.agentsByRepo[session.repoRoot]?.count ?? 0)") { await load() }
-    .sheet(item: $viewing) { chat in
-      ChatHistoryViewer(chat: chat, sessionId: session.id) {
-        viewing = nil
-        Task { await resume(chat.entry) }
-      }
-    }
-    .confirmationDialog(
-      "Delete every saved chat in this session?", isPresented: $confirmingClear
-    ) {
-      Button("Delete All", role: .destructive) { Task { await delete(sessionEntries) } }
     }
   }
 
   private func load() async {
-    guard let backend = store.backend else { return }
-    entries =
-      (try? await backend.request(
-        ArgusProtocol.Commands.ListChatHistory.self, .init(repoRoot: session.repoRoot))) ?? []
+    entries = await SessionChats.load(session, store: store) ?? entries
+    loaded = true
   }
 
   /// Paged from the host like a stopped agent's transcript, so a long chat
@@ -76,6 +129,7 @@ struct SessionChatHistoryCard: View {
       let agent = await store.spawnAgent(
         sessionId: session.id, resumeSessionId: entry.sessionId, runnerId: entry.runnerId)
     else { return }
+    dismiss()
     // Open it straight away, as the desktop does; the transcript fills in.
     model.open(spawned: agent.agentId, session: session.id)
     MacTelemetry.capture(.chatHistoryUsed(action: .resume))
@@ -88,6 +142,7 @@ struct SessionChatHistoryCard: View {
         ArgusProtocol.Commands.DeleteChatHistory.self, .init(repoRoot: session.repoRoot, historyId: entry.id))
     }
     await load()
+    changed()
     MacTelemetry.capture(.chatHistoryUsed(action: doomed.count > 1 ? .clear : .delete))
   }
 }

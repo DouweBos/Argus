@@ -67,12 +67,11 @@ extension DesktopModel {
       || store.scratchPads.contains { $0.id == id }
   }
 
-  /// A session from the sidebar: the panel it was last on, else its home.
+  /// A session from the sidebar: the panel it was last on, else its agents.
   func open(session id: String) {
     if gitPanelSessions.contains(id) { return openGit(session: id) }
     if codePanelSessions.contains(id) { return openCode(session: id) }
-    if agentsPanelSessions.contains(id) { return openAgents(session: id) }
-    navigate(.sessionHome(id: id))
+    openAgents(session: id)
   }
 
   /// A session's agents, on the one last open there, as the desktop keeps
@@ -92,17 +91,15 @@ extension DesktopModel {
     switch route {
     case .session: .agents
     case .sessionGit: .git
-    case .sessionHome: .home
     case .sessionCode: .code
     default: nil
     }
   }
 
-  /// Home, Agents, Code or Git of the session on screen, from the toolbar or the View menu.
+  /// Agent, Code or Git of the session on screen, from the context card, the View menu or the palette.
   func show(_ panel: SessionPanel, via: MacTelemetryEvent.PanelSwitchSource) {
     guard let id = route.sessionId, panel != sessionPanel else { return }
     switch panel {
-    case .home: navigate(.sessionHome(id: id))
     case .agents: openAgents(session: id)
     case .code: openCode(session: id)
     case .git: openGit(session: id)
@@ -178,14 +175,9 @@ extension DesktopModel {
     }
     switch route {
     case .session(let id, let agentId):
-      agentsPanelSessions.insert(id)
       gitPanelSessions.remove(id)
       codePanelSessions.remove(id)
       if let agentId { lastAgents[id] = agentId }
-    case .sessionHome(let id):
-      agentsPanelSessions.remove(id)
-      gitPanelSessions.remove(id)
-      codePanelSessions.remove(id)
     case .sessionGit(let id, let view):
       gitPanelSessions.insert(id)
       codePanelSessions.remove(id)
@@ -236,12 +228,11 @@ extension DesktopModel {
 
 /// The panels a session switches between.
 enum SessionPanel: String, CaseIterable {
-  case home, agents, code, git
+  case agents, code, git
 
   var title: String {
     switch self {
-    case .home: "Home"
-    case .agents: "Agents"
+    case .agents: "Agent"
     case .code: "Code"
     case .git: "Git"
     }
@@ -249,7 +240,6 @@ enum SessionPanel: String, CaseIterable {
 
   var symbol: String {
     switch self {
-    case .home: "house"
     case .agents: "sparkles"
     case .code: "chevron.left.forwardslash.chevron.right"
     case .git: "arrow.triangle.branch"

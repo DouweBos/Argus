@@ -335,7 +335,7 @@ struct DevicesScreen: View {
     guard let repoRoot = device.repoRoot,
       let root = store.sessionsByRepo[repoRoot]?.first(where: { $0.kind == .projectRoot })
     else { return }
-    model.navigate(.sessionHome(id: root.id))
+    model.openAgents(session: root.id)
   }
 
   private func open(_ device: ArgusProtocol.DeviceInfo, agent: Bool) {

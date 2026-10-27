@@ -65,7 +65,7 @@ struct ProposalScreen: View {
         Button("The proposal that replaced it") { model.navigate(.proposal(id: replacement)) }
       }
       if let session = proposal.sessionId {
-        Button("The session it started") { model.navigate(.sessionHome(id: session)) }
+        Button("The session it started") { model.openAgents(session: session) }
       }
     }
     .buttonStyle(.accentLink)

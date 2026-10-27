@@ -22,6 +22,7 @@ struct CodePanel: View {
     } trailing: {
       VStack(spacing: 0) {
         CodeTabBar(code: code, activePath: path)
+          .padding(.trailing, SessionContextCardOverlay.barReserve)
         Rectangle().fill(theme.border).frame(height: 1)
         if let path, let file = code.files[path] {
           CodeEditorPane(code: code, file: file)
@@ -32,6 +33,7 @@ struct CodePanel: View {
             message: "Pick a file from the navigator, press ⌘P to open one by name, or ⇧⌘O to open a file or symbol.")
         }
       }
+      .sessionContextCard(session, panel: .code, barHeight: CodeTabBar.height)
     }
     .overlay(alignment: .top) {
       if code.quickOpenVisible {

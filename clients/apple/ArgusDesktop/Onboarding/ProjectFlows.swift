@@ -120,7 +120,7 @@ extension DesktopModel {
     await openProject(repoRoot)
     let sessions = store.sessionsByRepo[repoRoot] ?? []
     if let root = sessions.first(where: { $0.kind == .projectRoot }) ?? sessions.first {
-      navigate(.sessionHome(id: root.id))
+      openAgents(session: root.id)
     }
   }
 }
