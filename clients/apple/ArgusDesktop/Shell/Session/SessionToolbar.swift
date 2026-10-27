@@ -19,9 +19,13 @@ struct SessionToolbar: ToolbarContent {
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.leadingWidth = $0 }
     }
     .flatToolbarItem()
-    // primaryAction pins them to the trailing edge; automatic leaves them beside the breadcrumb.
+    // The split view's detail toolbar packs items after the breadcrumb; the
+    // spacer pushes the rest to the window's trailing edge.
+    if #available(macOS 26.0, *) {
+      ToolbarSpacer(.flexible)
+    }
     if let session, session.status == .ready, cardCollapsed {
-      ToolbarItem(placement: .primaryAction) {
+      ToolbarItem {
         PillGroup {
           HuddleToolbarButton(sessionId: session.id)
           RunControl(session: session)
@@ -29,7 +33,7 @@ struct SessionToolbar: ToolbarContent {
         .measured(slot: 0, in: model.toolbarLayout)
       }
     }
-    ToolbarItem(placement: .primaryAction) {
+    ToolbarItem {
       PillGroup { sidePanelToggle }
         .measured(slot: 1, in: model.toolbarLayout)
     }
