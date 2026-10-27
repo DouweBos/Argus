@@ -112,6 +112,13 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 
 **The Mac app is the desktop's successor.** It ships as a beta next to Electron until `plan/swiftui-parity.md` is ticked. Once it is the product, every new desktop feature lands there too, in the same PR — until then, keep new desktop work portable (host commands, not renderer-only logic).
 
+**Mac app: everything clickable shows the pointing hand.** SwiftUI never does this on its own, so it goes through ArgusUI (`DesignSystem/Clickable.swift`):
+
+- `.buttonStyle(.argusPlain)` / `.argusBorderless` — never `.plain` / `.borderless`
+- `.clickable()` on anything made clickable another way (`onTapGesture`, `Menu`, `Link`); `.clickable(false)` while it isn't (e.g. renaming)
+- A new custom `ButtonStyle` applies `.clickable()` in its `makeBody`
+- Never call `.pointerStyle` directly. Native `.bordered` / `.borderedProminent` buttons keep the macOS arrow
+
 **The iOS client is a first-class citizen.** Every feature you add or change on the desktop also lands in `clients/apple` in the same PR. The only excuses are that it genuinely makes no sense on a phone (window management, tray, simulator HID injection) or that exposing it over the gateway is a real security risk — say which, don't just skip it. "Desktop first, phone later" is how the phone falls behind.
 
 Adding one (worked example: `automations.revise_playbook`):
