@@ -15,6 +15,7 @@ import { packetizeH264 } from "../../simulator/h264Rtp";
 import { h264PeerConfig } from "../../simulator/webrtcVideo";
 import { openServeSimVideo } from "./serveSim";
 import { ServeSimInput } from "./serveSimInput";
+import { rotationFor } from "./source";
 
 vi.mock("../../telemetry/telemetry", () => ({ capture: () => {} }));
 
@@ -329,5 +330,26 @@ describe("serve-sim input", () => {
       height: 2556,
       orientation: "portrait",
     });
+  });
+});
+
+describe("serve-sim display", () => {
+  it("turns a sideways framebuffer upright the way serve-sim's input expects", () => {
+    const portrait = { width: 1179, height: 2556 };
+    expect(rotationFor(null)).toBe(0);
+    expect(rotationFor({ ...portrait, orientation: "portrait" })).toBe(0);
+    expect(rotationFor({ ...portrait, orientation: "landscape_left" })).toBe(
+      90,
+    );
+    expect(rotationFor({ ...portrait, orientation: "landscape_right" })).toBe(
+      270,
+    );
+    expect(
+      rotationFor({ ...portrait, orientation: "portrait_upside_down" }),
+    ).toBe(180);
+    // Already landscape-shaped: upright as it comes.
+    expect(
+      rotationFor({ width: 2556, height: 1179, orientation: "landscape_left" }),
+    ).toBe(0);
   });
 });

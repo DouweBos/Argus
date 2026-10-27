@@ -112,12 +112,15 @@ Cloud simulators from Expo's EAS Simulator; the reference was T3 Code's
   (home/lock/app_switcher), key 0x06; admitted 0x83, screen config 0x82.
   Primed with one MJPEG request first.
 - **Capabilities**: all off (no simctl/conductor). Display info from the
-  stream's coded size, rotation 0.
+  stream's coded size; rotation from serve-sim's screen config (its stream is
+  the raw framebuffer, so a sideways UI arrives sideways and clients turn it
+  upright and send raw-space touches, as serve-sim expects).
 - **Phone**: `device_hosts.list` adds `kind`, `running_sessions`,
   `max_sessions`. `device_hosts.start_eas_session` (control, guest-denied)
   returns the slot id at once and starts in the background;
   `device_hosts.stop_eas_session` (control). `devices.watch` (monitor) refuses
   an EAS id that isn't running, so watching never starts a billed session.
 
-Not done: rotation through serve-sim's 0x07, Android sessions, MJPEG
-fallback, agent-device access.
+Not done: rotating the device through serve-sim's 0x07, Android sessions,
+MJPEG fallback, agent-device access, restoring a missing SPS VUI (T3 does it
+for Chromium's hardware decoder).
