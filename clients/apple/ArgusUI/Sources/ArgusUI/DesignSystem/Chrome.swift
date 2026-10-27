@@ -90,19 +90,23 @@ private struct FlatIcon<Label: View>: View {
 public struct ProjectBadge: View {
   @Environment(\.theme) private var theme
   let name: String
+  /// The project's path, which picks its colour; without one the badge stays neutral.
+  var key: String?
   var size: CGFloat
 
-  public init(_ name: String, size: CGFloat = 16) {
+  public init(_ name: String, key: String? = nil, size: CGFloat = 16) {
     self.name = name
+    self.key = key
     self.size = size
   }
 
   public var body: some View {
+    let tint = key.map(ProjectAccent.color(for:))
     Text(ChromeText.initials(name))
       .font(.scaled(size: size * 0.5, weight: .semibold))
-      .foregroundStyle(theme.textSecondary)
+      .foregroundStyle(tint ?? theme.textSecondary)
       .frame(width: TextScale.shared(size), height: TextScale.shared(size))
-      .background(theme.selection, in: .rect(cornerRadius: 4))
+      .background(tint.map { $0.opacity(0.2) } ?? theme.selection, in: .rect(cornerRadius: 4))
       .accessibilityHidden(true)
   }
 }
@@ -115,13 +119,19 @@ public struct Breadcrumb: View {
     public var id: Int
     public var title: String
     public var badge: String?
+    /// The project's path, to colour the badge.
+    public var badgeKey: String?
     public var help: String?
     public var action: (() -> Void)?
 
-    public init(id: Int, title: String, badge: String? = nil, help: String? = nil, action: (() -> Void)? = nil) {
+    public init(
+      id: Int, title: String, badge: String? = nil, badgeKey: String? = nil, help: String? = nil,
+      action: (() -> Void)? = nil
+    ) {
       self.id = id
       self.title = title
       self.badge = badge
+      self.badgeKey = badgeKey
       self.help = help
       self.action = action
     }
@@ -142,7 +152,7 @@ public struct Breadcrumb: View {
         }
         let last = step.id == steps.last?.id
         let label = HStack(spacing: 5) {
-          if let badge = step.badge { ProjectBadge(badge, size: 14) }
+          if let badge = step.badge { ProjectBadge(badge, key: step.badgeKey, size: 14) }
           Text(step.title)
             .lineLimit(1)
             .truncationMode(.tail)
@@ -205,7 +215,8 @@ public struct ChromeSearchField: View {
 public enum ChromeIcon {
   case symbol(String)
   case image(Image)
-  case badge(String)
+  /// A project's initials; `key` is its path, for its colour.
+  case badge(String, key: String? = nil)
 }
 
 public struct ChromeIconView: View {
@@ -231,8 +242,8 @@ public struct ChromeIconView: View {
           .interpolation(.high)
           .aspectRatio(contentMode: .fit)
           .frame(width: TextScale.shared(16), height: TextScale.shared(16))
-      case .badge(let name):
-        ProjectBadge(name, size: 15)
+      case .badge(let name, let key):
+        ProjectBadge(name, key: key, size: 15)
       }
     }
     .frame(width: TextScale.shared(16))

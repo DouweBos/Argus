@@ -64,7 +64,7 @@ struct SidebarTopBar: View {
       ChromeMenuItem("All Projects", icon: .symbol("square.grid.2x2"), checked: filter.project == nil) { pick(nil) }
       ChromeMenuEntry.divider
       for project in store.projects {
-        ChromeMenuItem(project.name, icon: .badge(project.name), checked: filter.project == project.repoRoot) {
+        ChromeMenuItem(project.name, icon: .badge(project.name, key: project.repoRoot), checked: filter.project == project.repoRoot) {
           pick(project.repoRoot)
         }
       }
@@ -96,7 +96,7 @@ struct SidebarTopBar: View {
       }
     } entries: {
       for project in store.projects {
-        ChromeMenuItem("New Session in \(project.name)…", icon: .badge(project.name)) {
+        ChromeMenuItem("New Session in \(project.name)…", icon: .badge(project.name, key: project.repoRoot)) {
           model.newSessionProject = project
         }
       }
