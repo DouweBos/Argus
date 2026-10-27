@@ -2,6 +2,7 @@ import type { H264Config } from "./h264-parser";
 import * as net from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 import { addHostEventSink } from "@argus/host/bus";
+import { readAnnexB } from "./annexBVideo";
 import { startIosVideoStream, stopIosVideoStream } from "./ios-video";
 import { onVideo } from "./videoForward";
 
@@ -66,7 +67,11 @@ describe("iOS video on the broadcast bus", () => {
     });
 
     const port = await serve();
-    startIosVideoStream(UDID, port);
+    startIosVideoStream(UDID, {
+      open: (sink) => ({
+        close: readAnnexB(net.connect(port, "127.0.0.1"), sink),
+      }),
+    });
     await done;
     untap();
 

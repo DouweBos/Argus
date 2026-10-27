@@ -44,3 +44,37 @@ they were local.
 - Fold/orientation and conductor-driven features (inspector, deep links,
   streaming input) on remote devices — conductor runs locally.
 - Agents: the simulator pool and conductor CLI stay local-only.
+
+## Device sources
+
+Above `DeviceMachine` sits `DeviceSource` (`simulator/deviceSource.ts`): what
+Argus does with a device, not how it reaches a machine. `list`/`find`,
+`open`/`close` (boot/shutdown), `erase`/`delete`, `capabilities(id)`, and
+`session(id)` — a `DeviceSession` with `start`, `video` (the shared stream),
+`adaptiveVideo` (null when there's no retargetable encode; remote viewers then
+ride the shared stream), `input` (touch, named button, HID key), `displayInfo`,
+`refreshDisplay`, `stop`.
+
+- `MachineDeviceSource` (`machineSource.ts` + `machineSession.ts`) is the only
+  implementation: simctl, argus-sim-bridge, argus-sim-input, for this Mac and
+  every SSH host alike. Nothing outside it calls `machineForDevice`.
+- `deviceSources.ts` resolves an id to its source through providers. The
+  machine provider is the fallback (bare UDID → this Mac, `<hostId>~<udid>` →
+  that host); `registerDeviceSourceProvider` puts a new namespace in front.
+- Capabilities (`rotation`, `fold`, `conductor`, `settings`, `erase`,
+  `delete`, `adaptiveVideo`) replace the old "is it remote" checks in pose,
+  conductor and the input-socket lookup. They stay host-internal: no client
+  hides controls by them yet.
+- Video is access units in (`VideoSink`), not a socket: the bridge's Annex B
+  port goes through `readAnnexB`; a source producing frames itself calls the
+  sink directly.
+
+### An EAS Simulator source
+
+A provider claiming `eas:<sessionId>` ids. `list` reads the account's
+sessions; `open`/`close` create and stop the billed session; `session(id)`
+wraps serve-sim — `video.open` feeds WebRTC H.264 access units to the sink,
+`adaptiveVideo` null, `input` maps to serve-sim's touch/button/key, display
+info from its reported size. `capabilities` all false except whatever
+serve-sim supports. `onGone` fires when the account is signed out. Capture
+refcounting, the video bus, remote viewers and gating all work unchanged.

@@ -9,11 +9,11 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { appState } from "../../state";
 import { webBrowserPool } from "../browser/pool";
-import { machineForDevice } from "../deviceHosts/registry";
 import {
   disconnectAndroidDevice,
   listAndroidDevices,
 } from "../simulator/android";
+import { resolveDeviceSource } from "../simulator/deviceSources";
 import { disconnectSimulator, listAllSimulators } from "../simulator/ios";
 
 const execFileAsync = promisify(execFile);
@@ -155,7 +155,7 @@ export async function listDevices(): Promise<DeviceInfo[]> {
 /**
  * Stop (shutdown / kill) a running device.
  *
- * - iOS: `xcrun simctl shutdown <udid>`, then clear any capture state.
+ * - iOS: shut it down through its device source, then clear any capture state.
  * - Android: `adb -s <serial> emu kill` (emulators only; no-op for physical).
  * - Web: release the browser reservation by its pool key.
  */
@@ -164,16 +164,7 @@ export async function stopDevice(
   deviceKey: string,
 ): Promise<void> {
   if (platform === "ios") {
-    const { machine, udid } = machineForDevice(deviceKey);
-    try {
-      await machine.exec("xcrun", ["simctl", "shutdown", udid]);
-    } catch (e) {
-      const msg = String(e);
-      // Already shut down is not a real error.
-      if (!msg.includes("Shutdown") && !msg.includes("current state")) {
-        throw `Failed to shutdown simulator: ${msg}`;
-      }
-    }
+    await resolveDeviceSource(deviceKey).close(deviceKey);
     disconnectSimulator(deviceKey);
 
     return;

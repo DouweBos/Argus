@@ -12,13 +12,12 @@
  * stream without adaptation — as does iOS if the remote encode can't start.
  */
 
+import type { AdaptiveVideoStream } from "./deviceSource";
 import type { H264Config } from "./h264-parser";
 import type { RemotePlatform } from "@argus/remote-protocol";
 import { error, log } from "@argus/host/logger";
-import { machineForDevice } from "../deviceHosts/registry";
 import { capture } from "../telemetry/telemetry";
-import { H264AccessUnitParser } from "./h264-parser";
-import { getBridgeForUdid } from "./ios";
+import { captureSessionFor } from "./iosCapture";
 import {
   RemoteBitrateController,
   type StreamTarget,
@@ -49,6 +48,8 @@ interface RemoteStream {
   viewers: Map<string, ViewerState>;
   /** Null while the stream rides the shared local encode. */
   controller: RemoteBitrateController | null;
+  /** The adaptive encode feeding the stream; null alongside `controller`. */
+  adaptive: AdaptiveVideoStream | null;
   lastConfig: H264Config | null;
   /** Tears down whatever currently feeds the stream. */
   detachSource: () => void;
@@ -97,6 +98,7 @@ function openStream(deviceId: string, platform: RemotePlatform): RemoteStream {
     platform,
     viewers: new Map(),
     controller: null,
+    adaptive: null,
     lastConfig: null,
     detachSource: () => {},
     timer: null,
@@ -151,6 +153,7 @@ function useSharedStream(stream: RemoteStream): void {
     stream.timer = null;
   }
   stream.controller = null;
+  stream.adaptive = null;
   stream.detachSource = onVideo(stream.deviceId, {
     onConfig: (config) => emitConfig(stream, config),
     onFrame: (data, keyFrame, timestamp) =>
@@ -158,63 +161,38 @@ function useSharedStream(stream: RemoteStream): void {
   });
 }
 
-function bridgeParams(target: StreamTarget): Record<string, number> {
-  return {
-    bitrate: target.bitrate,
-    maxDim: target.level.maxDim,
-    fps: target.level.fps,
-  };
-}
-
 async function startAdaptive(stream: RemoteStream): Promise<void> {
-  const bridge = getBridgeForUdid(stream.deviceId);
-  if (!bridge) {
-    throw new Error("no bridge for device");
+  // A source without an adaptive encode rides the shared stream instead.
+  const source = captureSessionFor(stream.deviceId)?.adaptiveVideo;
+  if (!source) {
+    throw new Error("no adaptive video for device");
   }
   const controller = new RemoteBitrateController(Date.now());
-  const response = await bridge.sendCommand({
-    cmd: "start_remote_stream",
-    ...bridgeParams(controller.target),
-  });
-  if (!response.ok || typeof response.port !== "number") {
-    // An older bridge binary without the remote encoder.
-    throw new Error(String(response.error ?? "start_remote_stream refused"));
-  }
+  const adaptive = await source.start(controller.target);
   if (stream.closed) {
-    bridge.sendCommand({ cmd: "stop_remote_stream" }).catch(() => {});
+    adaptive.stop();
 
     return;
   }
 
-  const parser = new H264AccessUnitParser({
+  stream.detachSource = adaptive.attach({
     onConfig: (config) => emitConfig(stream, config),
     onFrame: (data, keyFrame, timestamp) =>
       emitFrame(stream, data, keyFrame, timestamp),
+    onError: (err) => {
+      error(`[RemoteVideo] stream socket error (${stream.deviceId}):`, err);
+    },
+    onClose: () => {
+      // The encode went away under us; keep viewers fed from the shared stream.
+      if (!stream.closed && stream.controller === controller) {
+        log(`[RemoteVideo] adaptive stream closed (${stream.deviceId})`);
+        adaptive.stop();
+        useSharedStream(stream);
+      }
+    },
   });
-  // Loopback here, or `ssh -W` to a device host's loopback.
-  const socket = machineForDevice(stream.deviceId).machine.connect(
-    response.port,
-  );
-  socket.on("data", (chunk: Buffer) => parser.push(chunk));
-  socket.on("error", (err) => {
-    error(`[RemoteVideo] stream socket error (${stream.deviceId}):`, err);
-  });
-  socket.on("close", () => {
-    // The bridge went away under us; keep viewers fed from the shared stream.
-    if (!stream.closed && stream.controller === controller) {
-      log(`[RemoteVideo] adaptive stream closed (${stream.deviceId})`);
-      getBridgeForUdid(stream.deviceId)
-        ?.sendCommand({ cmd: "stop_remote_stream" })
-        .catch(() => {});
-      useSharedStream(stream);
-    }
-  });
-
   stream.controller = controller;
-  stream.detachSource = () => {
-    socket.destroy();
-    parser.reset();
-  };
+  stream.adaptive = adaptive;
   stream.timer = setInterval(() => sample(stream), SAMPLE_INTERVAL_MS);
   stream.timer.unref?.();
   log(
@@ -240,9 +218,7 @@ function sample(stream: RemoteStream): void {
     return;
   }
   log(`[RemoteVideo] ${stream.deviceId} → ${describe(next)}`);
-  getBridgeForUdid(stream.deviceId)
-    ?.sendCommand({ cmd: "set_stream_params", ...bridgeParams(next) })
-    .catch(() => {});
+  stream.adaptive?.retarget(next);
 }
 
 function describe(target: StreamTarget): string {
@@ -257,11 +233,7 @@ function closeStream(stream: RemoteStream): void {
   }
   stream.detachSource();
   const adaptive = stream.controller !== null;
-  if (adaptive) {
-    getBridgeForUdid(stream.deviceId)
-      ?.sendCommand({ cmd: "stop_remote_stream" })
-      .catch(() => {});
-  }
+  stream.adaptive?.stop();
   const stats = stream.controller?.stats;
   capture("simulator_remote_stream_ended", {
     adaptive,
