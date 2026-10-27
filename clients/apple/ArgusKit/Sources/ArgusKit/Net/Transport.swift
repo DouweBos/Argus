@@ -22,6 +22,8 @@ public actor Transport {
     case timedOut
     case badIdentity
     case gateway(GatewayErrorPayload)
+    /// The host has no such method: it runs an older Argus than this client.
+    case unsupported(method: String, hostVersion: String?)
   }
 
   /// Plaintext tags distinguishing JSON envelopes from binary media frames.
@@ -38,6 +40,8 @@ public actor Transport {
 
   private var handshake: NoiseHandshake?
   private var session: NoiseSession?
+  /// The host's app version once asked; `.some(nil)` while asking or unknown.
+  private var hostVersion: String??
   private var sendSeq = 0
   private var recvSeq = -1
   private var pending: [String: CheckedContinuation<ResponseEnvelope, Error>] = [:]
@@ -113,6 +117,7 @@ public actor Transport {
   }
 
   private func reset() {
+    hostVersion = nil
     handshake = nil
     session = nil
     sendSeq = 0
@@ -275,8 +280,22 @@ public actor Transport {
       return first
     }
 
-    if let error = response.error { throw TransportError.gateway(error) }
+    if let error = response.error {
+      guard let method = error.unsupportedMethod else { throw TransportError.gateway(error) }
+      throw TransportError.unsupported(method: method, hostVersion: await knownHostVersion())
+    }
     return response
+  }
+
+  /// Asked once per connection, the first time the host turns out too old.
+  private func knownHostVersion() async -> String? {
+    if let hostVersion { return hostVersion }
+    hostVersion = .some(nil)
+    let response = try? await exchange(
+      TransportError.versionCommand, EmptyParams(), timeout: Self.requestTimeout)
+    let version = response?.ok?.stringValue
+    hostVersion = version
+    return version
   }
 
   /// Cancellable, so a timed-out request doesn't keep its task group waiting.

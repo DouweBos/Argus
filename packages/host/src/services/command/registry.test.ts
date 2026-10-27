@@ -22,6 +22,7 @@ import {
   listCommands,
   resetCommandRegistry,
   setCommandBinder,
+  UnknownCommandError,
 } from "./registry";
 
 vi.mock("../tools/state", () => ({
@@ -159,6 +160,16 @@ describe("dispatchCommand", () => {
 
   it("rejects an unknown command", async () => {
     await expect(dispatchCommand("no_such")).rejects.toThrow(/unknown command/);
+  });
+
+  it("tags an unknown command with a code IPC can carry", async () => {
+    const err = await dispatchCommand("no_such").catch((e: Error) => e);
+    expect(err).toBeInstanceOf(UnknownCommandError);
+    expect((err as Error).message).toBe("unknown command no_such");
+    expect({ ...(err as object) }).toMatchObject({
+      code: "unknown_command",
+      command: "no_such",
+    });
   });
 });
 

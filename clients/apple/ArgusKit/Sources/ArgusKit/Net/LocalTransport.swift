@@ -32,6 +32,8 @@ public actor LocalTransport {
   private var backoff: Duration = .milliseconds(200)
   /// Bumped per connection so callbacks from a dead one are ignored.
   private var generation = 0
+  /// The host's app version once asked; `.some(nil)` while asking or unknown.
+  private var hostVersion: String??
 
   public init(path: String) {
     self.path = path
@@ -65,6 +67,7 @@ public actor LocalTransport {
   }
 
   private func reset() {
+    hostVersion = nil
     buffer = Data()
     sendSeq = 0
     recvSeq = -1
@@ -251,8 +254,21 @@ public actor LocalTransport {
       group.cancelAll()
       return first
     }
-    if let error = response.error { throw Transport.TransportError.gateway(error) }
+    if let error = response.error {
+      guard let method = error.unsupportedMethod else { throw Transport.TransportError.gateway(error) }
+      throw Transport.TransportError.unsupported(method: method, hostVersion: await knownHostVersion())
+    }
     return response
+  }
+
+  /// Asked once per connection, the first time the host turns out too old.
+  private func knownHostVersion() async -> String? {
+    if let hostVersion { return hostVersion }
+    hostVersion = .some(nil)
+    let response = try? await exchange(Transport.TransportError.versionCommand, EmptyParams())
+    let version = response?.ok?.stringValue
+    hostVersion = version
+    return version
   }
 
   /// Numbered in the same actor turn it's written in: the host drops a frame

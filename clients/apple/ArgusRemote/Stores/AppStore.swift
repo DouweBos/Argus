@@ -60,6 +60,8 @@ final class AppStore {
   /// Bumped on every connect so a probe that finishes after the user switched
   /// computers can't clobber the newer connection.
   private var connectGeneration = 0
+  /// Methods the connected computer turned out too old for, counted once each.
+  private var unsupportedSeen: Set<String> = []
 
   init() {
     let name = Preferences().string(PreferenceKey.deviceName) ?? UIDeviceName.current
@@ -68,6 +70,13 @@ final class AppStore {
       track: { Telemetry.capture(TelemetryEvent($0)) },
       errorReported: { [weak self] error, scope in
         self?.noteWarning(HostStore.describe(error))
+        // Version skew, not a bug: count it once per method rather than report it.
+        if let method = HostStore.unsupportedMethod(error) {
+          if self?.unsupportedSeen.insert(method).inserted == true {
+            Telemetry.capture(.hostFeatureUnsupported(method: method))
+          }
+          return
+        }
         Telemetry.capture(.appError(scope: scope, message: HostStore.describe(error)))
         Telemetry.captureException(error, source: "app_error", extra: ["scope": scope])
       },

@@ -9,6 +9,7 @@ final class FakeBackend: HostBackend, @unchecked Sendable {
   private let lock = NSLock()
   private var replies: [String: String] = [:]
   private var failing: Set<String> = []
+  private var errors: [String: Error] = [:]
   private var calls: [String] = []
   private var subscriptions: [(String, Bool)] = []
   private var held: Set<String> = []
@@ -56,6 +57,11 @@ final class FakeBackend: HostBackend, @unchecked Sendable {
     lock.withLock { _ = failing.insert(method.rawValue) }
   }
 
+  /// Fail `method` with a specific error, as a transport would throw it.
+  func fail(_ method: RemoteMethod, with error: Error) {
+    lock.withLock { errors[method.rawValue] = error }
+  }
+
   var requested: [String] { lock.withLock { calls } }
 
   func emit(_ event: String, agentId: String? = nil, payload: String) throws {
@@ -94,10 +100,11 @@ final class FakeBackend: HostBackend, @unchecked Sendable {
   }
 
   private func answer<Result: Decodable>(_ name: String, as _: Result.Type) throws -> Result {
-    let (json, fails) = lock.withLock { () -> (String?, Bool) in
+    let (json, fails, error) = lock.withLock { () -> (String?, Bool, Error?) in
       calls.append(name)
-      return (replies[name], failing.contains(name))
+      return (replies[name], failing.contains(name), errors[name])
     }
+    if let error { throw error }
     if fails { throw Failure() }
     return try ProtocolCodec.decoder.decode(Result.self, from: Data((json ?? "{}").utf8))
   }
