@@ -247,6 +247,12 @@ final class RuntimeModel {
     await refresh()
   }
 
+  /// The EAS Simulator hosts, for their session limits.
+  func easHosts() async throws -> [ArgusProtocol.EasDeviceHost] {
+    guard let backend else { throw RuntimeError.offline }
+    return try await backend.request(ArgusProtocol.Commands.ListEasDeviceHosts.self, EmptyParams())
+  }
+
   enum Repair { case erase, delete }
 
   /// Erases or deletes a simulator that can't boot as it is; the user confirmed.

@@ -34,6 +34,7 @@ import {
 import { DeviceDialog } from "./DeviceDialog/DeviceDialog";
 import { DeviceGrid } from "./DeviceGrid/DeviceGrid";
 import styles from "./DevicesScreen.module.css";
+import { useEasStartConfirm } from "./EasStartConfirm";
 import { useDeviceNavigation } from "./deviceNav";
 
 function platformIcon(platform: DeviceInfo["platform"]) {
@@ -152,11 +153,16 @@ export function DevicesScreen() {
     };
 
   const [booting, setBooting] = useState<Set<string>>(new Set());
+  const { confirmStart, dialog: easConfirmDialog } = useEasStartConfirm();
 
   const handleBoot =
     (d: DeviceInfo) => async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
-      if (d.platform !== "ios" || booting.has(d.deviceKey)) {
+      if (
+        d.platform !== "ios" ||
+        booting.has(d.deviceKey) ||
+        !(await confirmStart(d.deviceKey, d.online))
+      ) {
         return;
       }
       setBooting((prev) => new Set(prev).add(d.deviceKey));
@@ -388,6 +394,7 @@ export function DevicesScreen() {
       )}
 
       {open && <DeviceDialog device={open} onClose={() => setOpen(null)} />}
+      {easConfirmDialog}
 
       {menu && (
         <ContextMenu

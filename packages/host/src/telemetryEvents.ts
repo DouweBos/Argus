@@ -152,6 +152,7 @@ export interface EventMap {
     reason: "closed" | "expired" | "host_removed" | "leftover" | "shutdown";
   };
   eas_session_start_failed: { reason: EasFailure };
+  eas_session_start_prompted: { outcome: "cancelled" | "confirmed" };
   eas_session_started: { wait_bucket: "<1m" | "<3m" | "<10m" | ">=10m" };
   follow_up_used: { method: "click" | "tab" };
   follow_ups_suggested: { count: number; success: boolean };

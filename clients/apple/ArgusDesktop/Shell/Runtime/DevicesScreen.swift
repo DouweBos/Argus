@@ -28,6 +28,8 @@ struct DevicesScreen: View {
   @State private var actionError: String?
   /// Online devices shown as live tiles in the grid, in the order picked.
   @State private var gridKeys: [String] = []
+  /// A boot of a stopped EAS Simulator device waiting on its cost prompt.
+  @State private var pendingEas: PendingEasStart?
 
   private static let pollInterval = Duration.seconds(3)
 
@@ -77,8 +79,12 @@ struct DevicesScreen: View {
           selected = nil
           Task { await load() }
         },
-        onClose: { selected = nil })
+        onClose: { selected = nil }
+      )
+      .easStartConfirmation($pendingEas)
     }
+    // The open sheet asks in its place: a dialog behind it wouldn't show.
+    .easStartConfirmation(selected == nil ? $pendingEas : .constant(nil))
     // The shown machine's devices; a tile streams from it too.
     .task(id: "\(store.connection == .ready)|\(model.hosts.focused)") {
       runtime.hostId = model.hosts.focused
@@ -280,6 +286,18 @@ struct DevicesScreen: View {
   }
 
   private func boot(_ device: ArgusProtocol.DeviceInfo) {
+    Task {
+      if let prompt = await runtime.easStartPrompt(
+        device.deviceKey, running: device.online, start: { startBoot(device) })
+      {
+        pendingEas = prompt
+      } else {
+        startBoot(device)
+      }
+    }
+  }
+
+  private func startBoot(_ device: ArgusProtocol.DeviceInfo) {
     busy.insert(device.deviceKey)
     actionError = nil
     Task {
