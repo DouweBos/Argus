@@ -171,6 +171,52 @@ private struct AccentButton<Label: View>: View {
   }
 }
 
+// MARK: - Secondary button
+
+/// A clear action that isn't the primary one: a quiet fill and hairline, brighter on hover.
+public struct SecondaryButtonStyle: ButtonStyle {
+  public init() {}
+
+  public func makeBody(configuration: Configuration) -> some View {
+    SecondaryButton(label: configuration.label, pressed: configuration.isPressed).clickable()
+  }
+}
+
+private struct SecondaryButton<Label: View>: View {
+  @Environment(\.theme) private var theme
+  @Environment(\.isEnabled) private var isEnabled
+  let label: Label
+  let pressed: Bool
+  @State private var hovering = false
+
+  var body: some View {
+    label
+      .font(.scaled(size: 12, weight: .medium))
+      .lineLimit(1)
+      .padding(.horizontal, 12)
+      .padding(.vertical, 5)
+      .foregroundStyle(isEnabled ? theme.text : theme.textMuted)
+      .background(fill, in: .rect(cornerRadius: 6))
+      .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(theme.border))
+      .contentShape(.rect(cornerRadius: 6))
+      .onHover { hovering = $0 }
+  }
+
+  private var fill: Color {
+    guard isEnabled else { return theme.surface }
+    if pressed { return theme.borderStrong }
+    return hovering ? theme.bgHover : theme.selection
+  }
+}
+
+extension ButtonStyle where Self == SecondaryButtonStyle {
+  public static var secondary: SecondaryButtonStyle { SecondaryButtonStyle() }
+}
+
+extension ButtonStyle where Self == AccentButtonStyle {
+  public static var accent: AccentButtonStyle { AccentButtonStyle() }
+}
+
 // MARK: - Field
 
 extension View {
