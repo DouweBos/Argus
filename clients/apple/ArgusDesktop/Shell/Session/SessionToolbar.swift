@@ -125,7 +125,7 @@ struct SessionBreadcrumb: View {
       if let root, root.id != session.id {
         openRoot = { [model] in model.navigate(.sessionHome(id: root.id)) }
       }
-      steps.append(.init(id: 0, title: name, badge: name, help: session.repoRoot, action: openRoot))
+      steps.append(.init(id: 0, title: name, badge: name, badgeKey: session.repoRoot, help: session.repoRoot, action: openRoot))
     }
     let onAgents = model.sessionPanel == .agents
     steps.append(

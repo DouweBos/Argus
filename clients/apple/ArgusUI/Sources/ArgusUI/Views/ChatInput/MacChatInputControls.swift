@@ -94,7 +94,7 @@
         }
         for project in linkableProjects {
           ChromeMenuItem(
-            project.name, icon: .badge(project.name), checked: linkedProjects.contains(project.repoRoot),
+            project.name, icon: .badge(project.name, key: project.repoRoot), checked: linkedProjects.contains(project.repoRoot),
             keepsOpen: true
           ) {
             toggleLink(project.repoRoot)

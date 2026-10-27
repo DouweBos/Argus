@@ -20,7 +20,7 @@ struct ProjectHeader: View {
 
   var body: some View {
     HStack(spacing: 6) {
-      ProjectBadge(project.name)
+      ProjectBadge(project.name, key: project.repoRoot)
       Text(project.name)
         .font(.scaled(size: 12, weight: .semibold))
         .foregroundStyle(theme.textSecondary)
