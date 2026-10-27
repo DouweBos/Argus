@@ -3,7 +3,7 @@ import ArgusUI
 import SwiftUI
 
 /// A session's toolbar: where you are on the left ("Project / Session"), the
-/// panels and the panel toggles as plain icons on the right.
+/// panels and the panel toggles in native toolbar capsules on the right.
 struct SessionToolbar: ToolbarContent {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
@@ -20,23 +20,23 @@ struct SessionToolbar: ToolbarContent {
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.leadingWidth = $0 }
     }
     .flatToolbarItem()
-    ToolbarItem {
-      HStack(spacing: 2) {
-        if let session, session.status == .ready, !cardShown {
-          HuddleToolbarButton(sessionId: session.id).buttonStyle(FlatIconButtonStyle())
+    if let session, session.status == .ready, !cardShown {
+      ToolbarItem {
+        PillGroup {
+          HuddleToolbarButton(sessionId: session.id)
           RunControl(session: session)
-            .buttonStyle(FlatIconButtonStyle())
-          ToolbarSeparator()
         }
-        panelSwitcher
-        ToolbarSeparator()
-        panelToggles
+        .measured(slot: 0, in: model.toolbarLayout)
       }
-      .labelStyle(.iconOnly)
-      .fixedSize()
-      .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { model.toolbarLayout.sessionToolsWidth = $0 }
     }
-    .flatToolbarItem()
+    ToolbarItem {
+      PillGroup { panelSwitcher }
+        .measured(slot: 1, in: model.toolbarLayout)
+    }
+    ToolbarItem {
+      PillGroup { panelToggles }
+        .measured(slot: 2, in: model.toolbarLayout)
+    }
   }
 
   /// Home, Agents, Code and Git (⌘1–⌘4), the one on screen lit.
@@ -47,7 +47,7 @@ struct SessionToolbar: ToolbarContent {
       } label: {
         Label(panel.title, systemImage: panel.symbol)
       }
-      .buttonStyle(FlatIconButtonStyle(selected: model.sessionPanel == panel))
+      .buttonStyle(PillItemButtonStyle(selected: model.sessionPanel == panel))
       .overlay(alignment: .topTrailing) {
         if panel == .git, let count = gitChangeCount, count > 0 { PillBadge(count).scaleEffect(0.8) }
       }
@@ -62,7 +62,7 @@ struct SessionToolbar: ToolbarContent {
     } label: {
       Label("Session Details", systemImage: "list.bullet.rectangle")
     }
-    .buttonStyle(FlatIconButtonStyle(selected: cardPreferred))
+    .buttonStyle(PillItemButtonStyle(selected: cardPreferred))
     .disabled(model.sessionPanel != .home && model.sessionPanel != .agents)
     .help(cardPreferred ? "Hide session details" : "Show session details")
     Button {
@@ -70,7 +70,7 @@ struct SessionToolbar: ToolbarContent {
     } label: {
       Label("Side Panel", systemImage: "rectangle.righthalf.inset.filled")
     }
-    .buttonStyle(FlatIconButtonStyle(selected: model.sidePanelVisible))
+    .buttonStyle(PillItemButtonStyle(selected: model.sidePanelVisible))
     .help(model.sidePanelVisible ? "Hide side panel (⌘J)" : "Show side panel (⌘J)")
   }
 
@@ -91,12 +91,11 @@ extension ToolbarContent {
   }
 }
 
-/// A hairline between toolbar icon groups.
-private struct ToolbarSeparator: View {
-  @Environment(\.theme) private var theme
-
-  var body: some View {
-    Rectangle().fill(theme.border).frame(width: 1, height: 14).padding(.horizontal, 4)
+private extension View {
+  /// Reports a capsule's width, so the git panel's actions know what's left.
+  func measured(slot: Int, in layout: ToolbarLayout) -> some View {
+    onGeometryChange(for: CGFloat.self) { $0.size.width } action: { layout.sessionGroupWidths[slot] = $0 }
+      .onDisappear { layout.sessionGroupWidths[slot] = nil }
   }
 }
 

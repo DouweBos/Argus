@@ -5,13 +5,16 @@ import SwiftUI
 public struct PillItemButtonStyle: ButtonStyle {
   /// An icon alone gets a fixed width, so a group can tell what fits.
   var iconOnly: Bool
+  /// Lit, for the item whose view is on screen.
+  var selected: Bool
 
-  public init(iconOnly: Bool = true) {
+  public init(iconOnly: Bool = true, selected: Bool = false) {
     self.iconOnly = iconOnly
+    self.selected = selected
   }
 
   public func makeBody(configuration: Configuration) -> some View {
-    PillItem(label: configuration.label, pressed: configuration.isPressed, iconOnly: iconOnly)
+    PillItem(label: configuration.label, pressed: configuration.isPressed, iconOnly: iconOnly, selected: selected)
   }
 }
 
@@ -44,6 +47,7 @@ private struct PillItem<Label: View>: View {
   let label: Label
   let pressed: Bool
   let iconOnly: Bool
+  let selected: Bool
   @State private var hovering = false
 
   var body: some View {
@@ -58,6 +62,8 @@ private struct PillItem<Label: View>: View {
       .background {
         if isEnabled && (hovering || pressed) {
           Capsule().fill(pressed ? theme.borderStrong : theme.bgHover)
+        } else if selected {
+          Capsule().fill(theme.selection)
         }
       }
       .contentShape(Capsule())
