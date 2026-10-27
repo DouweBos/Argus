@@ -14,7 +14,7 @@ way to connect without one.
 | Where              | How                                                                                                                     |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | iPhone             | Settings → Account. Sign in with Apple, GitHub or an email code. The first device you sign in with sets up the account. |
-| Mac app            | Settings → Account. Signing in also links this Mac's own host, so it is on the account straight away.                   |
+| Mac app            | Settings → Account. Sign in with Apple, GitHub or an email code; this also puts this Mac's own host on the account.     |
 | Desktop (Electron) | Settings → Account → **Link this computer**. Your browser opens on a code; approve it from your phone (see below).      |
 | Headless host      | Type `login` in the `argus-host` terminal (or start it as `argus-host login`). It prints a code.                        |
 

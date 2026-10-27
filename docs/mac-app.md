@@ -248,8 +248,8 @@ The keys for paired hosts are kept in a file in the app's state folder that
 only your user can read. The account key is kept in the Keychain, on this Mac
 only.
 
-Sign in with Apple needs the app's Sign in with Apple entitlement; a build
-signed without it offers GitHub and email only.
+A build signed ad hoc or not at all has no Sign in with Apple and offers
+GitHub and email only.
 
 ## How it relates to the Electron app
 

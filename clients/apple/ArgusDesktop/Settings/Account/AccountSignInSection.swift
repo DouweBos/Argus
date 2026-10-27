@@ -59,8 +59,8 @@ struct AccountSignInSection: View {
     .clickable()
   }
 
-  /// Sign in with Apple needs its entitlement, which needs a provisioning
-  /// profile; a build signed without one offers GitHub and email only.
+  /// Signed builds carry the Sign in with Apple entitlement; an ad-hoc or
+  /// unsigned one doesn't, so it offers GitHub and email only.
   static let canSignInWithApple: Bool = {
     guard let task = SecTaskCreateFromSelf(nil) else { return false }
     return SecTaskCopyValueForEntitlement(task, "com.apple.developer.applesignin" as CFString, nil) != nil
