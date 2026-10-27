@@ -4,6 +4,7 @@
 
 import type { CommandSpec } from "./spec";
 import type { z } from "zod";
+import { ACCOUNT_COMMANDS } from "./account";
 import { AGENT_COMMANDS } from "./agents";
 import { AUTOMATION_COMMANDS } from "./automations";
 import { BROWSER_COMMANDS } from "./browser";
@@ -46,6 +47,7 @@ export * from "../models/gitRunner";
 export * from "../models/code";
 export * from "../models/lsp";
 export * from "../models/usage";
+export * from "../models/account";
 
 /** Each domain's entries, kept apart so a test can prove no name repeats. */
 export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
@@ -68,6 +70,7 @@ export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
   gitRunner: GIT_RUNNER_COMMANDS,
   shell: SHELL_COMMANDS,
   usage: USAGE_COMMANDS,
+  account: ACCOUNT_COMMANDS,
 };
 
 export const COMMANDS = {
@@ -90,6 +93,7 @@ export const COMMANDS = {
   ...GIT_RUNNER_COMMANDS,
   ...SHELL_COMMANDS,
   ...USAGE_COMMANDS,
+  ...ACCOUNT_COMMANDS,
 } as const;
 
 export type Commands = typeof COMMANDS;

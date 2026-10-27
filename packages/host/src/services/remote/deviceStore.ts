@@ -11,6 +11,7 @@
  * without at-rest encryption on that host.
  */
 
+import type { AccountRecord } from "../account/store";
 import type { Capability } from "@argus/remote-protocol";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -53,6 +54,11 @@ export interface PairedDevice {
   last_seen: number | null;
   /** Present once the phone has registered for background push. */
   push?: DevicePushToken | null;
+  /**
+   * How the device got in: a QR pairing (absent on records from before
+   * accounts), or materialized from the account log on first handshake.
+   */
+  source?: "account" | "pairing";
 }
 
 /**
@@ -89,6 +95,8 @@ interface RemoteState {
   ds_pub: string;
   devices: Record<string, PairedDevice>;
   push_config?: PushConfig;
+  /** The account link: signing keys, pinned root, verified log. */
+  account?: AccountRecord | null;
 }
 
 interface FileShape {
@@ -424,13 +432,39 @@ export async function revokeDevice(deviceId: string): Promise<void> {
   }
 }
 
+export async function getAccountRecord(): Promise<AccountRecord | null> {
+  const state = await ensureState();
+
+  return state.account ?? null;
+}
+
+export async function saveAccountRecord(
+  record: AccountRecord | null,
+): Promise<void> {
+  const state = await ensureState();
+  state.account = record;
+  await writeState(state);
+}
+
 /**
- * Rotate the desktop static identity. All existing devices can no longer
+ * Rotate the desktop static identity. QR-paired devices can no longer
  * authenticate the desktop (their pinned `ds_pub` is stale) and must re-pair,
- * so we clear them.
+ * so we clear them. Account devices survive: they re-read the key from the
+ * log's `rotate` entry.
  */
-export async function rotateDesktopIdentity(): Promise<void> {
+export async function rotateDesktopIdentity(): Promise<DesktopIdentity> {
+  const previous = await ensureState();
   const created = freshState();
+  created.account = previous.account ?? null;
+  created.devices = Object.fromEntries(
+    Object.entries(previous.devices).filter(([, d]) => d.source === "account"),
+  );
   await writeState(created);
   cached = created;
+  emitDevicesChanged();
+
+  return {
+    priv: Buffer.from(created.ds_priv, "base64"),
+    pub: Buffer.from(created.ds_pub, "base64"),
+  };
 }

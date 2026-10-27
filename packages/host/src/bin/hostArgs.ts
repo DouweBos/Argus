@@ -4,6 +4,8 @@ export interface HostArgs {
   uiSocket: string | null;
   /** The app supervising this host, recorded in the host lock (`--owner-pid`). */
   ownerPid: number | null;
+  /** `argus-host login`: start linking this computer as soon as it is up. */
+  login: boolean;
 }
 
 export function parseHostArgs(argv: string[]): HostArgs {
@@ -17,5 +19,6 @@ export function parseHostArgs(argv: string[]): HostArgs {
   return {
     uiSocket: value("--ui-socket"),
     ownerPid: Number.isInteger(ownerPid) && ownerPid > 0 ? ownerPid : null,
+    login: argv[0] === "login",
   };
 }

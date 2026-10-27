@@ -24,10 +24,14 @@ import { createServer, type Server, type ServerResponse } from "node:http";
 import path from "node:path";
 import { WebSocketServer, type WebSocket } from "ws";
 import { warn } from "@argus/host/logger";
+import { syncSoon } from "../account/lifecycle";
+import { accountAllowsDevice, findAccountDevice } from "../account/trust";
+import { capture } from "../telemetry/telemetry";
 import {
   findDeviceByStaticKey,
   updateLastSeen,
   type DesktopIdentity,
+  type PairedDevice,
 } from "./deviceStore";
 import {
   DeviceConnection,
@@ -157,6 +161,39 @@ function armJoinDeadline(ws: WebSocket, conn: DeviceConnection): void {
   ws.on("close", () => clearTimeout(timer));
 }
 
+/** Device id → day it last reported a connection, so the event fires once a day. */
+const connectionReported = new Map<string, string>();
+
+function reportConnection(device: PairedDevice): void {
+  const day = new Date().toISOString().slice(0, 10);
+  if (connectionReported.get(device.device_id) === day) {
+    return;
+  }
+  connectionReported.set(device.device_id, day);
+  capture("remote_connection_opened", {
+    trust: device.source === "account" ? "account" : "paired",
+  });
+}
+
+/**
+ * Who a handshaking key is, in order (§4.3): a QR-paired device, then a live
+ * device on this host's account (materialized on first sight). An account
+ * device the log no longer lists is refused even though its record exists.
+ */
+async function resolveDevice(clientPub: string): Promise<{
+  device: PairedDevice | null;
+  refused: boolean;
+}> {
+  const paired = await findDeviceByStaticKey(clientPub);
+  if (paired) {
+    return accountAllowsDevice(paired)
+      ? { device: paired, refused: false }
+      : { device: null, refused: true };
+  }
+
+  return { device: await findAccountDevice(clientPub), refused: false };
+}
+
 function handleDeviceSocket(ws: WebSocket, identity: DesktopIdentity): void {
   let handshake: NoiseHandshake | null = null;
   let connection: DeviceConnection | null = null;
@@ -191,9 +228,9 @@ function handleDeviceSocket(ws: WebSocket, identity: DesktopIdentity): void {
     const clientPub = Buffer.from(handshake.remoteStaticKey()).toString(
       "base64",
     );
-    findDeviceByStaticKey(clientPub)
-      .then((device) => {
-        if (!handshake) {
+    resolveDevice(clientPub)
+      .then(({ device, refused }) => {
+        if (!handshake || refused) {
           ws.close();
 
           return;
@@ -221,6 +258,10 @@ function handleDeviceSocket(ws: WebSocket, identity: DesktopIdentity): void {
         addConnection(conn);
         if (device) {
           updateLastSeen(device.device_id, Date.now()).catch(() => {});
+          reportConnection(device);
+          if (device.source === "account") {
+            syncSoon();
+          }
         } else {
           armJoinDeadline(ws, conn);
         }

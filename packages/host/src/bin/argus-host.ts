@@ -19,11 +19,13 @@ import { acquireHostLock, releaseHostLock } from "../lib/hostLock";
 import { nodeSecretStorage } from "../lib/nodeSecretStorage";
 import { nodeHostPlatform, setHostPlatform } from "../platform";
 import { startPowerAssertion } from "../serverMode";
+import { startLink } from "../services/account/link";
 import { stopAgentsForQuit } from "../services/agent/quit";
 import {
   defaultUiSocketPath,
   serveLocalUi,
 } from "../services/remote/serveLocalUi";
+import { attachConsoleAccount } from "./consoleAccount";
 import { attachConsolePairing } from "./consolePairing";
 import { parseHostArgs } from "./hostArgs";
 import { gatewayLine } from "./hostBanner";
@@ -129,7 +131,14 @@ Promise.all([remoteReady, uiReady]).then(([remote]) => {
   if (process.stdin.isTTY && !desktopMode) {
     const rl = readline.createInterface({ input: process.stdin });
     rl.on("SIGINT", stop);
-    attachConsolePairing(rl, print);
-    print('Type "pair" to pair a device.');
+    attachConsolePairing(rl, print, attachConsoleAccount(print));
+    print(
+      'Type "pair" to pair a device, or "login" to link this computer to your account.',
+    );
+    if (args.login) {
+      startLink("cli").catch((err: unknown) => print(String(err)));
+    }
+  } else if (args.login) {
+    print("argus-host login needs an interactive terminal.");
   }
 }, stop);

@@ -22,6 +22,8 @@ const GRANTS: Record<string, { admin: boolean; control: boolean }> = {
 export function attachConsolePairing(
   rl: Interface,
   print: (line: string) => void,
+  /** Other console words (the account's); true when it handled the line. */
+  other: (input: string) => boolean = () => false,
 ): void {
   setServerPairingListener(() => {
     const state = getServerPairingState();
@@ -67,10 +69,14 @@ export function attachConsolePairing(
       startServerPairing({
         publishCode: (code) => print(`Pairing code:\n\n  ${code}\n`),
       }).catch(() => undefined);
+    } else if (other(input)) {
+      return;
     } else if (answer === "cancel") {
       cancelServerPairing();
     } else if (answer) {
-      print("Commands: pair, cancel. Ctrl-C to stop the host.");
+      print(
+        "Commands: pair, cancel, login, approve, account, logout. Ctrl-C to stop the host.",
+      );
     }
   });
 }

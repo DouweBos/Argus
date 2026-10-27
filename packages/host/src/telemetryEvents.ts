@@ -61,6 +61,36 @@ type LspLanguage =
  * `session_*`, `telemetry_*`.
  */
 export interface EventMap {
+  account_join_resolved: { action: "approved" | "denied"; approver: "host" };
+  account_link_failed: {
+    stage:
+      | "claim_timeout"
+      | "denied"
+      | "network"
+      | "sas_rejected"
+      | "start"
+      | "verify";
+  };
+  account_link_started: {
+    surface: "cli" | "electron" | "mac" | "menubar" | "paired";
+  };
+  account_linked: {
+    first_member: boolean;
+    kind: "computer" | "host";
+    via: "app" | "browser" | "host" | "local" | "paired";
+  };
+  account_log_rejected: {
+    reason:
+      | "bad_signature"
+      | "fork"
+      | "malformed"
+      | "sas_mismatch"
+      | "unknown_signer";
+  };
+  account_member_revoked: {
+    role: "device" | "host";
+    source: "local" | "log";
+  };
   agent_exited: {
     duration_ms: number;
     exit_code: number;
@@ -190,6 +220,7 @@ export interface EventMap {
     stage: "creating_worktree" | "setting_up" | "starting_agent";
   };
   queued_message_sent_now: { mid_turn: boolean };
+  remote_connection_opened: { trust: "account" | "paired" };
   remote_device_watched: { success: boolean };
   renderer_started: { popout: string };
   secret_store_migrated: {

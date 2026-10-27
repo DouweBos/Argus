@@ -9,6 +9,7 @@ import { registerHostCommands } from "./commands/index";
 import { createLogger } from "./logger";
 import { hostPlatform } from "./platform";
 import { stopPowerAssertion } from "./serverMode";
+import { startAccount, stopAccount } from "./services/account/service";
 import { destroyAllAgents } from "./services/agent/agentService";
 import {
   startHostConversations,
@@ -49,6 +50,7 @@ import {
   stopAllLanguageServers,
 } from "./services/lsp/watchedFiles";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
+import { disconnectDevice } from "./services/remote/gateway";
 import { installRemoteStatusBroadcast } from "./services/remote/remoteAdmin";
 import {
   applyRemoteSettings,
@@ -220,6 +222,11 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   // quick tunnel finishing startup and revealing its URL).
   installRemoteStatusBroadcast();
 
+  // Linked hosts publish presence and poll the account log; unlinked ones idle.
+  startAccount({ disconnect: disconnectDevice }).catch((err) => {
+    log.error("Failed to start the account link:", err);
+  });
+
   startMjpegServer().catch((err) => {
     log.error("Failed to start MJPEG server:", err);
   });
@@ -241,6 +248,7 @@ export function stopHostServices(): void {
   stopHostConversations();
   stopMcpServer();
   stopRemote();
+  stopAccount();
   stopMjpegServer();
   stopAllScreencasts();
   stopAllDebugStreams();

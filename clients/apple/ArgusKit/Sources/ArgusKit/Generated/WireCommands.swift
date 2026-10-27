@@ -6,6 +6,133 @@ import Foundation
 extension ArgusProtocol {
   /// Params and result types for `Commands` that no model names.
   public enum CommandsTypes {
+    public struct AccountApproveJoinParams: Codable, Sendable {
+      public var requestId: String
+
+      enum CodingKeys: String, CodingKey {
+        case requestId = "requestId"
+      }
+
+      public init(requestId: String) {
+        self.requestId = requestId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(requestId, forKey: .requestId)
+      }
+    }
+
+    public struct AccountConfirmJoinParams: Codable, Sendable {
+      public var match: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case match = "match"
+      }
+
+      public init(match: Bool) {
+        self.match = match
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(match, forKey: .match)
+      }
+    }
+
+    public struct AccountDenyJoinParams: Codable, Sendable {
+      public var requestId: String
+
+      enum CodingKeys: String, CodingKey {
+        case requestId = "requestId"
+      }
+
+      public init(requestId: String) {
+        self.requestId = requestId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(requestId, forKey: .requestId)
+      }
+    }
+
+    public struct AccountLinkLocalFinishParams: Codable, Sendable {
+      public var accountId: String
+      public var epoch: Int
+      public var genesisHash: String
+
+      enum CodingKeys: String, CodingKey {
+        case accountId = "accountId"
+        case epoch = "epoch"
+        case genesisHash = "genesisHash"
+      }
+
+      public init(accountId: String, epoch: Int, genesisHash: String) {
+        self.accountId = accountId
+        self.epoch = epoch
+        self.genesisHash = genesisHash
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accountId, forKey: .accountId)
+        try c.encode(epoch, forKey: .epoch)
+        try c.encode(genesisHash, forKey: .genesisHash)
+      }
+    }
+
+    public struct AccountLoginConfirmParams: Codable, Sendable {
+      public var match: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case match = "match"
+      }
+
+      public init(match: Bool) {
+        self.match = match
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(match, forKey: .match)
+      }
+    }
+
+    public struct AccountLoginStartParams: Codable, Sendable {
+      public var surface: AccountLinkSurface
+
+      enum CodingKeys: String, CodingKey {
+        case surface = "surface"
+      }
+
+      public init(surface: AccountLinkSurface) {
+        self.surface = surface
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(surface, forKey: .surface)
+      }
+    }
+
+    public struct AccountSetConfigParams: Codable, Sendable {
+      public var patch: AccountConfigPatch
+
+      enum CodingKeys: String, CodingKey {
+        case patch = "patch"
+      }
+
+      public init(patch: AccountConfigPatch) {
+        self.patch = patch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(patch, forKey: .patch)
+      }
+    }
+
     public struct AddRepoRootParams: Codable, Sendable {
       public var path: String
 
@@ -9127,6 +9254,111 @@ extension ArgusProtocol {
 
   /// Every raw host command, for a client holding the admin tier.
   public enum Commands {
+    public enum AccountApproveJoin: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AccountApproveJoinParams
+      public typealias Result = ArgusProtocol.AccountApprovalState
+      public static let name = "account_approve_join"
+      public static let tier = "host"
+    }
+
+    public enum AccountConfirmJoin: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AccountConfirmJoinParams
+      public typealias Result = ArgusProtocol.AccountApprovalState
+      public static let name = "account_confirm_join"
+      public static let tier = "host"
+    }
+
+    public enum AccountDenyJoin: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AccountDenyJoinParams
+      public typealias Result = IgnoredResult
+      public static let name = "account_deny_join"
+      public static let tier = "host"
+    }
+
+    public enum AccountDeviceKey: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.AccountDeviceKey?
+      public static let name = "account_device_key"
+      public static let tier = "host"
+    }
+
+    public enum AccountGetStatus: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.AccountStatus
+      public static let name = "account_get_status"
+      public static let tier = "admin"
+    }
+
+    public enum AccountLinkLocalBegin: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.AccountLocalLinkOffer
+      public static let name = "account_link_local_begin"
+      public static let tier = "host"
+    }
+
+    public enum AccountLinkLocalFinish: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AccountLinkLocalFinishParams
+      public typealias Result = ArgusProtocol.AccountStatus
+      public static let name = "account_link_local_finish"
+      public static let tier = "host"
+    }
+
+    public enum AccountListHosts: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.AccountHost]
+      public static let name = "account_list_hosts"
+      public static let tier = "admin"
+    }
+
+    public enum AccountListMembers: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.AccountMemberInfo]
+      public static let name = "account_list_members"
+      public static let tier = "admin"
+    }
+
+    public enum AccountListRequests: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.AccountJoinRequest]
+      public static let name = "account_list_requests"
+      public static let tier = "host"
+    }
+
+    public enum AccountLoginCancel: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.AccountLinkState
+      public static let name = "account_login_cancel"
+      public static let tier = "host"
+    }
+
+    public enum AccountLoginConfirm: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AccountLoginConfirmParams
+      public typealias Result = ArgusProtocol.AccountLinkState
+      public static let name = "account_login_confirm"
+      public static let tier = "host"
+    }
+
+    public enum AccountLoginStart: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AccountLoginStartParams
+      public typealias Result = ArgusProtocol.AccountLinkState
+      public static let name = "account_login_start"
+      public static let tier = "host"
+    }
+
+    public enum AccountLogout: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = ArgusProtocol.AccountStatus
+      public static let name = "account_logout"
+      public static let tier = "host"
+    }
+
+    public enum AccountSetConfig: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AccountSetConfigParams
+      public typealias Result = ArgusProtocol.AccountStatus
+      public static let name = "account_set_config"
+      public static let tier = "host"
+    }
+
     public enum ActiveSimulator: RemoteCommand {
       public typealias Params = EmptyParams
       public typealias Result = String?

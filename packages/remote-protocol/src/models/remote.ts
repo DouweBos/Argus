@@ -39,6 +39,8 @@ export const PairedDevice = z.object({
   last_seen: z.number().nullable(),
   /** Present once the phone has registered for background push. */
   push: DevicePushToken.nullish(),
+  /** QR pairing (absent on older records), or materialized from the account log. */
+  source: z.enum(["account", "pairing"]).optional(),
 });
 export type PairedDevice = z.infer<typeof PairedDevice>;
 
