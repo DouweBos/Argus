@@ -4,27 +4,28 @@
  */
 
 import { warn } from "@argus/host/logger";
-import { machineForDevice } from "../deviceHosts/registry";
 import { capture } from "../telemetry/telemetry";
+import { requireCapability, resolveDeviceSource } from "./deviceSources";
 import { disconnectSimulator } from "./ios";
 import { describeSimctlFailure } from "./simctlProblems";
 
 /** Both need a shut-down device; one that already is says so, which is fine. */
 async function shutDown(udid: string): Promise<void> {
   disconnectSimulator(udid);
-  const target = machineForDevice(udid);
+  const source = resolveDeviceSource(udid);
   try {
-    await target.machine.exec("xcrun", ["simctl", "shutdown", target.udid]);
+    await source.close(udid);
   } catch {
     // Already shut down, or missing: erase/delete report what matters.
   }
 }
 
 async function run(action: "delete" | "erase", udid: string): Promise<void> {
+  requireCapability(udid, action);
   await shutDown(udid);
-  const target = machineForDevice(udid);
+  const source = resolveDeviceSource(udid);
   try {
-    await target.machine.exec("xcrun", ["simctl", action, target.udid]);
+    await source[action](udid);
     capture("simulator_repaired", { action, success: true });
   } catch (e) {
     warn(`[Simulator] ${action} failed for ${udid}:`, e);

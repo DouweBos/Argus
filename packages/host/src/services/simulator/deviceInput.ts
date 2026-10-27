@@ -15,7 +15,7 @@
 import { spawn } from "node:child_process";
 import { createLogger } from "@argus/host/logger";
 import { getConductorBinPath } from "../cli/conductor";
-import { isRemoteDeviceId } from "../deviceHosts/deviceId";
+import { deviceCapabilities } from "./deviceSources";
 
 const log = createLogger("simulator:deviceInput");
 
@@ -57,8 +57,8 @@ function runConductor(
 export async function getDeviceInputEndpoint(
   deviceKey: string,
 ): Promise<DeviceInputEndpoint | null> {
-  // conductor only reaches this Mac's devices; a device host's use native input.
-  if (!deviceKey || isRemoteDeviceId(deviceKey)) {
+  // Devices conductor can't reach use native input.
+  if (!deviceKey || !deviceCapabilities(deviceKey).conductor) {
     return null;
   }
   try {

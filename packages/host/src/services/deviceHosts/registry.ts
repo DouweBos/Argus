@@ -184,6 +184,16 @@ export function onDeviceHostRemoved(
   return () => removedListeners.delete(listener);
 }
 
+/** A saved host's machine and label; throws when it was removed. */
+export function deviceHostMachine(hostId: string): ReachableHost {
+  const rt = all().get(hostId);
+  if (!rt) {
+    throw "That device's host was removed from Settings → Tools → Device hosts.";
+  }
+
+  return { config: rt.config, machine: rt.machine };
+}
+
 /** The machine a device id lives on; throws when its host was removed. */
 export function machineForDevice(deviceId: string): {
   machine: DeviceMachine;
@@ -193,12 +203,8 @@ export function machineForDevice(deviceId: string): {
   if (!hostId) {
     return { machine: localMachine, udid };
   }
-  const rt = all().get(hostId);
-  if (!rt) {
-    throw "That device's host was removed from Settings → Tools → Device hosts.";
-  }
 
-  return { machine: rt.machine, udid };
+  return { machine: deviceHostMachine(hostId).machine, udid };
 }
 
 export interface ReachableHost {

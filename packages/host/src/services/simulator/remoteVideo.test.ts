@@ -7,7 +7,7 @@ const captured = vi.hoisted(() => [] as unknown[]);
 vi.mock("../telemetry/telemetry", () => ({
   capture: (...args: unknown[]) => captured.push(args),
 }));
-vi.mock("./ios", () => ({ getBridgeForUdid: () => null }));
+vi.mock("./iosCapture", () => ({ captureSessionFor: () => null }));
 
 const CONFIG: H264Config = {
   codec: "avc1.4d0028",
