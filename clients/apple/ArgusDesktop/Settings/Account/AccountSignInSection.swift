@@ -22,11 +22,21 @@ struct AccountSignInSection: View {
           Task { await account.signIn(with: .apple) }
         } label: {
           Label("Sign in with Apple", systemImage: "apple.logo")
+            .frame(width: 216)
         }
         .buttonStyle(.secondary)
       }
-      Button("Sign in with GitHub") { Task { await account.signIn(with: .github) } }
-        .buttonStyle(.secondary)
+      Button {
+        Task { await account.signIn(with: .github) }
+      } label: {
+        Label {
+          Text("Sign in with GitHub")
+        } icon: {
+          BrandIcon.github.resizable().scaledToFit().frame(width: 13, height: 13)
+        }
+        .frame(width: 216)
+      }
+      .buttonStyle(.secondary)
 
       if account.awaitingEmailCode {
         HStack {
