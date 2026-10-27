@@ -27,7 +27,7 @@ extension View {
   }
 }
 
-/// The title row at the top of a `panel()`: title, optional mono detail, trailing controls.
+/// A pane's title row over a hairline: title, optional detail, trailing controls.
 public struct PanelHeader<Accessory: View>: View {
   @Environment(\.theme) private var theme
   let title: String
@@ -43,21 +43,21 @@ public struct PanelHeader<Accessory: View>: View {
   public var body: some View {
     HStack(spacing: 8) {
       Text(title)
-        .font(.scaled(size: 13, weight: .semibold))
+        .font(.scaled(size: 12, weight: .medium))
         .foregroundStyle(theme.text)
         .lineLimit(1)
       if let detail {
         Text(detail)
-          .font(.scaled(size: 11, design: .monospaced))
-          .foregroundStyle(theme.textSecondary)
+          .font(.scaled(size: 11))
+          .foregroundStyle(theme.textMuted)
           .lineLimit(1)
       }
       Spacer(minLength: 8)
       accessory
     }
-    .padding(.horizontal, 14)
-    .frame(height: 40)
-    .overlay(alignment: .bottom) { Rectangle().fill(theme.border).frame(height: 0.5) }
+    .padding(.horizontal, 12)
+    .frame(height: 34)
+    .overlay(alignment: .bottom) { Rectangle().fill(theme.border).frame(height: 1) }
   }
 }
 
@@ -67,7 +67,7 @@ extension PanelHeader where Accessory == EmptyView {
   }
 }
 
-/// A sidebar section's title with its count in a capsule, as Grove's "Branches 3".
+/// A sidebar section's quiet title and count, "Branches 3".
 public struct SectionLabel: View {
   @Environment(\.theme) private var theme
   let title: String
@@ -79,17 +79,14 @@ public struct SectionLabel: View {
   }
 
   public var body: some View {
-    HStack(spacing: 4) {
+    HStack(spacing: 5) {
       Text(title)
       if let count {
-        Text(count, format: .number)
-          .font(.scaled(size: 11, weight: .semibold, design: .rounded))
-          .foregroundStyle(theme.textSecondary)
-          .padding(.horizontal, 6)
-          .padding(.vertical, 1)
-          .background(theme.bgTertiary, in: Capsule())
+        Text(count, format: .number).monospacedDigit()
       }
     }
+    .font(.scaled(size: 11, weight: .medium))
+    .foregroundStyle(theme.textMuted)
   }
 }
 

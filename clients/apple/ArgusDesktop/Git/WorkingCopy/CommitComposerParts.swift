@@ -5,6 +5,7 @@ import SwiftUI
 /// Who commits here, and switching it to a saved profile — written to this
 /// repository's own config, so other repositories keep theirs.
 struct IdentityMenu: View {
+  @Environment(\.theme) private var theme
   let workspace: GitWorkspace
   @State private var profiles = CommitPreferences.profiles()
   @State private var naming = false
@@ -43,13 +44,20 @@ struct IdentityMenu: View {
         }
       }
     } label: {
-      Label(vm.identity.map { "\($0.name) <\($0.email)>" } ?? "No identity", systemImage: "person.crop.circle")
-        .lineLimit(1)
-        .truncationMode(.middle)
+      HStack(spacing: 4) {
+        Image(systemName: "person.crop.circle")
+        Text(vm.identity.map { "\($0.name) <\($0.email)>" } ?? "No identity")
+          .lineLimit(1)
+          .truncationMode(.middle)
+        Image(systemName: "chevron.down").font(.scaled(size: 8, weight: .semibold))
+      }
+      .font(.scaled(size: 11))
+      .foregroundStyle(theme.textSecondary)
+      .contentShape(.rect)
     }
-    .menuStyle(.borderlessButton)
-    .font(.scaled(size: 11))
-    .foregroundStyle(.secondary)
+    .menuStyle(.button)
+    .buttonStyle(.plain)
+    .menuIndicator(.hidden)
     .fixedSize(horizontal: false, vertical: true)
     .help("Commits are authored as this identity — pick a saved profile to switch this repository")
     .onAppear { profiles = CommitPreferences.profiles() }

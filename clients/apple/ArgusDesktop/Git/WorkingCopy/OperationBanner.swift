@@ -31,7 +31,7 @@ struct OperationBanner: View {
       Button("Abort…") { confirmingAbort = true }
         .disabled(vm.isRunningOperation)
       Button("Continue") { Task { await actions.continueOperation() } }
-        .buttonStyle(.borderedProminent)
+        .buttonStyle(AccentButtonStyle())
         .disabled(vm.isRunningOperation || conflicts > 0)
         .help(conflicts > 0 ? "Resolve every conflict first" : "Continue the \(noun)")
     }

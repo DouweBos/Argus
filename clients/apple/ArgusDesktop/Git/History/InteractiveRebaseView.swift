@@ -18,7 +18,7 @@ struct InteractiveRebaseView: View {
       if let planner {
         editor(planner)
       } else if let problem {
-        EmptyState(icon: "list.bullet.indent", title: "Can't rebase from here", body: problem) {
+        QuietEmptyState(icon: "list.bullet.indent", title: "Can't rebase from here", message: problem) {
           Button("Back to History") { navigate(.history) }
         }
       } else {
@@ -49,7 +49,7 @@ struct InteractiveRebaseView: View {
         }
         .onMove { planner.move(fromOffsets: $0, toOffset: $1) }
       }
-      .listStyle(.inset)
+      .navigatorList()
       Divider()
       VStack(alignment: .leading, spacing: 8) {
         if let problem = planner.problem {

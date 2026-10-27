@@ -1,14 +1,14 @@
 import Foundation
 
-/// A git panel view as its pill bar shows it, Grove's `RepositoryTab`. Each
+/// A git panel view as its tab bar shows it, Grove's `RepositoryTab`. Each
 /// maps onto a `GitRoute`; the bar only navigates.
 enum GitTab: Hashable {
   case changes, branch, history, stashes, pullRequests, branchesReview, conflicts
   case reflog, blame, bisect, hooks, submodules, settings
-  /// Opened from a ref's or commit's menu, never from the bar; a pill while open.
+  /// Opened from a ref's or commit's menu, never from the bar; a tab while open.
   case compare, interactiveRebase
 
-  /// Always shown; the rest live in the More menu and get a pill only while open.
+  /// Always shown; the rest live in the More menu and get a tab only while open.
   static func primary(isProject: Bool) -> [GitTab] {
     isProject ? [.changes, .history, .stashes, .pullRequests, .branchesReview] : [.changes, .branch, .stashes]
   }

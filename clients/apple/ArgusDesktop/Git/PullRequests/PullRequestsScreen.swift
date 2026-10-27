@@ -93,14 +93,14 @@ struct PullRequestList: View {
     if !loaded {
       ProgressView("Asking GitHub…").controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
     } else if let error, pullRequests.isEmpty {
-      EmptyState(
+      QuietEmptyState(
         icon: "exclamationmark.triangle", title: "Couldn't fetch pull requests",
-        body: PullRequestLabels.explain(error), selectable: true
+        message: PullRequestLabels.explain(error)
       ) {
         Button("Try Again", action: retry)
       }
     } else if pullRequests.isEmpty {
-      EmptyState(icon: "arrow.triangle.pull", title: emptyTitle, body: emptyText)
+      QuietEmptyState(icon: "arrow.triangle.pull", title: emptyTitle, message: emptyText)
     } else {
       list
     }
@@ -134,7 +134,7 @@ struct PullRequestList: View {
         }
       }
     }
-    .listStyle(.inset)
+    .navigatorList()
     .contextMenu(forSelectionType: String.self) { ids in
       if let pr = pullRequests.first(where: { ids.contains($0.id) }) {
         PullRequestMenu(sessionId: actions.session(for: pr)) { actions.perform($0, pr, starting: $starting) }

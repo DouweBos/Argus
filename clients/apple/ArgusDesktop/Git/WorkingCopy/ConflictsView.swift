@@ -31,9 +31,9 @@ struct ConflictsView: View {
   private var content: some View {
     let conflicts = vm.conflictedFiles
     if conflicts.isEmpty {
-      EmptyState(
+      QuietEmptyState(
         icon: "checkmark.circle", title: vm.isInOperation ? "All conflicts resolved" : "No conflicts",
-        body: vm.isInOperation ? "Continue to finish, or abort to go back." : "Nothing is waiting to be resolved."
+        message: vm.isInOperation ? "Continue to finish, or abort to go back." : "Nothing is waiting to be resolved."
       ) {
         if !vm.isInOperation {
           Button("Back to Working Copy") { model.navigate(.sessionGit(id: workspace.sessionId, view: .working)) }
@@ -60,13 +60,13 @@ struct ConflictsView: View {
           .help(entry.path)
           .tag(entry.path)
         }
-        .listStyle(.inset)
+        .navigatorList()
       } trailing: {
         if let entry = vm.selectedEntry, entry.isConflicted {
           ConflictDetailView(workspace: workspace, entry: entry)
             .id(entry.path)
         } else {
-          EmptyState(icon: "exclamationmark.triangle", title: "Select a conflicted file")
+          QuietEmptyState(icon: "exclamationmark.triangle", title: "Select a conflicted file")
         }
       }
     }

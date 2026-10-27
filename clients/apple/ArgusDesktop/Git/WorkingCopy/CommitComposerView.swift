@@ -2,8 +2,8 @@ import ArgusUI
 import GroveKit
 import SwiftUI
 
-/// Subject, body and options under the Changes list, as Electron's CommitPanel,
-/// plus Grove's templates, gitmoji and identity switcher.
+/// Subject, body and options over the Changes list, as Electron's CommitPanel,
+/// plus templates, gitmoji and the identity switcher, flat on the canvas.
 struct CommitComposerView: View {
   @Environment(\.theme) private var theme
   let workspace: GitWorkspace
@@ -16,11 +16,11 @@ struct CommitComposerView: View {
   var body: some View {
     @Bindable var vm = vm
     VStack(alignment: .leading, spacing: 10) {
-      // Summary and description share one field box, as Grove's composer.
+      // Summary and description share one quiet field box.
       VStack(alignment: .leading, spacing: 0) {
         TextField("Summary", text: $vm.commitSubject)
           .textFieldStyle(.plain)
-          .font(.scaled(size: 13, weight: .medium))
+          .font(.scaled(size: 12, weight: .medium))
           .focused($subjectFocused)
           .onSubmit { if !vm.acceptAutoComplete() { commit() } }
           .onKeyPress(.upArrow) { moveHighlight(-1) }
@@ -30,28 +30,28 @@ struct CommitComposerView: View {
             vm.dismissAutoComplete()
             return .handled
           }
-          .padding(10)
+          .padding(.horizontal, 9)
+          .padding(.vertical, 7)
         if vm.isAutoCompleteVisible {
           CommitAutoCompleteList(vm: vm) { track(vm.autoCompleteTrigger == .gitmoji ? .gitmoji : .template) }
             .padding(.horizontal, 6)
         }
-        Divider()
+        Rectangle().fill(theme.border).frame(height: 1)
         TextField("Description", text: $vm.commitBody, axis: .vertical)
           .textFieldStyle(.plain)
           .lineLimit(3...8)
-          .padding(10)
-        HStack(spacing: 6) {
+          .padding(.horizontal, 9)
+          .padding(.vertical, 7)
+        HStack(spacing: 2) {
           Spacer()
           gitmojiButton
           templatesMenu
         }
-        .foregroundStyle(theme.textSecondary)
-        .padding(.horizontal, 10)
-        .padding(.bottom, 8)
+        .padding(.horizontal, 4)
+        .padding(.bottom, 4)
       }
-      .background(theme.bg, in: RoundedRectangle(cornerRadius: theme.radiusSmall, style: .continuous))
-      .overlay(RoundedRectangle(cornerRadius: theme.radiusSmall, style: .continuous).strokeBorder(theme.border))
-      HStack(spacing: 10) {
+      .background(theme.selection, in: .rect(cornerRadius: 6))
+      HStack(spacing: 12) {
         Toggle("Amend", isOn: Binding(get: { vm.isAmend }, set: { on in Task { await vm.setAmend(on) } }))
         Toggle("Sign Off", isOn: Binding(get: { vm.signOff }, set: { vm.setSignOff($0) }))
           .help("Add a Signed-off-by trailer")
@@ -61,13 +61,12 @@ struct CommitComposerView: View {
         }
         Spacer()
       }
-      .toggleStyle(.checkbox)
-      .controlSize(.small)
+      .toggleStyle(.quietCheckbox)
       HStack(spacing: 8) {
         IdentityMenu(workspace: workspace)
         Spacer(minLength: 4)
         Button(vm.commitButtonTitle, action: commit)
-          .buttonStyle(.borderedProminent)
+          .buttonStyle(AccentButtonStyle())
           .keyboardShortcut(.return, modifiers: .command)
           .disabled(!vm.canCommit)
           .help(disabledReason ?? "Commit (⌘↩)")
@@ -80,7 +79,7 @@ struct CommitComposerView: View {
 
   private var gitmojiButton: some View {
     Button { pickingGitmoji.toggle() } label: { Image(systemName: "face.smiling") }
-      .buttonStyle(.borderless)
+      .buttonStyle(FlatIconButtonStyle(selected: pickingGitmoji, size: 22))
       .help("Gitmoji (or type : in the summary)")
       .accessibilityLabel("Gitmoji")
       .popover(isPresented: $pickingGitmoji, arrowEdge: .bottom) {
@@ -106,7 +105,8 @@ struct CommitComposerView: View {
     } label: {
       Image(systemName: "text.badge.plus")
     }
-    .menuStyle(.borderlessButton)
+    .menuStyle(.button)
+    .buttonStyle(FlatIconButtonStyle(size: 22))
     .menuIndicator(.hidden)
     .fixedSize()
     .help("Commit templates (or type / in the summary)")

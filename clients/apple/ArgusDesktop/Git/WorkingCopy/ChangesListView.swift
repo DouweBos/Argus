@@ -23,9 +23,9 @@ struct ChangesListView: View {
       }
       if vm.changedCount > 0 || vm.fileViewMode == .allFiles || !filter.isEmpty {
         TextField("Filter", text: $filter)
-          .textFieldStyle(.roundedBorder)
-          .controlSize(.small)
-          .padding(8)
+          .quietField()
+          .padding(.horizontal, 8)
+          .padding(.vertical, 6)
       }
       if vm.lfs.status.isMissing {
         Text(LFSStatus.missingMessage)
@@ -54,10 +54,10 @@ struct ChangesListView: View {
     } label: {
       Image(systemName: vm.fileViewMode.symbol)
     }
-    .menuStyle(.borderlessButton)
+    .menuStyle(.button)
+    .buttonStyle(FlatIconButtonStyle(size: 22))
     .menuIndicator(.hidden)
     .fixedSize()
-    .foregroundStyle(theme.textSecondary)
     .help("View Mode")
     .accessibilityLabel("View Mode")
   }
@@ -74,12 +74,12 @@ struct ChangesListView: View {
         Button("Apply Patch…") { PatchPanels.chooseToApply(workspace: workspace) }
       }
     } label: {
-      Image(systemName: "ellipsis.circle")
+      Image(systemName: "ellipsis")
     }
-    .menuStyle(.borderlessButton)
+    .menuStyle(.button)
+    .buttonStyle(FlatIconButtonStyle(size: 22))
     .menuIndicator(.hidden)
     .fixedSize()
-    .foregroundStyle(theme.textSecondary)
     .help("File Options")
     .accessibilityLabel("File Options")
   }
@@ -96,26 +96,23 @@ struct ChangesListView: View {
         if !vm.hasLoadedStatus {
           ProgressView().controlSize(.small)
         } else if !filter.isEmpty {
-          ContentUnavailableView.search(text: filter)
+          QuietEmptyState(icon: "magnifyingglass", title: "No matches", message: "Nothing matches \u{201C}\(filter)\u{201D}.")
         } else {
-          // The diff card carries the big "Nothing to Commit" state, as in Grove.
+          // The diff pane carries the "Nothing to Commit" state.
           Text(vm.fileViewMode == .allFiles ? "Nothing is tracked yet" : "No changed files")
-            .font(.scaled(size: 13))
-            .foregroundStyle(theme.textSecondary)
+            .font(.scaled(size: 12))
+            .foregroundStyle(theme.textMuted)
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     } else {
       let selection = ChangeSelection(vm: vm, items: items)
       ScrollViewReader { proxy in
-        List(
-          items,
-          selection: Binding(get: { selection.selectedIDs }, set: { ids in Task { await selection.apply(ids) } })
-        ) { item in
-          row(item)
+        // Rows take clicks and keys themselves and draw the view model's selection quietly.
+        List(items) { item in
+          row(item, selected: selection.selectedIDs.contains(item.id))
         }
-        .listStyle(.inset)
-        .scrollContentBackground(.hidden)
+        .navigatorList()
         .focused($listFocused)
         .onKeyPress(.space) {
           Task { await actions.toggleSelection() }
@@ -141,7 +138,7 @@ struct ChangesListView: View {
   }
 
   @ViewBuilder
-  private func row(_ item: ChangeItem) -> some View {
+  private func row(_ item: ChangeItem, selected: Bool) -> some View {
     switch item.kind {
     case .header(let section, let count):
       header(section, count: count).selectionDisabled()
@@ -154,24 +151,25 @@ struct ChangesListView: View {
         .selectionDisabled()
     case .file(let entry, let section, let showsDirectory):
       fileRow(entry, section: section, showsDirectory: showsDirectory)
+        .modifier(NavigatorRowHighlight(selected: selected))
     case .tracked(let path):
       TrackedFileRow(path: path)
+        .modifier(NavigatorRowHighlight(selected: false))
         .contextMenu { TrackedFileMenu(workspace: workspace, path: path, onShowFileHistory: onShowFileHistory) }
     }
   }
 
   private func header(_ section: ChangeSection, count: Int) -> some View {
     HStack {
-      Text(section.rawValue).font(.scaled(size: 11, weight: .semibold)).foregroundStyle(.secondary)
-      Text("\(count)").font(.scaled(size: 11).monospacedDigit()).foregroundStyle(.tertiary)
+      SectionLabel(section.rawValue, count: count)
       Spacer()
       switch section {
       case .staged:
         Button("Unstage All") { Task { await actions.unstageAll() } }
-          .buttonStyle(.borderless).controlSize(.small)
+          .buttonStyle(QuietTabButtonStyle())
       case .unstaged:
         Button("Stage All") { Task { await actions.stageAll() } }
-          .buttonStyle(.borderless).controlSize(.small)
+          .buttonStyle(QuietTabButtonStyle())
       case .conflicted:
         EmptyView()
       }

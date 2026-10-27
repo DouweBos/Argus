@@ -30,9 +30,9 @@ struct BranchRow: View {
       AheadBehindLabel(ahead: branch.ahead, behind: branch.behind)
     }
     .help(branch.upstream.map { "\(branch.name) → \($0)" } ?? branch.name)
-    .font(.sidebarScaled(.body))
+    .font(.scaled(size: 12))
     .accessibilityLabel(branch.name)
-    .tag(GitSidebarTag.branch(branch.name))
+    .gitSidebarRow(.branch(branch.name))
     .contextMenu { BranchMenu(branch: branch, actions: actions) }
   }
 }
@@ -108,7 +108,10 @@ struct BranchFolderRow: View {
           BranchFolderRow(node: child, actions: actions, expanded: $expanded)
         }
       } label: {
-        SidebarLabel(node.title, systemImage: "folder")
+        GitRefLabel(node.title, systemImage: "folder")
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .contentShape(.rect)
+          .modifier(NavigatorRowHighlight(selected: false))
       }
     }
   }
@@ -135,9 +138,9 @@ struct RemoteBranchRow: View {
     } icon: {
       Image(systemName: "arrow.triangle.branch").foregroundStyle(theme.textSecondary)
     }
-    .font(.sidebarScaled(.body))
+    .font(.scaled(size: 12))
     .accessibilityLabel(branch.name)
-    .tag(GitSidebarTag.branch(branch.name))
+    .gitSidebarRow(.branch(branch.name))
     .contextMenu {
       Button("Checkout as \(local)") { Task { await actions.checkoutRemote(branch) } }
       Button("New Branch from \(branch.name)…") { actions.newBranch(from: branch.name) }
@@ -162,9 +165,9 @@ struct TagRow: View {
     } icon: {
       Image(systemName: tag.isAnnotated ? "tag.fill" : "tag").foregroundStyle(theme.textSecondary)
     }
-    .font(.sidebarScaled(.body))
+    .font(.scaled(size: 12))
     .accessibilityLabel(tag.name)
-    .tag(GitSidebarTag.tag(tag.name))
+    .gitSidebarRow(.tag(tag.name))
     .contextMenu {
       Button("Checkout") { Task { await actions.checkout(tag.name) } }
       Button("New Branch from \(tag.name)…") { actions.newBranch(from: tag.name) }
@@ -174,6 +177,31 @@ struct TagRow: View {
       Button("Copy Name") { Clipboard.copy(tag.name) }
       Divider()
       Button("Delete…", role: .destructive) { Task { await actions.deleteTag(tag.name) } }
+    }
+  }
+}
+
+/// A git sidebar row's icon and name: muted icon, one line, the main sidebar's size.
+struct GitRefLabel: View {
+  @Environment(\.theme) private var theme
+  let title: String
+  let systemImage: String
+
+  init(_ title: String, systemImage: String) {
+    self.title = title
+    self.systemImage = systemImage
+  }
+
+  var body: some View {
+    HStack(spacing: 6) {
+      Image(systemName: systemImage)
+        .font(.scaled(size: 11))
+        .foregroundStyle(theme.textMuted)
+        .frame(width: TextScale.shared(14))
+      Text(title)
+        .font(.scaled(size: 12))
+        .lineLimit(1)
+        .truncationMode(.middle)
     }
   }
 }

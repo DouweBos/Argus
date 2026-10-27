@@ -251,44 +251,6 @@ public struct ChromeIconView: View {
   }
 }
 
-// MARK: - Empty state
-
-/// A quiet "nothing here": a small muted icon over a line or two, centred in the room it's given.
-public struct QuietEmptyState: View {
-  @Environment(\.theme) private var theme
-  let icon: String
-  let title: String
-  var message: String?
-
-  public init(icon: String, title: String, message: String? = nil) {
-    self.icon = icon
-    self.title = title
-    self.message = message
-  }
-
-  public var body: some View {
-    VStack(spacing: 6) {
-      Image(systemName: icon)
-        .font(.scaled(size: 20, weight: .light))
-        .foregroundStyle(theme.textMuted)
-        .padding(.bottom, 2)
-      Text(title)
-        .font(.scaled(size: 13, weight: .medium))
-        .foregroundStyle(theme.textSecondary)
-      if let message {
-        Text(message)
-          .font(.scaled(size: 12))
-          .foregroundStyle(theme.textMuted)
-      }
-    }
-    .multilineTextAlignment(.center)
-    .frame(maxWidth: 300)
-    .padding(16)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .accessibilityElement(children: .combine)
-  }
-}
-
 // MARK: - Context card
 
 /// A context card's size, for whatever has to keep clear of it.

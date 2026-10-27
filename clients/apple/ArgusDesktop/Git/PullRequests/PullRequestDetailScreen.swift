@@ -63,9 +63,9 @@ private struct PullRequestDetailContent: View {
         }
         .modifier(PullRequestWindowChrome(detail: detail, embedded: embedded) { actions(detail) })
       } else if let error = model.loadError {
-        EmptyState(
+        QuietEmptyState(
           icon: "exclamationmark.triangle", title: "Couldn't load pull request",
-          body: PullRequestLabels.explain(error), selectable: true
+          message: PullRequestLabels.explain(error)
         ) {
           Button("Try Again") { Task { await model.load() } }
           Button("Back to Pull Requests") { desktop.navigate(.pullRequests) }
@@ -89,16 +89,21 @@ private struct PullRequestDetailContent: View {
 
   private func tabs(_ detail: ArgusProtocol.PullRequestDetail) -> some View {
     let passed = detail.checks.filter { PullRequestCheckTone($0) == .success }.count
-    return Picker("Section", selection: $tab) {
-      Text("Conversation (\(detail.comments.count))").tag(Tab.conversation)
-      Text("Commits (\(Int(detail.commits)))").tag(Tab.commits)
-      Text(detail.checks.isEmpty ? "Checks" : "Checks (\(passed)/\(detail.checks.count))").tag(Tab.checks)
-      Text("Files (\(Int(detail.changedFiles)))").tag(Tab.files)
+    let items: [(Tab, String)] = [
+      (.conversation, "Conversation (\(detail.comments.count))"),
+      (.commits, "Commits (\(Int(detail.commits)))"),
+      (.checks, detail.checks.isEmpty ? "Checks" : "Checks (\(passed)/\(detail.checks.count))"),
+      (.files, "Files (\(Int(detail.changedFiles)))"),
+    ]
+    return HStack(spacing: 2) {
+      ForEach(items, id: \.0) { item, title in
+        Button(title) { tab = item }
+          .buttonStyle(QuietTabButtonStyle(selected: tab == item))
+          .accessibilityAddTraits(tab == item ? .isSelected : [])
+      }
     }
-    .pickerStyle(.segmented)
-    .labelsHidden()
     .fixedSize()
-    .padding(.vertical, 8)
+    .padding(.vertical, 6)
   }
 
   @ViewBuilder
@@ -116,10 +121,10 @@ private struct PullRequestDetailContent: View {
       }
       .overlay {
         if model.diffLoaded, let error = model.diffError {
-          EmptyState(icon: "exclamationmark.triangle", title: "Couldn't load diff", body: error)
+          QuietEmptyState(icon: "exclamationmark.triangle", title: "Couldn't load diff", message: error)
             .background(.background)
         } else if model.diffLoaded, model.files.isEmpty {
-          EmptyState(icon: "doc.text", title: "No textual diff").background(.background)
+          QuietEmptyState(icon: "doc.text", title: "No textual diff").background(.background)
         }
       }
       .task { await model.loadDiffIfNeeded() }

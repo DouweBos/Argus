@@ -52,19 +52,19 @@ struct SubmodulesView: View {
   @ViewBuilder
   private var content: some View {
     if let loadError {
-      EmptyState(icon: "exclamationmark.triangle", title: "Couldn't list submodules", body: loadError) {
+      QuietEmptyState(icon: "exclamationmark.triangle", title: "Couldn't list submodules", message: loadError) {
         Button("Try Again") { Task { await load() } }
       }
     } else if let submodules {
       if submodules.isEmpty {
-        EmptyState(icon: "shippingbox", title: "No submodules", body: "This repository doesn't use git submodules.")
+        QuietEmptyState(icon: "shippingbox", title: "No submodules", message: "This repository doesn't use git submodules.")
       } else {
         List(submodules, id: \.path) { submodule in
           SubmoduleRow(submodule: submodule, busy: workspace.hostBusy != nil) { action in
             perform(action, on: submodule)
           }
         }
-        .listStyle(.inset)
+        .navigatorList()
       }
     } else {
       ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)

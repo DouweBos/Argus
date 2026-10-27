@@ -12,22 +12,19 @@ struct StashesView: View {
   private var stashes: StashesViewModel { workspace.stashes }
 
   var body: some View {
-    VStack(spacing: 12) {
+    VStack(spacing: 0) {
       if let error = stashes.errorMessage {
         GitErrorBanner(message: error) { stashes.dismissError() }
       }
-      // Grove's stash list card beside the selected stash's card.
-      ResizableHSplit(
-        key: "git.stashes", leadingMin: 220, leadingIdeal: 320, leadingMax: 460, trailingMin: 320, gap: 12
-      ) {
+      // The stash list beside the selected stash, split by a hairline.
+      ResizableHSplit(key: "git.stashes", leadingMin: 220, leadingIdeal: 320, leadingMax: 460, trailingMin: 320) {
         VStack(spacing: 0) {
           listHeader
           list
         }
         .frame(maxHeight: .infinity)
-        .panel()
       } trailing: {
-        detail.frame(maxHeight: .infinity).panel()
+        detail.frame(maxHeight: .infinity)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -64,9 +61,9 @@ struct StashesView: View {
       Button {
         GitMenuAction.stash.post(to: workspace.sessionId)
       } label: {
-        Image(systemName: "plus")
+        Label("Stash Changes", systemImage: "plus")
       }
-      .buttonStyle(.borderless)
+      .buttonStyle(FlatIconButtonStyle(size: 22))
       .disabled(workspace.workingCopy.changedCount == 0)
       .help("Stash Changes…")
       .accessibilityLabel("Stash Changes")
@@ -74,15 +71,7 @@ struct StashesView: View {
   }
 
   private var list: some View {
-    List(
-      stashes.stashes,
-      selection: Binding(
-        get: { stashes.selectedStash?.sha },
-        set: { sha in
-          guard let stash = stashes.stashes.first(where: { $0.sha == sha }) else { return }
-          Task { await stashes.select(stash) }
-        })
-    ) { stash in
+    List(stashes.stashes) { stash in
       VStack(alignment: .leading, spacing: 2) {
         Text(stash.message).lineLimit(2)
         HStack(spacing: 6) {
@@ -95,13 +84,17 @@ struct StashesView: View {
         .foregroundStyle(theme.textSecondary)
         .lineLimit(1)
       }
-      .padding(.vertical, 2)
-      .tag(stash.sha)
+      .padding(.vertical, 3)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .contentShape(.rect)
+      .onTapGesture { Task { await stashes.select(stash) } }
+      .modifier(NavigatorRowHighlight(selected: stashes.selectedStash?.sha == stash.sha))
       .contextMenu { menu(stash) }
     }
+    .navigatorList()
     .overlay {
       if stashes.stashes.isEmpty && !stashes.isLoading {
-        EmptyState(icon: "tray", title: "No Stashes", body: "Stashed changes show up here.")
+        QuietEmptyState(icon: "tray", title: "No stashes", message: "Stashed changes show up here.")
       }
     }
   }
@@ -111,29 +104,33 @@ struct StashesView: View {
     if let stash = stashes.selectedStash {
       VStack(spacing: 0) {
         HStack(spacing: 8) {
-          Text(stash.message).font(.scaled(.headline)).lineLimit(1)
+          Text(stash.message).font(.scaled(size: 12, weight: .medium)).lineLimit(1)
           Spacer()
-          Button("Apply") { stashes.request(.apply, on: stash) }
-          Button("Pop") { stashes.request(.pop, on: stash) }
-          Button("Drop", role: .destructive) { stashes.request(.drop, on: stash) }
+          Group {
+            Button("Apply") { stashes.request(.apply, on: stash) }
+            Button("Pop") { stashes.request(.pop, on: stash) }
+            Button("Drop", role: .destructive) { stashes.request(.drop, on: stash) }
+          }
+          .buttonStyle(QuietTabButtonStyle())
           Menu {
             menu(stash)
           } label: {
-            Image(systemName: "ellipsis.circle")
+            Image(systemName: "ellipsis")
           }
+          .menuStyle(.button)
+          .buttonStyle(FlatIconButtonStyle(size: 22))
           .menuIndicator(.hidden)
           .fixedSize()
           .accessibilityLabel("More")
         }
         .disabled(stashes.isPerforming)
-        .controlSize(.small)
-        .padding(.horizontal, 14)
-        .frame(height: 40)
-        .overlay(alignment: .bottom) { Divider() }
+        .padding(.horizontal, 12)
+        .frame(height: 34)
+        .overlay(alignment: .bottom) { Rectangle().fill(theme.border).frame(height: 1) }
         FileDiffsView(files: stashes.stashDiffs, isLoading: stashes.isLoadingDiff)
       }
     } else {
-      EmptyState(icon: "tray.full", title: "Select a Stash")
+      QuietEmptyState(icon: "tray.full", title: "Select a stash")
     }
   }
 

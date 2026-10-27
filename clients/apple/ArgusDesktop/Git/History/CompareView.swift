@@ -17,7 +17,7 @@ struct CompareView: View {
       header
       Divider()
       if left.isEmpty || right.isEmpty {
-        EmptyState(icon: "arrow.left.arrow.right", title: "Pick two refs", body: "Compare branches, tags or commits.")
+        QuietEmptyState(icon: "arrow.left.arrow.right", title: "Pick two refs", message: "Compare branches, tags or commits.")
       } else if let error = compare.errorMessage {
         GitErrorBanner(message: error) {}
         Spacer()
@@ -161,6 +161,7 @@ private struct CompareCommitList: View {
           Button("Copy SHA") { Clipboard.copy(commit.id) }
         }
       }
+      .navigatorList()
       .overlay {
         if commits == nil {
           ProgressView().controlSize(.small)

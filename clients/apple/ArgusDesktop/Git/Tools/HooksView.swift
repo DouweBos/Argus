@@ -32,21 +32,21 @@ struct HooksView: View {
   @ViewBuilder
   private var content: some View {
     if let loadError {
-      EmptyState(icon: "exclamationmark.triangle", title: "Couldn't list hooks", body: loadError) {
+      QuietEmptyState(icon: "exclamationmark.triangle", title: "Couldn't list hooks", message: loadError) {
         Button("Try Again") { Task { await load() } }
       }
     } else if let hooks {
       if hooks.isEmpty {
-        EmptyState(
+        QuietEmptyState(
           icon: "link", title: "No hooks installed",
-          body: "Add an executable file under .git/hooks to run it from here."
+          message: "Add an executable file under .git/hooks to run it from here."
         )
       } else {
         ResizableVSplit(key: "git.hooks", topMin: 120, bottomMin: 160, bottomIdeal: 240, showsBottom: true) {
           List(hooks, id: \.name, selection: $selected) { hook in
             HookRow(hook: hook, running: running == hook.name) { run(hook.name) }
           }
-          .listStyle(.inset)
+          .navigatorList()
         } bottom: {
           HookOutputPane(hook: selectedHook)
         }
@@ -136,11 +136,13 @@ private struct HookOutputPane: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack {
-        Picker("Output", selection: $stream) {
-          ForEach(Stream.allCases) { Text($0.rawValue).tag($0) }
+        HStack(spacing: 2) {
+          ForEach(Stream.allCases) { option in
+            Button(option.rawValue) { stream = option }
+              .buttonStyle(QuietTabButtonStyle(selected: stream == option))
+              .accessibilityAddTraits(stream == option ? .isSelected : [])
+          }
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
         .fixedSize()
         Spacer()
         if let output = hook?.lastOutput {
@@ -161,9 +163,9 @@ private struct HookOutputPane: View {
         }
         .background(theme.bgSecondary)
       } else {
-        EmptyState(
+        QuietEmptyState(
           icon: "terminal", title: "Not run yet",
-          body: hook == nil ? "Select a hook." : "Run it to see its output here."
+          message: hook == nil ? "Select a hook." : "Run it to see its output here."
         )
       }
     }

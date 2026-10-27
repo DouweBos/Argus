@@ -58,18 +58,33 @@ struct GitRefSections: View {
     }
     if !refs.tags.isEmpty {
       // Collapsed until asked for, as Electron's: thousands of tag rows make opening the panel slow.
-      Section(isExpanded: Binding(get: { workspace.tagsExpanded }, set: { workspace.tagsExpanded = $0 })) {
-        ForEach(refs.tags) { TagRow(tag: $0, actions: actions) }
+      Section {
+        if workspace.tagsExpanded {
+          ForEach(refs.tags) { TagRow(tag: $0, actions: actions) }
+        }
       } header: {
-        SectionLabel("Tags", count: refs.tags.count)
+        Button {
+          workspace.tagsExpanded.toggle()
+        } label: {
+          HStack(spacing: 4) {
+            SectionLabel("Tags", count: refs.tags.count)
+            Image(systemName: workspace.tagsExpanded ? "chevron.down" : "chevron.right")
+              .font(.scaled(size: 8, weight: .semibold))
+              .foregroundStyle(theme.textMuted)
+            Spacer(minLength: 0)
+          }
+          .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .help(workspace.tagsExpanded ? "Hide tags" : "Show tags")
       }
     }
     if !refs.submodules.isEmpty {
       Section {
         ForEach(refs.submodules) { submodule in
-          SidebarLabel(submodule.path, systemImage: submodule.state == .upToDate ? "shippingbox" : "shippingbox.fill")
+          GitRefLabel(submodule.path, systemImage: submodule.state == .upToDate ? "shippingbox" : "shippingbox.fill")
             .help(submodule.url ?? submodule.path)
-            .tag(GitSidebarTag.view(GitRoute.submodules.segment))
+            .gitSidebarRow(.view(GitRoute.submodules.segment))
         }
       } header: {
         SectionLabel("Submodules", count: refs.submodules.count)
@@ -86,10 +101,10 @@ struct GitRefSections: View {
 
   private func archivedRow(_ name: String, actions: RefActions) -> some View {
     let exists = refs.localBranches.contains { $0.name == name }
-    return SidebarLabel(name, systemImage: "archivebox")
+    return GitRefLabel(name, systemImage: "archivebox")
       .foregroundStyle(exists ? theme.textSecondary : theme.textMuted)
       .help(exists ? name : "\(name) no longer exists")
-      .tag(GitSidebarTag.branch(name))
+      .gitSidebarRow(.branch(name))
       .contextMenu {
         Button("Checkout") { Task { await actions.checkout(name) } }.disabled(!exists)
         Button("Unarchive") { Task { await actions.setArchived(name, false) } }
@@ -108,9 +123,16 @@ struct GitRefSections: View {
     ) {
       ForEach(branches) { RemoteBranchRow(branch: $0, actions: actions) }
     } label: {
-      SidebarLabel(remote.name, systemImage: "network")
-        .badge(branches.count)
-        .help(remote.url)
+      HStack {
+        GitRefLabel(remote.name, systemImage: "network")
+        Spacer(minLength: 4)
+        Text(branches.count, format: .number)
+          .font(.scaled(size: 10).monospacedDigit())
+          .foregroundStyle(theme.textMuted)
+      }
+      .contentShape(.rect)
+      .modifier(NavigatorRowHighlight(selected: false))
+      .help(remote.url)
         .contextMenu {
           Button("Fetch \(remote.name)") { Task { await actions.fetch(remote: remote.name) } }
           Button("Prune Stale Branches") { Task { await actions.pruneRemote(remote.name) } }
@@ -126,10 +148,13 @@ struct GitRefSections: View {
   }
 
   private func worktreeRow(_ worktree: WorktreeInfo) -> some View {
-    SidebarLabel(
+    GitRefLabel(
       worktree.branch ?? "Detached", systemImage: worktree.isMain ? "folder.fill" : "folder"
     )
     .foregroundStyle(worktree.isPrunable ? theme.textMuted : theme.text)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .contentShape(.rect)
+    .modifier(NavigatorRowHighlight(selected: false))
     .help(worktree.path)
     .contextMenu {
       Button("Reveal in Finder") { NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: worktree.path) }

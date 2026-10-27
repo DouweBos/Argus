@@ -16,7 +16,7 @@ struct GitScreen: View {
         GitWorkspaceView(workspace: workspace, session: session, view: view)
           .id(session.id)
       case .failed(let message):
-        EmptyState(icon: "exclamationmark.triangle", title: "Couldn't open the repository", body: message) {
+        QuietEmptyState(icon: "exclamationmark.triangle", title: "Couldn't open the repository", message: message) {
           Button("Try Again") {
             model.git.retry(session.id)
             Task { await model.git.open(session) }
@@ -34,14 +34,14 @@ struct GitScreen: View {
   }
 }
 
-/// The open repository: sidebar, banners, the views' pill bar and the sub-view, in cards.
+/// The open repository: sidebar, banners, the views' tab bar and the sub-view,
+/// flat on the window's canvas with hairlines between them.
 struct GitWorkspaceView: View {
   @Environment(DesktopModel.self) private var model
   @Environment(\.theme) private var theme
   let workspace: GitWorkspace
   let session: RemoteSession
   let view: GitRoute
-  @State private var barHeight: CGFloat = 52
 
   var body: some View {
     // Not a split view: HSplitView holds its sidebar at full width and won't
@@ -49,7 +49,7 @@ struct GitWorkspaceView: View {
     HStack(spacing: 0) {
       GitSidebar(workspace: workspace, session: session, view: view)
         .frame(width: 230)
-      Divider()
+      Rectangle().fill(theme.border).frame(width: 1)
       VStack(spacing: 0) {
         if let failure = workspace.failure {
           GitFailureBanner(workspace: workspace, session: session, failure: failure, canRetry: workspace.retry != nil) {
@@ -61,18 +61,15 @@ struct GitWorkspaceView: View {
         }
         VStack(spacing: 0) {
           GitTabBar(workspace: workspace, view: view)
-            .padding(.vertical, 10)
-            .padding(.leading, 12)
+            .padding(.leading, 6)
             .padding(.trailing, SessionContextCardOverlay.barReserve)
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
+          Rectangle().fill(theme.border).frame(height: 1)
           content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding([.horizontal, .bottom], 12)
         }
-        .sessionContextCard(session, panel: .git, barHeight: barHeight)
+        .sessionContextCard(session, panel: .git, barHeight: GitTabBar.height)
       }
       .frame(minWidth: 420)
-      .background(theme.bg)
     }
     .toolbar { GitToolbarActions(workspace: workspace, session: session) }
     .task {
@@ -110,7 +107,7 @@ struct GitWorkspaceView: View {
     }
   }
 
-  /// Changes, History and Stashes lay out their own cards, as Grove's; the rest sit in one.
+  /// Changes, History and Stashes lay out their own panes; the rest fill the room.
   @ViewBuilder
   private var content: some View {
     switch view {
@@ -123,7 +120,7 @@ struct GitWorkspaceView: View {
     case .stashes:
       StashesView(workspace: workspace)
     default:
-      single.panel()
+      single
     }
   }
 

@@ -45,7 +45,7 @@ struct CodeNavigator: View {
             Image(systemName: mode.symbol).accessibilityLabel(mode.title)
           }
         }
-        .buttonStyle(NavigatorTabStyle(selected: code.navigatorMode == mode))
+        .buttonStyle(QuietTabButtonStyle(selected: code.navigatorMode == mode))
         .help(mode.title)
         .accessibilityAddTraits(code.navigatorMode == mode ? .isSelected : [])
       }
@@ -61,39 +61,6 @@ extension CodeNavigatorMode {
     case .search: Icon.search
     case .changes: "plusminus"
     }
-  }
-}
-
-/// A navigator mode tab: muted until hovered, a quiet fill when selected.
-private struct NavigatorTabStyle: ButtonStyle {
-  let selected: Bool
-
-  func makeBody(configuration: Configuration) -> some View {
-    NavigatorTab(label: configuration.label, pressed: configuration.isPressed, selected: selected)
-  }
-}
-
-private struct NavigatorTab<Label: View>: View {
-  @Environment(\.theme) private var theme
-  let label: Label
-  let pressed: Bool
-  let selected: Bool
-  @State private var hovering = false
-
-  var body: some View {
-    label
-      .font(.scaled(size: 12, weight: .medium))
-      .lineLimit(1)
-      .padding(.horizontal, 8)
-      .padding(.vertical, 4)
-      .foregroundStyle(selected || hovering ? theme.text : theme.textSecondary)
-      .background {
-        if selected || hovering || pressed {
-          RoundedRectangle(cornerRadius: 6).fill(pressed ? theme.bgHover : theme.selection)
-        }
-      }
-      .contentShape(.rect(cornerRadius: 6))
-      .onHover { hovering = $0 }
   }
 }
 
