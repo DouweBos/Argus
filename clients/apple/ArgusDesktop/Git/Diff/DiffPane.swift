@@ -108,17 +108,12 @@ struct DiffPane: View {
   }
 }
 
-/// `+12 −3`, coloured.
+/// `+12 −3`, coloured; nothing for `+0 −0`.
 struct DiffStatsLabel: View {
-  @Environment(\.theme) private var theme
   let stats: DiffStats
 
   var body: some View {
-    HStack(spacing: 4) {
-      Text("+\(stats.additions)").foregroundStyle(theme.success)
-      Text("−\(stats.deletions)").foregroundStyle(theme.error)
-    }
-    .font(.scaled(size: 11, design: .monospaced))
+    ChangeCounts(additions: stats.additions, deletions: stats.deletions)
   }
 }
 

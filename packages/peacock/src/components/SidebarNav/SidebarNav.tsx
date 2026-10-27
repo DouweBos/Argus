@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
 import { ChevronDownIcon } from "../../icons/Icons";
 import { StatusDot, type StatusTone } from "../Badge/Badge";
+import { hasDiffChanges } from "../DiffStat/DiffStat";
 import styles from "./SidebarNav.module.css";
 
 export interface SidebarNavProps extends HTMLAttributes<HTMLElement> {
@@ -359,7 +360,7 @@ export function SidebarSessionRow({
       <span className={styles.sessionNameRow}>
         <StatusDot tone={status} pulse={pulse} />
         <span className={styles.sessionName}>{name}</span>
-        {(added != null || removed != null) && (
+        {hasDiffChanges(added, removed) && (
           <span className={styles.sessionDiff}>
             {added != null && <span className={styles.diffAdd}>+{added}</span>}
             {removed != null && (

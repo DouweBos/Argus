@@ -61,8 +61,10 @@ struct PullRequestView: View {
       }
       MutedText("\(detail.headRef) → \(detail.baseRef)", lineLimit: 1)
       HStack(spacing: 10) {
-        Text("+\(detail.additions)").foregroundStyle(theme.success)
-        Text("-\(detail.deletions)").foregroundStyle(theme.error)
+        if ChangeCounts.hasChanges(additions: Int(detail.additions), deletions: Int(detail.deletions)) {
+          Text("+\(detail.additions)").foregroundStyle(theme.success)
+          Text("-\(detail.deletions)").foregroundStyle(theme.error)
+        }
         MutedText("\(detail.changedFiles) files")
         if let author = detail.author { MutedText("by \(author)") }
       }
