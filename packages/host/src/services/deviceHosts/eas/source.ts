@@ -19,7 +19,7 @@ import { NO_CAPS } from "../../simulator/deviceSource";
 import { EasError } from "./credential";
 import { EAS_ID_PREFIX, parseEasDeviceId } from "./ids";
 import { openServeSimVideo } from "./serveSim";
-import { ServeSimInput } from "./serveSimInput";
+import { type ScreenConfig, ServeSimInput } from "./serveSimInput";
 
 /** How long listing waits on housekeeping (a status check with Expo) before answering. */
 const MAINTAIN_WAIT_MS = 1_000;
@@ -34,6 +34,29 @@ export function easMessage(e: unknown): string {
 }
 
 let captureHandles = 0;
+
+/**
+ * serve-sim streams the raw, panel-native framebuffer, so a UI turned
+ * sideways arrives sideways: the clockwise turn a viewer applies to sit it
+ * upright. A screen reported landscape-shaped is already upright.
+ */
+export function rotationFor(
+  screen: ScreenConfig | null,
+): DisplayInfo["rotation"] {
+  if (!screen || screen.width > screen.height) {
+    return 0;
+  }
+  switch (screen.orientation) {
+    case "landscape_left":
+      return 90;
+    case "landscape_right":
+      return 270;
+    case "portrait_upside_down":
+      return 180;
+    default:
+      return 0;
+  }
+}
 
 /** One capture of a running session: serve-sim's video and input. */
 class EasDeviceSession implements DeviceSession {
@@ -86,7 +109,12 @@ class EasDeviceSession implements DeviceSession {
 
     return Promise.resolve(
       size
-        ? { width: size.width, height: size.height, rotation: 0, screenID: 0 }
+        ? {
+            width: size.width,
+            height: size.height,
+            rotation: rotationFor(this.input_.screen),
+            screenID: 0,
+          }
         : null,
     );
   }
