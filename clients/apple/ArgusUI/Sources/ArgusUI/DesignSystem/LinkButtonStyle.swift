@@ -6,7 +6,7 @@ public struct AccentLinkButtonStyle: ButtonStyle {
   public init() {}
 
   public func makeBody(configuration: Configuration) -> some View {
-    AccentLinkLabel(configuration: configuration)
+    AccentLinkLabel(configuration: configuration).clickable()
   }
 }
 

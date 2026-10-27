@@ -20,7 +20,7 @@ struct PrereqListView: View {
           fix: { fix(id) }, open: { open($0) })
       }
       Button("Re-run Checks") { Task { await check(ids) } }
-        .buttonStyle(.borderless)
+        .buttonStyle(.argusBorderless)
         .disabled(checking)
     }
     .padding(.leading, 12)

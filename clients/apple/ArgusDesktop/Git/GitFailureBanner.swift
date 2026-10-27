@@ -103,11 +103,11 @@ struct GitErrorBanner: View {
       }
       if !actions.contains(.copyDetails) {
         Button("Copy") { Clipboard.copy(message) }
-          .buttonStyle(.borderless)
+          .buttonStyle(.argusBorderless)
           .controlSize(.small)
       }
       Button(action: dismiss) { Image(systemName: "xmark") }
-        .buttonStyle(.borderless)
+        .buttonStyle(.argusBorderless)
         .help("Dismiss")
     }
     .padding(10)

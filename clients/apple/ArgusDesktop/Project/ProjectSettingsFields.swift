@@ -53,7 +53,7 @@ struct RemoveButton: View {
   let action: () -> Void
   var body: some View {
     Button(action: action) { Image(systemName: "minus.circle") }
-      .buttonStyle(.borderless)
+      .buttonStyle(.argusBorderless)
       .help("Remove")
       .accessibilityLabel("Remove")
   }
@@ -67,7 +67,7 @@ struct AddButton: View {
     self.action = action
   }
   var body: some View {
-    Button(action: action) { Label(title, systemImage: "plus") }.buttonStyle(.borderless)
+    Button(action: action) { Label(title, systemImage: "plus") }.buttonStyle(.argusBorderless)
   }
 }
 

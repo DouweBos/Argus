@@ -56,7 +56,8 @@ struct IdentityMenu: View {
       .contentShape(.rect)
     }
     .menuStyle(.button)
-    .buttonStyle(.plain)
+    .clickable()
+    .buttonStyle(.argusPlain)
     .menuIndicator(.hidden)
     .fixedSize(horizontal: false, vertical: true)
     .help("Commits are authored as this identity — pick a saved profile to switch this repository")
@@ -107,7 +108,7 @@ struct CommitTemplatesSheet: View {
             Spacer()
             Button("Restore Defaults") { store.resetToDefaults() }
           }
-          .buttonStyle(.borderless)
+          .buttonStyle(.argusBorderless)
           .padding(8)
         }
         .frame(width: 220)

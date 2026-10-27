@@ -165,7 +165,7 @@ private struct HomeProjectCard: View {
         } label: {
           Image(systemName: "plus")
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(.argusBorderless)
         .help("New session in \(project.name)")
       }
       Text(HostScopedPath.path(project.repoRoot)).font(.scaled(.caption)).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
@@ -186,6 +186,7 @@ private struct HomeProjectCard: View {
     .contentShape(Rectangle())
     .onHover { hovering = $0 }
     .onTapGesture { Task { await model.openProjectRoot(project.repoRoot) } }
+    .clickable()
     .accessibilityElement(children: .contain)
     .accessibilityLabel("Project \(project.name)")
     .accessibilityAddTraits(.isButton)
@@ -249,7 +250,7 @@ private struct HomeAgentsList: View {
             .padding(.vertical, 5)
             .contentShape(Rectangle())
           }
-          .buttonStyle(.plain)
+          .buttonStyle(.argusPlain)
         }
       }
     }
@@ -282,7 +283,7 @@ private struct HomeDevicesList: View {
             .padding(.vertical, 5)
             .contentShape(Rectangle())
           }
-          .buttonStyle(.plain)
+          .buttonStyle(.argusPlain)
         }
       }
     }

@@ -33,7 +33,7 @@ struct SubagentPreview: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .accessibilityLabel("Subagent activity, \(calls.count + earlier) tool calls")
     .accessibilityHint("Shows every call")
   }

@@ -270,7 +270,7 @@ public struct CollapsedToolGroupView: View {
       .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
       .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .accessibilityLabel("Collapsed tool calls")
     .accessibilityValue(isExpanded ? "expanded" : "collapsed")
   }

@@ -33,7 +33,6 @@ struct GitTabBar: View {
           label(tab, titled: !iconsOnly || selected)
         }
         .buttonStyle(QuietTabButtonStyle(selected: selected))
-        .pointerStyle(.link)
         .help(tab.title)
         .accessibilityLabel(tab.title)
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -83,7 +82,7 @@ struct GitTabBar: View {
     .menuStyle(.button)
     .buttonStyle(QuietTabButtonStyle())
     .menuIndicator(.hidden)
-    .pointerStyle(.link)
+    .clickable()
     .fixedSize()
     .help("More git views")
     .accessibilityLabel("More git views")

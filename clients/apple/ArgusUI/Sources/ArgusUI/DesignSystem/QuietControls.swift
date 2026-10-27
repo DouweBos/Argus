@@ -64,7 +64,7 @@ public struct QuietTabButtonStyle: ButtonStyle {
   }
 
   public func makeBody(configuration: Configuration) -> some View {
-    QuietTab(label: configuration.label, pressed: configuration.isPressed, selected: selected)
+    QuietTab(label: configuration.label, pressed: configuration.isPressed, selected: selected).clickable()
   }
 }
 
@@ -132,7 +132,7 @@ private struct QuietCheckbox: View {
       .opacity(isEnabled ? 1 : 0.6)
       .contentShape(.rect)
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .accessibilityAddTraits(configuration.isOn ? .isSelected : [])
   }
 }
@@ -148,7 +148,7 @@ public struct AccentButtonStyle: ButtonStyle {
   public init() {}
 
   public func makeBody(configuration: Configuration) -> some View {
-    AccentButton(label: configuration.label, pressed: configuration.isPressed)
+    AccentButton(label: configuration.label, pressed: configuration.isPressed).clickable()
   }
 }
 

@@ -147,7 +147,7 @@ private struct NewPullRequestSheet: View {
         Text("Description")
         Spacer()
         Button("Fill In with Claude") { autofill() }
-          .buttonStyle(.borderless)
+          .buttonStyle(.argusBorderless)
           .controlSize(.small)
           .disabled(busy != nil || session == nil)
       }

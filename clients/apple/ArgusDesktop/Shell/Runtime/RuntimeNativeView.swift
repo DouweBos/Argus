@@ -203,7 +203,7 @@ struct RuntimeDeviceActions: View {
     Button(action: run) {
       Image(systemName: icon).frame(width: 22, height: 22)
     }
-    .buttonStyle(.borderless)
+    .buttonStyle(.argusBorderless)
     .help(label)
     .accessibilityLabel(label)
   }
@@ -262,6 +262,7 @@ struct RuntimeLinkMenu: View {
       Image(systemName: Icon.link)
     }
     .menuStyle(.borderlessButton)
+    .clickable()
     .menuIndicator(.hidden)
     .fixedSize()
     .help("Open deep link")

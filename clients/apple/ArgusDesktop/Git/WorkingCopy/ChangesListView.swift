@@ -55,6 +55,7 @@ struct ChangesListView: View {
       Image(systemName: vm.fileViewMode.symbol)
     }
     .menuStyle(.button)
+    .clickable()
     .buttonStyle(FlatIconButtonStyle(size: 22))
     .menuIndicator(.hidden)
     .fixedSize()
@@ -77,6 +78,7 @@ struct ChangesListView: View {
       Image(systemName: "ellipsis")
     }
     .menuStyle(.button)
+    .clickable()
     .buttonStyle(FlatIconButtonStyle(size: 22))
     .menuIndicator(.hidden)
     .fixedSize()
@@ -188,7 +190,7 @@ struct ChangesListView: View {
         }
       )
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .padding(.leading, showsDirectory || entry.directory.isEmpty ? 0 : 14)
     .contextMenu {
       ChangeRowMenu(workspace: workspace, entry: entry, section: section, onShowFileHistory: onShowFileHistory)

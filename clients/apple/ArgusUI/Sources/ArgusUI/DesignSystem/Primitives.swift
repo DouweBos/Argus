@@ -132,7 +132,7 @@ public struct Card<Content: View>: View {
       )
 
     if let onTap {
-      Button(action: onTap) { card }.buttonStyle(.plain)
+      Button(action: onTap) { card }.buttonStyle(.argusPlain)
     } else {
       card
     }
@@ -249,7 +249,7 @@ public struct Btn: View {
       // letting it sit against the leading edge of a wide layout.
       .frame(maxWidth: tone == .ghost || hugs ? nil : .infinity, alignment: .center)
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .opacity(isEnabled ? 1 : 0.4)
   }
 
@@ -306,7 +306,7 @@ public struct IconBtn: View {
         .frame(width: 32, height: 32)
         .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .accessibilityLabel(label)
   }
 }
@@ -373,10 +373,7 @@ public struct Chip: View {
 
     if let action {
       Button(action: action) { content }
-        .buttonStyle(.plain)
-        #if os(macOS)
-          .pointerStyle(.link)
-        #endif
+        .buttonStyle(.argusPlain)
     } else {
       content
     }

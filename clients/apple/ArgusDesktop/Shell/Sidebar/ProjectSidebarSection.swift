@@ -104,6 +104,7 @@ struct SidebarRow<Content: View>: View {
       .contentShape(.rect(cornerRadius: 6))
       .onHover { hovering = $0 }
       .onTapGesture { if enabled { action() } }
+      .clickable(enabled)
       .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
       .accessibilityAction { if enabled { action() } }
   }

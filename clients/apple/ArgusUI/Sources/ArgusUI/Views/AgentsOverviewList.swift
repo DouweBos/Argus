@@ -31,7 +31,7 @@ public struct AgentsOverviewList: View {
                 meta: [agent.projectName, agent.sessionLabel]
                   .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.argusPlain)
           }
         } header: {
           Text(Self.summary(agents))

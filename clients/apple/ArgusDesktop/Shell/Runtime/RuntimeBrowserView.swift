@@ -115,7 +115,7 @@ struct RuntimeBrowserView: View {
     _ label: String, _ icon: String, enabled: Bool, run: @escaping () -> Void
   ) -> some View {
     Button(action: run) { Image(systemName: icon).frame(width: 20, height: 20) }
-      .buttonStyle(.borderless)
+      .buttonStyle(.argusBorderless)
       .disabled(!enabled)
       .help(label)
       .accessibilityLabel(label)

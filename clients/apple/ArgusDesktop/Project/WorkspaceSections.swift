@@ -186,9 +186,9 @@ struct RunCommandsSection: View {
           Text(command.title.isEmpty ? "New command" : command.title)
           Spacer()
           Button { draft.run.move(at: index, by: -1) } label: { Image(systemName: "chevron.up") }
-            .buttonStyle(.borderless).disabled(index == 0).accessibilityLabel("Move up")
+            .buttonStyle(.argusBorderless).disabled(index == 0).accessibilityLabel("Move up")
           Button { draft.run.move(at: index, by: 1) } label: { Image(systemName: "chevron.down") }
-            .buttonStyle(.borderless).disabled(index == draft.run.count - 1).accessibilityLabel("Move down")
+            .buttonStyle(.argusBorderless).disabled(index == draft.run.count - 1).accessibilityLabel("Move down")
           RemoveButton { draft.run.removeAll { $0.id == command.id } }
         }
       }

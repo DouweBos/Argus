@@ -118,7 +118,7 @@ private struct EntryList: View {
         Spacer()
         Button("Remove", systemImage: "xmark.circle.fill") { remove(entry) }
           .labelStyle(.iconOnly)
-          .buttonStyle(.borderless)
+          .buttonStyle(.argusBorderless)
           .help("Remove \(entry)")
       }
     }

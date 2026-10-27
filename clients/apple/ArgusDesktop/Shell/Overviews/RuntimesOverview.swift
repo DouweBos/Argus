@@ -47,7 +47,7 @@ struct RuntimesOverview: View {
               }
               .contentShape(.rect)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.argusPlain)
           }
           TableColumn("Status") { row in
             Text(row.tab.exited ? "stopped" : "running").foregroundStyle(.secondary)
@@ -73,7 +73,7 @@ struct RuntimesOverview: View {
               } label: {
                 Image(systemName: "stop.fill")
               }
-              .buttonStyle(.borderless)
+              .buttonStyle(.argusBorderless)
               .help("Stop process")
             }
           }

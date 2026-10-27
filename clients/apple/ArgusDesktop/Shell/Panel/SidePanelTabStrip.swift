@@ -147,7 +147,7 @@ struct SidePanelTabButton<Glyph: View>: View {
         Button(action: close) {
           Image(systemName: "xmark").font(.scaled(size: 9, weight: .semibold))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
         .foregroundStyle(.secondary)
         .opacity(hovering ? 1 : 0)
         .help("Close tab")
@@ -166,7 +166,7 @@ struct SidePanelTabButton<Glyph: View>: View {
     .onTapGesture(perform: select)
     .simultaneousGesture(TapGesture(count: 2).onEnded { startRename?() })
     .onHover { hovering = $0 }
-    .pointerStyle(renaming ? nil : .link)
+    .clickable(!renaming)
     .accessibilityElement(children: .combine)
     .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
     .contextMenu {

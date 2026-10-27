@@ -64,6 +64,7 @@ struct CommandPaletteView: View {
               )
               .id(index)
               .onTapGesture { perform(command) }
+              .clickable()
             }
           }
         }

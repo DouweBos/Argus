@@ -105,13 +105,13 @@ public struct ProposalCard: View {
       HStack(spacing: 14) {
         if let onOpenDetails {
           Button("Details", action: onOpenDetails)
-            .buttonStyle(.plain)
+            .buttonStyle(.argusPlain)
             .font(.scaled(size: 12))
             .foregroundStyle(theme.accent)
         }
         if let onOpenRun {
           Button("View run", action: onOpenRun)
-            .buttonStyle(.plain)
+            .buttonStyle(.argusPlain)
             .font(.scaled(size: 12))
             .foregroundStyle(theme.accent)
         }
@@ -263,7 +263,7 @@ public struct StartedProposalCard: View {
             .font(.scaled(size: 12, weight: .semibold))
             .foregroundStyle(theme.textMuted)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
         .accessibilityLabel("Close")
       }
       MutedText(proposal.title, lineLimit: 2)

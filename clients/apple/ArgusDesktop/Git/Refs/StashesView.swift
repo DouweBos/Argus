@@ -118,6 +118,7 @@ struct StashesView: View {
             Image(systemName: "ellipsis")
           }
           .menuStyle(.button)
+          .clickable()
           .buttonStyle(FlatIconButtonStyle(size: 22))
           .menuIndicator(.hidden)
           .fixedSize()

@@ -101,14 +101,14 @@ struct CustomRunnerEditor: View {
       Text(title).font(.scaled(.subheadline).weight(.semibold))
       Spacer()
       Button(title == "Models" ? "Add Model" : "Add Variable", systemImage: "plus", action: add)
-        .buttonStyle(.borderless)
+        .buttonStyle(.argusBorderless)
     }
   }
 
   private func removeButton(_ label: String, action: @escaping () -> Void) -> some View {
     Button(label, systemImage: "xmark.circle.fill", action: action)
       .labelStyle(.iconOnly)
-      .buttonStyle(.borderless)
+      .buttonStyle(.argusBorderless)
       .help(label)
   }
 

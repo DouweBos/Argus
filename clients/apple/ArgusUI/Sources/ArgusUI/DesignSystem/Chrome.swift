@@ -54,7 +54,7 @@ public struct FlatIconButtonStyle: ButtonStyle {
   }
 
   public func makeBody(configuration: Configuration) -> some View {
-    FlatIcon(label: configuration.label, pressed: configuration.isPressed, selected: selected, size: size)
+    FlatIcon(label: configuration.label, pressed: configuration.isPressed, selected: selected, size: size).clickable()
   }
 }
 
@@ -161,7 +161,7 @@ public struct Breadcrumb: View {
         }
         if let action = step.action {
           Button(action: action) { label.contentShape(.rect) }
-            .buttonStyle(.plain)
+            .buttonStyle(.argusPlain)
             .help(step.help ?? step.title)
             .layoutPriority(last ? 0 : 1)
         } else {
@@ -200,7 +200,7 @@ public struct ChromeSearchField: View {
         } label: {
           Image(systemName: "xmark.circle.fill").foregroundStyle(theme.textMuted)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
         .accessibilityLabel("Clear search")
       }
     }
@@ -345,7 +345,7 @@ public struct ContextRowButtonStyle: ButtonStyle {
   }
 
   public func makeBody(configuration: Configuration) -> some View {
-    ContextRowHighlight(label: configuration.label, pressed: configuration.isPressed, selected: selected)
+    ContextRowHighlight(label: configuration.label, pressed: configuration.isPressed, selected: selected).clickable()
   }
 }
 

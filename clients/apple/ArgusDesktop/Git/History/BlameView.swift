@@ -131,7 +131,7 @@ private struct BlameFilePicker: View {
           .font(.scaled(size: 12))
           .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
       }
       .navigatorList()
       .overlay {

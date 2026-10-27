@@ -143,6 +143,7 @@ private struct ReflogEntryDetail<Actions: View>: View {
         Spacer()
         Menu { actions } label: { Image(systemName: "ellipsis.circle") }
           .menuIndicator(.hidden)
+          .clickable()
           .fixedSize()
           .accessibilityLabel("Entry Actions")
       }

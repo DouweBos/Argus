@@ -67,7 +67,7 @@
           .opacity(isEnabled ? 1 : 0.35)
           .contentShape(Circle())
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.argusPlain)
       .accessibilityLabel(label)
     }
   }

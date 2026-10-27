@@ -35,7 +35,7 @@ struct GitRemotesSection: View {
         } label: {
           Label("Add Remote", systemImage: "plus")
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(.argusBorderless)
         .controlSize(.small)
       }
     }
@@ -129,6 +129,7 @@ private struct RemoteRow: View {
         Image(systemName: "ellipsis")
       }
       .menuStyle(.borderlessButton)
+      .clickable()
       .menuIndicator(.hidden)
       .fixedSize()
     }

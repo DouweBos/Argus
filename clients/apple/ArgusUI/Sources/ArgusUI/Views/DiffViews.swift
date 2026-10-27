@@ -55,7 +55,7 @@ public struct FileDiffCard: View {
         }
         .contentShape(Rectangle())
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.argusPlain)
 
       if file.status == .renamed {
         MutedText("from \(file.oldPath)", lineLimit: 1)

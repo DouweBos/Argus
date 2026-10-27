@@ -30,6 +30,7 @@ struct QuickOpenView: View {
               .id(index)
               .contentShape(Rectangle())
               .onTapGesture { model.open(result) }
+              .clickable()
           }
         }
         .listStyle(.plain)

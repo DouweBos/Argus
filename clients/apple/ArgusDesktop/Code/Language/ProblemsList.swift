@@ -21,7 +21,7 @@ struct ProblemsList: View {
         } label: {
           Image(systemName: "xmark")
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
         .help("Hide problems")
       }
       .foregroundStyle(theme.textSecondary)
@@ -86,6 +86,7 @@ private struct ProblemRow: View {
     .contentShape(Rectangle())
     .onHover { hovering = $0 }
     .onTapGesture(perform: open)
+    .clickable()
   }
 
   private var location: String {

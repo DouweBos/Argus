@@ -73,7 +73,7 @@ struct InspectionTreeView: View {
         } label: {
           Image(systemName: "xmark.circle.fill")
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(.argusBorderless)
         .foregroundStyle(theme.textMuted)
         .help("Clear search")
         .accessibilityLabel("Clear search")
@@ -88,7 +88,7 @@ struct InspectionTreeView: View {
     -> some View
   {
     Button { model.stepSearch(forward: forward) } label: { Image(systemName: icon) }
-      .buttonStyle(.borderless)
+      .buttonStyle(.argusBorderless)
       .disabled(!enabled)
       .help(label)
       .accessibilityLabel(label)
@@ -137,7 +137,7 @@ private struct TreeRow: View {
             .rotationEffect(.degrees(open ? 90 : 0))
             .frame(width: 12, height: 12)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
         .foregroundStyle(theme.textMuted)
         .accessibilityLabel(open ? "Collapse" : "Expand")
       }
@@ -156,7 +156,7 @@ private struct TreeRow: View {
         }
         .contentShape(Rectangle())
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.argusPlain)
     }
     .font(.scaled(size: 11, design: .monospaced))
     .padding(.leading, 6 + CGFloat(level) * 12)

@@ -15,6 +15,7 @@ public struct PillItemButtonStyle: ButtonStyle {
 
   public func makeBody(configuration: Configuration) -> some View {
     PillItem(label: configuration.label, pressed: configuration.isPressed, iconOnly: iconOnly, selected: selected)
+      .clickable()
   }
 }
 
@@ -176,6 +177,7 @@ public struct PillActionGroup<Leading: View>: View {
           Label("More", systemImage: "ellipsis")
         }
         .menuStyle(.button)
+        .clickable()
         .menuIndicator(.hidden)
         .help("More")
         .accessibilityLabel("More")

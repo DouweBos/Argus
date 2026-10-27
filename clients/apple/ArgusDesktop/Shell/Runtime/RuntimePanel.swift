@@ -126,7 +126,7 @@ struct RuntimePanel: View {
         } label: {
           Image(systemName: "rectangle.portrait.on.rectangle.portrait")
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(.argusBorderless)
         .help("Open in floating window")
         .accessibilityLabel("Open in floating window")
       }
@@ -170,6 +170,7 @@ struct RuntimeTargetPicker: View {
       Label(label, systemImage: Icon.simulator)
     }
     .menuStyle(.borderlessButton)
+    .clickable()
     // A long device name truncates rather than push the toolbar out.
     .frame(maxWidth: 200, alignment: .leading)
     .accessibilityLabel("Runtime target")
