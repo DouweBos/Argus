@@ -238,6 +238,22 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `usage_limits_fetched`     | main   | The host asked the Claude CLI for an account's plan limits (at most once a minute per account) | `outcome: "ok" \| "failed" \| "unsupported"`, `window_count`                                                          |
 | `usage_summary_loaded`     | main   | The Usage screen loaded token and cost totals for a range                                      | `range: "24h" \| "7d" \| "30d" \| "90d"`, `prices_available` — false until the model price list has been fetched once |
 
+## Accounts
+
+Linking computers to an Argus account. These carry enums, booleans and
+outcomes only — never the account, member or request ids, names, emails,
+link codes, keys or addresses.
+
+| Event                      | Source | When                                                                       | Extra props                                                                                                                                                                                                                                                              |
+| -------------------------- | ------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `account_link_started`     | main   | A computer started linking itself to an account with a code                | `surface: "electron" \| "mac" \| "cli" \| "menubar" \| "paired"` — where it was started (`paired`: a QR-paired phone asked for it)                                                                                                                                       |
+| `account_linked`           | main   | The computer verified the account's log and pinned it                      | `via: "browser" \| "app" \| "host" \| "local" \| "paired"` — who approved it (`local`: the Mac app linked its own host), `first_member` — it became the account's first member, `kind: "host" \| "computer"` — `computer` when an Electron window joined as a device too |
+| `account_link_failed`      | main   | A link stopped short                                                       | `stage: "start" \| "claim_timeout" \| "denied" \| "sas_rejected" \| "verify" \| "network"`                                                                                                                                                                               |
+| `account_join_resolved`    | main   | This computer's console approved or declined another computer's link       | `action: "approved" \| "denied"`, `approver: "host"`                                                                                                                                                                                                                     |
+| `account_member_revoked`   | main   | The computer applied a revocation                                          | `role: "device" \| "host"`, `source: "local" \| "log"` — unlinked here, or read from the account log                                                                                                                                                                     |
+| `account_log_rejected`     | main   | The computer refused entries the account service served                    | `reason: "fork" \| "bad_signature" \| "unknown_signer" \| "malformed" \| "sas_mismatch"`                                                                                                                                                                                 |
+| `remote_connection_opened` | main   | A device completed the gateway handshake (at most once per device per day) | `trust: "paired" \| "account"` — a QR pairing or the account let it in                                                                                                                                                                                                   |
+
 ## Language servers
 
 The host runs language servers for the code editor. These events carry the

@@ -6,6 +6,68 @@ import Foundation
 extension ArgusProtocol {
   /// Params and result types for `Methods` that no model names.
   public enum MethodsTypes {
+    public struct AccountRequestLinkParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct AccountRequestLinkResult: Codable, Sendable {
+      public var userCode: String
+
+      enum CodingKeys: String, CodingKey {
+        case userCode = "user_code"
+      }
+
+      public init(userCode: String) {
+        self.userCode = userCode
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(userCode, forKey: .userCode)
+      }
+    }
+
+    public struct AccountStatusParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct AccountStatusResult: Codable, Sendable {
+      public var linked: Bool
+      public var accountIdHash: String?
+      public var headSeq: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case linked = "linked"
+        case accountIdHash = "account_id_hash"
+        case headSeq = "head_seq"
+      }
+
+      public init(linked: Bool, accountIdHash: String? = nil, headSeq: Int? = nil) {
+        self.linked = linked
+        self.accountIdHash = accountIdHash
+        self.headSeq = headSeq
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(linked, forKey: .linked)
+        try c.encode(accountIdHash, forKey: .accountIdHash)
+        try c.encode(headSeq, forKey: .headSeq)
+      }
+    }
+
     public struct AgentsCapabilitiesParams: Codable, Sendable {
       public var agentId: String
 
@@ -5555,6 +5617,18 @@ extension ArgusProtocol {
 
   /// The typed remote methods (`REMOTE_METHODS`), monitor and control tier.
   public enum Methods {
+    public enum AccountRequestLink: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AccountRequestLinkParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AccountRequestLinkResult
+      public static let name = "account.request_link"
+    }
+
+    public enum AccountStatus: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AccountStatusParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AccountStatusResult
+      public static let name = "account.status"
+    }
+
     public enum AgentsCapabilities: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.AgentsCapabilitiesParams
       public typealias Result = ArgusProtocol.MethodsTypes.AgentsCapabilitiesResult

@@ -105,6 +105,8 @@ export type AutomationInput = z.infer<typeof AutomationInput>;
 
 export const MethodParams = {
   "host.endpoints": z.object({}),
+  "account.status": z.object({}),
+  "account.request_link": z.object({}),
   "projects.list": z.object({}),
   "sessions.list": z.object({ repo_root: z.string() }),
   "scratch_pads.list": z.object({}),
@@ -620,6 +622,13 @@ export const MethodParams = {
 
 export const MethodResult = {
   "host.endpoints": z.object({ endpoints: z.array(RemoteEndpoint) }),
+  "account.status": z.object({
+    linked: z.boolean(),
+    /** sha256 hex of the account id — enough to compare, nothing to look up. */
+    account_id_hash: z.string().nullable(),
+    head_seq: z.number().int().nullable(),
+  }),
+  "account.request_link": z.object({ user_code: z.string() }),
   "projects.list": z.object({ projects: z.array(RemoteProject) }),
   "sessions.list": z.object({ sessions: z.array(RemoteSession) }),
   "scratch_pads.list": z.object({ sessions: z.array(RemoteSession) }),

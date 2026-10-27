@@ -238,6 +238,42 @@ This is the same flow the desktop runs in a dialog, on a different surface. It
 is not the `ARGUS_DEV_TRUST` bypass, which skips the comparison entirely and
 cannot run in a packaged build.
 
+## Linking to your Argus account
+
+Instead of pairing each device with a code, a host can join your
+[Argus account](accounts.md), so every device signed in to it can find and
+connect to the host on its current address. Linking happens in the terminal
+`argus-host` runs in (or start it as `argus-host login` over SSH):
+
+```
+$ argus-host login
+  Open https://houwert.dev/argus/link and enter  WDJB-MJHT   (expires in 10 min)
+  or type the code into the Argus app on your phone or Mac.
+  Waiting…
+Approval requested by "Douwe's iPhone". Code there: 482 093
+Does it match? [y/N] y
+Confirmed here. Waiting for the other side to finish…
+Linked. This computer now shows up on your devices.
+```
+
+Compare the six-digit code with the one on your phone before you answer `y`,
+for the same reason as with pairing. On an empty account the host asks whether
+to become the account's first computer instead.
+
+The other account words:
+
+| word                        | does                                                                                                                                                                                                            |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `account`                   | Shows whether the host is linked, the account safety code, and every computer on the account with online/offline                                                                                                |
+| `account set <key> <value>` | Changes this host's account settings: `enabled`, `lan`, `tailscale`, `cloudflare`, `approve` (`on`/`off`), `ios` (`monitor`/`control`), `desktop` (`monitor`/`control`/`admin`), `service` (a URL or `default`) |
+| `approve [n]`               | Approves another computer that is waiting to join, from this console — with the same code comparison                                                                                                            |
+| `logout`                    | Unlinks this host. QR-paired devices keep working                                                                                                                                                               |
+
+Once linked, the host publishes its addresses (signed with its own account key)
+when a tunnel or the LAN changes and every five minutes, and accepts devices
+the account lists with the grants from `account set ios|desktop`. The tray of
+`Argus Server.app` does not offer linking yet; use `argus-host`.
+
 ## Updating the server
 
 A mini nobody sits at still needs new builds, and the install command is

@@ -43,6 +43,12 @@
           "summary": "The built-in git client: branches, diffs, hunk-level staging, commits, stashes, merges and pull requests, in both session and project scope."
         },
         {
+          "slug": "accounts",
+          "file": "accounts.md",
+          "title": "Accounts",
+          "summary": "Sign in once and your computers find each other: linking with a code, what the account service can and can't see, and unlinking."
+        },
+        {
           "slug": "server-app",
           "file": "server-app.md",
           "title": "Argus Server — the headless host",

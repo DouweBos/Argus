@@ -47,8 +47,25 @@ const ENDPOINT_PRIORITY: Record<EndpointKind, number> = {
 /** Whether the gateway is listening on the local network; owned by remoteService. */
 let gatewayOnLan = false;
 
+const lanListeners = new Set<() => void>();
+
 export function setGatewayOnLan(onLan: boolean): void {
+  if (gatewayOnLan === onLan) {
+    return;
+  }
   gatewayOnLan = onLan;
+  for (const cb of lanListeners) {
+    cb();
+  }
+}
+
+/** Notified when the gateway starts or stops listening on the LAN. */
+export function onLanChange(cb: () => void): () => void {
+  lanListeners.add(cb);
+
+  return () => {
+    lanListeners.delete(cb);
+  };
 }
 
 /** First non-internal IPv4 LAN address as a ws:// URL, or null. */

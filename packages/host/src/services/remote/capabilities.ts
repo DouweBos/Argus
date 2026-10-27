@@ -38,6 +38,7 @@ import type { z } from "zod";
 import { emitHostEvent } from "@argus/host/bus";
 import { error as logError, info as logInfo } from "@argus/host/logger";
 import { appState } from "../../state";
+import { remoteAccountStatus, requestLinkFromPaired } from "../account/service";
 import {
   interruptAgent,
   respondToPermission,
@@ -789,6 +790,10 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "host.endpoints": async () => {
     return { endpoints: getEndpoints() };
   },
+
+  "account.status": async () => remoteAccountStatus(),
+  // Only raises the console's own link prompt; the host still has to confirm.
+  "account.request_link": () => control(() => requestLinkFromPaired()),
 
   "projects.list": async () => {
     const projects = collectAllProjects().map((p) => ({

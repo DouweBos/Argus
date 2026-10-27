@@ -79,6 +79,20 @@ export const HOST_ONLY_COMMANDS = new Set([
   "huddle_approve_guest",
   "huddle_deny_guest",
   "huddle_remove_guest",
+  // Linking this computer to an account, approving another one and unlinking
+  // are trust decisions with the same root as pairing.
+  "account_device_key",
+  "account_login_start",
+  "account_login_confirm",
+  "account_login_cancel",
+  "account_logout",
+  "account_link_local_begin",
+  "account_link_local_finish",
+  "account_list_requests",
+  "account_approve_join",
+  "account_confirm_join",
+  "account_deny_join",
+  "account_set_config",
   // Loopback DevTools endpoints: unreachable off this machine, and a debugger
   // into the session's browser besides.
   "browser_devtools",
@@ -304,6 +318,12 @@ export const REMOTE_METHODS = {
   "proposals.request_revision": "control",
   /** Every address this desktop is reachable on, so a client can pick one. */
   "host.endpoints": "monitor",
+  /** Whether this computer is on an account (hashed id only), so a paired
+   *  phone can offer "Add to your account". */
+  "account.status": "monitor",
+  /** Start this computer's code link so a QR-paired phone can approve it. It
+   *  only raises a console prompt — the host's own confirm is still required. */
+  "account.request_link": "monitor",
   /** Claude accounts. Reading which plans the host owner signed into is
    *  monitor; anything that switches, adds or forgets one changes what every
    *  new agent authenticates as and spends that account's quota, so control. */

@@ -4,6 +4,7 @@
  * dialog-bound commands on top; a headless host runs with these alone.
  */
 
+import { registerAccountCommands } from "./account";
 import { registerAgentCommands } from "./agents";
 import { registerAutomationCommands } from "./automations";
 import { registerBrowserCommands } from "./browser";
@@ -42,4 +43,5 @@ export function registerHostCommands(): void {
   registerGithubCommands();
   registerGitRunnerCommands();
   registerUsageCommands();
+  registerAccountCommands();
 }

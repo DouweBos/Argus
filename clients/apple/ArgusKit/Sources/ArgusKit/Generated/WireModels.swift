@@ -29,6 +29,763 @@ extension ArgusProtocol {
     }
   }
 
+  public struct AccountApprovalStateIdle: Codable, Sendable {
+    public var kind: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+    }
+
+    public init(kind: String) {
+      self.kind = kind
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+    }
+  }
+
+  public struct AccountApprovalStateAwaitingSas: Codable, Sendable {
+    public var kind: String
+    public var requestId: String
+    public var sas: String
+    public var subjectName: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case requestId = "request_id"
+      case sas = "sas"
+      case subjectName = "subject_name"
+    }
+
+    public init(kind: String, requestId: String, sas: String, subjectName: String) {
+      self.kind = kind
+      self.requestId = requestId
+      self.sas = sas
+      self.subjectName = subjectName
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(requestId, forKey: .requestId)
+      try c.encode(sas, forKey: .sas)
+      try c.encode(subjectName, forKey: .subjectName)
+    }
+  }
+
+  public struct AccountApprovalStateApproved: Codable, Sendable {
+    public var kind: String
+    public var requestId: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case requestId = "request_id"
+    }
+
+    public init(kind: String, requestId: String) {
+      self.kind = kind
+      self.requestId = requestId
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(requestId, forKey: .requestId)
+    }
+  }
+
+  public struct AccountApprovalStateError: Codable, Sendable {
+    public var kind: String
+    public var message: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case message = "message"
+    }
+
+    public init(kind: String, message: String) {
+      self.kind = kind
+      self.message = message
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(message, forKey: .message)
+    }
+  }
+
+  public enum AccountApprovalState: Codable, Sendable {
+    case idle(AccountApprovalStateIdle)
+    case awaitingSas(AccountApprovalStateAwaitingSas)
+    case approved(AccountApprovalStateApproved)
+    case error(AccountApprovalStateError)
+    case unknown(JSONValue)
+
+    private enum Tag: String, CodingKey { case tag = "kind" }
+
+    public init(from decoder: Decoder) throws {
+      let tag = try decoder.container(keyedBy: Tag.self).decodeIfPresent(String.self, forKey: .tag)
+      switch tag {
+      case "idle": self = .idle(try AccountApprovalStateIdle(from: decoder))
+      case "awaiting_sas": self = .awaitingSas(try AccountApprovalStateAwaitingSas(from: decoder))
+      case "approved": self = .approved(try AccountApprovalStateApproved(from: decoder))
+      case "error": self = .error(try AccountApprovalStateError(from: decoder))
+      default: self = .unknown(try JSONValue(from: decoder))
+      }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      switch self {
+      case .idle(let value): try value.encode(to: encoder)
+      case .awaitingSas(let value): try value.encode(to: encoder)
+      case .approved(let value): try value.encode(to: encoder)
+      case .error(let value): try value.encode(to: encoder)
+      case .unknown(let value): try value.encode(to: encoder)
+      }
+    }
+  }
+
+  public struct AccountConfigGrants: Codable, Sendable {
+    public var ios: AccountGrantSetting
+    public var desktop: AccountGrantSetting
+
+    enum CodingKeys: String, CodingKey {
+      case ios = "ios"
+      case desktop = "desktop"
+    }
+
+    public init(ios: AccountGrantSetting, desktop: AccountGrantSetting) {
+      self.ios = ios
+      self.desktop = desktop
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(ios, forKey: .ios)
+      try c.encode(desktop, forKey: .desktop)
+    }
+  }
+
+  public struct AccountConfigPublish: Codable, Sendable {
+    public var lan: Bool
+    public var tailscale: Bool
+    public var cloudflare: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case lan = "lan"
+      case tailscale = "tailscale"
+      case cloudflare = "cloudflare"
+    }
+
+    public init(lan: Bool, tailscale: Bool, cloudflare: Bool) {
+      self.lan = lan
+      self.tailscale = tailscale
+      self.cloudflare = cloudflare
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(lan, forKey: .lan)
+      try c.encode(tailscale, forKey: .tailscale)
+      try c.encode(cloudflare, forKey: .cloudflare)
+    }
+  }
+
+  public struct AccountConfig: Codable, Sendable {
+    public var enabled: Bool
+    public var serviceUrl: String
+    public var grants: AccountConfigGrants
+    public var publish: AccountConfigPublish
+    public var hostsCanApprove: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case enabled = "enabled"
+      case serviceUrl = "service_url"
+      case grants = "grants"
+      case publish = "publish"
+      case hostsCanApprove = "hosts_can_approve"
+    }
+
+    public init(enabled: Bool, serviceUrl: String, grants: AccountConfigGrants, publish: AccountConfigPublish, hostsCanApprove: Bool) {
+      self.enabled = enabled
+      self.serviceUrl = serviceUrl
+      self.grants = grants
+      self.publish = publish
+      self.hostsCanApprove = hostsCanApprove
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(enabled, forKey: .enabled)
+      try c.encode(serviceUrl, forKey: .serviceUrl)
+      try c.encode(grants, forKey: .grants)
+      try c.encode(publish, forKey: .publish)
+      try c.encode(hostsCanApprove, forKey: .hostsCanApprove)
+    }
+  }
+
+  public struct AccountConfigPatchGrants: Codable, Sendable {
+    public var ios: AccountGrantSetting?
+    public var desktop: AccountGrantSetting?
+
+    enum CodingKeys: String, CodingKey {
+      case ios = "ios"
+      case desktop = "desktop"
+    }
+
+    public init(ios: AccountGrantSetting? = nil, desktop: AccountGrantSetting? = nil) {
+      self.ios = ios
+      self.desktop = desktop
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(ios, forKey: .ios)
+      try c.encodeIfPresent(desktop, forKey: .desktop)
+    }
+  }
+
+  public struct AccountConfigPatchPublish: Codable, Sendable {
+    public var lan: Bool?
+    public var tailscale: Bool?
+    public var cloudflare: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case lan = "lan"
+      case tailscale = "tailscale"
+      case cloudflare = "cloudflare"
+    }
+
+    public init(lan: Bool? = nil, tailscale: Bool? = nil, cloudflare: Bool? = nil) {
+      self.lan = lan
+      self.tailscale = tailscale
+      self.cloudflare = cloudflare
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(lan, forKey: .lan)
+      try c.encodeIfPresent(tailscale, forKey: .tailscale)
+      try c.encodeIfPresent(cloudflare, forKey: .cloudflare)
+    }
+  }
+
+  public struct AccountConfigPatch: Codable, Sendable {
+    public var enabled: Bool?
+    public var serviceUrl: String?
+    public var grants: AccountConfigPatchGrants?
+    public var publish: AccountConfigPatchPublish?
+    public var hostsCanApprove: Bool?
+
+    enum CodingKeys: String, CodingKey {
+      case enabled = "enabled"
+      case serviceUrl = "service_url"
+      case grants = "grants"
+      case publish = "publish"
+      case hostsCanApprove = "hosts_can_approve"
+    }
+
+    public init(enabled: Bool? = nil, serviceUrl: String? = nil, grants: AccountConfigPatchGrants? = nil, publish: AccountConfigPatchPublish? = nil, hostsCanApprove: Bool? = nil) {
+      self.enabled = enabled
+      self.serviceUrl = serviceUrl
+      self.grants = grants
+      self.publish = publish
+      self.hostsCanApprove = hostsCanApprove
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(enabled, forKey: .enabled)
+      try c.encodeIfPresent(serviceUrl, forKey: .serviceUrl)
+      try c.encodeIfPresent(grants, forKey: .grants)
+      try c.encodeIfPresent(publish, forKey: .publish)
+      try c.encodeIfPresent(hostsCanApprove, forKey: .hostsCanApprove)
+    }
+  }
+
+  public struct AccountDeviceKey: Codable, Sendable {
+    public var deviceId: String
+    public var noisePriv: String
+    public var noisePub: String
+
+    enum CodingKeys: String, CodingKey {
+      case deviceId = "device_id"
+      case noisePriv = "noise_priv"
+      case noisePub = "noise_pub"
+    }
+
+    public init(deviceId: String, noisePriv: String, noisePub: String) {
+      self.deviceId = deviceId
+      self.noisePriv = noisePriv
+      self.noisePub = noisePub
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(deviceId, forKey: .deviceId)
+      try c.encode(noisePriv, forKey: .noisePriv)
+      try c.encode(noisePub, forKey: .noisePub)
+    }
+  }
+
+  public struct AccountGrantSetting: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let monitor = AccountGrantSetting(rawValue: "monitor")
+    public static let control = AccountGrantSetting(rawValue: "control")
+    public static let admin = AccountGrantSetting(rawValue: "admin")
+  }
+
+  public struct AccountHost: Codable, Sendable {
+    public var hostId: String
+    public var name: String
+    public var platform: String
+    public var noisePub: String
+    public var endpoints: [RemoteEndpoint]
+    public var lastSeen: Double?
+    public var online: Bool
+    public var isSelf: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case hostId = "host_id"
+      case name = "name"
+      case platform = "platform"
+      case noisePub = "noise_pub"
+      case endpoints = "endpoints"
+      case lastSeen = "last_seen"
+      case online = "online"
+      case isSelf = "is_self"
+    }
+
+    public init(hostId: String, name: String, platform: String, noisePub: String, endpoints: [RemoteEndpoint], lastSeen: Double? = nil, online: Bool, isSelf: Bool) {
+      self.hostId = hostId
+      self.name = name
+      self.platform = platform
+      self.noisePub = noisePub
+      self.endpoints = endpoints
+      self.lastSeen = lastSeen
+      self.online = online
+      self.isSelf = isSelf
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(hostId, forKey: .hostId)
+      try c.encode(name, forKey: .name)
+      try c.encode(platform, forKey: .platform)
+      try c.encode(noisePub, forKey: .noisePub)
+      try c.encode(endpoints, forKey: .endpoints)
+      try c.encode(lastSeen, forKey: .lastSeen)
+      try c.encode(online, forKey: .online)
+      try c.encode(isSelf, forKey: .isSelf)
+    }
+  }
+
+  public struct AccountJoinRequest: Codable, Sendable {
+    public var requestId: String
+    public var kind: String
+    public var subjectName: String
+    public var status: String
+    public var createdAt: Double
+    public var expiresAt: Double
+
+    enum CodingKeys: String, CodingKey {
+      case requestId = "request_id"
+      case kind = "kind"
+      case subjectName = "subject_name"
+      case status = "status"
+      case createdAt = "created_at"
+      case expiresAt = "expires_at"
+    }
+
+    public init(requestId: String, kind: String, subjectName: String, status: String, createdAt: Double, expiresAt: Double) {
+      self.requestId = requestId
+      self.kind = kind
+      self.subjectName = subjectName
+      self.status = status
+      self.createdAt = createdAt
+      self.expiresAt = expiresAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(requestId, forKey: .requestId)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(subjectName, forKey: .subjectName)
+      try c.encode(status, forKey: .status)
+      try c.encode(createdAt, forKey: .createdAt)
+      try c.encode(expiresAt, forKey: .expiresAt)
+    }
+  }
+
+  public struct AccountLinkStateIdle: Codable, Sendable {
+    public var kind: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+    }
+
+    public init(kind: String) {
+      self.kind = kind
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+    }
+  }
+
+  public struct AccountLinkStateAwaitingClaim: Codable, Sendable {
+    public var kind: String
+    public var userCode: String
+    public var verificationUri: String
+    public var verificationUriComplete: String
+    public var expiresAt: Double
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case userCode = "user_code"
+      case verificationUri = "verification_uri"
+      case verificationUriComplete = "verification_uri_complete"
+      case expiresAt = "expires_at"
+    }
+
+    public init(kind: String, userCode: String, verificationUri: String, verificationUriComplete: String, expiresAt: Double) {
+      self.kind = kind
+      self.userCode = userCode
+      self.verificationUri = verificationUri
+      self.verificationUriComplete = verificationUriComplete
+      self.expiresAt = expiresAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(userCode, forKey: .userCode)
+      try c.encode(verificationUri, forKey: .verificationUri)
+      try c.encode(verificationUriComplete, forKey: .verificationUriComplete)
+      try c.encode(expiresAt, forKey: .expiresAt)
+    }
+  }
+
+  public struct AccountLinkStateAwaitingFirst: Codable, Sendable {
+    public var kind: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+    }
+
+    public init(kind: String) {
+      self.kind = kind
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+    }
+  }
+
+  public struct AccountLinkStateAwaitingSas: Codable, Sendable {
+    public var kind: String
+    public var sas: String
+    public var approverName: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case sas = "sas"
+      case approverName = "approver_name"
+    }
+
+    public init(kind: String, sas: String, approverName: String) {
+      self.kind = kind
+      self.sas = sas
+      self.approverName = approverName
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(sas, forKey: .sas)
+      try c.encode(approverName, forKey: .approverName)
+    }
+  }
+
+  public struct AccountLinkStateAwaitingApproval: Codable, Sendable {
+    public var kind: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+    }
+
+    public init(kind: String) {
+      self.kind = kind
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+    }
+  }
+
+  public struct AccountLinkStateLinked: Codable, Sendable {
+    public var kind: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+    }
+
+    public init(kind: String) {
+      self.kind = kind
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+    }
+  }
+
+  public struct AccountLinkStateError: Codable, Sendable {
+    public var kind: String
+    public var message: String
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case message = "message"
+    }
+
+    public init(kind: String, message: String) {
+      self.kind = kind
+      self.message = message
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(message, forKey: .message)
+    }
+  }
+
+  public enum AccountLinkState: Codable, Sendable {
+    case idle(AccountLinkStateIdle)
+    case awaitingClaim(AccountLinkStateAwaitingClaim)
+    case awaitingFirst(AccountLinkStateAwaitingFirst)
+    case awaitingSas(AccountLinkStateAwaitingSas)
+    case awaitingApproval(AccountLinkStateAwaitingApproval)
+    case linked(AccountLinkStateLinked)
+    case error(AccountLinkStateError)
+    case unknown(JSONValue)
+
+    private enum Tag: String, CodingKey { case tag = "kind" }
+
+    public init(from decoder: Decoder) throws {
+      let tag = try decoder.container(keyedBy: Tag.self).decodeIfPresent(String.self, forKey: .tag)
+      switch tag {
+      case "idle": self = .idle(try AccountLinkStateIdle(from: decoder))
+      case "awaiting_claim": self = .awaitingClaim(try AccountLinkStateAwaitingClaim(from: decoder))
+      case "awaiting_first": self = .awaitingFirst(try AccountLinkStateAwaitingFirst(from: decoder))
+      case "awaiting_sas": self = .awaitingSas(try AccountLinkStateAwaitingSas(from: decoder))
+      case "awaiting_approval": self = .awaitingApproval(try AccountLinkStateAwaitingApproval(from: decoder))
+      case "linked": self = .linked(try AccountLinkStateLinked(from: decoder))
+      case "error": self = .error(try AccountLinkStateError(from: decoder))
+      default: self = .unknown(try JSONValue(from: decoder))
+      }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      switch self {
+      case .idle(let value): try value.encode(to: encoder)
+      case .awaitingClaim(let value): try value.encode(to: encoder)
+      case .awaitingFirst(let value): try value.encode(to: encoder)
+      case .awaitingSas(let value): try value.encode(to: encoder)
+      case .awaitingApproval(let value): try value.encode(to: encoder)
+      case .linked(let value): try value.encode(to: encoder)
+      case .error(let value): try value.encode(to: encoder)
+      case .unknown(let value): try value.encode(to: encoder)
+      }
+    }
+  }
+
+  public struct AccountLinkSurface: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let electron = AccountLinkSurface(rawValue: "electron")
+    public static let mac = AccountLinkSurface(rawValue: "mac")
+    public static let cli = AccountLinkSurface(rawValue: "cli")
+    public static let menubar = AccountLinkSurface(rawValue: "menubar")
+  }
+
+  public struct AccountLocalLinkOffer: Codable, Sendable {
+    public var host: HostMember
+    public var proof: String
+
+    enum CodingKeys: String, CodingKey {
+      case host = "host"
+      case proof = "proof"
+    }
+
+    public init(host: HostMember, proof: String) {
+      self.host = host
+      self.proof = proof
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(host, forKey: .host)
+      try c.encode(proof, forKey: .proof)
+    }
+  }
+
+  public typealias AccountMember = JSONValue
+
+  public struct AccountMemberInfoRole: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let device = AccountMemberInfoRole(rawValue: "device")
+    public static let host = AccountMemberInfoRole(rawValue: "host")
+  }
+
+  public struct AccountMemberInfo: Codable, Sendable {
+    public var id: String
+    public var role: AccountMemberInfoRole
+    public var kind: String
+    public var name: String
+    public var createdAt: Double
+    public var isSelf: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case role = "role"
+      case kind = "kind"
+      case name = "name"
+      case createdAt = "created_at"
+      case isSelf = "is_self"
+    }
+
+    public init(id: String, role: AccountMemberInfoRole, kind: String, name: String, createdAt: Double, isSelf: Bool) {
+      self.id = id
+      self.role = role
+      self.kind = kind
+      self.name = name
+      self.createdAt = createdAt
+      self.isSelf = isSelf
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(role, forKey: .role)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(name, forKey: .name)
+      try c.encode(createdAt, forKey: .createdAt)
+      try c.encode(isSelf, forKey: .isSelf)
+    }
+  }
+
+  public struct AccountRoot: Codable, Sendable {
+    public var accountId: String
+    public var epoch: Int
+    public var genesisHash: String
+
+    enum CodingKeys: String, CodingKey {
+      case accountId = "account_id"
+      case epoch = "epoch"
+      case genesisHash = "genesis_hash"
+    }
+
+    public init(accountId: String, epoch: Int, genesisHash: String) {
+      self.accountId = accountId
+      self.epoch = epoch
+      self.genesisHash = genesisHash
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(accountId, forKey: .accountId)
+      try c.encode(epoch, forKey: .epoch)
+      try c.encode(genesisHash, forKey: .genesisHash)
+    }
+  }
+
+  public struct AccountStatus: Codable, Sendable {
+    public var linked: Bool
+    public var accountId: String?
+    public var epoch: Int?
+    public var hostId: String?
+    public var safetyCode: String?
+    public var headSeq: Int?
+    public var logError: String?
+    public var presenceAt: Double?
+    public var config: AccountConfig
+    public var link: AccountLinkState
+
+    enum CodingKeys: String, CodingKey {
+      case linked = "linked"
+      case accountId = "account_id"
+      case epoch = "epoch"
+      case hostId = "host_id"
+      case safetyCode = "safety_code"
+      case headSeq = "head_seq"
+      case logError = "log_error"
+      case presenceAt = "presence_at"
+      case config = "config"
+      case link = "link"
+    }
+
+    public init(linked: Bool, accountId: String? = nil, epoch: Int? = nil, hostId: String? = nil, safetyCode: String? = nil, headSeq: Int? = nil, logError: String? = nil, presenceAt: Double? = nil, config: AccountConfig, link: AccountLinkState) {
+      self.linked = linked
+      self.accountId = accountId
+      self.epoch = epoch
+      self.hostId = hostId
+      self.safetyCode = safetyCode
+      self.headSeq = headSeq
+      self.logError = logError
+      self.presenceAt = presenceAt
+      self.config = config
+      self.link = link
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(linked, forKey: .linked)
+      try c.encode(accountId, forKey: .accountId)
+      try c.encode(epoch, forKey: .epoch)
+      try c.encode(hostId, forKey: .hostId)
+      try c.encode(safetyCode, forKey: .safetyCode)
+      try c.encode(headSeq, forKey: .headSeq)
+      try c.encode(logError, forKey: .logError)
+      try c.encode(presenceAt, forKey: .presenceAt)
+      try c.encode(config, forKey: .config)
+      try c.encode(link, forKey: .link)
+    }
+  }
+
   public struct AgentAccountInfo: Codable, Sendable {
     public var apiProvider: String?
     public var email: String?
@@ -4670,6 +5427,63 @@ extension ArgusProtocol {
     }
   }
 
+  public struct DeviceKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let ios = DeviceKind(rawValue: "ios")
+    public static let mac = DeviceKind(rawValue: "mac")
+    public static let electron = DeviceKind(rawValue: "electron")
+  }
+
+  public struct DeviceMember: Codable, Sendable {
+    public var id: String
+    public var signPub: String
+    public var noisePub: String
+    public var name: String
+    public var createdAt: Double
+    public var role: String
+    public var kind: DeviceKind
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case signPub = "sign_pub"
+      case noisePub = "noise_pub"
+      case name = "name"
+      case createdAt = "created_at"
+      case role = "role"
+      case kind = "kind"
+    }
+
+    public init(id: String, signPub: String, noisePub: String, name: String, createdAt: Double, role: String, kind: DeviceKind) {
+      self.id = id
+      self.signPub = signPub
+      self.noisePub = noisePub
+      self.name = name
+      self.createdAt = createdAt
+      self.role = role
+      self.kind = kind
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(signPub, forKey: .signPub)
+      try c.encode(noisePub, forKey: .noisePub)
+      try c.encode(name, forKey: .name)
+      try c.encode(createdAt, forKey: .createdAt)
+      try c.encode(role, forKey: .role)
+      try c.encode(kind, forKey: .kind)
+    }
+  }
+
   public struct DeviceOrientation: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -4793,6 +5607,35 @@ extension ArgusProtocol {
       try c.encodeIfPresent(pushKey, forKey: .pushKey)
       try c.encodeIfPresent(authKey, forKey: .authKey)
       try c.encode(updatedAt, forKey: .updatedAt)
+    }
+  }
+
+  public struct DirectoryRecord: Codable, Sendable {
+    public var hostId: String
+    public var presenceBody: String
+    public var presenceSig: String
+    public var lastSeen: Double
+
+    enum CodingKeys: String, CodingKey {
+      case hostId = "host_id"
+      case presenceBody = "presence_body"
+      case presenceSig = "presence_sig"
+      case lastSeen = "last_seen"
+    }
+
+    public init(hostId: String, presenceBody: String, presenceSig: String, lastSeen: Double) {
+      self.hostId = hostId
+      self.presenceBody = presenceBody
+      self.presenceSig = presenceSig
+      self.lastSeen = lastSeen
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(hostId, forKey: .hostId)
+      try c.encode(presenceBody, forKey: .presenceBody)
+      try c.encode(presenceSig, forKey: .presenceSig)
+      try c.encode(lastSeen, forKey: .lastSeen)
     }
   }
 
@@ -6380,6 +7223,47 @@ extension ArgusProtocol {
     }
   }
 
+  public struct HostMember: Codable, Sendable {
+    public var id: String
+    public var signPub: String
+    public var noisePub: String
+    public var name: String
+    public var createdAt: Double
+    public var role: String
+    public var platform: HostPlatformKind
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case signPub = "sign_pub"
+      case noisePub = "noise_pub"
+      case name = "name"
+      case createdAt = "created_at"
+      case role = "role"
+      case platform = "platform"
+    }
+
+    public init(id: String, signPub: String, noisePub: String, name: String, createdAt: Double, role: String, platform: HostPlatformKind) {
+      self.id = id
+      self.signPub = signPub
+      self.noisePub = noisePub
+      self.name = name
+      self.createdAt = createdAt
+      self.role = role
+      self.platform = platform
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(signPub, forKey: .signPub)
+      try c.encode(noisePub, forKey: .noisePub)
+      try c.encode(name, forKey: .name)
+      try c.encode(createdAt, forKey: .createdAt)
+      try c.encode(role, forKey: .role)
+      try c.encode(platform, forKey: .platform)
+    }
+  }
+
   public struct HostOsPlatform: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -6402,6 +7286,21 @@ extension ArgusProtocol {
     public static let openbsd = HostOsPlatform(rawValue: "openbsd")
     public static let sunos = HostOsPlatform(rawValue: "sunos")
     public static let win32 = HostOsPlatform(rawValue: "win32")
+  }
+
+  public struct HostPlatformKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let darwin = HostPlatformKind(rawValue: "darwin")
+    public static let linux = HostPlatformKind(rawValue: "linux")
   }
 
   public struct HostSnapshot: Codable, Sendable {
@@ -7004,6 +7903,402 @@ extension ArgusProtocol {
       try c.encode(lfsInstalled, forKey: .lfsInstalled)
       try c.encode(repoUsesLfs, forKey: .repoUsesLfs)
       try c.encode(tracked, forKey: .tracked)
+    }
+  }
+
+  public struct LogBodyGenesis: Codable, Sendable {
+    public var v: Double
+    public var accountId: String
+    public var epoch: Int
+    public var seq: Int
+    public var prev: String
+    public var ts: Double
+    public var signer: String
+    public var type: String
+    public var member: AccountMember
+
+    enum CodingKeys: String, CodingKey {
+      case v = "v"
+      case accountId = "account_id"
+      case epoch = "epoch"
+      case seq = "seq"
+      case prev = "prev"
+      case ts = "ts"
+      case signer = "signer"
+      case type = "type"
+      case member = "member"
+    }
+
+    public init(v: Double, accountId: String, epoch: Int, seq: Int, prev: String, ts: Double, signer: String, type: String, member: AccountMember) {
+      self.v = v
+      self.accountId = accountId
+      self.epoch = epoch
+      self.seq = seq
+      self.prev = prev
+      self.ts = ts
+      self.signer = signer
+      self.type = type
+      self.member = member
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(v, forKey: .v)
+      try c.encode(accountId, forKey: .accountId)
+      try c.encode(epoch, forKey: .epoch)
+      try c.encode(seq, forKey: .seq)
+      try c.encode(prev, forKey: .prev)
+      try c.encode(ts, forKey: .ts)
+      try c.encode(signer, forKey: .signer)
+      try c.encode(type, forKey: .type)
+      try c.encode(member, forKey: .member)
+    }
+  }
+
+  public struct LogBodyAddDevice: Codable, Sendable {
+    public var v: Double
+    public var accountId: String
+    public var epoch: Int
+    public var seq: Int
+    public var prev: String
+    public var ts: Double
+    public var signer: String
+    public var type: String
+    public var member: DeviceMember
+    public var requestId: String
+    public var sasCommit: String
+    public var proof: String
+
+    enum CodingKeys: String, CodingKey {
+      case v = "v"
+      case accountId = "account_id"
+      case epoch = "epoch"
+      case seq = "seq"
+      case prev = "prev"
+      case ts = "ts"
+      case signer = "signer"
+      case type = "type"
+      case member = "member"
+      case requestId = "request_id"
+      case sasCommit = "sas_commit"
+      case proof = "proof"
+    }
+
+    public init(v: Double, accountId: String, epoch: Int, seq: Int, prev: String, ts: Double, signer: String, type: String, member: DeviceMember, requestId: String, sasCommit: String, proof: String) {
+      self.v = v
+      self.accountId = accountId
+      self.epoch = epoch
+      self.seq = seq
+      self.prev = prev
+      self.ts = ts
+      self.signer = signer
+      self.type = type
+      self.member = member
+      self.requestId = requestId
+      self.sasCommit = sasCommit
+      self.proof = proof
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(v, forKey: .v)
+      try c.encode(accountId, forKey: .accountId)
+      try c.encode(epoch, forKey: .epoch)
+      try c.encode(seq, forKey: .seq)
+      try c.encode(prev, forKey: .prev)
+      try c.encode(ts, forKey: .ts)
+      try c.encode(signer, forKey: .signer)
+      try c.encode(type, forKey: .type)
+      try c.encode(member, forKey: .member)
+      try c.encode(requestId, forKey: .requestId)
+      try c.encode(sasCommit, forKey: .sasCommit)
+      try c.encode(proof, forKey: .proof)
+    }
+  }
+
+  public struct LogBodyAddHost: Codable, Sendable {
+    public var v: Double
+    public var accountId: String
+    public var epoch: Int
+    public var seq: Int
+    public var prev: String
+    public var ts: Double
+    public var signer: String
+    public var type: String
+    public var member: HostMember
+    public var requestId: String
+    public var sasCommit: String
+    public var proof: String
+
+    enum CodingKeys: String, CodingKey {
+      case v = "v"
+      case accountId = "account_id"
+      case epoch = "epoch"
+      case seq = "seq"
+      case prev = "prev"
+      case ts = "ts"
+      case signer = "signer"
+      case type = "type"
+      case member = "member"
+      case requestId = "request_id"
+      case sasCommit = "sas_commit"
+      case proof = "proof"
+    }
+
+    public init(v: Double, accountId: String, epoch: Int, seq: Int, prev: String, ts: Double, signer: String, type: String, member: HostMember, requestId: String, sasCommit: String, proof: String) {
+      self.v = v
+      self.accountId = accountId
+      self.epoch = epoch
+      self.seq = seq
+      self.prev = prev
+      self.ts = ts
+      self.signer = signer
+      self.type = type
+      self.member = member
+      self.requestId = requestId
+      self.sasCommit = sasCommit
+      self.proof = proof
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(v, forKey: .v)
+      try c.encode(accountId, forKey: .accountId)
+      try c.encode(epoch, forKey: .epoch)
+      try c.encode(seq, forKey: .seq)
+      try c.encode(prev, forKey: .prev)
+      try c.encode(ts, forKey: .ts)
+      try c.encode(signer, forKey: .signer)
+      try c.encode(type, forKey: .type)
+      try c.encode(member, forKey: .member)
+      try c.encode(requestId, forKey: .requestId)
+      try c.encode(sasCommit, forKey: .sasCommit)
+      try c.encode(proof, forKey: .proof)
+    }
+  }
+
+  public struct LogBodyRevoke: Codable, Sendable {
+    public var v: Double
+    public var accountId: String
+    public var epoch: Int
+    public var seq: Int
+    public var prev: String
+    public var ts: Double
+    public var signer: String
+    public var type: String
+    public var memberId: String
+    public var reason: RevokeReason
+
+    enum CodingKeys: String, CodingKey {
+      case v = "v"
+      case accountId = "account_id"
+      case epoch = "epoch"
+      case seq = "seq"
+      case prev = "prev"
+      case ts = "ts"
+      case signer = "signer"
+      case type = "type"
+      case memberId = "member_id"
+      case reason = "reason"
+    }
+
+    public init(v: Double, accountId: String, epoch: Int, seq: Int, prev: String, ts: Double, signer: String, type: String, memberId: String, reason: RevokeReason) {
+      self.v = v
+      self.accountId = accountId
+      self.epoch = epoch
+      self.seq = seq
+      self.prev = prev
+      self.ts = ts
+      self.signer = signer
+      self.type = type
+      self.memberId = memberId
+      self.reason = reason
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(v, forKey: .v)
+      try c.encode(accountId, forKey: .accountId)
+      try c.encode(epoch, forKey: .epoch)
+      try c.encode(seq, forKey: .seq)
+      try c.encode(prev, forKey: .prev)
+      try c.encode(ts, forKey: .ts)
+      try c.encode(signer, forKey: .signer)
+      try c.encode(type, forKey: .type)
+      try c.encode(memberId, forKey: .memberId)
+      try c.encode(reason, forKey: .reason)
+    }
+  }
+
+  public struct LogBodyRotate: Codable, Sendable {
+    public var v: Double
+    public var accountId: String
+    public var epoch: Int
+    public var seq: Int
+    public var prev: String
+    public var ts: Double
+    public var signer: String
+    public var type: String
+    public var memberId: String
+    public var signPub: String
+    public var noisePub: String
+    public var proof: String
+
+    enum CodingKeys: String, CodingKey {
+      case v = "v"
+      case accountId = "account_id"
+      case epoch = "epoch"
+      case seq = "seq"
+      case prev = "prev"
+      case ts = "ts"
+      case signer = "signer"
+      case type = "type"
+      case memberId = "member_id"
+      case signPub = "sign_pub"
+      case noisePub = "noise_pub"
+      case proof = "proof"
+    }
+
+    public init(v: Double, accountId: String, epoch: Int, seq: Int, prev: String, ts: Double, signer: String, type: String, memberId: String, signPub: String, noisePub: String, proof: String) {
+      self.v = v
+      self.accountId = accountId
+      self.epoch = epoch
+      self.seq = seq
+      self.prev = prev
+      self.ts = ts
+      self.signer = signer
+      self.type = type
+      self.memberId = memberId
+      self.signPub = signPub
+      self.noisePub = noisePub
+      self.proof = proof
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(v, forKey: .v)
+      try c.encode(accountId, forKey: .accountId)
+      try c.encode(epoch, forKey: .epoch)
+      try c.encode(seq, forKey: .seq)
+      try c.encode(prev, forKey: .prev)
+      try c.encode(ts, forKey: .ts)
+      try c.encode(signer, forKey: .signer)
+      try c.encode(type, forKey: .type)
+      try c.encode(memberId, forKey: .memberId)
+      try c.encode(signPub, forKey: .signPub)
+      try c.encode(noisePub, forKey: .noisePub)
+      try c.encode(proof, forKey: .proof)
+    }
+  }
+
+  public struct LogBodyRename: Codable, Sendable {
+    public var v: Double
+    public var accountId: String
+    public var epoch: Int
+    public var seq: Int
+    public var prev: String
+    public var ts: Double
+    public var signer: String
+    public var type: String
+    public var memberId: String
+    public var name: String
+
+    enum CodingKeys: String, CodingKey {
+      case v = "v"
+      case accountId = "account_id"
+      case epoch = "epoch"
+      case seq = "seq"
+      case prev = "prev"
+      case ts = "ts"
+      case signer = "signer"
+      case type = "type"
+      case memberId = "member_id"
+      case name = "name"
+    }
+
+    public init(v: Double, accountId: String, epoch: Int, seq: Int, prev: String, ts: Double, signer: String, type: String, memberId: String, name: String) {
+      self.v = v
+      self.accountId = accountId
+      self.epoch = epoch
+      self.seq = seq
+      self.prev = prev
+      self.ts = ts
+      self.signer = signer
+      self.type = type
+      self.memberId = memberId
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(v, forKey: .v)
+      try c.encode(accountId, forKey: .accountId)
+      try c.encode(epoch, forKey: .epoch)
+      try c.encode(seq, forKey: .seq)
+      try c.encode(prev, forKey: .prev)
+      try c.encode(ts, forKey: .ts)
+      try c.encode(signer, forKey: .signer)
+      try c.encode(type, forKey: .type)
+      try c.encode(memberId, forKey: .memberId)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
+  public enum LogBody: Codable, Sendable {
+    case genesis(LogBodyGenesis)
+    case addDevice(LogBodyAddDevice)
+    case addHost(LogBodyAddHost)
+    case revoke(LogBodyRevoke)
+    case rotate(LogBodyRotate)
+    case rename(LogBodyRename)
+    case unknown(JSONValue)
+
+    private enum Tag: String, CodingKey { case tag = "type" }
+
+    public init(from decoder: Decoder) throws {
+      let tag = try decoder.container(keyedBy: Tag.self).decodeIfPresent(String.self, forKey: .tag)
+      switch tag {
+      case "genesis": self = .genesis(try LogBodyGenesis(from: decoder))
+      case "add_device": self = .addDevice(try LogBodyAddDevice(from: decoder))
+      case "add_host": self = .addHost(try LogBodyAddHost(from: decoder))
+      case "revoke": self = .revoke(try LogBodyRevoke(from: decoder))
+      case "rotate": self = .rotate(try LogBodyRotate(from: decoder))
+      case "rename": self = .rename(try LogBodyRename(from: decoder))
+      default: self = .unknown(try JSONValue(from: decoder))
+      }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      switch self {
+      case .genesis(let value): try value.encode(to: encoder)
+      case .addDevice(let value): try value.encode(to: encoder)
+      case .addHost(let value): try value.encode(to: encoder)
+      case .revoke(let value): try value.encode(to: encoder)
+      case .rotate(let value): try value.encode(to: encoder)
+      case .rename(let value): try value.encode(to: encoder)
+      case .unknown(let value): try value.encode(to: encoder)
+      }
+    }
+  }
+
+  public struct LogEntry: Codable, Sendable {
+    public var body: String
+    public var sigs: [String: String]
+
+    enum CodingKeys: String, CodingKey {
+      case body = "body"
+      case sigs = "sigs"
+    }
+
+    public init(body: String, sigs: [String: String]) {
+      self.body = body
+      self.sigs = sigs
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(body, forKey: .body)
+      try c.encode(sigs, forKey: .sigs)
     }
   }
 
@@ -8222,6 +9517,21 @@ extension ArgusProtocol {
     public static let admin = PairedDeviceCapabilitiesItem(rawValue: "admin")
   }
 
+  public struct PairedDeviceSource: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let account = PairedDeviceSource(rawValue: "account")
+    public static let pairing = PairedDeviceSource(rawValue: "pairing")
+  }
+
   public struct PairedDevice: Codable, Sendable {
     public var deviceId: String
     public var label: String
@@ -8230,6 +9540,7 @@ extension ArgusProtocol {
     public var createdAt: Double
     public var lastSeen: Double?
     public var push: DevicePushToken?
+    public var source: PairedDeviceSource?
 
     enum CodingKeys: String, CodingKey {
       case deviceId = "device_id"
@@ -8239,9 +9550,10 @@ extension ArgusProtocol {
       case createdAt = "created_at"
       case lastSeen = "last_seen"
       case push = "push"
+      case source = "source"
     }
 
-    public init(deviceId: String, label: String, devStaticPub: String, capabilities: [PairedDeviceCapabilitiesItem], createdAt: Double, lastSeen: Double? = nil, push: DevicePushToken? = nil) {
+    public init(deviceId: String, label: String, devStaticPub: String, capabilities: [PairedDeviceCapabilitiesItem], createdAt: Double, lastSeen: Double? = nil, push: DevicePushToken? = nil, source: PairedDeviceSource? = nil) {
       self.deviceId = deviceId
       self.label = label
       self.devStaticPub = devStaticPub
@@ -8249,6 +9561,7 @@ extension ArgusProtocol {
       self.createdAt = createdAt
       self.lastSeen = lastSeen
       self.push = push
+      self.source = source
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -8260,6 +9573,7 @@ extension ArgusProtocol {
       try c.encode(createdAt, forKey: .createdAt)
       try c.encode(lastSeen, forKey: .lastSeen)
       try c.encodeIfPresent(push, forKey: .push)
+      try c.encodeIfPresent(source, forKey: .source)
     }
   }
 
@@ -8572,6 +9886,84 @@ extension ArgusProtocol {
     public static let running = PrereqStatus(rawValue: "running")
     public static let skipped = PrereqStatus(rawValue: "skipped")
     public static let warn = PrereqStatus(rawValue: "warn")
+  }
+
+  public struct PresenceBody: Codable, Sendable {
+    public var v: Double
+    public var accountId: String
+    public var epoch: Int
+    public var hostId: String
+    public var ts: Double
+    public var endpoints: [PresenceEndpoint]
+
+    enum CodingKeys: String, CodingKey {
+      case v = "v"
+      case accountId = "account_id"
+      case epoch = "epoch"
+      case hostId = "host_id"
+      case ts = "ts"
+      case endpoints = "endpoints"
+    }
+
+    public init(v: Double, accountId: String, epoch: Int, hostId: String, ts: Double, endpoints: [PresenceEndpoint]) {
+      self.v = v
+      self.accountId = accountId
+      self.epoch = epoch
+      self.hostId = hostId
+      self.ts = ts
+      self.endpoints = endpoints
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(v, forKey: .v)
+      try c.encode(accountId, forKey: .accountId)
+      try c.encode(epoch, forKey: .epoch)
+      try c.encode(hostId, forKey: .hostId)
+      try c.encode(ts, forKey: .ts)
+      try c.encode(endpoints, forKey: .endpoints)
+    }
+  }
+
+  public struct PresenceEndpointKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let lan = PresenceEndpointKind(rawValue: "lan")
+    public static let tailscale = PresenceEndpointKind(rawValue: "tailscale")
+    public static let cloudflare = PresenceEndpointKind(rawValue: "cloudflare")
+  }
+
+  public struct PresenceEndpoint: Codable, Sendable {
+    public var kind: PresenceEndpointKind
+    public var url: String
+    public var priority: Double
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case url = "url"
+      case priority = "priority"
+    }
+
+    public init(kind: PresenceEndpointKind, url: String, priority: Double) {
+      self.kind = kind
+      self.url = url
+      self.priority = priority
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(url, forKey: .url)
+      try c.encode(priority, forKey: .priority)
+    }
   }
 
   public struct ProjectAutomationConfigAutonomyCeiling: RawRepresentable, Codable, Hashable, Sendable {
@@ -13313,6 +14705,22 @@ extension ArgusProtocol {
       try c.encodeIfPresent(ok, forKey: .ok)
       try c.encodeIfPresent(error, forKey: .error)
     }
+  }
+
+  public struct RevokeReason: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let removed = RevokeReason(rawValue: "removed")
+    public static let lost = RevokeReason(rawValue: "lost")
+    public static let unlinked = RevokeReason(rawValue: "unlinked")
   }
 
   public struct RunnerCapabilities: Codable, Sendable {
