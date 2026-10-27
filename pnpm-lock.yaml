@@ -436,6 +436,12 @@ importers:
 
   packages/remote-protocol:
     dependencies:
+      '@noble/curves':
+        specifier: ^2.2.0
+        version: 2.2.0
+      '@noble/hashes':
+        specifier: ^2.2.0
+        version: 2.2.0
       zod:
         specifier: ^4.3.6
         version: 4.3.6

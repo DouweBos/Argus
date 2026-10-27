@@ -1,0 +1,23 @@
+{
+  "name": "wrong_prev",
+  "description": "an entry that does not extend the head",
+  "entries": [
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":0,\"prev\":\"\",\"ts\":1800000000000,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"genesis\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000001\",\"role\":\"device\",\"kind\":\"ios\",\"sign_pub\":\"iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w=\",\"noise_pub\":\"+0Gx/PdcEif6CIdgVqXtB6xE/gwRbsLegLjlI5WdeCQ=\",\"name\":\"Phone\",\"created_at\":1800000000000}}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "yWQSqld3PsIDFoyuT2scZ1vjC2wg7N55aYxbodxAJ32WPyBYy2LEyKNzJ09phgqy35AvhCKKFgjGRj0uIiIiBQ=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":1,\"prev\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\",\"ts\":1800000000000,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"rename\",\"member_id\":\"00000000-0000-4000-8000-000000000001\",\"name\":\"Forked\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "mESFxGtSS7EaqgyFKJ2Wn0iZJ9sPsCChnfzazfiaY4Lbzmp6W9Dcv3j61Uplz4IMnDO7Icj5ZJ+HLN+UQcN9CA=="
+      }
+    }
+  ],
+  "expect": {
+    "ok": false,
+    "reason": "fork",
+    "index": 1
+  }
+}
