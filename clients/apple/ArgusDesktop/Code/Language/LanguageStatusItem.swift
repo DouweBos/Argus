@@ -38,7 +38,7 @@ struct LanguageStatusItem: View {
         if counts.others > 0 { count(counts.others, icon: "info.circle.fill", tone: .accent) }
       }
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .help(client.problemsExpanded ? "Hide problems" : "Show problems in open files")
   }
 
@@ -67,7 +67,7 @@ struct LanguageStatusItem: View {
     case .needsSetup?:
       HStack(spacing: 4) {
         Text(Self.setupTitle(name, status?.action)).foregroundStyle(theme.warning)
-        Link("Learn more", destination: status?.action == nil ? Self.swiftHelp : Self.xcodeHelp)
+        Link("Learn more", destination: status?.action == nil ? Self.swiftHelp : Self.xcodeHelp).clickable()
         if status?.action != nil {
           Button("Retry") { Task { await client.restart(language.server) } }
             .buttonStyle(.accentLink)
@@ -77,7 +77,7 @@ struct LanguageStatusItem: View {
     case .missing?:
       HStack(spacing: 4) {
         Text("\(name) server not found").foregroundStyle(theme.warning)
-        Link("How to install", destination: Self.installHelp)
+        Link("How to install", destination: Self.installHelp).clickable()
       }
       .help(status?.message ?? "Argus didn't find a language server for \(name) on this machine")
     case .failed?:

@@ -102,7 +102,7 @@ struct PairingSheet: View {
       } label: {
         Image(systemName: copied ? "checkmark" : "doc.on.doc")
       }
-      .buttonStyle(.borderless)
+      .buttonStyle(.argusBorderless)
       .help("Copy pairing code")
       .accessibilityLabel("Copy pairing code")
     }

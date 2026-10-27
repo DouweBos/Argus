@@ -141,7 +141,7 @@ public struct SettingsHeaderButton: View {
       .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(theme.border))
       .contentShape(.rect(cornerRadius: 6))
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
   }
 }
 
@@ -283,7 +283,7 @@ public struct SettingsNavItem: View {
       }
       .contentShape(.rect(cornerRadius: 6))
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .onHover { hovering = $0 }
     .accessibilityAddTraits(selected ? .isSelected : [])
   }

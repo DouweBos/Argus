@@ -41,7 +41,7 @@
                     )
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.argusPlain)
                 .id(index)
               }
             }
@@ -163,7 +163,7 @@
                     .padding(4)
                     .background(Circle().fill(theme.accent))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.argusPlain)
                 .help("Remove image")
                 .offset(x: 5, y: -5)
               }

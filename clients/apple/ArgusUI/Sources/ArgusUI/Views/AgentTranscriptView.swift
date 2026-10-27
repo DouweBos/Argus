@@ -115,7 +115,7 @@ public struct AgentTranscriptView: View {
               .background(theme.accent)
               .clipShape(Circle())
           }
-          .buttonStyle(.plain)
+          .buttonStyle(.argusPlain)
           .padding(theme.space)
         }
       }

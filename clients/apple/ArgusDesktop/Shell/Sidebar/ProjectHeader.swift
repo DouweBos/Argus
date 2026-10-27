@@ -61,7 +61,7 @@ struct ProjectHeader: View {
         .frame(width: TextScale.shared(16), height: TextScale.shared(16))
         .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .accessibilityLabel(collapsed ? "Expand \(project.name)" : "Collapse \(project.name)")
   }
 

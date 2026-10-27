@@ -95,7 +95,7 @@ struct HomeEnvironmentCards: View {
       } label: {
         Image(systemName: "xmark")
       }
-      .buttonStyle(.borderless)
+      .buttonStyle(.argusBorderless)
       .accessibilityLabel("Dismiss")
     }
   }
@@ -168,7 +168,7 @@ private struct ProposalSummaryRow: View {
       }
       .contentShape(.rect)
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
   }
 }
 
@@ -210,7 +210,7 @@ struct HomeRecentRunsSection: View {
               .padding(.vertical, 5)
               .contentShape(.rect)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.argusPlain)
           }
         }
       }

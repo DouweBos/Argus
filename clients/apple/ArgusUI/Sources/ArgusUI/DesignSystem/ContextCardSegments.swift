@@ -61,7 +61,7 @@ private struct SegmentButtonStyle: ButtonStyle {
   let selected: Bool
 
   func makeBody(configuration: Configuration) -> some View {
-    SegmentHighlight(label: configuration.label, pressed: configuration.isPressed, selected: selected)
+    SegmentHighlight(label: configuration.label, pressed: configuration.isPressed, selected: selected).clickable()
   }
 }
 

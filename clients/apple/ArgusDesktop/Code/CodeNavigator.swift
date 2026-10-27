@@ -82,6 +82,7 @@ struct NavigatorRowHighlight: ViewModifier {
   func body(content: Content) -> some View {
     content
       .onHover { hovering = $0 }
+      .clickable()
       .listRowBackground(
         RoundedRectangle(cornerRadius: 6)
           .fill(selected || hovering ? theme.selection.opacity(selected ? 1 : 0.55) : .clear)

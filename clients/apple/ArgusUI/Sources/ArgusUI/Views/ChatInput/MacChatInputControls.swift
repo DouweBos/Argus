@@ -53,7 +53,7 @@
       } label: { open in
         ComposerPillLabel(icon: Icon.agent, title: modelLabel, open: open)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.argusPlain)
       .fixedSize()
       .help("Switch model")
     }
@@ -70,7 +70,7 @@
           icon: Icon.lock, title: ComposerPermissionMode.label(permissionMode), accent: permissionMode != .auto,
           open: open)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.argusPlain)
       .fixedSize()
       .help("\(ComposerPermissionMode.description(permissionMode)) (⇧Tab to cycle)")
     }
@@ -85,7 +85,7 @@
       } label: { open in
         ComposerPillLabel(icon: Icon.clock, title: ComposerEffort.label(host.effortByAgent[agentId]), open: open)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.argusPlain)
       .fixedSize()
       .help("Reasoning effort")
     }
@@ -108,7 +108,7 @@
           icon: Icon.link, title: linkedProjects.isEmpty ? nil : "\(linkedProjects.count) linked",
           accent: !linkedProjects.isEmpty, chevron: !linkedProjects.isEmpty, open: open)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.argusPlain)
       .fixedSize()
       .help(linkedProjects.isEmpty ? "Link another project to this message" : "Projects linked to this message")
       .accessibilityLabel("Link other project")

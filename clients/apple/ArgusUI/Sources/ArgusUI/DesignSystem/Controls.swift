@@ -42,7 +42,7 @@ public struct ActionTiles: View {
             RoundedRectangle(cornerRadius: theme.radiusSmall)
               .stroke(theme.border, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
         .disabled(action.disabled)
         .opacity(action.disabled ? 0.5 : 1)
       }
@@ -76,7 +76,7 @@ public struct SegmentedControl<Value: Hashable>: View {
             // A plain button only hits its opaque pixels; the unselected segment is clear.
             .contentShape(RoundedRectangle(cornerRadius: theme.radiusSmall - 2))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
       }
     }
     .padding(2)
@@ -252,7 +252,7 @@ public struct PickerSheet<Value: Hashable>: View {
                 .padding(.vertical, 6)
                 .contentShape(Rectangle())
               }
-              .buttonStyle(.plain)
+              .buttonStyle(.argusPlain)
               .listRowBackground(theme.bgSecondary)
             }
           }

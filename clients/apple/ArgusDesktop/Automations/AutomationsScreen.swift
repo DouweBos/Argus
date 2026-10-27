@@ -82,7 +82,7 @@ struct AutomationsScreen: View {
           }
           .contentShape(.rect)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
         .accessibilityLabel(automation.name)
       }
       TableColumn("Trigger") { Text(Labels.triggerLabel($0)) }

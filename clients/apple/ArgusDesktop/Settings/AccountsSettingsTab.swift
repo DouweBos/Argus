@@ -113,7 +113,7 @@ private struct AccountRow: View {
       } label: {
         identity
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.argusPlain)
       .accessibilityLabel(active ? "Active account" : "Make active")
       Spacer()
       if account.needsReauth {
@@ -126,6 +126,7 @@ private struct AccountRow: View {
         Image(systemName: "ellipsis")
       }
       .menuStyle(.borderlessButton)
+      .clickable()
       .fixedSize()
       .accessibilityLabel("Account actions")
     }

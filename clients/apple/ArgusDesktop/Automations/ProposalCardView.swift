@@ -85,7 +85,7 @@ struct ProposalCardView: View {
         Button { model.navigate(.proposal(id: proposal.id)) } label: {
           Text(proposal.title).font(.scaled(.headline)).foregroundStyle(theme.text).multilineTextAlignment(.leading)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
       } else {
         Text(proposal.title).font(.scaled(.headline)).textSelection(.enabled)
       }

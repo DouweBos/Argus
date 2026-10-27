@@ -51,7 +51,7 @@ struct AgentsOverview: View {
               }
               .contentShape(.rect)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.argusPlain)
           }
           .width(min: 140)
           TableColumn("Status") { row in

@@ -75,7 +75,7 @@ struct GitRefSections: View {
           }
           .contentShape(.rect)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
         .help(workspace.tagsExpanded ? "Hide tags" : "Show tags")
       }
     }

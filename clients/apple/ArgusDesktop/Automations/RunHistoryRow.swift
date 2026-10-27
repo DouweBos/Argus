@@ -27,7 +27,7 @@ struct RunHistoryRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.argusPlain)
       Text(Labels.runDuration(run)).monospacedDigit().foregroundStyle(.secondary)
       Text(Labels.runCost(run)).monospacedDigit().foregroundStyle(.secondary).frame(width: 56, alignment: .trailing)
       if run.isActive {
@@ -77,7 +77,7 @@ struct MemoriesSection: View {
           }
           .contentShape(.rect)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
       }
     } header: {
       HStack {

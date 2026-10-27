@@ -176,7 +176,7 @@ private struct AppearanceCard<Content: View>: View {
         )
         .contentShape(.rect(cornerRadius: theme.radiusSmall + 2))
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .onHover { hovering = $0 }
     .accessibilityAddTraits(selected ? .isSelected : [])
   }

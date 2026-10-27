@@ -88,14 +88,14 @@ struct HostFolderPicker: View {
                 }
                 .contentShape(.rect)
               }
-              .buttonStyle(.plain)
+              .buttonStyle(.argusPlain)
               .accessibilityLabel(entry.name)
               Button {
                 Task { await load(entry.path) }
               } label: {
                 Image(systemName: "chevron.right")
               }
-              .buttonStyle(.borderless)
+              .buttonStyle(.argusBorderless)
               .help("Open \(entry.name)")
               .accessibilityLabel("Open \(entry.name)")
             }

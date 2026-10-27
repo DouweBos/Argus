@@ -50,7 +50,7 @@ public struct TVRemoteView: View {
           .overlay(Circle().strokeBorder(theme.border, lineWidth: 1))
           .frame(width: Self.padSize * 0.4, height: Self.padSize * 0.4)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.argusPlain)
       .accessibilityLabel("Select")
     }
     .frame(width: Self.padSize, height: Self.padSize)
@@ -64,7 +64,7 @@ public struct TVRemoteView: View {
         .frame(width: 52, height: 52)
         .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .accessibilityLabel(id.capitalized)
   }
 

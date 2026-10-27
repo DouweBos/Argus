@@ -106,6 +106,7 @@ struct CommitComposerView: View {
       Image(systemName: "text.badge.plus")
     }
     .menuStyle(.button)
+    .clickable()
     .buttonStyle(FlatIconButtonStyle(size: 22))
     .menuIndicator(.hidden)
     .fixedSize()
@@ -166,7 +167,7 @@ private struct CommitAutoCompleteList: View {
               in: .rect(cornerRadius: 4))
             .contentShape(.rect)
           }
-          .buttonStyle(.plain)
+          .buttonStyle(.argusPlain)
           .onHover { if $0 { vm.highlightAutoComplete(suggestion.id) } }
         }
       }
@@ -198,7 +199,7 @@ private struct GitmojiPicker: View {
           }
           .contentShape(.rect)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
       }
       .listStyle(.plain)
     }

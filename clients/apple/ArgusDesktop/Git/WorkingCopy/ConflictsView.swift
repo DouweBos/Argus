@@ -55,7 +55,7 @@ struct ConflictsView: View {
             }
             .contentShape(.rect)
           }
-          .buttonStyle(.plain)
+          .buttonStyle(.argusPlain)
           .font(.scaled(size: 12))
           .help(entry.path)
           .tag(entry.path)

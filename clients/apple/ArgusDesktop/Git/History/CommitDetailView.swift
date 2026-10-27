@@ -82,7 +82,7 @@ private struct CommitDetailHeader: View {
             HStack(spacing: 6) {
               Text(commit.id).font(.scaled(size: 11, design: .monospaced)).textSelection(.enabled)
               Button { Clipboard.copy(commit.id) } label: { Image(systemName: "doc.on.doc") }
-                .buttonStyle(.borderless)
+                .buttonStyle(.argusBorderless)
                 .help("Copy SHA")
             }
           }
@@ -169,7 +169,7 @@ private struct CommitTreeList<Menu: View>: View {
           if changed { Image(systemName: "circle.fill").font(.scaled(size: 5)).foregroundStyle(.tint) }
         }
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.argusPlain)
       .contextMenu { menu(path) }
     }
     .overlay { if history.isLoadingTree { ProgressView().controlSize(.small) } }

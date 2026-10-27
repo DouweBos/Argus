@@ -33,7 +33,7 @@ public struct ColorThemePicker: View {
           }
           .contentShape(.rect)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
         .accessibilityLabel(preset.label)
         .accessibilityAddTraits(selection == preset ? .isSelected : [])
       }

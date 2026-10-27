@@ -70,7 +70,7 @@ struct RuntimeLogsView: View {
       } label: {
         Image(systemName: "doc.on.doc")
       }
-      .buttonStyle(.borderless)
+      .buttonStyle(.argusBorderless)
       .help("Copy visible lines")
       Button {
         log.clear()
@@ -78,7 +78,7 @@ struct RuntimeLogsView: View {
       } label: {
         Image(systemName: Icon.trash)
       }
-      .buttonStyle(.borderless)
+      .buttonStyle(.argusBorderless)
       .help("Clear")
     }
     .padding(.horizontal, 8)

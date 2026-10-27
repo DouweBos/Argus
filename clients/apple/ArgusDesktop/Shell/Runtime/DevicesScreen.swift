@@ -141,7 +141,7 @@ struct DevicesScreen: View {
         HStack(spacing: 6) {
           StatusDot(tone: row.device.online ? .success : .muted, pulse: false)
           Button(row.device.displayName) { selected = DeviceRef(row.device) }
-            .buttonStyle(.plain)
+            .buttonStyle(.argusPlain)
             .lineLimit(1)
             .help("Show details")
         }
@@ -205,7 +205,7 @@ struct DevicesScreen: View {
 
   private func iconButton(_ label: String, _ icon: String, run: @escaping () -> Void) -> some View {
     Button(action: run) { Image(systemName: icon) }
-      .buttonStyle(.borderless)
+      .buttonStyle(.argusBorderless)
       .help(label)
       .accessibilityLabel(label)
   }

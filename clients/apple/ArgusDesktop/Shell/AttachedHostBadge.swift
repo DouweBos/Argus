@@ -28,6 +28,7 @@ struct AttachedHostBadge: ToolbarContent {
             .background(theme.accentSoft, in: Capsule())
         }
         .menuIndicator(.hidden)
+        .clickable()
         .fixedSize()
         .help("This window is attached to the Argus host \(holder.appName) runs")
       }

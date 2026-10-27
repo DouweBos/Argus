@@ -156,6 +156,7 @@ private struct BisectStartForm: View {
         Image(systemName: "chevron.up.chevron.down")
       }
       .menuStyle(.borderlessButton)
+      .clickable()
       .menuIndicator(.hidden)
       .fixedSize()
       .disabled(refs.isEmpty)

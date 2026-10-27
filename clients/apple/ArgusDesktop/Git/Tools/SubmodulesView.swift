@@ -167,6 +167,7 @@ private struct SubmoduleRow: View {
         Image(systemName: "ellipsis")
       }
       .menuStyle(.borderlessButton)
+      .clickable()
       .menuIndicator(.hidden)
       .fixedSize()
     }

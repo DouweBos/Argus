@@ -316,7 +316,7 @@ public struct QuestionFormView: View {
         RoundedRectangle(cornerRadius: theme.radiusSmall)
           .stroke(selected ? theme.accentBorder : .clear, lineWidth: 1))
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
   }
 
   private func toggle(index: Int, question: Questions.Question, label: String) {

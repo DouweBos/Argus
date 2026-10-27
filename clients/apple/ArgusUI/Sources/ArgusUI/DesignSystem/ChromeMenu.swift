@@ -248,6 +248,7 @@
       .contentShape(.rect)
       .onHover(perform: hover)
       .onTapGesture { if !item.disabled { pick() } }
+      .clickable(!item.disabled)
       .accessibilityElement(children: .ignore)
       .accessibilityLabel(item.title)
       .accessibilityAddTraits(item.checked ? [.isButton, .isSelected] : .isButton)

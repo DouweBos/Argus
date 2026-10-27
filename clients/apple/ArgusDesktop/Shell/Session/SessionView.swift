@@ -209,13 +209,11 @@ struct AgentTab: View {
           }
         }
       }
-      .buttonStyle(.plain)
-      .pointerStyle(.link)
+      .buttonStyle(.argusPlain)
       Button(action: close) {
         Image(systemName: "xmark").font(.scaled(size: 9, weight: .semibold))
       }
-      .buttonStyle(.plain)
-      .pointerStyle(.link)
+      .buttonStyle(.argusPlain)
       .foregroundStyle(.secondary)
       .opacity(selected || hovering ? 1 : 0)
       .help("Close agent")

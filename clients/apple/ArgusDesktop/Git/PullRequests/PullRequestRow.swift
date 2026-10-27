@@ -42,7 +42,7 @@ struct PullRequestRow: View {
       Spacer(minLength: 8)
       HStack(spacing: 6) {
         Button { act(.openInBrowser) } label: { Image(systemName: "safari") }
-          .buttonStyle(.borderless)
+          .buttonStyle(.argusBorderless)
           .help("Open on GitHub")
         if let sessionId {
           Button("Open Session") { act(.openSession(sessionId)) }

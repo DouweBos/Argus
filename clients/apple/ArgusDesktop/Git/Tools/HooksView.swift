@@ -146,7 +146,7 @@ private struct HookOutputPane: View {
         .fixedSize()
         Spacer()
         if let output = hook?.lastOutput {
-          Button("Copy") { Clipboard.copy(text(output)) }.buttonStyle(.borderless)
+          Button("Copy") { Clipboard.copy(text(output)) }.buttonStyle(.argusBorderless)
         }
       }
       .padding(.horizontal, 10)

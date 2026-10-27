@@ -72,7 +72,7 @@ struct RecentChatsSheet: View {
         Text("Recent Chats").font(.scaled(.headline))
         Spacer()
         Button("Clear All…") { confirmingClear = true }
-          .buttonStyle(.borderless)
+          .buttonStyle(.argusBorderless)
           .disabled(entries.isEmpty)
         Button("Done") { dismiss() }
           .keyboardShortcut(.cancelAction)
@@ -176,14 +176,14 @@ private struct ChatHistoryRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.argusPlain)
       Button("Resume", action: resume)
         .controlSize(.small)
         .help("Continue this chat in a new agent")
       Button(action: delete) {
         Image(systemName: "xmark")
       }
-      .buttonStyle(.borderless)
+      .buttonStyle(.argusBorderless)
       .help("Delete")
       .accessibilityLabel("Delete chat")
     }

@@ -59,7 +59,7 @@ private struct NotificationRow: View {
       }
       Spacer()
       Button(action: dismiss) { Image(systemName: "xmark") }
-        .buttonStyle(.borderless)
+        .buttonStyle(.argusBorderless)
         .help("Dismiss")
     }
     .padding(.vertical, 4)

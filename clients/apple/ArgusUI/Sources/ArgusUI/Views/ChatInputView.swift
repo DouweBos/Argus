@@ -240,7 +240,7 @@ public struct ChatInputView: View {
                   .padding(4)
                   .background(Circle().fill(theme.accent))
               }
-              .buttonStyle(.plain)
+              .buttonStyle(.argusPlain)
               .offset(x: 6, y: -6)
             }
         }
@@ -269,7 +269,7 @@ public struct ChatInputView: View {
             .padding(.vertical, 6)
             .contentShape(Rectangle())
           }
-          .buttonStyle(.plain)
+          .buttonStyle(.argusPlain)
         }
       }
     }
@@ -379,7 +379,7 @@ public struct ChatInputView: View {
               .padding(.vertical, 6)
               .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.argusPlain)
           }
         }
       }

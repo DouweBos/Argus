@@ -129,7 +129,7 @@ public struct ToolCallCard: View {
       }
       .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
   }
 
   @ViewBuilder
@@ -343,7 +343,7 @@ public struct TranscriptImage: View {
             .frame(maxHeight: maxHeight)
             .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
         .accessibilityLabel("Open image")
       } else {
         RoundedRectangle(cornerRadius: theme.radiusSmall)

@@ -101,7 +101,7 @@ struct InspectionLauncherView: View {
       .padding(.vertical, 6)
       .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .disabled(model.launching)
   }
 

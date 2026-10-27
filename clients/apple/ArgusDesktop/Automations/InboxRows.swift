@@ -25,7 +25,7 @@ private struct InboxRow<Actions: View>: View {
           .frame(maxWidth: .infinity, alignment: .leading)
           .contentShape(.rect)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.argusPlain)
         .accessibilityLabel(title)
         badge
         actions()

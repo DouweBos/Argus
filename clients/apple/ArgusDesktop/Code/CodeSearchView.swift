@@ -82,6 +82,7 @@ struct CodeSearchView: View {
             CodeSearchMatchRow(match: match)
               .contentShape(Rectangle())
               .onTapGesture { code.navigate(to: match.relativePath, line: match.line, source: .search) }
+              .clickable()
           }
         } header: {
           HStack(spacing: 4) {

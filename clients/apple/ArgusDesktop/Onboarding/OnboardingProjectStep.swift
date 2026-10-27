@@ -125,7 +125,7 @@ struct OnboardingProjectStep: View {
               }
             }
           }
-          .buttonStyle(.plain)
+          .buttonStyle(.argusPlain)
         }
       }
     }

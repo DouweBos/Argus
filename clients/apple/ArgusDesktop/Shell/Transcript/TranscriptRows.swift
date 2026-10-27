@@ -227,7 +227,7 @@ struct TranscriptWorkLog: View, Equatable {
       .foregroundStyle(theme.textMuted)
       .contentShape(Rectangle())
     }
-    .buttonStyle(.plain)
+    .buttonStyle(.argusPlain)
     .help(Self.callCount(log.messages))
     .accessibilityLabel(label(now: .now))
     .accessibilityValue(expanded ? "expanded" : "collapsed")

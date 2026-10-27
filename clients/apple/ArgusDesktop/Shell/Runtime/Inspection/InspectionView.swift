@@ -123,7 +123,7 @@ struct InspectionView: View {
           .foregroundStyle(focused ? theme.accent : theme.text)
         }
       }
-      .buttonStyle(.borderless)
+      .buttonStyle(.argusBorderless)
       .font(.scaled(size: 11, design: .monospaced))
       .padding(.horizontal, 10)
     }
