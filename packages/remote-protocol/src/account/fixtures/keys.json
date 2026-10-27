@@ -1,0 +1,38 @@
+{
+  "phone": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "sign_priv": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=",
+    "sign_pub": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w=",
+    "noise_pub": "+0Gx/PdcEif6CIdgVqXtB6xE/gwRbsLegLjlI5WdeCQ="
+  },
+  "phone_next": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "sign_priv": "BgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgY=",
+    "sign_pub": "iodf/x6zhFFXes1a/uQFRWVo3XyJ4JCGOgVXvHr0nxc=",
+    "noise_pub": "piRGZNkdY/zmLt93bL/acsiLaAJfBcsMp2xGDTf7jTA="
+  },
+  "mini": {
+    "id": "00000000-0000-4000-8000-000000000002",
+    "sign_priv": "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI=",
+    "sign_pub": "gTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5Q=",
+    "noise_pub": "IZ5NgA2paNKl/LAJx4T0dGxxOO257khEtznoMLBc9CQ="
+  },
+  "mac": {
+    "id": "00000000-0000-4000-8000-000000000003",
+    "sign_priv": "AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=",
+    "sign_pub": "7UkoxijRwsbq6QM4kFmVYSlZJzpcY/k2NsFGFKyHN9E=",
+    "noise_pub": "bKO/Odl2qzaoCFMb1+wuS0+KrjqQE0U01Q9BHTd6LAU="
+  },
+  "electron": {
+    "id": "00000000-0000-4000-8000-000000000004",
+    "sign_priv": "BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ=",
+    "sign_pub": "ypOsFwUYcHHWe4PH/w7+gQjo7EUwV113JoeTM9vavnw=",
+    "noise_pub": "2nhdmqPNyIwkAXYFNa1fQ23IOlQuKU+q8H+yJTsAlBY="
+  },
+  "stranger": {
+    "id": "00000000-0000-4000-8000-000000000005",
+    "sign_priv": "BQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU=",
+    "sign_pub": "bnoc3Smwt4/ROvTFWY/v9O8qlxZuPKby5Pv8zYBQW/E=",
+    "noise_pub": "GxuMqoE2oHsZzcQtv/WMNB3gCH2P6uzynuwO1P0MM1U="
+  }
+}

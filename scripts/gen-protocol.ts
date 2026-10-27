@@ -522,7 +522,10 @@ function findDiscriminator(members: JsonSchema[]): string | null {
           m.type === "object" &&
           m.properties?.[key]?.const !== undefined &&
           (m.required ?? []).includes(key),
-      )
+      ) &&
+      // A key every member pins to the same value (a version) tells nothing apart.
+      new Set(members.map((m) => String(m.properties?.[key]?.const))).size ===
+        members.length
     ) {
       return key;
     }

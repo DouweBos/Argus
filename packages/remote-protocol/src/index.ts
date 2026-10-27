@@ -7,3 +7,4 @@ export * from "./pairing";
 export * from "./report";
 export * from "./scope";
 export * from "./commands";
+export * from "./account";

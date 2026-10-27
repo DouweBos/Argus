@@ -1,0 +1,106 @@
+{
+  "name": "valid_chain",
+  "description": "genesis, add_host, host adds its window, local add_host, rename, rotate, revokes",
+  "entries": [
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":0,\"prev\":\"\",\"ts\":1800000000000,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"genesis\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000001\",\"role\":\"device\",\"kind\":\"ios\",\"sign_pub\":\"iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w=\",\"noise_pub\":\"+0Gx/PdcEif6CIdgVqXtB6xE/gwRbsLegLjlI5WdeCQ=\",\"name\":\"Phone\",\"created_at\":1800000000000}}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "yWQSqld3PsIDFoyuT2scZ1vjC2wg7N55aYxbodxAJ32WPyBYy2LEyKNzJ09phgqy35AvhCKKFgjGRj0uIiIiBQ=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":1,\"prev\":\"f1a848257c3b8304e696575a6572338395c5033b5a79da32a96e1d5e4b262d06\",\"ts\":1800000000001,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"add_host\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000002\",\"role\":\"host\",\"platform\":\"darwin\",\"sign_pub\":\"gTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5Q=\",\"noise_pub\":\"IZ5NgA2paNKl/LAJx4T0dGxxOO257khEtznoMLBc9CQ=\",\"name\":\"Mini\",\"created_at\":1800000000000},\"request_id\":\"req-mini\",\"sas_commit\":\"d4db36d1ed4b003b8378d20d7733009c3cdf2bca58fc71446ded329633dcedb7\",\"proof\":\"9njA5qOeGvGC+5pPRkdI5+iufdYoEmfDtnJKV8u6M/HdBuBDxzbUPBxHYC82l+xWuenpHpnfMa3aONzK5h60Aw==\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "q0ptX+HOePBKZRcO6oOM12BvsbAoYDMDJ775vq0hrjk+DcaHskllnjwsotrkS2MSzBwfXP63+cyasyg9FVV9Bw=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":2,\"prev\":\"f3e2b2a734cb279e11247f752714c0effdba93bde960bb92b0b6e3148ee2eefc\",\"ts\":1800000000002,\"signer\":\"00000000-0000-4000-8000-000000000002\",\"type\":\"add_device\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000004\",\"role\":\"device\",\"kind\":\"electron\",\"sign_pub\":\"ypOsFwUYcHHWe4PH/w7+gQjo7EUwV113JoeTM9vavnw=\",\"noise_pub\":\"2nhdmqPNyIwkAXYFNa1fQ23IOlQuKU+q8H+yJTsAlBY=\",\"name\":\"Mini window\",\"created_at\":1800000000000},\"request_id\":\"\",\"sas_commit\":\"\",\"proof\":\"hLJCIvQbEhBeAVuvnApiyM7GYB+XK6JvhF0EVXUVMYn0w9xYR/8ygEzBueEsnJEmRJPwMpCkrypwexAKHGtqBw==\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000002": "lMsgcJg5igGnkEi2lbUC+btiOeyT4pdXH7lw6WF4HHFZMpLcCvxnngQR51r0/AEiuyrAH+r5ICzCGzXp4TijCQ=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":3,\"prev\":\"02ac97994d6ce8f0172e8ec320b396c2e0b99cbe06403330c0131a2258c4cb33\",\"ts\":1800000000003,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"add_host\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000003\",\"role\":\"host\",\"platform\":\"darwin\",\"sign_pub\":\"7UkoxijRwsbq6QM4kFmVYSlZJzpcY/k2NsFGFKyHN9E=\",\"noise_pub\":\"bKO/Odl2qzaoCFMb1+wuS0+KrjqQE0U01Q9BHTd6LAU=\",\"name\":\"Studio\",\"created_at\":1800000000000},\"request_id\":\"\",\"sas_commit\":\"\",\"proof\":\"C2PxM2wZcQX6EK0ywiUkSauI1hQy6OZwVMowki8T1WSz7RiUk9YUpMOsVqXZFU72uZkhuL/yc/I1541Vf88PBA==\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "pGcUPa2GJk03KPrExLzj9oUf9lX/q/cEdI77qrNbwfsIeDtZ+mXoafyY7y/uPDk6EFZ8WqBdIxtCPPmX2vEOBA=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":4,\"prev\":\"7016c65c571b9e03b0dd1e7824454dc6157e901ec8ee3afc7be5cce4dee9bf19\",\"ts\":1800000000004,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"rename\",\"member_id\":\"00000000-0000-4000-8000-000000000002\",\"name\":\"Mac mini\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "pqV+dwOiIJ8LjvDE1RFsa8jaMjafMVFYAqSyY49LJ+GgV+o16aWSzpRzWoGrgzcetOMw94fFMVLLEe8abVfLCQ=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":5,\"prev\":\"2aaaded7c88686789aaf265cbf231e975222a62d3019ed03f7ff693a189ed3f4\",\"ts\":1800000000005,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"rotate\",\"member_id\":\"00000000-0000-4000-8000-000000000001\",\"sign_pub\":\"iodf/x6zhFFXes1a/uQFRWVo3XyJ4JCGOgVXvHr0nxc=\",\"noise_pub\":\"piRGZNkdY/zmLt93bL/acsiLaAJfBcsMp2xGDTf7jTA=\",\"proof\":\"HNUrFnRlWB0+Xv8DIerWRq3tVR0JWaNTE0KDLRAYBWwMlX3ZaqydR5YDVMP+6rY0salO/a5wU/caE/twnAy3Ag==\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "etMn8fv58/SmvdLXnjDv3snk8Kg0A3wbtpb4Vc1PubP7i4//iAGFoOAhSFLyutQRmEKrebzmTstbqcYRMsH2AA=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":6,\"prev\":\"5cb03455160f691173b7069852c8d5014baea05b461a532a8b65e7249c565987\",\"ts\":1800000000006,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"revoke\",\"member_id\":\"00000000-0000-4000-8000-000000000003\",\"reason\":\"removed\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "S6ECZrsl4B6WsF65iwfH3lLRurCeM9aeQQ9pCU2yLpf05bDFDk7tUREpsOSOlX1Jw/eWVMhKeLA+0elr+9T+AA=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":7,\"prev\":\"068724f2f31e161d946bf93e903bca7bc64d5d2aaf3161dfd57f6d200b37ba85\",\"ts\":1800000000007,\"signer\":\"00000000-0000-4000-8000-000000000004\",\"type\":\"revoke\",\"member_id\":\"00000000-0000-4000-8000-000000000004\",\"reason\":\"unlinked\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000004": "9qB13zGVfaRGmEsoPoi+oKrek3kHfoWy+pZBtUuC54qpizd8Ug9bqOx7ZkzE6h88F/AxJr+TLXAlpX3NjVm2AQ=="
+      }
+    }
+  ],
+  "expect": {
+    "ok": true,
+    "head_seq": 7,
+    "live_members": [
+      "00000000-0000-4000-8000-000000000001",
+      "00000000-0000-4000-8000-000000000002"
+    ]
+  },
+  "admission": {
+    "member_id": "00000000-0000-4000-8000-000000000002",
+    "request_id": "req-mini",
+    "sas_commit": "d4db36d1ed4b003b8378d20d7733009c3cdf2bca58fc71446ded329633dcedb7",
+    "admitted": true
+  },
+  "presence": [
+    {
+      "record": {
+        "host_id": "00000000-0000-4000-8000-000000000002",
+        "presence_body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"host_id\":\"00000000-0000-4000-8000-000000000002\",\"ts\":1800000001000,\"endpoints\":[{\"kind\":\"lan\",\"url\":\"ws://192.168.1.20:47615\",\"priority\":0},{\"kind\":\"cloudflare\",\"url\":\"wss://quick-example.trycloudflare.com\",\"priority\":2}]}",
+        "presence_sig": "0z4leuVQEj65kk8Q2BOPuyOfkSNaMG9oxFZGEjnMjHsjlddc+io7mpTEHiv+c8kZ7M4uO9euTZ95ww4kWmQ4CA==",
+        "last_seen": 1800000002000
+      },
+      "valid": true
+    },
+    {
+      "record": {
+        "host_id": "00000000-0000-4000-8000-000000000002",
+        "presence_body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"host_id\":\"00000000-0000-4000-8000-000000000002\",\"ts\":1800000001000,\"endpoints\":[{\"kind\":\"lan\",\"url\":\"ws://192.168.1.20:47615\",\"priority\":0},{\"kind\":\"cloudflare\",\"url\":\"wss://quick-example.trycloudflare.com\",\"priority\":2}]}",
+        "presence_sig": "79/E5+RoRwMXQDCjyoEmLm+eO6vnQ1dg04Vxc15vdGmShVwdHybbso1G/F5eWfvZocl0sbOzS4++jGafFdEtBw==",
+        "last_seen": 1800000002000
+      },
+      "valid": false
+    },
+    {
+      "record": {
+        "host_id": "00000000-0000-4000-8000-000000000002",
+        "presence_body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"host_id\":\"00000000-0000-4000-8000-000000000001\",\"ts\":1800000001000,\"endpoints\":[{\"kind\":\"lan\",\"url\":\"ws://192.168.1.20:47615\",\"priority\":0},{\"kind\":\"cloudflare\",\"url\":\"wss://quick-example.trycloudflare.com\",\"priority\":2}]}",
+        "presence_sig": "d7tLYcZ0Jwa9jioe+24GRadPPfsLnwOKHnrk+fN5BSgjvEkO0oJpNzz+L/TySjQYdCjgIp9Ah8XEBaZd6F4TBA==",
+        "last_seen": 1800000002000
+      },
+      "valid": false
+    },
+    {
+      "record": {
+        "host_id": "00000000-0000-4000-8000-000000000002",
+        "presence_body": "{\"v\":1,\"account_id\":\"someone-else\",\"epoch\":0,\"host_id\":\"00000000-0000-4000-8000-000000000002\",\"ts\":1800000001000,\"endpoints\":[{\"kind\":\"lan\",\"url\":\"ws://192.168.1.20:47615\",\"priority\":0},{\"kind\":\"cloudflare\",\"url\":\"wss://quick-example.trycloudflare.com\",\"priority\":2}]}",
+        "presence_sig": "WH1AR2RzhEbowW5rH0G2ohGwV1b3g9PQHHlIhEzI9Hird5yxNqyeO4ubKflslDkA5Q6Dl0R9G+x6xPP6AdnVBA==",
+        "last_seen": 1800000002000
+      },
+      "valid": false
+    }
+  ]
+}
