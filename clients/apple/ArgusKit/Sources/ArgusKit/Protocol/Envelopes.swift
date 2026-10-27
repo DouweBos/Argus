@@ -8,6 +8,8 @@ import Foundation
 /// Methods this client sends. A strict subset of the host's `REMOTE_METHODS`.
 public enum RemoteMethod: String, Codable, Sendable {
   case hostEndpoints = "host.endpoints"
+  case accountStatus = "account.status"
+  case accountRequestLink = "account.request_link"
 
   case projectsList = "projects.list"
   case sessionsList = "sessions.list"

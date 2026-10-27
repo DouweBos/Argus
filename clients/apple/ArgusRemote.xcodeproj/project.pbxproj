@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AC0A00000000000000000010 /* ArgusAuth in Frameworks */ = {isa = PBXBuildFile; productRef = AC0A00000000000000000012 /* ArgusAuth */; };
+		AC0A00000000000000000011 /* ArgusAuth in Frameworks */ = {isa = PBXBuildFile; productRef = AC0A00000000000000000013 /* ArgusAuth */; };
+		AC0A00000000000000000005 /* AppStore+Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0A00000000000000000006 /* AppStore+Account.swift */; };
+		AC0A00000000000000000003 /* AddComputerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0A00000000000000000004 /* AddComputerView.swift */; };
+		AC0A00000000000000000001 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0A00000000000000000002 /* AccountView.swift */; };
 		A5C0DE0000000000000C0007 /* ArgusCore in Frameworks */ = {isa = PBXBuildFile; productRef = A5C0DE0000000000000C0005 /* ArgusCore */; };
 		A5C0DE0000000000000C0008 /* ArgusUI in Frameworks */ = {isa = PBXBuildFile; productRef = A5C0DE0000000000000C0006 /* ArgusUI */; };
 		5E7A00000000000000000007 /* ArgusSyntax in Frameworks */ = {isa = PBXBuildFile; productRef = 5E7A00000000000000000005 /* ArgusSyntax */; };
@@ -102,6 +107,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AC0A00000000000000000014 /* ArgusAuth */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ArgusAuth; path = ArgusAuth; sourceTree = SOURCE_ROOT; };
+		AC0A00000000000000000006 /* AppStore+Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Account.swift"; sourceTree = "<group>"; };
+		AC0A00000000000000000004 /* AddComputerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddComputerView.swift; sourceTree = "<group>"; };
+		AC0A00000000000000000002 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		FEED000100000000000000A4 /* Argus.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Argus.xcconfig; sourceTree = "<group>"; };
 		FEED000100000000000000B1 /* Telemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Telemetry.swift; sourceTree = "<group>"; };
 		FEED000100000000000000B2 /* TelemetryEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryEvent.swift; sourceTree = "<group>"; };
@@ -208,6 +217,7 @@
 				792DC62433CAABA830D81267 /* ArgusKit in Frameworks */,
 				A5C0DE0000000000000C0007 /* ArgusCore in Frameworks */,
 				A5C0DE0000000000000C0008 /* ArgusUI in Frameworks */,
+				AC0A00000000000000000010 /* ArgusAuth in Frameworks */,
 				5E7A00000000000000000007 /* ArgusSyntax in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -219,6 +229,7 @@
 				DE5C0000000000000000000E /* ArgusKit in Frameworks */,
 				DE5C0000000000000000000F /* ArgusCore in Frameworks */,
 				DE5C00000000000000000010 /* ArgusUI in Frameworks */,
+				AC0A00000000000000000011 /* ArgusAuth in Frameworks */,
 				5E7A00000000000000000008 /* ArgusSyntax in Frameworks */,
 				ED1700000000000000000004 /* ArgusEditor in Frameworks */,
 				7E2A00000000000000000003 /* SwiftTerm in Frameworks */,
@@ -294,6 +305,7 @@
 				1D00B47DC68F09613A0A0769 /* ArgusKit */,
 				A5C0DE0000000000000C0003 /* ArgusCore */,
 				A5C0DE0000000000000C0004 /* ArgusUI */,
+				AC0A00000000000000000014 /* ArgusAuth */,
 				5E7A00000000000000000003 /* ArgusSyntax */,
 				ED1700000000000000000002 /* ArgusEditor */,
 			);
@@ -323,6 +335,8 @@
 				F7591B2E634B37E1941AC94D /* BranchView.swift */,
 				EC699CB84E030428A8060A13 /* ChangesView.swift */,
 				46E305D96C871BB99B7DB468 /* ComputerView.swift */,
+				AC0A00000000000000000004 /* AddComputerView.swift */,
+				AC0A00000000000000000002 /* AccountView.swift */,
 				57ADDE446C44DCB7D8E5AA3C /* DevicesView.swift */,
 				AA1000000000000000000002 /* ClaudeAccountsView.swift */,
 				7B760406B1B2B956C52E89F9 /* DeviceView.swift */,
@@ -343,6 +357,7 @@
 			children = (
 				63A254961B044F508401BE46 /* AppStore.swift */,
 				000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */,
+				AC0A00000000000000000006 /* AppStore+Account.swift */,
 			);
 			path = Stores;
 			sourceTree = "<group>";
@@ -435,6 +450,7 @@
 				FEED000100000000000000A2 /* PostHog */,
 				A5C0DE0000000000000C0005 /* ArgusCore */,
 				A5C0DE0000000000000C0006 /* ArgusUI */,
+				AC0A00000000000000000012 /* ArgusAuth */,
 				5E7A00000000000000000005 /* ArgusSyntax */,
 			);
 			productName = ArgusRemote;
@@ -462,6 +478,7 @@
 				DE5C0000000000000000000B /* ArgusKit */,
 				DE5C0000000000000000000C /* ArgusCore */,
 				DE5C0000000000000000000D /* ArgusUI */,
+				AC0A00000000000000000013 /* ArgusAuth */,
 				5E7A00000000000000000006 /* ArgusSyntax */,
 				ED1700000000000000000003 /* ArgusEditor */,
 				7E2A00000000000000000002 /* SwiftTerm */,
@@ -531,6 +548,7 @@
 				B68ECC6C3B58529FD4EC56FE /* XCLocalSwiftPackageReference "ArgusKit" */,
 				A5C0DE0000000000000C0001 /* XCLocalSwiftPackageReference "ArgusCore" */,
 				A5C0DE0000000000000C0002 /* XCLocalSwiftPackageReference "ArgusUI" */,
+				AC0A00000000000000000015 /* XCLocalSwiftPackageReference "ArgusAuth" */,
 				5E7A00000000000000000001 /* XCLocalSwiftPackageReference "ArgusSyntax" */,
 				ED1700000000000000000001 /* XCLocalSwiftPackageReference "ArgusEditor" */,
 				FEED000100000000000000A1 /* XCRemoteSwiftPackageReference "posthog-ios" */,
@@ -612,6 +630,7 @@
 			files = (
 				79ABC516E0AC2C4AE453BB1A /* AgentView.swift in Sources */,
 				FAEB2F8A18B2B7EEA189693B /* AppStore+Push.swift in Sources */,
+				AC0A00000000000000000005 /* AppStore+Account.swift in Sources */,
 				E79376838450019576305370 /* AppStore.swift in Sources */,
 				DF3A5B1A8FDA279FDAA8D8FF /* ArgusRemoteApp.swift in Sources */,
 				AD0D5B2D0F246BA5D6CAF9F2 /* AutomationView.swift in Sources */,
@@ -634,6 +653,8 @@
 				B739591B2E634B37E1941AC9 /* BranchView.swift in Sources */,
 				C8A9E8FF4A15285665BCF2F8 /* ChangesView.swift in Sources */,
 				71F924F0B3BDE15E0083BDEE /* ComputerView.swift in Sources */,
+				AC0A00000000000000000003 /* AddComputerView.swift in Sources */,
+				AC0A00000000000000000001 /* AccountView.swift in Sources */,
 				AAC53DE55E408A8C4899520D /* DeviceView.swift in Sources */,
 				2861E9669ED0132B42988497 /* DevicesView.swift in Sources */,
 				774DC572A2AF220B00F3CF38 /* HomeView.swift in Sources */,
@@ -1032,6 +1053,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		AC0A00000000000000000015 /* XCLocalSwiftPackageReference "ArgusAuth" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ArgusAuth;
+		};
 		B68ECC6C3B58529FD4EC56FE /* XCLocalSwiftPackageReference "ArgusKit" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ArgusKit;
@@ -1082,6 +1107,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		AC0A00000000000000000012 /* ArgusAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AC0A00000000000000000015 /* XCLocalSwiftPackageReference "ArgusAuth" */;
+			productName = ArgusAuth;
+		};
+		AC0A00000000000000000013 /* ArgusAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AC0A00000000000000000015 /* XCLocalSwiftPackageReference "ArgusAuth" */;
+			productName = ArgusAuth;
+		};
 		6625E1D6BCC577429BF7B696 /* ArgusKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ArgusKit;

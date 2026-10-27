@@ -68,6 +68,8 @@ struct RootView: View {
     // the tail of them off the device.
     .onChange(of: scenePhase) { _, phase in
       if phase == .background { Telemetry.flush() }
+      // Moved tunnels and new computers, picked up on the way back in.
+      if phase == .active { Task { await app.account.refresh() } }
     }
     .task { await bootstrap() }
     // Rotating an iPad, or resizing it in Split View, changes the column
@@ -473,6 +475,10 @@ struct RootView: View {
       WarningsView()
     case .computers:
       HomeView()
+    case .account:
+      AccountView()
+    case .addComputer:
+      AddComputerView()
     case .claudeAccounts:
       ClaudeAccountsView()
     case .usage:

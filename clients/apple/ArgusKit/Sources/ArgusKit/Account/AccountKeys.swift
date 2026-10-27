@@ -15,6 +15,20 @@ public struct AccountDeviceKeys: Codable, Hashable, Sendable {
   public var name: String
   public var createdAt: Double
 
+  public init(
+    memberId: String, signSeed: String, signPub: String, noisePriv: String, noisePub: String,
+    kind: String, name: String, createdAt: Double
+  ) {
+    self.memberId = memberId
+    self.signSeed = signSeed
+    self.signPub = signPub
+    self.noisePriv = noisePriv
+    self.noisePub = noisePub
+    self.kind = kind
+    self.name = name
+    self.createdAt = createdAt
+  }
+
   public static func generate(kind: String, name: String, now: Date = Date()) -> AccountDeviceKeys {
     let sign = Curve25519.Signing.PrivateKey()
     let noise = NoiseCrypto.generateKeypair()

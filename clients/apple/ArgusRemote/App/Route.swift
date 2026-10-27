@@ -49,6 +49,8 @@ enum Route: Hashable {
   /// Warnings & errors shown this launch, as the desktop's `/notifications`.
   case notifications
   case computers
+  case account
+  case addComputer
   case claudeAccounts
   case usage
 
@@ -91,6 +93,8 @@ enum Route: Hashable {
     case .settings: "settings"
     case .notifications: "notifications"
     case .computers: "computers"
+    case .account: "account"
+    case .addComputer: "add_computer"
     case .claudeAccounts: "claude_accounts"
     case .usage: "usage"
     }

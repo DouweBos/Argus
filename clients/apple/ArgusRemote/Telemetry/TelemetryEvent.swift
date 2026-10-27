@@ -49,6 +49,20 @@ enum TelemetryEvent {
   /// How work leaves a session.
   typealias LandAction = StoreEvent.LandAction
 
+  /// How this phone signed in to its Argus account.
+  typealias SignInProvider = AccountSignInProvider
+
+  /// Whether a member this phone took off the account was a device or a computer.
+  typealias MemberRole = AccountMember.Role
+
+  /// Where adding a computer to the account started.
+  enum ComputerAddedVia: String {
+    /// A link code typed into the phone.
+    case code
+    /// A computer this phone was QR-paired with, asked over the gateway.
+    case existingPairing = "existing_pairing"
+  }
+
   case launched
   case paired(endpointKind: String, hasControl: Bool)
   /// The `PairingError` case name only — never its detail.
@@ -93,6 +107,13 @@ enum TelemetryEvent {
   /// Shared with the desktop on purpose: it is the same consent signal.
   case telemetryEnabled
   case telemetryDisabled
+  /// Signed in and the account is ready; `firstDevice` when this phone wrote its genesis.
+  case accountSignedIn(provider: SignInProvider, firstDevice: Bool)
+  case accountSignedOut
+  /// The phone wrote a revoke for another member.
+  case memberRemoved(role: MemberRole)
+  /// The phone approved a computer's link; the host counts completion itself.
+  case computerAdded(via: ComputerAddedVia)
 
   var name: String {
     switch self {
@@ -126,13 +147,24 @@ enum TelemetryEvent {
     case .appError: "ios_app_error"
     case .telemetryEnabled: "telemetry_enabled"
     case .telemetryDisabled: "telemetry_disabled"
+    case .accountSignedIn: "ios_account_signed_in"
+    case .accountSignedOut: "ios_account_signed_out"
+    case .memberRemoved: "ios_member_removed"
+    case .computerAdded: "ios_computer_added"
     }
   }
 
   var properties: [String: Any] {
     switch self {
-    case .launched, .telemetryEnabled, .telemetryDisabled, .proposalOpenedAsRun, .followUpUsed:
+    case .launched, .telemetryEnabled, .telemetryDisabled, .proposalOpenedAsRun, .followUpUsed,
+      .accountSignedOut:
       [:]
+    case .accountSignedIn(let provider, let firstDevice):
+      ["provider": provider.rawValue, "first_device": firstDevice]
+    case .memberRemoved(let role):
+      ["role": role.rawValue]
+    case .computerAdded(let via):
+      ["via": via.rawValue]
     case .paired(let endpointKind, let hasControl):
       ["endpoint_kind": endpointKind, "has_control": hasControl]
     case .pairFailed(let reason):

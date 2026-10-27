@@ -1,3 +1,4 @@
+import ArgusAuth
 import ArgusUI
 import Foundation
 import Observation
@@ -17,7 +18,13 @@ final class AppStore {
   // across several files to stay readable, and Swift scopes `private(set)` to
   // one file. Views read them; only the store's own extensions write them.
 
-  var hosts: [DeviceIdentity] = []
+  /// QR pairings, from the keystore.
+  var pairedHosts: [DeviceIdentity] = []
+  /// Hosts on the signed-in account, rebuilt from its verified log. Their
+  /// grants live here only: the host re-states them on every connect.
+  var accountHosts: [DeviceIdentity] = []
+  /// Every computer this phone can reach, one row each.
+  var hosts: [DeviceIdentity] { .merging(paired: pairedHosts, account: accountHosts) }
   var activeHostId: String?
   var identity: DeviceIdentity?
   /// False until the stored pairings have been read back from the keychain.
@@ -40,6 +47,8 @@ final class AppStore {
 
   /// The connected computer's data and actions.
   let host = HostStore()
+  /// The Argus account: sign-in, and the computers on it.
+  let account: AccountStore
 
   // MARK: Collaborators
 
@@ -53,6 +62,8 @@ final class AppStore {
   private var connectGeneration = 0
 
   init() {
+    let name = Preferences().string(PreferenceKey.deviceName) ?? UIDeviceName.current
+    account = AccountStore(auth: AccountAuth(), deviceKind: "ios", deviceName: { name })
     host.hooks = HostStoreHooks(
       track: { Telemetry.capture(TelemetryEvent($0)) },
       errorReported: { [weak self] error, scope in
@@ -87,9 +98,11 @@ final class AppStore {
       .flatMap(RemotePermissionMode.init(rawValue:))
 
     let stored = await keystore.load()
-    hosts = stored.hosts
+    pairedHosts = stored.hosts
     activeHostId = stored.activeId
     loaded = true
+    // An account host connects once the account's log has listed it.
+    Task { await startAccount() }
 
     if let activeId = stored.activeId,
       let identity = stored.hosts.first(where: { $0.deviceId == activeId })
@@ -130,7 +143,7 @@ final class AppStore {
     await disconnect()
     clearHostData()
     let state = await keystore.add(identity)
-    hosts = state.hosts
+    pairedHosts = state.hosts
     activeHostId = state.activeId
     await connect(to: identity)
   }
@@ -139,7 +152,7 @@ final class AppStore {
     let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return }
     let state = await keystore.update(deviceId: deviceId) { $0.hostName = trimmed }
-    hosts = state.hosts
+    pairedHosts = state.hosts
     if identity?.deviceId == deviceId { identity?.hostName = trimmed }
   }
 
@@ -154,7 +167,7 @@ final class AppStore {
     }
     agentHosts.forget(hostId: deviceId)
     let state = await keystore.remove(deviceId: deviceId)
-    hosts = state.hosts
+    pairedHosts = state.hosts
     activeHostId = state.activeId
     identity = nil
     host.capabilities = []
@@ -165,7 +178,7 @@ final class AppStore {
     agentHosts.host(forAgent: agentId)
   }
 
-  private func connect(to identity: DeviceIdentity) async {
+  func connect(to identity: DeviceIdentity) async {
     self.identity = identity
     host.capabilities = identity.capabilities
     connectGeneration += 1
@@ -179,16 +192,19 @@ final class AppStore {
         await attempt.transport.disconnect()
         return
       }
+      if identity.isAccountHost { account.setConnectionFailing(false) }
       let backend = GatewayBackend(transport: attempt.transport)
       await host.attach(backend)
       await onReady(backend, identity: identity, winningURL: attempt.url)
     } catch {
       guard generation == connectGeneration else { return }
       host.connectFailed("Couldn't reach this computer on any known address.")
+      // Its tunnel may have moved: watch the directory for the new address.
+      if identity.isAccountHost { account.setConnectionFailing(true) }
     }
   }
 
-  private func disconnect() async {
+  func disconnect() async {
     await host.detach()
   }
 
@@ -208,10 +224,7 @@ final class AppStore {
       .deviceCapabilities, EmptyParams(), as: CapabilitiesResult.self)
     {
       host.capabilities = result.capabilities
-      let state = await keystore.update(deviceId: identity.deviceId) {
-        $0.capabilities = result.capabilities
-      }
-      hosts = state.hosts
+      await updateHost(identity.deviceId) { $0.capabilities = result.capabilities }
     }
 
     await registerPush(backend)
@@ -222,26 +235,24 @@ final class AppStore {
     if let result = try? await backend.request(
       .hostEndpoints, EmptyParams(), as: EndpointsResult.self)
     {
-      let state = await keystore.update(deviceId: identity.deviceId) {
+      await updateHost(identity.deviceId) {
         $0.endpoints = DeviceIdentity.mergedEndpoints(known: $0.endpoints, live: result.endpoints)
         $0.url = winningURL
       }
-      hosts = state.hosts
-      self.identity = state.hosts.first { $0.deviceId == identity.deviceId }
+      self.identity = hosts.first { $0.deviceId == identity.deviceId } ?? self.identity
     }
   }
 
-  private func clearHostData() {
+  func clearHostData() {
     host.reset()
     pushState = .off
   }
 
   private func endpointsChanged(_ endpoints: [RemoteEndpoint]) async {
     guard let deviceId = identity?.deviceId else { return }
-    let state = await keystore.update(deviceId: deviceId) {
+    await updateHost(deviceId) {
       $0.endpoints = DeviceIdentity.mergedEndpoints(known: $0.endpoints, live: endpoints)
     }
-    hosts = state.hosts
   }
 
   // MARK: Preferences

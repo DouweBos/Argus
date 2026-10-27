@@ -17,16 +17,24 @@ struct HomeView: View {
       } else if app.hosts.isEmpty {
         EmptyState(
           icon: Icon.desktop,
-          title: "No computers paired",
+          title: "No computers yet",
           body: """
-            Pair with Argus on your Mac to drive its agents from here. Open \
-            Settings → Remote Access on the computer to get a code.
+            Sign in to your Argus account and your computers show up here. Or pair \
+            with one by QR code from Settings → Remote Access on the computer.
             """)
-        Btn(label: "Pair a computer") { router.push(.pair) }
+        if !app.account.isSignedIn {
+          Btn(label: "Sign in") { router.push(.account) }
+        }
+        Btn(label: "Scan a QR code", tone: app.account.isSignedIn ? .primary : .secondary) {
+          router.push(.pair)
+        }
       } else {
         SectionHeader(title: "Computers", count: app.hosts.count)
         ForEach(app.hosts) { computer in
           hostCard(computer)
+        }
+        if app.account.isSignedIn {
+          Btn(label: "Add a computer to your account", tone: .secondary) { router.push(.addComputer) }
         }
         Btn(label: "Pair another computer", tone: .secondary) { router.push(.pair) }
       }
@@ -44,7 +52,12 @@ struct HomeView: View {
           .foregroundStyle(active ? theme.accent : theme.textSecondary)
         VStack(alignment: .leading, spacing: 2) {
           BodyText(computer.label, lineLimit: 1)
-          MutedText(DeviceIdentity.gatewayHost(computer.url), lineLimit: 1)
+          if let presence = app.presence(of: computer) {
+            MutedText(
+              AccountPresenceLabel.text(online: presence.online, lastSeen: presence.lastSeen), lineLimit: 1)
+          } else {
+            MutedText(DeviceIdentity.gatewayHost(computer.url), lineLimit: 1)
+          }
         }
         Spacer(minLength: 6)
         if active {
