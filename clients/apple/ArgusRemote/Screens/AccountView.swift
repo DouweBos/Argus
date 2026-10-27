@@ -74,7 +74,7 @@ struct AccountView: View {
     .frame(height: 46)
     .frame(maxWidth: 420)
 
-    Btn(label: "Sign in with GitHub", tone: .secondary) {
+    Btn(label: "Sign in with GitHub", tone: .secondary, image: BrandIcon.github) {
       Task { await account.signIn(with: .github) }
     }
 

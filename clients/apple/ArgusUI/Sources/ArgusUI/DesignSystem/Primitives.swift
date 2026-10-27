@@ -208,6 +208,8 @@ public struct Btn: View {
   var tone: ButtonTone = .primary
   var small = false
   var icon: String?
+  /// A non-symbol icon, like a brand mark; drawn as a template.
+  var image: Image?
   /// Sized to its label, for a row of buttons rather than a stack.
   var hugs = false
   let action: () -> Void
@@ -217,6 +219,7 @@ public struct Btn: View {
     tone: ButtonTone = .primary,
     small: Bool = false,
     icon: String? = nil,
+    image: Image? = nil,
     hugs: Bool = false,
     action: @escaping () -> Void
   ) {
@@ -224,6 +227,7 @@ public struct Btn: View {
     self.tone = tone
     self.small = small
     self.icon = icon
+    self.image = image
     self.hugs = hugs
     self.action = action
   }
@@ -233,6 +237,8 @@ public struct Btn: View {
       HStack(spacing: 6) {
         if let icon {
           Image(systemName: icon).font(.scaled(size: small ? 11 : 13, weight: .semibold))
+        } else if let image {
+          image.resizable().scaledToFit().frame(width: small ? 12 : 15, height: small ? 12 : 15)
         }
         Text(label).font(.scaled(size: small ? 13 : 15, weight: .semibold))
       }
