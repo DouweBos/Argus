@@ -206,8 +206,10 @@ struct SessionContextCard: View {
       model.navigate(.sessionGit(id: session.id, view: .working))
     } label: {
       ContextCardRow(icon: Icon.file, title: "Changes") {
-        if let additions = git?.diffAdditions, let deletions = git?.diffDeletions {
-          ChangeCounts(additions: additions, deletions: deletions)
+        if let additions = git?.diffAdditions, let deletions = git?.diffDeletions,
+          ChangeCounts.hasChanges(additions: Int(additions), deletions: Int(deletions))
+        {
+          ChangeCounts(additions: Int(additions), deletions: Int(deletions))
         } else if let dirty = git?.dirtyCount, dirty > 0 {
           Text("\(Int(dirty))").font(.scaled(size: 11).monospacedDigit()).foregroundStyle(theme.textSecondary)
         }

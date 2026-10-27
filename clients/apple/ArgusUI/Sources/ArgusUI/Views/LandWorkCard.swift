@@ -139,8 +139,10 @@ public struct LandWorkCard: View {
   private var changeSummary: String {
     let count = status?.dirtyCount ?? 0
     var text = count == 1 ? "1 changed file" : "\(count) changed files"
-    if let added = status?.diffAdditions, let removed = status?.diffDeletions {
-      text += " · +\(added) −\(removed)"
+    if let added = status?.diffAdditions, let removed = status?.diffDeletions,
+      let counts = ChangeCounts.summary(additions: Int(added), deletions: Int(removed))
+    {
+      text += " · \(counts)"
     }
     return text
   }

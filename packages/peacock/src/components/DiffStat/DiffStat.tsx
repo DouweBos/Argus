@@ -7,6 +7,11 @@ export interface DiffStatProps extends HTMLAttributes<HTMLSpanElement> {
   files?: number;
 }
 
+/** Whether a "+N −N" pair says anything: a bare "+0 −0" is hidden. */
+export function hasDiffChanges(added?: number, removed?: number): boolean {
+  return (added ?? 0) !== 0 || (removed ?? 0) !== 0;
+}
+
 export function DiffStat({
   added,
   removed,
@@ -14,13 +19,20 @@ export function DiffStat({
   className,
   ...rest
 }: DiffStatProps) {
+  const lines = hasDiffChanges(added, removed);
+  if (!lines && files == null) {
+    return null;
+  }
+
   return (
     <span
       className={[styles.stat, className].filter(Boolean).join(" ")}
       {...rest}
     >
-      {added != null && <span className={styles.add}>+{added}</span>}
-      {removed != null && <span className={styles.del}>−{removed}</span>}
+      {lines && added != null && <span className={styles.add}>+{added}</span>}
+      {lines && removed != null && (
+        <span className={styles.del}>−{removed}</span>
+      )}
       {files != null && <span className={styles.files}>{files}</span>}
     </span>
   );

@@ -379,7 +379,7 @@ public struct ContextCardDivider: View {
   }
 }
 
-/// "+12 −3": lines added and removed.
+/// "+12 −3": lines added and removed. Renders nothing for "+0 −0".
 public struct ChangeCounts: View {
   @Environment(\.theme) private var theme
   let additions: Int
@@ -390,14 +390,26 @@ public struct ChangeCounts: View {
     self.deletions = deletions
   }
 
+  /// Whether there's anything to show; a bare "+0 −0" says nothing.
+  public static func hasChanges(additions: Int, deletions: Int) -> Bool {
+    additions != 0 || deletions != 0
+  }
+
+  /// "+12 −3" for plain text, nil when nothing changed.
+  public static func summary(additions: Int, deletions: Int) -> String? {
+    hasChanges(additions: additions, deletions: deletions) ? "+\(additions.formatted()) −\(deletions.formatted())" : nil
+  }
+
   public var body: some View {
-    HStack(spacing: 4) {
-      Text("+\(additions.formatted())").foregroundStyle(theme.success)
-      Text("−\(deletions.formatted())").foregroundStyle(theme.error)
+    if Self.hasChanges(additions: additions, deletions: deletions) {
+      HStack(spacing: 4) {
+        Text("+\(additions.formatted())").foregroundStyle(theme.success)
+        Text("−\(deletions.formatted())").foregroundStyle(theme.error)
+      }
+      .font(.scaled(size: 11, design: .monospaced))
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel("\(additions) lines added, \(deletions) removed")
     }
-    .font(.scaled(size: 11, design: .monospaced))
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel("\(additions) lines added, \(deletions) removed")
   }
 }
 
