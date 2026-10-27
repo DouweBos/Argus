@@ -67,6 +67,7 @@ import {
   toRemoteAgentCapabilities,
   toRemoteAgentStatus,
   toRemoteDeviceState,
+  unknownMethodError,
   type DeviceMediaController,
   type GatewayContext,
 } from "./capabilities";
@@ -813,7 +814,7 @@ export class DeviceConnection implements DeviceMediaController {
 
         return null;
       default:
-        throw new GatewayError("capability_denied", `unknown method ${method}`);
+        throw unknownMethodError("capability_denied", method);
     }
   }
 

@@ -78,6 +78,15 @@ struct LocalTransportTests {
       }
     }
 
+    // A method this host never had reads as version skew, with its version.
+    do {
+      _ = try await transport.request(method: "nothing.here", EmptyParams(), as: IgnoredResult.self)
+      Issue.record("an unknown method succeeded")
+    } catch Transport.TransportError.unsupported(let method, let hostVersion) {
+      #expect(method == "nothing.here")
+      #expect(hostVersion?.isEmpty == false)
+    }
+
     struct Foreground: Encodable { let foreground: Bool }
     _ = try await transport.request(
       method: "ui.state", Foreground(foreground: true), as: IgnoredResult.self)

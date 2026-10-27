@@ -981,6 +981,12 @@ export type Envelope = z.infer<typeof Envelope>;
 export const LOCAL_UI_PROTOCOL = 1;
 
 /**
+ * `error.data.reason` when the host has no such method or command: the client
+ * is newer than the host. `error.data.method` names what was asked for.
+ */
+export const UNKNOWN_COMMAND = "unknown_command";
+
+/**
  * What the host asks of the UI attached to its local socket: the
  * `HostPlatform` capabilities a headless Node process can't do itself. Flat
  * rather than a union so every client decodes it the same way; `kind` says

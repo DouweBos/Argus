@@ -50,6 +50,14 @@ enum MacTelemetry {
     }
   }
 
+  private static var unsupportedSeen: Set<String> = []
+
+  /// Once per method per launch: a screen retrying against an old host would flood.
+  static func captureUnsupported(method: String) {
+    guard unsupportedSeen.insert(method).inserted else { return }
+    capture(.hostFeatureUnsupported(method: method))
+  }
+
   private static func jsonValue(_ value: Any) -> JSONValue? {
     switch value {
     case let bool as Bool: .bool(bool)

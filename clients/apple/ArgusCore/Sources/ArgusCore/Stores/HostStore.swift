@@ -484,6 +484,13 @@ public final class HostStore {
 
   public func clearError() { lastError = nil }
 
+  /// The method a host too old for this client lacked, if that's what failed.
+  /// Expected version skew, so callers count it rather than report it.
+  public nonisolated static func unsupportedMethod(_ error: Error) -> String? {
+    guard case Transport.TransportError.unsupported(let method, _) = error else { return nil }
+    return method
+  }
+
   /// A description worth putting in front of someone.
   ///
   /// `localizedDescription` on a `DecodingError` is "The data couldn't be read
@@ -495,6 +502,7 @@ public final class HostStore {
     case let transport as Transport.TransportError:
       switch transport {
       case .gateway(let payload): return payload.message
+      case .unsupported: return transport.localizedDescription
       case .timedOut: return "The computer didn't answer in time."
       case .notReady: return "Not connected to a computer."
       case .badIdentity: return "This pairing's keys are unreadable."

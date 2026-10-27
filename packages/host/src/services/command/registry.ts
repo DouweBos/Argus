@@ -15,6 +15,7 @@ import {
   type ResultOf,
   type ToolId,
   COMMANDS,
+  UNKNOWN_COMMAND,
 } from "@argus/remote-protocol";
 import type { z } from "zod";
 import { createLogger } from "@argus/host/logger";
@@ -26,6 +27,16 @@ import { toolEnabled } from "../tools/state";
 export type { CommandTier } from "@argus/remote-protocol";
 
 export type CommandArgs = Record<string, unknown>;
+
+/** A command this host doesn't register; `code` and `command` survive IPC. */
+export class UnknownCommandError extends Error {
+  readonly code = UNKNOWN_COMMAND;
+
+  constructor(readonly command: string) {
+    super(`unknown command ${command}`);
+    this.name = "UnknownCommandError";
+  }
+}
 export type CommandHandler = (args: CommandArgs) => Promise<unknown> | unknown;
 
 export interface CommandOptions {
@@ -188,7 +199,7 @@ export async function dispatchCommand(
 ): Promise<unknown> {
   const definition = commands.get(name);
   if (!definition) {
-    throw new Error(`unknown command ${name}`);
+    throw new UnknownCommandError(name);
   }
   try {
     return await runCommand(definition, args);
@@ -246,7 +257,7 @@ export async function invokeCommand(
 ): Promise<unknown> {
   const definition = commands.get(name);
   if (!definition) {
-    throw new Error(`unknown command ${name}`);
+    throw new UnknownCommandError(name);
   }
 
   return await runCommand(definition, args);

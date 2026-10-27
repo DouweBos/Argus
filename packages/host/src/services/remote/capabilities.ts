@@ -20,6 +20,7 @@ import {
   METHOD_SCOPE,
   MethodParams,
   REMOTE_METHODS,
+  UNKNOWN_COMMAND,
   type Capability,
   type GrantScope,
   type RemoteAgentCapabilities,
@@ -268,6 +269,21 @@ export class GatewayError extends Error {
     super(message);
     this.name = "GatewayError";
   }
+}
+
+/**
+ * No such method or command on this host — usually a client newer than it.
+ * Keeps the old code and text for older clients; `data` is for newer ones.
+ */
+export function unknownMethodError(
+  code: "capability_denied" | "not_found",
+  method: string,
+  noun: "command" | "method" = "method",
+): GatewayError {
+  return new GatewayError(code, `unknown ${noun} ${method}`, {
+    reason: UNKNOWN_COMMAND,
+    method,
+  });
 }
 
 /**
@@ -2449,7 +2465,7 @@ async function dispatchAdmin(
   }
   const definition = getCommand(command);
   if (!definition) {
-    throw new GatewayError("not_found", `unknown command ${command}`);
+    throw unknownMethodError("not_found", command, "command");
   }
   if (definition.tier === "host") {
     if (!ctx.console) {
@@ -2530,7 +2546,7 @@ export async function dispatch(
       return dispatchAdmin(method, params, ctx);
     }
 
-    throw new GatewayError("capability_denied", `unknown method ${method}`);
+    throw unknownMethodError("capability_denied", method);
   }
   const remoteMethod = method as RemoteMethod;
   const required = REMOTE_METHODS[remoteMethod];

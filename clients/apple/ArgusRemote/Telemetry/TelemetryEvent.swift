@@ -104,6 +104,8 @@ enum TelemetryEvent {
   case fileSearchRun(regex: Bool, results: Int, truncated: Bool)
   /// `message` is scrubbed and truncated by `Telemetry` before it is sent.
   case appError(scope: String, message: String)
+  /// The computer is too old for something the phone asked; `method` is a protocol name.
+  case hostFeatureUnsupported(method: String)
   /// Shared with the desktop on purpose: it is the same consent signal.
   case telemetryEnabled
   case telemetryDisabled
@@ -145,6 +147,7 @@ enum TelemetryEvent {
     case .fileViewed: "ios_file_viewed"
     case .fileSearchRun: "ios_file_search_run"
     case .appError: "ios_app_error"
+    case .hostFeatureUnsupported: "ios_host_feature_unsupported"
     case .telemetryEnabled: "telemetry_enabled"
     case .telemetryDisabled: "telemetry_disabled"
     case .accountSignedIn: "ios_account_signed_in"
@@ -218,6 +221,8 @@ enum TelemetryEvent {
       ["regex": regex, "result_bucket": Self.resultBucket(results), "truncated": truncated]
     case .appError(let scope, let message):
       ["scope": scope, "message": String(Telemetry.scrub(message).prefix(2000))]
+    case .hostFeatureUnsupported(let method):
+      ["method": method]
     }
   }
 

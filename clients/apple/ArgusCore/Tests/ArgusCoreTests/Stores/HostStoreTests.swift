@@ -177,6 +177,24 @@ struct HostStoreTests {
     #expect(HostStore.refusedAnswerMessage(gone).hasPrefix("That prompt is no longer waiting"))
   }
 
+  @Test("a host too old for a method explains itself instead of erroring")
+  func unsupportedByHost() async {
+    var reported: [String] = []
+    let store = HostStore(hooks: HostStoreHooks(errorReported: { error, _ in
+      reported += HostStore.unsupportedMethod(error).map { [$0] } ?? []
+    }))
+    let backend = FakeBackend()
+    backend.fail(
+      .usageLimits, with: Transport.TransportError.unsupported(method: "usage.limits", hostVersion: "0.68.0"))
+    await store.attach(backend)
+    await store.loadUsageLimits()
+    #expect(
+      store.usageLimitsError
+        == "This needs a newer version of Argus. The host you're connected to is running 0.68.0.")
+    #expect(reported == ["usage.limits"])
+    #expect(HostStore.unsupportedMethod(Transport.TransportError.timedOut) == nil)
+  }
+
   @Test("reset forgets the previous computer")
   func reset() async throws {
     let store = HostStore()

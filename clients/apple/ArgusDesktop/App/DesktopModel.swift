@@ -113,6 +113,11 @@ final class DesktopModel {
         },
         errorReported: { error, scope in
           NSLog("[argus] %@: %@", scope, HostStore.describe(error))
+          // Version skew, not a bug: the screen shows why, so just count it.
+          if let method = HostStore.unsupportedMethod(error) {
+            MacTelemetry.captureUnsupported(method: method)
+            return
+          }
           notificationsLog.push(.error, HostStore.describe(error), source: scope)
         }))
     store.capabilities = ["monitor", "control", "admin"]

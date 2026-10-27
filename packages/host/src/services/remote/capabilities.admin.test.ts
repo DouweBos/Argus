@@ -175,7 +175,21 @@ describe("admin passthrough dispatch", () => {
   it("reports an unregistered command as not_found", async () => {
     await expect(
       dispatch("no_such_command", {}, makeCtx(["monitor", "admin"])),
-    ).rejects.toMatchObject({ code: "not_found" });
+    ).rejects.toMatchObject({
+      code: "not_found",
+      message: "unknown command no_such_command",
+      data: { reason: "unknown_command", method: "no_such_command" },
+    });
+  });
+
+  it("tags an unknown method for a client without admin", async () => {
+    await expect(
+      dispatch("usage.someday", {}, makeCtx(["monitor"])),
+    ).rejects.toMatchObject({
+      code: "capability_denied",
+      message: "unknown method usage.someday",
+      data: { reason: "unknown_command", method: "usage.someday" },
+    });
   });
 
   it("maps a throwing handler to a wire error", async () => {

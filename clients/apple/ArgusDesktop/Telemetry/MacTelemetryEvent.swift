@@ -202,6 +202,8 @@ enum MacTelemetryEvent {
   case hostHandover(holder: Holder, success: Bool)
   /// `holder` only when attached: whose host the window joined.
   case hostConnected(mode: HostMode, holder: Holder?)
+  /// The host is too old for something the app asked; `method` is a protocol name.
+  case hostFeatureUnsupported(method: String)
   /// `screen` is a route pattern, never an id.
   case screenViewed(screen: String)
   /// A saved chat was opened, resumed or deleted from a session's home.
@@ -332,6 +334,7 @@ enum MacTelemetryEvent {
     case .hostLockConflict: "mac_host_lock_conflict"
     case .hostHandover: "mac_host_handover"
     case .hostConnected: "mac_host_connected"
+    case .hostFeatureUnsupported: "mac_host_feature_unsupported"
     case .screenViewed: "mac_screen_viewed"
     case .linkOpened: "mac_link_opened"
     case .chatHistoryUsed: "mac_chat_history_used"
@@ -420,6 +423,8 @@ enum MacTelemetryEvent {
       ["holder": holder.rawValue, "success": success]
     case .hostConnected(let mode, let holder):
       ["mode": mode.rawValue, "holder": holder?.rawValue].compactMapValues { $0 }
+    case .hostFeatureUnsupported(let method):
+      ["method": method]
     case .screenViewed(let screen):
       ["screen": screen]
     case .linkOpened(let screen, let outcome):
