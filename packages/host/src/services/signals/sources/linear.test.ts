@@ -65,12 +65,11 @@ describe("linear signal source", () => {
 
     expect(linearSource.mode).toBe("native");
     await expect(linearSource.isAvailable()).resolves.toBe(true);
-    const signals = await gatherSignals({
-      sourceIds: [LINEAR_SOURCE_ID],
-      repoRoots: [],
-    });
-    expect(signals.instructions).toEqual([]);
-    expect(signals.items).toMatchObject([
+    // Straight to the fetcher: gathering also runs the injection scan, which
+    // may call out to a model.
+    await expect(
+      linearSource.fetchAssigned?.({ repoRoots: [] }),
+    ).resolves.toMatchObject([
       { external_id: "ENG-7", labels: ["argus"], source_id: LINEAR_SOURCE_ID },
     ]);
   });
