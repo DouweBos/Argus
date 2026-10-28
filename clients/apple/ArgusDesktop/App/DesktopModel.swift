@@ -324,7 +324,7 @@ final class DesktopModel {
         let view = parts.count > 2 ? GitRoute(devString: parts[2...].joined(separator: ":")) : nil
         open(.init(route: .sessionGit(id: parts[1], view: view ?? .working)))
       case ("pull-requests", _): navigate(.pullRequests)
-      case ("issues", _): navigate(.issues)
+      case ("issues", _): navigate(.issues())
       case ("agents", _): navigate(.agents)
       case ("runtimes", _): navigate(.runtimes)
       case ("devices", _): navigate(.devices)

@@ -25,7 +25,10 @@ struct DesktopRouteTests {
     ("/usage/tokens?range=1y", .usage(.tokens)),
     ("/usage?range=7d", .usage(.limits)),
     ("/pull-requests", .pullRequests),
-    ("/issues", .issues),
+    ("/issues", .issues()),
+    ("/issues/created", .issues(scope: .created)),
+    ("/issues/ENG-1", .issues(issue: "ENG-1")),
+    ("/issues/subscribed/ENG-1", .issues(scope: .subscribed, issue: "ENG-1")),
     ("/pull-requests/houwert/argus/42", .pullRequest(repo: "houwert/argus", number: 42)),
     ("/automations", .automations),
     ("/automations/quick", .quickRun(runId: nil)),
@@ -75,6 +78,7 @@ struct DesktopRouteTests {
 
   @Test(arguments: [
     "/nope", "/sessions", "/sessions/s1/git/nope", "/devices/ios", "/devices/ios/a/b", "/pull-requests/a/b/notanumber", "/agents/extra",
+    "/issues/created/ENG-1/extra",
   ])
   func rejectsUnknownPaths(path: String) {
     #expect(DesktopRoute(path: path) == nil)
@@ -82,7 +86,8 @@ struct DesktopRouteTests {
 
   @Test(arguments: [
     DesktopRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox, .proposal(id: "p 1"), .notifications, .usage(.limits), .usage(.cost), .usage(.tokens, range: ._90d),
-    .pullRequests, .pullRequest(repo: "o/r", number: 7), .issues, .automations, .quickRun(runId: nil),
+    .pullRequests, .pullRequest(repo: "o/r", number: 7), .issues(), .issues(scope: .created),
+    .issues(issue: "ENG-1"), .issues(scope: .subscribed, issue: "ENG-1"), .automations, .quickRun(runId: nil),
     .quickRun(runId: "r"), .automation(id: "a", runId: nil), .automation(id: "a", runId: "r"),
     .session(id: "s", agentId: nil), .session(id: "s", agentId: "a"),
     .sessionGit(id: "s", view: .working), .sessionGit(id: "s", view: .branches(nil)),
@@ -129,6 +134,8 @@ struct DesktopRouteTests {
       == "/sessions/:sessionId/git/branches/:branchName")
     #expect(DesktopRoute.sessionGit(id: "s", view: .blame(path: "secret.txt", ref: nil)).pattern
       == "/sessions/:sessionId/git/blame")
+    #expect(DesktopRoute.issues(scope: .created, issue: "ENG-1").pattern == "/issues/created/:issue")
+    #expect(DesktopRoute.issues().pattern == "/issues")
   }
 
   @Test func aDeviceRouteIsTheDevicesScreenWithAPattern() {

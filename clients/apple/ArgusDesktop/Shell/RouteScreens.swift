@@ -21,7 +21,7 @@ struct RouteScreen: View {
     case .proposal(let id): ProposalScreen(proposalId: id).id(id)
     case .notifications: NotificationsScreen()
     case .usage(let tab, let range): UsageScreen(tab: tab, range: range)
-    case .issues: IssuesScreen()
+    case .issues(let scope, let issue): IssuesScreen(scope: scope, issueRef: issue)
     default: EmptyView()
     }
   }

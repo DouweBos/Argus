@@ -120,7 +120,7 @@
         case "runtimes": model.navigate(.runtimes)
         case "devices": model.navigate(.devices)
         case "pull-requests": model.navigate(.pullRequests)
-        case "issues": model.navigate(.issues)
+        case "issues": model.navigate(.issues())
         case "back": model.goBack(via: .button)
         case "forward": model.goForward(via: .button)
         default: return ["error": "to?"]
