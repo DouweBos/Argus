@@ -29,9 +29,9 @@ describe("integration oauth", () => {
     vi.unstubAllGlobals();
   });
 
-  it("is offered for Linear, which has a registered app, and not Figma", () => {
+  it("is offered for both registered apps", () => {
     expect(oauthAvailable("linear")).toBe(true);
-    expect(oauthAvailable("figma")).toBe(false);
+    expect(oauthAvailable("figma")).toBe(true);
   });
 
   it("parses stored tokens and rejects anything else", () => {
