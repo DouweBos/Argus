@@ -31,8 +31,15 @@ issues as a board. There's a column per status and a swimlane per priority,
 so what to pick up next is at the top left. Like in Linear, Triage, Backlog and
 done, canceled or duplicate statuses start out as **Hidden columns** beside
 the board, with their counts: click one to show it, or hide any column from
-its header. **Current cycle** narrows the board to issues in their team's
-current cycle. Both choices are remembered. Switch between issues
+its header. Hidden columns are remembered.
+
+**Filter** works like Linear's: pick a field, then the values it should
+match, with a count next to each. Fields: team, status, status type,
+assignee, creator, priority, estimate, labels, relations (sub-issue or not),
+due date, created, updated, project, cycle (including **Current cycle**),
+links (has a pull request) and content (text in the title or description).
+Click a filter's operator to flip it between "is" and "is not", or its
+values to change them. Filters are remembered per tab. Switch between issues
 **Assigned** to you, ones you **Created** and ones you're **Subscribed** to.
 Switch to **List** for a section per status instead.
 

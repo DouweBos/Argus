@@ -2,7 +2,6 @@ import type { LinearIssue, LinearIssueScope } from "../../../lib/types";
 import { type ReactNode, useEffect, useState } from "react";
 import {
   Button,
-  Chip,
   EmptyState,
   GridScreen,
   Icons,
@@ -10,15 +9,14 @@ import {
   Select,
   Spinner,
 } from "@argus/peacock";
-import { inCurrentCycle } from "../../../lib/issueBoard";
+import { applyFilters } from "../../../lib/issueFilters";
 import { useCurrentRoute } from "../../../lib/routeHooks";
 import { appNavigate } from "../../../lib/router";
 import {
   type IssuesLayout,
   refreshLinearIssues,
-  setCurrentCycleOnly,
   setIssuesLayout,
-  useCurrentCycleOnly,
+  useIssueFilters,
   useIssuesLayout,
   useLinearConnected,
   useLinearIssueList,
@@ -27,6 +25,7 @@ import { useSessionProjects } from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
 import { openStartDraft } from "../../../stores/startDraftStore";
 import { IssueDetailDialog } from "../IssueDetail/IssueDetailDialog";
+import { IssueFilterBar } from "./IssueFilterBar";
 import { IssuesBoardView } from "./IssuesBoardView";
 import { IssuesListView } from "./IssuesListView";
 import styles from "./IssuesScreen.module.css";
@@ -55,11 +54,8 @@ export function IssuesScreen() {
   const { issueRef, issueScope } = useCurrentRoute();
   const connected = useLinearConnected();
   const { data: allIssues, error, loading } = useLinearIssueList(issueScope);
-  const currentCycleOnly = useCurrentCycleOnly();
-  const data =
-    allIssues && currentCycleOnly
-      ? allIssues.filter(inCurrentCycle)
-      : allIssues;
+  const filters = useIssueFilters(issueScope);
+  const data = allIssues && applyFilters(allIssues, filters);
   const layout = useIssuesLayout();
   const projects = useSessionProjects();
   const [pickedRoot, setPickedRoot] = useState<string | null>(null);
@@ -121,8 +117,8 @@ export function IssuesScreen() {
         icon={<Icons.CheckIcon size={20} />}
         title="No open issues here"
         body={
-          currentCycleOnly
-            ? "Nothing open in your teams' current cycles. Turn off Current cycle to see the rest."
+          filters.length > 0
+            ? "No open issues match these filters."
             : "Open issues in this view show up here."
         }
       />
@@ -187,14 +183,6 @@ export function IssuesScreen() {
             }
           />
           <div className={styles.toolbarEnd}>
-            <Chip
-              interactive
-              selected={currentCycleOnly}
-              title="Only issues in their team's current cycle"
-              onClick={() => setCurrentCycleOnly(!currentCycleOnly)}
-            >
-              Current cycle
-            </Chip>
             <SegmentedControl<IssuesLayout>
               aria-label="Layout"
               options={LAYOUTS}
@@ -203,6 +191,9 @@ export function IssuesScreen() {
             />
           </div>
         </div>
+      )}
+      {connected && allIssues && (
+        <IssueFilterBar issues={allIssues} scope={issueScope} />
       )}
       {content}
       {issueRef && (

@@ -65,6 +65,8 @@ export * from "./components/FormField/FormField";
 export * from "./components/FileTree/FileTree";
 export * from "./components/FollowUpSuggestions/FollowUpSuggestions";
 export * from "./components/FileTypeBadge/FileTypeBadge";
+export * from "./components/FilterChip/FilterChip";
+export * from "./components/FilterMenu/FilterMenu";
 export * from "./components/FileDiffCard/FileDiffCard";
 export * from "./components/GitErrorBanner/GitErrorBanner";
 export * from "./components/GitGraphCell/GitGraphCell";

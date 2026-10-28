@@ -8517,6 +8517,8 @@ extension ArgusProtocol {
     public var teamName: String
     public var assignee: String?
     public var assigneeAvatarUrl: String?
+    public var creator: String?
+    public var dueDate: String?
     public var labels: [String]
     public var project: LinearIssueProject?
     public var cycle: LinearIssueCycle?
@@ -8540,6 +8542,8 @@ extension ArgusProtocol {
       case teamName = "teamName"
       case assignee = "assignee"
       case assigneeAvatarUrl = "assigneeAvatarUrl"
+      case creator = "creator"
+      case dueDate = "dueDate"
       case labels = "labels"
       case project = "project"
       case cycle = "cycle"
@@ -8549,7 +8553,7 @@ extension ArgusProtocol {
       case updatedAt = "updatedAt"
     }
 
-    public init(id: String, identifier: String, title: String, description: String, url: String, branchName: String, state: LinearWorkflowState, priority: Double, estimate: Double? = nil, teamId: String, teamKey: String, teamName: String, assignee: String? = nil, assigneeAvatarUrl: String? = nil, labels: [String], project: LinearIssueProject? = nil, cycle: LinearIssueCycle? = nil, parent: LinearIssueParent? = nil, pullRequestCount: Double, createdAt: Double, updatedAt: Double) {
+    public init(id: String, identifier: String, title: String, description: String, url: String, branchName: String, state: LinearWorkflowState, priority: Double, estimate: Double? = nil, teamId: String, teamKey: String, teamName: String, assignee: String? = nil, assigneeAvatarUrl: String? = nil, creator: String? = nil, dueDate: String? = nil, labels: [String], project: LinearIssueProject? = nil, cycle: LinearIssueCycle? = nil, parent: LinearIssueParent? = nil, pullRequestCount: Double, createdAt: Double, updatedAt: Double) {
       self.id = id
       self.identifier = identifier
       self.title = title
@@ -8564,6 +8568,8 @@ extension ArgusProtocol {
       self.teamName = teamName
       self.assignee = assignee
       self.assigneeAvatarUrl = assigneeAvatarUrl
+      self.creator = creator
+      self.dueDate = dueDate
       self.labels = labels
       self.project = project
       self.cycle = cycle
@@ -8589,6 +8595,8 @@ extension ArgusProtocol {
       try c.encode(teamName, forKey: .teamName)
       try c.encode(assignee, forKey: .assignee)
       try c.encode(assigneeAvatarUrl, forKey: .assigneeAvatarUrl)
+      try c.encodeIfPresent(creator, forKey: .creator)
+      try c.encodeIfPresent(dueDate, forKey: .dueDate)
       try c.encode(labels, forKey: .labels)
       try c.encode(project, forKey: .project)
       try c.encode(cycle, forKey: .cycle)
@@ -8760,6 +8768,8 @@ extension ArgusProtocol {
     public var teamName: String
     public var assignee: String?
     public var assigneeAvatarUrl: String?
+    public var creator: String?
+    public var dueDate: String?
     public var labels: [String]
     public var project: LinearIssueDetailProject?
     public var cycle: LinearIssueDetailCycle?
@@ -8786,6 +8796,8 @@ extension ArgusProtocol {
       case teamName = "teamName"
       case assignee = "assignee"
       case assigneeAvatarUrl = "assigneeAvatarUrl"
+      case creator = "creator"
+      case dueDate = "dueDate"
       case labels = "labels"
       case project = "project"
       case cycle = "cycle"
@@ -8798,7 +8810,7 @@ extension ArgusProtocol {
       case children = "children"
     }
 
-    public init(id: String, identifier: String, title: String, description: String, url: String, branchName: String, state: LinearWorkflowState, priority: Double, estimate: Double? = nil, teamId: String, teamKey: String, teamName: String, assignee: String? = nil, assigneeAvatarUrl: String? = nil, labels: [String], project: LinearIssueDetailProject? = nil, cycle: LinearIssueDetailCycle? = nil, parent: LinearIssueDetailParent? = nil, pullRequestCount: Double, createdAt: Double, updatedAt: Double, comments: [LinearComment], attachments: [LinearAttachment], children: [LinearIssueDetailChildrenItem]) {
+    public init(id: String, identifier: String, title: String, description: String, url: String, branchName: String, state: LinearWorkflowState, priority: Double, estimate: Double? = nil, teamId: String, teamKey: String, teamName: String, assignee: String? = nil, assigneeAvatarUrl: String? = nil, creator: String? = nil, dueDate: String? = nil, labels: [String], project: LinearIssueDetailProject? = nil, cycle: LinearIssueDetailCycle? = nil, parent: LinearIssueDetailParent? = nil, pullRequestCount: Double, createdAt: Double, updatedAt: Double, comments: [LinearComment], attachments: [LinearAttachment], children: [LinearIssueDetailChildrenItem]) {
       self.id = id
       self.identifier = identifier
       self.title = title
@@ -8813,6 +8825,8 @@ extension ArgusProtocol {
       self.teamName = teamName
       self.assignee = assignee
       self.assigneeAvatarUrl = assigneeAvatarUrl
+      self.creator = creator
+      self.dueDate = dueDate
       self.labels = labels
       self.project = project
       self.cycle = cycle
@@ -8841,6 +8855,8 @@ extension ArgusProtocol {
       try c.encode(teamName, forKey: .teamName)
       try c.encode(assignee, forKey: .assignee)
       try c.encode(assigneeAvatarUrl, forKey: .assigneeAvatarUrl)
+      try c.encodeIfPresent(creator, forKey: .creator)
+      try c.encodeIfPresent(dueDate, forKey: .dueDate)
       try c.encode(labels, forKey: .labels)
       try c.encode(project, forKey: .project)
       try c.encode(cycle, forKey: .cycle)

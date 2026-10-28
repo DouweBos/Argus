@@ -1,3 +1,4 @@
+import type { IssueFilter } from "../lib/issueFilters";
 import type {
   LinearIssue,
   LinearIssueDetail,
@@ -20,7 +21,9 @@ const POLL_MS = 5 * 60 * 1000;
 const LIMIT = 150;
 const LAYOUT_KEY = "argus:issues-layout";
 const COLUMNS_KEY = "argus:issues-columns";
-const CYCLE_KEY = "argus:issues-current-cycle";
+const FILTERS_KEY = "argus:issues-filters";
+/** Read once to carry the old Current cycle toggle over into a filter. */
+const LEGACY_CYCLE_KEY = "argus:issues-current-cycle";
 
 export type IssuesLayout = "board" | "list";
 
@@ -36,9 +39,9 @@ interface LinearIssuesState {
   columnOverrides: Record<string, boolean>;
   /** Linear is connected and its credential still works. */
   connected: boolean;
-  /** Only issues in their team's current cycle. */
-  currentCycleOnly: boolean;
   details: Record<string, LinearIssueDetail>;
+  /** Active filters per scope, like a saved Linear view. */
+  filters: Record<LinearIssueScope, IssueFilter[]>;
   layout: IssuesLayout;
   lists: Record<LinearIssueScope, ScopeList>;
   statesByTeam: Record<string, LinearWorkflowState[]>;
@@ -64,6 +67,21 @@ function saveJson(key: string, value: unknown): void {
   }
 }
 
+function loadFilters(): Record<LinearIssueScope, IssueFilter[]> {
+  const saved = loadJson<Partial<
+    Record<LinearIssueScope, IssueFilter[]>
+  > | null>(FILTERS_KEY, null);
+  const legacyCycle: IssueFilter[] = loadJson(LEGACY_CYCLE_KEY, false)
+    ? [{ field: "cycle", negate: false, values: ["current"] }]
+    : [];
+
+  return {
+    assigned: saved?.assigned ?? legacyCycle,
+    created: saved?.created ?? [],
+    subscribed: saved?.subscribed ?? [],
+  };
+}
+
 function loadLayout(): IssuesLayout {
   try {
     return localStorage.getItem(LAYOUT_KEY) === "list" ? "list" : "board";
@@ -75,7 +93,7 @@ function loadLayout(): IssuesLayout {
 const store = create<LinearIssuesState>(() => ({
   columnOverrides: loadJson<Record<string, boolean>>(COLUMNS_KEY, {}),
   connected: false,
-  currentCycleOnly: loadJson(CYCLE_KEY, false),
+  filters: loadFilters(),
   details: {},
   layout: loadLayout(),
   lists: { assigned: EMPTY, created: EMPTY, subscribed: EMPTY },
@@ -242,10 +260,15 @@ export function setColumnHidden(columnId: string, hidden: boolean): void {
   saveJson(COLUMNS_KEY, columnOverrides);
 }
 
-export function setCurrentCycleOnly(on: boolean): void {
-  store.setState({ currentCycleOnly: on });
-  saveJson(CYCLE_KEY, on);
+export function setIssueFilters(
+  scope: LinearIssueScope,
+  filters: IssueFilter[],
+): void {
+  const next = { ...store.getState().filters, [scope]: filters };
+  store.setState({ filters: next });
+  saveJson(FILTERS_KEY, next);
 }
 
 export const useColumnOverrides = () => store((s) => s.columnOverrides);
-export const useCurrentCycleOnly = () => store((s) => s.currentCycleOnly);
+export const useIssueFilters = (scope: LinearIssueScope) =>
+  store((s) => s.filters[scope]);

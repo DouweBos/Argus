@@ -24,6 +24,8 @@ function issue(over: Partial<LinearIssue>): LinearIssue {
     teamName: "Eng",
     assignee: null,
     assigneeAvatarUrl: null,
+    creator: null,
+    dueDate: null,
     labels: [],
     project: null,
     cycle: null,
