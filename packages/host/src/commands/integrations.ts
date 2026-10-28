@@ -4,7 +4,9 @@ import {
   figmaFrame,
 } from "../services/integrations/figma/service";
 import {
+  cancelOAuth,
   connectWithKey,
+  connectWithOAuth,
   disconnect,
   getLinearIssue,
   listIntegrations,
@@ -20,6 +22,10 @@ export function registerIntegrationCommands(): void {
   defineTypedCommand("integration_connect_with_key", (p) =>
     connectWithKey(p.id, p.key),
   );
+  defineTypedCommand("integration_connect_oauth", (p) =>
+    connectWithOAuth(p.id),
+  );
+  defineTypedCommand("integration_cancel_oauth", () => cancelOAuth());
   defineTypedCommand("integration_disconnect", (p) => disconnect(p.id));
   defineTypedCommand("linear_list_issues", (p) =>
     listLinearIssues(p.query ?? null, p.limit),

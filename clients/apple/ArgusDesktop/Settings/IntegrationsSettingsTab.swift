@@ -29,6 +29,7 @@ private struct IntegrationGroup: View {
   @State private var key = ""
   @State private var busy = false
   @State private var reconnecting = false
+  @State private var signingIn = false
 
   private var status: ArgusProtocol.IntegrationStatus? {
     store.integrations.first { $0.id == id }
@@ -60,6 +61,22 @@ private struct IntegrationGroup: View {
           }
         }
       } else {
+        if status?.oauthAvailable == true {
+          SettingsRow("Browser", description: "Approve Argus in \(name) and come back.") {
+            HStack(spacing: 8) {
+              if signingIn {
+                Button("Cancel") {
+                  Task { await host.run(ArgusProtocol.Commands.IntegrationCancelOauth.self, .init()) }
+                }
+              }
+              Button(signingIn ? "Waiting for the browser…" : "Sign in with \(name)") {
+                Task { await signIn() }
+              }
+              .buttonStyle(.borderedProminent)
+              .disabled(busy)
+            }
+          }
+        }
         SettingsRow("API key", description: "Stored on this computer, never sent to paired devices.") {
           HStack(spacing: 8) {
             SecureField("API key", text: $key)
@@ -87,6 +104,20 @@ private struct IntegrationGroup: View {
       await host.run(ArgusProtocol.Commands.IntegrationConnectWithKey.self, .init(id: id, key: key)) != nil
     else { return }
     key = ""
+    reconnecting = false
+    await store.loadIntegrations()
+  }
+
+  private func signIn() async {
+    busy = true
+    signingIn = true
+    defer {
+      busy = false
+      signingIn = false
+    }
+    guard
+      await host.run(ArgusProtocol.Commands.IntegrationConnectOauth.self, .init(id: id)) != nil
+    else { return }
     reconnecting = false
     await store.loadIntegrations()
   }

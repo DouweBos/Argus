@@ -14,9 +14,14 @@ vi.mock("../../appSettings/store", () => ({
   loadAppMcpServers: vi.fn(() => ({})),
 }));
 
-vi.mock("../../integrations/service", () => ({
-  linearApi: vi.fn(() => null),
-}));
+vi.mock("../../integrations/service", () => {
+  const linearApi = vi.fn(() => null);
+
+  return {
+    freshLinearApi: vi.fn(() => Promise.resolve(linearApi())),
+    linearApi,
+  };
+});
 
 const { listInheritedMcpServers } = await import("../../mcp/userConfig");
 const { loadAppMcpServers } = await import("../../appSettings/store");

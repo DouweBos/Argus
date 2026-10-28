@@ -7988,6 +7988,7 @@ extension ArgusProtocol {
     public var method: IntegrationStatusMethod?
     public var account: IntegrationAccount?
     public var needsReauth: Bool
+    public var oauthAvailable: Bool
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -7995,14 +7996,16 @@ extension ArgusProtocol {
       case method = "method"
       case account = "account"
       case needsReauth = "needsReauth"
+      case oauthAvailable = "oauthAvailable"
     }
 
-    public init(id: IntegrationId, connected: Bool, method: IntegrationStatusMethod? = nil, account: IntegrationAccount? = nil, needsReauth: Bool) {
+    public init(id: IntegrationId, connected: Bool, method: IntegrationStatusMethod? = nil, account: IntegrationAccount? = nil, needsReauth: Bool, oauthAvailable: Bool) {
       self.id = id
       self.connected = connected
       self.method = method
       self.account = account
       self.needsReauth = needsReauth
+      self.oauthAvailable = oauthAvailable
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -8012,6 +8015,7 @@ extension ArgusProtocol {
       try c.encode(method, forKey: .method)
       try c.encode(account, forKey: .account)
       try c.encode(needsReauth, forKey: .needsReauth)
+      try c.encode(oauthAvailable, forKey: .oauthAvailable)
     }
   }
 

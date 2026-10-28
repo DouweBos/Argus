@@ -9,7 +9,7 @@
 import type { SignalSource, WorkItem } from "../types";
 import type { LinearIssue } from "@argus/remote-protocol";
 import { loadAppMcpServers } from "../../appSettings/store";
-import { linearApi } from "../../integrations/service";
+import { freshLinearApi, linearApi } from "../../integrations/service";
 import { listInheritedMcpServers } from "../../mcp/userConfig";
 import { LINEAR_SOURCE_ID } from "../sourceIds";
 
@@ -101,7 +101,7 @@ export const linearSource: SignalSource = {
   },
 
   async fetchAssigned() {
-    const api = linearApi();
+    const api = await freshLinearApi();
 
     return api ? (await api.myIssues(ASSIGNED_LIMIT)).map(issueToWorkItem) : [];
   },

@@ -33,6 +33,13 @@ import {
   issueImageUrls,
 } from "./linear/context";
 import { parseLinearRef } from "./linear/refs";
+import {
+  cancelOAuth,
+  freshAccessToken,
+  oauthAvailable,
+  parseTokens,
+  signInWithOAuth,
+} from "./oauth";
 
 export const INTEGRATION_STATUS_CHANGED = "integration_status_changed";
 
@@ -47,6 +54,7 @@ export function integrationStatus(id: IntegrationId): IntegrationStatus {
     method: entry?.method ?? null,
     account: entry?.account ?? null,
     needsReauth: entry?.needsReauth ?? false,
+    oauthAvailable: oauthAvailable(id),
   };
 }
 
@@ -131,12 +139,37 @@ export function linearApi(): LinearApi | null {
     return null;
   }
   const secret = readSecret("linear");
+  if (!secret) {
+    return null;
+  }
+  if (entry.method === "key") {
+    return new LinearApi({ method: "key", secret });
+  }
+  const tokens = parseTokens(secret);
 
-  return secret ? new LinearApi({ method: entry.method, secret }) : null;
+  return tokens
+    ? new LinearApi({ method: "oauth", secret: tokens.accessToken })
+    : null;
+}
+
+/** Like {@link linearApi}, but refreshes a browser sign-in's token first. */
+export async function freshLinearApi(): Promise<LinearApi | null> {
+  const entry = loadIntegration("linear");
+  if (entry?.method !== "oauth" || entry.needsReauth) {
+    return linearApi();
+  }
+  const token = await freshAccessToken("linear");
+  if (!token) {
+    credentialRejected("linear");
+
+    return null;
+  }
+
+  return new LinearApi({ method: "oauth", secret: token });
 }
 
 async function withLinear<T>(fn: (api: LinearApi) => Promise<T>): Promise<T> {
-  const api = linearApi();
+  const api = await freshLinearApi();
   if (!api) {
     throw "Linear isn't connected. Connect it in Settings → Integrations.";
   }
@@ -149,6 +182,37 @@ async function withLinear<T>(fn: (api: LinearApi) => Promise<T>): Promise<T> {
     throw err instanceof Error ? err.message : err;
   }
 }
+
+/** Browser sign-in; only offered when Argus has an OAuth app for the service. */
+export async function connectWithOAuth(
+  id: IntegrationId,
+): Promise<IntegrationStatus> {
+  if (id !== "linear") {
+    throw `${SERVICE_NAMES[id]} doesn't offer browser sign-in yet. Use a key instead.`;
+  }
+  try {
+    await signInWithOAuth(id, (token) =>
+      new LinearApi({ method: "oauth", secret: token }).account(),
+    );
+  } catch (err) {
+    capture("integration_connected", {
+      method: "oauth",
+      service: id,
+      success: false,
+    });
+    throw err;
+  }
+  capture("integration_connected", {
+    method: "oauth",
+    service: id,
+    success: true,
+  });
+  announce(id);
+
+  return integrationStatus(id);
+}
+
+export { cancelOAuth };
 
 export function listLinearIssues(
   query: string | null,
