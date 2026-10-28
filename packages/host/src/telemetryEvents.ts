@@ -121,7 +121,7 @@ export interface EventMap {
     has_parent: boolean;
     has_resume_id: boolean;
     permission_mode: string;
-  session_kind: SessionKind;
+    session_kind: SessionKind;
   };
   agent_limit_auto_continue: {
     action: "cancelled" | "dismissed" | "gave_up" | "scheduled" | "sent";
@@ -213,6 +213,7 @@ export interface EventMap {
     success: boolean;
   };
   integration_reauth_needed: { service: "figma" | "linear" };
+  issue_report_posted: { has_screenshots: boolean; trigger: "merge" | "pr" };
   /** Mirrors `LegacyTunnelKind` in `services/remote/legacyTunnels.ts`. */
   legacy_tunnel_retired: {
     kind: "cloudflare_quick" | "cloudflare_token" | "tailscale_funnel";

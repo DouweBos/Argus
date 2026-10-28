@@ -280,9 +280,10 @@ rather than quietly falling back to your boot disk.
 
 Linear connection for this machine. See [Integrations](./integrations.md).
 
-| Setting                 | Default | Description                                                                    |
-| ----------------------- | ------- | ------------------------------------------------------------------------------ |
-| **Move to In Progress** | on      | Moves an issue to its team's first started state when an agent starts from it. |
+| Setting                 | Default | Description                                                                                                                                           |
+| ----------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Move to In Progress** | on      | Moves an issue to its team's first started state when an agent starts from it.                                                                        |
+| **Report back**         | `pr`    | When to comment on the session's issue with its changes and simulator screenshots: `off`, `pr` (when a pull request is opened from Argus) or `merge`. |
 
 ## MCP servers
 
