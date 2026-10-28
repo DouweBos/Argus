@@ -93,7 +93,10 @@ function grantsFor(member: DeviceMember): AccountGrantSetting {
     return "monitor";
   }
 
-  return member.kind === "ios" ? grants.ios : grants.desktop;
+  // A browser gets the phone's grant: its key lives in a web origin's storage.
+  return member.kind === "mac" || member.kind === "electron"
+    ? grants.desktop
+    : grants.ios;
 }
 
 /** Whether a materialized account device may still connect. */

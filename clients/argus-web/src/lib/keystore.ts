@@ -16,6 +16,7 @@ import {
   type HostCredentials,
   type NoiseKeypair,
   type PairingResult,
+  type Transport,
 } from "@argus/remote-client";
 import { wsOrigin } from "./origin";
 
@@ -30,6 +31,22 @@ export interface DeviceIdentity {
   capabilities: string[];
   /** Client-chosen display name, shown in the desktop's paired-device list. */
   name: string;
+  /** Set when this is an account computer opened from the hosted client. */
+  account?: AccountHostLink;
+}
+
+/**
+ * An account computer the hosted client dials: over its own `wss://` route,
+ * with this browser's account key. Never written to `localStorage`.
+ */
+export interface AccountHostLink {
+  hostId: string;
+  hostName: string;
+  credentials: HostCredentials;
+  /** Runs once the channel is up (hands the host newer account entries). */
+  onReady: (transport: Transport) => void;
+  /** Back to the account's computer list. */
+  leave: () => void;
 }
 
 /** Best-effort friendly default name from the browser's platform hints. */
@@ -99,8 +116,15 @@ export function identityFromPairing(result: PairingResult): DeviceIdentity {
   };
 }
 
-/** Credentials for the shared transport — always dialled on our own origin. */
+/**
+ * Credentials for the shared transport. A paired host is always dialled on
+ * our own origin; an account computer on the route it published.
+ */
 export function credentialsFor(id: DeviceIdentity): HostCredentials {
+  if (id.account) {
+    return id.account.credentials;
+  }
+
   return {
     url: wsOrigin(),
     devPrivB64: id.devPrivB64,

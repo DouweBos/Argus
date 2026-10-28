@@ -244,7 +244,10 @@ export interface EventMap {
     stage: "creating_worktree" | "setting_up" | "starting_agent";
   };
   queued_message_sent_now: { mid_turn: boolean };
-  remote_connection_opened: { trust: "account" | "paired" };
+  remote_connection_opened: {
+    trust: "account" | "paired";
+    hosted_web: boolean;
+  };
   remote_device_watched: { success: boolean };
   renderer_started: { popout: string };
   secret_store_migrated: {

@@ -9,6 +9,7 @@ import {
   notificationsSupported,
   requestNotificationPermission,
 } from "../lib/notify";
+import { NameField, SignOutField } from "../hosted/AccountFields";
 import { useAppStore } from "../lib/store";
 import { webPushSupported, type WebPushState } from "../lib/webpush";
 import {
@@ -50,6 +51,22 @@ const PUSH_LABEL: Record<WebPushState, string> = {
   off: "Off — you'll only see alerts while this tab is open.",
 };
 
+function AppearanceField({ theme }: { theme: ThemePreference }) {
+  return (
+    <SettingsScreenField
+      label="Appearance"
+      caption="Match your system, or force light or dark."
+    >
+      <SegmentedControl<ThemePreference>
+        aria-label="Theme"
+        value={theme}
+        options={THEME_OPTIONS}
+        onChange={setThemePreference}
+      />
+    </SettingsScreenField>
+  );
+}
+
 export function Settings() {
   const deviceName = useAppStore((s) => s.deviceName);
   const setDeviceName = useAppStore((s) => s.setDeviceName);
@@ -58,6 +75,7 @@ export function Settings() {
   const pushState = useAppStore((s) => s.pushState);
   const setPushEnabled = useAppStore((s) => s.setPushEnabled);
   const theme = useThemePreference();
+  const account = useAppStore((s) => s.identity?.account);
 
   const [name, setName] = useState(deviceName);
   const [saved, setSaved] = useState(false);
@@ -75,6 +93,24 @@ export function Settings() {
     setSaved(true);
     setTimeout(() => setSaved(false), 1200);
   };
+
+  if (account) {
+    return (
+      <div className="aw-settings">
+        <SettingsScreenField
+          label="Computer"
+          caption={`Connected to ${account.hostName} through its tunnel.`}
+        >
+          <Button variant="secondary" onClick={account.leave}>
+            Switch computer
+          </Button>
+        </SettingsScreenField>
+        <NameField />
+        <AppearanceField theme={theme} />
+        <SignOutField />
+      </div>
+    );
+  }
 
   return (
     <div className="aw-settings">
@@ -100,17 +136,7 @@ export function Settings() {
         </div>
       </SettingsScreenField>
 
-      <SettingsScreenField
-        label="Appearance"
-        caption="Match your system, or force light or dark."
-      >
-        <SegmentedControl<ThemePreference>
-          aria-label="Theme"
-          value={theme}
-          options={THEME_OPTIONS}
-          onChange={setThemePreference}
-        />
-      </SettingsScreenField>
+      <AppearanceField theme={theme} />
 
       <SettingsScreenField
         label="Notifications"

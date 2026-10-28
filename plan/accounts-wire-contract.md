@@ -34,7 +34,7 @@ signature lives in `sigs[signer]`. Extra keys in `sigs` are ignored.)
 Members:
 
 ```
-DeviceMember = { id, role: "device", kind: "ios" | "mac" | "electron", sign_pub, noise_pub, name, created_at }
+DeviceMember = { id, role: "device", kind: "ios" | "mac" | "electron" | "web", sign_pub, noise_pub, name, created_at }
 HostMember   = { id, role: "host", platform: "darwin" | "linux", sign_pub, noise_pub, name, created_at }
 ```
 
@@ -355,7 +355,7 @@ Empty entry list with no prior state → `malformed` at index 0. Passing a prior
 genesis_hash differs from the pin → `fork` at index 0.
 
 Schema details: body `v` must be 1; `epoch`/`seq` non-negative integers; member `name` 1–64 chars
-without control chars; DeviceMember.kind ∈ ios|mac|electron; HostMember.platform ∈ darwin|linux;
+without control chars; DeviceMember.kind ∈ ios|mac|electron|web (web: the hosted client, phase 5); HostMember.platform ∈ darwin|linux;
 unknown `type` → malformed. Extra unknown keys are allowed (ignored).
 
 Admission check (subject side): member live AND its add\_\* request_id == expected AND sas_commit ==

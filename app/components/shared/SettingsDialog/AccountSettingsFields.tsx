@@ -60,11 +60,11 @@ export function AccountSettingsFields({ config }: { config: AccountConfig }) {
       </SettingsScreenField>
       <SettingsScreenField
         label="Access for account devices"
-        caption="What iPhones, and Macs or desktop windows, on the account may do on this computer."
+        caption="What iPhones and browsers, and Macs or desktop windows, on the account may do on this computer."
       >
         <div className={styles.grants}>
           <label className={styles.grant}>
-            iPhone
+            iPhone and browser
             <Select
               value={config.grants.ios}
               onChange={(e) =>

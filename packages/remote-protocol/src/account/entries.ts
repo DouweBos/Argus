@@ -5,7 +5,7 @@
 
 import type { LogState } from "./log";
 import type { AccountMember, LogEntry } from "./schema";
-import { entrySigningBytes, proofSigningBytes, signB64 } from "./sign";
+import { entrySigningBytes, proofSigningBytes, signB64, toB64 } from "./sign";
 
 export interface EntrySigner {
   id: string;
@@ -16,27 +16,46 @@ export interface EntrySigner {
 /** Type-specific fields of a body; the common header is filled in here. */
 export type EntryFields = Record<string, unknown> & { type: string };
 
-/** Sign one entry that extends `head` (`null` for genesis). */
-export function makeEntry(
-  header: {
-    account_id: string;
-    epoch: number;
-    head: { seq: number; hash: string } | null;
-    ts?: number;
-  },
-  signer: EntrySigner,
+export interface EntryHeader {
+  account_id: string;
+  epoch: number;
+  head: { seq: number; hash: string } | null;
+  ts?: number;
+}
+
+/**
+ * A signer whose private key never leaves its keystore (a non-extractable
+ * WebCrypto key): it signs bytes and hands back the raw 64-byte signature.
+ */
+export interface AsyncEntrySigner {
+  id: string;
+  sign: (message: Uint8Array) => Promise<Uint8Array>;
+}
+
+function entryBody(
+  header: EntryHeader,
+  signerId: string,
   fields: EntryFields,
-): LogEntry {
-  const body = JSON.stringify({
+): string {
+  return JSON.stringify({
     v: 1,
     account_id: header.account_id,
     epoch: header.epoch,
     seq: header.head ? header.head.seq + 1 : 0,
     prev: header.head ? header.head.hash : "",
     ts: header.ts ?? Date.now(),
-    signer: signer.id,
+    signer: signerId,
     ...fields,
   });
+}
+
+/** Sign one entry that extends `head` (`null` for genesis). */
+export function makeEntry(
+  header: EntryHeader,
+  signer: EntrySigner,
+  fields: EntryFields,
+): LogEntry {
+  const body = entryBody(header, signer.id, fields);
 
   return {
     body,
@@ -44,9 +63,29 @@ export function makeEntry(
   };
 }
 
+/** {@link makeEntry} for a key that signs asynchronously. */
+export async function makeEntryWith(
+  header: EntryHeader,
+  signer: AsyncEntrySigner,
+  fields: EntryFields,
+): Promise<LogEntry> {
+  const body = entryBody(header, signer.id, fields);
+  const sig = await signer.sign(entrySigningBytes(body));
+
+  return { body, sigs: { [signer.id]: toB64(sig) } };
+}
+
 /** A member's own key vouching for its id and keys. */
 export function makeProof(member: AccountMember, signPriv: string): string {
   return signB64(proofSigningBytes(member), signPriv);
+}
+
+/** {@link makeProof} for a key that signs asynchronously. */
+export async function makeProofWith(
+  member: AccountMember,
+  sign: (message: Uint8Array) => Promise<Uint8Array>,
+): Promise<string> {
+  return toB64(await sign(proofSigningBytes(member)));
 }
 
 /** The head a new entry must extend. */

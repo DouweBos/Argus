@@ -237,6 +237,9 @@ importers:
       '@argus/remote-client':
         specifier: workspace:*
         version: link:../../packages/remote-client
+      '@argus/remote-protocol':
+        specifier: workspace:*
+        version: link:../../packages/remote-protocol
       '@noble/ciphers':
         specifier: ^2.2.0
         version: 2.2.0

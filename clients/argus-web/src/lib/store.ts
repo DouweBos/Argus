@@ -85,6 +85,35 @@ import {
   type MediaMessage,
 } from "@argus/remote-client";
 
+/** Everything a host connection fetched, back to empty. */
+const DISCONNECTED = {
+  identity: null,
+  deviceName: "",
+  transport: null,
+  connection: "offline",
+  projects: [],
+  sessionsByRepo: {},
+  agentsByRepo: {},
+  recentAgents: [],
+  messagesByAgent: {},
+  optimisticByAgent: {},
+  queuedByAgent: {},
+  tasksByAgent: {},
+  todosByAgent: {},
+  followUpsByAgent: {},
+  pendingToolByAgent: {},
+  prevBeforeByAgent: {},
+  gitStatusBySession: {},
+  prompts: {},
+  answered: {},
+  imageCache: {},
+  capabilities: [],
+  capabilitiesByAgent: {},
+  statusByAgent: {},
+  effortByAgent: {},
+  devices: [],
+} satisfies Partial<AppState>;
+
 /** Cheap deep-equality via JSON — transcript pages are small and polled rarely. */
 const jsonEq = (a: unknown, b: unknown): boolean =>
   JSON.stringify(a) === JSON.stringify(b);
@@ -180,6 +209,10 @@ interface AppState {
    */
   setHuddleTyping: (typing: boolean) => void;
   pairComplete: (identity: DeviceIdentity) => void;
+  /** Connect to an account computer (hosted client); nothing is persisted here. */
+  openAccountHost: (identity: DeviceIdentity) => void;
+  /** Drop the account computer and everything fetched from it. */
+  closeHost: () => void;
   setDeviceName: (name: string) => Promise<void>;
   setPushEnabled: (enabled: boolean) => Promise<void>;
   unpair: () => void;
@@ -613,9 +646,15 @@ export const useAppStore = create<AppState>((set, get) => {
         // Push our display name once the secure channel is up, so the desktop's
         // paired-device list shows a friendly label instead of "New device".
         if (connection === "ready") {
-          const name = get().deviceName.trim();
-          if (name) {
-            transport.request("device.rename", { name }).catch(() => {});
+          if (identity.account) {
+            // An account device is named on the account, and push for the
+            // hosted client isn't wired: it serves every computer from one origin.
+            identity.account.onReady(transport);
+          } else {
+            const name = get().deviceName.trim();
+            if (name) {
+              transport.request("device.rename", { name }).catch(() => {});
+            }
           }
           // Refresh grants from the desktop — reflects any control toggle made
           // while we were offline (the desktop drops the socket on change).
@@ -623,9 +662,11 @@ export const useAppStore = create<AppState>((set, get) => {
             .request<{ capabilities: string[] }>("device.capabilities", {})
             .then((r) => set({ capabilities: r.capabilities }))
             .catch(() => {});
-          registerWebPush(transport)
-            .then((pushState) => set({ pushState }))
-            .catch(() => {});
+          if (!identity.account) {
+            registerWebPush(transport)
+              .then((pushState) => set({ pushState }))
+              .catch(() => {});
+          }
           flushPendingDecisions(transport).catch(() => {});
         } else {
           set({ pushState: "off" });
@@ -813,6 +854,22 @@ export const useAppStore = create<AppState>((set, get) => {
       });
     },
 
+    openAccountHost: (identity) => {
+      get().transport?.disconnect();
+      set({
+        ...DISCONNECTED,
+        identity,
+        deviceName: identity.name,
+        capabilities: [],
+        transport: connect(identity),
+      });
+    },
+
+    closeHost: () => {
+      get().transport?.disconnect();
+      set(DISCONNECTED);
+    },
+
     decidePrompt: async (agentId, toolUseId, decision) => {
       queuePendingDecision({ agentId, toolUseId, decision, at: Date.now() });
       const transport = get().transport;
@@ -859,33 +916,7 @@ export const useAppStore = create<AppState>((set, get) => {
       void unregisterWebPush(get().transport);
       get().transport?.disconnect();
       clearIdentity();
-      set({
-        identity: null,
-        deviceName: "",
-        transport: null,
-        connection: "offline",
-        projects: [],
-        sessionsByRepo: {},
-        agentsByRepo: {},
-        recentAgents: [],
-        messagesByAgent: {},
-        optimisticByAgent: {},
-        queuedByAgent: {},
-        tasksByAgent: {},
-        todosByAgent: {},
-        followUpsByAgent: {},
-        pendingToolByAgent: {},
-        prevBeforeByAgent: {},
-        gitStatusBySession: {},
-        prompts: {},
-        answered: {},
-        imageCache: {},
-        capabilities: [],
-        capabilitiesByAgent: {},
-        statusByAgent: {},
-        effortByAgent: {},
-        devices: [],
-      });
+      set(DISCONNECTED);
     },
 
     refreshProjects: async () => {

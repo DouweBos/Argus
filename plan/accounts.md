@@ -1,7 +1,8 @@
 # Account layer: find and link your computers
 
-Status: phases 1–4 built (phase 2 minus identity merge, account reset and QR "Also add to
-account" — see §11; phase 4 waits on the Cloudflare token below). Owner: Douwe. Touches `packages/host`, `packages/remote-protocol`,
+Status: phases 1–5 built (phase 2 minus identity merge, account reset and QR "Also add to
+account" — see §11; phase 4 waits on the Cloudflare token below; phase 5 is the hosted web
+client at `houwert.dev/argus/app`). Owner: Douwe. Touches `packages/host`, `packages/remote-protocol`,
 `clients/apple`, `app/`, and the houwert.dev Pages project.
 
 ## What Douwe needs to do
@@ -72,7 +73,8 @@ Everything not on this list is ours to build and script. Nothing here needs the 
 
 - Proxying traffic through houwert.dev. Clients still dial the host's own endpoints.
 - Sharing hosts across accounts or teams. Huddles cover ad-hoc sharing.
-- An account sign-in for the LAN web client (`clients/argus-web`). It stays QR-paired; see phase 5.
+- An account sign-in for the LAN web client (`clients/argus-web` served by a host). It stays
+  QR-paired; the account client is its hosted build (phase 5).
 - Storing anything a host or agent produces. The service never sees prompts, names of projects or
   sessions, or paths.
 - Replacing Clerk sessions with our own tokens. Clerk gates _who may use the directory_; our keys
@@ -644,7 +646,8 @@ option. Native Sign in with Apple satisfies it, and is shown first.
 ### 7.5 Web client (`clients/argus-web`)
 
 Unchanged in phases 1–4: it is served by a host on its LAN origin, which can't be a stable Clerk
-origin, and it already has a pairing. Phase 5 looks at a hosted client on houwert.dev.
+origin, and it already has a pairing. Phase 5 adds a second build of the same client, hosted on
+houwert.dev and signed in with the account (§11 Phase 5).
 
 ### 7.6 Command contract checklist (per new host command)
 
@@ -892,11 +895,62 @@ Deploy order: secret + vars (§ "What Douwe needs to do" 7a) → `wrangler d1 mi
 argus-account --remote` → push houwert.dev `main` → ship the Argus release. Older Argus hosts never
 call the new routes; new hosts against an old service get a 404 and back off like `unavailable`.
 
-### Phase 5 (later): hosted web client
+### Phase 5: hosted web client
 
-`houwert.dev/argus/app` with Clerk JS, a WebCrypto device key in IndexedDB (non-extractable), and
-the same join flow. Gated on whether WebSocket-to-LAN from a public origin is workable (mixed content
-from https to `ws://` LAN is blocked, so only tunnel endpoints are possible).
+`houwert.dev/argus/app`: the LAN web client's second build (`clients/argus-web/hosted/`,
+`src/hosted/`, `src/account/`), signed in with Clerk JS, joining like a phone, and dialling
+computers over their managed tunnels. Built.
+
+Decisions:
+
+- **Same components, another entry.** `vite.hosted.config.ts` builds `hosted/index.html` with
+  base `/argus/app/` into `dist-hosted`. Picking a computer hands the shared store an identity
+  whose `account` field carries the credentials (`store.openAccountHost`), and the existing
+  monitor UI runs unchanged; Settings and the root header swap pairing for the account.
+- **A new device kind, `web`.** Accounts hadn't shipped, so the verifiers (TS, Swift, the
+  service) accept it rather than reusing `electron`. Hosts grant it the iPhone's grant
+  (`grants.ios`, "iPhone and browser access"): its key lives in a web origin's storage.
+- **Keys.** Ed25519 and X25519 WebCrypto keys, generated non-extractable and stored as
+  `CryptoKey`s in IndexedDB (`vault.ts`). Entries and proofs are signed with
+  `crypto.subtle.sign` (`makeEntryWith`/`makeProofWith` in `remote-protocol`). Noise needs
+  `DH(s, rs)` and `DH(s, re)` synchronously, so `remote-client`'s `Transport` takes an
+  `AsyncStaticKey`, computes each DH with `deriveBits` before the message that needs it, and
+  queues frames behind it. No compromise: neither long-lived private key is ever in JavaScript
+  memory; only per-connection ephemerals are, as in every client. Browsers without Ed25519 /
+  X25519 WebCrypto (Chrome < 137, Safari < 17, Firefox < 130) are told so, never given an
+  extractable fallback.
+- **Join flow** ported from `AccountStore+Join.swift` (`join.ts`): request, SAS checked
+  against the approver's key and head in the verified log, adoption only through
+  `admitsMember` with the confirmed commit, the persisted request resumed after a reload, an
+  approval made while the tab was closed offered by its recomputed code
+  (`accountApprovals`, new in `remote-protocol`, mirrors Swift's `AccountLog.approvals`).
+  A browser **never writes genesis** (an empty account says "sign in on the iPhone or Mac app
+  first") and **never approves** others: approvals stay with apps and host consoles.
+- **Routes.** An https page can't open `ws://`, so only `wss://` presence endpoints are kept
+  (in practice the managed tunnel), lowest priority first; a computer without one shows
+  "no secure route". After a handshake the browser runs `account.sync` like the apps.
+- **Delivery.** houwert.dev commits a copy (`pnpm sync:argus-app` → `public/argus/app/` with
+  `build.json`: Argus commit + file hashes), not built at deploy time: what a key-holding page
+  runs is reviewed in a diff. Same commit, same bundle.
+- **CSP** from `functions/argus/app/_middleware.ts`, computed from `CLERK_PUBLISHABLE_KEY`:
+  `script-src 'self' <frontend API> https://challenges.cloudflare.com` (Turnstile, Clerk's bot
+  check), `connect-src 'self' <frontend API> wss://*.<tunnel domain>`, `style-src 'self'
+'unsafe-inline'` (Clerk injects styles), `frame-ancestors 'none'`, `object-src 'none'`,
+  `base-uri 'none'`. CSP can't express `argus-*`, hence the zone wildcard. Clerk JS is pinned
+  (5.128.1) and loaded with SRI; the entry script and stylesheet carry SRI too. No Google
+  Fonts, no other third-party script.
+- **Trust model.** A web page runs whatever its origin serves. Whoever controls houwert.dev
+  (or its deploys) could ship a page that misuses the browser's key — sign entries, connect to
+  hosts — though still not read other devices' traffic or keys. Mitigations: approval per
+  browser, the `control` (not `admin`) grant, revocation from any device, the committed and
+  hashed bundle. Users are told to prefer the apps (`docs/accounts.md`).
+
+Not done: Web Push (one origin serves every computer; the per-host VAPID registration doesn't
+fit), approving devices or adding computers from the browser, telemetry from the page itself
+(the host's `remote_connection_opened` gains `hosted_web`).
+
+Clerk: houwert.dev is the instance's own domain, so nothing changes for production. On the
+development instance the frontend API is `*.clerk.accounts.dev`; the CSP follows the key.
 
 ### Test plan (all phases)
 

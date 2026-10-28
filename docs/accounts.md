@@ -11,12 +11,13 @@ way to connect without one.
 
 ## Signing in
 
-| Where              | How                                                                                                                     |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| iPhone             | Settings → Account. Sign in with Apple, GitHub or an email code. The first device you sign in with sets up the account. |
-| Mac app            | Settings → Account. Sign in with Apple, GitHub or an email code; this also puts this Mac's own host on the account.     |
-| Desktop (Electron) | Settings → Account → **Link this computer**. Your browser opens on a code; approve it from your phone (see below).      |
-| Headless host      | Type `login` in the `argus-host` terminal (or start it as `argus-host login`). It prints a code.                        |
+| Where              | How                                                                                                                        |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| iPhone             | Settings → Account. Sign in with Apple, GitHub or an email code. The first device you sign in with sets up the account.    |
+| Mac app            | Settings → Account. Sign in with Apple, GitHub or an email code; this also puts this Mac's own host on the account.        |
+| Desktop (Electron) | Settings → Account → **Link this computer**. Your browser opens on a code; approve it from your phone (see below).         |
+| Headless host      | Type `login` in the `argus-host` terminal (or start it as `argus-host login`). It prints a code.                           |
+| Any browser        | Open `houwert.dev/argus/app` and sign in; a device already on the account approves it (see [In a browser](#in-a-browser)). |
 
 ### Linking a computer with a code
 
@@ -57,6 +58,44 @@ that computer. (Turn this off per computer with _Approve from this computer_.)
 
 Deny anything you didn't just sign in on: a request only gets in if someone
 confirms the code on a device that's already trusted.
+
+## In a browser
+
+`houwert.dev/argus/app` is Argus in any current browser — Chrome, Edge,
+Firefox or Safari — with nothing to install. It is the same client the
+desktop serves on your network, signed in with your account instead of paired
+with one computer.
+
+1. Open `houwert.dev/argus/app` and sign in with the account you use in the
+   Argus apps.
+2. On your iPhone, the Mac app or the desktop app, approve the browser and
+   check that both screens show the same six-digit code — exactly as for a
+   new phone. A browser can't start an account: if yours has no devices yet,
+   sign in on the iPhone or Mac app first.
+3. Pick a computer. The browser connects to it through the computer's managed
+   tunnel and shows its projects, agents and devices.
+
+A browser only reaches a computer through its tunnel: a page loaded over
+https may not open plain `ws://` connections to your local network or
+tailnet. A computer with remote access off, or without a tunnel, shows as
+having no secure route. It gets the same access as an iPhone (_iPhone and
+browser access_ in that computer's account settings).
+
+The browser keeps its keys in its own storage, created so that page scripts
+can use them but not read them out. Clearing the site's data, or **Sign out**
+(Account, top right), takes the browser off the account. You can rename it
+there too, or from any other device.
+
+One thing is different from the apps: in a browser, the code comes from the
+site. The account service can't add a device or read your traffic, but
+`houwert.dev` serves the page that holds the browser's key, so whoever
+controls that site could change what the page does. The page loads scripts
+only from `houwert.dev` and the sign-in provider, pinned with integrity
+hashes where it can, and keeps no third-party scripts. Prefer the apps on a
+device you can install them on, and remove a browser you no longer use.
+
+Background push isn't available in the browser yet; alerts show while the tab
+is open.
 
 ## Reaching your computers from anywhere
 
@@ -211,7 +250,7 @@ the account):
 | ---------------------------------------------- | -------- | --------------------------------------------------------------------------------- |
 | Use the account                                | on       | Off: stop publishing the address and refuse account devices, while staying linked |
 | Account service                                | built-in | Point at another account service (self-hosting, staging)                          |
-| iPhone access                                  | control  | What account iPhones may do on this computer (`monitor`, `control`)               |
+| iPhone and browser access                      | control  | What account iPhones and browsers may do on this computer (`monitor`, `control`)  |
 | Mac and desktop access                         | admin    | What account Macs and desktop apps may do (`monitor`, `control`, `admin`)         |
 | Publish LAN / Tailscale / Cloudflare addresses | on       | Which addresses go into the directory. LAN IPs are visible to the service         |
 | Managed tunnel                                 | on       | Run this computer's tunnel while remote access is on. Off: LAN and Tailscale only |

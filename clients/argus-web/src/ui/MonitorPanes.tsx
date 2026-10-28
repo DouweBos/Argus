@@ -159,6 +159,27 @@ function ViewBody({ push, view }: { push: Push; view: View }) {
   }
 }
 
+/**
+ * The top-left of the root list: the logo, or for an account computer opened
+ * from the hosted client, the way back to the account's computers.
+ */
+function RootLeading() {
+  const account = useAppStore((s) => s.identity?.account);
+  if (!account) {
+    return <Icons.ArgusLogo size={16} />;
+  }
+
+  return (
+    <SidebarHeaderAction
+      onClick={account.leave}
+      title="Computers"
+      aria-label="Computers"
+    >
+      <Icons.ChevronLeftIcon size={14} />
+    </SidebarHeaderAction>
+  );
+}
+
 /** Devices / refresh / settings — the actions that belong to the project list. */
 function RootActions({ push }: { push: Push }) {
   const connection = useAppStore((s) => s.connection);
@@ -325,7 +346,7 @@ export function SinglePane({
             <Icons.ChevronLeftIcon size={14} />
           </SidebarHeaderAction>
         ) : (
-          <Icons.ArgusLogo size={16} />
+          <RootLeading />
         )
       }
       actions={
@@ -369,7 +390,7 @@ export function MasterPane({
       view={view}
       leading={
         atRoot ? (
-          <Icons.ArgusLogo size={16} />
+          <RootLeading />
         ) : (
           // Pushing rather than popping: the detail pane must stay put.
           <SidebarHeaderAction

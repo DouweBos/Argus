@@ -166,6 +166,7 @@ enum AccountMemberText {
     switch member?.kind {
     case "ios": "iphone"
     case "mac": "laptopcomputer"
+    case "web": "globe"
     default: "desktopcomputer"
     }
   }
@@ -176,6 +177,7 @@ enum AccountMemberText {
     switch member.kind {
     case "ios": return "iPhone"
     case "mac": return "Mac app"
+    case "web": return "Browser"
     default: return "Desktop app"
     }
   }

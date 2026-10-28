@@ -43,7 +43,7 @@ const MemberBase = {
   created_at: z.number(),
 };
 
-export const DeviceKind = z.enum(["ios", "mac", "electron"]);
+export const DeviceKind = z.enum(["ios", "mac", "electron", "web"]);
 export type DeviceKind = z.infer<typeof DeviceKind>;
 
 export const HostPlatformKind = z.enum(["darwin", "linux"]);
