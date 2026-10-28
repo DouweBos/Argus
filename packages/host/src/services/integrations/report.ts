@@ -13,6 +13,7 @@ import { loadAppSettings } from "../appSettings/store";
 import { git } from "../session/git";
 import { iosScreenshot } from "../simulator/screenshot";
 import { capture } from "../telemetry/telemetry";
+import { figmaFrame } from "./figma/service";
 import { freshLinearApi } from "./service";
 
 const MAX_COMMITS = 10;
@@ -29,6 +30,8 @@ export function reportBody(opts: {
   prUrl: string | null;
   commits: string[];
   screenshotUrls: string[];
+  /** The session's Figma frames, with their render uploaded when it worked. */
+  designs?: { name: string; url: string; imageUrl: string | null }[];
 }): string {
   const lines = [
     opts.trigger === "pr"
@@ -38,7 +41,28 @@ export function reportBody(opts: {
   if (opts.commits.length > 0) {
     lines.push("", "**Changes**", ...opts.commits.map((c) => `- ${c}`));
   }
-  if (opts.screenshotUrls.length > 0) {
+  const designs = opts.designs ?? [];
+  if (designs.length > 0) {
+    // Side by side, so the ticket shows what was asked for next to what was built.
+    lines.push(
+      "",
+      "**Design vs. implementation**",
+      "",
+      "| Design | Implementation |",
+      "| --- | --- |",
+    );
+    const rows = Math.max(designs.length, opts.screenshotUrls.length);
+    for (let i = 0; i < rows; i++) {
+      const design = designs[i];
+      const shot = opts.screenshotUrls[i];
+      const left = design
+        ? `[${design.name}](${design.url})${design.imageUrl ? `<br>![${design.name}](${design.imageUrl})` : ""}`
+        : "";
+      lines.push(
+        `| ${left} | ${shot ? `![Simulator ${i + 1}](${shot})` : ""} |`,
+      );
+    }
+  } else if (opts.screenshotUrls.length > 0) {
     lines.push(
       "",
       "**Simulator**",
@@ -133,6 +157,21 @@ export async function reportOnIssue(
         api.upload(png, `${issue.identifier}-simulator-${i + 1}.png`),
       ),
     );
+    const designs = await Promise.all(
+      (session.design_refs ?? []).map(async (ref, i) => {
+        const frame = await figmaFrame(ref.url).catch(() => null);
+        const imageUrl = frame
+          ? await api
+              .upload(
+                Buffer.from(frame.image, "base64"),
+                `${issue.identifier}-design-${i + 1}.png`,
+              )
+              .catch(() => null)
+          : null;
+
+        return { name: ref.name, url: ref.url, imageUrl };
+      }),
+    );
     const target = await api.issue(issue.identifier);
     if (!target) {
       return;
@@ -146,6 +185,7 @@ export async function reportOnIssue(
         prUrl: details.prUrl ?? null,
         commits,
         screenshotUrls,
+        designs,
       }),
     );
     capture("issue_report_posted", {

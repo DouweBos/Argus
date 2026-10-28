@@ -12,6 +12,7 @@ import { error, info } from "@argus/host/logger";
 import { canonicalPath } from "../../lib/canonicalPath";
 import { appState } from "../../state";
 import { loadAppSettings } from "../appSettings/store";
+import { writeDesignFiles } from "../design/files";
 import { issueSessionStarted } from "../integrations/service";
 import { type AppDefaultLlm, resolveRunnerForSession } from "../llm/resolve";
 import { forkClaudeSessionFile } from "../llm/runners/claudeCode/transcriptFork";
@@ -754,6 +755,10 @@ async function finalizeSession(
       }
     }
     signalWorktreeReady?.({ ...ws });
+
+    if (ws.design_refs?.length) {
+      writeDesignFiles(ws.path, ws.design_refs).catch(() => undefined);
+    }
 
     // --- Phase 7: persist metadata --------------------------------------
     const meta = loadMetadata(repoRoot);

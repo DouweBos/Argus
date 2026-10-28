@@ -22,6 +22,7 @@ export interface FigmaFrame {
 
 /** A node trimmed to what an agent needs to build it: layout, type, colors, text. */
 export interface TrimmedNode {
+  id: string;
   name: string;
   type: string;
   size?: { w: number; h: number };
@@ -35,6 +36,7 @@ export interface TrimmedNode {
 }
 
 interface RawNode {
+  id: string;
   name: string;
   type: string;
   absoluteBoundingBox?: { width: number; height: number };
@@ -56,7 +58,11 @@ interface RawNode {
 }
 
 export function trimNode(node: RawNode, depth = 0): TrimmedNode {
-  const trimmed: TrimmedNode = { name: node.name, type: node.type };
+  const trimmed: TrimmedNode = {
+    id: node.id,
+    name: node.name,
+    type: node.type,
+  };
   if (node.absoluteBoundingBox) {
     trimmed.size = {
       w: Math.round(node.absoluteBoundingBox.width),
@@ -114,6 +120,13 @@ export function trimNode(node: RawNode, depth = 0): TrimmedNode {
   }
 
   return trimmed;
+}
+
+export interface FigmaFileOutline {
+  name: string;
+  version: string;
+  lastModified: number;
+  pages: { name: string; frames: { id: string; name: string }[] }[];
 }
 
 export class FigmaApi {
@@ -239,5 +252,56 @@ export class FigmaApi {
       )
       .sort((a, b) => a.created_at.localeCompare(b.created_at))
       .map((c) => ({ author: c.user.handle, body: c.message }));
+  }
+
+  /** File name, version, and each page's top-level frames. */
+  async outline(fileKey: string): Promise<FigmaFileOutline> {
+    const file = await this.get<{
+      name: string;
+      version: string;
+      lastModified: string;
+      document: {
+        children: {
+          name: string;
+          children?: { id: string; name: string; type: string }[];
+        }[];
+      };
+    }>(`/files/${fileKey}?depth=2`);
+
+    return {
+      name: file.name,
+      version: file.version,
+      lastModified: Date.parse(file.lastModified),
+      pages: file.document.children.map((page) => ({
+        name: page.name,
+        frames: (page.children ?? [])
+          .filter((c) =>
+            ["FRAME", "COMPONENT", "COMPONENT_SET", "SECTION"].includes(c.type),
+          )
+          .map((c) => ({ id: c.id, name: c.name })),
+      })),
+    };
+  }
+
+  /** Download URLs for rendering nodes, keyed by node id (missing ones are left out). */
+  async exportUrls(
+    fileKey: string,
+    ids: string[],
+    format: "png" | "svg",
+    scale = 3,
+  ): Promise<Record<string, string>> {
+    if (ids.length === 0) {
+      return {};
+    }
+    const scaleParam = format === "png" ? `&scale=${scale}` : "";
+    const data = await this.get<{ images: Record<string, string | null> }>(
+      `/images/${fileKey}?ids=${encodeURIComponent(ids.join(","))}&format=${format}${scaleParam}`,
+    );
+
+    return Object.fromEntries(
+      Object.entries(data.images).filter((e): e is [string, string] =>
+        Boolean(e[1]),
+      ),
+    );
   }
 }

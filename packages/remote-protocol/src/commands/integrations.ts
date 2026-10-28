@@ -1,7 +1,9 @@
 import { z } from "zod";
 import {
+  DesignComparison,
   DesignRef,
   FigmaFrame,
+  FigmaFrameDetails,
   IntegrationId,
   IntegrationStatus,
   LinearIssue,
@@ -110,6 +112,22 @@ export const INTEGRATION_COMMANDS = {
     tier: "admin",
     params: z.object({ url: z.string() }),
     result: FigmaFrame.nullable(),
+  },
+  /** The frame, its layers, comments and file outline, for the design viewer. */
+  figma_frame_details: {
+    tier: "admin",
+    params: z.object({ url: z.string() }),
+    result: FigmaFrameDetails.nullable(),
+  },
+  /** Render the frame at the device's pixel size and diff it against the screen. */
+  design_compare: {
+    tier: "admin",
+    params: z.object({
+      url: z.string(),
+      platform: z.enum(["android", "ios"]),
+      deviceKey: z.string(),
+    }),
+    result: DesignComparison,
   },
   /** Base64 PNG of a local simulator or emulator; null when it can't be taken. */
   device_screenshot: {

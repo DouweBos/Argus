@@ -15,6 +15,7 @@ import { emitHostEvent } from "@argus/host/bus";
 import { info } from "@argus/host/logger";
 import { appState } from "../../state";
 import { listClaudeAccounts } from "../claudeAuth/accounts";
+import { writeDesignFiles } from "../design/files";
 import { updateScratchPadRecord } from "../scratchPad/store";
 import { isBranchProtected, loadArgusConfig } from "./argusConfig";
 import { git } from "./git";
@@ -980,6 +981,7 @@ export function setSessionDesignRefs(id: string, refs: DesignRef[]): void {
   ws.design_refs = refs.length > 0 ? refs : null;
   appState.sessions.set(id, ws);
   emitHostEvent("session:updated", { ...ws });
+  writeDesignFiles(ws.path, refs).catch(() => undefined);
 
   const meta = loadMetadata(ws.repo_root);
   const m = meta.get(ws.path);

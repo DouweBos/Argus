@@ -7,6 +7,7 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { prReferenceSection } from "../design/prSection";
 import { pullRequestOpened } from "../integrations/report";
 
 const execFileAsync = promisify(execFile);
@@ -30,7 +31,11 @@ export async function ghPrCreate(params: {
   repoRoot: string;
   title: string;
 }): Promise<{ number: number; url: string }> {
-  const { repoRoot, title, body, base, head, draft } = params;
+  const { repoRoot, title, base, head, draft } = params;
+  const references = prReferenceSection(repoRoot, head);
+  const body = references
+    ? `${params.body.trimEnd()}\n\n${references}`
+    : params.body;
   const args = [
     "pr",
     "create",

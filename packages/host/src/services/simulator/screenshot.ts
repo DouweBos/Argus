@@ -46,14 +46,20 @@ async function androidScreenshot(serial: string): Promise<Buffer | null> {
   }
 }
 
+export function devicePng(
+  platform: "android" | "ios",
+  deviceKey: string,
+): Promise<Buffer | null> {
+  return platform === "ios"
+    ? iosScreenshot(deviceKey)
+    : androidScreenshot(deviceKey);
+}
+
 export async function deviceScreenshot(
   platform: "android" | "ios",
   deviceKey: string,
 ): Promise<string | null> {
-  const png =
-    platform === "ios"
-      ? await iosScreenshot(deviceKey)
-      : await androidScreenshot(deviceKey);
+  const png = await devicePng(platform, deviceKey);
 
   return png ? png.toString("base64") : null;
 }
