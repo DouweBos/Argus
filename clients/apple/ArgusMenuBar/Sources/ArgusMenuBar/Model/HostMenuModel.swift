@@ -40,22 +40,22 @@ public enum HostMenuModel {
 
   // MARK: Agents
 
-  public static func isActive(_ agent: ArgusProtocol.RemoteAgentStatus) -> Bool {
-    agent.status == .running || agent.status == .requiresAction
+  public static func isActive(_ agent: some HostMenuAgent) -> Bool {
+    agent.isWorking || agent.needsYou
   }
 
-  public static func activeCount(_ agents: [ArgusProtocol.RemoteAgentStatus]) -> Int {
+  public static func activeCount(_ agents: [some HostMenuAgent]) -> Int {
     agents.filter(isActive).count
   }
 
   /// Project → session → agent, newest activity first, as the Electron tray.
-  public static func agentTree(_ agents: [ArgusProtocol.RemoteAgentStatus]) -> [HostMenuItem] {
+  public static func agentTree<Agent: HostMenuAgent>(_ agents: [Agent]) -> [HostMenuItem] {
     guard !agents.isEmpty else { return [.info("No agents running")] }
     let active = activeCount(agents)
     var out: [HostMenuItem] = [
       .info("\(agents.count) agent\(agents.count == 1 ? "" : "s") · \(active) active")
     ]
-    let newest = { (list: [ArgusProtocol.RemoteAgentStatus]) in list.map { $0.createdAt ?? 0 }.max() ?? 0 }
+    let newest = { (list: [Agent]) in list.map { $0.createdAt ?? 0 }.max() ?? 0 }
     let byProject = Dictionary(grouping: agents) { $0.projectName ?? "Project" }
     for (project, projectAgents) in byProject.sorted(by: { newest($0.value) > newest($1.value) }) {
       let bySession = Dictionary(grouping: projectAgents, by: \.sessionId)
@@ -73,9 +73,9 @@ public enum HostMenuModel {
 
   /// Only the agents worth a glance — those waiting on you, then those working —
   /// flat, each opening where it lives; the window has the rest.
-  public static func activeAgents(_ agents: [ArgusProtocol.RemoteAgentStatus], limit: Int = 8) -> [HostMenuItem] {
-    let waiting = agents.filter { $0.status == .requiresAction }.sorted(by: newestFirst)
-    let running = agents.filter { $0.status == .running }.sorted(by: newestFirst)
+  public static func activeAgents(_ agents: [some HostMenuAgent], limit: Int = 8) -> [HostMenuItem] {
+    let waiting = agents.filter(\.needsYou).sorted(by: newestFirst)
+    let running = agents.filter(\.isWorking).sorted(by: newestFirst)
     guard !waiting.isEmpty || !running.isEmpty else { return [.info("No agents running")] }
     var out: [HostMenuItem] = []
     if !waiting.isEmpty {
@@ -89,13 +89,13 @@ public enum HostMenuModel {
     return out
   }
 
-  private static func agentLine(_ agent: ArgusProtocol.RemoteAgentStatus) -> HostMenuItem {
+  private static func agentLine(_ agent: some HostMenuAgent) -> HostMenuItem {
     let title = agent.title ?? "Agent"
     let label = agent.sessionLabel.map { "\(title) — \($0)" } ?? title
     return .action(label, .openAgent(agent.agentId))
   }
 
-  private static func newestFirst(_ a: ArgusProtocol.RemoteAgentStatus, _ b: ArgusProtocol.RemoteAgentStatus) -> Bool {
+  private static func newestFirst<Agent: HostMenuAgent>(_ a: Agent, _ b: Agent) -> Bool {
     (a.createdAt ?? 0) > (b.createdAt ?? 0)
   }
 

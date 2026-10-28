@@ -101,6 +101,30 @@ go through the host, exactly as in the Electron app.
   still warns about running agents. Builds without an update key (local
   builds) don't check at all.
 
+## The menu bar
+
+Argus for Mac puts an item in the menu bar, filled in while an agent is
+working. It's a companion to the window, not a second one:
+
+- **Open Argus** brings the window forward, reopening it if you closed it.
+- The host's state, with **Restart Host** if it stopped.
+- Agents that need you (a permission, a question, a plan), then the ones
+  running. Picking one opens its session in the window.
+- **Pair a device…**: the pairing window with the QR code, then the device's
+  6-digit code to compare and the access to grant, right in the menu. With
+  remote access off it opens Settings → Remote instead.
+- Your Argus account: whether this Mac is on it and online, the managed
+  tunnel, devices waiting to join (approve compares a 6-digit code in a small
+  window), linking with a code, and **Account Settings…** for the rest.
+- **Check for Updates…**, **Open at Login**, **Settings…** and **Quit Argus**.
+
+A window attached to another app's host shows only its agents: pairing and the
+account belong to the app running the host.
+
+Turn it off in Settings → General (**Show in menu bar**), or drag it off the
+menu bar with ⌘ held. It starts off when [Argus Server](server-app.md) is
+installed, which has its own menu bar item.
+
 ## Keyboard shortcuts
 
 Every shortcut is a menu item, so the menu bar lists them all and greys out

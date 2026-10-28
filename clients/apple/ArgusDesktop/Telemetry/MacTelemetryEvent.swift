@@ -226,6 +226,12 @@ enum MacTelemetryEvent {
   case sessionPanelSwitched(panel: String, via: PanelSwitchSource)
   /// One of the keyboard commands for agents, panels and screens was used.
   case menuCommandUsed(action: MenuCommandAction, via: MenuCommandSource)
+  /// An item in the menu-bar item's menu that does something.
+  case menuBarUsed(action: MenuBarAction)
+  /// The menu-bar item was shown or hidden, from Settings or by dragging it off the menu bar.
+  case menuBarToggled(shown: Bool, via: MenuBarToggleSource, serverInstalled: Bool)
+  /// Open at Login was switched; `status` is what macOS made of it.
+  case loginItem(enabled: Bool, status: LoginItemStatus)
   /// Back or Forward through the window tab's history.
   case navigatedHistory(direction: HistoryDirection, via: HistorySource)
   /// A folder was browsed for on a paired host's disk.
@@ -358,6 +364,9 @@ enum MacTelemetryEvent {
     case .tabUsed: "mac_tab_used"
     case .sessionPanelSwitched: "mac_session_panel_switched"
     case .menuCommandUsed: "mac_menu_command_used"
+    case .menuBarUsed: "mac_menu_bar_used"
+    case .menuBarToggled: "mac_menu_bar_toggled"
+    case .loginItem: "mac_login_item"
     case .navigatedHistory: "mac_navigated_history"
     case .scratchPadCreated: "mac_scratch_pad_created"
     case .prefsSupplied: "mac_prefs_supplied"
@@ -463,6 +472,12 @@ enum MacTelemetryEvent {
       ["panel": panel, "via": via.rawValue]
     case .menuCommandUsed(let action, let via):
       ["action": action.rawValue, "via": via.rawValue]
+    case .menuBarUsed(let action):
+      ["action": action.rawValue]
+    case .menuBarToggled(let shown, let via, let serverInstalled):
+      ["shown": shown, "via": via.rawValue, "server_installed": serverInstalled]
+    case .loginItem(let enabled, let status):
+      ["enabled": enabled, "status": status.rawValue]
     case .navigatedHistory(let direction, let via):
       ["direction": direction.rawValue, "via": via.rawValue]
     case .prefsSupplied(let keys):
