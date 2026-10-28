@@ -21,6 +21,7 @@ struct AccountSettingsTab: View {
       case .signedOut:
         AccountSignInSection()
       case .awaitingApproval:
+        AccountProfileHeader()
         SettingsGroup(
           "Waiting for device approval",
           footer: "Approving a new device from one already on your account is coming soon. You can still put this Mac's host on the account below, and approve it from your phone."
@@ -32,6 +33,7 @@ struct AccountSettingsTab: View {
         }
         MacHostLinkSection()
       case .ready:
+        AccountProfileHeader()
         AccountOverview()
       }
     }
