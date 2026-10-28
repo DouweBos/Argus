@@ -15,7 +15,7 @@ import type {
   ToolCallChild,
   ToolCallInfo,
 } from "./types";
-import { contextWindowFromModelUsage } from "../contextWindow";
+import { contextWindowFromModelUsage } from "../contextWindowUsage";
 import {
   applyTaskCallsLive,
   extractTasksFromMessages,
