@@ -16,6 +16,7 @@ import {
   openExternalUrl,
 } from "../../../lib/ipc";
 import { AccountComputers } from "./AccountComputers";
+import { AccountDevices } from "./AccountDevices";
 import styles from "./AccountSection.module.css";
 import { AccountSettingsFields } from "./AccountSettingsFields";
 
@@ -123,7 +124,8 @@ export function AccountSection() {
                 </p>
               )}
             </SettingsScreenField>
-            <AccountComputers />
+            <AccountComputers status={status} />
+            <AccountDevices status={status} />
             <AccountSettingsFields config={status.config} />
             <SettingsScreenField
               label="Unlink this computer"

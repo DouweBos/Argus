@@ -1,0 +1,41 @@
+{
+  "name": "device_removed_cannot_write",
+  "description": "a removed device can no longer approve anyone",
+  "entries": [
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":0,\"prev\":\"\",\"ts\":1800000000000,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"genesis\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000001\",\"role\":\"device\",\"kind\":\"ios\",\"sign_pub\":\"iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w=\",\"noise_pub\":\"+0Gx/PdcEif6CIdgVqXtB6xE/gwRbsLegLjlI5WdeCQ=\",\"name\":\"Phone\",\"created_at\":1800000000000}}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "yWQSqld3PsIDFoyuT2scZ1vjC2wg7N55aYxbodxAJ32WPyBYy2LEyKNzJ09phgqy35AvhCKKFgjGRj0uIiIiBQ=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":1,\"prev\":\"f1a848257c3b8304e696575a6572338395c5033b5a79da32a96e1d5e4b262d06\",\"ts\":1800000000001,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"add_host\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000002\",\"role\":\"host\",\"platform\":\"darwin\",\"sign_pub\":\"gTl3Dqh9F19Wo1Rmw0x+zMuNipG07jeiXfYPW4/Js5Q=\",\"noise_pub\":\"IZ5NgA2paNKl/LAJx4T0dGxxOO257khEtznoMLBc9CQ=\",\"name\":\"Mini\",\"created_at\":1800000000000},\"request_id\":\"\",\"sas_commit\":\"\",\"proof\":\"9njA5qOeGvGC+5pPRkdI5+iufdYoEmfDtnJKV8u6M/HdBuBDxzbUPBxHYC82l+xWuenpHpnfMa3aONzK5h60Aw==\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "+BQQEfCdOZxBpRfaDZW/+v9y/dc7GL947MpAQJIdHnwNKdJIz1a1s7j35uNVkRIrqAFMR2xupb3L53HI5ndGCg=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":2,\"prev\":\"37d2488c489c3d91393d29d7b18e218bd9e467a28e1696dde16ab8388303c778\",\"ts\":1800000000002,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"add_device\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000007\",\"role\":\"device\",\"kind\":\"ios\",\"sign_pub\":\"6kpsY+KcUgq+9VB7Ey7F+ZVHdq6+vnuSQh7qaRRG0iw=\",\"noise_pub\":\"hGL7PweY+f4sOfOCO7Qc0+/+cLtcgXNb5GoUMTXFhFQ=\",\"name\":\"Tablet\",\"created_at\":1800000000000},\"request_id\":\"6f1c2a8e-0000-4000-8000-0000000000aa\",\"sas_commit\":\"b6e7319291c39b203e79b6d121c3d6534c97b47f5a7a8ff9b3741369a8f38493\",\"proof\":\"isngWyOVVzmzX6n0FxOyeAlFaiG6yH0qkCaa/n7umSzyQAH235VbETI92/V20/sLHz51E+ZXFLPna5VzgMdFAw==\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "WhUwWzPLQKDm4QsEu6n9Y7Syqooczlh+Lpx9lmVvX7WouyifNuT74uAgHttCJ5yfsw/ioZ4LqN/FiBw3gLCLCA=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":3,\"prev\":\"113dfafa1e52fc18f2a9387c63bb319bc54b853c3f7cac05dd25ab427addef26\",\"ts\":1800000000003,\"signer\":\"00000000-0000-4000-8000-000000000001\",\"type\":\"revoke\",\"member_id\":\"00000000-0000-4000-8000-000000000007\",\"reason\":\"removed\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000001": "j9KcN+Kk4ieS1uUS+EH4LxQXYSEhJEg7HqFCVkoouKnPyBp3hHaaIntPvH06xQ2x4q8IBE0tbf8jSEPiSz/cAw=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":4,\"prev\":\"3e4c831e1025429ab1026b67a2668aabb209a14ab16610197530307bada9a57e\",\"ts\":1800000000004,\"signer\":\"00000000-0000-4000-8000-000000000007\",\"type\":\"add_device\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000008\",\"role\":\"device\",\"kind\":\"mac\",\"sign_pub\":\"E5j2LG0aRXxRumpLXz29L2n8qTIWIY3ImX5Ba9F9k8o=\",\"noise_pub\":\"yxsE+ys0ET51t+Ira4BYhZ0NKlBa8htfu/EO/5Bt3mc=\",\"name\":\"Laptop\",\"created_at\":1800000000000},\"request_id\":\"\",\"sas_commit\":\"\",\"proof\":\"pNq6RJfDdaWF12J1U+juSDI8ziPy1B9lTMNzdKo9OEM3BSo0GeFk6yPJHJ4psDoOIlIejh1G9It9lPJ9YfwRCg==\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000007": "ovPpU3sbLXlMjuHaPBSrKtoeXyPAWz0celXHVq44zJmdjx0VSEnJt4lmZd+Y2G/mZfAHt3/nAQuyzg3hXnALDQ=="
+      }
+    }
+  ],
+  "expect": {
+    "ok": false,
+    "reason": "unknown_signer",
+    "index": 4
+  }
+}

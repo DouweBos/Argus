@@ -39,6 +39,7 @@ import type { z } from "zod";
 import { emitHostEvent } from "@argus/host/bus";
 import { error as logError, info as logInfo } from "@argus/host/logger";
 import { appState } from "../../state";
+import { applyPushedEntries } from "../account/lifecycle";
 import { remoteAccountStatus, requestLinkFromPaired } from "../account/service";
 import {
   interruptAgent,
@@ -810,6 +811,13 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "account.status": async () => remoteAccountStatus(),
   // Only raises the console's own link prompt; the host still has to confirm.
   "account.request_link": () => control(() => requestLinkFromPaired()),
+  // Signed entries verify against this host's own log; no tier gate beyond
+  // monitor, so a monitor-only phone's removals still land.
+  "account.sync": async (params) => {
+    const { epoch, entries } = parse("account.sync", params);
+
+    return applyPushedEntries(epoch, entries);
+  },
 
   "projects.list": async () => {
     const projects = collectAllProjects().map((p) => ({

@@ -2668,6 +2668,16 @@ export const accountConfirmJoin = (
 export const accountDenyJoin = (requestId: string): Promise<void> =>
   invoke("account_deny_join", { requestId });
 
+/** Take a member off the account, signed by this window's device. */
+export const accountRevokeMember = (memberId: string): Promise<AccountStatus> =>
+  invoke("account_revoke_member", { memberId });
+
+export const accountRenameMember = (
+  memberId: string,
+  name: string,
+): Promise<AccountStatus> =>
+  invoke("account_rename_member", { memberId, name });
+
 export const accountSetConfig = (
   patch: AccountConfigPatch,
 ): Promise<AccountStatus> => invoke("account_set_config", { patch });

@@ -92,6 +92,8 @@ export const HOST_ONLY_COMMANDS = new Set([
   "account_approve_join",
   "account_confirm_join",
   "account_deny_join",
+  "account_revoke_member",
+  "account_rename_member",
   "account_set_config",
   // Loopback DevTools endpoints: unreachable off this machine, and a debugger
   // into the session's browser besides.
@@ -324,6 +326,10 @@ export const REMOTE_METHODS = {
   /** Start this computer's code link so a QR-paired phone can approve it. It
    *  only raises a console prompt — the host's own confirm is still required. */
   "account.request_link": "monitor",
+  /** Hand the host signed log entries it may not have seen yet. Monitor, so a
+   *  monitor-only phone's removals still reach every host it can reach; the
+   *  host verifies each entry against its own pinned log before applying it. */
+  "account.sync": "monitor",
   /** Claude accounts. Reading which plans the host owner signed into is
    *  monitor; anything that switches, adds or forgets one changes what every
    *  new agent authenticates as and spends that account's quota, so control. */

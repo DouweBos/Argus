@@ -1,14 +1,20 @@
-import type { AccountHost, AccountJoinRequest } from "../../../lib/types";
+import type {
+  AccountHost,
+  AccountJoinRequest,
+  AccountStatus,
+} from "../../../lib/types";
 import { useCallback, useEffect, useState } from "react";
 import { Button, SettingsScreenField, StatusBulb } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import { useLiveRefresh } from "../../../hooks/useLiveRefresh";
 import { refreshAccountHosts } from "../../../lib/accountHosts";
+import { memberKindLabel } from "../../../lib/accountMembers";
 import {
   accountApproveJoin,
   accountDenyJoin,
   accountListRequests,
 } from "../../../lib/ipc";
+import { AccountMemberActions } from "./AccountMemberActions";
 import styles from "./AccountSection.module.css";
 
 /** Well inside the host's 15-minute online window, so status tracks its 5-minute heartbeat. */
@@ -36,8 +42,8 @@ async function load(): Promise<{
   return { hosts, requests };
 }
 
-/** The account's computers, and other computers waiting to join it. */
-export function AccountComputers() {
+/** The account's computers, and computers and devices waiting to join it. */
+export function AccountComputers({ status }: { status: AccountStatus }) {
   const [hosts, setHosts] = useState<AccountHost[]>([]);
   const [requests, setRequests] = useState<AccountJoinRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +94,16 @@ export function AccountComputers() {
                 {host.is_self ? " (this computer)" : ""}
               </span>
               <span className={styles.muted}>{lastSeen(host)}</span>
+              <AccountMemberActions
+                id={host.host_id}
+                name={host.name}
+                canRename={host.is_self || status.device_id !== null}
+                canRemove={!host.is_self && status.device_id !== null}
+                onChanged={() => {
+                  refresh().catch(() => undefined);
+                }}
+                onError={setError}
+              />
             </div>
           ))}
         </div>
@@ -95,12 +111,15 @@ export function AccountComputers() {
       {requests.length > 0 && (
         <SettingsScreenField
           label="Waiting to join"
-          caption="Approve only a computer you just started linking. You'll compare a code on both screens."
+          caption="Approve only a computer or device you just started adding. You'll compare a code on both screens."
         >
           <div className={styles.list}>
             {requests.map((r) => (
               <div key={r.request_id} className={styles.row}>
                 <span className={styles.name}>{r.subject_name}</span>
+                <span className={styles.muted}>
+                  {memberKindLabel(r.subject_kind)}
+                </span>
                 <div className={styles.actions}>
                   <Button
                     variant="ghost"

@@ -20,8 +20,9 @@ import {
 interface Request {
   id: string;
   code: string;
+  kind: "computer" | "device" | "host";
   subject: {
-    host: HostMember;
+    host?: HostMember;
     device?: DeviceMember;
     proofs: Record<string, string>;
   };
@@ -60,6 +61,25 @@ export class FakeAccountService {
     return last
       ? { seq: this.entries.length - 1, hash: entryHash(last.body) }
       : null;
+  }
+
+  /** A signed-in app asking to join (`POST /join`), already on this account. */
+  addDeviceJoin(device: DeviceMember, proof: string): Request {
+    const id = `req-${this.nextId++}`;
+    const request: Request = {
+      id,
+      code: "",
+      kind: "device",
+      subject: { device, proofs: { [device.id]: proof } },
+      status: "claimed",
+      accountId: this.accountId,
+      approver: null,
+      head: null,
+      throughSeq: null,
+    };
+    this.requests.set(id, request);
+
+    return request;
   }
 
   /** The phone/page claiming a code for this account. */
@@ -110,7 +130,7 @@ export class FakeAccountService {
       if (body.type === "genesis") {
         for (const r of this.requests.values()) {
           if (
-            r.subject.host.sign_pub === JSON.parse(entry.body).member.sign_pub
+            r.subject.host?.sign_pub === JSON.parse(entry.body).member.sign_pub
           ) {
             r.status = "approved";
             r.throughSeq = this.entries.length - 1;
@@ -173,9 +193,11 @@ export class FakeAccountService {
     if (method === "POST" && route === "/link/start") {
       const id = `req-${this.nextId++}`;
       const code = `CODE-${String(this.nextId).padStart(4, "0")}`;
+      const subject = payload.subject as Request["subject"];
       this.requests.set(id, {
         id,
         code,
+        kind: subject.device ? "computer" : "host",
         subject: {
           ...(payload.subject as Request["subject"]),
           proofs: payload.proofs as Record<string, string>,
@@ -199,7 +221,7 @@ export class FakeAccountService {
     const link = route.match(/^\/link\/([^/]+)$/);
     if (link) {
       const request = this.requests.get(link[1]);
-      if (!request || request.subject.host.sign_pub !== key) {
+      if (!request || request.subject.host?.sign_pub !== key) {
         return json({ error: "not_found" }, 404);
       }
       if (method === "DELETE") {
@@ -261,7 +283,7 @@ export class FakeAccountService {
           .filter((r) => r.status === "claimed" || r.status === "approving")
           .map((r) => ({
             request_id: r.id,
-            kind: r.subject.device ? "computer" : "host",
+            kind: r.kind,
             subject: r.subject,
             status: r.status,
             created_at: 0,

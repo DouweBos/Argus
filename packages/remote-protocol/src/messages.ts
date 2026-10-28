@@ -5,6 +5,7 @@
  */
 
 import { z } from "zod";
+import { LogEntry } from "./account/schema";
 import { REMOTE_EVENTS } from "./capabilities";
 import { HuddleChatPayload, HuddleStatePayload } from "./huddle";
 import {
@@ -107,6 +108,11 @@ export const MethodParams = {
   "host.endpoints": z.object({}),
   "account.status": z.object({}),
   "account.request_link": z.object({}),
+  /** Entries of the caller's verified log past the host's head, in order. */
+  "account.sync": z.object({
+    epoch: z.number().int().nonnegative(),
+    entries: z.array(LogEntry).max(500),
+  }),
   "projects.list": z.object({}),
   "sessions.list": z.object({ repo_root: z.string() }),
   "scratch_pads.list": z.object({}),
@@ -629,6 +635,11 @@ export const MethodResult = {
     head_seq: z.number().int().nullable(),
   }),
   "account.request_link": z.object({ user_code: z.string() }),
+  /** The host's head after applying; `applied` counts entries that were new. */
+  "account.sync": z.object({
+    head_seq: z.number().int().nullable(),
+    applied: z.number().int(),
+  }),
   "projects.list": z.object({ projects: z.array(RemoteProject) }),
   "sessions.list": z.object({ sessions: z.array(RemoteSession) }),
   "scratch_pads.list": z.object({ sessions: z.array(RemoteSession) }),

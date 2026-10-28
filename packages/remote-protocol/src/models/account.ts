@@ -28,7 +28,11 @@ export const AccountLinkState = z.discriminatedUnion("kind", [
 ]);
 export type AccountLinkState = z.infer<typeof AccountLinkState>;
 
-/** This host's console approving another computer's link (§4.4). */
+/** Whether a join request is for a computer or a device. */
+export const AccountMemberRole = z.enum(["device", "host"]);
+export type AccountMemberRole = z.infer<typeof AccountMemberRole>;
+
+/** This host's console approving another computer or device (§4.4). */
 export const AccountApprovalState = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("idle") }),
   z.object({
@@ -36,8 +40,13 @@ export const AccountApprovalState = z.discriminatedUnion("kind", [
     request_id: z.string(),
     sas: z.string(),
     subject_name: z.string(),
+    subject_role: AccountMemberRole,
   }),
-  z.object({ kind: z.literal("approved"), request_id: z.string() }),
+  z.object({
+    kind: z.literal("approved"),
+    request_id: z.string(),
+    subject_role: AccountMemberRole,
+  }),
   z.object({ kind: z.literal("error"), message: z.string() }),
 ]);
 export type AccountApprovalState = z.infer<typeof AccountApprovalState>;
@@ -90,6 +99,8 @@ export const AccountStatus = z.object({
   epoch: z.number().int().nullable(),
   /** This host's member id once linked. */
   host_id: z.string().nullable(),
+  /** The Electron window's device on the account; it signs removals and renames. */
+  device_id: z.string().nullable(),
   /** `XXXX-XXXX-XXXX` from the genesis hash, for a by-eye check. */
   safety_code: z.string().nullable(),
   head_seq: z.number().int().nullable(),
@@ -118,7 +129,7 @@ export type AccountHost = z.infer<typeof AccountHost>;
 
 export const AccountMemberInfo = z.object({
   id: z.string(),
-  role: z.enum(["device", "host"]),
+  role: AccountMemberRole,
   /** Device kind (`ios`/`mac`/`electron`) or host platform. */
   kind: z.string(),
   name: z.string(),
@@ -127,11 +138,15 @@ export const AccountMemberInfo = z.object({
 });
 export type AccountMemberInfo = z.infer<typeof AccountMemberInfo>;
 
-/** A pending link another computer started, as this console sees it. */
+/** A computer's link or a device's join waiting for approval. */
 export const AccountJoinRequest = z.object({
   request_id: z.string(),
+  /** `host`/`computer` for a code link, `device` for a signed-in app. */
   kind: z.string(),
   subject_name: z.string(),
+  subject_role: AccountMemberRole,
+  /** Device kind (`ios`/`mac`/`electron`) or host platform. */
+  subject_kind: z.string(),
   status: z.string(),
   created_at: z.number(),
   expires_at: z.number(),

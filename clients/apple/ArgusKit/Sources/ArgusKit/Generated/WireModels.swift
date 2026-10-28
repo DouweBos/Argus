@@ -51,19 +51,22 @@ extension ArgusProtocol {
     public var requestId: String
     public var sas: String
     public var subjectName: String
+    public var subjectRole: AccountMemberRole
 
     enum CodingKeys: String, CodingKey {
       case kind = "kind"
       case requestId = "request_id"
       case sas = "sas"
       case subjectName = "subject_name"
+      case subjectRole = "subject_role"
     }
 
-    public init(kind: String, requestId: String, sas: String, subjectName: String) {
+    public init(kind: String, requestId: String, sas: String, subjectName: String, subjectRole: AccountMemberRole) {
       self.kind = kind
       self.requestId = requestId
       self.sas = sas
       self.subjectName = subjectName
+      self.subjectRole = subjectRole
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -72,27 +75,32 @@ extension ArgusProtocol {
       try c.encode(requestId, forKey: .requestId)
       try c.encode(sas, forKey: .sas)
       try c.encode(subjectName, forKey: .subjectName)
+      try c.encode(subjectRole, forKey: .subjectRole)
     }
   }
 
   public struct AccountApprovalStateApproved: Codable, Sendable {
     public var kind: String
     public var requestId: String
+    public var subjectRole: AccountMemberRole
 
     enum CodingKeys: String, CodingKey {
       case kind = "kind"
       case requestId = "request_id"
+      case subjectRole = "subject_role"
     }
 
-    public init(kind: String, requestId: String) {
+    public init(kind: String, requestId: String, subjectRole: AccountMemberRole) {
       self.kind = kind
       self.requestId = requestId
+      self.subjectRole = subjectRole
     }
 
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(kind, forKey: .kind)
       try c.encode(requestId, forKey: .requestId)
+      try c.encode(subjectRole, forKey: .subjectRole)
     }
   }
 
@@ -396,6 +404,8 @@ extension ArgusProtocol {
     public var requestId: String
     public var kind: String
     public var subjectName: String
+    public var subjectRole: AccountMemberRole
+    public var subjectKind: String
     public var status: String
     public var createdAt: Double
     public var expiresAt: Double
@@ -404,15 +414,19 @@ extension ArgusProtocol {
       case requestId = "request_id"
       case kind = "kind"
       case subjectName = "subject_name"
+      case subjectRole = "subject_role"
+      case subjectKind = "subject_kind"
       case status = "status"
       case createdAt = "created_at"
       case expiresAt = "expires_at"
     }
 
-    public init(requestId: String, kind: String, subjectName: String, status: String, createdAt: Double, expiresAt: Double) {
+    public init(requestId: String, kind: String, subjectName: String, subjectRole: AccountMemberRole, subjectKind: String, status: String, createdAt: Double, expiresAt: Double) {
       self.requestId = requestId
       self.kind = kind
       self.subjectName = subjectName
+      self.subjectRole = subjectRole
+      self.subjectKind = subjectKind
       self.status = status
       self.createdAt = createdAt
       self.expiresAt = expiresAt
@@ -423,6 +437,8 @@ extension ArgusProtocol {
       try c.encode(requestId, forKey: .requestId)
       try c.encode(kind, forKey: .kind)
       try c.encode(subjectName, forKey: .subjectName)
+      try c.encode(subjectRole, forKey: .subjectRole)
+      try c.encode(subjectKind, forKey: .subjectKind)
       try c.encode(status, forKey: .status)
       try c.encode(createdAt, forKey: .createdAt)
       try c.encode(expiresAt, forKey: .expiresAt)
@@ -656,24 +672,9 @@ extension ArgusProtocol {
 
   public typealias AccountMember = JSONValue
 
-  public struct AccountMemberInfoRole: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let device = AccountMemberInfoRole(rawValue: "device")
-    public static let host = AccountMemberInfoRole(rawValue: "host")
-  }
-
   public struct AccountMemberInfo: Codable, Sendable {
     public var id: String
-    public var role: AccountMemberInfoRole
+    public var role: AccountMemberRole
     public var kind: String
     public var name: String
     public var createdAt: Double
@@ -688,7 +689,7 @@ extension ArgusProtocol {
       case isSelf = "is_self"
     }
 
-    public init(id: String, role: AccountMemberInfoRole, kind: String, name: String, createdAt: Double, isSelf: Bool) {
+    public init(id: String, role: AccountMemberRole, kind: String, name: String, createdAt: Double, isSelf: Bool) {
       self.id = id
       self.role = role
       self.kind = kind
@@ -706,6 +707,21 @@ extension ArgusProtocol {
       try c.encode(createdAt, forKey: .createdAt)
       try c.encode(isSelf, forKey: .isSelf)
     }
+  }
+
+  public struct AccountMemberRole: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let device = AccountMemberRole(rawValue: "device")
+    public static let host = AccountMemberRole(rawValue: "host")
   }
 
   public struct AccountRoot: Codable, Sendable {
@@ -738,6 +754,7 @@ extension ArgusProtocol {
     public var accountId: String?
     public var epoch: Int?
     public var hostId: String?
+    public var deviceId: String?
     public var safetyCode: String?
     public var headSeq: Int?
     public var logError: String?
@@ -750,6 +767,7 @@ extension ArgusProtocol {
       case accountId = "account_id"
       case epoch = "epoch"
       case hostId = "host_id"
+      case deviceId = "device_id"
       case safetyCode = "safety_code"
       case headSeq = "head_seq"
       case logError = "log_error"
@@ -758,11 +776,12 @@ extension ArgusProtocol {
       case link = "link"
     }
 
-    public init(linked: Bool, accountId: String? = nil, epoch: Int? = nil, hostId: String? = nil, safetyCode: String? = nil, headSeq: Int? = nil, logError: String? = nil, presenceAt: Double? = nil, config: AccountConfig, link: AccountLinkState) {
+    public init(linked: Bool, accountId: String? = nil, epoch: Int? = nil, hostId: String? = nil, deviceId: String? = nil, safetyCode: String? = nil, headSeq: Int? = nil, logError: String? = nil, presenceAt: Double? = nil, config: AccountConfig, link: AccountLinkState) {
       self.linked = linked
       self.accountId = accountId
       self.epoch = epoch
       self.hostId = hostId
+      self.deviceId = deviceId
       self.safetyCode = safetyCode
       self.headSeq = headSeq
       self.logError = logError
@@ -777,6 +796,7 @@ extension ArgusProtocol {
       try c.encode(accountId, forKey: .accountId)
       try c.encode(epoch, forKey: .epoch)
       try c.encode(hostId, forKey: .hostId)
+      try c.encode(deviceId, forKey: .deviceId)
       try c.encode(safetyCode, forKey: .safetyCode)
       try c.encode(headSeq, forKey: .headSeq)
       try c.encode(logError, forKey: .logError)

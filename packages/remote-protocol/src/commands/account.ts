@@ -80,7 +80,7 @@ export const ACCOUNT_COMMANDS = {
     params: NoParams,
     result: z.array(AccountJoinRequest),
   },
-  /** Become the approver of another computer's link; shows the code. */
+  /** Become the approver of a computer's link or a device's join; shows the code. */
   account_approve_join: {
     tier: "host",
     params: z.object({ requestId: z.string() }),
@@ -95,6 +95,21 @@ export const ACCOUNT_COMMANDS = {
     tier: "host",
     params: z.object({ requestId: z.string() }),
     result: Void,
+  },
+  /**
+   * Take a member off the account. Signed by this window's device, which may
+   * remove anyone; a host on its own may only remove itself (§4.2).
+   */
+  account_revoke_member: {
+    tier: "host",
+    params: z.object({ memberId: z.string() }),
+    result: AccountStatus,
+  },
+  /** Rename a member; signed by this window's device, or the host for itself. */
+  account_rename_member: {
+    tier: "host",
+    params: z.object({ memberId: z.string(), name: z.string() }),
+    result: AccountStatus,
   },
   account_set_config: {
     tier: "host",

@@ -5,6 +5,9 @@
  */
 
 import { emitHostEvent } from "@argus/host/bus";
+import { warn } from "@argus/host/logger";
+import { revokeMember } from "../account/members";
+import { accountStatus } from "../account/status";
 import { blockAccountDevice } from "../account/trust";
 import { openExternalUrl } from "../shell/operations";
 import {
@@ -47,6 +50,12 @@ export async function revokeRemoteDevice(
 ): Promise<RemoteStatus> {
   if ((await getDevice(deviceId))?.source === "account") {
     await blockAccountDevice(deviceId);
+    // With a window device this console can take it off the whole account.
+    if (accountStatus().device_id) {
+      await revokeMember(deviceId).catch((err: unknown) =>
+        warn(`[account] removal not recorded: ${String(err)}`),
+      );
+    }
   }
   await revokeDevice(deviceId);
   disconnectDevice(deviceId);

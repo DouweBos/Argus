@@ -1,7 +1,7 @@
 /**
  * Account words for the terminal the host runs in (§5.9): `login` links this
- * computer with a code, `approve` approves another computer's link from this
- * console, `account` shows where things stand, `logout` unlinks.
+ * computer with a code, `approve` approves another computer's link or a new
+ * device's join from this console, `account` shows where things stand, `logout` unlinks.
  */
 
 import type {
@@ -19,6 +19,7 @@ import { cancelLink, confirmLink, startLink } from "../services/account/link";
 import {
   getAccountStatus,
   listHosts,
+  listMembers,
   logout,
   setAccountConfig,
 } from "../services/account/service";
@@ -30,6 +31,10 @@ const YES_NO: Record<string, boolean> = {
   n: false,
   no: false,
 };
+
+function noun(role: "device" | "host"): string {
+  return role === "host" ? "computer" : "device";
+}
 
 function spaced(sas: string): string {
   return `${sas.slice(0, 3)} ${sas.slice(3)}`;
@@ -61,9 +66,9 @@ function describeLink(state: AccountLinkState): string | null {
 function describeApproval(state: AccountApprovalState): string | null {
   switch (state.kind) {
     case "awaiting_sas":
-      return `Approving "${state.subject_name}". Code on that computer: ${spaced(state.sas)}\nDoes it match? [y/N]`;
+      return `Approving "${state.subject_name}". Code on that ${noun(state.subject_role)}: ${spaced(state.sas)}\nDoes it match? [y/N]`;
     case "approved":
-      return "Approved. That computer is now on your account.";
+      return `Approved. That ${noun(state.subject_role)} is now on your account.`;
     case "error":
       return `Approval failed: ${state.message}`;
     case "idle":
@@ -82,6 +87,13 @@ async function printAccount(print: (line: string) => void): Promise<void> {
   for (const host of await listHosts()) {
     const where = host.online ? "online" : "offline";
     print(`  ${host.name}${host.is_self ? " (this computer)" : ""} — ${where}`);
+  }
+  for (const device of listMembers().filter((m) => m.role === "device")) {
+    print(`  ${device.name} — ${device.kind} device`);
+  }
+  const waiting = await listRequests().catch(() => []);
+  if (waiting.length > 0) {
+    print(`${waiting.length} waiting to join. Type "approve" to review.`);
   }
 }
 
@@ -135,13 +147,15 @@ async function approve(
 ): Promise<void> {
   const requests = await listRequests();
   if (requests.length === 0) {
-    print("No computers are waiting for approval.");
+    print("Nothing is waiting to join your account.");
 
     return;
   }
   const index = arg ? Number(arg) - 1 : 0;
   if (requests.length > 1 && !arg) {
-    requests.forEach((r, i) => print(`  ${i + 1}. ${r.subject_name}`));
+    requests.forEach((r, i) =>
+      print(`  ${i + 1}. ${r.subject_name} (${noun(r.subject_role)})`),
+    );
     print('Type "approve <number>".');
 
     return;

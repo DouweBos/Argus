@@ -4,109 +4,33 @@
  * `pnpm gen:account-fixtures` reproduces them exactly; a test fails on drift.
  */
 
-import type { AccountMember, LogEntry } from "@argus/remote-protocol";
+import type { LogEntry } from "@argus/remote-protocol";
 import {
   accountSas,
+  admitsMember,
   entryHash,
   makeEntry,
   makeProof,
   presenceSigningBytes,
   signB64,
-  toB64,
   verifyLog,
 } from "@argus/remote-protocol";
-import { ed25519, x25519 } from "@noble/curves/ed25519.js";
-
-interface Keys {
-  id: string;
-  sign_priv: string;
-  sign_pub: string;
-  noise_pub: string;
-}
-
-function keys(id: string, fill: number): Keys {
-  const seed = new Uint8Array(32).fill(fill);
-  const noise = new Uint8Array(32).fill(fill + 100);
-
-  return {
-    id,
-    sign_priv: toB64(seed),
-    sign_pub: toB64(ed25519.getPublicKey(seed)),
-    noise_pub: toB64(x25519.getPublicKey(noise)),
-  };
-}
-
-const ACCOUNT = "abcdefghijklmnopqrstuvwxyz";
-const TS = 1_800_000_000_000;
-
-const phone = keys("00000000-0000-4000-8000-000000000001", 1);
-const mini = keys("00000000-0000-4000-8000-000000000002", 2);
-const mac = keys("00000000-0000-4000-8000-000000000003", 3);
-const electron = keys("00000000-0000-4000-8000-000000000004", 4);
-const stranger = keys("00000000-0000-4000-8000-000000000005", 5);
-const phoneNext = keys(phone.id, 6);
-
-const device = (k: Keys, name: string, kind = "ios"): AccountMember =>
-  ({
-    id: k.id,
-    role: "device",
-    kind,
-    sign_pub: k.sign_pub,
-    noise_pub: k.noise_pub,
-    name,
-    created_at: TS,
-  }) as AccountMember;
-
-const host = (k: Keys, name: string): AccountMember => ({
-  id: k.id,
-  role: "host",
-  platform: "darwin",
-  sign_pub: k.sign_pub,
-  noise_pub: k.noise_pub,
-  name,
-  created_at: TS,
-});
-
-const signer = (k: Keys) => ({ id: k.id, priv: k.sign_priv });
-
-/** Builds a chain one entry at a time, always on the previous entry's hash. */
-class Chain {
-  entries: LogEntry[] = [];
-  constructor(
-    readonly accountId = ACCOUNT,
-    readonly epoch = 0,
-  ) {}
-
-  private head() {
-    const last = this.entries.at(-1);
-    if (!last) {
-      return null;
-    }
-
-    return { seq: this.entries.length - 1, hash: entryHash(last.body) };
-  }
-
-  add(by: Keys, fields: Record<string, unknown> & { type: string }): this {
-    this.entries.push(
-      makeEntry(
-        {
-          account_id: this.accountId,
-          epoch: this.epoch,
-          head: this.head(),
-          ts: TS + this.entries.length,
-        },
-        signer(by),
-        fields,
-      ),
-    );
-
-    return this;
-  }
-
-  headHash(): string {
-    return entryHash(this.entries.at(-1)!.body);
-  }
-}
+import {
+  ACCOUNT,
+  Chain,
+  device,
+  electron,
+  host,
+  type Keys,
+  mac,
+  mini,
+  phone,
+  phoneNext,
+  signer,
+  stranger,
+  TS,
+} from "./fixtureChain";
+import { joinFixtures, laptop, tablet } from "./fixtureJoins";
 
 const miniMember = host(mini, "Mini");
 const sasForMini = (approver: Keys, headHash: string) =>
@@ -224,7 +148,7 @@ function presence(by: Keys, fields: Record<string, unknown>) {
   };
 }
 
-interface Fixture {
+export interface Fixture {
   name: string;
   description: string;
   pin?: { account_id: string; epoch: number; genesis_hash: string };
@@ -438,6 +362,7 @@ function fixtures(): Fixture[] {
       })(),
       expect: { ok: false, reason: "malformed", index: 1 },
     },
+    ...joinFixtures(),
   ];
 
   // Self-check: the TS verifier must agree before anything is written.
@@ -447,6 +372,15 @@ function fixtures(): Fixture[] {
       throw new Error(
         `${f.name}: expected ok=${f.expect.ok}, got ${JSON.stringify(result.ok ? true : result.reason)}`,
       );
+    }
+    const admission = f.admission;
+    if (
+      result.ok &&
+      admission &&
+      admitsMember(result.state, admission.member_id, admission) !==
+        admission.admitted
+    ) {
+      throw new Error(`${f.name}: admission disagrees`);
     }
   }
 
@@ -476,6 +410,8 @@ export function buildFixtures(): Record<string, unknown> {
       mac,
       electron,
       stranger,
+      tablet,
+      laptop,
     },
     "sas.json": sasVectors(),
   };

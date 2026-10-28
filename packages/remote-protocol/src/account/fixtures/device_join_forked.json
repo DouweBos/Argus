@@ -1,0 +1,32 @@
+{
+  "name": "device_join_forked",
+  "description": "a log the service made up approves the device; the code from the real phone refuses it",
+  "entries": [
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":0,\"prev\":\"\",\"ts\":1800000000000,\"signer\":\"00000000-0000-4000-8000-000000000005\",\"type\":\"genesis\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000005\",\"role\":\"device\",\"kind\":\"ios\",\"sign_pub\":\"bnoc3Smwt4/ROvTFWY/v9O8qlxZuPKby5Pv8zYBQW/E=\",\"noise_pub\":\"GxuMqoE2oHsZzcQtv/WMNB3gCH2P6uzynuwO1P0MM1U=\",\"name\":\"Phone\",\"created_at\":1800000000000}}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000005": "WE0iJccd+LD8roTq/aP7bnPweUcmdLSVc4a2w53oPfz3xtG1ji+Q5Mj6grnS3LWg7S406bZzDPcwzTIYn3khAg=="
+      }
+    },
+    {
+      "body": "{\"v\":1,\"account_id\":\"abcdefghijklmnopqrstuvwxyz\",\"epoch\":0,\"seq\":1,\"prev\":\"7949bef1551a5762b15f9e13fa06959507f859f9d1053048a89abc5f6517c272\",\"ts\":1800000000001,\"signer\":\"00000000-0000-4000-8000-000000000005\",\"type\":\"add_device\",\"member\":{\"id\":\"00000000-0000-4000-8000-000000000007\",\"role\":\"device\",\"kind\":\"ios\",\"sign_pub\":\"6kpsY+KcUgq+9VB7Ey7F+ZVHdq6+vnuSQh7qaRRG0iw=\",\"noise_pub\":\"hGL7PweY+f4sOfOCO7Qc0+/+cLtcgXNb5GoUMTXFhFQ=\",\"name\":\"Tablet\",\"created_at\":1800000000000},\"request_id\":\"6f1c2a8e-0000-4000-8000-0000000000aa\",\"sas_commit\":\"bf68de1da74116638f7a83c78b971cb5f34b16701b5d830658f0eb96a593ee09\",\"proof\":\"isngWyOVVzmzX6n0FxOyeAlFaiG6yH0qkCaa/n7umSzyQAH235VbETI92/V20/sLHz51E+ZXFLPna5VzgMdFAw==\"}",
+      "sigs": {
+        "00000000-0000-4000-8000-000000000005": "z7GASClQmbcGpQhThD5csTLKTNXLm5xVNbdWszvQ4qlhGc3UJPNzxe7InrDEr8KGXH0OM5YFkVYjaq8RZHzeBg=="
+      }
+    }
+  ],
+  "expect": {
+    "ok": true,
+    "head_seq": 1,
+    "live_members": [
+      "00000000-0000-4000-8000-000000000005",
+      "00000000-0000-4000-8000-000000000007"
+    ]
+  },
+  "admission": {
+    "member_id": "00000000-0000-4000-8000-000000000007",
+    "request_id": "6f1c2a8e-0000-4000-8000-0000000000aa",
+    "sas_commit": "b6e7319291c39b203e79b6d121c3d6534c97b47f5a7a8ff9b3741369a8f38493",
+    "admitted": false
+  }
+}

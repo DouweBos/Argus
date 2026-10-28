@@ -5,11 +5,12 @@
  */
 
 import type { AccountRecord } from "./store";
+import type { PairedDevice } from "../remote/deviceStore";
 import type { LogEntry, LogState } from "@argus/remote-protocol";
 import { verifyLog } from "@argus/remote-protocol";
 import { warn } from "@argus/host/logger";
 import { capture } from "../telemetry/telemetry";
-import { AccountClient } from "./client";
+import { AccountClient, AccountServiceError } from "./client";
 import { startPresence, stopPresence } from "./presence";
 import { emitAccountStatus } from "./status";
 import { resetAccountRecord, serviceUrl, writeAccountRecord } from "./store";
@@ -17,6 +18,7 @@ import {
   currentRecord,
   currentState,
   dropAccountDevices,
+  findAccountDevice,
   isLinked,
   reconcileDevices,
   setTrust,
@@ -51,7 +53,7 @@ export async function adoptAccount(
   record.entries = entries;
   await writeAccountRecord(record);
   setTrust(record, state);
-  await reconcileDevices();
+  await reconcileDevices("log");
   startBackground();
   emitAccountStatus();
 }
@@ -93,24 +95,24 @@ export async function forgetAccount(): Promise<void> {
   emitAccountStatus();
 }
 
-async function pull(): Promise<void> {
+export type LogSource = "log" | "sync";
+
+/**
+ * Verify entries past the head and adopt the good prefix. A fork or a forged
+ * entry never moves this host's view of the account. Returns how many applied.
+ */
+async function applyFresh(
+  entries: LogEntry[],
+  source: LogSource,
+): Promise<number> {
   const record = currentRecord();
   const state = currentState();
-  if (!record?.root || !state || !isLinked()) {
-    return;
-  }
-  const entries = await memberClient(record).log(
-    record.root.epoch,
-    state.head.seq,
-  );
-  if (entries.length === 0) {
-    return;
+  if (!record?.root || !state || !isLinked() || entries.length === 0) {
+    return 0;
   }
   const result = verifyLog(entries, { root: record.root, prior: state });
   const good = result.ok ? entries : entries.slice(0, result.index);
   if (!result.ok) {
-    // Keep the last good state and stop there: a fork or a forged entry
-    // never moves this host's view of the account.
     warn(`[account] log rejected: ${result.reason}`);
     capture("account_log_rejected", { reason: result.reason });
   }
@@ -121,13 +123,108 @@ async function pull(): Promise<void> {
   }
   setTrust(record, nextState, result.ok ? null : result.reason);
   if (!nextState.members[record.host_id]?.live) {
-    capture("account_member_revoked", { role: "host", source: "log" });
+    capture("account_member_revoked", { role: "host", source });
     await forgetAccount();
 
+    return good.length;
+  }
+  await reconcileDevices(source);
+  emitAccountStatus();
+
+  return good.length;
+}
+
+async function pull(): Promise<void> {
+  const record = currentRecord();
+  const state = currentState();
+  if (!record?.root || !state || !isLinked()) {
     return;
   }
-  await reconcileDevices();
-  emitAccountStatus();
+  const entries = await memberClient(record).log(
+    record.root.epoch,
+    state.head.seq,
+  );
+  await applyFresh(entries, "log");
+}
+
+/**
+ * `account.sync`: a connected device hands over entries it verified. They're
+ * checked against this host's own pinned log like anything the service
+ * serves, so a frozen service can't hold back a removal (§5.5).
+ */
+export async function applyPushedEntries(
+  epoch: number,
+  entries: LogEntry[],
+): Promise<{ head_seq: number | null; applied: number }> {
+  await syncing?.catch(() => undefined);
+  const state = currentState();
+  if (!state || !isLinked() || epoch !== state.epoch) {
+    return {
+      head_seq: isLinked() ? (state?.head.seq ?? null) : null,
+      applied: 0,
+    };
+  }
+  const fresh = entries.filter((e) => entrySeq(e) > state.head.seq);
+  const applied = await applyFresh(fresh, "sync");
+  const after = isLinked() ? currentState() : null;
+
+  return { head_seq: after?.head.seq ?? null, applied };
+}
+
+function entrySeq(entry: LogEntry): number {
+  try {
+    const seq = (JSON.parse(entry.body) as { seq?: unknown }).seq;
+
+    return typeof seq === "number" ? seq : -1;
+  } catch {
+    return -1;
+  }
+}
+
+/**
+ * Sign entries on the current head, append them and adopt them. When another
+ * member moved the head first, catch up and sign again, once.
+ */
+export async function appendOwn(
+  build: (state: LogState) => LogEntry[],
+): Promise<LogState> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const record = currentRecord();
+    const state = currentState();
+    if (!record || !state || !isLinked()) {
+      throw "This computer isn't linked to an account";
+    }
+    const entries = build(state);
+    const next = verifyLog(entries, { prior: state });
+    if (!next.ok) {
+      throw "Couldn't build the account entry";
+    }
+    try {
+      await memberClient(record).append(state.epoch, entries);
+    } catch (err) {
+      if (
+        attempt === 0 &&
+        err instanceof AccountServiceError &&
+        err.status === 409
+      ) {
+        await syncLog();
+        continue;
+      }
+      throw err instanceof AccountServiceError
+        ? "Couldn't reach the account service"
+        : err;
+    }
+    record.entries = [...record.entries, ...entries];
+    await writeAccountRecord(record);
+    setTrust(record, next.state);
+    if (next.state.members[record.host_id]?.live) {
+      await reconcileDevices("log");
+    }
+    emitAccountStatus();
+
+    return next.state;
+  }
+  throw "The account changed meanwhile — try again";
 }
 
 /** Fetch and verify anything new in the log. Serialized; never throws. */
@@ -141,6 +238,36 @@ export function syncLog(): Promise<void> {
     });
 
   return syncing;
+}
+
+/** Unknown keys may only make this host ask the service this often. */
+const MISS_SYNC_MS = 15_000;
+const MISS_SYNC_WAIT_MS = 5_000;
+let lastMissSync = 0;
+
+/**
+ * The account device behind a handshaking key. A miss on a linked host reads
+ * the log once before refusing, so a device approved a moment ago connects
+ * straight away instead of after the next 5-minute poll.
+ */
+export async function findAccountDeviceFresh(
+  noisePubB64: string,
+): Promise<PairedDevice | null> {
+  const found = await findAccountDevice(noisePubB64);
+  if (found || !isLinked() || !currentRecord()?.config.enabled) {
+    return found;
+  }
+  const now = Date.now();
+  if (now - lastMissSync < MISS_SYNC_MS) {
+    return null;
+  }
+  lastMissSync = now;
+  await Promise.race([
+    syncLog(),
+    new Promise((resolve) => setTimeout(resolve, MISS_SYNC_WAIT_MS).unref?.()),
+  ]);
+
+  return findAccountDevice(noisePubB64);
 }
 
 /** A device just connected: check for revocations soon (debounced). */

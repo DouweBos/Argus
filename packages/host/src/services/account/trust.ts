@@ -154,7 +154,9 @@ export async function findAccountDevice(
  * Bring materialized devices in line with the log: revoked or unlinked ones
  * go (and are disconnected), rotated ones follow their new key.
  */
-export async function reconcileDevices(): Promise<void> {
+export async function reconcileDevices(
+  source: "log" | "sync" = "log",
+): Promise<void> {
   const devices = await listDevices();
   for (const device of devices) {
     if (device.source !== "account") {
@@ -164,7 +166,7 @@ export async function reconcileDevices(): Promise<void> {
     if (!member) {
       await revokeDevice(device.device_id);
       disconnect(device.device_id);
-      capture("account_member_revoked", { role: "device", source: "log" });
+      capture("account_member_revoked", { role: "device", source });
       continue;
     }
     if (member.noise_pub !== device.dev_static_pub) {
