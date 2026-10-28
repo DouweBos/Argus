@@ -1,6 +1,7 @@
 # Account layer: find and link your computers
 
-Status: design, not started. Owner: Douwe. Touches `packages/host`, `packages/remote-protocol`,
+Status: phases 1 and 2 built (phase 2 minus identity merge, account reset and QR "Also add to
+account" — see §11). Owner: Douwe. Touches `packages/host`, `packages/remote-protocol`,
 `clients/apple`, `app/`, and the houwert.dev Pages project.
 
 ## What Douwe needs to do
@@ -746,6 +747,24 @@ Acceptance:
   "Also add to account".
 - Revoking a phone disconnects it from every host it's connected to within 5 s (sync), and from hosts
   it isn't connected to within 5 min (poll). This holds with the service blocked for the sync case.
+
+Built (see `plan/accounts-wire-contract.md` § Phase 2 for the exact flow):
+
+- Device joins on iPhone and Mac (`AccountStore+Join.swift`): `POST /join`, poll `GET /join/:id`,
+  the SAS checked against the approver's key and head in the verified log, adoption only through
+  `admits(…)` with the confirmed commit (kept in the vault, so a relaunch can't adopt an
+  unconfirmed approval).
+- Approving on iPhone, Mac and Electron (in-app prompt while open + Settings → Account), and from
+  a host console (`argus-host approve`, the Electron prompt) — open question 3 kept at the plan's
+  default, `hosts_can_approve` on.
+- `account.sync` (monitor, denied to huddle guests) after every handshake and after every append;
+  a host's handshake miss re-reads the log (≤ once per 15 s) so a fresh device connects at once.
+- Device list, rename and remove on every client. Open question 6 stays at "a host only revokes
+  itself": Electron removes and renames through its window's device key instead.
+
+Deferred: identity merge (§10), account reset (§5.8 "Nothing at all"), the QR pairing "Also add to
+your account" checkbox (§5.8 recovery — `argus-host approve` covers it), sealed silent push for
+join requests (phase 3).
 
 ### Phase 3: push and presence via the account
 

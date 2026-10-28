@@ -158,6 +158,7 @@ final class DesktopModel {
     }
     account.onHostsChanged = { [hosts] identities in hosts.setAccountHosts(identities) }
     hosts.onAccountHostFailing = { [account] failing in account.setConnectionFailing(failing) }
+    wireAccount()
   }
 
   func start() {
@@ -212,6 +213,7 @@ final class DesktopModel {
   /// A paired host connected, or reconnected after a drop: it kept running
   /// agents while we were away, so its share of the window is refetched.
   private func hostCameUp(_ hostId: HostId) async {
+    await syncAccount(hostId)
     await reloadLists()
     store.followAgents()
     store.resyncQueues()

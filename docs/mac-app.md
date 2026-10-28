@@ -211,8 +211,14 @@ headless Argus server, or `argus-host` — as well as its own:
   "Offline · last seen …", and **Add a host**: type the code another
   computer shows (`argus-host login`, or Sign in in Argus there) and compare
   the 6-digit codes. Sign Out takes this Mac off the account.
-- If your account already has devices, this Mac can't add itself yet;
-  **Link this Mac with a code** shows a code to add from your phone instead.
+- If your account already has devices, this Mac asks to join: approve it from
+  your iPhone or another computer after both show the same 6-digit code, and
+  its own host joins with it. **Link this Mac with a code** still links just
+  the host, from your phone.
+- Signed in, the tab also lists the account's **Devices** (rename, remove) and
+  anything **Waiting to join**. While the window is open, a device asking to
+  join is announced in the main window; **Review…** compares the code and adds
+  it.
 - **Settings → Hosts** lists the hosts on your account beside paired ones and
   attaches them with no pairing code; a host whose tunnel address changed is
   found again from the account. To pair without an account, paste the pairing
