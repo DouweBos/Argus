@@ -19,6 +19,21 @@ struct SettingsView: View {
 
   var body: some View {
     Form {
+      Section {
+        Button { router.push(.account) } label: {
+          HStack(spacing: 8) {
+            AccountProfileSummary(account: app.account, avatarSize: 52)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+              .font(.system(size: 13, weight: .semibold))
+              .foregroundStyle(theme.textMuted)
+          }
+          .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens your Argus account")
+      }
+
       Section("Connection") {
         LabeledContent("Status") {
           Text(host.connection.rawValue)
@@ -170,19 +185,6 @@ struct SettingsView: View {
             "Other Macs this computer streams simulators from over SSH, and EAS Simulator hosts in Expo's cloud. Add or remove them, and set Expo tokens, in Argus on the computer."
           )
         }
-      }
-
-      Section {
-        Button(app.account.isSignedIn ? "Account and computers" : "Sign in") {
-          router.push(.account)
-        }
-      } header: {
-        Text("Argus account")
-      } footer: {
-        Text(
-          app.account.isSignedIn
-            ? "Safety code \(app.account.safetyCode ?? "—"). Computers on your account connect without a QR code."
-            : "Sign in once and the computers on your account show up here, with no QR code per computer.")
       }
 
       Section {

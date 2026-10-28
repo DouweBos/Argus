@@ -28,6 +28,15 @@ public final class AccountAuth: AccountAuthenticating {
     configuredKey != nil && Clerk.shared.session != nil
   }
 
+  public var profile: AccountProfile? {
+    guard configuredKey != nil, let user = Clerk.shared.user else { return nil }
+    return AccountProfile(
+      firstName: user.firstName, lastName: user.lastName, username: user.username,
+      email: user.primaryEmailAddress?.emailAddress,
+      // Without an upload Clerk serves a generated picture; initials read better.
+      imageURL: user.hasImage ? URL(string: user.imageUrl) : nil)
+  }
+
   public func signInWithApple(idToken: String?) async throws {
     if let idToken {
       // Signs up on first use, like the full flow.
