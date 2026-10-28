@@ -18,6 +18,7 @@ const HOLDER_NAMES: Record<HostLockOwner, string> = {
   cli: "An Argus host",
   electron: "Another copy of Argus",
   mac: "Argus for Mac",
+  "mac-server": "Argus Server",
 };
 
 /** Telemetry can't be sent before the host is up, so the handover waits here. */
@@ -52,7 +53,7 @@ export async function claimHostLock(): Promise<boolean> {
     return false;
   }
   try {
-    // The owner, not the host pid: the Mac app would just restart its host.
+    // The owner, not the host pid: a supervising app would just restart its host.
     process.kill(first.holder.owner_pid, "SIGTERM");
   } catch {
     // Already gone.

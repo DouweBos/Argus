@@ -54,6 +54,22 @@ describe("host lock", () => {
     });
   });
 
+  it("decodes Argus Server's lock and falls back to cli for unknown owners", () => {
+    child = spawn(process.execPath, ["-e", "setTimeout(() => {}, 60000)"]);
+    const record = { pid: child.pid, owner_pid: 4242, started_at: 1 };
+    fs.writeFileSync(
+      hostLockPath(home),
+      JSON.stringify({ ...record, owner: "mac-server" }),
+    );
+    expect(readHostLock(home)?.owner).toBe("mac-server");
+
+    fs.writeFileSync(
+      hostLockPath(home),
+      JSON.stringify({ ...record, owner: "something-newer" }),
+    );
+    expect(readHostLock(home)?.owner).toBe("cli");
+  });
+
   it("reclaims a lock left by a process that is gone", async () => {
     child = spawn(process.execPath, ["-e", ""]);
     const pid = child.pid!;

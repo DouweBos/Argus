@@ -203,7 +203,7 @@ export interface EventMap {
   eas_session_started: { wait_bucket: "<1m" | "<3m" | "<10m" | ">=10m" };
   follow_up_used: { method: "click" | "tab" };
   follow_ups_suggested: { count: number; success: boolean };
-  host_lock_handover: { holder: "cli" | "electron" | "mac" };
+  host_lock_handover: { holder: "cli" | "electron" | "mac-server" | "mac" };
   /** Mirrors `LegacyTunnelKind` in `services/remote/legacyTunnels.ts`. */
   legacy_tunnel_retired: {
     kind: "cloudflare_quick" | "cloudflare_token" | "tailscale_funnel";

@@ -1,4 +1,4 @@
-/** Command-line flags for `argus-host`. `--desktop` is read in `hostEnv.ts`. */
+/** Command-line flags for `argus-host`. `--desktop` and `--server` are read in `hostEnv.ts`. */
 export interface HostArgs {
   /** Serve the local UI channel here (`--ui-socket <path>`). */
   uiSocket: string | null;

@@ -3,9 +3,9 @@
  *
  * Two hosts on the same state directory would both restore the same sessions,
  * reap each other's agents as orphans and race on every JSON store. Whoever
- * starts a host — the Electron app, the Mac app's bundled Node host, the CLI —
- * takes `$ARGUS_HOME/host.lock` first and refuses to start while someone else
- * holds it.
+ * starts a host — the Electron app, the Mac app's or Argus Server's bundled
+ * Node host, the CLI — takes `$ARGUS_HOME/host.lock` first and refuses to start
+ * while someone else holds it.
  *
  * Node has no `flock`, so this is a pid lock: created with `O_EXCL`, and
  * reclaimed only when the recorded process is gone.
@@ -15,7 +15,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { argusHomeDir } from "./argusHome";
 
-export type HostLockOwner = "cli" | "electron" | "mac";
+export type HostLockOwner = "cli" | "electron" | "mac-server" | "mac";
+
+const OWNERS: readonly HostLockOwner[] = [
+  "cli",
+  "electron",
+  "mac",
+  "mac-server",
+];
 
 export interface HostLockRecord {
   /** The process running the host core. */
@@ -69,10 +76,10 @@ function parseRecord(raw: string): HostLockRecord | null {
       pid: value.pid,
       owner_pid:
         typeof value.owner_pid === "number" ? value.owner_pid : value.pid,
-      owner:
-        value.owner === "electron" || value.owner === "mac"
-          ? value.owner
-          : "cli",
+      // A newer host's owner this build doesn't know still blocks, as "cli".
+      owner: OWNERS.includes(value.owner as HostLockOwner)
+        ? (value.owner as HostLockOwner)
+        : "cli",
       started_at: typeof value.started_at === "number" ? value.started_at : 0,
       ...(typeof value.socket === "string" && typeof value.protocol === "number"
         ? { socket: value.socket, protocol: value.protocol }

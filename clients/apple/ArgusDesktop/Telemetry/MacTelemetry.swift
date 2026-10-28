@@ -1,14 +1,11 @@
 import ArgusCore
 import Foundation
 
-/// Sends the Mac app's events through its host's `telemetry_capture`, so the
-/// host's install id, PostHog key and consent gate apply — one pipeline, as
-/// the Electron renderer has. Events raised before the host is up wait.
+/// The Mac app's events, through its host's `telemetry_capture` (see
+/// `HostTelemetryClient`): the Electron renderer's pipeline.
 @MainActor
 enum MacTelemetry {
-  private static var backend: LocalBackend?
-  private static var queued: [MacTelemetryEvent] = []
-  private static let queueCap = 50
+  private static let client = HostTelemetryClient()
 
   static let modeKey = "telemetryMode"
 
@@ -22,32 +19,15 @@ enum MacTelemetry {
   /// The host is reachable: apply the consent level, then flush. A window
   /// attached to another app's host leaves that app's consent alone.
   static func attach(_ backend: LocalBackend, applyMode: Bool = true) async {
-    self.backend = backend
-    if applyMode {
-      _ = try? await backend.request(
-        ArgusProtocol.Commands.TelemetrySetMode.self,
-        .init(mode: ArgusProtocol.TelemetryMode(rawValue: mode)))
-    }
-    let pending = queued
-    queued = []
-    for event in pending { capture(event) }
+    await client.attach(backend, mode: applyMode ? ArgusProtocol.TelemetryMode(rawValue: mode) : nil)
   }
 
   static func detach() {
-    backend = nil
+    client.detach()
   }
 
   static func capture(_ event: MacTelemetryEvent) {
-    guard let backend else {
-      if queued.count < queueCap { queued.append(event) }
-      return
-    }
-    let props = event.properties.compactMapValues(jsonValue)
-    Task {
-      _ = try? await backend.request(
-        ArgusProtocol.Commands.TelemetryCapture.self,
-        .init(event: event.name, props: props.isEmpty ? nil : props))
-    }
+    client.capture(event.name, event.properties)
   }
 
   private static var unsupportedSeen: Set<String> = []
@@ -56,15 +36,5 @@ enum MacTelemetry {
   static func captureUnsupported(method: String) {
     guard unsupportedSeen.insert(method).inserted else { return }
     capture(.hostFeatureUnsupported(method: method))
-  }
-
-  private static func jsonValue(_ value: Any) -> JSONValue? {
-    switch value {
-    case let bool as Bool: .bool(bool)
-    case let int as Int: .number(Double(int))
-    case let double as Double: .number(double)
-    case let string as String: .string(string)
-    default: nil
-    }
   }
 }

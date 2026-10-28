@@ -17,14 +17,17 @@ final class RemoteSettingsModel {
   /// Per device: the provider's answer to the last test push.
   private(set) var pushResults: [String: String] = [:]
   var error: String?
-  var pairing = PairingFlow()
-  /// The pairing sheet is up.
-  var pairingPresented = false
+  let pairing: PairingModel
   /// The device Revoke is asking about.
   var revoking: ArgusProtocol.PairedDevice?
 
   init(store: HostStore) {
     self.store = store
+    pairing = PairingModel(backend: { [store] in store.backend })
+    pairing.onStage = { stage, client, _ in
+      MacTelemetry.capture(.pairing(stage: .init(stage), client: client))
+    }
+    pairing.onPaired = { [weak self] in Task { await self?.refresh() } }
   }
 
   private var backend: (any HostBackend)? { store.backend }
@@ -54,26 +57,8 @@ final class RemoteSettingsModel {
     switch channel {
     case "remote:status":
       if let next = try? ProtocolCodec.convert(payload, to: ArgusProtocol.RemoteStatus.self) { status = next }
-    case "remote:pairing-sas":
-      let client = payload["client"].flatMap { try? ProtocolCodec.convert($0, to: PairingClientInfo.self) }
-      pairing.sas(payload["sas"]?.stringValue ?? "", client: client)
-    case "remote:pairing-complete":
-      let label = payload["device"]?["label"]?.stringValue ?? "Device"
-      MacTelemetry.capture(.pairing(stage: .completed, client: clientKind))
-      pairing.completed(label: label)
-      Task { await refresh() }
-    case "remote:pairing-error":
-      MacTelemetry.capture(.pairing(stage: .failed, client: clientKind))
-      pairing.failed(payload["message"]?.stringValue ?? "Pairing failed")
     default:
-      break
-    }
-  }
-
-  private var clientKind: String {
-    switch pairing.phase {
-    case .confirming(_, let client), .confirmingSent(_, let client): client?.kind ?? "unknown"
-    default: "unknown"
+      pairing.handle(channel: channel, payload: payload)
     }
   }
 
@@ -197,45 +182,19 @@ final class RemoteSettingsModel {
   var canPair: Bool { status?.enabled == true && status?.publicUrl != nil }
 
   func startPairing() async {
-    guard let backend else { return }
     error = nil
-    pairing.starting()
-    pairingPresented = true
-    do {
-      let start = try await backend.request(ArgusProtocol.Commands.RemoteStartPairing.self, .init())
-      pairing.started(qrPayload: start.qrPayload, pairingCode: start.pairingCode)
-      MacTelemetry.capture(.pairing(stage: .started, client: "unknown"))
-    } catch {
-      pairing.failed(HostStore.describe(error))
-    }
+    await pairing.start()
   }
+}
 
-  func confirmPairing() async {
-    guard let backend else { return }
-    let grants = pairing.grants
-    do {
-      try await backend.request(
-        ArgusProtocol.Commands.RemoteConfirmPairing.self,
-        .init(control: grants.control, admin: grants.admin))
-      MacTelemetry.capture(.pairing(stage: .confirmed, client: clientKind))
-      pairing.confirmSent()
-    } catch {
-      pairing.failed(HostStore.describe(error))
+extension MacTelemetryEvent.PairingStage {
+  init(_ stage: PairingModel.Stage) {
+    switch stage {
+    case .started: self = .started
+    case .confirmed: self = .confirmed
+    case .completed: self = .completed
+    case .failed: self = .failed
+    case .cancelled, .rejected: self = .cancelled
     }
-  }
-
-  /// Cancel an unfinished pairing and close the sheet.
-  func closePairing() {
-    switch pairing.phase {
-    case .starting, .waitingForDevice, .confirming, .confirmingSent:
-      MacTelemetry.capture(.pairing(stage: .cancelled, client: clientKind))
-      if let backend {
-        Task { _ = try? await backend.request(ArgusProtocol.Commands.RemoteCancelPairing.self, .init()) }
-      }
-    default:
-      break
-    }
-    pairing.reset()
-    pairingPresented = false
   }
 }

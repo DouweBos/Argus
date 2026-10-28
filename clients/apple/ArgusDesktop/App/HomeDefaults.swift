@@ -1,3 +1,4 @@
+import ArgusCore
 import Foundation
 
 /// App state that belongs to one Argus home (picks keyed by session, tabs
@@ -6,7 +7,7 @@ import Foundation
 /// state there leaks between dev, test and throwaway homes.
 @MainActor
 final class HomeDefaults {
-  static let shared = HomeDefaults(file: HostLocation.home.appendingPathComponent("mac-app-state.plist"))
+  static let shared = HomeDefaults(file: HostLocation.current.home.appendingPathComponent("mac-app-state.plist"))
   /// Posted after any write, so the host's copy can follow (`HostPreferences`).
   static let didChange = Notification.Name("HomeDefaults.didChange")
 

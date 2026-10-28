@@ -11,6 +11,7 @@ enum MacTelemetryEvent {
   enum Holder: String {
     case electron
     case mac
+    case macServer = "mac_server"
     case cli
   }
 

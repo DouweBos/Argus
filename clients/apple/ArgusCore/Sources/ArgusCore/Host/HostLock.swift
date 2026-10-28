@@ -6,6 +6,7 @@
   public struct HostLockRecord: Codable, Sendable, Equatable {
     public enum Owner: String, Codable, Sendable {
       case electron, mac, cli
+      case macServer = "mac-server"
     }
 
     /// The process running the host core.
@@ -57,6 +58,7 @@
       switch owner {
       case .electron: "Argus (Electron)"
       case .mac: "Argus for Mac"
+      case .macServer: "Argus Server"
       case .cli: "argus-host"
       }
     }
@@ -66,6 +68,7 @@
       switch owner {
       case .electron: "Argus (Electron)"
       case .mac: "Argus for Mac"
+      case .macServer: "Argus Server"
       case .cli: "An Argus host"
       }
     }
