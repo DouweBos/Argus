@@ -91,15 +91,20 @@ public final class HostRouter: HostBackend {
 
   // MARK: Hosts
 
-  /// Start routing to a connected host.
-  public func add(_ link: RemoteHostLink, label: String) async {
+  /// Start routing to a connected host. A link it replaces is closed, after
+  /// `drain` when one is given so its in-flight requests can finish.
+  public func add(_ link: RemoteHostLink, label: String, drain: Duration? = nil) async {
     let previous = state.withLock { state -> RemoteHostLink? in
       let previous = state.links[link.hostId]
       state.links[link.hostId] = link
       state.labels[link.hostId] = label
       return previous
     }
-    await previous?.disconnect()
+    if let drain {
+      previous?.retire(after: drain)
+    } else {
+      await previous?.disconnect()
+    }
     let hostId = link.hostId
     await link.start { [weak self] event in self?.remote(hostId, event) }
   }

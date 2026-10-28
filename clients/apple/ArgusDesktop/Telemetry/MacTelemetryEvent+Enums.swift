@@ -29,11 +29,8 @@ extension MacTelemetryEvent {
 
   enum RemoteSetting: String {
     case enabled
-    case tailscale
-    case cloudflare
-    case tunnelMode = "tunnel_mode"
-    case tunnelToken = "tunnel_token"
-    case publicUrl = "public_url"
+    case managedTunnel = "managed_tunnel"
+    case legacyTunnels = "legacy_tunnels"
     case notifyWhenFocused = "notify_when_focused"
     case push
     case pushContact = "push_contact"

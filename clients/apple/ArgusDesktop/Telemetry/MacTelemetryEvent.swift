@@ -309,8 +309,8 @@ enum MacTelemetryEvent {
   /// A pairing moved on; `client` is the kind the device claimed, or `unknown`.
   case pairing(stage: PairingStage, client: String)
   case remoteDeviceManaged(action: RemoteDeviceAction, success: Bool)
-  /// The Tailscale checklist ran a check or a one-click fix.
-  case tailscaleChecked(fix: Bool, ready: Bool)
+  /// An attached host's live link moved to a better route (e.g. tunnel → Wi-Fi) without dropping.
+  case routeUpgraded(from: RemoteEndpoint.Kind, to: RemoteEndpoint.Kind)
   /// Something done to a huddle from its sheet, chat or join requests.
   case huddleUsed(action: HuddleAction, hasDevice: Bool)
   case automationEdited(action: StoreEvent.AutomationAction)
@@ -396,7 +396,7 @@ enum MacTelemetryEvent {
     case .remoteSettingChanged: "mac_remote_setting_changed"
     case .pairing: "mac_pairing"
     case .remoteDeviceManaged: "mac_remote_device_managed"
-    case .tailscaleChecked: "mac_tailscale_checked"
+    case .routeUpgraded: "mac_route_upgraded"
     case .huddleUsed: "mac_huddle_used"
     case .automationEdited: "mac_automation_edited"
     case .runActed: "mac_run_acted"
@@ -541,8 +541,8 @@ enum MacTelemetryEvent {
       ["stage": stage.rawValue, "client": client]
     case .remoteDeviceManaged(let action, let success):
       ["action": action.rawValue, "success": success]
-    case .tailscaleChecked(let fix, let ready):
-      ["fix": fix, "ready": ready]
+    case .routeUpgraded(let from, let to):
+      ["from": from.rawValue, "to": to.rawValue]
     case .huddleUsed(let action, let hasDevice):
       ["action": action.rawValue, "has_device": hasDevice]
     case .automationEdited(let action):
