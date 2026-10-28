@@ -29,6 +29,18 @@ export interface NoiseKeypair {
 
 export type NoiseRole = "initiator" | "responder";
 
+/**
+ * A static key whose private half stays in its keystore (a non-extractable
+ * WebCrypto key). `dh` must answer synchronously, so the caller computes each
+ * shared secret ahead of the message that needs it (see `transport.ts`).
+ */
+export interface ExternalStaticKey {
+  pub: Uint8Array;
+  dh: (remotePub: Uint8Array) => Uint8Array;
+}
+
+export type StaticKey = ExternalStaticKey | NoiseKeypair;
+
 export function generateKeypair(): NoiseKeypair {
   const priv = x25519.utils.randomSecretKey();
 
@@ -39,8 +51,8 @@ export function publicKey(priv: Uint8Array): Uint8Array {
   return x25519.getPublicKey(priv);
 }
 
-function dh(kp: NoiseKeypair, pub: Uint8Array): Uint8Array {
-  return x25519.getSharedSecret(kp.priv, pub);
+function dh(kp: StaticKey, pub: Uint8Array): Uint8Array {
+  return "dh" in kp ? kp.dh(pub) : x25519.getSharedSecret(kp.priv, pub);
 }
 
 function concat(...arrs: Uint8Array[]): Uint8Array {
@@ -196,7 +208,7 @@ class SymmetricState {
 
 export interface HandshakeConfig {
   role: NoiseRole;
-  staticKey: NoiseKeypair;
+  staticKey: StaticKey;
   /** Responder's static public key — required for the initiator (IK pre-msg). */
   remoteStatic?: Uint8Array;
   /** 32-byte pre-shared key; enables the psk1 variant when present (pairing). */
@@ -235,7 +247,7 @@ export class NoiseSession {
 export class NoiseHandshake {
   private readonly sym: SymmetricState;
   private readonly initiator: boolean;
-  private readonly s: NoiseKeypair;
+  private readonly s: StaticKey;
   private readonly psk: Uint8Array | null;
   private e: NoiseKeypair | null;
   private rs: Uint8Array | null;
@@ -269,7 +281,7 @@ export class NoiseHandshake {
     return this.e;
   }
 
-  private mixDh(a: NoiseKeypair, b: Uint8Array): void {
+  private mixDh(a: StaticKey, b: Uint8Array): void {
     this.sym.mixKey(dh(a, b));
   }
 

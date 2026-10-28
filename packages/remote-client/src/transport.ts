@@ -18,7 +18,11 @@ import {
   type EventEnvelope,
   type ResponseEnvelope,
 } from "./envelopes";
-import { NoiseHandshake, type NoiseSession } from "./noise";
+import {
+  type ExternalStaticKey,
+  NoiseHandshake,
+  type NoiseSession,
+} from "./noise";
 import { GatewaySocket } from "./socket";
 
 export type ConnectionState =
@@ -26,6 +30,15 @@ export type ConnectionState =
   | "handshaking"
   | "offline"
   | "ready";
+
+/**
+ * A static key held by a keystore that only answers asynchronously, such as a
+ * non-extractable WebCrypto X25519 key. Takes the place of `devPrivB64`.
+ */
+export interface AsyncStaticKey {
+  pub: Uint8Array;
+  dh: (remotePub: Uint8Array) => Promise<Uint8Array>;
+}
 
 /** Everything needed to reach one host and prove who we are to it. */
 export interface HostCredentials {
@@ -36,6 +49,38 @@ export interface HostCredentials {
   devPubB64: string;
   /** The host's pinned static public key, base64. */
   hostPubB64: string;
+  /** Used instead of `devPrivB64`/`devPubB64` when present. */
+  staticKey?: AsyncStaticKey;
+}
+
+const hex = (bytes: Uint8Array): string =>
+  Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+
+/**
+ * Noise asks for DH results synchronously; an async key computes each one
+ * first and this answers from what was computed.
+ */
+class PrecomputedStaticKey implements ExternalStaticKey {
+  private readonly shared = new Map<string, Uint8Array>();
+
+  constructor(private readonly key: AsyncStaticKey) {}
+
+  get pub(): Uint8Array {
+    return this.key.pub;
+  }
+
+  async prepare(remotePub: Uint8Array): Promise<void> {
+    this.shared.set(hex(remotePub), await this.key.dh(remotePub));
+  }
+
+  dh(remotePub: Uint8Array): Uint8Array {
+    const found = this.shared.get(hex(remotePub));
+    if (!found) {
+      throw new Error("static key DH was not prepared");
+    }
+
+    return found;
+  }
 }
 
 export interface TransportHandlers {
@@ -68,6 +113,11 @@ export class Transport {
   private readonly socket: GatewaySocket;
   private hs: NoiseHandshake | null = null;
   private session: NoiseSession | null = null;
+  /** Set while dialling with an async key: frames wait their turn behind DH. */
+  private asyncKey: PrecomputedStaticKey | null = null;
+  private inbox: Promise<void> = Promise.resolve();
+  /** Bumped on every reset, so a DH that lands after a drop is discarded. */
+  private generation = 0;
   private sendSeq = 0;
   private recvSeq = -1;
   private readonly timeoutMs: number;
@@ -83,7 +133,7 @@ export class Transport {
     this.timeoutMs = options.requestTimeoutMs ?? 15_000;
     this.socket = new GatewaySocket(`${credentials.url}/device`, {
       onOpen: () => this.startHandshake(),
-      onFrame: (bytes) => this.onData(bytes),
+      onFrame: (bytes) => this.onFrame(bytes),
       onClose: () => {
         this.reset();
         this.handlers.onState("offline");
@@ -107,6 +157,8 @@ export class Transport {
   }
 
   private reset(): void {
+    this.generation += 1;
+    this.inbox = Promise.resolve();
     this.hs = null;
     this.session = null;
     this.sendSeq = 0;
@@ -124,15 +176,71 @@ export class Transport {
 
   private startHandshake(): void {
     this.handlers.onState("handshaking");
+    const remoteStatic = fromBase64(this.credentials.hostPubB64);
+    if (this.credentials.staticKey) {
+      const key = new PrecomputedStaticKey(this.credentials.staticKey);
+      const generation = this.generation;
+      this.asyncKey = key;
+      // `ss` needs DH(s, rs) while writing the first message.
+      this.inbox = key.prepare(remoteStatic).then(
+        () => {
+          if (generation !== this.generation) {
+            return;
+          }
+          this.hs = new NoiseHandshake({
+            role: "initiator",
+            staticKey: key,
+            remoteStatic,
+          });
+          this.socket.send(this.hs.writeMessage(new Uint8Array(0)));
+        },
+        () => {
+          if (generation === this.generation) {
+            this.reset();
+            this.handlers.onState("offline");
+          }
+        },
+      );
+
+      return;
+    }
     this.hs = new NoiseHandshake({
       role: "initiator",
       staticKey: {
         priv: fromBase64(this.credentials.devPrivB64),
         pub: fromBase64(this.credentials.devPubB64),
       },
-      remoteStatic: fromBase64(this.credentials.hostPubB64),
+      remoteStatic,
     });
     this.socket.send(this.hs.writeMessage(new Uint8Array(0)));
+  }
+
+  private onFrame(bytes: Uint8Array): void {
+    if (!this.asyncKey) {
+      this.onData(bytes);
+
+      return;
+    }
+    const key = this.asyncKey;
+    const generation = this.generation;
+    // `se` needs DH(s, re) before the reply can be read; `re` is its first 32 bytes.
+    this.inbox = this.inbox
+      .then(async () => {
+        if (!this.session && this.hs && bytes.length >= 32) {
+          await key.prepare(bytes.subarray(0, 32));
+        }
+      })
+      .then(() => {
+        if (generation === this.generation) {
+          this.onData(bytes);
+        }
+      })
+      .catch(() => {
+        if (generation === this.generation) {
+          this.reset();
+          this.handlers.onState("offline");
+        }
+      });
   }
 
   private onData(bytes: Uint8Array): void {
