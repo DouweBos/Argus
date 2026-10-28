@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusMenuBar
 import ArgusUI
 import SwiftUI
 
@@ -16,22 +17,22 @@ struct ArgusServerApp: App {
     }
     .menuBarExtraStyle(.menu)
 
-    Window("Pair a Device", id: ServerModel.Window.pairing.rawValue) {
-      PairingWindow(model: delegate.model).themed()
+    Window("Pair a Device", id: HostMenuWindow.pairing.rawValue) {
+      PairingWindow(pairing: delegate.model.pairing).themed()
     }
     .windowResizability(.contentSize)
     .defaultLaunchBehavior(.suppressed)
     .restorationBehavior(.disabled)
 
-    Window("Link to Your Argus Account", id: ServerModel.Window.link.rawValue) {
-      LinkWindow(model: delegate.model).themed()
+    Window("Link to Your Argus Account", id: HostMenuWindow.link.rawValue) {
+      LinkWindow(model: delegate.model.accountMenu).themed()
     }
     .windowResizability(.contentSize)
     .defaultLaunchBehavior(.suppressed)
     .restorationBehavior(.disabled)
 
-    Window("Approve a Join", id: ServerModel.Window.approval.rawValue) {
-      ApprovalWindow(model: delegate.model).themed()
+    Window("Approve a Join", id: HostMenuWindow.approval.rawValue) {
+      ApprovalWindow(model: delegate.model.accountMenu).themed()
     }
     .windowResizability(.contentSize)
     .defaultLaunchBehavior(.suppressed)

@@ -1,5 +1,6 @@
 import AppKit
 import ArgusCore
+import ArgusMenuBar
 import ArgusUpdate
 import Foundation
 import Observation
@@ -12,7 +13,8 @@ final class ServerModel {
   let location: HostLocation
   let supervisor: HostSupervisor
   let pairing: PairingModel
-  let link = HostLinkModel(surface: .menubar)
+  /// The account section and its link/approval windows.
+  let accountMenu = HostAccountMenu(surface: .menubar)
   let updater: MenuUpdater
   let loginItem = LoginItem()
   let legacyAgent: LegacyServerAgent
@@ -20,12 +22,6 @@ final class ServerModel {
   private(set) var backend: LocalBackend?
   private(set) var remote: ArgusProtocol.RemoteStatus?
   private(set) var agents: [ArgusProtocol.RemoteAgentStatus] = []
-  var account: ArgusProtocol.AccountStatus?
-  var approval: ArgusProtocol.AccountApprovalState = .idle(.init(kind: "idle"))
-  var requests: [ArgusProtocol.AccountJoinRequest] = []
-  var online: Bool?
-  /// The last account action's failure, shown until dismissed.
-  var notice: String?
   private(set) var autoInstall = false
   private(set) var legacySecrets: [ArgusProtocol.SecretStoreId] = []
   private(set) var loginState: LoginItemState = .off
@@ -62,6 +58,25 @@ final class ServerModel {
     supervisor.onEvent = { [weak self] event in self?.supervisorEvent(event) }
     updater.onEvent = { [weak self] event in self?.updaterEvent(event) }
     notifier.onOpen = { [weak self] target in self?.open(target) }
+    accountMenu.backend = { [weak self] in self?.backend }
+    accountMenu.onShow = { [weak self] window in self?.show(window) }
+    accountMenu.onNewRequest = { [weak self] request in self?.notifier.joinRequest(request) }
+    accountMenu.onPerformed = { action in
+      if let menuAction = ServerTelemetryEvent.MenuAction(action) {
+        ServerTelemetry.capture(.menuAction(action: menuAction))
+      }
+    }
+  }
+
+  var account: ArgusProtocol.AccountStatus? {
+    get { accountMenu.account }
+    set { accountMenu.account = newValue }
+  }
+
+  /// The last account action's failure, shown until dismissed.
+  var notice: String? {
+    get { accountMenu.notice }
+    set { accountMenu.notice = newValue }
   }
 
   var version: String {
@@ -161,22 +176,8 @@ final class ServerModel {
     switch channel {
     case "remote:status":
       if let next = try? ProtocolCodec.convert(arg, to: ArgusProtocol.RemoteStatus.self) { remote = next }
-    case "account:status":
-      let wasLinked = account?.linked
-      if let next = try? ProtocolCodec.convert(arg, to: ArgusProtocol.AccountStatus.self) {
-        account = next
-        if next.linked != wasLinked { Task { await refreshRequests() } }
-      }
-    case "account:link-state":
-      if let next = try? ProtocolCodec.convert(arg, to: ArgusProtocol.AccountLinkState.self) {
-        account?.link = next
-        link.observe(next)
-      }
-    case "account:approval-state":
-      if let next = try? ProtocolCodec.convert(arg, to: ArgusProtocol.AccountApprovalState.self) {
-        approval = next
-      }
     default:
+      if accountMenu.handle(channel: channel, payload: arg) { return }
       if pairing.handle(channel: channel, payload: arg), case .confirming(let sas, _) = pairing.flow.phase {
         notifier.pairingCode(sas)
       }
@@ -232,24 +233,11 @@ final class ServerModel {
   }
 
   func refreshAccount() async {
-    guard let backend else { return }
-    account = (try? await backend.request(ArgusProtocol.Commands.AccountGetStatus.self, EmptyParams())) ?? account
+    await accountMenu.refreshAccount()
   }
 
   func refreshRequests() async {
-    guard let backend, let account, account.linked, account.config.enabled else {
-      requests = []
-      online = nil
-      return
-    }
-    let previous = Set(requests.map(\.requestId))
-    async let nextRequests = try? backend.request(ArgusProtocol.Commands.AccountListRequests.self, EmptyParams())
-    async let hosts = try? backend.request(ArgusProtocol.Commands.AccountListHosts.self, EmptyParams())
-    requests = await nextRequests ?? requests
-    online = await hosts?.first(where: \.isSelf)?.online ?? online
-    for request in requests where !previous.contains(request.requestId) {
-      notifier.joinRequest(request)
-    }
+    await accountMenu.refreshRequests()
   }
 
   // MARK: Menu
@@ -262,11 +250,7 @@ final class ServerModel {
       stateDir: (location.home.path as NSString).abbreviatingWithTildeInPath,
       remote: remote,
       agents: agents,
-      account: account.map {
-        AccountMenuSnapshot(
-          status: $0, approval: approval, tunnel: remote?.managedTunnel,
-          requests: $0.linked ? requests : [], online: $0.linked ? online : nil, notice: notice)
-      },
+      account: accountMenu.snapshot(tunnel: remote?.managedTunnel),
       pairing: pairing.flow.phase,
       update: updater.state,
       autoInstall: autoInstall,
@@ -275,7 +259,7 @@ final class ServerModel {
       oldLoginAgent: oldLoginAgent)
   }
 
-  var menuItems: [ServerMenuItem] { ServerMenuModel.items(snapshot) }
+  var menuItems: [HostMenuItem] { ServerMenuModel.items(snapshot) }
 
   // MARK: Updates
 

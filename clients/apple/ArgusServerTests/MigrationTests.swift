@@ -1,3 +1,4 @@
+import ArgusMenuBar
 import Foundation
 import Testing
 

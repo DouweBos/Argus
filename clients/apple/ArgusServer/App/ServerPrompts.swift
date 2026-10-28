@@ -1,39 +1,12 @@
 import AppKit
 import ArgusCore
+import ArgusMenuBar
 
-/// The few questions a menu can't ask: native alerts, the app brought forward
-/// first since it has no window of its own.
+/// The server's own questions; the account's are `HostMenuPrompts`.
 @MainActor
 enum ServerPrompts {
   private static func alert(_ message: String, _ detail: String, buttons: [String]) -> NSAlert {
-    NSApp.activate()
-    let alert = NSAlert()
-    alert.messageText = message
-    alert.informativeText = detail
-    for button in buttons { alert.addButton(withTitle: button) }
-    return alert
-  }
-
-  /// This computer's name on the account; nil when cancelled.
-  static func computerName(current: String) -> String? {
-    let prompt = alert(
-      "Rename This Computer", "This computer's name on your Argus account.", buttons: ["Rename", "Cancel"])
-    let field = NSTextField(string: current)
-    field.frame = NSRect(x: 0, y: 0, width: 260, height: 24)
-    prompt.accessoryView = field
-    prompt.window.initialFirstResponder = field
-    guard prompt.runModal() == .alertFirstButtonReturn else { return nil }
-    let name = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-    return name.isEmpty ? nil : name
-  }
-
-  static func confirmUnlink() -> Bool {
-    let prompt = alert(
-      "Unlink this computer from your Argus account?",
-      "Devices signed in to your account can no longer find or reach it. Devices paired with a code keep working.",
-      buttons: ["Unlink", "Cancel"])
-    prompt.alertStyle = .warning
-    return prompt.runModal() == .alertFirstButtonReturn
+    HostMenuPrompts.alert(message, detail, buttons: buttons)
   }
 
   static func confirmTakeOver(_ holder: HostLockRecord) -> Bool {

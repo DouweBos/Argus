@@ -1,5 +1,5 @@
 #!/bin/zsh
-# The launchd agent behind Argus Server's Open at Login (ArgusServer/Lifecycle/
+# The launchd agent behind Argus Server's Open at Login (ArgusMenuBar/Lifecycle/
 # LoginItem.swift), embedded where SMAppService looks for it. KeepAlive on an
 # unsuccessful exit brings the app back after a crash; Quit exits 0.
 set -euo pipefail

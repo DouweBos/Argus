@@ -3,20 +3,36 @@ import Foundation
 
 /// The account section of the menu, line for line the Electron server tray's
 /// (`electron/services/tray/accountMenu.ts`), so the docs describe one menu.
-struct AccountMenuSnapshot {
-  var status: ArgusProtocol.AccountStatus
-  var approval: ArgusProtocol.AccountApprovalState
-  var tunnel: ArgusProtocol.ManagedTunnelState?
-  var requests: [ArgusProtocol.AccountJoinRequest]
+public struct AccountMenuSnapshot: Sendable {
+  public var status: ArgusProtocol.AccountStatus
+  public var approval: ArgusProtocol.AccountApprovalState
+  public var tunnel: ArgusProtocol.ManagedTunnelState?
+  public var requests: [ArgusProtocol.AccountJoinRequest]
   /// This computer as the account service sees it; nil until first checked.
-  var online: Bool?
+  public var online: Bool?
   /// The last action's failure, shown until dismissed or the next action.
-  var notice: String?
+  public var notice: String?
+  /// The server manages the account from its menu; the Mac app from Settings.
+  public var inlineSettings: Bool
+
+  public init(
+    status: ArgusProtocol.AccountStatus, approval: ArgusProtocol.AccountApprovalState,
+    tunnel: ArgusProtocol.ManagedTunnelState?, requests: [ArgusProtocol.AccountJoinRequest], online: Bool?,
+    notice: String?, inlineSettings: Bool = true
+  ) {
+    self.status = status
+    self.approval = approval
+    self.tunnel = tunnel
+    self.requests = requests
+    self.online = online
+    self.notice = notice
+    self.inlineSettings = inlineSettings
+  }
 }
 
-enum AccountMenuModel {
-  static func items(_ s: AccountMenuSnapshot) -> [ServerMenuItem] {
-    var out: [ServerMenuItem] = []
+public enum AccountMenuModel {
+  public static func items(_ s: AccountMenuSnapshot) -> [HostMenuItem] {
+    var out: [HostMenuItem] = []
     if let notice = s.notice {
       out += [.info(notice), .action("Dismiss", .account(.noticeDismiss))]
     }
@@ -30,7 +46,7 @@ enum AccountMenuModel {
     return out
   }
 
-  static func tunnelLine(_ tunnel: ArgusProtocol.ManagedTunnelState?) -> String {
+  public static func tunnelLine(_ tunnel: ArgusProtocol.ManagedTunnelState?) -> String {
     guard let tunnel else { return "Managed tunnel: off" }
     switch tunnel.phase {
     case .running:
@@ -51,19 +67,19 @@ enum AccountMenuModel {
     }
   }
 
-  static func spaced(_ sas: String) -> String {
+  public static func spaced(_ sas: String) -> String {
     guard sas.count > 3 else { return sas }
     return "\(sas.prefix(3)) \(sas.dropFirst(3))"
   }
 
-  static func withoutScheme(_ url: String) -> String {
+  public static func withoutScheme(_ url: String) -> String {
     var out = url
     if let range = out.range(of: "^[a-zA-Z]+://", options: .regularExpression) { out.removeSubrange(range) }
     if out.hasSuffix("/") { out.removeLast() }
     return out
   }
 
-  private static func noun(_ role: ArgusProtocol.AccountMemberRole) -> String {
+  public static func noun(_ role: ArgusProtocol.AccountMemberRole) -> String {
     role == .host ? "computer" : "device"
   }
 
@@ -73,9 +89,9 @@ enum AccountMenuModel {
     return online ? "Online" : "Offline — the account hasn't seen it lately"
   }
 
-  private static func linkItems(_ s: AccountMenuSnapshot) -> [ServerMenuItem] {
-    let cancel = ServerMenuItem.action("Cancel Linking", .account(.linkCancel))
-    let start = ServerMenuItem.action("Link to Argus Account…", .account(.linkStart))
+  private static func linkItems(_ s: AccountMenuSnapshot) -> [HostMenuItem] {
+    let cancel = HostMenuItem.action("Cancel Linking", .account(.linkCancel))
+    let start = HostMenuItem.action("Link to Argus Account…", .account(.linkStart))
     switch s.status.link {
     case .awaitingClaim(let claim):
       let site = withoutScheme(claim.verificationUri)
@@ -108,8 +124,8 @@ enum AccountMenuModel {
     }
   }
 
-  private static func approvalItems(_ s: AccountMenuSnapshot) -> [ServerMenuItem] {
-    let dismiss = ServerMenuItem.action("Dismiss", .account(.approvalDismiss))
+  private static func approvalItems(_ s: AccountMenuSnapshot) -> [HostMenuItem] {
+    let dismiss = HostMenuItem.action("Dismiss", .account(.approvalDismiss))
     switch s.approval {
     case .awaitingSas(let approval):
       return [
@@ -127,7 +143,7 @@ enum AccountMenuModel {
     }
   }
 
-  private static func waitingItems(_ s: AccountMenuSnapshot) -> [ServerMenuItem] {
+  private static func waitingItems(_ s: AccountMenuSnapshot) -> [HostMenuItem] {
     let n = s.requests.count
     guard n > 0 else { return [] }
     // Approving here is switched off: say why rather than hide the queue.
@@ -150,9 +166,10 @@ enum AccountMenuModel {
     ]
   }
 
-  private static func settingsItem(_ s: AccountMenuSnapshot) -> ServerMenuItem {
+  private static func settingsItem(_ s: AccountMenuSnapshot) -> HostMenuItem {
+    guard s.inlineSettings else { return .action("Account Settings…", .openAccountSettings) }
     let status = s.status
-    var submenu: [ServerMenuItem] = []
+    var submenu: [HostMenuItem] = []
     if let safety = status.safetyCode {
       submenu += [.info("Account safety code: \(safety)"), .separator]
     }

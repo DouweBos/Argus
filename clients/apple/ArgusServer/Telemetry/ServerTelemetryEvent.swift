@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusMenuBar
 import Foundation
 
 /// Every event Argus Server sends itself — the analogue of
@@ -128,6 +129,31 @@ enum ServerTelemetryEvent {
       ["enabled": enabled, "status": status.rawValue]
     case .migrated(let from, let success):
       ["from": from.rawValue, "success": success]
+    }
+  }
+}
+
+extension LoginItemState {
+  var telemetry: ServerTelemetryEvent.LoginItemStatus {
+    switch self {
+    case .enabled: .enabled
+    case .requiresApproval: .requiresApproval
+    case .off, .unavailable: .off
+    }
+  }
+}
+
+extension ServerTelemetryEvent.MenuAction {
+  /// The account actions worth counting; the rest only move a flow along.
+  init?(_ action: AccountMenuAction) {
+    switch action {
+    case .linkStart: self = .link
+    case .approve: self = .approveJoin
+    case .deny: self = .denyJoin
+    case .tunnel: self = .toggleTunnel
+    case .rename, .renameDefault: self = .rename
+    case .unlink: self = .unlink
+    default: return nil
     }
   }
 }
