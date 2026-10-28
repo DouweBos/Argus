@@ -6,5 +6,6 @@ export * from "./messages";
 export * from "./pairing";
 export * from "./report";
 export * from "./scope";
+export * from "./startPrompt";
 export * from "./commands";
 export * from "./account";
