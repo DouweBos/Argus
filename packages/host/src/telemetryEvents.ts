@@ -201,6 +201,9 @@ export interface EventMap {
   eas_session_start_failed: { reason: EasFailure };
   eas_session_start_prompted: { outcome: "cancelled" | "confirmed" };
   eas_session_started: { wait_bucket: "<1m" | "<3m" | "<10m" | ">=10m" };
+  electron_server_handoff: {
+    stage: "blocked_by_agents" | "failed" | "installing" | "offered";
+  };
   follow_up_used: { method: "click" | "tab" };
   follow_ups_suggested: { count: number; success: boolean };
   host_lock_handover: { holder: "cli" | "electron" | "mac-server" | "mac" };

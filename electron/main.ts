@@ -48,7 +48,7 @@ import { installHostPlatform } from "./hostPlatform";
 import { installIpcCommandBridge } from "./ipcBridge";
 import { setMainWindow } from "./mainWindow";
 import { agentPopouts, devicePopouts } from "./popouts";
-import { initServerUpdates } from "./serverUpdates";
+import { initServerHandoff } from "./serverHandoff";
 import { initContinuity } from "./services/continuity";
 import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
 import { destroyTray, initTray } from "./services/tray";
@@ -1077,10 +1077,13 @@ app.whenReady().then(async () => {
     isQuitting = true;
     bypassRunningAgentsGuard = true;
   });
-  initUpdater();
-  // The server has no window to show an update banner in, so its tray owns the
-  // flow instead. No-ops on the desktop.
-  initServerUpdates();
+  // Squirrel.Mac refuses the desktop feed's bundle on a server (different
+  // designated requirement), so a server updates by handing off to the native app.
+  if (isServerMode()) {
+    initServerHandoff();
+  } else {
+    initUpdater();
+  }
 
   // Fallback for git-dir watch events missed on network drives or sleep/wake.
   app.on("browser-window-focus", () => {

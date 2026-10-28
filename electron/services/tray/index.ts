@@ -31,15 +31,14 @@ import {
 } from "@argus/host/services/remote/serverPairing";
 import { appState } from "@argus/host/state";
 import {
-  canInstallServerUpdate,
-  checkServerUpdates,
-  downloadServerUpdate,
-  getServerUpdateState,
-  installServerUpdate,
+  canHandOff,
+  checkForNativeServer,
+  getHandoffState,
+  installNativeServer,
   isServerAutoInstallEnabled,
+  setHandoffListener,
   setServerAutoInstallEnabled,
-  setServerUpdateListener,
-} from "../../serverUpdates";
+} from "../../serverHandoff";
 import { isAgentActive } from "../agentActivity";
 import {
   accountMenuItems,
@@ -368,19 +367,17 @@ function buildPairingItems(): Electron.MenuItemConstructorOptions[] {
 }
 
 /**
- * The server's update flow, rendered as menu items.
- *
- * The running version is already the first line of the menu, so only the new
- * version is named. Restarting is shown as a refusal with a count rather than
- * hidden — "nothing happened" is the worst possible answer at a menu bar.
+ * The server's update flow: its next version is the native Argus Server, so
+ * installing hands the machine over to it. Refusing is shown with a count
+ * rather than hidden — "nothing happened" is the worst answer at a menu bar.
  */
 function buildUpdateItems(): Electron.MenuItemConstructorOptions[] {
-  const state = getServerUpdateState();
+  const state = getHandoffState();
   const items: Electron.MenuItemConstructorOptions[] = [];
   const check: Electron.MenuItemConstructorOptions = {
     label: "Check for Updates…",
     click: () => {
-      checkServerUpdates().catch(() => undefined);
+      checkForNativeServer().catch(() => undefined);
     },
   };
 
@@ -396,26 +393,18 @@ function buildUpdateItems(): Electron.MenuItemConstructorOptions[] {
       break;
     case "available":
       items.push(
-        { label: `Update available: ${state.version}`, enabled: false },
         {
-          label: "Download Update",
-          click: () => {
-            downloadServerUpdate().catch(() => undefined);
-          },
+          label: `New Argus Server available: ${state.version}`,
+          enabled: false,
         },
-      );
-      break;
-    case "downloading":
-      items.push({
-        label: `Downloading update — ${state.percent}%`,
-        enabled: false,
-      });
-      break;
-    case "ready":
-      items.push(
-        { label: `Update ready: ${state.version}`, enabled: false },
         buildInstallItem(),
       );
+      break;
+    case "installing":
+      items.push({
+        label: `Installing Argus Server ${state.version}…`,
+        enabled: false,
+      });
       break;
     case "error":
       items.push(
@@ -436,7 +425,7 @@ function buildUpdateItems(): Electron.MenuItemConstructorOptions[] {
 }
 
 function buildInstallItem(): Electron.MenuItemConstructorOptions {
-  const verdict = canInstallServerUpdate();
+  const verdict = canHandOff();
   if (!verdict.ok && verdict.reason === "agents_running") {
     const n = verdict.activeAgents;
 
@@ -447,9 +436,9 @@ function buildInstallItem(): Electron.MenuItemConstructorOptions {
   }
 
   return {
-    label: "Restart and Install",
+    label: "Install New Argus Server",
     click: () => {
-      installServerUpdate();
+      installNativeServer().catch(() => undefined);
     },
   };
 }
@@ -503,7 +492,7 @@ export function initTray(initHooks: TrayHooks): void {
   // Pairing changes are event-driven; the 1.5s agent poll is too slow to watch
   // a SAS appear while someone is standing at the machine.
   setServerPairingListener(() => refreshTray());
-  setServerUpdateListener(() => refreshTray());
+  setHandoffListener(() => refreshTray());
   if (isServerMode()) {
     initAccountTray(() => refreshTray());
   }
@@ -522,7 +511,7 @@ export function refreshTrayNow(): void {
 
 export function destroyTray(): void {
   setServerPairingListener(null);
-  setServerUpdateListener(null);
+  setHandoffListener(null);
   destroyAccountTray();
   if (pollTimer) {
     clearInterval(pollTimer);

@@ -12,7 +12,11 @@ import {
   type HostLockOwner,
   type HostLockRecord,
 } from "@argus/host/lib/hostLock";
+import { isServerMode } from "@argus/host/serverMode";
 import { capture } from "@argus/host/services/telemetry/telemetry";
+import { createLogger } from "../app/lib/logger";
+
+const logger = createLogger("host-lock");
 
 const HOLDER_NAMES: Record<HostLockOwner, string> = {
   cli: "An Argus host",
@@ -48,6 +52,16 @@ export async function claimHostLock(): Promise<boolean> {
     installRelease();
 
     return true;
+  }
+  // The native server replaced this one; a dialog here would greet every
+  // launchd start with a prompt nobody is at the mini to answer.
+  if (isServerMode() && first.holder.owner === "mac-server") {
+    logger.info(
+      "the native Argus Server owns this Argus home, quitting:",
+      argusHomeDir(),
+    );
+
+    return false;
   }
   if (!askToQuitHolder(first.holder)) {
     return false;
