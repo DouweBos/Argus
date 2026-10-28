@@ -1738,6 +1738,7 @@ extension ArgusProtocol {
       public var baseBranch: String?
       public var llm: CreateSessionParamsLlm?
       public var linkedIssue: LinkedIssue?
+      public var designRefs: [DesignRef]?
 
       enum CodingKeys: String, CodingKey {
         case repoRoot = "repoRoot"
@@ -1747,9 +1748,10 @@ extension ArgusProtocol {
         case baseBranch = "baseBranch"
         case llm = "llm"
         case linkedIssue = "linkedIssue"
+        case designRefs = "designRefs"
       }
 
-      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, llm: CreateSessionParamsLlm? = nil, linkedIssue: LinkedIssue? = nil) {
+      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, llm: CreateSessionParamsLlm? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil) {
         self.repoRoot = repoRoot
         self.branch = branch
         self.description = description
@@ -1757,6 +1759,7 @@ extension ArgusProtocol {
         self.baseBranch = baseBranch
         self.llm = llm
         self.linkedIssue = linkedIssue
+        self.designRefs = designRefs
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -1768,6 +1771,7 @@ extension ArgusProtocol {
         try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
         try c.encodeIfPresent(llm, forKey: .llm)
         try c.encodeIfPresent(linkedIssue, forKey: .linkedIssue)
+        try c.encodeIfPresent(designRefs, forKey: .designRefs)
       }
     }
 
@@ -2028,6 +2032,42 @@ extension ArgusProtocol {
       }
     }
 
+    public struct DeviceScreenshotParamsPlatform: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let android = DeviceScreenshotParamsPlatform(rawValue: "android")
+      public static let ios = DeviceScreenshotParamsPlatform(rawValue: "ios")
+    }
+
+    public struct DeviceScreenshotParams: Codable, Sendable {
+      public var platform: DeviceScreenshotParamsPlatform
+      public var deviceKey: String
+
+      enum CodingKeys: String, CodingKey {
+        case platform = "platform"
+        case deviceKey = "deviceKey"
+      }
+
+      public init(platform: DeviceScreenshotParamsPlatform, deviceKey: String) {
+        self.platform = platform
+        self.deviceKey = deviceKey
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(platform, forKey: .platform)
+        try c.encode(deviceKey, forKey: .deviceKey)
+      }
+    }
+
     public struct DiscardFileParams: Codable, Sendable {
       public var id: String
       public var filePath: String
@@ -2192,6 +2232,40 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(udid, forKey: .udid)
+      }
+    }
+
+    public struct FigmaDesignRefParams: Codable, Sendable {
+      public var url: String
+
+      enum CodingKeys: String, CodingKey {
+        case url = "url"
+      }
+
+      public init(url: String) {
+        self.url = url
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(url, forKey: .url)
+      }
+    }
+
+    public struct FigmaFrameParams: Codable, Sendable {
+      public var url: String
+
+      enum CodingKeys: String, CodingKey {
+        case url = "url"
+      }
+
+      public init(url: String) {
+        self.url = url
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(url, forKey: .url)
       }
     }
 
@@ -8325,6 +8399,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SetSessionDesignRefsParams: Codable, Sendable {
+      public var sessionId: String
+      public var refs: [DesignRef]
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+        case refs = "refs"
+      }
+
+      public init(sessionId: String, refs: [DesignRef]) {
+        self.sessionId = sessionId
+        self.refs = refs
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(refs, forKey: .refs)
+      }
+    }
+
     public struct SetUserProjectSettingsParams: Codable, Sendable {
       public var repoRoot: String
       public var settings: UserProjectSettings
@@ -10225,6 +10320,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum DeviceScreenshot: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.DeviceScreenshotParams
+      public typealias Result = String?
+      public static let name = "device_screenshot"
+      public static let tier = "admin"
+    }
+
     public enum DiscardFile: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.DiscardFileParams
       public typealias Result = IgnoredResult
@@ -10278,6 +10380,20 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.EraseSimulatorParams
       public typealias Result = IgnoredResult
       public static let name = "erase_simulator"
+      public static let tier = "admin"
+    }
+
+    public enum FigmaDesignRef: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.FigmaDesignRefParams
+      public typealias Result = ArgusProtocol.DesignRef?
+      public static let name = "figma_design_ref"
+      public static let tier = "admin"
+    }
+
+    public enum FigmaFrame: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.FigmaFrameParams
+      public typealias Result = ArgusProtocol.FigmaFrame?
+      public static let name = "figma_frame"
       public static let tier = "admin"
     }
 
@@ -12483,6 +12599,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.SetSessionClaudeAccountParams
       public typealias Result = JSONValue
       public static let name = "set_session_claude_account"
+      public static let tier = "admin"
+    }
+
+    public enum SetSessionDesignRefs: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.SetSessionDesignRefsParams
+      public typealias Result = IgnoredResult
+      public static let name = "set_session_design_refs"
       public static let tier = "admin"
     }
 

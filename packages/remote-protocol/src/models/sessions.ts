@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { AgentInfo } from "./agents";
-import { LinkedIssue } from "./integrations";
+import { DesignRef, LinkedIssue } from "./integrations";
 
 /**
  * What a session is backed by: a git worktree, the repo root itself, or — for
@@ -50,6 +50,8 @@ export const Session = z.object({
   /** Stable UUID used as the key in `appState.sessions`. */
   id: z.string(),
   kind: SessionKind,
+  /** Figma frames the session's work should match. */
+  design_refs: z.array(DesignRef).nullish(),
   /** The tracker issue the session was started from. */
   linked_issue: LinkedIssue.nullish(),
   /**

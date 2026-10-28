@@ -1,6 +1,6 @@
 import type { LinearIssueDetail } from "@argus/remote-protocol";
 import { describe, expect, it } from "vitest";
-import { issueContext, issueImageUrls } from "./context";
+import { issueContext, issueDesignUrls, issueImageUrls } from "./context";
 
 const issue: LinearIssueDetail = {
   id: "uuid",
@@ -54,5 +54,21 @@ describe("issueContext", () => {
     expect(
       issueContext({ ...issue, description: " ", comments: [] }),
     ).toContain("_No description._");
+  });
+});
+
+describe("issueDesignUrls", () => {
+  it("finds figma links in markdown and plain text", () => {
+    expect(
+      issueDesignUrls({
+        ...issue,
+        description:
+          "See [design](https://www.figma.com/design/Abc/App?node-id=1-2) and https://figma.com/file/Xyz/Old",
+        comments: [],
+      }),
+    ).toEqual([
+      "https://www.figma.com/design/Abc/App?node-id=1-2",
+      "https://figma.com/file/Xyz/Old",
+    ]);
   });
 });

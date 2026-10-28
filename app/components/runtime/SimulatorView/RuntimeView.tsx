@@ -10,11 +10,13 @@ import {
 } from "../../../hooks/useVideoInputDevices";
 import { openDevicePopout } from "../../../lib/ipc";
 import { useActiveToolId } from "../../../stores/layoutStore";
+import { useSessions } from "../../../stores/sessionStore";
 import {
   useActiveDeviceKey,
   useRuntimeViewSimulatorState,
 } from "../../../stores/simulatorStore";
 import { useEffectiveToolEnabled } from "../../../tools/store";
+import { DesignCompare } from "../DesignCompare/DesignCompare";
 import { RuntimeTargetPicker } from "../RuntimeTargetPicker/RuntimeTargetPicker";
 import { WebBrowserViewStack } from "../WebBrowserView";
 import { AndroidDeviceView } from "./AndroidDeviceView";
@@ -74,18 +76,24 @@ export function RuntimeView({
   // Native inspection is Apple-only (iOS/iPadOS/tvOS all run as iOS sims here).
   const inspectorEnabled = toolInspectorEnabled && platform === "ios";
 
+  const designRefs =
+    useSessions().find((s) => s.id === sessionId)?.design_refs ?? null;
+  const designPlatform =
+    platform === "ios" || platform === "android" ? platform : null;
+  const designEnabled = !!designRefs?.length && designPlatform !== null;
+
   // Modes contributed by tools. `Simulate` is core. `Inspect` is contributed
-  // by `device-inspector` on Apple platforms; otherwise we hide the toggle and
-  // ensure the active mode falls back to simulate.
+  // by `device-inspector` on Apple platforms; `Design` appears once the
+  // session has Figma frames. Otherwise the toggle hides itself.
   const runtimeModeOptions = useMemo(
-    () =>
-      inspectorEnabled
-        ? [
-            { label: "Simulate" as const, value: "simulate" as const },
-            { label: "Inspect" as const, value: "inspect" as const },
-          ]
-        : [{ label: "Simulate" as const, value: "simulate" as const }],
-    [inspectorEnabled],
+    () => [
+      { label: "Simulate", value: "simulate" as const },
+      ...(inspectorEnabled
+        ? [{ label: "Inspect", value: "inspect" as const }]
+        : []),
+      ...(designEnabled ? [{ label: "Design", value: "design" as const }] : []),
+    ],
+    [designEnabled, inspectorEnabled],
   );
 
   useEffect(() => {
@@ -97,10 +105,13 @@ export function RuntimeView({
   // If the inspector tool gets disabled while inspect mode is active,
   // snap back to simulate so the segmented control matches reality.
   useEffect(() => {
-    if (!inspectorEnabled && runtimeMode === "inspect") {
+    if (
+      (!inspectorEnabled && runtimeMode === "inspect") ||
+      (!designEnabled && runtimeMode === "design")
+    ) {
       setRuntimeMode("simulate");
     }
-  }, [inspectorEnabled, runtimeMode, setRuntimeMode]);
+  }, [designEnabled, inspectorEnabled, runtimeMode, setRuntimeMode]);
 
   const toggleRuntimeDialog = useCallback(() => {
     setRuntimeDialogOpen(!runtimeDialogOpen);
@@ -275,6 +286,15 @@ export function RuntimeView({
                 <InspectionPanel
                   deviceKey={activeDeviceKey}
                   showSidebar={runtimeDialogOpen || isPopout}
+                />
+              </div>
+            )}
+            {designEnabled && designPlatform && runtimeMode === "design" && (
+              <div className={styles.inspectionLayer}>
+                <DesignCompare
+                  deviceKey={activeDeviceKey}
+                  platform={designPlatform}
+                  refs={designRefs}
                 />
               </div>
             )}

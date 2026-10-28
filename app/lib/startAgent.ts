@@ -1,14 +1,17 @@
 import type { ImageAttachment } from "./ipc";
 import type { CanonicalPermissionMode } from "./permissionModes";
-import type { LinearIssueContext, LinkedIssue } from "./types";
+import type { DesignRef, LinearIssueContext, LinkedIssue } from "./types";
 import { setLinkedProjects } from "../stores/conversationStore";
 import { selectSession, setPendingPrompt } from "../stores/sessionStore";
 import { sendUserMessageToAgent, startAgentInSession } from "./agentLifecycle";
+import { setSessionDesignRefs } from "./ipc";
 import { buildLinkedProjectsPreamble } from "./linkedProjectsPreamble";
 import { createSessionInProject } from "./projectsService";
 
 /** Everything the start composer collected for the first agent. */
 export interface StartRequest {
+  /** Figma frames to match; one scoped to an issue only goes to that issue's agent. */
+  designs: { issueId: string | null; ref: DesignRef }[];
   images: ImageAttachment[];
   /** Linear issues to work on — one worktree and agent each. */
   issues: LinearIssueContext[];
@@ -26,19 +29,50 @@ function explicitModel(model: string): string | undefined {
 
 const ISSUE_ONLY_PROMPT = "Work on this issue.";
 
-/** The issue context first, then what the user typed (or a default ask). */
-export function promptWithIssues(
+type DraftDesign = StartRequest["designs"][number];
+
+function designSection(designs: DesignRef[]): string | null {
+  if (designs.length === 0) {
+    return null;
+  }
+
+  return [
+    "## Design",
+    "",
+    "Match these Figma frames. Call `figma_get_frame` with each link for the image, layers and designer notes, and compare a simulator screenshot against the frame before you call the work done.",
+    "",
+    ...designs.map((d) => `- ${d.name}: ${d.url}`),
+  ].join("\n");
+}
+
+/** Issue context, then the designs to match, then what the user typed (or a default ask). */
+export function startPrompt(
   issues: LinearIssueContext[],
+  designs: DesignRef[],
   prompt: string,
 ): string {
   const text = prompt.trim();
-  if (issues.length === 0) {
+  const sections = [
+    ...issues.map((i) => i.context),
+    designSection(designs),
+  ].filter((section) => section !== null);
+  if (sections.length === 0) {
     return text;
   }
 
-  return [...issues.map((i) => i.context), text || ISSUE_ONLY_PROMPT].join(
-    "\n\n",
-  );
+  return [...sections, text || (issues.length > 0 ? ISSUE_ONLY_PROMPT : "")]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+/** The designs one issue's agent gets: its own plus the unscoped ones. */
+function designsFor(
+  designs: DraftDesign[],
+  issueId: string | null,
+): DesignRef[] {
+  return designs
+    .filter((d) => d.issueId === null || d.issueId === issueId)
+    .map((d) => d.ref);
 }
 
 function linkedIssue({ issue }: LinearIssueContext): LinkedIssue {
@@ -66,7 +100,11 @@ export async function startInSession(
   if (linkedProjects.length > 0) {
     setLinkedProjects(info.agent_id, linkedProjects);
   }
-  const text = promptWithIssues(issues, prompt) || "(see attached images)";
+  const designs = request.designs.map((d) => d.ref);
+  if (designs.length > 0) {
+    await setSessionDesignRefs(sessionId, designs);
+  }
+  const text = startPrompt(issues, designs, prompt) || "(see attached images)";
   const message = buildLinkedProjectsPreamble(linkedProjects, text);
   // The transcript (and the title made from it) shows what the user typed.
   await sendUserMessageToAgent(
@@ -96,16 +134,18 @@ export async function startInNewWorktree(
     permissionMode: request.permissionMode,
   };
   if (request.issues.length === 0) {
-    const prompt = request.prompt.trim();
+    const designs = designsFor(request.designs, null);
     const session = await createSessionInProject(
       repoRoot,
       "",
-      prompt,
+      request.prompt.trim(),
       false,
       baseBranch,
       llm,
+      undefined,
+      designs,
     );
-    setPendingPrompt(session.id, prompt, {
+    setPendingPrompt(session.id, startPrompt([], designs, request.prompt), {
       ...pending,
       images: request.images,
     });
@@ -116,6 +156,7 @@ export async function startInNewWorktree(
   const sessions = await Promise.all(
     request.issues.map(async (context) => {
       const { issue } = context;
+      const designs = designsFor(request.designs, issue.id);
       const session = await createSessionInProject(
         repoRoot,
         issue.branchName,
@@ -124,14 +165,12 @@ export async function startInNewWorktree(
         baseBranch,
         llm,
         linkedIssue(context),
+        designs,
       );
       setPendingPrompt(
         session.id,
-        promptWithIssues([context], request.prompt),
-        {
-          ...pending,
-          images: [...request.images, ...context.images],
-        },
+        startPrompt([context], designs, request.prompt),
+        { ...pending, images: [...request.images, ...context.images] },
       );
 
       return session;

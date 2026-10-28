@@ -17,7 +17,13 @@ function message(err: unknown): string {
 }
 
 /** Linear issues attached to the agent about to start, and the picker that finds them. */
-export function useIssueDraft() {
+export function useIssueDraft(
+  hooks: {
+    onAttached?: (context: LinearIssueContext) => void;
+    onRemoved?: (issueId: string) => void;
+  } = {},
+) {
+  const { onAttached, onRemoved } = hooks;
   const [connected, setConnected] = useState(false);
   const [issues, setIssues] = useState<LinearIssueContext[]>([]);
   const [adding, setAdding] = useState(0);
@@ -69,30 +75,38 @@ export function useIssueDraft() {
     };
   }, [pickerOpen, query]);
 
-  const attach = useCallback(async (ref: string) => {
-    setAdding((n) => n + 1);
-    try {
-      const context = await getLinearIssueContext(ref);
-      if (!context) {
-        pushError(`Linear has no issue ${ref}.`, "linear_issue");
+  const attach = useCallback(
+    async (ref: string) => {
+      setAdding((n) => n + 1);
+      try {
+        const context = await getLinearIssueContext(ref);
+        if (!context) {
+          pushError(`Linear has no issue ${ref}.`, "linear_issue");
 
-        return;
+          return;
+        }
+        setIssues((current) =>
+          current.some((c) => c.issue.id === context.issue.id)
+            ? current
+            : [...current, context],
+        );
+        onAttached?.(context);
+      } catch (err) {
+        pushError(message(err), "linear_issue");
+      } finally {
+        setAdding((n) => n - 1);
       }
-      setIssues((current) =>
-        current.some((c) => c.issue.id === context.issue.id)
-          ? current
-          : [...current, context],
-      );
-    } catch (err) {
-      pushError(message(err), "linear_issue");
-    } finally {
-      setAdding((n) => n - 1);
-    }
-  }, []);
+    },
+    [onAttached],
+  );
 
-  const remove = useCallback((id: string) => {
-    setIssues((current) => current.filter((c) => c.issue.id !== id));
-  }, []);
+  const remove = useCallback(
+    (id: string) => {
+      setIssues((current) => current.filter((c) => c.issue.id !== id));
+      onRemoved?.(id);
+    },
+    [onRemoved],
+  );
 
   const toggle = useCallback(
     (issue: { id: string; identifier: string }) => {

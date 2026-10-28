@@ -1,7 +1,7 @@
 # Integrations
 
-Argus connects to Linear itself, with its own sign-in kept on this machine.
-Nothing depends on an MCP server staying signed in.
+Argus connects to Linear and Figma itself, with its own sign-in kept on this
+machine. Nothing depends on an MCP server staying signed in.
 
 ## Connecting Linear
 
@@ -63,3 +63,27 @@ pull request is opened from Argus (the default), when the session merges, or
 never. A session started by hand still gets a report if its branch name
 contains the issue identifier, because Argus asks Linear which issue the
 branch belongs to.
+
+## Connecting Figma
+
+Open **Settings → Integrations** and paste a Figma personal access token.
+Create one in Figma under **Settings → Security → Personal access tokens**,
+with read access to file content and comments. It's stored the same way as
+the Linear key.
+
+## Designs
+
+Paste a Figma frame link (one with `node-id` in it) into the start composer
+and it becomes a design chip. Figma links in an attached Linear issue are
+picked up automatically. Those only go to that issue's agent.
+
+The agent is told to match the frames. It gets a `figma_get_frame` tool that
+returns the rendered frame, its layers trimmed to layout, sizes, colors and
+text, and the open designer comments on it. The agent is also told to
+compare a simulator screenshot against the frame before it calls the work
+done.
+
+Once a session has designs, the runtime panel gets a **Design** mode next to
+Simulate. It shows the frame and a screenshot of the device side by side, or
+under a slider. Retake the screenshot after a change. With several frames,
+pick one from the list.

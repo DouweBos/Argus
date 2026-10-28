@@ -33,6 +33,27 @@ export const LinkedIssue = z.object({
 });
 export type LinkedIssue = z.infer<typeof LinkedIssue>;
 
+/** A Figma frame the session's work should match. */
+export const DesignRef = z.object({
+  url: z.string(),
+  fileKey: z.string(),
+  /** `12:34`; null when the link names the whole file. */
+  nodeId: z.string().nullable(),
+  name: z.string(),
+});
+export type DesignRef = z.infer<typeof DesignRef>;
+
+/** A rendered Figma frame. */
+export const FigmaFrame = z.object({
+  name: z.string(),
+  /** PNG, base64, rendered at 2x. */
+  image: z.string(),
+  /** Frame size in points. */
+  width: z.number(),
+  height: z.number(),
+});
+export type FigmaFrame = z.infer<typeof FigmaFrame>;
+
 export const LinearIssue = z.object({
   id: z.string(),
   /** `ENG-123`. */
@@ -73,5 +94,7 @@ export const LinearIssueContext = z.object({
   context: z.string(),
   /** Images embedded in the issue and its comments (at most a handful). */
   images: z.array(ImageAttachment),
+  /** figma.com links in the issue and its comments. */
+  designUrls: z.array(z.string()),
 });
 export type LinearIssueContext = z.infer<typeof LinearIssueContext>;

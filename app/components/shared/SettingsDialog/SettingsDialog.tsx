@@ -188,7 +188,7 @@ function SettingsDialogContent() {
         {
           id: "integrations",
           label: "Integrations",
-          description: "Linear",
+          description: "Linear and Figma",
           icon: <Icons.LinkIcon size={12} />,
           render: () => <IntegrationsSection />,
         },

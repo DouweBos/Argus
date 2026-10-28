@@ -3,7 +3,7 @@
  */
 
 import type { WorktreePurpose } from "./worktreeLocationCore";
-import type { LinkedIssue } from "@argus/remote-protocol";
+import type { DesignRef, LinkedIssue } from "@argus/remote-protocol";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -306,6 +306,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       ws.model = m.model ?? null;
       ws.claude_account_id = m.claude_account_id ?? null;
       ws.linked_issue = m.linked_issue ?? null;
+      ws.design_refs = m.design_refs ?? null;
     }
 
     stampAvailability(ws);
@@ -345,6 +346,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       model: entry.model ?? null,
       claude_account_id: entry.claude_account_id ?? null,
       linked_issue: entry.linked_issue ?? null,
+      design_refs: entry.design_refs ?? null,
       availability: "unavailable",
       unavailable_reason: "volume_missing",
       unavailable_volume: availability.volume,
@@ -368,6 +370,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
         model: w.model ?? null,
         claude_account_id: w.claude_account_id ?? null,
         linked_issue: w.linked_issue ?? null,
+        design_refs: w.design_refs ?? null,
         // Recorded so the row can still be drawn with the files unreachable.
         branch: w.branch,
         kind: w.kind,
@@ -430,6 +433,7 @@ export interface CreateSessionOptions {
   worktreePurpose?: WorktreePurpose;
   /** Names the session after the issue; the issue moves to started. */
   linkedIssue?: LinkedIssue;
+  designRefs?: DesignRef[];
 }
 
 /**
@@ -456,6 +460,7 @@ export async function createSession(
   opts?: Pick<
     CreateSessionOptions,
     | "awaitWorktreeReady"
+    | "designRefs"
     | "linkedIssue"
     | "postWorktreeReady"
     | "worktreePurpose"
@@ -516,6 +521,7 @@ export async function createSession(
     runner_id: chosenRunner.id,
     model: initialModel,
     linked_issue: linkedIssue,
+    design_refs: opts?.designRefs?.length ? opts.designRefs : null,
   };
   appState.sessions.set(id, { ...pending });
   emitHostEvent("session:created", { ...pending });
@@ -760,6 +766,7 @@ async function finalizeSession(
       model: ws.model ?? null,
       claude_account_id: ws.claude_account_id ?? null,
       linked_issue: ws.linked_issue ?? null,
+      design_refs: ws.design_refs ?? null,
     });
     try {
       saveMetadata(repoRoot, meta);

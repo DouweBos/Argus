@@ -34,12 +34,16 @@ export interface ImageDiffProps {
    * image (current version). Undefined means the file is deleted.
    */
   after?: string;
+  /** Pane label for `after`; defaults to "After". */
+  afterLabel?: string;
   afterMeta?: ImageMeta;
   /**
    * Data URL for the "before" image (HEAD version). Undefined means the file
    * is newly added.
    */
   before?: string;
+  /** Pane label for `before`; defaults to "Before". */
+  beforeLabel?: string;
   beforeMeta?: ImageMeta;
 }
 
@@ -176,12 +180,16 @@ function SliderView({
 function SideBySideView({
   before,
   after,
+  beforeLabel,
+  afterLabel,
   beforeMeta,
   afterMeta,
 }: {
   after: string | undefined;
+  afterLabel: string;
   afterMeta?: ImageMeta;
   before: string | undefined;
+  beforeLabel: string;
   beforeMeta?: ImageMeta;
 }): ReactNode {
   const isAdded = !before && !!after;
@@ -194,7 +202,7 @@ function SideBySideView({
         <span
           className={`${styles.panelLabel}${isDeleted ? " " + styles.deleted : ""}`}
         >
-          {isAdded ? "Not present" : "Before"}
+          {isAdded ? "Not present" : beforeLabel}
         </span>
         <div className={styles.imageWrap}>
           {before ? (
@@ -222,7 +230,7 @@ function SideBySideView({
         <span
           className={`${styles.panelLabel}${isAdded ? " " + styles.added : ""}`}
         >
-          {isDeleted ? "Deleted" : "After"}
+          {isDeleted ? "Deleted" : afterLabel}
         </span>
         <div className={styles.imageWrap}>
           {after ? (
@@ -251,6 +259,8 @@ function SideBySideView({
 export function ImageDiff({
   before,
   after,
+  beforeLabel = "Before",
+  afterLabel = "After",
   beforeMeta,
   afterMeta,
 }: ImageDiffProps): ReactNode {
@@ -297,6 +307,8 @@ export function ImageDiff({
         <SideBySideView
           before={before}
           after={after}
+          beforeLabel={beforeLabel}
+          afterLabel={afterLabel}
           beforeMeta={beforeMeta}
           afterMeta={afterMeta}
         />
