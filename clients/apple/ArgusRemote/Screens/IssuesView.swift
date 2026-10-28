@@ -29,9 +29,14 @@ private struct IssuesContent: View {
     )
     .safeAreaInset(edge: .top, spacing: 0) {
       if host.linearConnected {
-        SegmentedControl(
-          value: $model.scope, options: ArgusProtocol.LinearIssueScope.all.map { ($0, $0.title) }
-        )
+        VStack(spacing: 8) {
+          SegmentedControl(
+            value: $model.scope, options: ArgusProtocol.LinearIssueScope.all.map { ($0, $0.title) }
+          )
+          if let issues = model.issues, !issues.isEmpty {
+            IssueFilterBar(issues: issues, filters: $model.filters)
+          }
+        }
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(.bar)
