@@ -96,6 +96,9 @@ export interface EventMap {
     role: "device" | "host";
     source: "local" | "log" | "sync";
   };
+  account_push_sent: {
+    outcome: "delivered" | "failed" | "refused" | "unregistered";
+  };
   agent_exited: {
     duration_ms: number;
     exit_code: number;

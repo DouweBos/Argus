@@ -671,6 +671,17 @@ The relay is deliberately given as little as possible:
   first registration for a token wins — replacing one requires signing with the
   key already on file.
 
+**Through your Argus account.** A phone signed in to an [Argus account](accounts.md)
+gets notifications from every computer on the account, including ones it has
+never opened. It registers its token with the account once and hands each
+computer its sealing key, encrypted so only that computer can open it. The
+computer signs every send, and the account service only delivers it while that
+computer and that phone are both still on the same account — a removed
+computer's sends are refused. The notification itself is sealed exactly as
+above, so the service can't read it either. A computer you QR-paired without an
+account keeps using the relay as before, and a phone reached both ways gets
+each notification once.
+
 Nothing here needs configuring. The one editable field is the **push service
 contact** — a `mailto:` or `https:` address Mozilla, Google, and Apple use to
 reach you if a browser notification misbehaves.

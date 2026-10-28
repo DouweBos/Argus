@@ -1,0 +1,11 @@
+{
+  "device_id": "00000000-0000-4000-8000-000000000001",
+  "host_id": "00000000-0000-4000-8000-000000000002",
+  "device_noise_priv": "ERERERERERERERERERERERERERERERERERERERERERE=",
+  "device_noise_pub": "e06Qm75//kTEZaIgA31gjuNYl9Me+XLwf3SJLLD3PxM=",
+  "host_noise_priv": "IiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiI=",
+  "host_noise_pub": "D6poTtKIZ7l/Smot7l34zpdOdrcBjj8iocTPJnhXDyA=",
+  "push_key": "MzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM=",
+  "nonce": "RERERERERERERERE",
+  "sealed": "REREREREREREREREYuDcNVfYIcih/nrmLmrQN94oZf9MaBnbnb1CIFASNDXWimG915ZmSe8JBnzWb+GT"
+}

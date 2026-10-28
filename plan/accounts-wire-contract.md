@@ -1,4 +1,4 @@
-# Argus account layer — wire contract, phases 1–2 (authoritative for all implementers)
+# Argus account layer — wire contract, phases 1–3 (authoritative for all implementers)
 
 Design background: /Users/douwe/Work/Houwert/Projects/Argus/plan/accounts.md. Where this file and
 the plan disagree, THIS file wins (it resolves details the plan left open).
@@ -222,6 +222,48 @@ Joining device N (signed in with Clerk, account not empty):
 
 Hosts admit N on its first handshake: a miss on a linked host re-reads the log (at most once per
 15 s) before refusing.
+
+## Phase 3: push through the account
+
+One push key per install (the same 32-byte AES key the per-host `device.register_push` path
+uses), so a host that holds a per-host registration with that key and an account grant for it
+sends once — through the per-host registration.
+
+**Sealed push key** (`sealed_keys[host_id]`), written by the device, opened by the host:
+
+```
+shared = X25519(device.dev_noise_priv, host.noise_pub)    // = X25519(host ds_priv, device.noise_pub)
+key    = HKDF-SHA256(ikm = shared, salt = utf8("argus-account-pushkey-v1"),
+                     info = utf8(device_id + "\n" + host_id), L = 32)
+sealed = b64( nonce(12) ‖ AES-256-GCM(key, nonce, push_key(32), aad = none) ‖ tag(16) )   // 60 bytes
+```
+
+Both Noise keys come from the verified log, so only that device could have sealed it and only
+that host can open it; the host drops a grant that doesn't open, or whose device isn't live in
+its own log. Vector: `fixtures/push_key.json` (TS `services/account/pushKey.ts`, Swift
+`ArgusKit/Account/AccountPushKey.swift`). A device rotation invalidates its grants (the service
+drops them); the device re-registers.
+
+| Method & path               | Auth        | Request                                                                                                                     | Response                                                                                                                                                                                                                                                     |
+| --------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PUT /push/registration`    | Clerk       | `{ device_id, service: "apns" \| "fcm", token, environment?: "production" \| "sandbox" (default production), sealed_keys }` | `204`. Replaces the device's token and its whole key set. `device_id` must be a live device of the caller's account (403); keys for hosts that aren't live hosts of it are dropped; ≤ 64 keys, each exactly 60 bytes (400). 30 / 10 min per device           |
+| `DELETE /push/registration` | Clerk       | `{ device_id }`                                                                                                             | `204` (push switched off)                                                                                                                                                                                                                                    |
+| `GET /host/push-keys`       | host member | —                                                                                                                           | `{ devices: [{ device_id, service, environment, sealed }] }` — live devices on the host's account that sealed a key for it. Never the token                                                                                                                  |
+| `POST /push/send`           | host member | `{ device_id, sealed /* the notification, sealed as in seal.ts */, collapse_id? }`                                          | `200 { delivered: true, environment }` / provider failure `{ delivered: false, reason }` with its status / `401` revoked host / `403` device not a live device of the host's account / `404` no registration with a key for this host. 600 / 10 min per host |
+
+Wake-ups: on `POST /join` (device join), on the first `POST /link/claim` of a non-empty account
+(reason `join`), and on any `POST /log` batch that adds, revokes or rotates a member (reason
+`changed`), the service sends every registered live device (read before the batch, so a removed
+device hears of it; the batch's signers excepted) a content-free background push:
+APNs `apns-push-type: background`, priority 5, `{ "aps": { "content-available": 1 }, "argus":
+{ "account": "join" | "changed" } }`; FCM data `{ "account": "join" | "changed" }`. The device
+re-reads and verifies the log, directory and requests itself, re-seals its push key if the host
+set changed, and announces each new verified join request once with a local notification.
+
+A revoke drops the member's registration (device) or every key sealed for it (host); a rotate
+drops the device's keys; `DELETE /account` drops both tables for the account. A provider verdict
+that the token is dead (`BadDeviceToken`, `Unregistered`, `DeviceTokenNotForTopic`) drops the
+registration. QR-only hosts keep the per-device HMAC relay (`/argus/push/{register,send,revoke}`).
 
 ## Verifier check order (exact — fixtures pin reason AND index)
 

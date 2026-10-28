@@ -7,12 +7,18 @@
  * party is involved. Phones can't be: only the team that owns the app's bundle
  * id may push to it, so APNs/FCM go through the relay, which holds that
  * credential and receives nothing but a blob sealed for the target device.
+ *
+ * Account devices that never opened this host are reached through the account
+ * instead (`account/push.ts`). A phone has one push key per install, so a
+ * registration this host already holds with that key covers it: no doubles.
  */
 
 import type { RemoteNotificationPayload } from "../../notifications/broadcast";
 import type { PairedDevice, PushConfig } from "../deviceStore";
 import type { PushOutcome } from "./types";
+import type { AccountPushTarget } from "../../account/push";
 import { log, warn } from "@argus/host/logger";
+import { accountPushTargets, sendAccountPush } from "../../account/push";
 import {
   clearDevicePush,
   getPushConfig,
@@ -137,6 +143,59 @@ function isTokenDead(
     : isRelayRegistrationDead(reason);
 }
 
+async function sendAccountOnce(
+  target: AccountPushTarget,
+  n: RemoteNotificationPayload,
+): Promise<PushOutcome> {
+  const subject = collapseSubject(n);
+  let sealed: string;
+  try {
+    sealed = seal(target.push_key, toSealedNotification(n));
+  } catch (err) {
+    return { ok: false, retryable: false, reason: (err as Error).message };
+  }
+
+  return sendAccountPush(
+    target,
+    sealed,
+    subject ? collapseId(target.push_key, subject) : undefined,
+  );
+}
+
+async function pushToAccountDevice(
+  target: AccountPushTarget,
+  n: RemoteNotificationPayload,
+): Promise<void> {
+  let outcome = await sendAccountOnce(target, n);
+  if (!outcome.ok && outcome.retryable) {
+    await delay(RETRY_DELAY_MS);
+    outcome = await sendAccountOnce(target, n);
+  }
+  if (outcome.ok) {
+    log(`[push] delivered "${n.kind}" to ${target.label} via the account`);
+  } else {
+    warn(`[push] ${target.label} (account): ${outcome.reason}`);
+  }
+}
+
+/**
+ * Account devices to push to: not connected, and not already reached through
+ * a registration on this host carrying the same push key.
+ */
+export function accountTargetsToPush(
+  targets: AccountPushTarget[],
+  devices: PairedDevice[],
+  connected: Set<string>,
+): AccountPushTarget[] {
+  const covered = new Set(
+    devices.flatMap((d) => (d.push?.push_key ? [d.push.push_key] : [])),
+  );
+
+  return targets.filter(
+    (t) => !connected.has(t.device_id) && !covered.has(t.push_key),
+  );
+}
+
 async function pushToDevice(
   device: PairedDevice,
   config: PushConfig,
@@ -169,13 +228,19 @@ export function dispatchRemotePush(n: RemoteNotificationPayload): void {
       return;
     }
     const connected = new Set(getConnectedDeviceIds());
-    const targets = (await listDevices()).filter(
+    const devices = await listDevices();
+    const targets = devices.filter(
       (d) => d.push && !connected.has(d.device_id),
     );
-    if (targets.length === 0) {
-      return;
-    }
-    await Promise.all(targets.map((d) => pushToDevice(d, config, n)));
+    const viaAccount = accountTargetsToPush(
+      await accountPushTargets().catch(() => []),
+      devices,
+      connected,
+    );
+    await Promise.all([
+      ...targets.map((d) => pushToDevice(d, config, n)),
+      ...viaAccount.map((t) => pushToAccountDevice(t, n)),
+    ]);
   };
   run().catch((err: unknown) => {
     warn(`[push] dispatch failed: ${(err as Error).message}`);
@@ -188,6 +253,28 @@ export async function sendTestPush(
 ): Promise<{ delivered: boolean; reason?: string }> {
   const config = await getPushConfig();
   const device = (await listDevices()).find((d) => d.device_id === deviceId);
+  const test: RemoteNotificationPayload = {
+    agent_id: null,
+    session_id: null,
+    tool_use_id: null,
+    kind: "push",
+    title: "Argus",
+    body: "Push notifications are working.",
+    actions: [],
+  };
+  // An account device that registered through the account, not with us.
+  const viaAccount = device?.push
+    ? undefined
+    : (await accountPushTargets().catch(() => [])).find(
+        (t) => t.device_id === deviceId,
+      );
+  if (viaAccount) {
+    const sent = await sendAccountOnce(viaAccount, test);
+
+    return sent.ok
+      ? { delivered: true }
+      : { delivered: false, reason: sent.reason };
+  }
   if (!device) {
     return { delivered: false, reason: "device not found" };
   }
@@ -197,15 +284,7 @@ export async function sendTestPush(
       reason: "this device has not registered for push yet",
     };
   }
-  const outcome = await sendOnce(device, config, {
-    agent_id: null,
-    session_id: null,
-    tool_use_id: null,
-    kind: "push",
-    title: "Argus",
-    body: "Push notifications are working.",
-    actions: [],
-  });
+  const outcome = await sendOnce(device, config, test);
 
   return outcome.ok
     ? { delivered: true }

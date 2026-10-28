@@ -58,6 +58,28 @@ that computer. (Turn this off per computer with _Approve from this computer_.)
 Deny anything you didn't just sign in on: a request only gets in if someone
 confirms the code on a device that's already trusted.
 
+## Notifications
+
+Once a phone is on the account, every computer on it can send that phone
+notifications — even a computer you linked a minute ago and never opened on the
+phone. Turn them off with **Background push** in the phone's Settings.
+
+- The computer encrypts each notification for your phone before it leaves the
+  computer, so neither the account service nor Apple can read it.
+- The computer signs every notification it sends. The service only passes it on
+  while that computer and your phone are both on your account: a removed
+  computer, or one on someone else's account, can't reach your phone.
+- When a device asks to join, your phone gets a quiet nudge and shows
+  _Approve a new device?_ — then open Argus and compare the codes. When a
+  device or computer is removed, your phone picks that up the same way, without
+  being opened. These nudges carry nothing but "look again"; the phone reads
+  and checks the account itself. iOS may hold them back for an app you swiped
+  away; Argus catches up the next time it opens.
+
+Every host list — on the phone, in the Mac app and in the desktop app — also
+shows whether each computer on the account is online, or when it was last
+seen.
+
 ## What the account service can and can't see
 
 The service at `houwert.dev` is a directory and an introducer. It is
@@ -69,7 +91,9 @@ It **can** see:
   is stored),
 - the names you gave your computers and devices, and how many there are,
 - the addresses each computer publishes (LAN IP, Tailscale or Cloudflare URL)
-  and when it last checked in.
+  and when it last checked in,
+- your phone's push token, and when a computer sends it a notification (never
+  what the notification says).
 
 It **cannot**:
 

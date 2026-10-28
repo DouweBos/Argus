@@ -1,6 +1,6 @@
 # Account layer: find and link your computers
 
-Status: phases 1 and 2 built (phase 2 minus identity merge, account reset and QR "Also add to
+Status: phases 1–3 built (phase 2 minus identity merge, account reset and QR "Also add to
 account" — see §11). Owner: Douwe. Touches `packages/host`, `packages/remote-protocol`,
 `clients/apple`, `app/`, and the houwert.dev Pages project.
 
@@ -367,7 +367,8 @@ houwert.dev/
     links.ts       link/join state machine
     presence.ts    directory
     ratelimit.ts   D1 fixed-window counters
-    push.ts        phase 3: account-aware relay sends
+    push.ts        phase 3: registrations, host push keys, host-signed sends, wake-ups
+  server/argus-push/providers.ts        APNs/FCM delivery, shared with functions/argus/push
   src/pages/ArgusLink.tsx               /argus/link: Clerk JS sign-in + code claim
   scripts/argus-account-setup.mjs       d1 create + id → wrangler.toml + migrations apply --remote
 ```
@@ -445,12 +446,13 @@ CREATE TABLE rate_limits (
   expires  INTEGER NOT NULL
 );
 
--- Phase 3
+-- Phase 3 (migrations/argus-account/0002_push.sql)
 CREATE TABLE push_registrations (
-  device_id    TEXT PRIMARY KEY REFERENCES members(member_id),
+  device_id    TEXT PRIMARY KEY,
+  account_id   TEXT NOT NULL,              -- for cleanup on account delete
   service      TEXT NOT NULL CHECK (service IN ('apns','fcm')),
   token        TEXT NOT NULL,
-  environment  TEXT,
+  environment  TEXT NOT NULL,
   updated_at   INTEGER NOT NULL
 );
 CREATE TABLE push_keys (                     -- push_key sealed to one host's noise_pub
@@ -493,26 +495,28 @@ S looks up `sign_pub` in `members` (not revoked) or in the pending `join_request
 
 Every response is JSON. Errors look like `{ error: "<code>" }`.
 
-| Method & path                      | Auth                        | Request                                                                                    | Response                                                                                                           |
-| ---------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `GET /config`                      | none                        | —                                                                                          | `{ clerk_publishable_key, frontend_api, min_client: { ios, mac, host } }`                                          |
-| `POST /account`                    | Clerk                       | `{}`                                                                                       | `{ account_id, epoch, head_seq: number \| null }` (create-or-get)                                                  |
-| `GET /log?epoch&after`             | Clerk or host               | —                                                                                          | `{ epoch, entries: Entry[] }` (≤ 500 per page, `next_after`)                                                       |
-| `POST /log`                        | Clerk or host               | `{ epoch, entries: Entry[] }` (a batch, in seq order)                                      | `201 { head_seq }` / `409 { error: "conflict", head_seq }` / `422 { error: "invalid_entry", index }`               |
-| `GET /directory`                   | Clerk or host               | —                                                                                          | `{ hosts: [{ host_id, presence_body, presence_sig, last_seen }] }`                                                 |
-| `PUT /host/presence`               | host                        | `{ presence_body, presence_sig }`                                                          | `204`                                                                                                              |
-| `POST /link/start`                 | host key (pre-member)       | `{ subject: { host, device? }, proofs }`                                                   | `{ request_id, user_code, verification_uri, verification_uri_complete, expires_in: 600, interval: 5 }`             |
-| `GET /link/:id`                    | host key                    | —                                                                                          | `{ status, account_empty?, account_id?, epoch?, approver?: { id, sign_pub }, head?: { seq, hash }, through_seq? }` |
-| `POST /link/claim`                 | Clerk                       | `{ user_code }`                                                                            | `{ request_id, kind, subject }`                                                                                    |
-| `POST /join`                       | Clerk                       | `{ member: DeviceMember, proof }`                                                          | `{ request_id, expires_at }`                                                                                       |
-| `GET /join`                        | Clerk or host               | —                                                                                          | `{ requests: [{ request_id, kind, subject, status, created_at }] }`                                                |
-| `GET /join/:id`                    | Clerk                       | —                                                                                          | same shape as `GET /link/:id`                                                                                      |
-| `POST /join/:id/approver`          | Clerk or host               | `{ approver_id }`                                                                          | `{ head: { seq, hash } }` (moves to `approving`)                                                                   |
-| `POST /join/:id/deny`              | Clerk or host               | `{}`                                                                                       | `204`                                                                                                              |
-| `POST /account/reset`              | Clerk + reverified ≤ 10 min | `{ genesis: Entry }`                                                                       | `{ epoch }`                                                                                                        |
-| `DELETE /account`                  | Clerk + reverified          | `{}`                                                                                       | `204` (deletes everything)                                                                                         |
-| _phase 3_ `PUT /push/registration` | Clerk                       | `{ device_id, service, token, environment, auth_key, sealed_keys: { [host_id]: string } }` | `204`                                                                                                              |
-| _phase 3_ `GET /host/push-keys`    | host                        | —                                                                                          | `{ devices: [{ device_id, service, environment, sealed }] }`                                                       |
+| Method & path                         | Auth                        | Request                                                                          | Response                                                                                                           |
+| ------------------------------------- | --------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `GET /config`                         | none                        | —                                                                                | `{ clerk_publishable_key, frontend_api, min_client: { ios, mac, host } }`                                          |
+| `POST /account`                       | Clerk                       | `{}`                                                                             | `{ account_id, epoch, head_seq: number \| null }` (create-or-get)                                                  |
+| `GET /log?epoch&after`                | Clerk or host               | —                                                                                | `{ epoch, entries: Entry[] }` (≤ 500 per page, `next_after`)                                                       |
+| `POST /log`                           | Clerk or host               | `{ epoch, entries: Entry[] }` (a batch, in seq order)                            | `201 { head_seq }` / `409 { error: "conflict", head_seq }` / `422 { error: "invalid_entry", index }`               |
+| `GET /directory`                      | Clerk or host               | —                                                                                | `{ hosts: [{ host_id, presence_body, presence_sig, last_seen }] }`                                                 |
+| `PUT /host/presence`                  | host                        | `{ presence_body, presence_sig }`                                                | `204`                                                                                                              |
+| `POST /link/start`                    | host key (pre-member)       | `{ subject: { host, device? }, proofs }`                                         | `{ request_id, user_code, verification_uri, verification_uri_complete, expires_in: 600, interval: 5 }`             |
+| `GET /link/:id`                       | host key                    | —                                                                                | `{ status, account_empty?, account_id?, epoch?, approver?: { id, sign_pub }, head?: { seq, hash }, through_seq? }` |
+| `POST /link/claim`                    | Clerk                       | `{ user_code }`                                                                  | `{ request_id, kind, subject }`                                                                                    |
+| `POST /join`                          | Clerk                       | `{ member: DeviceMember, proof }`                                                | `{ request_id, expires_at }`                                                                                       |
+| `GET /join`                           | Clerk or host               | —                                                                                | `{ requests: [{ request_id, kind, subject, status, created_at }] }`                                                |
+| `GET /join/:id`                       | Clerk                       | —                                                                                | same shape as `GET /link/:id`                                                                                      |
+| `POST /join/:id/approver`             | Clerk or host               | `{ approver_id }`                                                                | `{ head: { seq, hash } }` (moves to `approving`)                                                                   |
+| `POST /join/:id/deny`                 | Clerk or host               | `{}`                                                                             | `204`                                                                                                              |
+| `POST /account/reset`                 | Clerk + reverified ≤ 10 min | `{ genesis: Entry }`                                                             | `{ epoch }`                                                                                                        |
+| `DELETE /account`                     | Clerk + reverified          | `{}`                                                                             | `204` (deletes everything)                                                                                         |
+| _phase 3_ `PUT /push/registration`    | Clerk                       | `{ device_id, service, token, environment, sealed_keys: { [host_id]: string } }` | `204` (no `auth_key`: account sends are authenticated by the host's signature)                                     |
+| _phase 3_ `DELETE /push/registration` | Clerk                       | `{ device_id }`                                                                  | `204`                                                                                                              |
+| _phase 3_ `GET /host/push-keys`       | host                        | —                                                                                | `{ devices: [{ device_id, service, environment, sealed }] }`                                                       |
+| _phase 3_ `POST /push/send`           | host                        | `{ device_id, sealed, collapse_id? }`                                            | as the relay's `/send` (see the wire contract § Phase 3)                                                           |
 
 What `POST /log` checks (hygiene only, clients re-verify everything):
 
@@ -621,7 +625,7 @@ Remote method tiers:
 | `ArgusCore/Hosts/RemoteHostsStore.swift` (Mac) and `ArgusRemote/Stores/AppStore.swift` (iOS) | Host list = paired ∪ account, deduped by `desktopPubB64`. `connect(to:)` is unchanged because an account host is just a `DeviceIdentity` built from the log. After `onReady`, call `account.sync`                                                                                                                                                                                                                                                                                                                                                                  |
 | `ArgusRemote`                                                                                | **New** `Screens/AccountView.swift` (sign-in: native SIWA button first, then GitHub, then email code), `Screens/ApproveJoinView.swift` (SAS + match/deny), `Screens/AddComputerView.swift` (enter code). Edits: `PairView.swift` (primary "Sign in", secondary "Scan QR"), `HomeView.swift`/`ComputerView.swift` (online/offline from presence), `SettingsView.swift`/`DevicesView.swift` (account devices, safety code, sign out). Each new file needs its four `project.pbxproj` entries. Add the _Sign in with Apple_ entitlement to `ArgusRemote.entitlements` |
 | `ArgusDesktop` (synced group)                                                                | **New** `Settings/Account/AccountSettingsTab.swift`. `Settings/Hosts/HostsSettingsTab.swift` shows account hosts. On first sign-in, run `account_link_local` over `LocalTransport` (§5.2b). Add the SIWA entitlement and the regenerated Developer ID profile                                                                                                                                                                                                                                                                                                      |
-| `ArgusRemote/Stores/AppStore+Push.swift` (phase 3)                                           | Register with the account (`PUT /push/registration`, seal `push_key` to each account host's `noise_pub`) instead of per-host `device.register_push`. Keep the per-host path for paired-only hosts                                                                                                                                                                                                                                                                                                                                                                  |
+| `ArgusRemote/Stores/AppStore+Push.swift` (phase 3)                                           | Built: `AccountStore+Push.swift` registers with the account (`PUT /push/registration`, the push key sealed per host from `dev_noise` + the host's `noise_pub`, wire contract § Phase 3) and re-seals when hosts join or leave; account hosts skip per-host `device.register_push` once that succeeded. Wake-ups land in the app delegate (`AccountWake`)                                                                                                                                                                                                           |
 | `Envelopes.swift`                                                                            | `RemoteMethod` cases for `account.sync`, `account.request_link`, `account.status`. Run `pnpm gen:protocol` for the command catalog                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 App Store guideline 4.8: offering GitHub/email login on iOS requires an equivalent privacy-preserving
@@ -763,8 +767,8 @@ Built (see `plan/accounts-wire-contract.md` § Phase 2 for the exact flow):
   itself": Electron removes and renames through its window's device key instead.
 
 Deferred: identity merge (§10), account reset (§5.8 "Nothing at all"), the QR pairing "Also add to
-your account" checkbox (§5.8 recovery — `argus-host approve` covers it), sealed silent push for
-join requests (phase 3).
+your account" checkbox (§5.8 recovery — `argus-host approve` covers it). Silent push for join
+requests landed in phase 3.
 
 ### Phase 3: push and presence via the account
 
@@ -777,6 +781,32 @@ Acceptance:
 - Linking a new host means the phone gets that host's notifications without ever opening it.
 - The relay still never sees plaintext, because sealing is unchanged.
 - The relay rejects a send from a revoked host.
+
+Built (wire contract § Phase 3):
+
+- Service: `0002_push.sql`; `PUT`/`DELETE /push/registration`, `GET /host/push-keys`, and
+  host-signed `POST /push/send` live in the account service (`server/argus-account/push.ts`), not
+  the relay: one base URL for everything a linked host says, `service_url` overrides included.
+  A send needs a live host and a live device on the same account and epoch, and a key the device
+  sealed for that host. APNs/FCM delivery moved to `server/argus-push/providers.ts`, shared with
+  the unchanged per-device relay. Revokes, rotations and account deletion drop registrations.
+- Sealing: the push key is wrapped with X25519(dev_noise, host noise_pub) + HKDF rather than an
+  ephemeral sealed box, so a grant authenticates its device and the service can't plant a key.
+  `auth_key` is gone from the account path.
+- Host: `account/push.ts` reads and opens the grants (re-read when the log moves, ≤ 2 min stale),
+  and `dispatch.ts` sends to account devices that aren't connected and whose push key no
+  registration on this host already carries — so a phone reached both ways gets one push.
+- "Sealed silent push" became a **content-free** wake-up: the service originates it (on joins and
+  membership changes) and has no key to seal with, so it carries only `join | changed`; the phone
+  re-reads and verifies everything itself, applies removals, re-seals for new hosts, and posts a
+  local _Approve a new device?_ for each new verified request. It runs in the app delegate's
+  background handler (not the Notification Service Extension, which only sees alerts). iOS
+  doesn't deliver background pushes to an app the user force-quit; the next launch catches up.
+- Presence: online/offline in the iPhone's Home/Computer/Account screens (phase 2), the Mac's
+  Hosts and Account settings and its machines menu, and Electron's Account section and every host
+  list (`useHostEntries`), all on the 60 s refresh and 15-minute window.
+- Not done: the Mac app registers no push token (it has no APNs client), so its account device
+  gets no account pushes; Android/FCM has no client.
 
 ### Phase 4 (optional): managed tunnels
 

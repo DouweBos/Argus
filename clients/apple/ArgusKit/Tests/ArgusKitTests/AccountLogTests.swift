@@ -52,7 +52,7 @@ struct AccountLogTests {
 
   static let logFixtures: [String] = {
     let names = (try? FileManager.default.contentsOfDirectory(atPath: fixtures.path)) ?? []
-    return names.filter { $0.hasSuffix(".json") && $0 != "keys.json" && $0 != "sas.json" }.sorted()
+    return names.filter { $0.hasSuffix(".json") && !["keys.json", "sas.json", "push_key.json"].contains($0) }.sorted()
   }()
 
   @Test("the fixtures are there")
