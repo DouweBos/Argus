@@ -25,6 +25,8 @@ public struct HostStoreHooks: Sendable {
   /// Whether a session runs on another machine, so a file dropped here has
   /// to be uploaded before its agent can open it.
   public var sessionIsRemote: @MainActor @Sendable (_ sessionId: String) -> Bool = { _ in false }
+  /// The backend's connection went up or down on its own (not an attach or detach).
+  public var connectionChanged: @MainActor @Sendable (Transport.State) -> Void = { _ in }
 
   public init(
     track: @escaping @MainActor @Sendable (StoreEvent) -> Void = { _ in },

@@ -62,6 +62,8 @@ final class AppStore {
   private var connectGeneration = 0
   /// Methods the connected computer turned out too old for, counted once each.
   private var unsupportedSeen: Set<String> = []
+  /// Keeps the connection on the best route that works; see `RouteSupervisor`.
+  @ObservationIgnored private var routes: RouteSupervisor!
 
   init() {
     let name = Preferences().string(PreferenceKey.deviceName) ?? UIDeviceName.current
@@ -91,6 +93,15 @@ final class AppStore {
       decisionUndelivered: { [weak self] agentId, toolUseId, decision in
         self?.queueOfflineDecision(agentId: agentId, toolUseId: toolUseId, decision: decision)
       })
+    host.hooks.connectionChanged = { [weak self] state in
+      guard state == .ready || state == .offline else { return }
+      self?.routes.connectionChanged(up: state == .ready)
+    }
+    routes = RouteSupervisor(
+      hooks: .init(
+        identity: { [weak self] in self?.currentIdentity },
+        busy: { [weak self] in self?.host.hasConnectionBoundWork ?? false },
+        adopt: { [weak self] attempt, upgrade in await self?.adoptRoute(attempt, upgrade: upgrade) ?? false }))
   }
 
   // MARK: Lifecycle
@@ -193,6 +204,7 @@ final class AppStore {
     connectGeneration += 1
     let generation = connectGeneration
     host.beginConnecting()
+    routes.suspend()
 
     do {
       let attempt = try await EndpointRacer.connectBest(identity: identity)
@@ -204,17 +216,56 @@ final class AppStore {
       if identity.isAccountHost { account.setConnectionFailing(false) }
       let backend = GatewayBackend(transport: attempt.transport)
       await host.attach(backend)
+      routes.connected(via: attempt.endpoint)
       await onReady(backend, identity: identity, winningURL: attempt.url)
     } catch {
       guard generation == connectGeneration else { return }
       host.connectFailed("Couldn't reach this computer on any known address.")
+      // Re-raced on the next network change or recheck.
+      routes.connected(via: nil)
       // Its tunnel may have moved: watch the directory for the new address.
       if identity.isAccountHost { account.setConnectionFailing(true) }
     }
   }
 
   func disconnect() async {
+    routes.suspend()
     await host.detach()
+  }
+
+  /// The active computer with its latest synced addresses.
+  private var currentIdentity: DeviceIdentity? {
+    guard let id = identity?.deviceId, activeHostId == id else { return nil }
+    return hosts.first { $0.deviceId == id } ?? identity
+  }
+
+  /// Back in the foreground: the network may well have changed while away.
+  func recheckRoutes() {
+    routes.recheck()
+  }
+
+  /// A route won a preflight: a better one under a live connection, or any
+  /// one at all while the connection is down. The new backend goes in before
+  /// the old one is closed.
+  private func adoptRoute(_ attempt: EndpointRacer.Attempt, upgrade: Bool) async -> Bool {
+    guard let identity = currentIdentity else { return false }
+    let backend = GatewayBackend(transport: attempt.transport)
+    if identity.isAccountHost { account.setConnectionFailing(false) }
+    guard host.backend != nil else {
+      // The connect that failed, reaching it now: the full post-connect run.
+      connectGeneration += 1
+      await host.attach(backend)
+      await onReady(backend, identity: identity, winningURL: attempt.url)
+      return true
+    }
+    if upgrade, let from = routes.route?.kind {
+      Telemetry.capture(.routeUpgraded(from: from, to: attempt.endpoint.kind))
+    }
+    await host.swapBackend(backend)
+    // A re-race follows a dropped connection: answers queued while it was down go now.
+    if !upgrade { await flushPendingDecisions(backend) }
+    await updateHost(identity.deviceId) { $0.url = attempt.url }
+    return true
   }
 
   /// Everything a fresh connection has to settle before the UI is trustworthy.

@@ -87,7 +87,7 @@ struct ComputerView: View {
     if app.account.isSignedIn, computer.accountHostId == nil {
       Field(
         label: "Your account",
-        caption: "Add it to your Argus account so your other devices reach it without a QR code. Confirm the code on the computer too."
+        caption: "Add it to your Argus account so your other devices reach it without a QR code, and from anywhere through its own tunnel. Confirm the code on the computer too."
       ) {
         Btn(label: "Add to your account", tone: .secondary) {
           router.push(.addComputer)
@@ -100,7 +100,7 @@ struct ComputerView: View {
     Field(
       label: "Addresses",
       caption:
-        "Every route this computer advertised. All are dialled at once and the simplest one that answers wins."
+        "Every route this computer advertised: Wi-Fi, Tailscale when both devices are on your tailnet, and the tunnel it gets from your Argus account. The simplest one that answers wins, and a better one is picked up when your network changes."
     ) {
       ForEach(computer.candidateEndpoints, id: \.url) { endpoint in
         HStack(spacing: 8) {

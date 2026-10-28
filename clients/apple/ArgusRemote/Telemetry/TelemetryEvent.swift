@@ -149,6 +149,8 @@ enum TelemetryEvent {
   case accountPushRegistered(success: Bool)
   /// A wake-up push from the account service was handled in the background.
   case accountWoken(reason: WakeReason, outcome: WakeOutcome)
+  /// A live connection moved to a better route (e.g. tunnel → Wi-Fi) without dropping.
+  case routeUpgraded(from: RemoteEndpoint.Kind, to: RemoteEndpoint.Kind)
 
   var name: String {
     switch self {
@@ -191,6 +193,7 @@ enum TelemetryEvent {
     case .memberRenamed: "ios_member_renamed"
     case .accountPushRegistered: "ios_account_push_registered"
     case .accountWoken: "ios_account_woken"
+    case .routeUpgraded: "ios_route_upgraded"
     }
   }
 
@@ -266,6 +269,8 @@ enum TelemetryEvent {
       ["scope": scope, "message": String(Telemetry.scrub(message).prefix(2000))]
     case .hostFeatureUnsupported(let method):
       ["method": method]
+    case .routeUpgraded(let from, let to):
+      ["from": from.rawValue, "to": to.rawValue]
     }
   }
 
