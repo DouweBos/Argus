@@ -5,10 +5,11 @@ machine. Nothing depends on an MCP server staying signed in.
 
 ## Connecting Linear
 
-Open **Settings → Integrations**. If this build of Argus has a Linear app
-registered, **Sign in with Linear** opens your browser. Approve Argus there,
-and the sign-in comes back to Argus on `127.0.0.1:47620`. The token refreshes
-by itself, so it doesn't expire on you.
+Open **Settings → Integrations** and click **Sign in with Linear**. Your
+browser opens; approve Argus there and the sign-in comes back to Argus on
+`127.0.0.1:47620`. It works for any Linear workspace, signs in as you, and
+refreshes itself. If your workspace requires admins to approve third-party
+apps, Linear asks an admin first.
 
 You can always paste a Linear personal API key instead. Create one in Linear
 under **Settings → Security & access → Personal API keys**. A personal key

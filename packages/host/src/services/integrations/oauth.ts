@@ -22,8 +22,8 @@ interface OAuthApp {
   port: number;
 }
 
-/** Empty until Argus has a registered app; set ARGUS_LINEAR_CLIENT_ID to try one. */
-const LINEAR_CLIENT_ID = "";
+/** Argus's public Linear app. Public clients use PKCE, so there's no secret. */
+const LINEAR_CLIENT_ID = "0e6aed28f0324b14b99789ba966b098f";
 
 const APPS: Partial<Record<IntegrationId, OAuthApp>> = {
   linear: {
