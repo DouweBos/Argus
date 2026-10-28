@@ -441,6 +441,8 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_git_view_picked` | A git view was picked from the git panel's pill bar or its More menu | `view` (the route segment: `working`, `branch`, `history`, `stashes`, `pull-requests`, `branches-review`, `conflicts`, `reflog`, `blame`, `bisect`, `hooks`, `submodules`, `settings`), `via` (`tabs`, `more`) |
 | `mac_diff_layout_changed` | Diffs were switched between unified and split, from a diff's header or Settings → Git | `layout` (`unified`, `split`), `via` (`diff`, `settings`) |
 | `mac_pull_request_acted` | A pull request was opened, merged, commented on or closed from the app (through the host's `gh`) | `action` (`open`, `merge`, `comment`, `close`) |
+| `mac_account_join_acted` | This Mac asked to join the account, or approved or denied a device joining it | `action` (`requested`, `approved`, `denied`, `expired`), `role` (`subject`, `approver`) |
+| `mac_account_member_changed` | This Mac removed or renamed a device or host on the account | `action` (`removed`, `renamed`), `role` (`device`, `host`) |
 | `mac_hosts_used` | Another host was paired, attached, detached, forgotten, renamed or shown from the Hosts settings or the machines menu | `action` (`pair`, `attach`, `detach`, `forget`, `rename`, `focus`), `success` |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `mac_palette_command_run` | A command palette entry was run | `section` (`navigate`, `sessions`, `session`, `project`, `app`, `git`, `settings`, `automations`) |

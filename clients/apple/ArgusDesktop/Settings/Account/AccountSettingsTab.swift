@@ -22,22 +22,15 @@ struct AccountSettingsTab: View {
         AccountSignInSection()
       case .awaitingApproval:
         AccountProfileHeader()
-        SettingsGroup(
-          "Waiting for device approval",
-          footer: "Approving a new device from one already on your account is coming soon. You can still put this Mac's host on the account below, and approve it from your phone."
-        ) {
-          Text("Your account already has devices, so this Mac can't add itself yet.")
-            .foregroundStyle(.secondary)
-          Button("Sign out") { Task { await account.signOut() } }
-            .buttonStyle(.secondary)
-        }
+        AccountJoinSection()
         MacHostLinkSection()
       case .ready:
         AccountProfileHeader()
         AccountOverview()
       }
     }
-    // Presence moves while this is open: a host going quiet or coming back.
+    // Presence moves while this is open: a host going quiet or coming back,
+    // and someone may be waiting to join.
     .liveRefresh(enabled: account.isSignedIn, every: AccountStore.presencePollInterval) {
       await account.refresh()
     }
@@ -51,8 +44,11 @@ private struct AccountOverview: View {
   @State private var code = ""
   @State private var confirmingSignOut = false
   @State private var removing: AccountStore.Host?
+  @State private var renaming: AccountMember?
 
   var body: some View {
+    AccountRequestsGroup()
+
     SettingsGroup(
       "Safety code",
       footer: "The same on every device on your account. If one ever shows a different code, it's looking at a different account."
@@ -94,6 +90,8 @@ private struct AccountOverview: View {
           Text(AccountPresenceText.text(online: host.online, lastSeen: host.lastSeen))
             .foregroundStyle(.secondary)
           Spacer()
+          Button("Rename…") { renaming = host.member }
+            .buttonStyle(.secondary)
           Button("Remove…", role: .destructive) { removing = host }
             .buttonStyle(.secondary)
         }
@@ -103,6 +101,8 @@ private struct AccountOverview: View {
     SettingsGroup("Add a host", footer: "Type the code the other computer shows, then compare the 6-digit codes.") {
       AddHostByCode(code: $code)
     }
+
+    AccountDevicesGroup()
 
     SettingsGroup(footer: "Takes this Mac off the account and deletes its account key. Paired hosts keep working.") {
       HStack {
@@ -124,6 +124,9 @@ private struct AccountOverview: View {
       }
     } message: {
       Text("Your devices stop connecting to it through the account. Link it again with a new code.")
+    }
+    .sheet(item: $renaming) { member in
+      AccountRenameSheet(member: member)
     }
   }
 }

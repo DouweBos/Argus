@@ -103,6 +103,10 @@ enum MacTelemetryEvent {
     case pair, attach, detach, forget, rename, focus
   }
 
+  enum AccountMemberAction: String {
+    case removed, renamed
+  }
+
   enum GitViewSource: String {
     case tabs
     case more
@@ -282,6 +286,10 @@ enum MacTelemetryEvent {
   case hostsUsed(action: HostsAction, success: Bool)
   /// A pull request was opened, merged, commented on or closed through the host's `gh`.
   case pullRequestActed(action: PullRequestAction)
+  /// This Mac asked to join the account, or approved or denied a device joining it.
+  case accountJoinActed(action: AccountStore.JoinAction, role: AccountStore.JoinRole)
+  /// This Mac removed or renamed a member of the account.
+  case accountMemberChanged(action: AccountMemberAction, role: AccountMember.Role)
   /// A command palette entry was run; `section` is its group, never its title.
   case paletteCommandRun(section: String)
   /// The phone handed a session over; `matched` is whether it named this computer.
@@ -375,6 +383,8 @@ enum MacTelemetryEvent {
     case .diffLayoutChanged: "mac_diff_layout_changed"
     case .hostsUsed: "mac_hosts_used"
     case .pullRequestActed: "mac_pull_request_acted"
+    case .accountJoinActed: "mac_account_join_acted"
+    case .accountMemberChanged: "mac_account_member_changed"
     case .paletteCommandRun: "mac_palette_command_run"
     case .handoffContinued: "mac_handoff_continued"
     case .onboardingStep: "mac_onboarding_step"
@@ -505,6 +515,10 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "success": success]
     case .pullRequestActed(let action):
       ["action": action.rawValue]
+    case .accountJoinActed(let action, let role):
+      ["action": action.rawValue, "role": role.rawValue]
+    case .accountMemberChanged(let action, let role):
+      ["action": action.rawValue, "role": role.rawValue]
     case .paletteCommandRun(let section):
       ["section": section.lowercased()]
     case .handoffContinued(let matched):

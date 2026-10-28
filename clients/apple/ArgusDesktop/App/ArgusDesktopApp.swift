@@ -10,6 +10,7 @@ struct ArgusDesktopApp: App {
   var body: some Scene {
     Window("Argus", id: "main") {
       RootView()
+        .modifier(AccountJoinPrompt())
         .environment(delegate.model)
         .environment(delegate.model.store)
         .environment(delegate.model.terminals)
