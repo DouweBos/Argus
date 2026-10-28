@@ -207,6 +207,12 @@ export interface EventMap {
   follow_up_used: { method: "click" | "tab" };
   follow_ups_suggested: { count: number; success: boolean };
   host_lock_handover: { holder: "cli" | "electron" | "mac-server" | "mac" };
+  integration_connected: {
+    method: "key" | "oauth";
+    service: "figma" | "linear";
+    success: boolean;
+  };
+  integration_reauth_needed: { service: "figma" | "linear" };
   /** Mirrors `LegacyTunnelKind` in `services/remote/legacyTunnels.ts`. */
   legacy_tunnel_retired: {
     kind: "cloudflare_quick" | "cloudflare_token" | "tailscale_funnel";

@@ -192,6 +192,13 @@ export type {
   McpTool,
 } from "@argus/remote-protocol";
 
+export type {
+  IntegrationId,
+  IntegrationStatus,
+  LinearIssue,
+  LinearIssueDetail,
+} from "@argus/remote-protocol";
+
 export type { AppSettings } from "@argus/remote-protocol";
 
 export type { UserProjectSettings } from "@argus/remote-protocol";

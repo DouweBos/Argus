@@ -1,0 +1,246 @@
+/**
+ * The only place the host touches `@linear/sdk`. Every call is one hand-written
+ * GraphQL document through the SDK's client: its models lazy-load relations, so
+ * a page of issues would cost a request per state, team and assignee.
+ */
+
+import type {
+  IntegrationAccount,
+  LinearIssue,
+  LinearIssueDetail,
+} from "@argus/remote-protocol";
+import {
+  AuthenticationLinearError,
+  LinearClient,
+  parseLinearError,
+} from "@linear/sdk";
+
+const ISSUE_FIELDS = `
+  id identifier title description url branchName priority updatedAt
+  state { name type }
+  team { key }
+  assignee { displayName }
+  labels { nodes { name } }
+`;
+
+const MY_ISSUES = `query ArgusMyIssues($first: Int!) {
+  viewer {
+    assignedIssues(
+      first: $first
+      orderBy: updatedAt
+      filter: { state: { type: { nin: ["completed", "canceled"] } } }
+    ) { nodes { ${ISSUE_FIELDS} } }
+  }
+}`;
+
+const SEARCH_ISSUES = `query ArgusSearchIssues($term: String!, $first: Int!) {
+  searchIssues(term: $term, first: $first) { nodes { ${ISSUE_FIELDS} } }
+}`;
+
+const ISSUE_DETAIL = `query ArgusIssue($id: String!) {
+  issue(id: $id) {
+    ${ISSUE_FIELDS}
+    comments(first: 50) { nodes { body createdAt user { displayName } } }
+  }
+}`;
+
+const ISSUE_FOR_BRANCH = `query ArgusIssueForBranch($branch: String!) {
+  issueVcsBranchSearch(branchName: $branch) { ${ISSUE_FIELDS} }
+}`;
+
+const START_STATE = `query ArgusStartState($id: String!) {
+  issue(id: $id) {
+    state { type }
+    team { states(filter: { type: { eq: "started" } }) { nodes { id position } } }
+  }
+}`;
+
+const SET_STATE = `mutation ArgusSetState($id: String!, $stateId: String!) {
+  issueUpdate(id: $id, input: { stateId: $stateId }) { success }
+}`;
+
+const COMMENT = `mutation ArgusComment($issueId: String!, $body: String!) {
+  commentCreate(input: { issueId: $issueId, body: $body }) { success }
+}`;
+
+const VIEWER = `query ArgusViewer {
+  viewer { displayName email }
+  organization { name }
+}`;
+
+interface RawIssue {
+  id: string;
+  identifier: string;
+  title: string;
+  description?: string | null;
+  url: string;
+  branchName: string;
+  priority: number;
+  updatedAt: string;
+  state: { name: string; type: string };
+  team: { key: string };
+  assignee?: { displayName: string } | null;
+  labels: { nodes: { name: string }[] };
+}
+
+interface RawComment {
+  body: string;
+  createdAt: string;
+  user?: { displayName: string } | null;
+}
+
+export function toLinearIssue(raw: RawIssue): LinearIssue {
+  return {
+    id: raw.id,
+    identifier: raw.identifier,
+    title: raw.title,
+    description: raw.description ?? "",
+    url: raw.url,
+    branchName: raw.branchName,
+    state: { name: raw.state.name, type: raw.state.type },
+    priority: raw.priority,
+    teamKey: raw.team.key,
+    assignee: raw.assignee?.displayName ?? null,
+    labels: raw.labels.nodes.map((l) => l.name),
+    updatedAt: Date.parse(raw.updatedAt),
+  };
+}
+
+/** The credential was rejected — the caller flags the integration for reauth. */
+export class LinearAuthError extends Error {}
+
+export interface LinearCredential {
+  method: "key" | "oauth";
+  secret: string;
+}
+
+export class LinearApi {
+  private readonly sdk: LinearClient;
+
+  constructor(credential: LinearCredential) {
+    this.sdk = new LinearClient(
+      credential.method === "key"
+        ? { apiKey: credential.secret }
+        : { accessToken: credential.secret },
+    );
+  }
+
+  private async query<T>(
+    document: string,
+    variables: Record<string, unknown> = {},
+  ): Promise<T> {
+    try {
+      return await this.sdk.client.request<T, Record<string, unknown>>(
+        document,
+        variables,
+      );
+    } catch (raw) {
+      // The SDK only wraps errors for its own model calls, not raw requests.
+      const err = parseLinearError(
+        raw as Parameters<typeof parseLinearError>[0],
+      );
+      if (err instanceof AuthenticationLinearError) {
+        throw new LinearAuthError(err.message);
+      }
+      throw new Error(`Linear: ${err.message}`);
+    }
+  }
+
+  async account(): Promise<IntegrationAccount> {
+    const data = await this.query<{
+      viewer: { displayName: string; email: string | null };
+      organization: { name: string } | null;
+    }>(VIEWER);
+
+    return {
+      name: data.viewer.displayName,
+      email: data.viewer.email,
+      workspace: data.organization?.name ?? null,
+    };
+  }
+
+  async myIssues(limit: number): Promise<LinearIssue[]> {
+    const data = await this.query<{
+      viewer: { assignedIssues: { nodes: RawIssue[] } };
+    }>(MY_ISSUES, { first: limit });
+
+    return data.viewer.assignedIssues.nodes.map(toLinearIssue);
+  }
+
+  async searchIssues(term: string, limit: number): Promise<LinearIssue[]> {
+    const data = await this.query<{ searchIssues: { nodes: RawIssue[] } }>(
+      SEARCH_ISSUES,
+      { term, first: limit },
+    );
+
+    return data.searchIssues.nodes.map(toLinearIssue);
+  }
+
+  async issue(identifier: string): Promise<LinearIssueDetail | null> {
+    try {
+      const data = await this.query<{
+        issue: (RawIssue & { comments: { nodes: RawComment[] } }) | null;
+      }>(ISSUE_DETAIL, { id: identifier });
+      if (!data.issue) {
+        return null;
+      }
+
+      return {
+        ...toLinearIssue(data.issue),
+        comments: data.issue.comments.nodes
+          .map((c) => ({
+            author: c.user?.displayName ?? null,
+            body: c.body,
+            createdAt: Date.parse(c.createdAt),
+          }))
+          .sort((a, b) => a.createdAt - b.createdAt),
+      };
+    } catch (err) {
+      // Linear answers an unknown identifier with an "entity not found" error.
+      if (err instanceof Error && /not found/i.test(err.message)) {
+        return null;
+      }
+      throw err;
+    }
+  }
+
+  async issueForBranch(branch: string): Promise<LinearIssue | null> {
+    const data = await this.query<{ issueVcsBranchSearch: RawIssue | null }>(
+      ISSUE_FOR_BRANCH,
+      { branch },
+    );
+
+    return data.issueVcsBranchSearch
+      ? toLinearIssue(data.issueVcsBranchSearch)
+      : null;
+  }
+
+  /** Moves the issue to its team's first "started" state, unless it's already past backlog. */
+  async markStarted(issueId: string): Promise<boolean> {
+    const data = await this.query<{
+      issue: {
+        state: { type: string };
+        team: { states: { nodes: { id: string; position: number }[] } };
+      } | null;
+    }>(START_STATE, { id: issueId });
+    if (
+      !data.issue ||
+      !["backlog", "unstarted", "triage"].includes(data.issue.state.type)
+    ) {
+      return false;
+    }
+    const [first] = [...data.issue.team.states.nodes].sort(
+      (a, b) => a.position - b.position,
+    );
+    if (!first) {
+      return false;
+    }
+    await this.query(SET_STATE, { id: issueId, stateId: first.id });
+
+    return true;
+  }
+
+  async comment(issueId: string, body: string): Promise<void> {
+    await this.query(COMMENT, { issueId, body });
+  }
+}

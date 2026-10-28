@@ -276,6 +276,10 @@ rather than quietly falling back to your boot disk.
 
 ---
 
+## Integrations
+
+Linear connection for this machine. See [Integrations](./integrations.md).
+
 ## MCP servers
 
 | Setting         | Default | Description                                                         |

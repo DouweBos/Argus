@@ -79,6 +79,12 @@
           "summary": "Per-developer machine-local preferences. Theme, agent defaults, remote access, telemetry level, and other personal toggles."
         },
         {
+          "slug": "integrations",
+          "file": "integrations.md",
+          "title": "Integrations",
+          "summary": "Connect Linear so agents can start from your issues, with a sign-in Argus keeps itself."
+        },
+        {
           "slug": "language-servers",
           "file": "language-servers.md",
           "title": "Language servers",
