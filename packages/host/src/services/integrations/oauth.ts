@@ -34,7 +34,7 @@ interface OAuthApp {
 const LINEAR_CLIENT_ID = "0e6aed28f0324b14b99789ba966b098f";
 
 /** Argus's Figma app. Its secret lives in the houwert.dev relay, never here. */
-const FIGMA_CLIENT_ID = "";
+const FIGMA_CLIENT_ID = "tQpFJhR3tEmY6n1BtrfNbs";
 
 const APPS: Partial<Record<IntegrationId, OAuthApp>> = {
   linear: {
