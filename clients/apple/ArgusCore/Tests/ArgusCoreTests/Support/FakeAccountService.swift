@@ -16,6 +16,7 @@ final class FakeAccountService: @unchecked Sendable {
   private(set) var appends: [[AccountEntry]] = []
   private var links: [String: LinkRequest] = [:]
   private var directory: [AccountDirectoryRecord] = []
+  private var directoryDown = false
   /// Called before a `POST /log` is applied; returning true answers 409 instead.
   var beforeAppend: (@Sendable (FakeAccountService) -> Bool)?
 
@@ -35,6 +36,9 @@ final class FakeAccountService: @unchecked Sendable {
   func linkStatus(_ requestId: String) -> String? { lock.withLock { links[requestId]?.status } }
 
   func setDirectory(_ records: [AccountDirectoryRecord]) { lock.withLock { directory = records } }
+
+  /// `GET /directory` answers 503 while set.
+  func setDirectoryDown(_ down: Bool) { lock.withLock { directoryDown = down } }
 
   var http: AccountClient.HTTP {
     { [self] request in try handle(request) }
@@ -63,6 +67,7 @@ final class FakeAccountService: @unchecked Sendable {
     case ("POST", "log"):
       return appendLog(body, url)
     case ("GET", "directory"):
+      if lock.withLock({ directoryDown }) { return respond(503, ["error": "unavailable"], url) }
       let records = lock.withLock { directory }
       return respond(
         200,

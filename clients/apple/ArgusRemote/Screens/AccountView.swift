@@ -35,6 +35,10 @@ struct AccountView: View {
     .navigationTitle("Account")
     .navigationBarTitleDisplayMode(.inline)
     .task { await account.prepare() }
+    // Presence moves while the list is open: a host going quiet or coming back.
+    .liveRefresh(enabled: account.isSignedIn, every: AccountStore.presencePollInterval) {
+      await app.account.refreshDirectory()
+    }
     .alert("Sign out of your account?", isPresented: $confirmingSignOut) {
       Button("Cancel", role: .cancel) {}
       Button("Sign out", role: .destructive) { Task { await account.signOut() } }

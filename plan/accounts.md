@@ -293,7 +293,8 @@ last_seen }]`. The client verifies `presence_sig` against the host's `sign_pub` 
   hands the host any entries newer than the host's head. The host verifies and applies them. This
   is how revocations beat a frozen service.
 - **Offline.** No presence for 15 min shows "Offline · last seen 2 h ago". The client still tries the
-  last good endpoints.
+  last good endpoints. A visible host list re-reads the directory every minute and on foreground,
+  and recomputes online against the current time even when that read fails.
 
 ### 5.6 Revoke
 

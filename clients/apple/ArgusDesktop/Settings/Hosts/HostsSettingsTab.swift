@@ -6,6 +6,7 @@ import SwiftUI
 /// drives. Pairing runs against a code from the other machine's Remote screen.
 struct HostsSettingsTab: View {
   @Environment(RemoteHostsStore.self) private var hosts
+  @Environment(AccountStore.self) private var account
   @State private var code = ""
 
   var body: some View {
@@ -41,6 +42,10 @@ struct HostsSettingsTab: View {
       }
     }
     .onDisappear { hosts.clearPairing() }
+    // Account hosts' presence moves while this is open.
+    .liveRefresh(enabled: account.isSignedIn, every: AccountStore.presencePollInterval) {
+      await account.refreshDirectory()
+    }
   }
 
   private var isPairing: Bool {
