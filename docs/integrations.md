@@ -178,17 +178,28 @@ when the computer has Linear connected. Search or pick from your open
 issues, select one or several, and **Start N agents**: each issue gets its
 own worktree on Linear's branch name and an agent that starts from the
 issue, with anything you typed after it. A session started from an issue
-shows the issue at the top of its section; tap it to open it in Linear.
+shows the issue and its Figma frames at the top of its section, and the
+agent screen has the same references under its paperclip button; tap the
+issue to read it in the app, or a frame to open it in the design viewer.
 The inbox also links to **Linear issues**: your Assigned, Created or
 Subscribed issues in a section per status, with the same cards as the
 desktop. Tap one to read it in full, with its sub-issues, links and
 comments; with control you can also change its status and priority,
-comment, and **Start agent** or **Open session**.
+comment, and **Start agent** or **Open session**. Figma links in an issue
+open in the design viewer instead of the browser.
+
+The design viewer shows the frame to pinch and pan, its layers with their
+size, text, font and fill, the designers' comments, and the file's pages and
+frames to move between, with **Open in Figma**. Opened from a session, it
+says when the design has changed since the session started, and **Compare
+with Simulator** diffs the frame against one of the computer's running
+simulators or emulators: the share of pixels that differ, and the design,
+the screen and the differences one at a time.
 
 The computer's page in the iPhone app's settings lists which integrations
 are connected and as whom. Connecting and disconnecting stay on the
 computer, so API keys never travel to the phone. Filing bugs from the
-simulator and comparing against Figma frames are desktop-only.
+simulator is desktop-only.
 
 The Mac app has the same flow in **New Session**: **Add Linear Issue…**
 picks the issues, and **Start N Agents** creates a session per issue. The

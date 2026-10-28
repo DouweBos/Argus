@@ -39,6 +39,8 @@ enum Route: Hashable {
   case issues
   /// One Linear issue (`ENG-123`), as the desktop's `/issues/:issue`.
   case issue(ref: String)
+  /// A Figma frame in the design viewer, for a session when it has one.
+  case design(url: String, sessionId: String?)
   case pullRequest(repo: String, number: Int, label: String)
   case automations
   case automation(id: String, label: String)
@@ -88,6 +90,7 @@ enum Route: Hashable {
     case .pullRequests: "pull_requests"
     case .issues: "issues"
     case .issue: "issue"
+    case .design: "design"
     case .pullRequest: "pull_request"
     case .automations: "automations"
     case .automation: "automation"

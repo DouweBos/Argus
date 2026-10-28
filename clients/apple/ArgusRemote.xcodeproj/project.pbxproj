@@ -70,6 +70,7 @@
 		EB002C96DC172A3D1C7BDEFF /* PullRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC876CC2111BA8BDFB115904 /* PullRequestsView.swift */; };
 		A1F00D1E55E5A1C0DEC0FFEE /* IssuesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F00D1E55E5A1C0DEC0FFEF /* IssuesView.swift */; };
 		A1F00D1E55E5A1C0DEC0FF10 /* IssueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F00D1E55E5A1C0DEC0FF11 /* IssueView.swift */; };
+		D5E51A9E0000DE5160000010 /* DesignView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E51A9E0000DE5160000011 /* DesignView.swift */; };
 		ED1700000000000000000004 /* ArgusEditor in Frameworks */ = {isa = PBXBuildFile; productRef = ED1700000000000000000003 /* ArgusEditor */; };
 		F70136FC258ED77D2D4D337A /* WarningsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */; };
 		FAEB2F8A18B2B7EEA189693B /* AppStore+Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */; };
@@ -184,6 +185,7 @@
 		DC876CC2111BA8BDFB115904 /* PullRequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestsView.swift; sourceTree = "<group>"; };
 		A1F00D1E55E5A1C0DEC0FFEF /* IssuesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssuesView.swift; sourceTree = "<group>"; };
 		A1F00D1E55E5A1C0DEC0FF11 /* IssueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueView.swift; sourceTree = "<group>"; };
+		D5E51A9E0000DE5160000011 /* DesignView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignView.swift; sourceTree = "<group>"; };
 		DE5C00000000000000000002 /* Argus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Argus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E3E0EB550BA6630F2052ABE5 /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
 		EC699CB84E030428A8060A13 /* ChangesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangesView.swift; sourceTree = "<group>"; };
@@ -356,6 +358,7 @@
 				DC876CC2111BA8BDFB115904 /* PullRequestsView.swift */,
 				A1F00D1E55E5A1C0DEC0FFEF /* IssuesView.swift */,
 				A1F00D1E55E5A1C0DEC0FF11 /* IssueView.swift */,
+				D5E51A9E0000DE5160000011 /* DesignView.swift */,
 				C01FFCA8035ABC8A01D2C6CF /* BranchesView.swift */,
 				F71EA73DE9EF93E59424EF83 /* BranchCompareView.swift */,
 				F71A133F6BBFBAFFDDBDE2AD /* CommitView.swift */,
@@ -819,6 +822,7 @@
 				EB002C96DC172A3D1C7BDEFF /* PullRequestsView.swift in Sources */,
 				A1F00D1E55E5A1C0DEC0FFEE /* IssuesView.swift in Sources */,
 				A1F00D1E55E5A1C0DEC0FF10 /* IssueView.swift in Sources */,
+				D5E51A9E0000DE5160000010 /* DesignView.swift in Sources */,
 				AA1000000000000000000001 /* ClaudeAccountsView.swift in Sources */,
 				0C2CEA8B85053A238EB47BA7 /* AutomationsView.swift in Sources */,
 				8B82B5637BDFB9252A8D9AD0 /* BranchesView.swift in Sources */,

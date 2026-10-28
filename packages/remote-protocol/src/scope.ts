@@ -224,6 +224,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "linear.issue": DENIED,
   "linear.update_issue": DENIED,
   "linear.comment": DENIED,
+  "figma.frame_details": DENIED,
+  "design.compare": DENIED,
   // A guest reviews the agent it was handed; it does not speak on GitHub.
   "github.pull_requests": DENIED,
   "github.pull_request": DENIED,

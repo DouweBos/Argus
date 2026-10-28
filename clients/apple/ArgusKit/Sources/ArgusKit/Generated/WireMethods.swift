@@ -2539,6 +2539,63 @@ extension ArgusProtocol {
       }
     }
 
+    public struct DesignCompareParamsPlatform: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let android = DesignCompareParamsPlatform(rawValue: "android")
+      public static let ios = DesignCompareParamsPlatform(rawValue: "ios")
+    }
+
+    public struct DesignCompareParams: Codable, Sendable {
+      public var url: String
+      public var platform: DesignCompareParamsPlatform
+      public var deviceKey: String
+
+      enum CodingKeys: String, CodingKey {
+        case url = "url"
+        case platform = "platform"
+        case deviceKey = "device_key"
+      }
+
+      public init(url: String, platform: DesignCompareParamsPlatform, deviceKey: String) {
+        self.url = url
+        self.platform = platform
+        self.deviceKey = deviceKey
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(url, forKey: .url)
+        try c.encode(platform, forKey: .platform)
+        try c.encode(deviceKey, forKey: .deviceKey)
+      }
+    }
+
+    public struct DesignCompareResult: Codable, Sendable {
+      public var comparison: DesignComparison
+
+      enum CodingKeys: String, CodingKey {
+        case comparison = "comparison"
+      }
+
+      public init(comparison: DesignComparison) {
+        self.comparison = comparison
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(comparison, forKey: .comparison)
+      }
+    }
+
     public struct DeviceCapabilitiesParams: Codable, Sendable {
 
       public init() {
@@ -3345,6 +3402,40 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(streamId, forKey: .streamId)
+      }
+    }
+
+    public struct FigmaFrameDetailsParams: Codable, Sendable {
+      public var url: String
+
+      enum CodingKeys: String, CodingKey {
+        case url = "url"
+      }
+
+      public init(url: String) {
+        self.url = url
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(url, forKey: .url)
+      }
+    }
+
+    public struct FigmaFrameDetailsResult: Codable, Sendable {
+      public var details: FigmaFrameDetails?
+
+      enum CodingKeys: String, CodingKey {
+        case details = "details"
+      }
+
+      public init(details: FigmaFrameDetails? = nil) {
+        self.details = details
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(details, forKey: .details)
       }
     }
 
@@ -6222,6 +6313,12 @@ extension ArgusProtocol {
       public static let name = "claude_accounts.set_active"
     }
 
+    public enum DesignCompare: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.DesignCompareParams
+      public typealias Result = ArgusProtocol.MethodsTypes.DesignCompareResult
+      public static let name = "design.compare"
+    }
+
     public enum DeviceCapabilities: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.DeviceCapabilitiesParams
       public typealias Result = ArgusProtocol.MethodsTypes.DeviceCapabilitiesResult
@@ -6340,6 +6437,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.DevicesWatchParams
       public typealias Result = ArgusProtocol.MethodsTypes.DevicesWatchResult
       public static let name = "devices.watch"
+    }
+
+    public enum FigmaFrameDetails: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.FigmaFrameDetailsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.FigmaFrameDetailsResult
+      public static let name = "figma.frame_details"
     }
 
     public enum FilesRead: RemoteCommand {

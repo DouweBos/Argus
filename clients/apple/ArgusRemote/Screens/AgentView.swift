@@ -63,6 +63,9 @@ struct AgentView: View {
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItemGroup(placement: .topBarTrailing) {
+        if let session = sessionId.flatMap(host.loadedSession(id:)), SessionReferences.any(in: session) {
+          SessionReferencesMenu(session: session)
+        }
         if let sessionId {
           IconBtn(systemName: Icon.branch, label: "View changes") {
             router.push(.changes(sessionId: sessionId, label: label))
@@ -93,6 +96,10 @@ struct AgentView: View {
       // Always asked, not only when the session is unknown: a cached status
       // can belong to an agent that has since been shut down.
       await host.loadAgentStatus(agentId: agentId)
+      // The session's ticket and designs, when it was reached without its project.
+      if let sessionId, host.loadedSession(id: sessionId) == nil {
+        for project in host.projects { await host.loadSessions(repoRoot: project.repoRoot) }
+      }
       // Fetched once, not polled: this only decides where the device button goes.
       if host.connection == .ready { await host.refreshDevices() }
     }

@@ -34,6 +34,14 @@ enum TelemetryEvent {
   /// What was done to a branch.
   typealias BranchAction = StoreEvent.BranchAction
 
+  /// Where the design viewer was opened from.
+  enum DesignSource: String {
+    /// A Figma link in an issue.
+    case issue
+    /// One of a session's design frames.
+    case session
+  }
+
   enum Setting: String {
     case autoExpandImageReads = "auto_expand_image_reads"
   }
@@ -125,6 +133,8 @@ enum TelemetryEvent {
   case warningsOpened(count: Int)
   /// A session file opened in the read-only viewer.
   case fileViewed(source: FileViewSource, language: String)
+  /// A Figma frame opened in the design viewer.
+  case designOpened(source: DesignSource)
   /// A worktree search finished; `results` is bucketed before it is sent.
   case fileSearchRun(regex: Bool, results: Int, truncated: Bool)
   /// `message` is scrubbed and truncated by `Telemetry` before it is sent.
@@ -182,6 +192,7 @@ enum TelemetryEvent {
     case .agentStartSubmitted: "ios_agent_start_submitted"
     case .warningsOpened: "ios_warnings_opened"
     case .fileViewed: "ios_file_viewed"
+    case .designOpened: "ios_design_opened"
     case .fileSearchRun: "ios_file_search_run"
     case .appError: "ios_app_error"
     case .hostFeatureUnsupported: "ios_host_feature_unsupported"
@@ -268,6 +279,8 @@ enum TelemetryEvent {
       ["count": count]
     case .fileViewed(let source, let language):
       ["source": source.rawValue, "language": language]
+    case .designOpened(let source):
+      ["source": source.rawValue]
     case .fileSearchRun(let regex, let results, let truncated):
       ["regex": regex, "result_bucket": Self.resultBucket(results), "truncated": truncated]
     case .appError(let scope, let message):

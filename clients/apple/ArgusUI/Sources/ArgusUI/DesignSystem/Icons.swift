@@ -57,6 +57,9 @@ public enum Icon {
   public static let link = "link"
   /// A tracker issue (Linear).
   public static let issue = "checklist"
+  /// A Figma frame.
+  public static let design = "paintbrush.pointed"
+  public static let compare = "square.split.2x1"
   public static let openExternal = "arrow.up.forward.square"
   public static let warning = "exclamationmark.triangle"
   public static let image = "photo"

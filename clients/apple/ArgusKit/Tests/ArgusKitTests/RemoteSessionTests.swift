@@ -63,4 +63,17 @@ struct RemoteSessionTests {
     #expect(session.linkedIssue?.identifier == "ENG-1")
     #expect(session.linkedIssue?.url == "https://linear.app/acme/issue/ENG-1")
   }
+
+  @Test("a session carries the Figma frames it should match")
+  func designRefs() throws {
+    let session = try decode(
+      """
+      {"id":"s1","repo_root":"/r","kind":"worktree","branch":"b","status":"ready",
+       "design_refs":[{"url":"https://www.figma.com/design/k/F?node-id=1-2","fileKey":"k",
+       "nodeId":"1:2","name":"Login","version":"7"}]}
+      """)
+
+    #expect(session.designRefs?.first?.name == "Login")
+    #expect(session.designRefs?.first?.version == "7")
+  }
 }

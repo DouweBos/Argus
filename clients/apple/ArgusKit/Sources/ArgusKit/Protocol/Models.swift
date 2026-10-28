@@ -61,6 +61,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var volume: String?
   /// The tracker issue the session was started from. Nil on older computers.
   public var linkedIssue: RemoteLinkedIssue?
+  /// The Figma frames its work should match. Nil on older computers.
+  public var designRefs: [RemoteDesignRef]?
 
   public var isUnavailable: Bool { availability == .unavailable }
   /// A scratch pad or automation run: its own folder, no project, no git.
@@ -78,6 +80,7 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case unavailableVolume = "unavailable_volume"
     case volume
     case linkedIssue = "linked_issue"
+    case designRefs = "design_refs"
   }
 }
 
@@ -92,6 +95,20 @@ public struct RemoteLinkedIssue: Codable, Hashable, Sendable {
     self.identifier = identifier
     self.title = title
     self.url = url
+  }
+}
+
+/// A Figma frame a session's work should match.
+public struct RemoteDesignRef: Codable, Hashable, Sendable {
+  public var url: String
+  public var name: String
+  /// The file version it was attached at, to tell when the design moved on.
+  public var version: String?
+
+  public init(url: String, name: String, version: String? = nil) {
+    self.url = url
+    self.name = name
+    self.version = version
   }
 }
 

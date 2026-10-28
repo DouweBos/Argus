@@ -102,6 +102,7 @@ import {
   getCommand,
   invokeCommand,
 } from "../command/registry";
+import { compareToDesign } from "../design/compare";
 import {
   isEasDeviceId,
   remoteEasDeviceHosts,
@@ -111,6 +112,7 @@ import {
 } from "../deviceHosts/eas/registry";
 import { listDeviceHosts } from "../deviceHosts/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
+import { figmaFrameDetails } from "../integrations/figma/service";
 import { prepareIssueStart } from "../integrations/issueStart";
 import {
   commentOnLinearIssueById,
@@ -177,6 +179,7 @@ import {
   simulatorSetOrientation,
   simulatorTouch,
 } from "../simulator/ios";
+import { devicePng } from "../simulator/screenshot";
 import { getVideoDims } from "../simulator/videoForward";
 import { capture } from "../telemetry/telemetry";
 import {
@@ -521,6 +524,7 @@ function toRemoteSession(s: Session): RemoteSession {
       : null,
     volume: s.volume ? (s.volume.split("/").pop() ?? null) : null,
     linked_issue: s.linked_issue ?? null,
+    design_refs: s.design_refs ?? null,
   };
 }
 
@@ -1999,6 +2003,24 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     await control(() => commentOnLinearIssueById(issue_id, body));
 
     return { accepted: true };
+  },
+  "figma.frame_details": async (params) => {
+    const { url } = parse("figma.frame_details", params);
+
+    return { details: await control(() => figmaFrameDetails(url)) };
+  },
+  "design.compare": async (params) => {
+    const { url, platform, device_key } = parse("design.compare", params);
+    const comparison = await control(async () => {
+      const png = await devicePng(platform, device_key);
+      if (!png) {
+        throw new Error("Couldn't take a screenshot of that device.");
+      }
+
+      return compareToDesign(url, png, "app");
+    });
+
+    return { comparison };
   },
 
   "github.pull_requests": async (params) => {
