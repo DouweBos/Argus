@@ -30,6 +30,7 @@ private struct IntegrationGroup: View {
   @State private var busy = false
   @State private var reconnecting = false
   @State private var signingIn = false
+  @State private var useKey = false
 
   private var status: ArgusProtocol.IntegrationStatus? {
     store.integrations.first { $0.id == id }
@@ -61,9 +62,10 @@ private struct IntegrationGroup: View {
           }
         }
       } else {
-        if status?.oauthAvailable == true {
-          SettingsRow("Browser", description: "Approve Argus in \(name) and come back.") {
+        if status?.oauthAvailable == true && !useKey {
+          SettingsRow("Browser", description: "Approve Argus in \(name). It signs in as you and refreshes itself.") {
             HStack(spacing: 8) {
+              Button("Use an API key instead") { useKey = true }
               if signingIn {
                 Button("Cancel") {
                   Task { await host.run(ArgusProtocol.Commands.IntegrationCancelOauth.self, .init()) }
@@ -77,18 +79,21 @@ private struct IntegrationGroup: View {
             }
           }
         }
-        SettingsRow("API key", description: "Stored on this computer, never sent to paired devices.") {
-          HStack(spacing: 8) {
-            SecureField("API key", text: $key)
-              .frame(width: 240)
-              .onSubmit { Task { await connect() } }
-            Button(busy ? "Connecting…" : "Connect") { Task { await connect() } }
-              .buttonStyle(.borderedProminent)
-              .disabled(busy || key.trimmingCharacters(in: .whitespaces).isEmpty)
-            if reconnecting {
-              Button("Cancel") {
-                reconnecting = false
-                key = ""
+        if status?.oauthAvailable != true || useKey {
+          SettingsRow("API key", description: "Stored on this computer, never sent to paired devices.") {
+            HStack(spacing: 8) {
+              SecureField("API key", text: $key)
+                .frame(width: 240)
+                .onSubmit { Task { await connect() } }
+              Button(busy ? "Connecting…" : "Connect") { Task { await connect() } }
+                .buttonStyle(.borderedProminent)
+                .disabled(busy || key.trimmingCharacters(in: .whitespaces).isEmpty)
+              if reconnecting || useKey {
+                Button("Cancel") {
+                  reconnecting = false
+                  useKey = false
+                  key = ""
+                }
               }
             }
           }

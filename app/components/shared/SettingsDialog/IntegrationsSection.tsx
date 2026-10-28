@@ -102,6 +102,7 @@ function IntegrationField({
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const [useKey, setUseKey] = useState(false);
 
   const run = async (action: () => Promise<unknown>) => {
     setBusy(true);
@@ -117,13 +118,21 @@ function IntegrationField({
     }
   };
 
-  const showKeyForm = !status.connected || editing;
+  const showConnect = !status.connected || editing;
+  // Browser sign-in is the way in when there is one; a key stays one click away.
+  const showKeyForm = showConnect && (!status.oauthAvailable || useKey);
+  const connectCaption = () => {
+    if (showKeyForm) {
+      return keyCaption;
+    }
+
+    return showConnect
+      ? `Opens your browser to approve Argus in ${label}. It signs in as you and refreshes itself.`
+      : undefined;
+  };
 
   return (
-    <SettingsScreenField
-      label={label}
-      caption={showKeyForm ? keyCaption : undefined}
-    >
+    <SettingsScreenField label={label} caption={connectCaption()}>
       <div className={styles.field}>
         {status.connected && status.account && (
           <AccountRow
@@ -136,8 +145,11 @@ function IntegrationField({
             onRemove={() => run(() => disconnectIntegration(id))}
           />
         )}
-        {showKeyForm && status.oauthAvailable && (
+        {showConnect && status.oauthAvailable && !useKey && (
           <div className={styles.actions}>
+            <Button variant="ghost" onClick={() => setUseKey(true)}>
+              Use an API key instead
+            </Button>
             {signingIn ? (
               <Button
                 variant="ghost"
@@ -181,8 +193,14 @@ function IntegrationField({
               >
                 Get a key
               </Button>
-              {editing && (
-                <Button variant="ghost" onClick={() => setEditing(false)}>
+              {(editing || useKey) && (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setEditing(false);
+                    setUseKey(false);
+                  }}
+                >
                   Cancel
                 </Button>
               )}
