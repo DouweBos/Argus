@@ -10,6 +10,8 @@ import { selectSession } from "./sessionStore";
  * home with the prompt box focused instead of opening a dialog.
  */
 export interface StartDraft {
+  /** Linear issues to attach, e.g. one just filed from the simulator. */
+  issueRefs: string[];
   /** Distinguishes two identical requests, so the second one still focuses. */
   nonce: number;
   prompt: string;
@@ -28,13 +30,18 @@ let nextNonce = 1;
 /** Open `repoRoot`'s home with its start composer focused. */
 export async function openStartDraft(
   repoRoot: string,
-  options: { prompt?: string; workspace?: StartWorkspace } = {},
+  options: {
+    issueRefs?: string[];
+    prompt?: string;
+    workspace?: StartWorkspace;
+  } = {},
 ): Promise<void> {
   try {
     const head = await createHeadSession(repoRoot);
     store.setState({
       draft: {
         nonce: nextNonce++,
+        issueRefs: options.issueRefs ?? [],
         prompt: options.prompt ?? "",
         repoRoot,
         workspace: options.workspace ?? "worktree",

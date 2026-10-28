@@ -8380,6 +8380,31 @@ extension ArgusProtocol {
     }
   }
 
+  public struct LinearTeam: Codable, Sendable {
+    public var id: String
+    public var key: String
+    public var name: String
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case key = "key"
+      case name = "name"
+    }
+
+    public init(id: String, key: String, name: String) {
+      self.id = id
+      self.key = key
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(key, forKey: .key)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
   public struct LinkedIssue: Codable, Sendable {
     public var source: String
     public var identifier: String

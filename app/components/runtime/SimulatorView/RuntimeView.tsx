@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect } from "react";
 import { Icons, SegmentedControl } from "@argus/peacock";
 import { useDragResize } from "@argus/peacock";
 import { InspectionPanel } from "../../../features/inspection/InspectionPanel";
@@ -10,19 +10,20 @@ import {
 } from "../../../hooks/useVideoInputDevices";
 import { openDevicePopout } from "../../../lib/ipc";
 import { useActiveToolId } from "../../../stores/layoutStore";
-import { useSessions } from "../../../stores/sessionStore";
 import {
   useActiveDeviceKey,
   useRuntimeViewSimulatorState,
 } from "../../../stores/simulatorStore";
 import { useEffectiveToolEnabled } from "../../../tools/store";
 import { DesignCompare } from "../DesignCompare/DesignCompare";
+import { FileIssueButton } from "../FileIssueDialog/FileIssueButton";
 import { RuntimeTargetPicker } from "../RuntimeTargetPicker/RuntimeTargetPicker";
 import { WebBrowserViewStack } from "../WebBrowserView";
 import { AndroidDeviceView } from "./AndroidDeviceView";
 import { IosSimulatorView } from "./IosSimulatorView";
 import styles from "./RuntimeView.module.css";
 import { VideoInputView } from "./VideoInputView";
+import { useRuntimeModes } from "./useRuntimeModes";
 
 interface RuntimeViewProps {
   sessionId: string | null;
@@ -76,42 +77,20 @@ export function RuntimeView({
   // Native inspection is Apple-only (iOS/iPadOS/tvOS all run as iOS sims here).
   const inspectorEnabled = toolInspectorEnabled && platform === "ios";
 
-  const designRefs =
-    useSessions().find((s) => s.id === sessionId)?.design_refs ?? null;
-  const designPlatform =
-    platform === "ios" || platform === "android" ? platform : null;
-  const designEnabled = !!designRefs?.length && designPlatform !== null;
-
-  // Modes contributed by tools. `Simulate` is core. `Inspect` is contributed
-  // by `device-inspector` on Apple platforms; `Design` appears once the
-  // session has Figma frames. Otherwise the toggle hides itself.
-  const runtimeModeOptions = useMemo(
-    () => [
-      { label: "Simulate", value: "simulate" as const },
-      ...(inspectorEnabled
-        ? [{ label: "Inspect", value: "inspect" as const }]
-        : []),
-      ...(designEnabled ? [{ label: "Design", value: "design" as const }] : []),
-    ],
-    [designEnabled, inspectorEnabled],
-  );
+  const { designEnabled, designPlatform, designRefs, runtimeModeOptions } =
+    useRuntimeModes({
+      inspectorEnabled,
+      platform,
+      runtimeMode,
+      sessionId,
+      setRuntimeMode,
+    });
 
   useEffect(() => {
     if (activeToolId !== "simulator") {
       setRuntimeDialogOpen(false);
     }
   }, [activeToolId, setRuntimeDialogOpen]);
-
-  // If the inspector tool gets disabled while inspect mode is active,
-  // snap back to simulate so the segmented control matches reality.
-  useEffect(() => {
-    if (
-      (!inspectorEnabled && runtimeMode === "inspect") ||
-      (!designEnabled && runtimeMode === "design")
-    ) {
-      setRuntimeMode("simulate");
-    }
-  }, [designEnabled, inspectorEnabled, runtimeMode, setRuntimeMode]);
 
   const toggleRuntimeDialog = useCallback(() => {
     setRuntimeDialogOpen(!runtimeDialogOpen);
@@ -174,6 +153,14 @@ export function RuntimeView({
 
   const titleBarToggles = (
     <>
+      {designPlatform && activeDeviceKey && sessionId && (
+        <FileIssueButton
+          className={styles.runtimeToggleButton}
+          deviceKey={activeDeviceKey}
+          platform={designPlatform}
+          sessionId={sessionId}
+        />
+      )}
       {canPopout && (
         <button
           className={styles.runtimeToggleButton}
@@ -289,15 +276,18 @@ export function RuntimeView({
                 />
               </div>
             )}
-            {designEnabled && designPlatform && runtimeMode === "design" && (
-              <div className={styles.inspectionLayer}>
-                <DesignCompare
-                  deviceKey={activeDeviceKey}
-                  platform={designPlatform}
-                  refs={designRefs}
-                />
-              </div>
-            )}
+            {designEnabled &&
+              designPlatform &&
+              designRefs &&
+              runtimeMode === "design" && (
+                <div className={styles.inspectionLayer}>
+                  <DesignCompare
+                    deviceKey={activeDeviceKey}
+                    platform={designPlatform}
+                    refs={designRefs}
+                  />
+                </div>
+              )}
           </div>
         </div>
         {inspectorEnabled && runtimeDialogOpen && runtimeMode === "inspect" && (

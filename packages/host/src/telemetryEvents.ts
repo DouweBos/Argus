@@ -215,6 +215,7 @@ export interface EventMap {
     success: boolean;
   };
   integration_reauth_needed: { service: "figma" | "linear" };
+  issue_filed_from_device: { has_screenshot: boolean };
   issue_report_posted: { has_screenshots: boolean; trigger: "merge" | "pr" };
   /** Mirrors `LegacyTunnelKind` in `services/remote/legacyTunnels.ts`. */
   legacy_tunnel_retired: {

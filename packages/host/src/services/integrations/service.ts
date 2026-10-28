@@ -11,6 +11,7 @@ import type {
   LinearIssue,
   LinearIssueContext,
   LinearIssueDetail,
+  LinearTeam,
   LinkedIssue,
 } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
@@ -241,6 +242,40 @@ export function commentOnLinearIssue(
       throw `Linear has no issue ${identifier}.`;
     }
     await api.comment(issue.id, body);
+
+    return issue;
+  });
+}
+
+export function listLinearTeams(): Promise<LinearTeam[]> {
+  return withLinear((api) => api.teams());
+}
+
+export function fileLinearIssue(input: {
+  teamId: string;
+  title: string;
+  description: string;
+  screenshot: string | null;
+}): Promise<LinearIssue> {
+  return withLinear(async (api) => {
+    const shot = input.screenshot
+      ? await api.upload(
+          Buffer.from(input.screenshot, "base64"),
+          "screenshot.png",
+        )
+      : null;
+    const description = [
+      input.description.trim(),
+      shot && `![Screenshot](${shot})`,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    const issue = await api.createIssue({
+      teamId: input.teamId,
+      title: input.title.trim(),
+      description,
+    });
+    capture("issue_filed_from_device", { has_screenshot: Boolean(shot) });
 
     return issue;
   });

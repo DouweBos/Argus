@@ -102,6 +102,7 @@ export function StartComposer({
 
   // "New session" from elsewhere lands here with the prompt box primed.
   const draft = useStartDraft(isProjectRoot ? repoRoot : null);
+  const attachIssue = issueDraft.attach;
   useEffect(() => {
     if (!draft) {
       return;
@@ -112,8 +113,9 @@ export function StartComposer({
     if (draft.prompt) {
       setPrompt(draft.prompt);
     }
+    draft.issueRefs.forEach((ref) => attachIssue(ref));
     requestAnimationFrame(focusPrompt);
-  }, [draft, focusPrompt]);
+  }, [attachIssue, draft, focusPrompt]);
 
   const startable =
     !!session &&

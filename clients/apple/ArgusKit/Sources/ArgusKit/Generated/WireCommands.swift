@@ -5745,6 +5745,35 @@ extension ArgusProtocol {
       }
     }
 
+    public struct LinearFileIssueParams: Codable, Sendable {
+      public var teamId: String
+      public var title: String
+      public var description: String
+      public var screenshot: String?
+
+      enum CodingKeys: String, CodingKey {
+        case teamId = "teamId"
+        case title = "title"
+        case description = "description"
+        case screenshot = "screenshot"
+      }
+
+      public init(teamId: String, title: String, description: String, screenshot: String? = nil) {
+        self.teamId = teamId
+        self.title = title
+        self.description = description
+        self.screenshot = screenshot
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teamId, forKey: .teamId)
+        try c.encode(title, forKey: .title)
+        try c.encode(description, forKey: .description)
+        try c.encodeIfPresent(screenshot, forKey: .screenshot)
+      }
+    }
+
     public struct LinearGetIssueParams: Codable, Sendable {
       public var ref: String
 
@@ -11545,6 +11574,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum LinearFileIssue: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LinearFileIssueParams
+      public typealias Result = ArgusProtocol.LinearIssue
+      public static let name = "linear_file_issue"
+      public static let tier = "admin"
+    }
+
     public enum LinearGetIssue: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.LinearGetIssueParams
       public typealias Result = ArgusProtocol.LinearIssueDetail?
@@ -11563,6 +11599,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.LinearListIssuesParams
       public typealias Result = [ArgusProtocol.LinearIssue]
       public static let name = "linear_list_issues"
+      public static let tier = "admin"
+    }
+
+    public enum LinearListTeams: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.LinearTeam]
+      public static let name = "linear_list_teams"
       public static let tier = "admin"
     }
 

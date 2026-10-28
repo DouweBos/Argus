@@ -96,3 +96,15 @@ depend on an MCP sign-in. Each issue carries its labels, so a playbook can
 pick up only the issues labelled, say, `argus`. Without a connection, the
 source falls back to asking the agent to fetch issues through a Linear MCP
 server, if one is configured.
+
+## Filing bugs from the simulator
+
+With Linear connected, the runtime panel's title bar has a Linear button.
+It takes a screenshot of the simulator or emulator and opens **File in
+Linear**. Pick a team, write a title and a description, then:
+
+- **File** creates the issue, assigned to you, with the screenshot and the
+  device name under the description, and opens it in Linear.
+- **File & start agent** creates it the same way and opens the project's
+  start composer with the issue attached, ready to hand to an agent in a new
+  worktree.

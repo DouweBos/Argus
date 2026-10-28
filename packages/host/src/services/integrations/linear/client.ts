@@ -69,6 +69,16 @@ const FILE_UPLOAD = `mutation ArgusFileUpload($contentType: String!, $filename: 
   }
 }`;
 
+const TEAMS = `query ArgusTeams {
+  teams(first: 100) { nodes { id key name } }
+}`;
+
+const CREATE_ISSUE = `mutation ArgusCreateIssue($input: IssueCreateInput!) {
+  issueCreate(input: $input) { issue { ${ISSUE_FIELDS} } }
+}`;
+
+const VIEWER_ID = `query ArgusViewerId { viewer { id } }`;
+
 const VIEWER = `query ArgusViewer {
   viewer { displayName email }
   organization { name }
@@ -309,6 +319,32 @@ export class LinearApi {
     }
 
     return file.assetUrl;
+  }
+
+  async teams(): Promise<{ id: string; key: string; name: string }[]> {
+    const data = await this.query<{
+      teams: { nodes: { id: string; key: string; name: string }[] };
+    }>(TEAMS);
+
+    return data.teams.nodes;
+  }
+
+  /** Created assigned to the connected user, so it shows up in their picker. */
+  async createIssue(input: {
+    teamId: string;
+    title: string;
+    description: string;
+  }): Promise<LinearIssue> {
+    const viewer = await this.query<{ viewer: { id: string } }>(VIEWER_ID);
+    const data = await this.query<{ issueCreate: { issue: RawIssue | null } }>(
+      CREATE_ISSUE,
+      { input: { ...input, assigneeId: viewer.viewer.id } },
+    );
+    if (!data.issueCreate.issue) {
+      throw new Error("Linear didn't create the issue.");
+    }
+
+    return toLinearIssue(data.issueCreate.issue);
   }
 
   async comment(issueId: string, body: string): Promise<void> {

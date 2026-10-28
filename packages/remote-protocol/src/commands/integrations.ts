@@ -7,6 +7,7 @@ import {
   LinearIssue,
   LinearIssueContext,
   LinearIssueDetail,
+  LinearTeam,
 } from "../models/integrations";
 import { type CommandSpec, NoParams, Void } from "./spec";
 
@@ -47,6 +48,25 @@ export const INTEGRATION_COMMANDS = {
     tier: "admin",
     params: z.object({ ref: z.string() }),
     result: LinearIssueContext.nullable(),
+  },
+  linear_list_teams: {
+    tier: "admin",
+    params: NoParams,
+    result: z.array(LinearTeam),
+  },
+  /**
+   * File a bug as the connected user. The screenshot (base64 PNG) is uploaded
+   * to Linear and embedded under the description.
+   */
+  linear_file_issue: {
+    tier: "admin",
+    params: z.object({
+      teamId: z.string(),
+      title: z.string().min(1),
+      description: z.string(),
+      screenshot: z.string().nullish(),
+    }),
+    result: LinearIssue,
   },
   /** Null when the URL isn't a Figma link. */
   figma_design_ref: {

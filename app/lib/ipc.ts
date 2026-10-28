@@ -89,6 +89,7 @@ import type {
   LinearIssue,
   LinearIssueContext,
   LinearIssueDetail,
+  LinearTeam,
   LinkedIssue,
   McpOAuthStatus,
   McpTestResult,
@@ -1794,6 +1795,16 @@ export const takeDeviceScreenshot = (
 
 export const getFigmaFrame = (url: string): Promise<FigmaFrame | null> =>
   invoke("figma_frame", { url });
+
+export const listLinearTeams = (): Promise<LinearTeam[]> =>
+  invoke("linear_list_teams", {});
+
+export const fileLinearIssue = (input: {
+  description: string;
+  screenshot: string | null;
+  teamId: string;
+  title: string;
+}): Promise<LinearIssue> => invoke("linear_file_issue", input);
 
 export const getLinearIssueContext = (
   ref: string,

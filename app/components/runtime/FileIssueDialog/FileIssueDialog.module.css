@@ -1,0 +1,26 @@
+.form {
+  display: flex;
+  gap: var(--space-6);
+  align-items: flex-start;
+}
+
+.shot {
+  width: 140px;
+  flex-shrink: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex: 1;
+  min-width: 0;
+}
+
+.error {
+  margin: 0;
+  color: var(--error);
+  font: var(--type-caption);
+}
