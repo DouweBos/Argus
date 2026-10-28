@@ -34,27 +34,27 @@ Design only; no code lands with this file.
   the Mac app, the phone or the web client (`clients/argus-web`, served by the
   host).
 - No change to the host core's behaviour beyond a supervised `--server` mode.
-- Not a launchd *daemon*: CoreSimulator needs an Aqua login (unchanged from
+- Not a launchd _daemon_: CoreSimulator needs an Aqua login (unchanged from
   `docs/server-app.md`; auto-login is still required).
 - Not Linux/headless: that stays `argus-host`.
 - No Sign in with Apple in the server: it links via a host code, never signs in.
 
 ## 2. Today (what this builds on)
 
-| Piece | Where | Relevance |
-| --- | --- | --- |
-| Electron server target | `scripts/electron-builder-server.config.cjs`, `dist-electron/server.js` banner sets `ARGUS_SERVER=1` | What we replace |
-| Server mode | `packages/host/src/serverMode.ts` (`isServerMode`, `caffeinate -i -m -s -w`) | Reused by the host as-is |
-| Home default | `packages/host/src/lib/argusHome.ts` → `~/.argus-server` when `ARGUS_SERVER=1` | Native server passes `ARGUS_HOME` explicitly anyway |
-| Standalone host env | `packages/host/src/bin/hostEnv.ts`: `--desktop` vs default server (`~/.argus-host`, 47617) | Needs a third, supervised server mode |
-| Host bin | `packages/host/src/bin/argus-host.ts`: lock owner `mac`/`cli`, `forceRemote: !desktopMode`, power assertion, `--owner-pid` watchdog, UI socket | Server mode flips the desktop-only branches |
-| Supervisor | `ArgusCore/Host/HostSupervisor.swift` (hardcodes `--desktop`; crash backoff 5/120 s; `logs/host.log` 10 MB; attach/lock/takeOver) | Reused; gains a mode |
-| Host bundle | `scripts/build-mac-host.ts` + ArgusDesktop "Bundle Node host" build phase | Same phase in the new target |
-| Pairing state machine | `packages/host/src/services/remote/serverPairing.ts` (Electron in-process, writes `pairing-code.txt`) | Native uses `remote_*_pairing` commands over the UI socket |
-| Account commands | `packages/remote-protocol/src/commands/account.ts` (`account_get_status`, `account_link_local_begin/finish`, `account_list_requests`, `account_approve_join`/`confirm`/`deny`, `account_set_name`, `account_set_config`, `account_logout`) | Menu calls these; no new commands expected |
-| Mac UI to reuse | `Settings/Account/MacHostLinkSection.swift` (`MacHostLink`), `Settings/Remote/{PairingSheet,QRCodeView,RemoteSettingsModel,RemoteTunnelSections}.swift` | Move to shared modules |
-| Updates | Electron: `electron/serverUpdates.ts`, `server_auto_install_updates` in `app-settings.json`. Mac app: none yet (Sparkle is an M7 parity row) | Shared Sparkle work |
-| launchd | `build/dev.houwert.argus.server.plist`, `pnpm server:install-agent` | Migrated away from |
+| Piece                  | Where                                                                                                                                                                                                                                      | Relevance                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Electron server target | `scripts/electron-builder-server.config.cjs`, `dist-electron/server.js` banner sets `ARGUS_SERVER=1`                                                                                                                                       | What we replace                                            |
+| Server mode            | `packages/host/src/serverMode.ts` (`isServerMode`, `caffeinate -i -m -s -w`)                                                                                                                                                               | Reused by the host as-is                                   |
+| Home default           | `packages/host/src/lib/argusHome.ts` → `~/.argus-server` when `ARGUS_SERVER=1`                                                                                                                                                             | Native server passes `ARGUS_HOME` explicitly anyway        |
+| Standalone host env    | `packages/host/src/bin/hostEnv.ts`: `--desktop` vs default server (`~/.argus-host`, 47617)                                                                                                                                                 | Needs a third, supervised server mode                      |
+| Host bin               | `packages/host/src/bin/argus-host.ts`: lock owner `mac`/`cli`, `forceRemote: !desktopMode`, power assertion, `--owner-pid` watchdog, UI socket                                                                                             | Server mode flips the desktop-only branches                |
+| Supervisor             | `ArgusCore/Host/HostSupervisor.swift` (hardcodes `--desktop`; crash backoff 5/120 s; `logs/host.log` 10 MB; attach/lock/takeOver)                                                                                                          | Reused; gains a mode                                       |
+| Host bundle            | `scripts/build-mac-host.ts` + ArgusDesktop "Bundle Node host" build phase                                                                                                                                                                  | Same phase in the new target                               |
+| Pairing state machine  | `packages/host/src/services/remote/serverPairing.ts` (Electron in-process, writes `pairing-code.txt`)                                                                                                                                      | Native uses `remote_*_pairing` commands over the UI socket |
+| Account commands       | `packages/remote-protocol/src/commands/account.ts` (`account_get_status`, `account_link_local_begin/finish`, `account_list_requests`, `account_approve_join`/`confirm`/`deny`, `account_set_name`, `account_set_config`, `account_logout`) | Menu calls these; no new commands expected                 |
+| Mac UI to reuse        | `Settings/Account/MacHostLinkSection.swift` (`MacHostLink`), `Settings/Remote/{PairingSheet,QRCodeView,RemoteSettingsModel,RemoteTunnelSections}.swift`                                                                                    | Move to shared modules                                     |
+| Updates                | Electron: `electron/serverUpdates.ts`, `server_auto_install_updates` in `app-settings.json`. Mac app: none yet (Sparkle is an M7 parity row)                                                                                               | Shared Sparkle work                                        |
+| launchd                | `build/dev.houwert.argus.server.plist`, `pnpm server:install-agent`                                                                                                                                                                        | Migrated away from                                         |
 
 Ports in use: 47615 desktop, 47616 `pnpm dev`, 47617 server, 47618
 `pnpm dev:host`, 48016+ Mac app dev run command.
@@ -63,11 +63,11 @@ Ports in use: 47615 desktop, 47616 `pnpm dev`, 47617 server, 47618
 
 ### Options
 
-| Option | Single instance / lock | Bundle id, LSUIElement | Login item | Updates | Verdict |
-| --- | --- | --- | --- | --- | --- |
-| **A. Second Xcode app target `ArgusServer`** | Own bundle id → own app-level instance; own `ARGUS_HOME` → own `host.lock` | Own Info.plist: `LSUIElement=YES`, id `dev.houwert.argus.server` | `SMAppService` registers *this* app | Own Sparkle feed/channel | **Recommended** |
-| B. Build configuration of ArgusDesktop (`Release-Server`) | Same as A at runtime | Needs per-config Info.plist + id; every scheme/config doubles (Debug/Release × Desktop/Server) | Same as A | Same as A | Config sprawl, easy to ship the wrong flavour; no real saving over A |
-| C. One app, runtime server mode | One bundle id for both: LaunchServices/`NSRunningApplication` treat them as one app; can't run desktop + server side by side without hacks | `LSUIElement` is static; would need `setActivationPolicy` at runtime (Dock flashes at launch) | Login item would start the *desktop* | One feed for two products | Rejected: same reason Electron split targets (`docs/server-app.md`) |
+| Option                                                    | Single instance / lock                                                                                                                     | Bundle id, LSUIElement                                                                         | Login item                           | Updates                   | Verdict                                                              |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------- | -------------------------------------------------------------------- |
+| **A. Second Xcode app target `ArgusServer`**              | Own bundle id → own app-level instance; own `ARGUS_HOME` → own `host.lock`                                                                 | Own Info.plist: `LSUIElement=YES`, id `dev.houwert.argus.server`                               | `SMAppService` registers _this_ app  | Own Sparkle feed/channel  | **Recommended**                                                      |
+| B. Build configuration of ArgusDesktop (`Release-Server`) | Same as A at runtime                                                                                                                       | Needs per-config Info.plist + id; every scheme/config doubles (Debug/Release × Desktop/Server) | Same as A                            | Same as A                 | Config sprawl, easy to ship the wrong flavour; no real saving over A |
+| C. One app, runtime server mode                           | One bundle id for both: LaunchServices/`NSRunningApplication` treat them as one app; can't run desktop + server side by side without hacks | `LSUIElement` is static; would need `setActivationPolicy` at runtime (Dock flashes at launch)  | Login item would start the _desktop_ | One feed for two products | Rejected: same reason Electron split targets (`docs/server-app.md`)  |
 
 ### Recommendation: A
 
@@ -77,7 +77,7 @@ Ports in use: 47615 desktop, 47616 `pnpm dev`, 47617 server, 47618
 - Depends on `ArgusKit`, `ArgusCore`, `ArgusUI`, `PostHog` (and Sparkle once
   added). Never on ArgusDesktop sources directly.
 - Build phase: the same "Bundle Node host" script (`build-mac-host.ts --out …
-  --sign … --app …`), so the server ships the identical host, `argus-web`
+--sign … --app …`), so the server ships the identical host, `argus-web`
   bundle, sim bridge, conductor, rg, language servers.
 - Info.plist: `LSUIElement=YES`, `CFBundleName=Argus Server`, no `argus://`
   URL scheme, no document types; keep the usage strings the host's
@@ -87,24 +87,24 @@ Ports in use: 47615 desktop, 47616 `pnpm dev`, 47617 server, 47618
   → plain Developer ID with no provisioning profile (unlike `dev.houwert.argus.mac`,
   which needs `fastlane mac_app_profile`).
 
-| Config | Bundle id | Default `ARGUS_HOME` | Port | Signing |
-| --- | --- | --- | --- | --- |
-| Debug | `dev.houwert.argus.server.dev` | `~/.argus-mac-server-dev` | 47619 | Apple Development |
-| Release | `dev.houwert.argus.server` | `~/.argus-server` | 47617 | Developer ID Application, notarized |
+| Config  | Bundle id                      | Default `ARGUS_HOME`      | Port  | Signing                             |
+| ------- | ------------------------------ | ------------------------- | ----- | ----------------------------------- |
+| Debug   | `dev.houwert.argus.server.dev` | `~/.argus-mac-server-dev` | 47619 | Apple Development                   |
+| Release | `dev.houwert.argus.server`     | `~/.argus-server`         | 47617 | Developer ID Application, notarized |
 
 Debug never defaults to `~/.argus-server` (same rule as `HostLocation` for
 `~/.argus`). `ARGUS_HOME`/`ARGUS_REMOTE_PORT` env still override.
 
 ### Shared code moves (phase 0, pure refactor)
 
-| From `ArgusDesktop` | To | Why |
-| --- | --- | --- |
-| `HostLocation` (home/bundledHost/configuration) | `ArgusCore/Host/HostLocation` parameterised by `{defaultHome, debugHome, mode}` | Both apps build a `HostSupervisor.Configuration` |
-| `MacHostLink` state machine | `ArgusCore` (`HostLinkModel`) | Menu and Settings drive the same link flow |
-| Pairing model in `RemoteSettingsModel` | `ArgusCore` (`PairingModel`) | Menu pairing + desktop sheet |
-| `QRCodeView`, SAS/code views from `PairingSheet` | `ArgusUI` | Pairing window in the server |
-| Account join approval model (`AccountJoinPrompt` logic) | `ArgusCore` | Approve from the menu |
-| Telemetry client bits of `MacTelemetry` | `ArgusCore` (event enum stays per app) | Server gets its own enum |
+| From `ArgusDesktop`                                     | To                                                                              | Why                                              |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `HostLocation` (home/bundledHost/configuration)         | `ArgusCore/Host/HostLocation` parameterised by `{defaultHome, debugHome, mode}` | Both apps build a `HostSupervisor.Configuration` |
+| `MacHostLink` state machine                             | `ArgusCore` (`HostLinkModel`)                                                   | Menu and Settings drive the same link flow       |
+| Pairing model in `RemoteSettingsModel`                  | `ArgusCore` (`PairingModel`)                                                    | Menu pairing + desktop sheet                     |
+| `QRCodeView`, SAS/code views from `PairingSheet`        | `ArgusUI`                                                                       | Pairing window in the server                     |
+| Account join approval model (`AccountJoinPrompt` logic) | `ArgusCore`                                                                     | Approve from the menu                            |
+| Telemetry client bits of `MacTelemetry`                 | `ArgusCore` (event enum stays per app)                                          | Server gets its own enum                         |
 
 ### Single instance
 
@@ -131,22 +131,22 @@ Debug never defaults to `~/.argus-server` (same rule as `HostLocation` for
 - Host side (`hostEnv.ts` / `argus-host.ts`): replace the `desktopMode`
   boolean with `hostMode: "desktop" | "server" | "cli"`.
 
-| Behaviour | `--desktop` (Mac app) | `--server` (native server) | none (`argus-host`) |
-| --- | --- | --- | --- |
-| `ARGUS_SERVER=1` | no | yes | yes |
-| Default home | `~/.argus` | supervisor always passes one | `~/.argus-host` |
-| Default port | 47615 | 47617 | 47617 |
-| Lock owner | `mac` | `mac-server` | `cli` |
-| `forceRemote` | no (follows settings) | **yes** | yes |
-| Power assertion | no | **yes** | yes |
-| UI socket `supervised` | yes | yes | no |
-| Quit | `stopAgentsForQuit()` then teardown | `stopAgentsForQuit()` then teardown (better than Electron's "just goes"; capped by supervisor's 15 s stop timeout) | immediate |
-| TTY console (`pair`, `login`, `account`) | no | no | yes |
-| `repo-roots.json` replay | via host | via host (verify `startHost` does it under `ARGUS_SERVER`, as Electron server relies on it) | same |
+| Behaviour                                | `--desktop` (Mac app)               | `--server` (native server)                                                                                         | none (`argus-host`) |
+| ---------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| `ARGUS_SERVER=1`                         | no                                  | yes                                                                                                                | yes                 |
+| Default home                             | `~/.argus`                          | supervisor always passes one                                                                                       | `~/.argus-host`     |
+| Default port                             | 47615                               | 47617                                                                                                              | 47617               |
+| Lock owner                               | `mac`                               | `mac-server`                                                                                                       | `cli`               |
+| `forceRemote`                            | no (follows settings)               | **yes**                                                                                                            | yes                 |
+| Power assertion                          | no                                  | **yes**                                                                                                            | yes                 |
+| UI socket `supervised`                   | yes                                 | yes                                                                                                                | no                  |
+| Quit                                     | `stopAgentsForQuit()` then teardown | `stopAgentsForQuit()` then teardown (better than Electron's "just goes"; capped by supervisor's 15 s stop timeout) | immediate           |
+| TTY console (`pair`, `login`, `account`) | no                                  | no                                                                                                                 | yes                 |
+| `repo-roots.json` replay                 | via host                            | via host (verify `startHost` does it under `ARGUS_SERVER`, as Electron server relies on it)                        | same                |
 
 - Crash restart: `HostSupervisor` restarts the host (5 crashes / 120 s, then
   `.failed`). The menu shows the state and a **Restart Host** item on
-  `.failed`. The *app* itself is restarted by launchd via `SMAppService`
+  `.failed`. The _app_ itself is restarted by launchd via `SMAppService`
   (`KeepAlive` on unsuccessful exit, §5).
 - Logs: host → `~/.argus-server/logs/host.log` (supervisor, rotating). The
   host's own rotating log stays where it is. App-level `os.Logger` subsystem
@@ -206,17 +206,17 @@ target's asset catalog.
 Menu built from a pure `ServerMenuModel` (ArgusServer, no SwiftUI) →
 `[MenuItem]`, so it is unit-testable like the Electron tray.
 
-| Section | Items | Backing |
-| --- | --- | --- |
-| Status | `Argus Server 1.2.3` · `Host: running / restarting (2) / failed` · `Gateway: ws://<lan>:47617` · `State: ~/.argus-server` (click: reveal) | `HostSupervisor.state`, `remote_get_status` |
-| Agents | `● Project (n)` → `● session (n)` → `● agent`; disabled leaves (no window to navigate to), or **Open in Web Client** deep link (open question) | `LocalBackend` sessions/agents stores |
-| Routes | `LAN: 192.168.1.20`, `Tailscale: …`, `Tunnel: argus-….houwert.dev (up / starting / off / failed)`; **Copy Address** | `remote_get_status` routes + managed tunnel (as `RemoteTunnelSections`) |
-| Pairing | **Pair a Device…** → window: QR + code (copied to clipboard and written to `$ARGUS_HOME/pairing-code.txt`, 0600, deleted on settle/quit), then `Confirm this matches: 123 456` with **Approve — watch only / run agents / full control of this Mac** and **Reject**; states mirror `buildPairingItems()` | `remote_start_pairing`, `remote_confirm_pairing`, `remote_cancel_pairing` via shared `PairingModel` |
-| Account (unlinked) | **Link to Your Account…** → window: code `WDJB-MJHT`, expiry, "or open houwert.dev/argus/link"; then SAS confirm or "Make it the first computer" | `account_link_local_begin/finish`, shared `HostLinkModel` |
-| Account (linked) | `Linked as "Mac mini"` · `Safety code: …` · `Waiting to join: 2` → per request **Review…** (SAS window, Approve/Deny) · **Rename This Computer…** · Tunnel on/off · **Unlink…** (confirm alert) | `account_get_status`, `account_list_requests`, `account_approve_join`/`confirm`/`deny`, `account_set_name`, `account_set_config`, `account_logout` |
-| Open | **Open Web Client** (`http://127.0.0.1:47617/` in the default browser) · **Open Logs** (reveals `logs/`) · **Show State Folder** | `NSWorkspace` |
-| Updates | identical rows to `buildUpdateItems()` / `buildInstallItem()` + **Install Automatically When Idle** | Sparkle wrapper |
-| App | **Open at Login** ✓ · **Settings…** · **Quit Argus Server** | `SMAppService`, Settings scene |
+| Section            | Items                                                                                                                                                                                                                                                                                                    | Backing                                                                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status             | `Argus Server 1.2.3` · `Host: running / restarting (2) / failed` · `Gateway: ws://<lan>:47617` · `State: ~/.argus-server` (click: reveal)                                                                                                                                                                | `HostSupervisor.state`, `remote_get_status`                                                                                                        |
+| Agents             | `● Project (n)` → `● session (n)` → `● agent`; disabled leaves (no window to navigate to), or **Open in Web Client** deep link (open question)                                                                                                                                                           | `LocalBackend` sessions/agents stores                                                                                                              |
+| Routes             | `LAN: 192.168.1.20`, `Tailscale: …`, `Tunnel: argus-….houwert.dev (up / starting / off / failed)`; **Copy Address**                                                                                                                                                                                      | `remote_get_status` routes + managed tunnel (as `RemoteTunnelSections`)                                                                            |
+| Pairing            | **Pair a Device…** → window: QR + code (copied to clipboard and written to `$ARGUS_HOME/pairing-code.txt`, 0600, deleted on settle/quit), then `Confirm this matches: 123 456` with **Approve — watch only / run agents / full control of this Mac** and **Reject**; states mirror `buildPairingItems()` | `remote_start_pairing`, `remote_confirm_pairing`, `remote_cancel_pairing` via shared `PairingModel`                                                |
+| Account (unlinked) | **Link to Your Account…** → window: code `WDJB-MJHT`, expiry, "or open houwert.dev/argus/link"; then SAS confirm or "Make it the first computer"                                                                                                                                                         | `account_link_local_begin/finish`, shared `HostLinkModel`                                                                                          |
+| Account (linked)   | `Linked as "Mac mini"` · `Safety code: …` · `Waiting to join: 2` → per request **Review…** (SAS window, Approve/Deny) · **Rename This Computer…** · Tunnel on/off · **Unlink…** (confirm alert)                                                                                                          | `account_get_status`, `account_list_requests`, `account_approve_join`/`confirm`/`deny`, `account_set_name`, `account_set_config`, `account_logout` |
+| Open               | **Open Web Client** (`http://127.0.0.1:47617/` in the default browser) · **Open Logs** (reveals `logs/`) · **Show State Folder**                                                                                                                                                                         | `NSWorkspace`                                                                                                                                      |
+| Updates            | identical rows to `buildUpdateItems()` / `buildInstallItem()` + **Install Automatically When Idle**                                                                                                                                                                                                      | Sparkle wrapper                                                                                                                                    |
+| App                | **Open at Login** ✓ · **Settings…** · **Quit Argus Server**                                                                                                                                                                                                                                              | `SMAppService`, Settings scene                                                                                                                     |
 
 Labels and ordering follow the Electron tray (including the account section
 being added now); reconcile wording with that change before phase 2 lands, so
@@ -248,15 +248,15 @@ Host events are already captured by the host (`agent_started`,
 New Swift enum `ServerTelemetryEvent` (enum-with-payload; wrong props fail to
 compile), same consent gating.
 
-| Event | When | Props |
-| --- | --- | --- |
-| `mac_server_launched` | App start | `login_item` (`enabled`, `requires_approval`, `off`), `launched_by_launchd` bool |
-| `mac_server_host` | Supervisor events (mirrors `mac_host_*`) | `stage` (`started`, `crashed`, `gave_up`, `lock_conflict`, `handover`), `restarts`, `exit_code`, `holder` (`electron`, `mac`, `mac_server`, `cli`), `success` |
-| `mac_server_menu_action` | Menu/window action | `action` (`pair`, `link`, `approve_join`, `deny_join`, `rename`, `unlink`, `toggle_tunnel`, `open_web`, `open_logs`, `restart_host`, `quit`) |
-| `mac_server_pairing` | Pairing settled | `stage` (`confirmed`, `rejected`, `failed`, `cancelled`), `grant` (`monitor`, `control`, `admin`, `none`) |
-| `mac_server_update` | Update step | `stage` (`checked`, `downloaded`, `installed`, `blocked_by_agents`, `auto_installed`, `failed`) |
-| `mac_server_login_item` | Toggled | `enabled`, `status` |
-| `mac_server_migrated` | Old Electron server replaced | `from` (`electron_agent`, `electron_running`), `success` |
+| Event                    | When                                     | Props                                                                                                                                                         |
+| ------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mac_server_launched`    | App start                                | `login_item` (`enabled`, `requires_approval`, `off`), `launched_by_launchd` bool                                                                              |
+| `mac_server_host`        | Supervisor events (mirrors `mac_host_*`) | `stage` (`started`, `crashed`, `gave_up`, `lock_conflict`, `handover`), `restarts`, `exit_code`, `holder` (`electron`, `mac`, `mac_server`, `cli`), `success` |
+| `mac_server_menu_action` | Menu/window action                       | `action` (`pair`, `link`, `approve_join`, `deny_join`, `rename`, `unlink`, `toggle_tunnel`, `open_web`, `open_logs`, `restart_host`, `quit`)                  |
+| `mac_server_pairing`     | Pairing settled                          | `stage` (`confirmed`, `rejected`, `failed`, `cancelled`), `grant` (`monitor`, `control`, `admin`, `none`)                                                     |
+| `mac_server_update`      | Update step                              | `stage` (`checked`, `downloaded`, `installed`, `blocked_by_agents`, `auto_installed`, `failed`)                                                               |
+| `mac_server_login_item`  | Toggled                                  | `enabled`, `status`                                                                                                                                           |
+| `mac_server_migrated`    | Old Electron server replaced             | `from` (`electron_agent`, `electron_running`), `success`                                                                                                      |
 
 No names, paths, URLs, codes. Document all in `docs/telemetry-events.md`
 (`telemetryDocs.test.ts` must see the Swift catalog — extend it to read
@@ -268,16 +268,16 @@ Same bundle id + same Developer ID team → same designated requirement, so TCC
 grants (Full Disk Access, Accessibility, Screen Recording for the sim bridge)
 and `~/Library/Preferences/dev.houwert.argus.server.plist` carry over.
 
-| Concern | Plan |
-| --- | --- |
-| State dir | Same `~/.argus-server`: worktrees, `repo-roots.json`, `tools.json`, `app-settings.json`, account keys, chat history are host-owned and already shared format |
-| Secrets | `remote-devices.json`/`mcp-tokens.json` must be in the keychain format ("Argus Host Secret Storage" for that home). Require the last Electron server release to have run once (same rule as `docs/mac-app.md`); if not, the menu shows "Paired devices still in the old format — open the old Argus Server once" and remote stays off (reuse the Mac app's detection) |
-| Running Electron server | Lock owner `electron` → menu: **Take Over from the Old Argus Server** → `takeOver()` (SIGTERM, wait for release, launch) |
-| Old launch agent | On first run, if `~/Library/LaunchAgents/dev.houwert.argus.server.plist` exists: `launchctl bootout gui/$UID/dev.houwert.argus.server`, move the plist to `~/.argus-server/migrated/`, register the `SMAppService` agent. Ask once in a window (it changes what starts at login) |
-| `pnpm server:install-agent` | Keep for the Electron build until it's removed; print a deprecation note pointing at Open at Login |
-| Old app in `/Applications` | Native release ships as `Argus Server.app`; Sparkle/the user replaces it in place. Optional: final Electron server release delivers the native zip through its updater (Squirrel.Mac checks the same DR, which the native app satisfies) — open question |
-| `server_auto_install_updates` | Same key, same file |
-| Rollback | Re-installing the Electron server works: same home, same lock protocol; it re-installs its plist with `server:install-agent` |
+| Concern                       | Plan                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| State dir                     | Same `~/.argus-server`: worktrees, `repo-roots.json`, `tools.json`, `app-settings.json`, account keys, chat history are host-owned and already shared format                                                                                                                                                                                                          |
+| Secrets                       | `remote-devices.json`/`mcp-tokens.json` must be in the keychain format ("Argus Host Secret Storage" for that home). Require the last Electron server release to have run once (same rule as `docs/mac-app.md`); if not, the menu shows "Paired devices still in the old format — open the old Argus Server once" and remote stays off (reuse the Mac app's detection) |
+| Running Electron server       | Lock owner `electron` → menu: **Take Over from the Old Argus Server** → `takeOver()` (SIGTERM, wait for release, launch)                                                                                                                                                                                                                                              |
+| Old launch agent              | On first run, if `~/Library/LaunchAgents/dev.houwert.argus.server.plist` exists: `launchctl bootout gui/$UID/dev.houwert.argus.server`, move the plist to `~/.argus-server/migrated/`, register the `SMAppService` agent. Ask once in a window (it changes what starts at login)                                                                                      |
+| `pnpm server:install-agent`   | Keep for the Electron build until it's removed; print a deprecation note pointing at Open at Login                                                                                                                                                                                                                                                                    |
+| Old app in `/Applications`    | Native release ships as `Argus Server.app`; Sparkle/the user replaces it in place. Optional: final Electron server release delivers the native zip through its updater (Squirrel.Mac checks the same DR, which the native app satisfies) — open question                                                                                                              |
+| `server_auto_install_updates` | Same key, same file                                                                                                                                                                                                                                                                                                                                                   |
+| Rollback                      | Re-installing the Electron server works: same home, same lock protocol; it re-installs its plist with `server:install-agent`                                                                                                                                                                                                                                          |
 
 ## 9. Docs to update
 
@@ -295,27 +295,27 @@ and `~/Library/Preferences/dev.houwert.argus.server.plist` carry over.
 
 ## 10. Tests
 
-| Layer | Test |
-| --- | --- |
-| Host | `hostEnv`/`hostArgs` tests for `--server` (env, port, owner, forceRemote, power assertion, quit drain); `hostLock` accepts `mac-server` |
-| ArgusCore (`swift test`) | `HostSupervisor` launches with `--server` for `.server` mode; `HostLockRecord` decodes `mac-server`; `HostLinkModel`/`PairingModel` state machines (moved, existing behaviour pinned first) |
-| ArgusServer unit (`ArgusServerTests`) | `ServerMenuModel` snapshots for every pairing/link/update/host state, agent-count guard, install-when-idle trigger; migration detector (old plist present, lock owner `electron`) |
-| Typetests | Telemetry docs test covers `ServerTelemetryEvent` |
-| CI | `xcodebuild -scheme ArgusServer -destination 'platform=macOS' build` (+ `test`) alongside ArgusDesktop |
-| Manual (mini) | Fresh install, login item approve, reboot with auto-login, kill -9 host (supervisor restarts), kill -9 app (launchd restarts), pair phone, link + approve, tunnel reach from LTE, update blocked while agent runs, idle auto-install, migration from a running Electron server with its plist |
+| Layer                                 | Test                                                                                                                                                                                                                                                                                          |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Host                                  | `hostEnv`/`hostArgs` tests for `--server` (env, port, owner, forceRemote, power assertion, quit drain); `hostLock` accepts `mac-server`                                                                                                                                                       |
+| ArgusCore (`swift test`)              | `HostSupervisor` launches with `--server` for `.server` mode; `HostLockRecord` decodes `mac-server`; `HostLinkModel`/`PairingModel` state machines (moved, existing behaviour pinned first)                                                                                                   |
+| ArgusServer unit (`ArgusServerTests`) | `ServerMenuModel` snapshots for every pairing/link/update/host state, agent-count guard, install-when-idle trigger; migration detector (old plist present, lock owner `electron`)                                                                                                             |
+| Typetests                             | Telemetry docs test covers `ServerTelemetryEvent`                                                                                                                                                                                                                                             |
+| CI                                    | `xcodebuild -scheme ArgusServer -destination 'platform=macOS' build` (+ `test`) alongside ArgusDesktop                                                                                                                                                                                        |
+| Manual (mini)                         | Fresh install, login item approve, reboot with auto-login, kill -9 host (supervisor restarts), kill -9 app (launchd restarts), pair phone, link + approve, tunnel reach from LTE, update blocked while agent runs, idle auto-install, migration from a running Electron server with its plist |
 
 Never test against a live `~/.argus-server`: Debug uses its own home and port.
 
 ## 11. Phased rollout
 
-| Phase | Scope | Acceptance |
-| --- | --- | --- |
-| 0. Refactor | Move `HostLocation`, link/pairing models, QR/SAS views, telemetry client to ArgusCore/ArgusUI; `HostSupervisor` mode; host `--server` mode + `mac-server` owner | Mac app unchanged (tests green, manual smoke); `argus-host --server` under a supervisor behaves per §4 table |
-| 1. Target + host | `ArgusServer` target, LSUIElement, bundled host, status + agents sections, Quit, Open Logs/Web Client/State, host restart, Debug home/port | Debug build runs next to Mac app and Electron desktop without lock conflicts; web client loads from 47619; crash restart observed |
-| 2. Pairing + account | Pairing window, account link/approve/rename/unlink/tunnel, notifications, minimal Settings, telemetry | Phone pairs via QR/code with grant choice; host links with a code and approves a phone join; menu labels match the Electron tray; telemetry docs test passes |
-| 3. Lifecycle + release | `SMAppService` agent, Open at Login, Sparkle + guard + install-when-idle, `mac_server_release` lane, notarized zip + appcast | Notarized build passes `spctl -a -vv`; survives reboot on an auto-login mini; update refuses while agents run and auto-installs when idle |
-| 4. Migration + cutover | Old plist migration, takeover flow, secrets-format check, docs, changeset; Electron server marked deprecated | A mini running the Electron server + plist switches with one confirmation, keeps paired devices, account link, TCC grants and worktrees |
-| 5. Removal | Delete `build:app:server`, `electron-builder-server.config.cjs`, `server.js` banner, `serverUpdates.ts`, server branches in `electron/main.ts` and tray, `server:install-agent` | After one release cycle with no Electron-server installs in presence telemetry |
+| Phase                  | Scope                                                                                                                                                                           | Acceptance                                                                                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0. Refactor            | Move `HostLocation`, link/pairing models, QR/SAS views, telemetry client to ArgusCore/ArgusUI; `HostSupervisor` mode; host `--server` mode + `mac-server` owner                 | Mac app unchanged (tests green, manual smoke); `argus-host --server` under a supervisor behaves per §4 table                                                 |
+| 1. Target + host       | `ArgusServer` target, LSUIElement, bundled host, status + agents sections, Quit, Open Logs/Web Client/State, host restart, Debug home/port                                      | Debug build runs next to Mac app and Electron desktop without lock conflicts; web client loads from 47619; crash restart observed                            |
+| 2. Pairing + account   | Pairing window, account link/approve/rename/unlink/tunnel, notifications, minimal Settings, telemetry                                                                           | Phone pairs via QR/code with grant choice; host links with a code and approves a phone join; menu labels match the Electron tray; telemetry docs test passes |
+| 3. Lifecycle + release | `SMAppService` agent, Open at Login, Sparkle + guard + install-when-idle, `mac_server_release` lane, notarized zip + appcast                                                    | Notarized build passes `spctl -a -vv`; survives reboot on an auto-login mini; update refuses while agents run and auto-installs when idle                    |
+| 4. Migration + cutover | Old plist migration, takeover flow, secrets-format check, docs, changeset; Electron server marked deprecated                                                                    | A mini running the Electron server + plist switches with one confirmation, keeps paired devices, account link, TCC grants and worktrees                      |
+| 5. Removal             | Delete `build:app:server`, `electron-builder-server.config.cjs`, `server.js` banner, `serverUpdates.ts`, server branches in `electron/main.ts` and tray, `server:install-agent` | After one release cycle with no Electron-server installs in presence telemetry                                                                               |
 
 ## 12. Open questions
 
