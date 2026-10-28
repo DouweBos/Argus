@@ -11,7 +11,11 @@ import { accountStatus, emitAccountStatus } from "./status";
 import { ensureAccountRecord, writeAccountRecord } from "./store";
 import { currentRecord, currentState, isLinked, setTrust } from "./trust";
 
-export type NameSource = "account_list" | "settings" | "terminal";
+export type NameSource =
+  | "account_list"
+  | "server_tray"
+  | "settings"
+  | "terminal";
 
 export const INVALID_NAME = "Names are 1–64 characters on one line";
 

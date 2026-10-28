@@ -33,7 +33,10 @@ export type AccountModelChecks = [
     Equal<Awaited<ReturnType<typeof linkLocalBegin>>, AccountLocalLinkOffer>
   >,
   Expect<Equal<AccountRecord["config"], AccountConfig>>,
-  Expect<Equal<Exclude<LinkSurface, "paired">, AccountLinkSurface>>,
+  // `paired` and `server_tray` start in-process, never through the command.
+  Expect<
+    Equal<Exclude<LinkSurface, "paired" | "server_tray">, AccountLinkSurface>
+  >,
   Expect<
     Equal<
       ReturnType<typeof remoteAccountStatus>,

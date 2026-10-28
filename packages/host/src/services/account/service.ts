@@ -190,6 +190,17 @@ export async function setAccountConfig(
   return accountStatus();
 }
 
+/** The managed tunnel switch, shared by `account set tunnel` and the server tray. */
+export async function switchManagedTunnel(
+  on: boolean,
+  surface: "server_tray" | "terminal",
+): Promise<AccountStatus> {
+  const status = await setAccountConfig({ tunnel: on });
+  capture("account_tunnel_switched", { on, surface });
+
+  return status;
+}
+
 export function listMembers(): AccountMemberInfo[] {
   const record = currentRecord();
   const state = currentState();

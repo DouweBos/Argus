@@ -243,8 +243,9 @@ cannot run in a packaged build.
 
 Instead of pairing each device with a code, a host can join your
 [Argus account](accounts.md), so every device signed in to it can find and
-connect to the host on its current address. Linking happens in the terminal
-`argus-host` runs in (or start it as `argus-host login` over SSH):
+connect to the host on its current address. On `Argus Server.app`, link from
+the menu bar (below); on a bare `argus-host`, link from the terminal it runs in
+(or start it as `argus-host login` over SSH):
 
 ```
 $ argus-host login
@@ -275,8 +276,25 @@ new phone, then type `approve` here and compare the code it shows.
 
 Once linked, the host publishes its addresses (signed with its own account key)
 when a route or the LAN changes and every five minutes, and accepts devices
-the account lists with the grants from `account set ios|desktop`. The tray of
-`Argus Server.app` does not offer linking yet; use `argus-host`.
+the account lists with the grants from `account set ios|desktop`.
+
+### From the menu bar
+
+`Argus Server.app`'s tray item carries the same flow, backed by the same host
+services as the console words:
+
+| menu shows                                | does                                                                                                                                                                                              |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Link to Argus Account…**                | `login`: copies the code to the clipboard and shows it with the `houwert.dev/argus/link` address (**Open** it, or type the code into the Argus app). **Cancel Linking** stops it                  |
+| _Confirm this matches: 482 093_           | the six-digit comparison. **Codes Match — Link** or **Codes Differ — Cancel**; on an empty account, **Make This Computer the First** instead                                                      |
+| _Argus Account: linked as "Mini"_         | `account`: the name it's linked as, whether the account sees it online, and the managed tunnel's state and address                                                                                |
+| **Waiting to join (n)**                   | `approve`: pick who, then **Approve…** shows the code to compare (**Codes Match — Approve** / **Codes Differ — Deny**), or **Deny**. Says _approving here is off_ after `account set approve off` |
+| **Argus Account → Managed Tunnel**        | `account set tunnel on\|off`                                                                                                                                                                      |
+| **Argus Account → This Computer's Name…** | `account set name`, in a small prompt; **Use System Name** goes back to the default                                                                                                               |
+| **Argus Account → Unlink…**               | `logout`, after a confirmation                                                                                                                                                                    |
+
+Who is waiting to join and whether the account sees the server online are
+checked once a minute; everything else updates as it happens.
 
 A linked host with remote access on also runs its own **managed tunnel**, so
 devices reach it from anywhere (see
@@ -337,8 +355,8 @@ The setting is stored in `$ARGUS_HOME/app-settings.json` as
 ## The tray is the whole UI
 
 The server's only surface is the menu-bar item: the same live agent tree the
-desktop shows, plus its version, gateway URL and state directory, the pairing
-and update flows above, and Quit. Menu entries don't navigate anywhere — there is no window
+desktop shows, plus its version, gateway URL and state directory, the account,
+pairing and update flows above, and Quit. Menu entries don't navigate anywhere — there is no window
 to navigate.
 
 Quitting the server does not prompt about running agents the way the desktop

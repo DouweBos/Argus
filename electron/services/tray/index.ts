@@ -9,6 +9,9 @@
  * The icon swaps between two template PNGs (idle vs. active) so macOS keeps
  * tinting it for light/dark menu bars while we still surface "something is
  * happening" at a glance.
+ *
+ * On the headless server it also carries pairing, updates and the account
+ * (`accountTray.ts`), since there is no window for any of them.
  */
 
 import type { AgentSession } from "@argus/host/services/agent/models";
@@ -38,6 +41,11 @@ import {
   setServerUpdateListener,
 } from "../../serverUpdates";
 import { isAgentActive } from "../agentActivity";
+import {
+  accountMenuItems,
+  destroyAccountTray,
+  initAccountTray,
+} from "./accountTray";
 
 let tray: Tray | null = null;
 let pollTimer: NodeJS.Timeout | null = null;
@@ -267,6 +275,8 @@ function buildMenu(): Menu {
 
   template.push({ type: "separator" });
   if (isServerMode()) {
+    template.push(...accountMenuItems());
+    template.push({ type: "separator" });
     for (const item of buildPairingItems()) {
       template.push(item);
     }
@@ -494,6 +504,9 @@ export function initTray(initHooks: TrayHooks): void {
   // a SAS appear while someone is standing at the machine.
   setServerPairingListener(() => refreshTray());
   setServerUpdateListener(() => refreshTray());
+  if (isServerMode()) {
+    initAccountTray(() => refreshTray());
+  }
   tray.setIgnoreDoubleClickEvents(true);
   refreshTray();
 
@@ -510,6 +523,7 @@ export function refreshTrayNow(): void {
 export function destroyTray(): void {
   setServerPairingListener(null);
   setServerUpdateListener(null);
+  destroyAccountTray();
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;

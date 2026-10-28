@@ -23,6 +23,7 @@ import {
   listMembers,
   logout,
   setAccountConfig,
+  switchManagedTunnel,
 } from "../services/account/service";
 import { getApprovalState, getLinkState } from "../services/account/status";
 import { getManagedTunnelState } from "../services/remote/managedTunnel";
@@ -113,7 +114,6 @@ const SWITCHES: Record<string, (on: boolean) => AccountConfigPatch> = {
   tailscale: (on) => ({ publish: { tailscale: on } }),
   cloudflare: (on) => ({ publish: { cloudflare: on } }),
   approve: (on) => ({ hosts_can_approve: on }),
-  tunnel: (on) => ({ tunnel: on }),
 };
 const GRANTS = ["monitor", "control", "admin"] as const;
 
@@ -147,6 +147,12 @@ async function setSetting(
       "terminal",
     );
     print(`This computer is now called "${status.name}".`);
+
+    return;
+  }
+  if (args[0] === "tunnel" && (args[1] === "on" || args[1] === "off")) {
+    await switchManagedTunnel(args[1] === "on", "terminal");
+    print("Saved.");
 
     return;
   }
@@ -187,7 +193,7 @@ async function approve(
 
     return;
   }
-  await approveJoin(request.request_id);
+  await approveJoin(request.request_id, "terminal");
 }
 
 /**
