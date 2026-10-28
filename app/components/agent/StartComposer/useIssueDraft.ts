@@ -19,13 +19,17 @@ function message(err: unknown): string {
 /** Linear issues attached to the agent about to start, and the picker that finds them. */
 export function useIssueDraft(
   hooks: {
+    /** Issues already attached, e.g. restored from a stash. */
+    initial?: LinearIssueContext[];
     onAttached?: (context: LinearIssueContext) => void;
     onRemoved?: (issueId: string) => void;
   } = {},
 ) {
   const { onAttached, onRemoved } = hooks;
   const [connected, setConnected] = useState(false);
-  const [issues, setIssues] = useState<LinearIssueContext[]>([]);
+  const [issues, setIssues] = useState<LinearIssueContext[]>(
+    hooks.initial ?? [],
+  );
   const [adding, setAdding] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [query, setQuery] = useState("");

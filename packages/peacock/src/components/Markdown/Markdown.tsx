@@ -1,4 +1,4 @@
-import { memo, type ReactNode, useMemo } from "react";
+import { memo, type ReactNode, useMemo, useRef } from "react";
 import ReactMarkdown, {
   type Components,
   type Options,
@@ -64,6 +64,11 @@ export interface MarkdownProps {
    * double-styling on surfaces that predate this component).
    */
   baseProse?: boolean;
+  /**
+   * Called before an http(s) link opens. Return true to handle it in-app (the
+   * default navigation is then cancelled), false to let it open as usual.
+   */
+  onLinkClick?: (url: string) => boolean;
 }
 
 /**
@@ -80,7 +85,11 @@ export const Markdown = memo(function Markdown({
   rehypePlugins,
   renderMermaid,
   baseProse = true,
+  onLinkClick,
 }: MarkdownProps) {
+  // Read through a ref so a new handler doesn't remount the rendered tree.
+  const onLinkClickRef = useRef(onLinkClick);
+  onLinkClickRef.current = onLinkClick;
   // Memoized so custom component identities stay stable across re-renders;
   // react-markdown treats a new `pre` function as a new type and would
   // otherwise remount the subtree (tearing down inline mermaid diagrams).
@@ -117,6 +126,12 @@ export const Markdown = memo(function Markdown({
               target="_blank"
               rel="noopener noreferrer"
               {...rest}
+              onClick={(e) => {
+                if (onLinkClickRef.current?.(href)) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              }}
             >
               {children}
             </a>

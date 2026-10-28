@@ -1,12 +1,10 @@
 import type { DesignRef } from "../../../lib/types";
 import { useCallback, useEffect, useState } from "react";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
+import { isFigmaUrl } from "../../../lib/designViewer";
 import { getFigmaDesignRef, listIntegrations } from "../../../lib/ipc";
 import { capture } from "../../../lib/telemetry";
 import { pushError } from "../../../stores/notificationsStore";
-
-const FIGMA_URL =
-  /^https?:\/\/(?:www\.)?figma\.com\/(?:design|file|proto)\/\S+$/;
 
 /** A design the agent should match; `issueId` scopes it to one issue's agent. */
 export interface DraftDesign {
@@ -14,14 +12,15 @@ export interface DraftDesign {
   ref: DesignRef;
 }
 
-export function isFigmaUrl(text: string): boolean {
-  return FIGMA_URL.test(text.trim());
+/** Pasted text that is nothing but a Figma link. */
+function isPastedFigmaLink(text: string): boolean {
+  return isFigmaUrl(text) && !/\s/.test(text.trim());
 }
 
 /** Figma frames attached to the agent about to start. */
-export function useDesignDraft() {
+export function useDesignDraft(initial: DraftDesign[] = []) {
   const [connected, setConnected] = useState(false);
-  const [designs, setDesigns] = useState<DraftDesign[]>([]);
+  const [designs, setDesigns] = useState<DraftDesign[]>(initial);
   const [adding, setAdding] = useState(0);
 
   const refreshConnected = useCallback(() => {
@@ -75,7 +74,7 @@ export function useDesignDraft() {
     (fallback: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void) =>
       (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
         const text = e.clipboardData.getData("text/plain").trim();
-        if (connected && isFigmaUrl(text)) {
+        if (connected && isPastedFigmaLink(text)) {
           e.preventDefault();
           add(text);
 

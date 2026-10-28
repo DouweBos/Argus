@@ -8,6 +8,7 @@ import {
   Markdown,
   Spinner,
 } from "@argus/peacock";
+import { figmaLinkHandler, isFigmaUrl } from "../../../lib/designViewer";
 import { openExternalUrl } from "../../../lib/ipc";
 import {
   loadLinearIssueDetail,
@@ -16,6 +17,8 @@ import {
 import { IssueComments } from "./IssueComments";
 import styles from "./IssueDetail.module.css";
 import { IssueProperties } from "./IssueProperties";
+
+const openFigmaLink = figmaLinkHandler("issue");
 
 interface IssueDetailDialogProps {
   issueRef: string;
@@ -80,6 +83,7 @@ export function IssueDetailDialog({
                 <Markdown
                   className={styles.description}
                   text={issue.description}
+                  onLinkClick={openFigmaLink}
                 />
               ) : (
                 <p className={styles.muted}>No description.</p>
@@ -106,9 +110,17 @@ export function IssueDetailDialog({
                       key={a.url}
                       className={styles.link}
                       type="button"
-                      onClick={() => openExternalUrl(a.url).catch(() => {})}
+                      onClick={() => {
+                        if (!openFigmaLink(a.url)) {
+                          openExternalUrl(a.url).catch(() => {});
+                        }
+                      }}
                     >
-                      <Icons.ArrowUpRightIcon size={11} />
+                      {isFigmaUrl(a.url) ? (
+                        <Icons.FigmaIcon size={11} />
+                      ) : (
+                        <Icons.ArrowUpRightIcon size={11} />
+                      )}
                       <span>{a.title}</span>
                       {a.subtitle && (
                         <span className={styles.muted}>{a.subtitle}</span>

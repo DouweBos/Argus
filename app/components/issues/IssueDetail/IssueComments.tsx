@@ -1,9 +1,12 @@
 import type { LinearIssueDetail } from "../../../lib/types";
 import { useState } from "react";
 import { Button, Markdown, TextArea } from "@argus/peacock";
+import { figmaLinkHandler } from "../../../lib/designViewer";
 import { formatIssueDate } from "../../../lib/issueBoard";
 import { postLinearComment } from "../../../stores/linearIssuesStore";
 import styles from "./IssueDetail.module.css";
+
+const openFigmaLink = figmaLinkHandler("issue");
 
 /** The thread, oldest first, with a box to add to it as yourself. */
 export function IssueComments({ issue }: { issue: LinearIssueDetail }) {
@@ -37,7 +40,7 @@ export function IssueComments({ issue }: { issue: LinearIssueDetail }) {
               {formatIssueDate(comment.createdAt)}
             </span>
           </div>
-          <Markdown text={comment.body} />
+          <Markdown text={comment.body} onLinkClick={openFigmaLink} />
         </div>
       ))}
       <div className={styles.composer}>

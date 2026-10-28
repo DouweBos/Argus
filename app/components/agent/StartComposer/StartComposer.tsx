@@ -1,5 +1,5 @@
 import type { LinearIssueContext } from "../../../lib/types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   FileMentionPicker,
@@ -8,6 +8,7 @@ import {
   SlashCommandList,
   TextArea,
 } from "@argus/peacock";
+import { openDesignViewer } from "../../../lib/designViewer";
 import { ACCEPTED_IMAGE_TYPES } from "../../../lib/imageAttachments";
 import { startInNewWorktree, startInSession } from "../../../lib/startAgent";
 import { capture } from "../../../lib/telemetry";
@@ -27,6 +28,11 @@ import { DesignChips } from "./DesignChips";
 import { IssueChips } from "./IssueChips";
 import styles from "./StartComposer.module.css";
 import { BaseBranchChip, WorkspaceChip } from "./WorkspaceChips";
+import {
+  clearComposerStash,
+  peekComposerStash,
+  stashComposer,
+} from "./composerStash";
 import { useAgentOptions } from "./useAgentOptions";
 import { useBaseBranches } from "./useBaseBranches";
 import { useDesignDraft } from "./useDesignDraft";
@@ -60,7 +66,10 @@ export function StartComposer({
     sessions.find((s) => s.repo_root === repoRoot && s.kind === "project_root")
       ?.branch ?? null;
 
-  const [prompt, setPrompt] = useState("");
+  // A draft stashed when the user stepped out to the design viewer.
+  const restored = useMemo(() => peekComposerStash(sessionId), [sessionId]);
+  useEffect(() => clearComposerStash(sessionId), [sessionId]);
+  const [prompt, setPrompt] = useState(restored?.prompt ?? "");
   const defaultWorkspace = useStartWorkspace();
   // A draft from "New session" overrides the default; picking overrides both.
   const [draftWorkspace, setDraftWorkspace] = useState<StartWorkspace | null>(
@@ -80,9 +89,10 @@ export function StartComposer({
 
   const options = useAgentOptions(sessionId);
   const images = useImageDraft(focusPrompt);
-  const designDraft = useDesignDraft();
+  const designDraft = useDesignDraft(restored?.designs);
   const { add: addDesign, removeForIssue } = designDraft;
   const issueDraft = useIssueDraft({
+    initial: restored?.issues,
     onAttached: useCallback(
       (context: LinearIssueContext) =>
         context.designUrls.forEach((url) => addDesign(url, context.issue.id)),
@@ -185,6 +195,15 @@ export function StartComposer({
       e.preventDefault();
       submit();
     }
+  };
+
+  const openDesign = (url: string) => {
+    stashComposer(sessionId, {
+      designs: designDraft.designs,
+      issues: issueDraft.issues,
+      prompt,
+    });
+    openDesignViewer(url, "composer", sessionId);
   };
 
   const handleDrop = useFileDrop(sessionId, images.add, promptRef, setPrompt);
@@ -291,7 +310,7 @@ export function StartComposer({
             />
           )}
           <IssueChips draft={issueDraft} />
-          <DesignChips draft={designDraft} />
+          <DesignChips draft={designDraft} onOpen={openDesign} />
           <AgentOptionChips
             linkedProjects={options.linkedProjects}
             model={options.model}

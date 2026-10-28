@@ -46,7 +46,11 @@ export function Chip({
         <button
           type="button"
           className={styles.close}
-          onClick={onDismiss}
+          onClick={(e) => {
+            // A dismissable chip may be clickable too; removing it isn't a click on it.
+            e.stopPropagation();
+            onDismiss(e);
+          }}
           aria-label="Remove"
         >
           <CloseIcon size={10} />
