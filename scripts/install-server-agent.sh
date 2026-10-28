@@ -10,6 +10,11 @@
 
 set -euo pipefail
 
+cat >&2 <<'NOTE'
+Deprecated: this is for the old (Electron) Argus Server. The native Argus
+Server starts itself at login: use "Open at Login" in its menu bar item instead.
+NOTE
+
 LABEL="dev.houwert.argus.server"
 PLIST_DEST="$HOME/Library/LaunchAgents/$LABEL.plist"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

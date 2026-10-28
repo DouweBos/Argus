@@ -179,6 +179,9 @@ cp -R "release-server/mac-arm64/Argus Server.app" /Applications/
 pnpm server:install-agent                        # or: … /path/to/Argus Server.app
 ```
 
+This is for the old Electron build only; the native Argus Server starts itself
+at login with **Open at Login** in its menu, and the script says so.
+
 That renders `build/dev.houwert.argus.server.plist` into
 `~/Library/LaunchAgents/` and bootstraps it into the GUI domain. It starts at
 login and restarts on crash. Logs land in `~/.argus-server/launchd.{out,err}.log`
@@ -311,46 +314,52 @@ A mini nobody sits at still needs new builds, and the install command is
 deliberately host-tier — a client must never restart a host out from under
 someone else's running agents. So updating happens in the tray, next to pairing.
 
-The menu shows where the update stands:
+The next version of this server is the native **Argus Server** app, so updating
+hands the machine over to it. The tray checks the native app's feed (on the
+channel picked in `updater_channel`) shortly after launch and then hourly:
 
-| menu says                  | meaning                                                       |
-| -------------------------- | ------------------------------------------------------------- |
-| **Check for Updates…**     | nothing known yet, or the last check came back clean          |
-| _Checking for updates…_    | a feed check is in flight                                     |
-| _Up to date_               | the running version is the newest on the channel              |
-| _Update available: 1.2.3_  | pick **Download Update** — downloads never start on their own |
-| _Downloading update — 42%_ | progress; the menu updates live                               |
-| _Update ready: 1.2.3_      | pick **Restart and Install**                                  |
-| _Update failed: …_         | the feed error, shortened; **Check for Updates…** retries     |
+| menu says                           | meaning                                                       |
+| ----------------------------------- | ------------------------------------------------------------- |
+| **Check for Updates…**              | nothing known yet                                             |
+| _Checking for updates…_             | a feed check is in flight                                     |
+| _Up to date_                        | no native release on the channel yet                          |
+| _New Argus Server available: 1.2.3_ | pick **Install New Argus Server**                             |
+| _Installing Argus Server 1.2.3…_    | downloading and checking it; the server quits once it's ready |
+| _Update failed: …_                  | nothing was changed; **Check for Updates…** retries           |
 
-The running version is the first line of the menu, so only the new version is
-named here.
+Installing downloads the native app into `~/.argus-server/migrated/`, checks it
+is signed by Argus and is the native build, then quits. A small script waits
+for the old process to exit, moves the old app to
+`~/.argus-server/migrated/Argus Server (Electron).app`, puts the native one in
+its place and opens it (its log is `migrated/handoff.log`). If the copy fails,
+the old app goes back and is reopened. Everything in `~/.argus-server` — paired
+devices, sessions, the account — carries over.
 
-Checks also run in the background once an hour, the same as the desktop. That is
-already far tighter than a machine that runs for weeks needs, so the server adds
-no second timer.
+Once the native Argus Server runs on this home, the old one quits at launch with
+a log line instead of competing for it.
 
 ### Restarting is refused while agents are running
 
-Installing an update quits the process, which kills every agent on the machine.
-So **Restart and Install** is replaced by a disabled `3 agents running — cannot
-restart` whenever anything is working — including an agent whose prompt is still
-in flight between tool calls. Stop or wait out the agents and the item comes
-back. It never restarts silently, and the count tells you what it is waiting on.
+Installing quits the process, which kills every agent on the machine. So
+**Install New Argus Server** is replaced by a disabled `3 agents running —
+cannot restart` whenever anything is working — including an agent whose prompt
+is still in flight between tool calls. Stop or wait out the agents and the item
+comes back. It never restarts silently, and the count tells you what it is
+waiting on.
 
 ### Install automatically when idle
 
 **Install Automatically When Idle** is a checkbox in the same section, **off by
-default**. With it on, a downloaded update installs itself the moment the last
-agent finishes — the same guard, just without a human to click it. The server
-re-checks for idleness every minute, so an unattended restart lands within about
-a minute of the fleet going quiet.
+default**. With it on, an available native release installs itself the moment
+the last agent finishes — the same guard, just without a human to click it. The
+server re-checks for idleness every minute, so an unattended hand-off lands
+within about a minute of the fleet going quiet.
 
-Off by default because a mini rebooting unprompted is a surprise; turn it on for
-a machine you want to stay current without visiting.
+Off by default because a mini restarting unprompted is a surprise; turn it on
+for a machine you want to stay current without visiting.
 
 The setting is stored in `$ARGUS_HOME/app-settings.json` as
-`server_auto_install_updates`.
+`server_auto_install_updates`, which the native app reads too.
 
 ## The tray is the whole UI
 
