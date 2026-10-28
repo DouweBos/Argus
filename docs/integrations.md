@@ -24,6 +24,16 @@ If Linear later rejects it (because it was revoked, for example), the
 integration is marked **Signed out**. Reconnect it from the same screen.
 Disconnecting deletes the saved credential.
 
+## Issues
+
+With Linear connected, the sidebar has an **Issues** entry: your open
+assigned issues, grouped into In progress, Todo and Backlog. An issue an
+agent is already working on shows **Open session**. A session counts as
+working on it when it was started from the issue, or its branch is the
+issue's Linear branch name. Any other issue shows **Start agent**, which
+opens the start composer of the project picked at the top with the issue
+attached. The list refreshes every five minutes, or with **Refresh**.
+
 ## Starting from an issue
 
 With Linear connected, the start composer has an **Issue** chip. Open it to

@@ -9,6 +9,7 @@ const VIEW_TITLES: Record<string, string> = {
   devices: "Devices",
   home: "Home",
   inbox: "Inbox",
+  issues: "Issues",
   notifications: "Notifications",
   "pull-request-detail": "Pull requests",
   "pull-requests": "Pull requests",

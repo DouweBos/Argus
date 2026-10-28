@@ -14,6 +14,7 @@ export type CenterView =
   | "devices"
   | "home"
   | "inbox"
+  | "issues"
   | "notifications"
   | "pull-request-detail"
   | "pull-requests"
