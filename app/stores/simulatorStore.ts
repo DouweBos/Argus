@@ -530,6 +530,28 @@ export function useActiveDeviceKey(
   });
 }
 
+/**
+ * The session's device to compare a design against: the shown platform's
+ * pick, else whichever simulator or emulator the session has.
+ */
+export function useSessionDesignDevice(sessionId: string | null): {
+  deviceKey: string | null;
+  platform: "android" | "ios";
+} {
+  return useSimulatorStore(
+    useShallow((s) => {
+      const key = sessionId ?? "__global__";
+      const ios = s.selectedUdidBySession[key] ?? null;
+      const android = s.selectedAndroidBySession[key] ?? null;
+      if (android && (s.platform === "android" || !ios)) {
+        return { platform: "android" as const, deviceKey: android };
+      }
+
+      return { platform: "ios" as const, deviceKey: ios };
+    }),
+  );
+}
+
 /** Run `cb` on every change to the runtime selection, outside React. */
 export const subscribeSimulator = (cb: () => void): (() => void) =>
   simulatorStore.subscribe(cb);

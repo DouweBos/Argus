@@ -92,6 +92,8 @@ export * from "./components/HuddleChat/HuddleChat";
 export * from "./components/IconBadge/IconBadge";
 export * from "./components/ImageAttachmentStrip/ImageAttachmentStrip";
 export * from "./components/ImageDiff/ImageDiff";
+export * from "./components/ZoomPanImage/ZoomPanImage";
+export * from "./components/DesignLayerList/DesignLayerList";
 export * from "./components/InboxItemRow/InboxItemRow";
 export * from "./components/IssueBoard/IssueBoard";
 export * from "./components/IssueCard/IssueCard";

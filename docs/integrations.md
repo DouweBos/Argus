@@ -128,6 +128,28 @@ Pull requests opened from Argus end with the ticket and the design frames.
 The Linear comment Argus posts shows each design next to the implementation
 screenshot.
 
+## Design viewer
+
+Figma links open inside Argus instead of the browser: links in an issue's
+description, comments and Links, the design chips in the start composer, and
+the chips next to a session's name in the title bar and on its home. The
+viewer shows the frame — fit to the window, zoom with the controls, pinch or
+⌘-scroll, drag to pan — with the file's name and when it was last edited, and
+**Open in Figma** for the real thing. Beside it:
+
+- **Layers** — the frame's layers, indented by depth, with their size, fill
+  color, font and text.
+- **Comments** — what designers left on the frame.
+- **Pages** — every page of the file and its frames; click one to view it.
+
+Opened from a session, the viewer warns when the design has changed since the
+session started, and **Compare with simulator** renders the frame at the
+session's device's pixel size and diffs it against the screen: the share of
+pixels that differ, and the design and screenshot under a slider, side by
+side, or as a heatmap. The runtime panel's **Design** mode shows the same
+comparison, with **Open in viewer**. The session's issue chip opens the issue
+over the Issues board; **Open in Linear** is in there.
+
 ## Automations
 
 An automation that watches Linear fetches your assigned open issues through

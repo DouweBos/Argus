@@ -11,6 +11,7 @@ import { appNavigate, getCurrentRoute } from "../lib/router";
 export type CenterView =
   | "agents"
   | "automations"
+  | "design"
   | "devices"
   | "home"
   | "inbox"

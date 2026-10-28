@@ -18,6 +18,7 @@
  * - `/automations/quick/runs/:runId`             → a single ad-hoc run
  * - `/automations/:automationId`                 → automation config + run history
  * - `/automations/:automationId/runs/:runId`     → a single automation run
+ * - `/design?url=<figma url>[&session=<id>]`     → design viewer for a Figma frame
  * - `/devices`                                   → devices screen
  * - `/devices/:platform/:deviceKey`              → devices screen with device dialog open
  * - `/inbox`                                     → the briefing: what Argus wants you to decide
@@ -53,12 +54,18 @@ import type { UsageRange } from "./types";
 import { useEffect } from "react";
 import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
+import {
+  type DesignRouteFields,
+  designPathname,
+  designRouteFields,
+} from "./routerDesign";
 import { capturePageview } from "./telemetry";
 import { LOCAL_HOST_ID, type HostId } from "./transport/hostId";
 
 export type AppView =
   | "agents"
   | "automations"
+  | "design"
   | "devices"
   | "home"
   | "inbox"
@@ -129,7 +136,7 @@ export interface PullRequestRef {
   repo: string;
 }
 
-export interface ParsedRoute {
+export interface ParsedRoute extends DesignRouteFields {
   /** Which automation is open. Only meaningful when view === "automations". */
   automationId: string | null;
   /**
@@ -212,10 +219,19 @@ export function parseRoute(url: string): ParsedRoute {
   return {
     ...route,
     ...issueRouteFields(pathname),
+    ...designRouteFields(pathname, params),
     hostId: hostId && hostId.length > 0 ? hostId : LOCAL_HOST_ID,
     usageRange: usageRangeFor(route.usageTab, params.get("range")),
   };
 }
+
+/** Fields `parsePathname` leaves to the query and sub-route helpers. */
+type NonPathFields =
+  | keyof DesignRouteFields
+  | "hostId"
+  | "issueRef"
+  | "issueScope"
+  | "usageRange";
 
 function usageRangeFor(
   tab: UsageTab | null,
@@ -228,9 +244,7 @@ function usageRangeFor(
   return VALID_USAGE_RANGES.find((r) => r === raw) ?? DEFAULT_USAGE_RANGE;
 }
 
-function parsePathname(
-  pathname: string,
-): Omit<ParsedRoute, "hostId" | "issueRef" | "issueScope" | "usageRange"> {
+function parsePathname(pathname: string): Omit<ParsedRoute, NonPathFields> {
   const clean = pathname.replace(/\/+$/, "") || "/";
   const segments = clean.split("/").filter(Boolean);
 
@@ -341,6 +355,7 @@ function parsePathname(
 
   if (
     segments[0] === "agents" ||
+    segments[0] === "design" ||
     segments[0] === "devices" ||
     segments[0] === "issues" ||
     segments[0] === "notifications" ||
@@ -361,9 +376,7 @@ function decodeSegment(segment: string): string {
   }
 }
 
-function emptyRoute(
-  view: AppView,
-): Omit<ParsedRoute, "hostId" | "issueRef" | "issueScope" | "usageRange"> {
+function emptyRoute(view: AppView): Omit<ParsedRoute, NonPathFields> {
   return {
     view,
     automationId: null,
@@ -406,6 +419,8 @@ export function routePattern(pathname: string): string {
       return route.proposalId ? "/inbox/proposals/:proposalId" : "/inbox";
     case "usage":
       return usagePathname(route.usageTab);
+    case "design":
+      return "/design";
     case "issues": {
       const { issueRef, issueScope } = route;
       const base =
@@ -495,6 +510,9 @@ function routePathname(route: Partial<ParsedRoute>): string {
     return range && range !== DEFAULT_USAGE_RANGE
       ? `${path}?range=${range}`
       : path;
+  }
+  if (route.view === "design") {
+    return designPathname(route);
   }
   if (route.view === "issues") {
     const scope = route.issueScope ?? "assigned";

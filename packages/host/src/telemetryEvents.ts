@@ -170,6 +170,9 @@ export interface EventMap {
     source: "agent" | "app";
   };
   design_ref_added: { from: "issue" | "paste" };
+  design_viewer_opened: {
+    source: "composer" | "issue" | "runtime" | "session";
+  };
   device_host_added: { has_identity_file: boolean; has_port: boolean };
   device_host_removed: undefined;
   device_name_changed: {

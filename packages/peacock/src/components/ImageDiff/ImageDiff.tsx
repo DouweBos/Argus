@@ -5,6 +5,7 @@
  *   "slider"  — overlay two images with a draggable reveal slider (default)
  *   "side"    — side-by-side panels
  *   "deleted" — single tombstone thumbnail for removed images
+ *   "diff"    — a caller-rendered heatmap of where the two differ, when given
  *
  * All content stays inside this component; no inline SVG in app/.
  */
@@ -45,9 +46,13 @@ export interface ImageDiffProps {
   /** Pane label for `before`; defaults to "Before". */
   beforeLabel?: string;
   beforeMeta?: ImageMeta;
+  /** Data URL of a precomputed heatmap; adds a third "Diff" mode. */
+  diff?: string;
+  /** Mode label for `diff`; defaults to "Diff". */
+  diffLabel?: string;
 }
 
-type ViewMode = "side" | "slider";
+type ViewMode = "diff" | "side" | "slider";
 
 function formatBytes(n: number): string {
   if (n < 1024) {
@@ -263,12 +268,15 @@ export function ImageDiff({
   afterLabel = "After",
   beforeMeta,
   afterMeta,
+  diff,
+  diffLabel = "Diff",
 }: ImageDiffProps): ReactNode {
   const modeSwitcherId = useId();
   const hasSlider = !!before && !!after;
-  const [viewMode, setViewMode] = useState<ViewMode>(
+  const [pickedMode, setViewMode] = useState<ViewMode>(
     hasSlider ? "slider" : "side",
   );
+  const viewMode = pickedMode === "diff" && !diff ? "slider" : pickedMode;
 
   const isAdded = !before && !!after;
   const isDeleted = !!before && !after;
@@ -294,12 +302,28 @@ export function ImageDiff({
           >
             Side by side
           </button>
+          {diff && (
+            <button
+              type="button"
+              className={`${styles.modeBtn}${viewMode === "diff" ? " " + styles.modeBtnActive : ""}`}
+              onClick={() => setViewMode("diff")}
+              aria-pressed={viewMode === "diff"}
+            >
+              {diffLabel}
+            </button>
+          )}
         </div>
       )}
 
       {/* Slider mode */}
       {hasSlider && viewMode === "slider" && (
         <SliderView before={before} after={after} />
+      )}
+
+      {hasSlider && viewMode === "diff" && diff && (
+        <div className={styles.imageWrap}>
+          <img alt={diffLabel} className={styles.image} src={diff} />
+        </div>
       )}
 
       {/* Side-by-side or single-panel (added / deleted) */}

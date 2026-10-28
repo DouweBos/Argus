@@ -253,6 +253,7 @@ Linear and Figma connections. No account names, emails, workspaces or keys.
 | `linear_issue_updated`       | main     | An issue's status or priority was changed, or a comment posted, from Argus            | `field: "status" \| "priority" \| "comment"`                                                                                                                      |
 | `design_ref_added`           | renderer | A Figma frame was attached in the start composer                                      | `from: "issue" \| "paste"` — linked from an attached Linear issue, or pasted                                                                                      |
 | `design_compare_opened`      | renderer | The runtime panel switched to Design mode                                             | —                                                                                                                                                                 |
+| `design_viewer_opened`       | renderer | A Figma frame was opened in the design viewer                                         | `source: "issue" \| "session" \| "composer" \| "runtime"` — an issue's link, a session's design chip, a start-composer chip, or the runtime Design mode           |
 | `design_compared`            | main     | A Figma frame was diffed against a device screenshot                                  | `source: "agent" \| "app"` — an agent's `design_compare` tool or the Design view; `diff_bucket: "<2%" \| "<10%" \| "<30%" \| ">=30%"` — share of differing pixels |
 
 ## Accounts
