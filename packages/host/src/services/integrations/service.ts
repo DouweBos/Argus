@@ -5,6 +5,7 @@
  */
 
 import type {
+  IntegrationAccount,
   IntegrationId,
   IntegrationStatus,
   LinearIssue,
@@ -23,8 +24,13 @@ import {
   readSecret,
   saveIntegration,
 } from "./credentials";
+import { FigmaApi, FigmaAuthError } from "./figma/client";
 import { LinearApi, LinearAuthError } from "./linear/client";
-import { issueContext, issueImageUrls } from "./linear/context";
+import {
+  issueContext,
+  issueDesignUrls,
+  issueImageUrls,
+} from "./linear/context";
 import { parseLinearRef } from "./linear/refs";
 
 export const INTEGRATION_STATUS_CHANGED = "integration_status_changed";
@@ -51,29 +57,46 @@ function announce(id: IntegrationId): void {
   emitHostEvent(INTEGRATION_STATUS_CHANGED, integrationStatus(id));
 }
 
+const SERVICE_NAMES: Record<IntegrationId, string> = {
+  figma: "Figma",
+  linear: "Linear",
+};
+
+/** Who the key signs in as; throws a sentence when the service rejects it. */
+async function accountForKey(
+  id: IntegrationId,
+  secret: string,
+): Promise<IntegrationAccount> {
+  try {
+    return id === "linear"
+      ? await new LinearApi({ method: "key", secret }).account()
+      : await new FigmaApi(secret).account();
+  } catch (err) {
+    if (err instanceof LinearAuthError || err instanceof FigmaAuthError) {
+      throw `${SERVICE_NAMES[id]} didn't accept that key.`;
+    }
+    throw err instanceof Error ? err.message : String(err);
+  }
+}
+
 export async function connectWithKey(
   id: IntegrationId,
   key: string,
 ): Promise<IntegrationStatus> {
   const secret = key.trim();
   if (!secret) {
-    throw "Paste an API key first.";
-  }
-  if (id !== "linear") {
-    throw `Connecting ${id} isn't supported yet.`;
+    throw "Paste a key first.";
   }
   let account;
   try {
-    account = await new LinearApi({ method: "key", secret }).account();
+    account = await accountForKey(id, secret);
   } catch (err) {
     capture("integration_connected", {
       method: "key",
       service: id,
       success: false,
     });
-    throw err instanceof LinearAuthError
-      ? "Linear didn't accept that API key."
-      : String(err instanceof Error ? err.message : err);
+    throw err;
   }
   saveIntegration(id, { method: "key", secret, account });
   capture("integration_connected", {
@@ -84,6 +107,15 @@ export async function connectWithKey(
   announce(id);
 
   return integrationStatus(id);
+}
+
+/** The service rejected a saved credential: flag it once and tell every window. */
+export function credentialRejected(id: IntegrationId): string {
+  markNeedsReauth(id);
+  capture("integration_reauth_needed", { service: id });
+  announce(id);
+
+  return `${SERVICE_NAMES[id]} rejected the saved credential. Reconnect it in Settings → Integrations.`;
 }
 
 export function disconnect(id: IntegrationId): void {
@@ -111,10 +143,7 @@ async function withLinear<T>(fn: (api: LinearApi) => Promise<T>): Promise<T> {
     return await fn(api);
   } catch (err) {
     if (err instanceof LinearAuthError) {
-      markNeedsReauth("linear");
-      capture("integration_reauth_needed", { service: "linear" });
-      announce("linear");
-      throw "Linear rejected the saved credential. Reconnect it in Settings → Integrations.";
+      throw credentialRejected("linear");
     }
     throw err instanceof Error ? err.message : err;
   }
@@ -191,6 +220,7 @@ export function linearIssueContext(
       issue,
       context: issueContext(issue),
       images: images.filter((i) => i !== null),
+      designUrls: issueDesignUrls(issue),
     };
   });
 }

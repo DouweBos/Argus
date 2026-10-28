@@ -1,5 +1,7 @@
 import { z } from "zod";
 import {
+  DesignRef,
+  FigmaFrame,
   IntegrationId,
   IntegrationStatus,
   LinearIssue,
@@ -45,5 +47,26 @@ export const INTEGRATION_COMMANDS = {
     tier: "admin",
     params: z.object({ ref: z.string() }),
     result: LinearIssueContext.nullable(),
+  },
+  /** Null when the URL isn't a Figma link. */
+  figma_design_ref: {
+    tier: "admin",
+    params: z.object({ url: z.string() }),
+    result: DesignRef.nullable(),
+  },
+  /** The frame rendered to PNG. Cached on the host. */
+  figma_frame: {
+    tier: "admin",
+    params: z.object({ url: z.string() }),
+    result: FigmaFrame.nullable(),
+  },
+  /** Base64 PNG of a local simulator or emulator; null when it can't be taken. */
+  device_screenshot: {
+    tier: "admin",
+    params: z.object({
+      platform: z.enum(["android", "ios"]),
+      deviceKey: z.string(),
+    }),
+    result: z.string().nullable(),
   },
 } as const satisfies Record<string, CommandSpec>;

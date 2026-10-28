@@ -24,6 +24,7 @@ import {
   renameSessionBranch,
   retrySessionSetup,
 } from "../services/session/manager";
+import { setSessionDesignRefs } from "../services/session/sessionOps";
 
 export function registerSessionCommands(): void {
   defineTypedCommand("add_repo_root", (p) => addRepoRoot(p.path));
@@ -49,7 +50,7 @@ export function registerSessionCommands(): void {
       p.useExistingBranch,
       p.baseBranch,
       p.llm,
-      { linkedIssue: p.linkedIssue },
+      { designRefs: p.designRefs, linkedIssue: p.linkedIssue },
     ),
   );
   defineTypedCommand("create_project_root_session", (p) =>
@@ -86,6 +87,9 @@ export function registerSessionCommands(): void {
       p.forkTimestampMs,
       p.forkTurnNumber,
     ),
+  );
+  defineTypedCommand("set_session_design_refs", (p) =>
+    setSessionDesignRefs(p.sessionId, p.refs),
   );
   defineTypedCommand("set_session_claude_account", (p) =>
     pinSessionClaudeAccount(

@@ -19,6 +19,16 @@ export function issueImageUrls(issue: LinearIssueDetail): string[] {
   return [...new Set(urls)];
 }
 
+const FIGMA_LINK =
+  /https:\/\/(?:www\.)?figma\.com\/(?:design|file|proto)\/[^\s)>\]]+/g;
+
+/** figma.com links in the issue body and comments, deduped. */
+export function issueDesignUrls(issue: LinearIssueDetail): string[] {
+  const texts = [issue.description, ...issue.comments.map((c) => c.body)];
+
+  return [...new Set(texts.flatMap((t) => t.match(FIGMA_LINK) ?? []))];
+}
+
 export function issueContext(issue: LinearIssueDetail): string {
   const lines = [
     `## Linear issue ${issue.identifier}: ${issue.title}`,

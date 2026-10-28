@@ -85,7 +85,7 @@ function loadBrowserPreset(): string {
 }
 
 export type Platform = "android" | "ios" | "video" | "web";
-export type RuntimeMode = "inspect" | "simulate";
+export type RuntimeMode = "design" | "inspect" | "simulate";
 
 interface SimulatorStoreData {
   androidBooting: boolean;

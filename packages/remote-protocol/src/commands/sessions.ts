@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { LinkedIssue } from "../models/integrations";
+import { DesignRef, LinkedIssue } from "../models/integrations";
 import {
   CliProjectImportSource,
   CliProjectScan,
@@ -71,6 +71,7 @@ export const SESSION_COMMANDS = {
         .optional(),
       /** Names the session after the issue and moves the issue to started. */
       linkedIssue: LinkedIssue.optional(),
+      designRefs: z.array(DesignRef).optional(),
     }),
     result: Session,
   },
@@ -135,6 +136,12 @@ export const SESSION_COMMANDS = {
       agentId: z.string().nullish(),
     }),
     result: z.null(),
+  },
+  /** Figma frames the session's work should match; empty clears them. */
+  set_session_design_refs: {
+    tier: "admin",
+    params: z.object({ sessionId: z.string(), refs: z.array(DesignRef) }),
+    result: Void,
   },
   get_session: { tier: "admin", params: SessionId, result: Session.nullable() },
 } as const satisfies Record<string, CommandSpec>;

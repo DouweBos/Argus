@@ -243,12 +243,14 @@ initial attempt from a `continue` after the user resolved conflicts.
 
 Linear and Figma connections. No account names, emails, workspaces or keys.
 
-| Event                        | Source | When                                                                                  | Extra props                                                           |
-| ---------------------------- | ------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `integration_connected`      | main   | A Linear or Figma connection attempt finished                                         | `service: "linear" \| "figma"`, `method: "key" \| "oauth"`, `success` |
-| `integration_reauth_needed`  | main   | The service rejected a saved credential and it needs reconnecting                     | `service: "linear" \| "figma"`                                        |
-| `session_started_from_issue` | main   | A session was created from a tracker issue (one per issue when several start at once) | `source: "linear"`                                                    |
-| `issue_report_posted`        | main   | Argus commented on a session's Linear issue after a pull request or merge             | `trigger: "pr" \| "merge"`, `has_screenshots`                         |
+| Event                        | Source   | When                                                                                  | Extra props                                                                  |
+| ---------------------------- | -------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `integration_connected`      | main     | A Linear or Figma connection attempt finished                                         | `service: "linear" \| "figma"`, `method: "key" \| "oauth"`, `success`        |
+| `integration_reauth_needed`  | main     | The service rejected a saved credential and it needs reconnecting                     | `service: "linear" \| "figma"`                                               |
+| `session_started_from_issue` | main     | A session was created from a tracker issue (one per issue when several start at once) | `source: "linear"`                                                           |
+| `issue_report_posted`        | main     | Argus commented on a session's Linear issue after a pull request or merge             | `trigger: "pr" \| "merge"`, `has_screenshots`                                |
+| `design_ref_added`           | renderer | A Figma frame was attached in the start composer                                      | `from: "issue" \| "paste"` — linked from an attached Linear issue, or pasted |
+| `design_compare_opened`      | renderer | The runtime panel switched to Design mode                                             | —                                                                            |
 
 ## Accounts
 

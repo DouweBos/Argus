@@ -1,11 +1,12 @@
 /**
- * Linear for agents, through Argus's own sign-in — so an agent never depends
- * on a separately configured Linear MCP server staying signed in. Only
- * advertised while Linear is connected.
+ * Linear and Figma for agents, through Argus's own sign-in — so an agent never
+ * depends on a separately configured MCP server staying signed in. Each set is
+ * only advertised while its service is connected.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { figmaApi, figmaDesignContext } from "../integrations/figma/service";
 import {
   commentOnLinearIssue,
   linearApi,
@@ -22,10 +23,62 @@ function failure(err: unknown) {
 }
 
 export function registerIntegrationTools(server: McpServer): void {
-  if (!linearApi()) {
-    return;
+  if (linearApi()) {
+    registerLinearTools(server);
   }
+  if (figmaApi()) {
+    registerFigmaTools(server);
+  }
+}
 
+function registerFigmaTools(server: McpServer): void {
+  server.tool(
+    "figma_get_frame",
+    "Get a Figma frame to build or check UI against: the rendered image, its layer tree trimmed to layout, sizes, colors and text, and open designer comments on it. Compare a simulator screenshot to the image before calling UI work done.",
+    {
+      url: z
+        .string()
+        .describe(
+          "A figma.com design link, ideally with ?node-id= for one frame.",
+        ),
+    },
+    async ({ url }) => {
+      try {
+        const design = await figmaDesignContext(url);
+        if (!design) {
+          return text(`"${url}" isn't a Figma frame Argus can read.`, true);
+        }
+        const notes = design.comments.map((c) => `- ${c.author}: ${c.body}`);
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: [
+                `# ${design.frame.name} (${design.frame.width}×${design.frame.height} pt)`,
+                ...(notes.length > 0
+                  ? ["", "## Designer comments", ...notes]
+                  : []),
+                "",
+                "## Layers",
+                JSON.stringify(design.node, null, 1),
+              ].join("\n"),
+            },
+            {
+              type: "image" as const,
+              data: design.frame.image,
+              mimeType: "image/png",
+            },
+          ],
+        };
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+}
+
+function registerLinearTools(server: McpServer): void {
   server.tool(
     "linear_get_issue",
     "Read a Linear issue in full: description, state, labels, comments, and the screenshots attached to it. Accepts an identifier (ENG-123) or an issue URL.",

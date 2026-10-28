@@ -5208,6 +5208,35 @@ extension ArgusProtocol {
     }
   }
 
+  public struct DesignRef: Codable, Sendable {
+    public var url: String
+    public var fileKey: String
+    public var nodeId: String?
+    public var name: String
+
+    enum CodingKeys: String, CodingKey {
+      case url = "url"
+      case fileKey = "fileKey"
+      case nodeId = "nodeId"
+      case name = "name"
+    }
+
+    public init(url: String, fileKey: String, nodeId: String? = nil, name: String) {
+      self.url = url
+      self.fileKey = fileKey
+      self.nodeId = nodeId
+      self.name = name
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(url, forKey: .url)
+      try c.encode(fileKey, forKey: .fileKey)
+      try c.encode(nodeId, forKey: .nodeId)
+      try c.encode(name, forKey: .name)
+    }
+  }
+
   public struct DetectedSignal: Codable, Sendable {
     public var detail: String?
     public var kind: DetectedSignalKind
@@ -6087,6 +6116,35 @@ extension ArgusProtocol {
     public static let settings = ExpoCredentialSource(rawValue: "settings")
     public static let env = ExpoCredentialSource(rawValue: "env")
     public static let easLogin = ExpoCredentialSource(rawValue: "eas-login")
+  }
+
+  public struct FigmaFrame: Codable, Sendable {
+    public var name: String
+    public var image: String
+    public var width: Double
+    public var height: Double
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case image = "image"
+      case width = "width"
+      case height = "height"
+    }
+
+    public init(name: String, image: String, width: Double, height: Double) {
+      self.name = name
+      self.image = image
+      self.width = width
+      self.height = height
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(image, forKey: .image)
+      try c.encode(width, forKey: .width)
+      try c.encode(height, forKey: .height)
+    }
   }
 
   public struct FileStat: Codable, Sendable {
@@ -8211,17 +8269,20 @@ extension ArgusProtocol {
     public var issue: LinearIssueDetail
     public var context: String
     public var images: [ImageAttachment]
+    public var designUrls: [String]
 
     enum CodingKeys: String, CodingKey {
       case issue = "issue"
       case context = "context"
       case images = "images"
+      case designUrls = "designUrls"
     }
 
-    public init(issue: LinearIssueDetail, context: String, images: [ImageAttachment]) {
+    public init(issue: LinearIssueDetail, context: String, images: [ImageAttachment], designUrls: [String]) {
       self.issue = issue
       self.context = context
       self.images = images
+      self.designUrls = designUrls
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -8229,6 +8290,7 @@ extension ArgusProtocol {
       try c.encode(issue, forKey: .issue)
       try c.encode(context, forKey: .context)
       try c.encode(images, forKey: .images)
+      try c.encode(designUrls, forKey: .designUrls)
     }
   }
 
@@ -15444,6 +15506,7 @@ extension ArgusProtocol {
     public var envIndex: Double?
     public var id: String
     public var kind: SessionKind
+    public var designRefs: [DesignRef]?
     public var linkedIssue: LinkedIssue?
     public var model: String?
     public var path: String
@@ -15465,6 +15528,7 @@ extension ArgusProtocol {
       case envIndex = "env_index"
       case id = "id"
       case kind = "kind"
+      case designRefs = "design_refs"
       case linkedIssue = "linked_issue"
       case model = "model"
       case path = "path"
@@ -15477,7 +15541,7 @@ extension ArgusProtocol {
       case volume = "volume"
     }
 
-    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
+    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
       self.availability = availability
       self.baseBranch = baseBranch
       self.branch = branch
@@ -15487,6 +15551,7 @@ extension ArgusProtocol {
       self.envIndex = envIndex
       self.id = id
       self.kind = kind
+      self.designRefs = designRefs
       self.linkedIssue = linkedIssue
       self.model = model
       self.path = path
@@ -15510,6 +15575,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(envIndex, forKey: .envIndex)
       try c.encode(id, forKey: .id)
       try c.encode(kind, forKey: .kind)
+      try c.encodeIfPresent(designRefs, forKey: .designRefs)
       try c.encodeIfPresent(linkedIssue, forKey: .linkedIssue)
       try c.encodeIfPresent(model, forKey: .model)
       try c.encode(path, forKey: .path)

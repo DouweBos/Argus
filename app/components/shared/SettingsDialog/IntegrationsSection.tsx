@@ -20,6 +20,7 @@ import styles from "./IntegrationsSection.module.css";
 import { LinearOptions } from "./LinearOptions";
 
 const LINEAR_KEYS_URL = "https://linear.app/settings/account/security";
+const FIGMA_KEYS_URL = "https://www.figma.com/settings";
 
 function accountDetail(status: IntegrationStatus): string | undefined {
   const parts = [status.account?.workspace, status.account?.email].filter(
@@ -44,11 +45,12 @@ export function IntegrationsSection() {
   useIpcEvent("integration_status_changed", refresh);
 
   const linear = statuses.find((s) => s.id === "linear");
+  const figma = statuses.find((s) => s.id === "figma");
 
   return (
     <SettingsScreenDetail>
       <SettingsScreenDetailHeader
-        description="Start agents from your issues and let them read the full ticket. Argus keeps its own sign-in, so agents don't depend on a separate MCP login."
+        description="Start agents from your issues, and give them the designs to match. Argus keeps its own sign-in, so agents don't depend on a separate MCP login."
         title="Integrations"
       />
       <SettingsScreenDetailBody>
@@ -63,6 +65,16 @@ export function IntegrationsSection() {
           />
         )}
         {linear?.connected && <LinearOptions />}
+        {figma && (
+          <IntegrationField
+            id="figma"
+            keyCaption="Create a personal access token in Figma under Settings → Security with read access to files and comments."
+            keysUrl={FIGMA_KEYS_URL}
+            label="Figma"
+            status={figma}
+            onError={setError}
+          />
+        )}
         {error && <p className={styles.error}>{error}</p>}
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
@@ -125,7 +137,7 @@ function IntegrationField({
           <div className={styles.keyForm}>
             <Input
               autoFocus={editing}
-              placeholder="API key"
+              placeholder={id === "figma" ? "Personal access token" : "API key"}
               type="password"
               value={key}
               onChange={(e) => setKey(e.target.value)}

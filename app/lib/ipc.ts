@@ -82,6 +82,8 @@ import type {
   SimulatorDevice,
   AppSettings,
   InheritedMcpServer,
+  DesignRef,
+  FigmaFrame,
   IntegrationId,
   IntegrationStatus,
   LinearIssue,
@@ -706,6 +708,7 @@ export const createSession = (
   baseBranch?: string,
   llm?: CreateSessionLlm,
   linkedIssue?: LinkedIssue,
+  designRefs?: DesignRef[],
 ): Promise<Session> =>
   invoke("create_session", {
     repoRoot,
@@ -715,6 +718,7 @@ export const createSession = (
     baseBranch,
     llm,
     linkedIssue,
+    designRefs,
   });
 
 export const listScratchPads = (): Promise<Session[]> =>
@@ -1773,6 +1777,23 @@ export const listLinearIssues = (
   query: string | null,
   limit?: number,
 ): Promise<LinearIssue[]> => invoke("linear_list_issues", { query, limit });
+
+export const setSessionDesignRefs = (
+  sessionId: string,
+  refs: DesignRef[],
+): Promise<void> => invoke("set_session_design_refs", { sessionId, refs });
+
+export const getFigmaDesignRef = (url: string): Promise<DesignRef | null> =>
+  invoke("figma_design_ref", { url });
+
+export const takeDeviceScreenshot = (
+  platform: "android" | "ios",
+  deviceKey: string,
+): Promise<string | null> =>
+  invoke("device_screenshot", { platform, deviceKey });
+
+export const getFigmaFrame = (url: string): Promise<FigmaFrame | null> =>
+  invoke("figma_frame", { url });
 
 export const getLinearIssueContext = (
   ref: string,

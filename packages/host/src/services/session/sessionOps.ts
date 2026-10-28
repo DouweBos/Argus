@@ -7,6 +7,7 @@
  */
 
 import type { SessionMergeStatus } from "./merge";
+import type { DesignRef } from "@argus/remote-protocol";
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import nodePath from "node:path";
@@ -963,6 +964,29 @@ export function setSessionClaudeAccount(
     m.claude_account_id = accountId;
     meta.set(ws.path, m);
   }
+  try {
+    saveMetadata(ws.repo_root, meta);
+  } catch {
+    // Non-fatal.
+  }
+}
+
+/** Replace the Figma frames a session's work should match. */
+export function setSessionDesignRefs(id: string, refs: DesignRef[]): void {
+  const ws = appState.sessions.get(id);
+  if (!ws) {
+    throw `Session not found: ${id}`;
+  }
+  ws.design_refs = refs.length > 0 ? refs : null;
+  appState.sessions.set(id, ws);
+  emitHostEvent("session:updated", { ...ws });
+
+  const meta = loadMetadata(ws.repo_root);
+  const m = meta.get(ws.path);
+  if (!m) {
+    return;
+  }
+  m.design_refs = ws.design_refs;
   try {
     saveMetadata(ws.repo_root, meta);
   } catch {

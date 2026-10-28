@@ -193,6 +193,8 @@ export type {
 } from "@argus/remote-protocol";
 
 export type {
+  DesignRef,
+  FigmaFrame,
   IntegrationId,
   IntegrationStatus,
   LinearIssue,

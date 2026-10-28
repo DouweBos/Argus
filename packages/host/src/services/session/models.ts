@@ -5,7 +5,7 @@
  * `<repo>-argus-worktrees/<branch>/` directory.
  */
 
-import type { LinkedIssue } from "@argus/remote-protocol";
+import type { DesignRef, LinkedIssue } from "@argus/remote-protocol";
 import type { AutonomyLevel } from "../automation/models";
 
 /**
@@ -87,6 +87,8 @@ export interface Session {
   claude_account_id?: string | null;
   /** The tracker issue the session was started from. */
   linked_issue?: LinkedIssue | null;
+  /** Figma frames the session's work should match. */
+  design_refs?: DesignRef[] | null;
   /**
    * Whether the session's files are reachable right now. Orthogonal to
    * `status`: a session can be mid-setup *and* on a drive that just got

@@ -6,20 +6,15 @@
 
 import type { Session } from "../session/models";
 import type { LinkedIssue } from "@argus/remote-protocol";
-import { execFile } from "node:child_process";
-import fs from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { promisify } from "node:util";
 import { addHostEventSink } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../state";
 import { loadAppSettings } from "../appSettings/store";
 import { git } from "../session/git";
+import { iosScreenshot } from "../simulator/screenshot";
 import { capture } from "../telemetry/telemetry";
 import { linearApi } from "./service";
 
-const execFileAsync = promisify(execFile);
 const MAX_COMMITS = 10;
 
 export type ReportTrigger = "merge" | "pr";
@@ -86,25 +81,9 @@ async function simulatorShots(sessionId: string): Promise<Buffer[]> {
       udids.add(reservation.udid);
     }
   }
-  const shots: Buffer[] = [];
-  for (const udid of udids) {
-    const file = path.join(
-      tmpdir(),
-      `argus-issue-shot-${udid}-${Date.now()}.png`,
-    );
-    try {
-      await execFileAsync("xcrun", ["simctl", "io", udid, "screenshot", file], {
-        timeout: 15_000,
-      });
-      shots.push(await fs.readFile(file));
-    } catch {
-      // A shut-down simulator just means no picture.
-    } finally {
-      fs.unlink(file).catch(() => {});
-    }
-  }
+  const shots = await Promise.all([...udids].map(iosScreenshot));
 
-  return shots;
+  return shots.filter((shot) => shot !== null);
 }
 
 async function issueFor(session: Session): Promise<LinkedIssue | null> {

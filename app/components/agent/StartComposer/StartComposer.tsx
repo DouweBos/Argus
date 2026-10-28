@@ -1,3 +1,4 @@
+import type { LinearIssueContext } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
@@ -22,11 +23,13 @@ import {
 } from "../../../stores/startDraftStore";
 import { ExistingBranchDialog } from "../../sidebar/ExistingBranchDialog";
 import { AgentOptionChips } from "./AgentOptionChips";
+import { DesignChips } from "./DesignChips";
 import { IssueChips } from "./IssueChips";
 import styles from "./StartComposer.module.css";
 import { BaseBranchChip, WorkspaceChip } from "./WorkspaceChips";
 import { useAgentOptions } from "./useAgentOptions";
 import { useBaseBranches } from "./useBaseBranches";
+import { useDesignDraft } from "./useDesignDraft";
 import { useFileDrop } from "./useFileDrop";
 import { useImageDraft } from "./useImageDraft";
 import { useIssueDraft } from "./useIssueDraft";
@@ -77,7 +80,16 @@ export function StartComposer({
 
   const options = useAgentOptions(sessionId);
   const images = useImageDraft(focusPrompt);
-  const issueDraft = useIssueDraft();
+  const designDraft = useDesignDraft();
+  const { add: addDesign, removeForIssue } = designDraft;
+  const issueDraft = useIssueDraft({
+    onAttached: useCallback(
+      (context: LinearIssueContext) =>
+        context.designUrls.forEach((url) => addDesign(url, context.issue.id)),
+      [addDesign],
+    ),
+    onRemoved: removeForIssue,
+  });
   const assist = usePromptAssist({
     onPromptChange: setPrompt,
     promptRef,
@@ -114,7 +126,12 @@ export function StartComposer({
     issueCount > 0 ||
     trimmed.length > 0 ||
     (!isWorktree && images.images.length > 0);
-  const canSubmit = startable && hasInput && !submitting && !issueDraft.adding;
+  const canSubmit =
+    startable &&
+    hasInput &&
+    !submitting &&
+    !issueDraft.adding &&
+    !designDraft.adding;
 
   const submit = async () => {
     if (!canSubmit) {
@@ -127,6 +144,7 @@ export function StartComposer({
     });
     const request = {
       images: images.images.map((p) => p.attachment),
+      designs: designDraft.designs,
       issues: issueDraft.issues,
       linkedProjects: options.linkedProjects,
       model: options.model,
@@ -143,6 +161,7 @@ export function StartComposer({
       setPrompt("");
       images.clear();
       issueDraft.clear();
+      designDraft.clear();
     } catch (err) {
       // A failed worktree was already reported by `createSessionInProject`.
       if (!isWorktree) {
@@ -217,7 +236,9 @@ export function StartComposer({
             disabled={!startable}
             onChange={assist.handleChange}
             onKeyDown={handleKeyDown}
-            onPaste={issueDraft.pasteOr(images.handlePaste)}
+            onPaste={issueDraft.pasteOr(
+              designDraft.pasteOr(images.handlePaste),
+            )}
             onSelect={() => assist.mention.updateMentions(promptRef.current)}
           />
           <button
@@ -268,6 +289,7 @@ export function StartComposer({
             />
           )}
           <IssueChips draft={issueDraft} />
+          <DesignChips draft={designDraft} />
           <AgentOptionChips
             linkedProjects={options.linkedProjects}
             model={options.model}

@@ -77,3 +77,13 @@ export const NoCaptions: Story = {
     after: BLUE_PNG,
   },
 };
+
+/** Custom pane labels — e.g. a design frame against the running app. */
+export const CustomLabels: Story = {
+  args: {
+    before: BLUE_PNG,
+    after: GREEN_PNG,
+    beforeLabel: "Design",
+    afterLabel: "Simulator",
+  },
+};
