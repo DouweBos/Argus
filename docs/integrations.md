@@ -28,7 +28,11 @@ Disconnecting deletes the saved credential.
 
 With Linear connected, the sidebar has an **Issues** entry: your open Linear
 issues as a board. There's a column per status and a swimlane per priority,
-so what to pick up next is at the top left. Switch between issues
+so what to pick up next is at the top left. Like in Linear, Triage, Backlog and
+done, canceled or duplicate statuses start out as **Hidden columns** beside
+the board, with their counts: click one to show it, or hide any column from
+its header. **Current cycle** narrows the board to issues in their team's
+current cycle. Both choices are remembered. Switch between issues
 **Assigned** to you, ones you **Created** and ones you're **Subscribed** to.
 Switch to **List** for a section per status instead.
 

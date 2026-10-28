@@ -4,6 +4,7 @@ import {
   boardColumns,
   byPriority,
   cycleLabel,
+  isColumnHidden,
   sessionForIssue,
 } from "./issueBoard";
 
@@ -114,5 +115,21 @@ describe("cycleLabel", () => {
     expect(
       cycleLabel({ id: "c", number: 59, name: "Polish", isActive: true }),
     ).toBe("Polish");
+  });
+});
+
+describe("isColumnHidden", () => {
+  it("hides backlog and done-like columns until shown", () => {
+    expect(isColumnHidden({ id: "backlog", type: "backlog" }, {})).toBe(true);
+    expect(isColumnHidden({ id: "duplicate", type: "duplicate" }, {})).toBe(
+      true,
+    );
+    expect(isColumnHidden({ id: "todo", type: "unstarted" }, {})).toBe(false);
+    expect(
+      isColumnHidden({ id: "backlog", type: "backlog" }, { backlog: false }),
+    ).toBe(false);
+    expect(
+      isColumnHidden({ id: "todo", type: "unstarted" }, { todo: true }),
+    ).toBe(true);
   });
 });

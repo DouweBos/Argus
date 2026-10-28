@@ -13,7 +13,30 @@ const TYPE_ORDER = [
   "started",
   "completed",
   "canceled",
+  "duplicate",
 ];
+
+/** Linear's own default: what's ready or in flight, not the backlog or what's done. */
+const HIDDEN_BY_DEFAULT = new Set([
+  "backlog",
+  "canceled",
+  "completed",
+  "duplicate",
+  "triage",
+]);
+
+/** `overrides` maps a column id to an explicit hide (true) or show (false). */
+export function isColumnHidden(
+  column: Pick<BoardColumn, "id" | "type">,
+  overrides: Record<string, boolean>,
+): boolean {
+  return overrides[column.id] ?? HIDDEN_BY_DEFAULT.has(column.type);
+}
+
+/** Issues in the cycle their team is in now. */
+export function inCurrentCycle(issue: LinearIssue): boolean {
+  return issue.cycle?.isActive === true;
+}
 
 /** Urgent first, "no priority" last — Linear's own order. */
 export const PRIORITY_ORDER = [1, 2, 3, 4, 0];

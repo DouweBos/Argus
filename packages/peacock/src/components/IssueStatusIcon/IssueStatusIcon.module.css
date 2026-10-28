@@ -19,6 +19,7 @@
   color: var(--success);
 }
 
-.canceled {
+.canceled,
+.duplicate {
   color: var(--text-muted);
 }

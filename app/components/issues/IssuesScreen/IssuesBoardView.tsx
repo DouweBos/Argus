@@ -10,8 +10,13 @@ import {
 import {
   boardColumns,
   byPriority,
+  isColumnHidden,
   PRIORITY_ORDER,
 } from "../../../lib/issueBoard";
+import {
+  setColumnHidden,
+  useColumnOverrides,
+} from "../../../stores/linearIssuesStore";
 import { useIssueCardProps } from "./useIssueCardProps";
 
 interface IssuesBoardViewProps {
@@ -28,23 +33,33 @@ export function IssuesBoardView({
 }: IssuesBoardViewProps) {
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const cardProps = useIssueCardProps();
-  const columns = boardColumns(issues);
+  const overrides = useColumnOverrides();
+  const all = boardColumns(issues);
+  const columns = all.filter((c) => !isColumnHidden(c, overrides));
+  const shown = columns.flatMap((c) => c.issues);
+  const toBoardColumn = (c: (typeof all)[number]) => ({
+    id: c.id,
+    title: c.name,
+    count: c.issues.length,
+    icon: <IssueStatusIcon type={c.type} />,
+  });
+  // Lanes count only what's on the board, so a lane of hidden issues disappears.
   const lanes = PRIORITY_ORDER.map((priority) => ({
     id: String(priority),
     title: PRIORITY_LABELS[priority],
     icon: <PriorityIcon priority={priority} />,
-    count: issues.filter((i) => i.priority === priority).length,
+    count: shown.filter((i) => i.priority === priority).length,
     collapsed: collapsed.includes(String(priority)),
   })).filter((lane) => lane.count > 0);
 
   return (
     <IssueBoard
-      columns={columns.map((c) => ({
-        id: c.id,
-        title: c.name,
-        count: c.issues.length,
-        icon: <IssueStatusIcon type={c.type} />,
-      }))}
+      columns={columns.map(toBoardColumn)}
+      hiddenColumns={all
+        .filter((c) => isColumnHidden(c, overrides))
+        .map(toBoardColumn)}
+      onHideColumn={(id) => setColumnHidden(id, true)}
+      onShowColumn={(id) => setColumnHidden(id, false)}
       lanes={lanes}
       onToggleLane={(id) =>
         setCollapsed((current) =>

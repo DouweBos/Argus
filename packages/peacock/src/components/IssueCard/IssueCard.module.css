@@ -22,6 +22,11 @@
   }
 }
 
+.card:focus-visible {
+  outline: none;
+  border-color: var(--accent-border-strong);
+}
+
 .selected {
   border-color: var(--accent-border-strong);
 }

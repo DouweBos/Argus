@@ -133,3 +133,39 @@ export const NoLanes: Story = {
     />
   ),
 };
+
+export const HiddenColumns: Story = {
+  render: () => {
+    const [hidden, setHidden] = useState<string[]>(["review"]);
+
+    return (
+      <IssueBoard
+        columns={COLUMNS.filter((c) => !hidden.includes(c.id))}
+        hiddenColumns={[
+          ...COLUMNS.filter((c) => hidden.includes(c.id)),
+          {
+            id: "backlog",
+            title: "Backlog",
+            count: 4,
+            icon: <IssueStatusIcon type="backlog" />,
+          },
+        ]}
+        onHideColumn={(id) => setHidden((h) => [...h, id])}
+        onShowColumn={(id) => setHidden((h) => h.filter((x) => x !== id))}
+        renderCell={(_lane, column) =>
+          Object.values(CARDS)
+            .flatMap((lane) => lane[column] ?? [])
+            .map((c) => (
+              <IssueCard
+                key={c.id}
+                identifier={c.id}
+                title={c.title}
+                statusType={c.type}
+                priority={c.p}
+              />
+            ))
+        }
+      />
+    );
+  },
+};

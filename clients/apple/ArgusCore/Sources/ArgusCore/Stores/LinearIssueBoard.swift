@@ -65,7 +65,22 @@ public enum LinearIssueBoard {
   }
 
   /// Linear's state categories in the order work flows through them.
-  static let typeOrder = ["triage", "backlog", "unstarted", "started", "completed", "canceled"]
+  static let typeOrder = [
+    "triage", "backlog", "unstarted", "started", "completed", "canceled", "duplicate",
+  ]
+
+  /// Linear's own default: what's ready or in flight, not the backlog or what's done.
+  static let hiddenByDefault: Set<String> = ["backlog", "canceled", "completed", "duplicate", "triage"]
+
+  /// `overrides` maps a column id to an explicit hide (true) or show (false).
+  public static func isHidden(_ column: Column, overrides: [String: Bool]) -> Bool {
+    overrides[column.id] ?? hiddenByDefault.contains(column.type)
+  }
+
+  /// Issues in the cycle their team is in now.
+  public static func inCurrentCycle(_ issue: Issue) -> Bool {
+    issue.cycle?.isActive == true
+  }
 
   /// Urgent first, "no priority" last — Linear's own order.
   public static let priorityOrder = [1, 2, 3, 4, 0]

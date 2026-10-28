@@ -17,6 +17,14 @@ public final class LinearIssuesModel {
   }
   /// Nil until the first answer for this scope.
   public private(set) var issues: [ArgusProtocol.LinearIssue]?
+  /// Only issues in their team's current cycle.
+  public var currentCycleOnly = false
+
+  /// `issues` after the current-cycle filter: what the board and list show.
+  public var shownIssues: [ArgusProtocol.LinearIssue]? {
+    guard let issues, currentCycleOnly else { return issues }
+    return issues.filter(LinearIssueBoard.inCurrentCycle)
+  }
   public private(set) var error: String?
   public private(set) var refreshing = false
 

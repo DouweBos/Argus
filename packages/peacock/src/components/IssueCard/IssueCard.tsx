@@ -49,7 +49,19 @@ export function IssueCard({
     .join(" ");
 
   return (
-    <button className={cls} type="button" onClick={onClick}>
+    // A div, not a button: buttons center their content in an anonymous box.
+    <div
+      className={cls}
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+    >
       <div className={styles.head}>
         <span className={styles.identifier}>
           {parent ? `${parent} › ` : ""}
@@ -88,6 +100,6 @@ export function IssueCard({
         {badge && <span className={styles.badge}>{badge}</span>}
       </div>
       {footnote && <div className={styles.footnote}>{footnote}</div>}
-    </button>
+    </div>
   );
 }

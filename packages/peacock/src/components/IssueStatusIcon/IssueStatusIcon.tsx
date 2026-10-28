@@ -5,6 +5,7 @@ export type IssueStatusType =
   | "backlog"
   | "canceled"
   | "completed"
+  | "duplicate"
   | "started"
   | "triage"
   | "unstarted";
@@ -20,6 +21,7 @@ const KNOWN = new Set<IssueStatusType>([
   "backlog",
   "canceled",
   "completed",
+  "duplicate",
   "started",
   "triage",
   "unstarted",
@@ -91,7 +93,7 @@ export function IssueStatusIcon({
           />
         </>
       )}
-      {kind === "canceled" && (
+      {(kind === "canceled" || kind === "duplicate") && (
         <>
           <circle cx="7" cy="7" fill="currentColor" r="6.25" />
           <path

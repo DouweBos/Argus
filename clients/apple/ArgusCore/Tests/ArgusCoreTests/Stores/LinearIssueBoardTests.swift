@@ -95,4 +95,16 @@ struct LinearIssueBoardTests {
     // A checkout that happens to be on the branch isn't a session started for it.
     #expect(LinearIssueBoard.session(for: issue("ENG-3", type: "started"), in: sessions) == nil)
   }
+
+  @Test func hidesBacklogAndDoneLikeColumnsUntilShown() {
+    let columns = LinearIssueBoard.columns([
+      issue("ENG-1", type: "backlog"), issue("ENG-2", type: "unstarted"), issue("ENG-3", type: "duplicate"),
+    ])
+    let hidden = { (overrides: [String: Bool]) in
+      columns.filter { LinearIssueBoard.isHidden($0, overrides: overrides) }.map(\.type)
+    }
+
+    #expect(hidden([:]) == ["backlog", "duplicate"])
+    #expect(hidden(["backlog": false, "unstarted": true]) == ["unstarted", "duplicate"])
+  }
 }

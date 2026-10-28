@@ -20,6 +20,7 @@ export const AllTypes: Story = {
         "started",
         "completed",
         "canceled",
+        "duplicate",
       ].map((type) => (
         <span
           key={type}
