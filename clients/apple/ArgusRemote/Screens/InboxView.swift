@@ -30,6 +30,12 @@ struct InboxView: View {
             }
           }
         }
+        // Only once the computer has Linear connected; the key never leaves it.
+        if host.linearConnected {
+          NavigationLink(value: Route.issues) {
+            Label("Linear issues", systemImage: Icon.issue)
+          }
+        }
       }
 
       if !proposals.loaded {
@@ -82,8 +88,9 @@ struct InboxView: View {
     }
     .liveRefresh(enabled: host.connection == .ready) { await proposals.refresh() }
     .task(id: host.connection) {
-      guard host.connection == .ready, !pullRequests.loaded else { return }
-      await pullRequests.refresh()
+      guard host.connection == .ready else { return }
+      await host.loadIntegrations()
+      if !pullRequests.loaded { await pullRequests.refresh() }
     }
   }
 

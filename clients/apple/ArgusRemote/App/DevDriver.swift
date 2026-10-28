@@ -298,6 +298,7 @@
       case "settings": self = .settings
       case "devices": self = .devices
       case "pullRequests": self = .pullRequests
+      case "issues": self = .issues
       default: return nil
       }
     }

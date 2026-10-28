@@ -35,6 +35,8 @@ enum Route: Hashable {
   /// One proposal in full, as the desktop's `/inbox/proposals/:proposalId`.
   case proposal(id: String)
   case pullRequests
+  /// Your open Linear issues, as the desktop's `/issues`.
+  case issues
   case pullRequest(repo: String, number: Int, label: String)
   case automations
   case automation(id: String, label: String)
@@ -82,6 +84,7 @@ enum Route: Hashable {
     case .inbox: "inbox"
     case .proposal: "proposal"
     case .pullRequests: "pull_requests"
+    case .issues: "issues"
     case .pullRequest: "pull_request"
     case .automations: "automations"
     case .automation: "automation"
