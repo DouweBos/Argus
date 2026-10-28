@@ -7,9 +7,11 @@
 import type { HostConnectionInfo } from "../stores/connectionStore";
 import type { HostConnectionEntry, HostLinkState } from "@argus/peacock";
 import { useCallback, useState } from "react";
+import { presenceLabel } from "../lib/accountPresence";
 import { useRouteHostId } from "../lib/routeHooks";
 import { attachTo, detachFrom, focusHost } from "../lib/transport";
 import { LOCAL_HOST_ID } from "../lib/transport/hostId";
+import { useAccountPresence } from "../stores/accountPresenceStore";
 import {
   useHostConnections,
   useUnreachableHosts,
@@ -56,6 +58,7 @@ export function useHostEntries(): HostEntries {
   const paired = useRemoteHosts();
   const focusedId = useRouteHostId();
   const unreachable = useUnreachableHosts();
+  const presence = useAccountPresence();
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const byId = new Map(connections.map((c) => [c.hostId, c]));
@@ -73,6 +76,12 @@ export function useHostEntries(): HostEntries {
     },
     ...paired.map((host): HostConnectionEntry => {
       const connection = byId.get(host.id);
+      const seen = presence[host.hostPubB64];
+      // Not attached: whether the computer is up at all, from the account.
+      const where =
+        seen && connection?.state !== "ready"
+          ? `${presenceLabel(seen)} · ${labelFromUrl(host.url)}`
+          : labelFromUrl(host.url);
 
       return {
         id: host.id,
@@ -80,7 +89,7 @@ export function useHostEntries(): HostEntries {
         attached: connection !== undefined,
         focused: focusedId === host.id,
         state: hostLinkState(connection, unreachable.includes(host.label)),
-        detail: connection?.lastError ?? labelFromUrl(host.url),
+        detail: connection?.lastError ?? where,
       };
     }),
   ];
