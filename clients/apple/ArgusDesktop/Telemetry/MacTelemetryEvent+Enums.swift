@@ -119,6 +119,32 @@ extension MacTelemetryEvent {
     case gitStash = "git_stash"
   }
 
+  /// The menu-bar item's menu.
+  enum MenuBarAction: String {
+    case openApp = "open_app"
+    case openAgent = "open_agent"
+    case pair
+    case link
+    case approveJoin = "approve_join"
+    case denyJoin = "deny_join"
+    case openSettings = "open_settings"
+    case checkForUpdates = "check_for_updates"
+    case restartHost = "restart_host"
+    case quit
+  }
+
+  enum MenuBarToggleSource: String {
+    case settings
+    /// ⌘-dragged off the menu bar.
+    case menuBar = "menu_bar"
+  }
+
+  enum LoginItemStatus: String {
+    case enabled
+    case requiresApproval = "requires_approval"
+    case off
+  }
+
   enum HistoryDirection: String {
     case back
     case forward

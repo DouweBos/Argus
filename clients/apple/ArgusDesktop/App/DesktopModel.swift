@@ -39,6 +39,8 @@ final class DesktopModel {
   let account: AccountStore
   /// The bundled host, linked to the account without a code.
   let localAccountLink = LocalHostAccountLink()
+  /// The menu-bar item, when Settings shows it.
+  let menuBar = MenuBarModel()
   /// Sparkle, on the channel the host's `updater_channel` names.
   let updater = StandardUpdater(feed: UpdateFeed(product: "argus-mac", channel: .latest))
   /// Every request, routed to the host that owns its subject.
@@ -163,6 +165,7 @@ final class DesktopModel {
     hosts.onAccountHostFailing = { [account] failing in account.setConnectionFailing(failing) }
     hosts.onRouteUpgraded = { from, to in MacTelemetry.capture(.routeUpgraded(from: from, to: to)) }
     wireAccount()
+    menuBar.install(on: self)
   }
 
   func start() {
@@ -285,6 +288,7 @@ final class DesktopModel {
     restoreActiveTabOnce()
     await applyLaunchRoute()
     resolvePendingLocation()
+    await menuBar.reconnected()
   }
 
   private func restoreActiveTabOnce() {
@@ -416,6 +420,7 @@ final class DesktopModel {
   /// Stop the host cleanly: it lets agents finish stopping before it exits.
   func shutdown() async {
     MacTelemetry.capture(.quit(hadRunningAgents: runningAgentCount > 0))
+    menuBar.stop()
     await store.detach()
     platform.detach()
     MacTelemetry.detach()

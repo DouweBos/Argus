@@ -205,9 +205,10 @@ How to tick a row:
 
 ### Argus Server
 
-| Feature                      | Electron | Mac | iOS | Milestone | Notes                                                                                                                                      |
-| ---------------------------- | -------- | --- | --- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Headless host, tray-only app | ✅       | ✅  | —   | M7        | Mac: the native `ArgusServer` target ([plan](mac-server.md)); updates need the Sparkle key and appcast hosting. iOS: a phone isn't a host. |
+| Feature                      | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                                                                                                      |
+| ---------------------------- | -------- | --- | --- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Headless host, tray-only app | ✅       | ✅  | —   | M7        | Mac: the native `ArgusServer` target ([plan](mac-server.md)); updates need the Sparkle key and appcast hosting. iOS: a phone isn't a host.                                                                                                                 |
+| Desktop menu-bar tray        | ✅       | ✅  | —   | M7        | Mac: `ArgusMenuBar`, shared with Argus Server; agents that need you and running ones (not Electron's project tree), pairing, join approvals, the account, updates, Open at Login. Off by default when a server is installed. iOS: a phone has no menu bar. |
 
 ### Automations
 

@@ -842,6 +842,17 @@ The Mac app's code view (⌘3 in a session). These live on this Mac only.
 
 ---
 
+## Menu bar and login (Mac app)
+
+Settings → General → Startup in Argus for Mac. These live on this Mac only.
+
+| Setting              | Default | Description                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Open at Login**    | off     | Opens Argus when you log in. If macOS wants your OK first, **Open Login Items…** takes you to System Settings → General → Login Items.                                                                                                                                                                                                                                           |
+| **Show in menu bar** | on      | An Argus item in the menu bar: agents that need you and what's running, pairing a device, approving a join and your Argus account. Off by default when Argus Server (the native or the Electron one) is installed on this Mac, since it has its own menu bar item. Dragging the icon off the menu bar with ⌘ held turns it off too. See [the menu bar](mac-app.md#the-menu-bar). |
+
+---
+
 ## Where things are stored
 
 Argus keeps everything under `~/.argus/`:

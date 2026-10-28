@@ -1,8 +1,9 @@
 import ArgusCore
+import ArgusMenuBar
 import ArgusUI
 import SwiftUI
 
-/// This Mac's name, where Argus opens, where worktrees go, extra "Open in" apps, and telemetry.
+/// This Mac's name, where Argus opens, the menu bar and login item, where worktrees go, extra "Open in" apps, and telemetry.
 struct GeneralSettingsTab: View {
   @Environment(HostSettingsModel.self) private var host
   @Environment(DesktopModel.self) private var model
@@ -22,6 +23,21 @@ struct GeneralSettingsTab: View {
           .pickerStyle(.segmented)
           .disabled(!host.loaded)
         }
+        SettingsToggleRow(
+          "Open at Login", description: "Opens Argus when you log in to this Mac.",
+          isOn: Binding(
+            get: { menuBar.loginState == .enabled || menuBar.loginState == .requiresApproval },
+            set: { menuBar.setOpenAtLogin($0) }))
+        if menuBar.loginState == .requiresApproval {
+          SettingsRow("Allow Argus in Login Items", description: "macOS wants your OK before Argus opens at login.") {
+            Button("Open Login Items…") { LoginItem.openSystemSettings() }
+          }
+        }
+        SettingsToggleRow(
+          "Show in menu bar",
+          description: "Agents that need you and what's running, pairing a device and approving a join, "
+            + "from the menu bar. Off by default when Argus Server is installed, which has its own.",
+          isOn: MenuBarVisibility.binding(AppPreferences.shared, via: .settings))
       }
 
       SettingsGroup(
@@ -70,6 +86,7 @@ struct GeneralSettingsTab: View {
 
       SettingsError(text: host.error)
     }
+    .onAppear { menuBar.refreshLoginState() }
     .task(id: host.loaded) {
       guard let backend = model.backend else { return }
       defaultWorktreeBase =
@@ -77,6 +94,8 @@ struct GeneralSettingsTab: View {
         ?? ""
     }
   }
+
+  private var menuBar: MenuBarModel { model.menuBar }
 
   private var launchRoute: Binding<ArgusProtocol.AppSettingsLaunchRoute> {
     Binding(

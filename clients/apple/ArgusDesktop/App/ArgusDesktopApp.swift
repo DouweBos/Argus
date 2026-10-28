@@ -1,11 +1,18 @@
 import AppKit
 import ArgusCore
 import ArgusEditor
+import ArgusMenuBar
 import SwiftUI
 
 @main
 struct ArgusDesktopApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+  /// Read here so the scene follows it; `AppPreferences` registers its default.
+  @AppStorage(AppPreferences.showInMenuBarKey) private var showInMenuBar = true
+
+  init() {
+    _ = AppPreferences.shared
+  }
 
   var body: some Scene {
     Window("Argus", id: "main") {
@@ -88,6 +95,35 @@ struct ArgusDesktopApp: App {
     }
     .windowLevel(.floating)
     .defaultSize(width: 380, height: 760)
+    .restorationBehavior(.disabled)
+
+    MenuBarExtra(isInserted: MenuBarVisibility.binding(AppPreferences.shared, shown: showInMenuBar, via: .menuBar)) {
+      DesktopMenuContent(menuBar: delegate.model.menuBar)
+    } label: {
+      DesktopMenuLabel(menuBar: delegate.model.menuBar)
+    }
+    .menuBarExtraStyle(.menu)
+
+    // What the menu-bar item opens; never on their own at launch.
+    Window("Pair a Device", id: HostMenuWindow.pairing.rawValue) {
+      PairingWindow(pairing: delegate.model.menuBar.pairing).themed()
+    }
+    .windowResizability(.contentSize)
+    .defaultLaunchBehavior(.suppressed)
+    .restorationBehavior(.disabled)
+
+    Window("Link to Your Argus Account", id: HostMenuWindow.link.rawValue) {
+      LinkWindow(model: delegate.model.menuBar.accountMenu).themed()
+    }
+    .windowResizability(.contentSize)
+    .defaultLaunchBehavior(.suppressed)
+    .restorationBehavior(.disabled)
+
+    Window("Approve a Join", id: HostMenuWindow.approval.rawValue) {
+      ApprovalWindow(model: delegate.model.menuBar.accountMenu).themed()
+    }
+    .windowResizability(.contentSize)
+    .defaultLaunchBehavior(.suppressed)
     .restorationBehavior(.disabled)
   }
 }

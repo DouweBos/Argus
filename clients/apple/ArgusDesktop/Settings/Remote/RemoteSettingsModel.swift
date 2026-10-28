@@ -58,7 +58,8 @@ final class RemoteSettingsModel {
     case "remote:status":
       if let next = try? ProtocolCodec.convert(payload, to: ArgusProtocol.RemoteStatus.self) { status = next }
     default:
-      pairing.handle(channel: channel, payload: payload)
+      // The menu bar pairs on its own model; only follow a pairing started here.
+      if pairing.isActive { pairing.handle(channel: channel, payload: payload) }
     }
   }
 

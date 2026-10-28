@@ -10,6 +10,7 @@ import SwiftUI
 final class AppPreferences {
   static let shared = AppPreferences()
   nonisolated static let colorThemeKey = "argus:color-theme"
+  nonisolated static let showInMenuBarKey = "argus:menuBar.show"
 
   private enum Key {
     static let theme = "argus:theme"
@@ -31,6 +32,7 @@ final class AppPreferences {
     static let languageServers = "argus:editor.languageServers"
     static let disabledLanguageServers = "argus:editor.languageServers.disabled"
     static let deviceName = "argus:device.name"
+    static let showInMenuBar = AppPreferences.showInMenuBarKey
   }
 
   private let defaults: UserDefaults
@@ -71,6 +73,12 @@ final class AppPreferences {
 
   static var systemDeviceName: String {
     AccountDeviceKeys.memberName(Host.current().localizedName ?? "Mac")
+  }
+
+  /// The menu-bar item. Until it's set, off where an Argus Server is installed,
+  /// so this Mac doesn't get two Argus icons.
+  var showInMenuBar: Bool {
+    didSet { defaults.set(showInMenuBar, forKey: Key.showInMenuBar) }
   }
 
   /// Seeded into new sessions; empty means the CLI's own default.
@@ -150,6 +158,9 @@ final class AppPreferences {
     defaultPermissionMode = .sanitize(defaults.string(forKey: Key.permissionMode))
     defaultModel = defaults.string(forKey: Key.defaultModel) ?? ""
     deviceName = defaults.string(forKey: Key.deviceName) ?? ""
+    // Registered rather than stored, so it follows a server installed later until it's set.
+    defaults.register(defaults: [Key.showInMenuBar: !InstalledServer.isInstalled()])
+    showInMenuBar = defaults.bool(forKey: Key.showInMenuBar)
     customEditors = CustomEditor.sanitize(defaults.data(forKey: Key.customEditors))
     editorFontName = defaults.string(forKey: Key.editorFontName) ?? ""
     editorFontSize = (defaults.object(forKey: Key.editorFontSize) as? Double).map { min(max($0, 8), 32) } ?? 13
