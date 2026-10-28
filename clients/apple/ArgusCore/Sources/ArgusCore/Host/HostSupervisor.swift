@@ -14,6 +14,21 @@
   @MainActor
   @Observable
   public final class HostSupervisor {
+    /// Which app the host runs for: the Mac app (`--desktop`) or Argus Server (`--server`).
+    public enum Mode: String, Sendable {
+      case desktop, server
+
+      var flag: String { "--\(rawValue)" }
+
+      /// The owner the host records in `host.lock` in this mode.
+      public var lockOwner: HostLockRecord.Owner {
+        switch self {
+        case .desktop: .mac
+        case .server: .macServer
+        }
+      }
+    }
+
     public struct Configuration: Sendable {
       public var node: URL
       public var hostScript: URL
@@ -24,10 +39,11 @@
       public var environment: [String: String]
       /// Only ever a client of whoever runs `home`: never a host of its own.
       public var attachOnly: Bool
+      public var mode: Mode
 
       public init(
         node: URL, hostScript: URL, resources: URL?, home: URL,
-        environment: [String: String] = [:], attachOnly: Bool = false
+        environment: [String: String] = [:], attachOnly: Bool = false, mode: Mode = .desktop
       ) {
         self.node = node
         self.hostScript = hostScript
@@ -35,6 +51,16 @@
         self.home = home
         self.environment = environment
         self.attachOnly = attachOnly
+        self.mode = mode
+      }
+
+      /// What `launch()` passes the host script.
+      public func arguments(ownerPid: Int32) -> [String] {
+        [
+          hostScript.path, mode.flag,
+          "--ui-socket", socketPath,
+          "--owner-pid", String(ownerPid),
+        ]
       }
 
       public var socketPath: String { home.appendingPathComponent("host.sock").path }
@@ -116,7 +142,7 @@
         }
         // An orphan of a previous run of this app: its supervisor is gone, so
         // nobody else will ever stop it.
-        if !configuration.attachOnly, holder.owner == .mac, !HostLock.isAlive(holder.ownerPid) {
+        if !configuration.attachOnly, holder.owner == configuration.mode.lockOwner, !HostLock.isAlive(holder.ownerPid) {
           kill(holder.pid, SIGTERM)
           state = .starting
           Task {
@@ -250,11 +276,7 @@
 
       let process = Process()
       process.executableURL = configuration.node
-      process.arguments = [
-        configuration.hostScript.path, "--desktop",
-        "--ui-socket", configuration.socketPath,
-        "--owner-pid", String(getpid()),
-      ]
+      process.arguments = configuration.arguments(ownerPid: getpid())
       var environment = ProcessInfo.processInfo.environment
       environment["ARGUS_HOME"] = configuration.home.path
       if let resources = configuration.resources {

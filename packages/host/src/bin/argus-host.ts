@@ -5,11 +5,14 @@
  *
  * `--desktop` runs it as the Mac app's host instead: on `~/.argus`, with the
  * gateway following Settings, and the app attached over `--ui-socket`.
+ * `--server` runs it under the native Argus Server menu-bar app: a supervised
+ * server on `~/.argus-server`. See `hostMode.ts` for what each mode does.
  * Either way the UI socket is served and advertised in `host.lock`.
  */
 
 import type { LocalUiServer } from "../services/remote/localUiSocket";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
 import { shutdownHost, startHost, syncHostCleanup } from "../boot";
@@ -21,6 +24,7 @@ import { nodeHostPlatform, setHostPlatform } from "../platform";
 import { startPowerAssertion } from "../serverMode";
 import { startLink } from "../services/account/link";
 import { stopAgentsForQuit } from "../services/agent/quit";
+import { startDevTrust, stopDevTrust } from "../services/remote/devTrust";
 import {
   defaultUiSocketPath,
   serveLocalUi,
@@ -29,7 +33,8 @@ import { attachConsoleAccount } from "./consoleAccount";
 import { attachConsolePairing } from "./consolePairing";
 import { parseHostArgs } from "./hostArgs";
 import { gatewayLine } from "./hostBanner";
-import { desktopMode } from "./hostEnv";
+import { hostBehaviour } from "./hostEnv";
+import { devTrustAllowed } from "./hostMode";
 
 /** Exit code when another host holds this ARGUS_HOME; the Mac app keys on it. */
 const EXIT_LOCKED = 75;
@@ -49,7 +54,7 @@ function resolveWebClientDir(): string | null {
 
 const args = parseHostArgs(process.argv.slice(2));
 
-const lock = acquireHostLock(desktopMode ? "mac" : "cli", {
+const lock = acquireHostLock(hostBehaviour.lockOwner, {
   ownerPid: args.ownerPid ?? undefined,
 });
 if (!lock.ok) {
@@ -65,18 +70,18 @@ const uiSocketPath = args.uiSocket ?? defaultUiSocketPath();
 let uiServer: LocalUiServer | null = null;
 const uiReady = serveLocalUi({
   socketPath: uiSocketPath,
-  supervised: desktopMode,
+  supervised: hostBehaviour.supervised,
 }).then((server) => {
   uiServer = server;
 });
 
-if (!desktopMode) {
+if (hostBehaviour.powerAssertion) {
   // A sleeping Mac stops agents mid-run and drops every attached client.
   startPowerAssertion();
 }
 
 const { remoteReady } = startHost({
-  forceRemote: !desktopMode,
+  forceRemote: hostBehaviour.forceRemote,
   webClientDir: resolveWebClientDir(),
 });
 
@@ -87,9 +92,12 @@ function stop(): void {
   }
   stopping = true;
   print("Stopping…");
-  // The desktop's quit: agents get to stop cleanly (and save) before the
-  // teardown kills whatever is left. A server just goes.
-  const drained = desktopMode ? stopAgentsForQuit() : Promise.resolve();
+  // A supervised quit: agents get to stop cleanly (and save) before the
+  // teardown kills whatever is left. The CLI just goes.
+  const drained = hostBehaviour.drainAgentsOnQuit
+    ? stopAgentsForQuit()
+    : Promise.resolve();
+  stopDevTrust();
   drained
     .then(() => Promise.allSettled([uiServer?.close(), shutdownHost()]))
     .finally(() => {
@@ -122,13 +130,16 @@ process.on("exit", () => {
 
 Promise.all([remoteReady, uiReady]).then(([remote]) => {
   print(`Argus host ${base.appVersion()}`);
-  if (!desktopMode) {
+  if (hostBehaviour.gatewayBanner) {
     print(gatewayLine(remote.error));
   }
+  startDevTrust(devTrustAllowed(process.env, os.homedir())).catch(
+    (err: unknown) => print(`Dev trust failed: ${String(err)}`),
+  );
   print(`State: ${argusHomeDir()}`);
   // The supervisor waits for this line before connecting.
   print(`UI socket: ${uiSocketPath}`);
-  if (process.stdin.isTTY && !desktopMode) {
+  if (process.stdin.isTTY && hostBehaviour.console) {
     const rl = readline.createInterface({ input: process.stdin });
     rl.on("SIGINT", stop);
     attachConsolePairing(rl, print, attachConsoleAccount(print));

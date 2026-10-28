@@ -8,7 +8,7 @@ import SwiftUI
 struct MacHostLinkSection: View {
   @Environment(DesktopModel.self) private var model
   @Environment(\.theme) private var theme
-  @State private var link = MacHostLink()
+  @State private var link = HostLinkModel(surface: .mac)
 
   var body: some View {
     SettingsGroup(
@@ -75,73 +75,5 @@ struct MacHostLinkSection: View {
       SettingsError(text: link.failure)
     }
     .onDisappear { link.stopPolling() }
-  }
-}
-
-/// The host's link state machine, driven over the local socket.
-@MainActor
-@Observable
-final class MacHostLink {
-  private(set) var state: ArgusProtocol.AccountLinkState?
-  /// Why the last request failed, shown under the group.
-  private(set) var failure: String?
-  @ObservationIgnored private var backend: (any HostBackend)?
-  @ObservationIgnored private var poll: Task<Void, Never>?
-
-  func start(_ backend: (any HostBackend)?) async {
-    guard let backend else { return }
-    self.backend = backend
-    guard await run({ try await backend.request(ArgusProtocol.Commands.AccountLoginStart.self, .init(surface: .mac)) })
-    else { return }
-    startPolling()
-  }
-
-  func confirm(_ match: Bool) async {
-    guard let backend else { return }
-    await run { try await backend.request(ArgusProtocol.Commands.AccountLoginConfirm.self, .init(match: match)) }
-  }
-
-  func cancel() async {
-    stopPolling()
-    guard let backend else { return }
-    await run { try await backend.request(ArgusProtocol.Commands.AccountLoginCancel.self, EmptyParams()) }
-  }
-
-  /// A failed request says why instead of doing nothing. An older Argus running this
-  /// Mac's host has no account commands at all, so that's the likely cause.
-  @discardableResult
-  private func run(_ request: () async throws -> ArgusProtocol.AccountLinkState) async -> Bool {
-    do {
-      state = try await request()
-      failure = nil
-      return true
-    } catch {
-      failure =
-        "Couldn't reach this Mac's host for linking (\(error.localizedDescription)). If another Argus app is running it, that app may be too old for accounts: update or quit it, then try again."
-      return false
-    }
-  }
-
-  /// The host moves on its own (claimed, approver found); read where it is.
-  private func startPolling() {
-    poll?.cancel()
-    poll = Task { [weak self] in
-      while !Task.isCancelled {
-        try? await Task.sleep(for: .seconds(2))
-        guard let self, let backend = self.backend,
-          let status = try? await backend.request(ArgusProtocol.Commands.AccountGetStatus.self, EmptyParams())
-        else { continue }
-        self.state = status.link
-        switch status.link {
-        case .linked, .error, .idle: return
-        default: continue
-        }
-      }
-    }
-  }
-
-  func stopPolling() {
-    poll?.cancel()
-    poll = nil
   }
 }

@@ -119,8 +119,8 @@ private struct RemoteSettingsForm: View {
         Text(error).foregroundStyle(theme.error).textSelection(.enabled)
       }
     }
-    .sheet(isPresented: $model.pairingPresented) {
-      PairingSheet(model: model)
+    .sheet(isPresented: Binding(get: { model.pairing.presented }, set: { model.pairing.presented = $0 })) {
+      PairingPanel(model: model.pairing)
     }
     .alert(
       "Revoke “\(model.revoking?.label ?? "")”?",

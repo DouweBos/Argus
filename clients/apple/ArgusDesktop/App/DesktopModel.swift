@@ -90,9 +90,9 @@ final class DesktopModel {
   var activeTabId = WindowTab.restoredActive()
 
   init() {
-    supervisor = HostSupervisor(configuration: HostLocation.configuration())
+    supervisor = HostSupervisor(configuration: HostLocation.current.configuration())
     hosts = RemoteHostsStore(
-      file: PairedHostsFile(url: HostLocation.home.appendingPathComponent("mac-paired-hosts.json")),
+      file: PairedHostsFile(url: HostLocation.current.home.appendingPathComponent("mac-paired-hosts.json")),
       clientInfo: PairingClientInfo(
         product: "Argus for Mac", kind: "desktop", device: AppPreferences.shared.effectiveDeviceName,
         version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String))
@@ -185,7 +185,7 @@ final class DesktopModel {
     let hosts = hosts
     let router = HostRouter(
       local: local,
-      snapshots: HostSnapshotFiles(directory: HostLocation.home.appendingPathComponent("mac-host-snapshots"))
+      snapshots: HostSnapshotFiles(directory: HostLocation.current.home.appendingPathComponent("mac-host-snapshots"))
     ) { hostId, event in hosts.linkEvent(hostId, event) }
     localBackend = local
     backend = router
@@ -424,6 +424,7 @@ extension MacTelemetryEvent.Holder {
     switch owner {
     case .electron: self = .electron
     case .mac: self = .mac
+    case .macServer: self = .macServer
     case .cli: self = .cli
     }
   }
