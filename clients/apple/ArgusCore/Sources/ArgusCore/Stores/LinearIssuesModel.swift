@@ -17,21 +17,55 @@ public final class LinearIssuesModel {
   }
   /// Nil until the first answer for this scope.
   public private(set) var issues: [ArgusProtocol.LinearIssue]?
-  /// Only issues in their team's current cycle.
-  public var currentCycleOnly = false
+  /// The scope's active filters, like a saved Linear view; remembered per scope.
+  public var filters: [IssueFilter] {
+    get { filtersByScope[scope.rawValue] ?? [] }
+    set {
+      filtersByScope[scope.rawValue] = newValue
+      Self.save(filtersByScope, to: defaults)
+    }
+  }
 
-  /// `issues` after the current-cycle filter: what the board and list show.
+  /// `issues` after the filters: what the board and list show.
   public var shownIssues: [ArgusProtocol.LinearIssue]? {
-    guard let issues, currentCycleOnly else { return issues }
-    return issues.filter(LinearIssueBoard.inCurrentCycle)
+    issues.map { IssueFilters.apply($0, filters) }
   }
   public private(set) var error: String?
   public private(set) var refreshing = false
 
+  private var filtersByScope: [String: [IssueFilter]]
+  private let defaults: UserDefaults?
   private unowned let host: HostStore
 
-  public init(host: HostStore) {
+  /// `defaults` nil keeps filters in memory only.
+  public init(host: HostStore, defaults: UserDefaults? = .standard) {
     self.host = host
+    self.defaults = defaults
+    filtersByScope = Self.load(from: defaults)
+  }
+
+  static let filtersKey = "issues.filters"
+  /// The Mac's old Current cycle toggle, carried over into a filter once.
+  static let legacyCycleKey = "issues.currentCycle"
+
+  static func load(from defaults: UserDefaults?) -> [String: [IssueFilter]] {
+    guard let defaults else { return [:] }
+    var saved =
+      defaults.data(forKey: filtersKey).flatMap { try? JSONDecoder().decode([String: [IssueFilter]].self, from: $0) }
+      ?? [:]
+    if defaults.object(forKey: legacyCycleKey) != nil {
+      if defaults.bool(forKey: legacyCycleKey), saved[ArgusProtocol.LinearIssueScope.assigned.rawValue] == nil {
+        saved[ArgusProtocol.LinearIssueScope.assigned.rawValue] = [IssueFilters.currentCycle]
+        save(saved, to: defaults)
+      }
+      defaults.removeObject(forKey: legacyCycleKey)
+    }
+    return saved
+  }
+
+  static func save(_ filters: [String: [IssueFilter]], to defaults: UserDefaults?) {
+    guard let defaults, let data = try? JSONEncoder().encode(filters) else { return }
+    defaults.set(data, forKey: filtersKey)
   }
 
   public func refresh() async {
