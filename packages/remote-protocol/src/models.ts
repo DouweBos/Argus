@@ -6,7 +6,7 @@
  */
 
 import { z } from "zod";
-import { LinkedIssue } from "./models/integrations";
+import { DesignRef, LinkedIssue } from "./models/integrations";
 
 export const RemoteProject = z.object({
   repo_root: z.string(),
@@ -49,6 +49,8 @@ export const RemoteSession = z.object({
   volume: z.string().nullable().optional(),
   /** The tracker issue the session was started from. Absent on older hosts. */
   linked_issue: LinkedIssue.nullable().optional(),
+  /** The Figma frames its work should match. Absent on older hosts. */
+  design_refs: z.array(DesignRef).nullable().optional(),
 });
 export type RemoteSession = z.infer<typeof RemoteSession>;
 

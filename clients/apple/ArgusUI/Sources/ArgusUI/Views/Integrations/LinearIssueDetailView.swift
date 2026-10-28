@@ -15,17 +15,21 @@ public struct LinearIssueDetailView: View {
   let canStart: Bool
   let onOpenSession: (RemoteSession) -> Void
   let onStart: (HostStore.LinearIssue) -> Void
+  /// Figma links, in the description, comments and links, open here instead of the browser.
+  let onOpenDesign: ((String) -> Void)?
 
   public init(
     model: LinearIssueDetailModel, canEdit: Bool, canStart: Bool,
     onOpenSession: @escaping (RemoteSession) -> Void,
-    onStart: @escaping (HostStore.LinearIssue) -> Void
+    onStart: @escaping (HostStore.LinearIssue) -> Void,
+    onOpenDesign: ((String) -> Void)? = nil
   ) {
     self.model = model
     self.canEdit = canEdit
     self.canStart = canStart
     self.onOpenSession = onOpenSession
     self.onStart = onStart
+    self.onOpenDesign = onOpenDesign
   }
 
   public var body: some View {
@@ -52,6 +56,13 @@ public struct LinearIssueDetailView: View {
       }
     }
     .task(id: model.ref) { await model.load() }
+    .environment(\.openURL, OpenURLAction(handler: openLink))
+  }
+
+  private func openLink(_ url: URL) -> OpenURLAction.Result {
+    guard let onOpenDesign, FigmaLink.isDesign(url) else { return .systemAction }
+    onOpenDesign(url.absoluteString)
+    return .handled
   }
 
   private func header(_ issue: HostStore.LinearIssueDetail) -> some View {

@@ -38,7 +38,11 @@ private struct IssueContent: View {
   var body: some View {
     LinearIssueDetailView(
       model: model, canEdit: host.hasControl, canStart: host.hasControl && !host.projects.isEmpty,
-      onOpenSession: open, onStart: start
+      onOpenSession: open, onStart: start,
+      onOpenDesign: { url in
+        Telemetry.capture(.designOpened(source: .issue))
+        router.push(.design(url: url, sessionId: nil))
+      }
     )
     .background(theme.bg.ignoresSafeArea())
     .navigationTitle(model.issue?.identifier ?? model.ref)

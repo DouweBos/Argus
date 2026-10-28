@@ -56,6 +56,8 @@ import { CodeFile, CodeSearchEvent } from "./models/code";
 import { GitStashEntry } from "./models/git/history";
 import { GitTag } from "./models/git/remotes";
 import {
+  DesignComparison,
+  FigmaFrameDetails,
   IntegrationStatus,
   LinearIssue,
   LinearIssueDetail,
@@ -583,6 +585,14 @@ export const MethodParams = {
     issue_id: z.string(),
     body: z.string().trim().min(1),
   }),
+  /** A Figma frame link, `node-id` and all. */
+  "figma.frame_details": z.object({ url: z.string().trim().min(1).max(2000) }),
+  /** The frame against a screenshot of one of the computer's devices. */
+  "design.compare": z.object({
+    url: z.string().trim().min(1).max(2000),
+    platform: z.enum(["android", "ios"]),
+    device_key: z.string().min(1).max(200),
+  }),
   "github.pull_requests": z.object({
     /** Omit for every registered project. */
     repo_roots: z.array(z.string()).optional(),
@@ -915,6 +925,9 @@ export const MethodResult = {
   }),
   "linear.update_issue": z.object({ issue: LinearIssue }),
   "linear.comment": z.object({ accepted: z.boolean() }),
+  /** Null when the link isn't a frame Figma could render. */
+  "figma.frame_details": z.object({ details: FigmaFrameDetails.nullable() }),
+  "design.compare": z.object({ comparison: DesignComparison }),
   "github.pull_requests": z.object({
     pull_requests: z.array(RemotePullRequest),
   }),
