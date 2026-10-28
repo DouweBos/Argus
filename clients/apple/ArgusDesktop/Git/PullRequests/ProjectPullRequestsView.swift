@@ -93,6 +93,7 @@ private struct NewPullRequestSheet: View {
       }
     }
     .formStyle(.grouped)
+    .toggleStyle(.argusSwitch)
     .safeAreaInset(edge: .top) {
       Text("New Pull Request").font(.scaled(.headline)).frame(maxWidth: .infinity, alignment: .leading)
         .padding([.top, .horizontal], 20)

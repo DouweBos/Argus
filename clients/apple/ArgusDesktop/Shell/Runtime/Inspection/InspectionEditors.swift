@@ -140,7 +140,7 @@ struct InspectionBoolEdit: View {
     Toggle(
       "", isOn: Binding(get: { value }, set: { commit($0 ? "true" : "false") })
     )
-    .toggleStyle(.switch)
+    .toggleStyle(.argusSwitch)
     .controlSize(.mini)
     .labelsHidden()
   }

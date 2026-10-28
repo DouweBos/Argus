@@ -238,7 +238,7 @@ public struct SettingsToggleRow: View {
   public var body: some View {
     SettingsRow(title, description: description) {
       Toggle(title, isOn: $isOn)
-        .toggleStyle(.switch)
+        .toggleStyle(.argusSwitch)
         .controlSize(.small)
     }
   }

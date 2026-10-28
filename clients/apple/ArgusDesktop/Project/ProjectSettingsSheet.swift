@@ -178,6 +178,7 @@ private struct ProjectSettingsDetail: View {
       }
     }
     .formStyle(.grouped)
+    .toggleStyle(.argusSwitch)
     .id(section)
   }
 }

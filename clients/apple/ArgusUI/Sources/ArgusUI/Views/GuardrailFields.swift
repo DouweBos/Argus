@@ -4,7 +4,6 @@ import SwiftUI
 /// The limits a run is held to, whatever its playbook says. Enforced on the
 /// computer, never in the prompt — this only edits the numbers.
 public struct GuardrailFields: View {
-  @Environment(\.theme) private var theme
   @Binding var guardrails: RemoteAutomationGuardrails
 
   public init(guardrails: Binding<RemoteAutomationGuardrails>) {
@@ -47,14 +46,14 @@ public struct GuardrailFields: View {
 
       Toggle("Require green CI before an auto-merge", isOn: $guardrails.requireCleanCi)
         .font(.scaled(size: 14))
-        .tint(theme.tint)
+        .toggleStyle(.argusSwitch)
 
       Toggle(
         "Retry on another Claude account when a usage limit is hit",
         isOn: $guardrails.retryOtherAccounts
       )
       .font(.scaled(size: 14))
-      .tint(theme.tint)
+      .toggleStyle(.argusSwitch)
     }
   }
 

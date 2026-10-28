@@ -98,7 +98,7 @@ struct SettingsView: View {
 
       Section {
         Toggle("Expand image reads", isOn: autoExpandImageReadsBinding)
-          .tint(theme.tint)
+          .toggleStyle(.argusSwitch)
       } header: {
         Text("Transcript")
       } footer: {
@@ -125,7 +125,7 @@ struct SettingsView: View {
 
       Section {
         Toggle("Background push", isOn: pushBinding)
-          .tint(theme.tint)
+          .toggleStyle(.argusSwitch)
       } footer: {
         Text(app.pushState.explanation)
       }
@@ -142,7 +142,7 @@ struct SettingsView: View {
 
       Section {
         Toggle("Anonymous usage & crash reports", isOn: telemetryBinding)
-          .tint(theme.tint)
+          .toggleStyle(.argusSwitch)
       } header: {
         Text("Privacy")
       } footer: {

@@ -46,7 +46,7 @@ private struct RemoteSettingsForm: View {
                 text: enabled ? RemoteAccessLabels.reachabilityLabel(status) : "off")
             }
             Toggle("Enable remote access", isOn: toggle(\.enabled, .enabled) { .init(enabled: $0) })
-              .toggleStyle(.switch)
+              .toggleStyle(.argusSwitch)
               .controlSize(.small)
               .disabled(model.busy || status == nil)
           }

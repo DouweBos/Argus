@@ -8,7 +8,6 @@ import SwiftUI
 /// proposals, so disagreeing about one thing cannot quietly empty the inbox of
 /// everything else. Turning it on is the user saying "yes, take that one out".
 public struct RunFeedbackSheet: View {
-  @Environment(\.theme) private var theme
   @Environment(AutomationsStore.self) private var store
   @Environment(\.dismiss) private var dismiss
 
@@ -53,7 +52,7 @@ public struct RunFeedbackSheet: View {
         ) {
           Toggle("It may withdraw or supersede what your note names", isOn: $allowClearing)
             .font(.scaled(size: 14))
-            .tint(theme.tint)
+            .toggleStyle(.argusSwitch)
         }
       }
       .navigationTitle("Give feedback")

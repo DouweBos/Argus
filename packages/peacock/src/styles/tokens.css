@@ -70,6 +70,10 @@ html[data-theme="dark"] {
   --accent-border-soft: rgba(245, 166, 35, 0.25);
   --accent-border-strong: rgba(245, 166, 35, 0.4);
 
+  /* A switch's on state; follows the accent unless a colour theme overrides it. */
+  --toggle-on: var(--accent);
+  --toggle-on-border: var(--accent-hover);
+
   /* ─── Semantic ─── */
   --success: #00d4aa;
   --success-soft: #4ade80;
@@ -301,6 +305,10 @@ html[data-theme="light"] {
   --accent-border-soft: rgba(199, 134, 31, 0.3);
   --accent-border-strong: rgba(199, 134, 31, 0.5);
 
+  /* A switch's on state; follows the accent unless a colour theme overrides it. */
+  --toggle-on: var(--accent);
+  --toggle-on-border: var(--accent-hover);
+
   /* ─── Semantic ─── darkened for contrast on light backgrounds */
   --success: #00a884;
   --success-soft: #2fa355;
@@ -530,6 +538,9 @@ html:not([data-theme="light"])[data-color-theme="muted"] {
   --accent-secondary: #b4b4c2;
   --accent-fg: #15151c;
   --accent-gradient: linear-gradient(135deg, #ececf1, #9d9daf);
+  /* A monochrome switch reads as off, so it borrows amber. */
+  --toggle-on: var(--color-theme-amber-accent);
+  --toggle-on-border: var(--color-theme-amber-accent);
 }
 
 html[data-theme="light"][data-color-theme="muted"] {
@@ -538,6 +549,9 @@ html[data-theme="light"][data-color-theme="muted"] {
   --accent-secondary: #3d3d4a;
   --accent-fg: #ffffff;
   --accent-gradient: linear-gradient(135deg, #18181f, #5c5c72);
+  /* A monochrome switch reads as off, so it borrows amber. */
+  --toggle-on: var(--color-theme-amber-accent);
+  --toggle-on-border: var(--color-theme-amber-accent);
 }
 
 html:not([data-theme="light"])[data-color-theme="grove"] {

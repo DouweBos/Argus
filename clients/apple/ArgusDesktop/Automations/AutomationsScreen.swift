@@ -68,7 +68,7 @@ struct AutomationsScreen: View {
             get: { automation.enabled },
             set: { on in Task { await store.setEnabled(id: automation.id, enabled: on) } })
         )
-        .toggleStyle(.switch).controlSize(.mini).labelsHidden()
+        .toggleStyle(.argusSwitch).controlSize(.mini).labelsHidden()
         .help(automation.enabled ? "Enabled" : "Paused")
       }
       .width(44)

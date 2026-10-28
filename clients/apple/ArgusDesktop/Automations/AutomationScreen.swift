@@ -82,6 +82,7 @@ private struct AutomationDetail: View {
       runHistory
     }
     .formStyle(.grouped)
+    .toggleStyle(.argusSwitch)
   }
 
   private var runHistory: some View {
@@ -118,7 +119,7 @@ private struct AutomationDetail: View {
             Task { await store.setEnabled(id: automationId, enabled: on) }
           })
       )
-      .toggleStyle(.switch)
+      .toggleStyle(.argusSwitch)
       AutomationRunButton(automationId: automationId)
       Button("Delete") { confirmingDelete = true }
       Button(saving ? "Saving…" : saved == draft ? "Saved" : "Save Changes") { save() }

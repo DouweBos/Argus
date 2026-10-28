@@ -25,6 +25,8 @@ public struct Theme: Sendable, Equatable {
   public var onAccent: Color
   /// For system controls (`.tint`), which draw white labels and knobs on it.
   public var tint: Color
+  /// A switch's on track; Muted's grey would read as off, so it borrows amber.
+  public var switchTint: Color
   public var success: Color
   public var successSoft: Color
   public var warning: Color
@@ -56,7 +58,8 @@ public struct Theme: Sendable, Equatable {
   /// near-black (or white) canvas, hairlines instead of boxes. Peacock keeps
   /// the colours that carry meaning — the accent, and the status palette.
   private static func base(
-    accent: Color, accentSoft: Color, accentBorder: Color, onAccent: Color, tint: Color? = nil, scheme: ColorScheme
+    accent: Color, accentSoft: Color, accentBorder: Color, onAccent: Color, tint: Color? = nil, switchTint: Color? = nil,
+    scheme: ColorScheme
   ) -> Theme {
     let neutrals = Neutrals.for(scheme)
     return Theme(
@@ -76,6 +79,7 @@ public struct Theme: Sendable, Equatable {
       accentBorder: accentBorder,
       onAccent: onAccent,
       tint: tint ?? accent,
+      switchTint: switchTint ?? accent,
       success: scheme == .light ? Color(hex: 0x00A884) : Color(hex: 0x00D4AA),
       successSoft: (scheme == .light ? Color(hex: 0x00A884) : Color(hex: 0x00D4AA)).opacity(0.16),
       warning: scheme == .light ? Color(hex: 0xD69A00) : Color(hex: 0xFFD54A),
@@ -109,6 +113,7 @@ public struct Theme: Sendable, Equatable {
       onAccent: onAccent,
       // A near-white tint would hide those white labels and knobs.
       tint: colorTheme == .muted && scheme == .dark ? Color(hex: 0x6E6E7A) : accent,
+      switchTint: colorTheme == .muted ? ColorTheme.amber.accent(for: scheme) : accent,
       scheme: scheme)
   }
 }

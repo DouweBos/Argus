@@ -235,7 +235,6 @@ public struct BranchActionsView: View {
 
 /// A branch name, for creating one or renaming one.
 public struct BranchNameSheet: View {
-  @Environment(\.theme) private var theme
   @Environment(\.dismiss) private var dismiss
 
   let title: String
@@ -269,7 +268,7 @@ public struct BranchNameSheet: View {
         }
         if offerCheckout {
           Toggle(isOn: $checkout) { MutedText("Check out after creating") }
-            .tint(theme.tint)
+            .toggleStyle(.argusSwitch)
         }
       }
       .navigationTitle(title)

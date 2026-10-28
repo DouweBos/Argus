@@ -68,8 +68,8 @@
 
 .checked .track,
 .track.checked {
-  background: var(--accent);
-  border-color: var(--accent-hover);
+  background: var(--toggle-on);
+  border-color: var(--toggle-on-border);
 }
 .checked .thumb {
   background: var(--accent-fg);

@@ -87,6 +87,7 @@ private struct QuickRunComposer: View {
       }
     }
     .formStyle(.grouped)
+    .toggleStyle(.argusSwitch)
     .navigationTitle("Quick Run")
     .navigationSubtitle("A playbook, run once, against the projects you pick")
     .task { await store.refresh() }
