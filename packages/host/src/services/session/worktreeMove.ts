@@ -253,12 +253,28 @@ function quiesce(sessionIds: string[]): void {
 
 type StepReporter = (step: MoveStep, done?: number, total?: number) => void;
 
-async function countEntries(dir: string): Promise<number> {
-  try {
-    return (await fs.promises.readdir(dir, { recursive: true })).length;
-  } catch {
-    return 0;
+/**
+ * Streams the walk: a recursive `readdir` holds every path at once, and a
+ * pnpm `node_modules` has millions of them — enough to run the host out of heap.
+ */
+async function countEntries(root: string): Promise<number> {
+  let count = 0;
+  const pending = [root];
+  while (pending.length > 0) {
+    const dir = pending.pop() as string;
+    try {
+      for await (const entry of await fs.promises.opendir(dir)) {
+        count += 1;
+        if (entry.isDirectory()) {
+          pending.push(path.join(dir, entry.name));
+        }
+      }
+    } catch {
+      // Unreadable subtree: the copy reports it if it matters.
+    }
   }
+
+  return count;
 }
 
 /**

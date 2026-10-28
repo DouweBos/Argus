@@ -62,6 +62,7 @@ export type AppView =
   | "devices"
   | "home"
   | "inbox"
+  | "issues"
   | "notifications"
   | "pull-request-detail"
   | "pull-requests"
@@ -316,6 +317,7 @@ function parsePathname(
   if (
     segments[0] === "agents" ||
     segments[0] === "devices" ||
+    segments[0] === "issues" ||
     segments[0] === "notifications" ||
     segments[0] === "pull-requests" ||
     segments[0] === "runtimes"
@@ -379,6 +381,7 @@ export function routePattern(pathname: string): string {
       return usagePathname(route.usageTab);
     case "agents":
     case "devices":
+    case "issues":
     case "notifications":
     case "pull-requests":
     case "runtimes":
@@ -463,6 +466,7 @@ function routePathname(route: Partial<ParsedRoute>): string {
   if (
     route.view === "agents" ||
     route.view === "devices" ||
+    route.view === "issues" ||
     route.view === "notifications" ||
     route.view === "pull-requests" ||
     route.view === "runtimes"

@@ -42,6 +42,7 @@ import {
   toggleTool,
   useLeftSidebarVisible,
 } from "../../../stores/layoutStore";
+import { useLinearIssuesSync } from "../../../stores/linearIssuesStore";
 import { openOpenPalette } from "../../../stores/openPaletteStore";
 import { useProposalsSync } from "../../../stores/proposalStore";
 import { usePullRequestsSync } from "../../../stores/pullRequestStore";
@@ -66,6 +67,7 @@ import { HomeScreen } from "../../home/HomeScreen";
 import { NewSessionPicker } from "../../home/HomeScreen/NewSessionPicker";
 import { useHomeData } from "../../home/HomeScreen/useHomeData";
 import { InboxRoot } from "../../inbox";
+import { IssuesScreen } from "../../issues/IssuesScreen";
 import { NotificationsScreen } from "../../notifications";
 import { PullRequestDetailScreen } from "../../pullRequests/PullRequestDetailScreen";
 import { PullRequestsScreen } from "../../pullRequests/PullRequestsScreen";
@@ -124,6 +126,7 @@ function renderCenter(
     | "devices"
     | "home"
     | "inbox"
+    | "issues"
     | "notifications"
     | "pull-request-detail"
     | "pull-requests"
@@ -152,6 +155,9 @@ function renderCenter(
   if (centerView === "usage") {
     return <UsageScreen />;
   }
+  if (centerView === "issues") {
+    return <IssuesScreen />;
+  }
   if (centerView === "runtimes") {
     return <RuntimeScreen />;
   }
@@ -179,6 +185,7 @@ export function AppShell() {
   const setLeftWidth = setLeftPanelWidth;
   useWindowFocus();
   useSuppressSpacePageScroll();
+  useLinearIssuesSync();
   usePullRequestsSync();
   useAutomationsSync();
   useProposalsSync();
