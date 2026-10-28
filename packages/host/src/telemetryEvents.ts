@@ -223,6 +223,10 @@ export interface EventMap {
   };
   integration_reauth_needed: { service: "figma" | "linear" };
   issue_filed_from_device: { has_screenshot: boolean };
+  issue_filter_changed: {
+    action: "add" | "clear" | "flip" | "remove";
+    field: string;
+  };
   issue_report_posted: { has_screenshots: boolean; trigger: "merge" | "pr" };
   linear_issue_updated: { field: "comment" | "priority" | "status" };
   /** Mirrors `LegacyTunnelKind` in `services/remote/legacyTunnels.ts`. */
