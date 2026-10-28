@@ -18,9 +18,23 @@ extension AppStore {
         Telemetry.capture(.memberRemoved(role: role))
       case .computerAdded(let viaPairing):
         Telemetry.capture(.computerAdded(via: viaPairing ? .existingPairing : .code))
+      case .joinActed(let action, let role):
+        Telemetry.capture(.joinActed(action: action, role: role))
+      case .memberRenamed(let role):
+        Telemetry.capture(.memberRenamed(role: role))
       }
     }
+    // A removal reaches the connected computer at once, not at its next poll.
+    account.onLogAppended = { [weak self] in
+      Task { await self?.syncAccount() }
+    }
     await account.start()
+  }
+
+  /// Hand the connected computer account entries it hasn't seen (§5.5).
+  func syncAccount() async {
+    guard let backend = host.backend else { return }
+    await account.sync(over: .backend(backend))
   }
 
   /// A pairing's fields live in the keystore; an account host's only here.

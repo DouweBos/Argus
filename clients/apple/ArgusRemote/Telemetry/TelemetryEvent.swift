@@ -55,6 +55,11 @@ enum TelemetryEvent {
   /// Whether a member this phone took off the account was a device or a computer.
   typealias MemberRole = AccountMember.Role
 
+  /// This phone's side of a device approval: what happened, and whether it
+  /// was the device joining or the one approving.
+  typealias JoinAction = AccountStore.JoinAction
+  typealias JoinRole = AccountStore.JoinRole
+
   /// Where adding a computer to the account started.
   enum ComputerAddedVia: String {
     /// A link code typed into the phone.
@@ -116,6 +121,10 @@ enum TelemetryEvent {
   case memberRemoved(role: MemberRole)
   /// The phone approved a computer's link; the host counts completion itself.
   case computerAdded(via: ComputerAddedVia)
+  /// The phone asked to join, or approved or denied a device joining.
+  case joinActed(action: JoinAction, role: JoinRole)
+  /// The phone renamed a member of the account.
+  case memberRenamed(role: MemberRole)
 
   var name: String {
     switch self {
@@ -154,6 +163,8 @@ enum TelemetryEvent {
     case .accountSignedOut: "ios_account_signed_out"
     case .memberRemoved: "ios_member_removed"
     case .computerAdded: "ios_computer_added"
+    case .joinActed: "ios_join_acted"
+    case .memberRenamed: "ios_member_renamed"
     }
   }
 
@@ -164,8 +175,10 @@ enum TelemetryEvent {
       [:]
     case .accountSignedIn(let provider, let firstDevice):
       ["provider": provider.rawValue, "first_device": firstDevice]
-    case .memberRemoved(let role):
+    case .memberRemoved(let role), .memberRenamed(let role):
       ["role": role.rawValue]
+    case .joinActed(let action, let role):
+      ["action": action.rawValue, "role": role.rawValue]
     case .computerAdded(let via):
       ["via": via.rawValue]
     case .paired(let endpointKind, let hasControl):

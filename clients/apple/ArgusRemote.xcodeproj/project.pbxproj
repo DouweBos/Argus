@@ -48,6 +48,9 @@
 		AAC53DE55E408A8C4899520D /* DeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B760406B1B2B956C52E89F9 /* DeviceView.swift */; };
 		AC0A00000000000000000001 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0A00000000000000000002 /* AccountView.swift */; };
 		AC0A00000000000000000003 /* AddComputerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0A00000000000000000004 /* AddComputerView.swift */; };
+		AC0A00000000000000000007 /* ApproveJoinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0A00000000000000000008 /* ApproveJoinView.swift */; };
+		AC0A00000000000000000009 /* JoinAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0A0000000000000000000A /* JoinAccountView.swift */; };
+		AC0A0000000000000000000B /* AccountMembersSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0A0000000000000000000C /* AccountMembersSection.swift */; };
 		AC0A00000000000000000005 /* AppStore+Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0A00000000000000000006 /* AppStore+Account.swift */; };
 		AC0A00000000000000000010 /* ArgusAuth in Frameworks */ = {isa = PBXBuildFile; productRef = AC0A00000000000000000012 /* ArgusAuth */; };
 		AC0A00000000000000000011 /* ArgusAuth in Frameworks */ = {isa = PBXBuildFile; productRef = AC0A00000000000000000013 /* ArgusAuth */; };
@@ -150,6 +153,9 @@
 		AA1000000000000000000002 /* ClaudeAccountsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeAccountsView.swift; sourceTree = "<group>"; };
 		AC0A00000000000000000002 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		AC0A00000000000000000004 /* AddComputerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddComputerView.swift; sourceTree = "<group>"; };
+		AC0A00000000000000000008 /* ApproveJoinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApproveJoinView.swift; sourceTree = "<group>"; };
+		AC0A0000000000000000000A /* JoinAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoinAccountView.swift; sourceTree = "<group>"; };
+		AC0A0000000000000000000C /* AccountMembersSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountMembersSection.swift; sourceTree = "<group>"; };
 		AC0A00000000000000000006 /* AppStore+Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Account.swift"; sourceTree = "<group>"; };
 		AC0A00000000000000000014 /* ArgusAuth */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ArgusAuth; sourceTree = SOURCE_ROOT; };
 		AC6939D496D536368D99A574 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -296,6 +302,9 @@
 				EC699CB84E030428A8060A13 /* ChangesView.swift */,
 				46E305D96C871BB99B7DB468 /* ComputerView.swift */,
 				AC0A00000000000000000004 /* AddComputerView.swift */,
+				AC0A00000000000000000008 /* ApproveJoinView.swift */,
+				AC0A0000000000000000000A /* JoinAccountView.swift */,
+				AC0A0000000000000000000C /* AccountMembersSection.swift */,
 				AC0A00000000000000000002 /* AccountView.swift */,
 				57ADDE446C44DCB7D8E5AA3C /* DevicesView.swift */,
 				AA1000000000000000000002 /* ClaudeAccountsView.swift */,
@@ -641,6 +650,9 @@
 				C8A9E8FF4A15285665BCF2F8 /* ChangesView.swift in Sources */,
 				71F924F0B3BDE15E0083BDEE /* ComputerView.swift in Sources */,
 				AC0A00000000000000000003 /* AddComputerView.swift in Sources */,
+				AC0A00000000000000000007 /* ApproveJoinView.swift in Sources */,
+				AC0A00000000000000000009 /* JoinAccountView.swift in Sources */,
+				AC0A0000000000000000000B /* AccountMembersSection.swift in Sources */,
 				AC0A00000000000000000001 /* AccountView.swift in Sources */,
 				AAC53DE55E408A8C4899520D /* DeviceView.swift in Sources */,
 				2861E9669ED0132B42988497 /* DevicesView.swift in Sources */,

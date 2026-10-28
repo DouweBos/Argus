@@ -36,9 +36,27 @@ your account.
 If your account is still empty, the first computer you link this way becomes
 its first member instead, after you confirm on that computer.
 
-In this first release only one device can join an account by signing in: the
-first. Signing in on a second phone or Mac shows _Waiting for device approval
-(coming soon)_ — keep using QR pairing on it until device approval lands.
+### Adding a phone or a Mac
+
+The first device you sign in with sets up the account. Every device after it
+asks to join, and one that is already on the account approves it:
+
+1. Sign in on the new iPhone or Mac app. It shows _Approve this phone_ (or Mac).
+2. On a device already on the account — your iPhone, the Mac app, or the
+   desktop app — a prompt says the new one wants to join. Choose **Review**
+   (or find it under Settings → Account → **Waiting to join**).
+3. Both screens show the same six-digit code. Check it, then confirm on both.
+
+The new device then lists every computer on the account and connects to them
+without a pairing code. A computer that hasn't heard of it yet looks it up the
+first time it knocks.
+
+If you've lost every device, a linked computer can approve instead: type
+`approve` in its `argus-host` terminal, or use the prompt in the desktop app on
+that computer. (Turn this off per computer with _Approve from this computer_.)
+
+Deny anything you didn't just sign in on: a request only gets in if someone
+confirms the code on a device that's already trusted.
 
 ## What the account service can and can't see
 
@@ -74,8 +92,15 @@ settings. It is derived from the very first entry in your log, so it is the same
 everywhere for the same account; comparing it across two devices is a quick
 by-eye check that they are on the same account.
 
-## Unlinking and removing
+## Devices, unlinking and removing
 
+Settings → Account lists the devices on your account — name, kind, when it was
+added, and which one you're on — next to its computers. Rename any of them from
+there.
+
+- **Remove** a device from your phone, the Mac app or the desktop app. Every
+  computer it is connected to drops it straight away; it has to be approved
+  again to come back.
 - **Sign out** on a device removes that device from the account. Computers it
   was QR-paired with are unaffected.
 - **Unlink this computer** (desktop Settings → Account, or `logout` in
@@ -83,8 +108,9 @@ by-eye check that they are on the same account.
   devices on the account can no longer connect to it through the account.
 - Removing a computer from your phone does the same from the other side.
 
-A computer polls the account every few minutes and on every new connection, so
-a removed device loses access within minutes.
+A device that removes another hands the removal straight to every computer it's
+connected to, so it can't be held back by the account service. Other computers
+pick it up within five minutes.
 
 ## Computer settings
 

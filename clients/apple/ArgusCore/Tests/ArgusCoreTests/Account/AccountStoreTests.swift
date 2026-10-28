@@ -46,7 +46,8 @@ struct AccountStoreTests {
     let memory = MemoryAccountVault(vault)
     let store = AccountStore(
       auth: auth, vault: memory, deviceKind: "ios", deviceName: { "Phone" }, localHost: localHost,
-      baseURL: URL(string: "https://example.test/argus/account/v1")!, http: service.http)
+      baseURL: URL(string: "https://example.test/argus/account/v1")!, http: service.http,
+      joinPollInterval: .seconds(3600))
     return (store, memory)
   }
 
@@ -89,13 +90,15 @@ struct AccountStoreTests {
     #expect(events == [.signedIn(provider: .github, firstDevice: false)])
   }
 
-  @Test("a second device waits for approval")
+  @Test("a second device asks to join and waits for approval")
   func secondDevice() async {
     service.seed([genesis(TestKey(1))])
     let (store, _) = makeStore()
     await store.start()
     await store.signIn(with: .apple)
     #expect(store.phase == .awaitingApproval)
+    #expect(store.join == .waiting)
+    #expect(service.joinIds.count == 1)
     #expect(service.batches.isEmpty)
   }
 

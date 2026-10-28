@@ -13,18 +13,23 @@ public enum LinkFlow: Equatable, Sendable {
   case failed(String)
 }
 
+/// A request this device is approving: whom the code is about, and the head
+/// and code it was computed for.
 struct PendingLink {
   var viaPairing: Bool
-  var claim: AccountLinkClaim
+  var requestId: String
+  var subject: AccountRequestSubject
   var head: AccountHead
   var sas: AccountSas
+
+  var name: String { subject.member?.name ?? "" }
 }
 
 extension AccountStore {
   /// Claim a typed `XXXX-XXXX` code and show the code to compare.
   /// `viaPairing` when a QR-paired computer handed the code over (`account.request_link`).
   public func link(code: String, viaPairing: Bool = false) async {
-    guard phase == .ready, let keys = vault.keys else {
+    guard phase == .ready else {
       link = .failed(AccountStoreError.notReady.message)
       return
     }
@@ -46,7 +51,10 @@ extension AccountStore {
         link = .failed("\(claim.subject.host.name) is already on your account.")
         return
       }
-      try await approve(claim, viaPairing: viaPairing, approverId: keys.memberId, approverSignPub: keys.signPub)
+      let subject = AccountRequestSubject(
+        host: claim.subject.host, device: claim.subject.device, proofs: claim.subject.proofs)
+      pendingLink = try await beginApproval(requestId: claim.requestId, subject: subject, viaPairing: viaPairing)
+      link = .confirm(sas: pendingLink!.sas.sas, hostName: claim.subject.host.name)
     } catch AccountServiceError.conflict {
       link = .failed("That code is already being used by another account.")
     } catch {
@@ -54,57 +62,65 @@ extension AccountStore {
     }
   }
 
-  /// Become the request's approver and work out the code for its head.
-  private func approve(
-    _ claim: AccountLinkClaim, viaPairing: Bool, approverId: String, approverSignPub: String
-  ) async throws {
-    let head = try await client.approve(requestId: claim.requestId, approverId: approverId)
+  /// Become the request's approver and work out the code for its head, which
+  /// must be the head this device holds.
+  func beginApproval(requestId: String, subject: AccountRequestSubject, viaPairing: Bool) async throws
+    -> PendingLink
+  {
+    guard let keys = vault.keys, let member = subject.member else { throw AccountStoreError.notReady }
+    let head = try await client.approve(requestId: requestId, approverId: keys.memberId)
     if let current = state, current.head.seq < head.seq { await refreshLog() }
     guard let current = state, current.head == head else { throw AccountStoreError.headMoved }
     let sas = try AccountSas.compute(
       .init(
         accountId: current.accountId, epoch: current.epoch, headHash: head.hash,
-        approverSignPub: approverSignPub, subjectSignPub: claim.subject.host.signPub,
-        subjectNoisePub: claim.subject.host.noisePub, requestId: claim.requestId))
-    pendingLink = PendingLink(viaPairing: viaPairing, claim: claim, head: head, sas: sas)
-    link = .confirm(sas: sas.sas, hostName: claim.subject.host.name)
+        approverSignPub: keys.signPub, subjectSignPub: member.signPub,
+        subjectNoisePub: member.noisePub, requestId: requestId))
+    return PendingLink(viaPairing: viaPairing, requestId: requestId, subject: subject, head: head, sas: sas)
+  }
+
+  /// Write the request's members onto the account on the head the code was
+  /// computed for. Nil when the log moved first: the caller shows the new
+  /// code from the returned approval instead.
+  func writeApproval(_ pending: PendingLink) async throws -> PendingLink? {
+    var entries: [AccountEntry] = []
+    var head = pending.head
+    // A link writes its computer first, then the window riding along with it.
+    for member in [pending.subject.host, pending.subject.device].compactMap({ $0 }) {
+      guard let proof = pending.subject.proofs[member.id] else { throw AccountStoreError.keys }
+      let fields: AccountEntryBuilder.Fields =
+        member.role == .host
+        ? .addHost(member: member, requestId: pending.requestId, sasCommit: pending.sas.commit, proof: proof)
+        : .addDevice(member: member, requestId: pending.requestId, sasCommit: pending.sas.commit, proof: proof)
+      let next = try entry(head: head, fields)
+      entries.append(next)
+      head = AccountHead(seq: head.seq + 1, hash: next.hash)
+    }
+    guard let epoch = state?.epoch else { throw AccountStoreError.notReady }
+    do {
+      try await client.append(epoch: epoch, entries: entries)
+    } catch AccountServiceError.conflict {
+      await refreshLog()
+      return try await beginApproval(
+        requestId: pending.requestId, subject: pending.subject, viaPairing: pending.viaPairing)
+    }
+    try await applyOwn(entries)
+    return nil
   }
 
   /// "Codes match": write the computer onto the account. When the log moved
   /// meanwhile the code changes too, so it goes back to comparing.
   public func confirmLink() async {
-    guard let pending = pendingLink, let keys = vault.keys else { return }
-    let claim = pending.claim
-    link = .working("Adding \(claim.subject.host.name)…")
+    guard let pending = pendingLink else { return }
+    link = .working("Adding \(pending.name)…")
     do {
-      guard let hostProof = claim.subject.proofs[claim.subject.host.id] else {
-        throw AccountStoreError.keys
-      }
-      var entries = [
-        try entry(
-          head: pending.head,
-          .addHost(
-            member: claim.subject.host, requestId: claim.requestId, sasCommit: pending.sas.commit,
-            proof: hostProof))
-      ]
-      if let device = claim.subject.device, let proof = claim.subject.proofs[device.id] {
-        entries.append(
-          try entry(
-            head: AccountHead(seq: pending.head.seq + 1, hash: entries[0].hash),
-            .addDevice(member: device, requestId: claim.requestId, sasCommit: pending.sas.commit, proof: proof)))
-      }
-      guard let epoch = state?.epoch else { throw AccountStoreError.notReady }
-      do {
-        try await client.append(epoch: epoch, entries: entries)
-      } catch AccountServiceError.conflict {
-        await refreshLog()
-        try await approve(
-          claim, viaPairing: pending.viaPairing, approverId: keys.memberId, approverSignPub: keys.signPub)
+      if let again = try await writeApproval(pending) {
+        pendingLink = again
+        link = .confirm(sas: again.sas.sas, hostName: again.name)
         return
       }
-      try await applyOwn(entries)
       pendingLink = nil
-      link = .done(hostName: claim.subject.host.name)
+      link = .done(hostName: pending.name)
       onEvent(.computerAdded(viaPairing: pending.viaPairing))
       await refreshDirectory()
     } catch {
@@ -120,7 +136,7 @@ extension AccountStore {
     }
     pendingLink = nil
     link = .idle
-    try? await client.deny(requestId: pending.claim.requestId)
+    try? await client.deny(requestId: pending.requestId)
   }
 
   public func resetLink() {
