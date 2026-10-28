@@ -137,6 +137,7 @@ export function useIssueDraft(
 
   return {
     adding: adding > 0,
+    attach,
     clear: () => setIssues([]),
     handleClosePicker: () => setPickerOpen(false),
     connected,

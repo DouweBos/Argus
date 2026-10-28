@@ -98,3 +98,10 @@ export const LinearIssueContext = z.object({
   designUrls: z.array(z.string()),
 });
 export type LinearIssueContext = z.infer<typeof LinearIssueContext>;
+
+export const LinearTeam = z.object({
+  id: z.string(),
+  key: z.string(),
+  name: z.string(),
+});
+export type LinearTeam = z.infer<typeof LinearTeam>;

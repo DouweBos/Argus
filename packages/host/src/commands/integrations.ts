@@ -8,7 +8,9 @@ import {
   disconnect,
   getLinearIssue,
   listIntegrations,
+  fileLinearIssue,
   linearIssueContext,
+  listLinearTeams,
   listLinearIssues,
 } from "../services/integrations/service";
 import { deviceScreenshot } from "../services/simulator/screenshot";
@@ -24,6 +26,10 @@ export function registerIntegrationCommands(): void {
   );
   defineTypedCommand("linear_get_issue", (p) => getLinearIssue(p.ref));
   defineTypedCommand("linear_issue_context", (p) => linearIssueContext(p.ref));
+  defineTypedCommand("linear_list_teams", () => listLinearTeams());
+  defineTypedCommand("linear_file_issue", (p) =>
+    fileLinearIssue({ ...p, screenshot: p.screenshot ?? null }),
+  );
   defineTypedCommand("figma_design_ref", (p) => figmaDesignRef(p.url));
   defineTypedCommand("figma_frame", (p) => figmaFrame(p.url));
   defineTypedCommand("device_screenshot", (p) =>

@@ -537,3 +537,19 @@ export const subscribeSimulator = (cb: () => void): (() => void) =>
 /** For tests */
 export const getSimulatorState = () => simulatorStore.getState();
 export const setSimulatorState = simulatorStore.setState.bind(simulatorStore);
+
+/** "iPhone 16 Pro (iOS 18.2)" for a device key, for bug reports and the like. */
+export const useDeviceLabel = (
+  platform: "android" | "ios",
+  deviceKey: string | null,
+): string =>
+  simulatorStore((s) => {
+    if (platform === "ios") {
+      const device = s.devices.find((d) => d.udid === deviceKey);
+
+      return device ? `${device.name} (${device.runtime})` : "iOS Simulator";
+    }
+    const device = s.androidDevices.find((d) => d.serial === deviceKey);
+
+    return device ? `${device.name} (Android)` : "Android emulator";
+  });
