@@ -99,6 +99,7 @@ extension DesktopModel {
     case .pullRequests: screen = "Pull Requests"
     case .pullRequest(let repo, let number): screen = "\(repo)#\(number)"
     case .issues: screen = "Issues"
+    case .design: screen = "Design"
     case .automations, .automation, .quickRun: screen = "Automations"
     case .inbox, .proposal: screen = "Inbox"
     case .notifications: screen = "Notifications"
