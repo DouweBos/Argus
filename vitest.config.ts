@@ -16,6 +16,8 @@ export default defineConfig({
       "electron/**/*.test.ts",
       "packages/host/**/*.test.ts",
       "packages/peacock/src/**/*.test.{ts,tsx}",
+      "packages/remote-client/src/**/*.test.ts",
+      "packages/remote-protocol/src/**/*.test.ts",
       "clients/argus-web/src/**/*.test.{ts,tsx}",
     ],
     environment: "node",
