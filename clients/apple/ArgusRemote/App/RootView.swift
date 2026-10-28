@@ -461,6 +461,8 @@ struct RootView: View {
       PullRequestsView()
     case .issues:
       IssuesView()
+    case .issue(let ref):
+      IssueView(ref: ref).id(ref)
     case .pullRequest(let repo, let number, let label):
       PullRequestView(repo: repo, number: number, label: label)
     case .automations:

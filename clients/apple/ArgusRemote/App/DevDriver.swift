@@ -299,6 +299,7 @@
       case "devices": self = .devices
       case "pullRequests": self = .pullRequests
       case "issues": self = .issues
+      case "issue": self = .issue(ref: arg(1))
       default: return nil
       }
     }

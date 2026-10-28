@@ -221,6 +221,9 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   // The host owner's Linear account; a guest has no claim on it.
   "integrations.list": DENIED,
   "linear.issues": DENIED,
+  "linear.issue": DENIED,
+  "linear.update_issue": DENIED,
+  "linear.comment": DENIED,
   // A guest reviews the agent it was handed; it does not speak on GitHub.
   "github.pull_requests": DENIED,
   "github.pull_request": DENIED,

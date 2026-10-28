@@ -1,151 +1,115 @@
 import ArgusCore
 import SwiftUI
 
-/// Your open Linear issues, grouped by where they are in the workflow, with
-/// the session already on each or a start. The native `/issues`.
+/// Open Linear issues in one scope, a section per status with the most
+/// urgent first — the desktop's Issues list. Tapping one opens it. The
+/// screen keeps it loaded with `refreshingLinearIssues`.
 public struct LinearIssuesList: View {
   @Environment(HostStore.self) private var host
-  /// False greys out "Start agent": no project picked, or no control.
-  let canStart: Bool
+  let model: LinearIssuesModel
   /// What to say while Linear isn't connected: where to connect it.
   let connectHint: String
-  let onOpenSession: (RemoteSession) -> Void
-  let onStart: (HostStore.LinearIssue) -> Void
-
-  @State private var issues: [HostStore.LinearIssue]?
-  @State private var error: String?
+  /// The issue open in the detail, highlighted.
+  let selected: String?
+  let onOpen: (HostStore.LinearIssue) -> Void
 
   public init(
-    canStart: Bool,
-    connectHint: String,
-    onOpenSession: @escaping (RemoteSession) -> Void,
-    onStart: @escaping (HostStore.LinearIssue) -> Void
+    model: LinearIssuesModel, connectHint: String, selected: String? = nil,
+    onOpen: @escaping (HostStore.LinearIssue) -> Void
   ) {
-    self.canStart = canStart
+    self.model = model
     self.connectHint = connectHint
-    self.onOpenSession = onOpenSession
-    self.onStart = onStart
+    self.selected = selected
+    self.onOpen = onOpen
   }
 
   public var body: some View {
     List {
-      if let error, issues != nil {
+      if let error = model.error, model.issues != nil {
         Banner(text: error, tone: .danger).listRowBackground(Color.clear)
       }
-      ForEach(LinearIssueBoard.groups(issues ?? [])) { group in
+      ForEach(LinearIssueBoard.columns(model.issues ?? [])) { column in
         Section {
-          ForEach(group.issues) { issue in
-            LinearIssueRow(
-              issue: issue, session: host.session(workingOn: issue), canStart: canStart,
-              onOpenSession: onOpenSession, onStart: { onStart(issue) })
+          ForEach(column.issues.sorted(by: LinearIssueBoard.byPriority)) { issue in
+            Button {
+              onOpen(issue)
+            } label: {
+              LinearIssueCard(
+                issue: issue, agentOnIt: host.session(workingOn: issue) != nil, style: .row)
+            }
+            .buttonStyle(.argusPlain)
+            .listRowBackground(issue.identifier == selected ? LinearIssueSelection() : nil)
           }
         } header: {
-          Text("\(group.title) · \(group.issues.count)")
+          HStack(spacing: 6) {
+            IssueStatusGlyph(type: column.type, size: 12)
+            Text("\(column.name) · \(column.issues.count)")
+          }
         }
       }
     }
     // Over the list, not in it: a row only gets its own height.
-    .overlay { placeholder }
-    .refreshable { await refresh() }
-    .task(id: host.connection == .ready) {
-      guard host.connection == .ready else { return }
-      await host.loadIntegrations()
-      await refresh()
-    }
-    .liveRefresh(enabled: host.connection == .ready && host.linearConnected, every: .seconds(300)) {
-      await refresh()
-    }
+    .overlay { LinearIssuesPlaceholder(model: model, connectHint: connectHint) }
+    .refreshable { await model.refresh() }
+  }
+}
+
+private struct LinearIssueSelection: View {
+  @Environment(\.theme) private var theme
+  var body: some View { theme.selection }
+}
+
+/// Not connected, failed, loading or empty: what the Issues screen shows in
+/// place of issues.
+public struct LinearIssuesPlaceholder: View {
+  @Environment(HostStore.self) private var host
+  let model: LinearIssuesModel
+  let connectHint: String
+
+  public init(model: LinearIssuesModel, connectHint: String) {
+    self.model = model
+    self.connectHint = connectHint
   }
 
-  @ViewBuilder private var placeholder: some View {
+  public var body: some View {
     if !host.linearConnected {
       EmptyState(icon: Icon.issue, title: "Linear isn't connected", body: connectHint)
-    } else if let error, issues == nil {
+    } else if let error = model.error, model.issues == nil {
       EmptyState(icon: Icon.warning, title: "Couldn't fetch your issues", body: error, selectable: true)
-    } else if issues == nil {
+    } else if model.issues == nil {
       Loading(label: "Asking Linear…")
-    } else if issues?.isEmpty == true {
-      EmptyState(
-        icon: Icon.check, title: "Nothing assigned to you",
-        body: "Open issues assigned to you in Linear show up here.")
-    }
-  }
-
-  private func refresh() async {
-    guard host.linearConnected else {
-      issues = nil
-      error = nil
-      return
-    }
-    do {
-      let found = try await host.linearIssues(query: "", limit: 100)
-      issues = found
-      error = nil
-    } catch {
-      self.error = HostStore.describe(error)
-    }
-    // "Open session" needs every project's sessions, not just the ones opened.
-    for project in host.projects {
-      await host.loadSessions(repoRoot: project.repoRoot)
+    } else if model.issues?.isEmpty == true {
+      EmptyState(icon: Icon.check, title: "No open issues", body: model.scope.emptyText)
     }
   }
 }
 
-/// One issue: what it is, how pressing, and what Argus is doing about it.
-public struct LinearIssueRow: View {
-  @Environment(\.theme) private var theme
-  let issue: HostStore.LinearIssue
-  let session: RemoteSession?
-  let canStart: Bool
-  let onOpenSession: (RemoteSession) -> Void
-  let onStart: () -> Void
+extension View {
+  /// Loads the issues once the host is ready and whenever the scope changes,
+  /// then every five minutes while Linear is connected.
+  public func refreshingLinearIssues(_ model: LinearIssuesModel) -> some View {
+    modifier(LinearIssuesRefresh(model: model))
+  }
+}
 
-  public init(
-    issue: HostStore.LinearIssue, session: RemoteSession?, canStart: Bool,
-    onOpenSession: @escaping (RemoteSession) -> Void, onStart: @escaping () -> Void
-  ) {
-    self.issue = issue
-    self.session = session
-    self.canStart = canStart
-    self.onOpenSession = onOpenSession
-    self.onStart = onStart
+private struct LinearIssuesRefresh: ViewModifier {
+  @Environment(HostStore.self) private var host
+  let model: LinearIssuesModel
+
+  func body(content: Content) -> some View {
+    content
+      .task(id: Key(ready: host.connection == .ready, scope: model.scope.rawValue)) {
+        guard host.connection == .ready else { return }
+        await host.loadIntegrations()
+        await model.refresh()
+      }
+      .liveRefresh(enabled: host.connection == .ready && host.linearConnected, every: .seconds(300)) {
+        await model.refresh()
+      }
   }
 
-  public var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      HStack(alignment: .firstTextBaseline, spacing: 8) {
-        Text(issue.identifier)
-          .font(.scaled(size: 12, design: .monospaced))
-          .foregroundStyle(theme.textMuted)
-        BodyText(issue.title, lineLimit: 2)
-      }
-      FlowRow(spacing: 6, rowSpacing: 6) {
-        MutedText(issue.state.name, lineLimit: 1)
-        if let priority = LinearIssueBoard.priority(issue.priority) {
-          Badge(label: priority, tone: LinearIssueBoard.isPressing(issue.priority) ? .warning : .muted)
-        }
-        ForEach(issue.labels, id: \.self) { Badge(label: $0) }
-      }
-      HStack(spacing: 8) {
-        if let session {
-          Btn(label: "Open session", tone: .secondary, small: true, icon: Icon.agent, hugs: true) {
-            onOpenSession(session)
-          }
-        } else {
-          Btn(label: "Start agent", small: true, icon: Icon.play, hugs: true, action: onStart)
-            .disabled(!canStart)
-        }
-        if let url = URL(string: issue.url) {
-          Link(destination: url) {
-            Label("Linear", systemImage: Icon.openExternal)
-              .font(.scaled(size: 13, weight: .semibold))
-              .foregroundStyle(theme.textSecondary)
-          }
-          .clickable()
-          .help("Open \(issue.identifier) in Linear")
-        }
-      }
-    }
-    .padding(.vertical, 4)
+  private struct Key: Equatable {
+    let ready: Bool
+    let scope: String
   }
 }

@@ -69,6 +69,7 @@
 		E79376838450019576305370 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A254961B044F508401BE46 /* AppStore.swift */; };
 		EB002C96DC172A3D1C7BDEFF /* PullRequestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC876CC2111BA8BDFB115904 /* PullRequestsView.swift */; };
 		A1F00D1E55E5A1C0DEC0FFEE /* IssuesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F00D1E55E5A1C0DEC0FFEF /* IssuesView.swift */; };
+		A1F00D1E55E5A1C0DEC0FF10 /* IssueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F00D1E55E5A1C0DEC0FF11 /* IssueView.swift */; };
 		ED1700000000000000000004 /* ArgusEditor in Frameworks */ = {isa = PBXBuildFile; productRef = ED1700000000000000000003 /* ArgusEditor */; };
 		F70136FC258ED77D2D4D337A /* WarningsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */; };
 		FAEB2F8A18B2B7EEA189693B /* AppStore+Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */; };
@@ -182,6 +183,7 @@
 		D7E500000000000000000002 /* ArgusDesktopTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArgusDesktopTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DC876CC2111BA8BDFB115904 /* PullRequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestsView.swift; sourceTree = "<group>"; };
 		A1F00D1E55E5A1C0DEC0FFEF /* IssuesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssuesView.swift; sourceTree = "<group>"; };
+		A1F00D1E55E5A1C0DEC0FF11 /* IssueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IssueView.swift; sourceTree = "<group>"; };
 		DE5C00000000000000000002 /* Argus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Argus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E3E0EB550BA6630F2052ABE5 /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
 		EC699CB84E030428A8060A13 /* ChangesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangesView.swift; sourceTree = "<group>"; };
@@ -353,6 +355,7 @@
 				74103E5844EC73EB127B8F8A /* PullRequestView.swift */,
 				DC876CC2111BA8BDFB115904 /* PullRequestsView.swift */,
 				A1F00D1E55E5A1C0DEC0FFEF /* IssuesView.swift */,
+				A1F00D1E55E5A1C0DEC0FF11 /* IssueView.swift */,
 				C01FFCA8035ABC8A01D2C6CF /* BranchesView.swift */,
 				F71EA73DE9EF93E59424EF83 /* BranchCompareView.swift */,
 				F71A133F6BBFBAFFDDBDE2AD /* CommitView.swift */,
@@ -815,6 +818,7 @@
 				97AF0DF41C25983BAD9692C1 /* PullRequestView.swift in Sources */,
 				EB002C96DC172A3D1C7BDEFF /* PullRequestsView.swift in Sources */,
 				A1F00D1E55E5A1C0DEC0FFEE /* IssuesView.swift in Sources */,
+				A1F00D1E55E5A1C0DEC0FF10 /* IssueView.swift in Sources */,
 				AA1000000000000000000001 /* ClaudeAccountsView.swift in Sources */,
 				0C2CEA8B85053A238EB47BA7 /* AutomationsView.swift in Sources */,
 				8B82B5637BDFB9252A8D9AD0 /* BranchesView.swift in Sources */,

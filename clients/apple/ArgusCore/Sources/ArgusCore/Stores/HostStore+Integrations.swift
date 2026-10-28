@@ -5,6 +5,9 @@ import Foundation
 /// leaves the computer, so connecting is the Mac app's (or the desktop's) job.
 extension HostStore {
   public typealias LinearIssue = ArgusProtocol.LinearIssue
+  public typealias LinearIssueDetail = ArgusProtocol.LinearIssueDetail
+  public typealias LinearWorkflowState = ArgusProtocol.LinearWorkflowState
+  public typealias LinearIssueScope = ArgusProtocol.LinearIssueScope
 
   /// Linear is connected and its key still works.
   public var linearConnected: Bool {
@@ -23,14 +26,39 @@ extension HostStore {
     }
   }
 
-  /// No query: the connected user's open assigned issues. Throws the
+  /// No query: the connected user's open issues in `scope`. Throws the
   /// computer's own sentence, for the picker to show in place.
-  public func linearIssues(query: String, limit: Int? = nil) async throws -> [LinearIssue] {
+  public func linearIssues(
+    query: String, scope: LinearIssueScope? = nil, limit: Int? = nil
+  ) async throws -> [LinearIssue] {
     guard let backend else { return [] }
     let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
     return try await backend.request(
-      ArgusProtocol.Methods.LinearIssues.self, .init(query: term.isEmpty ? nil : term, limit: limit)
+      ArgusProtocol.Methods.LinearIssues.self,
+      .init(query: term.isEmpty ? nil : term, scope: term.isEmpty ? scope : nil, limit: limit)
     ).issues
+  }
+
+  /// The whole issue plus its team's workflow; nil issue when Linear has none.
+  public func linearIssue(ref: String) async throws -> (issue: LinearIssueDetail?, states: [LinearWorkflowState]) {
+    guard let backend else { return (nil, []) }
+    let result = try await backend.request(ArgusProtocol.Methods.LinearIssue.self, .init(ref: ref))
+    return (result.issue, result.states)
+  }
+
+  /// Moves an issue to another state or priority, as the connected user.
+  public func updateLinearIssue(id: String, stateId: String? = nil, priority: Int? = nil) async throws
+    -> LinearIssue?
+  {
+    guard let backend else { return nil }
+    return try await backend.request(
+      ArgusProtocol.Methods.LinearUpdateIssue.self, .init(issueId: id, stateId: stateId, priority: priority)
+    ).issue
+  }
+
+  public func commentOnLinearIssue(id: String, body: String) async throws {
+    guard let backend else { return }
+    try await backend.request(ArgusProtocol.Methods.LinearComment.self, .init(issueId: id, body: body))
   }
 
   /// The session already working on the issue, across every loaded project.
@@ -56,58 +84,5 @@ extension HostStore {
       }
     }
     return started
-  }
-}
-
-extension ArgusProtocol.LinearIssue: Identifiable {}
-
-/// The Issues screen's reading of Linear: groups by workflow state, priority
-/// names, and which session is on an issue — as the desktop's `IssuesScreen`.
-public enum LinearIssueBoard {
-  public struct Group: Identifiable {
-    public let title: String
-    public let issues: [ArgusProtocol.LinearIssue]
-    public var id: String { title }
-  }
-
-  /// Linear's state types, in the order work moves through them.
-  static let order: [(title: String, types: Set<String>)] = [
-    ("In progress", ["started"]),
-    ("Todo", ["unstarted"]),
-    ("Backlog", ["backlog", "triage"]),
-  ]
-
-  /// Empty groups dropped; done and cancelled issues never show.
-  public static func groups(_ issues: [ArgusProtocol.LinearIssue]) -> [Group] {
-    order.compactMap { entry in
-      let matching = issues.filter { entry.types.contains($0.state.type) }
-      return matching.isEmpty ? nil : Group(title: entry.title, issues: matching)
-    }
-  }
-
-  /// Nil for "No priority" (0) and anything Linear adds later.
-  public static func priority(_ value: Double) -> String? {
-    switch Int(value) {
-    case 1: "Urgent"
-    case 2: "High"
-    case 3: "Medium"
-    case 4: "Low"
-    default: nil
-    }
-  }
-
-  /// Urgent and High stand out.
-  public static func isPressing(_ value: Double) -> Bool {
-    (1...2).contains(Int(value))
-  }
-
-  /// Started from the issue, or a worktree on its Linear branch name.
-  public static func session(
-    for issue: ArgusProtocol.LinearIssue, in sessions: some Sequence<RemoteSession>
-  ) -> RemoteSession? {
-    sessions.first {
-      $0.linkedIssue?.identifier == issue.identifier
-        || ($0.kind == .worktree && $0.branch == issue.branchName)
-    }
   }
 }
