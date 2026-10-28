@@ -4,7 +4,8 @@
  * or prop could ship undocumented and the public page would quietly lie.
  *
  * This test reads every catalog — the host's `EventMap`, the iOS client's
- * `TelemetryEvent`, the Mac app's `MacTelemetryEvent` — and the doc, and fails when they disagree, in
+ * `TelemetryEvent`, the Mac app's `MacTelemetryEvent`, Argus Server's
+ * `ServerTelemetryEvent` — and the doc, and fails when they disagree, in
  * either direction: undocumented events, undocumented props, documented
  * events that no longer exist, and catalog entries nothing ever sends.
  */
@@ -28,10 +29,15 @@ const MAC_CATALOG = path.join(
   REPO,
   "clients/apple/ArgusDesktop/Telemetry/MacTelemetryEvent.swift",
 );
+const SERVER_CATALOG = path.join(
+  REPO,
+  "clients/apple/ArgusServer/Telemetry/ServerTelemetryEvent.swift",
+);
 /** Where a `capture(...)` call can plausibly live. */
 const HOST_SOURCES = ["packages", "app", "electron", "clients/argus-web/src"];
 const IOS_SOURCES = ["clients/apple/ArgusRemote"];
 const MAC_SOURCES = ["clients/apple/ArgusDesktop"];
+const SERVER_SOURCES = ["clients/apple/ArgusServer"];
 
 /**
  * Events whose prop shape PostHog dictates rather than us. They're documented
@@ -179,7 +185,8 @@ const rows = documentedRows(doc);
 const host = hostEvents(fs.readFileSync(HOST_CATALOG, "utf-8"));
 const ios = swiftEvents(fs.readFileSync(IOS_CATALOG, "utf-8"));
 const mac = swiftEvents(fs.readFileSync(MAC_CATALOG, "utf-8"));
-const catalog = [...host, ...ios, ...mac];
+const server = swiftEvents(fs.readFileSync(SERVER_CATALOG, "utf-8"));
+const catalog = [...host, ...ios, ...mac, ...server];
 
 describe("docs/telemetry-events.md", () => {
   it("reads both catalogs", () => {
@@ -187,6 +194,7 @@ describe("docs/telemetry-events.md", () => {
     expect(host.length).toBeGreaterThan(10);
     expect(ios.length).toBeGreaterThan(10);
     expect(mac.length).toBeGreaterThan(5);
+    expect(server.length).toBeGreaterThan(5);
     expect(rows.size).toBeGreaterThan(10);
   });
 
@@ -243,5 +251,13 @@ describe("telemetry catalogs", () => {
       .filter((event) => !sources.includes(event.usage))
       .map((event) => event.name);
     expect(dead, "in MacTelemetryEvent but never captured").toEqual([]);
+  });
+
+  it("declares no server event nothing sends", () => {
+    const sources = read(SERVER_SOURCES, [".swift"], SERVER_CATALOG);
+    const dead = server
+      .filter((event) => !sources.includes(event.usage))
+      .map((event) => event.name);
+    expect(dead, "in ServerTelemetryEvent but never captured").toEqual([]);
   });
 });

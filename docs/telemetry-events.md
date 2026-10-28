@@ -511,3 +511,22 @@ Everything the host already sees (`agent_started`, `session_created`,
 `editor_insert_spaces`, `editor_wrap_lines`, `editor_show_invisibles`,
 `editor_format_on_save`, `open_file_links_in` or `language_servers`. `mcp_tested` also fires when a server is tested from Project
 Settings.
+
+## Argus Server (Mac)
+
+The native Argus Server (`clients/apple/ArgusServer`) sends its events
+through its own host with `telemetry_capture`, like the Mac app. A server
+has no onboarding to ask, so it stays at `presence` — the launch heartbeat
+only — until someone picks **Full analytics** in its Settings. Everything the
+host already sees (agents, sessions, the account and its tunnel, pairing on
+the host side) is captured there and absent below.
+
+| Event                    | When                                                                                                                           | Props                                                                                                                                                                                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mac_server_launched`    | The app started                                                                                                                | `login_item` (`enabled`, `requires_approval`, `off`), `launched_by_launchd` — started by its login item rather than by hand                                                                                                               |
+| `mac_server_host`        | The supervised host started, crashed, was given up on after repeated crashes, found another app on its home, or was taken over | `stage` (`started`, `crashed`, `gave_up`, `lock_conflict`, `handover`); `restarts` (crash restarts so far, or crashes when giving up), `exit_code`, `holder` (`electron`, `mac`, `mac_server`, `cli`) and `success` only where they apply |
+| `mac_server_menu_action` | A menu item or window button that does something was used                                                                      | `action` (`pair`, `link`, `approve_join`, `deny_join`, `rename`, `unlink`, `toggle_tunnel`, `open_web`, `open_agent`, `open_logs`, `restart_host`, `take_over`, `quit`)                                                                   |
+| `mac_server_pairing`     | A pairing started from the server was confirmed with codes matching, rejected because they differed, failed, or cancelled      | `stage` (`confirmed`, `rejected`, `failed`, `cancelled`), `grant` (`monitor`, `control`, `admin`; `none` unless confirmed)                                                                                                                |
+| `mac_server_update`      | An update was checked for, downloaded, started installing, refused because agents were running, installed when idle, or failed | `stage` (`checked`, `downloaded`, `installed`, `blocked_by_agents`, `auto_installed`, `failed`)                                                                                                                                           |
+| `mac_server_login_item`  | **Open at Login** was switched                                                                                                 | `enabled`, `status` (`enabled`, `requires_approval`, `off`) — what macOS made of it                                                                                                                                                       |
+| `mac_server_migrated`    | The old Electron server's login agent was replaced by this app's login item, or the running old server was taken over          | `from` (`electron_agent`, `electron_running`), `success`                                                                                                                                                                                  |

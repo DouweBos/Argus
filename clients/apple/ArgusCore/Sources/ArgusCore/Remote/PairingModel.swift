@@ -19,13 +19,14 @@ public final class PairingModel {
   public var flow = PairingFlow()
   /// The pairing sheet or window is up.
   public var presented = false
-  @ObservationIgnored private let backend: @MainActor () -> (any HostBackend)?
+  /// The host to pair with, read at each step: it may come up after the model.
+  @ObservationIgnored public var backend: @MainActor () -> (any HostBackend)?
   /// Every stage, with the client's self-declared kind and the grants sent.
   @ObservationIgnored public var onStage: (@MainActor (Stage, String, (control: Bool, admin: Bool)) -> Void)?
   /// A device was paired: the device list changed.
   @ObservationIgnored public var onPaired: (@MainActor () -> Void)?
 
-  public init(backend: @escaping @MainActor () -> (any HostBackend)?) {
+  public init(backend: @escaping @MainActor () -> (any HostBackend)? = { nil }) {
     self.backend = backend
   }
 
