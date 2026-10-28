@@ -20,6 +20,8 @@ export const IntegrationStatus = z.object({
   account: IntegrationAccount.nullable(),
   /** The credential stopped working; the user has to connect again. */
   needsReauth: z.boolean(),
+  /** Argus can sign in through the browser rather than with a pasted key. */
+  oauthAvailable: z.boolean(),
 });
 export type IntegrationStatus = z.infer<typeof IntegrationStatus>;
 

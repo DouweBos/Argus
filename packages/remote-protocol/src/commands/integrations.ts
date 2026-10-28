@@ -23,6 +23,13 @@ export const INTEGRATION_COMMANDS = {
     params: z.object({ id: IntegrationId, key: z.string() }),
     result: IntegrationStatus,
   },
+  /** Opens the browser; resolves once the user approved. */
+  integration_connect_oauth: {
+    tier: "admin",
+    params: z.object({ id: IntegrationId }),
+    result: IntegrationStatus,
+  },
+  integration_cancel_oauth: { tier: "admin", params: NoParams, result: Void },
   integration_disconnect: {
     tier: "admin",
     params: z.object({ id: IntegrationId }),

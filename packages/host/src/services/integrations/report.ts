@@ -13,7 +13,7 @@ import { loadAppSettings } from "../appSettings/store";
 import { git } from "../session/git";
 import { iosScreenshot } from "../simulator/screenshot";
 import { capture } from "../telemetry/telemetry";
-import { linearApi } from "./service";
+import { freshLinearApi } from "./service";
 
 const MAX_COMMITS = 10;
 
@@ -91,7 +91,7 @@ async function issueFor(session: Session): Promise<LinkedIssue | null> {
     return session.linked_issue;
   }
   // Started by hand on a branch that names the issue: Linear can still match it.
-  const found = await linearApi()
+  const found = await (await freshLinearApi())
     ?.issueForBranch(session.branch)
     .catch(() => null);
 
@@ -112,7 +112,7 @@ export async function reportOnIssue(
 ): Promise<void> {
   const setting = loadAppSettings().linear_report ?? "pr";
   const session = appState.sessions.get(sessionId);
-  const api = linearApi();
+  const api = await freshLinearApi();
   const key = `${sessionId}:${trigger}`;
   if (setting !== trigger || !session || !api || reported.has(key)) {
     return;

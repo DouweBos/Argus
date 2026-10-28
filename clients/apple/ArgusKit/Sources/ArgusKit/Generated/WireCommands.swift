@@ -5690,6 +5690,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct IntegrationConnectOauthParams: Codable, Sendable {
+      public var id: IntegrationId
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: IntegrationId) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
     public struct IntegrationConnectWithKeyParams: Codable, Sendable {
       public var id: IntegrationId
       public var key: String
@@ -11543,6 +11560,20 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.InspectionSetPropertyParams
       public typealias Result = ArgusProtocol.InspectionAck
       public static let name = "inspection_set_property"
+      public static let tier = "admin"
+    }
+
+    public enum IntegrationCancelOauth: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = IgnoredResult
+      public static let name = "integration_cancel_oauth"
+      public static let tier = "admin"
+    }
+
+    public enum IntegrationConnectOauth: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.IntegrationConnectOauthParams
+      public typealias Result = ArgusProtocol.IntegrationStatus
+      public static let name = "integration_connect_oauth"
       public static let tier = "admin"
     }
 

@@ -259,7 +259,7 @@ async function registerClient(
   }
 }
 
-function pkcePair(): { verifier: string; challenge: string } {
+export function pkcePair(): { verifier: string; challenge: string } {
   const verifier = randomBytes(32).toString("base64url");
   const challenge = createHash("sha256").update(verifier).digest("base64url");
 
@@ -270,7 +270,10 @@ function pkcePair(): { verifier: string; challenge: string } {
  * Spin up a single-shot localhost HTTP listener that resolves once the
  * browser hits `/callback?code=…`. The listener closes itself afterwards.
  */
-function startLoopback(state: string): Promise<{
+export function startLoopback(
+  state: string,
+  port = 0,
+): Promise<{
   port: number;
   redirectUri: string;
   waitForCode: () => Promise<string>;
@@ -325,7 +328,7 @@ function startLoopback(state: string): Promise<{
     });
 
     server.on("error", reject);
-    server.listen(0, "127.0.0.1", () => {
+    server.listen(port, "127.0.0.1", () => {
       const addr = server.address() as AddressInfo;
       resolve({
         port: addr.port,

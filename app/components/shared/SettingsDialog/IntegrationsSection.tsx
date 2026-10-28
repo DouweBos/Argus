@@ -11,7 +11,9 @@ import {
 } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
+  cancelIntegrationOAuth,
   connectIntegrationWithKey,
+  connectIntegrationWithOAuth,
   disconnectIntegration,
   listIntegrations,
   openExternalUrl,
@@ -99,6 +101,7 @@ function IntegrationField({
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
 
   const run = async (action: () => Promise<unknown>) => {
     setBusy(true);
@@ -132,6 +135,30 @@ function IntegrationField({
             onReauth={() => setEditing(true)}
             onRemove={() => run(() => disconnectIntegration(id))}
           />
+        )}
+        {showKeyForm && status.oauthAvailable && (
+          <div className={styles.actions}>
+            {signingIn ? (
+              <Button
+                variant="ghost"
+                onClick={() => cancelIntegrationOAuth().catch(() => {})}
+              >
+                Cancel sign-in
+              </Button>
+            ) : null}
+            <Button
+              variant="primary"
+              disabled={busy}
+              onClick={() => {
+                setSigningIn(true);
+                run(() => connectIntegrationWithOAuth(id)).finally(() =>
+                  setSigningIn(false),
+                );
+              }}
+            >
+              {signingIn ? "Waiting for the browser…" : `Sign in with ${label}`}
+            </Button>
+          </div>
         )}
         {showKeyForm && (
           <div className={styles.keyForm}>

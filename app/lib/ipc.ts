@@ -1771,6 +1771,13 @@ export const connectIntegrationWithKey = (
 ): Promise<IntegrationStatus> =>
   invoke("integration_connect_with_key", { id, key });
 
+export const connectIntegrationWithOAuth = (
+  id: IntegrationId,
+): Promise<IntegrationStatus> => invoke("integration_connect_oauth", { id });
+
+export const cancelIntegrationOAuth = (): Promise<void> =>
+  invoke("integration_cancel_oauth", {});
+
 export const disconnectIntegration = (id: IntegrationId): Promise<void> =>
   invoke("integration_disconnect", { id });
 
