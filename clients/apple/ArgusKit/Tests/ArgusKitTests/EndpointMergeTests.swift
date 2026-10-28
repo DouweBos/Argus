@@ -33,3 +33,24 @@ import Testing
     #expect(merged == [lan, tailscale])
   }
 }
+
+@Suite struct EndpointKindTests {
+  @Test func tailnetAddressesAreTailscale() {
+    #expect(DeviceIdentity.inferEndpointKind("ws://100.101.102.103:47615") == .tailscale)
+    #expect(DeviceIdentity.inferEndpointKind("ws://100.64.0.1:47615") == .tailscale)
+    #expect(DeviceIdentity.inferEndpointKind("ws://100.127.255.254:1") == .tailscale)
+    #expect(DeviceIdentity.inferEndpointKind("wss://mac.tail1234.ts.net") == .tailscale)
+  }
+
+  @Test func outsideTheTailnetRangeIsLan() {
+    #expect(DeviceIdentity.inferEndpointKind("ws://100.63.0.1:47615") == .lan)
+    #expect(DeviceIdentity.inferEndpointKind("ws://100.128.0.1:47615") == .lan)
+    #expect(DeviceIdentity.inferEndpointKind("ws://192.168.1.20:47615") == .lan)
+    #expect(DeviceIdentity.inferEndpointKind("ws://mac.local:47615") == .lan)
+  }
+
+  @Test func tlsIsATunnel() {
+    #expect(DeviceIdentity.inferEndpointKind("wss://argus-abc123.houwert.dev") == .cloudflare)
+    #expect(DeviceIdentity.inferEndpointKind("wss://a-b-c.trycloudflare.com") == .cloudflare)
+  }
+}

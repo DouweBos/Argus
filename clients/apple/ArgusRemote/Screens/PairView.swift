@@ -38,12 +38,14 @@ struct PairView: View {
     if !app.account.isSignedIn {
       Card {
         BodyText("Sign in to your Argus account")
-        MutedText("Computers on your account show up on their own — no code to scan for each one.")
+        MutedText(
+          "Computers on your account show up on their own — no code to scan for each one — and each gets its own tunnel, so you reach it from anywhere.")
         Btn(label: "Sign in") { router.push(.account) }
       }
       SectionHeader(title: "Or scan a QR code")
     }
-    MutedText("In Argus, open Settings → Remote Access → Start pairing.")
+    MutedText(
+      "In Argus, open Settings → Remote Access → Start pairing. A scanned pairing works on the same Wi-Fi, or over Tailscale when both devices are on your tailnet.")
 
     QRScannerView { code in begin(code) }
       .aspectRatio(1, contentMode: .fit)

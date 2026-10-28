@@ -138,7 +138,7 @@ public final class HostStore {
   /// Frames arrive far too fast for observable state, and a view registers its
   /// sink only after `devices.watch` returns — so the config message that
   /// arrives first is buffered until someone is listening.
-  @ObservationIgnored private var mediaSinks: [UInt16: @MainActor (MediaMessage) -> Void] = [:]
+  @ObservationIgnored var mediaSinks: [UInt16: @MainActor (MediaMessage) -> Void] = [:]
   @ObservationIgnored private var mediaBuffer: [UInt16: [MediaMessage]] = [:]
   private static let mediaBufferCap = 120
   /// Git status reads in flight, and those asked for again meanwhile; see `refreshGitStatus`.
@@ -262,7 +262,9 @@ public final class HostStore {
     switch event {
     case .state(let state):
       let reconnected = state == .ready && connection != .ready
+      let changed = state != connection
       connection = state
+      if changed { hooks.connectionChanged(state) }
       // Subscriptions belong to a connection; a fresh one starts with none.
       if reconnected {
         resyncTranscripts()

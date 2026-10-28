@@ -72,6 +72,7 @@ struct RootView: View {
       if phase == .background { Telemetry.flush() }
       // Moved tunnels, new computers and reconnected drives, picked up on the way back in.
       if phase == .active {
+        app.recheckRoutes()
         Task { await app.account.refresh() }
         Task { await app.host.refreshHeldLists() }
       }

@@ -2,9 +2,9 @@ import Foundation
 
 /// Picks which of a computer's addresses to talk over.
 ///
-/// A desktop can be reachable several ways at once — the LAN, a Tailscale
-/// funnel, a Cloudflare tunnel — and which ones work depends on where the phone
-/// is. Rather than making the user choose, every candidate is dialled at once
+/// A desktop can be reachable several ways at once — the LAN, its tailnet
+/// address, its account's Cloudflare tunnel — and which ones work depends on
+/// where the phone is. Rather than making the user choose, every candidate is dialled at once
 /// and the simplest one that completes the pinned-key Noise handshake wins.
 ///
 /// The handshake, not just a socket open, is the test on purpose: a stale LAN
@@ -20,7 +20,9 @@ public enum EndpointRacer {
 
   public struct Attempt: Sendable {
     public let transport: Transport
-    public let url: String
+    /// The address that won, with its rank.
+    public let endpoint: RemoteEndpoint
+    public var url: String { endpoint.url }
   }
 
   public enum RaceError: Error, Equatable {
@@ -37,11 +39,26 @@ public enum EndpointRacer {
   public static func connectBest(identity: DeviceIdentity) async throws -> Attempt {
     let candidates = identity.candidateEndpoints
     guard !candidates.isEmpty else { throw RaceError.noKnownAddress }
+    guard let attempt = await race(identity: identity, candidates: candidates) else {
+      throw RaceError.unreachable
+    }
+    return attempt
+  }
 
+  /// Preflight a route change: race only `candidates` (a full handshake each,
+  /// so a winner both works and still authorizes this device) and hand back
+  /// the best one, leaving whatever connection is live untouched. Nil when
+  /// none of them answered.
+  public static func preflight(identity: DeviceIdentity, candidates: [RemoteEndpoint]) async -> Attempt? {
+    guard !candidates.isEmpty else { return nil }
+    return await race(identity: identity, candidates: candidates.sorted { $0.priority < $1.priority })
+  }
+
+  private static func race(identity: DeviceIdentity, candidates: [RemoteEndpoint]) async -> Attempt? {
     let transports = candidates.map { Transport(identity: identity, url: $0.url) }
 
-    // The group itself never throws — it reports a winner or nothing, and the
-    // failure is raised outside so the cleanup below always runs.
+    // The group never throws — it reports a winner or nothing, so the cleanup
+    // below always runs.
     let attempt: Attempt? = await withTaskGroup(of: Outcome.self) { group in
       for (index, transport) in transports.enumerated() {
         group.addTask {
@@ -106,10 +123,8 @@ public enum EndpointRacer {
       for (index, transport) in transports.enumerated() where index != winner {
         await transport.disconnect()
       }
-      return Attempt(transport: transports[winner], url: candidates[winner].url)
+      return Attempt(transport: transports[winner], endpoint: candidates[winner])
     }
-
-    guard let attempt else { throw RaceError.unreachable }
     return attempt
   }
 

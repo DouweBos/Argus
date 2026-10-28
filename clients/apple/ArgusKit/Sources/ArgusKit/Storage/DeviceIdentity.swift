@@ -111,17 +111,22 @@ public struct DeviceIdentity: Codable, Hashable, Sendable, Identifiable {
   }
 
   /// Classify a bare URL from a pre-endpoint-sync pairing, so a legacy identity
-  /// still sorts sensibly once real endpoints arrive alongside it.
+  /// still sorts sensibly once real endpoints arrive alongside it. A tailnet
+  /// address (100.64.0.0/10 or `*.ts.net`) is Tailscale, anything behind TLS is
+  /// a tunnel, the rest is the local network.
   public static func inferEndpointKind(_ url: String) -> RemoteEndpoint.Kind {
-    if url.range(of: #"\.ts\.net(:\d+)?(/|$)"#, options: [.regularExpression, .caseInsensitive]) != nil {
-      return .tailscale
-    }
-    if url.range(of: #"trycloudflare\.com"#, options: [.regularExpression, .caseInsensitive]) != nil
-      || url.lowercased().hasPrefix("wss://")
-    {
-      return .cloudflare
-    }
+    let parsed = URL(string: url)
+    let host = parsed?.host?.lowercased() ?? ""
+    if host.hasSuffix(".ts.net") || isTailnetAddress(host) { return .tailscale }
+    if parsed?.scheme?.lowercased() == "wss" || url.lowercased().hasPrefix("wss://") { return .cloudflare }
     return .lan
+  }
+
+  /// Tailscale hands out addresses from the CGNAT range, 100.64.0.0/10.
+  static func isTailnetAddress(_ host: String) -> Bool {
+    let octets = host.split(separator: ".", omittingEmptySubsequences: false).compactMap { UInt8($0) }
+    guard octets.count == 4, host.split(separator: ".").count == 4 else { return false }
+    return octets[0] == 100 && (64...127).contains(octets[1])
   }
 
   /// Folds what the computer advertises right now into what this phone already
