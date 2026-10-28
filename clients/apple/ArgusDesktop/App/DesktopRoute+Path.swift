@@ -28,6 +28,9 @@ extension DesktopRoute {
       let rest = parts.dropFirst(scope == nil ? 1 : 2)
       guard rest.count <= 1 else { return nil }
       self = .issues(scope: scope ?? .assigned, issue: rest.first)
+    case ("design", 1):
+      guard let url = query["url"].flatMap(\.nonEmpty) else { return nil }
+      self = .design(url: url, sessionId: query["session"].flatMap(\.nonEmpty))
     case ("pull-requests", 4):
       guard let number = Int(parts[3]) else { return nil }
       self = .pullRequest(repo: "\(parts[1])/\(parts[2])", number: number)
@@ -79,6 +82,7 @@ extension DesktopRoute {
     case .pullRequest(let repo, let number): "/pull-requests/\(repo)/\(number)"
     case .issues(let scope, let issue):
       (scope == .assigned ? "/issues" : "/issues/\(scope.rawValue)") + (issue.map { "/\(Self.encode($0))" } ?? "")
+    case .design(let url, let sessionId): "/design" + Self.query([("url", url), ("session", sessionId)])
     case .automations: "/automations"
     case .quickRun(let runId): runId.map { "/automations/quick/runs/\(Self.encode($0))" } ?? "/automations/quick"
     case .automation(let id, let runId):

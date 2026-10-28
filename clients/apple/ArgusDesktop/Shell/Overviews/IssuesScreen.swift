@@ -165,7 +165,8 @@ private struct IssueInspector: View {
       if let model {
         LinearIssueDetailView(
           model: model, canEdit: store.hasControl, canStart: canStart,
-          onOpenSession: { desktop.open(session: $0.id) }, onStart: onStart)
+          onOpenSession: { desktop.open(session: $0.id) }, onStart: onStart,
+          onOpenDesign: { desktop.navigate(.design(url: $0)) })
       }
     }
     .task(id: ref) {

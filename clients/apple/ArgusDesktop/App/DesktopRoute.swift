@@ -24,6 +24,8 @@ enum DesktopRoute: Hashable {
   /// `/issues[/<scope>][/<IDENTIFIER>]`: your open Linear issues in a scope
   /// (bare is assigned), optionally with one open in the inspector.
   case issues(scope: ArgusProtocol.LinearIssueScope = .assigned, issue: String? = nil)
+  /// `/design?url=&session=`: a Figma frame in the design viewer, for a session when it has one.
+  case design(url: String, sessionId: String? = nil)
   /// `/pull-requests/:owner/:repo/:number`; `repo` is `owner/repo`.
   case pullRequest(repo: String, number: Int)
   /// `/automations`: every automation on this host.
@@ -81,6 +83,7 @@ enum DesktopRoute: Hashable {
     case .pullRequest: "/pull-requests/:owner/:repo/:number"
     case .issues(let scope, let issue):
       (scope == .assigned ? "/issues" : "/issues/\(scope.rawValue)") + (issue == nil ? "" : "/:issue")
+    case .design: "/design"
     case .automations: "/automations"
     case .quickRun(let runId): runId == nil ? "/automations/quick" : "/automations/quick/runs/:runId"
     case .automation(_, let runId):

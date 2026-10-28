@@ -12,8 +12,8 @@ enum ContextCardPreference {
 
 /// The session at a glance, at the top right of its panel: the Agent / Code /
 /// Git switcher, then (unless collapsed) the machine it's on, opening it in an
-/// editor, its run command and huddle, its branch, pushing it, how much it has
-/// changed, and its recent chats.
+/// editor, its run command and huddle, its ticket and designs, its branch,
+/// pushing it, how much it has changed, and its recent chats.
 struct SessionContextCard: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
@@ -73,6 +73,7 @@ struct SessionContextCard: View {
     if !session.isOutsideProjects {
       ContextCardDivider()
       if let issue = session.linkedIssue { linkedIssueRow(issue) }
+      ForEach(session.designRefs ?? [], id: \.url) { designRow($0) }
       branchRow
       if ready { pushRow }
       if ready { changesRow }
@@ -159,19 +160,36 @@ struct SessionContextCard: View {
 
   // MARK: Git
 
-  /// The Linear issue the session was started from; opens it.
+  /// The Linear issue the session was started from; opens it in the Issues inspector.
   private func linkedIssueRow(_ issue: RemoteLinkedIssue) -> some View {
-    Button {
-      guard let url = URL(string: issue.url) else { return }
+    ContextSplitRow {
       MacTelemetry.capture(.contextCardUsed(action: .linkedIssue))
-      openURL(url)
-    } label: {
-      ContextCardRow(icon: Icon.issue, title: "\(issue.identifier) \(issue.title)") {
-        Image(systemName: Icon.openExternal).font(.scaled(size: 10)).foregroundStyle(theme.textSecondary)
+      model.navigate(.issues(issue: issue.identifier))
+    } row: {
+      ContextCardRow(icon: Icon.issue, title: "\(issue.identifier) \(issue.title)")
+    } menu: {
+      if let url = URL(string: issue.url) {
+        ChromeMenuItem("Open in Linear", icon: .symbol(Icon.openExternal)) { openURL(url) }
       }
+      ChromeMenuItem("Copy Issue ID", icon: .symbol(Icon.copy)) { Clipboard.copy(issue.identifier) }
     }
-    .buttonStyle(ContextRowButtonStyle())
-    .help("Open \(issue.identifier) in Linear")
+    .help("Open \(issue.identifier)")
+  }
+
+  /// A Figma frame the session's work should match; opens it in the design viewer.
+  private func designRow(_ design: RemoteDesignRef) -> some View {
+    ContextSplitRow {
+      MacTelemetry.capture(.contextCardUsed(action: .design))
+      model.navigate(.design(url: design.url, sessionId: session.id))
+    } row: {
+      ContextCardRow(icon: Icon.design, title: design.name)
+    } menu: {
+      if let url = URL(string: design.url) {
+        ChromeMenuItem("Open in Figma", icon: .symbol(Icon.openExternal)) { openURL(url) }
+      }
+      ChromeMenuItem("Copy Link", icon: .symbol(Icon.copy)) { Clipboard.copy(design.url) }
+    }
+    .help("Open the \(design.name) design")
   }
 
   private var branchRow: some View {

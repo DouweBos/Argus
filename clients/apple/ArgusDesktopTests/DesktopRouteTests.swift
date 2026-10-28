@@ -29,6 +29,8 @@ struct DesktopRouteTests {
     ("/issues/created", .issues(scope: .created)),
     ("/issues/ENG-1", .issues(issue: "ENG-1")),
     ("/issues/subscribed/ENG-1", .issues(scope: .subscribed, issue: "ENG-1")),
+    ("/design?url=https%3A%2F%2Ffigma.com%2Fdesign%2Fk%2FA%3Fnode-id%3D1-2", .design(url: "https://figma.com/design/k/A?node-id=1-2")),
+    ("/design?url=https%3A%2F%2Ffigma.com%2Fdesign%2Fk&session=s1", .design(url: "https://figma.com/design/k", sessionId: "s1")),
     ("/pull-requests/houwert/argus/42", .pullRequest(repo: "houwert/argus", number: 42)),
     ("/automations", .automations),
     ("/automations/quick", .quickRun(runId: nil)),
@@ -78,7 +80,7 @@ struct DesktopRouteTests {
 
   @Test(arguments: [
     "/nope", "/sessions", "/sessions/s1/git/nope", "/devices/ios", "/devices/ios/a/b", "/pull-requests/a/b/notanumber", "/agents/extra",
-    "/issues/created/ENG-1/extra",
+    "/issues/created/ENG-1/extra", "/design", "/design?url=", "/design/extra?url=x",
   ])
   func rejectsUnknownPaths(path: String) {
     #expect(DesktopRoute(path: path) == nil)
@@ -87,7 +89,9 @@ struct DesktopRouteTests {
   @Test(arguments: [
     DesktopRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox, .proposal(id: "p 1"), .notifications, .usage(.limits), .usage(.cost), .usage(.tokens, range: ._90d),
     .pullRequests, .pullRequest(repo: "o/r", number: 7), .issues(), .issues(scope: .created),
-    .issues(issue: "ENG-1"), .issues(scope: .subscribed, issue: "ENG-1"), .automations, .quickRun(runId: nil),
+    .issues(issue: "ENG-1"), .issues(scope: .subscribed, issue: "ENG-1"),
+    .design(url: "https://www.figma.com/design/k/App?node-id=1-2&t=a+b"), .design(url: "https://figma.com/file/k", sessionId: "s 1"),
+    .automations, .quickRun(runId: nil),
     .quickRun(runId: "r"), .automation(id: "a", runId: nil), .automation(id: "a", runId: "r"),
     .session(id: "s", agentId: nil), .session(id: "s", agentId: "a"),
     .sessionGit(id: "s", view: .working), .sessionGit(id: "s", view: .branches(nil)),
@@ -100,6 +104,10 @@ struct DesktopRouteTests {
   ])
   func pathsRoundTrip(route: DesktopRoute) {
     #expect(DesktopRoute(path: route.path) == route, "\(route.path)")
+  }
+
+  @Test func designPatternLeavesTheLinkOut() {
+    #expect(DesktopRoute.design(url: "https://figma.com/design/k", sessionId: "s").pattern == "/design")
   }
 
   @Test func usageTabsAreTheirOwnPatterns() {
