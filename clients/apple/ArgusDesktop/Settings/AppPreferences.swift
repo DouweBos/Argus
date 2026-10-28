@@ -30,6 +30,7 @@ final class AppPreferences {
     static let editorFormatOnSave = "argus:editor.formatOnSaveMode"
     static let languageServers = "argus:editor.languageServers"
     static let disabledLanguageServers = "argus:editor.languageServers.disabled"
+    static let deviceName = "argus:device.name"
   }
 
   private let defaults: UserDefaults
@@ -56,6 +57,20 @@ final class AppPreferences {
   /// Applied to every agent spawned without an explicit mode.
   var defaultPermissionMode: DefaultPermissionMode {
     didSet { defaults.set(defaultPermissionMode.rawValue, forKey: Key.permissionMode) }
+  }
+
+  /// This Mac's name, for it and its bundled host on the account; empty means the system name.
+  var deviceName: String {
+    didSet { defaults.set(deviceName, forKey: Key.deviceName) }
+  }
+
+  /// The name this Mac goes by: the setting, or the system's until one is set.
+  var effectiveDeviceName: String {
+    deviceName.isEmpty ? Self.systemDeviceName : deviceName
+  }
+
+  static var systemDeviceName: String {
+    AccountDeviceKeys.memberName(Host.current().localizedName ?? "Mac")
   }
 
   /// Seeded into new sessions; empty means the CLI's own default.
@@ -134,6 +149,7 @@ final class AppPreferences {
     displaySize = .sanitize(defaults.string(forKey: Key.displaySize))
     defaultPermissionMode = .sanitize(defaults.string(forKey: Key.permissionMode))
     defaultModel = defaults.string(forKey: Key.defaultModel) ?? ""
+    deviceName = defaults.string(forKey: Key.deviceName) ?? ""
     customEditors = CustomEditor.sanitize(defaults.data(forKey: Key.customEditors))
     editorFontName = defaults.string(forKey: Key.editorFontName) ?? ""
     editorFontSize = (defaults.object(forKey: Key.editorFontSize) as? Double).map { min(max($0, 8), 32) } ?? 13

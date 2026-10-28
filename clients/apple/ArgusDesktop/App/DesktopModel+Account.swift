@@ -13,9 +13,15 @@ extension DesktopModel {
         MacTelemetry.capture(.accountMemberChanged(action: .removed, role: role))
       case .memberRenamed(let role):
         MacTelemetry.capture(.accountMemberChanged(action: .renamed, role: role))
-      case .signedIn, .signedOut, .computerAdded, .pushRegistered, .nameChanged:
+      case .nameChanged(let source, let linked):
+        MacTelemetry.capture(.deviceNameChanged(source: source, linked: linked))
+      case .signedIn, .signedOut, .computerAdded, .pushRegistered:
         break
       }
+    }
+    // One name for this Mac and its host: set here, from the list, or from another device.
+    account.onNameChanged = { name in
+      AppPreferences.shared.deviceName = name == AppPreferences.systemDeviceName ? "" : name
     }
     // A removal reaches connected hosts at once, not at their next poll.
     account.onLogAppended = { [weak self] in
