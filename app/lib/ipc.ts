@@ -89,7 +89,9 @@ import type {
   LinearIssue,
   LinearIssueContext,
   LinearIssueDetail,
+  LinearIssueScope,
   LinearTeam,
+  LinearWorkflowState,
   LinkedIssue,
   McpOAuthStatus,
   McpTestResult,
@@ -1784,7 +1786,24 @@ export const disconnectIntegration = (id: IntegrationId): Promise<void> =>
 export const listLinearIssues = (
   query: string | null,
   limit?: number,
-): Promise<LinearIssue[]> => invoke("linear_list_issues", { query, limit });
+  scope?: LinearIssueScope,
+): Promise<LinearIssue[]> =>
+  invoke("linear_list_issues", { query, limit, scope });
+
+export const listLinearTeamStates = (
+  teamId: string,
+): Promise<LinearWorkflowState[]> => invoke("linear_team_states", { teamId });
+
+export const updateLinearIssue = (
+  issueId: string,
+  change: { priority?: number; stateId?: string },
+): Promise<LinearIssue> =>
+  invoke("linear_update_issue", { issueId, ...change });
+
+export const commentOnLinearIssue = (
+  issueId: string,
+  body: string,
+): Promise<void> => invoke("linear_comment_issue", { issueId, body });
 
 export const setSessionDesignRefs = (
   sessionId: string,

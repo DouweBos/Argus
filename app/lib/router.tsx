@@ -157,6 +157,10 @@ export interface ParsedRoute {
    * know whose projects, devices and agents they are showing.
    */
   hostId: HostId;
+  /** The issue open over the Issues screen (`STR-123`), if any. */
+  issueRef: string | null;
+  /** Whose issues the Issues screen lists. Only meaningful when view=issues. */
+  issueScope: IssueScope;
   /** Session panel (agents/git/home). Only meaningful when view=session. */
   panel: SessionPanel;
   /** Identifies which PR to show when view === "pull-request-detail". */
@@ -173,6 +177,26 @@ export interface ParsedRoute {
 
 const VALID_PANELS: SessionPanel[] = ["agents", "git", "home"];
 
+export type IssueScope = "assigned" | "created" | "subscribed";
+const ISSUE_SCOPES: IssueScope[] = ["assigned", "created", "subscribed"];
+
+/** `/issues[/<scope>][/<IDENTIFIER>]` — the bare path is your assigned issues. */
+function issueRouteFields(pathname: string): {
+  issueRef: string | null;
+  issueScope: IssueScope;
+} {
+  const [first, second, third] = pathname.split("/").filter(Boolean);
+  if (first !== "issues") {
+    return { issueRef: null, issueScope: "assigned" };
+  }
+  const scope = ISSUE_SCOPES.find((s) => s === second);
+
+  return {
+    issueScope: scope ?? "assigned",
+    issueRef: scope ? (third ?? null) : (second ?? null),
+  };
+}
+
 /**
  * Parse a URL (pathname, optionally with a query string) into a normalised
  * route descriptor. `?host=` names the attached host the view reads from.
@@ -187,6 +211,7 @@ export function parseRoute(url: string): ParsedRoute {
 
   return {
     ...route,
+    ...issueRouteFields(pathname),
     hostId: hostId && hostId.length > 0 ? hostId : LOCAL_HOST_ID,
     usageRange: usageRangeFor(route.usageTab, params.get("range")),
   };
@@ -205,7 +230,7 @@ function usageRangeFor(
 
 function parsePathname(
   pathname: string,
-): Omit<ParsedRoute, "hostId" | "usageRange"> {
+): Omit<ParsedRoute, "hostId" | "issueRef" | "issueScope" | "usageRange"> {
   const clean = pathname.replace(/\/+$/, "") || "/";
   const segments = clean.split("/").filter(Boolean);
 
@@ -336,7 +361,9 @@ function decodeSegment(segment: string): string {
   }
 }
 
-function emptyRoute(view: AppView): Omit<ParsedRoute, "hostId" | "usageRange"> {
+function emptyRoute(
+  view: AppView,
+): Omit<ParsedRoute, "hostId" | "issueRef" | "issueScope" | "usageRange"> {
   return {
     view,
     automationId: null,
@@ -379,9 +406,15 @@ export function routePattern(pathname: string): string {
       return route.proposalId ? "/inbox/proposals/:proposalId" : "/inbox";
     case "usage":
       return usagePathname(route.usageTab);
+    case "issues": {
+      const { issueRef, issueScope } = route;
+      const base =
+        issueScope === "assigned" ? "/issues" : `/issues/${issueScope}`;
+
+      return issueRef ? `${base}/:issue` : base;
+    }
     case "agents":
     case "devices":
-    case "issues":
     case "notifications":
     case "pull-requests":
     case "runtimes":
@@ -463,10 +496,17 @@ function routePathname(route: Partial<ParsedRoute>): string {
       ? `${path}?range=${range}`
       : path;
   }
+  if (route.view === "issues") {
+    const scope = route.issueScope ?? "assigned";
+    const base = scope === "assigned" ? "/issues" : `/issues/${scope}`;
+
+    return route.issueRef
+      ? `${base}/${encodeURIComponent(route.issueRef)}`
+      : base;
+  }
   if (
     route.view === "agents" ||
     route.view === "devices" ||
-    route.view === "issues" ||
     route.view === "notifications" ||
     route.view === "pull-requests" ||
     route.view === "runtimes"

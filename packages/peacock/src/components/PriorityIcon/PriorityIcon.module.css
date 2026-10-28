@@ -1,0 +1,12 @@
+.icon {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.urgent {
+  color: var(--error);
+}
+
+.dim {
+  opacity: 0.3;
+}

@@ -5762,6 +5762,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct LinearCommentIssueParams: Codable, Sendable {
+      public var issueId: String
+      public var body: String
+
+      enum CodingKeys: String, CodingKey {
+        case issueId = "issueId"
+        case body = "body"
+      }
+
+      public init(issueId: String, body: String) {
+        self.issueId = issueId
+        self.body = body
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(issueId, forKey: .issueId)
+        try c.encode(body, forKey: .body)
+      }
+    }
+
     public struct LinearFileIssueParams: Codable, Sendable {
       public var teamId: String
       public var title: String
@@ -5827,22 +5848,68 @@ extension ArgusProtocol {
 
     public struct LinearListIssuesParams: Codable, Sendable {
       public var query: String?
+      public var scope: LinearIssueScope?
       public var limit: Int?
 
       enum CodingKeys: String, CodingKey {
         case query = "query"
+        case scope = "scope"
         case limit = "limit"
       }
 
-      public init(query: String? = nil, limit: Int? = nil) {
+      public init(query: String? = nil, scope: LinearIssueScope? = nil, limit: Int? = nil) {
         self.query = query
+        self.scope = scope
         self.limit = limit
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encodeIfPresent(query, forKey: .query)
+        try c.encodeIfPresent(scope, forKey: .scope)
         try c.encodeIfPresent(limit, forKey: .limit)
+      }
+    }
+
+    public struct LinearTeamStatesParams: Codable, Sendable {
+      public var teamId: String
+
+      enum CodingKeys: String, CodingKey {
+        case teamId = "teamId"
+      }
+
+      public init(teamId: String) {
+        self.teamId = teamId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(teamId, forKey: .teamId)
+      }
+    }
+
+    public struct LinearUpdateIssueParams: Codable, Sendable {
+      public var issueId: String
+      public var stateId: String?
+      public var priority: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case issueId = "issueId"
+        case stateId = "stateId"
+        case priority = "priority"
+      }
+
+      public init(issueId: String, stateId: String? = nil, priority: Int? = nil) {
+        self.issueId = issueId
+        self.stateId = stateId
+        self.priority = priority
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(issueId, forKey: .issueId)
+        try c.encodeIfPresent(stateId, forKey: .stateId)
+        try c.encodeIfPresent(priority, forKey: .priority)
       }
     }
 
@@ -11605,6 +11672,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum LinearCommentIssue: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LinearCommentIssueParams
+      public typealias Result = IgnoredResult
+      public static let name = "linear_comment_issue"
+      public static let tier = "admin"
+    }
+
     public enum LinearFileIssue: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.LinearFileIssueParams
       public typealias Result = ArgusProtocol.LinearIssue
@@ -11637,6 +11711,20 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = [ArgusProtocol.LinearTeam]
       public static let name = "linear_list_teams"
+      public static let tier = "admin"
+    }
+
+    public enum LinearTeamStates: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LinearTeamStatesParams
+      public typealias Result = [ArgusProtocol.LinearWorkflowState]
+      public static let name = "linear_team_states"
+      public static let tier = "admin"
+    }
+
+    public enum LinearUpdateIssue: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LinearUpdateIssueParams
+      public typealias Result = ArgusProtocol.LinearIssue
+      public static let name = "linear_update_issue"
       public static let tier = "admin"
     }
 

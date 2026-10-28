@@ -7,7 +7,9 @@ import {
   LinearIssue,
   LinearIssueContext,
   LinearIssueDetail,
+  LinearIssueScope,
   LinearTeam,
+  LinearWorkflowState,
 } from "../models/integrations";
 import { type CommandSpec, NoParams, Void } from "./spec";
 
@@ -40,6 +42,8 @@ export const INTEGRATION_COMMANDS = {
     tier: "admin",
     params: z.object({
       query: z.string().nullish(),
+      /** Ignored with a query. */
+      scope: LinearIssueScope.default("assigned"),
       limit: z.number().int().min(1).max(100).default(30),
     }),
     result: z.array(LinearIssue),
@@ -55,6 +59,26 @@ export const INTEGRATION_COMMANDS = {
     tier: "admin",
     params: z.object({ ref: z.string() }),
     result: LinearIssueContext.nullable(),
+  },
+  /** A team's workflow, for moving an issue between states. */
+  linear_team_states: {
+    tier: "admin",
+    params: z.object({ teamId: z.string() }),
+    result: z.array(LinearWorkflowState),
+  },
+  linear_update_issue: {
+    tier: "admin",
+    params: z.object({
+      issueId: z.string(),
+      stateId: z.string().optional(),
+      priority: z.number().int().min(0).max(4).optional(),
+    }),
+    result: LinearIssue,
+  },
+  linear_comment_issue: {
+    tier: "admin",
+    params: z.object({ issueId: z.string(), body: z.string().min(1) }),
+    result: Void,
   },
   linear_list_teams: {
     tier: "admin",

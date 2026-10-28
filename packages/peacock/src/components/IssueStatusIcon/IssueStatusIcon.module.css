@@ -1,0 +1,24 @@
+.icon {
+  flex-shrink: 0;
+}
+
+.backlog,
+.unstarted {
+  color: var(--text-muted);
+}
+
+.triage {
+  color: var(--error);
+}
+
+.started {
+  color: var(--warning);
+}
+
+.completed {
+  color: var(--success);
+}
+
+.canceled {
+  color: var(--text-muted);
+}

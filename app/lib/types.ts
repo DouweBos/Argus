@@ -200,7 +200,9 @@ export type {
   LinearIssue,
   LinearIssueContext,
   LinearIssueDetail,
+  LinearIssueScope,
   LinearTeam,
+  LinearWorkflowState,
   LinkedIssue,
 } from "@argus/remote-protocol";
 

@@ -26,13 +26,21 @@ Disconnecting deletes the saved credential.
 
 ## Issues
 
-With Linear connected, the sidebar has an **Issues** entry: your open
-assigned issues, grouped into In progress, Todo and Backlog. An issue an
-agent is already working on shows **Open session**. A session counts as
-working on it when it was started from the issue, or its branch is the
-issue's Linear branch name. Any other issue shows **Start agent**, which
-opens the start composer of the project picked at the top with the issue
-attached. The list refreshes every five minutes, or with **Refresh**.
+With Linear connected, the sidebar has an **Issues** entry: your open Linear
+issues as a board. There's a column per status and a swimlane per priority,
+so what to pick up next is at the top left. Switch between issues
+**Assigned** to you, ones you **Created** and ones you're **Subscribed** to.
+Switch to **List** for a section per status instead.
+
+Each card shows priority, estimate, cycle, project, linked pull requests,
+labels and the assignee. **Agent on it** marks issues that already have a
+session: started from the issue, or on its Linear branch.
+
+Click a card to open the issue: its description, sub-issues, links and
+comments. You can comment as yourself, change its status and priority, and
+**Start agent** (in the project picked at the top) or **Open session**.
+Images in descriptions are hosted by Linear and may not load in Argus; open
+the issue in Linear to see them.
 
 ## Starting from an issue
 

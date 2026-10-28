@@ -8,8 +8,9 @@ struct LinearIssueBoardTests {
   private func issue(_ id: String, type: String, priority: Double = 0) -> ArgusProtocol.LinearIssue {
     .init(
       id: id, identifier: id, title: "t", description: "", url: "https://linear.app/x/\(id)",
-      branchName: "\(id.lowercased())-fix", state: .init(name: type, type: type), priority: priority,
-      teamKey: "ENG", labels: [], updatedAt: 0)
+      branchName: "\(id.lowercased())-fix", state: .init(id: type, name: type, type: type, position: 0),
+      priority: priority, teamId: "t", teamKey: "ENG", teamName: "Engineering", labels: [],
+      pullRequestCount: 0, createdAt: 0, updatedAt: 0)
   }
 
   private func session(_ json: String) throws -> RemoteSession {
