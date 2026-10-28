@@ -46,6 +46,8 @@ enum SettingsField: String {
   case editorFormatOnSave = "editor_format_on_save"
   case openFileLinksIn = "open_file_links_in"
   case languageServers = "language_servers"
+  case linearMarkStarted = "linear_mark_started"
+  case linearReport = "linear_report"
 
   var section: SettingsTab {
     switch self {
@@ -62,6 +64,7 @@ enum SettingsField: String {
     case .mcpServers, .mcpTested, .mcpSignedIn, .mcpSignedOut: .mcp
     case .toolToggled, .prereqFixed, .conductorVersion: .tools
     case .updateChannel: .advanced
+    case .linearMarkStarted, .linearReport: .integrations
     case .editorFont, .editorFontSize, .editorTabWidth, .editorInsertSpaces, .editorWrapLines,
       .editorShowInvisibles, .editorFormatOnSave, .openFileLinksIn, .languageServers:
       .editor

@@ -122,3 +122,9 @@ The computer's page in the iPhone app's settings lists which integrations
 are connected and as whom. Connecting and disconnecting stay on the
 computer, so API keys never travel to the phone. Filing bugs from the
 simulator and comparing against Figma frames are desktop-only.
+
+The Mac app has the same flow in **New Session**: **Add Linear Issue…**
+picks the issues, and **Start N Agents** creates a session per issue. The
+session's context card shows its issue and opens it. **Settings →
+Integrations** connects Linear and Figma with a key, reconnects or
+disconnects them, and holds the two Linear options above.

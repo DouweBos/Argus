@@ -196,6 +196,7 @@ enum MacTelemetryEvent {
     case branch
     case push
     case changes
+    case linkedIssue = "linked_issue"
   }
 
   case launched

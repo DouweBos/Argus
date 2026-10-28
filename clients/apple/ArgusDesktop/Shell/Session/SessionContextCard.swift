@@ -19,6 +19,7 @@ struct SessionContextCard: View {
   @Environment(HostStore.self) private var store
   @Environment(RemoteHostsStore.self) private var hosts
   @Environment(\.theme) private var theme
+  @Environment(\.openURL) private var openURL
   let session: RemoteSession
   let panel: SessionPanel
   @AppStorage private var collapsed: Bool
@@ -71,6 +72,7 @@ struct SessionContextCard: View {
     // No branch to show or push in a scratch pad's or a run's folder.
     if !session.isOutsideProjects {
       ContextCardDivider()
+      if let issue = session.linkedIssue { linkedIssueRow(issue) }
       branchRow
       if ready { pushRow }
       if ready { changesRow }
@@ -156,6 +158,21 @@ struct SessionContextCard: View {
   }
 
   // MARK: Git
+
+  /// The Linear issue the session was started from; opens it.
+  private func linkedIssueRow(_ issue: RemoteLinkedIssue) -> some View {
+    Button {
+      guard let url = URL(string: issue.url) else { return }
+      MacTelemetry.capture(.contextCardUsed(action: .linkedIssue))
+      openURL(url)
+    } label: {
+      ContextCardRow(icon: Icon.issue, title: "\(issue.identifier) \(issue.title)") {
+        Image(systemName: Icon.openExternal).font(.scaled(size: 10)).foregroundStyle(theme.textSecondary)
+      }
+    }
+    .buttonStyle(ContextRowButtonStyle())
+    .help("Open \(issue.identifier) in Linear")
+  }
 
   private var branchRow: some View {
     ContextSplitRow {

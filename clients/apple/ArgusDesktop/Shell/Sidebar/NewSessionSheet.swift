@@ -16,6 +16,9 @@ struct NewSessionSheet: View {
   @State private var existingBranch = ""
   @State private var prompt = ""
   @State private var creating = false
+  /// Each gets its own session on Linear's branch name.
+  @State private var issues: [HostStore.LinearIssue] = []
+  @State private var pickingIssues = false
 
   /// `sessions.branches` is addressed by session; the project root always exists.
   private var rootSessionId: String? {
@@ -28,22 +31,36 @@ struct NewSessionSheet: View {
 
   private var canCreate: Bool {
     !creating
-      && (useExisting
+      && (!issues.isEmpty
+        || useExisting
         ? !existingBranch.isEmpty
         : !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
   }
 
   var body: some View {
     Form {
-      Section {
-        TextField("What should it do?", text: $description, axis: .vertical)
-          .lineLimit(2...6)
-      } footer: {
-        Text("The branch is named from this.").foregroundStyle(.secondary)
+      if store.linearConnected {
+        Section {
+          if !issues.isEmpty { PickedIssueChips(issues: $issues) }
+          Button("Add Linear Issue…", systemImage: Icon.issue) { pickingIssues = true }
+        } footer: {
+          if !issues.isEmpty {
+            Text("Each issue gets its own session on Linear's branch name, and an agent that starts from it.")
+              .foregroundStyle(.secondary)
+          }
+        }
+      }
+      if issues.isEmpty {
+        Section {
+          TextField("What should it do?", text: $description, axis: .vertical)
+            .lineLimit(2...6)
+        } footer: {
+          Text("The branch is named from this.").foregroundStyle(.secondary)
+        }
       }
       Section {
-        Toggle("Use an existing branch", isOn: $useExisting)
-        if useExisting {
+        if issues.isEmpty { Toggle("Use an existing branch", isOn: $useExisting) }
+        if useExisting && issues.isEmpty {
           Picker("Branch", selection: $existingBranch) {
             Text("Pick a branch").tag("")
             ForEach(localBranches, id: \.self) { Text($0).tag($0) }
@@ -56,11 +73,15 @@ struct NewSessionSheet: View {
         }
       }
       Section {
-        TextField("First prompt (optional)", text: $prompt, axis: .vertical)
+        TextField(issues.isEmpty ? "First prompt (optional)" : "Anything to add (optional)", text: $prompt, axis: .vertical)
           .lineLimit(3...10)
       } footer: {
-        Text("An agent starts with this once the worktree is ready.")
-          .foregroundStyle(.secondary)
+        Text(
+          issues.isEmpty
+            ? "An agent starts with this once the worktree is ready."
+            : "Goes after the issue in each agent's first message."
+        )
+        .foregroundStyle(.secondary)
       }
     }
     .formStyle(.grouped)
@@ -78,11 +99,31 @@ struct NewSessionSheet: View {
         Button("Cancel") { dismiss() }
       }
       ToolbarItem(placement: .confirmationAction) {
-        Button("Create") { create() }.disabled(!canCreate)
+        Button(issues.count > 1 ? "Start \(issues.count) Agents" : issues.isEmpty ? "Create" : "Start Agent") {
+          issues.isEmpty ? create() : startFromIssues()
+        }
+        .disabled(!canCreate)
       }
     }
+    .sheet(isPresented: $pickingIssues) { IssuePickerSheet(selection: $issues) }
     .task {
+      await store.loadIntegrations()
       if let rootSessionId { branches = await store.listBranches(sessionId: rootSessionId) }
+    }
+  }
+
+  private func startFromIssues() {
+    creating = true
+    Task {
+      let sessions = await store.startFromIssues(
+        issues, repoRoot: project.repoRoot, baseBranch: baseBranch.isEmpty ? nil : baseBranch,
+        prompt: prompt.trimmingCharacters(in: .whitespacesAndNewlines),
+        model: nil, permissionMode: nil, runnerId: nil)
+      creating = false
+      guard let first = sessions.first else { return }
+      await store.loadSessions(repoRoot: project.repoRoot)
+      onCreated(first)
+      dismiss()
     }
   }
 

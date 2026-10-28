@@ -278,7 +278,8 @@ rather than quietly falling back to your boot disk.
 
 ## Integrations
 
-Linear connection for this machine. See [Integrations](./integrations.md).
+Linear and Figma connections for this machine, in Settings → Integrations in both the
+desktop and the Mac app. See [Integrations](./integrations.md).
 
 | Setting                 | Default | Description                                                                                                                                           |
 | ----------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |

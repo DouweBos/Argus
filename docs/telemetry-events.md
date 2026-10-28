@@ -511,11 +511,11 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_editor_quick_open_used` | Quick open closed | `mode` (`files`, `mixed`, `symbols`, `file_symbols`, `line`), `result` (`opened`, `dismissed`) |
 | `mac_sidebar_project_toggled` | A project in the sidebar was collapsed or expanded | `collapsed` |
 | `mac_sidebar_filtered` | The sidebar was searched (once per search, never the query) or narrowed to one project from its filter menu | `kind` (`search`, `project`) |
-| `mac_context_card_used` | A session's context card was folded to its switcher or opened again, or one of its actions used (its view switcher counts as `mac_session_panel_switched`) | `action` (`collapse`, `expand`, `recent_chats`, `open_editor`, `reveal`, `copy_path`, `run`, `share`, `branch`, `push`, `changes`) |
+| `mac_context_card_used` | A session's context card was folded to its switcher or opened again, or one of its actions used (its view switcher counts as `mac_session_panel_switched`) | `action` (`collapse`, `expand`, `recent_chats`, `open_editor`, `reveal`, `copy_path`, `run`, `share`, `branch`, `push`, `changes`, `linked_issue`) |
 | `mac_navigated_history` | Back or Forward went through the window tab's history | `direction` (`back`, `forward`), `via` (`button` the toolbar chevrons, `shortcut` ⌘[ / ⌘] or the code view's ⌃- / ⌃⇧-, `menu` the Go menu clicked, `palette`, `mouse` the side buttons) |
 
 `mac_settings_changed`'s `section` is `general`, `appearance`, `accounts`, `agents`, `llm`,
-`mcp`, `tools`, `editor` or `advanced`, and `setting` is one of `theme`, `color_theme`, `display_size`,
+`mcp`, `integrations`, `tools`, `editor` or `advanced`, and `setting` is one of `theme`, `color_theme`, `display_size`,
 `launch_route`, `worktree_location`, `automation_worktree_location`,
 `custom_editors`, `telemetry_mode`, `account_selected`, `account_added`,
 `account_removed`, `account_renamed`, `account_reauth`, `default_model`,
@@ -526,7 +526,8 @@ Everything the host already sees (`agent_started`, `session_created`,
 `mcp_signed_out`, `tool_toggled`, `prereq_fixed`, `conductor_version`,
 `update_channel`, `editor_font`, `editor_font_size`, `editor_tab_width`,
 `editor_insert_spaces`, `editor_wrap_lines`, `editor_show_invisibles`,
-`editor_format_on_save`, `open_file_links_in` or `language_servers`. `mcp_tested` also fires when a server is tested from Project
+`editor_format_on_save`, `open_file_links_in`, `language_servers`,
+`linear_mark_started` or `linear_report`. `mcp_tested` also fires when a server is tested from Project
 Settings.
 
 ## Argus Server (Mac)
