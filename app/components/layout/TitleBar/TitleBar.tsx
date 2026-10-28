@@ -15,7 +15,7 @@ import {
   useSessions,
 } from "../../../stores/sessionStore";
 import { PencilIcon } from "../../shared/Icons";
-import { LinkedIssueChip } from "../../shared/LinkedIssueChip/LinkedIssueChip";
+import { SessionReferenceChips } from "../../shared/SessionReferenceChips/SessionReferenceChips";
 import { ConnectionPicker } from "../ConnectionPicker";
 import { NavigationButtons } from "../NavigationButtons";
 import styles from "./TitleBar.module.css";
@@ -87,9 +87,7 @@ export function TitleBar() {
           </>
         )}
         <span className={styles.branchLabel}>{session.branch}</span>
-        {session.linked_issue && (
-          <LinkedIssueChip issue={session.linked_issue} />
-        )}
+        <SessionReferenceChips session={session} />
         {session.base_branch && (
           <div ref={pickerRef} className={styles.baseBranchGroup}>
             <button
