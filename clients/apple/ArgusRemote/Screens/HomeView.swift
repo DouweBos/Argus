@@ -41,6 +41,10 @@ struct HomeView: View {
     }
     .navigationTitle("Computers")
     .navigationBarTitleDisplayMode(.inline)
+    // Presence moves while the list is open: a host going quiet or coming back.
+    .liveRefresh(enabled: app.account.isSignedIn, every: AccountStore.presencePollInterval) {
+      await app.account.refreshDirectory()
+    }
   }
 
   private func hostCard(_ computer: DeviceIdentity) -> some View {

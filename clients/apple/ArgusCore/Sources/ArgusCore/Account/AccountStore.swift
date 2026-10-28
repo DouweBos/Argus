@@ -57,6 +57,10 @@ public final class AccountStore {
   /// An email code is on its way and the next step is to type it.
   public internal(set) var awaitingEmailCode = false
 
+  /// How often a visible host list re-reads the directory. Well inside the
+  /// online window, so a host that comes back shows within a minute.
+  public static let presencePollInterval: Duration = .seconds(60)
+
   /// The account hosts changed; rebuild the host list.
   @ObservationIgnored public var onHostsChanged: ([DeviceIdentity]) -> Void = { _ in }
   @ObservationIgnored public var onEvent: (Event) -> Void = { _ in }

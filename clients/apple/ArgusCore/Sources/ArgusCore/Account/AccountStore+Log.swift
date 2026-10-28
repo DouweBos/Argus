@@ -72,9 +72,14 @@ extension AccountStore {
   // MARK: Directory
 
   /// Verified presence for every live host; a record older than the one held is dropped.
+  /// Online is recomputed against now even when the fetch fails, so a host
+  /// that went quiet stops showing as online.
   public func refreshDirectory() async {
     guard phase == .ready, let current = state else { return }
-    guard let records = try? await client.directory() else { return }
+    guard let records = try? await client.directory() else {
+      publishHosts()
+      return
+    }
     var changed = false
     for record in records {
       guard let presence = AccountLog.verifyPresence(record, state: current) else { continue }
@@ -99,7 +104,7 @@ extension AccountStore {
         isLocal: member.id == vault.localHostId)
     }
     let identitiesChanged = next.map(\.member) != hosts.map(\.member) || next.map(\.endpoints) != hosts.map(\.endpoints)
-    hosts = next
+    if next != hosts { hosts = next }
     if identitiesChanged { onHostsChanged(hostIdentities) }
   }
 

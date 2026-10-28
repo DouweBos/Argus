@@ -32,6 +32,10 @@ struct ComputerView: View {
     .navigationTitle(computer?.label ?? "Computer")
     .navigationBarTitleDisplayMode(.inline)
     .task { name = computer?.label ?? "" }
+    // Presence moves while the list is open: a host going quiet or coming back.
+    .liveRefresh(enabled: computer?.isAccountHost == true, every: AccountStore.presencePollInterval) {
+      await app.account.refreshDirectory()
+    }
     .alert("Unpair “\(computer?.label ?? "")”?", isPresented: $confirmingUnpair) {
       Button("Cancel", role: .cancel) {}
       Button("Unpair", role: .destructive) {

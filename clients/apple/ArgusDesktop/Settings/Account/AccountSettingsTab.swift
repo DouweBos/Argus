@@ -35,7 +35,10 @@ struct AccountSettingsTab: View {
         AccountOverview()
       }
     }
-    .task { await account.refresh() }
+    // Presence moves while this is open: a host going quiet or coming back.
+    .liveRefresh(enabled: account.isSignedIn, every: AccountStore.presencePollInterval) {
+      await account.refresh()
+    }
   }
 }
 

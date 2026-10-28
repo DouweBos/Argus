@@ -2,6 +2,7 @@ import type { AccountHost, AccountJoinRequest } from "../../../lib/types";
 import { useCallback, useEffect, useState } from "react";
 import { Button, SettingsScreenField, StatusBulb } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
+import { useLiveRefresh } from "../../../hooks/useLiveRefresh";
 import { refreshAccountHosts } from "../../../lib/accountHosts";
 import {
   accountApproveJoin,
@@ -9,6 +10,9 @@ import {
   accountListRequests,
 } from "../../../lib/ipc";
 import styles from "./AccountSection.module.css";
+
+/** Well inside the host's 15-minute online window, so status tracks its 5-minute heartbeat. */
+const PRESENCE_POLL_MS = 60_000;
 
 function lastSeen(host: AccountHost): string {
   if (host.online) {
@@ -56,6 +60,9 @@ export function AccountComputers() {
   useIpcEvent("account:status", () => {
     refresh().catch(() => undefined);
   });
+  useLiveRefresh(() => {
+    refresh().catch(() => undefined);
+  }, PRESENCE_POLL_MS);
 
   const act = (action: () => Promise<unknown>) => {
     setError(null);
