@@ -87,3 +87,12 @@ Once a session has designs, the runtime panel gets a **Design** mode next to
 Simulate. It shows the frame and a screenshot of the device side by side, or
 under a slider. Retake the screenshot after a change. With several frames,
 pick one from the list.
+
+## Automations
+
+An automation that watches Linear fetches your assigned open issues through
+this connection, before its agent starts. That costs no tokens and doesn't
+depend on an MCP sign-in. Each issue carries its labels, so a playbook can
+pick up only the issues labelled, say, `argus`. Without a connection, the
+source falls back to asking the agent to fetch issues through a Linear MCP
+server, if one is configured.

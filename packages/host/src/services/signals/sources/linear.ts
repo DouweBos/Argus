@@ -1,16 +1,15 @@
 /**
- * Linear as an agent-mode source — a paragraph, not a project.
- *
- * There is no Linear client here and no new auth: the Linear MCP server is
- * already merged into every agent's tool set by `mcp/userConfig.ts`, so the
- * source's whole contribution is prompt text telling the run's agent which
- * tools to call and what shape to normalize the answers into. Availability is
- * the same question asked of config rather than of a network: is a Linear MCP
- * server going to be on the agent's tool list at all?
+ * Linear as a signal source. With Linear connected in Settings → Integrations
+ * it's native: Argus fetches the assigned issues itself, so a run spends no
+ * tokens on it and doesn't fail when an MCP sign-in lapses. Without it, it
+ * falls back to a paragraph telling the run's agent to fetch through a Linear
+ * MCP server merged in by `mcp/userConfig.ts`.
  */
 
-import type { SignalSource } from "../types";
+import type { SignalSource, WorkItem } from "../types";
+import type { LinearIssue } from "@argus/remote-protocol";
 import { loadAppMcpServers } from "../../appSettings/store";
+import { linearApi } from "../../integrations/service";
 import { listInheritedMcpServers } from "../../mcp/userConfig";
 import { LINEAR_SOURCE_ID } from "../sourceIds";
 
@@ -60,18 +59,51 @@ function linearInstructions(): string {
   ].join("\n");
 }
 
+const ASSIGNED_LIMIT = 50;
+
+export function issueToWorkItem(issue: LinearIssue): WorkItem {
+  return {
+    source_id: LINEAR_SOURCE_ID,
+    external_id: issue.identifier,
+    url: issue.url,
+    title: issue.title,
+    body: issue.description,
+    state: issue.state.name,
+    assignee: issue.assignee,
+    labels: issue.labels,
+    priority: issue.priority,
+    updated_at: issue.updatedAt,
+    kind: "task",
+    // Linear teams don't map to checkouts; the run decides from the content.
+    repo_root: null,
+  };
+}
+
+function hasLinearMcpServer(): boolean {
+  const names = [
+    ...listInheritedMcpServers().map((s) => s.name),
+    ...Object.keys(loadAppMcpServers()),
+  ];
+
+  return names.some(isLinearServer);
+}
+
 export const linearSource: SignalSource = {
   id: LINEAR_SOURCE_ID,
   label: "Linear",
-  mode: "agent",
+
+  get mode() {
+    return linearApi() ? "native" : "agent";
+  },
 
   isAvailable() {
-    const names = [
-      ...listInheritedMcpServers().map((s) => s.name),
-      ...Object.keys(loadAppMcpServers()),
-    ];
+    return Promise.resolve(Boolean(linearApi()) || hasLinearMcpServer());
+  },
 
-    return Promise.resolve(names.some(isLinearServer));
+  async fetchAssigned() {
+    const api = linearApi();
+
+    return api ? (await api.myIssues(ASSIGNED_LIMIT)).map(issueToWorkItem) : [];
   },
 
   agentInstructions: linearInstructions,
