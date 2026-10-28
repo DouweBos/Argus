@@ -5,6 +5,7 @@
  * `<repo>-argus-worktrees/<branch>/` directory.
  */
 
+import type { LinkedIssue } from "@argus/remote-protocol";
 import type { AutonomyLevel } from "../automation/models";
 
 /**
@@ -84,6 +85,8 @@ export interface Session {
    * different accounts.
    */
   claude_account_id?: string | null;
+  /** The tracker issue the session was started from. */
+  linked_issue?: LinkedIssue | null;
   /**
    * Whether the session's files are reachable right now. Orthogonal to
    * `status`: a session can be mid-setup *and* on a drive that just got

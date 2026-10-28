@@ -7,9 +7,7 @@ import {
   SlashCommandList,
   TextArea,
 } from "@argus/peacock";
-import { resolveDroppedFilePaths } from "../../../lib/droppedFiles";
 import { ACCEPTED_IMAGE_TYPES } from "../../../lib/imageAttachments";
-import { insertFileMentions } from "../../../lib/insertFileMentions";
 import { startInNewWorktree, startInSession } from "../../../lib/startAgent";
 import { capture } from "../../../lib/telemetry";
 import { pushError } from "../../../stores/notificationsStore";
@@ -24,11 +22,14 @@ import {
 } from "../../../stores/startDraftStore";
 import { ExistingBranchDialog } from "../../sidebar/ExistingBranchDialog";
 import { AgentOptionChips } from "./AgentOptionChips";
+import { IssueChips } from "./IssueChips";
 import styles from "./StartComposer.module.css";
 import { BaseBranchChip, WorkspaceChip } from "./WorkspaceChips";
 import { useAgentOptions } from "./useAgentOptions";
 import { useBaseBranches } from "./useBaseBranches";
+import { useFileDrop } from "./useFileDrop";
 import { useImageDraft } from "./useImageDraft";
+import { useIssueDraft } from "./useIssueDraft";
 import { usePromptAssist } from "./usePromptAssist";
 
 interface StartComposerProps {
@@ -76,6 +77,7 @@ export function StartComposer({
 
   const options = useAgentOptions(sessionId);
   const images = useImageDraft(focusPrompt);
+  const issueDraft = useIssueDraft();
   const assist = usePromptAssist({
     onPromptChange: setPrompt,
     promptRef,
@@ -106,11 +108,13 @@ export function StartComposer({
     typeof session.status === "string" &&
     session.status !== "deleting";
   const trimmed = prompt.trim();
-  // A worktree's branch is named from the prompt, so it needs words.
-  const hasInput = isWorktree
-    ? trimmed.length > 0
-    : trimmed.length > 0 || images.images.length > 0;
-  const canSubmit = startable && hasInput && !submitting;
+  const issueCount = issueDraft.issues.length;
+  // A worktree's branch is named from the prompt (or the issue), so it needs words.
+  const hasInput =
+    issueCount > 0 ||
+    trimmed.length > 0 ||
+    (!isWorktree && images.images.length > 0);
+  const canSubmit = startable && hasInput && !submitting && !issueDraft.adding;
 
   const submit = async () => {
     if (!canSubmit) {
@@ -123,6 +127,7 @@ export function StartComposer({
     });
     const request = {
       images: images.images.map((p) => p.attachment),
+      issues: issueDraft.issues,
       linkedProjects: options.linkedProjects,
       model: options.model,
       permissionMode: options.permissionMode,
@@ -137,6 +142,7 @@ export function StartComposer({
       }
       setPrompt("");
       images.clear();
+      issueDraft.clear();
     } catch (err) {
       // A failed worktree was already reported by `createSessionInProject`.
       if (!isWorktree) {
@@ -160,27 +166,7 @@ export function StartComposer({
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    const files = Array.from(e.dataTransfer?.files ?? []);
-    if (files.length === 0) {
-      return;
-    }
-    e.preventDefault();
-    const [pictures, others] = [
-      files.filter((f) => f.type.startsWith("image/")),
-      files.filter((f) => !f.type.startsWith("image/")),
-    ];
-    images.add(pictures);
-    if (others.length > 0) {
-      // Attached to a host, the drop is uploaded before it can be mentioned.
-      resolveDroppedFilePaths(sessionId, others)
-        .then(({ paths, errors }) => {
-          errors.forEach((message) => pushError(message, "attachment"));
-          insertFileMentions(promptRef.current, paths, setPrompt);
-        })
-        .catch((err: unknown) => pushError(String(err), "attachment"));
-    }
-  };
+  const handleDrop = useFileDrop(sessionId, images.add, promptRef, setPrompt);
 
   const currentLabel = isProjectRoot ? "Current checkout" : "This worktree";
 
@@ -231,7 +217,7 @@ export function StartComposer({
             disabled={!startable}
             onChange={assist.handleChange}
             onKeyDown={handleKeyDown}
-            onPaste={images.handlePaste}
+            onPaste={issueDraft.pasteOr(images.handlePaste)}
             onSelect={() => assist.mention.updateMentions(promptRef.current)}
           />
           <button
@@ -281,6 +267,7 @@ export function StartComposer({
               onChange={setPickedBase}
             />
           )}
+          <IssueChips draft={issueDraft} />
           <AgentOptionChips
             linkedProjects={options.linkedProjects}
             model={options.model}
@@ -298,7 +285,7 @@ export function StartComposer({
           leading={<Icons.AgentStartIcon size={12} />}
           disabled={!canSubmit}
         >
-          {submitting ? "Starting…" : "Start agent"}
+          {startLabel(submitting, isWorktree ? issueCount : 0)}
         </Button>
       </div>
 
@@ -310,4 +297,12 @@ export function StartComposer({
       )}
     </form>
   );
+}
+
+function startLabel(submitting: boolean, worktreeIssues: number): string {
+  if (submitting) {
+    return "Starting…";
+  }
+
+  return worktreeIssues > 1 ? `Start ${worktreeIssues} agents` : "Start agent";
 }

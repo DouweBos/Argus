@@ -121,7 +121,7 @@ export interface EventMap {
     has_parent: boolean;
     has_resume_id: boolean;
     permission_mode: string;
-    session_kind: SessionKind;
+  session_kind: SessionKind;
   };
   agent_limit_auto_continue: {
     action: "cancelled" | "dismissed" | "gave_up" | "scheduled" | "sent";
@@ -287,6 +287,7 @@ export interface EventMap {
     action: "mark_ready" | "retry";
     success: boolean;
   };
+  session_started_from_issue: { source: "linear" };
   simulator_boot_failed: {
     reason:
       | "disk_full"

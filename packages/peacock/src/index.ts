@@ -93,6 +93,7 @@ export * from "./components/IconBadge/IconBadge";
 export * from "./components/ImageAttachmentStrip/ImageAttachmentStrip";
 export * from "./components/ImageDiff/ImageDiff";
 export * from "./components/InboxItemRow/InboxItemRow";
+export * from "./components/IssuePicker/IssuePicker";
 export * from "./components/Input/Input";
 export * from "./components/InviteMessage/InviteMessage";
 export * from "./components/Kbd/Kbd";

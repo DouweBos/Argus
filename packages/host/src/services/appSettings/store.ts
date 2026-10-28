@@ -68,6 +68,13 @@ export interface AppSettings {
    * automations are actually producing proposals.
    */
   launch_route?: "home" | "inbox";
+  /** Move a Linear issue to started when a session starts from it. Defaults to true. */
+  linear_mark_started?: boolean;
+  /**
+   * When to comment on a session's Linear issue with a summary and simulator
+   * screenshots. Defaults to `pr`.
+   */
+  linear_report?: "merge" | "off" | "pr";
   /**
    * App-wide cap on how far any automation may go. Unset or null means no
    * cap — the automation's own level stands. A repo can cap it lower, never

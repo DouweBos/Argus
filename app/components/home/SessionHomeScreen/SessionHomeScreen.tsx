@@ -12,6 +12,7 @@ import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { setPendingPrompt, useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { StartComposer } from "../../agent/StartComposer";
+import { LinkedIssueChip } from "../../shared/LinkedIssueChip/LinkedIssueChip";
 import { ActiveAgentsPanel } from "../ActiveAgentsPanel";
 import { ChangeBaseBranchDialog } from "../ChangeBaseBranchDialog";
 import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
@@ -146,6 +147,12 @@ export function SessionHomeScreen({
                     <>
                       <span className={styles.dot}>·</span>
                       <span>in {projectName}</span>
+                    </>
+                  )}
+                  {session?.linked_issue && (
+                    <>
+                      <span className={styles.dot}>·</span>
+                      <LinkedIssueChip issue={session.linked_issue} />
                     </>
                   )}
                 </div>

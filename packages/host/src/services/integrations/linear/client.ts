@@ -114,10 +114,18 @@ export interface LinearCredential {
   secret: string;
 }
 
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const IMAGE_TYPES = new Set([
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
 export class LinearApi {
   private readonly sdk: LinearClient;
 
-  constructor(credential: LinearCredential) {
+  constructor(private readonly credential: LinearCredential) {
     this.sdk = new LinearClient(
       credential.method === "key"
         ? { apiKey: credential.secret }
@@ -238,6 +246,31 @@ export class LinearApi {
     await this.query(SET_STATE, { id: issueId, stateId: first.id });
 
     return true;
+  }
+
+  /** An `uploads.linear.app` image, or null when it isn't one an agent can take. */
+  async image(
+    url: string,
+  ): Promise<{ data: string; media_type: string } | null> {
+    const res = await fetch(url, {
+      headers: {
+        authorization:
+          this.credential.method === "key"
+            ? this.credential.secret
+            : `Bearer ${this.credential.secret}`,
+      },
+      signal: AbortSignal.timeout(15_000),
+    });
+    const type = res.headers.get("content-type")?.split(";")[0] ?? "";
+    if (!res.ok || !IMAGE_TYPES.has(type)) {
+      return null;
+    }
+    const bytes = Buffer.from(await res.arrayBuffer());
+    if (bytes.length > MAX_IMAGE_BYTES) {
+      return null;
+    }
+
+    return { data: bytes.toString("base64"), media_type: type };
   }
 
   async comment(issueId: string, body: string): Promise<void> {

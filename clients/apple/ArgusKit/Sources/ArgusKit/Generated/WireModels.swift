@@ -1405,6 +1405,22 @@ extension ArgusProtocol {
     public static let inbox = AppSettingsLaunchRoute(rawValue: "inbox")
   }
 
+  public struct AppSettingsLinearReport: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let off = AppSettingsLinearReport(rawValue: "off")
+    public static let pr = AppSettingsLinearReport(rawValue: "pr")
+    public static let merge = AppSettingsLinearReport(rawValue: "merge")
+  }
+
   public struct AppSettingsRemoteProvider: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -1568,6 +1584,8 @@ extension ArgusProtocol {
     public var automationsEnabled: Bool?
     public var followUpSuggestions: Bool?
     public var launchRoute: AppSettingsLaunchRoute?
+    public var linearMarkStarted: Bool?
+    public var linearReport: AppSettingsLinearReport?
     public var defaultAutonomy: AutonomyLevel?
     public var maxConcurrentAutomationSessions: Double?
     public var automationDailyBudgetUsd: Double?
@@ -1604,6 +1622,8 @@ extension ArgusProtocol {
       case automationsEnabled = "automations_enabled"
       case followUpSuggestions = "follow_up_suggestions"
       case launchRoute = "launch_route"
+      case linearMarkStarted = "linear_mark_started"
+      case linearReport = "linear_report"
       case defaultAutonomy = "default_autonomy"
       case maxConcurrentAutomationSessions = "max_concurrent_automation_sessions"
       case automationDailyBudgetUsd = "automation_daily_budget_usd"
@@ -1631,7 +1651,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, launchRoute: AppSettingsLaunchRoute? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, defaultModel: String? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, defaultModel: String? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.defaultLlm = defaultLlm
@@ -1641,6 +1661,8 @@ extension ArgusProtocol {
       self.automationsEnabled = automationsEnabled
       self.followUpSuggestions = followUpSuggestions
       self.launchRoute = launchRoute
+      self.linearMarkStarted = linearMarkStarted
+      self.linearReport = linearReport
       self.defaultAutonomy = defaultAutonomy
       self.maxConcurrentAutomationSessions = maxConcurrentAutomationSessions
       self.automationDailyBudgetUsd = automationDailyBudgetUsd
@@ -1679,6 +1701,8 @@ extension ArgusProtocol {
       try c.encodeIfPresent(automationsEnabled, forKey: .automationsEnabled)
       try c.encodeIfPresent(followUpSuggestions, forKey: .followUpSuggestions)
       try c.encodeIfPresent(launchRoute, forKey: .launchRoute)
+      try c.encodeIfPresent(linearMarkStarted, forKey: .linearMarkStarted)
+      try c.encodeIfPresent(linearReport, forKey: .linearReport)
       try c.encodeIfPresent(defaultAutonomy, forKey: .defaultAutonomy)
       try c.encodeIfPresent(maxConcurrentAutomationSessions, forKey: .maxConcurrentAutomationSessions)
       try c.encodeIfPresent(automationDailyBudgetUsd, forKey: .automationDailyBudgetUsd)
@@ -8183,6 +8207,31 @@ extension ArgusProtocol {
     }
   }
 
+  public struct LinearIssueContext: Codable, Sendable {
+    public var issue: LinearIssueDetail
+    public var context: String
+    public var images: [ImageAttachment]
+
+    enum CodingKeys: String, CodingKey {
+      case issue = "issue"
+      case context = "context"
+      case images = "images"
+    }
+
+    public init(issue: LinearIssueDetail, context: String, images: [ImageAttachment]) {
+      self.issue = issue
+      self.context = context
+      self.images = images
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(issue, forKey: .issue)
+      try c.encode(context, forKey: .context)
+      try c.encode(images, forKey: .images)
+    }
+  }
+
   public struct LinearIssueDetailState: Codable, Sendable {
     public var name: String
     public var type: String
@@ -8266,6 +8315,35 @@ extension ArgusProtocol {
       try c.encode(labels, forKey: .labels)
       try c.encode(updatedAt, forKey: .updatedAt)
       try c.encode(comments, forKey: .comments)
+    }
+  }
+
+  public struct LinkedIssue: Codable, Sendable {
+    public var source: String
+    public var identifier: String
+    public var title: String
+    public var url: String
+
+    enum CodingKeys: String, CodingKey {
+      case source = "source"
+      case identifier = "identifier"
+      case title = "title"
+      case url = "url"
+    }
+
+    public init(source: String, identifier: String, title: String, url: String) {
+      self.source = source
+      self.identifier = identifier
+      self.title = title
+      self.url = url
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(source, forKey: .source)
+      try c.encode(identifier, forKey: .identifier)
+      try c.encode(title, forKey: .title)
+      try c.encode(url, forKey: .url)
     }
   }
 
@@ -15366,6 +15444,7 @@ extension ArgusProtocol {
     public var envIndex: Double?
     public var id: String
     public var kind: SessionKind
+    public var linkedIssue: LinkedIssue?
     public var model: String?
     public var path: String
     public var repoRoot: String
@@ -15386,6 +15465,7 @@ extension ArgusProtocol {
       case envIndex = "env_index"
       case id = "id"
       case kind = "kind"
+      case linkedIssue = "linked_issue"
       case model = "model"
       case path = "path"
       case repoRoot = "repo_root"
@@ -15397,7 +15477,7 @@ extension ArgusProtocol {
       case volume = "volume"
     }
 
-    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, model: String? = nil, path: String, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
+    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
       self.availability = availability
       self.baseBranch = baseBranch
       self.branch = branch
@@ -15407,6 +15487,7 @@ extension ArgusProtocol {
       self.envIndex = envIndex
       self.id = id
       self.kind = kind
+      self.linkedIssue = linkedIssue
       self.model = model
       self.path = path
       self.repoRoot = repoRoot
@@ -15429,6 +15510,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(envIndex, forKey: .envIndex)
       try c.encode(id, forKey: .id)
       try c.encode(kind, forKey: .kind)
+      try c.encodeIfPresent(linkedIssue, forKey: .linkedIssue)
       try c.encodeIfPresent(model, forKey: .model)
       try c.encode(path, forKey: .path)
       try c.encode(repoRoot, forKey: .repoRoot)

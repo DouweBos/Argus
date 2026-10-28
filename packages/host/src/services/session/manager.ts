@@ -3,6 +3,7 @@
  */
 
 import type { WorktreePurpose } from "./worktreeLocationCore";
+import type { LinkedIssue } from "@argus/remote-protocol";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -11,6 +12,7 @@ import { error, info } from "@argus/host/logger";
 import { canonicalPath } from "../../lib/canonicalPath";
 import { appState } from "../../state";
 import { loadAppSettings } from "../appSettings/store";
+import { issueSessionStarted } from "../integrations/service";
 import { type AppDefaultLlm, resolveRunnerForSession } from "../llm/resolve";
 import { forkClaudeSessionFile } from "../llm/runners/claudeCode/transcriptFork";
 import {
@@ -303,6 +305,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       ws.runner_id = m.runner_id ?? null;
       ws.model = m.model ?? null;
       ws.claude_account_id = m.claude_account_id ?? null;
+      ws.linked_issue = m.linked_issue ?? null;
     }
 
     stampAvailability(ws);
@@ -341,6 +344,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       runner_id: entry.runner_id ?? null,
       model: entry.model ?? null,
       claude_account_id: entry.claude_account_id ?? null,
+      linked_issue: entry.linked_issue ?? null,
       availability: "unavailable",
       unavailable_reason: "volume_missing",
       unavailable_volume: availability.volume,
@@ -363,6 +367,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
         runner_id: w.runner_id ?? null,
         model: w.model ?? null,
         claude_account_id: w.claude_account_id ?? null,
+        linked_issue: w.linked_issue ?? null,
         // Recorded so the row can still be drawn with the files unreachable.
         branch: w.branch,
         kind: w.kind,
@@ -423,6 +428,8 @@ export interface CreateSessionOptions {
    * pointed at a separate drive; see `worktreeLocation.ts`.
    */
   worktreePurpose?: WorktreePurpose;
+  /** Names the session after the issue; the issue moves to started. */
+  linkedIssue?: LinkedIssue;
 }
 
 /**
@@ -448,7 +455,10 @@ export async function createSession(
   sessionLlm?: AppDefaultLlm,
   opts?: Pick<
     CreateSessionOptions,
-    "awaitWorktreeReady" | "postWorktreeReady" | "worktreePurpose"
+    | "awaitWorktreeReady"
+    | "linkedIssue"
+    | "postWorktreeReady"
+    | "worktreePurpose"
   >,
 ): Promise<Session> {
   requireKnownProject(repoRoot);
@@ -481,7 +491,9 @@ export async function createSession(
   // Provisional display name so the sidebar row has something readable before
   // branch generation returns. Prefer the user-typed branch, then the first
   // line of the description, then a generic fallback.
+  const linkedIssue = opts?.linkedIssue ?? null;
   const provisionalName =
+    (linkedIssue && `${linkedIssue.identifier} ${linkedIssue.title}`) ||
     branch.trim() ||
     description.trim().split(/\r?\n/)[0].slice(0, 60) ||
     "New session";
@@ -503,6 +515,7 @@ export async function createSession(
     base_branch: explicitBaseBranch ?? null,
     runner_id: chosenRunner.id,
     model: initialModel,
+    linked_issue: linkedIssue,
   };
   appState.sessions.set(id, { ...pending });
   emitHostEvent("session:created", { ...pending });
@@ -513,6 +526,9 @@ export async function createSession(
     use_existing_branch: Boolean(useExistingBranch),
     has_explicit_base_branch: Boolean(explicitBaseBranch),
   });
+  if (linkedIssue) {
+    issueSessionStarted(linkedIssue);
+  }
 
   let signalReady: ((s: Session) => void) | undefined;
   let signalReadyError: ((err: unknown) => void) | undefined;
@@ -743,6 +759,7 @@ async function finalizeSession(
       runner_id: ws.runner_id ?? null,
       model: ws.model ?? null,
       claude_account_id: ws.claude_account_id ?? null,
+      linked_issue: ws.linked_issue ?? null,
     });
     try {
       saveMetadata(repoRoot, meta);

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AgentInfo } from "./agents";
+import { LinkedIssue } from "./integrations";
 
 /**
  * What a session is backed by: a git worktree, the repo root itself, or — for
@@ -49,6 +50,8 @@ export const Session = z.object({
   /** Stable UUID used as the key in `appState.sessions`. */
   id: z.string(),
   kind: SessionKind,
+  /** The tracker issue the session was started from. */
+  linked_issue: LinkedIssue.nullish(),
   /**
    * Default model id (runner-specific shape) for agents spawned in this
    * session. `null` lets the cascade fall through to the project default,
