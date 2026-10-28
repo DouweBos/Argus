@@ -10,6 +10,13 @@ describe("parseFigmaUrl", () => {
     ).toEqual({ fileKey: "AbC123", nodeId: "12:34" });
   });
 
+  it("converts every separator in nested instance ids", () => {
+    expect(
+      parseFigmaUrl("https://www.figma.com/design/K/App?node-id=I1-2;3-4")
+        ?.nodeId,
+    ).toBe("I1:2;3:4");
+  });
+
   it("accepts older file links and whole-file links", () => {
     expect(parseFigmaUrl("https://figma.com/file/Key9/Name")).toEqual({
       fileKey: "Key9",

@@ -18,6 +18,6 @@ export function parseFigmaUrl(url: string): FigmaRef | null {
   // Links carry `12-34`; the API wants `12:34`.
   return {
     fileKey: match[1],
-    nodeId: nodeParam ? nodeParam.replace("-", ":") : null,
+    nodeId: nodeParam ? nodeParam.replaceAll("-", ":") : null,
   };
 }

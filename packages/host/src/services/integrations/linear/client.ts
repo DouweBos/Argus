@@ -50,6 +50,7 @@ const ISSUE_FOR_BRANCH = `query ArgusIssueForBranch($branch: String!) {
 
 const START_STATE = `query ArgusStartState($id: String!) {
   issue(id: $id) {
+    id
     state { type }
     team { states(filter: { type: { eq: "started" } }) { nodes { id position } } }
   }
@@ -243,6 +244,7 @@ export class LinearApi {
   async markStarted(issueId: string): Promise<boolean> {
     const data = await this.query<{
       issue: {
+        id: string;
         state: { type: string };
         team: { states: { nodes: { id: string; position: number }[] } };
       } | null;
@@ -259,7 +261,8 @@ export class LinearApi {
     if (!first) {
       return false;
     }
-    await this.query(SET_STATE, { id: issueId, stateId: first.id });
+    // `issueId` may be an identifier; the update takes the issue's own id.
+    await this.query(SET_STATE, { id: data.issue.id, stateId: first.id });
 
     return true;
   }
