@@ -134,6 +134,9 @@ issues, select one or several, and **Start N agents**: each issue gets its
 own worktree on Linear's branch name and an agent that starts from the
 issue, with anything you typed after it. A session started from an issue
 shows the issue at the top of its section; tap it to open it in Linear.
+The inbox also links to **Linear issues**, the same list as the desktop's
+**Issues** screen: **Open session** on an issue an agent is already on, or
+**Start agent** in the project picked at the top.
 
 The computer's page in the iPhone app's settings lists which integrations
 are connected and as whom. Connecting and disconnecting stay on the

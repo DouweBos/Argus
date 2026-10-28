@@ -59,6 +59,7 @@ public struct StartAgentSheet: View {
     workspace: Workspace = .current,
     models: [RemoteModelInfo],
     defaultMode: RemotePermissionMode? = nil,
+    issues: [HostStore.LinearIssue] = [],
     onStarted: @escaping (Started, Workspace) -> Void
   ) {
     self.repoRoot = repoRoot
@@ -68,6 +69,7 @@ public struct StartAgentSheet: View {
     self.onStarted = onStarted
     _workspace = State(initialValue: sessionId == nil ? .worktree : workspace)
     _mode = State(initialValue: defaultMode)
+    _issues = State(initialValue: issues)
   }
 
   private var trimmedPrompt: String {
