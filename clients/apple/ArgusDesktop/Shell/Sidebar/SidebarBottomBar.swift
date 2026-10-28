@@ -72,8 +72,11 @@ struct SidebarNav: View {
 
 extension SidebarDestination {
   @MainActor static let issues = SidebarDestination(
-    title: "Issues", symbol: Icon.issue, shortcut: nil, route: .issues
-  ) { $0 == .issues }
+    title: "Issues", symbol: Icon.issue, shortcut: nil, route: .issues()
+  ) {
+    if case .issues = $0 { return true }
+    return false
+  }
 }
 
 /// Settings and the occasional screens as small icons along the sidebar's foot.

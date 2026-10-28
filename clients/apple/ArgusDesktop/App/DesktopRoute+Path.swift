@@ -22,7 +22,12 @@ extension DesktopRoute {
       let tab = UsageTab(rawValue: parts[1]) ?? .limits
       self = .usage(tab, range: tab == .limits ? nil : Self.usageRange(query["range"]))
     case ("pull-requests", 1): self = .pullRequests
-    case ("issues", 1): self = .issues
+    case ("issues", 1...3):
+      // Electron's `/issues[/<scope>][/<IDENTIFIER>]`.
+      let scope = ArgusProtocol.LinearIssueScope.all.first { $0.rawValue == parts.dropFirst().first }
+      let rest = parts.dropFirst(scope == nil ? 1 : 2)
+      guard rest.count <= 1 else { return nil }
+      self = .issues(scope: scope ?? .assigned, issue: rest.first)
     case ("pull-requests", 4):
       guard let number = Int(parts[3]) else { return nil }
       self = .pullRequest(repo: "\(parts[1])/\(parts[2])", number: number)
@@ -72,7 +77,8 @@ extension DesktopRoute {
     case .usage(let tab, let range): pattern + Self.query([("range", tab == .limits ? nil : range?.rawValue)])
     case .pullRequests: "/pull-requests"
     case .pullRequest(let repo, let number): "/pull-requests/\(repo)/\(number)"
-    case .issues: "/issues"
+    case .issues(let scope, let issue):
+      (scope == .assigned ? "/issues" : "/issues/\(scope.rawValue)") + (issue.map { "/\(Self.encode($0))" } ?? "")
     case .automations: "/automations"
     case .quickRun(let runId): runId.map { "/automations/quick/runs/\(Self.encode($0))" } ?? "/automations/quick"
     case .automation(let id, let runId):

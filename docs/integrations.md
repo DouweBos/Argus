@@ -163,6 +163,8 @@ simulator and comparing against Figma frames are desktop-only.
 The Mac app has the same flow in **New Session**: **Add Linear Issue…**
 picks the issues, and **Start N Agents** creates a session per issue. The
 session's context card shows its issue and opens it. With Linear connected,
-the sidebar has the same **Issues** screen as the desktop. **Settings →
-Integrations** connects Linear and Figma with a key, reconnects or
-disconnects them, and holds the two Linear options above.
+the sidebar has the same **Issues** board as the desktop, with the same
+scopes and a Board/List switch it remembers; clicking a card opens the issue
+in an inspector beside the board. **Settings → Integrations** connects
+Linear and Figma with a key, reconnects or disconnects them, and holds the
+two Linear options above.
