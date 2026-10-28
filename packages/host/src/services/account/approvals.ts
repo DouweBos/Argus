@@ -32,11 +32,15 @@ import {
 import { writeAccountRecord } from "./store";
 import { currentRecord, currentState, isLinked, setTrust } from "./trust";
 
+/** Where the approval was acted on, for telemetry. */
+export type ApprovalSurface = "app" | "server_tray" | "terminal";
+
 interface Pending {
   request: JoinRequestRow;
   sas: string;
   commit: string;
   head: { seq: number; hash: string };
+  surface: ApprovalSurface;
 }
 
 let pending: Pending | null = null;
@@ -105,6 +109,7 @@ function subjectProven(request: JoinRequestRow): boolean {
 
 export async function approveJoin(
   requestId: string,
+  surface: ApprovalSurface = "app",
 ): Promise<AccountApprovalState> {
   const { record } = requireApprover();
   const client = memberClient(record);
@@ -135,7 +140,7 @@ export async function approveJoin(
     subject_noise_pub: subject.noise_pub,
     request_id: requestId,
   });
-  pending = { request, sas, commit, head };
+  pending = { request, sas, commit, head, surface };
   setApprovalState({
     kind: "awaiting_sas",
     request_id: requestId,
@@ -157,7 +162,7 @@ export async function confirmJoin(
   pending = null;
   const requestId = current.request.request_id;
   if (!match) {
-    await denyJoin(requestId);
+    await denyJoin(requestId, current.surface);
 
     return getApprovalState();
   }
@@ -211,6 +216,7 @@ export async function confirmJoin(
     action: "approved",
     approver: "host",
     subject: subject.role,
+    surface: current.surface,
   });
   setApprovalState({
     kind: "approved",
@@ -221,7 +227,10 @@ export async function confirmJoin(
   return getApprovalState();
 }
 
-export async function denyJoin(requestId: string): Promise<void> {
+export async function denyJoin(
+  requestId: string,
+  surface: ApprovalSurface = "app",
+): Promise<void> {
   const { record } = requireApprover();
   if (pending?.request.request_id === requestId) {
     pending = null;
@@ -231,7 +240,15 @@ export async function denyJoin(requestId: string): Promise<void> {
     action: "denied",
     approver: "host",
     subject: listedRoles.get(requestId) ?? "host",
+    surface,
   });
   listedRoles.delete(requestId);
   setApprovalState({ kind: "idle" });
+}
+
+/** Clear a settled approval (approved or failed) once it has been read. */
+export function dismissApproval(): void {
+  if (!pending && getApprovalState().kind !== "idle") {
+    setApprovalState({ kind: "idle" });
+  }
 }

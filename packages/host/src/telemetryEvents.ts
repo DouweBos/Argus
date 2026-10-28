@@ -65,6 +65,7 @@ export interface EventMap {
     action: "approved" | "denied";
     approver: "host";
     subject: "device" | "host";
+    surface: "app" | "server_tray" | "terminal";
   };
   account_link_failed: {
     stage:
@@ -76,7 +77,7 @@ export interface EventMap {
       | "verify";
   };
   account_link_started: {
-    surface: "cli" | "electron" | "mac" | "menubar" | "paired";
+    surface: "cli" | "electron" | "mac" | "menubar" | "paired" | "server_tray";
   };
   account_linked: {
     first_member: boolean;
@@ -98,6 +99,10 @@ export interface EventMap {
   };
   account_push_sent: {
     outcome: "delivered" | "failed" | "refused" | "unregistered";
+  };
+  account_tunnel_switched: {
+    on: boolean;
+    surface: "server_tray" | "terminal";
   };
   agent_exited: {
     duration_ms: number;
@@ -162,7 +167,7 @@ export interface EventMap {
   device_host_added: { has_identity_file: boolean; has_port: boolean };
   device_host_removed: undefined;
   device_name_changed: {
-    source: "account_list" | "settings" | "terminal";
+    source: "account_list" | "server_tray" | "settings" | "terminal";
     linked: boolean;
   };
   device_host_tested: {

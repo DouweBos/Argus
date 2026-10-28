@@ -39,7 +39,7 @@ import {
 } from "./store";
 import { isLinked } from "./trust";
 
-export type LinkSurface = AccountLinkSurface | "paired";
+export type LinkSurface = AccountLinkSurface | "paired" | "server_tray";
 type FailStage =
   | "claim_timeout"
   | "denied"
