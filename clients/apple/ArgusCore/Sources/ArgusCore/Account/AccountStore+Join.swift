@@ -48,9 +48,7 @@ extension AccountStore {
     join = .requesting
     await withdrawPendingJoin()
     for attempt in 0..<2 {
-      let keys =
-        (attempt == 0 ? vault.keys : nil)
-        ?? AccountDeviceKeys.generate(kind: deviceKind, name: deviceName(), now: now())
+      let keys = attempt == 0 ? currentKeys() : AccountDeviceKeys.generate(kind: deviceKind, name: deviceName(), now: now())
       if vault.keys != keys {
         vault.keys = keys
         await vaultStore.save(vault)
@@ -269,6 +267,7 @@ extension AccountStore {
     onEvent(.joinActed(action: .approved, role: .subject))
     if let provider { onEvent(.signedIn(provider: provider, firstDevice: false)) }
     await linkLocalHostIfNeeded()
+    await flushName()
     await refreshDirectory()
     await syncPushRegistration()
   }

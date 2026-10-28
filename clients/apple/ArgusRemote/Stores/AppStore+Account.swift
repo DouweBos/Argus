@@ -25,6 +25,8 @@ extension AppStore {
         Telemetry.capture(.joinActed(action: action, role: role))
       case .memberRenamed(let role):
         Telemetry.capture(.memberRenamed(role: role))
+      case .nameChanged(let source, let linked):
+        Telemetry.capture(.deviceNameChanged(source: source, linked: linked))
       case .pushRegistered(let success):
         Telemetry.capture(.accountPushRegistered(success: success))
       }
@@ -144,8 +146,8 @@ enum AccountWake {
   /// No UI yet (launched in the background): read the account straight from the vault.
   @MainActor
   private static func backgroundStore(_ preferences: Preferences) async -> AccountStore? {
-    let name = preferences.string(PreferenceKey.deviceName) ?? UIDeviceName.current
-    let store = AccountStore(auth: AccountAuth(), deviceKind: "ios", deviceName: { name })
+    let store = AccountStore(
+      auth: AccountAuth(), deviceKind: "ios", deviceName: { UIDeviceName.stored(preferences) })
     return await store.resumeForWake() ? store : nil
   }
 

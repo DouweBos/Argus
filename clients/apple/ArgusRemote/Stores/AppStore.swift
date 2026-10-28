@@ -66,8 +66,9 @@ final class AppStore {
   @ObservationIgnored private var routes: RouteSupervisor!
 
   init() {
-    let name = Preferences().string(PreferenceKey.deviceName) ?? UIDeviceName.current
-    account = AccountStore(auth: AccountAuth(), deviceKind: "ios", deviceName: { name })
+    let prefs = Preferences()
+    account = AccountStore(
+      auth: AccountAuth(), deviceKind: "ios", deviceName: { UIDeviceName.stored(prefs) })
     host.hooks = HostStoreHooks(
       track: { Telemetry.capture(TelemetryEvent($0)) },
       errorReported: { [weak self] error, scope in
@@ -109,7 +110,7 @@ final class AppStore {
   func initialize() async {
     telemetryMode = Telemetry.currentMode
     pushEnabled = preferences.string(PreferenceKey.pushEnabled) != "off"
-    deviceName = preferences.string(PreferenceKey.deviceName) ?? UIDeviceName.current
+    deviceName = UIDeviceName.stored(preferences)
     themePreference =
       ThemePreference(rawValue: preferences.string(PreferenceKey.theme) ?? "") ?? .system
     colorTheme = .sanitize(preferences.string(PreferenceKey.colorTheme))
@@ -121,6 +122,8 @@ final class AppStore {
     pairedHosts = stored.hosts
     activeHostId = stored.activeId
     loaded = true
+    // Set here, renamed from the account list, or renamed from another device.
+    account.onNameChanged = { [weak self] name in self?.applyDeviceName(name) }
     // An account host connects once the account's log has listed it.
     Task { await startAccount() }
 

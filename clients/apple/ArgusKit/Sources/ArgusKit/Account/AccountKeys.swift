@@ -51,6 +51,13 @@ public struct AccountDeviceKeys: Codable, Hashable, Sendable {
     return name.isEmpty ? "Device" : name
   }
 
+  /// A name typed into a "Name" setting: trimmed, then 1–64 UTF-16 units with
+  /// no control characters; nil otherwise. Mirrors the TS `normalizeMemberName`.
+  public static func validatedName(_ raw: String) -> String? {
+    let name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    return AccountBody.validName(name) ? name : nil
+  }
+
   public var member: AccountMember {
     .device(id: memberId, kind: kind, signPub: signPub, noisePub: noisePub, name: name, createdAt: createdAt)
   }
@@ -110,11 +117,14 @@ public struct AccountVault: Codable, Hashable, Sendable {
   /// The join request this device is waiting on, so a relaunch resumes it
   /// instead of filing another.
   public var pendingJoin: AccountPendingJoin?
+  /// A name set here that isn't on the account yet (offline, or mid-join).
+  public var pendingName: String?
 
   public init(
     keys: AccountDeviceKeys? = nil, root: AccountRoot? = nil, entries: [AccountEntry] = [],
     presence: [String: AccountCachedPresence] = [:], localHostId: String? = nil,
-    joinRequestId: String? = nil, joinCommit: String? = nil, pendingJoin: AccountPendingJoin? = nil
+    joinRequestId: String? = nil, joinCommit: String? = nil, pendingJoin: AccountPendingJoin? = nil,
+    pendingName: String? = nil
   ) {
     self.keys = keys
     self.root = root
@@ -124,6 +134,7 @@ public struct AccountVault: Codable, Hashable, Sendable {
     self.joinRequestId = joinRequestId
     self.joinCommit = joinCommit
     self.pendingJoin = pendingJoin
+    self.pendingName = pendingName
   }
 
   public static let empty = AccountVault()

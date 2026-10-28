@@ -145,6 +145,8 @@ enum TelemetryEvent {
   case joinActed(action: JoinAction, role: JoinRole)
   /// The phone renamed a member of the account.
   case memberRenamed(role: MemberRole)
+  /// This phone's name setting changed; `linked`: renamed on the account too.
+  case deviceNameChanged(source: AccountStore.NameSource, linked: Bool)
   /// Push registered with the account (every computer on it can wake the phone), or it failed.
   case accountPushRegistered(success: Bool)
   /// A wake-up push from the account service was handled in the background.
@@ -191,6 +193,7 @@ enum TelemetryEvent {
     case .computerAdded: "ios_computer_added"
     case .joinActed: "ios_join_acted"
     case .memberRenamed: "ios_member_renamed"
+    case .deviceNameChanged: "ios_device_name_changed"
     case .accountPushRegistered: "ios_account_push_registered"
     case .accountWoken: "ios_account_woken"
     case .routeUpgraded: "ios_route_upgraded"
@@ -208,6 +211,8 @@ enum TelemetryEvent {
       ["role": role.rawValue]
     case .joinActed(let action, let role):
       ["action": action.rawValue, "role": role.rawValue]
+    case .deviceNameChanged(let source, let linked):
+      ["source": source.rawValue, "linked": linked]
     case .computerAdded(let via):
       ["via": via.rawValue]
     case .accountPushRegistered(let success):

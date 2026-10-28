@@ -47,6 +47,14 @@ public final class AccountStore {
     case joinActed(action: JoinAction, role: JoinRole)
     /// Push registered with the account (phase 3), or the attempt failed.
     case pushRegistered(success: Bool)
+    /// This device's name setting changed here; `linked`: put on the account too.
+    case nameChanged(source: NameSource, linked: Bool)
+  }
+
+  /// Where this device's name was edited.
+  public enum NameSource: String, Sendable {
+    case settings
+    case accountList = "account_list"
   }
 
   public enum JoinAction: String, Sendable {
@@ -89,6 +97,9 @@ public final class AccountStore {
   /// This device appended entries: hand them to the hosts it is connected to
   /// (`account.sync`), so a removal doesn't wait for their next poll.
   @ObservationIgnored public var onLogAppended: () -> Void = {}
+  /// The name setting should now read this: set here, renamed from the list,
+  /// or renamed from another device. The app persists it; `deviceName` then returns it.
+  @ObservationIgnored public var onNameChanged: (String) -> Void = { _ in }
 
   @ObservationIgnored let auth: any AccountAuthenticating
   @ObservationIgnored let vaultStore: any AccountVaultStore
@@ -113,6 +124,7 @@ public final class AccountStore {
 
   /// - Parameters:
   ///   - deviceKind: `ios` or `mac`, as the log names this device.
+  ///   - deviceName: the name setting's current value; joins and links use it.
   ///   - localHost: the Mac app's bundled host, linked without a code.
   ///   - http: the transport to the service; tests pass a fake.
   public init(
@@ -181,6 +193,7 @@ public final class AccountStore {
     guard phase == .ready else { return }
     refreshProfile()
     await refreshLog()
+    await flushName()
     await refreshDirectory()
     await refreshRequests()
   }
@@ -302,6 +315,7 @@ public final class AccountStore {
       publishHosts()
       if let provider { onEvent(.signedIn(provider: provider, firstDevice: firstDevice)) }
       await linkLocalHostIfNeeded()
+      await flushName()
       await refreshDirectory()
       await syncPushRegistration()
     } catch {
@@ -313,7 +327,7 @@ public final class AccountStore {
   /// The first device on the account (TOFU): its own genesis, pinned.
   /// False when another device won the race and the account isn't empty after all.
   private func writeGenesis(_ info: AccountInfo) async throws -> Bool {
-    let keys = vault.keys ?? AccountDeviceKeys.generate(kind: deviceKind, name: deviceName(), now: now())
+    let keys = currentKeys()
     guard let signer = keys.signer else { throw AccountStoreError.keys }
     let genesis = try AccountEntryBuilder.make(
       accountId: info.accountId, epoch: info.epoch, head: nil, ts: nowMs(), signer: signer,

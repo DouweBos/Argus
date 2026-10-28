@@ -95,8 +95,13 @@ extension AccountStore {
   // MARK: Members
 
   /// Rename a device or computer on the account.
+  /// This device's own name (or the Mac's host) is a setting: the list edits that.
   public func rename(memberId: String, to name: String) async {
     guard let target = state?.liveMember(memberId) else { return }
+    if isOwnMember(memberId) {
+      await setName(name, source: .accountList)
+      return
+    }
     let clean = AccountDeviceKeys.memberName(name)
     guard clean != target.member.name else { return }
     error = nil

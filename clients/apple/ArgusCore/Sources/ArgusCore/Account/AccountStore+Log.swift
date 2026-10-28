@@ -25,6 +25,7 @@ extension AccountStore {
   }
 
   private func adopt(_ verified: AccountLogState, appending entries: [AccountEntry]) async {
+    let prior = state
     state = verified
     vault.entries += entries
     guard ownMemberLive(in: verified) else {
@@ -33,6 +34,7 @@ extension AccountStore {
       await forgetAccount()
       return
     }
+    if let prior { reflectName(from: prior, to: verified) }
     await vaultStore.save(vault)
     publishHosts()
   }
@@ -154,8 +156,10 @@ extension AccountStore {
     if let id = vault.localHostId, state?.liveMember(id) != nil { return }
     localLinkError = nil
     do {
-      let offer = try await localHost.begin()
+      var offer = try await localHost.begin()
       guard offer.host.role == .host else { throw AccountStoreError.keys }
+      // One name for this Mac and its host; the proof doesn't cover it.
+      offer.host.name = AccountDeviceKeys.memberName(deviceName())
       if state?.liveMember(offer.host.id) == nil {
         try await appendWithRetry { [self] head in
           [

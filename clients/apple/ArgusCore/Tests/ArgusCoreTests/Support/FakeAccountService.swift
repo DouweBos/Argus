@@ -27,6 +27,7 @@ final class FakeAccountService: @unchecked Sendable {
   private var links: [String: LinkRequest] = [:]
   private var directory: [AccountDirectoryRecord] = []
   private var directoryDown = false
+  private var appendDown = false
   private var pushBodies: [[String: Any]] = []
   private var pushDeletes: [String] = []
   /// Every `PUT /push/registration` body, oldest first.
@@ -82,6 +83,8 @@ final class FakeAccountService: @unchecked Sendable {
 
   /// `GET /directory` answers 503 while set.
   func setDirectoryDown(_ down: Bool) { lock.withLock { directoryDown = down } }
+  /// Answer every `POST /log` with a 503, as an unreachable service would.
+  func setAppendDown(_ down: Bool) { lock.withLock { appendDown = down } }
 
   var http: AccountClient.HTTP {
     { [self] request in try handle(request) }
@@ -188,6 +191,7 @@ final class FakeAccountService: @unchecked Sendable {
   private func appendLog(_ body: [String: Any], _ url: URL) -> (Data, HTTPURLResponse) {
     let raw = body["entries"] as? [[String: Any]] ?? []
     let batch = raw.map { AccountEntry(body: $0["body"] as? String ?? "", sigs: $0["sigs"] as? [String: String] ?? [:]) }
+    if lock.withLock({ appendDown }) { return respond(503, ["error": "unavailable"], url) }
     if beforeAppend?(self) == true {
       return respond(409, ["error": "conflict", "head_seq": lock.withLock { entries.count - 1 }], url)
     }
