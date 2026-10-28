@@ -55,7 +55,13 @@ import { AutomationCalibration } from "./models/automations";
 import { CodeFile, CodeSearchEvent } from "./models/code";
 import { GitStashEntry } from "./models/git/history";
 import { GitTag } from "./models/git/remotes";
-import { IntegrationStatus, LinearIssue } from "./models/integrations";
+import {
+  IntegrationStatus,
+  LinearIssue,
+  LinearIssueDetail,
+  LinearIssueScope,
+  LinearWorkflowState,
+} from "./models/integrations";
 import {
   ClaudeUsageLimits,
   ClaudeUsageSummary,
@@ -559,10 +565,23 @@ export const MethodParams = {
     allow_clearing: z.boolean().optional(),
   }),
   "integrations.list": z.object({}),
-  /** No query: the connected user's open assigned issues, newest first. */
+  /** No query: the connected user's open issues in `scope`, newest first. */
   "linear.issues": z.object({
     query: z.string().max(500).optional(),
+    /** Ignored with a query; omitted is `assigned`. */
+    scope: LinearIssueScope.optional(),
     limit: z.number().int().min(1).max(100).optional(),
+  }),
+  /** `ENG-123` or a Linear URL. */
+  "linear.issue": z.object({ ref: z.string().trim().min(1).max(500) }),
+  "linear.update_issue": z.object({
+    issue_id: z.string(),
+    state_id: z.string().optional(),
+    priority: z.number().int().min(0).max(4).optional(),
+  }),
+  "linear.comment": z.object({
+    issue_id: z.string(),
+    body: z.string().trim().min(1),
   }),
   "github.pull_requests": z.object({
     /** Omit for every registered project. */
@@ -888,6 +907,14 @@ export const MethodResult = {
   "automations.run_feedback": z.object({ run: RemoteAutomationRun }),
   "integrations.list": z.object({ integrations: z.array(IntegrationStatus) }),
   "linear.issues": z.object({ issues: z.array(LinearIssue) }),
+  /** Null when Linear has no such issue; `states` is its team's workflow, for
+   *  the status picker. */
+  "linear.issue": z.object({
+    issue: LinearIssueDetail.nullable(),
+    states: z.array(LinearWorkflowState),
+  }),
+  "linear.update_issue": z.object({ issue: LinearIssue }),
+  "linear.comment": z.object({ accepted: z.boolean() }),
   "github.pull_requests": z.object({
     pull_requests: z.array(RemotePullRequest),
   }),

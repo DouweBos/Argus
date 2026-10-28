@@ -3749,23 +3749,103 @@ extension ArgusProtocol {
       }
     }
 
+    public struct LinearCommentParams: Codable, Sendable {
+      public var issueId: String
+      public var body: String
+
+      enum CodingKeys: String, CodingKey {
+        case issueId = "issue_id"
+        case body = "body"
+      }
+
+      public init(issueId: String, body: String) {
+        self.issueId = issueId
+        self.body = body
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(issueId, forKey: .issueId)
+        try c.encode(body, forKey: .body)
+      }
+    }
+
+    public struct LinearCommentResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct LinearIssueParams: Codable, Sendable {
+      public var ref: String
+
+      enum CodingKeys: String, CodingKey {
+        case ref = "ref"
+      }
+
+      public init(ref: String) {
+        self.ref = ref
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(ref, forKey: .ref)
+      }
+    }
+
+    public struct LinearIssueResult: Codable, Sendable {
+      public var issue: LinearIssueDetail?
+      public var states: [LinearWorkflowState]
+
+      enum CodingKeys: String, CodingKey {
+        case issue = "issue"
+        case states = "states"
+      }
+
+      public init(issue: LinearIssueDetail? = nil, states: [LinearWorkflowState]) {
+        self.issue = issue
+        self.states = states
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(issue, forKey: .issue)
+        try c.encode(states, forKey: .states)
+      }
+    }
+
     public struct LinearIssuesParams: Codable, Sendable {
       public var query: String?
+      public var scope: LinearIssueScope?
       public var limit: Int?
 
       enum CodingKeys: String, CodingKey {
         case query = "query"
+        case scope = "scope"
         case limit = "limit"
       }
 
-      public init(query: String? = nil, limit: Int? = nil) {
+      public init(query: String? = nil, scope: LinearIssueScope? = nil, limit: Int? = nil) {
         self.query = query
+        self.scope = scope
         self.limit = limit
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encodeIfPresent(query, forKey: .query)
+        try c.encodeIfPresent(scope, forKey: .scope)
         try c.encodeIfPresent(limit, forKey: .limit)
       }
     }
@@ -3784,6 +3864,48 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(issues, forKey: .issues)
+      }
+    }
+
+    public struct LinearUpdateIssueParams: Codable, Sendable {
+      public var issueId: String
+      public var stateId: String?
+      public var priority: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case issueId = "issue_id"
+        case stateId = "state_id"
+        case priority = "priority"
+      }
+
+      public init(issueId: String, stateId: String? = nil, priority: Int? = nil) {
+        self.issueId = issueId
+        self.stateId = stateId
+        self.priority = priority
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(issueId, forKey: .issueId)
+        try c.encodeIfPresent(stateId, forKey: .stateId)
+        try c.encodeIfPresent(priority, forKey: .priority)
+      }
+    }
+
+    public struct LinearUpdateIssueResult: Codable, Sendable {
+      public var issue: LinearIssue
+
+      enum CodingKeys: String, CodingKey {
+        case issue = "issue"
+      }
+
+      public init(issue: LinearIssue) {
+        self.issue = issue
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(issue, forKey: .issue)
       }
     }
 
@@ -6280,10 +6402,28 @@ extension ArgusProtocol {
       public static let name = "integrations.list"
     }
 
+    public enum LinearComment: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.LinearCommentParams
+      public typealias Result = ArgusProtocol.MethodsTypes.LinearCommentResult
+      public static let name = "linear.comment"
+    }
+
+    public enum LinearIssue: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.LinearIssueParams
+      public typealias Result = ArgusProtocol.MethodsTypes.LinearIssueResult
+      public static let name = "linear.issue"
+    }
+
     public enum LinearIssues: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.LinearIssuesParams
       public typealias Result = ArgusProtocol.MethodsTypes.LinearIssuesResult
       public static let name = "linear.issues"
+    }
+
+    public enum LinearUpdateIssue: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.LinearUpdateIssueParams
+      public typealias Result = ArgusProtocol.MethodsTypes.LinearUpdateIssueResult
+      public static let name = "linear.update_issue"
     }
 
     public enum PermissionRespond: RemoteCommand {

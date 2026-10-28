@@ -2,48 +2,31 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// `/issues`: your open Linear issues, with the session already on each or
-/// a start in the project picked in the toolbar.
+/// `/issues`: your open Linear issues assigned to you; clicking one opens it in Linear.
 struct IssuesScreen: View {
-  @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
-  @State private var pickedRoot: String?
-  @State private var starting: HostStore.LinearIssue?
 
-  private var project: RemoteProject? {
-    store.projects.first { $0.repoRoot == pickedRoot } ?? store.projects.first
+  var body: some View {
+    IssuesScreenContent(model: LinearIssuesModel(host: store))
+  }
+}
+
+private struct IssuesScreenContent: View {
+  @Environment(\.openURL) private var openURL
+  @State private var model: LinearIssuesModel
+
+  init(model: LinearIssuesModel) {
+    _model = State(initialValue: model)
   }
 
   var body: some View {
     LinearIssuesList(
-      canStart: store.hasControl && project != nil,
+      model: model,
       connectHint: "Connect Linear in Settings → Integrations to see the issues assigned to you.",
-      onOpenSession: { model.open(session: $0.id) },
-      onStart: { starting = $0 }
+      onOpen: { issue in URL(string: issue.url).map { openURL($0) } }
     )
+    .refreshingLinearIssues(model)
     .navigationTitle("Issues")
     .navigationSubtitle("Open issues assigned to you in Linear")
-    .toolbar {
-      if store.linearConnected, store.projects.count > 1 {
-        ToolbarItem {
-          Picker("Start in", selection: projectSelection) {
-            ForEach(store.projects) { Text("Start in \($0.name)").tag(String?.some($0.repoRoot)) }
-          }
-          .fixedSize()
-          .help("The project new agents start in")
-        }
-      }
-    }
-    .sheet(item: $starting) { issue in
-      if let project {
-        NewSessionSheet(project: project, issues: [issue]) { session in
-          model.openAgents(session: session.id)
-        }
-      }
-    }
-  }
-
-  private var projectSelection: Binding<String?> {
-    Binding(get: { project?.repoRoot }, set: { pickedRoot = $0 })
   }
 }

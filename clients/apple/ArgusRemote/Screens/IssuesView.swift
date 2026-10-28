@@ -1,67 +1,43 @@
 import ArgusUI
 import SwiftUI
 
-/// The computer's open Linear issues for you, as the desktop's `/issues`:
-/// open the session already on one, or start an agent in a project you pick.
+/// The computer's open Linear issues, as the desktop's `/issues`: assigned
+/// to, created by or subscribed to by you, a section per status. Tapping one
+/// opens it; agents start in the project picked in the toolbar.
 struct IssuesView: View {
-  @Environment(AppStore.self) private var app
+  @Environment(HostStore.self) private var host
+
+  var body: some View {
+    IssuesContent(model: LinearIssuesModel(host: host))
+  }
+}
+
+private struct IssuesContent: View {
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
-  @State private var pickedRoot: String?
-  @State private var pickingProject = false
-  @State private var starting: HostStore.LinearIssue?
+  @State private var model: LinearIssuesModel
 
-  private var project: RemoteProject? {
-    host.projects.first { $0.repoRoot == pickedRoot } ?? host.projects.first
+  init(model: LinearIssuesModel) {
+    _model = State(initialValue: model)
   }
 
   var body: some View {
     LinearIssuesList(
-      canStart: host.hasControl && project != nil,
+      model: model,
       connectHint: "Connect Linear in Argus on your computer to see your issues here.",
-      onOpenSession: open,
-      onStart: { starting = $0 }
+      onOpen: { router.push(.issue(ref: $0.identifier)) }
     )
+    .safeAreaInset(edge: .top, spacing: 0) {
+      if host.linearConnected {
+        SegmentedControl(
+          value: $model.scope, options: ArgusProtocol.LinearIssueScope.all.map { ($0, $0.title) }
+        )
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(.bar)
+      }
+    }
+    .refreshingLinearIssues(model)
     .navigationTitle("Issues")
-    .toolbar {
-      if host.hasControl, host.linearConnected, host.projects.count > 1, let project {
-        ToolbarItem(placement: .primaryAction) {
-          Button {
-            pickingProject = true
-          } label: {
-            Label("Start in \(project.name)", systemImage: Icon.folder)
-          }
-          .accessibilityLabel("Project to start agents in: \(project.name)")
-        }
-      }
-    }
-    .sheet(isPresented: $pickingProject) {
-      PickerSheet(
-        title: "Start agents in",
-        options: host.projects.map { .init(value: $0.repoRoot, label: $0.name) },
-        selected: Set([project?.repoRoot].compactMap { $0 })
-      ) { pickedRoot = $0 }
-    }
-    .sheet(item: $starting) { issue in
-      if let project {
-        StartAgentSheet(
-          repoRoot: project.repoRoot, sessionId: nil, workspace: .worktree, models: [],
-          defaultMode: app.defaultPermissionMode, issues: [issue]
-        ) { _, chosen in
-          Telemetry.capture(.agentStartSubmitted(workspace: chosen.rawValue, changedWorkspace: false))
-          Task { await host.loadSessions(repoRoot: project.repoRoot) }
-        }
-      }
-    }
-  }
-
-  /// Straight to its agent when one is live, otherwise the project it is in.
-  private func open(_ session: RemoteSession) {
-    if let agent = host.recentAgents.first(where: { $0.sessionId == session.id }) {
-      router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
-      return
-    }
-    let name = host.projects.first { $0.repoRoot == session.repoRoot }?.name ?? session.branch
-    router.push(.project(repoRoot: session.repoRoot, name: name))
   }
 }

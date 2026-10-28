@@ -303,6 +303,10 @@ export const REMOTE_METHODS = {
   "integrations.list": "monitor",
   /** Reads Linear as the computer's connected user. */
   "linear.issues": "monitor",
+  "linear.issue": "monitor",
+  /** Moving an issue or commenting speaks for you in Linear. */
+  "linear.update_issue": "control",
+  "linear.comment": "control",
   /** Pull requests, through the `gh` CLI on the computer. Reading is monitor;
    *  opening, merging or commenting speaks for you on GitHub, so it is not. */
   "github.pull_requests": "monitor",

@@ -112,7 +112,14 @@ import {
 import { listDeviceHosts } from "../deviceHosts/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
 import { prepareIssueStart } from "../integrations/issueStart";
-import { listIntegrations, listLinearIssues } from "../integrations/service";
+import {
+  commentOnLinearIssueById,
+  getLinearIssue,
+  linearTeamStates,
+  listIntegrations,
+  listLinearIssues,
+  updateLinearIssue,
+} from "../integrations/service";
 import { getRunnerById } from "../llm/registry";
 import { collectAllProjects } from "../mcp/projectDiscovery";
 import { createScratchPad, listScratchPads } from "../scratchPad/manager";
@@ -1956,12 +1963,42 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "integrations.list": async () => ({ integrations: listIntegrations() }),
 
   "linear.issues": async (params) => {
-    const { query, limit } = parse("linear.issues", params);
+    const { query, scope, limit } = parse("linear.issues", params);
     const issues = await control(() =>
-      listLinearIssues(query ?? null, limit ?? 30),
+      listLinearIssues(query ?? null, limit ?? 30, scope),
     );
 
     return { issues };
+  },
+  "linear.issue": async (params) => {
+    const { ref } = parse("linear.issue", params);
+    const issue = await control(() => getLinearIssue(ref));
+    // The picker falls back to the issue's own state without the workflow.
+    const states = issue
+      ? await linearTeamStates(issue.teamId).catch(() => [])
+      : [];
+
+    return { issue, states };
+  },
+  "linear.update_issue": async (params) => {
+    const { issue_id, state_id, priority } = parse(
+      "linear.update_issue",
+      params,
+    );
+    if (state_id === undefined && priority === undefined) {
+      throw new GatewayError("bad_request", "nothing to change");
+    }
+    const issue = await control(() =>
+      updateLinearIssue(issue_id, { stateId: state_id, priority }),
+    );
+
+    return { issue };
+  },
+  "linear.comment": async (params) => {
+    const { issue_id, body } = parse("linear.comment", params);
+    await control(() => commentOnLinearIssueById(issue_id, body));
+
+    return { accepted: true };
   },
 
   "github.pull_requests": async (params) => {

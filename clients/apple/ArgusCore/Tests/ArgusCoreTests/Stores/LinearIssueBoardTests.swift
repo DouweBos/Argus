@@ -5,26 +5,73 @@ import Testing
 @testable import ArgusCore
 
 struct LinearIssueBoardTests {
-  private func issue(_ id: String, type: String, priority: Double = 0) -> ArgusProtocol.LinearIssue {
+  private func issue(
+    _ id: String, type: String, state: String? = nil, position: Double = 0, priority: Double = 0,
+    updatedAt: Double = 0
+  ) -> ArgusProtocol.LinearIssue {
     .init(
       id: id, identifier: id, title: "t", description: "", url: "https://linear.app/x/\(id)",
-      branchName: "\(id.lowercased())-fix", state: .init(id: type, name: type, type: type, position: 0),
+      branchName: "\(id.lowercased())-fix",
+      state: .init(id: "\(id)-state", name: state ?? type, type: type, position: position),
       priority: priority, teamId: "t", teamKey: "ENG", teamName: "Engineering", labels: [],
-      pullRequestCount: 0, createdAt: 0, updatedAt: 0)
+      pullRequestCount: 0, createdAt: 0, updatedAt: updatedAt)
   }
 
   private func session(_ json: String) throws -> RemoteSession {
     try JSONDecoder().decode(RemoteSession.self, from: Data(json.utf8))
   }
 
-  @Test func groupsByStateInWorkOrder() {
-    let groups = LinearIssueBoard.groups([
-      issue("ENG-1", type: "backlog"), issue("ENG-2", type: "started"),
-      issue("ENG-3", type: "triage"), issue("ENG-4", type: "completed"),
+  @Test func columnsFollowTheWorkflow() {
+    let columns = LinearIssueBoard.columns([
+      issue("ENG-1", type: "started", state: "In Review", position: 3),
+      issue("ENG-2", type: "backlog"),
+      issue("ENG-3", type: "started", state: "In Progress", position: 2),
+      issue("ENG-4", type: "completed", state: "Done"),
+      issue("ENG-5", type: "triage"),
     ])
 
-    #expect(groups.map(\.title) == ["In progress", "Backlog"])
-    #expect(groups[1].issues.map(\.identifier) == ["ENG-1", "ENG-3"])
+    #expect(columns.map(\.name) == ["triage", "backlog", "In Progress", "In Review", "Done"])
+  }
+
+  @Test func sameNamedStatesShareAColumn() {
+    let columns = LinearIssueBoard.columns([
+      issue("ENG-1", type: "started", state: "In Progress"),
+      issue("APP-2", type: "started", state: "in progress"),
+    ])
+
+    #expect(columns.count == 1)
+    #expect(columns[0].issues.map(\.identifier) == ["ENG-1", "APP-2"])
+  }
+
+  @Test func lanesSkipEmptyPrioritiesAndPutNoneLast() {
+    let issues = [
+      issue("ENG-1", type: "started", priority: 0), issue("ENG-2", type: "started", priority: 3),
+      issue("ENG-3", type: "backlog", priority: 1), issue("ENG-4", type: "backlog", priority: 3),
+    ]
+    let lanes = LinearIssueBoard.lanes(issues)
+
+    #expect(lanes.map(\.priority) == [1, 3, 0])
+    #expect(lanes.map(\.count) == [1, 2, 1])
+    #expect(lanes.map(\.title) == ["Urgent", "Medium", "No priority"])
+  }
+
+  @Test func cellsHoldTheirLaneNewestFirst() throws {
+    let issues = [
+      issue("ENG-1", type: "started", priority: 2, updatedAt: 1),
+      issue("ENG-2", type: "started", priority: 2, updatedAt: 5),
+      issue("ENG-3", type: "started", priority: 4),
+    ]
+    let column = try #require(LinearIssueBoard.columns(issues).first)
+    let high = try #require(LinearIssueBoard.lanes(issues).first)
+
+    #expect(LinearIssueBoard.cell(column, lane: high).map(\.identifier) == ["ENG-2", "ENG-1"])
+  }
+
+  @Test func labelsCyclesAndEstimates() {
+    #expect(LinearIssueBoard.cycleLabel(number: 59, name: nil) == "Cycle 59")
+    #expect(LinearIssueBoard.cycleLabel(number: 59, name: "Sprint 4") == "Sprint 4")
+    #expect(LinearIssueBoard.estimateLabel(3) == "3 pt")
+    #expect(LinearIssueBoard.estimateLabel(0.5) == "0.5 pt")
   }
 
   @Test func namesPriorities() {
