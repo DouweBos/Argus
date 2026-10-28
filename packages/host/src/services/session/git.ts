@@ -269,7 +269,10 @@ export async function removeWorktree(
     maxRetries: 5,
     retryDelay: 200,
   });
-  await git(repoRoot, ["worktree", "prune"]);
+  // Prune is repo-wide: it would also drop every worktree on an unplugged drive.
+  if (!(await hasDisconnectedWorktree(repoRoot))) {
+    await git(repoRoot, ["worktree", "prune"]);
+  }
 }
 
 export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {

@@ -60,6 +60,13 @@ extension HostStore {
     runners = result.runners
   }
 
+  /// Backstop for a change nothing announced (a dropped event, an older
+  /// computer): refetch the projects and every session list already held.
+  public func refreshHeldLists() async {
+    await refreshProjects()
+    await reloadSessions(for: nil)
+  }
+
   /// Answer a `sessions.changed` event. A named repo reloads just that one;
   /// a nil repo means the computer couldn't say which, so everything the app
   /// is already holding gets refetched.

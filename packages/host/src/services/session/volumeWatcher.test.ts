@@ -16,4 +16,14 @@ describe("reposOnVolumes", () => {
 
     expect(repos).toEqual(["/Users/me/app", "/Volumes/Ext/lib"]);
   });
+
+  it("includes repos whose drive sessions only the index knows", () => {
+    const repos = reposOnVolumes([], "darwin", [
+      { repo_root: "/Users/me/app", paths: ["/Volumes/Ext/wt/a"] },
+      { repo_root: "/Users/me/other", paths: ["/Users/me/other-wt/b"] },
+      { repo_root: "/Volumes/Ext/lib", paths: [] },
+    ]);
+
+    expect(repos).toEqual(["/Users/me/app", "/Volumes/Ext/lib"]);
+  });
 });

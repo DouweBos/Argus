@@ -108,7 +108,8 @@ function saveRepoRoots(): void {
 /**
  * Re-register the roots a previous run had open, so a host comes back with the
  * same projects even when no client has asked for them yet. Roots on a volume
- * that isn't mounted stay saved and are picked up on a later launch.
+ * that isn't mounted stay saved and are picked up once it is (the volume
+ * watcher calls this again).
  */
 export function restoreRepoRoots(): void {
   for (const dirPath of loadPersistedRepoRoots()) {
@@ -127,6 +128,7 @@ export function restoreRepoRoots(): void {
       continue;
     }
     info(`Restoring repo root: ${dirPath}`);
+    unreachableRepoRoots.delete(dirPath);
     appState.repoRoots.add(dirPath);
     emitHostEvent("project:added", dirPath);
     // Its home session is in memory only; without this it is gone until a
