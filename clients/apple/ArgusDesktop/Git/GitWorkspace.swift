@@ -155,7 +155,9 @@ final class GitWorkspace {
       async let working: Void = workingCopy.refresh()
       async let list: Void = reload(shown)
       async let tab: Void = refreshVisibleTab()
-      _ = await (refsRead.value, working, list, tab)
+      // The sidebar's ahead/behind is the host's read, not GroveKit's; keep it in step.
+      async let status: Void = host.refreshGitStatus(sessionId: sessionId)
+      _ = await (refsRead.value, working, list, tab, status)
     } while needsAnotherRefresh
   }
 
@@ -247,6 +249,7 @@ final class GitWorkspace {
       hostError = nil
       if let action { track(action, success: true) }
       await refreshAll()
+      await host.refreshGitStatuses(repoRoot: repoRoot)
       return result
     } catch {
       failure = GitFailure(error: error) ?? GitFailure.classify(HostStore.describe(error), operation: C.name)

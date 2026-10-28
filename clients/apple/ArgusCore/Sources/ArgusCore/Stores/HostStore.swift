@@ -139,6 +139,9 @@ public final class HostStore {
   @ObservationIgnored private var mediaSinks: [UInt16: @MainActor (MediaMessage) -> Void] = [:]
   @ObservationIgnored private var mediaBuffer: [UInt16: [MediaMessage]] = [:]
   private static let mediaBufferCap = 120
+  /// Git status reads in flight, and those asked for again meanwhile; see `refreshGitStatus`.
+  @ObservationIgnored var gitStatusLoading: Set<String> = []
+  @ObservationIgnored var gitStatusStale: Set<String> = []
   /// Views listening to raw `ipc` channels; see `observeIpc`.
   @ObservationIgnored var ipcObservers: [UUID: @MainActor (String, [JSONValue], Int) -> Void] = [:]
   /// Streaming terminal readers, by terminal id; see `followTerminal`.
