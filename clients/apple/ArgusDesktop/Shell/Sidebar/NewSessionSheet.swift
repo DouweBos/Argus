@@ -20,6 +20,12 @@ struct NewSessionSheet: View {
   @State private var issues: [HostStore.LinearIssue] = []
   @State private var pickingIssues = false
 
+  init(project: RemoteProject, issues: [HostStore.LinearIssue] = [], onCreated: @escaping (RemoteSession) -> Void) {
+    self.project = project
+    self.onCreated = onCreated
+    _issues = State(initialValue: issues)
+  }
+
   /// `sessions.branches` is addressed by session; the project root always exists.
   private var rootSessionId: String? {
     store.sessionsByRepo[project.repoRoot]?.first { $0.kind == .projectRoot }?.id

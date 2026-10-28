@@ -21,6 +21,8 @@ enum DesktopRoute: Hashable {
   case sessionCode(id: String, path: String?, line: Int?)
   /// `/pull-requests`: the PRs of interest across open projects.
   case pullRequests
+  /// `/issues`: your open Linear issues, with the session on each.
+  case issues
   /// `/pull-requests/:owner/:repo/:number`; `repo` is `owner/repo`.
   case pullRequest(repo: String, number: Int)
   /// `/automations`: every automation on this host.
@@ -76,6 +78,7 @@ enum DesktopRoute: Hashable {
     case .sessionCode: "/sessions/:sessionId/code"
     case .pullRequests: "/pull-requests"
     case .pullRequest: "/pull-requests/:owner/:repo/:number"
+    case .issues: "/issues"
     case .automations: "/automations"
     case .quickRun(let runId): runId == nil ? "/automations/quick" : "/automations/quick/runs/:runId"
     case .automation(_, let runId):
