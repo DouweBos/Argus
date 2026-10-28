@@ -210,6 +210,7 @@ public final class HostStore {
     agentsByRepo = [:]
     recentAgents = []
     scratchPads = []
+    adoptedSessions = [:]
     stoppedByRepo = [:]
     messagesByAgent = [:]
     optimisticByAgent = [:]
@@ -466,11 +467,30 @@ public final class HostStore {
     for (repoRoot, sessions) in sessionsByRepo where sessions.contains(where: { $0.id == id }) {
       return repoRoot
     }
+    if let loose = scratchPads.first(where: { $0.id == id }) ?? adoptedSessions[id] { return loose.repoRoot }
     guard
       let projectName = statusByAgent.values.first(where: { $0.sessionId == id })?.projectName
     else { return nil }
 
     return projects.first { $0.name == projectName }?.repoRoot
+  }
+
+  /// A scratch pad or automation run working in `repoRoot`, its own folder.
+  /// The host lists agents by repo only for projects, so these go by session.
+  public func sessionOutsideProjects(repoRoot: String) -> RemoteSession? {
+    (scratchPads + adoptedSessions.values).first { $0.isOutsideProjects && $0.repoRoot == repoRoot }
+  }
+
+  /// Where a session works, as a person reads it. A run's folder is named by
+  /// its run id, which is no name to show.
+  public func placeName(of session: RemoteSession) -> String {
+    switch session.kind {
+    case .scratchPad: "Scratch pad"
+    case .automationHost: "Automation"
+    case .projectRoot, .worktree:
+      projects.first { $0.repoRoot == session.repoRoot }?.name
+        ?? URL(fileURLWithPath: session.repoRoot).lastPathComponent
+    }
   }
 
   // MARK: Error surface

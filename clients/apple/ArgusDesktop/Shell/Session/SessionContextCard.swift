@@ -53,7 +53,7 @@ struct SessionContextCard: View {
     }
     .task(id: "\(session.id):\(session.status.rawValue)") { await loadPaths() }
     .task(id: SessionChats.reloadKey(session, store: store)) { await loadChatCount() }
-    .liveRefresh(enabled: !collapsed && ready && session.kind != .scratchPad, every: .seconds(10)) {
+    .liveRefresh(enabled: !collapsed && ready && !session.isOutsideProjects, every: .seconds(10)) {
       await store.loadGitStatus(sessionId: session.id)
     }
   }
@@ -68,7 +68,8 @@ struct SessionContextCard: View {
       HuddleToolbarButton(sessionId: session.id, inCard: true)
         .buttonStyle(ContextRowButtonStyle())
     }
-    if session.kind != .scratchPad {
+    // No branch to show or push in a scratch pad's or a run's folder.
+    if !session.isOutsideProjects {
       ContextCardDivider()
       branchRow
       if ready { pushRow }

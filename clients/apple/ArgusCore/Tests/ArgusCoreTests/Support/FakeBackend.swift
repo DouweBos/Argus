@@ -11,6 +11,7 @@ final class FakeBackend: HostBackend, @unchecked Sendable {
   private var failing: Set<String> = []
   private var errors: [String: Error] = [:]
   private var calls: [String] = []
+  private var sent: [String: Data] = [:]
   private var subscriptions: [(String, Bool)] = []
   private var held: Set<String> = []
   private var waiters: [String: [CheckedContinuation<Void, Never>]] = [:]
@@ -64,6 +65,12 @@ final class FakeBackend: HostBackend, @unchecked Sendable {
 
   var requested: [String] { lock.withLock { calls } }
 
+  /// The params last sent with `method`, as a JSON object.
+  func params(_ method: RemoteMethod) -> [String: Any]? {
+    guard let data = lock.withLock({ sent[method.rawValue] }) else { return nil }
+    return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+  }
+
   func emit(_ event: String, agentId: String? = nil, payload: String) throws {
     let agent = agentId.map { #","agent_id":"\#($0)""# } ?? ""
     let json = #"{"seq":1,"event":"\#(event)"\#(agent),"payload":\#(payload)}"#
@@ -80,6 +87,8 @@ final class FakeBackend: HostBackend, @unchecked Sendable {
   func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
     _ method: RemoteMethod, _ params: Params, as: Result.Type
   ) async throws -> Result {
+    let data = try? JSONEncoder().encode(params)
+    lock.withLock { sent[method.rawValue] = data }
     await waitIfHeld(method.rawValue)
     return try answer(method.rawValue, as: Result.self)
   }

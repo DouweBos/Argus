@@ -87,11 +87,10 @@ struct SessionBreadcrumb: View {
     guard let session else { return [.init(id: 0, title: "Session")] }
     let title = SessionView.title(session)
     var steps: [Breadcrumb.Step] = []
-    if session.kind == .scratchPad {
-      steps.append(.init(id: 0, title: "Scratch pad"))
+    if session.isOutsideProjects {
+      steps.append(.init(id: 0, title: store.placeName(of: session)))
     } else {
-      let project = store.projects.first { $0.repoRoot == session.repoRoot }
-      let name = project?.name ?? URL(fileURLWithPath: session.repoRoot).lastPathComponent
+      let name = store.placeName(of: session)
       let root = store.sessionsByRepo[session.repoRoot]?.first { $0.kind == .projectRoot }
       var openRoot: (() -> Void)?
       if let root, root.id != session.id {

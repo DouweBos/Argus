@@ -61,6 +61,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var volume: String?
 
   public var isUnavailable: Bool { availability == .unavailable }
+  /// A scratch pad or automation run: its own folder, no project, no git.
+  public var isOutsideProjects: Bool { kind == .scratchPad || kind == .automationHost }
 
   enum CodingKeys: String, CodingKey {
     case id
