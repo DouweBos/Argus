@@ -5477,6 +5477,7 @@ extension ArgusProtocol {
     public static let ios = DeviceKind(rawValue: "ios")
     public static let mac = DeviceKind(rawValue: "mac")
     public static let electron = DeviceKind(rawValue: "electron")
+    public static let web = DeviceKind(rawValue: "web")
   }
 
   public struct DeviceMember: Codable, Sendable {

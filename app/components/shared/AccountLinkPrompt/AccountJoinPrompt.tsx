@@ -14,7 +14,11 @@ function what(request: AccountJoinRequest): string {
     return "A computer";
   }
 
-  return request.subject_kind === "ios" ? "An iPhone" : "A device";
+  if (request.subject_kind === "ios") {
+    return "An iPhone";
+  }
+
+  return request.subject_kind === "web" ? "A browser" : "A device";
 }
 
 /**

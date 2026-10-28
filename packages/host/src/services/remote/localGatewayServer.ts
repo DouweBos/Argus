@@ -25,7 +25,7 @@ import path from "node:path";
 import { WebSocketServer, type WebSocket } from "ws";
 import { warn } from "@argus/host/logger";
 import { findAccountDeviceFresh, syncSoon } from "../account/lifecycle";
-import { accountAllowsDevice } from "../account/trust";
+import { accountAllowsDevice, currentState } from "../account/trust";
 import { capture } from "../telemetry/telemetry";
 import {
   findDeviceByStaticKey,
@@ -170,8 +170,10 @@ function reportConnection(device: PairedDevice): void {
     return;
   }
   connectionReported.set(device.device_id, day);
+  const member = currentState()?.members[device.device_id]?.member;
   capture("remote_connection_opened", {
     trust: device.source === "account" ? "account" : "paired",
+    hosted_web: member?.role === "device" && member.kind === "web",
   });
 }
 

@@ -44,6 +44,37 @@ pnpm --filter argus-web build
 In dev, Argus serves `clients/argus-web/dist`; packaged builds ship it under
 `resources/argus-web`.
 
+## Hosted build (houwert.dev/argus/app)
+
+The same client, built from a second entry (`hosted/index.html` →
+`src/hosted/`), signs in with the Argus account instead of pairing:
+
+```sh
+pnpm build:web-client:hosted   # → clients/argus-web/dist-hosted, base /argus/app/
+```
+
+houwert.dev ships it as a committed copy: run `pnpm sync:argus-app` there
+(it builds this and copies `dist-hosted` into `public/argus/app/` with a
+manifest of the Argus commit and file hashes), review, commit.
+
+- Sign-in is Clerk JS, loaded from the instance's frontend API at a pinned
+  version with Subresource Integrity (`src/account/clerk.ts`; bump the version
+  and hash together).
+- The device's Ed25519 and X25519 keys are WebCrypto keys created
+  non-extractable and kept in IndexedDB (`src/account/webKeys.ts`,
+  `vault.ts`). Noise uses the X25519 key through `deriveBits`; the shared
+  transport precomputes each DH it needs (`AsyncStaticKey`), so neither
+  long-lived private key is ever in JavaScript memory (only per-connection
+  ephemerals are).
+- Joining follows the apps (`src/account/join.ts`): a request, the 6-digit
+  code, adoption only of a log whose `add_device` carries the confirmed code,
+  and a persisted request that survives a reload. A browser never writes
+  genesis and never approves other devices.
+- Only `wss://` routes are dialled (an https page can't open `ws://`), so a
+  computer is reachable through its managed tunnel.
+- No Web Push and no fonts from Google: the CSP (set by houwert.dev) allows
+  scripts only from the site, the Clerk frontend API and Turnstile.
+
 ## Notes
 
 - Crypto is `@noble/*` (pure TS); `src/crypto/noise.ts` is a byte-for-byte copy

@@ -95,7 +95,7 @@ struct AccountBody {
     else { return nil }
     switch role {
     case "device":
-      guard let kind = JSONField.string(o["kind"]), ["ios", "mac", "electron"].contains(kind) else {
+      guard let kind = JSONField.string(o["kind"]), ["ios", "mac", "electron", "web"].contains(kind) else {
         return nil
       }
       return AccountMember(

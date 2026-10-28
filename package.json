@@ -26,6 +26,7 @@
     "dev:host": "ARGUS_HOME=\"${ARGUS_HOME:-$HOME/.argus-host-dev}\" ARGUS_REMOTE_PORT=\"${ARGUS_REMOTE_PORT:-47618}\" pnpm build:host && ARGUS_HOME=\"${ARGUS_HOME:-$HOME/.argus-host-dev}\" ARGUS_REMOTE_PORT=\"${ARGUS_REMOTE_PORT:-47618}\" node --enable-source-maps dist-host/argus-host.js",
     "start:host": "node --enable-source-maps dist-host/argus-host.js",
     "build:web-client": "pnpm --filter argus-web build",
+    "build:web-client:hosted": "pnpm --filter argus-web build:hosted",
     "hotswap": "tsx scripts/hotswap-app.ts",
     "hotswap:web-client": "tsx scripts/hotswap-web-client.ts",
     "build": "pnpm ensure:bridge && tsc --noEmit && pnpm typecheck:electron && vite build && pnpm build:electron",

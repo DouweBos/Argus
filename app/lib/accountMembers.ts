@@ -7,6 +7,8 @@ export function memberKindLabel(kind: string): string {
       return "Mac app";
     case "electron":
       return "Desktop app";
+    case "web":
+      return "Browser";
     case "linux":
       return "Linux computer";
     default:
