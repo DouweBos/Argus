@@ -17,6 +17,7 @@ import {
   openExternalUrl,
 } from "../../../lib/ipc";
 import styles from "./IntegrationsSection.module.css";
+import { LinearOptions } from "./LinearOptions";
 
 const LINEAR_KEYS_URL = "https://linear.app/settings/account/security";
 
@@ -61,6 +62,7 @@ export function IntegrationsSection() {
             onError={setError}
           />
         )}
+        {linear?.connected && <LinearOptions />}
         {error && <p className={styles.error}>{error}</p>}
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>

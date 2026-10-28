@@ -11,6 +11,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import type { LinkedIssue } from "@argus/remote-protocol";
 import { warn } from "@argus/host/logger";
 import { argusHomeDir } from "../../lib/argusHome";
 import { canonicalPath } from "../../lib/canonicalPath";
@@ -41,6 +42,7 @@ export interface SessionMeta {
   /** Claude account this session authenticates as. `null` follows the
    * app-wide active account. */
   claude_account_id?: string | null;
+  linked_issue?: LinkedIssue | null;
   /**
    * Last known branch. Recorded so a session whose drive is disconnected can
    * still be listed — `git worktree list` is not readable for it.

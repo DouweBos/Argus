@@ -9,6 +9,7 @@
  */
 
 import type { CreateSessionLlm } from "./ipc";
+import type { LinkedIssue } from "./types";
 import type { Session } from "./types";
 import { getAgentState, removeAgent } from "../stores/agentStore";
 import { pushError } from "../stores/notificationsStore";
@@ -130,6 +131,7 @@ export async function createSessionInProject(
   useExistingBranch?: boolean,
   baseBranch?: string,
   llm?: CreateSessionLlm,
+  linkedIssue?: LinkedIssue,
 ) {
   try {
     const session = await apiCreateSession(
@@ -139,6 +141,7 @@ export async function createSessionInProject(
       useExistingBranch,
       baseBranch,
       llm,
+      linkedIssue,
     );
     if (!getSessionState().sessions.some((w) => w.id === session.id)) {
       addSession(session, projectHost(repoRoot) ?? LOCAL_HOST_ID);

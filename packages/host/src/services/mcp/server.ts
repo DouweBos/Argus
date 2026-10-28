@@ -71,6 +71,7 @@ import {
   recordAutomationSessionForCaller,
 } from "./automationGuards";
 import { registerAutomationTools } from "./automationTools";
+import { registerIntegrationTools } from "./integrationTools";
 import { findPastAgent, registerPastAgentTools } from "./pastAgentTools";
 import { isGitRepo, collectAllProjects } from "./projectDiscovery";
 import { ensureRepoRegistered } from "./projects";
@@ -3076,6 +3077,7 @@ export function createMcpServer(
   // advertised to everyone and refused later.
   registerAutomationTools(server, callerAgentId);
   registerPastAgentTools(server);
+  registerIntegrationTools(server);
 
   return server;
 }

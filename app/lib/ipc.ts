@@ -85,7 +85,9 @@ import type {
   IntegrationId,
   IntegrationStatus,
   LinearIssue,
+  LinearIssueContext,
   LinearIssueDetail,
+  LinkedIssue,
   McpOAuthStatus,
   McpTestResult,
   CustomRunnerConfig,
@@ -703,6 +705,7 @@ export const createSession = (
   useExistingBranch?: boolean,
   baseBranch?: string,
   llm?: CreateSessionLlm,
+  linkedIssue?: LinkedIssue,
 ): Promise<Session> =>
   invoke("create_session", {
     repoRoot,
@@ -711,6 +714,7 @@ export const createSession = (
     useExistingBranch: useExistingBranch ?? false,
     baseBranch,
     llm,
+    linkedIssue,
   });
 
 export const listScratchPads = (): Promise<Session[]> =>
@@ -1769,6 +1773,11 @@ export const listLinearIssues = (
   query: string | null,
   limit?: number,
 ): Promise<LinearIssue[]> => invoke("linear_list_issues", { query, limit });
+
+export const getLinearIssueContext = (
+  ref: string,
+): Promise<LinearIssueContext | null> =>
+  invoke("linear_issue_context", { ref });
 
 export const getLinearIssue = (
   ref: string,

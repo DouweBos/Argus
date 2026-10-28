@@ -56,6 +56,10 @@ export const AppSettings = z.object({
   follow_up_suggestions: z.boolean().optional(),
   /** Screen Argus opens on: the project picker, or the inbox. Defaults to home. */
   launch_route: z.enum(["home", "inbox"]).optional(),
+  /** Move a Linear issue to its team's started state when a session starts from it. Defaults to true. */
+  linear_mark_started: z.boolean().optional(),
+  /** When to comment on a session's Linear issue with a summary and screenshots. Defaults to `pr`. */
+  linear_report: z.enum(["off", "pr", "merge"]).optional(),
   /**
    * App-wide cap on how far any automation may go. Unset or null means no
    * cap — the automation's own level stands. A project can cap it lower,

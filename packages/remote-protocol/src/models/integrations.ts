@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ImageAttachment } from "./agents";
 
 export const IntegrationId = z.enum(["linear", "figma"]);
 export type IntegrationId = z.infer<typeof IntegrationId>;
@@ -21,6 +22,16 @@ export const IntegrationStatus = z.object({
   needsReauth: z.boolean(),
 });
 export type IntegrationStatus = z.infer<typeof IntegrationStatus>;
+
+/** The tracker issue a session was started from. */
+export const LinkedIssue = z.object({
+  source: z.literal("linear"),
+  /** `ENG-123`. */
+  identifier: z.string(),
+  title: z.string(),
+  url: z.string(),
+});
+export type LinkedIssue = z.infer<typeof LinkedIssue>;
 
 export const LinearIssue = z.object({
   id: z.string(),
@@ -54,3 +65,13 @@ export const LinearIssueDetail = LinearIssue.extend({
   comments: z.array(LinearComment),
 });
 export type LinearIssueDetail = z.infer<typeof LinearIssueDetail>;
+
+/** Everything an agent starts from: the issue, its text, and its screenshots. */
+export const LinearIssueContext = z.object({
+  issue: LinearIssueDetail,
+  /** Markdown to put in front of the user's prompt. */
+  context: z.string(),
+  /** Images embedded in the issue and its comments (at most a handful). */
+  images: z.array(ImageAttachment),
+});
+export type LinearIssueContext = z.infer<typeof LinearIssueContext>;

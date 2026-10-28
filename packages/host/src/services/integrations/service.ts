@@ -8,9 +8,13 @@ import type {
   IntegrationId,
   IntegrationStatus,
   LinearIssue,
+  LinearIssueContext,
   LinearIssueDetail,
+  LinkedIssue,
 } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
+import { warn } from "@argus/host/logger";
+import { loadAppSettings } from "../appSettings/store";
 import { capture } from "../telemetry/telemetry";
 import {
   deleteIntegration,
@@ -20,6 +24,7 @@ import {
   saveIntegration,
 } from "./credentials";
 import { LinearApi, LinearAuthError } from "./linear/client";
+import { issueContext, issueImageUrls } from "./linear/context";
 import { parseLinearRef } from "./linear/refs";
 
 export const INTEGRATION_STATUS_CHANGED = "integration_status_changed";
@@ -144,4 +149,69 @@ export function getLinearIssue(ref: string): Promise<LinearIssueDetail | null> {
   }
 
   return withLinear((api) => api.issue(identifier));
+}
+
+/** A session was just created from an issue. Never blocks or fails the session. */
+export function issueSessionStarted(issue: LinkedIssue): void {
+  capture("session_started_from_issue", { source: issue.source });
+  if (loadAppSettings().linear_mark_started === false) {
+    return;
+  }
+  withLinear((api) => api.markStarted(issue.identifier)).catch(
+    (err: unknown) => {
+      warn(
+        `[integrations] couldn't move ${issue.identifier} to started: ${String(err)}`,
+      );
+    },
+  );
+}
+
+const MAX_CONTEXT_IMAGES = 5;
+
+export function linearIssueContext(
+  ref: string,
+): Promise<LinearIssueContext | null> {
+  const identifier = parseLinearRef(ref);
+  if (!identifier) {
+    return Promise.resolve(null);
+  }
+
+  return withLinear(async (api) => {
+    const issue = await api.issue(identifier);
+    if (!issue) {
+      return null;
+    }
+    const urls = issueImageUrls(issue).slice(0, MAX_CONTEXT_IMAGES);
+    // A screenshot that won't download shouldn't stop the agent starting.
+    const images = await Promise.all(
+      urls.map((u) => api.image(u).catch(() => null)),
+    );
+
+    return {
+      issue,
+      context: issueContext(issue),
+      images: images.filter((i) => i !== null),
+    };
+  });
+}
+
+/** Posts as the connected Linear user. Returns the issue it landed on. */
+export function commentOnLinearIssue(
+  ref: string,
+  body: string,
+): Promise<LinearIssue> {
+  const identifier = parseLinearRef(ref);
+  if (!identifier) {
+    return Promise.reject(`"${ref}" isn't a Linear issue identifier or link.`);
+  }
+
+  return withLinear(async (api) => {
+    const issue = await api.issue(identifier);
+    if (!issue) {
+      throw `Linear has no issue ${identifier}.`;
+    }
+    await api.comment(issue.id, body);
+
+    return issue;
+  });
 }

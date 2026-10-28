@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LinkedIssue } from "../models/integrations";
 import {
   CliProjectImportSource,
   CliProjectScan,
@@ -68,6 +69,8 @@ export const SESSION_COMMANDS = {
           model: z.string().nullish(),
         })
         .optional(),
+      /** Names the session after the issue and moves the issue to started. */
+      linkedIssue: LinkedIssue.optional(),
     }),
     result: Session,
   },

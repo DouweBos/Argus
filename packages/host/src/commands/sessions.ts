@@ -49,6 +49,7 @@ export function registerSessionCommands(): void {
       p.useExistingBranch,
       p.baseBranch,
       p.llm,
+      { linkedIssue: p.linkedIssue },
     ),
   );
   defineTypedCommand("create_project_root_session", (p) =>

@@ -3,6 +3,7 @@ import {
   IntegrationId,
   IntegrationStatus,
   LinearIssue,
+  LinearIssueContext,
   LinearIssueDetail,
 } from "../models/integrations";
 import { type CommandSpec, NoParams, Void } from "./spec";
@@ -38,5 +39,11 @@ export const INTEGRATION_COMMANDS = {
     tier: "admin",
     params: z.object({ ref: z.string() }),
     result: LinearIssueDetail.nullable(),
+  },
+  /** The issue plus the context and images an agent starts from. */
+  linear_issue_context: {
+    tier: "admin",
+    params: z.object({ ref: z.string() }),
+    result: LinearIssueContext.nullable(),
   },
 } as const satisfies Record<string, CommandSpec>;

@@ -1737,6 +1737,7 @@ extension ArgusProtocol {
       public var useExistingBranch: Bool?
       public var baseBranch: String?
       public var llm: CreateSessionParamsLlm?
+      public var linkedIssue: LinkedIssue?
 
       enum CodingKeys: String, CodingKey {
         case repoRoot = "repoRoot"
@@ -1745,15 +1746,17 @@ extension ArgusProtocol {
         case useExistingBranch = "useExistingBranch"
         case baseBranch = "baseBranch"
         case llm = "llm"
+        case linkedIssue = "linkedIssue"
       }
 
-      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, llm: CreateSessionParamsLlm? = nil) {
+      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, llm: CreateSessionParamsLlm? = nil, linkedIssue: LinkedIssue? = nil) {
         self.repoRoot = repoRoot
         self.branch = branch
         self.description = description
         self.useExistingBranch = useExistingBranch
         self.baseBranch = baseBranch
         self.llm = llm
+        self.linkedIssue = linkedIssue
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -1764,6 +1767,7 @@ extension ArgusProtocol {
         try c.encodeIfPresent(useExistingBranch, forKey: .useExistingBranch)
         try c.encodeIfPresent(baseBranch, forKey: .baseBranch)
         try c.encodeIfPresent(llm, forKey: .llm)
+        try c.encodeIfPresent(linkedIssue, forKey: .linkedIssue)
       }
     }
 
@@ -5668,6 +5672,23 @@ extension ArgusProtocol {
     }
 
     public struct LinearGetIssueParams: Codable, Sendable {
+      public var ref: String
+
+      enum CodingKeys: String, CodingKey {
+        case ref = "ref"
+      }
+
+      public init(ref: String) {
+        self.ref = ref
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(ref, forKey: .ref)
+      }
+    }
+
+    public struct LinearIssueContextParams: Codable, Sendable {
       public var ref: String
 
       enum CodingKeys: String, CodingKey {
@@ -11412,6 +11433,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.LinearGetIssueParams
       public typealias Result = ArgusProtocol.LinearIssueDetail?
       public static let name = "linear_get_issue"
+      public static let tier = "admin"
+    }
+
+    public enum LinearIssueContext: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LinearIssueContextParams
+      public typealias Result = ArgusProtocol.LinearIssueContext?
+      public static let name = "linear_issue_context"
       public static let tier = "admin"
     }
 

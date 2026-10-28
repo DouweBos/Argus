@@ -196,7 +196,9 @@ export type {
   IntegrationId,
   IntegrationStatus,
   LinearIssue,
+  LinearIssueContext,
   LinearIssueDetail,
+  LinkedIssue,
 } from "@argus/remote-protocol";
 
 export type { AppSettings } from "@argus/remote-protocol";

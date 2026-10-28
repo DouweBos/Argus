@@ -4,6 +4,7 @@ import {
   disconnect,
   getLinearIssue,
   listIntegrations,
+  linearIssueContext,
   listLinearIssues,
 } from "../services/integrations/service";
 
@@ -17,4 +18,5 @@ export function registerIntegrationCommands(): void {
     listLinearIssues(p.query ?? null, p.limit),
   );
   defineTypedCommand("linear_get_issue", (p) => getLinearIssue(p.ref));
+  defineTypedCommand("linear_issue_context", (p) => linearIssueContext(p.ref));
 }
