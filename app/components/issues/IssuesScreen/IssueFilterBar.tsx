@@ -9,6 +9,7 @@ import {
   type IssueFilter,
   optionLabel,
 } from "../../../lib/issueFilters";
+import { capture } from "../../../lib/telemetry";
 import {
   setIssueFilters,
   useIssueFilters,
@@ -65,10 +66,19 @@ export function IssueFilterBar({ issues, scope }: IssueFilterBarProps) {
     };
     const next = change(current);
     const rest = filters.filter((f) => f.field !== field);
+    const existed = filters.some((f) => f.field === field);
     if (!next || next.values.length === 0) {
+      if (existed) {
+        capture("issue_filter_changed", { action: "remove", field });
+      }
       setIssueFilters(scope, rest);
 
       return;
+    }
+    if (!existed) {
+      capture("issue_filter_changed", { action: "add", field });
+    } else if (next.negate !== current.negate) {
+      capture("issue_filter_changed", { action: "flip", field });
     }
     // Keep a changed filter where it was in the row; a new one goes last.
     setIssueFilters(
@@ -106,7 +116,10 @@ export function IssueFilterBar({ issues, scope }: IssueFilterBarProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setIssueFilters(scope, [])}
+          onClick={() => {
+            capture("issue_filter_changed", { action: "clear", field: "all" });
+            setIssueFilters(scope, []);
+          }}
         >
           Clear
         </Button>
