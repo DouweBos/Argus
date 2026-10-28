@@ -65,6 +65,10 @@ struct SessionView: View {
     }
     .navigationTitle(session.map(Self.title) ?? "Session")
     .navigationSubtitle(session.map(Self.subtitle) ?? "")
+    // No project lists an automation run's session; opened straight from its agent, fetch it.
+    .task(id: sessionId) {
+      if session == nil { await store.adoptSession(id: sessionId) }
+    }
     .task(id: session?.repoRoot) {
       if let repoRoot = session?.repoRoot { await store.loadAgents(repoRoot: repoRoot) }
     }
@@ -300,10 +304,7 @@ struct AgentStartTitle: View {
   let sessionId: String
 
   private var place: String {
-    guard let session = model.session(sessionId) else { return "" }
-    if session.kind == .scratchPad { return "Scratch pad" }
-    return store.projects.first { $0.repoRoot == session.repoRoot }?.name
-      ?? URL(fileURLWithPath: session.repoRoot).lastPathComponent
+    model.session(sessionId).map(store.placeName(of:)) ?? ""
   }
 
   var body: some View {

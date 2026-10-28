@@ -51,7 +51,7 @@ struct RunControl: View {
         ChromeMenuItem("Edit Run Commands…", icon: .symbol(Icon.gear)) { model.projectSettingsRepo = session.repoRoot }
       }
       .help(running(primary.title) ? "Stop \(primary.title)" : primary.command)
-    } else if session.kind != .scratchPad {
+    } else if !session.isOutsideProjects {
       Button {
         model.projectSettingsRepo = session.repoRoot
       } label: {

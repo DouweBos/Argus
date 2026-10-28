@@ -26,7 +26,7 @@ extension DesktopModel {
     guard let id = route.sessionId, let session = session(id), session.status == .ready else { return false }
     switch kind {
     case .pullRequest: return sessionPullRequest(session) != nil
-    case .diff, .files: return session.kind != .scratchPad
+    case .diff, .files: return !session.isOutsideProjects
     default: return true
     }
   }

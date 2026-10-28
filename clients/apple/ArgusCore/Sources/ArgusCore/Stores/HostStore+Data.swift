@@ -113,10 +113,15 @@ extension HostStore {
 
   public func loadAgents(repoRoot: String) async {
     guard let backend else { return }
-    struct Params: Encodable { let repo_root: String }
+    struct Params: Encodable {
+      var repo_root: String?
+      var session_id: String?
+    }
     struct Result: Decodable { let agents: [RemoteAgentStatus] }
-    guard let result = try? await backend.request(
-      .agentsList, Params(repo_root: repoRoot), as: Result.self) else { return }
+    // The host refuses a repo it has no project for, which a scratch pad's or a run's folder never is.
+    let params = sessionOutsideProjects(repoRoot: repoRoot).map { Params(session_id: $0.id) }
+      ?? Params(repo_root: repoRoot)
+    guard let result = try? await backend.request(.agentsList, params, as: Result.self) else { return }
     agentsByRepo[repoRoot] = result.agents
     for agent in result.agents { statusByAgent[agent.agentId] = agent }
   }
