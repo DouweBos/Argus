@@ -95,6 +95,11 @@ go through the host, exactly as in the Electron app.
 - The command palette (⇧⌘P), its results grouped by kind with their
   shortcuts, and Handoff of the session on screen to your
   phone.
+- Updates: the app checks hourly on the channel picked in Settings →
+  Advanced, and **Check for Updates…** in the Argus menu checks now. It
+  asks before downloading and before restarting, and quitting to install
+  still warns about running agents. Builds without an update key (local
+  builds) don't check at all.
 
 ## Keyboard shortcuts
 

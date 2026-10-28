@@ -270,8 +270,8 @@ How to tick a row:
 
 ### Auto-update and telemetry
 
-| Feature                              | Electron | Mac | iOS | Milestone | Notes                                      |
-| ------------------------------------ | -------- | --- | --- | --------- | ------------------------------------------ |
-| Background updates, relaunch prompt  | ✅       | ☐   | —   | M7        | Mac: Sparkle. iOS: App Store / TestFlight. |
-| Release channels (latest/beta/alpha) | ✅       | ☐   | —   | M7        | iOS: TestFlight is the beta channel.       |
-| Telemetry consent (presence / full)  | ✅       | ☐   | ✅  | M7        |                                            |
+| Feature                              | Electron | Mac | iOS | Milestone | Notes                                                                                                                                                                         |
+| ------------------------------------ | -------- | --- | --- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Background updates, relaunch prompt  | ✅       | ◐   | —   | M7        | Mac: Sparkle via `ArgusUpdate`, shared with Argus Server; inert until `SPARKLE_PUBLIC_ED_KEY` is set and `argus-mac-<channel>.xml` is published. iOS: App Store / TestFlight. |
+| Release channels (latest/beta/alpha) | ✅       | ◐   | —   | M7        | Mac: the host's `updater_channel` picks the appcast. iOS: TestFlight is the beta channel.                                                                                     |
+| Telemetry consent (presence / full)  | ✅       | ☐   | ✅  | M7        |                                                                                                                                                                               |

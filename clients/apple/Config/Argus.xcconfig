@@ -7,6 +7,10 @@ POSTHOG_KEY =
 SLASH = /
 POSTHOG_HOST = https:$(SLASH)$(SLASH)eu.i.posthog.com
 
+// Sparkle's EdDSA public key (`generate_keys`). Empty: the Mac app and Argus
+// Server never check for updates, since they couldn't verify one.
+SPARKLE_PUBLIC_ED_KEY =
+
 // A gitignored `Argus.local.xcconfig` beside this file wins — included last so
 // its values override the defaults above — so a contributor can point their
 // own PostHog project at a local build without touching git.
