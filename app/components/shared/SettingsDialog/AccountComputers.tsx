@@ -9,27 +9,15 @@ import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import { useLiveRefresh } from "../../../hooks/useLiveRefresh";
 import { refreshAccountHosts } from "../../../lib/accountHosts";
 import { memberKindLabel } from "../../../lib/accountMembers";
+import { presenceLabel } from "../../../lib/accountPresence";
 import {
   accountApproveJoin,
   accountDenyJoin,
   accountListRequests,
 } from "../../../lib/ipc";
+import { PRESENCE_POLL_MS } from "../../../stores/accountPresenceStore";
 import { AccountMemberActions } from "./AccountMemberActions";
 import styles from "./AccountSection.module.css";
-
-/** Well inside the host's 15-minute online window, so status tracks its 5-minute heartbeat. */
-const PRESENCE_POLL_MS = 60_000;
-
-function lastSeen(host: AccountHost): string {
-  if (host.online) {
-    return "Online";
-  }
-  if (host.last_seen === null) {
-    return "Offline";
-  }
-
-  return `Offline · last seen ${new Date(host.last_seen).toLocaleString()}`;
-}
 
 /** Also folds the computers into Hosts, so they attach like a pairing. */
 async function load(): Promise<{
@@ -93,7 +81,7 @@ export function AccountComputers({ status }: { status: AccountStatus }) {
                 {host.name}
                 {host.is_self ? " (this computer)" : ""}
               </span>
-              <span className={styles.muted}>{lastSeen(host)}</span>
+              <span className={styles.muted}>{presenceLabel(host)}</span>
               <AccountMemberActions
                 id={host.host_id}
                 name={host.name}

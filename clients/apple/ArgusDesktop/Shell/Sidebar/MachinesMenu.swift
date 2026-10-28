@@ -7,6 +7,7 @@ import SwiftUI
 struct MachinesMenu: View {
   @Environment(DesktopModel.self) private var model
   @Environment(RemoteHostsStore.self) private var hosts
+  @Environment(AccountStore.self) private var account
   @Environment(\.openSettings) private var openSettings
 
   var body: some View {
@@ -20,7 +21,7 @@ struct MachinesMenu: View {
       ChromeMenuEntry.divider
       for id in hosts.machines {
         ChromeMenuItem(
-          hosts.label(id), subtitle: hosts.state(id).title,
+          hosts.label(id), subtitle: subtitle(id),
           icon: .symbol(id == Hosts.local ? "laptopcomputer" : Icon.desktop), checked: model.machineFilter == id
         ) { model.showMachine(id) }
       }
@@ -40,6 +41,19 @@ struct MachinesMenu: View {
     }
     .help(model.machineFilter.map { "Showing \(hosts.label($0)) only" } ?? "All machines")
     .accessibilityLabel("Machines")
+    // Account computers' online state, kept current while the window is up.
+    .liveRefresh(enabled: account.isSignedIn, every: AccountStore.presencePollInterval) {
+      await account.refreshDirectory()
+    }
+  }
+
+  /// The link's state; for an account computer that isn't attached, whether it's online.
+  private func subtitle(_ id: HostId) -> String {
+    let state = hosts.state(id)
+    guard state != .ready, let accountHost = hosts.identity(id)?.accountHostId.flatMap(account.host) else {
+      return state.title
+    }
+    return "\(state.title) · \(AccountPresenceText.text(online: accountHost.online, lastSeen: accountHost.lastSeen))"
   }
 }
 

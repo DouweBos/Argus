@@ -6,6 +6,7 @@
  */
 
 import type { AccountDeviceKey, AccountHost } from "./types";
+import { setAccountPresence } from "../stores/accountPresenceStore";
 import {
   addRemoteHost,
   getRemoteHosts,
@@ -81,6 +82,7 @@ export async function refreshAccountHosts(): Promise<AccountHost[]> {
     accountListHosts(),
     accountDeviceKey(),
   ]);
+  setAccountPresence(hosts);
   const { upsert, forget } = mergeAccountHosts(getRemoteHosts(), hosts, key);
   for (const host of upsert) {
     addRemoteHost(host);
