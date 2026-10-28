@@ -29,10 +29,8 @@ describe("integration oauth", () => {
     vi.unstubAllGlobals();
   });
 
-  it("isn't offered without a registered client id", () => {
-    expect(oauthAvailable("linear")).toBe(
-      Boolean(process.env.ARGUS_LINEAR_CLIENT_ID),
-    );
+  it("is offered for Linear, which has a registered app, and not Figma", () => {
+    expect(oauthAvailable("linear")).toBe(true);
     expect(oauthAvailable("figma")).toBe(false);
   });
 
@@ -59,15 +57,43 @@ describe("integration oauth", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it.skipIf(Boolean(process.env.ARGUS_LINEAR_CLIENT_ID))(
-    "gives up on an expired token it has no app to refresh with",
-    async () => {
-      store.secret = JSON.stringify({
-        accessToken: "old",
-        refreshToken: "r",
-        expiresAt: 1,
-      });
-      await expect(freshAccessToken("linear")).resolves.toBeNull();
-    },
-  );
+  it("refreshes an expiring token once, however many callers ask", async () => {
+    const fetchSpy = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({ access_token: "new", expires_in: 3600 }),
+          { status: 200 },
+        ),
+      ),
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+    store.secret = JSON.stringify({
+      accessToken: "old",
+      refreshToken: "r",
+      expiresAt: 1,
+    });
+    const [a, b] = await Promise.all([
+      freshAccessToken("linear"),
+      freshAccessToken("linear"),
+    ]);
+    expect([a, b]).toEqual(["new", "new"]);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(store.saved[0].secret)).toMatchObject({
+      accessToken: "new",
+      refreshToken: "r",
+    });
+  });
+
+  it("gives up when the refresh is refused", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(new Response("nope", { status: 400 }))),
+    );
+    store.secret = JSON.stringify({
+      accessToken: "old",
+      refreshToken: "r",
+      expiresAt: 1,
+    });
+    await expect(freshAccessToken("linear")).resolves.toBeNull();
+  });
 });
