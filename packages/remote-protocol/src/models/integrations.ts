@@ -42,6 +42,8 @@ export const DesignRef = z.object({
   /** `12:34`; null when the link names the whole file. */
   nodeId: z.string().nullable(),
   name: z.string(),
+  /** The Figma file version it was captured at, to tell when the design moved on. */
+  version: z.string().nullish(),
 });
 export type DesignRef = z.infer<typeof DesignRef>;
 
@@ -156,3 +158,56 @@ export const LinearTeam = z.object({
   name: z.string(),
 });
 export type LinearTeam = z.infer<typeof LinearTeam>;
+
+/** One layer of a frame, flattened in drawing order. */
+export const FigmaLayer = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.string(),
+  depth: z.number(),
+  width: z.number().nullable(),
+  height: z.number().nullable(),
+  /** Text content, for text layers. */
+  text: z.string().nullable(),
+  /** First solid fill as `#rrggbb`, when there is one. */
+  fill: z.string().nullable(),
+  /** `Inter 600 16/24`, for text layers. */
+  font: z.string().nullable(),
+});
+export type FigmaLayer = z.infer<typeof FigmaLayer>;
+
+/** Everything the design viewer shows for a frame. */
+export const FigmaFrameDetails = z.object({
+  ref: DesignRef,
+  frame: FigmaFrame,
+  layers: z.array(FigmaLayer),
+  comments: z.array(z.object({ author: z.string(), body: z.string() })),
+  file: z.object({
+    name: z.string(),
+    version: z.string(),
+    /** Epoch milliseconds. */
+    lastModified: z.number(),
+  }),
+  /** The file's pages and their top-level frames, to move between them. */
+  pages: z.array(
+    z.object({
+      name: z.string(),
+      frames: z.array(z.object({ name: z.string(), url: z.string() })),
+    }),
+  ),
+});
+export type FigmaFrameDetails = z.infer<typeof FigmaFrameDetails>;
+
+/** A frame and a device screenshot at the same pixel size, and where they differ. */
+export const DesignComparison = z.object({
+  /** 0–1: share of pixels that differ noticeably. */
+  differingFraction: z.number(),
+  width: z.number(),
+  height: z.number(),
+  /** PNGs, base64. */
+  design: z.string(),
+  screenshot: z.string(),
+  /** Differences in red over a faded screenshot. */
+  diff: z.string(),
+});
+export type DesignComparison = z.infer<typeof DesignComparison>;

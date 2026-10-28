@@ -5208,24 +5208,64 @@ extension ArgusProtocol {
     }
   }
 
+  public struct DesignComparison: Codable, Sendable {
+    public var differingFraction: Double
+    public var width: Double
+    public var height: Double
+    public var design: String
+    public var screenshot: String
+    public var diff: String
+
+    enum CodingKeys: String, CodingKey {
+      case differingFraction = "differingFraction"
+      case width = "width"
+      case height = "height"
+      case design = "design"
+      case screenshot = "screenshot"
+      case diff = "diff"
+    }
+
+    public init(differingFraction: Double, width: Double, height: Double, design: String, screenshot: String, diff: String) {
+      self.differingFraction = differingFraction
+      self.width = width
+      self.height = height
+      self.design = design
+      self.screenshot = screenshot
+      self.diff = diff
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(differingFraction, forKey: .differingFraction)
+      try c.encode(width, forKey: .width)
+      try c.encode(height, forKey: .height)
+      try c.encode(design, forKey: .design)
+      try c.encode(screenshot, forKey: .screenshot)
+      try c.encode(diff, forKey: .diff)
+    }
+  }
+
   public struct DesignRef: Codable, Sendable {
     public var url: String
     public var fileKey: String
     public var nodeId: String?
     public var name: String
+    public var version: String?
 
     enum CodingKeys: String, CodingKey {
       case url = "url"
       case fileKey = "fileKey"
       case nodeId = "nodeId"
       case name = "name"
+      case version = "version"
     }
 
-    public init(url: String, fileKey: String, nodeId: String? = nil, name: String) {
+    public init(url: String, fileKey: String, nodeId: String? = nil, name: String, version: String? = nil) {
       self.url = url
       self.fileKey = fileKey
       self.nodeId = nodeId
       self.name = name
+      self.version = version
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -5234,6 +5274,7 @@ extension ArgusProtocol {
       try c.encode(fileKey, forKey: .fileKey)
       try c.encode(nodeId, forKey: .nodeId)
       try c.encode(name, forKey: .name)
+      try c.encodeIfPresent(version, forKey: .version)
     }
   }
 
@@ -6144,6 +6185,180 @@ extension ArgusProtocol {
       try c.encode(image, forKey: .image)
       try c.encode(width, forKey: .width)
       try c.encode(height, forKey: .height)
+    }
+  }
+
+  public struct FigmaFrameDetailsCommentsItem: Codable, Sendable {
+    public var author: String
+    public var body: String
+
+    enum CodingKeys: String, CodingKey {
+      case author = "author"
+      case body = "body"
+    }
+
+    public init(author: String, body: String) {
+      self.author = author
+      self.body = body
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(author, forKey: .author)
+      try c.encode(body, forKey: .body)
+    }
+  }
+
+  public struct FigmaFrameDetailsFile: Codable, Sendable {
+    public var name: String
+    public var version: String
+    public var lastModified: Double
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case version = "version"
+      case lastModified = "lastModified"
+    }
+
+    public init(name: String, version: String, lastModified: Double) {
+      self.name = name
+      self.version = version
+      self.lastModified = lastModified
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(version, forKey: .version)
+      try c.encode(lastModified, forKey: .lastModified)
+    }
+  }
+
+  public struct FigmaFrameDetailsPagesItemFramesItem: Codable, Sendable {
+    public var name: String
+    public var url: String
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case url = "url"
+    }
+
+    public init(name: String, url: String) {
+      self.name = name
+      self.url = url
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(url, forKey: .url)
+    }
+  }
+
+  public struct FigmaFrameDetailsPagesItem: Codable, Sendable {
+    public var name: String
+    public var frames: [FigmaFrameDetailsPagesItemFramesItem]
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case frames = "frames"
+    }
+
+    public init(name: String, frames: [FigmaFrameDetailsPagesItemFramesItem]) {
+      self.name = name
+      self.frames = frames
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(frames, forKey: .frames)
+    }
+  }
+
+  public struct FigmaFrameDetails: Codable, Sendable {
+    public var ref: DesignRef
+    public var frame: FigmaFrame
+    public var layers: [FigmaLayer]
+    public var comments: [FigmaFrameDetailsCommentsItem]
+    public var file: FigmaFrameDetailsFile
+    public var pages: [FigmaFrameDetailsPagesItem]
+
+    enum CodingKeys: String, CodingKey {
+      case ref = "ref"
+      case frame = "frame"
+      case layers = "layers"
+      case comments = "comments"
+      case file = "file"
+      case pages = "pages"
+    }
+
+    public init(ref: DesignRef, frame: FigmaFrame, layers: [FigmaLayer], comments: [FigmaFrameDetailsCommentsItem], file: FigmaFrameDetailsFile, pages: [FigmaFrameDetailsPagesItem]) {
+      self.ref = ref
+      self.frame = frame
+      self.layers = layers
+      self.comments = comments
+      self.file = file
+      self.pages = pages
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(ref, forKey: .ref)
+      try c.encode(frame, forKey: .frame)
+      try c.encode(layers, forKey: .layers)
+      try c.encode(comments, forKey: .comments)
+      try c.encode(file, forKey: .file)
+      try c.encode(pages, forKey: .pages)
+    }
+  }
+
+  public struct FigmaLayer: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var type: String
+    public var depth: Double
+    public var width: Double?
+    public var height: Double?
+    public var text: String?
+    public var fill: String?
+    public var font: String?
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case name = "name"
+      case type = "type"
+      case depth = "depth"
+      case width = "width"
+      case height = "height"
+      case text = "text"
+      case fill = "fill"
+      case font = "font"
+    }
+
+    public init(id: String, name: String, type: String, depth: Double, width: Double? = nil, height: Double? = nil, text: String? = nil, fill: String? = nil, font: String? = nil) {
+      self.id = id
+      self.name = name
+      self.type = type
+      self.depth = depth
+      self.width = width
+      self.height = height
+      self.text = text
+      self.fill = fill
+      self.font = font
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(name, forKey: .name)
+      try c.encode(type, forKey: .type)
+      try c.encode(depth, forKey: .depth)
+      try c.encode(width, forKey: .width)
+      try c.encode(height, forKey: .height)
+      try c.encode(text, forKey: .text)
+      try c.encode(fill, forKey: .fill)
+      try c.encode(font, forKey: .font)
     }
   }
 

@@ -1,7 +1,9 @@
 import { defineTypedCommand } from "../services/command/registry";
+import { compareToDesign } from "../services/design/compare";
 import {
   figmaDesignRef,
   figmaFrame,
+  figmaFrameDetails,
 } from "../services/integrations/figma/service";
 import {
   cancelOAuth,
@@ -18,7 +20,7 @@ import {
   listLinearIssues,
   updateLinearIssue,
 } from "../services/integrations/service";
-import { deviceScreenshot } from "../services/simulator/screenshot";
+import { devicePng, deviceScreenshot } from "../services/simulator/screenshot";
 
 export function registerIntegrationCommands(): void {
   defineTypedCommand("list_integrations", () => listIntegrations());
@@ -48,6 +50,15 @@ export function registerIntegrationCommands(): void {
   );
   defineTypedCommand("figma_design_ref", (p) => figmaDesignRef(p.url));
   defineTypedCommand("figma_frame", (p) => figmaFrame(p.url));
+  defineTypedCommand("figma_frame_details", (p) => figmaFrameDetails(p.url));
+  defineTypedCommand("design_compare", async (p) => {
+    const png = await devicePng(p.platform, p.deviceKey);
+    if (!png) {
+      throw "Couldn't take a screenshot of that device.";
+    }
+
+    return compareToDesign(p.url, png, "app");
+  });
   defineTypedCommand("device_screenshot", (p) =>
     deviceScreenshot(p.platform, p.deviceKey),
   );

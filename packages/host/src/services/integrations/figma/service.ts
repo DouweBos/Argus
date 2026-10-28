@@ -3,11 +3,16 @@
  * shows the same frame in its chip, its Design view and its agent's context.
  */
 
-import type { DesignRef, FigmaFrame } from "@argus/remote-protocol";
+import type {
+  DesignRef,
+  FigmaFrame,
+  FigmaFrameDetails,
+} from "@argus/remote-protocol";
 import { loadIntegration, readSecret } from "../credentials";
 import { freshAccessToken, parseTokens } from "../oauth";
 import { credentialRejected } from "../service";
 import { FigmaApi, FigmaAuthError, type TrimmedNode } from "./client";
+import { flattenLayers } from "./layers";
 import { parseFigmaUrl } from "./refs";
 
 const FRAME_CACHE_LIMIT = 30;
@@ -46,7 +51,9 @@ async function freshFigmaApi(): Promise<FigmaApi | null> {
   return new FigmaApi(token, "oauth");
 }
 
-async function withFigma<T>(fn: (api: FigmaApi) => Promise<T>): Promise<T> {
+export async function withFigma<T>(
+  fn: (api: FigmaApi) => Promise<T>,
+): Promise<T> {
   const api = await freshFigmaApi();
   if (!api) {
     throw "Figma isn't connected. Connect it in Settings → Integrations.";
@@ -89,20 +96,76 @@ export function figmaFrame(url: string): Promise<FigmaFrame | null> {
   });
 }
 
+/** The link Figma opens for a node. */
+export function figmaNodeUrl(fileKey: string, nodeId: string): string {
+  return `https://www.figma.com/design/${fileKey}/?node-id=${nodeId.replace(/:/g, "-")}`;
+}
+
 /** A link resolved to a named design reference, or null when it isn't Figma's. */
 export async function figmaDesignRef(url: string): Promise<DesignRef | null> {
   const ref = parseFigmaUrl(url);
   if (!ref) {
     return null;
   }
-  const frame = await figmaFrame(url);
+  const [frame, outline] = await Promise.all([
+    figmaFrame(url),
+    withFigma((api) => api.outline(ref.fileKey)).catch(() => null),
+  ]);
 
   return {
     url: url.trim(),
     fileKey: ref.fileKey,
     nodeId: ref.nodeId,
     name: frame?.name ?? "Figma frame",
+    version: outline?.version ?? null,
   };
+}
+
+/** Everything the design viewer shows: frame, layers, comments, the file around it. */
+export async function figmaFrameDetails(
+  url: string,
+): Promise<FigmaFrameDetails | null> {
+  const ref = parseFigmaUrl(url);
+  if (!ref) {
+    return null;
+  }
+  const frame = await figmaFrame(url);
+  if (!frame) {
+    return null;
+  }
+
+  return withFigma(async (api) => {
+    const [node, comments, outline] = await Promise.all([
+      api.node(ref.fileKey, ref.nodeId),
+      api.comments(ref.fileKey, ref.nodeId).catch(() => []),
+      api.outline(ref.fileKey),
+    ]);
+
+    return {
+      ref: {
+        url: url.trim(),
+        fileKey: ref.fileKey,
+        nodeId: ref.nodeId ?? node?.id ?? null,
+        name: frame.name,
+        version: outline.version,
+      },
+      frame,
+      layers: node ? flattenLayers(node) : [],
+      comments,
+      file: {
+        name: outline.name,
+        version: outline.version,
+        lastModified: outline.lastModified,
+      },
+      pages: outline.pages.map((page) => ({
+        name: page.name,
+        frames: page.frames.map((f) => ({
+          name: f.name,
+          url: figmaNodeUrl(ref.fileKey, f.id),
+        })),
+      })),
+    };
+  });
 }
 
 export interface FigmaDesignContext {

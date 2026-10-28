@@ -29,4 +29,27 @@ describe("reportBody", () => {
     });
     expect(body).toBe("Argus merged `eng-1` into `main`.");
   });
+
+  it("puts each design next to a screenshot", () => {
+    const body = reportBody({
+      trigger: "pr",
+      branch: "b",
+      baseBranch: "main",
+      prUrl: "https://github.com/a/b/pull/1",
+      commits: [],
+      screenshotUrls: ["https://uploads.linear.app/shot.png"],
+      designs: [
+        {
+          name: "Login",
+          url: "https://figma.com/design/K",
+          imageUrl: "https://uploads.linear.app/design.png",
+        },
+      ],
+    });
+    expect(body).toContain("| Design | Implementation |");
+    expect(body).toContain(
+      "| [Login](https://figma.com/design/K)<br>![Login](https://uploads.linear.app/design.png) | ![Simulator 1](https://uploads.linear.app/shot.png) |",
+    );
+    expect(body).not.toContain("**Simulator**");
+  });
 });

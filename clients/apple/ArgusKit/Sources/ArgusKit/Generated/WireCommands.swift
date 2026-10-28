@@ -1960,6 +1960,46 @@ extension ArgusProtocol {
       }
     }
 
+    public struct DesignCompareParamsPlatform: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let android = DesignCompareParamsPlatform(rawValue: "android")
+      public static let ios = DesignCompareParamsPlatform(rawValue: "ios")
+    }
+
+    public struct DesignCompareParams: Codable, Sendable {
+      public var url: String
+      public var platform: DesignCompareParamsPlatform
+      public var deviceKey: String
+
+      enum CodingKeys: String, CodingKey {
+        case url = "url"
+        case platform = "platform"
+        case deviceKey = "deviceKey"
+      }
+
+      public init(url: String, platform: DesignCompareParamsPlatform, deviceKey: String) {
+        self.url = url
+        self.platform = platform
+        self.deviceKey = deviceKey
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(url, forKey: .url)
+        try c.encode(platform, forKey: .platform)
+        try c.encode(deviceKey, forKey: .deviceKey)
+      }
+    }
+
     public struct DestroyTerminalParams: Codable, Sendable {
       public var sessionId: String
 
@@ -2253,6 +2293,23 @@ extension ArgusProtocol {
     }
 
     public struct FigmaFrameParams: Codable, Sendable {
+      public var url: String
+
+      enum CodingKeys: String, CodingKey {
+        case url = "url"
+      }
+
+      public init(url: String) {
+        self.url = url
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(url, forKey: .url)
+      }
+    }
+
+    public struct FigmaFrameDetailsParams: Codable, Sendable {
       public var url: String
 
       enum CodingKeys: String, CodingKey {
@@ -10405,6 +10462,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum DesignCompare: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.DesignCompareParams
+      public typealias Result = ArgusProtocol.DesignComparison
+      public static let name = "design_compare"
+      public static let tier = "admin"
+    }
+
     public enum DestroyTerminal: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.DestroyTerminalParams
       public typealias Result = IgnoredResult
@@ -10507,6 +10571,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.FigmaFrameParams
       public typealias Result = ArgusProtocol.FigmaFrame?
       public static let name = "figma_frame"
+      public static let tier = "admin"
+    }
+
+    public enum FigmaFrameDetails: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.FigmaFrameDetailsParams
+      public typealias Result = ArgusProtocol.FigmaFrameDetails?
+      public static let name = "figma_frame_details"
       public static let tier = "admin"
     }
 

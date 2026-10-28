@@ -165,6 +165,10 @@ export interface EventMap {
     theme: "amber" | "ember" | "grove" | "iris" | "muted" | "ocean" | "rose";
   };
   design_compare_opened: undefined;
+  design_compared: {
+    diff_bucket: "<2%" | "<10%" | "<30%" | ">=30%";
+    source: "agent" | "app";
+  };
   design_ref_added: { from: "issue" | "paste" };
   device_host_added: { has_identity_file: boolean; has_port: boolean };
   device_host_removed: undefined;

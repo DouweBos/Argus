@@ -107,18 +107,26 @@ expire, so you'll reconnect when they do.
 
 Paste a Figma frame link (one with `node-id` in it) into the start composer
 and it becomes a design chip. Figma links in an attached Linear issue are
-picked up automatically. Those only go to that issue's agent.
+picked up automatically, and only go to that issue's agent.
 
-The agent is told to match the frames. It gets a `figma_get_frame` tool that
-returns the rendered frame, its layers trimmed to layout, sizes, colors and
-text, and the open designer comments on it. The agent is also told to
-compare a simulator screenshot against the frame before it calls the work
-done.
+Each of a session's frames is written into its worktree under
+`.argus/design/` as a PNG at 3x and a JSON of its layers (sizes, colors,
+fonts, text) and designer comments. The folder is kept out of git. Agents are
+asked to build against them in a loop:
 
-Once a session has designs, the runtime panel gets a **Design** mode next to
-Simulate. It shows the frame and a screenshot of the device side by side, or
-under a slider. Retake the screenshot after a change. With several frames,
-pick one from the list.
+- `figma_get_frame` for the full spec, and `figma_export_assets` to export
+  the frame's icons and small images into `.argus/design/assets/` instead of
+  redrawing them.
+- `design_compare` after each visible change. It renders the frame at the
+  simulator's exact pixel size, diffs it against the screen, and returns the
+  share of differing pixels with the design, the screenshot and a heatmap.
+  The latest screenshot and heatmap are kept in `.argus/design/compare/`.
+- `conductor assert-screenshot <reference.png>` works on the same files as a
+  pass/fail gate.
+
+Pull requests opened from Argus end with the ticket and the design frames.
+The Linear comment Argus posts shows each design next to the implementation
+screenshot.
 
 ## Automations
 

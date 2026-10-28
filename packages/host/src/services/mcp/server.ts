@@ -3077,7 +3077,7 @@ export function createMcpServer(
   // advertised to everyone and refused later.
   registerAutomationTools(server, callerAgentId);
   registerPastAgentTools(server);
-  registerIntegrationTools(server);
+  registerIntegrationTools(server, callerAgentId);
 
   return server;
 }
