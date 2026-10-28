@@ -69,6 +69,28 @@ extension AppStore {
         pushState = .off
       }
     }
+    if enabled {
+      await registerAccountPush()
+    } else {
+      await account.setPushToken(nil)
+    }
+  }
+
+  /// This install's token and push key, if push is on and already allowed.
+  /// Never prompts: that happens on the first connection.
+  func accountPushToken() async -> AccountPushToken? {
+    guard pushEnabled, await PushTokens.isAuthorized(),
+      let token = await PushTokens.deviceToken()
+    else { return nil }
+    return AccountPushToken(
+      token: token, environment: PushTokens.environment, pushKey: PushTokens.relayKeys().pushKey)
+  }
+
+  /// Register with the account, so every computer on it can wake this phone —
+  /// including ones it never opened. Re-registered by the store as hosts change.
+  func registerAccountPush() async {
+    guard let token = await accountPushToken() else { return }
+    await account.setPushToken(token)
   }
 
   func setDeviceName(_ name: String) async {
@@ -103,6 +125,16 @@ extension AppStore {
     }
     guard let token = await PushTokens.deviceToken() else {
       pushState = .noToken
+      return
+    }
+    await account.setPushToken(
+      AccountPushToken(
+        token: token, environment: PushTokens.environment, pushKey: PushTokens.relayKeys().pushKey))
+    // An account computer reaches this phone through the account; a per-host
+    // registration is only for QR pairings (and as a fallback).
+    if identity?.isAccountHost == true, account.pushRegistered {
+      preferences.set(token, for: PreferenceKey.pushToken)
+      pushState = .registered
       return
     }
 

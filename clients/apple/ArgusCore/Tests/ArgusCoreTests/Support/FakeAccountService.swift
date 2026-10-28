@@ -27,6 +27,12 @@ final class FakeAccountService: @unchecked Sendable {
   private var links: [String: LinkRequest] = [:]
   private var directory: [AccountDirectoryRecord] = []
   private var directoryDown = false
+  private var pushBodies: [[String: Any]] = []
+  private var pushDeletes: [String] = []
+  /// Every `PUT /push/registration` body, oldest first.
+  var pushRegistrations: [[String: Any]] { lock.withLock { pushBodies } }
+  /// Device ids `DELETE /push/registration` named.
+  var pushUnregistered: [String] { lock.withLock { pushDeletes } }
   /// Called before a `POST /log` is applied; returning true answers 409 instead.
   var beforeAppend: (@Sendable (FakeAccountService) -> Bool)?
 
@@ -111,6 +117,12 @@ final class FakeAccountService: @unchecked Sendable {
         ["hosts": records.map {
           ["host_id": $0.hostId, "presence_body": $0.presenceBody, "presence_sig": $0.presenceSig, "last_seen": $0.lastSeen]
         }], url)
+    case ("PUT", "push/registration"):
+      lock.withLock { pushBodies.append(body) }
+      return respond(204, [:], url)
+    case ("DELETE", "push/registration"):
+      lock.withLock { pushDeletes.append(body["device_id"] as? String ?? "") }
+      return respond(204, [:], url)
     case ("POST", "link/claim"):
       let code = body["user_code"] as? String ?? ""
       guard let (id, link) = lock.withLock({ links.first { $0.value.userCode == code } }) else {

@@ -104,9 +104,14 @@ extension AccountStore {
         online: AccountPresence.isOnline(lastSeenMs: presence?.lastSeen, now: now()),
         isLocal: member.id == vault.localHostId)
     }
+    let previousMembers = hosts.map(\.member)
     let identitiesChanged = next.map(\.member) != hosts.map(\.member) || next.map(\.endpoints) != hosts.map(\.endpoints)
     if next != hosts { hosts = next }
     if identitiesChanged { onHostsChanged(hostIdentities) }
+    // A host joined or left: seal this device's push key for the new set.
+    if pushToken != nil, next.map(\.member) != previousMembers {
+      Task { await syncPushRegistration() }
+    }
   }
 
   /// Account hosts as connectable identities: the log's Noise key pinned, this

@@ -10,6 +10,8 @@ public enum PreferenceKey {
   public static let autoExpandImageReads = "transcript.autoExpandImageReads"
   public static let defaultPermissionMode = "agent.defaultPermissionMode"
   public static let pushToken = "push.token"
+  /// Join requests a wake-up push already announced, so each is shown once.
+  public static let accountPromptedJoins = "account.promptedJoins"
   public static let agentHosts = "agent.hosts"
   public static let pendingDecisions = "permission.pending"
   public static let telemetryId = "telemetry.id"

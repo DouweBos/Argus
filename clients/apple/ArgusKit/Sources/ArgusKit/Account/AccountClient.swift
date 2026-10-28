@@ -122,6 +122,16 @@ public struct AccountClient: Sendable {
     return result.head
   }
 
+  /// Register this device's push token and its per-host sealed keys (phase 3).
+  public func registerPush(_ registration: AccountPushRegistration) async throws {
+    let _: Empty = try await send("PUT", "push/registration", body: registration)
+  }
+
+  /// Push was switched off on this device.
+  public func unregisterPush(deviceId: String) async throws {
+    let _: Empty = try await send("DELETE", "push/registration", body: ["device_id": deviceId])
+  }
+
   public func deny(requestId: String) async throws {
     let _: Empty = try await send("POST", "join/\(requestId)/deny", body: [String: String]())
   }
