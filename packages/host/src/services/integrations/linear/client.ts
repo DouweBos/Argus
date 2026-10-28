@@ -63,6 +63,12 @@ const COMMENT = `mutation ArgusComment($issueId: String!, $body: String!) {
   commentCreate(input: { issueId: $issueId, body: $body }) { success }
 }`;
 
+const FILE_UPLOAD = `mutation ArgusFileUpload($contentType: String!, $filename: String!, $size: Int!) {
+  fileUpload(contentType: $contentType, filename: $filename, size: $size) {
+    uploadFile { uploadUrl assetUrl headers { key value } }
+  }
+}`;
+
 const VIEWER = `query ArgusViewer {
   viewer { displayName email }
   organization { name }
@@ -271,6 +277,38 @@ export class LinearApi {
     }
 
     return { data: bytes.toString("base64"), media_type: type };
+  }
+
+  /** Uploads to Linear's storage and returns the URL to embed in Markdown. */
+  async upload(png: Buffer, filename: string): Promise<string> {
+    const data = await this.query<{
+      fileUpload: {
+        uploadFile: {
+          uploadUrl: string;
+          assetUrl: string;
+          headers: { key: string; value: string }[];
+        } | null;
+      };
+    }>(FILE_UPLOAD, { contentType: "image/png", filename, size: png.length });
+    const file = data.fileUpload.uploadFile;
+    if (!file) {
+      throw new Error("Linear didn't accept the upload.");
+    }
+    const res = await fetch(file.uploadUrl, {
+      method: "PUT",
+      headers: {
+        "content-type": "image/png",
+        "cache-control": "public, max-age=31536000",
+        ...Object.fromEntries(file.headers.map((h) => [h.key, h.value])),
+      },
+      body: new Uint8Array(png),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) {
+      throw new Error(`Linear upload failed with HTTP ${res.status}.`);
+    }
+
+    return file.assetUrl;
   }
 
   async comment(issueId: string, body: string): Promise<void> {

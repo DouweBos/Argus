@@ -248,6 +248,7 @@ Linear and Figma connections. No account names, emails, workspaces or keys.
 | `integration_connected`      | main   | A Linear or Figma connection attempt finished                                         | `service: "linear" \| "figma"`, `method: "key" \| "oauth"`, `success` |
 | `integration_reauth_needed`  | main   | The service rejected a saved credential and it needs reconnecting                     | `service: "linear" \| "figma"`                                        |
 | `session_started_from_issue` | main   | A session was created from a tracker issue (one per issue when several start at once) | `source: "linear"`                                                    |
+| `issue_report_posted`        | main   | Argus commented on a session's Linear issue after a pull request or merge             | `trigger: "pr" \| "merge"`, `has_screenshots`                         |
 
 ## Accounts
 

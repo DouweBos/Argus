@@ -50,3 +50,16 @@ While Linear is connected, every agent gets three Argus tools:
 
 They use Argus's connection, so agents don't need a Linear MCP server of
 their own.
+
+## Reporting back
+
+When a session's work lands, Argus comments on its issue. The comment has the
+pull request link (or the branch that was merged), the commit subjects, and a
+screenshot of every simulator the session's agents are using at that moment.
+Reviewers and PMs see the result without checking out the branch.
+
+**Report back** in Settings → Integrations decides when this happens: when a
+pull request is opened from Argus (the default), when the session merges, or
+never. A session started by hand still gets a report if its branch name
+contains the issue identifier, because Argus asks Linear which issue the
+branch belongs to.

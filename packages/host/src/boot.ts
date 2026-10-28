@@ -45,6 +45,7 @@ import {
   importEnabled,
   startCliChatImport,
 } from "./services/externalChats/importer";
+import { initIssueReports } from "./services/integrations/report";
 import {
   initLanguageServers,
   stopAllLanguageServers,
@@ -152,6 +153,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
 
   initAutomations();
   initAutomationOutcomes();
+  initIssueReports();
   startAutomationScheduler();
 
   // Chats run with the plain CLI join each project's history.

@@ -7,6 +7,7 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { pullRequestOpened } from "../integrations/report";
 
 const execFileAsync = promisify(execFile);
 
@@ -80,6 +81,7 @@ export async function ghPrCreate(params: {
     throw `Could not parse PR number from URL: ${url}`;
   }
   const number = Number(match[1]);
+  pullRequestOpened(repoRoot, head, url);
 
   return { url, number };
 }
