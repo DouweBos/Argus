@@ -62,4 +62,22 @@ struct SessionsOutsideProjectsTests {
     #expect(session.isOutsideProjects)
     #expect(store.placeName(of: session) == "Automation")
   }
+
+  @Test("a saved chat an older host won't read says so instead of looking empty")
+  func stoppedTranscriptRefused() async {
+    let store = HostStore()
+    let backend = FakeBackend()
+    backend.fail(
+      .agentsStoppedTranscript,
+      with: Transport.TransportError.gateway(GatewayErrorPayload(code: "not_found", message: "unknown repo_root")))
+    await store.attach(backend)
+
+    let key = HostStore.stoppedKey(repoRoot: Self.runDir, historyId: "h1")
+    await store.loadTranscript(agentId: key)
+
+    #expect(store.visibleMessages(for: key).isEmpty)
+    #expect(
+      store.transcriptErrorByAgent[key]
+        == "Reading chats saved outside a project needs a newer version of Argus on the host.")
+  }
 }

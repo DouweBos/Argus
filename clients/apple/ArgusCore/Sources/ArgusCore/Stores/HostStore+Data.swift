@@ -222,17 +222,23 @@ extension HostStore {
       let before: Double?
     }
 
-    // Any failure becomes an empty transcript: an agent that hasn't started
-    // yet should show an empty state, not a spinner that never resolves.
+    // A live agent's failure becomes an empty transcript: one that hasn't
+    // started yet should show an empty state, not a spinner that never resolves.
     let transcript: RemoteTranscript
     if let stopped = Self.parseStoppedKey(key) {
-      transcript =
-        (try? await backend.request(
+      // A saved chat always has messages, so a failure is said rather than shown empty.
+      do {
+        transcript = try await backend.request(
           .agentsStoppedTranscript,
           StoppedParams(
             repo_root: stopped.repoRoot, history_id: stopped.historyId,
             limit: Self.transcriptPage, before: before),
-          as: RemoteTranscript.self)) ?? Self.emptyTranscript
+          as: RemoteTranscript.self)
+        transcriptErrorByAgent[key] = nil
+      } catch {
+        transcriptErrorByAgent[key] = Self.stoppedTranscriptFailure(error)
+        return
+      }
     } else {
       // A tail page re-establishes where deltas line up; those arriving
       // meanwhile wait for it.
@@ -254,6 +260,17 @@ extension HostStore {
     }
 
     merge(transcript, into: key, isOlderPage: before != nil)
+  }
+
+  /// Hosts up to 0.68 only read saved chats inside a project, so a scratch
+  /// pad's or a run's chat is refused as an unknown repo.
+  nonisolated static func stoppedTranscriptFailure(_ error: Error) -> String {
+    if case Transport.TransportError.gateway(let payload) = error, payload.isNotFound,
+      payload.message.contains("repo_root")
+    {
+      return "Reading chats saved outside a project needs a newer version of Argus on the host."
+    }
+    return describe(error)
   }
 
   private static let emptyTranscript = RemoteTranscript(

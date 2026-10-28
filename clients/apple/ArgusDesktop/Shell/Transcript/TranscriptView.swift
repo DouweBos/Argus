@@ -51,7 +51,10 @@ struct TranscriptView: View {
     .onChange(of: model.revealToken) { _, _ in reveal() }
     // Over the table, not in it: a row is as tall as its content, so only the pane can centre it.
     .overlay {
-      if showsEmptyState && messages.isEmpty && (landed || fixture != nil) && !hasQueue {
+      if messages.isEmpty, let error = host.transcriptErrorByAgent[agentKey] {
+        EmptyState(icon: "exclamationmark.triangle", title: "Couldn't load this chat", body: error)
+          .allowsHitTesting(false)
+      } else if showsEmptyState && messages.isEmpty && (landed || fixture != nil) && !hasQueue {
         EmptyState(icon: Icon.agent, title: "Nothing yet", body: "Send this agent a message to get it going.")
           .allowsHitTesting(false)
       }

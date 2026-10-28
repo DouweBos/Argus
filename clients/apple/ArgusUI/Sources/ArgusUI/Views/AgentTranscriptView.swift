@@ -93,7 +93,10 @@ public struct AgentTranscriptView: View {
       }
       // Over the scroll view, not in it: only the pane can centre it.
       .overlay {
-        if messages.isEmpty {
+        if messages.isEmpty, let error = host.transcriptErrorByAgent[agentKey] {
+          EmptyState(icon: "exclamationmark.triangle", title: "Couldn't load this chat", body: error)
+            .allowsHitTesting(false)
+        } else if messages.isEmpty {
           EmptyState(
             icon: Icon.agent,
             title: "Nothing yet",
