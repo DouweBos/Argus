@@ -2,131 +2,93 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// Tunnels: Tailscale and Cloudflare side by side, the Tailscale checklist
-/// when it's on, and Cloudflare's quick/named mode, token and public URL.
+/// Routes in: the local network, the tailnet, the account's managed tunnel,
+/// and any tunnel an earlier version set up that still runs.
 struct RemoteTunnelSections: View {
   @Environment(\.theme) private var theme
   @Bindable var model: RemoteSettingsModel
-  let toggle:
-    (
-      KeyPath<ArgusProtocol.RemoteStatus, Bool>, MacTelemetryEvent.RemoteSetting,
-      @escaping (Bool) -> ArgusProtocol.RemoteConfigPatch
-    ) -> Binding<Bool>
-
-  @State private var token = ""
-  @State private var publicUrl = ""
 
   private var status: ArgusProtocol.RemoteStatus? { model.status }
-  private var tailscaleOn: Bool { status?.tailscaleEnabled ?? false }
-  private var cloudflareOn: Bool { status?.cloudflareEnabled ?? false }
-  private var mode: ArgusProtocol.RemoteTunnelMode { status?.tunnelMode ?? .quick }
 
   var body: some View {
     SettingsGroup(
-      "Tunnels",
-      footer: "Devices on this network always connect directly. Tunnels add a way in from anywhere else — enable as many as you like. A paired phone syncs every address and connects over the simplest one that works: Wi-Fi first, then Tailscale, then Cloudflare."
+      "Routes",
+      footer: "Devices try every route at once and keep the fastest that works: this network, then Tailscale, then the managed tunnel. Everything stays end-to-end encrypted; the tunnel only ever carries ciphertext."
     ) {
-      tunnelRow("Tailscale", on: tailscaleOn, state: status?.tunnels["tailscale"]) {
-        toggle(\.tailscaleEnabled, .tailscale) { .init(tailscaleEnabled: $0) }
+      SettingsRow("Local network") {
+        address(status?.lanUrl)
       }
-      tunnelRow("Cloudflare", on: cloudflareOn, state: status?.tunnels["cloudflare"]) {
-        toggle(\.cloudflareEnabled, .cloudflare) { .init(cloudflareEnabled: $0) }
+      SettingsRow("Tailscale") {
+        address(status?.tailscaleUrl)
+      } detail: {
+        if status?.enabled == true, status?.tailscaleUrl == nil {
+          note("Run Tailscale on this Mac and your phone for a direct route when you're away.")
+        }
+      }
+      if let tunnel = status?.managedTunnel {
+        managedTunnelRow(tunnel)
       }
     }
 
-    if tailscaleOn {
+    if let legacy = status?.legacyTunnels, !legacy.isEmpty {
       SettingsGroup(
-        "Tailscale Funnel",
-        footer: "Exposes the gateway at your stable *.ts.net address — no domain or Cloudflare account. Argus checks each prerequisite and can fix them for you."
+        "Earlier tunnels",
+        footer: "Set up in an earlier version. It keeps running until this Mac's managed tunnel replaces it."
       ) {
-        TailscaleSetupView(model: model)
-      }
-    }
-
-    if cloudflareOn {
-      SettingsGroup("Cloudflare", footer: cloudflareFooter) {
-        SettingsRow("Tunnel") {
-          Picker("Tunnel", selection: modeBinding) {
-            Text("Quick tunnel").tag(ArgusProtocol.RemoteTunnelMode.quick)
-            Text("Named tunnel").tag(ArgusProtocol.RemoteTunnelMode.token)
-          }
-          .pickerStyle(.segmented)
-        }
-        if mode == .token {
-          SettingsRow("Connector token") {
-            HStack {
-              SecureField(
-                "Connector token", text: $token,
-                prompt: Text(status?.hasTunnelToken == true ? "••••••••" : "Paste token")
-              )
-              .textFieldStyle(.roundedBorder)
-              .frame(width: 240)
-              Button("Save") {
-                Task {
-                  if await model.apply(.init(tunnelToken: token), setting: .tunnelToken) { token = "" }
-                }
-              }
-              .disabled(model.busy || token.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-          }
-          SettingsRow("Public URL") {
-            HStack {
-              TextField("Public URL", text: $publicUrl, prompt: Text("wss://argus.example.com"))
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 240)
-              Button("Save") {
-                Task { _ = await model.apply(.init(publicUrl: publicUrl), setting: .publicUrl) }
-              }
-              .disabled(model.busy || publicUrl.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
+        ForEach(Array(legacy.enumerated()), id: \.offset) { _, tunnel in
+          SettingsRow(RemoteAccessLabels.legacyTunnel(tunnel.kind)) {
+            ToneLabel(
+              tone: RemoteAccessLabels.legacyTunnelTone(tunnel),
+              text: RemoteAccessLabels.legacyTunnelLabel(tunnel))
+          } detail: {
+            if let error = tunnel.error { errorText(error) }
           }
         }
+        SettingsRow("Stop using them") {
+          Button("Stop") {
+            Task { _ = await model.apply(.init(retireLegacyTunnels: true), setting: .legacyTunnels) }
+          }
+          .disabled(model.busy)
+        }
       }
-      .onAppear(perform: seedPublicUrl)
-      .onChange(of: status?.publicUrl) { seedPublicUrl() }
     }
   }
 
-  private var cloudflareFooter: String {
-    let modes =
-      "Quick = ephemeral trycloudflare.com URL (no account). Named = stable hostname via a Cloudflare connector token; survives restarts so devices stay paired."
-    guard mode == .token else { return modes }
-    let token =
-      status?.hasTunnelToken == true
-      ? "A token is set. Enter a new one to replace it."
-      : "Token from `cloudflared tunnel token <name>` or the Cloudflare dashboard."
-    return "\(modes) \(token) The public URL is the hostname mapped to this machine in Cloudflare."
-  }
-
-  private func seedPublicUrl() {
-    if mode == .token, publicUrl.isEmpty, let url = status?.publicUrl { publicUrl = url }
-  }
-
-  private var modeBinding: Binding<ArgusProtocol.RemoteTunnelMode> {
-    Binding(
-      get: { mode },
-      set: { next in Task { _ = await model.apply(.init(tunnelMode: next), setting: .tunnelMode) } })
-  }
-
-  private func tunnelRow(
-    _ name: String, on: Bool, state: ArgusProtocol.RemoteTunnelState?, binding: () -> Binding<Bool>
-  ) -> some View {
-    SettingsRow(name) {
+  private func managedTunnelRow(_ tunnel: ArgusProtocol.ManagedTunnelState) -> some View {
+    SettingsRow("Managed tunnel") {
       HStack(spacing: 10) {
-        if status != nil {
-          ToneLabel(
-            tone: on ? RemoteAccessLabels.tunnelTone(state) : .idle,
-            text: on ? RemoteAccessLabels.tunnelLabel(state) : "off")
+        ToneLabel(
+          tone: RemoteAccessLabels.managedTunnelTone(tunnel),
+          text: tunnel.phase == .running ? (tunnel.url ?? "running") : RemoteAccessLabels.managedTunnelLabel(tunnel))
+        if tunnel.reason == .turnedOff {
+          Button("Turn On") { Task { await model.setManagedTunnel(true) } }
+            .disabled(model.busy)
+        } else if tunnel.phase != .off || tunnel.reason == .remoteOff {
+          Button("Turn Off") { Task { await model.setManagedTunnel(false) } }
+            .disabled(model.busy || tunnel.reason == .notLinked)
         }
-        Toggle(name, isOn: binding())
-          .toggleStyle(.argusSwitch)
-          .controlSize(.small)
-          .disabled(model.busy || status == nil)
       }
     } detail: {
-      if on, let error = state?.error {
-        Text(error).font(.scaled(.callout)).foregroundStyle(theme.error).textSelection(.enabled)
+      if let error = tunnel.error, tunnel.phase == .error {
+        errorText(error)
+      } else if let text = RemoteAccessLabels.managedTunnelNote(tunnel) {
+        note(tunnel.reason == .notLinked ? "\(text) Settings → Account." : text)
       }
     }
+  }
+
+  private func address(_ url: String?) -> some View {
+    Text(url ?? "—")
+      .font(.system(.body, design: .monospaced))
+      .foregroundStyle(url == nil ? theme.textSecondary : theme.text)
+      .textSelection(.enabled)
+  }
+
+  private func note(_ text: String) -> some View {
+    Text(text).font(.scaled(.callout)).foregroundStyle(theme.textSecondary)
+  }
+
+  private func errorText(_ text: String) -> some View {
+    Text(text).font(.scaled(.callout)).foregroundStyle(theme.error).textSelection(.enabled)
   }
 }

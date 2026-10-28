@@ -2,8 +2,8 @@ import ArgusCore
 import Foundation
 import Observation
 
-/// The Remote tab's state: the host's remote status, push config, Tailscale
-/// checklist and the pairing flow, kept live from `remote:*` events — the
+/// The Remote tab's state: the host's remote status, push config, the managed
+/// tunnel switch and the pairing flow, kept live from `remote:*` events — the
 /// desktop's `RemoteAccessSection` and friends.
 @MainActor
 @Observable
@@ -13,13 +13,7 @@ final class RemoteSettingsModel {
 
   private(set) var status: ArgusProtocol.RemoteStatus?
   private(set) var push: ArgusProtocol.RemotePushConfig?
-  private(set) var tailscale: ArgusProtocol.TailscaleDiagnosis?
   private(set) var busy = false
-  private(set) var tailscaleChecking = false
-  private(set) var tailscaleFixing: ArgusProtocol.TailscaleFixKind?
-  /// A browser fix ran; the checks can't advance until the user finishes there.
-  private(set) var tailscaleHandedOff = false
-  private(set) var tailscaleError: String?
   /// Per device: the provider's answer to the last test push.
   private(set) var pushResults: [String: String] = [:]
   var error: String?
@@ -179,43 +173,27 @@ final class RemoteSettingsModel {
     }
   }
 
-  // MARK: Tailscale
+  // MARK: Managed tunnel
 
-  func diagnoseTailscale() async {
+  /// The tunnel is an account setting of this Mac's host; status follows on `remote:status`.
+  func setManagedTunnel(_ on: Bool) async {
     guard let backend else { return }
-    tailscaleChecking = true
-    tailscaleError = nil
-    defer { tailscaleChecking = false }
+    busy = true
+    error = nil
+    defer { busy = false }
     do {
-      let diagnosis = try await backend.request(ArgusProtocol.Commands.RemoteTailscaleDiagnose.self, .init())
-      tailscale = diagnosis
-      MacTelemetry.capture(.tailscaleChecked(fix: false, ready: diagnosis.ready))
+      _ = try await backend.request(
+        ArgusProtocol.Commands.AccountSetConfig.self, .init(patch: .init(tunnel: on)))
+      MacTelemetry.capture(.remoteSettingChanged(setting: .managedTunnel, on: on))
+      await refresh()
     } catch {
-      tailscaleError = HostStore.describe(error)
-    }
-  }
-
-  /// The host opens any browser step itself, through the platform bridge.
-  func fixTailscale(_ step: ArgusProtocol.TailscaleStep) async {
-    guard let backend, let fix = step.fix else { return }
-    tailscaleFixing = fix
-    tailscaleError = nil
-    tailscaleHandedOff = false
-    defer { tailscaleFixing = nil }
-    do {
-      let result = try await backend.request(
-        ArgusProtocol.Commands.RemoteTailscaleFix.self, .init(fix: fix, url: step.url))
-      tailscale = result.diagnosis
-      tailscaleError = result.error
-      tailscaleHandedOff = result.error == nil && (fix == .openUrl || fix == .signIn)
-      MacTelemetry.capture(.tailscaleChecked(fix: true, ready: result.diagnosis.ready))
-    } catch {
-      tailscaleError = HostStore.describe(error)
+      self.error = HostStore.describe(error)
     }
   }
 
   // MARK: Pairing
 
+  /// Any address will do: the phone learns the rest after it connects.
   var canPair: Bool { status?.enabled == true && status?.publicUrl != nil }
 
   func startPairing() async {

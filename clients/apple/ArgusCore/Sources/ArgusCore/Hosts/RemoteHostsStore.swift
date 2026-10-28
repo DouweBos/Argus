@@ -50,12 +50,16 @@ public final class RemoteHostsStore {
   @ObservationIgnored public var onAction: (Action, Bool) -> Void = { _, _ in }
   /// An attached account host can't be reached: poll the directory for a moved address.
   @ObservationIgnored public var onAccountHostFailing: (Bool) -> Void = { _ in }
+  /// A live link moved to a better-ranked route.
+  @ObservationIgnored public var onRouteUpgraded: (_ from: RemoteEndpoint.Kind, _ to: RemoteEndpoint.Kind) -> Void = { _, _ in }
 
   @ObservationIgnored private let file: PairedHostsFile
   @ObservationIgnored private let clientInfo: PairingClientInfo
   @ObservationIgnored private var router: HostRouter?
   @ObservationIgnored private var pairingClient: PairingClient?
   @ObservationIgnored private var retries: [HostId: Task<Void, Never>] = [:]
+  /// Each attached host's route watcher; see `RouteSupervisor`.
+  @ObservationIgnored private var routes: [HostId: RouteSupervisor] = [:]
 
   public init(file: PairedHostsFile, clientInfo: PairingClientInfo) {
     self.file = file
@@ -125,9 +129,11 @@ public final class RemoteHostsStore {
     switch state {
     case .ready:
       states[hostId] = .ready
+      routes[hostId]?.connectionChanged(up: true)
       if previous != .ready { onReady(hostId) }
     case .offline:
       states[hostId] = .offline
+      routes[hostId]?.connectionChanged(up: false)
     case .connecting, .handshaking:
       if previous != .ready { states[hostId] = .connecting }
     }
@@ -137,6 +143,7 @@ public final class RemoteHostsStore {
     guard identity(hostId) != nil, let router else { return }
     states[hostId] = .connecting
     retries[hostId]?.cancel()
+    supervisor(hostId).suspend()
     retries[hostId] = Task { [weak self] in
       var delay: Duration = .seconds(5)
       while !Task.isCancelled {
@@ -149,6 +156,7 @@ public final class RemoteHostsStore {
           }
           await router.add(link, label: identity.label)
           self.remember(url: url, for: hostId)
+          self.routes[hostId]?.connected(via: link.endpoint)
           self.linkState(hostId, .ready)
           self.reportAccountFailures()
           self.onHostsChanged()
@@ -161,6 +169,43 @@ public final class RemoteHostsStore {
         delay = min(delay * 2, .seconds(60))
       }
     }
+  }
+
+  private func supervisor(_ hostId: HostId) -> RouteSupervisor {
+    if let existing = routes[hostId] { return existing }
+    let supervisor = RouteSupervisor(
+      hooks: .init(
+        identity: { [weak self] in
+          guard let self, self.router?.link(hostId) != nil else { return nil }
+          return self.identity(hostId)
+        },
+        busy: { [weak self] in self?.router?.link(hostId)?.isStreaming ?? false },
+        adopt: { [weak self] attempt, upgrade in
+          await self?.adopt(attempt, for: hostId, upgrade: upgrade) ?? false
+        },
+        networkChanged: { [weak self] in
+          // An unreachable host waits out up to a minute of back-off; a new network is worth trying now.
+          guard let self, self.attached.contains(hostId), self.states[hostId] == .unreachable else { return }
+          self.connect(hostId)
+        }))
+    routes[hostId] = supervisor
+    return supervisor
+  }
+
+  /// Swap a host's link for one on a better route: the router adopts the new
+  /// link before it closes the old one, and the host's lists are refetched for
+  /// whatever arrived in between.
+  private func adopt(_ attempt: EndpointRacer.Attempt, for hostId: HostId, upgrade: Bool) async -> Bool {
+    guard attached.contains(hostId), let router, let current = router.link(hostId),
+      let identity = identity(hostId)
+    else { return false }
+    await router.add(current.replaced(by: attempt), label: identity.label, drain: .seconds(10))
+    remember(url: attempt.url, for: hostId)
+    if upgrade { onRouteUpgraded(current.endpoint.kind, attempt.endpoint.kind) }
+    states[hostId] = .ready
+    onReady(hostId)
+    reportAccountFailures()
+    return true
   }
 
   private func reportAccountFailures() {
@@ -193,6 +238,7 @@ public final class RemoteHostsStore {
   public func detach(_ hostId: HostId) async {
     attached.remove(hostId)
     retries.removeValue(forKey: hostId)?.cancel()
+    routes.removeValue(forKey: hostId)?.stop()
     states[hostId] = .detached
     if focused == hostId { focus(Hosts.local) }
     persist()

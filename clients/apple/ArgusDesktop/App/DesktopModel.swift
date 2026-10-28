@@ -158,6 +158,7 @@ final class DesktopModel {
     }
     account.onHostsChanged = { [hosts] identities in hosts.setAccountHosts(identities) }
     hosts.onAccountHostFailing = { [account] failing in account.setConnectionFailing(failing) }
+    hosts.onRouteUpgraded = { from, to in MacTelemetry.capture(.routeUpgraded(from: from, to: to)) }
     wireAccount()
   }
 

@@ -2,7 +2,7 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// Settings → Remote: the gateway, tunnels, addresses, push, pairing and the
+/// Settings → Remote: the gateway, routes, addresses, push, pairing and the
 /// paired devices — the desktop's Remote access section.
 struct RemoteSettingsTab: View {
   @Environment(HostStore.self) private var store
@@ -36,7 +36,7 @@ private struct RemoteSettingsForm: View {
     SettingsPage {
       SettingsGroup(
         "Remote access",
-        footer: "Pair a phone to monitor your projects and agents from anywhere. Argus exposes a local, end-to-end-encrypted gateway through a Cloudflare or Tailscale tunnel — no inbound ports. Paired devices monitor and approve prompts by default; grant a device control to also let it drive agents. Creating projects always stays on this machine."
+        footer: "Pair a phone to monitor your projects and agents from anywhere. Argus runs an end-to-end-encrypted gateway that devices reach on this network or your tailnet, and from anywhere through this Mac's managed tunnel once it's on your Argus account — no inbound ports. Paired devices monitor and approve prompts by default; grant a device control to also let it drive agents. Creating projects always stays on this machine."
       ) {
         SettingsRow("Enable remote access") {
           HStack(spacing: 10) {
@@ -53,7 +53,7 @@ private struct RemoteSettingsForm: View {
         }
       }
 
-      RemoteTunnelSections(model: model, toggle: toggle)
+      RemoteTunnelSections(model: model)
 
       SettingsGroup(
         "Addresses",
@@ -93,7 +93,7 @@ private struct RemoteSettingsForm: View {
         "Devices", footer: "Scan the QR on your phone, then confirm the 6-digit code matches on both screens."
       ) {
         SettingsRow("Pair a device") {
-          Button(model.canPair ? "Start Pairing…" : "Waiting for the tunnel…") {
+          Button(model.canPair ? "Start Pairing…" : "Waiting for an address…") {
             Task { await model.startPairing() }
           }
           .disabled(!model.canPair)
