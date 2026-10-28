@@ -14,6 +14,7 @@ import { registerFileCommands } from "./files";
 import { registerGitCommands } from "./git";
 import { registerGitRunnerCommands } from "./gitRunner";
 import { registerGithubCommands } from "./github";
+import { registerIntegrationCommands } from "./integrations";
 import { registerLlmCommands } from "./llm";
 import { registerLspCommands } from "./lsp";
 import { registerMcpCommands } from "./mcp";
@@ -44,4 +45,5 @@ export function registerHostCommands(): void {
   registerGitRunnerCommands();
   registerUsageCommands();
   registerAccountCommands();
+  registerIntegrationCommands();
 }

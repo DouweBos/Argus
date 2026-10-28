@@ -82,6 +82,10 @@ import type {
   SimulatorDevice,
   AppSettings,
   InheritedMcpServer,
+  IntegrationId,
+  IntegrationStatus,
+  LinearIssue,
+  LinearIssueDetail,
   McpOAuthStatus,
   McpTestResult,
   CustomRunnerConfig,
@@ -1747,6 +1751,28 @@ export const getMcpOAuthStatus = (
 
 export const listAuthorizedMcpServers = (): Promise<string[]> =>
   invoke("mcp_oauth_list_authorized", {});
+
+// Integrations (Linear, Figma)
+export const listIntegrations = (): Promise<IntegrationStatus[]> =>
+  invoke("list_integrations", {});
+
+export const connectIntegrationWithKey = (
+  id: IntegrationId,
+  key: string,
+): Promise<IntegrationStatus> =>
+  invoke("integration_connect_with_key", { id, key });
+
+export const disconnectIntegration = (id: IntegrationId): Promise<void> =>
+  invoke("integration_disconnect", { id });
+
+export const listLinearIssues = (
+  query: string | null,
+  limit?: number,
+): Promise<LinearIssue[]> => invoke("linear_list_issues", { query, limit });
+
+export const getLinearIssue = (
+  ref: string,
+): Promise<LinearIssueDetail | null> => invoke("linear_get_issue", { ref });
 
 // Command metrics (per-project slash command popularity)
 export const getCommandMetrics = (

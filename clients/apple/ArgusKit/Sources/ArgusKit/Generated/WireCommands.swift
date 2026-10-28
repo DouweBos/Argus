@@ -5612,6 +5612,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct IntegrationConnectWithKeyParams: Codable, Sendable {
+      public var id: IntegrationId
+      public var key: String
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+        case key = "key"
+      }
+
+      public init(id: IntegrationId, key: String) {
+        self.id = id
+        self.key = key
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(key, forKey: .key)
+      }
+    }
+
+    public struct IntegrationDisconnectParams: Codable, Sendable {
+      public var id: IntegrationId
+
+      enum CodingKeys: String, CodingKey {
+        case id = "id"
+      }
+
+      public init(id: IntegrationId) {
+        self.id = id
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+      }
+    }
+
     public struct InterruptAgentParams: Codable, Sendable {
       public var agentId: String
 
@@ -5626,6 +5664,44 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(agentId, forKey: .agentId)
+      }
+    }
+
+    public struct LinearGetIssueParams: Codable, Sendable {
+      public var ref: String
+
+      enum CodingKeys: String, CodingKey {
+        case ref = "ref"
+      }
+
+      public init(ref: String) {
+        self.ref = ref
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(ref, forKey: .ref)
+      }
+    }
+
+    public struct LinearListIssuesParams: Codable, Sendable {
+      public var query: String?
+      public var limit: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case query = "query"
+        case limit = "limit"
+      }
+
+      public init(query: String? = nil, limit: Int? = nil) {
+        self.query = query
+        self.limit = limit
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(query, forKey: .query)
+        try c.encodeIfPresent(limit, forKey: .limit)
       }
     }
 
@@ -11304,6 +11380,20 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum IntegrationConnectWithKey: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.IntegrationConnectWithKeyParams
+      public typealias Result = ArgusProtocol.IntegrationStatus
+      public static let name = "integration_connect_with_key"
+      public static let tier = "admin"
+    }
+
+    public enum IntegrationDisconnect: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.IntegrationDisconnectParams
+      public typealias Result = IgnoredResult
+      public static let name = "integration_disconnect"
+      public static let tier = "admin"
+    }
+
     public enum InterruptAgent: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.InterruptAgentParams
       public typealias Result = IgnoredResult
@@ -11315,6 +11405,20 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = [ArgusProtocol.SecretStoreId]
       public static let name = "legacy_secret_stores"
+      public static let tier = "admin"
+    }
+
+    public enum LinearGetIssue: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LinearGetIssueParams
+      public typealias Result = ArgusProtocol.LinearIssueDetail?
+      public static let name = "linear_get_issue"
+      public static let tier = "admin"
+    }
+
+    public enum LinearListIssues: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LinearListIssuesParams
+      public typealias Result = [ArgusProtocol.LinearIssue]
+      public static let name = "linear_list_issues"
       public static let tier = "admin"
     }
 
@@ -11420,6 +11524,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.ListInheritedMcpServersParams
       public typealias Result = [ArgusProtocol.InheritedMcpServer]
       public static let name = "list_inherited_mcp_servers"
+      public static let tier = "admin"
+    }
+
+    public enum ListIntegrations: RemoteCommand {
+      public typealias Params = EmptyParams
+      public typealias Result = [ArgusProtocol.IntegrationStatus]
+      public static let name = "list_integrations"
       public static let tier = "admin"
     }
 

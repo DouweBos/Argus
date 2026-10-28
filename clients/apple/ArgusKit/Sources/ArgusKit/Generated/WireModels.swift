@@ -7845,6 +7845,94 @@ extension ArgusProtocol {
     }
   }
 
+  public struct IntegrationAccount: Codable, Sendable {
+    public var name: String
+    public var email: String?
+    public var workspace: String?
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case email = "email"
+      case workspace = "workspace"
+    }
+
+    public init(name: String, email: String? = nil, workspace: String? = nil) {
+      self.name = name
+      self.email = email
+      self.workspace = workspace
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(email, forKey: .email)
+      try c.encode(workspace, forKey: .workspace)
+    }
+  }
+
+  public struct IntegrationId: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let linear = IntegrationId(rawValue: "linear")
+    public static let figma = IntegrationId(rawValue: "figma")
+  }
+
+  public struct IntegrationStatusMethod: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let key = IntegrationStatusMethod(rawValue: "key")
+    public static let oauth = IntegrationStatusMethod(rawValue: "oauth")
+  }
+
+  public struct IntegrationStatus: Codable, Sendable {
+    public var id: IntegrationId
+    public var connected: Bool
+    public var method: IntegrationStatusMethod?
+    public var account: IntegrationAccount?
+    public var needsReauth: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case connected = "connected"
+      case method = "method"
+      case account = "account"
+      case needsReauth = "needsReauth"
+    }
+
+    public init(id: IntegrationId, connected: Bool, method: IntegrationStatusMethod? = nil, account: IntegrationAccount? = nil, needsReauth: Bool) {
+      self.id = id
+      self.connected = connected
+      self.method = method
+      self.account = account
+      self.needsReauth = needsReauth
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(connected, forKey: .connected)
+      try c.encode(method, forKey: .method)
+      try c.encode(account, forKey: .account)
+      try c.encode(needsReauth, forKey: .needsReauth)
+    }
+  }
+
   public struct InterestingPullRequest: Codable, Sendable {
     public var author: String?
     public var authorAvatarUrl: String?
@@ -7985,6 +8073,199 @@ extension ArgusProtocol {
       try c.encode(lfsInstalled, forKey: .lfsInstalled)
       try c.encode(repoUsesLfs, forKey: .repoUsesLfs)
       try c.encode(tracked, forKey: .tracked)
+    }
+  }
+
+  public struct LinearComment: Codable, Sendable {
+    public var author: String?
+    public var body: String
+    public var createdAt: Double
+
+    enum CodingKeys: String, CodingKey {
+      case author = "author"
+      case body = "body"
+      case createdAt = "createdAt"
+    }
+
+    public init(author: String? = nil, body: String, createdAt: Double) {
+      self.author = author
+      self.body = body
+      self.createdAt = createdAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(author, forKey: .author)
+      try c.encode(body, forKey: .body)
+      try c.encode(createdAt, forKey: .createdAt)
+    }
+  }
+
+  public struct LinearIssueState: Codable, Sendable {
+    public var name: String
+    public var type: String
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case type = "type"
+    }
+
+    public init(name: String, type: String) {
+      self.name = name
+      self.type = type
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(type, forKey: .type)
+    }
+  }
+
+  public struct LinearIssue: Codable, Sendable {
+    public var id: String
+    public var identifier: String
+    public var title: String
+    public var description: String
+    public var url: String
+    public var branchName: String
+    public var state: LinearIssueState
+    public var priority: Double
+    public var teamKey: String
+    public var assignee: String?
+    public var labels: [String]
+    public var updatedAt: Double
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case identifier = "identifier"
+      case title = "title"
+      case description = "description"
+      case url = "url"
+      case branchName = "branchName"
+      case state = "state"
+      case priority = "priority"
+      case teamKey = "teamKey"
+      case assignee = "assignee"
+      case labels = "labels"
+      case updatedAt = "updatedAt"
+    }
+
+    public init(id: String, identifier: String, title: String, description: String, url: String, branchName: String, state: LinearIssueState, priority: Double, teamKey: String, assignee: String? = nil, labels: [String], updatedAt: Double) {
+      self.id = id
+      self.identifier = identifier
+      self.title = title
+      self.description = description
+      self.url = url
+      self.branchName = branchName
+      self.state = state
+      self.priority = priority
+      self.teamKey = teamKey
+      self.assignee = assignee
+      self.labels = labels
+      self.updatedAt = updatedAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(identifier, forKey: .identifier)
+      try c.encode(title, forKey: .title)
+      try c.encode(description, forKey: .description)
+      try c.encode(url, forKey: .url)
+      try c.encode(branchName, forKey: .branchName)
+      try c.encode(state, forKey: .state)
+      try c.encode(priority, forKey: .priority)
+      try c.encode(teamKey, forKey: .teamKey)
+      try c.encode(assignee, forKey: .assignee)
+      try c.encode(labels, forKey: .labels)
+      try c.encode(updatedAt, forKey: .updatedAt)
+    }
+  }
+
+  public struct LinearIssueDetailState: Codable, Sendable {
+    public var name: String
+    public var type: String
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case type = "type"
+    }
+
+    public init(name: String, type: String) {
+      self.name = name
+      self.type = type
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(type, forKey: .type)
+    }
+  }
+
+  public struct LinearIssueDetail: Codable, Sendable {
+    public var id: String
+    public var identifier: String
+    public var title: String
+    public var description: String
+    public var url: String
+    public var branchName: String
+    public var state: LinearIssueDetailState
+    public var priority: Double
+    public var teamKey: String
+    public var assignee: String?
+    public var labels: [String]
+    public var updatedAt: Double
+    public var comments: [LinearComment]
+
+    enum CodingKeys: String, CodingKey {
+      case id = "id"
+      case identifier = "identifier"
+      case title = "title"
+      case description = "description"
+      case url = "url"
+      case branchName = "branchName"
+      case state = "state"
+      case priority = "priority"
+      case teamKey = "teamKey"
+      case assignee = "assignee"
+      case labels = "labels"
+      case updatedAt = "updatedAt"
+      case comments = "comments"
+    }
+
+    public init(id: String, identifier: String, title: String, description: String, url: String, branchName: String, state: LinearIssueDetailState, priority: Double, teamKey: String, assignee: String? = nil, labels: [String], updatedAt: Double, comments: [LinearComment]) {
+      self.id = id
+      self.identifier = identifier
+      self.title = title
+      self.description = description
+      self.url = url
+      self.branchName = branchName
+      self.state = state
+      self.priority = priority
+      self.teamKey = teamKey
+      self.assignee = assignee
+      self.labels = labels
+      self.updatedAt = updatedAt
+      self.comments = comments
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(id, forKey: .id)
+      try c.encode(identifier, forKey: .identifier)
+      try c.encode(title, forKey: .title)
+      try c.encode(description, forKey: .description)
+      try c.encode(url, forKey: .url)
+      try c.encode(branchName, forKey: .branchName)
+      try c.encode(state, forKey: .state)
+      try c.encode(priority, forKey: .priority)
+      try c.encode(teamKey, forKey: .teamKey)
+      try c.encode(assignee, forKey: .assignee)
+      try c.encode(labels, forKey: .labels)
+      try c.encode(updatedAt, forKey: .updatedAt)
+      try c.encode(comments, forKey: .comments)
     }
   }
 

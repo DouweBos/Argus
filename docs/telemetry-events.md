@@ -239,6 +239,15 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `usage_limits_fetched`     | main   | The host asked the Claude CLI for an account's plan limits (at most once a minute per account) | `outcome: "ok" \| "failed" \| "unsupported"`, `window_count`                                                          |
 | `usage_summary_loaded`     | main   | The Usage screen loaded token and cost totals for a range                                      | `range: "24h" \| "7d" \| "30d" \| "90d"`, `prices_available` — false until the model price list has been fetched once |
 
+## Integrations
+
+Linear and Figma connections. No account names, emails, workspaces or keys.
+
+| Event                       | Source | When                                                              | Extra props                                                           |
+| --------------------------- | ------ | ----------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `integration_connected`     | main   | A Linear or Figma connection attempt finished                     | `service: "linear" \| "figma"`, `method: "key" \| "oauth"`, `success` |
+| `integration_reauth_needed` | main   | The service rejected a saved credential and it needs reconnecting | `service: "linear" \| "figma"`                                        |
+
 ## Accounts
 
 Linking computers to an Argus account. These carry enums, booleans and

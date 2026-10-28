@@ -99,6 +99,7 @@ import { CustomRunnersSection } from "./CustomRunnersSection";
 import { FollowUpSuggestionsToggle } from "./FollowUpSuggestionsToggle";
 import { HostsSection } from "./HostsSection";
 import { ImportCliChatsField } from "./ImportCliChatsField";
+import { IntegrationsSection } from "./IntegrationsSection";
 import { RemoteAccessSection } from "./RemoteAccessSection";
 import styles from "./SettingsDialog.module.css";
 import { ToolsSection } from "./ToolsSection";
@@ -183,6 +184,13 @@ function SettingsDialogContent() {
           description: "Where sessions are stored",
           icon: <Icons.DriveIcon size={12} />,
           render: () => <WorktreesSection />,
+        },
+        {
+          id: "integrations",
+          label: "Integrations",
+          description: "Linear",
+          icon: <Icons.LinkIcon size={12} />,
+          render: () => <IntegrationsSection />,
         },
         {
           id: "mcp",

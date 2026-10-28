@@ -14,6 +14,7 @@ import { FILE_COMMANDS } from "./files";
 import { GIT_COMMANDS } from "./git";
 import { GIT_RUNNER_COMMANDS } from "./gitRunner";
 import { GITHUB_COMMANDS } from "./github";
+import { INTEGRATION_COMMANDS } from "./integrations";
 import { LLM_COMMANDS } from "./llm";
 import { LSP_COMMANDS } from "./lsp";
 import { MCP_COMMANDS } from "./mcp";
@@ -48,6 +49,7 @@ export * from "../models/code";
 export * from "../models/lsp";
 export * from "../models/usage";
 export * from "../models/account";
+export * from "../models/integrations";
 
 /** Each domain's entries, kept apart so a test can prove no name repeats. */
 export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
@@ -71,6 +73,7 @@ export const COMMAND_DOMAINS: Record<string, Record<string, CommandSpec>> = {
   shell: SHELL_COMMANDS,
   usage: USAGE_COMMANDS,
   account: ACCOUNT_COMMANDS,
+  integrations: INTEGRATION_COMMANDS,
 };
 
 export const COMMANDS = {
@@ -94,6 +97,7 @@ export const COMMANDS = {
   ...SHELL_COMMANDS,
   ...USAGE_COMMANDS,
   ...ACCOUNT_COMMANDS,
+  ...INTEGRATION_COMMANDS,
 } as const;
 
 export type Commands = typeof COMMANDS;
