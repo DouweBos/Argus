@@ -1,3 +1,4 @@
+import ArgusMenuBar
 import Foundation
 import Testing
 
@@ -11,5 +12,11 @@ struct ServerTelemetryEventTests {
     let handover = ServerTelemetryEvent.host(stage: .handover, restarts: nil, exitCode: nil, holder: .electron, success: true)
     #expect(handover.properties["holder"] as? String == "electron")
     #expect(handover.properties["success"] as? Bool == true)
+  }
+
+  @Test func onlyAccountActionsThatDoSomethingAreCounted() {
+    #expect(ServerTelemetryEvent.MenuAction(.linkStart) == .link)
+    #expect(ServerTelemetryEvent.MenuAction(.renameDefault) == .rename)
+    #expect(ServerTelemetryEvent.MenuAction(.linkCopyCode("ABCD")) == nil)
   }
 }

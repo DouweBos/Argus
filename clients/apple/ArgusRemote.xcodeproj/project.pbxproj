@@ -81,6 +81,8 @@
 		5E4E00000000000000000010 /* ArgusCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5E4E0000000000000000000C /* ArgusCore */; };
 		5E4E00000000000000000011 /* ArgusUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5E4E0000000000000000000D /* ArgusUI */; };
 		5E4E00000000000000000012 /* ArgusUpdate in Frameworks */ = {isa = PBXBuildFile; productRef = 5E4E0000000000000000000E /* ArgusUpdate */; };
+		5B4D00000000000000000004 /* ArgusMenuBar in Frameworks */ = {isa = PBXBuildFile; productRef = 5B4D00000000000000000003 /* ArgusMenuBar */; };
+		5B4D00000000000000000006 /* ArgusMenuBar in Frameworks */ = {isa = PBXBuildFile; productRef = 5B4D00000000000000000005 /* ArgusMenuBar */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -191,6 +193,7 @@
 		FEED000100000000000000B3 /* CrashDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashDiagnostics.swift; sourceTree = "<group>"; };
 		FEED000100000000000000B4 /* TelemetryConsentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryConsentSheet.swift; sourceTree = "<group>"; };
 		5A4C00000000000000000001 /* ArgusUpdate */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ArgusUpdate; sourceTree = SOURCE_ROOT; };
+		5B4D00000000000000000001 /* ArgusMenuBar */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ArgusMenuBar; sourceTree = SOURCE_ROOT; };
 		5E4E00000000000000000002 /* Argus Server.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Argus Server.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5E4F00000000000000000002 /* ArgusServerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArgusServerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -260,6 +263,7 @@
 				7E2A00000000000000000003 /* SwiftTerm in Frameworks */,
 				6B0F00000000000000000003 /* GroveKit in Frameworks */,
 				5A4C00000000000000000004 /* ArgusUpdate in Frameworks */,
+				5B4D00000000000000000006 /* ArgusMenuBar in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -271,6 +275,7 @@
 				5E4E00000000000000000010 /* ArgusCore in Frameworks */,
 				5E4E00000000000000000011 /* ArgusUI in Frameworks */,
 				5E4E00000000000000000012 /* ArgusUpdate in Frameworks */,
+				5B4D00000000000000000004 /* ArgusMenuBar in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -323,6 +328,7 @@
 				5E7A00000000000000000003 /* ArgusSyntax */,
 				ED1700000000000000000002 /* ArgusEditor */,
 				5A4C00000000000000000001 /* ArgusUpdate */,
+				5B4D00000000000000000001 /* ArgusMenuBar */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -523,6 +529,7 @@
 				7E2A00000000000000000002 /* SwiftTerm */,
 				6B0F00000000000000000002 /* GroveKit */,
 				5A4C00000000000000000003 /* ArgusUpdate */,
+				5B4D00000000000000000005 /* ArgusMenuBar */,
 			);
 			productName = ArgusDesktop;
 			productReference = DE5C00000000000000000002 /* Argus.app */;
@@ -578,6 +585,7 @@
 				5E4E0000000000000000000C /* ArgusCore */,
 				5E4E0000000000000000000D /* ArgusUI */,
 				5E4E0000000000000000000E /* ArgusUpdate */,
+				5B4D00000000000000000003 /* ArgusMenuBar */,
 			);
 			productName = ArgusServer;
 			productReference = 5E4E00000000000000000002 /* Argus Server.app */;
@@ -657,6 +665,7 @@
 				7E2A00000000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 				6B0F00000000000000000001 /* XCRemoteSwiftPackageReference "Grove" */,
 				5A4C00000000000000000002 /* XCLocalSwiftPackageReference "ArgusUpdate" */,
+				5B4D00000000000000000002 /* XCLocalSwiftPackageReference "ArgusMenuBar" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2367FD0131C0CDC27F4B7B30 /* Products */;
@@ -1385,6 +1394,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ArgusUpdate;
 		};
+		5B4D00000000000000000002 /* XCLocalSwiftPackageReference "ArgusMenuBar" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ArgusMenuBar;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -1512,6 +1525,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5A4C00000000000000000002 /* XCLocalSwiftPackageReference "ArgusUpdate" */;
 			productName = ArgusUpdate;
+		};
+		5B4D00000000000000000003 /* ArgusMenuBar */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5B4D00000000000000000002 /* XCLocalSwiftPackageReference "ArgusMenuBar" */;
+			productName = ArgusMenuBar;
+		};
+		5B4D00000000000000000005 /* ArgusMenuBar */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5B4D00000000000000000002 /* XCLocalSwiftPackageReference "ArgusMenuBar" */;
+			productName = ArgusMenuBar;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

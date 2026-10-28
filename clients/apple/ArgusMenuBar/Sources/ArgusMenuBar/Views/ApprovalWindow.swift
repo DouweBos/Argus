@@ -4,12 +4,16 @@ import SwiftUI
 
 /// Approve a Join: the device or computer waiting to join the account, and
 /// the 6-digit code to compare with its screen.
-struct ApprovalWindow: View {
-  let model: ServerModel
+public struct ApprovalWindow: View {
+  let model: HostAccountMenu
   @Environment(\.theme) private var theme
   @Environment(\.dismissWindow) private var dismissWindow
 
-  var body: some View {
+  public init(model: HostAccountMenu) {
+    self.model = model
+  }
+
+  public var body: some View {
     VStack(spacing: 14) {
       Text("Approve a Join").font(.scaled(.title2).weight(.semibold))
       content
@@ -21,26 +25,22 @@ struct ApprovalWindow: View {
     .frame(width: 420)
   }
 
-  private func noun(_ role: ArgusProtocol.AccountMemberRole) -> String {
-    role == .host ? "computer" : "device"
-  }
-
   @ViewBuilder
   private var content: some View {
     switch model.approval {
     case .awaitingSas(let approval):
-      Text("\(approval.subjectName) (\(noun(approval.subjectRole))) wants to join your account. Only approve if it shows the same code:")
+      Text("\(approval.subjectName) (\(AccountMenuModel.noun(approval.subjectRole))) wants to join your account. Only approve if it shows the same code:")
         .multilineTextAlignment(.center).foregroundStyle(theme.textSecondary)
       Text(AccountMenuModel.spaced(approval.sas))
         .font(.scaled(size: 34, weight: .semibold, design: .monospaced))
         .accessibilityLabel("Safety code \(approval.sas)")
       HStack {
-        Button("Codes Differ — Deny", role: .destructive) { model.runAccount(.approvalConfirm(match: false)) }
-        Button("Codes Match — Approve") { model.runAccount(.approvalConfirm(match: true)) }
+        Button("Codes Differ — Deny", role: .destructive) { model.run(.approvalConfirm(match: false)) }
+        Button("Codes Match — Approve") { model.run(.approvalConfirm(match: true)) }
           .keyboardShortcut(.defaultAction)
       }
     case .approved(let approved):
-      Label("Approved. That \(noun(approved.subjectRole)) is now on your account.", systemImage: "checkmark.circle.fill")
+      Label("Approved. That \(AccountMenuModel.noun(approved.subjectRole)) is now on your account.", systemImage: "checkmark.circle.fill")
         .foregroundStyle(theme.success)
       closeButton
     case .error(let error):
@@ -54,8 +54,8 @@ struct ApprovalWindow: View {
 
   private var closeButton: some View {
     Button("Done") {
-      model.runAccount(.approvalDismiss)
-      dismissWindow(id: ServerModel.Window.approval.rawValue)
+      model.run(.approvalDismiss)
+      dismissWindow(id: HostMenuWindow.approval.rawValue)
     }
     .keyboardShortcut(.defaultAction)
   }

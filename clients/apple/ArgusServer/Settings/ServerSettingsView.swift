@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusMenuBar
 import ArgusUI
 import ArgusUpdate
 import SwiftUI

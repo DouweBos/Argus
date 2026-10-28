@@ -2,7 +2,7 @@ import ArgusCore
 import Foundation
 import Testing
 
-@testable import Argus_Server
+@testable import ArgusMenuBar
 
 /// Mirrors `electron/services/tray/accountMenu.test.ts`: one menu, two apps.
 struct AccountMenuModelTests {
@@ -86,6 +86,14 @@ struct AccountMenuModelTests {
   @Test func putsAFailedActionOnTopUntilDismissed() {
     let menu = AccountMenuModel.items(F.account(notice: "That request is gone"))
     #expect(Array(F.labels(menu).prefix(2)) == ["That request is gone", "Dismiss"])
+  }
+
+  @Test func theMacAppManagesTheAccountInSettings() {
+    var snapshot = F.account(linked)
+    snapshot.inlineSettings = false
+    let menu = AccountMenuModel.items(snapshot)
+    #expect(F.find(menu, "Argus Account") == nil)
+    #expect(F.action(F.find(menu, "Account Settings…")) == .openAccountSettings)
   }
 
   @Test func tunnelLinesSayWhyItIsOff() {

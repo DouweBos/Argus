@@ -1,11 +1,12 @@
 import AppKit
 import ArgusCore
+import ArgusMenuBar
 import Foundation
 
 /// What each menu item does. Every account action calls the same host command
 /// the Electron tray's console words reach, so the two can't drift.
 extension ServerModel {
-  func perform(_ action: ServerMenuAction) {
+  func perform(_ action: HostMenuAction) {
     switch action {
     case .revealState:
       NSWorkspace.shared.activateFileViewerSelecting([location.home])
@@ -60,6 +61,8 @@ extension ServerModel {
     case .openSettings:
       NSApp.activate()
       openSettings?()
+    case .openApp, .openRemoteSettings, .openAccountSettings:
+      break
     case .quit:
       ServerTelemetry.capture(.menuAction(action: .quit))
       onQuit?()
@@ -68,11 +71,7 @@ extension ServerModel {
 
   // MARK: Windows
 
-  enum Window: String {
-    case pairing, approval, link
-  }
-
-  func show(_ window: Window) {
+  func show(_ window: HostMenuWindow) {
     NSApp.activate()
     openWindow?(window.rawValue)
   }
@@ -85,79 +84,11 @@ extension ServerModel {
   }
 
   func copy(_ text: String) {
-    NSPasteboard.general.clearContents()
-    NSPasteboard.general.setString(text, forType: .string)
+    HostAccountMenu.copy(text)
   }
-
-  // MARK: Account
 
   func runAccount(_ action: AccountMenuAction) {
-    notice = nil
-    Task {
-      do {
-        try await performAccount(action)
-      } catch {
-        notice = HostStore.describe(error)
-      }
-    }
-  }
-
-  private func performAccount(_ action: AccountMenuAction) async throws {
-    guard let backend else { return }
-    switch action {
-    case .linkStart:
-      ServerTelemetry.capture(.menuAction(action: .link))
-      await link.start(backend)
-      linkMoved()
-      if case .awaitingClaim(let claim)? = link.state { copy(claim.userCode) }
-      show(.link)
-    case .linkCopyCode(let code):
-      copy(code)
-    case .linkOpen(let url):
-      if let url = URL(string: url) { NSWorkspace.shared.open(url) }
-    case .linkConfirm(let match):
-      await link.confirm(match)
-      linkMoved()
-    case .linkCancel:
-      await link.cancel()
-      linkMoved()
-    case .approve(let requestId):
-      ServerTelemetry.capture(.menuAction(action: .approveJoin))
-      approval = try await backend.request(ArgusProtocol.Commands.AccountApproveJoin.self, .init(requestId: requestId))
-      show(.approval)
-    case .deny(let requestId):
-      ServerTelemetry.capture(.menuAction(action: .denyJoin))
-      try await backend.request(ArgusProtocol.Commands.AccountDenyJoin.self, .init(requestId: requestId))
-      await refreshRequests()
-    case .approvalConfirm(let match):
-      approval = try await backend.request(ArgusProtocol.Commands.AccountConfirmJoin.self, .init(match: match))
-      await refreshRequests()
-    case .approvalDismiss:
-      // The host has no "dismiss"; its next approval replaces this one.
-      approval = .idle(.init(kind: "idle"))
-    case .tunnel(let on):
-      ServerTelemetry.capture(.menuAction(action: .toggleTunnel))
-      account = try await backend.request(ArgusProtocol.Commands.AccountSetConfig.self, .init(patch: .init(tunnel: on)))
-    case .rename(let current):
-      guard let name = ServerPrompts.computerName(current: current), name != current else { return }
-      ServerTelemetry.capture(.menuAction(action: .rename))
-      account = try await backend.request(ArgusProtocol.Commands.AccountSetName.self, .init(name: name))
-    case .renameDefault:
-      ServerTelemetry.capture(.menuAction(action: .rename))
-      account = try await backend.request(ArgusProtocol.Commands.AccountSetName.self, .init(name: nil))
-    case .unlink:
-      guard ServerPrompts.confirmUnlink() else { return }
-      ServerTelemetry.capture(.menuAction(action: .unlink))
-      account = try await backend.request(ArgusProtocol.Commands.AccountLogout.self, EmptyParams())
-    case .noticeDismiss:
-      return
-    }
-  }
-
-  /// The link model holds the host's answer; the menu reads the status.
-  private func linkMoved() {
-    if let state = link.state { account?.link = state }
-    if let failure = link.failure { notice = failure }
+    accountMenu.run(action)
   }
 
   // MARK: Host

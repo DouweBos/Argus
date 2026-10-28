@@ -4,12 +4,16 @@ import SwiftUI
 
 /// Link to Your Argus Account: the code to type on a phone, then the 6-digit
 /// code to compare — the menu's account lines, larger.
-struct LinkWindow: View {
-  let model: ServerModel
+public struct LinkWindow: View {
+  let model: HostAccountMenu
   @Environment(\.theme) private var theme
   @Environment(\.dismissWindow) private var dismissWindow
 
-  var body: some View {
+  public init(model: HostAccountMenu) {
+    self.model = model
+  }
+
+  public var body: some View {
     VStack(spacing: 14) {
       Text("Link to Your Argus Account").font(.scaled(.title2).weight(.semibold))
       content
@@ -31,16 +35,16 @@ struct LinkWindow: View {
         .font(.scaled(size: 30, weight: .semibold, design: .monospaced))
         .textSelection(.enabled)
       HStack {
-        Button("Copy Code") { model.runAccount(.linkCopyCode(claim.userCode)) }
-        Button("Open Link Page") { model.runAccount(.linkOpen(claim.verificationUriComplete)) }
-        Button("Cancel", role: .cancel) { model.runAccount(.linkCancel) }
+        Button("Copy Code") { model.run(.linkCopyCode(claim.userCode)) }
+        Button("Open Link Page") { model.run(.linkOpen(claim.verificationUriComplete)) }
+        Button("Cancel", role: .cancel) { model.run(.linkCancel) }
       }
     case .awaitingFirst?:
       Text("Your account has no computers yet. Make this one the first?")
         .multilineTextAlignment(.center).foregroundStyle(theme.textSecondary)
       HStack {
-        Button("Cancel", role: .cancel) { model.runAccount(.linkCancel) }
-        Button("Make This Computer the First") { model.runAccount(.linkConfirm(match: true)) }
+        Button("Cancel", role: .cancel) { model.run(.linkCancel) }
+        Button("Make This Computer the First") { model.run(.linkConfirm(match: true)) }
           .keyboardShortcut(.defaultAction)
       }
     case .awaitingSas(let sas)?:
@@ -50,8 +54,8 @@ struct LinkWindow: View {
         .font(.scaled(size: 34, weight: .semibold, design: .monospaced))
         .accessibilityLabel("Safety code \(sas.sas)")
       HStack {
-        Button("Codes Differ — Cancel", role: .destructive) { model.runAccount(.linkConfirm(match: false)) }
-        Button("Codes Match — Link") { model.runAccount(.linkConfirm(match: true)) }
+        Button("Codes Differ — Cancel", role: .destructive) { model.run(.linkConfirm(match: false)) }
+        Button("Codes Match — Link") { model.run(.linkConfirm(match: true)) }
           .keyboardShortcut(.defaultAction)
       }
     case .awaitingApproval?:
@@ -59,12 +63,12 @@ struct LinkWindow: View {
     case .linked?:
       Label("This computer is on your account.", systemImage: "checkmark.circle.fill")
         .foregroundStyle(theme.success)
-      Button("Done") { dismissWindow(id: ServerModel.Window.link.rawValue) }.keyboardShortcut(.defaultAction)
+      Button("Done") { dismissWindow(id: HostMenuWindow.link.rawValue) }.keyboardShortcut(.defaultAction)
     case .error(let error)?:
       Text("Linking failed: \(error.message)").foregroundStyle(theme.error)
-      Button("Try Again") { model.runAccount(.linkStart) }
+      Button("Try Again") { model.run(.linkStart) }
     case .idle?, .unknown?, nil:
-      Button("Get a Code") { model.runAccount(.linkStart) }.keyboardShortcut(.defaultAction)
+      Button("Get a Code") { model.run(.linkStart) }.keyboardShortcut(.defaultAction)
     }
   }
 }
