@@ -19,6 +19,8 @@ import {
 const POLL_MS = 5 * 60 * 1000;
 const LIMIT = 150;
 const LAYOUT_KEY = "argus:issues-layout";
+const COLUMNS_KEY = "argus:issues-columns";
+const CYCLE_KEY = "argus:issues-current-cycle";
 
 export type IssuesLayout = "board" | "list";
 
@@ -30,8 +32,12 @@ interface ScopeList {
 }
 
 interface LinearIssuesState {
+  /** Board columns shown (false) or hidden (true) against the defaults. */
+  columnOverrides: Record<string, boolean>;
   /** Linear is connected and its credential still works. */
   connected: boolean;
+  /** Only issues in their team's current cycle. */
+  currentCycleOnly: boolean;
   details: Record<string, LinearIssueDetail>;
   layout: IssuesLayout;
   lists: Record<LinearIssueScope, ScopeList>;
@@ -39,6 +45,24 @@ interface LinearIssuesState {
 }
 
 const EMPTY: ScopeList = { data: null, error: null, loading: false };
+
+function loadJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveJson(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // storage unavailable
+  }
+}
 
 function loadLayout(): IssuesLayout {
   try {
@@ -49,7 +73,9 @@ function loadLayout(): IssuesLayout {
 }
 
 const store = create<LinearIssuesState>(() => ({
+  columnOverrides: loadJson<Record<string, boolean>>(COLUMNS_KEY, {}),
   connected: false,
+  currentCycleOnly: loadJson(CYCLE_KEY, false),
   details: {},
   layout: loadLayout(),
   lists: { assigned: EMPTY, created: EMPTY, subscribed: EMPTY },
@@ -206,3 +232,20 @@ export const useLinearIssueDetail = (ref: string | null) =>
 export const useTeamStates = (teamId: string | null) =>
   store((s) => (teamId ? (s.statesByTeam[teamId] ?? null) : null));
 export const useIssuesLayout = () => store((s) => s.layout);
+
+export function setColumnHidden(columnId: string, hidden: boolean): void {
+  const columnOverrides = {
+    ...store.getState().columnOverrides,
+    [columnId]: hidden,
+  };
+  store.setState({ columnOverrides });
+  saveJson(COLUMNS_KEY, columnOverrides);
+}
+
+export function setCurrentCycleOnly(on: boolean): void {
+  store.setState({ currentCycleOnly: on });
+  saveJson(CYCLE_KEY, on);
+}
+
+export const useColumnOverrides = () => store((s) => s.columnOverrides);
+export const useCurrentCycleOnly = () => store((s) => s.currentCycleOnly);

@@ -2,6 +2,7 @@ import type { LinearIssue, LinearIssueScope } from "../../../lib/types";
 import { type ReactNode, useEffect, useState } from "react";
 import {
   Button,
+  Chip,
   EmptyState,
   GridScreen,
   Icons,
@@ -9,12 +10,15 @@ import {
   Select,
   Spinner,
 } from "@argus/peacock";
+import { inCurrentCycle } from "../../../lib/issueBoard";
 import { useCurrentRoute } from "../../../lib/routeHooks";
 import { appNavigate } from "../../../lib/router";
 import {
   type IssuesLayout,
   refreshLinearIssues,
+  setCurrentCycleOnly,
   setIssuesLayout,
+  useCurrentCycleOnly,
   useIssuesLayout,
   useLinearConnected,
   useLinearIssueList,
@@ -50,7 +54,12 @@ function basename(p: string): string {
 export function IssuesScreen() {
   const { issueRef, issueScope } = useCurrentRoute();
   const connected = useLinearConnected();
-  const { data, error, loading } = useLinearIssueList(issueScope);
+  const { data: allIssues, error, loading } = useLinearIssueList(issueScope);
+  const currentCycleOnly = useCurrentCycleOnly();
+  const data =
+    allIssues && currentCycleOnly
+      ? allIssues.filter(inCurrentCycle)
+      : allIssues;
   const layout = useIssuesLayout();
   const projects = useSessionProjects();
   const [pickedRoot, setPickedRoot] = useState<string | null>(null);
@@ -111,7 +120,11 @@ export function IssuesScreen() {
       <EmptyState
         icon={<Icons.CheckIcon size={20} />}
         title="No open issues here"
-        body="Open issues in this view show up here."
+        body={
+          currentCycleOnly
+            ? "Nothing open in your teams' current cycles. Turn off Current cycle to see the rest."
+            : "Open issues in this view show up here."
+        }
       />
     );
   } else if (layout === "board") {
@@ -173,12 +186,22 @@ export function IssuesScreen() {
               appNavigate({ view: "issues", issueScope: scope, issueRef: null })
             }
           />
-          <SegmentedControl<IssuesLayout>
-            aria-label="Layout"
-            options={LAYOUTS}
-            value={layout}
-            onChange={setIssuesLayout}
-          />
+          <div className={styles.toolbarEnd}>
+            <Chip
+              interactive
+              selected={currentCycleOnly}
+              title="Only issues in their team's current cycle"
+              onClick={() => setCurrentCycleOnly(!currentCycleOnly)}
+            >
+              Current cycle
+            </Chip>
+            <SegmentedControl<IssuesLayout>
+              aria-label="Layout"
+              options={LAYOUTS}
+              value={layout}
+              onChange={setIssuesLayout}
+            />
+          </div>
         </div>
       )}
       {content}

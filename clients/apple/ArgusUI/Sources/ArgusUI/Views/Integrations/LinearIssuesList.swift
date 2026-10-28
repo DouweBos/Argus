@@ -28,7 +28,7 @@ public struct LinearIssuesList: View {
       if let error = model.error, model.issues != nil {
         Banner(text: error, tone: .danger).listRowBackground(Color.clear)
       }
-      ForEach(LinearIssueBoard.columns(model.issues ?? [])) { column in
+      ForEach(LinearIssueBoard.columns(model.shownIssues ?? [])) { column in
         Section {
           ForEach(column.issues.sorted(by: LinearIssueBoard.byPriority)) { issue in
             Button {
