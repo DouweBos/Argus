@@ -11,9 +11,15 @@ import { verifyLog } from "@argus/remote-protocol";
 import { warn } from "@argus/host/logger";
 import { capture } from "../telemetry/telemetry";
 import { AccountClient, AccountServiceError } from "./client";
+import { reflectedName, renameEntries } from "./nameEntries";
 import { startPresence, stopPresence } from "./presence";
 import { emitAccountStatus } from "./status";
-import { resetAccountRecord, serviceUrl, writeAccountRecord } from "./store";
+import {
+  computerName,
+  resetAccountRecord,
+  serviceUrl,
+  writeAccountRecord,
+} from "./store";
 import {
   currentRecord,
   currentState,
@@ -67,8 +73,11 @@ export function startBackground(): void {
     return;
   }
   startPresence();
+  flushComputerName().catch(() => undefined);
   pollTimer = setInterval(() => {
-    syncLog().catch(() => undefined);
+    syncLog()
+      .then(() => flushComputerName())
+      .catch(() => undefined);
   }, POLL_MS);
   pollTimer.unref?.();
 }
@@ -131,6 +140,16 @@ async function applyFresh(
     await forgetAccount();
 
     return good.length;
+  }
+  const renamed = reflectedName(record, state, nextState);
+  if (renamed) {
+    // Follow the rename, then bring this computer's other member in line.
+    record.name = renamed;
+    record.name_pending = true;
+    await writeAccountRecord(record);
+    setTimeout(() => {
+      flushComputerName().catch(() => undefined);
+    }, 0).unref?.();
   }
   await reconcileDevices(source);
   emitAccountStatus();
@@ -284,4 +303,48 @@ export function syncSoon(): void {
     syncLog().catch(() => undefined);
   }, SYNC_SOON_MS);
   soonTimer.unref?.();
+}
+
+let flushing: Promise<void> | null = null;
+
+/**
+ * Put this computer's name setting on the account once it's reachable: a
+ * rename signed by this host, and one by its window's device. Never throws;
+ * a failure leaves it pending for the next poll.
+ */
+export function flushComputerName(): Promise<void> {
+  flushing ??= pushComputerName().finally(() => {
+    flushing = null;
+  });
+
+  return flushing;
+}
+
+async function pushComputerName(): Promise<void> {
+  for (;;) {
+    const record = currentRecord();
+    const state = currentState();
+    if (!record?.name_pending) {
+      return;
+    }
+    const name = computerName(record);
+    try {
+      if (isLinked() && state && renameEntries(record, state, name).length) {
+        await appendOwn((s) => renameEntries(record, s, name));
+      }
+    } catch (err) {
+      warn(`[account] name not on the account yet: ${String(err)}`);
+
+      return;
+    }
+    // Edited again meanwhile: go round with the newer name.
+    if (computerName(record) !== name) {
+      continue;
+    }
+    record.name_pending = false;
+    await writeAccountRecord(record);
+    emitAccountStatus();
+
+    return;
+  }
 }

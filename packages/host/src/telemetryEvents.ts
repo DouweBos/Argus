@@ -161,6 +161,10 @@ export interface EventMap {
   };
   device_host_added: { has_identity_file: boolean; has_port: boolean };
   device_host_removed: undefined;
+  device_name_changed: {
+    source: "account_list" | "settings" | "terminal";
+    linked: boolean;
+  };
   device_host_tested: {
     failure:
       | "auth"

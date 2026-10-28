@@ -24,6 +24,17 @@ export const MemberName = z
   .max(64)
   .refine((name) => !hasControlChar(name), "control characters");
 
+/**
+ * A name typed into a "Name" setting: trimmed, then 1–64 UTF-16 units with no
+ * control characters. Null when it doesn't qualify. Mirrors Swift's
+ * `AccountDeviceKeys.validatedName`.
+ */
+export function normalizeMemberName(raw: string): string | null {
+  const name = raw.trim();
+
+  return MemberName.safeParse(name).success ? name : null;
+}
+
 const MemberBase = {
   id: z.string().min(1),
   sign_pub: z.string().min(1),

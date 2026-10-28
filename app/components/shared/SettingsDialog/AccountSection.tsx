@@ -19,6 +19,7 @@ import { AccountComputers } from "./AccountComputers";
 import { AccountDevices } from "./AccountDevices";
 import styles from "./AccountSection.module.css";
 import { AccountSettingsFields } from "./AccountSettingsFields";
+import { ComputerNameField } from "./ComputerNameField";
 
 const LINKING_COPY: Partial<Record<AccountLinkState["kind"], string>> = {
   awaiting_first:
@@ -109,6 +110,7 @@ export function AccountSection() {
         description="Sign in once and your computers find each other. The account service only introduces them — every change is signed by your own devices, and traffic never passes through it."
       />
       <SettingsScreenDetailBody>
+        {status && <ComputerNameField key={status.name} status={status} />}
         {status && !status.linked && <SignedOut status={status} />}
         {status?.linked && (
           <>

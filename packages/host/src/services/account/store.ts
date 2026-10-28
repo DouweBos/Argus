@@ -50,6 +50,10 @@ export interface AccountRecord {
   blocked_devices?: string[];
   /** The managed tunnel's connector credentials, as the service issued them. */
   tunnel?: StoredTunnel | null;
+  /** This computer's name setting; unset means the system name. Survives unlinking. */
+  name?: string | null;
+  /** `name` changed while linked and isn't on the account yet (offline). */
+  name_pending?: boolean;
 }
 
 export interface StoredTunnel {
@@ -127,7 +131,7 @@ export async function writeAccountRecord(record: AccountRecord): Promise<void> {
 export async function resetAccountRecord(
   previous: AccountRecord,
 ): Promise<AccountRecord> {
-  const next = freshIdentity(previous.config);
+  const next = { ...freshIdentity(previous.config), name: previous.name };
   await saveAccountRecord(next);
 
   return next;
@@ -162,6 +166,11 @@ export function machineName(): string {
   return (name || "Argus host").slice(0, 64);
 }
 
+/** The name this computer joins, links and stays on the account as. */
+export function computerName(record: AccountRecord | null): string {
+  return record?.name || machineName();
+}
+
 export async function hostMember(record: AccountRecord): Promise<HostMember> {
   const identity = await getDesktopIdentity();
 
@@ -171,19 +180,20 @@ export async function hostMember(record: AccountRecord): Promise<HostMember> {
     platform: process.platform === "linux" ? "linux" : "darwin",
     sign_pub: record.host_sign_pub,
     noise_pub: Buffer.from(identity.pub).toString("base64"),
-    name: machineName(),
+    name: computerName(record),
     created_at: record.host_created_at,
   };
 }
 
-export function deviceMember(device: StoredDevice): DeviceMember {
+/** The window's device carries the computer's name: users see one machine. */
+export function deviceMember(device: StoredDevice, name: string): DeviceMember {
   return {
     id: device.id,
     role: "device",
     kind: "electron",
     sign_pub: device.sign_pub,
     noise_pub: device.noise_pub,
-    name: `${machineName()} (desktop)`.slice(0, 64),
+    name,
     created_at: device.created_at,
   };
 }

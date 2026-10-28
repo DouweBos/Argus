@@ -263,12 +263,12 @@ to become the account's first computer instead.
 
 The other account words:
 
-| word                        | does                                                                                                                                                                                                                      |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `account`                   | Shows whether the host is linked, the account safety code, every computer on the account with online/offline, its devices, and how many are waiting to join                                                               |
-| `account set <key> <value>` | Changes this host's account settings: `enabled`, `lan`, `tailscale`, `cloudflare`, `approve`, `tunnel` (`on`/`off`), `ios` (`monitor`/`control`), `desktop` (`monitor`/`control`/`admin`), `service` (a URL or `default`) |
-| `approve [n]`               | Approves a computer or a device (a phone or Mac that signed in) waiting to join, from this console — with the same code comparison. Turned off by `account set approve off`                                               |
-| `logout`                    | Unlinks this host. QR-paired devices keep working                                                                                                                                                                         |
+| word                        | does                                                                                                                                                                                                                                                                                                      |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `account`                   | Shows whether the host is linked, the account safety code, every computer on the account with online/offline, its devices, and how many are waiting to join                                                                                                                                               |
+| `account set <key> <value>` | Changes this host's account settings: `enabled`, `lan`, `tailscale`, `cloudflare`, `approve`, `tunnel` (`on`/`off`), `ios` (`monitor`/`control`), `desktop` (`monitor`/`control`/`admin`), `service` (a URL or `default`), `name` (this computer's name on the account, or `default` for the system name) |
+| `approve [n]`               | Approves a computer or a device (a phone or Mac that signed in) waiting to join, from this console — with the same code comparison. Turned off by `account set approve off`                                                                                                                               |
+| `logout`                    | Unlinks this host. QR-paired devices keep working                                                                                                                                                                                                                                                         |
 
 `approve` is also the way back in when you've lost every device: sign in on the
 new phone, then type `approve` here and compare the code it shows.

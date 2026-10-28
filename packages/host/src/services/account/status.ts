@@ -11,7 +11,7 @@ import type {
 } from "@argus/remote-protocol";
 import { safetyCode } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
-import { DEFAULT_ACCOUNT_CONFIG } from "./store";
+import { computerName, DEFAULT_ACCOUNT_CONFIG, machineName } from "./store";
 import {
   currentLogError,
   currentRecord,
@@ -61,6 +61,8 @@ export function accountStatus(): AccountStatus {
     presence_at: linked ? (record?.presence_at ?? null) : null,
     config: record?.config ?? DEFAULT_ACCOUNT_CONFIG,
     link: linkState,
+    name: computerName(record),
+    system_name: machineName(),
   };
 }
 

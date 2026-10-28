@@ -8,6 +8,7 @@ import type { AccountStatus, EntrySigner } from "@argus/remote-protocol";
 import { makeEntry, MemberName } from "@argus/remote-protocol";
 import { capture } from "../telemetry/telemetry";
 import { appendOwn } from "./lifecycle";
+import { INVALID_NAME, setComputerName } from "./name";
 import { logout } from "./service";
 import { accountStatus } from "./status";
 import { currentRecord, currentState, isLinked } from "./trust";
@@ -59,14 +60,15 @@ export async function renameMember(
 ): Promise<AccountStatus> {
   const record = currentRecord();
   const target = liveTarget(memberId);
+  // This computer's own name is a setting; the list only edits it.
+  if (memberId === record?.host_id || memberId === record?.device?.id) {
+    return setComputerName(name, "account_list");
+  }
   const parsed = MemberName.safeParse(name.trim());
   if (!parsed.success) {
-    throw "Names are 1–64 characters";
+    throw INVALID_NAME;
   }
-  const signer: EntrySigner | null =
-    memberId === record?.host_id
-      ? { id: record.host_id, priv: record.host_sign_priv }
-      : windowSigner();
+  const signer = windowSigner();
   if (!signer) {
     throw "Rename it from your phone or another Mac — a computer can only rename itself";
   }

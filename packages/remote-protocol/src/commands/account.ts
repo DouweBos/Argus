@@ -111,6 +111,15 @@ export const ACCOUNT_COMMANDS = {
     params: z.object({ memberId: z.string(), name: z.string() }),
     result: AccountStatus,
   },
+  /**
+   * This computer's name setting; `null` returns to the system name. While
+   * linked, also renames this host (and its window's device) on the account.
+   */
+  account_set_name: {
+    tier: "host",
+    params: z.object({ name: z.string().nullable() }),
+    result: AccountStatus,
+  },
   account_set_config: {
     tier: "host",
     params: z.object({ patch: AccountConfigPatch }),

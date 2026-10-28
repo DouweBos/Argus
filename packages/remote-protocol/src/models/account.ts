@@ -113,6 +113,10 @@ export const AccountStatus = z.object({
   presence_at: z.number().nullable(),
   config: AccountConfig,
   link: AccountLinkState,
+  /** This computer's name: what it joins and links as, and keeps on the account. */
+  name: z.string().optional(),
+  /** The name the system gives this computer, used while `name` isn't set. */
+  system_name: z.string().optional(),
 });
 export type AccountStatus = z.infer<typeof AccountStatus>;
 

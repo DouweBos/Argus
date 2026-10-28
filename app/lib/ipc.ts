@@ -2663,3 +2663,7 @@ export const accountRenameMember = (
 export const accountSetConfig = (
   patch: AccountConfigPatch,
 ): Promise<AccountStatus> => invoke("account_set_config", { patch });
+
+/** This computer's name; `null` returns to the system name. Renames it on the account while linked. */
+export const accountSetName = (name: string | null): Promise<AccountStatus> =>
+  invoke("account_set_name", { name });

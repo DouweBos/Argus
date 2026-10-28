@@ -93,6 +93,7 @@ export const HOST_ONLY_COMMANDS = new Set([
   "account_revoke_member",
   "account_rename_member",
   "account_set_config",
+  "account_set_name",
   // Loopback DevTools endpoints: unreachable off this machine, and a debugger
   // into the session's browser besides.
   "browser_devtools",
