@@ -63,7 +63,10 @@ private struct SettingsNavList: View {
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 1) {
-        ForEach(SettingsTab.allCases, id: \.self) { tab in
+        // The account is the profile row up top, not a row in the list.
+        SettingsProfileNavItem(selected: model.settingsTab == .account) { model.settingsTab = .account }
+          .padding(.bottom, 6)
+        ForEach(SettingsTab.allCases.filter { $0 != .account }, id: \.self) { tab in
           SettingsNavItem(tab.title, systemImage: tab.systemImage, selected: model.settingsTab == tab) {
             model.settingsTab = tab
           }
