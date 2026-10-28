@@ -17,8 +17,8 @@ public final class AccountStore {
     /// Signed in with Clerk; creating or reading the account log.
     case settingUp
     case ready
-    /// The account already has devices and this one isn't on it. Joining
-    /// through an approval comes in a later release.
+    /// The account already has devices and this one isn't on it yet: it asks
+    /// to join and waits for one of them to approve (`join`).
     case awaitingApproval
   }
 
@@ -40,8 +40,20 @@ public final class AccountStore {
     case signedIn(provider: AccountSignInProvider, firstDevice: Bool)
     case signedOut
     case memberRemoved(role: AccountMember.Role)
+    case memberRenamed(role: AccountMember.Role)
     /// `viaPairing`: started from a QR-paired computer rather than a typed code.
     case computerAdded(viaPairing: Bool)
+    /// This device's side of a device approval (§5.4).
+    case joinActed(action: JoinAction, role: JoinRole)
+  }
+
+  public enum JoinAction: String, Sendable {
+    case requested, approved, denied, expired
+  }
+
+  /// Whether this device was the one joining or the one approving.
+  public enum JoinRole: String, Sendable {
+    case subject, approver
   }
 
   public internal(set) var phase: Phase = .loading
@@ -58,6 +70,12 @@ public final class AccountStore {
   public internal(set) var awaitingEmailCode = false
   /// Who is signed in, for the account header. Never sent anywhere.
   public internal(set) var profile: AccountProfile?
+  /// This device asking to join an account that already has devices.
+  public internal(set) var join: JoinFlow = .idle
+  /// Computers and devices waiting for an approval, proofs checked.
+  public internal(set) var requests: [AccountJoinRequestInfo] = []
+  /// Approving one of `requests`.
+  public internal(set) var approval: ApprovalFlow = .idle
 
   /// How often a visible host list re-reads the directory. Well inside the
   /// online window, so a host that comes back shows within a minute.
@@ -66,6 +84,9 @@ public final class AccountStore {
   /// The account hosts changed; rebuild the host list.
   @ObservationIgnored public var onHostsChanged: ([DeviceIdentity]) -> Void = { _ in }
   @ObservationIgnored public var onEvent: (Event) -> Void = { _ in }
+  /// This device appended entries: hand them to the hosts it is connected to
+  /// (`account.sync`), so a removal doesn't wait for their next poll.
+  @ObservationIgnored public var onLogAppended: () -> Void = {}
 
   @ObservationIgnored let auth: any AccountAuthenticating
   @ObservationIgnored let vaultStore: any AccountVaultStore
@@ -77,6 +98,10 @@ public final class AccountStore {
   @ObservationIgnored var vault = AccountVault.empty
   @ObservationIgnored var configured = false
   @ObservationIgnored var pendingLink: PendingLink?
+  @ObservationIgnored var pendingJoin: PendingJoin?
+  @ObservationIgnored var pendingApproval: PendingLink?
+  @ObservationIgnored var joinLoop: Task<Void, Never>?
+  @ObservationIgnored let joinPollInterval: Duration
   @ObservationIgnored private var retryLoop: Task<Void, Never>?
 
   /// - Parameters:
@@ -91,7 +116,8 @@ public final class AccountStore {
     localHost: (any AccountLocalHostLinking)? = nil,
     baseURL: URL = AccountClient.configuredBaseURL(),
     http: AccountClient.HTTP? = nil,
-    now: @escaping () -> Date = Date.init
+    now: @escaping () -> Date = Date.init,
+    joinPollInterval: Duration = .seconds(3)
   ) {
     self.auth = auth
     vaultStore = vault
@@ -99,6 +125,7 @@ public final class AccountStore {
     self.deviceName = deviceName
     self.localHost = localHost
     self.now = now
+    self.joinPollInterval = joinPollInterval
     client = AccountClient(baseURL: baseURL, token: { [auth] in try await auth.token() }, http: http)
   }
 
@@ -147,6 +174,7 @@ public final class AccountStore {
     refreshProfile()
     await refreshLog()
     await refreshDirectory()
+    await refreshRequests()
   }
 
   /// Re-read the signed-in person from the sign-in provider.
@@ -251,6 +279,7 @@ public final class AccountStore {
       if !firstDevice {
         guard try await resume(info) else {
           phase = .awaitingApproval
+          await requestJoin(info, provider: provider)
           return
         }
       }
@@ -291,8 +320,14 @@ public final class AccountStore {
     let entries = try await client.log(epoch: info.epoch, after: -1)
     switch AccountLog.verify(entries, root: vault.root) {
     case .ok(let verified):
-      guard ownMemberLive(in: verified) else { return false }
+      // Never pinned: only this device's own genesis, or an approval carrying
+      // the code compared here, counts.
+      guard ownMemberLive(in: verified),
+        vault.root != nil || admitsConfirmedJoin(verified) || wroteGenesis(verified)
+      else { return false }
       vault.root = verified.root
+      vault.joinRequestId = nil
+      vault.joinCommit = nil
       vault.entries = entries
       state = verified
       logError = nil
@@ -304,6 +339,11 @@ public final class AccountStore {
     }
   }
 
+  func wroteGenesis(_ state: AccountLogState) -> Bool {
+    guard let id = vault.keys?.memberId else { return false }
+    return state.members[id]?.addedBy == id
+  }
+
   func ownMemberLive(in state: AccountLogState) -> Bool {
     guard let keys = vault.keys, let found = state.liveMember(keys.memberId) else { return false }
     return found.member.signPub == keys.signPub
@@ -312,6 +352,9 @@ public final class AccountStore {
   /// Sign out = take this device off the account, forget its keys, end the
   /// Clerk session. Hosts it was QR-paired with are unaffected.
   public func signOut() async {
+    if let pending = pendingJoin {
+      try? await client.deny(requestId: pending.requestId)
+    }
     if phase == .ready, let memberId = vault.keys?.memberId {
       // Not applied: the store is forgotten right after, and adopting a log
       // without this device would read as being removed.
@@ -332,6 +375,11 @@ public final class AccountStore {
     profile = nil
     link = .idle
     pendingLink = nil
+    stopJoin()
+    join = .idle
+    requests = []
+    approval = .idle
+    pendingApproval = nil
     phase = .signedOut
     onHostsChanged([])
   }

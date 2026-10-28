@@ -1,7 +1,7 @@
 import Foundation
 
 /// A device or host on the account, as its log entry names it.
-public struct AccountMember: Codable, Hashable, Sendable {
+public struct AccountMember: Codable, Hashable, Sendable, Identifiable {
   public enum Role: String, Codable, Sendable {
     case device, host
   }

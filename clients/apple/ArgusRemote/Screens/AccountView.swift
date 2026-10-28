@@ -14,6 +14,8 @@ struct AccountView: View {
   @State private var code = ""
   @State private var confirmingSignOut = false
   @State private var removing: AccountStore.Host?
+  @State private var renaming: AccountStore.Host?
+  @State private var draft = ""
 
   private var account: AccountStore { app.account }
 
@@ -38,6 +40,7 @@ struct AccountView: View {
     // Presence moves while the list is open: a host going quiet or coming back.
     .liveRefresh(enabled: account.isSignedIn, every: AccountStore.presencePollInterval) {
       await app.account.refreshDirectory()
+      await app.account.refreshRequests()
     }
     .alert("Sign out of your account?", isPresented: $confirmingSignOut) {
       Button("Cancel", role: .cancel) {}
@@ -55,6 +58,15 @@ struct AccountView: View {
       }
     } message: {
       Text("Your devices stop connecting to it through the account. Link it again with a new code.")
+    }
+    .alert(
+      "Rename “\(renaming?.name ?? "")”",
+      isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } }),
+      presenting: renaming
+    ) { host in
+      TextField("Name", text: $draft)
+      Button("Cancel", role: .cancel) {}
+      Button("Rename") { Task { await account.rename(memberId: host.id, to: draft) } }
     }
   }
 
@@ -129,15 +141,7 @@ struct AccountView: View {
 
   @ViewBuilder private var awaitingApproval: some View {
     profileHeader
-    EmptyState(
-      icon: "hourglass",
-      title: "Waiting for device approval",
-      body: """
-        Your account already has devices. Approving a new one from them is coming soon; \
-        until then, pair this phone with each computer by QR code.
-        """)
-    Btn(label: "Pair with a QR code", tone: .secondary) { router.push(.pair) }
-    Btn(label: "Sign out", tone: .ghost) { Task { await account.signOut() } }
+    JoinAccountView()
   }
 
   // MARK: Signed in
@@ -171,6 +175,8 @@ struct AccountView: View {
       Btn(label: "Add a computer", icon: "plus") { router.push(.addComputer) }
     }
 
+    AccountMembersSection()
+
     if let error = account.error {
       Banner(text: error, tone: .danger)
     }
@@ -190,7 +196,17 @@ struct AccountView: View {
           MutedText(AccountPresenceLabel.text(online: host.online, lastSeen: host.lastSeen), lineLimit: 1)
         }
         Spacer(minLength: 6)
-        IconBtn(systemName: "trash", label: "Remove \(host.name)") { removing = host }
+        Menu {
+          Button("Rename…", systemImage: "pencil") {
+            draft = host.name
+            renaming = host
+          }
+          Button("Remove…", systemImage: "trash", role: .destructive) { removing = host }
+        } label: {
+          Image(systemName: "ellipsis.circle")
+            .foregroundStyle(theme.textSecondary)
+            .accessibilityLabel("Manage \(host.name)")
+        }
       }
     }
   }

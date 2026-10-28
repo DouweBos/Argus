@@ -10,7 +10,17 @@ final class FakeAccountService: @unchecked Sendable {
     var status = "pending"
   }
 
+  struct JoinRequest {
+    var member: AccountMember
+    var proof: String
+    var status = "claimed"
+    var approver: (id: String, signPub: String)?
+    var head: AccountHead?
+  }
+
   private let lock = NSLock()
+  private var joins: [String: JoinRequest] = [:]
+  private var nextJoin = 1
   private(set) var accountId = "abcdefghijklmnopqrstuvwxyz"
   private(set) var entries: [AccountEntry] = []
   private(set) var appends: [[AccountEntry]] = []
@@ -34,6 +44,33 @@ final class FakeAccountService: @unchecked Sendable {
   }
 
   func linkStatus(_ requestId: String) -> String? { lock.withLock { links[requestId]?.status } }
+
+  func join(_ requestId: String) -> JoinRequest? { lock.withLock { joins[requestId] } }
+  var joinIds: [String] { lock.withLock { joins.keys.sorted() } }
+
+  /// Another device files a join request, as `POST /join` would.
+  @discardableResult
+  func addJoin(member: AccountMember, proof: String) -> String {
+    lock.withLock {
+      let id = "join-\(nextJoin)"
+      nextJoin += 1
+      joins[id] = JoinRequest(member: member, proof: proof)
+      return id
+    }
+  }
+
+  /// An approver picks a join up (`POST /join/:id/approver`); returns the head the code binds.
+  func pickUp(_ requestId: String, by id: String, signPub: String) -> AccountHead {
+    lock.withLock {
+      let head = AccountHead(seq: entries.count - 1, hash: entries.last?.hash ?? "")
+      joins[requestId]?.status = "approving"
+      joins[requestId]?.approver = (id, signPub)
+      joins[requestId]?.head = head
+      return head
+    }
+  }
+
+  func setJoinStatus(_ requestId: String, _ status: String) { lock.withLock { joins[requestId]?.status = status } }
 
   func setDirectory(_ records: [AccountDirectoryRecord]) { lock.withLock { directory = records } }
 
@@ -85,14 +122,51 @@ final class FakeAccountService: @unchecked Sendable {
         200,
         ["request_id": id, "kind": link.subject.device == nil ? "host" : "computer", "subject": subject,
          "account_empty": lock.withLock { entries.isEmpty }], url)
+    case ("POST", "join"):
+      if lock.withLock({ entries.isEmpty }) { return respond(409, ["error": "conflict", "head_seq": NSNull()], url) }
+      guard let raw = body["member"], let data = try? JSONSerialization.data(withJSONObject: raw),
+        let member = try? JSONDecoder().decode(AccountMember.self, from: data), let proof = body["proof"] as? String
+      else { return respond(400, ["error": "bad_request"], url) }
+      let taken = lock.withLock { entries.contains { $0.body.contains(member.signPub) } }
+      if taken { return respond(409, ["error": "conflict", "head_seq": lock.withLock { entries.count - 1 }], url) }
+      let id = addJoin(member: member, proof: proof)
+      return respond(200, ["request_id": id, "expires_at": 9_999_999_999_999], url)
+    case ("GET", "join"):
+      let listed: [[String: Any]] = lock.withLock {
+        joins.filter { ["claimed", "approving"].contains($0.value.status) }.sorted { $0.key < $1.key }.map { id, join in
+          let member = (try? JSONSerialization.jsonObject(with: JSONEncoder().encode(join.member))) ?? [:]
+          return [
+            "request_id": id, "kind": "device", "status": join.status, "created_at": 1, "expires_at": 9_999_999_999_999,
+            "subject": ["device": member, "proofs": [join.member.id: join.proof]],
+          ]
+        }
+      }
+      return respond(200, ["requests": listed], url)
+    case ("GET", _) where path.hasPrefix("join/"):
+      let id = String(path.dropFirst("join/".count))
+      guard let join = lock.withLock({ joins[id] }) else { return respond(404, ["error": "not_found"], url) }
+      var out: [String: Any] = ["status": join.status, "account_id": accountId, "epoch": 0]
+      if let approver = join.approver, join.status != "claimed" {
+        out["approver"] = ["id": approver.id, "sign_pub": approver.signPub]
+      }
+      if let head = join.head { out["head"] = ["seq": head.seq, "hash": head.hash] }
+      return respond(200, out, url)
     case ("POST", _) where path.hasSuffix("/approver"):
-      let id = path.split(separator: "/")[1]
-      lock.withLock { links[String(id)]?.status = "approving" }
+      let id = String(path.split(separator: "/")[1])
+      if lock.withLock({ joins[id] != nil }) {
+        let approverId = body["approver_id"] as? String ?? ""
+        let head = pickUp(id, by: approverId, signPub: "")
+        return respond(200, ["head": ["seq": head.seq, "hash": head.hash]], url)
+      }
+      lock.withLock { links[id]?.status = "approving" }
       let head = lock.withLock { ["seq": entries.count - 1, "hash": entries.last?.hash ?? ""] as [String: Any] }
       return respond(200, ["head": head], url)
     case ("POST", _) where path.hasSuffix("/deny"):
-      let id = path.split(separator: "/")[1]
-      lock.withLock { links[String(id)]?.status = "denied" }
+      let id = String(path.split(separator: "/")[1])
+      lock.withLock {
+        links[id]?.status = "denied"
+        joins[id]?.status = "denied"
+      }
       return respond(204, [:], url)
     default:
       return respond(404, ["error": "not_found"], url)
@@ -117,6 +191,7 @@ final class FakeAccountService: @unchecked Sendable {
           let id = o["request_id"] as? String, !id.isEmpty
         {
           links[id]?.status = "approved"
+          joins[id]?.status = "approved"
         }
       }
       return respond(201, ["head_seq": entries.count - 1], url)

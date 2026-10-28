@@ -90,16 +90,23 @@ public struct AccountVault: Codable, Hashable, Sendable {
   public var presence: [String: AccountCachedPresence]
   /// The Mac app's bundled host, once linked to the account.
   public var localHostId: String?
+  /// The join request whose code this device confirmed, and that code's
+  /// commit: the only approval it adopts before it has pinned the account.
+  public var joinRequestId: String?
+  public var joinCommit: String?
 
   public init(
     keys: AccountDeviceKeys? = nil, root: AccountRoot? = nil, entries: [AccountEntry] = [],
-    presence: [String: AccountCachedPresence] = [:], localHostId: String? = nil
+    presence: [String: AccountCachedPresence] = [:], localHostId: String? = nil,
+    joinRequestId: String? = nil, joinCommit: String? = nil
   ) {
     self.keys = keys
     self.root = root
     self.entries = entries
     self.presence = presence
     self.localHostId = localHostId
+    self.joinRequestId = joinRequestId
+    self.joinCommit = joinCommit
   }
 
   public static let empty = AccountVault()

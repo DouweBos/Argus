@@ -238,6 +238,7 @@ final class AppStore {
 
     await registerPush(backend)
     await flushPendingDecisions(backend)
+    await account.sync(over: .backend(backend))
 
     // Re-sync addresses so a phone paired over Wi-Fi learns the tunnels, without
     // forgetting one that just isn't up right now.

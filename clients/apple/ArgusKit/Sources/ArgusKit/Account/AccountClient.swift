@@ -90,6 +90,20 @@ public struct AccountClient: Sendable {
     return try await send("POST", "link/claim", body: Body(userCode: userCode))
   }
 
+  /// Ask to join the signed-in account as `member` (§5.4).
+  public func join(member: AccountMember, proof: String) async throws -> AccountJoinTicket {
+    struct Body: Encodable {
+      let member: AccountMember
+      let proof: String
+    }
+    return try await send("POST", "join", body: Body(member: member, proof: proof))
+  }
+
+  /// Where this device's own join request is.
+  public func joinStatus(requestId: String) async throws -> AccountRequestStatus {
+    try await send("GET", "join/\(requestId)")
+  }
+
   public func joinRequests() async throws -> [AccountJoinRequestInfo] {
     struct Result: Decodable { let requests: [AccountJoinRequestInfo] }
     let result: Result = try await send("GET", "join")
@@ -314,15 +328,96 @@ public struct AccountLinkClaim: Decodable, Sendable {
   }
 }
 
-public struct AccountJoinRequestInfo: Decodable, Sendable, Identifiable {
+/// Who a pending request is for: a computer (with an Electron window riding
+/// along), or a device that signed in. Each with its proof of possession.
+public struct AccountRequestSubject: Codable, Hashable, Sendable {
+  public var host: AccountMember?
+  public var device: AccountMember?
+  public var proofs: [String: String]
+
+  public init(host: AccountMember? = nil, device: AccountMember? = nil, proofs: [String: String]) {
+    self.host = host
+    self.device = device
+    self.proofs = proofs
+  }
+
+  public init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    host = try c.decodeIfPresent(AccountMember.self, forKey: .host)
+    device = try c.decodeIfPresent(AccountMember.self, forKey: .device)
+    proofs = try c.decodeIfPresent([String: String].self, forKey: .proofs) ?? [:]
+  }
+
+  /// The member the code is about: the computer of a link, else the device.
+  public var member: AccountMember? { host ?? device }
+
+  /// Every member's own key vouches for it; nothing unproven is shown.
+  public var proven: Bool {
+    let members = [host, device].compactMap { $0 }
+    return !members.isEmpty
+      && members.allSatisfy { m in
+        proofs[m.id].map { AccountCodec.verify(m.proofBytes, signature: $0, publicKey: m.signPub) } ?? false
+      }
+  }
+}
+
+public struct AccountJoinTicket: Decodable, Sendable, Equatable {
+  public var requestId: String
+  public var expiresAt: Double
+
+  enum CodingKeys: String, CodingKey {
+    case requestId = "request_id"
+    case expiresAt = "expires_at"
+  }
+}
+
+/// `GET /join/:id`: untrusted, only tells the joining device whom to compare with.
+public struct AccountRequestStatus: Decodable, Sendable, Equatable {
+  public struct Approver: Decodable, Sendable, Equatable {
+    public var id: String
+    public var signPub: String
+
+    enum CodingKeys: String, CodingKey {
+      case id
+      case signPub = "sign_pub"
+    }
+  }
+
+  public var status: String
+  public var accountId: String?
+  public var epoch: Int?
+  public var approver: Approver?
+  public var head: AccountHead?
+  public var throughSeq: Int?
+
+  enum CodingKeys: String, CodingKey {
+    case status, epoch, approver, head
+    case accountId = "account_id"
+    case throughSeq = "through_seq"
+  }
+}
+
+public struct AccountJoinRequestInfo: Decodable, Sendable, Identifiable, Equatable {
   public var requestId: String
   public var kind: String
-  public var subject: AccountLinkSubject?
+  public var subject: AccountRequestSubject?
   public var status: String
   public var createdAt: Double?
   public var expiresAt: Double?
 
   public var id: String { requestId }
+
+  public init(
+    requestId: String, kind: String, subject: AccountRequestSubject?, status: String = "claimed",
+    createdAt: Double? = nil, expiresAt: Double? = nil
+  ) {
+    self.requestId = requestId
+    self.kind = kind
+    self.subject = subject
+    self.status = status
+    self.createdAt = createdAt
+    self.expiresAt = expiresAt
+  }
 
   enum CodingKeys: String, CodingKey {
     case requestId = "request_id"
@@ -335,8 +430,7 @@ public struct AccountJoinRequestInfo: Decodable, Sendable, Identifiable {
     let c = try decoder.container(keyedBy: CodingKeys.self)
     requestId = try c.decode(String.self, forKey: .requestId)
     kind = try c.decodeIfPresent(String.self, forKey: .kind) ?? "host"
-    // A device join's subject has another shape; phase 1 only shows host links.
-    subject = try? c.decodeIfPresent(AccountLinkSubject.self, forKey: .subject)
+    subject = try? c.decodeIfPresent(AccountRequestSubject.self, forKey: .subject)
     status = try c.decodeIfPresent(String.self, forKey: .status) ?? "claimed"
     createdAt = try? c.decodeIfPresent(Double.self, forKey: .createdAt)
     expiresAt = try? c.decodeIfPresent(Double.self, forKey: .expiresAt)

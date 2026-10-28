@@ -61,6 +61,7 @@ extension AccountStore {
       case .ok(let verified) = AccountLog.verify(entries, root: vault.root, prior: current)
     else { throw AccountStoreError.untrustedLog }
     await adopt(verified, appending: entries)
+    if phase == .ready { onLogAppended() }
   }
 
   func entry(head: AccountHead, _ fields: AccountEntryBuilder.Fields) throws -> AccountEntry {
