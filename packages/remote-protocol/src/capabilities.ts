@@ -298,6 +298,11 @@ export const REMOTE_METHODS = {
    *  Monitor, not control: it records that you looked, and can do nothing else. */
   "automations.mark_run_read": "monitor",
   "automations.run_feedback": "control",
+  /** Which integrations the computer has connected, and as whom. Connecting
+   *  one takes a secret, which stays on the computer: no method sets it. */
+  "integrations.list": "monitor",
+  /** Reads Linear as the computer's connected user. */
+  "linear.issues": "monitor",
   /** Pull requests, through the `gh` CLI on the computer. Reading is monitor;
    *  opening, merging or commenting speaks for you on GitHub, so it is not. */
   "github.pull_requests": "monitor",

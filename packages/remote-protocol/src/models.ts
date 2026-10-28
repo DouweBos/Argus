@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { LinkedIssue } from "./models/integrations";
 
 export const RemoteProject = z.object({
   repo_root: z.string(),
@@ -46,6 +47,8 @@ export const RemoteSession = z.object({
   unavailable_volume: z.string().nullable().optional(),
   /** Name of the external drive holding the session; null on the boot volume. */
   volume: z.string().nullable().optional(),
+  /** The tracker issue the session was started from. Absent on older hosts. */
+  linked_issue: LinkedIssue.nullable().optional(),
 });
 export type RemoteSession = z.infer<typeof RemoteSession>;
 

@@ -55,6 +55,7 @@ import { AutomationCalibration } from "./models/automations";
 import { CodeFile, CodeSearchEvent } from "./models/code";
 import { GitStashEntry } from "./models/git/history";
 import { GitTag } from "./models/git/remotes";
+import { IntegrationStatus, LinearIssue } from "./models/integrations";
 import {
   ClaudeUsageLimits,
   ClaudeUsageSummary,
@@ -257,6 +258,13 @@ export const MethodParams = {
     model: z.string().optional(),
     permission_mode: RemotePermissionMode.optional(),
     runner_id: z.string().optional(),
+    /**
+     * A Linear identifier (`ENG-123`) or issue URL. The host branches on
+     * Linear's branch name, links the session to the issue and always starts
+     * the agent, with the issue's context in front of `prompt`; `branch` and
+     * `description` are ignored.
+     */
+    linear_issue: z.string().max(500).optional(),
   }),
   "sessions.files": z.object({ session_id: z.string() }),
   /** One file's contents, read-only: the phone views, it never writes. */
@@ -549,6 +557,12 @@ export const MethodParams = {
     note: z.string(),
     /** Let the turn withdraw or supersede proposals. Off adds only. */
     allow_clearing: z.boolean().optional(),
+  }),
+  "integrations.list": z.object({}),
+  /** No query: the connected user's open assigned issues, newest first. */
+  "linear.issues": z.object({
+    query: z.string().max(500).optional(),
+    limit: z.number().int().min(1).max(100).optional(),
   }),
   "github.pull_requests": z.object({
     /** Omit for every registered project. */
@@ -872,6 +886,8 @@ export const MethodResult = {
   /** The run as it now stands — read. */
   "automations.mark_run_read": z.object({ run: RemoteAutomationRun }),
   "automations.run_feedback": z.object({ run: RemoteAutomationRun }),
+  "integrations.list": z.object({ integrations: z.array(IntegrationStatus) }),
+  "linear.issues": z.object({ issues: z.array(LinearIssue) }),
   "github.pull_requests": z.object({
     pull_requests: z.array(RemotePullRequest),
   }),

@@ -218,6 +218,9 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "automations.set_default_autonomy": DENIED,
   "automations.mark_run_read": DENIED,
   "automations.run_feedback": DENIED,
+  // The host owner's Linear account; a guest has no claim on it.
+  "integrations.list": DENIED,
+  "linear.issues": DENIED,
   // A guest reviews the agent it was handed; it does not speak on GitHub.
   "github.pull_requests": DENIED,
   "github.pull_request": DENIED,

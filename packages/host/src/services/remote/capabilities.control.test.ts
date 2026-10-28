@@ -108,6 +108,21 @@ vi.mock("../session/sessionOps", () => ({
   getSessionBranchDiff: vi.fn(async () => "diff --git a b"),
   getSessionFullDiff: vi.fn(async () => "diff --git HEAD"),
 }));
+vi.mock("../integrations/issueStart", () => ({
+  prepareIssueStart: vi.fn(async (ref: string, prompt: string) => ({
+    branch: "eng-1-fix-login",
+    description: `${ref} Fix login`,
+    linkedIssue: {
+      source: "linear",
+      identifier: ref,
+      title: "Fix login",
+      url: "https://linear.app/x/issue/ENG-1",
+    },
+    designRefs: [],
+    prompt: `## ENG-1\n\n${prompt || "Work on this issue."}`,
+    images: [{ data: "aGk=", media_type: "image/png" }],
+  })),
+}));
 vi.mock("../llm/registry", () => ({
   getRunnerById: vi.fn((id: string) =>
     id === "codex" ? { id: "codex" } : null,
@@ -557,6 +572,44 @@ describe("sessions.create with a prompt", () => {
     await vi.waitFor(() => expect(startAgent).toHaveBeenCalled());
     const args = vi.mocked(startAgent).mock.calls.at(-1) ?? [];
     expect(args.slice(0, 3)).toEqual(["s3", "opus", "plan"]);
+  });
+
+  it("branches a linear issue on its own branch and hands the agent its context", async () => {
+    const { createSession } = vi.mocked(await import("../session/manager"));
+    createSession.mockResolvedValueOnce({
+      id: "s4",
+      status: "ready",
+    } as never);
+    appState.sessions.set("s4", { id: "s4", status: "ready" } as never);
+
+    await dispatch(
+      "sessions.create",
+      {
+        repo_root: "/repo",
+        branch: "ignored",
+        description: "ignored",
+        linear_issue: "ENG-1",
+      },
+      makeCtx(["monitor", "control"]),
+    );
+
+    const call = createSession.mock.calls.at(-1) ?? [];
+    expect(call.slice(0, 3)).toEqual([
+      "/repo",
+      "eng-1-fix-login",
+      "ENG-1 Fix login",
+    ]);
+    expect(call[6]).toMatchObject({
+      linkedIssue: { identifier: "ENG-1" },
+      designRefs: [],
+    });
+    await vi.waitFor(() =>
+      expect(sendAgentMessage).toHaveBeenCalledWith(
+        "a1",
+        "## ENG-1\n\nWork on this issue.",
+        [{ data: "aGk=", media_type: "image/png" }],
+      ),
+    );
   });
 
   it("refuses a permission mode the phone may not grant", async () => {

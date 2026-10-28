@@ -23,6 +23,7 @@ import {
   UNKNOWN_COMMAND,
   type Capability,
   type GrantScope,
+  type ImageAttachment,
   type RemoteAgentCapabilities,
   type RemoteAgentStatus,
   type RemoteClaudeAccount,
@@ -110,6 +111,8 @@ import {
 } from "../deviceHosts/eas/registry";
 import { listDeviceHosts } from "../deviceHosts/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
+import { prepareIssueStart } from "../integrations/issueStart";
+import { listIntegrations, listLinearIssues } from "../integrations/service";
 import { getRunnerById } from "../llm/registry";
 import { collectAllProjects } from "../mcp/projectDiscovery";
 import { createScratchPad, listScratchPads } from "../scratchPad/manager";
@@ -436,6 +439,7 @@ export async function startAgentWhenReady(
     model?: string;
     permissionMode?: string;
     runnerId?: string;
+    images?: ImageAttachment[];
   } = {},
 ): Promise<void> {
   try {
@@ -462,7 +466,11 @@ export async function startAgentWhenReady(
       initial_prompt: prompt,
       model: agent.model,
     });
-    sendAgentMessage(agent.agent_id, prompt);
+    if (options.images?.length) {
+      sendAgentMessage(agent.agent_id, prompt, options.images);
+    } else {
+      sendAgentMessage(agent.agent_id, prompt);
+    }
     // The renderer only draws user bubbles for sends it made itself.
     emitHostEvent(`agent:remote-message:${agent.agent_id}`, {
       message: prompt,
@@ -505,6 +513,7 @@ function toRemoteSession(s: Session): RemoteSession {
       ? (s.unavailable_volume.split("/").pop() ?? null)
       : null,
     volume: s.volume ? (s.volume.split("/").pop() ?? null) : null,
+    linked_issue: s.linked_issue ?? null,
   };
 }
 
@@ -1271,10 +1280,35 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       model,
       permission_mode,
       runner_id,
+      linear_issue,
     } = parse("sessions.create", params);
     requireKnownRepoRoot(repo_root);
     requireRemotePermissionMode(permission_mode);
     requireKnownRunner(runner_id);
+    if (linear_issue) {
+      const start = await control(() =>
+        prepareIssueStart(linear_issue, prompt ?? ""),
+      );
+      const session = await control(() =>
+        createSession(
+          repo_root,
+          start.branch,
+          start.description,
+          false,
+          base_branch,
+          undefined,
+          { linkedIssue: start.linkedIssue, designRefs: start.designRefs },
+        ),
+      );
+      startAgentWhenReady(session.id, start.prompt, {
+        model,
+        permissionMode: permission_mode,
+        runnerId: runner_id,
+        images: start.images,
+      }).catch(() => {});
+
+      return { session: toRemoteSession(session) };
+    }
     const session = await control(() =>
       createSession(
         repo_root,
@@ -1919,6 +1953,17 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
     return { autonomy: appDefaultAutonomy() };
   },
+  "integrations.list": async () => ({ integrations: listIntegrations() }),
+
+  "linear.issues": async (params) => {
+    const { query, limit } = parse("linear.issues", params);
+    const issues = await control(() =>
+      listLinearIssues(query ?? null, limit ?? 30),
+    );
+
+    return { issues };
+  },
+
   "github.pull_requests": async (params) => {
     const { repo_roots } = parse("github.pull_requests", params);
     const roots = repo_roots ?? collectAllProjects().map((p) => p.path);

@@ -32,6 +32,11 @@ struct ComputerView: View {
     .navigationTitle(computer?.label ?? "Computer")
     .navigationBarTitleDisplayMode(.inline)
     .task { name = computer?.label ?? "" }
+    .task(id: host.connection == .ready) {
+      if computer?.deviceId == app.activeHostId, host.connection == .ready {
+        await host.loadIntegrations()
+      }
+    }
     // Presence moves while the list is open: a host going quiet or coming back.
     .liveRefresh(enabled: computer?.isAccountHost == true, every: AccountStore.presencePollInterval) {
       await app.account.refreshDirectory()
@@ -71,6 +76,15 @@ struct ComputerView: View {
             router.popToRoot()
           }
         }
+      }
+    }
+
+    if active, !host.integrations.isEmpty {
+      Field(
+        label: "Integrations",
+        caption: "Connect or disconnect them in Argus on the computer; their keys never leave it."
+      ) {
+        IntegrationStatusRows(integrations: host.integrations)
       }
     }
 

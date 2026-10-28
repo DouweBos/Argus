@@ -44,6 +44,8 @@ public final class HostStore {
   public internal(set) var adoptedSessions: [String: RemoteSession] = [:]
   /// LLM runners this computer has registered, for the spawn sheet's picker.
   public internal(set) var runners: [RemoteRunner] = []
+  /// Linear and Figma as this computer has them connected; empty until loaded.
+  public internal(set) var integrations: [ArgusProtocol.IntegrationStatus] = []
   public internal(set) var stoppedByRepo: [String: [RemoteStoppedAgent]] = [:]
   public internal(set) var messagesByAgent: [String: [RemoteMessage]] = [:]
   /// Locally-appended user messages awaiting confirmation in the next snapshot.
@@ -213,6 +215,7 @@ public final class HostStore {
     recentAgents = []
     scratchPads = []
     adoptedSessions = [:]
+    integrations = []
     stoppedByRepo = [:]
     messagesByAgent = [:]
     optimisticByAgent = [:]

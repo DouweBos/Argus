@@ -14137,6 +14137,7 @@ extension ArgusProtocol {
     public var availability: RemoteSessionAvailability?
     public var unavailableVolume: String?
     public var volume: String?
+    public var linkedIssue: LinkedIssue?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -14152,9 +14153,10 @@ extension ArgusProtocol {
       case availability = "availability"
       case unavailableVolume = "unavailable_volume"
       case volume = "volume"
+      case linkedIssue = "linked_issue"
     }
 
-    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
+    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil) {
       self.id = id
       self.repoRoot = repoRoot
       self.kind = kind
@@ -14168,6 +14170,7 @@ extension ArgusProtocol {
       self.availability = availability
       self.unavailableVolume = unavailableVolume
       self.volume = volume
+      self.linkedIssue = linkedIssue
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -14185,6 +14188,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(availability, forKey: .availability)
       try c.encodeIfPresent(unavailableVolume, forKey: .unavailableVolume)
       try c.encodeIfPresent(volume, forKey: .volume)
+      try c.encodeIfPresent(linkedIssue, forKey: .linkedIssue)
     }
   }
 

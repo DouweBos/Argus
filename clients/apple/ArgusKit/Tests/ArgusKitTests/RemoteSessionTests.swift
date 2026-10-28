@@ -50,4 +50,17 @@ struct RemoteSessionTests {
     // Still "ready": the session is fine, the drive is what is missing.
     #expect(session.status == .ready)
   }
+
+  @Test("a session started from a Linear issue carries the issue")
+  func linkedIssue() throws {
+    let session = try decode(
+      """
+      {"id":"s1","repo_root":"/r","kind":"worktree","branch":"eng-1-fix","status":"ready",
+       "linked_issue":{"source":"linear","identifier":"ENG-1","title":"Fix login",
+       "url":"https://linear.app/acme/issue/ENG-1"}}
+      """)
+
+    #expect(session.linkedIssue?.identifier == "ENG-1")
+    #expect(session.linkedIssue?.url == "https://linear.app/acme/issue/ENG-1")
+  }
 }
