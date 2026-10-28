@@ -24,7 +24,7 @@ struct RemotePushSection: View {
             ToneLabel(tone: enabled ? .success : .idle, text: enabled ? "ready" : "off")
           }
           Toggle("Background push", isOn: binding)
-            .toggleStyle(.switch)
+            .toggleStyle(.argusSwitch)
             .controlSize(.small)
             .disabled(!gatewayOn || model.busy || model.push == nil)
         }

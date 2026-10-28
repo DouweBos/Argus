@@ -16,6 +16,7 @@ struct GitSettingsView: View {
       GitLfsSection(workspace: workspace)
     }
     .formStyle(.grouped)
+    .toggleStyle(.argusSwitch)
   }
 }
 

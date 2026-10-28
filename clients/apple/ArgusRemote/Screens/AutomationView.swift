@@ -138,7 +138,7 @@ struct AutomationView: View {
               Task { await store.setEnabled(id: automationId, enabled: enabled) }
             }))
             .labelsHidden()
-            .tint(theme.tint)
+            .toggleStyle(.argusSwitch)
         } else {
           Badge(
             label: automation.enabled ? "Enabled" : "Paused",

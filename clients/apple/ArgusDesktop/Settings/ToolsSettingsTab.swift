@@ -52,7 +52,7 @@ private struct ToolRow: View {
     let missing = on ? DesktopTool.missingRequirements(tool.id, in: toggles) : []
     SettingsRow(tool.name, description: tool.description) {
       Toggle(tool.name, isOn: Binding(get: { on }, set: set))
-        .toggleStyle(.switch)
+        .toggleStyle(.argusSwitch)
         .controlSize(.small)
     } detail: {
       if !missing.isEmpty {

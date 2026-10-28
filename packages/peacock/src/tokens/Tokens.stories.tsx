@@ -174,6 +174,31 @@ export const Colors: Story = {
         </div>
       </section>
       <section>
+        <h3 className="eyebrow">Toggle</h3>
+        <p
+          style={{
+            margin: "0 0 8px",
+            fontSize: 11,
+            color: "var(--text-muted)",
+          }}
+        >
+          A switch&apos;s on state. Follows the accent, except in the Muted
+          colour theme, where a monochrome track reads as off and it uses amber.
+        </p>
+        <div style={row}>
+          <Token
+            name="--toggle-on"
+            value="var(--accent)"
+            preview={<div style={swatch("var(--toggle-on)")} />}
+          />
+          <Token
+            name="--toggle-on-border"
+            value="var(--accent-hover)"
+            preview={<div style={swatch("var(--toggle-on-border)")} />}
+          />
+        </div>
+      </section>
+      <section>
         <h3 className="eyebrow">Chart</h3>
         <p
           style={{

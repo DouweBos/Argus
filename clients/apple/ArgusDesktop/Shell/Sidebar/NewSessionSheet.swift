@@ -64,6 +64,7 @@ struct NewSessionSheet: View {
       }
     }
     .formStyle(.grouped)
+    .toggleStyle(.argusSwitch)
     .safeAreaInset(edge: .top) {
       // A sheet shows no navigation title; say where the session goes.
       Text("New Session in \(project.name)")

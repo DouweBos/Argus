@@ -119,7 +119,7 @@ struct RemoteTunnelSections: View {
             text: on ? RemoteAccessLabels.tunnelLabel(state) : "off")
         }
         Toggle(name, isOn: binding())
-          .toggleStyle(.switch)
+          .toggleStyle(.argusSwitch)
           .controlSize(.small)
           .disabled(model.busy || status == nil)
       }

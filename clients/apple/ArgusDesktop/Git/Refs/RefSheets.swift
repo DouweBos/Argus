@@ -43,6 +43,7 @@ struct PushSheet: View {
         Toggle("Force with lease", isOn: $forceWithLease)
       }
       .formStyle(.grouped)
+      .toggleStyle(.argusSwitch)
     }
     .onAppear {
       remote = remotes.contains("origin") ? "origin" : remotes.first ?? ""
@@ -123,6 +124,7 @@ struct BranchSheet: View {
         Toggle("Check out the new branch", isOn: $checkout)
       }
       .formStyle(.grouped)
+      .toggleStyle(.argusSwitch)
     }
     .onAppear { start = startPoint }
   }
@@ -154,6 +156,7 @@ struct BranchPickSheet: View {
         if squashOption { Toggle("Squash into one commit", isOn: $squash) }
       }
       .formStyle(.grouped)
+      .toggleStyle(.argusSwitch)
     }
     .onAppear { branch = branches.first ?? "" }
   }
@@ -182,6 +185,7 @@ struct StashSheet: View {
         Toggle("Keep staged changes", isOn: $keepIndex)
       }
       .formStyle(.grouped)
+      .toggleStyle(.argusSwitch)
     }
   }
 }
