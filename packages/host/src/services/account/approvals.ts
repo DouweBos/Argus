@@ -1,17 +1,21 @@
 /**
- * Approving another computer's link from this host's console (§4.4): the
- * Electron window, the Mac app's local host, or `argus-host approve`. Never
- * reachable over the gateway — every command here is host-tier.
+ * Approving another computer's link or a new device's join from this host's
+ * console (§4.4, §5.8): the Electron window, the Mac app's local host, or
+ * `argus-host approve`. Never reachable over the gateway — every command here
+ * is host-tier.
  */
 
 import type { JoinRequestRow } from "./client";
 import type {
   AccountApprovalState,
   AccountJoinRequest,
+  AccountMember,
+  AccountMemberRole,
   LogEntry,
 } from "@argus/remote-protocol";
 import {
   accountSas,
+  entryHash,
   makeEntry,
   proofSigningBytes,
   verifyB64,
@@ -36,6 +40,13 @@ interface Pending {
 }
 
 let pending: Pending | null = null;
+/** What each listed request is for, so a deny from the list can report it. */
+const listedRoles = new Map<string, AccountMemberRole>();
+
+/** Who the code is about: the computer of a link, else the joining device. */
+function subjectOf(request: JoinRequestRow): AccountMember | null {
+  return request.subject.host ?? request.subject.device ?? null;
+}
 
 function requireApprover() {
   const record = currentRecord();
@@ -56,39 +67,40 @@ export async function listRequests(): Promise<AccountJoinRequest[]> {
     return [];
   }
   const { requests } = await memberClient(record).listJoins();
-
-  return requests
-    .filter((r) => r.subject.host)
-    .map((r) => ({
+  const out: AccountJoinRequest[] = [];
+  for (const r of requests) {
+    const subject = subjectOf(r);
+    // This window's own device never asks; anything else unproven isn't shown.
+    if (!subject || subject.id === record.device?.id || !subjectProven(r)) {
+      continue;
+    }
+    listedRoles.set(r.request_id, subject.role);
+    out.push({
       request_id: r.request_id,
       kind: r.kind,
-      subject_name: r.subject.host?.name ?? "",
+      subject_name: subject.name,
+      subject_role: subject.role,
+      subject_kind: subject.role === "device" ? subject.kind : subject.platform,
       status: r.status,
       created_at: r.created_at,
       expires_at: r.expires_at,
-    }));
+    });
+  }
+
+  return out;
 }
 
-/** Both proofs must check out before this host vouches for anything. */
+/** Every member's proof must check out before this host vouches for it. */
 function subjectProven(request: JoinRequestRow): boolean {
   const { host, device, proofs } = request.subject;
-  if (!host || !proofs) {
+  if ((!host && !device) || !proofs) {
     return false;
   }
-  const hostOk = verifyB64(
-    proofSigningBytes(host),
-    proofs[host.id] ?? "",
-    host.sign_pub,
-  );
-  const deviceOk =
-    !device ||
-    verifyB64(
-      proofSigningBytes(device),
-      proofs[device.id] ?? "",
-      device.sign_pub,
-    );
 
-  return hostOk && deviceOk;
+  return [host, device].every(
+    (m) =>
+      !m || verifyB64(proofSigningBytes(m), proofs[m.id] ?? "", m.sign_pub),
+  );
 }
 
 export async function approveJoin(
@@ -98,8 +110,9 @@ export async function approveJoin(
   const client = memberClient(record);
   const { requests } = await client.listJoins();
   const request = requests.find((r) => r.request_id === requestId);
-  if (!request?.subject.host) {
-    throw "That request is gone or isn't a computer link";
+  const subject = request ? subjectOf(request) : null;
+  if (!request || !subject) {
+    throw "That request is gone";
   }
   if (!subjectProven(request)) {
     throw "That request's keys don't check out";
@@ -118,8 +131,8 @@ export async function approveJoin(
     epoch: state.epoch,
     head_hash: head.hash,
     approver_sign_pub: record.host_sign_pub,
-    subject_sign_pub: request.subject.host.sign_pub,
-    subject_noise_pub: request.subject.host.noise_pub,
+    subject_sign_pub: subject.sign_pub,
+    subject_noise_pub: subject.noise_pub,
     request_id: requestId,
   });
   pending = { request, sas, commit, head };
@@ -127,7 +140,8 @@ export async function approveJoin(
     kind: "awaiting_sas",
     request_id: requestId,
     sas,
-    subject_name: request.subject.host.name,
+    subject_name: subject.name,
+    subject_role: subject.role,
   });
 
   return getApprovalState();
@@ -149,33 +163,28 @@ export async function confirmJoin(
   }
   const { record, state } = requireApprover();
   const { host, device, proofs } = current.request.subject;
-  if (!host || !proofs) {
+  const subject = subjectOf(current.request);
+  if (!subject || !proofs) {
     throw "That request is gone";
   }
   const header = { account_id: state.account_id, epoch: state.epoch };
   const signer = { id: record.host_id, priv: record.host_sign_priv };
-  const entries: LogEntry[] = [
-    makeEntry({ ...header, head: current.head }, signer, {
-      type: "add_host",
-      member: host,
+  // A link writes its computer first, then the window riding along with it.
+  const members = [host, device].filter((m): m is AccountMember => !!m);
+  const entries: LogEntry[] = [];
+  let head = current.head;
+  for (const member of members) {
+    const entry = makeEntry({ ...header, head }, signer, {
+      type: member.role === "host" ? "add_host" : "add_device",
+      member,
       request_id: requestId,
       sas_commit: current.commit,
-      proof: proofs[host.id],
-    }),
-  ];
-  let next = verifyLog(entries, { prior: state });
-  if (device && next.ok) {
-    entries.push(
-      makeEntry({ ...header, head: next.state.head }, signer, {
-        type: "add_device",
-        member: device,
-        request_id: requestId,
-        sas_commit: current.commit,
-        proof: proofs[device.id],
-      }),
-    );
-    next = verifyLog(entries, { prior: state });
+      proof: proofs[member.id],
+    });
+    entries.push(entry);
+    head = { seq: head.seq + 1, hash: entryHash(entry.body) };
   }
+  const next = verifyLog(entries, { prior: state });
   if (!next.ok) {
     setApprovalState({ kind: "error", message: "Couldn't build the entry" });
 
@@ -198,8 +207,16 @@ export async function confirmJoin(
   await writeAccountRecord(record);
   setTrust(record, next.state);
   emitAccountStatus();
-  capture("account_join_resolved", { action: "approved", approver: "host" });
-  setApprovalState({ kind: "approved", request_id: requestId });
+  capture("account_join_resolved", {
+    action: "approved",
+    approver: "host",
+    subject: subject.role,
+  });
+  setApprovalState({
+    kind: "approved",
+    request_id: requestId,
+    subject_role: subject.role,
+  });
 
   return getApprovalState();
 }
@@ -210,6 +227,11 @@ export async function denyJoin(requestId: string): Promise<void> {
     pending = null;
   }
   await memberClient(record).deny(requestId);
-  capture("account_join_resolved", { action: "denied", approver: "host" });
+  capture("account_join_resolved", {
+    action: "denied",
+    approver: "host",
+    subject: listedRoles.get(requestId) ?? "host",
+  });
+  listedRoles.delete(requestId);
   setApprovalState({ kind: "idle" });
 }

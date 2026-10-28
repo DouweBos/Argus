@@ -34,5 +34,17 @@
     "sign_priv": "BQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU=",
     "sign_pub": "bnoc3Smwt4/ROvTFWY/v9O8qlxZuPKby5Pv8zYBQW/E=",
     "noise_pub": "GxuMqoE2oHsZzcQtv/WMNB3gCH2P6uzynuwO1P0MM1U="
+  },
+  "tablet": {
+    "id": "00000000-0000-4000-8000-000000000007",
+    "sign_priv": "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=",
+    "sign_pub": "6kpsY+KcUgq+9VB7Ey7F+ZVHdq6+vnuSQh7qaRRG0iw=",
+    "noise_pub": "hGL7PweY+f4sOfOCO7Qc0+/+cLtcgXNb5GoUMTXFhFQ="
+  },
+  "laptop": {
+    "id": "00000000-0000-4000-8000-000000000008",
+    "sign_priv": "CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg=",
+    "sign_pub": "E5j2LG0aRXxRumpLXz29L2n8qTIWIY3ImX5Ba9F9k8o=",
+    "noise_pub": "yxsE+ys0ET51t+Ira4BYhZ0NKlBa8htfu/EO/5Bt3mc="
   }
 }

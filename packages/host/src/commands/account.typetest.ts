@@ -1,4 +1,6 @@
 import type { Equal, Expect } from "./typeEquality";
+import type { listRequests } from "../services/account/approvals";
+import type { applyPushedEntries } from "../services/account/lifecycle";
 import type { LinkSurface } from "../services/account/link";
 import type {
   deviceKey,
@@ -13,6 +15,7 @@ import type {
   AccountConfig,
   AccountDeviceKey,
   AccountHost,
+  AccountJoinRequest,
   AccountLinkSurface,
   AccountLocalLinkOffer,
   AccountMemberInfo,
@@ -35,6 +38,13 @@ export type AccountModelChecks = [
     Equal<
       ReturnType<typeof remoteAccountStatus>,
       z.infer<(typeof MethodResult)["account.status"]>
+    >
+  >,
+  Expect<Equal<Awaited<ReturnType<typeof listRequests>>, AccountJoinRequest[]>>,
+  Expect<
+    Equal<
+      Awaited<ReturnType<typeof applyPushedEntries>>,
+      z.infer<(typeof MethodResult)["account.sync"]>
     >
   >,
 ];

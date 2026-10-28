@@ -24,8 +24,8 @@ import { createServer, type Server, type ServerResponse } from "node:http";
 import path from "node:path";
 import { WebSocketServer, type WebSocket } from "ws";
 import { warn } from "@argus/host/logger";
-import { syncSoon } from "../account/lifecycle";
-import { accountAllowsDevice, findAccountDevice } from "../account/trust";
+import { findAccountDeviceFresh, syncSoon } from "../account/lifecycle";
+import { accountAllowsDevice } from "../account/trust";
 import { capture } from "../telemetry/telemetry";
 import {
   findDeviceByStaticKey,
@@ -191,7 +191,7 @@ async function resolveDevice(clientPub: string): Promise<{
       : { device: null, refused: true };
   }
 
-  return { device: await findAccountDevice(clientPub), refused: false };
+  return { device: await findAccountDeviceFresh(clientPub), refused: false };
 }
 
 function handleDeviceSocket(ws: WebSocket, identity: DesktopIdentity): void {

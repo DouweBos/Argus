@@ -68,6 +68,48 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AccountSyncParams: Codable, Sendable {
+      public var epoch: Int
+      public var entries: [LogEntry]
+
+      enum CodingKeys: String, CodingKey {
+        case epoch = "epoch"
+        case entries = "entries"
+      }
+
+      public init(epoch: Int, entries: [LogEntry]) {
+        self.epoch = epoch
+        self.entries = entries
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(epoch, forKey: .epoch)
+        try c.encode(entries, forKey: .entries)
+      }
+    }
+
+    public struct AccountSyncResult: Codable, Sendable {
+      public var headSeq: Int?
+      public var applied: Int
+
+      enum CodingKeys: String, CodingKey {
+        case headSeq = "head_seq"
+        case applied = "applied"
+      }
+
+      public init(headSeq: Int? = nil, applied: Int) {
+        self.headSeq = headSeq
+        self.applied = applied
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(headSeq, forKey: .headSeq)
+        try c.encode(applied, forKey: .applied)
+      }
+    }
+
     public struct AgentsCapabilitiesParams: Codable, Sendable {
       public var agentId: String
 
@@ -5627,6 +5669,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AccountStatusParams
       public typealias Result = ArgusProtocol.MethodsTypes.AccountStatusResult
       public static let name = "account.status"
+    }
+
+    public enum AccountSync: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AccountSyncParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AccountSyncResult
+      public static let name = "account.sync"
     }
 
     public enum AgentsCapabilities: RemoteCommand {

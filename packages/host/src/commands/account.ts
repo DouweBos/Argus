@@ -5,6 +5,7 @@ import {
   listRequests,
 } from "../services/account/approvals";
 import { cancelLink, confirmLink, startLink } from "../services/account/link";
+import { renameMember, revokeMember } from "../services/account/members";
 import {
   deviceKey,
   getAccountStatus,
@@ -32,5 +33,9 @@ export function registerAccountCommands(): void {
   defineTypedCommand("account_approve_join", (p) => approveJoin(p.requestId));
   defineTypedCommand("account_confirm_join", (p) => confirmJoin(p.match));
   defineTypedCommand("account_deny_join", (p) => denyJoin(p.requestId));
+  defineTypedCommand("account_revoke_member", (p) => revokeMember(p.memberId));
+  defineTypedCommand("account_rename_member", (p) =>
+    renameMember(p.memberId, p.name),
+  );
   defineTypedCommand("account_set_config", (p) => setAccountConfig(p.patch));
 }

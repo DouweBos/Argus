@@ -116,6 +116,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AccountRenameMemberParams: Codable, Sendable {
+      public var memberId: String
+      public var name: String
+
+      enum CodingKeys: String, CodingKey {
+        case memberId = "memberId"
+        case name = "name"
+      }
+
+      public init(memberId: String, name: String) {
+        self.memberId = memberId
+        self.name = name
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(memberId, forKey: .memberId)
+        try c.encode(name, forKey: .name)
+      }
+    }
+
+    public struct AccountRevokeMemberParams: Codable, Sendable {
+      public var memberId: String
+
+      enum CodingKeys: String, CodingKey {
+        case memberId = "memberId"
+      }
+
+      public init(memberId: String) {
+        self.memberId = memberId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(memberId, forKey: .memberId)
+      }
+    }
+
     public struct AccountSetConfigParams: Codable, Sendable {
       public var patch: AccountConfigPatch
 
@@ -9349,6 +9387,20 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = ArgusProtocol.AccountStatus
       public static let name = "account_logout"
+      public static let tier = "host"
+    }
+
+    public enum AccountRenameMember: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AccountRenameMemberParams
+      public typealias Result = ArgusProtocol.AccountStatus
+      public static let name = "account_rename_member"
+      public static let tier = "host"
+    }
+
+    public enum AccountRevokeMember: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AccountRevokeMemberParams
+      public typealias Result = ArgusProtocol.AccountStatus
+      public static let name = "account_revoke_member"
       public static let tier = "host"
     }
 

@@ -64,6 +64,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "host.endpoints": OPEN,
   "account.status": OPEN,
   "account.request_link": OPEN,
+  // A huddle guest isn't on the account; nothing it could hand over applies.
+  "account.sync": DENIED,
 
   // The host owner's Claude sign-ins: the list names their email and org, and
   // switching one silently changes what every new agent spends. Nothing a

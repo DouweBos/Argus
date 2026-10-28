@@ -113,6 +113,7 @@ describe("account link", () => {
     commitOverride?: string,
   ): { sas: string; entries: LogEntry[] } {
     const request = fake.requests.get(requestId)!;
+    const host = request.subject.host!;
     const head = fake.setApprover(requestId, {
       id: phone.id,
       sign_pub: phone.sign.pub,
@@ -122,8 +123,8 @@ describe("account link", () => {
       epoch: 0,
       head_hash: head.hash,
       approver_sign_pub: phone.sign.pub,
-      subject_sign_pub: request.subject.host.sign_pub,
-      subject_noise_pub: request.subject.host.noise_pub,
+      subject_sign_pub: host.sign_pub,
+      subject_noise_pub: host.noise_pub,
       request_id: requestId,
     });
     const entries = [
@@ -132,10 +133,10 @@ describe("account link", () => {
         { id: phone.id, priv: phone.sign.priv },
         {
           type: "add_host",
-          member: request.subject.host,
+          member: host,
           request_id: requestId,
           sas_commit: commitOverride ?? commit,
-          proof: request.subject.proofs[request.subject.host.id],
+          proof: request.subject.proofs[host.id],
         },
       ),
     ];

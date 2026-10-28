@@ -1,4 +1,4 @@
-# Argus account layer — phase 1 wire contract (authoritative for all implementers)
+# Argus account layer — wire contract, phases 1–2 (authoritative for all implementers)
 
 Design background: /Users/douwe/Work/Houwert/Projects/Argus/plan/accounts.md. Where this file and
 the plan disagree, THIS file wins (it resolves details the plan left open).
@@ -132,7 +132,7 @@ Clerk auth = `Authorization: Bearer <Clerk session JWT>`. JSON in and out.
 | `GET /join/:id`            | Clerk                                                                                           | —                                                                                        | `RequestStatus`                                                                                                                                                                           |
 | `POST /join/:id/approver`  | Clerk, or host member                                                                           | `{ approver_id }`                                                                        | `{ head: { seq, hash } }` (status → approving; approver must be a live member of the account; allowed again by the same approver)                                                         |
 | `POST /join/:id/deny`      | Clerk, or host member                                                                           | `{}`                                                                                     | `204`                                                                                                                                                                                     |
-| `POST /join`               | Clerk                                                                                           | `{ member: DeviceMember, proof }`                                                        | `{ request_id, expires_at }` (phase 2 clients; service may implement)                                                                                                                     |
+| `POST /join`               | Clerk                                                                                           | `{ member: DeviceMember, proof }`                                                        | `{ request_id, expires_at }` — a device join, created `claimed` on the caller's account; 409 `{ head_seq: null }` on an empty account                                                     |
 | `DELETE /account`          | Clerk, reverified ≤10 min (`fva[0]` ≤ 10)                                                       | `{}`                                                                                     | `204`                                                                                                                                                                                     |
 
 `RequestStatus = { status: "pending"|"claimed"|"approving"|"approved"|"denied"|"expired", account_empty?: boolean, account_id?, epoch?, approver?: { id, sign_pub }, head?: { seq, hash }, through_seq?: number }`.
@@ -156,23 +156,25 @@ current epoch.
 
 ## Host commands (catalog domain `account`, Argus host, all snake_case)
 
-| command                     | tier  | params                                             | result                                                                 |
-| --------------------------- | ----- | -------------------------------------------------- | ---------------------------------------------------------------------- |
-| `account_get_status`        | admin | `{}`                                               | `AccountStatus`                                                        |
-| `account_list_hosts`        | admin | `{}`                                               | `AccountHost[]`                                                        |
-| `account_list_members`      | admin | `{}`                                               | `AccountMemberInfo[]`                                                  |
-| `account_device_key`        | host  | `{}`                                               | `{ device_id, noise_priv, noise_pub } \| null` (Electron's own device) |
-| `account_login_start`       | host  | `{ surface: "electron"\|"mac"\|"cli"\|"menubar" }` | `AccountLinkState`                                                     |
-| `account_login_confirm`     | host  | `{ match: boolean }`                               | `AccountLinkState`                                                     |
-| `account_login_cancel`      | host  | `{}`                                               | `AccountLinkState`                                                     |
-| `account_logout`            | host  | `{}`                                               | `AccountStatus`                                                        |
-| `account_link_local_begin`  | host  | `{}`                                               | `{ host: HostMember, proof: string }`                                  |
-| `account_link_local_finish` | host  | `{ accountId, epoch, genesisHash }`                | `AccountStatus`                                                        |
-| `account_list_requests`     | host  | `{}`                                               | `AccountJoinRequest[]`                                                 |
-| `account_approve_join`      | host  | `{ requestId }`                                    | `AccountApprovalState`                                                 |
-| `account_confirm_join`      | host  | `{ match: boolean }`                               | `AccountApprovalState`                                                 |
-| `account_deny_join`         | host  | `{ requestId }`                                    | void                                                                   |
-| `account_set_config`        | host  | `{ patch: AccountConfigPatch }`                    | `AccountStatus`                                                        |
+| command                     | tier  | params                                             | result                                                                             |
+| --------------------------- | ----- | -------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `account_get_status`        | admin | `{}`                                               | `AccountStatus`                                                                    |
+| `account_list_hosts`        | admin | `{}`                                               | `AccountHost[]`                                                                    |
+| `account_list_members`      | admin | `{}`                                               | `AccountMemberInfo[]`                                                              |
+| `account_device_key`        | host  | `{}`                                               | `{ device_id, noise_priv, noise_pub } \| null` (Electron's own device)             |
+| `account_login_start`       | host  | `{ surface: "electron"\|"mac"\|"cli"\|"menubar" }` | `AccountLinkState`                                                                 |
+| `account_login_confirm`     | host  | `{ match: boolean }`                               | `AccountLinkState`                                                                 |
+| `account_login_cancel`      | host  | `{}`                                               | `AccountLinkState`                                                                 |
+| `account_logout`            | host  | `{}`                                               | `AccountStatus`                                                                    |
+| `account_link_local_begin`  | host  | `{}`                                               | `{ host: HostMember, proof: string }`                                              |
+| `account_link_local_finish` | host  | `{ accountId, epoch, genesisHash }`                | `AccountStatus`                                                                    |
+| `account_list_requests`     | host  | `{}`                                               | `AccountJoinRequest[]`                                                             |
+| `account_approve_join`      | host  | `{ requestId }`                                    | `AccountApprovalState`                                                             |
+| `account_confirm_join`      | host  | `{ match: boolean }`                               | `AccountApprovalState`                                                             |
+| `account_deny_join`         | host  | `{ requestId }`                                    | void                                                                               |
+| `account_revoke_member`     | host  | `{ memberId }`                                     | `AccountStatus` (signed by the Electron window's device; host: self only = logout) |
+| `account_rename_member`     | host  | `{ memberId, name }`                               | `AccountStatus` (window device for anyone; host for itself)                        |
+| `account_set_config`        | host  | `{ patch: AccountConfigPatch }`                    | `AccountStatus`                                                                    |
 
 Mac local link (§5.2b): app calls `account_link_local_begin` → builds + signs `add_host`
 (request_id "", sas_commit "", proof from the host) with its device key → `POST /log` → calls
@@ -189,7 +191,37 @@ Host events: `account:status` (AccountStatus), `account:link-state` (AccountLink
 
 Remote methods (gateway, dotted): `account.status` (monitor) → `{ linked, account_id_hash /* sha256hex(account_id) */, head_seq }`;
 `account.request_link` (monitor) `{}` → `{ user_code }` — starts the host's code link (surface "paired")
-so a QR-paired phone can then claim + approve that code exactly like a typed one.
+so a QR-paired phone can then claim + approve that code exactly like a typed one;
+`account.sync` (monitor, denied to huddle guests) `{ epoch, entries: Entry[] (≤500) }` →
+`{ head_seq: number | null, applied }` — the client hands over entries of its verified log past the
+host's head (read from `account.status`; the host skips entries at or below its head). The host
+verifies them against its own pinned log exactly like a service fetch and applies the good prefix,
+so a removal reaches a connected host even when the service withholds it. Clients call it after
+every handshake to an account host whose `account_id_hash` matches and whose `head_seq` is behind,
+and right after they append a `revoke`.
+
+## Phase 2: device joins
+
+Joining device N (signed in with Clerk, account not empty):
+
+1. N generates keys, `POST /join { member, proof }` → `{ request_id, expires_at }`.
+2. N polls `GET /join/:id` (Clerk) every ~3 s. Approvers list it in `GET /join` (`kind: "device"`,
+   `subject: { device, proofs: { [device.id]: proof } }`); they verify the proof before showing it.
+3. Approver A: `POST /join/:id/approver { approver_id }` → `{ head }`. A must hold its own log at that
+   head (catch up first; a different head → refuse). A shows the SAS for
+   (account_id, epoch, head.hash, A.sign_pub, N.sign_pub, N.noise_pub, request_id).
+4. N sees `status: "approving"` with `approver: { id, sign_pub }` and `head`; it reads the log
+   (`GET /log`, Clerk), verifies it from genesis, requires `approver.id` live with that `sign_pub` and
+   the verified head == `head`, and shows the same SAS. "Doesn't match" on either side →
+   `POST /join/:id/deny`.
+5. A appends `add_device { member: N, request_id, sas_commit, proof }` signed by A (a device, or a
+   host console when its `hosts_can_approve` is on). Status → `approved` with `through_seq`.
+6. N, once the user confirmed the code on N, fetches the log, verifies it from genesis, and adopts it
+   only if `admits(N.id, request_id, sas_commit)` holds for the commit it confirmed; it then pins the
+   root. `denied`/`expired` end the wait; N may start a new request.
+
+Hosts admit N on its first handshake: a miss on a linked host re-reads the log (at most once per
+15 s) before refusing.
 
 ## Verifier check order (exact — fixtures pin reason AND index)
 

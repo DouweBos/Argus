@@ -61,7 +61,11 @@ type LspLanguage =
  * `session_*`, `telemetry_*`.
  */
 export interface EventMap {
-  account_join_resolved: { action: "approved" | "denied"; approver: "host" };
+  account_join_resolved: {
+    action: "approved" | "denied";
+    approver: "host";
+    subject: "device" | "host";
+  };
   account_link_failed: {
     stage:
       | "claim_timeout"
@@ -87,9 +91,10 @@ export interface EventMap {
       | "sas_mismatch"
       | "unknown_signer";
   };
+  account_member_renamed: { role: "device" | "host" };
   account_member_revoked: {
     role: "device" | "host";
-    source: "local" | "log";
+    source: "local" | "log" | "sync";
   };
   agent_exited: {
     duration_ms: number;

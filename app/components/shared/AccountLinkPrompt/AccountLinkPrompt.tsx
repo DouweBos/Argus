@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ConfirmDialog } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import { accountConfirmJoin, accountLoginConfirm } from "../../../lib/ipc";
+import { AccountJoinPrompt } from "./AccountJoinPrompt";
 import styles from "./AccountLinkPrompt.module.css";
 
 function spaced(sas: string): string {
@@ -14,7 +15,8 @@ function spaced(sas: string): string {
 
 /**
  * The console prompts of the account flow, wherever the window is: confirm
- * the code when linking this computer, or when approving another one.
+ * the code when linking this computer, or when approving another computer or
+ * device — and the nudge when one is waiting to join.
  * A paired phone can start a link (`account.request_link`), so this can't
  * live inside Settings.
  */
@@ -85,5 +87,5 @@ export function AccountLinkPrompt() {
     );
   }
 
-  return null;
+  return <AccountJoinPrompt />;
 }

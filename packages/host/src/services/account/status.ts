@@ -51,6 +51,10 @@ export function accountStatus(): AccountStatus {
     account_id: linked ? (state?.account_id ?? null) : null,
     epoch: linked ? (state?.epoch ?? null) : null,
     host_id: linked ? (record?.host_id ?? null) : null,
+    device_id:
+      linked && record?.device && state?.members[record.device.id]?.live
+        ? record.device.id
+        : null,
     safety_code: linked && state ? safetyCode(state.genesis_hash) : null,
     head_seq: linked ? (state?.head.seq ?? null) : null,
     log_error: currentLogError(),

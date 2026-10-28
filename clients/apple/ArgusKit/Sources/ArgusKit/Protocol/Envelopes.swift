@@ -10,6 +10,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case hostEndpoints = "host.endpoints"
   case accountStatus = "account.status"
   case accountRequestLink = "account.request_link"
+  case accountSync = "account.sync"
 
   case projectsList = "projects.list"
   case sessionsList = "sessions.list"
