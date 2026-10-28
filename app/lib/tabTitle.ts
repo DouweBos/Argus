@@ -8,6 +8,7 @@ import type { AppView, ParsedRoute } from "./router";
 const VIEW_TITLES: Record<AppView, string> = {
   agents: "Agents",
   automations: "Automations",
+  design: "Design",
   devices: "Devices",
   home: "Home",
   inbox: "Inbox",

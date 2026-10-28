@@ -82,8 +82,10 @@ import type {
   SimulatorDevice,
   AppSettings,
   InheritedMcpServer,
+  DesignComparison,
   DesignRef,
   FigmaFrame,
+  FigmaFrameDetails,
   IntegrationId,
   IntegrationStatus,
   LinearIssue,
@@ -1821,6 +1823,17 @@ export const takeDeviceScreenshot = (
 
 export const getFigmaFrame = (url: string): Promise<FigmaFrame | null> =>
   invoke("figma_frame", { url });
+
+export const getFigmaFrameDetails = (
+  url: string,
+): Promise<FigmaFrameDetails | null> => invoke("figma_frame_details", { url });
+
+export const compareDesign = (
+  url: string,
+  platform: "android" | "ios",
+  deviceKey: string,
+): Promise<DesignComparison> =>
+  invoke("design_compare", { url, platform, deviceKey });
 
 export const listLinearTeams = (): Promise<LinearTeam[]> =>
   invoke("linear_list_teams", {});

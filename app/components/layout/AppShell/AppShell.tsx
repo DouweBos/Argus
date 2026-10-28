@@ -62,6 +62,7 @@ import {
 import { CenterPanel } from "../../agent/CenterPanel";
 import { AgentsScreen } from "../../agents/AgentsScreen";
 import { AutomationsRoot } from "../../automations";
+import { DesignViewerScreen } from "../../design/DesignViewer";
 import { DevicesScreen } from "../../devices/DevicesScreen";
 import { HomeScreen } from "../../home/HomeScreen";
 import { NewSessionPicker } from "../../home/HomeScreen/NewSessionPicker";
@@ -123,6 +124,7 @@ function renderCenter(
   centerView:
     | "agents"
     | "automations"
+    | "design"
     | "devices"
     | "home"
     | "inbox"
@@ -157,6 +159,9 @@ function renderCenter(
   }
   if (centerView === "issues") {
     return <IssuesScreen />;
+  }
+  if (centerView === "design") {
+    return <DesignViewerScreen />;
   }
   if (centerView === "runtimes") {
     return <RuntimeScreen />;

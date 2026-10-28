@@ -29,6 +29,7 @@ switching tabs is a navigation, not a second source of truth. See
 | `/automations/quick/runs/:runId`                   | Quick run detail                        | One ad-hoc run: its report, and the button that turns it into a real automation.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `/automations/:automationId`                       | Automation config + run history         | Name, playbook, trigger, model, the memories runs carry forward and the list of past runs.                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `/automations/:automationId/runs/:runId`           | Automation run                          | Status, cost, duration, the run's markdown report and a link to its host session.                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `/design?url=&session=&tab=&compare=1`             | Design viewer                           | Desktop: a Figma frame to fit, zoom and pan; `tab` picks the side panel (`layers` by default, `comments`, `pages` — a page's frame opens in place). With `session`, it flags a design changed since the session started, and `compare=1` diffs it against the session's simulator or emulator: the share that differs, slider, side by side and heatmap. Figma links in issues, session chips and composer chips open here.                                                                                                              |
 | `/devices`                                         | Devices                                 | iOS simulators + Android emulators.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `/devices/:platform/:deviceKey`                    | Devices, with one device's details open | `platform` is `ios`, `android` or `web`; closing the details goes back to `/devices`.                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `/inbox`                                           | Inbox — the briefing                    | What Argus wants from you: pending proposals to decide on, work it started that is waiting for review, and automation runs that failed. Grouped by what you would do, not by which automation produced it. Can be made the launch screen (**Settings → Appearance → Launch screen**).                                                                                                                                                                                                                                                    |
@@ -63,6 +64,7 @@ interface ParsedRoute {
   view:
     | "agents"
     | "automations"
+    | "design"
     | "devices"
     | "home"
     | "inbox"
@@ -100,6 +102,10 @@ interface ParsedRoute {
   automationQuick: boolean; // true on /automations/quick and below
   automationRunId: string | null; // set on either …/runs/:runId
   hostId: string; // "?host=" — the attached host this screen reads from; "local" for this Mac
+  designUrl: string | null; // "?url=" on /design — the Figma frame on screen
+  designSessionId: string | null; // "?session=" on /design — the session it was opened from
+  designTab: "layers" | "comments" | "pages"; // "?tab=" on /design; layers stays off the URL
+  designCompare: boolean; // "?compare=1" on /design, only with a session
 }
 ```
 

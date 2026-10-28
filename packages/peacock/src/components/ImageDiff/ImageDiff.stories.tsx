@@ -87,3 +87,14 @@ export const CustomLabels: Story = {
     afterLabel: "Simulator",
   },
 };
+
+/** With a heatmap of where the two differ — adds a Diff mode. */
+export const WithHeatmap: Story = {
+  args: {
+    before: RED_PNG,
+    after: BLUE_PNG,
+    diff: GREEN_PNG,
+    beforeLabel: "Design",
+    afterLabel: "Simulator",
+  },
+};
