@@ -115,7 +115,12 @@ struct ComputerView: View {
     }
 
     Field(label: "Gateway") {
-      MutedText("Device \(computer.deviceId.prefix(8))")
+      // Account computers carry a synthetic `account:<id>` device id; show the host's own id.
+      if computer.isAccountHost, let hostId = computer.accountHostId {
+        MutedText("Computer \(hostId.prefix(8)) on your Argus account")
+      } else {
+        MutedText("Device \(computer.deviceId.prefix(8))")
+      }
       if let pairedAt = computer.pairedAt {
         MutedText(
           "Paired \(Date(timeIntervalSince1970: pairedAt / 1000).formatted(date: .abbreviated, time: .omitted))"
