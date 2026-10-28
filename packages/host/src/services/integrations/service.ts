@@ -11,7 +11,9 @@ import type {
   LinearIssue,
   LinearIssueContext,
   LinearIssueDetail,
+  LinearIssueScope,
   LinearTeam,
+  LinearWorkflowState,
   LinkedIssue,
 } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
@@ -216,12 +218,13 @@ export { cancelOAuth };
 export function listLinearIssues(
   query: string | null,
   limit: number,
+  scope: LinearIssueScope = "assigned",
 ): Promise<LinearIssue[]> {
   const term = query?.trim();
 
   return withLinear(async (api) => {
     if (!term) {
-      return api.myIssues(limit);
+      return api.scopedIssues(scope, limit);
     }
     // An identifier or URL is a lookup, not a search: Linear's search ranks it poorly.
     const identifier = parseLinearRef(term);
@@ -341,5 +344,36 @@ export function fileLinearIssue(input: {
     capture("issue_filed_from_device", { has_screenshot: Boolean(shot) });
 
     return issue;
+  });
+}
+
+export function linearTeamStates(
+  teamId: string,
+): Promise<LinearWorkflowState[]> {
+  return withLinear((api) => api.teamStates(teamId));
+}
+
+/** Status or priority, changed from Argus rather than in Linear. */
+export function updateLinearIssue(
+  issueId: string,
+  change: { priority?: number; stateId?: string },
+): Promise<LinearIssue> {
+  return withLinear(async (api) => {
+    const issue = await api.updateIssue(issueId, change);
+    capture("linear_issue_updated", {
+      field: change.stateId ? "status" : "priority",
+    });
+
+    return issue;
+  });
+}
+
+export function commentOnLinearIssueById(
+  issueId: string,
+  body: string,
+): Promise<void> {
+  return withLinear(async (api) => {
+    await api.comment(issueId, body);
+    capture("linear_issue_updated", { field: "comment" });
   });
 }

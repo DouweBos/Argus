@@ -5,6 +5,7 @@ import {
 } from "../services/integrations/figma/service";
 import {
   cancelOAuth,
+  commentOnLinearIssueById,
   connectWithKey,
   connectWithOAuth,
   disconnect,
@@ -12,8 +13,10 @@ import {
   listIntegrations,
   fileLinearIssue,
   linearIssueContext,
+  linearTeamStates,
   listLinearTeams,
   listLinearIssues,
+  updateLinearIssue,
 } from "../services/integrations/service";
 import { deviceScreenshot } from "../services/simulator/screenshot";
 
@@ -28,11 +31,18 @@ export function registerIntegrationCommands(): void {
   defineTypedCommand("integration_cancel_oauth", () => cancelOAuth());
   defineTypedCommand("integration_disconnect", (p) => disconnect(p.id));
   defineTypedCommand("linear_list_issues", (p) =>
-    listLinearIssues(p.query ?? null, p.limit),
+    listLinearIssues(p.query ?? null, p.limit, p.scope),
   );
   defineTypedCommand("linear_get_issue", (p) => getLinearIssue(p.ref));
   defineTypedCommand("linear_issue_context", (p) => linearIssueContext(p.ref));
   defineTypedCommand("linear_list_teams", () => listLinearTeams());
+  defineTypedCommand("linear_team_states", (p) => linearTeamStates(p.teamId));
+  defineTypedCommand("linear_update_issue", (p) =>
+    updateLinearIssue(p.issueId, { priority: p.priority, stateId: p.stateId }),
+  );
+  defineTypedCommand("linear_comment_issue", (p) =>
+    commentOnLinearIssueById(p.issueId, p.body),
+  );
   defineTypedCommand("linear_file_issue", (p) =>
     fileLinearIssue({ ...p, screenshot: p.screenshot ?? null }),
   );

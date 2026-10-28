@@ -1,147 +1,77 @@
-import type { LinearIssue, Session } from "../../../lib/types";
-import { type ReactNode, useState } from "react";
+import type { LinearIssue, LinearIssueScope } from "../../../lib/types";
+import { type ReactNode, useEffect, useState } from "react";
 import {
-  Badge,
   Button,
-  Card,
   EmptyState,
   GridScreen,
   Icons,
+  SegmentedControl,
   Select,
   Spinner,
 } from "@argus/peacock";
-import { openExternalUrl } from "../../../lib/ipc";
+import { useCurrentRoute } from "../../../lib/routeHooks";
+import { appNavigate } from "../../../lib/router";
 import {
+  type IssuesLayout,
   refreshLinearIssues,
-  useLinearIssues,
+  setIssuesLayout,
+  useIssuesLayout,
+  useLinearConnected,
+  useLinearIssueList,
 } from "../../../stores/linearIssuesStore";
-import {
-  selectSession,
-  useSessionProjects,
-  useSessions,
-} from "../../../stores/sessionStore";
+import { useSessionProjects } from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
 import { openStartDraft } from "../../../stores/startDraftStore";
+import { IssueDetailDialog } from "../IssueDetail/IssueDetailDialog";
+import { IssuesBoardView } from "./IssuesBoardView";
+import { IssuesListView } from "./IssuesListView";
 import styles from "./IssuesScreen.module.css";
 
-/** Linear's workflow state types, in the order work moves through them. */
-const GROUPS: { title: string; types: string[] }[] = [
-  { title: "In progress", types: ["started"] },
-  { title: "Todo", types: ["unstarted"] },
-  { title: "Backlog", types: ["backlog", "triage"] },
+const SCOPES = [
+  { value: "assigned" as const, label: "Assigned" },
+  { value: "created" as const, label: "Created" },
+  { value: "subscribed" as const, label: "Subscribed" },
 ];
 
-const PRIORITY: Record<number, string> = {
-  1: "Urgent",
-  2: "High",
-  3: "Medium",
-  4: "Low",
-};
+const LAYOUTS = [
+  { value: "board" as const, label: "Board" },
+  { value: "list" as const, label: "List" },
+];
 
 function basename(p: string): string {
   return p.split("/").filter(Boolean).pop() ?? p;
 }
 
-/** The session already working on the issue, if any. */
-function sessionFor(issue: LinearIssue, sessions: Session[]): Session | null {
-  return (
-    sessions.find(
-      (s) =>
-        s.linked_issue?.identifier === issue.identifier ||
-        (s.kind === "worktree" && s.branch === issue.branchName),
-    ) ?? null
-  );
-}
-
-function IssueRow({
-  issue,
-  session,
-  onStart,
-}: {
-  issue: LinearIssue;
-  onStart: (() => void) | null;
-  session: Session | null;
-}) {
-  return (
-    <Card hoverable className={styles.row}>
-      <div className={styles.main}>
-        <div className={styles.titleLine}>
-          <span className={styles.identifier}>{issue.identifier}</span>
-          <span className={styles.title}>{issue.title}</span>
-        </div>
-        <div className={styles.meta}>
-          <span>{issue.state.name}</span>
-          {PRIORITY[issue.priority] && (
-            <Badge
-              tone={issue.priority <= 2 ? "warning" : "neutral"}
-              size="tag"
-            >
-              {PRIORITY[issue.priority]}
-            </Badge>
-          )}
-          {issue.labels.map((label) => (
-            <Badge key={label} tone="neutral" size="tag">
-              {label}
-            </Badge>
-          ))}
-        </div>
-      </div>
-      <div className={styles.actions}>
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label="Open in Linear"
-          title="Open in Linear"
-          onClick={() => {
-            openExternalUrl(issue.url).catch(() => {});
-          }}
-        >
-          <Icons.ArrowUpRightIcon size={12} />
-        </Button>
-        {session ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            leading={<Icons.AgentIcon size={12} />}
-            onClick={() => selectSession(session.id)}
-          >
-            Open session
-          </Button>
-        ) : (
-          <Button
-            variant="primary"
-            size="sm"
-            disabled={!onStart}
-            leading={<Icons.AgentStartIcon size={12} />}
-            onClick={() => onStart?.()}
-          >
-            Start agent
-          </Button>
-        )}
-      </div>
-    </Card>
-  );
-}
-
 /**
- * Your open Linear issues, with what Argus is doing about each: the session
- * already on it, or a one-click start in the project you pick.
+ * Your Linear work as a board — a column per status, a lane per priority — so
+ * you can pick what's next, read the ticket, and hand it to an agent without
+ * leaving Argus.
  */
 export function IssuesScreen() {
-  const { connected, data, error, loading } = useLinearIssues();
-  const sessions = useSessions();
+  const { issueRef, issueScope } = useCurrentRoute();
+  const connected = useLinearConnected();
+  const { data, error, loading } = useLinearIssueList(issueScope);
+  const layout = useIssuesLayout();
   const projects = useSessionProjects();
   const [pickedRoot, setPickedRoot] = useState<string | null>(null);
   const repoRoot = pickedRoot ?? projects[0]?.repoRoot ?? null;
 
-  const start = (issue: LinearIssue) => {
-    if (repoRoot) {
-      openStartDraft(repoRoot, {
-        issueRefs: [issue.identifier],
-        workspace: "worktree",
-      }).catch(() => {});
+  useEffect(() => {
+    if (connected) {
+      refreshLinearIssues(issueScope).catch(() => {});
     }
-  };
+  }, [connected, issueScope]);
+
+  const open = (issue: LinearIssue) =>
+    appNavigate({ view: "issues", issueScope, issueRef: issue.identifier });
+  const start = repoRoot
+    ? (identifier: string) => {
+        openStartDraft(repoRoot, {
+          issueRefs: [identifier],
+          workspace: "worktree",
+        }).catch(() => {});
+      }
+    : null;
 
   let content: ReactNode;
   if (!connected) {
@@ -149,7 +79,7 @@ export function IssuesScreen() {
       <EmptyState
         icon={<Icons.LinearIcon size={20} />}
         title="Connect Linear"
-        body="See the issues assigned to you, which ones an agent is already on, and start agents from them."
+        body="See your issues by status and priority, read them in full, and start agents on them."
         action={
           <Button
             variant="primary"
@@ -164,7 +94,7 @@ export function IssuesScreen() {
     content = (
       <EmptyState
         icon={<Icons.WarningIcon size={20} />}
-        title="Couldn't fetch your issues"
+        title="Couldn't fetch issues"
         body={error}
       />
     );
@@ -173,50 +103,32 @@ export function IssuesScreen() {
       <EmptyState
         icon={<Spinner size="md" />}
         title="Loading issues"
-        body="Asking Linear for the open issues assigned to you."
+        body="Asking Linear for your open issues."
       />
     );
   } else if (data.length === 0) {
     content = (
       <EmptyState
         icon={<Icons.CheckIcon size={20} />}
-        title="Nothing assigned to you"
-        body="Open issues assigned to you in Linear show up here."
+        title="No open issues here"
+        body="Open issues in this view show up here."
       />
     );
+  } else if (layout === "board") {
+    content = (
+      <IssuesBoardView issues={data} selected={issueRef} onOpen={open} />
+    );
   } else {
-    content = GROUPS.map((group) => {
-      const issues = data.filter((i) => group.types.includes(i.state.type));
-      if (issues.length === 0) {
-        return null;
-      }
-
-      return (
-        <GridScreen.Section
-          key={group.title}
-          title={group.title}
-          count={issues.length}
-        >
-          <GridScreen.Grid>
-            {issues.map((issue) => (
-              <IssueRow
-                key={issue.id}
-                issue={issue}
-                session={sessionFor(issue, sessions)}
-                onStart={repoRoot ? () => start(issue) : null}
-              />
-            ))}
-          </GridScreen.Grid>
-        </GridScreen.Section>
-      );
-    });
+    content = (
+      <IssuesListView issues={data} selected={issueRef} onOpen={open} />
+    );
   }
 
   return (
     <GridScreen>
       <GridScreen.Header
         title="Issues"
-        subtitle="Open issues assigned to you in Linear"
+        subtitle="Your open Linear issues"
         actions={
           connected && (
             <div className={styles.headerActions}>
@@ -242,7 +154,7 @@ export function IssuesScreen() {
                 disabled={loading}
                 leading={<Icons.RefreshIcon size={12} />}
                 onClick={() => {
-                  refreshLinearIssues().catch(() => {});
+                  refreshLinearIssues(issueScope).catch(() => {});
                 }}
               >
                 {loading ? "Refreshing…" : "Refresh"}
@@ -251,7 +163,34 @@ export function IssuesScreen() {
           )
         }
       />
+      {connected && (
+        <div className={styles.toolbar}>
+          <SegmentedControl<LinearIssueScope>
+            aria-label="Whose issues"
+            options={SCOPES}
+            value={issueScope}
+            onChange={(scope) =>
+              appNavigate({ view: "issues", issueScope: scope, issueRef: null })
+            }
+          />
+          <SegmentedControl<IssuesLayout>
+            aria-label="Layout"
+            options={LAYOUTS}
+            value={layout}
+            onChange={setIssuesLayout}
+          />
+        </div>
+      )}
       {content}
+      {issueRef && (
+        <IssueDetailDialog
+          issueRef={issueRef}
+          onClose={() =>
+            appNavigate({ view: "issues", issueScope, issueRef: null })
+          }
+          onStart={start}
+        />
+      )}
     </GridScreen>
   );
 }

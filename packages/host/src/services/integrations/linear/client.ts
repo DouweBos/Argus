@@ -1,127 +1,41 @@
 /**
- * The only place the host touches `@linear/sdk`. Every call is one hand-written
- * GraphQL document through the SDK's client: its models lazy-load relations, so
- * a page of issues would cost a request per state, team and assignee.
+ * The only place the host touches `@linear/sdk`, used as a GraphQL transport
+ * with typed errors; the documents and mapping live in `queries.ts`.
  */
 
 import type {
   IntegrationAccount,
   LinearIssue,
   LinearIssueDetail,
+  LinearIssueScope,
+  LinearWorkflowState,
 } from "@argus/remote-protocol";
 import {
   AuthenticationLinearError,
   LinearClient,
   parseLinearError,
 } from "@linear/sdk";
+import {
+  COMMENT,
+  CREATE_ISSUE,
+  FILE_UPLOAD,
+  ISSUE_DETAIL,
+  ISSUE_FOR_BRANCH,
+  type RawIssue,
+  type RawIssueDetail,
+  SCOPED_ISSUES,
+  SEARCH_ISSUES,
+  START_STATE,
+  TEAM_STATES,
+  TEAMS,
+  toLinearIssue,
+  toLinearIssueDetail,
+  UPDATE_ISSUE,
+  VIEWER,
+  VIEWER_ID,
+} from "./queries";
 
-const ISSUE_FIELDS = `
-  id identifier title description url branchName priority updatedAt
-  state { name type }
-  team { key }
-  assignee { displayName }
-  labels { nodes { name } }
-`;
-
-const MY_ISSUES = `query ArgusMyIssues($first: Int!) {
-  viewer {
-    assignedIssues(
-      first: $first
-      orderBy: updatedAt
-      filter: { state: { type: { nin: ["completed", "canceled"] } } }
-    ) { nodes { ${ISSUE_FIELDS} } }
-  }
-}`;
-
-const SEARCH_ISSUES = `query ArgusSearchIssues($term: String!, $first: Int!) {
-  searchIssues(term: $term, first: $first) { nodes { ${ISSUE_FIELDS} } }
-}`;
-
-const ISSUE_DETAIL = `query ArgusIssue($id: String!) {
-  issue(id: $id) {
-    ${ISSUE_FIELDS}
-    comments(first: 50) { nodes { body createdAt user { displayName } } }
-  }
-}`;
-
-const ISSUE_FOR_BRANCH = `query ArgusIssueForBranch($branch: String!) {
-  issueVcsBranchSearch(branchName: $branch) { ${ISSUE_FIELDS} }
-}`;
-
-const START_STATE = `query ArgusStartState($id: String!) {
-  issue(id: $id) {
-    id
-    state { type }
-    team { states(filter: { type: { eq: "started" } }) { nodes { id position } } }
-  }
-}`;
-
-const SET_STATE = `mutation ArgusSetState($id: String!, $stateId: String!) {
-  issueUpdate(id: $id, input: { stateId: $stateId }) { success }
-}`;
-
-const COMMENT = `mutation ArgusComment($issueId: String!, $body: String!) {
-  commentCreate(input: { issueId: $issueId, body: $body }) { success }
-}`;
-
-const FILE_UPLOAD = `mutation ArgusFileUpload($contentType: String!, $filename: String!, $size: Int!) {
-  fileUpload(contentType: $contentType, filename: $filename, size: $size) {
-    uploadFile { uploadUrl assetUrl headers { key value } }
-  }
-}`;
-
-const TEAMS = `query ArgusTeams {
-  teams(first: 100) { nodes { id key name } }
-}`;
-
-const CREATE_ISSUE = `mutation ArgusCreateIssue($input: IssueCreateInput!) {
-  issueCreate(input: $input) { issue { ${ISSUE_FIELDS} } }
-}`;
-
-const VIEWER_ID = `query ArgusViewerId { viewer { id } }`;
-
-const VIEWER = `query ArgusViewer {
-  viewer { displayName email }
-  organization { name }
-}`;
-
-interface RawIssue {
-  id: string;
-  identifier: string;
-  title: string;
-  description?: string | null;
-  url: string;
-  branchName: string;
-  priority: number;
-  updatedAt: string;
-  state: { name: string; type: string };
-  team: { key: string };
-  assignee?: { displayName: string } | null;
-  labels: { nodes: { name: string }[] };
-}
-
-interface RawComment {
-  body: string;
-  createdAt: string;
-  user?: { displayName: string } | null;
-}
-
-export function toLinearIssue(raw: RawIssue): LinearIssue {
-  return {
-    id: raw.id,
-    identifier: raw.identifier,
-    title: raw.title,
-    description: raw.description ?? "",
-    url: raw.url,
-    branchName: raw.branchName,
-    state: { name: raw.state.name, type: raw.state.type },
-    priority: raw.priority,
-    teamKey: raw.team.key,
-    assignee: raw.assignee?.displayName ?? null,
-    labels: raw.labels.nodes.map((l) => l.name),
-    updatedAt: Date.parse(raw.updatedAt),
-  };
-}
+export { toLinearIssue } from "./queries";
 
 /** The credential was rejected — the caller flags the integration for reauth. */
 export class LinearAuthError extends Error {}
@@ -185,11 +99,27 @@ export class LinearApi {
   }
 
   async myIssues(limit: number): Promise<LinearIssue[]> {
-    const data = await this.query<{
-      viewer: { assignedIssues: { nodes: RawIssue[] } };
-    }>(MY_ISSUES, { first: limit });
+    return this.scopedIssues("assigned", limit);
+  }
 
-    return data.viewer.assignedIssues.nodes.map(toLinearIssue);
+  async scopedIssues(
+    scope: LinearIssueScope,
+    limit: number,
+  ): Promise<LinearIssue[]> {
+    const data = await this.query<{
+      viewer?: {
+        assignedIssues?: { nodes: RawIssue[] };
+        createdIssues?: { nodes: RawIssue[] };
+      };
+      issues?: { nodes: RawIssue[] };
+    }>(SCOPED_ISSUES[scope], { first: limit });
+    const nodes =
+      data.viewer?.assignedIssues?.nodes ??
+      data.viewer?.createdIssues?.nodes ??
+      data.issues?.nodes ??
+      [];
+
+    return nodes.map(toLinearIssue);
   }
 
   async searchIssues(term: string, limit: number): Promise<LinearIssue[]> {
@@ -203,23 +133,12 @@ export class LinearApi {
 
   async issue(identifier: string): Promise<LinearIssueDetail | null> {
     try {
-      const data = await this.query<{
-        issue: (RawIssue & { comments: { nodes: RawComment[] } }) | null;
-      }>(ISSUE_DETAIL, { id: identifier });
-      if (!data.issue) {
-        return null;
-      }
+      const data = await this.query<{ issue: RawIssueDetail | null }>(
+        ISSUE_DETAIL,
+        { id: identifier },
+      );
 
-      return {
-        ...toLinearIssue(data.issue),
-        comments: data.issue.comments.nodes
-          .map((c) => ({
-            author: c.user?.displayName ?? null,
-            body: c.body,
-            createdAt: Date.parse(c.createdAt),
-          }))
-          .sort((a, b) => a.createdAt - b.createdAt),
-      };
+      return data.issue ? toLinearIssueDetail(data.issue) : null;
     } catch (err) {
       // Linear answers an unknown identifier with an "entity not found" error.
       if (err instanceof Error && /not found/i.test(err.message)) {
@@ -262,7 +181,7 @@ export class LinearApi {
       return false;
     }
     // `issueId` may be an identifier; the update takes the issue's own id.
-    await this.query(SET_STATE, { id: data.issue.id, stateId: first.id });
+    await this.updateIssue(data.issue.id, { stateId: first.id });
 
     return true;
   }
@@ -348,6 +267,30 @@ export class LinearApi {
     }
 
     return toLinearIssue(data.issueCreate.issue);
+  }
+
+  async teamStates(teamId: string): Promise<LinearWorkflowState[]> {
+    const data = await this.query<{
+      team: { states: { nodes: LinearWorkflowState[] } } | null;
+    }>(TEAM_STATES, { teamId });
+
+    return [...(data.team?.states.nodes ?? [])].sort(
+      (a, b) => a.position - b.position,
+    );
+  }
+
+  async updateIssue(
+    issueId: string,
+    input: { priority?: number; stateId?: string },
+  ): Promise<LinearIssue> {
+    const data = await this.query<{
+      issueUpdate: { issue: RawIssue | null };
+    }>(UPDATE_ISSUE, { id: issueId, input });
+    if (!data.issueUpdate.issue) {
+      throw new Error("Linear didn't update the issue.");
+    }
+
+    return toLinearIssue(data.issueUpdate.issue);
   }
 
   async comment(issueId: string, body: string): Promise<void> {

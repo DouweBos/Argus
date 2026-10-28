@@ -20,7 +20,10 @@ import {
 } from "../../../stores/automationStore";
 import { useHostConnections } from "../../../stores/connectionStore";
 import { useDevices } from "../../../stores/deviceStore";
-import { useLinearIssues } from "../../../stores/linearIssuesStore";
+import {
+  useLinearConnected,
+  useLinearIssueList,
+} from "../../../stores/linearIssuesStore";
 import { usePendingProposals } from "../../../stores/proposalStore";
 import {
   useAwaitingMyReviewCount,
@@ -66,7 +69,8 @@ export function SessionSidebar() {
   const unreadReports = useUnreadReportCount();
   const awaitingMyReviewCount = useAwaitingMyReviewCount();
   const prList = usePrList();
-  const linearIssues = useLinearIssues();
+  const linearConnected = useLinearConnected();
+  const linearIssues = useLinearIssueList("assigned");
   // Show a spinner until the first fetch has landed; swapping to `0`
   // before we have data would imply "no reviews waiting" when really
   // we just haven't asked GitHub yet.
@@ -225,7 +229,7 @@ export function SessionSidebar() {
         >
           Pull requests
         </SidebarNavItem>
-        {linearIssues.connected && (
+        {linearConnected && (
           <SidebarNavItem
             view="issues"
             leading={<Icons.LinearIcon size={12} />}

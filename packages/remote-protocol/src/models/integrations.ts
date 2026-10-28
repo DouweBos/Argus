@@ -56,6 +56,20 @@ export const FigmaFrame = z.object({
 });
 export type FigmaFrame = z.infer<typeof FigmaFrame>;
 
+/** Whose issues: assigned to, created by, or subscribed to by the connected user. */
+export const LinearIssueScope = z.enum(["assigned", "created", "subscribed"]);
+export type LinearIssueScope = z.infer<typeof LinearIssueScope>;
+
+/** A team's workflow state; `type` is Linear's fixed category. */
+export const LinearWorkflowState = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.string(),
+  /** Order within the team's workflow. */
+  position: z.number(),
+});
+export type LinearWorkflowState = z.infer<typeof LinearWorkflowState>;
+
 export const LinearIssue = z.object({
   id: z.string(),
   /** `ENG-123`. */
@@ -65,12 +79,30 @@ export const LinearIssue = z.object({
   url: z.string(),
   /** Linear's own branch name — using it lets Linear's GitHub integration link the PR. */
   branchName: z.string(),
-  state: z.object({ name: z.string(), type: z.string() }),
+  state: LinearWorkflowState,
   /** Linear's 0–4, where 1 is urgent and 0 is none. */
   priority: z.number(),
+  estimate: z.number().nullable(),
+  teamId: z.string(),
   teamKey: z.string(),
+  teamName: z.string(),
   assignee: z.string().nullable(),
+  assigneeAvatarUrl: z.string().nullable(),
   labels: z.array(z.string()),
+  project: z.object({ id: z.string(), name: z.string() }).nullable(),
+  cycle: z
+    .object({
+      id: z.string(),
+      number: z.number(),
+      name: z.string().nullable(),
+      isActive: z.boolean(),
+    })
+    .nullable(),
+  parent: z.object({ identifier: z.string(), title: z.string() }).nullable(),
+  /** GitHub/GitLab pull requests attached to the issue. */
+  pullRequestCount: z.number(),
+  /** Epoch milliseconds. */
+  createdAt: z.number(),
   /** Epoch milliseconds. */
   updatedAt: z.number(),
 });
@@ -84,8 +116,25 @@ export const LinearComment = z.object({
 });
 export type LinearComment = z.infer<typeof LinearComment>;
 
+export const LinearAttachment = z.object({
+  title: z.string(),
+  subtitle: z.string().nullable(),
+  url: z.string(),
+  /** `github`, `gitlab`, `slack`, … when Linear knows. */
+  sourceType: z.string().nullable(),
+});
+export type LinearAttachment = z.infer<typeof LinearAttachment>;
+
 export const LinearIssueDetail = LinearIssue.extend({
   comments: z.array(LinearComment),
+  attachments: z.array(LinearAttachment),
+  children: z.array(
+    z.object({
+      identifier: z.string(),
+      title: z.string(),
+      state: z.object({ name: z.string(), type: z.string() }),
+    }),
+  ),
 });
 export type LinearIssueDetail = z.infer<typeof LinearIssueDetail>;
 

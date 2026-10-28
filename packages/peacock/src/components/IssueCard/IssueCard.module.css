@@ -1,0 +1,95 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-base),
+    background var(--transition-base);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    background: var(--surface-3-solid);
+  }
+}
+
+.selected {
+  border-color: var(--accent-border-strong);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.identifier {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.avatar {
+  flex-shrink: 0;
+}
+
+.titleLine {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.titleLine > svg {
+  margin-top: 2px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip,
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: 5px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.badge {
+  border-color: var(--accent-border-soft);
+  background: var(--accent-overlay-md);
+  color: var(--text-primary);
+}
+
+.footnote {
+  font-size: 11px;
+  color: var(--text-muted);
+}
