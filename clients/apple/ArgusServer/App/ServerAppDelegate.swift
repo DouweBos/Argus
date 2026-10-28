@@ -21,7 +21,8 @@ final class ServerAppDelegate: NSObject, NSApplicationDelegate {
     Task {
       // A login item and a double-click must not both run a server. Debug
       // builds run one per worktree home; the host lock keeps those apart.
-      guard ServerModel.isDebug || (await SingleInstance.waitUntilAlone(home: home)) else {
+      let alone = ServerModel.isDebug ? true : await SingleInstance.waitUntilAlone(home: home)
+      guard alone else {
         exit(0)
       }
       begin()
