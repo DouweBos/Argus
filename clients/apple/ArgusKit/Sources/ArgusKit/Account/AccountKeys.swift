@@ -80,6 +80,19 @@ public struct AccountCachedPresence: Codable, Hashable, Sendable {
   }
 }
 
+/// A join request this device filed and hasn't seen settled yet.
+public struct AccountPendingJoin: Codable, Hashable, Sendable {
+  public var requestId: String
+  public var accountId: String
+  public var epoch: Int
+
+  public init(requestId: String, accountId: String, epoch: Int) {
+    self.requestId = requestId
+    self.accountId = accountId
+    self.epoch = epoch
+  }
+}
+
 /// Everything account-related this device keeps between launches.
 public struct AccountVault: Codable, Hashable, Sendable {
   public var keys: AccountDeviceKeys?
@@ -94,11 +107,14 @@ public struct AccountVault: Codable, Hashable, Sendable {
   /// commit: the only approval it adopts before it has pinned the account.
   public var joinRequestId: String?
   public var joinCommit: String?
+  /// The join request this device is waiting on, so a relaunch resumes it
+  /// instead of filing another.
+  public var pendingJoin: AccountPendingJoin?
 
   public init(
     keys: AccountDeviceKeys? = nil, root: AccountRoot? = nil, entries: [AccountEntry] = [],
     presence: [String: AccountCachedPresence] = [:], localHostId: String? = nil,
-    joinRequestId: String? = nil, joinCommit: String? = nil
+    joinRequestId: String? = nil, joinCommit: String? = nil, pendingJoin: AccountPendingJoin? = nil
   ) {
     self.keys = keys
     self.root = root
@@ -107,6 +123,7 @@ public struct AccountVault: Codable, Hashable, Sendable {
     self.localHostId = localHostId
     self.joinRequestId = joinRequestId
     self.joinCommit = joinCommit
+    self.pendingJoin = pendingJoin
   }
 
   public static let empty = AccountVault()

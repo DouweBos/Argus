@@ -102,12 +102,18 @@ struct AccountJoinTests {
     await store.pollJoin()
     #expect(store.phase == .awaitingApproval)
 
-    let relaunched = AccountStore(
+    let relaunched = relaunch(memory)
+    await relaunched.start()
+    #expect(relaunched.phase == .awaitingApproval)
+    #expect(relaunched.join == .alreadyApproved(sas: sas.sas, approverName: "Phone"))
+    #expect(await memory.vault.root == nil)
+  }
+
+  func relaunch(_ memory: MemoryAccountVault) -> AccountStore {
+    AccountStore(
       auth: auth, vault: memory, deviceKind: "mac", deviceName: { "Studio" },
       baseURL: URL(string: "https://example.test/argus/account/v1")!, http: service.http,
       joinPollInterval: .seconds(3600))
-    await relaunched.start()
-    #expect(relaunched.phase == .awaitingApproval)
   }
 
   @Test("codes that don't match deny the request on the joining device")

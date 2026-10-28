@@ -102,7 +102,7 @@ struct AccountDevicesGroup: View {
         HStack {
           Image(systemName: AccountMemberText.icon(device))
           Text(isSelf ? "\(device.name) (this Mac)" : device.name)
-          Text("\(AccountMemberText.kind(device)) · added \(AccountMemberText.added(device))")
+          Text(AccountMemberText.detail(device, code: account.approvalCode(for: device.id)))
             .foregroundStyle(.secondary)
           Spacer()
           Button("Rename…") { renaming = device }.buttonStyle(.secondary)
@@ -178,6 +178,13 @@ enum AccountMemberText {
     case "mac": return "Mac app"
     default: return "Desktop app"
     }
+  }
+
+  /// Kind, date, and the code it was approved with, so a device approved
+  /// while it was away can check it.
+  static func detail(_ member: AccountMember, code: String?) -> String {
+    let base = "\(kind(member)) · added \(added(member))"
+    return code.map { "\(base) · code \($0.prefix(3)) \($0.suffix(3))" } ?? base
   }
 
   static func added(_ member: AccountMember) -> String {

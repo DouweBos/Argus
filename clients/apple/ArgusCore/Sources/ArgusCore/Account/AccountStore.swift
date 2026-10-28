@@ -101,6 +101,8 @@ public final class AccountStore {
   @ObservationIgnored var configured = false
   @ObservationIgnored var pendingLink: PendingLink?
   @ObservationIgnored var pendingJoin: PendingJoin?
+  @ObservationIgnored var approvedJoin: ApprovedJoin?
+  @ObservationIgnored var approvalsCache: (head: AccountHead, approvals: [String: AccountApproval])?
   @ObservationIgnored var pendingApproval: PendingLink?
   @ObservationIgnored var joinLoop: Task<Void, Never>?
   @ObservationIgnored let joinPollInterval: Duration
@@ -283,9 +285,16 @@ public final class AccountStore {
         firstDevice = try await writeGenesis(info)
       }
       if !firstDevice {
-        guard try await resume(info) else {
+        switch try await resume(info) {
+        case .adopted:
+          break
+        case .notMember:
           phase = .awaitingApproval
-          await requestJoin(info, provider: provider)
+          await continueJoin(info, provider: provider)
+          return
+        case .approvedUnconfirmed(let verified, let entries):
+          phase = .awaitingApproval
+          await offerApprovedJoin(verified, entries: entries, info: info, provider: provider)
           return
         }
       }
@@ -322,24 +331,33 @@ public final class AccountStore {
     return true
   }
 
+  enum ResumeOutcome {
+    case adopted
+    case notMember
+    /// This device's keys were approved, but not with a code it confirmed.
+    case approvedUnconfirmed(AccountLogState, [AccountEntry])
+  }
+
   /// This device's key is live in the account's log: adopt it.
-  private func resume(_ info: AccountInfo) async throws -> Bool {
+  private func resume(_ info: AccountInfo) async throws -> ResumeOutcome {
     let entries = try await client.log(epoch: info.epoch, after: -1)
     switch AccountLog.verify(entries, root: vault.root) {
     case .ok(let verified):
+      guard ownMemberLive(in: verified) else { return .notMember }
       // Never pinned: only this device's own genesis, or an approval carrying
       // the code compared here, counts.
-      guard ownMemberLive(in: verified),
-        vault.root != nil || admitsConfirmedJoin(verified) || wroteGenesis(verified)
-      else { return false }
+      guard vault.root != nil || admitsConfirmedJoin(verified) || wroteGenesis(verified) else {
+        return .approvedUnconfirmed(verified, entries)
+      }
       vault.root = verified.root
       vault.joinRequestId = nil
       vault.joinCommit = nil
+      vault.pendingJoin = nil
       vault.entries = entries
       state = verified
       logError = nil
       await vaultStore.save(vault)
-      return true
+      return .adopted
     case .rejected(let reason, _, _):
       logError = reason
       throw AccountStoreError.untrustedLog
@@ -359,8 +377,8 @@ public final class AccountStore {
   /// Sign out = take this device off the account, forget its keys, end the
   /// Clerk session. Hosts it was QR-paired with are unaffected.
   public func signOut() async {
-    if let pending = pendingJoin {
-      try? await client.deny(requestId: pending.requestId)
+    if let requestId = pendingJoin?.requestId ?? vault.pendingJoin?.requestId {
+      try? await client.deny(requestId: requestId)
     }
     if phase == .ready, let memberId = vault.keys?.memberId {
       // Not applied: the store is forgotten right after, and adopting a log
@@ -383,6 +401,7 @@ public final class AccountStore {
     link = .idle
     pendingLink = nil
     stopJoin()
+    approvedJoin = nil
     join = .idle
     requests = []
     approval = .idle

@@ -33,6 +33,21 @@ struct AccountJoinSection: View {
         }
       case .confirmed(let approverName):
         progress("Confirmed here. Finish on \(approverName)…")
+      case .alreadyApproved(let sas, let approverName):
+        VStack(alignment: .leading, spacing: 8) {
+          Text(
+            "\(approverName) approved this Mac. Check that Settings → Account → Devices on \(approverName) shows this code next to this Mac:"
+          )
+          .foregroundStyle(.secondary)
+          AccountCodeText(sas: sas)
+          HStack {
+            Button("Codes Match") { Task { await account.confirmApprovedJoin() } }
+              .buttonStyle(.accent)
+              .keyboardShortcut(.defaultAction)
+            Button("Not Mine", role: .destructive) { Task { await account.rejectApprovedJoin() } }
+              .buttonStyle(.secondary)
+          }
+        }
       case .denied:
         ended("The request was turned down.")
       case .expired:
