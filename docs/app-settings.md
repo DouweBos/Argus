@@ -512,14 +512,15 @@ offline, and folds them into **Hosts**, where you attach to them like a paired
 host. Other computers waiting to join appear under **Waiting to join** with
 Approve and Deny.
 
-| Setting                        | Default                                            | Description                                                                                                                                           |
-| ------------------------------ | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Use the account**            | On                                                 | Off stops publishing this computer's address and refuses account devices, while staying linked.                                                       |
-| **Publish addresses**          | All on                                             | Which of the LAN address, the Tailscale funnel and the Cloudflare tunnel go into the account directory. The account service can see what you publish. |
-| **Access for account devices** | iPhone: run agents · Mac and desktop: full control | What devices on the account may do here: the same grants as a pairing (`monitor`, `control`, `admin`).                                                |
-| **Approve from this computer** | On                                                 | Whether this computer may approve other computers joining.                                                                                            |
-| **Account service**            | empty (built-in)                                   | Another account service, for self-hosting or testing.                                                                                                 |
-| **Unlink**                     | —                                                  | Removes this computer and this window from the account. QR-paired devices keep working.                                                               |
+| Setting                        | Default                                            | Description                                                                                                                                                                                  |
+| ------------------------------ | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Use the account**            | On                                                 | Off stops publishing this computer's address and refuses account devices, while staying linked.                                                                                              |
+| **Publish addresses**          | All on                                             | Which of the LAN address, the tailnet address and the managed tunnel go into the account directory. The account service can see what you publish.                                            |
+| **Managed tunnel**             | On                                                 | Run this computer's own tunnel (see [Reaching your computers from anywhere](accounts.md#reaching-your-computers-from-anywhere)) while remote access is on. Off leaves the LAN and Tailscale. |
+| **Access for account devices** | iPhone: run agents · Mac and desktop: full control | What devices on the account may do here: the same grants as a pairing (`monitor`, `control`, `admin`).                                                                                       |
+| **Approve from this computer** | On                                                 | Whether this computer may approve other computers joining.                                                                                                                                   |
+| **Account service**            | empty (built-in)                                   | Another account service, for self-hosting or testing.                                                                                                                                        |
+| **Unlink**                     | —                                                  | Removes this computer and this window from the account. QR-paired devices keep working.                                                                                                      |
 
 These live with the remote-access keys in the encrypted
 `~/.argus/remote-devices.json`, per machine. `argus-host` has the same
@@ -529,46 +530,42 @@ settings as `account set …` (see [the server docs](server-app.md)).
 
 Pair a phone to monitor your projects and agents from anywhere — or skip the
 pairing and link this computer to your [account](#account) instead; pairing
-is the way in without one. With remote
-access on, Argus runs a gateway that devices on your network reach directly by
-IP; tunnels add a way in from outside your network. All traffic is end-to-end encrypted (Noise IK); the
-tunnel only ever sees ciphertext. Paired devices are **monitor + approve only** —
-they can view projects/sessions/agents and approve or deny permission prompts,
-but cannot spawn agents, send messages, or run commands.
+is the way in without one. With remote access on, Argus runs a gateway that
+devices on your network, and on your tailnet, reach directly by IP. A computer
+linked to an account also gets its own **managed tunnel**, the way in from
+anywhere else, with nothing to set up. All traffic is end-to-end encrypted
+(Noise IK); the tunnel only ever sees ciphertext. Paired devices are
+**monitor + approve only** — they can view projects/sessions/agents and approve
+or deny permission prompts, but cannot spawn agents, send messages, or run
+commands.
 
 | Setting                                     | Default | Description                                                                                                                                                                                                                                     |
 | ------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enable remote access**                    | Off     | Master kill-switch. On ⇒ the gateway listens on your local network. Off ⇒ the gateway + every tunnel stay down and pairing is refused.                                                                                                          |
-| **Tunnels**                                 | All off | **Tailscale** (`tailscale funnel`) and **Cloudflare** (`cloudflared`) toggle independently and run side by side, for access from outside your network. A tunnel needs that provider's CLI on your `PATH`.                                       |
-| **Addresses**                               | —       | Read-only list of every address that's live right now, in the order phones try them. Synced to paired devices on connect.                                                                                                                       |
-| **Tunnel** (Cloudflare)                     | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                                                                                                                      |
-| **Connector token**                         | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                                                                                                                |
-| **Public URL**                              | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                                                                                                            |
+| **Enable remote access**                    | Off     | Master kill-switch. On ⇒ the gateway listens on your local network and the managed tunnel runs. Off ⇒ everything stays down and pairing is refused.                                                                                             |
+| **Routes**                                  | —       | Read-only: the local network address, this computer's tailnet address when Tailscale is connected, and the managed tunnel's state and address. Synced to paired devices on connect.                                                             |
+| **Earlier tunnels**                         | —       | Only shown while a tunnel set up in an earlier version still runs. **Stop using it** stops it and forgets its settings; it also stops by itself once the managed tunnel is up.                                                                  |
 | **Paired devices**                          | —       | Each shows its label, last-seen time and grants. **Control** lets it drive agents and land their work; **Admin** hands another Mac of yours the keyboard (see below). **Revoke** deletes its pinned key and drops any live session immediately. |
 | **Background push**                         | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                                                                                                                      |
 | **Notify my devices while I'm using Argus** | Off     | Mirror notifications to phones and browsers even when the Argus window is focused. Off ⇒ they stay quiet while you're at the desktop.                                                                                                           |
 | **Your name on a huddle invite**            | `""`    | The name in "… wants you to join". Empty falls back to the git `user.name` of the session you're sharing — set this if you commit under a name you don't go by.                                                                                 |
 
-### Choosing tunnels
+### Routes
 
-Devices on your network always connect directly by IP — no tunnel and no
-external process. Tunnels are only for access from _off_ your network, and they
-are not mutually exclusive: enable as many as you like and they run at the same
-time, each in its own process. The phone then picks between every address (see
-[Picking a route](#picking-a-route)), so the usual setup is **Tailscale**: fast
-at home over Wi-Fi, reachable everywhere else.
+Devices on your network connect directly by IP. Off your network there are two
+ways in, and neither needs setting up:
 
-- **Cloudflare — Quick**: zero setup, just the
-  [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
-  binary. The URL rotates each run, so you re-pair after a restart. Good for a
-  first try.
-- **Cloudflare — Named**: stable hostname, survives restarts, but needs a
-  (free) Cloudflare account **and a domain on Cloudflare**.
-- **Tailscale**: stable `*.ts.net` address with **no domain and no Cloudflare
-  account** — just the `tailscale` CLI, signed into a tailnet with
-  [Funnel](https://tailscale.com/kb/1223/funnel) enabled. Often the sweet spot
-  for a stable URL without owning a domain. Argus checks each prerequisite (CLI,
-  service, sign-in, Funnel) in Settings and offers a one-click fix for each.
+- **Tailscale**: if this computer and the phone are both on your tailnet, the
+  phone connects to the computer's tailnet address directly. Just have
+  Tailscale running on both.
+- **Managed tunnel**: a computer linked to your [account](accounts.md) gets a
+  stable `argus-….houwert.dev` address. Argus downloads a pinned, checksum-
+  verified `cloudflared` the first time and runs it for you; it only forwards
+  to the remote gateway. Set `ARGUS_CLOUDFLARED_PATH` to use a `cloudflared` of
+  your own instead.
+
+Cloudflare quick tunnels, named Cloudflare tunnels and Tailscale Funnel are no
+longer options. One you had set up keeps running until the managed tunnel
+replaces it (see [Tunnels from earlier versions](accounts.md#tunnels-from-earlier-versions)).
 
 ### Picking a route
 
@@ -578,7 +575,7 @@ simplest one that completes the pinned-key handshake:
 
 1. Local network
 2. Tailscale
-3. Cloudflare
+3. Managed tunnel
 
 The full handshake — not just a socket open — is what counts as success, so a
 stale LAN IP that now belongs to another machine, or a captive portal that
@@ -586,9 +583,15 @@ accepts any connection, can never win: only the real desktop holds the pinned
 key. If a worse-ranked address answers first, the phone waits briefly for a
 better one before settling.
 
-The address list is re-synced on every connect and whenever a tunnel comes up or
-dies, so **turning on a new way in doesn't require re-pairing** — an existing
-phone learns the new address the next time it connects over any route that still
+While it's connected over a slower route, the phone (and the Mac and desktop
+apps) check the better ones again whenever the network changes and every few
+minutes, and move over as soon as one completes the handshake. A route that
+just failed is left alone for a while, so a flaky network can't bounce the
+connection.
+
+The address list is re-synced on every connect and whenever a route comes up or
+goes away, so **a new way in doesn't require re-pairing** — an existing phone
+learns the new address the next time it connects over any route that still
 works.
 
 ### One phone, several computers
@@ -645,8 +648,8 @@ that socket is gone, so Argus sends a real push instead.
 Argus generates its own on first use, encrypts each notification for that
 subscription (RFC 8291), and posts it to whatever push service the browser
 picked. No third party is involved and there is nothing to configure. It does
-need a **secure context**, so it works over a Cloudflare/Tailscale tunnel but
-_not_ over a plain `http://<lan-ip>` address — browsers refuse to register a
+need a **secure context**, so it works over the managed tunnel but _not_ over
+a plain `http://<lan-ip>` or tailnet address — browsers refuse to register a
 service worker there. Safari only offers it to a PWA you've added to the Home
 Screen / Dock.
 
@@ -713,8 +716,8 @@ subscription (RFC 8291), and posts it to whatever push service the browser
 picked. The only thing worth setting is the **contact** — a `mailto:` or
 `https:` address push services use to reach you if your messages misbehave.
 
-Web Push needs a **secure context**, so it works over a Cloudflare/Tailscale
-tunnel but _not_ over a plain `http://<lan-ip>` address — browsers refuse to
+Web Push needs a **secure context**, so it works over the managed tunnel but
+_not_ over a plain `http://<lan-ip>` or tailnet address — browsers refuse to
 register a service worker there. Safari only offers it to a PWA you've added to
 the Home Screen / Dock.
 
@@ -756,8 +759,8 @@ With remote access on, open `http://<your-ip>:47615` on any device on the same
 network — no app install, no tunnel. It still pairs and Noise-authenticates
 exactly like the phone, so being on the LAN grants no access on its own.
 
-The browser client itself is served over **every** way in, not just the LAN: a
-Tailscale or Cloudflare URL opens the same app in a browser. You can also reach
+The browser client itself is served over **every** way in, not just the LAN:
+the tailnet address or the managed tunnel's URL opens the same app in a browser. You can also reach
 it from the Home screen's **Remote access** button. (Build the bundle once with `pnpm --filter argus-web build`.)
 
 **Pairing** shows a QR code (and a copy-paste code) plus a 6-digit confirmation
@@ -767,7 +770,7 @@ over the wire — so nothing in the middle (Cloudflare or Tailscale included) ca
 impersonate your desktop.
 
 The desktop identity key lives in `~/.argus/remote-devices.json` (encrypted via
-`safeStorage`); the tunnel settings live in `app-settings.json`.
+`safeStorage`), next to the managed tunnel's credentials.
 
 ---
 

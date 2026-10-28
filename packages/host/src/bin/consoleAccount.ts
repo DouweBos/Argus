@@ -24,6 +24,7 @@ import {
   setAccountConfig,
 } from "../services/account/service";
 import { getApprovalState, getLinkState } from "../services/account/status";
+import { getManagedTunnelState } from "../services/remote/managedTunnel";
 
 const YES_NO: Record<string, boolean> = {
   y: true,
@@ -84,6 +85,12 @@ async function printAccount(print: (line: string) => void): Promise<void> {
     return;
   }
   print(`Linked. Account safety code: ${status.safety_code}`);
+  const tunnel = getManagedTunnelState();
+  print(
+    tunnel.phase === "running" && tunnel.url
+      ? `Tunnel: ${tunnel.url}`
+      : `Tunnel: ${tunnel.phase === "off" ? `off (${tunnel.reason ?? "off"})` : tunnel.phase}`,
+  );
   for (const host of await listHosts()) {
     const where = host.online ? "online" : "offline";
     print(`  ${host.name}${host.is_self ? " (this computer)" : ""} — ${where}`);
@@ -103,6 +110,7 @@ const SWITCHES: Record<string, (on: boolean) => AccountConfigPatch> = {
   tailscale: (on) => ({ publish: { tailscale: on } }),
   cloudflare: (on) => ({ publish: { cloudflare: on } }),
   approve: (on) => ({ hosts_can_approve: on }),
+  tunnel: (on) => ({ tunnel: on }),
 };
 const GRANTS = ["monitor", "control", "admin"] as const;
 
@@ -132,7 +140,7 @@ async function setSetting(
   const patch = settingPatch(args[0] ?? "", args[1] ?? "");
   if (!patch) {
     print(
-      "account set enabled|lan|tailscale|cloudflare|approve on|off, account set ios monitor|control, account set desktop monitor|control|admin, account set service <url>|default",
+      "account set enabled|lan|tailscale|cloudflare|approve|tunnel on|off, account set ios monitor|control, account set desktop monitor|control|admin, account set service <url>|default",
     );
 
     return;

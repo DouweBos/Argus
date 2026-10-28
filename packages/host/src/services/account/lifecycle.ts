@@ -23,6 +23,7 @@ import {
   reconcileDevices,
   setTrust,
 } from "./trust";
+import { stopAccountTunnel, syncAccountTunnel } from "./tunnel";
 
 const POLL_MS = 5 * 60_000;
 const SYNC_SOON_MS = 2_000;
@@ -60,6 +61,8 @@ export async function adoptAccount(
 
 export function startBackground(): void {
   stopBackground();
+  // Follows link, pause and remote state itself, so it runs either way.
+  syncAccountTunnel();
   if (!isLinked() || !currentRecord()?.config.enabled) {
     return;
   }
@@ -86,6 +89,7 @@ export function stopBackground(): void {
 export async function forgetAccount(): Promise<void> {
   const record = currentRecord();
   stopBackground();
+  stopAccountTunnel();
   if (!record) {
     return;
   }

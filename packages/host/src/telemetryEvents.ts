@@ -195,6 +195,11 @@ export interface EventMap {
   follow_up_used: { method: "click" | "tab" };
   follow_ups_suggested: { count: number; success: boolean };
   host_lock_handover: { holder: "cli" | "electron" | "mac" };
+  /** Mirrors `LegacyTunnelKind` in `services/remote/legacyTunnels.ts`. */
+  legacy_tunnel_retired: {
+    kind: "cloudflare_quick" | "cloudflare_token" | "tailscale_funnel";
+    reason: "managed" | "user";
+  };
   lsp_feature_used: {
     feature:
       | "code_action"
@@ -221,6 +226,13 @@ export interface EventMap {
   lsp_setup_needed: {
     language: LspLanguage;
     reason: "loose_files" | "no_build_server" | "not_built";
+  };
+  managed_tunnel_failed: {
+    stage: "connect" | "credentials" | "install" | "unavailable";
+  };
+  managed_tunnel_started: {
+    created: boolean;
+    install: "downloaded" | "managed" | "override" | "path";
   };
   onboarding_completed: undefined;
   prefs_imported: { keys: number };

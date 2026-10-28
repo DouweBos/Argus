@@ -9,7 +9,6 @@
  */
 
 import type { ArgusTransport } from "./types";
-import type { RemoteHost } from "../../stores/settingsStore";
 import type { ConnectionState } from "@argus/remote-client";
 import {
   addHostConnection,
@@ -17,6 +16,11 @@ import {
   removeHostConnection,
   setHostConnection,
 } from "../../stores/connectionStore";
+import {
+  updateRemoteHostRoutes,
+  type RemoteHost,
+} from "../../stores/settingsStore";
+import { attachBudgetMs } from "./endpointRanking";
 import { LOCAL_HOST_ID, isLocalHost, type HostId } from "./hostId";
 import { localTransport } from "./local";
 import { RemoteTransport } from "./remote";
@@ -143,8 +147,11 @@ export function attachHost(
     return Promise.resolve();
   }
 
+  wireNetworkChanges();
   const remote = new RemoteTransport(host, {
     onState: (state) => handleState(host.id, state),
+    onRoute: (url) => updateRemoteHostRoutes(host.id, { url }),
+    onEndpoints: (endpoints) => updateRemoteHostRoutes(host.id, { endpoints }),
   });
   const connection: Connection = {
     hostId: host.id,
@@ -167,7 +174,33 @@ export function attachHost(
   }
   remote.connect();
 
-  return waitForReady(host.id, options.timeoutMs ?? 8000);
+  // Long enough to fall back through every route before giving up.
+  return waitForReady(
+    host.id,
+    options.timeoutMs ??
+      Math.max(8000, attachBudgetMs(host.url, host.endpoints)),
+  );
+}
+
+let networkWired = false;
+
+/** Back online or on another network: every host retries or looks for a better route. */
+function wireNetworkChanges(): void {
+  if (networkWired || typeof window.addEventListener !== "function") {
+    return;
+  }
+  networkWired = true;
+  const changed = () => {
+    for (const connection of connections.values()) {
+      connection.remote?.onNetworkChange();
+    }
+  };
+  window.addEventListener("online", changed);
+  // Chromium's Network Information API: fires on a Wi-Fi or interface switch.
+  const info = (
+    globalThis.navigator as { connection?: EventTarget } | undefined
+  )?.connection;
+  info?.addEventListener("change", changed);
 }
 
 /**

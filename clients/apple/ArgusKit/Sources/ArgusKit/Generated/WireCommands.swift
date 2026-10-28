@@ -7454,27 +7454,6 @@ extension ArgusProtocol {
       }
     }
 
-    public struct RemoteTailscaleFixParams: Codable, Sendable {
-      public var fix: TailscaleFixKind
-      public var url: String?
-
-      enum CodingKeys: String, CodingKey {
-        case fix = "fix"
-        case url = "url"
-      }
-
-      public init(fix: TailscaleFixKind, url: String? = nil) {
-        self.fix = fix
-        self.url = url
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(fix, forKey: .fix)
-        try c.encodeIfPresent(url, forKey: .url)
-      }
-    }
-
     public struct RemoteTestPushParams: Codable, Sendable {
       public var deviceId: String
 
@@ -12103,20 +12082,6 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = ArgusProtocol.RemotePairingStart
       public static let name = "remote_start_pairing"
-      public static let tier = "host"
-    }
-
-    public enum RemoteTailscaleDiagnose: RemoteCommand {
-      public typealias Params = EmptyParams
-      public typealias Result = ArgusProtocol.TailscaleDiagnosis
-      public static let name = "remote_tailscale_diagnose"
-      public static let tier = "host"
-    }
-
-    public enum RemoteTailscaleFix: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.RemoteTailscaleFixParams
-      public typealias Result = ArgusProtocol.TailscaleFixResult
-      public static let name = "remote_tailscale_fix"
       public static let tier = "host"
     }
 

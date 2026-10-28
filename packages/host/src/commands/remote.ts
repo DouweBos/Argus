@@ -19,7 +19,6 @@ import {
 } from "../services/remote/push/config";
 import { sendTestPush } from "../services/remote/push/dispatch";
 import {
-  applyTailscaleFixAndOpen,
   revokeRemoteDevice,
   setRemoteDeviceGrants,
   startRemotePairing,
@@ -29,16 +28,11 @@ import {
   setRemoteConfig,
 } from "../services/remote/remoteService";
 import { checkShareReadiness } from "../services/remote/shareReadiness";
-import { diagnoseTailscale } from "../services/remote/tailscaleSetup";
 
 export function registerRemoteCommands(): void {
   defineTypedCommand("remote_get_status", () => getRemoteStatus());
   defineTypedCommand("remote_get_host_key", () => getHostKey());
   defineTypedCommand("remote_set_config", (p) => setRemoteConfig(p.config));
-  defineTypedCommand("remote_tailscale_diagnose", () => diagnoseTailscale());
-  defineTypedCommand("remote_tailscale_fix", (p) =>
-    applyTailscaleFixAndOpen(p.fix, p.url),
-  );
   defineTypedCommand("remote_get_push_config", () => getPushConfigStatus());
   defineTypedCommand("remote_set_push_config", (p) =>
     setPushConfigFromPatch(p.patch),

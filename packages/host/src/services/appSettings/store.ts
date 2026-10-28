@@ -100,26 +100,14 @@ export interface AppSettings {
    * gateway + tunnel stay down and pairing is refused.
    */
   remote_enabled?: boolean;
-  /**
-   * @deprecated Superseded by the per-provider `remote_*_enabled` flags. Still
-   * read once to migrate installs that predate concurrent providers.
-   */
+  // Tunnels an earlier version let the user configure. Nothing sets them any
+  // more: they keep an existing tunnel running on a computer with nothing to
+  // replace it, and are cleared once the account's managed tunnel is up.
   remote_provider?: "cloudflare" | "none" | "tailscale";
-  /**
-   * Run `tailscale funnel` alongside any other provider. Providers are
-   * independent — a phone syncs every reachable address and picks the simplest.
-   */
   remote_tailscale_enabled?: boolean;
-  /** Run `cloudflared` alongside any other provider. */
   remote_cloudflare_enabled?: boolean;
-  /**
-   * Cloudflare tunnel mode: "quick" (ephemeral trycloudflare URL, no account)
-   * or "token" (stable named tunnel via a connector token). Defaults to quick.
-   */
   remote_tunnel_mode?: "quick" | "token";
-  /** Cloudflare connector token for a named tunnel (token mode). */
   remote_tunnel_token?: string;
-  /** Stable public URL for the named tunnel, configured in Cloudflare. */
   remote_public_url?: string;
   /**
    * Mirror notifications to paired devices even while the Argus window is

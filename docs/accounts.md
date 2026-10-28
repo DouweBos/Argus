@@ -3,8 +3,8 @@
 Sign in once and your computers find each other. An Argus account lists the
 computers you have linked to it with the addresses they are currently reachable
 on, so the iPhone app, the Mac app and the desktop app can connect to every one
-of them without scanning a pairing code per computer — and keep connecting when
-a quick tunnel comes back on a new URL.
+of them without scanning a pairing code per computer. Every linked computer also
+gets a tunnel of its own, so you reach it from anywhere with nothing to set up.
 
 Accounts are optional. QR pairing keeps working exactly as before and stays the
 way to connect without one.
@@ -58,6 +58,48 @@ that computer. (Turn this off per computer with _Approve from this computer_.)
 Deny anything you didn't just sign in on: a request only gets in if someone
 confirms the code on a device that's already trusted.
 
+## Reaching your computers from anywhere
+
+A linked computer with remote access on gets its own **managed tunnel**: a
+stable address like `argus-1a2b3c4d5e6f7a8b.houwert.dev`, set up for it by the
+account service. Argus downloads Cloudflare's `cloudflared` the first time it's
+needed, checks it against a pinned checksum, and runs it in the background. The
+tunnel forwards to Argus's remote gateway on that computer and to nothing else.
+
+Your devices try every way in at once and keep the fastest that works:
+
+1. **The local network**, when you're on the same Wi-Fi.
+2. **Tailscale**, when both are on your tailnet. Argus uses the computer's
+   tailnet address directly; there's nothing to configure.
+3. **The managed tunnel**, from anywhere else.
+
+When your network changes — leaving the house, joining the office Wi-Fi — the
+phone and the Mac app check again and move to a faster way in as soon as one
+works.
+
+Everything inside the tunnel is end-to-end encrypted between your device and
+your computer, exactly as on your own network. Cloudflare and the account
+service see encrypted bytes and timing, never what you do.
+
+A computer the service can't give a tunnel to (or one where you turned the
+tunnel off) keeps working over the local network and Tailscale. A tunnel that
+stays unused for two weeks — a computer that's been off that long — is
+reclaimed, and set up again the next time that computer comes online, at the
+same address.
+
+### Tunnels from earlier versions
+
+Earlier versions let you set up a Cloudflare quick tunnel, a named Cloudflare
+tunnel or Tailscale Funnel yourself. Those settings are gone. A tunnel you had
+set up keeps running until the computer's managed tunnel is up, so nothing you
+rely on stops working; then Argus stops it and forgets its settings. You can
+also stop it yourself from Settings → Remote access.
+
+A computer that isn't linked to an account keeps the local network and
+Tailscale, and an old tunnel keeps running there. Sharing an agent with a guest
+(a huddle) still raises a temporary quick tunnel when nothing else reaches the
+computer.
+
 ## Notifications
 
 Once a phone is on the account, every computer on it can send that phone
@@ -90,8 +132,9 @@ It **can** see:
 - that your account exists (by an opaque id from the sign-in provider — no email
   is stored),
 - the names you gave your computers and devices, and how many there are,
-- the addresses each computer publishes (LAN IP, Tailscale or Cloudflare URL)
-  and when it last checked in,
+- the addresses each computer publishes (LAN IP, tailnet IP and tunnel
+  address) and when it last checked in,
+- which computers have a managed tunnel, and when each last asked for it,
 - your phone's push token, and when a computer sends it a notification (never
   what the notification says).
 
@@ -104,8 +147,11 @@ It **cannot**:
   handshake to the key in the signed log, so a forged key or address only
   fails to connect.
 - read anything you do with Argus. Traffic goes from your device to your
-  computer directly over its own tunnel or your LAN; it never passes through
-  the service.
+  computer over your LAN, your tailnet or the computer's tunnel; it never
+  passes through the service itself. The tunnel runs on Cloudflare, which only
+  ever carries end-to-end encrypted bytes.
+- hand one computer's tunnel to another. A computer asks for its tunnel by
+  signing the request with its own key, and only ever gets its own.
 
 What a compromised service could still do is refuse to answer, hide changes
 for a while, or show stale addresses. Your devices keep the last good state they
@@ -128,8 +174,9 @@ there.
 - **Sign out** on a device removes that device from the account. Computers it
   was QR-paired with are unaffected.
 - **Unlink this computer** (desktop Settings → Account, or `logout` in
-  `argus-host`) removes the computer: it stops publishing its address, and
-  devices on the account can no longer connect to it through the account.
+  `argus-host`) removes the computer: it stops publishing its address, gives
+  back its tunnel, and devices on the account can no longer connect to it
+  through the account.
 - Removing a computer from your phone does the same from the other side.
 
 A device that removes another hands the removal straight to every computer it's
@@ -148,6 +195,7 @@ the account):
 | iPhone access                                  | control  | What account iPhones may do on this computer (`monitor`, `control`)               |
 | Mac and desktop access                         | admin    | What account Macs and desktop apps may do (`monitor`, `control`, `admin`)         |
 | Publish LAN / Tailscale / Cloudflare addresses | on       | Which addresses go into the directory. LAN IPs are visible to the service         |
+| Managed tunnel                                 | on       | Run this computer's tunnel while remote access is on. Off: LAN and Tailscale only |
 | Approve from this computer                     | on       | Whether this computer's console may approve other computers joining               |
 
 Change them in desktop Settings → Account, or with the `account` commands in

@@ -1,4 +1,5 @@
 import type { CanonicalPermissionMode } from "../lib/permissionModes";
+import type { RemoteEndpoint } from "../lib/types";
 import { create } from "zustand";
 import { mirrorToHost, onHostPrefChange } from "../lib/hostPrefs";
 
@@ -27,6 +28,8 @@ export interface RemoteHost {
   capabilities: string[];
   devPrivB64: string;
   devPubB64: string;
+  /** Every route the host announced, best first; absent on older entries. */
+  endpoints?: RemoteEndpoint[];
   hostPubB64: string;
   /** Device id the host issued us. Stable across reconnects. */
   id: string;
@@ -35,7 +38,7 @@ export interface RemoteHost {
   pairedAt: number;
   /** A QR pairing (absent on older entries), or a computer on your account. */
   source?: "account" | "pairing";
-  /** `ws://` or `wss://` origin of that host's gateway. */
+  /** `ws://` or `wss://` origin of that host's gateway: the last route that worked. */
   url: string;
 }
 
@@ -261,6 +264,36 @@ function sanitizeRemoteHosts(input: unknown): RemoteHost[] {
           ? o.capabilities.filter((c): c is string => typeof c === "string")
           : [],
         pairedAt: typeof o.pairedAt === "number" ? o.pairedAt : 0,
+        ...(o.source === "account" || o.source === "pairing"
+          ? { source: o.source }
+          : {}),
+        ...(Array.isArray(o.endpoints)
+          ? { endpoints: sanitizeEndpoints(o.endpoints) }
+          : {}),
+      },
+    ];
+  });
+}
+
+const ENDPOINT_KINDS = new Set(["cloudflare", "lan", "tailscale"]);
+
+function sanitizeEndpoints(input: unknown[]): RemoteEndpoint[] {
+  return input.flatMap((raw): RemoteEndpoint[] => {
+    const e = (raw ?? {}) as Record<string, unknown>;
+    if (
+      typeof e.url !== "string" ||
+      typeof e.priority !== "number" ||
+      typeof e.kind !== "string" ||
+      !ENDPOINT_KINDS.has(e.kind)
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        kind: e.kind as RemoteEndpoint["kind"],
+        priority: e.priority,
+        url: e.url,
       },
     ];
   });
@@ -658,16 +691,26 @@ interface SettingsDialogState {
   /** Section to open on first render (e.g. "remote-access"). */
   initialSectionId?: string;
   open: boolean;
+  /** Bumped per request so an open dialog can jump to another section. */
+  request: number;
 }
 
-const dialogStore = create<SettingsDialogState>(() => ({ open: false }));
+const dialogStore = create<SettingsDialogState>(() => ({
+  open: false,
+  request: 0,
+}));
 
 export const showSettingsDialog = (initialSectionId?: string) =>
-  dialogStore.setState({ open: true, initialSectionId });
+  dialogStore.setState((s) => ({
+    open: true,
+    initialSectionId,
+    request: s.request + 1,
+  }));
 export const hideSettingsDialog = () => dialogStore.setState({ open: false });
 export const useSettingsDialogOpen = () => dialogStore((s) => s.open);
 export const useSettingsInitialSection = () =>
   dialogStore((s) => s.initialSectionId);
+export const useSettingsDialogRequest = () => dialogStore((s) => s.request);
 
 // --- Paired hosts -----------------------------------------------------------
 
@@ -694,6 +737,28 @@ export const addRemoteHost = (host: RemoteHost): void => {
 export const renameRemoteHost = (id: string, label: string): void => {
   store.setState((s) => ({
     remoteHosts: s.remoteHosts.map((h) => (h.id === id ? { ...h, label } : h)),
+  }));
+  persist(store.getState());
+};
+
+/** A host's routes moved, or one of them just worked. Unknown ids are ignored. */
+export const updateRemoteHostRoutes = (
+  id: string,
+  patch: { endpoints?: RemoteEndpoint[]; url?: string },
+): void => {
+  const host = getRemoteHost(id);
+  if (!host) {
+    return;
+  }
+  const next = { ...host, ...patch };
+  if (
+    next.url === host.url &&
+    JSON.stringify(next.endpoints) === JSON.stringify(host.endpoints)
+  ) {
+    return;
+  }
+  store.setState((s) => ({
+    remoteHosts: s.remoteHosts.map((h) => (h.id === id ? next : h)),
   }));
   persist(store.getState());
 };

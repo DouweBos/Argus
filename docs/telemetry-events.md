@@ -256,6 +256,17 @@ link codes, keys or addresses.
 | `account_log_rejected`     | main   | The computer refused entries the account service served                                 | `reason: "fork" \| "bad_signature" \| "unknown_signer" \| "malformed" \| "sas_mismatch"`                                                                                                                                                                                 |
 | `remote_connection_opened` | main   | A device completed the gateway handshake (at most once per device per day)              | `trust: "paired" \| "account"` — a QR pairing or the account let it in                                                                                                                                                                                                   |
 
+### Managed tunnels
+
+A linked computer's own tunnel, and the tunnels from earlier versions it
+replaces. No hostnames, addresses, tunnel ids or tokens.
+
+| Event                    | Source | When                                                                                   | Extra props                                                                                                                                                                                                                      |
+| ------------------------ | ------ | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `managed_tunnel_started` | main   | The managed tunnel's connector registered with Cloudflare (once per credentials fetch) | `created` — the service made the tunnel for this request, `install: "downloaded" \| "managed" \| "override" \| "path"` — how `cloudflared` was found: just downloaded, already installed, `ARGUS_CLOUDFLARED_PATH`, or on `PATH` |
+| `managed_tunnel_failed`  | main   | The managed tunnel couldn't come up (at most once per stage per launch)                | `stage: "unavailable" \| "credentials" \| "install" \| "connect"` — the service has no tunnels, couldn't get credentials, couldn't install `cloudflared`, or the connector keeps failing                                         |
+| `legacy_tunnel_retired`  | main   | A tunnel set up in an earlier version was stopped and its settings forgotten           | `kind: "cloudflare_quick" \| "cloudflare_token" \| "tailscale_funnel"`, `reason: "managed" \| "user"` — the managed tunnel replaced it, or the user stopped it                                                                   |
+
 ## Language servers
 
 The host runs language servers for the code editor. These events carry the
@@ -325,6 +336,7 @@ stay honest.
 | `ios_paired`                               | A computer was paired                                                                                                                                             | `endpoint_kind`, `has_control`                                                                                                                     |
 | `ios_pair_failed`                          | Pairing failed                                                                                                                                                    | `reason` (the failure case name, no detail)                                                                                                        |
 | `ios_host_switched`                        | A different paired computer was selected                                                                                                                          | `host_count`                                                                                                                                       |
+| `ios_route_upgraded`                       | A live connection moved to a faster route after a network change or a periodic check                                                                              | `from`, `to` (`lan`, `tailscale`, `cloudflare`)                                                                                                    |
 | `ios_message_sent`                         | A message reached the computer, or its queue                                                                                                                      | `queued`, `has_images`, `length_bucket`                                                                                                            |
 | `ios_message_send_failed`                  | A message never left the phone                                                                                                                                    | `retried`                                                                                                                                          |
 | `ios_permission_answered`                  | A permission prompt was answered                                                                                                                                  | `approved`, `from_notification`                                                                                                                    |
@@ -408,6 +420,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_host_lock_conflict` | Another app's host was already running on this Argus home | `holder` (`electron`, `mac`, `cli`) |
 | `mac_host_handover` | The user had the app quit the other host and take over | `holder`, `success` |
 | `mac_host_connected` | The window connected to a host: the one it runs itself, or another app's it opened next to as a second window | `mode` (`own`, `attached`), `holder` (`electron`, `mac`, `cli`; only when attached) |
+| `mac_route_upgraded` | A connection to another host moved to a faster route after a network change or a periodic check | `from`, `to` (`lan`, `tailscale`, `cloudflare`) |
 | `mac_host_feature_unsupported` | The host runs an older Argus (e.g. an attached Electron app) without a method the app used; once per method per launch | `method` — the protocol method or command name (e.g. `usage.limits`) |
 | `mac_screen_viewed` | The window navigated | `screen` — the route pattern, never an id |
 | `mac_link_opened` | A deep link or the launch route was opened; one naming a session waits for its machine to connect | `screen` (route pattern), `outcome` (`direct`, `waited` — its machine connected later, `abandoned` — its session never turned up) |
@@ -456,10 +469,9 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_argus_json_generated` | A proposed `.argus.json` was saved, discarded, or couldn't be generated | `method` (`quick`, `claude`), `outcome` (`saved`, `discarded`, `failed`) |
 | `mac_project_settings_saved` | Project Settings was saved | `changed_bucket` (top-level `.argus.json` keys that changed: `0`, `1-9`, `10-99`, `100+`), `personal` (the branch prefix changed too), `success` |
 | `mac_settings_changed` | A setting was changed in the Settings window — which one, never its value | `section` (the Settings tab), `setting` (listed below) |
-| `mac_remote_setting_changed` | A Remote Access setting was changed (`setting` also `notify_when_focused`, `push_contact`) | `setting` (`enabled`, `tailscale`, `cloudflare`, `tunnel_mode`, `tunnel_token`, `public_url`, `push`, …), `on` (toggles) |
+| `mac_remote_setting_changed` | A Remote Access setting was changed (`setting` also `notify_when_focused`, `push_contact`) | `setting` (`enabled`, `managed_tunnel`, `legacy_tunnels`, `push`, …), `on` (toggles) |
 | `mac_pairing` | A device pairing moved on in the pairing sheet | `stage` (`started`, `confirmed`, `completed`, `cancelled`, `failed`), `client` (`desktop`, `mobile`, `web`, `unknown`) |
 | `mac_remote_device_managed` | A paired device's grants were changed, it was revoked, or sent a test push | `action` (`grants`, `revoke`, `test_push`), `success` |
-| `mac_tailscale_checked` | The Tailscale Funnel checklist re-checked or ran a one-click fix | `fix` (a fix rather than a check), `ready` (every prerequisite passed) |
 | `mac_huddle_used` | A huddle was started, blocked or ended, a guest let in or out, a chat message sent or the invite copied | `action` (`start`, `blocked`, `stop`, `approve`, `deny`, `remove`, `say`, `copy_invite`), `has_device` |
 | `mac_automation_edited` | An automation was created, described, saved, deleted, paused or resumed, or its playbook rewritten | `action` (`create`, `describe`, `save`, `delete`, `enable`, `disable`, `revise_playbook`) |
 | `mac_run_acted` | A run was started, cancelled, argued with, kept as an automation, deleted or marked read | `action` (`start`, `start_scratch`, `cancel`, `feedback`, `save_scratch`, `delete`, `mark_read`) |

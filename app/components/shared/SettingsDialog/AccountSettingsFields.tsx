@@ -11,7 +11,7 @@ import styles from "./AccountSection.module.css";
 const PUBLISH: { key: keyof AccountConfig["publish"]; label: string }[] = [
   { key: "lan", label: "LAN address" },
   { key: "tailscale", label: "Tailscale" },
-  { key: "cloudflare", label: "Cloudflare tunnel" },
+  { key: "cloudflare", label: "Managed tunnel" },
 ];
 
 function save(patch: AccountConfigPatch) {
@@ -48,6 +48,15 @@ export function AccountSettingsFields({ config }: { config: AccountConfig }) {
             </Toggle>
           ))}
         </div>
+      </SettingsScreenField>
+      <SettingsScreenField
+        label="Managed tunnel"
+        caption="While remote access is on, the account gives this computer its own address on the internet, so your devices reach it from anywhere. Traffic stays end-to-end encrypted."
+      >
+        <Toggle
+          checked={config.tunnel}
+          onChange={(tunnel) => save({ tunnel })}
+        />
       </SettingsScreenField>
       <SettingsScreenField
         label="Access for account devices"

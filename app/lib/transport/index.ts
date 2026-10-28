@@ -69,7 +69,7 @@ export function isRemoteMode(): boolean {
 }
 
 /**
- * Account computers may have moved (a quick tunnel restarts on a new URL), so
+ * Account computers may have moved (new routes, a tunnel on a new URL), so
  * pick up their current addresses first — but never hold the window up long.
  */
 async function refreshAccountAddresses(): Promise<void> {

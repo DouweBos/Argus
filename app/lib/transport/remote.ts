@@ -8,15 +8,16 @@
  */
 
 import type { RemoteHost } from "../../stores/settingsStore";
+import type { RemoteEndpoint } from "../types";
 import {
   MediaRouter,
   RemoteError,
-  Transport,
   TransferChannel,
   type ConnectionState,
   type EventEnvelope,
 } from "@argus/remote-client";
 import { localTransport } from "./local";
+import { RouteDialer } from "./routeDialer";
 import { commandTarget } from "./routing";
 import {
   HostUnavailableError,
@@ -48,15 +49,22 @@ function subscriptionScope(channel: string): string | null {
 }
 
 export interface RemoteTransportHandlers {
+  /** The host's current routes, so the next launch can fall back too. */
+  onEndpoints?: (endpoints: RemoteEndpoint[]) => void;
+  /** A route just connected; remembered as the one to prefer next time. */
+  onRoute?: (url: string) => void;
   onState: (state: ConnectionState) => void;
 }
+
+const offline = () =>
+  Promise.reject(new RemoteError("offline", "not connected"));
 
 export class RemoteTransport implements ArgusTransport {
   /** Device-screen frames, keyed by the stream id `devices.watch` hands back. */
   readonly media = new MediaRouter();
   /** Chunked file transfers — attachments and large reads, in both directions. */
   readonly transfers: TransferChannel;
-  private readonly transport: Transport;
+  private readonly dialer: RouteDialer;
   private readonly listeners = new Map<
     string,
     Set<(payload: unknown) => void>
@@ -69,39 +77,56 @@ export class RemoteTransport implements ArgusTransport {
     private readonly host: RemoteHost,
     private readonly handlers: RemoteTransportHandlers,
   ) {
-    this.transport = new Transport(
+    this.dialer = new RouteDialer(
       {
-        url: host.url,
         devPrivB64: host.devPrivB64,
         devPubB64: host.devPubB64,
         hostPubB64: host.hostPubB64,
       },
+      host.url,
+      host.endpoints,
       {
         onState: (state) => this.onState(state),
         onEvent: (env) => this.onEvent(env),
         onMedia: (bytes) => this.media.push(bytes),
         onXfer: (bytes) => this.transfers.pushFrame(bytes),
+        onRoute: (url) => this.handlers.onRoute?.(url),
       },
+      { lastGoodUrl: host.url },
     );
     this.transfers = new TransferChannel({
-      request: (method, params) => this.transport.request(method, params),
-      sendXfer: (body) => this.transport.sendXfer(body),
-      buffered: () => this.transport.bufferedAmount,
+      request: (method, params) => this.request(method, params),
+      sendXfer: (body) => this.dialer.transport?.sendXfer(body),
+      buffered: () => this.dialer.transport?.bufferedAmount ?? 0,
     });
   }
 
   connect(): void {
-    this.transport.connect();
+    this.dialer.connect();
   }
 
   disconnect(): void {
-    this.transport.disconnect();
+    this.dialer.disconnect();
     this.media.clear();
     this.transfers.reset();
   }
 
   get connectionState(): ConnectionState {
     return this.state;
+  }
+
+  /** The network changed: reconnect sooner, or try a better route. */
+  onNetworkChange(): void {
+    this.dialer.onNetworkChange();
+  }
+
+  private request<T>(method: string, params: unknown): Promise<T> {
+    return this.dialer.transport?.request<T>(method, params) ?? offline();
+  }
+
+  private applyEndpoints(endpoints: RemoteEndpoint[]): void {
+    this.dialer.setEndpoints(this.host.url, endpoints);
+    this.handlers.onEndpoints?.(endpoints);
   }
 
   private onState(state: ConnectionState): void {
@@ -114,6 +139,16 @@ export class RemoteTransport implements ArgusTransport {
       this.transfers.reset();
     }
     this.handlers.onState(state);
+    if (state === "ready") {
+      // Pushed only when they change, so ask once per connection.
+      this.request<{ endpoints?: RemoteEndpoint[] }>("host.endpoints", {})
+        .then((res) => {
+          if (res.endpoints) {
+            this.applyEndpoints(res.endpoints);
+          }
+        })
+        .catch(() => undefined);
+    }
   }
 
   invoke<T>(channel: string, args?: Record<string, unknown>): Promise<T> {
@@ -140,7 +175,7 @@ export class RemoteTransport implements ArgusTransport {
           );
         }
 
-        return this.transport.request<T>(channel, args ?? {});
+        return this.request<T>(channel, args ?? {});
     }
   }
 
@@ -151,7 +186,7 @@ export class RemoteTransport implements ArgusTransport {
       return;
     }
     // No fire-and-forget envelope on the wire; drop the reply instead.
-    this.transport.request(channel, args ?? {}).catch(() => undefined);
+    this.request(channel, args ?? {}).catch(() => undefined);
   }
 
   on<T>(event: string, callback: (payload: T) => void): () => void {
@@ -182,7 +217,7 @@ export class RemoteTransport implements ArgusTransport {
     const next = (this.subscriptionRefs.get(scope) ?? 0) + 1;
     this.subscriptionRefs.set(scope, next);
     if (next === 1) {
-      this.transport.subscribe(scope, true);
+      this.dialer.subscribe(scope, true);
     }
   }
 
@@ -194,13 +229,22 @@ export class RemoteTransport implements ArgusTransport {
     const next = (this.subscriptionRefs.get(scope) ?? 1) - 1;
     if (next <= 0) {
       this.subscriptionRefs.delete(scope);
-      this.transport.subscribe(scope, false);
+      this.dialer.subscribe(scope, false);
     } else {
       this.subscriptionRefs.set(scope, next);
     }
   }
 
   private onEvent(env: EventEnvelope): void {
+    if (env.event === "host.endpoints") {
+      const endpoints = (env.payload as { endpoints?: RemoteEndpoint[] })
+        ?.endpoints;
+      if (endpoints) {
+        this.applyEndpoints(endpoints);
+      }
+
+      return;
+    }
     // Admin devices get every renderer broadcast forwarded verbatim, so the
     // desktop can keep listening on the channel names it already knows.
     if (env.event !== "ipc") {

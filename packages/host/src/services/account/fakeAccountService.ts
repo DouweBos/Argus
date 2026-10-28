@@ -64,7 +64,20 @@ export class FakeAccountService {
     sealed: string;
     collapse_id?: string;
   }[] = [];
+  /** Managed tunnels, per host id (`POST /host/tunnel`). */
+  tunnels = new Map<
+    string,
+    { hostname: string; tunnel_id: string; token: string; port: number }
+  >();
+  /** Off: `POST /host/tunnel` answers 503 like a service with no API token. */
+  tunnelsEnabled = true;
+  /** Every `POST /host/tunnel`, and every `DELETE`, by host id. */
+  tunnelRequests: string[] = [];
+  tunnelReleases: string[] = [];
   private nextId = 1;
+
+  /** Tokens the next `POST /host/tunnel` calls hand out, in order. */
+  tunnelTokens: string[] = [];
 
   state(): LogState | null {
     const result = verifyLog(this.entries);
@@ -329,6 +342,41 @@ export class FakeAccountService {
       });
 
       return json({ delivered: true, environment: "sandbox" });
+    }
+    if (
+      route === "/host/tunnel" &&
+      (method === "POST" || method === "DELETE")
+    ) {
+      const hostId = headers.get("x-argus-member") ?? "";
+      if (method === "DELETE") {
+        this.tunnelReleases.push(hostId);
+        this.tunnels.delete(hostId);
+
+        return new Response(null, { status: 204 });
+      }
+      this.tunnelRequests.push(hostId);
+      if (!this.tunnelsEnabled) {
+        return json({ error: "unavailable" }, 503);
+      }
+      const existing = this.tunnels.get(hostId);
+      const tunnel = {
+        hostname: existing?.hostname ?? `argus-${hostId.slice(0, 8)}.fake.test`,
+        tunnel_id: existing?.tunnel_id ?? `tun-${this.nextId++}`,
+        token:
+          this.tunnelTokens.shift() ??
+          existing?.token ??
+          `token-${this.nextId++}`,
+        port: Number(payload.port),
+      };
+      this.tunnels.set(hostId, tunnel);
+
+      return json({
+        hostname: tunnel.hostname,
+        url: `wss://${tunnel.hostname}`,
+        tunnel_id: tunnel.tunnel_id,
+        token: tunnel.token,
+        created: !existing,
+      });
     }
     const deny = route.match(/^\/join\/([^/]+)\/deny$/);
     if (method === "POST" && deny) {

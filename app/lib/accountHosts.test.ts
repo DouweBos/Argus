@@ -62,6 +62,28 @@ describe("account hosts", () => {
     ]);
   });
 
+  it("hands the transport every route, best first", () => {
+    const { upsert } = mergeAccountHosts([], [accountHost()], key);
+    expect(upsert[0].endpoints?.map((e) => e.kind)).toEqual([
+      "lan",
+      "cloudflare",
+    ]);
+  });
+
+  it("keeps the route that last worked while the account still lists it", () => {
+    const current = paired({
+      id: "mini",
+      source: "account",
+      url: "wss://quick.example",
+      devPrivB64: key.noise_priv,
+      devPubB64: key.noise_pub,
+    });
+    const { upsert } = mergeAccountHosts([current], [accountHost()], key);
+    expect(upsert).toEqual([
+      expect.objectContaining({ url: "wss://quick.example" }),
+    ]);
+  });
+
   it("skips this computer and forgets ones that left the account", () => {
     const gone = paired({
       id: "gone",

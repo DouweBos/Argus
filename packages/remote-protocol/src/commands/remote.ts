@@ -10,9 +10,6 @@ import {
   RemotePushTestResult,
   RemoteStatus,
   ShareReadiness,
-  TailscaleDiagnosis,
-  TailscaleFixKind,
-  TailscaleFixResult,
 } from "../models/remote";
 import { type CommandSpec, NoParams, Void } from "./spec";
 
@@ -37,18 +34,6 @@ export const REMOTE_COMMANDS = {
     tier: "host",
     params: z.object({ config: RemoteConfigPatch }),
     result: RemoteStatus,
-  },
-  /** Ordered Tailscale prerequisite checks for Funnel. */
-  remote_tailscale_diagnose: {
-    tier: "host",
-    params: NoParams,
-    result: TailscaleDiagnosis,
-  },
-  /** Run one in-app fix; browser-completed fixes open their URL on the host. */
-  remote_tailscale_fix: {
-    tier: "host",
-    params: z.object({ fix: TailscaleFixKind, url: z.string().nullish() }),
-    result: TailscaleFixResult,
   },
   remote_get_push_config: {
     tier: "admin",

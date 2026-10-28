@@ -79,23 +79,13 @@ export const AppSettings = z.object({
    * gateway + tunnel stay down and pairing is refused.
    */
   remote_enabled: z.boolean().optional(),
-  /**
-   * @deprecated Superseded by the per-provider `remote_*_enabled` flags. Still
-   * read once to migrate installs that predate concurrent providers.
-   */
+  // Tunnels an earlier version let the user configure. No longer settable:
+  // read only to keep one running until the managed tunnel replaces it.
   remote_provider: z.enum(["cloudflare", "none", "tailscale"]).optional(),
-  /** Run `tailscale funnel` alongside any other provider. */
   remote_tailscale_enabled: z.boolean().optional(),
-  /** Run `cloudflared` alongside any other provider. */
   remote_cloudflare_enabled: z.boolean().optional(),
-  /**
-   * Cloudflare tunnel mode: "quick" (ephemeral trycloudflare URL, no account)
-   * or "token" (stable named tunnel via a connector token). Defaults to quick.
-   */
   remote_tunnel_mode: z.enum(["quick", "token"]).optional(),
-  /** Cloudflare connector token for a named tunnel (token mode). */
   remote_tunnel_token: z.string().optional(),
-  /** Stable public URL for the named tunnel, configured in Cloudflare. */
   remote_public_url: z.string().optional(),
   /**
    * Serve the web client on the LAN. Access is still gated by Noise pairing;

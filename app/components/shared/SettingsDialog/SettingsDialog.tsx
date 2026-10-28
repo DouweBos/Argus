@@ -58,6 +58,7 @@ import {
   useDiffWhitespace,
   useDiffWordDiff,
   useSettingsDialogOpen,
+  useSettingsDialogRequest,
   useSettingsInitialSection,
   useShowAssumeUnchangedFiles,
   useShowIgnoredFiles,
@@ -123,6 +124,7 @@ const START_WORKSPACES: [StartWorkspace, string][] = [
 
 function SettingsDialogContent() {
   const initialSection = useSettingsInitialSection();
+  const request = useSettingsDialogRequest();
   const groups: SettingsDialogGroup[] = [
     {
       sections: [
@@ -244,6 +246,7 @@ function SettingsDialogContent() {
 
   return (
     <SettingsDialogShell
+      key={request}
       groups={groups}
       title="Settings"
       titleId="settings-dialog-title"
