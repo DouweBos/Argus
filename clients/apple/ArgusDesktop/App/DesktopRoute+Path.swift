@@ -22,6 +22,7 @@ extension DesktopRoute {
       let tab = UsageTab(rawValue: parts[1]) ?? .limits
       self = .usage(tab, range: tab == .limits ? nil : Self.usageRange(query["range"]))
     case ("pull-requests", 1): self = .pullRequests
+    case ("issues", 1): self = .issues
     case ("pull-requests", 4):
       guard let number = Int(parts[3]) else { return nil }
       self = .pullRequest(repo: "\(parts[1])/\(parts[2])", number: number)
@@ -71,6 +72,7 @@ extension DesktopRoute {
     case .usage(let tab, let range): pattern + Self.query([("range", tab == .limits ? nil : range?.rawValue)])
     case .pullRequests: "/pull-requests"
     case .pullRequest(let repo, let number): "/pull-requests/\(repo)/\(number)"
+    case .issues: "/issues"
     case .automations: "/automations"
     case .quickRun(let runId): runId.map { "/automations/quick/runs/\(Self.encode($0))" } ?? "/automations/quick"
     case .automation(let id, let runId):

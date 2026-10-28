@@ -46,10 +46,11 @@ struct SidebarDestination {
 /// The everyday screens as quiet rows under the sidebar's search.
 struct SidebarNav: View {
   @Environment(DesktopModel.self) private var model
+  @Environment(HostStore.self) private var store
 
   var body: some View {
     VStack(alignment: .leading, spacing: 1) {
-      ForEach(SidebarDestination.primary, id: \.title) { destination in
+      ForEach(destinations, id: \.title) { destination in
         SettingsNavItem(destination.title, systemImage: destination.symbol, selected: destination.isOn(model.route)) {
           model.navigate(destination.route)
         }
@@ -58,7 +59,21 @@ struct SidebarNav: View {
     }
     .padding(.horizontal, 8)
     .padding(.bottom, 6)
+    .task(id: store.connection == .ready) {
+      if store.connection == .ready { await store.loadIntegrations() }
+    }
   }
+
+  /// Issues only while Linear is connected, as in Electron.
+  private var destinations: [SidebarDestination] {
+    store.linearConnected ? SidebarDestination.primary + [SidebarDestination.issues] : SidebarDestination.primary
+  }
+}
+
+extension SidebarDestination {
+  @MainActor static let issues = SidebarDestination(
+    title: "Issues", symbol: Icon.issue, shortcut: nil, route: .issues
+  ) { $0 == .issues }
 }
 
 /// Settings and the occasional screens as small icons along the sidebar's foot.
