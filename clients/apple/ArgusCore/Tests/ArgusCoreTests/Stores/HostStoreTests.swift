@@ -106,6 +106,21 @@ struct HostStoreTests {
     #expect(store.sessionsByRepo["/repo"]?.first?.branch == "feature")
   }
 
+  @Test("refreshing held lists refetches every repo already listed")
+  func refreshHeldLists() async throws {
+    let store = HostStore()
+    let backend = FakeBackend()
+    await store.attach(backend)
+    backend.reply(.sessionsList, #"{"sessions":[]}"#)
+    await store.loadSessions(repoRoot: "/repo")
+
+    backend.reply(.projectsList, #"{"projects":[]}"#)
+    backend.reply(.sessionsList, #"{"sessions":[\#(Self.session)]}"#)
+    await store.refreshHeldLists()
+    #expect(store.sessionsByRepo["/repo"]?.count == 1)
+    #expect(store.projectsLoaded)
+  }
+
   @Test("sessions.changed ignores a repo nobody listed")
   func sessionsChangedUnknown() async throws {
     let store = HostStore()

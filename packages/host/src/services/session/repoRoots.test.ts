@@ -97,6 +97,19 @@ describe("repo root persistence", () => {
     expect(loadPersistedRepoRoots().sort()).toEqual([gone, repo].sort());
   });
 
+  it("registers a root once its drive comes back", () => {
+    const later = path.join(repo, "on-drive");
+    persistRepoRoots([later]);
+    restoreRepoRoots();
+    expect([...appState.repoRoots]).toEqual([]);
+
+    fs.mkdirSync(later);
+    restoreRepoRoots();
+
+    expect([...appState.repoRoots]).toEqual([later]);
+    expect(loadPersistedRepoRoots()).toEqual([later]);
+  });
+
   it("returns nothing for a corrupt file", () => {
     fs.writeFileSync(path.join(home, "repo-roots.json"), "{not json", "utf8");
     expect(loadPersistedRepoRoots()).toEqual([]);
