@@ -45,6 +45,8 @@ public final class AccountStore {
     case computerAdded(viaPairing: Bool)
     /// This device's side of a device approval (§5.4).
     case joinActed(action: JoinAction, role: JoinRole)
+    /// Push registered with the account (phase 3), or the attempt failed.
+    case pushRegistered(success: Bool)
   }
 
   public enum JoinAction: String, Sendable {
@@ -103,6 +105,9 @@ public final class AccountStore {
   @ObservationIgnored var joinLoop: Task<Void, Never>?
   @ObservationIgnored let joinPollInterval: Duration
   @ObservationIgnored private var retryLoop: Task<Void, Never>?
+  /// The push token to keep registered with the account, and what was last sent.
+  @ObservationIgnored var pushToken: AccountPushToken?
+  @ObservationIgnored var pushFingerprint: String?
 
   /// - Parameters:
   ///   - deviceKind: `ios` or `mac`, as the log names this device.
@@ -161,6 +166,7 @@ public final class AccountStore {
     if phase == .ready {
       await refresh()
       await linkLocalHostIfNeeded()
+      await syncPushRegistration()
     } else if auth.isSignedIn {
       await bootstrap(provider: nil)
     } else {
@@ -288,6 +294,7 @@ public final class AccountStore {
       if let provider { onEvent(.signedIn(provider: provider, firstDevice: firstDevice)) }
       await linkLocalHostIfNeeded()
       await refreshDirectory()
+      await syncPushRegistration()
     } catch {
       self.error = Self.describe(error)
       phase = .signedOut
@@ -380,6 +387,7 @@ public final class AccountStore {
     requests = []
     approval = .idle
     pendingApproval = nil
+    pushFingerprint = nil
     phase = .signedOut
     onHostsChanged([])
   }

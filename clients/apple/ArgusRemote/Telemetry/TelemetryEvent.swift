@@ -60,6 +60,26 @@ enum TelemetryEvent {
   typealias JoinAction = AccountStore.JoinAction
   typealias JoinRole = AccountStore.JoinRole
 
+  /// Why the account service woke the phone.
+  enum WakeReason: String {
+    /// A device or computer asked to join.
+    case join
+    /// Someone was added to or removed from the account.
+    case changed
+  }
+
+  /// What a wake-up push led to.
+  enum WakeOutcome: String {
+    /// A join request was announced with a notification.
+    case prompted
+    /// Re-read the account; nothing to show.
+    case refreshed
+    /// This phone had been removed from the account.
+    case removed
+    /// Not signed in, or the account service couldn't be reached.
+    case unreachable
+  }
+
   /// Where adding a computer to the account started.
   enum ComputerAddedVia: String {
     /// A link code typed into the phone.
@@ -125,6 +145,10 @@ enum TelemetryEvent {
   case joinActed(action: JoinAction, role: JoinRole)
   /// The phone renamed a member of the account.
   case memberRenamed(role: MemberRole)
+  /// Push registered with the account (every computer on it can wake the phone), or it failed.
+  case accountPushRegistered(success: Bool)
+  /// A wake-up push from the account service was handled in the background.
+  case accountWoken(reason: WakeReason, outcome: WakeOutcome)
 
   var name: String {
     switch self {
@@ -165,6 +189,8 @@ enum TelemetryEvent {
     case .computerAdded: "ios_computer_added"
     case .joinActed: "ios_join_acted"
     case .memberRenamed: "ios_member_renamed"
+    case .accountPushRegistered: "ios_account_push_registered"
+    case .accountWoken: "ios_account_woken"
     }
   }
 
@@ -181,6 +207,10 @@ enum TelemetryEvent {
       ["action": action.rawValue, "role": role.rawValue]
     case .computerAdded(let via):
       ["via": via.rawValue]
+    case .accountPushRegistered(let success):
+      ["success": success]
+    case .accountWoken(let reason, let outcome):
+      ["reason": reason.rawValue, "outcome": outcome.rawValue]
     case .paired(let endpointKind, let hasControl):
       ["endpoint_kind": endpointKind, "has_control": hasControl]
     case .pairFailed(let reason):

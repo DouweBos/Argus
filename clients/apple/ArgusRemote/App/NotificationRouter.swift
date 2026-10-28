@@ -13,7 +13,7 @@ import UserNotifications
 final class NotificationRouter: NSObject {
   static let shared = NotificationRouter()
 
-  private weak var app: AppStore?
+  private(set) weak var app: AppStore?
   private weak var router: Router?
   private var pendingOpen: PendingOpen?
   /// Nothing can be opened until the gate is passed and the stack exists.
@@ -206,5 +206,21 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     didFailToRegisterForRemoteNotificationsWithError error: Error
   ) {
     Task { @MainActor in PushTokens.received(token: nil) }
+  }
+
+  /// The account service's wake-ups; sealed alerts go through the extension instead.
+  func application(
+    _ application: UIApplication,
+    didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    guard let reason = AccountWake.reason(userInfo) else {
+      completionHandler(.noData)
+      return
+    }
+    let completion = MainThreadCompletion(call: completionHandler)
+    Task { @MainActor in
+      completion.call(await AccountWake.handle(reason, app: NotificationRouter.shared.app))
+    }
   }
 }

@@ -1,5 +1,8 @@
+import ArgusAuth
 import ArgusUI
 import Foundation
+import UIKit
+import UserNotifications
 
 /// The account's half of the host list: computers on the signed-in account
 /// show up beside the QR pairings, and connect with no QR.
@@ -22,6 +25,8 @@ extension AppStore {
         Telemetry.capture(.joinActed(action: action, role: role))
       case .memberRenamed(let role):
         Telemetry.capture(.memberRenamed(role: role))
+      case .pushRegistered(let success):
+        Telemetry.capture(.accountPushRegistered(success: success))
       }
     }
     // A removal reaches the connected computer at once, not at its next poll.
@@ -29,6 +34,7 @@ extension AppStore {
       Task { await self?.syncAccount() }
     }
     await account.start()
+    await registerAccountPush()
   }
 
   /// Hand the connected computer account entries it hasn't seen (§5.5).
@@ -91,5 +97,68 @@ extension AppStore {
   /// Online/offline from the account directory; nil for a QR pairing.
   func presence(of computer: DeviceIdentity) -> AccountStore.Host? {
     computer.accountHostId.flatMap { account.host($0) }
+  }
+}
+
+/// A content-free push from the account service ("look again"): a device asked
+/// to join, or someone was added or removed. The phone re-reads and verifies
+/// the account itself, so removals apply and approvers get prompted without
+/// the app being open. Runs in the background handler, with or without a UI.
+enum AccountWake {
+  /// `join` or `changed`, if this is an account wake-up at all.
+  static func reason(_ userInfo: [AnyHashable: Any]) -> TelemetryEvent.WakeReason? {
+    guard let argus = userInfo["argus"] as? [String: Any], let raw = argus["account"] as? String else {
+      return nil
+    }
+    return TelemetryEvent.WakeReason(rawValue: raw)
+  }
+
+  @MainActor
+  static func handle(_ reason: TelemetryEvent.WakeReason, app: AppStore?) async -> UIBackgroundFetchResult {
+    let preferences = Preferences()
+    var store = app?.account
+    if store == nil { store = await backgroundStore(preferences) }
+    guard let store else {
+      Telemetry.capture(.accountWoken(reason: reason, outcome: .unreachable))
+      return .noData
+    }
+    let seen = Set(preferences.decode(PreferenceKey.accountPromptedJoins, as: [String].self) ?? [])
+    let token = preferences.string(PreferenceKey.pushToken).map {
+      AccountPushToken(token: $0, environment: PushTokens.environment, pushKey: PushTokens.relayKeys().pushKey)
+    }
+    let result = await store.handleWake(alreadySeen: seen, pushToken: token)
+    if !result.newRequests.isEmpty {
+      let ids = result.newRequests.map(\.requestId)
+      preferences.encode(Array((Array(seen) + ids).suffix(50)), for: PreferenceKey.accountPromptedJoins)
+      if UIApplication.shared.applicationState != .active {
+        for request in result.newRequests { prompt(request) }
+      }
+    }
+    let outcome: TelemetryEvent.WakeOutcome =
+      !result.reached ? .unreachable
+      : result.removed ? .removed : result.newRequests.isEmpty ? .refreshed : .prompted
+    Telemetry.capture(.accountWoken(reason: reason, outcome: outcome))
+    return result.reached ? .newData : .failed
+  }
+
+  /// No UI yet (launched in the background): read the account straight from the vault.
+  @MainActor
+  private static func backgroundStore(_ preferences: Preferences) async -> AccountStore? {
+    let name = preferences.string(PreferenceKey.deviceName) ?? UIDeviceName.current
+    let store = AccountStore(auth: AccountAuth(), deviceKind: "ios", deviceName: { name })
+    return await store.resumeForWake() ? store : nil
+  }
+
+  /// "Approve a new device?" The in-app prompt takes over once the app opens.
+  private static func prompt(_ request: AccountJoinRequestInfo) {
+    guard let member = request.subject?.member else { return }
+    let content = UNMutableNotificationContent()
+    content.title = member.role == .host ? "Approve a new computer?" : "Approve a new device?"
+    content.body =
+      "\u{201C}\(member.name)\u{201D} wants to join your Argus account. Open Argus and compare the codes before you approve."
+    content.sound = .default
+    content.userInfo = [NotificationUserInfoKey.kind: "account_join"]
+    UNUserNotificationCenter.current().add(
+      UNNotificationRequest(identifier: "account-join-\(request.requestId)", content: content, trigger: nil))
   }
 }
