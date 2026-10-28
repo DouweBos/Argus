@@ -75,8 +75,9 @@ vendor/bundle
 # Generated macOS iconset (built by scripts/render-icon.swift)
 build/icon.iconset/
 
-# Headless server app build output
+# Headless server app build output (Electron, then the native app's lane)
 release-server
+release-mac-server
 
 # Local iOS build settings (PostHog key et al)
 clients/apple/Config/Argus.local.xcconfig
