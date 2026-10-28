@@ -27,3 +27,11 @@ export const TaskList: Story = {
     text: "- [x] done\n- [ ] not done",
   },
 };
+
+/** `onLinkClick` claims some links for the app; the rest open as usual. */
+export const InterceptedLinks: Story = {
+  args: {
+    text: "See the [checkout frame](https://www.figma.com/design/abc/App?node-id=1-2) and the [docs](https://example.com).",
+    onLinkClick: (url: string) => url.includes("figma.com"),
+  },
+};
