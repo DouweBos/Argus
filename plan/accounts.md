@@ -771,7 +771,11 @@ Built (see `plan/accounts-wire-contract.md` § Phase 2 for the exact flow):
 - Device joins on iPhone and Mac (`AccountStore+Join.swift`): `POST /join`, poll `GET /join/:id`,
   the SAS checked against the approver's key and head in the verified log, adoption only through
   `admits(…)` with the confirmed commit (kept in the vault, so a relaunch can't adopt an
-  unconfirmed approval).
+  unconfirmed approval). The open request is persisted too, so a relaunch resumes it rather than
+  filing another; one approved while the device was away is offered again with its code
+  recomputed from the log (`AccountLog.approvals`, also listed beside each device on the
+  approver) and adopted only after "Codes Match". A device whose key is already live never asks
+  again, and withdraws its own stale request.
 - Approving on iPhone, Mac and Electron (in-app prompt while open + Settings → Account), and from
   a host console (`argus-host approve`, the Electron prompt) — open question 3 kept at the plan's
   default, `hosts_can_approve` on.

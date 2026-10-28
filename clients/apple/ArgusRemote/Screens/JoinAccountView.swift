@@ -30,6 +30,13 @@ struct JoinAccountView: View {
       Btn(label: "They don't match", tone: .danger) { Task { await account.rejectJoinCode() } }
     case .confirmed(let approverName):
       Loading(label: "Confirmed here. Finish on \(approverName)…")
+    case .alreadyApproved(let sas, let approverName):
+      TitleText("\(approverName) approved this phone")
+      MutedText(
+        "Check that Settings → Account → Devices on \(approverName) shows this code next to this phone.")
+      SasCode(sas: sas)
+      Btn(label: "Codes match") { Task { await account.confirmApprovedJoin() } }
+      Btn(label: "Not mine", tone: .danger) { Task { await account.rejectApprovedJoin() } }
     case .denied:
       ended("Not approved", body: "The request was turned down. Ask again when you're at your other device.")
     case .expired:

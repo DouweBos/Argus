@@ -219,6 +219,13 @@ Joining device N (signed in with Clerk, account not empty):
 6. N, once the user confirmed the code on N, fetches the log, verifies it from genesis, and adopts it
    only if `admits(N.id, request_id, sas_commit)` holds for the commit it confirmed; it then pins the
    root. `denied`/`expired` end the wait; N may start a new request.
+7. N keeps `request_id` (and any confirmed commit) across a relaunch and resumes polling it. Before
+   filing a new request it withdraws its old one (`POST /join/:id/deny`), and it never files one
+   while its key is live: an `add_device` for its keys that it didn't confirm (approved while it
+   was away) is adopted only if its `sas_commit` equals the SAS N recomputes from the log
+   (the entry's `prev` as head, the signer's `sign_pub` as approver, N's keys, `request_id`) and
+   the user confirms that code against the one the approver lists beside N. Rejecting it signs N
+   out and drops its keys.
 
 Hosts admit N on its first handshake: a miss on a linked host re-reads the log (at most once per
 15 s) before refusing.
