@@ -1,6 +1,7 @@
 import type { ImageAttachment } from "./ipc";
 import type { CanonicalPermissionMode } from "./permissionModes";
 import type { DesignRef, LinearIssueContext, LinkedIssue } from "./types";
+import { startPrompt } from "@argus/remote-protocol";
 import { setLinkedProjects } from "../stores/conversationStore";
 import { selectSession, setPendingPrompt } from "../stores/sessionStore";
 import { sendUserMessageToAgent, startAgentInSession } from "./agentLifecycle";
@@ -27,42 +28,19 @@ function explicitModel(model: string): string | undefined {
   return model && model !== "default" ? model : undefined;
 }
 
-const ISSUE_ONLY_PROMPT = "Work on this issue.";
-
 type DraftDesign = StartRequest["designs"][number];
 
-function designSection(designs: DesignRef[]): string | null {
-  if (designs.length === 0) {
-    return null;
-  }
-
-  return [
-    "## Design",
-    "",
-    "Match these Figma frames. Call `figma_get_frame` with each link for the image, layers and designer notes, and compare a simulator screenshot against the frame before you call the work done.",
-    "",
-    ...designs.map((d) => `- ${d.name}: ${d.url}`),
-  ].join("\n");
-}
-
 /** Issue context, then the designs to match, then what the user typed (or a default ask). */
-export function startPrompt(
+function startPromptFor(
   issues: LinearIssueContext[],
   designs: DesignRef[],
   prompt: string,
 ): string {
-  const text = prompt.trim();
-  const sections = [
-    ...issues.map((i) => i.context),
-    designSection(designs),
-  ].filter((section) => section !== null);
-  if (sections.length === 0) {
-    return text;
-  }
-
-  return [...sections, text || (issues.length > 0 ? ISSUE_ONLY_PROMPT : "")]
-    .filter(Boolean)
-    .join("\n\n");
+  return startPrompt(
+    issues.map((i) => i.context),
+    designs,
+    prompt,
+  );
 }
 
 /** The designs one issue's agent gets: its own plus the unscoped ones. */
@@ -104,7 +82,8 @@ export async function startInSession(
   if (designs.length > 0) {
     await setSessionDesignRefs(sessionId, designs);
   }
-  const text = startPrompt(issues, designs, prompt) || "(see attached images)";
+  const text =
+    startPromptFor(issues, designs, prompt) || "(see attached images)";
   const message = buildLinkedProjectsPreamble(linkedProjects, text);
   // The transcript (and the title made from it) shows what the user typed.
   await sendUserMessageToAgent(
@@ -145,7 +124,7 @@ export async function startInNewWorktree(
       undefined,
       designs,
     );
-    setPendingPrompt(session.id, startPrompt([], designs, request.prompt), {
+    setPendingPrompt(session.id, startPromptFor([], designs, request.prompt), {
       ...pending,
       images: request.images,
     });
@@ -169,7 +148,7 @@ export async function startInNewWorktree(
       );
       setPendingPrompt(
         session.id,
-        startPrompt([context], designs, request.prompt),
+        startPromptFor([context], designs, request.prompt),
         { ...pending, images: [...request.images, ...context.images] },
       );
 
