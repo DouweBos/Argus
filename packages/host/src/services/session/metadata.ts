@@ -8,10 +8,10 @@
  * and kind, so a session can be drawn with no access to its files at all.
  */
 
+import type { DesignRef, LinkedIssue } from "@argus/remote-protocol";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import type { DesignRef, LinkedIssue } from "@argus/remote-protocol";
 import { warn } from "@argus/host/logger";
 import { argusHomeDir } from "../../lib/argusHome";
 import { canonicalPath } from "../../lib/canonicalPath";

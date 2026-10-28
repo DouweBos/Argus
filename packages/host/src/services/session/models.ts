@@ -5,8 +5,8 @@
  * `<repo>-argus-worktrees/<branch>/` directory.
  */
 
-import type { DesignRef, LinkedIssue } from "@argus/remote-protocol";
 import type { AutonomyLevel } from "../automation/models";
+import type { DesignRef, LinkedIssue } from "@argus/remote-protocol";
 
 /**
  * What a session is backed by: a git worktree, the repo root itself, or — for
