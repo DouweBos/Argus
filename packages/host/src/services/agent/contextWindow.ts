@@ -3,41 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { argusHomeDir } from "../../lib/argusHome";
 
-/**
- * The context window the CLI itself reports: every `result` event carries
- * `modelUsage[model].contextWindow`, which is authoritative where guessing
- * from model ids and marketing copy is not.
- */
-
-/**
- * The main model's window from a `result` event's `modelUsage`. Subagents on
- * other models show up there too, so match `mainModel` first and otherwise
- * take the largest window reported.
- */
-export function contextWindowFromModelUsage(
-  modelUsage: unknown,
-  mainModel?: string | null,
-): number | null {
-  if (!modelUsage || typeof modelUsage !== "object") {
-    return null;
-  }
-
-  const windows = new Map<string, number>();
-  for (const [model, usage] of Object.entries(modelUsage)) {
-    const size = (usage as { contextWindow?: unknown } | null)?.contextWindow;
-    if (typeof size === "number" && size > 0) {
-      windows.set(model, size);
-    }
-  }
-  if (windows.size === 0) {
-    return null;
-  }
-
-  return (
-    (mainModel ? windows.get(mainModel) : undefined) ??
-    Math.max(...windows.values())
-  );
-}
+// Pure, so the renderer's reducer can use it without pulling in `node:fs`.
+export { contextWindowFromModelUsage } from "./contextWindowUsage";
 
 const ONE_MILLION = 1_000_000;
 const DEFAULT_WINDOW = 200_000;
