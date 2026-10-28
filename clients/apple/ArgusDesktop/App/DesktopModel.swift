@@ -94,11 +94,11 @@ final class DesktopModel {
     hosts = RemoteHostsStore(
       file: PairedHostsFile(url: HostLocation.home.appendingPathComponent("mac-paired-hosts.json")),
       clientInfo: PairingClientInfo(
-        product: "Argus for Mac", kind: "desktop", device: Host.current().localizedName,
+        product: "Argus for Mac", kind: "desktop", device: AppPreferences.shared.effectiveDeviceName,
         version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String))
-    let macName = Host.current().localizedName ?? "Mac"
     account = AccountStore(
-      auth: AccountAuth(), deviceKind: "mac", deviceName: { macName }, localHost: localAccountLink)
+      auth: AccountAuth(), deviceKind: "mac", deviceName: { AppPreferences.shared.effectiveDeviceName },
+      localHost: localAccountLink)
     let notificationsLog = NotificationsLog()
     self.notificationsLog = notificationsLog
     store = HostStore(

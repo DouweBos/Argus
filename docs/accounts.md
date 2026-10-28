@@ -168,6 +168,25 @@ Settings → Account lists the devices on your account — name, kind, when it w
 added, and which one you're on — next to its computers. Rename any of them from
 there.
 
+### Naming this device or computer
+
+Each device and computer has a name setting. It starts as the system's name
+(your iPhone's name, the Mac's computer name), and it is what the device joins
+or the computer links as.
+
+| Where              | Setting                                                                                |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| iPhone             | Settings → **This iPhone's name**                                                      |
+| Mac app            | Settings → General → This Mac → **Name** — one name for this Mac and its own host      |
+| Desktop (Electron) | Settings → Account → **This computer's name** — names the computer and its window      |
+| Headless host      | `account set name <name>` in the `argus-host` terminal (`default` for the system name) |
+
+Changing it while you're on the account renames that device (and computer) on
+the account straight away. Offline, the rename waits and goes through once the
+account service is reachable. Renaming this device or computer from the
+Devices/Computers list edits the same setting, and a rename made from another
+of your devices shows up in the setting too.
+
 - **Remove** a device from your phone, the Mac app or the desktop app. Every
   computer it is connected to drops it straight away; it has to be approved
   again to come back.
@@ -197,6 +216,7 @@ the account):
 | Publish LAN / Tailscale / Cloudflare addresses | on       | Which addresses go into the directory. LAN IPs are visible to the service         |
 | Managed tunnel                                 | on       | Run this computer's tunnel while remote access is on. Off: LAN and Tailscale only |
 | Approve from this computer                     | on       | Whether this computer's console may approve other computers joining               |
+| Name                                           | system   | The name this computer links as and keeps on the account (see above)              |
 
 Change them in desktop Settings → Account, or with the `account` commands in
 `argus-host`.

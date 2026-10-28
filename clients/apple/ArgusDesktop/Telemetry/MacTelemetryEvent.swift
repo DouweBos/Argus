@@ -290,6 +290,8 @@ enum MacTelemetryEvent {
   case accountJoinActed(action: AccountStore.JoinAction, role: AccountStore.JoinRole)
   /// This Mac removed or renamed a member of the account.
   case accountMemberChanged(action: AccountMemberAction, role: AccountMember.Role)
+  /// This Mac's name setting changed; `linked`: renamed on the account too.
+  case deviceNameChanged(source: AccountStore.NameSource, linked: Bool)
   /// A command palette entry was run; `section` is its group, never its title.
   case paletteCommandRun(section: String)
   /// The phone handed a session over; `matched` is whether it named this computer.
@@ -385,6 +387,7 @@ enum MacTelemetryEvent {
     case .pullRequestActed: "mac_pull_request_acted"
     case .accountJoinActed: "mac_account_join_acted"
     case .accountMemberChanged: "mac_account_member_changed"
+    case .deviceNameChanged: "mac_device_name_changed"
     case .paletteCommandRun: "mac_palette_command_run"
     case .handoffContinued: "mac_handoff_continued"
     case .onboardingStep: "mac_onboarding_step"
@@ -519,6 +522,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue, "role": role.rawValue]
     case .accountMemberChanged(let action, let role):
       ["action": action.rawValue, "role": role.rawValue]
+    case .deviceNameChanged(let source, let linked):
+      ["source": source.rawValue, "linked": linked]
     case .paletteCommandRun(let section):
       ["section": section.lowercased()]
     case .handoffContinued(let matched):

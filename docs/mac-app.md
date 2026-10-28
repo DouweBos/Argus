@@ -215,8 +215,14 @@ headless Argus server, or `argus-host` — as well as its own:
   your iPhone or another computer after both show the same 6-digit code, and
   its own host joins with it. **Link this Mac with a code** still links just
   the host, from your phone.
+- **Settings → General → This Mac → Name** is one name for this Mac and its
+  own host (it defaults to the system's computer name). Signing in and linking
+  use it; changing it renames both on the account (once the account service is
+  reachable, if you're offline), and renaming this Mac or its host from your
+  phone updates it here and brings the other in line.
 - Signed in, the tab also lists the account's **Devices** (rename, remove) and
-  anything **Waiting to join**. While the window is open, a device asking to
+  anything **Waiting to join**. Renaming this Mac or its host there edits the
+  same Name setting. While the window is open, a device asking to
   join is announced in the main window; **Review…** compares the code and adds
   it.
 - **Settings → Hosts** lists the hosts on your account beside paired ones and

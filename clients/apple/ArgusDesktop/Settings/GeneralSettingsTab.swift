@@ -2,7 +2,7 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// Where Argus opens, where worktrees go, extra "Open in" apps, and telemetry.
+/// This Mac's name, where Argus opens, where worktrees go, extra "Open in" apps, and telemetry.
 struct GeneralSettingsTab: View {
   @Environment(HostSettingsModel.self) private var host
   @Environment(DesktopModel.self) private var model
@@ -11,6 +11,8 @@ struct GeneralSettingsTab: View {
 
   var body: some View {
     SettingsPage {
+      DeviceNameSection()
+
       SettingsGroup("Startup") {
         SettingsRow("Launch screen", description: "Where Argus lands when it opens. Restored window tabs still win.") {
           Picker("Launch screen", selection: launchRoute) {
