@@ -59,6 +59,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var unavailableVolume: String?
   /// The external drive holding the session, by name; nil on the boot volume.
   public var volume: String?
+  /// The tracker issue the session was started from. Nil on older computers.
+  public var linkedIssue: RemoteLinkedIssue?
 
   public var isUnavailable: Bool { availability == .unavailable }
   /// A scratch pad or automation run: its own folder, no project, no git.
@@ -75,6 +77,21 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case setupError = "setup_error"
     case unavailableVolume = "unavailable_volume"
     case volume
+    case linkedIssue = "linked_issue"
+  }
+}
+
+/// The Linear issue a session works on.
+public struct RemoteLinkedIssue: Codable, Hashable, Sendable {
+  /// `ENG-123`.
+  public var identifier: String
+  public var title: String
+  public var url: String
+
+  public init(identifier: String, title: String, url: String) {
+    self.identifier = identifier
+    self.title = title
+    self.url = url
   }
 }
 

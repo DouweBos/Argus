@@ -108,3 +108,17 @@ Linear**. Pick a team, write a title and a description, then:
 - **File & start agent** creates it the same way and opens the project's
   start composer with the issue attached, ready to hand to an agent in a new
   worktree.
+
+## On iPhone and the Mac app
+
+On a paired iPhone with control, **New agent** offers **Add Linear issue**
+when the computer has Linear connected. Search or pick from your open
+issues, select one or several, and **Start N agents**: each issue gets its
+own worktree on Linear's branch name and an agent that starts from the
+issue, with anything you typed after it. A session started from an issue
+shows the issue at the top of its section; tap it to open it in Linear.
+
+The computer's page in the iPhone app's settings lists which integrations
+are connected and as whom. Connecting and disconnecting stay on the
+computer, so API keys never travel to the phone. Filing bugs from the
+simulator and comparing against Figma frames are desktop-only.

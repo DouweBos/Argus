@@ -3722,6 +3722,71 @@ extension ArgusProtocol {
       }
     }
 
+    public struct IntegrationsListParams: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
+    public struct IntegrationsListResult: Codable, Sendable {
+      public var integrations: [IntegrationStatus]
+
+      enum CodingKeys: String, CodingKey {
+        case integrations = "integrations"
+      }
+
+      public init(integrations: [IntegrationStatus]) {
+        self.integrations = integrations
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(integrations, forKey: .integrations)
+      }
+    }
+
+    public struct LinearIssuesParams: Codable, Sendable {
+      public var query: String?
+      public var limit: Int?
+
+      enum CodingKeys: String, CodingKey {
+        case query = "query"
+        case limit = "limit"
+      }
+
+      public init(query: String? = nil, limit: Int? = nil) {
+        self.query = query
+        self.limit = limit
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(query, forKey: .query)
+        try c.encodeIfPresent(limit, forKey: .limit)
+      }
+    }
+
+    public struct LinearIssuesResult: Codable, Sendable {
+      public var issues: [LinearIssue]
+
+      enum CodingKeys: String, CodingKey {
+        case issues = "issues"
+      }
+
+      public init(issues: [LinearIssue]) {
+        self.issues = issues
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(issues, forKey: .issues)
+      }
+    }
+
     public struct PermissionRespondParamsDecision: RawRepresentable, Codable, Hashable, Sendable {
       public var rawValue: String
       public init(rawValue: String) { self.rawValue = rawValue }
@@ -4436,6 +4501,7 @@ extension ArgusProtocol {
       public var model: String?
       public var permissionMode: RemotePermissionMode?
       public var runnerId: String?
+      public var linearIssue: String?
 
       enum CodingKeys: String, CodingKey {
         case repoRoot = "repo_root"
@@ -4447,9 +4513,10 @@ extension ArgusProtocol {
         case model = "model"
         case permissionMode = "permission_mode"
         case runnerId = "runner_id"
+        case linearIssue = "linear_issue"
       }
 
-      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil, model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil) {
+      public init(repoRoot: String, branch: String, description: String, useExistingBranch: Bool? = nil, baseBranch: String? = nil, prompt: String? = nil, model: String? = nil, permissionMode: RemotePermissionMode? = nil, runnerId: String? = nil, linearIssue: String? = nil) {
         self.repoRoot = repoRoot
         self.branch = branch
         self.description = description
@@ -4459,6 +4526,7 @@ extension ArgusProtocol {
         self.model = model
         self.permissionMode = permissionMode
         self.runnerId = runnerId
+        self.linearIssue = linearIssue
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -4472,6 +4540,7 @@ extension ArgusProtocol {
         try c.encodeIfPresent(model, forKey: .model)
         try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
         try c.encodeIfPresent(runnerId, forKey: .runnerId)
+        try c.encodeIfPresent(linearIssue, forKey: .linearIssue)
       }
     }
 
@@ -6203,6 +6272,18 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.HostEndpointsParams
       public typealias Result = ArgusProtocol.MethodsTypes.HostEndpointsResult
       public static let name = "host.endpoints"
+    }
+
+    public enum IntegrationsList: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.IntegrationsListParams
+      public typealias Result = ArgusProtocol.MethodsTypes.IntegrationsListResult
+      public static let name = "integrations.list"
+    }
+
+    public enum LinearIssues: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.LinearIssuesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.LinearIssuesResult
+      public static let name = "linear.issues"
     }
 
     public enum PermissionRespond: RemoteCommand {

@@ -48,6 +48,9 @@ public struct StartAgentSheet: View {
   @State private var mode: RemotePermissionMode?
   @State private var picker: Picker?
   @State private var starting = false
+  /// Each gets its own worktree on Linear's branch name.
+  @State private var issues: [HostStore.LinearIssue] = []
+  @State private var pickingIssues = false
 
   public init(
     repoRoot: String?,
@@ -73,6 +76,7 @@ public struct StartAgentSheet: View {
 
   private var canStart: Bool {
     guard !starting else { return false }
+    if !issues.isEmpty { return repoRoot != nil }
     switch workspace {
     case .current: return sessionId != nil
     // The branch is named from the prompt, so it needs words.
@@ -96,16 +100,26 @@ public struct StartAgentSheet: View {
   public var body: some View {
     NavigationStack {
       Screen {
-        Field(
-          label: "WHAT SHOULD IT DO?",
-          caption: workspace == .worktree ? "The computer names the branch from this." : nil
-        ) {
+        Field(label: "WHAT SHOULD IT DO?", caption: promptCaption) {
           ThemedTextField(
-            placeholder: "Fix the flaky login test", text: $prompt,
-            multiline: true, lines: 3...8)
+            placeholder: issues.isEmpty ? "Fix the flaky login test" : "Anything to add (optional)",
+            text: $prompt, multiline: true, lines: 3...8)
+          if repoRoot != nil, host.linearConnected {
+            if !issues.isEmpty { PickedIssueChips(issues: $issues) }
+            Btn(label: "Add Linear issue", tone: .secondary, small: true, icon: Icon.issue) {
+              pickingIssues = true
+            }
+          }
         }
 
-        if workspaceOptions.count > 1 {
+        if !issues.isEmpty {
+          Field(label: "WHERE", caption: "A new worktree per issue, on Linear's branch name.") {
+            Btn(
+              label: baseBranch.isEmpty ? "Base: project default" : "Base: \(baseBranch)",
+              tone: .secondary, small: true
+            ) { picker = .base }
+          }
+        } else if workspaceOptions.count > 1 {
           Field(label: "WHERE") {
             SegmentedControl(value: $workspace, options: workspaceOptions)
 
@@ -142,7 +156,7 @@ public struct StartAgentSheet: View {
           ) { picker = .mode }
         }
 
-        Btn(label: starting ? "Starting…" : "Start agent", icon: Icon.plus) { start() }
+        Btn(label: startLabel, icon: Icon.plus) { start() }
           .disabled(!canStart)
       }
       .navigationTitle("New agent")
@@ -153,13 +167,27 @@ public struct StartAgentSheet: View {
         }
       }
       .sheet(item: $picker) { which in picked(which) }
+      .background {
+        Color.clear.sheet(isPresented: $pickingIssues) { IssuePickerSheet(selection: $issues) }
+      }
       .task {
+        if repoRoot != nil { await host.loadIntegrations() }
         await host.loadRunners()
         if let sessionId, repoRoot != nil {
           branches = await host.listBranches(sessionId: sessionId)
         }
       }
     }
+  }
+
+  private var promptCaption: String? {
+    if !issues.isEmpty { return "Each agent starts from its issue; this goes after it." }
+    return workspace == .worktree ? "The computer names the branch from this." : nil
+  }
+
+  private var startLabel: String {
+    if starting { return "Starting…" }
+    return issues.count > 1 ? "Start \(issues.count) agents" : "Start agent"
   }
 
   private var selectedRunner: RemoteRunner? {
@@ -244,20 +272,32 @@ public struct StartAgentSheet: View {
 
   private func start() {
     starting = true
-    let chosen = workspace
+    let chosen = issues.isEmpty ? workspace : .worktree
     Task {
       let started: Started?
-      switch chosen {
-      case .current:
-        started = await startHere()
-      case .worktree, .existing:
-        started = await startInNewSession(existing: chosen == .existing)
+      if !issues.isEmpty {
+        started = await startFromIssues()
+      } else {
+        switch chosen {
+        case .current:
+          started = await startHere()
+        case .worktree, .existing:
+          started = await startInNewSession(existing: chosen == .existing)
+        }
       }
       starting = false
       guard let started else { return }
       onStarted(started, chosen)
       dismiss()
     }
+  }
+
+  private func startFromIssues() async -> Started? {
+    guard let repoRoot else { return nil }
+    let sessions = await host.startFromIssues(
+      issues, repoRoot: repoRoot, baseBranch: baseBranch.isEmpty ? nil : baseBranch,
+      prompt: trimmedPrompt, model: model, permissionMode: mode, runnerId: runner)
+    return sessions.first.map { .session($0) }
   }
 
   private func startHere() async -> Started? {
