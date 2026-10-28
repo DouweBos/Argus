@@ -337,11 +337,18 @@ describe("account approvals", () => {
 
     const hostId = status.accountStatus().host_id;
     await members.renameMember(hostId!, "Mac mini");
-    expect(JSON.parse(fake.entries.at(-1)!.body)).toMatchObject({
+    expect(JSON.parse(fake.entries.at(-2)!.body)).toMatchObject({
       type: "rename",
       member_id: hostId,
       signer: hostId,
       name: "Mac mini",
+    });
+    await members.renameMember(phone.id, "Kitchen");
+    expect(JSON.parse(fake.entries.at(-1)!.body)).toMatchObject({
+      type: "rename",
+      member_id: phone.id,
+      signer: deviceId,
+      name: "Kitchen",
     });
     await expect(members.renameMember(phone.id, "")).rejects.toMatch(/1–64/);
     expect(status.accountStatus().head_seq).toBe(fake.entries.length - 1);

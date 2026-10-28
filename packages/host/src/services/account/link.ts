@@ -128,7 +128,7 @@ export async function startLink(
   }
   const host = await hostMember(record);
   const device =
-    withDevice && record.device ? deviceMember(record.device) : null;
+    withDevice && record.device ? deviceMember(record.device, host.name) : null;
   const proofs: Record<string, string> = {
     [host.id]: makeProof(host, record.host_sign_priv),
   };

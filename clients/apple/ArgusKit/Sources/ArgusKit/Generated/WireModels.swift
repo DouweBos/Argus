@@ -769,6 +769,8 @@ extension ArgusProtocol {
     public var presenceAt: Double?
     public var config: AccountConfig
     public var link: AccountLinkState
+    public var name: String?
+    public var systemName: String?
 
     enum CodingKeys: String, CodingKey {
       case linked = "linked"
@@ -782,9 +784,11 @@ extension ArgusProtocol {
       case presenceAt = "presence_at"
       case config = "config"
       case link = "link"
+      case name = "name"
+      case systemName = "system_name"
     }
 
-    public init(linked: Bool, accountId: String? = nil, epoch: Int? = nil, hostId: String? = nil, deviceId: String? = nil, safetyCode: String? = nil, headSeq: Int? = nil, logError: String? = nil, presenceAt: Double? = nil, config: AccountConfig, link: AccountLinkState) {
+    public init(linked: Bool, accountId: String? = nil, epoch: Int? = nil, hostId: String? = nil, deviceId: String? = nil, safetyCode: String? = nil, headSeq: Int? = nil, logError: String? = nil, presenceAt: Double? = nil, config: AccountConfig, link: AccountLinkState, name: String? = nil, systemName: String? = nil) {
       self.linked = linked
       self.accountId = accountId
       self.epoch = epoch
@@ -796,6 +800,8 @@ extension ArgusProtocol {
       self.presenceAt = presenceAt
       self.config = config
       self.link = link
+      self.name = name
+      self.systemName = systemName
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -811,6 +817,8 @@ extension ArgusProtocol {
       try c.encode(presenceAt, forKey: .presenceAt)
       try c.encode(config, forKey: .config)
       try c.encode(link, forKey: .link)
+      try c.encodeIfPresent(name, forKey: .name)
+      try c.encodeIfPresent(systemName, forKey: .systemName)
     }
   }
 

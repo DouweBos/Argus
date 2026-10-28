@@ -16,6 +16,7 @@ import {
   listRequests,
 } from "../services/account/approvals";
 import { cancelLink, confirmLink, startLink } from "../services/account/link";
+import { setComputerName } from "../services/account/name";
 import {
   getAccountStatus,
   listHosts,
@@ -84,7 +85,9 @@ async function printAccount(print: (line: string) => void): Promise<void> {
 
     return;
   }
-  print(`Linked. Account safety code: ${status.safety_code}`);
+  print(
+    `Linked as "${status.name}". Account safety code: ${status.safety_code}`,
+  );
   const tunnel = getManagedTunnelState();
   print(
     tunnel.phase === "running" && tunnel.url
@@ -137,10 +140,20 @@ async function setSetting(
   args: string[],
   print: (line: string) => void,
 ): Promise<void> {
+  if (args[0] === "name" && args.length > 1) {
+    const name = args.slice(1).join(" ");
+    const status = await setComputerName(
+      name === "default" ? null : name,
+      "terminal",
+    );
+    print(`This computer is now called "${status.name}".`);
+
+    return;
+  }
   const patch = settingPatch(args[0] ?? "", args[1] ?? "");
   if (!patch) {
     print(
-      "account set enabled|lan|tailscale|cloudflare|approve|tunnel on|off, account set ios monitor|control, account set desktop monitor|control|admin, account set service <url>|default",
+      "account set enabled|lan|tailscale|cloudflare|approve|tunnel on|off, account set ios monitor|control, account set desktop monitor|control|admin, account set service <url>|default, account set name <name>|default",
     );
 
     return;

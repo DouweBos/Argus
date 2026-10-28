@@ -171,6 +171,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AccountSetNameParams: Codable, Sendable {
+      public var name: String?
+
+      enum CodingKeys: String, CodingKey {
+        case name = "name"
+      }
+
+      public init(name: String? = nil) {
+        self.name = name
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(name, forKey: .name)
+      }
+    }
+
     public struct AddRepoRootParams: Codable, Sendable {
       public var path: String
 
@@ -9387,6 +9404,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.AccountSetConfigParams
       public typealias Result = ArgusProtocol.AccountStatus
       public static let name = "account_set_config"
+      public static let tier = "host"
+    }
+
+    public enum AccountSetName: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.AccountSetNameParams
+      public typealias Result = ArgusProtocol.AccountStatus
+      public static let name = "account_set_name"
       public static let tier = "host"
     }
 
