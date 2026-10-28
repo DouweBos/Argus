@@ -18,13 +18,22 @@ vi.mock("@argus/remote-client", async (importOriginal) => ({
   Transport: class {
     constructor(
       _credentials: unknown,
-      handlers: { onEvent: (env: never) => void },
+      private readonly handlers: {
+        onEvent: (env: never) => void;
+        onState: (state: string) => void;
+      },
     ) {
       capturedOnEvent = handlers.onEvent as EventHandler;
     }
-    connect() {}
+    // The fake gateway answers at once, so every test starts connected.
+    connect() {
+      this.handlers.onState("ready");
+    }
     disconnect() {}
     request(method: string, params: unknown) {
+      if (method === "host.endpoints") {
+        return Promise.resolve({ endpoints: [] });
+      }
       requests.push({ method, params });
 
       return Promise.resolve("ok");
@@ -56,7 +65,10 @@ const host = {
 };
 
 function makeTransport() {
-  return new RemoteTransport(host, { onState: () => undefined });
+  const transport = new RemoteTransport(host, { onState: () => undefined });
+  transport.connect();
+
+  return transport;
 }
 
 describe("remoteTransport", () => {

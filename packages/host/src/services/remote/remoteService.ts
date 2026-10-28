@@ -1,12 +1,12 @@
 /**
  * Lifecycle for phone/LAN remote access. When enabled, starts the local gateway
- * server and, optionally, a tunnel (Cloudflare or Tailscale) that exposes it
- * off-network. In LAN mode the gateway binds the network interface and serves
- * the web client, so other devices on your Wi-Fi can open it in a browser.
+ * server on the network interface, so devices on your Wi-Fi (or tailnet) reach
+ * it directly and the account's managed tunnel has something to forward to.
  * Started from `main.ts` and re-applied whenever the settings change.
  */
 
 import { loadAppSettings, saveAppSettings } from "../appSettings/store";
+import { CloudflaredInstallError, ensureCloudflared } from "./cloudflared";
 import {
   getDesktopIdentity,
   listDevices,
@@ -16,6 +16,7 @@ import {
 import {
   getEndpoints,
   getLanUrl,
+  getTailnetUrl,
   LOCAL_GATEWAY_PORT,
   setGatewayOnLan,
   type EndpointKind,
@@ -28,22 +29,27 @@ import {
   setConnectionsChangedListener,
 } from "./gateway";
 import { endAllRooms } from "./huddle";
+import {
+  legacyTunnelStates,
+  retireLegacyTunnels,
+  startLegacyTunnels,
+  type LegacyTunnelState,
+} from "./legacyTunnels";
 import { startLocalGateway, stopLocalGateway } from "./localGatewayServer";
+import {
+  getManagedTunnelState,
+  type ManagedTunnelState,
+} from "./managedTunnel";
 import { probeGatewayUrl } from "./reachability";
 import { cloudflaredMissingError, quickTunnelError } from "./shareError";
 import {
-  binaryOnPath,
   getTunnelState,
   markTunnelReachability,
-  getTunnelStates,
   onTunnelChange,
   startTunnel,
   stopTunnel,
   subscribeTunnelChange,
-  TUNNEL_PROVIDERS,
-  type CloudflareMode,
   type TunnelProvider,
-  type TunnelState,
 } from "./tunnelManager";
 
 export { getEndpoints, getLanUrl, LOCAL_GATEWAY_PORT };
@@ -61,61 +67,36 @@ export function isRemoteActive(): boolean {
   return running;
 }
 
-/**
- * Which tunnels should be running. Installs that predate concurrent providers
- * only have the old exclusive `remote_provider`, so fold it in as a default.
- */
-export function enabledProviders(): TunnelProvider[] {
-  const settings = loadAppSettings();
-  const legacy = settings.remote_provider;
-
-  return TUNNEL_PROVIDERS.filter((provider) => {
-    const flag =
-      provider === "tailscale"
-        ? settings.remote_tailscale_enabled
-        : settings.remote_cloudflare_enabled;
-
-    return flag ?? legacy === provider;
-  });
-}
-
-/** Cloudflare can't start without a token in named-tunnel mode. */
-function isStartable(provider: TunnelProvider): boolean {
-  const settings = loadAppSettings();
-  if (provider !== "cloudflare") {
-    return true;
-  }
-
-  return (
-    (settings.remote_tunnel_mode ?? "quick") !== "token" ||
-    Boolean(settings.remote_tunnel_token)
-  );
-}
+const SEED_ORDER: EndpointKind[] = ["cloudflare", "tailscale", "lan"];
 
 /**
- * Address to seed the pairing payload with. Prefers a tunnel so a QR scanned at
- * home keeps working away from the LAN; the full list is synced after connect.
+ * Address to seed the pairing payload with. Prefers the tunnel, so a QR
+ * scanned at home keeps working away from the LAN; the full list is synced
+ * after connect.
  */
 export function getPublicUrl(): string | null {
   const endpoints = getEndpoints();
-  const tunnelled = endpoints.find((e) => e.kind !== "lan");
+  for (const kind of SEED_ORDER) {
+    const found = endpoints.find((e) => e.kind === kind);
+    if (found) {
+      return found.url;
+    }
+  }
 
-  return (tunnelled ?? endpoints[0])?.url ?? null;
+  return null;
 }
 
 export interface RemoteStatus {
   enabled: boolean;
-  /** Independently enabled tunnel providers. */
-  tailscaleEnabled: boolean;
-  cloudflareEnabled: boolean;
-  /** Per-provider runtime state, keyed by provider. */
-  tunnels: Record<TunnelProvider, TunnelState>;
   /** Every address a phone could use right now, best first. */
   endpoints: RemoteEndpoint[];
-  tunnelMode: CloudflareMode;
-  hasTunnelToken: boolean;
   publicUrl: string | null;
   lanUrl: string | null;
+  /** This computer's tailnet address, when Tailscale is connected. */
+  tailscaleUrl: string | null;
+  managedTunnel: ManagedTunnelState;
+  /** Tunnels configured by an earlier version, still running until replaced. */
+  legacyTunnels: LegacyTunnelState[];
   /** Mirror notifications to devices even while the desktop window is focused. */
   notifyWhenFocused: boolean;
   devices: PairedDevice[];
@@ -125,18 +106,16 @@ export interface RemoteStatus {
 
 export async function getRemoteStatus(): Promise<RemoteStatus> {
   const settings = loadAppSettings();
-  const enabled = enabledProviders();
+  const endpoints = getEndpoints();
 
   return {
     enabled: Boolean(settings.remote_enabled),
-    tailscaleEnabled: enabled.includes("tailscale"),
-    cloudflareEnabled: enabled.includes("cloudflare"),
-    tunnels: getTunnelStates(),
-    endpoints: getEndpoints(),
-    tunnelMode: settings.remote_tunnel_mode ?? "quick",
-    hasTunnelToken: Boolean(settings.remote_tunnel_token),
+    endpoints,
     publicUrl: getPublicUrl(),
-    lanUrl: getEndpoints().find((e) => e.kind === "lan")?.url ?? null,
+    lanUrl: endpoints.find((e) => e.kind === "lan")?.url ?? null,
+    tailscaleUrl: running ? getTailnetUrl() : null,
+    managedTunnel: getManagedTunnelState(),
+    legacyTunnels: running ? legacyTunnelStates() : [],
     notifyWhenFocused: Boolean(settings.remote_notify_when_focused),
     devices: await listDevices(),
     connectedDeviceIds: getConnectedDeviceIds(),
@@ -145,31 +124,12 @@ export async function getRemoteStatus(): Promise<RemoteStatus> {
 
 export async function setRemoteConfig(cfg: {
   enabled?: boolean;
-  tailscaleEnabled?: boolean;
-  cloudflareEnabled?: boolean;
-  tunnelMode?: CloudflareMode;
-  tunnelToken?: string;
-  publicUrl?: string;
   notifyWhenFocused?: boolean;
+  retireLegacyTunnels?: boolean;
 }): Promise<RemoteStatus> {
   const patch: Parameters<typeof saveAppSettings>[0] = {};
   if (cfg.enabled !== undefined) {
     patch.remote_enabled = cfg.enabled;
-  }
-  if (cfg.tailscaleEnabled !== undefined) {
-    patch.remote_tailscale_enabled = cfg.tailscaleEnabled;
-  }
-  if (cfg.cloudflareEnabled !== undefined) {
-    patch.remote_cloudflare_enabled = cfg.cloudflareEnabled;
-  }
-  if (cfg.tunnelMode !== undefined) {
-    patch.remote_tunnel_mode = cfg.tunnelMode;
-  }
-  if (cfg.tunnelToken !== undefined) {
-    patch.remote_tunnel_token = cfg.tunnelToken.trim();
-  }
-  if (cfg.publicUrl !== undefined) {
-    patch.remote_public_url = cfg.publicUrl.trim();
   }
   if (cfg.notifyWhenFocused !== undefined) {
     patch.remote_notify_when_focused = cfg.notifyWhenFocused;
@@ -177,7 +137,16 @@ export async function setRemoteConfig(cfg: {
   if (Object.keys(patch).length > 0) {
     saveAppSettings(patch);
   }
-  await applyRemoteSettings();
+  if (cfg.retireLegacyTunnels) {
+    retireLegacyTunnels("user", { spareCloudflare: huddleOwnsCloudflare });
+  }
+  // Only the master switch changes what runs; a notification preference
+  // mustn't bounce the gateway under connected phones.
+  if (cfg.enabled !== undefined) {
+    await applyRemoteSettings();
+  } else {
+    statusListener?.();
+  }
 
   return getRemoteStatus();
 }
@@ -219,7 +188,7 @@ function gatewayOpts(onLan: boolean): {
   return { host: onLan ? "0.0.0.0" : "127.0.0.1", staticDir: webClientDir };
 }
 
-/** Tear down then, if enabled, bring up the local gateway (+ optional tunnel). */
+/** Tear down then, if enabled, bring up the local gateway. */
 export async function applyRemoteSettings(): Promise<void> {
   stopRemote();
 
@@ -230,26 +199,23 @@ export async function applyRemoteSettings(): Promise<void> {
   const identity = await getDesktopIdentity();
 
   await startLocalGateway(LOCAL_GATEWAY_PORT, identity, gatewayOpts(true));
-
-  // Tunnels are optional and independent — each enabled provider gets its own
-  // process.
-  const cloudflareMode: CloudflareMode = settings.remote_tunnel_mode ?? "quick";
-  for (const provider of enabledProviders()) {
-    if (!isStartable(provider)) {
-      continue;
-    }
-    startTunnel({
-      provider,
-      localPort: LOCAL_GATEWAY_PORT,
-      cloudflareMode,
-      cloudflareToken: settings.remote_tunnel_token,
-      cloudflarePublicUrl: settings.remote_public_url,
-    });
+  if (getManagedTunnelState().phase !== "running") {
+    startLegacyTunnels(LOCAL_GATEWAY_PORT);
   }
   running = true;
   setGatewayOnLan(true);
   statusListener?.();
 }
+
+/**
+ * The managed tunnel replaces whatever an earlier version configured: once it
+ * is up, those are stopped and their settings dropped for good.
+ */
+subscribeTunnelChange(() => {
+  if (getManagedTunnelState().phase === "running") {
+    retireLegacyTunnels("managed", { spareCloudflare: huddleOwnsCloudflare });
+  }
+});
 
 export function stopRemote(): void {
   // Rooms are in memory and die with the gateway: end them first so guest
@@ -268,12 +234,13 @@ export function stopRemote(): void {
 
 /**
  * On-demand public URL for huddles. A huddle link only works if some endpoint
- * off this machine reaches the gateway, but remote access may be off entirely,
- * so it can raise a Cloudflare quick tunnel and drop it again afterwards.
+ * off this machine reaches the gateway, but remote access may be off entirely
+ * and a computer with no account has no managed tunnel, so it can raise a
+ * Cloudflare quick tunnel and drop it again afterwards.
  *
  * Reference-counted: overlapping huddles share one tunnel and only the last
- * release tears it down. A tunnel the user enabled in Settings is reused and
- * never stopped here.
+ * release tears it down. The managed tunnel, or one an earlier version set up,
+ * is reused and never stopped here.
  */
 const QUICK_TUNNEL_TIMEOUT_MS = 30_000;
 
@@ -344,11 +311,11 @@ function waitForTunnelUrl(
   });
 }
 
-function quickTunnelFailure(reasons: string[]): Error {
+function quickTunnelFailure(reasons: string[], missing: boolean): Error {
   const detail = reasons.filter(Boolean).join("\n");
   // A missing binary has one fix and reads nothing like a flaky tunnel, so it
   // gets its own explanation rather than the rate-limit one.
-  if (!binaryOnPath("cloudflared")) {
+  if (missing) {
     return cloudflaredMissingError(detail || undefined);
   }
 
@@ -358,7 +325,7 @@ function quickTunnelFailure(reasons: string[]): Error {
 /** Why a URL that exists still isn't usable, in terms the user can act on. */
 function unreachableReason(kind: EndpointKind, url: string): string {
   if (kind === "tailscale") {
-    return `Tailscale published ${wssToHttps(url)} but nothing answered through it — this Mac probably isn't connected to your tailnet. Open the Tailscale app and sign in, then try again.`;
+    return `Tailscale Funnel published ${wssToHttps(url)} but nothing answered through it — this Mac probably isn't connected to your tailnet.`;
   }
 
   return `${wssToHttps(url)} didn't route back to Argus.`;
@@ -416,12 +383,13 @@ export async function acquirePublicUrl(
   await ensureGatewayUp();
   const failures: string[] = [];
 
-  // Something may already reach us — the user's own tunnel, a Tailscale funnel,
-  // or one an earlier huddle raised — but only if it truly answers. A guest gets
-  // one URL and no fallback list, so each candidate is probed before it's used.
-  // getEndpoints() ranks Tailscale above Cloudflare.
+  // Something may already reach us — the managed tunnel, one an earlier
+  // version set up, or one an earlier huddle raised — but only if it truly
+  // answers. A guest gets one URL and no fallback list, so each candidate is
+  // probed first. Only `wss://` counts: a guest's browser can't reach a LAN
+  // or tailnet address.
   for (const candidate of getEndpoints()) {
-    if (candidate.kind === "lan") {
+    if (!candidate.url.startsWith("wss://")) {
       continue;
     }
     if (await confirmReachable(candidate.kind, candidate.url)) {
@@ -432,10 +400,10 @@ export async function acquirePublicUrl(
     failures.push(unreachableReason(candidate.kind, candidate.url));
   }
 
-  // A provider the user enabled is still coming up: wait for it rather than
-  // racing a second tunnel onto the same port.
-  const pending = enabledProviders().find(
-    (p) => isStartable(p) && getTunnelState(p).status === "starting",
+  // A tunnel already on its way up: wait for it rather than racing a second
+  // one onto the same port.
+  const pending = (["tailscale", "cloudflare"] as TunnelProvider[]).find(
+    (p) => getTunnelState(p).status === "starting",
   );
   if (pending) {
     try {
@@ -447,25 +415,33 @@ export async function acquirePublicUrl(
       }
       failures.push(unreachableReason(pending, url));
     } catch (e) {
-      // Fall through: a failing Tailscale funnel is exactly when a quick
-      // tunnel earns its keep.
+      // Fall through: a failing Funnel is exactly when a quick tunnel earns
+      // its keep.
       failures.push(`${pending}: ${(e as Error).message}`);
     }
   }
 
-  // Last resort. Never on top of a Cloudflare tunnel the user configured —
-  // starting ours would kill theirs and nothing here would put it back.
-  if (
-    enabledProviders().includes("cloudflare") &&
-    getTunnelState("cloudflare").publicUrl
-  ) {
-    throw quickTunnelFailure(failures);
+  // Last resort. Never on top of a Cloudflare tunnel that is already up —
+  // starting ours would kill it and nothing here would put it back.
+  if (getTunnelState("cloudflare").publicUrl) {
+    throw quickTunnelFailure(failures, false);
   }
 
+  let bin: string;
+  try {
+    bin = (await ensureCloudflared()).path;
+  } catch (e) {
+    if (publicUrlRefs === 0 && huddleStartedGateway) {
+      stopHuddleGateway();
+    }
+    const reason = e instanceof CloudflaredInstallError ? e.message : String(e);
+    throw quickTunnelFailure([...failures, reason], true);
+  }
   startTunnel({
     provider: "cloudflare",
     localPort: LOCAL_GATEWAY_PORT,
     cloudflareMode: "quick",
+    bin,
   });
   huddleOwnsCloudflare = true;
   try {
@@ -484,7 +460,7 @@ export async function acquirePublicUrl(
         stopHuddleGateway();
       }
     }
-    throw quickTunnelFailure([...failures, (e as Error).message]);
+    throw quickTunnelFailure([...failures, (e as Error).message], false);
   }
 }
 

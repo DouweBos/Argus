@@ -10,7 +10,6 @@
 export type ShareErrorKind =
   | "cloudflared-missing"
   | "quick-tunnel-failed"
-  | "tailscale-not-ready"
   | "tunnel-unreachable"
   | "unknown";
 
@@ -85,66 +84,28 @@ export function isShareErrorPayload(
   );
 }
 
-const TAILSCALE_ALTERNATIVE =
-  "Already on Tailscale? Turn it on under Settings → Remote access and sharing " +
-  "uses your tailnet instead — no cloudflared needed.";
+const ACCOUNT_ALTERNATIVE =
+  "Sign in to an account under Settings → Account and this computer gets a " +
+  "tunnel of its own, which sharing uses instead.";
 
-/** `cloudflared` isn't installed, and nothing else can carry the link. */
+/** `cloudflared` couldn't be installed, and nothing else can carry the link. */
 export function cloudflaredMissingError(detail?: string): ShareError {
   return new ShareError(
     "cloudflared-missing",
-    "Argus needs cloudflared to hand out a share link",
+    "Argus couldn't set up cloudflared to hand out a share link",
     {
       explanation:
         "A guest opens the link from outside your network, so Argus needs a way " +
         "in that doesn't mean opening a port. It uses Cloudflare's free quick " +
-        "tunnel for that, which runs through the `cloudflared` command — and " +
-        "that command isn't installed on this Mac.",
+        "tunnel for that, through the `cloudflared` command, which Argus " +
+        "downloads the first time it's needed — and that download didn't work.",
       steps: [
-        "Run the command below in a terminal.",
-        "Quit and reopen Argus so it picks the command up.",
-        "Come back here and start sharing.",
+        "Check this computer's internet connection.",
+        "Try sharing again.",
+        "Still stuck? Install it yourself with the command below and restart Argus.",
       ],
       command: "brew install cloudflared",
-      alternative: TAILSCALE_ALTERNATIVE,
-      detail,
-    },
-  );
-}
-
-/** What each Tailscale prerequisite means when it's the one in the way. */
-const TAILSCALE_BLOCKER_TITLES: Record<string, string> = {
-  cli: "Tailscale isn't installed on this Mac",
-  daemon: "Tailscale isn't running",
-  login: "Tailscale isn't signed in",
-  funnel: "Funnel isn't enabled on your tailnet",
-};
-
-/**
- * Tailscale is the only way out but isn't ready. Its prerequisites are ordered,
- * so only the first failing one is worth putting in front of anyone — the rest
- * can't be judged until it passes.
- */
-export function tailscaleNotReadyError(
-  blockingStep: { id: string; message: string },
-  detail?: string,
-): ShareError {
-  return new ShareError(
-    "tailscale-not-ready",
-    TAILSCALE_BLOCKER_TITLES[blockingStep.id] ??
-      "Tailscale can't carry a share link yet",
-    {
-      explanation:
-        "Sharing goes out over your tailnet, which needs Tailscale installed, " +
-        "running, signed in, and allowed to use Funnel. " +
-        blockingStep.message,
-      steps: [
-        "Open Settings → Remote access — Argus checks each step there and can fix most of them for you.",
-        "Once every check passes, come back and start sharing.",
-      ],
-      alternative:
-        "Rather not use Tailscale? Install Cloudflare's tunnel instead with " +
-        "`brew install cloudflared` and restart Argus.",
+      alternative: ACCOUNT_ALTERNATIVE,
       detail,
     },
   );
@@ -159,7 +120,7 @@ export function quickTunnelError(detail: string): ShareError {
       "though nothing is wrong on this Mac.",
     steps: [
       "Wait a minute, then try again.",
-      "If it keeps failing, set up Tailscale or a named Cloudflare tunnel under Settings → Remote access for a link that doesn't depend on quick tunnels.",
+      "If it keeps failing, sign in to an account under Settings → Account: this computer then gets a tunnel of its own that doesn't depend on quick tunnels.",
     ],
     detail,
   });

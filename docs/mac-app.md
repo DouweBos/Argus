@@ -85,7 +85,7 @@ go through the host, exactly as in the Electron app.
   theme as preview cards), Claude accounts, agents and automation
   defaults, LLM runners including custom ones, MCP servers, tools, git
   defaults and commit signing, the update channel, remote access —
-  pairing a phone, its grants, push and tunnels — and your Argus account
+  pairing a phone, its grants, push and the routes in — and your Argus account
   (see [Other hosts](#other-hosts)).
 - **Project Settings** from a project's menu in the sidebar: every
   `.argus.json` field, plus your own branch prefix and worktree locations.
@@ -220,7 +220,8 @@ headless Argus server, or `argus-host` — as well as its own:
   join is announced in the main window; **Review…** compares the code and adds
   it.
 - **Settings → Hosts** lists the hosts on your account beside paired ones and
-  attaches them with no pairing code; a host whose tunnel address changed is
+  attaches them with no pairing code, over the fastest route that works (moving
+  to a faster one when the network changes); a host whose address changed is
   found again from the account. To pair without an account, paste the pairing
   code from that machine's Remote screen, compare the 6-digit code, and approve
   it there with **Admin** ticked. Paired hosts can be renamed, attached,

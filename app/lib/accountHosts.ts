@@ -1,11 +1,11 @@
 /**
  * Computers on this desktop's account, merged into the paired-hosts list so
  * the Hosts screen and the transport treat them like any other host. The
- * account wins on the address (it tracks tunnel changes); a QR pairing to the
+ * account supplies the routes (it tracks tunnel changes); a QR pairing to the
  * same computer keeps its own keys and grant.
  */
 
-import type { AccountDeviceKey, AccountHost } from "./types";
+import type { AccountDeviceKey, AccountHost, RemoteEndpoint } from "./types";
 import { setAccountPresence } from "../stores/accountPresenceStore";
 import {
   addRemoteHost,
@@ -16,10 +16,24 @@ import { accountDeviceKey, accountListHosts } from "./ipc";
 
 /** The address to dial first: the LAN when published, else the best tunnel. */
 export function preferredUrl(host: AccountHost): string | null {
-  const sorted = [...host.endpoints].sort((a, b) => a.priority - b.priority);
-
-  return sorted[0]?.url ?? null;
+  return sortedEndpoints(host)[0]?.url ?? null;
 }
+
+function sortedEndpoints(host: AccountHost): RemoteEndpoint[] {
+  return [...host.endpoints].sort((a, b) => a.priority - b.priority);
+}
+
+/** Keep the route that last worked while the account still lists it. */
+function dialUrl(current: string | undefined, host: AccountHost): string {
+  if (current && host.endpoints.some((e) => e.url === current)) {
+    return current;
+  }
+
+  return preferredUrl(host) ?? current ?? "";
+}
+
+const sameEndpoints = (a?: RemoteEndpoint[], b?: RemoteEndpoint[]) =>
+  JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
 
 /** What the store should hold, given the account's verified computers. */
 export function mergeAccountHosts(
@@ -33,13 +47,17 @@ export function mergeAccountHosts(
     if (host.is_self) {
       continue;
     }
-    const url = preferredUrl(host);
+    const endpoints = sortedEndpoints(host);
     const paired = existing.find(
       (h) => h.source !== "account" && h.hostPubB64 === host.noise_pub,
     );
     if (paired) {
-      if (url && paired.url !== url) {
-        upsert.push({ ...paired, url });
+      if (endpoints.length === 0) {
+        continue;
+      }
+      const url = dialUrl(paired.url, host);
+      if (paired.url !== url || !sameEndpoints(paired.endpoints, endpoints)) {
+        upsert.push({ ...paired, url, endpoints });
       }
       continue;
     }
@@ -51,7 +69,8 @@ export function mergeAccountHosts(
     const next: RemoteHost = {
       id: host.host_id,
       label: current?.label ?? host.name,
-      url: url ?? current?.url ?? "",
+      url: dialUrl(current?.url, host),
+      endpoints,
       devPrivB64: key.noise_priv,
       devPubB64: key.noise_pub,
       hostPubB64: host.noise_pub,
@@ -63,6 +82,7 @@ export function mergeAccountHosts(
     if (
       !current ||
       current.url !== next.url ||
+      !sameEndpoints(current.endpoints, next.endpoints) ||
       current.hostPubB64 !== next.hostPubB64 ||
       current.devPubB64 !== next.devPubB64
     ) {

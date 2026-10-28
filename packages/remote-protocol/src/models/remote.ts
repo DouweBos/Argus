@@ -44,13 +44,7 @@ export const PairedDevice = z.object({
 });
 export type PairedDevice = z.infer<typeof PairedDevice>;
 
-// --- Status and tunnels -----------------------------------------------------
-
-export const RemoteTunnelProvider = z.enum(["cloudflare", "tailscale"]);
-export type RemoteTunnelProvider = z.infer<typeof RemoteTunnelProvider>;
-
-export const RemoteTunnelMode = z.enum(["quick", "token"]);
-export type RemoteTunnelMode = z.infer<typeof RemoteTunnelMode>;
+// --- Status and routes ------------------------------------------------------
 
 export const RemoteTunnelStatus = z.enum([
   "error",
@@ -60,32 +54,69 @@ export const RemoteTunnelStatus = z.enum([
 ]);
 export type RemoteTunnelStatus = z.infer<typeof RemoteTunnelStatus>;
 
-export const RemoteTunnelState = z.object({
+/**
+ * A tunnel an earlier version let the user configure. It keeps running on a
+ * computer that has nothing to replace it yet, and is retired once the managed
+ * tunnel is up.
+ */
+export const LegacyTunnelKind = z.enum([
+  "cloudflare_quick",
+  "cloudflare_token",
+  "tailscale_funnel",
+]);
+export type LegacyTunnelKind = z.infer<typeof LegacyTunnelKind>;
+
+export const LegacyTunnelState = z.object({
+  kind: LegacyTunnelKind,
   status: RemoteTunnelStatus,
   /** Public `wss://` URL once known, else null. */
   publicUrl: z.string().nullable(),
   error: z.string().nullable(),
-  /**
-   * Whether that URL was last seen to reach the gateway. `null` until probed —
-   * a published URL is not a reachable one.
-   */
-  reachable: z.boolean().nullable(),
 });
-export type RemoteTunnelState = z.infer<typeof RemoteTunnelState>;
+export type LegacyTunnelState = z.infer<typeof LegacyTunnelState>;
+
+export const ManagedTunnelPhase = z.enum([
+  /** Not wanted right now; `reason` says why. */
+  "off",
+  /** The account service has no tunnels to give out. */
+  "unavailable",
+  "provisioning",
+  "installing",
+  "starting",
+  "running",
+  "error",
+]);
+export type ManagedTunnelPhase = z.infer<typeof ManagedTunnelPhase>;
+
+export const ManagedTunnelOffReason = z.enum([
+  "not_linked",
+  "account_paused",
+  "turned_off",
+  "remote_off",
+]);
+export type ManagedTunnelOffReason = z.infer<typeof ManagedTunnelOffReason>;
+
+/** The account-managed Cloudflare tunnel: the route in from anywhere. */
+export const ManagedTunnelState = z.object({
+  phase: ManagedTunnelPhase,
+  reason: ManagedTunnelOffReason.nullable(),
+  /** `wss://argus-….houwert.dev` once known. */
+  url: z.string().nullable(),
+  error: z.string().nullable(),
+});
+export type ManagedTunnelState = z.infer<typeof ManagedTunnelState>;
 
 export const RemoteStatus = z.object({
   enabled: z.boolean(),
-  /** Independently enabled tunnel providers. */
-  tailscaleEnabled: z.boolean(),
-  cloudflareEnabled: z.boolean(),
-  /** Per-provider runtime state, keyed by provider. */
-  tunnels: z.record(RemoteTunnelProvider, RemoteTunnelState),
   /** Every address a phone could use right now, best first. */
   endpoints: z.array(RemoteEndpoint),
-  tunnelMode: RemoteTunnelMode,
-  hasTunnelToken: z.boolean(),
   publicUrl: z.string().nullable(),
   lanUrl: z.string().nullable(),
+  /** This computer's tailnet address, when Tailscale is connected. */
+  tailscaleUrl: z.string().nullable(),
+  managedTunnel: ManagedTunnelState,
+  /** Tunnels configured by an earlier version, still running until replaced. */
+  legacyTunnels: z.array(LegacyTunnelState),
   /** Mirror notifications to devices even while the desktop window is focused. */
   notifyWhenFocused: z.boolean(),
   devices: z.array(PairedDevice),
@@ -97,68 +128,11 @@ export type RemoteStatus = z.infer<typeof RemoteStatus>;
 /** A partial update to how the host is reachable; absent keys are untouched. */
 export const RemoteConfigPatch = z.object({
   enabled: z.boolean().optional(),
-  tailscaleEnabled: z.boolean().optional(),
-  cloudflareEnabled: z.boolean().optional(),
-  tunnelMode: RemoteTunnelMode.optional(),
-  tunnelToken: z.string().optional(),
-  publicUrl: z.string().optional(),
   notifyWhenFocused: z.boolean().optional(),
+  /** Stop and forget every tunnel an earlier version configured. */
+  retireLegacyTunnels: z.boolean().optional(),
 });
 export type RemoteConfigPatch = z.infer<typeof RemoteConfigPatch>;
-
-// --- Tailscale setup --------------------------------------------------------
-
-export const TailscaleStepId = z.enum(["cli", "daemon", "funnel", "login"]);
-export type TailscaleStepId = z.infer<typeof TailscaleStepId>;
-
-export const TailscaleStepState = z.enum(["blocked", "fail", "ok"]);
-export type TailscaleStepState = z.infer<typeof TailscaleStepState>;
-
-/** A fix Argus can perform itself, on an explicit click. */
-export const TailscaleFixKind = z.enum([
-  "install-cli",
-  "open-url",
-  "sign-in",
-  "start-daemon",
-]);
-export type TailscaleFixKind = z.infer<typeof TailscaleFixKind>;
-
-export const TailscaleStep = z.object({
-  id: TailscaleStepId,
-  title: z.string(),
-  state: TailscaleStepState,
-  /** One-line, user-facing summary of the current state. */
-  message: z.string(),
-  /** Raw CLI output, shown behind "Why" when something failed. */
-  detail: z.string().nullable(),
-  /** The in-app fix, when there is one. */
-  fix: TailscaleFixKind.nullable(),
-  fixLabel: z.string().nullable(),
-  /** Page to open for fixes the user must complete in a browser. */
-  url: z.string().nullable(),
-});
-export type TailscaleStep = z.infer<typeof TailscaleStep>;
-
-export const TailscaleDiagnosis = z.object({
-  steps: z.array(TailscaleStep),
-  /** True when every check passed — Funnel will start. */
-  ready: z.boolean(),
-  /** Resolved binary, or null when nothing is installed. */
-  bin: z.string().nullable(),
-  /** `*.ts.net` name of this node once known. */
-  dnsName: z.string().nullable(),
-});
-export type TailscaleDiagnosis = z.infer<typeof TailscaleDiagnosis>;
-
-export const TailscaleFixResult = z.object({
-  /** Fresh diagnosis after the fix, so the UI can just re-render. */
-  diagnosis: TailscaleDiagnosis,
-  /** A URL the host opened in the browser, when the fix produced one. */
-  openUrl: z.string().nullable(),
-  /** Set when the fix itself failed, separate from the step states. */
-  error: z.string().nullable(),
-});
-export type TailscaleFixResult = z.infer<typeof TailscaleFixResult>;
 
 // --- Push -------------------------------------------------------------------
 
@@ -201,7 +175,6 @@ export type RemotePairingStart = z.infer<typeof RemotePairingStart>;
 export const ShareErrorKind = z.enum([
   "cloudflared-missing",
   "quick-tunnel-failed",
-  "tailscale-not-ready",
   "tunnel-unreachable",
   "unknown",
 ]);

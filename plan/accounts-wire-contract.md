@@ -1,4 +1,4 @@
-# Argus account layer — wire contract, phases 1–3 (authoritative for all implementers)
+# Argus account layer — wire contract, phases 1–4 (authoritative for all implementers)
 
 Design background: /Users/douwe/Work/Houwert/Projects/Argus/plan/accounts.md. Where this file and
 the plan disagree, THIS file wins (it resolves details the plan left open).
@@ -264,6 +264,68 @@ A revoke drops the member's registration (device) or every key sealed for it (ho
 drops the device's keys; `DELETE /account` drops both tables for the account. A provider verdict
 that the token is dead (`BadDeviceToken`, `Unregistered`, `DeviceTokenNotForTopic`) drops the
 registration. QR-only hosts keep the per-device HMAC relay (`/argus/push/{register,send,revoke}`).
+
+## Phase 4: managed tunnels
+
+A linked host gets a named Cloudflare Tunnel on the service owner's Cloudflare account. The service
+creates it, points `argus-<hash>.<ARGUS_TUNNEL_DOMAIN>` at it (one label under the zone, so
+Universal SSL covers it), and hands the host a connector token. The host runs a pinned `cloudflared`
+that forwards to the gateway's loopback port only. Traffic stays Noise IK end to end: the edge sees
+ciphertext and timing, as with any tunnel.
+
+**Names.** `hash = sha256hex("argus-tunnel-v1\n" + host_id).slice(0, 16)`; tunnel name and DNS label
+`argus-<hash>`; hostname `argus-<hash>.<ARGUS_TUNNEL_DOMAIN>` (default `houwert.dev`). Deterministic,
+so a re-created tunnel keeps its address and clients keep their stored endpoint.
+
+**Config.** Pages secret `CF_TUNNEL_API_TOKEN` (scoped: Account › Cloudflare Tunnel › Edit, Zone ›
+DNS › Edit on the one zone); `[vars]` `CF_TUNNEL_ACCOUNT_ID`, `CF_TUNNEL_ZONE_ID`,
+`ARGUS_TUNNEL_DOMAIN`. Any of the three ids/secret empty → the feature is off: `GET /config`
+says `managed_tunnels: false` and `POST /host/tunnel` answers `503 { error: "unavailable" }`.
+`CF_API_BASE` (default `https://api.cloudflare.com/client/v4`) is honoured only on localhost, for
+tests and the local smoke run.
+
+**Cloudflare calls** (bearer `CF_TUNNEL_API_TOKEN`; every response `{ success, errors, result }`):
+
+1. `POST /accounts/{acct}/cfd_tunnel { name, config_src: "cloudflare" }` → `result.id`. A name
+   clash (an earlier attempt that lost its row) adopts `GET /accounts/{acct}/cfd_tunnel?name=…&is_deleted=false`.
+2. `PUT /accounts/{acct}/cfd_tunnel/{id}/configurations { config: { ingress: [{ hostname,
+service: "http://127.0.0.1:<port>" }, { service: "http_status:404" }] } }` — on create and when the
+   port changes.
+3. DNS: `POST /zones/{zone}/dns_records { type: "CNAME", name: hostname, content:
+"<id>.cfargotunnel.com", proxied: true, ttl: 1 }`; an existing record (`GET ?type=CNAME&name=`) is
+   updated with `PATCH` instead.
+4. `GET /accounts/{acct}/cfd_tunnel/{id}/token` → `result` (the connector token). Never stored.
+
+Release: `DELETE …/cfd_tunnel/{id}/connections`, `DELETE …/cfd_tunnel/{id}`, `DELETE
+/zones/{zone}/dns_records/{record}`; a 404 counts as done. The row goes only after all three.
+
+**D1** (`0003_tunnels.sql`): `host_tunnels(host_id PK, account_id, tunnel_name UNIQUE, hostname,
+tunnel_id NULL, dns_record_id NULL, origin_port NULL, created_at, last_used)`. Ids are checkpointed
+as each step lands, so a retry resumes rather than leaking.
+
+| Method & path         | Auth        | Request                 | Response                                                                                                                                                                                                                                                                                                                                                                           |
+| --------------------- | ----------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /host/tunnel`   | host member | `{ port }` (1024–65535) | `{ hostname, url: "wss://<hostname>", tunnel_id, token, created: boolean }`. Create-or-get for the caller's own `host_id` only — there is no parameter naming a host. 401 for a revoked member id (403 when signed by key), 403 on an old epoch, 503 `unavailable`, 502 `upstream` when Cloudflare fails, 429 beyond 12 / hour per host, 409 `limit` beyond 20 tunnels per account |
+| `DELETE /host/tunnel` | host member | —                       | `204` — releases the caller's tunnel                                                                                                                                                                                                                                                                                                                                               |
+| `GET /config`         | none        | —                       | adds `managed_tunnels: boolean`                                                                                                                                                                                                                                                                                                                                                    |
+
+`last_used` moves on every `POST /host/tunnel`. **Release triggers:** a `revoke` of a host
+(`waitUntil`, after the batch commits), `DELETE /account` (rows read before the delete), and the lazy
+sweep. **Sweep** (on ~1 % of requests, only when the feature is on, ≤ 3 releases per run): rows whose
+host isn't a live member, and rows idle for 14 days — `max(last_used, host_presence.last_seen) <
+now − 14 d`. A reclaimed host that comes back asks again and gets a new tunnel under the same name.
+
+**Host.** Linked + account enabled + remote access on → `POST /host/tunnel { port:
+LOCAL_GATEWAY_PORT }`, cache `{ hostname, url, tunnel_id, token, port }` in the encrypted account
+record, run `cloudflared tunnel --no-autoupdate run` with `TUNNEL_TOKEN` in the environment (never
+argv). Up when cloudflared logs a registered connection; the endpoint `{ kind: "cloudflare", url,
+priority: 2 }` then joins presence and `host.endpoints`. Exits restart with backoff (2 s → 5 min); two
+failures in a row, or a log line saying the tunnel or token is gone, re-request credentials (≥ 2 min
+apart). `503 unavailable` (or a 404 from a service that predates tunnels) backs off an hour. Unlink → stop + `DELETE /host/tunnel` best effort.
+
+**cloudflared.** Pinned version + per-platform SHA-256 in `services/remote/cloudflared.ts`;
+downloaded on first need into `$ARGUS_HOME/bin/cloudflared/<version>/`, checksum-verified before it's
+made executable. `ARGUS_CLOUDFLARED_PATH` overrides (the user's binary, never replaced).
 
 ## Verifier check order (exact — fixtures pin reason AND index)
 

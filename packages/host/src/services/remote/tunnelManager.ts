@@ -1,22 +1,15 @@
 /**
- * Manages the child processes that expose the local gateway server to the
- * internet without opening an inbound port — each daemon dials out and proxies
- * back to 127.0.0.1. Argus owns their lifecycle, like it does `conductor`.
+ * Child processes for tunnels Argus no longer lets you configure, plus the
+ * quick tunnel a huddle raises on demand. The account's managed tunnel is the
+ * route in from anywhere (`managedTunnel.ts`); these stay so an existing setup
+ * keeps working until that replaces it, and so a computer with no account can
+ * still hand a guest a link.
  *
- * Providers run concurrently and independently: a phone syncs every reachable
- * address and picks the simplest one, so enabling Tailscale must not tear down
- * Cloudflare. Each provider therefore gets its own child + state.
+ *   - "cloudflare" (`cloudflared`): "quick" = ephemeral trycloudflare URL;
+ *     "token" = a named tunnel from an earlier version's settings.
+ *   - "tailscale" (`tailscale funnel`): an earlier version's Funnel.
  *
- * Two providers:
- *   - "cloudflare" (`cloudflared`): "quick" = ephemeral trycloudflare URL (no
- *     account); "token" = stable named tunnel via a connector token + a domain
- *     on Cloudflare.
- *   - "tailscale" (`tailscale funnel`): stable `*.ts.net` URL with no domain and
- *     no Cloudflare account — just the tailscale CLI, logged into a tailnet with
- *     Funnel enabled.
- *
- * Both give a stable-ish public `wss://` URL and only ever see ciphertext (the
- * app layer is Noise-encrypted end to end).
+ * Both only ever see ciphertext (the app layer is Noise-encrypted end to end).
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
@@ -74,6 +67,11 @@ const runtimes = new Map<TunnelProvider, Runtime>();
 let onChange: (() => void) | null = null;
 /** Extra listeners (huddle lifecycle) that must coexist with the status one. */
 const changeSubscribers = new Set<() => void>();
+
+/** Tell every listener the set of routes may have changed. */
+export function notifyTunnelChange(): void {
+  emitChange();
+}
 
 function emitChange(): void {
   onChange?.();
@@ -190,7 +188,7 @@ function describeFailure(
     provider === "cloudflare" &&
     /429|rate.?limit|too many (requests|connections)|quota/i.test(joined)
   ) {
-    return "Cloudflare is rate-limiting free quick tunnels right now. Wait a minute and try again, or use Tailscale or a named tunnel for a link that doesn't depend on them.";
+    return "Cloudflare is rate-limiting free quick tunnels right now. Wait a minute and try again, or sign in to an account so this computer gets a tunnel of its own.";
   }
 
   if (

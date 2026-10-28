@@ -1,18 +1,7 @@
-import type {
-  PairingClient,
-  RemoteDevice,
-  RemoteEndpoint,
-  RemoteStatus,
-  RemoteTunnelMode,
-  RemoteTunnelState,
-} from "../../../lib/types";
+import type { RemoteConfigPatch, RemoteStatus } from "../../../lib/types";
 import { useCallback, useEffect, useState } from "react";
 import {
-  Button,
-  Icons,
   Input,
-  QrCode,
-  SegmentedControl,
   SettingsScreenDetail,
   SettingsScreenDetailBody,
   SettingsScreenDetailHeader,
@@ -22,102 +11,23 @@ import {
 } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
-  remoteCancelPairing,
-  remoteConfirmPairing,
   remoteGetStatus,
   remoteRevokeDevice,
   remoteSetConfig,
   remoteSetDeviceGrants,
-  remoteStartPairing,
 } from "../../../lib/ipc";
-import { canDriveArgus, pairingClientLabel } from "../../../lib/pairingClient";
+import { reachabilityLabel, reachabilityTone } from "../../../lib/remoteRoutes";
 import {
   setHuddleDisplayName,
   useHuddleDisplayName,
 } from "../../../stores/settingsStore";
 import styles from "./RemoteAccessSection.module.css";
 import { RemoteDeviceRow } from "./RemoteDeviceRow";
+import { RemotePairingField } from "./RemotePairingField";
 import { RemotePushFields } from "./RemotePushFields";
-import { TailscaleSetup } from "./TailscaleSetup";
+import { RemoteRoutes } from "./RemoteRoutes";
 
-type PairPhase = "awaiting-sas" | "idle" | "starting" | "waiting-device";
-
-const MODE_OPTIONS = [
-  { value: "quick" as const, label: "Quick tunnel" },
-  { value: "token" as const, label: "Named tunnel" },
-];
-
-/** Monospace code with a copy button that reveals on hover, like chat. */
-function CopyableCode({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
-  const copy = () => {
-    navigator.clipboard
-      .writeText(value)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1200);
-      })
-      .catch(() => {});
-  };
-
-  return (
-    <div className={styles.codeRow}>
-      <code className={styles.code}>{value}</code>
-      <button
-        type="button"
-        className={styles.copyBtn}
-        onClick={copy}
-        aria-label="Copy pairing code"
-      >
-        {copied ? <Icons.CheckIcon size={13} /> : <Icons.CopyIcon size={13} />}
-      </button>
-    </div>
-  );
-}
-
-const ENDPOINT_LABELS: Record<RemoteEndpoint["kind"], string> = {
-  lan: "Local network",
-  tailscale: "Tailscale",
-  cloudflare: "Cloudflare",
-};
-
-function tunnelTone(state: RemoteTunnelState): "error" | "idle" | "success" {
-  if (state.status === "error" || state.reachable === false) {
-    return "error";
-  }
-
-  return state.status === "running" ? "success" : "idle";
-}
-
-/** A published URL that nothing answers on is worse than no URL — say so. */
-function tunnelLabel(state: RemoteTunnelState): string {
-  if (state.reachable === false) {
-    return "unreachable";
-  }
-
-  return state.publicUrl ?? state.status;
-}
-
-/** Green once any address is live, red only when every enabled way in failed. */
-function reachabilityTone(status: RemoteStatus): "error" | "idle" | "success" {
-  if (status.endpoints.length > 0) {
-    return "success";
-  }
-  const failed = Object.values(status.tunnels).some(
-    (t) => t.status === "error",
-  );
-
-  return failed ? "error" : "idle";
-}
-
-function reachabilityLabel(status: RemoteStatus): string {
-  const count = status.endpoints.length;
-  if (count > 0) {
-    return count === 1 ? "1 way in" : `${count} ways in`;
-  }
-
-  return reachabilityTone(status) === "error" ? "unreachable" : "starting";
-}
+const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export function RemoteAccessSection() {
   const huddleDisplayName = useHuddleDisplayName();
@@ -125,30 +35,11 @@ export function RemoteAccessSection() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const [token, setToken] = useState("");
-  const [publicUrl, setPublicUrl] = useState("");
-
-  const [phase, setPhase] = useState<PairPhase>("idle");
-  const [qr, setQr] = useState<{
-    pairingCode: string;
-    qrPayload: string;
-  } | null>(null);
-  const [sas, setSas] = useState<string | null>(null);
-  const [pairingClient, setPairingClient] = useState<PairingClient | null>(
-    null,
-  );
-  const [grantControl, setGrantControl] = useState(false);
-  const [grantAdmin, setGrantAdmin] = useState(false);
-
   const refresh = useCallback(async () => {
     try {
-      const s = await remoteGetStatus();
-      setStatus(s);
-      if (s.tunnelMode === "token" && s.publicUrl) {
-        setPublicUrl((prev) => prev || s.publicUrl!);
-      }
+      setStatus(await remoteGetStatus());
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     }
   }, []);
 
@@ -156,134 +47,54 @@ export function RemoteAccessSection() {
     refresh();
   }, [refresh]);
 
-  // Live tunnel updates (e.g. a quick tunnel finishing startup).
+  // Live route updates (e.g. the managed tunnel finishing startup).
   useIpcEvent<RemoteStatus>("remote:status", (s) => setStatus(s));
 
-  const resetPairing = useCallback(() => {
-    setGrantAdmin(false);
-    setPhase("idle");
-    setQr(null);
-    setSas(null);
-    setPairingClient(null);
-    setGrantControl(false);
-  }, []);
-
-  useIpcEvent<{ client: PairingClient | null; sas: string }>(
-    "remote:pairing-sas",
-    (p) => {
-      setSas(p.sas);
-      setPairingClient(p.client ?? null);
-      // Only another desktop can drive this one, so a phone or a browser is
-      // never offered the keyboard — the toggle is not hidden from you, it is
-      // absent because it would do nothing.
-      if (p.client && p.client.kind !== "desktop") {
-        setGrantAdmin(false);
-      }
-      setPhase("awaiting-sas");
-    },
-  );
-  useIpcEvent<{ device: RemoteDevice }>("remote:pairing-complete", () => {
-    resetPairing();
-    refresh();
-  });
-  useIpcEvent<{ message: string }>("remote:pairing-error", (p) => {
-    setError(p.message);
-    resetPairing();
-  });
-
-  const applyConfig = async (cfg: {
-    cloudflareEnabled?: boolean;
-    enabled?: boolean;
-    notifyWhenFocused?: boolean;
-    publicUrl?: string;
-    tailscaleEnabled?: boolean;
-    tunnelMode?: RemoteTunnelMode;
-    tunnelToken?: string;
-  }) => {
+  const run = async (action: () => Promise<RemoteStatus | undefined>) => {
     setBusy(true);
     setError(null);
     try {
-      setStatus(await remoteSetConfig(cfg));
-      if (cfg.tunnelToken !== undefined) {
-        setToken("");
+      const next = await action();
+      if (next) {
+        setStatus(next);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
   };
 
-  const startPairing = async () => {
-    setError(null);
-    setPhase("starting");
-    try {
-      const start = await remoteStartPairing();
-      setQr({ qrPayload: start.qrPayload, pairingCode: start.pairingCode });
-      setPhase("waiting-device");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-      resetPairing();
-    }
-  };
+  const applyConfig = (patch: RemoteConfigPatch) =>
+    run(() => remoteSetConfig(patch));
 
-  const confirmPairing = async () => {
-    setError(null);
-    try {
-      await remoteConfirmPairing({ control: grantControl, admin: grantAdmin });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
-  };
-
-  const setGrants = async (
+  const setGrants = (
     id: string,
     grants: { admin: boolean; control: boolean },
-  ) => {
-    setBusy(true);
-    setError(null);
-    try {
+  ) =>
+    run(async () => {
       await remoteSetDeviceGrants(id, grants);
       await refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
 
-  const cancelPairing = () => {
-    remoteCancelPairing().catch(() => {});
-    resetPairing();
-  };
+      return undefined;
+    });
 
-  const revoke = async (id: string) => {
-    setBusy(true);
-    try {
-      setStatus(await remoteRevokeDevice(id));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
+  const revoke = (id: string) => run(() => remoteRevokeDevice(id));
 
   const enabled = status?.enabled ?? false;
-  const tailscaleOn = status?.tailscaleEnabled ?? false;
-  const cloudflareOn = status?.cloudflareEnabled ?? false;
-  const mode = status?.tunnelMode ?? "quick";
+  // Any address will do for the QR; the phone learns the rest after pairing.
   const canPair = enabled && Boolean(status?.publicUrl);
 
   return (
     <SettingsScreenDetail>
       <SettingsScreenDetailHeader
-        description="Pair a phone to monitor your projects and agents from anywhere. Argus exposes a local, end-to-end-encrypted gateway through a Cloudflare or Tailscale tunnel — no inbound ports. Paired devices monitor and approve prompts by default; grant a device control to also let it drive agents. Creating projects always stays on this machine."
+        description="Pair a phone to monitor your projects and agents from anywhere. Argus runs a local, end-to-end-encrypted gateway with no inbound ports: devices reach it on this network, over Tailscale, or through the managed tunnel your Argus account provides. Paired devices monitor and approve prompts by default; grant a device control to also let it drive agents. Creating projects always stays on this machine."
         title="Remote access"
       />
       <SettingsScreenDetailBody>
         <SettingsScreenField
           label="Enable remote access"
-          caption="Starts the local gateway and every enabled tunnel below."
+          caption="Starts the local gateway and, on a linked computer, the managed tunnel."
         >
           <div className={styles.toggleRow}>
             <Toggle
@@ -300,158 +111,9 @@ export function RemoteAccessSection() {
           </div>
         </SettingsScreenField>
 
-        <SettingsScreenField
-          label="Tunnels"
-          caption="Devices on this network always connect directly. Tunnels add a way in from anywhere else — enable as many as you like. A paired phone syncs every address and connects over the simplest one that works: Wi-Fi first, then Tailscale, then Cloudflare."
-        >
-          <div className={styles.providerList}>
-            <div className={styles.providerRow}>
-              <Toggle
-                checked={tailscaleOn}
-                disabled={busy}
-                onChange={(next) => applyConfig({ tailscaleEnabled: next })}
-              />
-              <span className={styles.providerName}>Tailscale</span>
-              {status && (
-                <StatusDot
-                  tone={
-                    tailscaleOn ? tunnelTone(status.tunnels.tailscale) : "idle"
-                  }
-                  label={
-                    tailscaleOn ? tunnelLabel(status.tunnels.tailscale) : "off"
-                  }
-                />
-              )}
-            </div>
-            {tailscaleOn && status?.tunnels.tailscale.error && (
-              <p className={styles.tunnelError}>
-                {status.tunnels.tailscale.error}
-              </p>
-            )}
-            <div className={styles.providerRow}>
-              <Toggle
-                checked={cloudflareOn}
-                disabled={busy}
-                onChange={(next) => applyConfig({ cloudflareEnabled: next })}
-              />
-              <span className={styles.providerName}>Cloudflare</span>
-              {status && (
-                <StatusDot
-                  tone={
-                    cloudflareOn
-                      ? tunnelTone(status.tunnels.cloudflare)
-                      : "idle"
-                  }
-                  label={
-                    cloudflareOn
-                      ? tunnelLabel(status.tunnels.cloudflare)
-                      : "off"
-                  }
-                />
-              )}
-            </div>
-            {cloudflareOn && status?.tunnels.cloudflare.error && (
-              <p className={styles.tunnelError}>
-                {status.tunnels.cloudflare.error}
-              </p>
-            )}
-          </div>
-        </SettingsScreenField>
-
-        {tailscaleOn && (
-          <SettingsScreenField
-            label="Tailscale Funnel"
-            caption="Exposes the gateway at your stable `*.ts.net` address — no domain or Cloudflare account. Argus checks each prerequisite below and can fix them for you."
-          >
-            <TailscaleSetup />
-          </SettingsScreenField>
+        {status && (
+          <RemoteRoutes busy={busy} onApply={applyConfig} status={status} />
         )}
-
-        {cloudflareOn && (
-          <SettingsScreenField
-            label="Tunnel"
-            caption="Quick = ephemeral trycloudflare.com URL (no account). Named = stable hostname via a Cloudflare connector token; survives restarts so devices stay paired."
-          >
-            <SegmentedControl<RemoteTunnelMode>
-              aria-label="Tunnel mode"
-              value={mode}
-              options={MODE_OPTIONS}
-              onChange={(m) => applyConfig({ tunnelMode: m })}
-            />
-          </SettingsScreenField>
-        )}
-
-        {cloudflareOn && mode === "token" && (
-          <>
-            <SettingsScreenField
-              label="Connector token"
-              caption={
-                status?.hasTunnelToken
-                  ? "A token is set. Enter a new one to replace it."
-                  : "From `cloudflared tunnel token <name>` or the Cloudflare dashboard."
-              }
-            >
-              <div className={styles.inlineForm}>
-                <Input
-                  type="password"
-                  placeholder={
-                    status?.hasTunnelToken ? "••••••••" : "Paste token"
-                  }
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                />
-                <Button
-                  variant="secondary"
-                  disabled={busy || !token.trim()}
-                  onClick={() => applyConfig({ tunnelToken: token })}
-                >
-                  Save
-                </Button>
-              </div>
-            </SettingsScreenField>
-            <SettingsScreenField
-              label="Public URL"
-              caption="The hostname mapped to this machine in Cloudflare (e.g. wss://argus.example.com)."
-            >
-              <div className={styles.inlineForm}>
-                <Input
-                  placeholder="wss://argus.example.com"
-                  value={publicUrl}
-                  onChange={(e) => setPublicUrl(e.target.value)}
-                />
-                <Button
-                  variant="secondary"
-                  disabled={busy || !publicUrl.trim()}
-                  onClick={() => applyConfig({ publicUrl })}
-                >
-                  Save
-                </Button>
-              </div>
-            </SettingsScreenField>
-          </>
-        )}
-
-        <SettingsScreenField
-          label="Addresses"
-          caption="Synced to every paired device on connect, in the order they're tried."
-        >
-          {status && status.endpoints.length > 0 ? (
-            <ol className={styles.endpointList}>
-              {status.endpoints.map((endpoint) => (
-                <li key={endpoint.kind} className={styles.endpointRow}>
-                  <span className={styles.endpointKind}>
-                    {ENDPOINT_LABELS[endpoint.kind]}
-                  </span>
-                  <code className={styles.endpointUrl}>{endpoint.url}</code>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <span className={styles.deviceMeta}>
-              {enabled ? "resolving…" : "—"}
-            </span>
-          )}
-        </SettingsScreenField>
 
         {enabled && status && (
           <SettingsScreenField
@@ -481,82 +143,11 @@ export function RemoteAccessSection() {
           </div>
         </SettingsScreenField>
 
-        <SettingsScreenField
-          label="Pair a device"
-          caption="Scan the QR on your phone, then confirm the 6-digit code matches on both screens."
-        >
-          {phase === "idle" ? (
-            <Button
-              variant="primary"
-              disabled={!canPair}
-              onClick={startPairing}
-            >
-              {canPair ? "Start pairing" : "Waiting for the tunnel…"}
-            </Button>
-          ) : (
-            <div className={styles.pairing}>
-              {phase === "starting" && (
-                <p className={styles.muted}>Starting…</p>
-              )}
-              {qr && phase === "waiting-device" && (
-                <>
-                  <QrCode
-                    value={qr.qrPayload}
-                    size={200}
-                    alt="Pairing QR code"
-                  />
-                  <p className={styles.muted}>
-                    Or paste this code into the app:
-                  </p>
-                  <CopyableCode value={qr.pairingCode} />
-                  <p className={styles.muted}>Waiting for the device…</p>
-                  <Button variant="ghost" onClick={cancelPairing}>
-                    Cancel
-                  </Button>
-                </>
-              )}
-              {phase === "awaiting-sas" && sas && (
-                <>
-                  <p className={styles.muted}>
-                    {pairingClient
-                      ? `${pairingClientLabel(pairingClient)} wants to pair. Confirm this code matches the one on its screen:`
-                      : "Confirm this code matches the one on your device:"}
-                  </p>
-                  <div className={styles.sas}>{sas}</div>
-                  <label className={styles.controlToggle}>
-                    <Toggle
-                      checked={grantControl || grantAdmin}
-                      disabled={grantAdmin}
-                      onChange={setGrantControl}
-                    />
-                    <span>
-                      Allow this device to control agents (send messages, spawn
-                      agents, create sessions)
-                    </span>
-                  </label>
-                  {canDriveArgus(pairingClient) && (
-                    <label className={styles.controlToggle}>
-                      <Toggle checked={grantAdmin} onChange={setGrantAdmin} />
-                      <span>
-                        Let this device drive Argus like a second keyboard — for
-                        another Mac of yours running the desktop app, never a
-                        browser or phone.
-                      </span>
-                    </label>
-                  )}
-                  <div className={styles.pairActions}>
-                    <Button variant="ghost" onClick={cancelPairing}>
-                      Cancel
-                    </Button>
-                    <Button variant="primary" onClick={confirmPairing}>
-                      Codes match — pair
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </SettingsScreenField>
+        <RemotePairingField
+          canPair={canPair}
+          onError={setError}
+          onPaired={refresh}
+        />
 
         {status && status.devices.length > 0 && (
           <SettingsScreenField label="Paired devices">

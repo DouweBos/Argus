@@ -95,10 +95,11 @@ gateway on your Mac; a paired device connects straight to it and the
 traffic is end-to-end encrypted (Noise IK), so a tunnel only ever sees
 ciphertext.
 
-- **Ways in** — devices on your network connect directly by IP;
-  **Tailscale** (`tailscale funnel`) and **Cloudflare** (`cloudflared`)
-  tunnels add access from anywhere and run side by side. Phones try the
-  live addresses in order.
+- **Ways in** — devices on your network, and on your tailnet, connect
+  directly by IP. A computer linked to your Argus account gets its own
+  **managed tunnel** for access from anywhere, with nothing to set up.
+  Phones try every address at once, keep the fastest that works, and move
+  to a faster one when the network changes.
 - **Argus account** — sign in on the iPhone app or Argus for Mac (Apple,
   GitHub or an emailed code) and the computers on your account show up
   with their current addresses, online or offline, with no QR per

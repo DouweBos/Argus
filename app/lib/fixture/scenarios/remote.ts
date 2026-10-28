@@ -31,42 +31,33 @@ const DEVICES = [
 ];
 
 const STATUS = {
-  cloudflareEnabled: false,
   connectedDeviceIds: ["dev_iphone", "dev_mini"],
   devices: DEVICES,
   enabled: true,
   endpoints: [
-    { kind: "lan", priority: 0, url: "http://192.168.1.24:47615" },
+    { kind: "lan", priority: 0, url: "ws://192.168.1.24:47615" },
+    { kind: "tailscale", priority: 1, url: "ws://100.101.42.7:47615" },
     {
-      kind: "tailscale",
-      priority: 1,
-      url: "https://aurora-mbp.tail9c2f.ts.net",
+      kind: "cloudflare",
+      priority: 2,
+      url: "wss://argus-7f3a9c2e.houwert.dev",
     },
   ],
-  hasTunnelToken: false,
-  lanUrl: "http://192.168.1.24:47615",
-  notifyWhenFocused: false,
-  publicUrl: "https://aurora-mbp.tail9c2f.ts.net",
-  tailscaleEnabled: true,
-  tunnelMode: "quick",
-  tunnels: {
-    cloudflare: {
-      error: null,
-      publicUrl: null,
-      reachable: null,
-      status: "stopped",
-    },
-    tailscale: {
-      error: null,
-      publicUrl: "https://aurora-mbp.tail9c2f.ts.net",
-      reachable: true,
-      status: "running",
-    },
+  lanUrl: "ws://192.168.1.24:47615",
+  legacyTunnels: [],
+  managedTunnel: {
+    error: null,
+    phase: "running",
+    reason: null,
+    url: "wss://argus-7f3a9c2e.houwert.dev",
   },
+  notifyWhenFocused: false,
+  publicUrl: "ws://192.168.1.24:47615",
+  tailscaleUrl: "ws://100.101.42.7:47615",
 };
 
 /**
- * Remote access, configured and live: two ways in, three paired devices, one
+ * Remote access, configured and live: three ways in, three paired devices, one
  * of them another Mac holding the admin grant.
  */
 export const remote: FixtureScenario = {

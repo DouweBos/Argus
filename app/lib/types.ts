@@ -346,17 +346,14 @@ export type {
   RemotePushConfig,
   RemotePushConfigPatch,
   RemotePushTestResult,
+  RemoteConfigPatch,
   RemoteStatus,
-  RemoteTunnelMode,
-  RemoteTunnelProvider,
-  RemoteTunnelState,
   RemoteTunnelStatus,
-  TailscaleDiagnosis,
-  TailscaleFixKind,
-  TailscaleFixResult,
-  TailscaleStep,
-  TailscaleStepId,
-  TailscaleStepState,
+  LegacyTunnelKind,
+  LegacyTunnelState,
+  ManagedTunnelOffReason,
+  ManagedTunnelPhase,
+  ManagedTunnelState,
 } from "@argus/remote-protocol";
 
 /**

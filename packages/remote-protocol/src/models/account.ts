@@ -70,6 +70,8 @@ export const AccountConfig = z.object({
     cloudflare: z.boolean(),
   }),
   hosts_can_approve: z.boolean(),
+  /** Run the account's managed tunnel while remote access is on. */
+  tunnel: z.boolean(),
 });
 export type AccountConfig = z.infer<typeof AccountConfig>;
 
@@ -90,6 +92,7 @@ export const AccountConfigPatch = z.object({
     })
     .optional(),
   hosts_can_approve: z.boolean().optional(),
+  tunnel: z.boolean().optional(),
 });
 export type AccountConfigPatch = z.infer<typeof AccountConfigPatch>;
 

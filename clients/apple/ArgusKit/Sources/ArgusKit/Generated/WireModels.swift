@@ -208,6 +208,7 @@ extension ArgusProtocol {
     public var grants: AccountConfigGrants
     public var publish: AccountConfigPublish
     public var hostsCanApprove: Bool
+    public var tunnel: Bool
 
     enum CodingKeys: String, CodingKey {
       case enabled = "enabled"
@@ -215,14 +216,16 @@ extension ArgusProtocol {
       case grants = "grants"
       case publish = "publish"
       case hostsCanApprove = "hosts_can_approve"
+      case tunnel = "tunnel"
     }
 
-    public init(enabled: Bool, serviceUrl: String, grants: AccountConfigGrants, publish: AccountConfigPublish, hostsCanApprove: Bool) {
+    public init(enabled: Bool, serviceUrl: String, grants: AccountConfigGrants, publish: AccountConfigPublish, hostsCanApprove: Bool, tunnel: Bool) {
       self.enabled = enabled
       self.serviceUrl = serviceUrl
       self.grants = grants
       self.publish = publish
       self.hostsCanApprove = hostsCanApprove
+      self.tunnel = tunnel
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -232,6 +235,7 @@ extension ArgusProtocol {
       try c.encode(grants, forKey: .grants)
       try c.encode(publish, forKey: .publish)
       try c.encode(hostsCanApprove, forKey: .hostsCanApprove)
+      try c.encode(tunnel, forKey: .tunnel)
     }
   }
 
@@ -287,6 +291,7 @@ extension ArgusProtocol {
     public var grants: AccountConfigPatchGrants?
     public var publish: AccountConfigPatchPublish?
     public var hostsCanApprove: Bool?
+    public var tunnel: Bool?
 
     enum CodingKeys: String, CodingKey {
       case enabled = "enabled"
@@ -294,14 +299,16 @@ extension ArgusProtocol {
       case grants = "grants"
       case publish = "publish"
       case hostsCanApprove = "hosts_can_approve"
+      case tunnel = "tunnel"
     }
 
-    public init(enabled: Bool? = nil, serviceUrl: String? = nil, grants: AccountConfigPatchGrants? = nil, publish: AccountConfigPatchPublish? = nil, hostsCanApprove: Bool? = nil) {
+    public init(enabled: Bool? = nil, serviceUrl: String? = nil, grants: AccountConfigPatchGrants? = nil, publish: AccountConfigPatchPublish? = nil, hostsCanApprove: Bool? = nil, tunnel: Bool? = nil) {
       self.enabled = enabled
       self.serviceUrl = serviceUrl
       self.grants = grants
       self.publish = publish
       self.hostsCanApprove = hostsCanApprove
+      self.tunnel = tunnel
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -311,6 +318,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(grants, forKey: .grants)
       try c.encodeIfPresent(publish, forKey: .publish)
       try c.encodeIfPresent(hostsCanApprove, forKey: .hostsCanApprove)
+      try c.encodeIfPresent(tunnel, forKey: .tunnel)
     }
   }
 
@@ -7901,6 +7909,51 @@ extension ArgusProtocol {
     }
   }
 
+  public struct LegacyTunnelKind: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let cloudflareQuick = LegacyTunnelKind(rawValue: "cloudflare_quick")
+    public static let cloudflareToken = LegacyTunnelKind(rawValue: "cloudflare_token")
+    public static let tailscaleFunnel = LegacyTunnelKind(rawValue: "tailscale_funnel")
+  }
+
+  public struct LegacyTunnelState: Codable, Sendable {
+    public var kind: LegacyTunnelKind
+    public var status: RemoteTunnelStatus
+    public var publicUrl: String?
+    public var error: String?
+
+    enum CodingKeys: String, CodingKey {
+      case kind = "kind"
+      case status = "status"
+      case publicUrl = "publicUrl"
+      case error = "error"
+    }
+
+    public init(kind: LegacyTunnelKind, status: RemoteTunnelStatus, publicUrl: String? = nil, error: String? = nil) {
+      self.kind = kind
+      self.status = status
+      self.publicUrl = publicUrl
+      self.error = error
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(kind, forKey: .kind)
+      try c.encode(status, forKey: .status)
+      try c.encode(publicUrl, forKey: .publicUrl)
+      try c.encode(error, forKey: .error)
+    }
+  }
+
   public struct LfsFiles: Codable, Sendable {
     public var lfsInstalled: Bool
     public var repoUsesLfs: Bool
@@ -9046,6 +9099,72 @@ extension ArgusProtocol {
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(files, forKey: .files)
+    }
+  }
+
+  public struct ManagedTunnelOffReason: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let notLinked = ManagedTunnelOffReason(rawValue: "not_linked")
+    public static let accountPaused = ManagedTunnelOffReason(rawValue: "account_paused")
+    public static let turnedOff = ManagedTunnelOffReason(rawValue: "turned_off")
+    public static let remoteOff = ManagedTunnelOffReason(rawValue: "remote_off")
+  }
+
+  public struct ManagedTunnelPhase: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let off = ManagedTunnelPhase(rawValue: "off")
+    public static let unavailable = ManagedTunnelPhase(rawValue: "unavailable")
+    public static let provisioning = ManagedTunnelPhase(rawValue: "provisioning")
+    public static let installing = ManagedTunnelPhase(rawValue: "installing")
+    public static let starting = ManagedTunnelPhase(rawValue: "starting")
+    public static let running = ManagedTunnelPhase(rawValue: "running")
+    public static let error = ManagedTunnelPhase(rawValue: "error")
+  }
+
+  public struct ManagedTunnelState: Codable, Sendable {
+    public var phase: ManagedTunnelPhase
+    public var reason: ManagedTunnelOffReason?
+    public var url: String?
+    public var error: String?
+
+    enum CodingKeys: String, CodingKey {
+      case phase = "phase"
+      case reason = "reason"
+      case url = "url"
+      case error = "error"
+    }
+
+    public init(phase: ManagedTunnelPhase, reason: ManagedTunnelOffReason? = nil, url: String? = nil, error: String? = nil) {
+      self.phase = phase
+      self.reason = reason
+      self.url = url
+      self.error = error
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(phase, forKey: .phase)
+      try c.encode(reason, forKey: .reason)
+      try c.encode(url, forKey: .url)
+      try c.encode(error, forKey: .error)
     }
   }
 
@@ -11940,42 +12059,26 @@ extension ArgusProtocol {
 
   public struct RemoteConfigPatch: Codable, Sendable {
     public var enabled: Bool?
-    public var tailscaleEnabled: Bool?
-    public var cloudflareEnabled: Bool?
-    public var tunnelMode: RemoteTunnelMode?
-    public var tunnelToken: String?
-    public var publicUrl: String?
     public var notifyWhenFocused: Bool?
+    public var retireLegacyTunnels: Bool?
 
     enum CodingKeys: String, CodingKey {
       case enabled = "enabled"
-      case tailscaleEnabled = "tailscaleEnabled"
-      case cloudflareEnabled = "cloudflareEnabled"
-      case tunnelMode = "tunnelMode"
-      case tunnelToken = "tunnelToken"
-      case publicUrl = "publicUrl"
       case notifyWhenFocused = "notifyWhenFocused"
+      case retireLegacyTunnels = "retireLegacyTunnels"
     }
 
-    public init(enabled: Bool? = nil, tailscaleEnabled: Bool? = nil, cloudflareEnabled: Bool? = nil, tunnelMode: RemoteTunnelMode? = nil, tunnelToken: String? = nil, publicUrl: String? = nil, notifyWhenFocused: Bool? = nil) {
+    public init(enabled: Bool? = nil, notifyWhenFocused: Bool? = nil, retireLegacyTunnels: Bool? = nil) {
       self.enabled = enabled
-      self.tailscaleEnabled = tailscaleEnabled
-      self.cloudflareEnabled = cloudflareEnabled
-      self.tunnelMode = tunnelMode
-      self.tunnelToken = tunnelToken
-      self.publicUrl = publicUrl
       self.notifyWhenFocused = notifyWhenFocused
+      self.retireLegacyTunnels = retireLegacyTunnels
     }
 
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encodeIfPresent(enabled, forKey: .enabled)
-      try c.encodeIfPresent(tailscaleEnabled, forKey: .tailscaleEnabled)
-      try c.encodeIfPresent(cloudflareEnabled, forKey: .cloudflareEnabled)
-      try c.encodeIfPresent(tunnelMode, forKey: .tunnelMode)
-      try c.encodeIfPresent(tunnelToken, forKey: .tunnelToken)
-      try c.encodeIfPresent(publicUrl, forKey: .publicUrl)
       try c.encodeIfPresent(notifyWhenFocused, forKey: .notifyWhenFocused)
+      try c.encodeIfPresent(retireLegacyTunnels, forKey: .retireLegacyTunnels)
     }
   }
 
@@ -13701,43 +13804,37 @@ extension ArgusProtocol {
 
   public struct RemoteStatus: Codable, Sendable {
     public var enabled: Bool
-    public var tailscaleEnabled: Bool
-    public var cloudflareEnabled: Bool
-    public var tunnels: [String: RemoteTunnelState]
     public var endpoints: [RemoteEndpoint]
-    public var tunnelMode: RemoteTunnelMode
-    public var hasTunnelToken: Bool
     public var publicUrl: String?
     public var lanUrl: String?
+    public var tailscaleUrl: String?
+    public var managedTunnel: ManagedTunnelState
+    public var legacyTunnels: [LegacyTunnelState]
     public var notifyWhenFocused: Bool
     public var devices: [PairedDevice]
     public var connectedDeviceIds: [String]
 
     enum CodingKeys: String, CodingKey {
       case enabled = "enabled"
-      case tailscaleEnabled = "tailscaleEnabled"
-      case cloudflareEnabled = "cloudflareEnabled"
-      case tunnels = "tunnels"
       case endpoints = "endpoints"
-      case tunnelMode = "tunnelMode"
-      case hasTunnelToken = "hasTunnelToken"
       case publicUrl = "publicUrl"
       case lanUrl = "lanUrl"
+      case tailscaleUrl = "tailscaleUrl"
+      case managedTunnel = "managedTunnel"
+      case legacyTunnels = "legacyTunnels"
       case notifyWhenFocused = "notifyWhenFocused"
       case devices = "devices"
       case connectedDeviceIds = "connectedDeviceIds"
     }
 
-    public init(enabled: Bool, tailscaleEnabled: Bool, cloudflareEnabled: Bool, tunnels: [String: RemoteTunnelState], endpoints: [RemoteEndpoint], tunnelMode: RemoteTunnelMode, hasTunnelToken: Bool, publicUrl: String? = nil, lanUrl: String? = nil, notifyWhenFocused: Bool, devices: [PairedDevice], connectedDeviceIds: [String]) {
+    public init(enabled: Bool, endpoints: [RemoteEndpoint], publicUrl: String? = nil, lanUrl: String? = nil, tailscaleUrl: String? = nil, managedTunnel: ManagedTunnelState, legacyTunnels: [LegacyTunnelState], notifyWhenFocused: Bool, devices: [PairedDevice], connectedDeviceIds: [String]) {
       self.enabled = enabled
-      self.tailscaleEnabled = tailscaleEnabled
-      self.cloudflareEnabled = cloudflareEnabled
-      self.tunnels = tunnels
       self.endpoints = endpoints
-      self.tunnelMode = tunnelMode
-      self.hasTunnelToken = hasTunnelToken
       self.publicUrl = publicUrl
       self.lanUrl = lanUrl
+      self.tailscaleUrl = tailscaleUrl
+      self.managedTunnel = managedTunnel
+      self.legacyTunnels = legacyTunnels
       self.notifyWhenFocused = notifyWhenFocused
       self.devices = devices
       self.connectedDeviceIds = connectedDeviceIds
@@ -13746,14 +13843,12 @@ extension ArgusProtocol {
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
       try c.encode(enabled, forKey: .enabled)
-      try c.encode(tailscaleEnabled, forKey: .tailscaleEnabled)
-      try c.encode(cloudflareEnabled, forKey: .cloudflareEnabled)
-      try c.encode(tunnels, forKey: .tunnels)
       try c.encode(endpoints, forKey: .endpoints)
-      try c.encode(tunnelMode, forKey: .tunnelMode)
-      try c.encode(hasTunnelToken, forKey: .hasTunnelToken)
       try c.encode(publicUrl, forKey: .publicUrl)
       try c.encode(lanUrl, forKey: .lanUrl)
+      try c.encode(tailscaleUrl, forKey: .tailscaleUrl)
+      try c.encode(managedTunnel, forKey: .managedTunnel)
+      try c.encode(legacyTunnels, forKey: .legacyTunnels)
       try c.encode(notifyWhenFocused, forKey: .notifyWhenFocused)
       try c.encode(devices, forKey: .devices)
       try c.encode(connectedDeviceIds, forKey: .connectedDeviceIds)
@@ -14234,65 +14329,6 @@ extension ArgusProtocol {
       case .image(let value): try value.encode(to: encoder)
       case .unknown(let value): try value.encode(to: encoder)
       }
-    }
-  }
-
-  public struct RemoteTunnelMode: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let quick = RemoteTunnelMode(rawValue: "quick")
-    public static let token = RemoteTunnelMode(rawValue: "token")
-  }
-
-  public struct RemoteTunnelProvider: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let cloudflare = RemoteTunnelProvider(rawValue: "cloudflare")
-    public static let tailscale = RemoteTunnelProvider(rawValue: "tailscale")
-  }
-
-  public struct RemoteTunnelState: Codable, Sendable {
-    public var status: RemoteTunnelStatus
-    public var publicUrl: String?
-    public var error: String?
-    public var reachable: Bool?
-
-    enum CodingKeys: String, CodingKey {
-      case status = "status"
-      case publicUrl = "publicUrl"
-      case error = "error"
-      case reachable = "reachable"
-    }
-
-    public init(status: RemoteTunnelStatus, publicUrl: String? = nil, error: String? = nil, reachable: Bool? = nil) {
-      self.status = status
-      self.publicUrl = publicUrl
-      self.error = error
-      self.reachable = reachable
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(status, forKey: .status)
-      try c.encode(publicUrl, forKey: .publicUrl)
-      try c.encode(error, forKey: .error)
-      try c.encode(reachable, forKey: .reachable)
     }
   }
 
@@ -15174,7 +15210,6 @@ extension ArgusProtocol {
 
     public static let cloudflaredMissing = ShareErrorKind(rawValue: "cloudflared-missing")
     public static let quickTunnelFailed = ShareErrorKind(rawValue: "quick-tunnel-failed")
-    public static let tailscaleNotReady = ShareErrorKind(rawValue: "tailscale-not-ready")
     public static let tunnelUnreachable = ShareErrorKind(rawValue: "tunnel-unreachable")
     public static let unknown = ShareErrorKind(rawValue: "unknown")
   }
@@ -15599,155 +15634,6 @@ extension ArgusProtocol {
       try c.encode(action, forKey: .action)
       try c.encode(agentId, forKey: .agentId)
     }
-  }
-
-  public struct TailscaleDiagnosis: Codable, Sendable {
-    public var steps: [TailscaleStep]
-    public var ready: Bool
-    public var bin: String?
-    public var dnsName: String?
-
-    enum CodingKeys: String, CodingKey {
-      case steps = "steps"
-      case ready = "ready"
-      case bin = "bin"
-      case dnsName = "dnsName"
-    }
-
-    public init(steps: [TailscaleStep], ready: Bool, bin: String? = nil, dnsName: String? = nil) {
-      self.steps = steps
-      self.ready = ready
-      self.bin = bin
-      self.dnsName = dnsName
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(steps, forKey: .steps)
-      try c.encode(ready, forKey: .ready)
-      try c.encode(bin, forKey: .bin)
-      try c.encode(dnsName, forKey: .dnsName)
-    }
-  }
-
-  public struct TailscaleFixKind: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let installCli = TailscaleFixKind(rawValue: "install-cli")
-    public static let openUrl = TailscaleFixKind(rawValue: "open-url")
-    public static let signIn = TailscaleFixKind(rawValue: "sign-in")
-    public static let startDaemon = TailscaleFixKind(rawValue: "start-daemon")
-  }
-
-  public struct TailscaleFixResult: Codable, Sendable {
-    public var diagnosis: TailscaleDiagnosis
-    public var openUrl: String?
-    public var error: String?
-
-    enum CodingKeys: String, CodingKey {
-      case diagnosis = "diagnosis"
-      case openUrl = "openUrl"
-      case error = "error"
-    }
-
-    public init(diagnosis: TailscaleDiagnosis, openUrl: String? = nil, error: String? = nil) {
-      self.diagnosis = diagnosis
-      self.openUrl = openUrl
-      self.error = error
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(diagnosis, forKey: .diagnosis)
-      try c.encode(openUrl, forKey: .openUrl)
-      try c.encode(error, forKey: .error)
-    }
-  }
-
-  public struct TailscaleStep: Codable, Sendable {
-    public var id: TailscaleStepId
-    public var title: String
-    public var state: TailscaleStepState
-    public var message: String
-    public var detail: String?
-    public var fix: TailscaleFixKind?
-    public var fixLabel: String?
-    public var url: String?
-
-    enum CodingKeys: String, CodingKey {
-      case id = "id"
-      case title = "title"
-      case state = "state"
-      case message = "message"
-      case detail = "detail"
-      case fix = "fix"
-      case fixLabel = "fixLabel"
-      case url = "url"
-    }
-
-    public init(id: TailscaleStepId, title: String, state: TailscaleStepState, message: String, detail: String? = nil, fix: TailscaleFixKind? = nil, fixLabel: String? = nil, url: String? = nil) {
-      self.id = id
-      self.title = title
-      self.state = state
-      self.message = message
-      self.detail = detail
-      self.fix = fix
-      self.fixLabel = fixLabel
-      self.url = url
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(id, forKey: .id)
-      try c.encode(title, forKey: .title)
-      try c.encode(state, forKey: .state)
-      try c.encode(message, forKey: .message)
-      try c.encode(detail, forKey: .detail)
-      try c.encode(fix, forKey: .fix)
-      try c.encode(fixLabel, forKey: .fixLabel)
-      try c.encode(url, forKey: .url)
-    }
-  }
-
-  public struct TailscaleStepId: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let cli = TailscaleStepId(rawValue: "cli")
-    public static let daemon = TailscaleStepId(rawValue: "daemon")
-    public static let funnel = TailscaleStepId(rawValue: "funnel")
-    public static let login = TailscaleStepId(rawValue: "login")
-  }
-
-  public struct TailscaleStepState: RawRepresentable, Codable, Hashable, Sendable {
-    public var rawValue: String
-    public init(rawValue: String) { self.rawValue = rawValue }
-    public init(from decoder: Decoder) throws {
-      rawValue = try decoder.singleValueContainer().decode(String.self)
-    }
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.singleValueContainer()
-      try c.encode(rawValue)
-    }
-
-    public static let blocked = TailscaleStepState(rawValue: "blocked")
-    public static let fail = TailscaleStepState(rawValue: "fail")
-    public static let ok = TailscaleStepState(rawValue: "ok")
   }
 
   public struct TelemetryInit: Codable, Sendable {

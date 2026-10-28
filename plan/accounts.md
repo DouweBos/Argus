@@ -1,7 +1,7 @@
 # Account layer: find and link your computers
 
-Status: phases 1–3 built (phase 2 minus identity merge, account reset and QR "Also add to
-account" — see §11). Owner: Douwe. Touches `packages/host`, `packages/remote-protocol`,
+Status: phases 1–4 built (phase 2 minus identity merge, account reset and QR "Also add to
+account" — see §11; phase 4 waits on the Cloudflare token below). Owner: Douwe. Touches `packages/host`, `packages/remote-protocol`,
 `clients/apple`, `app/`, and the houwert.dev Pages project.
 
 ## What Douwe needs to do
@@ -33,6 +33,15 @@ Everything not on this list is ours to build and script. Nothing here needs the 
    `argus-account` in the dashboard and paste its id.
 7. Optional: one WAF rate-limiting rule on `houwert.dev/argus/account/v1/link/*` (10 req/min per IP).
    The service has its own D1 counters either way.
+   7a. **Managed tunnels (phase 4).** Create an API token (My Profile → API Tokens → Create Custom
+   Token) with exactly **Account › Cloudflare Tunnel › Edit** and **Zone › DNS › Edit**, zone resource
+   limited to `houwert.dev`. Then in houwert.dev: `wrangler pages secret put CF_TUNNEL_API_TOKEN
+--project-name=houwert-dev`, and fill `CF_TUNNEL_ACCOUNT_ID` (dashboard → any zone → Overview →
+   Account ID) and `CF_TUNNEL_ZONE_ID` (the `houwert.dev` zone's Zone ID) in `wrangler.toml`
+   `[vars]`. Apply the migration before the deploy that uses it:
+   `wrangler d1 migrations apply argus-account --remote`, then push `main`. Until all three are set the
+   feature stays off and linked hosts use LAN and Tailscale only. Universal SSL already covers
+   `argus-<hash>.houwert.dev` (one label deep); don't move them under a sub-subdomain.
 
 **Apple Developer**
 
@@ -55,8 +64,9 @@ Everything not on this list is ours to build and script. Nothing here needs the 
   from a device or host that's already trusted, by comparing a 6-digit code.
 - The directory carries each host's current endpoints and last-seen time. This fixes the
   "quick tunnel URL changed on restart, re-pair" problem.
-- Keep what works: Noise IK end to end, user-owned tunnels (cloudflared quick/token, Tailscale
-  Funnel), LAN-first endpoint ranking, QR pairing as the no-account path, and per-device push sealing.
+- Keep what works: Noise IK end to end, LAN-first endpoint ranking, QR pairing as the no-account
+  path, and per-device push sealing. Phase 4 replaced user-owned tunnels (cloudflared quick/token,
+  Tailscale Funnel) with a managed tunnel per linked host plus direct tailnet addresses.
 
 **Non-goals (for this plan)**
 
@@ -76,7 +86,7 @@ Everything not on this list is ours to build and script. Nothing here needs the 
 | Paired devices | same                                                                                                                                    | `PairedDevice { device_id, dev_static_pub, capabilities, push }`, matched by `findDeviceByStaticKey`.                                                                         |
 | Enrollment     | `pairing.ts`, `serverPairing.ts`, `bin/consolePairing.ts`                                                                               | Noise IKpsk1 on `/pair`. The PSK comes from the QR secret; a SAS (`derive.ts deriveSas`) is confirmed at the host console.                                                    |
 | Steady state   | `localGatewayServer.ts handleDeviceSocket`                                                                                              | Noise IK on `/device`. An unknown key is closed unless a huddle room is open.                                                                                                 |
-| Endpoints      | `endpoints.ts getEndpoints`, `tunnelManager.ts`                                                                                         | Ranked list (lan 0, tailscale 1, cloudflare 2), synced to clients via `host.endpoints`.                                                                                       |
+| Endpoints      | `endpoints.ts getEndpoints`, `managedTunnel.ts`, `tunnelManager.ts` (legacy + huddle quick tunnel)                                      | Ranked list (lan 0, tailscale = tailnet IP 1, cloudflare = managed tunnel 2), synced to clients via `host.endpoints`.                                                         |
 | Tiers          | `remote-protocol/src/capabilities.ts`                                                                                                   | `monitor`/`control`/`admin`. `HOST_ONLY_COMMANDS` (pairing, revoke, grants, huddles) never cross the wire.                                                                    |
 | Push           | `push/relay.ts`, `push/seal.ts`, houwert.dev `functions/argus/push/[[path]].ts` (KV `ARGUS_PUSH`)                                       | The device mints `push_key` (AES, sealing) and `auth_key` (HMAC), registers `auth_key` with the relay, and hands both to each host over the gateway (`device.register_push`). |
 | iOS store      | `ArgusKit/Storage/Keystore.swift`, `DeviceIdentity.swift`                                                                               | Keychain `PairedHosts`. **One keypair per pairing**, plus pinned `desktopPubB64`, `url`, `endpoints`.                                                                         |
@@ -658,6 +668,7 @@ Electron _Account_ and Mac _Account_ settings, and via `argus-host account set �
 | `account.grants.desktop`                             | `control+admin`  | For `mac`/`electron` devices                                         |
 | `account.publish.lan` / `.tailscale` / `.cloudflare` | on / on / on     | Which endpoint kinds go into presence. LAN IPs are metadata (§3)     |
 | `account.hosts_can_approve`                          | on               | Lets this host's console approve joins (§4.4)                        |
+| `account.tunnel` (phase 4)                           | on               | Run the managed tunnel while remote access is on                     |
 
 **Docs**
 
@@ -686,6 +697,9 @@ and counts. The host captures what it does. iOS captures only phone-local acts.
 | `account_member_revoked`   | `role: "device" \| "host"`, `source: "local" \| "log"`                                                  | Host applies a revoke                                   | Revocation volume and path           |
 | `account_log_rejected`     | `reason: "fork" \| "bad_signature" \| "unknown_signer" \| "sas_mismatch"`                               | Verifier refuses                                        | Attacks or bugs                      |
 | `remote_connection_opened` | `trust: "paired" \| "account"`                                                                          | Successful `/device` handshake, once per device per day | Do account hosts replace QR pairing? |
+| `managed_tunnel_started`   | `created: boolean`, `install: "downloaded" \| "managed" \| "override" \| "path"`                        | Phase 4: the connector registered                       | Do managed tunnels come up?          |
+| `managed_tunnel_failed`    | `stage: "unavailable" \| "credentials" \| "install" \| "connect"`                                       | Phase 4: once per stage per launch                      | Where do they break?                 |
+| `legacy_tunnel_retired`    | `kind: "cloudflare_quick" \| "cloudflare_token" \| "tailscale_funnel"`, `reason: "managed" \| "user"`   | Phase 4 migration                                       | How many old setups are left?        |
 
 **iOS (`clients/apple/ArgusRemote/Telemetry/TelemetryEvent.swift`)**
 
@@ -808,12 +822,71 @@ Built (wire contract § Phase 3):
 - Not done: the Mac app registers no push token (it has no APNs client), so its account device
   gets no account pushes; Android/FCM has no client.
 
-### Phase 4 (optional): managed tunnels
+### Phase 4: managed tunnels (the primary remote route)
 
-`<host-hash>.argus.houwert.dev` named Cloudflare tunnels, created by the service for linked hosts
-whose owners opt in. This needs a scoped Cloudflare API token as a Pages secret (user input) and
-idle-tunnel reclamation. The tunnel still only carries Noise ciphertext, and the endpoint is just
-another `cloudflare` entry in presence. Decide after phase 3 usage data.
+Every linked host with remote access on gets a named Cloudflare Tunnel on the service owner's
+account, `argus-<hash>.houwert.dev`, created and torn down by the account service. It replaces the
+user-managed options (cloudflared quick/token tunnels, Tailscale Funnel). Exact flow, names, the
+Cloudflare calls and the D1 table: wire contract § Phase 4.
+
+Decisions:
+
+- **One label under `houwert.dev`**, not `*.argus.houwert.dev`: Universal SSL covers only one level
+  of wildcard; a deeper name needs Advanced Certificate Manager. The label is
+  `argus-` + 16 hex of `sha256("argus-tunnel-v1\n" + host_id)`, so a re-created tunnel keeps its
+  address and clients keep their stored endpoint.
+- **Noise inside the tunnel.** The edge terminates TLS but sees only Noise ciphertext: stronger than
+  a comparable product whose tunnel edge sees plaintext and whose relay is a trusted broker. Ingress
+  points only at `http://127.0.0.1:<gateway port>`; the service sets it from the port the host
+  reports, never from a caller-supplied URL.
+- **The service issues credentials, the host keeps them.** `POST /host/tunnel` is host-signed and
+  keyed only by the signing member, so no request can name another host. The connector token is
+  never stored in D1 (fetched from Cloudflare per request); the host keeps it in its encrypted
+  account record and passes it to `cloudflared` via `TUNNEL_TOKEN`, never argv.
+- **Pinned `cloudflared`, downloaded on first need** into `$ARGUS_HOME/bin/cloudflared/<version>/`
+  (SHA-256 per platform in `services/remote/cloudflared.ts`, version 2026.10.4), with
+  `ARGUS_CLOUDFLARED_PATH` as the user's override and `PATH` as the fallback when the download
+  fails. Not bundled: it would add ~40 MB to each of the Electron app, the Mac app and the server
+  app, and a third-party binary inside the Mac bundle has to be re-signed for notarization. Node's
+  `fetch` sets no quarantine flag, and neither app is sandboxed, so the download runs as is.
+- **Reclamation without cron.** Pages has no cron, so the account service sweeps lazily on ~1 % of
+  requests (≤ 3 releases): tunnels of hosts that are no longer live members, and tunnels idle for
+  14 days (`max(last_used, presence last_seen)`). Revokes and account deletion release at once
+  (`waitUntil`). A follow-up could move the sweep to a Worker cron if the lazy one lags.
+- **Route order unchanged**: LAN → Tailscale → managed tunnel. "Tailscale" is now the host's tailnet
+  IP (`ws://100.x.y.z:port`, 100.64.0.0/10) rather than a Funnel URL — a bare IP needs no ATS
+  exception and nothing to configure. Clients race all routes at connect (existing `EndpointRacer`)
+  and, while on a worse route, re-check better ones on network change and every few minutes, with
+  a cooldown after a failed check (the connection-supervisor idea).
+- **Migration.** The old settings (`remote_tailscale_enabled`, `remote_cloudflare_enabled`,
+  `remote_tunnel_mode`, `remote_tunnel_token`, `remote_public_url`, `remote_provider`) can't be set
+  any more. A tunnel they describe keeps running (`legacyTunnels` in `remote_get_status`) until the
+  managed tunnel registers; then it is stopped and the settings cleared
+  (`legacy_tunnel_retired`). Settings → Remote access also offers "Stop using it". QR-only hosts keep
+  LAN + tailnet, and an old tunnel keeps running there indefinitely: removing it would strand a
+  phone that only reached the computer through it. Huddles still raise a temporary quick tunnel
+  (now with the pinned binary) when nothing else reaches the host, since a guest's browser can't use
+  a LAN or tailnet address.
+- **Degrades cleanly.** No API token or ids → `managed_tunnels: false`, `503 unavailable`; the host
+  shows "unavailable", retries hourly, and keeps LAN/Tailscale.
+
+Built:
+
+- Service (houwert.dev): `0003_tunnels.sql`, `server/argus-account/{cloudflare,tunnels}.ts`,
+  `POST`/`DELETE /host/tunnel`, release on revoke and `DELETE /account`, the lazy sweep, 12 / hour per
+  host and 20 tunnels per account, tests against a fake Cloudflare API and a smoke run against a
+  local mock.
+- Host: `services/remote/{cloudflared,managedTunnel,legacyTunnels}.ts`,
+  `services/account/tunnel.ts` (credentials, install, supervision, refresh on rejection, release on
+  unlink), tailnet endpoint in `endpoints.ts`, `account set tunnel on|off`, `RemoteStatus`
+  reshaped (`tailscaleUrl`, `managedTunnel`, `legacyTunnels`), Tailscale-Funnel setup removed.
+- Clients: Electron, Mac and iOS settings show the routes, the tunnel's state and any legacy tunnel;
+  the Account settings gain the tunnel switch; route re-checks on network change (iOS, Mac,
+  Electron).
+
+Deploy order: secret + vars (§ "What Douwe needs to do" 7a) → `wrangler d1 migrations apply
+argus-account --remote` → push houwert.dev `main` → ship the Argus release. Older Argus hosts never
+call the new routes; new hosts against an old service get a 404 and back off like `unavailable`.
 
 ### Phase 5 (later): hosted web client
 
@@ -858,6 +931,8 @@ from https to `ws://` LAN is blocked, so only tunnel endpoints are possible).
 ## Prior art
 
 A comparable product's hosted relay uses the same identity provider, but makes the relay a trusted
-broker: it mints session credentials for environments and runs managed tunnels. We keep the service
-untrusted (signed log, SAS approvals, Noise to pinned keys), keep tunnels user-owned, and run our own
+broker: it mints session credentials for environments and runs managed tunnels whose edge sees
+plaintext. We keep the service untrusted (signed log, SAS approvals, Noise to pinned keys), run
+managed tunnels the same way (named tunnel per host, pinned and checksum-verified `cloudflared`,
+reclamation of idle tunnels) but carry only Noise ciphertext through them, and run our own
 device-code step instead of Clerk's beta OAuth device grant.

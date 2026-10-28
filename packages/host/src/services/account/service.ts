@@ -46,6 +46,7 @@ import {
   setDeviceDisconnector,
   setTrust,
 } from "./trust";
+import { releaseAccountTunnel, stopAccountTunnel } from "./tunnel";
 
 /** Presence older than this shows the host as offline. */
 const ONLINE_WINDOW_MS = 15 * 60_000;
@@ -61,6 +62,7 @@ export async function startAccount(opts: {
 
 export function stopAccount(): void {
   stopBackground();
+  stopAccountTunnel();
   if (linkInProgress()) {
     cancelLink().catch(() => undefined);
   }
@@ -109,6 +111,8 @@ export async function logout(): Promise<AccountStatus> {
       { type: "revoke", member_id: record.host_id, reason: "unlinked" },
     ),
   );
+  // Before the revoke: afterwards this host can no longer sign for its tunnel.
+  await releaseAccountTunnel();
   try {
     await memberClient(record).append(state.epoch, entries);
   } catch (err) {

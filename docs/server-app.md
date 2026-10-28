@@ -232,7 +232,8 @@ on the host.
 settles either way, and on quit.
 
 If the menu says _no reachable address_, the gateway has no LAN address or
-tunnel yet — check the network, or turn on a tunnel.
+tunnel yet — check the network, or link the host to your account so it gets a
+tunnel of its own.
 
 This is the same flow the desktop runs in a dialog, on a different surface. It
 is not the `ARGUS_DEV_TRUST` bypass, which skips the comparison entirely and
@@ -262,20 +263,29 @@ to become the account's first computer instead.
 
 The other account words:
 
-| word                        | does                                                                                                                                                                                                            |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `account`                   | Shows whether the host is linked, the account safety code, every computer on the account with online/offline, its devices, and how many are waiting to join                                                     |
-| `account set <key> <value>` | Changes this host's account settings: `enabled`, `lan`, `tailscale`, `cloudflare`, `approve` (`on`/`off`), `ios` (`monitor`/`control`), `desktop` (`monitor`/`control`/`admin`), `service` (a URL or `default`) |
-| `approve [n]`               | Approves a computer or a device (a phone or Mac that signed in) waiting to join, from this console — with the same code comparison. Turned off by `account set approve off`                                     |
-| `logout`                    | Unlinks this host. QR-paired devices keep working                                                                                                                                                               |
+| word                        | does                                                                                                                                                                                                                      |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `account`                   | Shows whether the host is linked, the account safety code, every computer on the account with online/offline, its devices, and how many are waiting to join                                                               |
+| `account set <key> <value>` | Changes this host's account settings: `enabled`, `lan`, `tailscale`, `cloudflare`, `approve`, `tunnel` (`on`/`off`), `ios` (`monitor`/`control`), `desktop` (`monitor`/`control`/`admin`), `service` (a URL or `default`) |
+| `approve [n]`               | Approves a computer or a device (a phone or Mac that signed in) waiting to join, from this console — with the same code comparison. Turned off by `account set approve off`                                               |
+| `logout`                    | Unlinks this host. QR-paired devices keep working                                                                                                                                                                         |
 
 `approve` is also the way back in when you've lost every device: sign in on the
 new phone, then type `approve` here and compare the code it shows.
 
 Once linked, the host publishes its addresses (signed with its own account key)
-when a tunnel or the LAN changes and every five minutes, and accepts devices
+when a route or the LAN changes and every five minutes, and accepts devices
 the account lists with the grants from `account set ios|desktop`. The tray of
 `Argus Server.app` does not offer linking yet; use `argus-host`.
+
+A linked host with remote access on also runs its own **managed tunnel**, so
+devices reach it from anywhere (see
+[Reaching your computers from anywhere](accounts.md#reaching-your-computers-from-anywhere)).
+The first time, the host downloads a pinned `cloudflared` into
+`$ARGUS_HOME/bin/cloudflared/` and checks its SHA-256 before running it; set
+`ARGUS_CLOUDFLARED_PATH` to use your own binary instead (handy on a machine
+with no outbound access to GitHub). `account` shows the tunnel's state and
+address; `account set tunnel off` turns it off, leaving the LAN and Tailscale.
 
 ## Updating the server
 

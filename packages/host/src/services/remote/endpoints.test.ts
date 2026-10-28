@@ -1,77 +1,90 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const settings = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
 const tunnels = vi.hoisted(() => ({
   value: {
-    cloudflare: { status: "stopped", publicUrl: null, error: null },
-    tailscale: { status: "stopped", publicUrl: null, error: null },
+    cloudflare: { publicUrl: null },
+    tailscale: { publicUrl: null },
   } as Record<string, { publicUrl: string | null }>,
 }));
+const managed = vi.hoisted(() => ({ url: null as string | null }));
+const net = vi.hoisted(() => ({ tailnet: true }));
 
-vi.mock("../appSettings/store", () => ({
-  loadAppSettings: () => settings.value,
-}));
 vi.mock("./tunnelManager", () => ({
-  TUNNEL_PROVIDERS: ["tailscale", "cloudflare"],
   getTunnelStates: () => tunnels.value,
+}));
+vi.mock("./managedTunnel", () => ({
+  getManagedTunnelUrl: () => managed.url,
 }));
 vi.mock("node:os", () => ({
   networkInterfaces: () => ({
+    // Tailscale's interface can come first; it must never pass for the LAN.
+    ...(net.tailnet
+      ? { utun3: [{ family: "IPv4", address: "100.88.1.2", internal: false }] }
+      : {}),
     en0: [{ family: "IPv4", address: "192.168.1.79", internal: false }],
     lo0: [{ family: "IPv4", address: "127.0.0.1", internal: true }],
   }),
 }));
 
-const { getEndpoints, setGatewayOnLan, LOCAL_GATEWAY_PORT } =
+const { getEndpoints, isTailnetAddress, setGatewayOnLan, LOCAL_GATEWAY_PORT } =
   await import("./endpoints");
 
 const LAN_URL = `ws://192.168.1.79:${LOCAL_GATEWAY_PORT}`;
+const TAILNET_URL = `ws://100.88.1.2:${LOCAL_GATEWAY_PORT}`;
+const MANAGED_URL = "wss://argus-0123456789abcdef.houwert.dev";
 
 describe("getEndpoints", () => {
   beforeEach(() => {
-    settings.value = {};
     tunnels.value = {
       cloudflare: { publicUrl: null },
       tailscale: { publicUrl: null },
     };
+    managed.url = null;
+    net.tailnet = true;
     setGatewayOnLan(true);
   });
 
-  it("ranks LAN before Tailscale before Cloudflare", () => {
-    tunnels.value.tailscale.publicUrl = "wss://mac.tail.ts.net";
-    tunnels.value.cloudflare.publicUrl = "wss://x.trycloudflare.com";
+  it("ranks LAN before the tailnet before the managed tunnel", () => {
+    managed.url = MANAGED_URL;
 
     expect(getEndpoints()).toEqual([
       { kind: "lan", url: LAN_URL, priority: 0 },
-      { kind: "tailscale", url: "wss://mac.tail.ts.net", priority: 1 },
-      { kind: "cloudflare", url: "wss://x.trycloudflare.com", priority: 2 },
+      { kind: "tailscale", url: TAILNET_URL, priority: 1 },
+      { kind: "cloudflare", url: MANAGED_URL, priority: 2 },
     ]);
   });
 
-  it("advertises several providers at once", () => {
-    tunnels.value.tailscale.publicUrl = "wss://mac.tail.ts.net";
-    tunnels.value.cloudflare.publicUrl = "wss://x.trycloudflare.com";
-
-    expect(getEndpoints().map((e) => e.kind)).toEqual([
-      "lan",
-      "tailscale",
-      "cloudflare",
-    ]);
-  });
-
-  it("omits tunnels that haven't produced a URL yet", () => {
-    tunnels.value.tailscale.publicUrl = null;
+  it("leaves out the tailnet when Tailscale isn't connected", () => {
+    net.tailnet = false;
 
     expect(getEndpoints().map((e) => e.kind)).toEqual(["lan"]);
   });
 
-  it("omits the LAN address while the gateway is down", () => {
-    setGatewayOnLan(false);
+  it("omits the managed tunnel until it registers", () => {
+    expect(getEndpoints().map((e) => e.kind)).toEqual(["lan", "tailscale"]);
+  });
+
+  it("lets an earlier version's Funnel stand in for the tailnet address", () => {
     tunnels.value.tailscale.publicUrl = "wss://mac.tail.ts.net";
 
-    // The tunnel URL is still listed: the daemon holds it independently of
-    // whether this process is currently listening.
-    expect(getEndpoints().map((e) => e.kind)).toEqual(["tailscale"]);
+    expect(getEndpoints().find((e) => e.kind === "tailscale")?.url).toBe(
+      "wss://mac.tail.ts.net",
+    );
+  });
+
+  it("prefers the managed tunnel over an earlier version's Cloudflare tunnel", () => {
+    tunnels.value.cloudflare.publicUrl = "wss://x.trycloudflare.com";
+    expect(getEndpoints().at(-1)?.url).toBe("wss://x.trycloudflare.com");
+
+    managed.url = MANAGED_URL;
+    expect(getEndpoints().at(-1)?.url).toBe(MANAGED_URL);
+  });
+
+  it("omits direct addresses while the gateway is off the network", () => {
+    setGatewayOnLan(false);
+    managed.url = MANAGED_URL;
+
+    expect(getEndpoints().map((e) => e.kind)).toEqual(["cloudflare"]);
   });
 
   it("returns nothing when there is no way in", () => {
@@ -79,8 +92,14 @@ describe("getEndpoints", () => {
 
     expect(getEndpoints()).toEqual([]);
   });
+});
 
-  it("skips internal interfaces when picking the LAN address", () => {
-    expect(getEndpoints()[0].url).toBe(LAN_URL);
+describe("isTailnetAddress", () => {
+  it("matches Tailscale's 100.64.0.0/10 and nothing around it", () => {
+    expect(isTailnetAddress("100.64.0.1")).toBe(true);
+    expect(isTailnetAddress("100.127.255.254")).toBe(true);
+    expect(isTailnetAddress("100.63.255.255")).toBe(false);
+    expect(isTailnetAddress("100.128.0.1")).toBe(false);
+    expect(isTailnetAddress("10.0.0.4")).toBe(false);
   });
 });

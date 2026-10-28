@@ -48,6 +48,18 @@ export interface AccountRecord {
   presence_at: number | null;
   /** Account devices revoked from this console: never re-materialized here. */
   blocked_devices?: string[];
+  /** The managed tunnel's connector credentials, as the service issued them. */
+  tunnel?: StoredTunnel | null;
+}
+
+export interface StoredTunnel {
+  hostname: string;
+  url: string;
+  tunnel_id: string;
+  token: string;
+  /** The loopback port the service pointed the tunnel's ingress at. */
+  port: number;
+  fetched_at: number;
 }
 
 export const DEFAULT_ACCOUNT_URL = "https://houwert.dev/argus/account/v1";
@@ -58,6 +70,7 @@ export const DEFAULT_ACCOUNT_CONFIG: AccountConfig = {
   grants: { ios: "control", desktop: "admin" },
   publish: { lan: true, tailscale: true, cloudflare: true },
   hosts_can_approve: true,
+  tunnel: true,
 };
 
 function freshIdentity(config: AccountConfig): AccountRecord {
@@ -92,7 +105,15 @@ export async function ensureAccountRecord(): Promise<AccountRecord> {
 }
 
 export async function readAccountRecord(): Promise<AccountRecord | null> {
-  return getAccountRecord();
+  const existing = await getAccountRecord();
+
+  // Records written before a setting existed pick up its default.
+  return existing
+    ? {
+        ...existing,
+        config: mergeConfig(DEFAULT_ACCOUNT_CONFIG, existing.config ?? {}),
+      }
+    : null;
 }
 
 export async function writeAccountRecord(record: AccountRecord): Promise<void> {
@@ -177,6 +198,7 @@ export function mergeConfig(
     grants: { ...base.grants, ...stripUndefined(patch.grants ?? {}) },
     publish: { ...base.publish, ...stripUndefined(patch.publish ?? {}) },
     hosts_can_approve: patch.hosts_can_approve ?? base.hosts_can_approve,
+    tunnel: patch.tunnel ?? base.tunnel,
   };
 }
 

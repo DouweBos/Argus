@@ -84,6 +84,15 @@ export interface PushSendResult {
   reason?: string;
 }
 
+/** The managed tunnel the service keeps for this host (`POST /host/tunnel`). */
+export interface HostTunnel {
+  hostname: string;
+  url: string;
+  tunnel_id: string;
+  token: string;
+  created: boolean;
+}
+
 export interface LogPage {
   epoch: number;
   entries: LogEntry[];
@@ -185,6 +194,14 @@ export class AccountClient {
       presence_body: presenceBody,
       presence_sig: presenceSig,
     });
+  }
+
+  hostTunnel(port: number): Promise<HostTunnel> {
+    return this.request("POST", "/host/tunnel", { port });
+  }
+
+  releaseHostTunnel(): Promise<void> {
+    return this.request("DELETE", "/host/tunnel");
   }
 
   listJoins(): Promise<{ requests: JoinRequestRow[] }> {

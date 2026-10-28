@@ -1,9 +1,9 @@
 /**
  * The addresses a phone can reach this desktop on.
  *
- * Providers run concurrently, so there's rarely one "current" URL: the LAN IP,
- * a Tailscale funnel and a Cloudflare tunnel can all be live at once. Clients
- * receive the whole ranked list and keep the simplest one that handshakes.
+ * Routes are live at once: the LAN IP, the tailnet IP and the account's
+ * managed tunnel. Clients receive the whole ranked list and keep the simplest
+ * one that handshakes.
  *
  * A leaf module on purpose — the gateway's method handlers need this, and
  * importing `remoteService` there would close the
@@ -12,7 +12,8 @@
 
 import type { TunnelProvider } from "./tunnelManager";
 import { networkInterfaces } from "node:os";
-import { getTunnelStates, TUNNEL_PROVIDERS } from "./tunnelManager";
+import { getManagedTunnelUrl } from "./managedTunnel";
+import { getTunnelStates } from "./tunnelManager";
 
 /**
  * Loopback/LAN port the gateway (and the web client it serves) listens on.
@@ -36,7 +37,7 @@ export interface RemoteEndpoint {
 
 /**
  * Ranked simplest-first: the LAN never leaves the building, Tailscale is a
- * direct WireGuard mesh, Cloudflare relays through a third party.
+ * direct WireGuard mesh, the managed tunnel relays through Cloudflare.
  */
 const ENDPOINT_PRIORITY: Record<EndpointKind, number> = {
   lan: 0,
@@ -68,48 +69,72 @@ export function onLanChange(cb: () => void): () => void {
   };
 }
 
-/** First non-internal IPv4 LAN address as a ws:// URL, or null. */
-export function getLanUrl(): string | null {
+export function isGatewayOnLan(): boolean {
+  return gatewayOnLan;
+}
+
+/** Tailscale hands out addresses from the CGNAT range, 100.64.0.0/10. */
+export function isTailnetAddress(address: string): boolean {
+  const [a, b] = address.split(".").map(Number);
+
+  return a === 100 && b >= 64 && b <= 127;
+}
+
+function ipv4Addresses(): string[] {
+  const out: string[] = [];
   for (const addrs of Object.values(networkInterfaces())) {
     for (const a of addrs ?? []) {
       if (a.family === "IPv4" && !a.internal) {
-        return `ws://${a.address}:${LOCAL_GATEWAY_PORT}`;
+        out.push(a.address);
       }
     }
   }
 
-  return null;
+  return out;
+}
+
+/** First non-internal, non-tailnet IPv4 address as a ws:// URL, or null. */
+export function getLanUrl(): string | null {
+  const address = ipv4Addresses().find((a) => !isTailnetAddress(a));
+
+  return address ? `ws://${address}:${LOCAL_GATEWAY_PORT}` : null;
+}
+
+/**
+ * This machine's tailnet address as a ws:// URL, or null when Tailscale isn't
+ * connected. An IP rather than the MagicDNS name: phones on the tailnet reach
+ * it directly, and a bare IP needs no TLS exception on iOS.
+ */
+export function getTailnetUrl(): string | null {
+  const address = ipv4Addresses().find(isTailnetAddress);
+
+  return address ? `ws://${address}:${LOCAL_GATEWAY_PORT}` : null;
 }
 
 /**
  * Every address worth trying, best first. Only live ones are included — a
- * tunnel that hasn't produced a URL yet isn't reachable.
+ * tunnel that hasn't registered yet isn't reachable.
  */
 export function getEndpoints(): RemoteEndpoint[] {
   const endpoints: RemoteEndpoint[] = [];
+  const add = (kind: EndpointKind, url: string | null) => {
+    if (url) {
+      endpoints.push({ kind, url, priority: ENDPOINT_PRIORITY[kind] });
+    }
+  };
+  const legacy = getTunnelStates();
 
   if (gatewayOnLan) {
-    const lan = getLanUrl();
-    if (lan) {
-      endpoints.push({
-        kind: "lan",
-        url: lan,
-        priority: ENDPOINT_PRIORITY.lan,
-      });
-    }
+    add("lan", getLanUrl());
   }
-
-  const states = getTunnelStates();
-  for (const provider of TUNNEL_PROVIDERS) {
-    const url = states[provider].publicUrl;
-    if (url) {
-      endpoints.push({
-        kind: provider,
-        url,
-        priority: ENDPOINT_PRIORITY[provider],
-      });
-    }
-  }
+  // A phone keeps one address per kind. An earlier version's Funnel reaches
+  // phones off the tailnet too, so while it runs it stands in for the direct
+  // tailnet address.
+  add(
+    "tailscale",
+    legacy.tailscale.publicUrl ?? (gatewayOnLan ? getTailnetUrl() : null),
+  );
+  add("cloudflare", getManagedTunnelUrl() ?? legacy.cloudflare.publicUrl);
 
   return endpoints.sort((a, b) => a.priority - b.priority);
 }

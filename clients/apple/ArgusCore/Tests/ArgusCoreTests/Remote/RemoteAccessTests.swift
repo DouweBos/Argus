@@ -4,12 +4,12 @@ import Testing
 
 private func status(
   endpoints: [ArgusProtocol.RemoteEndpoint] = [],
-  tunnels: [String: ArgusProtocol.RemoteTunnelState] = [:]
+  managed: ArgusProtocol.ManagedTunnelState = .init(phase: .starting),
+  legacy: [ArgusProtocol.LegacyTunnelState] = []
 ) -> ArgusProtocol.RemoteStatus {
   .init(
-    enabled: true, tailscaleEnabled: false, cloudflareEnabled: false, tunnels: tunnels,
-    endpoints: endpoints, tunnelMode: .quick, hasTunnelToken: false, notifyWhenFocused: false,
-    devices: [], connectedDeviceIds: [])
+    enabled: true, endpoints: endpoints, managedTunnel: managed, legacyTunnels: legacy,
+    notifyWhenFocused: false, devices: [], connectedDeviceIds: [])
 }
 
 struct RemoteAccessLabelsTests {
@@ -23,18 +23,39 @@ struct RemoteAccessLabelsTests {
   }
 
   @Test func failedTunnelWithNoAddressIsUnreachable() {
-    let failed = ArgusProtocol.RemoteTunnelState(status: .error, error: "boom")
-    #expect(RemoteAccessLabels.reachabilityLabel(status(tunnels: ["cloudflare": failed])) == "unreachable")
+    let failed = ArgusProtocol.ManagedTunnelState(phase: .error, error: "boom")
+    #expect(RemoteAccessLabels.reachabilityLabel(status(managed: failed)) == "unreachable")
+    let legacy = ArgusProtocol.LegacyTunnelState(kind: .cloudflareQuick, status: .error, error: "boom")
+    #expect(RemoteAccessLabels.reachabilityTone(status(legacy: [legacy])) == .error)
     #expect(RemoteAccessLabels.reachabilityLabel(status()) == "starting")
   }
 
-  @Test func publishedButUnreachableTunnelSaysSo() {
-    let state = ArgusProtocol.RemoteTunnelState(status: .running, publicUrl: "wss://a", reachable: false)
-    #expect(RemoteAccessLabels.tunnelLabel(state) == "unreachable")
-    #expect(RemoteAccessLabels.tunnelTone(state) == .error)
-    let up = ArgusProtocol.RemoteTunnelState(status: .running, publicUrl: "wss://a")
-    #expect(RemoteAccessLabels.tunnelLabel(up) == "wss://a")
-    #expect(RemoteAccessLabels.tunnelTone(up) == .success)
+  @Test func managedTunnelReadsInWords() {
+    let running = ArgusProtocol.ManagedTunnelState(phase: .running, url: "wss://argus-a.houwert.dev")
+    #expect(RemoteAccessLabels.managedTunnelLabel(running) == "running")
+    #expect(RemoteAccessLabels.managedTunnelTone(running) == .success)
+    #expect(RemoteAccessLabels.managedTunnelNote(running) == nil)
+    let error = ArgusProtocol.ManagedTunnelState(phase: .error, error: "boom")
+    #expect(RemoteAccessLabels.managedTunnelTone(error) == .error)
+    #expect(RemoteAccessLabels.managedTunnelLabel(.init(phase: .provisioning)) == "setting up")
+    #expect(RemoteAccessLabels.managedTunnelTone(.init(phase: .provisioning)) == .idle)
+  }
+
+  @Test func offTunnelSaysWhy() {
+    let notLinked = ArgusProtocol.ManagedTunnelState(phase: .off, reason: .notLinked)
+    #expect(RemoteAccessLabels.managedTunnelNote(notLinked)?.contains("Sign in") == true)
+    #expect(RemoteAccessLabels.managedTunnelNote(.init(phase: .off, reason: .remoteOff)) == "Starts when remote access is on.")
+    #expect(RemoteAccessLabels.managedTunnelNote(.init(phase: .unavailable)) != nil)
+    #expect(RemoteAccessLabels.managedTunnelTone(notLinked) == .idle)
+  }
+
+  @Test func legacyTunnelsShowTheirAddress() {
+    let up = ArgusProtocol.LegacyTunnelState(kind: .tailscaleFunnel, status: .running, publicUrl: "wss://a.ts.net")
+    #expect(RemoteAccessLabels.legacyTunnel(up.kind) == "Tailscale Funnel")
+    #expect(RemoteAccessLabels.legacyTunnelLabel(up) == "wss://a.ts.net")
+    #expect(RemoteAccessLabels.legacyTunnelTone(up) == .success)
+    let starting = ArgusProtocol.LegacyTunnelState(kind: .cloudflareToken, status: .starting)
+    #expect(RemoteAccessLabels.legacyTunnelLabel(starting) == "starting")
   }
 
   @Test func lastSeenBuckets() {

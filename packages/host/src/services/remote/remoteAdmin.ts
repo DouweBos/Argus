@@ -9,7 +9,6 @@ import { warn } from "@argus/host/logger";
 import { revokeMember } from "../account/members";
 import { accountStatus } from "../account/status";
 import { blockAccountDevice } from "../account/trust";
-import { openExternalUrl } from "../shell/operations";
 import {
   getDevice,
   listDevices,
@@ -26,24 +25,6 @@ import {
   setRemoteStatusListener,
   type RemoteStatus,
 } from "./remoteService";
-import {
-  applyTailscaleFix,
-  type TailscaleFixKind,
-  type TailscaleFixResult,
-} from "./tailscaleSetup";
-
-/** Browser-completed fixes (sign-in, enabling Funnel) hand back a URL to open. */
-export async function applyTailscaleFixAndOpen(
-  fix: TailscaleFixKind,
-  url?: string | null,
-): Promise<TailscaleFixResult> {
-  const result = await applyTailscaleFix(fix, url);
-  if (result.openUrl) {
-    openExternalUrl(result.openUrl);
-  }
-
-  return result;
-}
 
 export async function revokeRemoteDevice(
   deviceId: string,

@@ -153,9 +153,9 @@ export function HuddleDialog({
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => showSettingsDialog("remote-access")}
+                    onClick={() => showSettingsDialog("account")}
                   >
-                    Open Remote access
+                    Open Account
                   </Button>
                 </>
               }

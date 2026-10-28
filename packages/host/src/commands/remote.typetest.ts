@@ -4,6 +4,11 @@ import type {
   PairedDevice as HostPairedDevice,
 } from "../services/remote/deviceStore";
 import type { RemoteEndpoint as HostRemoteEndpoint } from "../services/remote/endpoints";
+import type {
+  LegacyTunnelKind as HostLegacyTunnelKind,
+  LegacyTunnelState as HostLegacyTunnelState,
+} from "../services/remote/legacyTunnels";
+import type { ManagedTunnelState as HostManagedTunnelState } from "../services/remote/managedTunnel";
 import type { PairingStart } from "../services/remote/pairing";
 import type {
   PushConfigPatch,
@@ -16,17 +21,7 @@ import type {
 } from "../services/remote/remoteService";
 import type { ShareErrorPayload as HostShareErrorPayload } from "../services/remote/shareError";
 import type { ShareReadiness as HostShareReadiness } from "../services/remote/shareReadiness";
-import type {
-  TailscaleDiagnosis as HostTailscaleDiagnosis,
-  TailscaleFixKind as HostTailscaleFixKind,
-  TailscaleFixResult as HostTailscaleFixResult,
-  TailscaleStep as HostTailscaleStep,
-} from "../services/remote/tailscaleSetup";
-import type {
-  CloudflareMode,
-  TunnelProvider,
-  TunnelState,
-} from "../services/remote/tunnelManager";
+import type { TunnelStatus } from "../services/remote/tunnelManager";
 import type {
   DevicePushToken,
   HuddleGuest,
@@ -41,15 +36,12 @@ import type {
   RemotePushConfigPatch,
   RemotePushTestResult,
   RemoteStatus,
-  RemoteTunnelMode,
-  RemoteTunnelProvider,
-  RemoteTunnelState,
+  LegacyTunnelKind,
+  LegacyTunnelState,
+  ManagedTunnelState,
+  RemoteTunnelStatus,
   ShareErrorPayload,
   ShareReadiness,
-  TailscaleDiagnosis,
-  TailscaleFixKind,
-  TailscaleFixResult,
-  TailscaleStep,
 } from "@argus/remote-protocol";
 import type { z } from "zod";
 
@@ -57,15 +49,12 @@ export type RemoteModelChecks = [
   Expect<Equal<DevicePushToken, HostDevicePushToken>>,
   Expect<Equal<PairedDevice, HostPairedDevice>>,
   Expect<Equal<RemoteEndpoint, HostRemoteEndpoint>>,
-  Expect<Equal<RemoteTunnelProvider, TunnelProvider>>,
-  Expect<Equal<RemoteTunnelMode, CloudflareMode>>,
-  Expect<Equal<RemoteTunnelState, TunnelState>>,
+  Expect<Equal<RemoteTunnelStatus, TunnelStatus>>,
+  Expect<Equal<LegacyTunnelKind, HostLegacyTunnelKind>>,
+  Expect<Equal<LegacyTunnelState, HostLegacyTunnelState>>,
+  Expect<Equal<ManagedTunnelState, HostManagedTunnelState>>,
   Expect<Equal<RemoteStatus, HostRemoteStatus>>,
   Expect<Equal<RemoteConfigPatch, Parameters<typeof setRemoteConfig>[0]>>,
-  Expect<Equal<TailscaleFixKind, HostTailscaleFixKind>>,
-  Expect<Equal<TailscaleStep, HostTailscaleStep>>,
-  Expect<Equal<TailscaleDiagnosis, HostTailscaleDiagnosis>>,
-  Expect<Equal<TailscaleFixResult, HostTailscaleFixResult>>,
   Expect<Equal<RemotePushConfig, PushConfigStatus>>,
   Expect<Equal<RemotePushConfigPatch, PushConfigPatch>>,
   Expect<Equal<RemotePushTestResult, Awaited<ReturnType<typeof sendTestPush>>>>,

@@ -45,7 +45,8 @@ const tunnels = vi.hoisted(() => {
       this.outcome = {};
       this.starts = [];
       this.stops = [];
-      this.listeners.clear();
+      // Not cleared: remoteService subscribes once at import, and every
+      // waiter unsubscribes itself when it settles.
     },
     set(provider: TunnelProvider, next: Partial<TunnelState>): void {
       this.states[provider] = { ...this.states[provider], ...next };
@@ -90,8 +91,22 @@ vi.mock("./localGatewayServer", () => ({
     gateway.stops += 1;
   },
 }));
+vi.mock("./cloudflared", () => ({
+  CloudflaredInstallError: class extends Error {},
+  ensureCloudflared: async () => {
+    if (!tunnels.installed) {
+      throw new Error("Couldn't download cloudflared");
+    }
+
+    return { path: "/opt/cloudflared", source: "managed", downloaded: false };
+  },
+}));
 vi.mock("./tunnelManager", () => ({
-  binaryOnPath: () => tunnels.installed,
+  notifyTunnelChange: () => {
+    for (const cb of [...tunnels.listeners]) {
+      cb();
+    }
+  },
   TUNNEL_PROVIDERS: ["tailscale", "cloudflare"] as TunnelProvider[],
   getTunnelState: (p: TunnelProvider) => tunnels.states[p],
   getTunnelStates: () => tunnels.states,
@@ -140,20 +155,33 @@ vi.mock("./tunnelManager", () => ({
 vi.mock("./reachability", () => ({
   probeGatewayUrl: async (url: string) => reach.unreachable.has(url) === false,
 }));
+const tailnet = vi.hoisted(() => ({ on: false }));
 vi.mock("node:os", () => ({
   networkInterfaces: () => ({
     en0: [{ family: "IPv4", address: "192.168.1.79", internal: false }],
+    ...(tailnet.on
+      ? { utun4: [{ family: "IPv4", address: "100.101.7.9", internal: false }] }
+      : {}),
   }),
 }));
+vi.mock("../telemetry/telemetry", () => ({
+  capture: (name: string, props: unknown) => captured.push({ name, props }),
+}));
+const captured = vi.hoisted(() => [] as { name: string; props: unknown }[]);
 
 const {
   acquirePublicUrl,
   applyRemoteSettings,
+  getRemoteStatus,
   publicUrlLeaseCount,
   releasePublicUrl,
+  setRemoteConfig,
   setWebClientDir,
   stopRemote,
 } = await import("./remoteService");
+const { setManagedTunnelState } = await import("./managedTunnel");
+
+const MANAGED_URL = "wss://argus-0123456789abcdef.houwert.dev";
 
 const WEB_DIR = "/tmp/argus-web";
 const CF_URL = "wss://demo.trycloudflare.com";
@@ -174,6 +202,9 @@ function reset(): void {
   tunnels.reset();
   reach.unreachable.clear();
   settings.value = { remote_enabled: true };
+  tailnet.on = false;
+  captured.length = 0;
+  setManagedTunnelState({ phase: "off", reason: "not_linked", url: null });
   setWebClientDir(WEB_DIR);
 }
 
@@ -340,22 +371,39 @@ describe("acquirePublicUrl", () => {
     const failure = await shareFailure(acquirePublicUrl({ timeoutMs: 10 }));
 
     expect(failure.detail).toMatch(/no URL after/);
-    expect(failure.steps.join(" ")).toMatch(/Settings → Remote access/);
+    expect(failure.steps.join(" ")).toMatch(/Settings → Account/);
   });
 
-  it("explains the missing CLI instead of blaming Cloudflare", async () => {
+  it("explains a cloudflared it couldn't install instead of blaming Cloudflare", async () => {
     tunnels.installed = false;
-    tunnels.outcome.cloudflare = {
-      status: "error",
-      error: "`cloudflared` isn't on Argus's PATH.",
-    };
 
     const failure = await shareFailure(acquirePublicUrl({ timeoutMs: 1000 }));
 
     expect(failure.kind).toBe("cloudflared-missing");
     expect(failure.command).toBe("brew install cloudflared");
     expect(failure.explanation).not.toMatch(/rate-limit/);
+    expect(failure.detail).toMatch(/Couldn't download/);
+    expect(tunnels.starts).toEqual([]);
     expect(publicUrlLeaseCount()).toBe(0);
+  });
+
+  it("never hands a guest the tailnet address", async () => {
+    tailnet.on = true;
+    willPublish("cloudflare", CF_URL);
+
+    const lease = await acquirePublicUrl();
+
+    expect(lease.url).toBe(CF_URL);
+    expect(tunnels.starts).toEqual(["cloudflare"]);
+  });
+
+  it("reuses the managed tunnel once it runs", async () => {
+    setManagedTunnelState({ phase: "running", url: MANAGED_URL });
+
+    const lease = await acquirePublicUrl();
+
+    expect(lease).toMatchObject({ url: MANAGED_URL, kind: "cloudflare" });
+    expect(tunnels.starts).toEqual([]);
   });
 });
 
@@ -412,5 +460,112 @@ describe("releasePublicUrl", () => {
     releasePublicUrl();
 
     expect(publicUrlLeaseCount()).toBe(0);
+  });
+});
+
+describe("routes and legacy tunnels", () => {
+  beforeEach(reset);
+
+  it("lists the tailnet address as the Tailscale route, after the LAN", async () => {
+    tailnet.on = true;
+    await applyRemoteSettings();
+
+    const status = await getRemoteStatus();
+
+    expect(status.endpoints.map((e) => [e.kind, e.url])).toEqual([
+      ["lan", "ws://192.168.1.79:47615"],
+      ["tailscale", "ws://100.101.7.9:47615"],
+    ]);
+    expect(status.tailscaleUrl).toBe("ws://100.101.7.9:47615");
+    expect(status.lanUrl).toBe("ws://192.168.1.79:47615");
+  });
+
+  it("keeps an earlier version's tunnel running while nothing replaces it", async () => {
+    settings.value = {
+      remote_enabled: true,
+      remote_cloudflare_enabled: true,
+      remote_tunnel_mode: "token",
+      remote_tunnel_token: "secret",
+    };
+    await applyRemoteSettings();
+
+    expect(tunnels.starts).toEqual(["cloudflare"]);
+    expect((await getRemoteStatus()).legacyTunnels).toMatchObject([
+      { kind: "cloudflare_token", status: "starting" },
+    ]);
+  });
+
+  it("ignores a named tunnel that never had a token", async () => {
+    settings.value = {
+      remote_enabled: true,
+      remote_cloudflare_enabled: true,
+      remote_tunnel_mode: "token",
+    };
+    await applyRemoteSettings();
+
+    expect(tunnels.starts).toEqual([]);
+    expect((await getRemoteStatus()).legacyTunnels).toEqual([]);
+  });
+
+  it("retires legacy tunnels and their settings once the managed tunnel runs", async () => {
+    settings.value = {
+      remote_enabled: true,
+      remote_provider: "tailscale",
+      remote_cloudflare_enabled: true,
+    };
+    await applyRemoteSettings();
+    expect(tunnels.starts).toEqual(["tailscale", "cloudflare"]);
+
+    setManagedTunnelState({ phase: "running", url: MANAGED_URL });
+
+    expect(tunnels.stops).toEqual(
+      expect.arrayContaining(["tailscale", "cloudflare"]),
+    );
+    expect(settings.value.remote_provider).toBeUndefined();
+    expect(settings.value.remote_cloudflare_enabled).toBeUndefined();
+    expect(settings.value.remote_enabled).toBe(true);
+    expect(captured).toEqual([
+      {
+        name: "legacy_tunnel_retired",
+        props: { kind: "tailscale_funnel", reason: "managed" },
+      },
+      {
+        name: "legacy_tunnel_retired",
+        props: { kind: "cloudflare_quick", reason: "managed" },
+      },
+    ]);
+    const status = await getRemoteStatus();
+    expect(status.legacyTunnels).toEqual([]);
+    expect(status.endpoints.at(-1)).toEqual({
+      kind: "cloudflare",
+      url: MANAGED_URL,
+      priority: 2,
+    });
+  });
+
+  it("doesn't start a legacy tunnel when the managed one is already up", async () => {
+    setManagedTunnelState({ phase: "running", url: MANAGED_URL });
+    settings.value = { remote_enabled: true, remote_cloudflare_enabled: true };
+    await applyRemoteSettings();
+
+    expect(tunnels.starts).toEqual([]);
+  });
+
+  it("lets the user stop a legacy tunnel without bouncing the gateway", async () => {
+    settings.value = { remote_enabled: true, remote_tailscale_enabled: true };
+    await applyRemoteSettings();
+    const starts = gateway.starts.length;
+
+    await setRemoteConfig({ retireLegacyTunnels: true });
+
+    expect(settings.value.remote_tailscale_enabled).toBeUndefined();
+    expect(tunnels.stops).toContain("tailscale");
+    expect(gateway.starts).toHaveLength(starts);
+    expect(captured).toEqual([
+      {
+        name: "legacy_tunnel_retired",
+        props: { kind: "tailscale_funnel", reason: "user" },
+      },
+    ]);
   });
 });

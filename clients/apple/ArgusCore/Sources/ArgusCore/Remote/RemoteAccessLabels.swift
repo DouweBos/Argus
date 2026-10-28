@@ -19,23 +19,68 @@ public enum RemoteAccessLabels {
     }
   }
 
-  public static func tunnelTone(_ state: ArgusProtocol.RemoteTunnelState?) -> RemoteTone {
-    guard let state else { return .idle }
-    if state.status == .error || state.reachable == false { return .error }
-    return state.status == .running ? .success : .idle
+  public static func managedTunnelTone(_ state: ArgusProtocol.ManagedTunnelState) -> RemoteTone {
+    switch state.phase {
+    case .running: .success
+    case .error: .error
+    default: .idle
+    }
   }
 
-  /// A published URL that nothing answers on is worse than no URL — say so.
-  public static func tunnelLabel(_ state: ArgusProtocol.RemoteTunnelState?) -> String {
-    guard let state else { return "stopped" }
-    if state.reachable == false { return "unreachable" }
-    return state.publicUrl ?? state.status.rawValue
+  /// The account tunnel's state in a word or two; its address is shown apart.
+  public static func managedTunnelLabel(_ state: ArgusProtocol.ManagedTunnelState) -> String {
+    switch state.phase {
+    case .running: "running"
+    case .provisioning: "setting up"
+    case .installing: "installing"
+    case .starting: "starting"
+    case .error: "error"
+    case .unavailable: "unavailable"
+    case .off: "off"
+    default: state.phase.rawValue
+    }
   }
 
-  /// Green once any address is live, red only when every enabled way in failed.
+  /// Why there is no tunnel, in plain words; nil while there is one.
+  public static func managedTunnelNote(_ state: ArgusProtocol.ManagedTunnelState) -> String? {
+    if state.phase == .unavailable { return "Your Argus account has no tunnels to give out right now." }
+    guard state.phase == .off else { return nil }
+    switch state.reason {
+    case .notLinked?: return "Sign in to an Argus account to give this computer its own tunnel."
+    case .accountPaused?: return "Tunnels are paused for your Argus account."
+    case .turnedOff?: return "Turned off for this computer in its account settings."
+    case .remoteOff?: return "Starts when remote access is on."
+    default: return nil
+    }
+  }
+
+  /// A tunnel an earlier version set up, by what it is.
+  public static func legacyTunnel(_ kind: ArgusProtocol.LegacyTunnelKind) -> String {
+    switch kind {
+    case .cloudflareQuick: "Cloudflare quick tunnel"
+    case .cloudflareToken: "Cloudflare named tunnel"
+    case .tailscaleFunnel: "Tailscale Funnel"
+    default: kind.rawValue
+    }
+  }
+
+  public static func legacyTunnelTone(_ state: ArgusProtocol.LegacyTunnelState) -> RemoteTone {
+    switch state.status {
+    case .running: .success
+    case .error: .error
+    default: .idle
+    }
+  }
+
+  public static func legacyTunnelLabel(_ state: ArgusProtocol.LegacyTunnelState) -> String {
+    state.publicUrl ?? state.status.rawValue
+  }
+
+  /// Green once any address is live, red only when every way in failed.
   public static func reachabilityTone(_ status: ArgusProtocol.RemoteStatus) -> RemoteTone {
     if !status.endpoints.isEmpty { return .success }
-    return status.tunnels.values.contains { $0.status == .error } ? .error : .idle
+    let failed = status.managedTunnel.phase == .error || status.legacyTunnels.contains { $0.status == .error }
+    return failed ? .error : .idle
   }
 
   public static func reachabilityLabel(_ status: ArgusProtocol.RemoteStatus) -> String {
