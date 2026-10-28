@@ -64,6 +64,8 @@ public final class HostStore {
   public internal(set) var pendingToolByAgent: [String: String] = [:]
   /// Cursor for the next older page per agent; nil means the start is reached.
   public internal(set) var prevBeforeByAgent: [String: Double] = [:]
+  /// Why a saved chat's transcript couldn't be read, so it isn't mistaken for an empty one.
+  public internal(set) var transcriptErrorByAgent: [String: String] = [:]
   public internal(set) var gitStatusBySession: [String: RemoteGitStatus] = [:]
   public internal(set) var prompts: [String: RemotePermissionRequest] = [:]
   /// Prompts this client just answered — clears the inline form instantly,
@@ -223,6 +225,7 @@ public final class HostStore {
     followUpsByAgent = [:]
     pendingToolByAgent = [:]
     prevBeforeByAgent = [:]
+    transcriptErrorByAgent = [:]
     gitStatusBySession = [:]
     prompts = [:]
     answered = []

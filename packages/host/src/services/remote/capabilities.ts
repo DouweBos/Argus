@@ -742,6 +742,21 @@ function requireKnownRepoRoot(repoRoot: string): void {
 }
 
 /**
+ * A saved chat's folder: a project, or a scratch pad's or automation run's own
+ * folder, which no project lists but whose agents save history all the same.
+ */
+function requireKnownHistoryRoot(repoRoot: string): void {
+  const ownFolder = [...appState.sessions.values()].some(
+    (s) =>
+      (s.kind === "scratch_pad" || s.kind === "automation_host") &&
+      s.repo_root === repoRoot,
+  );
+  if (!ownFolder) {
+    requireKnownRepoRoot(repoRoot);
+  }
+}
+
+/**
  * Belt-and-braces rejection of "trusted" (bypassPermissions). The wire schema
  * already excludes it, but an unattended host auto-approving every tool call is
  * the one failure worth checking twice.
@@ -963,7 +978,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       "agents.stopped_transcript",
       params,
     );
-    requireKnownRepoRoot(repo_root);
+    requireKnownHistoryRoot(repo_root);
     const conv = loadStoppedConversation(repo_root, history_id);
 
     return {
@@ -977,7 +992,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       "agents.stopped_image",
       params,
     );
-    requireKnownRepoRoot(repo_root);
+    requireKnownHistoryRoot(repo_root);
     const found = findImage(
       loadStoppedConversation(repo_root, history_id),
       image_id,

@@ -9,7 +9,11 @@ enum SessionChats {
     guard let backend = store.backend else { return nil }
     let entries = try? await backend.request(
       ArgusProtocol.Commands.ListChatHistory.self, .init(repoRoot: session.repoRoot))
-    return entries?.filter { $0.sessionBranch == session.branch }.sorted { $0.endedAt > $1.endedAt }
+    // History is written while an agent runs; a live one is its tab, not a past chat, as on the desktop.
+    let live = Set((store.agentsByRepo[session.repoRoot] ?? []).map(\.agentId))
+    return entries?
+      .filter { $0.sessionBranch == session.branch && !($0.agentId.map(live.contains) ?? false) }
+      .sorted { $0.endedAt > $1.endedAt }
   }
 
   /// Reloads as agents come and go, since a stopped agent's chat lands here.
