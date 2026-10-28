@@ -1,45 +1,46 @@
 # Argus Server — the headless host app
 
-`Argus Server.app` is Argus with no window. It runs the whole service layer —
-agents, worktrees, terminals, simulators, the remote gateway — on a machine
-nobody is sitting at, typically a Mac mini, so agents keep working while your
-laptop comes and goes.
+Argus Server is Argus with no window. It runs the whole service layer —
+agents, worktrees, terminals, simulators, the remote gateway and the web
+client — on a machine nobody is sitting at, typically a Mac mini, so agents
+keep working while your laptop comes and goes. Its only surface is an item in
+the menu bar.
 
-It is built from the same codebase as the desktop app, as a **second
-electron-builder target**. It is not a flag on `Argus.app`, and that is
-deliberate: `app.requestSingleInstanceLock()` quits the second instance, and the
-lock is keyed on the userData path derived from the app id. Two distinct app ids
-means two distinct locks, which is the only reason a server and a desktop can
-run on the same Mac at all — local development of remote access depends on it.
+It is a native Mac app built from `clients/apple` (the `ArgusServer` target),
+a sibling of [Argus for Mac](mac-app.md): it bundles and supervises the same
+Node host core the Mac app does, in a server mode. It replaces the Electron
+build of Argus Server, which is deprecated (see
+[Moving from the Electron server](#moving-from-the-electron-server)).
 
-|                      | Argus               | Argus Server               |
-| -------------------- | ------------------- | -------------------------- |
-| App id               | `dev.houwert.argus` | `dev.houwert.argus.server` |
-| State (`ARGUS_HOME`) | `~/.argus`          | `~/.argus-server`          |
-| Gateway port         | 47615               | 47617                      |
-| Window               | yes                 | none — tray item only      |
-| Dock tile            | yes                 | no (`LSUIElement`)         |
-| `argus://` links     | claims the scheme   | never claims it            |
-| Distribution         | `.dmg`              | `.app` only                |
+|                      | Argus for Mac           | Argus Server               |
+| -------------------- | ----------------------- | -------------------------- |
+| Bundle id            | `dev.houwert.argus.mac` | `dev.houwert.argus.server` |
+| State (`ARGUS_HOME`) | `~/.argus`              | `~/.argus-server`          |
+| Gateway port         | 47615                   | 47617                      |
+| Window               | yes                     | none — menu bar item only  |
+| Dock tile            | yes                     | no (`LSUIElement`)         |
+| `argus://` links     | claims the scheme       | never claims it            |
+| Distribution         | `.dmg`                  | notarized `.zip`           |
+| Macs                 | Apple silicon           | Apple silicon              |
 
-The server ships the same payload as the desktop: the simulator bridge,
-`scrcpy-server.jar`, the agent prompts, the conductor tree, and the
-`clients/argus-web` bundle — the server is what serves that bundle to phones and
-browsers.
+The server ships the same payload as the Mac app: the Node runtime, the host,
+the simulator bridge, `scrcpy-server.jar`, the agent prompts, the conductor
+tree, the language servers and the `clients/argus-web` bundle — the server is
+what serves that bundle to phones and browsers.
 
 ## Fully standalone state
 
 The server never shares anything with a co-located desktop. Its `ARGUS_HOME`
-defaults to `~/.argus-server`, so it gets its own worktrees, `tools.json`,
-paired-device keys, Claude accounts, chat history and app settings. Two
-processes running git in one worktree is not a thing to design for.
+is `~/.argus-server`, so it gets its own worktrees, `tools.json`, paired-device
+keys, Claude accounts, chat history and app settings. Two processes running git
+in one worktree is not a thing to design for. Only one Argus Server runs per
+Mac user, and the host lock keeps any other app off its home.
 
-`ARGUS_HOME` still overrides the default, on both apps.
+`ARGUS_HOME` still overrides the default.
 
 Its open projects live in `repo-roots.json` under that same directory and are
-re-registered at launch. The server has no renderer to replay a project list, so
-without this it came back from every restart with nothing for clients to attach
-to.
+re-registered at launch, so the server comes back from every restart with the
+projects clients attach to.
 
 The gateway is not a setting on the server — it is the only way in, so it is
 forced on at startup regardless of `remote_enabled`.
@@ -47,33 +48,41 @@ forced on at startup regardless of `remote_enabled`.
 ## Building
 
 ```
-pnpm build:app          # Argus.app + .dmg           → release/
-pnpm build:app:server   # Argus Server.app           → release-server/
+xcodebuild -project clients/apple/ArgusRemote.xcodeproj -scheme ArgusServer \
+  -destination 'platform=macOS' build                      # Debug
+xcodebuild … -scheme ArgusServer -destination 'platform=macOS' test
+bundle exec fastlane mac mac_server_release              # notarized release
 ```
 
-The server config lives in `scripts/electron-builder-server.config.cjs`, derived
-from `electron-builder.yml` so the two can't drift on bundled resources. It
-overrides the app id, product name and output directory, points the packaged
-`main` at `dist-electron/server.js`, drops the DMG and the Dock tile, and
-removes the usage strings only a window can trigger. Both targets run
-`scripts/electron-after-pack.cjs`.
+Like the Mac app, its build phase stages the host with
+`scripts/build-mac-host.ts` into `Contents/Resources/host` and signs it. A
+second phase embeds the launch agent behind **Open at Login** in
+`Contents/Library/LaunchAgents`. Release builds are signed with the Developer ID
+certificate and no provisioning profile: the server needs no profile-bound
+entitlement (it never signs in with Apple; it links to the account with a code).
 
-`dist-electron/server.js` is the same bundle as `main.js` with an esbuild banner
-that sets `ARGUS_SERVER=1` (and the default gateway port) before the first
-module loads — early enough that `ARGUS_HOME` is already correct when services
-read it at import time.
+`mac_server_release` archives the Release build, exports it for Developer ID,
+notarizes and staples it, zips it as `Argus-Server-<version>-arm64.zip`, writes
+the Sparkle appcast for its channel (`argus-server-latest.xml`,
+`argus-server-beta.xml` or `argus-server-alpha.xml`) and uploads both to the
+version's GitHub release, where `houwert.dev/argus/updates/` serves them. It
+needs `SPARKLE_PUBLIC_ED_KEY` (baked into the build) and
+`SPARKLE_ED_PRIVATE_KEY` (signs the appcast) next to the usual App Store
+Connect key. A build without a public key never checks for updates.
 
 ## Running one next to your desktop, for development
 
-```
-pnpm dev         # desktop, ~/.argus-dev,        gateway 47616
-pnpm dev:server  # headless, ~/.argus-server-dev, gateway 47617
-```
+A Debug build never touches the real server: it runs on
+`~/.argus-mac-server-dev` with its gateway on port 48116, has its own bundle id
+(`dev.houwert.argus.server.dev`, shown as "Argus Server Dev") and its own login
+item. `ARGUS_HOME` and `ARGUS_REMOTE_PORT` override both. Never point a dev
+server at `~/.argus-server`.
 
-`pnpm dev:server` needs no Vite — there is no renderer. It builds the main
-process and launches Electron with `ARGUS_SERVER=1`, a separate `userData`
-(`argus-server-dev`, hence a separate single-instance lock), and
-`ARGUS_DEV_TRUST=1`.
+The repository's **Mac server** run command builds it into
+`.build/mac-server-dd` and starts it on `~/.argus-mac-server-dev-<port>` with
+port `48116 + offset`, so each worktree gets its own; Debug builds skip the
+one-copy-per-user check for that reason, leaving the host lock to keep homes
+apart.
 
 ### Dev-loopback pairing
 
@@ -82,9 +91,9 @@ confirm they match. That assumes two devices and two screens; a headless server
 has neither, and pairing a desktop to a server on the same Mac has nothing to
 compare against.
 
-With `ARGUS_DEV_TRUST=1` **and an unpackaged build**, the server arms a pairing
-session against `ws://127.0.0.1:<port>`, auto-confirms the SAS, and writes the
-pairing code to `$ARGUS_HOME/dev-pairing.json`:
+A Debug build starts its host with `ARGUS_DEV_TRUST=1`. The host then arms a
+pairing session against `ws://127.0.0.1:<port>`, auto-confirms the SAS, and
+writes the pairing code to `$ARGUS_HOME/dev-pairing.json`:
 
 ```json
 {
@@ -92,18 +101,20 @@ pairing code to `$ARGUS_HOME/dev-pairing.json`:
   "pairing_code": "eyJ2IjoxLC…",
   "payload": {
     "v": 1,
-    "url": "ws://127.0.0.1:47617",
+    "url": "ws://127.0.0.1:48116",
     "ds_pub": "…",
     "pairing_secret": "…"
   }
 }
 ```
 
-Paste `pairing_code` into the client. The file is rewritten whenever the server
+Paste `pairing_code` into the client. The file is rewritten whenever the host
 re-arms, so it always holds the current code, and it is deleted on quit.
 
-This bypasses the anti-MITM confirmation, so it is gated twice: on the env var
-and on `app.isPackaged` being false. It cannot happen in a release build.
+This bypasses the anti-MITM confirmation, so it is gated twice: on the
+variable, which only a Debug build sets, and on the host not running from an
+installed app — it refuses whenever its resources sit under an `Applications`
+folder. `argus-host` honours the same variable under the same gate.
 
 ## When the files are on the other Mac
 
@@ -171,50 +182,62 @@ System Settings → Users & Groups → Automatic log in → pick the Argus user.
 FileVault blocks auto-login at first boot. Either leave FileVault off on a
 physically secured machine, or accept that a cold boot needs one manual unlock.
 
-### Install the launchd agent
+### Open at Login
 
-```
-pnpm build:app:server
-cp -R "release-server/mac-arm64/Argus Server.app" /Applications/
-pnpm server:install-agent                        # or: … /path/to/Argus Server.app
-```
+**Open at Login** in the menu registers the server's own launch agent with
+macOS (`SMAppService`), so it shows up in System Settings → General → Login
+Items like any other login item. It starts the server when you log in and
+brings it back if it crashes; **Quit** exits cleanly, so it stays quit until
+the next login. If macOS wants you to allow it first, the menu says **Allow in
+Login Items…** and opens the right pane.
 
-This is for the old Electron build only; the native Argus Server starts itself
-at login with **Open at Login** in its menu, and the script says so.
-
-That renders `build/dev.houwert.argus.server.plist` into
-`~/Library/LaunchAgents/` and bootstraps it into the GUI domain. It starts at
-login and restarts on crash. Logs land in `~/.argus-server/launchd.{out,err}.log`
-alongside Argus's own rotating log.
-
-```
-launchctl print gui/$(id -u)/dev.houwert.argus.server   # status
-pnpm server:install-agent --uninstall                   # remove
-```
+The server writes its host's output to `~/.argus-server/logs/host.log` (rolled
+at 10 MB), next to the host's own rotating log; **Open Logs** shows the folder.
+The host is restarted if it crashes, and after five crashes in two minutes the
+menu says _Host: failed_ with **Restart Host**.
 
 ### Staying awake
 
-The server holds a `caffeinate -i -m -s` power assertion for as long as it runs
+The host holds a `caffeinate -i -m -s` power assertion for as long as it runs
 — a sleeping mini stops agents mid-run and drops every attached client. The
-assertion is tied to the server's pid (`-w`), so a crash can't leave the machine
+assertion is tied to the host's pid (`-w`), so a crash can't leave the machine
 pinned awake. The display is free to sleep.
 
 For a mini on mains power, also set System Settings → Energy → "Prevent
 automatic sleeping when the display is off".
 
+## The menu
+
+| section       | shows                                                                                                                                                            |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| status        | the version, whether the host is running, the gateway, the local network and Tailscale addresses with **Copy Address**, and the state folder (click to show it)  |
+| agents        | how many agents run and how many are active, then each project → session → agent; picking an agent opens it in the web client                                    |
+| Argus Account | linking, the account's view of this computer, the managed tunnel, who is waiting to join, and the account settings — see [From the menu bar](#from-the-menu-bar) |
+| pairing       | **Pair a device…** and the pairing in progress                                                                                                                   |
+| updates       | where an update stands, and **Install Automatically When Idle**                                                                                                  |
+| open          | **Open Web Client** (`http://127.0.0.1:47617/` in your browser) and **Open Logs**                                                                                |
+| app           | **Open at Login**, **Settings…** (start at login, updates, usage data, the account's settings and paired devices with their grants) and **Quit Argus Server**    |
+
+When another app holds `~/.argus-server`, the menu says which and offers to
+take over from it instead; when a pairing or a join request needs someone at
+the server, a notification says so and opens it.
+
+Everything else — Claude accounts, MCP servers, LLM runners, tools — is
+managed from a paired desktop granted full control, as if it were that
+desktop's own host.
+
 ## Pairing your first device
 
-The server has no window, so pairing happens in the tray:
+**Pair a device…** opens a small window with a QR code to scan with Argus on
+your phone and the pairing code to paste into a desktop's _Add host_ field. The
+code is also copied to the clipboard and written to
+`$ARGUS_HOME/pairing-code.txt` (mode 0600) for a machine you only reach over
+SSH.
 
-**Pair a device…** arms a pairing session, copies the pairing code to the
-clipboard, and writes it to `$ARGUS_HOME/pairing-code.txt` (mode 0600) for a
-machine you only reach over SSH — the code is far too long to read off a menu
-item. Paste it into the desktop's _Add host_ field.
-
-When the desktop connects, the menu shows a six-digit number. **Compare it
-against the one on the desktop's screen** — that comparison is what makes a
-man-in-the-middle impossible, and it is the reason pairing can never happen over
-the wire. If they match, approve:
+When the device connects, the window and the menu show a six-digit number.
+**Compare it against the one on the device's screen** — that comparison is
+what makes a man-in-the-middle impossible, and it is the reason pairing can
+never happen over the wire. If they match, approve from the window or the menu:
 
 The server decides what the device may do. The device never asks for a tier, and
 nothing it sends afterwards can widen one — pairing and grant changes are
@@ -228,26 +251,18 @@ host-tier commands that never cross the wire. Pick the narrowest that works:
 
 Least privilege is listed first deliberately: `admin` inverts the allowlist to a
 denylist, so it should be a deliberate reach rather than the obvious click. You
-can change a device's grants later, or revoke it, from Settings → Remote access
-on the host.
+can change a device's grants later, or revoke it, from the server's Settings →
+Account & Remote, or from a desktop granted full control.
 
 **Reject** if the numbers differ. The code file is deleted the moment pairing
 settles either way, and on quit.
-
-If the menu says _no reachable address_, the gateway has no LAN address or
-tunnel yet — check the network, or link the host to your account so it gets a
-tunnel of its own.
-
-This is the same flow the desktop runs in a dialog, on a different surface. It
-is not the `ARGUS_DEV_TRUST` bypass, which skips the comparison entirely and
-cannot run in a packaged build.
 
 ## Linking to your Argus account
 
 Instead of pairing each device with a code, a host can join your
 [Argus account](accounts.md), so every device signed in to it can find and
-connect to the host on its current address. On `Argus Server.app`, link from
-the menu bar (below); on a bare `argus-host`, link from the terminal it runs in
+connect to the host on its current address. On Argus Server, link from the
+menu bar (below); on a bare `argus-host`, link from the terminal it runs in
 (or start it as `argus-host login` over SSH):
 
 ```
@@ -283,8 +298,9 @@ the account lists with the grants from `account set ios|desktop`.
 
 ### From the menu bar
 
-`Argus Server.app`'s tray item carries the same flow, backed by the same host
-services as the console words:
+Argus Server's menu carries the same flow, backed by the same host commands as
+the console words. **Link to Argus Account…** also opens a window with the code
+in large type, and **Approve…** one with the code to compare.
 
 | menu shows                                | does                                                                                                                                                                                              |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -312,62 +328,100 @@ address; `account set tunnel off` turns it off, leaving the LAN and Tailscale.
 
 A mini nobody sits at still needs new builds, and the install command is
 deliberately host-tier — a client must never restart a host out from under
-someone else's running agents. So updating happens in the tray, next to pairing.
+someone else's running agents. So updating happens in the menu.
 
-The next version of this server is the native **Argus Server** app, so updating
-hands the machine over to it. The tray checks the native app's feed (on the
-channel picked in `updater_channel`) shortly after launch and then hourly:
+The server checks its feed once an hour, on the channel picked in Settings
+(`updater_channel`, shared with the desktop). Sparkle replaces the whole app,
+the bundled host included, so the two never drift apart.
 
-| menu says                           | meaning                                                       |
-| ----------------------------------- | ------------------------------------------------------------- |
-| **Check for Updates…**              | nothing known yet                                             |
-| _Checking for updates…_             | a feed check is in flight                                     |
-| _Up to date_                        | no native release on the channel yet                          |
-| _New Argus Server available: 1.2.3_ | pick **Install New Argus Server**                             |
-| _Installing Argus Server 1.2.3…_    | downloading and checking it; the server quits once it's ready |
-| _Update failed: …_                  | nothing was changed; **Check for Updates…** retries           |
+| menu says                  | meaning                                                       |
+| -------------------------- | ------------------------------------------------------------- |
+| **Check for Updates…**     | nothing known yet                                             |
+| _Checking for updates…_    | a feed check is in flight                                     |
+| _Up to date_               | the running version is the newest on the channel              |
+| _Update available: 1.2.3_  | pick **Download Update** — downloads never start on their own |
+| _Downloading update — 42%_ | progress; the menu updates live                               |
+| _Update ready: 1.2.3_      | pick **Restart and Install**                                  |
+| _Update failed: …_         | the feed error, shortened; **Check for Updates…** retries     |
 
-Installing downloads the native app into `~/.argus-server/migrated/`, checks it
-is signed by Argus and is the native build, then quits. A small script waits
-for the old process to exit, moves the old app to
-`~/.argus-server/migrated/Argus Server (Electron).app`, puts the native one in
-its place and opens it (its log is `migrated/handoff.log`). If the copy fails,
-the old app goes back and is reopened. Everything in `~/.argus-server` — paired
-devices, sessions, the account — carries over.
-
-Once the native Argus Server runs on this home, the old one quits at launch with
-a log line instead of competing for it.
+The running version is the first line of the menu, so only the new version is
+named here.
 
 ### Restarting is refused while agents are running
 
-Installing quits the process, which kills every agent on the machine. So
-**Install New Argus Server** is replaced by a disabled `3 agents running —
-cannot restart` whenever anything is working — including an agent whose prompt
-is still in flight between tool calls. Stop or wait out the agents and the item
+Installing an update quits the server, which stops every agent on the machine.
+So **Restart and Install** is replaced by a disabled `3 agents running — cannot
+restart` whenever anything is working. Stop or wait out the agents and the item
 comes back. It never restarts silently, and the count tells you what it is
 waiting on.
 
 ### Install automatically when idle
 
 **Install Automatically When Idle** is a checkbox in the same section, **off by
-default**. With it on, an available native release installs itself the moment
-the last agent finishes — the same guard, just without a human to click it. The
-server re-checks for idleness every minute, so an unattended hand-off lands
-within about a minute of the fleet going quiet.
+default**. With it on, a new version is downloaded as soon as it is found and
+installed the moment the last agent finishes — the same guard, just without a
+human to click it. The server re-checks for idleness every minute, so an
+unattended restart lands within about a minute of the fleet going quiet.
 
 Off by default because a mini restarting unprompted is a surprise; turn it on
 for a machine you want to stay current without visiting.
 
 The setting is stored in `$ARGUS_HOME/app-settings.json` as
-`server_auto_install_updates`, which the native app reads too.
+`server_auto_install_updates`, the same key the Electron server used.
 
-## The tray is the whole UI
+## Quitting
 
-The server's only surface is the menu-bar item: the same live agent tree the
-desktop shows, plus its version, gateway URL and state directory, the account,
-pairing and update flows above, and Quit. Menu entries don't navigate anywhere — there is no window
-to navigate.
+**Quit Argus Server** with agents running asks first: **Quit** lets them stop
+cleanly and save, which can take a few seconds; **Quit Now** stops them at
+once. With nothing running it just quits. Either way the host shuts down its
+terminals and agent processes before the app exits.
 
-Quitting the server does not prompt about running agents the way the desktop
-does; there is no renderer to ask. It tears down PTYs and agent subprocesses and
-exits.
+## Moving from the Electron server
+
+The native app keeps the Electron server's bundle id, its `~/.argus-server`
+and its port, so it drops in: paired devices, the account link, sessions,
+worktrees, settings and the macOS privacy permissions you granted (Full Disk
+Access and the like) all carry over.
+
+- **From the old server's menu.** The last Electron server checks the native
+  app's feed and offers _New Argus Server available_ → **Install New Argus
+  Server** (refused while agents run; **Install Automatically When Idle**
+  applies). It downloads the native app into `~/.argus-server/migrated/`,
+  checks it is signed by Argus and is the native build, quits, and a small
+  script swaps the apps and opens the new one. The old app is kept as
+  `~/.argus-server/migrated/Argus Server (Electron).app`, and the swap is
+  logged to `migrated/handoff.log`. If the copy fails, the old app goes back
+  and is reopened.
+- **By hand.** Quit the old server and put the native `Argus Server.app` in its
+  place. If the old one is still running, the native one says so in its menu
+  and offers **Take Over from the Old Argus Server**, which asks the old one to
+  quit and starts its own host on the same home.
+- **Starting at login.** The old server started from a hand-installed launch
+  agent (`pnpm server:install-agent`). The first time the native server sees it,
+  it asks once whether to start at login with **Open at Login** instead; until
+  you agree, the menu offers **Start at Login with This App…**. Agreeing moves
+  the old agent to `~/.argus-server/migrated/` and turns on Open at Login.
+- **Paired devices in the old format.** The Electron server moves its paired
+  devices and MCP sign-ins to the keychain format the native host reads the
+  first time a recent version runs. If the native server finds them still in
+  the old format, its menu says so: open the old server once, then come back.
+
+Going back is the reverse: quit the native server, put the old app back (it is
+in `migrated/`), and reinstall its launch agent with `pnpm
+server:install-agent`. Both use the same home and the same lock.
+
+## Electron server (deprecated)
+
+The Electron build (`pnpm build:app:server`, `pnpm dev:server`,
+`scripts/electron-builder-server.config.cjs`) still builds, so the last
+release that hands over to the native app can ship. It is removed one release
+after that. Until then:
+
+- `pnpm dev:server` runs it unpackaged on `~/.argus-server-dev` and port 47617,
+  with dev-loopback pairing on.
+- `pnpm server:install-agent` installs its launch agent and prints a
+  deprecation note; the native server replaces the agent as described above.
+- Its menu offers only the hand-off as an update: Squirrel.Mac would refuse the
+  desktop's update feed on a server, since the bundle ids differ.
+- When the native server already runs on its home, it quits at launch with a
+  log line instead of competing for it.

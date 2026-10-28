@@ -348,10 +348,12 @@ The app bundles its own Node runtime and the host
 (`Argus.app/Contents/Resources/host/`) and supervises it: it starts the host on
 launch, restarts it if it crashes, and stops it — after letting running agents
 stop cleanly — when you quit. The host's log is at `~/.argus/logs/host.log`.
+[Argus Server](server-app.md) is its sibling: the same bundled host, supervised
+the same way, as a menu bar app on `~/.argus-server`.
 
 The app talks to its host over a Unix socket in `~/.argus` that only your user
 can open, rather than over the network. Every host serves that socket — the
-Electron app's, Argus for Mac's and `argus-host` — and names it in
+Electron app's, Argus for Mac's, Argus Server's and `argus-host` — and names it in
 `host.lock`, which is how a second window finds one to attach to.
 
 What the host asks of the windows on that socket:

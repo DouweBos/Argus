@@ -164,16 +164,19 @@ alongside you until you end the huddle.
 
 ## Argus Server — the headless host
 
-`Argus Server.app` is Argus with no window: the whole service layer —
+Argus Server is Argus with no window: the whole service layer —
 agents, worktrees, terminals, simulators, the gateway — on a machine
 nobody is sitting at, typically a Mac mini, so agents keep working while
 your laptop comes and goes.
 
-- Ships as a separate build target with its own app id and its own
-  state, so a server and a desktop can run on the same Mac.
+- A native Mac app with its own app id and its own state, so a server and
+  a desktop can run on the same Mac.
 - The gateway is forced on: it is the only way in.
 - Serves the web client to phones and browsers itself.
-- Tray item only — no dock tile, no window.
+- Menu bar item only — no dock tile, no window. Pairs devices with a QR
+  code, links to your Argus account and approves joins from the menu.
+- Opens at login, comes back after a crash, and updates itself when no
+  agent is running.
 
 See [Argus Server](/argus/docs/server-app).
 

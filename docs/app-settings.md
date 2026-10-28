@@ -389,13 +389,12 @@ Production users never see beta builds — they're published under a separate `b
 
 > Alpha builds (one-off cuts from any branch) are not exposed in this dialog. Repo collaborators install them manually by downloading the `.dmg` from the corresponding GitHub release.
 
-`Argus Server.app` has no Settings dialog, so it carries one extra update
-preference of its own, toggled from its tray menu and stored in the same
-`app-settings.json`:
+Argus Server carries one extra update preference of its own, toggled from its
+menu bar item or its Settings and stored in the same `app-settings.json`:
 
-| Setting                             | Default | Description                                                                                                               |
-| ----------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **Install Automatically When Idle** | off     | Server only. Installs a downloaded update and restarts as soon as no agent is running. Never interrupts an agent mid-run. |
+| Setting                             | Default | Description                                                                                                              |
+| ----------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Install Automatically When Idle** | off     | Server only. Downloads an update and restarts into it as soon as no agent is running. Never interrupts an agent mid-run. |
 
 See [server-app.md](./server-app.md#updating-the-server) for the full flow.
 
