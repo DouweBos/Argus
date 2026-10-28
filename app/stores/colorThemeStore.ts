@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { create } from "zustand";
 import {
   type ColorThemeId,
@@ -50,4 +51,13 @@ export const useColorTheme = () => store((s) => s.theme);
 
 export function initColorTheme() {
   apply(store.getState().theme);
+}
+
+/** Show `theme` while the calling screen is mounted, without changing the user's pick. */
+export function useColorThemeOverride(theme: ColorThemeId) {
+  useEffect(() => {
+    apply(theme);
+
+    return () => apply(store.getState().theme);
+  }, [theme]);
 }
