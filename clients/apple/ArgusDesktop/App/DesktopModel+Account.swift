@@ -13,7 +13,7 @@ extension DesktopModel {
         MacTelemetry.capture(.accountMemberChanged(action: .removed, role: role))
       case .memberRenamed(let role):
         MacTelemetry.capture(.accountMemberChanged(action: .renamed, role: role))
-      case .signedIn, .signedOut, .computerAdded, .pushRegistered:
+      case .signedIn, .signedOut, .computerAdded, .pushRegistered, .nameChanged:
         break
       }
     }

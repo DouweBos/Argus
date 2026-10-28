@@ -158,14 +158,14 @@ struct AccountJoinTests {
     #expect(events == [.joinActed(action: .approved, role: .approver)])
   }
 
-  @Test("renaming writes a signed rename")
+  @Test("renaming this device writes a signed rename through its name setting")
   func renames() async throws {
     let store = await readyPhone()
     var events: [AccountStore.Event] = []
     store.onEvent = { events.append($0) }
     await store.rename(memberId: phone.id, to: "  Douwe's iPhone\n")
     #expect(store.members.first?.name == "Douwe's iPhone")
-    #expect(events == [.memberRenamed(role: .device)])
+    #expect(events == [.nameChanged(source: .accountList, linked: true)])
   }
 
   @Test("a connected host on this account gets the entries it's missing")

@@ -51,6 +51,12 @@ enum UIDeviceName {
     let name = UIDevice.current.name.trimmingCharacters(in: .whitespaces)
     return name.isEmpty ? "iPhone" : name
   }
+
+  /// The name setting, or the system's name until one is set.
+  @MainActor
+  static func stored(_ preferences: Preferences) -> String {
+    preferences.string(PreferenceKey.deviceName) ?? current
+  }
 }
 
 extension AppStore {
@@ -93,14 +99,22 @@ extension AppStore {
     await account.setPushToken(token)
   }
 
-  func setDeviceName(_ name: String) async {
-    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty else { return }
-    deviceName = trimmed
-    preferences.set(trimmed, for: PreferenceKey.deviceName)
+  /// The name setting: the account renames this phone (now, or once it's
+  /// reachable) and calls back into `applyDeviceName`. False for a name it refuses.
+  @discardableResult
+  func setDeviceName(_ name: String) async -> Bool {
+    await account.setName(name, source: .settings)
+  }
+
+  /// Persist the name and tell the connected computer, whoever changed it.
+  func applyDeviceName(_ name: String) {
+    deviceName = name
+    preferences.set(name, for: PreferenceKey.deviceName)
+    guard let backend = host.backend else { return }
     struct Params: Encodable { let name: String }
-    _ = try? await host.backend?.request(
-      .deviceRename, Params(name: trimmed), as: IgnoredResult.self)
+    Task {
+      _ = try? await backend.request(.deviceRename, Params(name: name), as: IgnoredResult.self)
+    }
   }
 
   /// Hand this device's push token and its two keys to the computer.

@@ -34,6 +34,19 @@ struct SettingsView: View {
         .accessibilityHint("Opens your Argus account")
       }
 
+      Section {
+        TextField("This iPhone's name", text: $name)
+          .textInputAutocapitalization(.words)
+          .onSubmit(save)
+        Button(saved ? "Saved" : "Save", action: save)
+          .disabled(!nameIsSavable)
+      } header: {
+        Text("This iPhone's name")
+      } footer: {
+        Text(
+          "How your computers and your Argus account list this iPhone. Changing it renames it on the account too.")
+      }
+
       Section("Connection") {
         LabeledContent("Status") {
           Text(host.connection.rawValue)
@@ -42,18 +55,6 @@ struct SettingsView: View {
         if !host.capabilities.isEmpty {
           LabeledContent("Grants", value: host.capabilities.joined(separator: ", "))
         }
-      }
-
-      Section {
-        TextField("Device name", text: $name)
-          .textInputAutocapitalization(.words)
-          .onSubmit(save)
-        Button(saved ? "Saved" : "Save", action: save)
-          .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || name == app.deviceName)
-      } header: {
-        Text("Device name")
-      } footer: {
-        Text("Shown under paired devices in Argus on every computer you pair with.")
       }
 
       Section {
@@ -201,6 +202,8 @@ struct SettingsView: View {
       }
     }
     .navigationTitle("Settings")
+    // Renamed from the account list or another device.
+    .onChange(of: app.deviceName) { _, next in name = next }
     .task {
       name = app.deviceName
       notificationStatus = await NotificationRouter.shared.authorizationStatus()
@@ -268,9 +271,15 @@ struct SettingsView: View {
     }
   }
 
+  private var nameIsSavable: Bool {
+    AccountDeviceKeys.validatedName(name).map { $0 != app.deviceName } ?? false
+  }
+
   private func save() {
+    guard nameIsSavable else { return }
     Task {
-      await app.setDeviceName(name)
+      guard await app.setDeviceName(name) else { return }
+      name = app.deviceName
       saved = true
       try? await Task.sleep(for: .milliseconds(1200))
       saved = false
