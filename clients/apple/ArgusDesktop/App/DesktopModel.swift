@@ -1,6 +1,7 @@
 import AppKit
 import ArgusAuth
 import ArgusCore
+import ArgusUpdate
 import Foundation
 import Observation
 
@@ -38,6 +39,8 @@ final class DesktopModel {
   let account: AccountStore
   /// The bundled host, linked to the account without a code.
   let localAccountLink = LocalHostAccountLink()
+  /// Sparkle, on the channel the host's `updater_channel` names.
+  let updater = StandardUpdater(feed: UpdateFeed(product: "argus-mac", channel: .latest))
   /// Every request, routed to the host that owns its subject.
   private(set) var backend: HostRouter?
   /// The supervised host alone: platform requests and telemetry are this Mac's.
@@ -296,6 +299,7 @@ final class DesktopModel {
     guard !launchRouteApplied, let backend = localBackend else { return }
     launchRouteApplied = true
     let settings = try? await backend.request(ArgusProtocol.Commands.GetAppSettings.self, EmptyParams())
+    updater.feed.channel = UpdateChannel(setting: settings?.updaterChannel?.rawValue)
     guard settings?.launchRoute == .inbox, route == .home, pendingLocation == nil else { return }
     route = .inbox
   }

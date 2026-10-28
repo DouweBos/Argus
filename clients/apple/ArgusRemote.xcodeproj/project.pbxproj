@@ -76,6 +76,7 @@
 		FEED000100000000000000C2 /* TelemetryEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEED000100000000000000B2 /* TelemetryEvent.swift */; };
 		FEED000100000000000000C3 /* CrashDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEED000100000000000000B3 /* CrashDiagnostics.swift */; };
 		FEED000100000000000000C4 /* TelemetryConsentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEED000100000000000000B4 /* TelemetryConsentSheet.swift */; };
+		5A4C00000000000000000004 /* ArgusUpdate in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4C00000000000000000003 /* ArgusUpdate */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -178,6 +179,7 @@
 		FEED000100000000000000B2 /* TelemetryEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryEvent.swift; sourceTree = "<group>"; };
 		FEED000100000000000000B3 /* CrashDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrashDiagnostics.swift; sourceTree = "<group>"; };
 		FEED000100000000000000B4 /* TelemetryConsentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelemetryConsentSheet.swift; sourceTree = "<group>"; };
+		5A4C00000000000000000001 /* ArgusUpdate */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ArgusUpdate; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -234,6 +236,7 @@
 				ED1700000000000000000004 /* ArgusEditor in Frameworks */,
 				7E2A00000000000000000003 /* SwiftTerm in Frameworks */,
 				6B0F00000000000000000003 /* GroveKit in Frameworks */,
+				5A4C00000000000000000004 /* ArgusUpdate in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -274,6 +277,7 @@
 				AC0A00000000000000000014 /* ArgusAuth */,
 				5E7A00000000000000000003 /* ArgusSyntax */,
 				ED1700000000000000000002 /* ArgusEditor */,
+				5A4C00000000000000000001 /* ArgusUpdate */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -473,6 +477,7 @@
 				ED1700000000000000000003 /* ArgusEditor */,
 				7E2A00000000000000000002 /* SwiftTerm */,
 				6B0F00000000000000000002 /* GroveKit */,
+				5A4C00000000000000000003 /* ArgusUpdate */,
 			);
 			productName = ArgusDesktop;
 			productReference = DE5C00000000000000000002 /* Argus.app */;
@@ -550,6 +555,7 @@
 				FEED000100000000000000A1 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				7E2A00000000000000000001 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 				6B0F00000000000000000001 /* XCRemoteSwiftPackageReference "Grove" */,
+				5A4C00000000000000000002 /* XCLocalSwiftPackageReference "ArgusUpdate" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2367FD0131C0CDC27F4B7B30 /* Products */;
@@ -1080,6 +1086,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ArgusEditor;
 		};
+		5A4C00000000000000000002 /* XCLocalSwiftPackageReference "ArgusUpdate" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ArgusUpdate;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -1182,6 +1192,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FEED000100000000000000A1 /* XCRemoteSwiftPackageReference "posthog-ios" */;
 			productName = PostHog;
+		};
+		5A4C00000000000000000003 /* ArgusUpdate */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4C00000000000000000002 /* XCLocalSwiftPackageReference "ArgusUpdate" */;
+			productName = ArgusUpdate;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

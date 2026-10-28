@@ -29,6 +29,9 @@ struct ArgusDesktopApp: App {
     // Room for the sidebar, the git panel's three columns and the runtime.
     .defaultSize(width: 1560, height: 960)
     .commands {
+      CommandGroup(after: .appInfo) {
+        CheckForUpdatesCommand(model: delegate.model)
+      }
       CommandGroup(replacing: .appTermination) {
         Button("Quit Argus") { delegate.quit() }
           .keyboardShortcut("q")
@@ -101,6 +104,17 @@ private struct NewSessionCommand: View {
     Button("Delete Session…") { model.requestDeleteSession() }
       .keyboardShortcut(.delete, modifiers: .command)
       .disabled(model.deletableSession == nil)
+  }
+}
+
+private struct CheckForUpdatesCommand: View {
+  let model: DesktopModel
+
+  var body: some View {
+    if model.updater.isConfigured {
+      Button("Check for Updates…") { model.updater.check() }
+        .disabled(!model.updater.canCheck)
+    }
   }
 }
 
