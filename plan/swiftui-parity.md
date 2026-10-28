@@ -205,9 +205,9 @@ How to tick a row:
 
 ### Argus Server
 
-| Feature                      | Electron | Mac | iOS | Milestone | Notes                                                                                                             |
-| ---------------------------- | -------- | --- | --- | --------- | ----------------------------------------------------------------------------------------------------------------- |
-| Headless host, tray-only app | ✅       | ☐   | —   | M7        | The plan doesn't say what replaces it at cutover (plain `argus-host` or a Mac target). iOS: a phone isn't a host. |
+| Feature                      | Electron | Mac | iOS | Milestone | Notes                                                                                                                                      |
+| ---------------------------- | -------- | --- | --- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Headless host, tray-only app | ✅       | ✅  | —   | M7        | Mac: the native `ArgusServer` target ([plan](mac-server.md)); updates need the Sparkle key and appcast hosting. iOS: a phone isn't a host. |
 
 ### Automations
 
