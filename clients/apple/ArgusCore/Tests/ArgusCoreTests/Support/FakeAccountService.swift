@@ -142,6 +142,7 @@ final class FakeAccountAuth: AccountAuthenticating {
   var signedIn = false
   var configuredKey: String?
   var signedOut = false
+  var user: AccountProfile?
 
   var isSignedIn: Bool { signedIn }
   func configure(publishableKey: String) async throws { configuredKey = publishableKey }
@@ -150,6 +151,7 @@ final class FakeAccountAuth: AccountAuthenticating {
   func sendEmailCode(_: String) async throws {}
   func verifyEmailCode(_: String) async throws { signedIn = true }
   func token() async throws -> String? { signedIn ? "token" : nil }
+  var profile: AccountProfile? { signedIn ? user : nil }
   func signOut() async throws {
     signedIn = false
     signedOut = true

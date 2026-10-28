@@ -120,7 +120,15 @@ struct AccountView: View {
 
   // MARK: Not on the account yet
 
+  private var profileHeader: some View {
+    Card {
+      AccountProfileSummary(account: account, avatarSize: 56)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+  }
+
   @ViewBuilder private var awaitingApproval: some View {
+    profileHeader
     EmptyState(
       icon: "hourglass",
       title: "Waiting for device approval",
@@ -135,6 +143,8 @@ struct AccountView: View {
   // MARK: Signed in
 
   @ViewBuilder private var signedIn: some View {
+    profileHeader
+
     Field(
       label: "Safety code",
       caption: "The same on every device on your account. If one ever shows a different code, it's looking at a different account."

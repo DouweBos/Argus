@@ -56,6 +56,8 @@ public final class AccountStore {
   public internal(set) var localLinkError: String?
   /// An email code is on its way and the next step is to type it.
   public internal(set) var awaitingEmailCode = false
+  /// Who is signed in, for the account header. Never sent anywhere.
+  public internal(set) var profile: AccountProfile?
 
   /// How often a visible host list re-reads the directory. Well inside the
   /// online window, so a host that comes back shows within a minute.
@@ -128,6 +130,7 @@ public final class AccountStore {
       if phase == .loading { phase = .signedOut }
       return
     }
+    refreshProfile()
     if phase == .ready {
       await refresh()
       await linkLocalHostIfNeeded()
@@ -141,8 +144,14 @@ public final class AccountStore {
   /// The app came to the foreground: pick up new entries and moved addresses.
   public func refresh() async {
     guard phase == .ready else { return }
+    refreshProfile()
     await refreshLog()
     await refreshDirectory()
+  }
+
+  /// Re-read the signed-in person from the sign-in provider.
+  public func refreshProfile() {
+    profile = configured && auth.isSignedIn ? auth.profile : nil
   }
 
   /// While a connection to an account host keeps failing, poll the directory
@@ -210,6 +219,7 @@ public final class AccountStore {
     do {
       try await ensureConfigured()
       try await flow()
+      refreshProfile()
     } catch {
       self.error = Self.describe(error)
       phase = .signedOut
@@ -319,6 +329,7 @@ public final class AccountStore {
     await vaultStore.save(vault)
     state = nil
     hosts = []
+    profile = nil
     link = .idle
     pendingLink = nil
     phase = .signedOut
