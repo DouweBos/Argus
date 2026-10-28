@@ -106,6 +106,45 @@ struct HostStoreTests {
     #expect(store.sessionsByRepo["/repo"]?.first?.branch == "feature")
   }
 
+  @Test("a push announced by the host refreshes the sidebar's ahead count")
+  func gitStatusChangedRefreshesAheadCount() async throws {
+    func status(ahead: Int) -> String {
+      #"{"status":{"branch":"main","upstream":"origin/main","ahead":\#(ahead),"behind":0,"dirty_count":0,"stash_count":0,"conflict_count":0,"detached":false}}"#
+    }
+    let store = HostStore()
+    let backend = FakeBackend()
+    await store.attach(backend)
+    backend.reply(.sessionsGitStatus, status(ahead: 23))
+    await store.loadGitStatus(sessionId: "s1")
+    #expect(store.gitStatusBySession["s1"]?.ahead == 23)
+
+    backend.reply(.sessionsGitStatus, status(ahead: 0))
+    try backend.emit("ipc", payload: #"{"channel":"git_status_changed","args":[{"sessionId":"s1"}]}"#)
+    #expect(await eventually { store.gitStatusBySession["s1"]?.ahead == 0 })
+  }
+
+  @Test("a burst of git_status_changed reads once more, and only what is shown")
+  func gitStatusChangedCoalesces() async throws {
+    let store = HostStore()
+    let backend = FakeBackend()
+    await store.attach(backend)
+    backend.reply(
+      .sessionsGitStatus,
+      #"{"status":{"branch":"main","upstream":null,"ahead":0,"behind":0,"dirty_count":0,"stash_count":0,"conflict_count":0,"detached":false}}"#)
+    await store.loadGitStatus(sessionId: "s1")
+
+    backend.hold(.sessionsGitStatus)
+    let first = Task { await store.refreshGitStatus(sessionId: "s1") }
+    // Let the first read reach the backend and park there.
+    try await Task.sleep(for: .milliseconds(50))
+    for _ in 0..<3 { await store.refreshGitStatus(sessionId: "s1") }
+    await store.refreshGitStatus(sessionId: "s9")
+    backend.release(.sessionsGitStatus)
+    await first.value
+
+    #expect(backend.count(.sessionsGitStatus) == 3)
+  }
+
   @Test("refreshing held lists refetches every repo already listed")
   func refreshHeldLists() async throws {
     let store = HostStore()

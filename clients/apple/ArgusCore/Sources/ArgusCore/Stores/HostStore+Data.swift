@@ -409,6 +409,26 @@ extension HostStore {
     gitStatusBySession[sessionId] = result.status
   }
 
+  /// Re-reads a status something already shows, once per burst: a push or
+  /// fetch rewrites refs in several steps, each a `git_status_changed`.
+  public func refreshGitStatus(sessionId: String) async {
+    guard gitStatusBySession[sessionId] != nil else { return }
+    guard gitStatusLoading.insert(sessionId).inserted else {
+      gitStatusStale.insert(sessionId)
+      return
+    }
+    defer { gitStatusLoading.remove(sessionId) }
+    repeat {
+      gitStatusStale.remove(sessionId)
+      await loadGitStatus(sessionId: sessionId)
+    } while gitStatusStale.contains(sessionId)
+  }
+
+  /// A fetch or push moves remote-tracking refs every checkout of the repo compares to.
+  public func refreshGitStatuses(repoRoot: String) async {
+    for session in sessionsByRepo[repoRoot] ?? [] { await refreshGitStatus(sessionId: session.id) }
+  }
+
   public func loadDiff(sessionId: String, mode: String) async -> String {
     guard let backend else { return "" }
     struct Params: Encodable {

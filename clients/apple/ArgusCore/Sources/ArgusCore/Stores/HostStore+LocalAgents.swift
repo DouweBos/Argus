@@ -26,10 +26,14 @@ extension HostStore {
 
   /// The raw broadcasts a console connection gets that the typed events don't cover.
   func handleRawBroadcast(_ payload: JSONValue) {
-    guard followsAllAgents,
-      let ipc = try? ProtocolCodec.convert(payload, to: IpcPayload.self)
-    else { return }
+    guard let ipc = try? ProtocolCodec.convert(payload, to: IpcPayload.self) else { return }
     let arg = ipc.args?.first ?? .null
+    // A push, pull, fetch or commit anywhere moves the ahead/behind the sidebar shows.
+    if ipc.channel == "git_status_changed", case .object(let body) = arg, let id = body["sessionId"]?.stringValue {
+      Task { await refreshGitStatus(sessionId: id) }
+      return
+    }
+    guard followsAllAgents else { return }
     switch ipc.channel {
     case "agent:started":
       guard let info = try? ProtocolCodec.convert(arg, to: StartedAgent.self) else { return }

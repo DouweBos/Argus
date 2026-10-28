@@ -9,6 +9,7 @@ import { appState } from "../../state";
 import { git } from "./git";
 import { GitError } from "./gitError";
 import { withGitLock } from "./gitLock";
+import { announcingRepoGitStatus } from "./gitWatcher";
 
 function sessionPath(id: string): string {
   const ws = appState.sessions.get(id);
@@ -55,7 +56,9 @@ export async function gitPushV2(id: string, opts: PushV2Opts): Promise<string> {
     args.push(remote, "HEAD");
   }
 
-  return withGitLock(wt, () => git(wt, args));
+  return announcingRepoGitStatus(id, () =>
+    withGitLock(wt, () => git(wt, args)),
+  );
 }
 
 export interface PullV2Opts {
@@ -89,5 +92,7 @@ export async function gitPullV2(id: string, opts: PullV2Opts): Promise<string> {
     }
   }
 
-  return withGitLock(wt, () => git(wt, args));
+  return announcingRepoGitStatus(id, () =>
+    withGitLock(wt, () => git(wt, args)),
+  );
 }

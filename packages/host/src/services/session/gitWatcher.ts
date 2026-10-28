@@ -125,6 +125,35 @@ export async function startGitWatcher(
   };
 }
 
+/**
+ * Tell every session of `sessionId`'s repo its status may have moved. A push,
+ * pull or fetch rewrites remote-tracking refs in the common git dir, which a
+ * linked worktree's watcher never sees, and every sibling's upstream with it.
+ */
+export function announceRepoGitStatus(sessionId: string): void {
+  const repoRoot = appState.sessions.get(sessionId)?.repo_root;
+  if (!repoRoot) {
+    return;
+  }
+  for (const ws of appState.sessions.values()) {
+    if (ws.repo_root === repoRoot) {
+      emitHostEvent("git_status_changed", { sessionId: ws.id });
+    }
+  }
+}
+
+/** Runs a remote git operation, then announces the repo's status either way. */
+export async function announcingRepoGitStatus<T>(
+  sessionId: string,
+  run: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await run();
+  } finally {
+    announceRepoGitStatus(sessionId);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Lifecycle helpers — keyed by sessionId so we don't leak watchers when a
 // session is recreated under the same id.

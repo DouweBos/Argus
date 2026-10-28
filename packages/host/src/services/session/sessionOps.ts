@@ -18,7 +18,7 @@ import { updateScratchPadRecord } from "../scratchPad/store";
 import { isBranchProtected, loadArgusConfig } from "./argusConfig";
 import { git } from "./git";
 import { withGitLock } from "./gitLock";
-import { attachGitWatcher } from "./gitWatcher";
+import { announcingRepoGitStatus, attachGitWatcher } from "./gitWatcher";
 import {
   checkMergeConflicts,
   abortSessionMerge as doAbortSessionMerge,
@@ -652,21 +652,27 @@ export async function gitPull(
   }
   const wt = sessionPath(id);
 
-  return withGitLock(wt, () => git(wt, args));
+  return announcingRepoGitStatus(id, () =>
+    withGitLock(wt, () => git(wt, args)),
+  );
 }
 
 /** Push to the remote for a session. */
 export async function gitPush(id: string): Promise<string> {
   const wt = sessionPath(id);
 
-  return withGitLock(wt, () => git(wt, ["push"]));
+  return announcingRepoGitStatus(id, () =>
+    withGitLock(wt, () => git(wt, ["push"])),
+  );
 }
 
 /** Fetch from all remotes for a session. */
 export async function gitFetch(id: string): Promise<string> {
   const wt = sessionPath(id);
 
-  return withGitLock(wt, () => git(wt, ["fetch", "--all"]));
+  return announcingRepoGitStatus(id, () =>
+    withGitLock(wt, () => git(wt, ["fetch", "--all"])),
+  );
 }
 
 /** Stash working directory changes in a session. */
@@ -1351,15 +1357,17 @@ export async function pushSessionBranch(id: string): Promise<{
   }
   const remoteName = remoteList.includes("origin") ? "origin" : remoteList[0];
 
-  await withGitLock(ws.path, async () => {
-    // Commit staged changes first, so the push is meaningful.
-    try {
-      await git(ws.path, ["diff", "--cached", "--quiet"]);
-    } catch {
-      await git(ws.path, ["commit", "-m", `chore: wip on ${ws.branch}`]);
-    }
-    await git(ws.path, ["push", "-u", remoteName, ws.branch]);
-  });
+  await announcingRepoGitStatus(id, () =>
+    withGitLock(ws.path, async () => {
+      // Commit staged changes first, so the push is meaningful.
+      try {
+        await git(ws.path, ["diff", "--cached", "--quiet"]);
+      } catch {
+        await git(ws.path, ["commit", "-m", `chore: wip on ${ws.branch}`]);
+      }
+      await git(ws.path, ["push", "-u", remoteName, ws.branch]);
+    }),
+  );
 
   const remoteUrl = (
     await git(ws.repo_root, ["remote", "get-url", remoteName])
