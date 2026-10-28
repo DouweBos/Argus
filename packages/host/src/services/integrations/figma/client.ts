@@ -117,11 +117,18 @@ export function trimNode(node: RawNode, depth = 0): TrimmedNode {
 }
 
 export class FigmaApi {
-  constructor(private readonly token: string) {}
+  /** A personal access token, or an OAuth access token sent as a bearer. */
+  constructor(
+    private readonly token: string,
+    private readonly method: "key" | "oauth" = "key",
+  ) {}
 
   private async get<T>(pathAndQuery: string): Promise<T> {
     const res = await fetch(`${API}${pathAndQuery}`, {
-      headers: { "x-figma-token": this.token },
+      headers:
+        this.method === "oauth"
+          ? { authorization: `Bearer ${this.token}` }
+          : { "x-figma-token": this.token },
       signal: AbortSignal.timeout(30_000),
     });
     if (res.status === 401 || res.status === 403) {

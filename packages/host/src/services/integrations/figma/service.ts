@@ -5,6 +5,7 @@
 
 import type { DesignRef, FigmaFrame } from "@argus/remote-protocol";
 import { loadIntegration, readSecret } from "../credentials";
+import { freshAccessToken, parseTokens } from "../oauth";
 import { credentialRejected } from "../service";
 import { FigmaApi, FigmaAuthError, type TrimmedNode } from "./client";
 import { parseFigmaUrl } from "./refs";
@@ -18,12 +19,35 @@ export function figmaApi(): FigmaApi | null {
     return null;
   }
   const secret = readSecret("figma");
+  if (!secret) {
+    return null;
+  }
+  if (entry.method === "key") {
+    return new FigmaApi(secret);
+  }
+  const tokens = parseTokens(secret);
 
-  return secret ? new FigmaApi(secret) : null;
+  return tokens ? new FigmaApi(tokens.accessToken, "oauth") : null;
+}
+
+/** Like {@link figmaApi}, but refreshes a browser sign-in's token first. */
+async function freshFigmaApi(): Promise<FigmaApi | null> {
+  const entry = loadIntegration("figma");
+  if (entry?.method !== "oauth" || entry.needsReauth) {
+    return figmaApi();
+  }
+  const token = await freshAccessToken("figma");
+  if (!token) {
+    credentialRejected("figma");
+
+    return null;
+  }
+
+  return new FigmaApi(token, "oauth");
 }
 
 async function withFigma<T>(fn: (api: FigmaApi) => Promise<T>): Promise<T> {
-  const api = figmaApi();
+  const api = await freshFigmaApi();
   if (!api) {
     throw "Figma isn't connected. Connect it in Settings → Integrations.";
   }

@@ -16,14 +16,25 @@ const REFRESH_MARGIN_MS = 60 * 1000;
 interface OAuthApp {
   clientId: string;
   authorizeUrl: string;
-  tokenUrl: string;
+  /** The service's token endpoint, for public clients that need no secret. */
+  tokenUrl?: string;
+  /**
+   * A relay holding the client secret (`/token`, `/refresh`), for services
+   * that won't issue tokens to a public client.
+   */
+  relayUrl?: string;
   scope: string;
   /** Registered redirects must match exactly, so the port is fixed. */
   port: number;
+  pkce: boolean;
+  extraParams?: Record<string, string>;
 }
 
 /** Argus's public Linear app. Public clients use PKCE, so there's no secret. */
 const LINEAR_CLIENT_ID = "0e6aed28f0324b14b99789ba966b098f";
+
+/** Argus's Figma app. Its secret lives in the houwert.dev relay, never here. */
+const FIGMA_CLIENT_ID = "";
 
 const APPS: Partial<Record<IntegrationId, OAuthApp>> = {
   linear: {
@@ -32,6 +43,17 @@ const APPS: Partial<Record<IntegrationId, OAuthApp>> = {
     tokenUrl: "https://api.linear.app/oauth/token",
     scope: "read,write",
     port: 47_620,
+    pkce: true,
+    extraParams: { prompt: "consent" },
+  },
+  figma: {
+    clientId: process.env.ARGUS_FIGMA_CLIENT_ID ?? FIGMA_CLIENT_ID,
+    authorizeUrl: "https://www.figma.com/oauth",
+    relayUrl:
+      process.env.ARGUS_FIGMA_RELAY_URL ?? "https://houwert.dev/argus/figma",
+    scope: "current_user:read file_content:read file_comments:read",
+    port: 47_621,
+    pkce: false,
   },
 };
 
@@ -52,14 +74,19 @@ export function oauthAvailable(id: IntegrationId): boolean {
   return app(id) !== null;
 }
 
-async function tokenRequest(
-  oauthApp: OAuthApp,
-  body: Record<string, string>,
+interface TokenAnswer {
+  access_token: string;
+  refresh_token?: string | null;
+  expires_in?: number | null;
+}
+
+async function postForTokens(
+  url: string,
+  init: RequestInit,
 ): Promise<OAuthTokens> {
-  const res = await fetch(oauthApp.tokenUrl, {
+  const res = await fetch(url, {
+    ...init,
     method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ client_id: oauthApp.clientId, ...body }),
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) {
@@ -68,17 +95,40 @@ async function tokenRequest(
       `Token request failed (HTTP ${res.status})${text ? `: ${text.slice(0, 200)}` : ""}`,
     );
   }
-  const json = (await res.json()) as {
-    access_token: string;
-    refresh_token?: string;
-    expires_in?: number;
-  };
+  const json = (await res.json()) as TokenAnswer;
 
   return {
     accessToken: json.access_token,
     refreshToken: json.refresh_token ?? null,
     expiresAt: json.expires_in ? Date.now() + json.expires_in * 1000 : null,
   };
+}
+
+/** `body` uses the standard OAuth field names; a relay gets the subset it needs. */
+function tokenRequest(
+  oauthApp: OAuthApp,
+  body: Record<string, string>,
+): Promise<OAuthTokens> {
+  if (oauthApp.relayUrl) {
+    const refresh = body.grant_type === "refresh_token";
+
+    return postForTokens(
+      `${oauthApp.relayUrl}/${refresh ? "refresh" : "token"}`,
+      {
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(
+          refresh
+            ? { refresh_token: body.refresh_token }
+            : { code: body.code, redirect_uri: body.redirect_uri },
+        ),
+      },
+    );
+  }
+
+  return postForTokens(oauthApp.tokenUrl ?? "", {
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ client_id: oauthApp.clientId, ...body }),
+  });
 }
 
 let pendingCancel: (() => void) | null = null;
@@ -120,9 +170,10 @@ export async function signInWithOAuth(
       response_type: "code",
       scope: oauthApp.scope,
       state,
-      code_challenge: challenge,
-      code_challenge_method: "S256",
-      prompt: "consent",
+      ...(oauthApp.pkce
+        ? { code_challenge: challenge, code_challenge_method: "S256" }
+        : {}),
+      ...oauthApp.extraParams,
     }).toString();
     await hostPlatform().openExternal(url.toString());
     const code = await Promise.race([loopback.waitForCode(), cancelled]);
@@ -130,7 +181,7 @@ export async function signInWithOAuth(
       grant_type: "authorization_code",
       code,
       redirect_uri: loopback.redirectUri,
-      code_verifier: verifier,
+      ...(oauthApp.pkce ? { code_verifier: verifier } : {}),
     });
     saveIntegration(id, {
       method: "oauth",
