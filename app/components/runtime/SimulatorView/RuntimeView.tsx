@@ -285,6 +285,7 @@ export function RuntimeView({
                     deviceKey={activeDeviceKey}
                     platform={designPlatform}
                     refs={designRefs}
+                    sessionId={sessionId}
                   />
                 </div>
               )}
