@@ -46,7 +46,7 @@ export const INTEGRATION_COMMANDS = {
       query: z.string().nullish(),
       /** Ignored with a query. */
       scope: LinearIssueScope.default("assigned"),
-      limit: z.number().int().min(1).max(100).default(30),
+      limit: z.number().int().min(1).max(250).default(30),
     }),
     result: z.array(LinearIssue),
   },
