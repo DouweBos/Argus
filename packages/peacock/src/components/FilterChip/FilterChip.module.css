@@ -1,0 +1,60 @@
+.chip {
+  display: inline-flex;
+  align-items: stretch;
+  height: 24px;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  font-size: 12px;
+  overflow: hidden;
+}
+
+.part,
+.operator,
+.value,
+.remove {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  white-space: nowrap;
+}
+
+.operator,
+.value,
+.remove {
+  border-left: 1px solid var(--glass-border);
+  cursor: pointer;
+}
+
+.operator {
+  color: var(--text-muted);
+}
+
+.operator:disabled {
+  cursor: default;
+}
+
+.value {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
+.remove {
+  padding: 0 6px;
+  color: var(--text-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .operator:not(:disabled):hover,
+  .value:hover,
+  .remove:hover {
+    background: var(--surface-3);
+    color: var(--text-primary);
+  }
+}

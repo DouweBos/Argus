@@ -16,6 +16,8 @@ const ISSUE_FIELDS = `
   state { id name type position }
   team { id key name }
   assignee { displayName avatarUrl }
+  creator { displayName }
+  dueDate
   labels { nodes { name } }
   project { id name }
   cycle { id number name isActive }
@@ -116,6 +118,8 @@ export interface RawIssue {
   state: LinearWorkflowState;
   team: { id: string; key: string; name: string };
   assignee?: { displayName: string; avatarUrl?: string | null } | null;
+  creator?: { displayName: string } | null;
+  dueDate?: string | null;
   labels: { nodes: { name: string }[] };
   project?: { id: string; name: string } | null;
   cycle?: {
@@ -176,6 +180,8 @@ export function toLinearIssue(raw: RawIssue | RawIssueDetail): LinearIssue {
     teamName: raw.team.name,
     assignee: raw.assignee?.displayName ?? null,
     assigneeAvatarUrl: raw.assignee?.avatarUrl ?? null,
+    creator: raw.creator?.displayName ?? null,
+    dueDate: raw.dueDate ?? null,
     labels: raw.labels.nodes.map((l) => l.name),
     project: raw.project
       ? { id: raw.project.id, name: raw.project.name }

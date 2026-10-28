@@ -33,11 +33,6 @@ export function isColumnHidden(
   return overrides[column.id] ?? HIDDEN_BY_DEFAULT.has(column.type);
 }
 
-/** Issues in the cycle their team is in now. */
-export function inCurrentCycle(issue: LinearIssue): boolean {
-  return issue.cycle?.isActive === true;
-}
-
 /** Urgent first, "no priority" last — Linear's own order. */
 export const PRIORITY_ORDER = [1, 2, 3, 4, 0];
 

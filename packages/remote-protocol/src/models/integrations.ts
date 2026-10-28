@@ -90,6 +90,9 @@ export const LinearIssue = z.object({
   teamName: z.string(),
   assignee: z.string().nullable(),
   assigneeAvatarUrl: z.string().nullable(),
+  creator: z.string().nullish(),
+  /** `YYYY-MM-DD`. */
+  dueDate: z.string().nullish(),
   labels: z.array(z.string()),
   project: z.object({ id: z.string(), name: z.string() }).nullable(),
   cycle: z
