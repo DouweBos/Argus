@@ -197,7 +197,9 @@ Subscribed issues in a section per status, with the same cards as the
 desktop. Tap one to read it in full, with its sub-issues, links and
 comments; with control you can also change its status and priority,
 comment, and **Start agent** or **Open session**. Figma links in an issue
-open in the design viewer instead of the browser.
+open in the design viewer instead of the browser. The iPhone's issue list
+and the Mac app's Issues screen have the desktop's **Filter** row too, with
+the same fields and remembered per tab.
 
 The design viewer shows the frame to pinch and pan, its layers with their
 size, text, font and fill, the designers' comments, and the file's pages and

@@ -41,6 +41,7 @@ public enum Icon {
   public static let check = "checkmark"
   public static let history = "clock.arrow.circlepath"
   public static let search = "magnifyingglass"
+  public static let filter = "line.3.horizontal.decrease"
   public static let terminal = "terminal"
   public static let pencil = "pencil"
   public static let scratchPad = "note.text"

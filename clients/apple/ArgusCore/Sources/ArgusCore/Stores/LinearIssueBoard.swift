@@ -77,11 +77,6 @@ public enum LinearIssueBoard {
     overrides[column.id] ?? hiddenByDefault.contains(column.type)
   }
 
-  /// Issues in the cycle their team is in now.
-  public static func inCurrentCycle(_ issue: Issue) -> Bool {
-    issue.cycle?.isActive == true
-  }
-
   /// Urgent first, "no priority" last — Linear's own order.
   public static let priorityOrder = [1, 2, 3, 4, 0]
 

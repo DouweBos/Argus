@@ -80,6 +80,8 @@ public struct LinearIssuesPlaceholder: View {
       Loading(label: "Asking Linear…")
     } else if model.issues?.isEmpty == true {
       EmptyState(icon: Icon.check, title: "No open issues", body: model.scope.emptyText)
+    } else if model.shownIssues?.isEmpty == true {
+      EmptyState(icon: Icon.filter, title: "No issues match", body: "Change or clear the filters to see more.")
     }
   }
 }

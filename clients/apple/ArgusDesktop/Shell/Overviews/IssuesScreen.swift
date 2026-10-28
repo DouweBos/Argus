@@ -21,7 +21,6 @@ private struct IssuesScreenContent: View {
   @Environment(DesktopModel.self) private var desktop
   @Environment(HostStore.self) private var store
   @AppStorage("issues.layout") private var layout = Layout.board
-  @AppStorage("issues.currentCycle") private var currentCycleOnly = false
   @State private var model: LinearIssuesModel
   @State private var pickedRoot: String?
   @State private var starting: HostStore.LinearIssue?
@@ -45,7 +44,6 @@ private struct IssuesScreenContent: View {
       .overlay { LinearIssuesPlaceholder(model: model, connectHint: Self.connectHint) }
       .refreshingLinearIssues(model)
       .onChange(of: scope, initial: true) { model.scope = scope }
-      .onChange(of: currentCycleOnly, initial: true) { model.currentCycleOnly = currentCycleOnly }
       .navigationTitle("Issues")
       .navigationSubtitle(subtitle)
       .toolbar { toolbar }
@@ -71,7 +69,18 @@ private struct IssuesScreenContent: View {
 
   private static let connectHint = "Connect Linear in Settings → Integrations to see your issues."
 
-  @ViewBuilder private var content: some View {
+  private var content: some View {
+    issues
+      .safeAreaInset(edge: .top, spacing: 0) {
+        if store.linearConnected, let issues = model.issues, !issues.isEmpty {
+          IssueFilterBar(issues: issues, filters: $model.filters)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+        }
+      }
+  }
+
+  @ViewBuilder private var issues: some View {
     switch layout {
     case .board:
       IssuesBoard(issues: model.shownIssues ?? [], selected: issueRef, onOpen: open)
@@ -89,11 +98,6 @@ private struct IssuesScreenContent: View {
         .pickerStyle(.segmented)
         .fixedSize()
         .help("Whose issues to show")
-        Toggle(isOn: $currentCycleOnly) {
-          Label("Current cycle", systemImage: "arrow.triangle.2.circlepath")
-        }
-        .toggleStyle(.button)
-        .help("Only issues in their team's current cycle")
         Picker("Layout", selection: $layout) {
           Label("Board", systemImage: "rectangle.split.3x1").tag(Layout.board)
           Label("List", systemImage: "list.bullet").tag(Layout.list)
@@ -122,7 +126,9 @@ private struct IssuesScreenContent: View {
 
   private var subtitle: String {
     guard let issues = model.issues else { return "Open issues in Linear" }
-    return "\(issues.count) open · \(scope.title.lowercased())"
+    let shown = model.shownIssues?.count ?? issues.count
+    let count = shown == issues.count ? "\(issues.count)" : "\(shown) of \(issues.count)"
+    return "\(count) open · \(scope.title.lowercased())"
   }
 
   /// One navigation per click: the issue's own URL.
