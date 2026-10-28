@@ -31,6 +31,7 @@ import {
   TS,
 } from "./fixtureChain";
 import { joinFixtures, laptop, tablet } from "./fixtureJoins";
+import { pushKeyVector } from "./fixturePush";
 
 const miniMember = host(mini, "Mini");
 const sasForMini = (approver: Keys, headHash: string) =>
@@ -414,6 +415,7 @@ export function buildFixtures(): Record<string, unknown> {
       laptop,
     },
     "sas.json": sasVectors(),
+    "push_key.json": pushKeyVector(),
   };
   for (const f of fixtures()) {
     out[`${f.name}.json`] = f;

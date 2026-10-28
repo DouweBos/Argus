@@ -70,6 +70,20 @@ export interface JoinRequestRow {
   expires_at: number;
 }
 
+/** A device's push key, still sealed for this host (`GET /host/push-keys`). */
+export interface SealedPushKey {
+  device_id: string;
+  service: "apns" | "fcm";
+  environment: "production" | "sandbox";
+  sealed: string;
+}
+
+export interface PushSendResult {
+  delivered: boolean;
+  environment?: "production" | "sandbox";
+  reason?: string;
+}
+
 export interface LogPage {
   epoch: number;
   entries: LogEntry[];
@@ -186,6 +200,19 @@ export class AccountClient {
       `/join/${encodeURIComponent(requestId)}/approver`,
       { approver_id: approverId },
     );
+  }
+
+  pushKeys(): Promise<{ devices: SealedPushKey[] }> {
+    return this.request("GET", "/host/push-keys");
+  }
+
+  /** Deliver a notification this host sealed for an account device. */
+  pushSend(body: {
+    device_id: string;
+    sealed: string;
+    collapse_id?: string;
+  }): Promise<PushSendResult> {
+    return this.request("POST", "/push/send", body);
   }
 
   deny(requestId: string): Promise<void> {

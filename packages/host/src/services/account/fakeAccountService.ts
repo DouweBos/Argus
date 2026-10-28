@@ -47,6 +47,23 @@ export class FakeAccountService {
   >();
   /** Requests whose signature didn't verify. */
   rejectedSignatures = 0;
+  /** Push keys devices sealed, per host id (`GET /host/push-keys`). */
+  pushKeys = new Map<
+    string,
+    {
+      device_id: string;
+      service: "apns" | "fcm";
+      environment: "production" | "sandbox";
+      sealed: string;
+    }[]
+  >();
+  /** Every `POST /push/send`, with the host that sent it. */
+  pushSent: {
+    host_id: string;
+    device_id: string;
+    sealed: string;
+    collapse_id?: string;
+  }[] = [];
   private nextId = 1;
 
   state(): LogState | null {
@@ -299,6 +316,19 @@ export class FakeAccountService {
       });
 
       return json({ head });
+    }
+    if (method === "GET" && route === "/host/push-keys") {
+      return json({
+        devices: this.pushKeys.get(headers.get("x-argus-member") ?? "") ?? [],
+      });
+    }
+    if (method === "POST" && route === "/push/send") {
+      this.pushSent.push({
+        host_id: headers.get("x-argus-member") ?? "",
+        ...(payload as { device_id: string; sealed: string }),
+      });
+
+      return json({ delivered: true, environment: "sandbox" });
     }
     const deny = route.match(/^\/join\/([^/]+)\/deny$/);
     if (method === "POST" && deny) {

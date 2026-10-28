@@ -41,8 +41,11 @@ function read<T>(file: string): T {
   return JSON.parse(readFileSync(path.join(DIR, file), "utf-8")) as T;
 }
 
+/** Vectors that aren't log fixtures. */
+const VECTORS = new Set(["keys.json", "sas.json", "push_key.json"]);
+
 const fixtures = readdirSync(DIR)
-  .filter((f) => f.endsWith(".json") && f !== "keys.json" && f !== "sas.json")
+  .filter((f) => f.endsWith(".json") && !VECTORS.has(f))
   .map((f) => read<Fixture>(f));
 const passing = fixtures.filter((f) => f.expect.ok);
 const failing = fixtures.filter((f) => !f.expect.ok);
