@@ -83,10 +83,17 @@ branch belongs to.
 
 ## Connecting Figma
 
-Open **Settings → Integrations** and paste a Figma personal access token.
-Create one in Figma under **Settings → Security → Personal access tokens**,
-with read access to file content and comments. It's stored the same way as
-the Linear key.
+Open **Settings → Integrations** and click **Sign in with Figma**. Your browser
+opens; approve Argus there and the sign-in comes back to Argus on
+`127.0.0.1:47621`. Figma only hands out tokens to an app that proves itself
+with a secret, so that one step goes through `houwert.dev/argus/figma`, which
+holds the secret and passes Figma's answer straight back. Nothing is stored
+there, and the token refreshes itself.
+
+You can also paste a Figma personal access token instead (**Use an API key
+instead**). Create one in Figma under **Settings → Security → Personal access
+tokens**, with read access to file content and comments. Personal tokens
+expire, so you'll reconnect when they do.
 
 ## Designs
 

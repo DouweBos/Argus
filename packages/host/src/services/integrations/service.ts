@@ -187,12 +187,11 @@ async function withLinear<T>(fn: (api: LinearApi) => Promise<T>): Promise<T> {
 export async function connectWithOAuth(
   id: IntegrationId,
 ): Promise<IntegrationStatus> {
-  if (id !== "linear") {
-    throw `${SERVICE_NAMES[id]} doesn't offer browser sign-in yet. Use a key instead.`;
-  }
   try {
     await signInWithOAuth(id, (token) =>
-      new LinearApi({ method: "oauth", secret: token }).account(),
+      id === "linear"
+        ? new LinearApi({ method: "oauth", secret: token }).account()
+        : new FigmaApi(token, "oauth").account(),
     );
   } catch (err) {
     capture("integration_connected", {
