@@ -1,6 +1,7 @@
 export * from "./capabilities";
 export * from "./connection";
 export * from "./huddle";
+export * from "./issueTime";
 export * from "./linearLabels";
 export * from "./models";
 export * from "./messages";
