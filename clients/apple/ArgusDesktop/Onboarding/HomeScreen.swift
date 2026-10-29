@@ -41,15 +41,17 @@ struct HomeScreen: View {
         HStack(spacing: 10) {
           Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 32, height: 32)
           Text("Argus").font(.scaled(size: 24, weight: .semibold))
-          Spacer(minLength: 16)
-          Button {
-            MacTelemetry.capture(.homeUsageOpened(level: usageLevel))
-            model.navigate(.usage(.limits))
-          } label: {
-            UsageLimitsStrip(limits: store.usageLimits).contentShape(.rect)
+        }
+        if !UsageLimitsStrip.accounts(store.usageLimits).isEmpty {
+          section("Plan limits") {
+            Button("View usage") {
+              MacTelemetry.capture(.homeUsageOpened(level: usageLevel))
+              model.navigate(.usage(.limits))
+            }
+            .buttonStyle(.accentLink)
+          } content: {
+            UsageLimitsStrip(limits: store.usageLimits)
           }
-          .buttonStyle(.argusPlain)
-          .help("Plan limits — open Usage")
         }
         HomeNeedsYouSection()
         section("Projects") {
