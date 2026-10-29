@@ -256,6 +256,8 @@ enum MacTelemetryEvent {
   case issuePropertyMenuOpened(property: LinearIssueProperty.Kind, via: IssueMenuVia)
   /// A workspace issue search settled; once per term, never the term itself.
   case issueSearched(results: String)
+  /// The plan-limits strip on Home opened Usage; `level` is the most severe limit shown.
+  case homeUsageOpened(level: String)
   /// A deep link or launch route was opened; `screen` is its route pattern.
   case linkOpened(screen: String, outcome: LinkOutcome)
   /// A transcript link was used; `relative` is whether the path needed the worktree.
@@ -373,6 +375,7 @@ enum MacTelemetryEvent {
     case .contextCardUsed: "mac_context_card_used"
     case .issuePropertyMenuOpened: "mac_issue_property_menu_opened"
     case .issueSearched: "mac_issue_searched"
+    case .homeUsageOpened: "mac_home_usage_opened"
     case .homeCardActed: "mac_home_card_acted"
     case .hostFolderPicked: "mac_host_folder_picked"
     case .tabUsed: "mac_tab_used"
@@ -480,6 +483,8 @@ enum MacTelemetryEvent {
       ["property": property.rawValue, "via": via.rawValue]
     case .issueSearched(let results):
       ["result_bucket": results]
+    case .homeUsageOpened(let level):
+      ["level": level]
     case .homeCardActed(let card, let action):
       ["card": card.rawValue, "action": action.rawValue]
     case .hostFolderPicked(let stage):

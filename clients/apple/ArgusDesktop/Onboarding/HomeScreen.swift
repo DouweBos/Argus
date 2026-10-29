@@ -43,6 +43,7 @@ struct HomeScreen: View {
           Text("Argus").font(.scaled(size: 24, weight: .semibold))
           Spacer(minLength: 16)
           Button {
+            MacTelemetry.capture(.homeUsageOpened(level: usageLevel))
             model.navigate(.usage(.limits))
           } label: {
             UsageLimitsStrip(limits: store.usageLimits).contentShape(.rect)
@@ -67,6 +68,16 @@ struct HomeScreen: View {
     .padding(28)
     .frame(maxWidth: 960, alignment: .leading)
     .frame(maxWidth: .infinity)
+  }
+
+  /// The most severe plan limit on the strip, for telemetry.
+  private var usageLevel: String {
+    let used = (store.usageLimits?.accounts ?? []).flatMap(\.windows).map(\.usedPercent).max() ?? 0
+    return switch UsageLimitFormat.level(usedPercent: used) {
+    case .normal: "normal"
+    case .warning: "warning"
+    case .critical: "critical"
+    }
   }
 
   /// Most recently opened first (in either desktop app), then the newest

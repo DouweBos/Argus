@@ -521,6 +521,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_sidebar_filtered` | The sidebar was searched (once per search, never the query) or narrowed to one project from its filter menu | `kind` (`search`, `project`) |
 | `mac_context_card_used` | A session's context card was folded to its switcher or opened again, or one of its actions used (its view switcher counts as `mac_session_panel_switched`) | `action` (`collapse`, `expand`, `recent_chats`, `open_editor`, `reveal`, `copy_path`, `run`, `share`, `branch`, `push`, `changes`, `linked_issue`, `design`) |
 | `mac_issue_property_menu_opened` | An issue page's status or priority menu was opened (picking a value is `linear_issue_updated`) | `property` (`status`, `priority`), `via` (`click`, `shortcut` the page's S / P keys) |
+| `mac_home_usage_opened` | The plan-limits strip on Home was clicked to open Usage | `level` (`normal`, `warning`, `critical`) — the most severe limit shown |
 | `mac_issue_searched` | A workspace issue search settled on the Issues screen, once per term (never the term) | `result_bucket` (`0`, `1-9`, `10-99`, `100+`) |
 | `mac_navigated_history` | Back or Forward went through the window tab's history | `direction` (`back`, `forward`), `via` (`button` the toolbar chevrons, `shortcut` ⌘[ / ⌘] or the code view's ⌃- / ⌃⇧-, `menu` the Go menu clicked, `palette`, `mouse` the side buttons) |
 
