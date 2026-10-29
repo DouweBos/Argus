@@ -440,6 +440,14 @@ export class ControlHandler {
     });
   }
 
+  /** `mcp_status` answers with every server's live connection state. */
+  buildMcpStatusRequest(): [
+    string,
+    Promise<Record<string, unknown> | undefined>,
+  ] {
+    return this.buildOutboundRequest({ subtype: "mcp_status" });
+  }
+
   private buildOutboundRequest(
     request: Record<string, unknown>,
   ): [string, Promise<Record<string, unknown> | undefined>] {

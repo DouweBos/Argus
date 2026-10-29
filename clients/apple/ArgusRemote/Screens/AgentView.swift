@@ -13,6 +13,7 @@ struct AgentView: View {
   let label: String
 
   @State private var confirmingStop = false
+  @State private var showingMcp = false
 
   private var sessionId: String? { host.statusByAgent[agentId]?.sessionId }
 
@@ -85,6 +86,12 @@ struct AgentView: View {
           }
         }
         IconBtn(systemName: Icon.simulator, label: "Devices") { openDevices() }
+        if !isGone {
+          IconBtn(systemName: Icon.mcp, label: "MCP servers") {
+            Telemetry.capture(.mcpServersOpened)
+            showingMcp = true
+          }
+        }
         if host.hasControl, !isGone {
           IconBtn(systemName: Icon.stop, label: "Shut down agent") {
             confirmingStop = true
@@ -102,6 +109,21 @@ struct AgentView: View {
       }
       // Fetched once, not polled: this only decides where the device button goes.
       if host.connection == .ready { await host.refreshDevices() }
+    }
+    .sheet(isPresented: $showingMcp) {
+      NavigationStack {
+        AgentMcpServersView(agentId: agentId)
+          .frame(maxHeight: .infinity, alignment: .top)
+          .background(theme.bg.ignoresSafeArea())
+          .navigationTitle("MCP Servers")
+          .navigationBarTitleDisplayMode(.inline)
+          .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+              Button("Done") { showingMcp = false }
+            }
+          }
+      }
+      .presentationDetents([.medium, .large])
     }
     .confirmationDialog(
       "Shut down this agent?", isPresented: $confirmingStop, titleVisibility: .visible

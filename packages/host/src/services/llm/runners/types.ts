@@ -160,6 +160,14 @@ export interface LlmRunnerHandleEvents {
   exit: [code: number];
 }
 
+export interface RunnerMcpServerStatus {
+  name: string;
+  status: string;
+  source: string | null;
+  toolCount: number | null;
+  error: string | null;
+}
+
 export interface LlmRunnerHandle {
   readonly runnerId: string;
   /** Listen for runner events. */
@@ -183,6 +191,8 @@ export interface LlmRunnerHandle {
    * this as a no-op.
    */
   setEffort: (level: string | null) => Promise<void>;
+  /** Live status of every MCP server the CLI loaded; absent when it can't report. */
+  mcpStatus?: () => Promise<RunnerMcpServerStatus[]>;
   /** Respond to a previously-emitted permission request. */
   respondToPermission: (decision: PermissionDecisionInput) => void;
   /** Kill the underlying child process; resolves once it exits. */

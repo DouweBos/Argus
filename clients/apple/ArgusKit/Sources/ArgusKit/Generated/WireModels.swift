@@ -13913,6 +13913,39 @@ extension ArgusProtocol {
     }
   }
 
+  public struct RemoteMcpServerStatus: Codable, Sendable {
+    public var name: String
+    public var status: String
+    public var source: String?
+    public var toolCount: Double?
+    public var error: String?
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case status = "status"
+      case source = "source"
+      case toolCount = "tool_count"
+      case error = "error"
+    }
+
+    public init(name: String, status: String, source: String? = nil, toolCount: Double? = nil, error: String? = nil) {
+      self.name = name
+      self.status = status
+      self.source = source
+      self.toolCount = toolCount
+      self.error = error
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(status, forKey: .status)
+      try c.encodeIfPresent(source, forKey: .source)
+      try c.encodeIfPresent(toolCount, forKey: .toolCount)
+      try c.encodeIfPresent(error, forKey: .error)
+    }
+  }
+
   public struct RemoteMentionEntry: Codable, Sendable {
     public var name: String
     public var isDir: Bool

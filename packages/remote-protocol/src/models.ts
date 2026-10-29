@@ -250,6 +250,18 @@ export const RemoteAgentVitals = z.object({
 });
 export type RemoteAgentVitals = z.infer<typeof RemoteAgentVitals>;
 
+/** One MCP server as the agent's CLI sees it right now. */
+export const RemoteMcpServerStatus = z.object({
+  name: z.string(),
+  /** `connected`, `pending`, `needs-auth`, `failed` or `disabled`; open for new CLI states. */
+  status: z.string(),
+  /** Where the config came from: `user`, `project`, `plugin`, `claudeai`, … */
+  source: z.string().nullable().optional(),
+  tool_count: z.number().nullable().optional(),
+  error: z.string().nullable().optional(),
+});
+export type RemoteMcpServerStatus = z.infer<typeof RemoteMcpServerStatus>;
+
 /**
  * A permission prompt forwarded to the client. `tool_input` is passed through
  * so the user can see what they're approving, but the client can only reply

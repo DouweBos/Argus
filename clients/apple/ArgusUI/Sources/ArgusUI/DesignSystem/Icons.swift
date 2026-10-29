@@ -63,6 +63,7 @@ public enum Icon {
   public static let compare = "square.split.2x1"
   public static let openExternal = "arrow.up.forward.square"
   public static let warning = "exclamationmark.triangle"
+  public static let mcp = "server.rack"
   public static let image = "photo"
   public static let rotate = "rotate.right"
   public static let fold = "book.closed"

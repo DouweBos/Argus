@@ -17,6 +17,7 @@ import {
   RemoteAutomationGuardrails,
   RemoteAutomationRun,
   RemoteAgentVitals,
+  RemoteMcpServerStatus,
   RemoteClaudeAccount,
   RemoteClaudeLoginState,
   RemoteDevice,
@@ -132,6 +133,7 @@ export const MethodParams = {
   }),
   "agents.status": z.object({ agent_id: z.string() }),
   "agents.vitals": z.object({ agent_id: z.string() }),
+  "agents.mcp_status": z.object({ agent_id: z.string() }),
   "agents.transcript": z.object({
     agent_id: z.string(),
     /** Forward cursor — return messages starting at this index. */
@@ -691,6 +693,12 @@ export const MethodResult = {
   "agents.list": z.object({ agents: z.array(RemoteAgentStatus) }),
   "agents.status": z.object({ agent: RemoteAgentStatus }),
   "agents.vitals": z.object({ vitals: RemoteAgentVitals }),
+  /** `servers` is null when the agent's CLI can't report MCP status. */
+  "agents.mcp_status": z.object({
+    servers: z.array(RemoteMcpServerStatus).nullable(),
+    /** The Claude account the agent's process runs as. */
+    account_id: z.string().nullable().optional(),
+  }),
   "agents.transcript": z.object({
     messages: z.array(RemoteMessage),
     next_after: z.number().int().nonnegative().nullable(),

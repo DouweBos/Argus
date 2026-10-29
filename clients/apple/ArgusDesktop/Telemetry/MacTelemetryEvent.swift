@@ -204,6 +204,7 @@ enum MacTelemetryEvent {
     case changes
     case linkedIssue = "linked_issue"
     case design
+    case mcp
   }
 
   case launched

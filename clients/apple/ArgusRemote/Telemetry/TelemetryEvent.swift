@@ -131,6 +131,8 @@ enum TelemetryEvent {
   case agentStartSubmitted(workspace: String, changedWorkspace: Bool)
   /// The warnings list was opened; `count` is how many it held.
   case warningsOpened(count: Int)
+  /// An agent's MCP servers list was opened.
+  case mcpServersOpened
   /// A session file opened in the read-only viewer.
   case fileViewed(source: FileViewSource, language: String)
   /// A Figma frame opened in the design viewer.
@@ -195,6 +197,7 @@ enum TelemetryEvent {
     case .defaultChanged: "ios_default_changed"
     case .agentStartSubmitted: "ios_agent_start_submitted"
     case .warningsOpened: "ios_warnings_opened"
+    case .mcpServersOpened: "ios_mcp_servers_opened"
     case .fileViewed: "ios_file_viewed"
     case .designOpened: "ios_design_opened"
     case .designLayerSelected: "ios_design_layer_selected"
@@ -220,7 +223,7 @@ enum TelemetryEvent {
   var properties: [String: Any] {
     switch self {
     case .launched, .telemetryEnabled, .telemetryDisabled, .proposalOpenedAsRun, .followUpUsed,
-      .accountSignedOut:
+      .accountSignedOut, .mcpServersOpened:
       [:]
     case .accountSignedIn(let provider, let firstDevice):
       ["provider": provider.rawValue, "first_device": firstDevice]

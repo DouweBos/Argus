@@ -108,6 +108,7 @@ export const REMOTE_METHODS = {
   "agents.list": "monitor",
   "agents.status": "monitor",
   "agents.vitals": "monitor",
+  "agents.mcp_status": "monitor",
   "agents.transcript": "monitor",
   /** Resolve a transcript image reference to its bytes. */
   "agents.image": "monitor",

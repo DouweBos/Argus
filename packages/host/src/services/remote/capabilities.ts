@@ -31,6 +31,7 @@ import {
   type RemoteDevice,
   type RemoteDeviceState,
   type RemoteGitBranch,
+  type RemoteMcpServerStatus,
   type RemoteMethod,
   type RemotePlatform,
   type RemoteSession,
@@ -57,6 +58,7 @@ import { loadConversation, loadHistoryIndex } from "../agent/chatHistory";
 import { agentContextWindow } from "../agent/contextWindow";
 import { liveCursor, readConversation } from "../agent/conversation/live";
 import { dismissLimitResume, limitResumeAt } from "../agent/limitResume";
+import { agentMcpStatus } from "../agent/mcpStatus";
 import {
   enqueueMessage,
   listQueue,
@@ -929,6 +931,22 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         turns_completed: a.turnsCompleted,
       },
     };
+  },
+
+  "agents.mcp_status": async (params) => {
+    const { agent_id } = parse("agents.mcp_status", params);
+    const a = appState.agents.get(agent_id);
+    if (!a) {
+      throw new GatewayError("not_found", `no agent ${agent_id}`);
+    }
+    let servers: RemoteMcpServerStatus[] | null;
+    try {
+      servers = await agentMcpStatus(a);
+    } catch (error) {
+      throw new GatewayError("internal", String(error));
+    }
+
+    return { servers, account_id: a.accountId ?? null };
   },
 
   "agents.transcript": async (params) => {

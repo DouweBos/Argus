@@ -292,6 +292,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AgentsMcpStatusParams: Codable, Sendable {
+      public var agentId: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+      }
+
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
+    }
+
+    public struct AgentsMcpStatusResult: Codable, Sendable {
+      public var servers: [RemoteMcpServerStatus]?
+      public var accountId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case servers = "servers"
+        case accountId = "account_id"
+      }
+
+      public init(servers: [RemoteMcpServerStatus]? = nil, accountId: String? = nil) {
+        self.servers = servers
+        self.accountId = accountId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(servers, forKey: .servers)
+        try c.encodeIfPresent(accountId, forKey: .accountId)
+      }
+    }
+
     public struct AgentsQueueAddParams: Codable, Sendable {
       public var agentId: String
       public var message: String
@@ -5991,6 +6029,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AgentsListParams
       public typealias Result = ArgusProtocol.MethodsTypes.AgentsListResult
       public static let name = "agents.list"
+    }
+
+    public enum AgentsMcpStatus: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsMcpStatusParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsMcpStatusResult
+      public static let name = "agents.mcp_status"
     }
 
     public enum AgentsQueueAdd: RemoteCommand {

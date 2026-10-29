@@ -12,8 +12,8 @@ enum ContextCardPreference {
 
 /// The session at a glance, at the top right of its panel: the Agent / Code /
 /// Git switcher, then (unless collapsed) the machine it's on, opening it in an
-/// editor, its run command and huddle, its ticket and designs, its branch,
-/// pushing it, how much it has changed, and its recent chats.
+/// editor, its run command, huddle and the agent's MCP servers, its ticket and
+/// designs, its branch, pushing it, how much it has changed, and its recent chats.
 struct SessionContextCard: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
@@ -68,6 +68,7 @@ struct SessionContextCard: View {
       RunControl(session: session, inCard: true)
       HuddleToolbarButton(sessionId: session.id, inCard: true)
         .buttonStyle(ContextRowButtonStyle())
+      if let agent = model.agentInFront { McpContextRow(agentId: agent.agentId) }
     }
     // No branch to show or push in a scratch pad's or a run's folder.
     if !session.isOutsideProjects {
