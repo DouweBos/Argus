@@ -15,7 +15,7 @@ extension DesktopModel {
     return false
   }
 
-  /// ⌘W closes the editor tab or agent tab on screen first, then the window tab.
+  /// ⌘W closes the editor tab or agent tab on screen first, then the window tab, never the main window.
   func closeTabOrEditor() {
     if case .sessionCode(let id, let path?, _) = route {
       Task { await code.session(id).close(path, active: path) }
@@ -25,6 +25,7 @@ extension DesktopModel {
       if Self.confirmCloseAgent(agent) { closeAgent(agent.agentId, inSession: id) }
       return
     }
+    guard activeTab?.pinned == false else { return NSSound.beep() }
     closeTab()
   }
 
