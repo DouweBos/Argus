@@ -69,6 +69,8 @@ export const LinearWorkflowState = z.object({
   type: z.string(),
   /** Order within the team's workflow. */
   position: z.number(),
+  /** Linear's color for it (`#rrggbb`), for the status icon. */
+  color: z.string().nullish(),
 });
 export type LinearWorkflowState = z.infer<typeof LinearWorkflowState>;
 
@@ -87,6 +89,10 @@ export const LinearIssue = z.object({
   estimate: z.number().nullable(),
   /** The team's estimate scale: `tShirt`, `fibonacci`, `linear`, `exponential`. */
   estimateType: z.string().nullish(),
+  /** Each label with its Linear color (`#rrggbb`). */
+  labelColors: z
+    .array(z.object({ name: z.string(), color: z.string() }))
+    .nullish(),
   teamId: z.string(),
   teamKey: z.string(),
   teamName: z.string(),
@@ -196,10 +202,6 @@ export const LinearIssueDetail = LinearIssue.extend({
     .array(
       z.object({ name: z.string(), type: z.string(), enteredAt: z.number() }),
     )
-    .nullish(),
-  /** Each label with its Linear color (`#rrggbb`). */
-  labelColors: z
-    .array(z.object({ name: z.string(), color: z.string() }))
     .nullish(),
 
   attachments: z.array(LinearAttachment),

@@ -8537,6 +8537,27 @@ extension ArgusProtocol {
     }
   }
 
+  public struct LinearIssueLabelColorsItem: Codable, Sendable {
+    public var name: String
+    public var color: String
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case color = "color"
+    }
+
+    public init(name: String, color: String) {
+      self.name = name
+      self.color = color
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(color, forKey: .color)
+    }
+  }
+
   public struct LinearIssueProject: Codable, Sendable {
     public var id: String
     public var name: String
@@ -8619,6 +8640,7 @@ extension ArgusProtocol {
     public var priority: Double
     public var estimate: Double?
     public var estimateType: String?
+    public var labelColors: [LinearIssueLabelColorsItem]?
     public var teamId: String
     public var teamKey: String
     public var teamName: String
@@ -8645,6 +8667,7 @@ extension ArgusProtocol {
       case priority = "priority"
       case estimate = "estimate"
       case estimateType = "estimateType"
+      case labelColors = "labelColors"
       case teamId = "teamId"
       case teamKey = "teamKey"
       case teamName = "teamName"
@@ -8661,7 +8684,7 @@ extension ArgusProtocol {
       case updatedAt = "updatedAt"
     }
 
-    public init(id: String, identifier: String, title: String, description: String, url: String, branchName: String, state: LinearWorkflowState, priority: Double, estimate: Double? = nil, estimateType: String? = nil, teamId: String, teamKey: String, teamName: String, assignee: String? = nil, assigneeAvatarUrl: String? = nil, creator: String? = nil, dueDate: String? = nil, labels: [String], project: LinearIssueProject? = nil, cycle: LinearIssueCycle? = nil, parent: LinearIssueParent? = nil, pullRequestCount: Double, createdAt: Double, updatedAt: Double) {
+    public init(id: String, identifier: String, title: String, description: String, url: String, branchName: String, state: LinearWorkflowState, priority: Double, estimate: Double? = nil, estimateType: String? = nil, labelColors: [LinearIssueLabelColorsItem]? = nil, teamId: String, teamKey: String, teamName: String, assignee: String? = nil, assigneeAvatarUrl: String? = nil, creator: String? = nil, dueDate: String? = nil, labels: [String], project: LinearIssueProject? = nil, cycle: LinearIssueCycle? = nil, parent: LinearIssueParent? = nil, pullRequestCount: Double, createdAt: Double, updatedAt: Double) {
       self.id = id
       self.identifier = identifier
       self.title = title
@@ -8672,6 +8695,7 @@ extension ArgusProtocol {
       self.priority = priority
       self.estimate = estimate
       self.estimateType = estimateType
+      self.labelColors = labelColors
       self.teamId = teamId
       self.teamKey = teamKey
       self.teamName = teamName
@@ -8700,6 +8724,7 @@ extension ArgusProtocol {
       try c.encode(priority, forKey: .priority)
       try c.encode(estimate, forKey: .estimate)
       try c.encodeIfPresent(estimateType, forKey: .estimateType)
+      try c.encodeIfPresent(labelColors, forKey: .labelColors)
       try c.encode(teamId, forKey: .teamId)
       try c.encode(teamKey, forKey: .teamKey)
       try c.encode(teamName, forKey: .teamName)
@@ -8743,6 +8768,27 @@ extension ArgusProtocol {
       try c.encode(context, forKey: .context)
       try c.encode(images, forKey: .images)
       try c.encode(designUrls, forKey: .designUrls)
+    }
+  }
+
+  public struct LinearIssueDetailLabelColorsItem: Codable, Sendable {
+    public var name: String
+    public var color: String
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case color = "color"
+    }
+
+    public init(name: String, color: String) {
+      self.name = name
+      self.color = color
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(color, forKey: .color)
     }
   }
 
@@ -8913,27 +8959,6 @@ extension ArgusProtocol {
     }
   }
 
-  public struct LinearIssueDetailLabelColorsItem: Codable, Sendable {
-    public var name: String
-    public var color: String
-
-    enum CodingKeys: String, CodingKey {
-      case name = "name"
-      case color = "color"
-    }
-
-    public init(name: String, color: String) {
-      self.name = name
-      self.color = color
-    }
-
-    public func encode(to encoder: Encoder) throws {
-      var c = encoder.container(keyedBy: CodingKeys.self)
-      try c.encode(name, forKey: .name)
-      try c.encode(color, forKey: .color)
-    }
-  }
-
   public struct LinearIssueDetailChildrenItemState: Codable, Sendable {
     public var name: String
     public var type: String
@@ -8991,6 +9016,7 @@ extension ArgusProtocol {
     public var priority: Double
     public var estimate: Double?
     public var estimateType: String?
+    public var labelColors: [LinearIssueDetailLabelColorsItem]?
     public var teamId: String
     public var teamKey: String
     public var teamName: String
@@ -9010,7 +9036,6 @@ extension ArgusProtocol {
     public var subscribers: [LinearIssueDetailSubscribersItem]?
     public var relations: [LinearIssueDetailRelationsItem]?
     public var statusHistory: [LinearIssueDetailStatusHistoryItem]?
-    public var labelColors: [LinearIssueDetailLabelColorsItem]?
     public var attachments: [LinearAttachment]
     public var children: [LinearIssueDetailChildrenItem]
 
@@ -9025,6 +9050,7 @@ extension ArgusProtocol {
       case priority = "priority"
       case estimate = "estimate"
       case estimateType = "estimateType"
+      case labelColors = "labelColors"
       case teamId = "teamId"
       case teamKey = "teamKey"
       case teamName = "teamName"
@@ -9044,12 +9070,11 @@ extension ArgusProtocol {
       case subscribers = "subscribers"
       case relations = "relations"
       case statusHistory = "statusHistory"
-      case labelColors = "labelColors"
       case attachments = "attachments"
       case children = "children"
     }
 
-    public init(id: String, identifier: String, title: String, description: String, url: String, branchName: String, state: LinearWorkflowState, priority: Double, estimate: Double? = nil, estimateType: String? = nil, teamId: String, teamKey: String, teamName: String, assignee: String? = nil, assigneeAvatarUrl: String? = nil, creator: String? = nil, dueDate: String? = nil, labels: [String], project: LinearIssueDetailProject? = nil, cycle: LinearIssueDetailCycle? = nil, parent: LinearIssueDetailParent? = nil, pullRequestCount: Double, createdAt: Double, updatedAt: Double, comments: [LinearComment], history: [LinearHistoryEvent]? = nil, subscribers: [LinearIssueDetailSubscribersItem]? = nil, relations: [LinearIssueDetailRelationsItem]? = nil, statusHistory: [LinearIssueDetailStatusHistoryItem]? = nil, labelColors: [LinearIssueDetailLabelColorsItem]? = nil, attachments: [LinearAttachment], children: [LinearIssueDetailChildrenItem]) {
+    public init(id: String, identifier: String, title: String, description: String, url: String, branchName: String, state: LinearWorkflowState, priority: Double, estimate: Double? = nil, estimateType: String? = nil, labelColors: [LinearIssueDetailLabelColorsItem]? = nil, teamId: String, teamKey: String, teamName: String, assignee: String? = nil, assigneeAvatarUrl: String? = nil, creator: String? = nil, dueDate: String? = nil, labels: [String], project: LinearIssueDetailProject? = nil, cycle: LinearIssueDetailCycle? = nil, parent: LinearIssueDetailParent? = nil, pullRequestCount: Double, createdAt: Double, updatedAt: Double, comments: [LinearComment], history: [LinearHistoryEvent]? = nil, subscribers: [LinearIssueDetailSubscribersItem]? = nil, relations: [LinearIssueDetailRelationsItem]? = nil, statusHistory: [LinearIssueDetailStatusHistoryItem]? = nil, attachments: [LinearAttachment], children: [LinearIssueDetailChildrenItem]) {
       self.id = id
       self.identifier = identifier
       self.title = title
@@ -9060,6 +9085,7 @@ extension ArgusProtocol {
       self.priority = priority
       self.estimate = estimate
       self.estimateType = estimateType
+      self.labelColors = labelColors
       self.teamId = teamId
       self.teamKey = teamKey
       self.teamName = teamName
@@ -9079,7 +9105,6 @@ extension ArgusProtocol {
       self.subscribers = subscribers
       self.relations = relations
       self.statusHistory = statusHistory
-      self.labelColors = labelColors
       self.attachments = attachments
       self.children = children
     }
@@ -9096,6 +9121,7 @@ extension ArgusProtocol {
       try c.encode(priority, forKey: .priority)
       try c.encode(estimate, forKey: .estimate)
       try c.encodeIfPresent(estimateType, forKey: .estimateType)
+      try c.encodeIfPresent(labelColors, forKey: .labelColors)
       try c.encode(teamId, forKey: .teamId)
       try c.encode(teamKey, forKey: .teamKey)
       try c.encode(teamName, forKey: .teamName)
@@ -9115,7 +9141,6 @@ extension ArgusProtocol {
       try c.encodeIfPresent(subscribers, forKey: .subscribers)
       try c.encodeIfPresent(relations, forKey: .relations)
       try c.encodeIfPresent(statusHistory, forKey: .statusHistory)
-      try c.encodeIfPresent(labelColors, forKey: .labelColors)
       try c.encode(attachments, forKey: .attachments)
       try c.encode(children, forKey: .children)
     }
@@ -9167,19 +9192,22 @@ extension ArgusProtocol {
     public var name: String
     public var type: String
     public var position: Double
+    public var color: String?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
       case name = "name"
       case type = "type"
       case position = "position"
+      case color = "color"
     }
 
-    public init(id: String, name: String, type: String, position: Double) {
+    public init(id: String, name: String, type: String, position: Double, color: String? = nil) {
       self.id = id
       self.name = name
       self.type = type
       self.position = position
+      self.color = color
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -9188,6 +9216,7 @@ extension ArgusProtocol {
       try c.encode(name, forKey: .name)
       try c.encode(type, forKey: .type)
       try c.encode(position, forKey: .position)
+      try c.encodeIfPresent(color, forKey: .color)
     }
   }
 

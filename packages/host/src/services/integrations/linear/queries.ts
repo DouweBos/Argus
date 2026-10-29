@@ -14,12 +14,12 @@ import { historyEvents } from "./history";
 
 const ISSUE_FIELDS = `
   id identifier title description url branchName priority estimate createdAt updatedAt
-  state { id name type position }
+  state { id name type position color }
   team { id key name issueEstimationType }
   assignee { displayName avatarUrl }
   creator { displayName }
   dueDate
-  labels { nodes { name } }
+  labels { nodes { name color } }
   project { id name }
   cycle { id number name isActive }
   parent { identifier title }
@@ -100,7 +100,7 @@ export const START_STATE = `query ArgusStartState($id: String!) {
 }`;
 
 export const TEAM_STATES = `query ArgusTeamStates($teamId: String!) {
-  team(id: $teamId) { states(first: 50) { nodes { id name type position } } }
+  team(id: $teamId) { states(first: 50) { nodes { id name type position color } } }
 }`;
 
 export const UPDATE_ISSUE = `mutation ArgusUpdateIssue($id: String!, $input: IssueUpdateInput!) {
@@ -153,7 +153,7 @@ export interface RawIssue {
   assignee?: { displayName: string; avatarUrl?: string | null } | null;
   creator?: { displayName: string } | null;
   dueDate?: string | null;
-  labels: { nodes: { name: string }[] };
+  labels: { nodes: { name: string; color?: string | null }[] };
   project?: { id: string; name: string } | null;
   cycle?: {
     id: string;
@@ -249,6 +249,7 @@ export function toLinearIssue(raw: RawIssue | RawIssueDetail): LinearIssue {
       name: raw.state.name,
       type: raw.state.type,
       position: raw.state.position,
+      color: raw.state.color ?? null,
     },
     priority: raw.priority,
     estimate: raw.estimate ?? null,
@@ -261,6 +262,10 @@ export function toLinearIssue(raw: RawIssue | RawIssueDetail): LinearIssue {
     creator: raw.creator?.displayName ?? null,
     dueDate: raw.dueDate ?? null,
     labels: raw.labels.nodes.map((l) => l.name),
+    labelColors: raw.labels.nodes.map((l) => ({
+      name: l.name,
+      color: l.color ?? "#888888",
+    })),
     project: raw.project
       ? { id: raw.project.id, name: raw.project.name }
       : null,
@@ -347,7 +352,7 @@ export function toLinearIssueDetail(raw: RawIssueDetail): LinearIssueDetail {
   return {
     ...toLinearIssue({
       ...raw,
-      labels: { nodes: raw.labels.nodes.map((l) => ({ name: l.name })) },
+      labels: raw.labels,
       attachments: { nodes: raw.attachments.nodes },
     }),
     comments: raw.comments.nodes
@@ -390,9 +395,5 @@ export function toLinearIssueDetail(raw: RawIssueDetail): LinearIssueDetail {
       })),
     ],
     statusHistory: statusHistory(raw),
-    labelColors: raw.labels.nodes.map((l) => ({
-      name: l.name,
-      color: l.color ?? "#888888",
-    })),
   };
 }
