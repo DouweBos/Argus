@@ -47,7 +47,8 @@ export interface IssueActivityProps {
 const FOLD_AT = 4;
 
 type Row =
-  { kind: "fold"; id: string; events: ActivityEvent[] } | { kind: "item"; item: ActivityItem };
+  | { kind: "fold"; id: string; events: ActivityEvent[] }
+  | { kind: "item"; item: ActivityItem };
 
 /** Long runs of events keep their first and last line and fold the rest. */
 function fold(items: ActivityItem[]): Row[] {
