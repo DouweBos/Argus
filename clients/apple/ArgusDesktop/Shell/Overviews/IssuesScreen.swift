@@ -200,6 +200,8 @@ private struct IssuePage: View {
           onOpenDesign: { desktop.navigate(.design(url: $0)) })
       }
     }
+    // Fill the window from the top, so the bar doesn't float mid-screen while loading.
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .task(id: ref) {
       if model == nil { model = LinearIssueDetailModel(ref: ref, host: store, onChange: onChange) }
     }

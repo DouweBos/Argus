@@ -36,9 +36,10 @@ public struct DesignViewerView: View {
       } else if let error = model.loadError {
         EmptyState(icon: Icon.warning, title: "Couldn't open the design", body: error, selectable: true)
       } else {
-        Loading(label: "Asking Figma…")
+        Loading(label: "Asking Figma…").padding(.top, 48)
       }
     }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .background(theme.bg)
     .task { if model.details == nil, model.loadError == nil { await model.load() } }
     // The viewer's own Figma link goes to Figma, whatever opened the viewer.

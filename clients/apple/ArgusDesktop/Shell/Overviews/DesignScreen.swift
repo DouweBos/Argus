@@ -37,7 +37,7 @@ private struct DesignScreenContent: View {
       compareHint: isLocal
         ? "Pick a running simulator or emulator for this session in the runtime panel."
         : "Compare works against this Mac's simulators.")
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
       .navigationTitle(model.details?.frame.name ?? "Design")
       .navigationSubtitle(model.details?.file.name ?? "")
       .toolbar {
