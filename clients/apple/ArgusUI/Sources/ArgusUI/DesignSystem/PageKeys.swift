@@ -49,7 +49,9 @@
       }
 
       private func handle(_ event: NSEvent) -> Bool {
-        guard let perform, let window = view?.window, event.window === window, window.isKeyWindow,
+        guard let perform, let window = view?.window, event.window === window,
+          // An inactive app only gets synthetic keys (UI automation), which AppKit hands the main window.
+          window.isKeyWindow || !NSApp.isActive,
           !(window.firstResponder is NSText),
           event.modifierFlags.intersection([.command, .control, .option]).isEmpty,
           let typed = event.charactersIgnoringModifiers?.lowercased().first

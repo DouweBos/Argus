@@ -124,6 +124,7 @@
     private var hosting: NSHostingView<AnyView>?
     private var root = AnyView(EmptyView())
     private var dismissedAt = Date.distantPast
+    private var keyMonitor: Any?
 
     var isOpen: Bool { panel != nil }
     var justDismissed: Bool { Date().timeIntervalSince(dismissedAt) < 0.3 }
@@ -165,13 +166,27 @@
       self.hosting = hosting
       layout()
       window.addChildWindow(panel, ordered: .above)
-      if interactive { panel.makeKeyAndOrderFront(nil) } else { panel.orderFront(nil) }
+      if interactive {
+        panel.makeKeyAndOrderFront(nil)
+        // Synthetic keys to an inactive app land on the main window; the open menu gets them first.
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+          let handled = MainActor.assumeIsolated {
+            guard let self, !NSApp.isActive, event.window !== self.panel else { return false }
+            return self.handle(event)
+          }
+          return handled ? nil : event
+        }
+      } else {
+        panel.orderFront(nil)
+      }
     }
 
     func dismiss(restoreFocus: Bool, notify: Bool) {
       guard let panel else { return }
       self.panel = nil
       hosting = nil
+      if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+      keyMonitor = nil
       panel.onResign = nil
       let parent = panel.parent
       parent?.removeChildWindow(panel)
