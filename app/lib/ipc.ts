@@ -1805,7 +1805,9 @@ export const updateLinearIssue = (
 export const commentOnLinearIssue = (
   issueId: string,
   body: string,
-): Promise<void> => invoke("linear_comment_issue", { issueId, body });
+  parentId?: string | null,
+): Promise<void> =>
+  invoke("linear_comment_issue", { issueId, body, parentId });
 
 export const setSessionDesignRefs = (
   sessionId: string,

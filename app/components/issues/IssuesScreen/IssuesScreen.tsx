@@ -9,6 +9,7 @@ import {
   Select,
   Spinner,
 } from "@argus/peacock";
+import { issueOrder } from "../../../lib/issueActivity";
 import { applyFilters } from "../../../lib/issueFilters";
 import { useCurrentRoute } from "../../../lib/routeHooks";
 import { appNavigate } from "../../../lib/router";
@@ -24,7 +25,7 @@ import {
 import { useSessionProjects } from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
 import { openStartDraft } from "../../../stores/startDraftStore";
-import { IssueDetailDialog } from "../IssueDetail/IssueDetailDialog";
+import { IssueDetailPage } from "../IssueDetail/IssueDetailPage";
 import { IssueFilterBar } from "./IssueFilterBar";
 import { IssuesBoardView } from "./IssuesBoardView";
 import { IssuesListView } from "./IssuesListView";
@@ -35,6 +36,12 @@ const SCOPES = [
   { value: "created" as const, label: "Created" },
   { value: "subscribed" as const, label: "Subscribed" },
 ];
+
+const SCOPE_TITLES: Record<LinearIssueScope, string> = {
+  assigned: "Assigned to me",
+  created: "Created by me",
+  subscribed: "Subscribed",
+};
 
 const LAYOUTS = [
   { value: "board" as const, label: "Board" },
@@ -133,6 +140,27 @@ export function IssuesScreen() {
     );
   }
 
+  // An open issue takes the whole screen, the way Linear opens one.
+  if (issueRef && connected) {
+    return (
+      <IssueDetailPage
+        issueRef={issueRef}
+        listTitle={SCOPE_TITLES[issueScope]}
+        order={issueOrder(data ?? [])}
+        onClose={() =>
+          appNavigate({ view: "issues", issueScope, issueRef: null })
+        }
+        onOpen={(identifier) =>
+          appNavigate(
+            { view: "issues", issueScope, issueRef: identifier },
+            { replace: true },
+          )
+        }
+        onStart={start}
+      />
+    );
+  }
+
   return (
     <GridScreen>
       <GridScreen.Header
@@ -196,15 +224,6 @@ export function IssuesScreen() {
         <IssueFilterBar issues={allIssues} scope={issueScope} />
       )}
       {content}
-      {issueRef && (
-        <IssueDetailDialog
-          issueRef={issueRef}
-          onClose={() =>
-            appNavigate({ view: "issues", issueScope, issueRef: null })
-          }
-          onStart={start}
-        />
-      )}
     </GridScreen>
   );
 }
