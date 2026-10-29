@@ -99,22 +99,13 @@ private struct PlanActions: View {
     VStack(alignment: .leading, spacing: 10) {
       ThemedTextField(placeholder: "Feedback (optional)", text: $feedback, multiline: true)
 
-      HStack(spacing: 8) {
-        Btn(label: "Approve", small: true, action: onApprove)
-        // The second button changes meaning once there is something to send.
-        if trimmed.isEmpty {
-          Btn(label: "Keep planning", tone: .ghost, small: true, action: onKeepPlanning)
-        } else {
-          Btn(label: "Send feedback", tone: .secondary, small: true) { onFeedback(trimmed) }
-            .commandReturnShortcut()
+      // One row when it fits, a full-width column when it doesn't (a phone).
+      ViewThatFits(in: .horizontal) {
+        HStack(spacing: 8) {
+          buttons(hugs: true)
+          Spacer(minLength: 0)
         }
-      }
-
-      // Its own row: three buttons don't fit across a phone.
-      if onApproveInNewSession != nil {
-        Btn(label: "Approve in new session", tone: .secondary, small: true) {
-          confirmingHandoff = true
-        }
+        VStack(spacing: 8) { buttons(hugs: false) }
       }
     }
     .alert("Implement in a new session?", isPresented: $confirmingHandoff) {
@@ -122,6 +113,22 @@ private struct PlanActions: View {
       Button("Create") { onApproveInNewSession?() }
     } message: {
       Text("Argus starts a new session on this plan. This one stays in plan mode.")
+    }
+  }
+
+  @ViewBuilder private func buttons(hugs: Bool) -> some View {
+    Btn(label: "Approve", small: true, hugs: hugs, action: onApprove)
+    // The second button changes meaning once there is something to send.
+    if trimmed.isEmpty {
+      Btn(label: "Keep planning", tone: .ghost, small: true, action: onKeepPlanning)
+    } else {
+      Btn(label: "Send feedback", tone: .secondary, small: true, hugs: hugs) { onFeedback(trimmed) }
+        .commandReturnShortcut()
+    }
+    if onApproveInNewSession != nil {
+      Btn(label: "Approve in new session", tone: .secondary, small: true, hugs: hugs) {
+        confirmingHandoff = true
+      }
     }
   }
 }
