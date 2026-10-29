@@ -64,9 +64,10 @@ public struct LinearIssueDetailView: View {
       } else if let error = model.loadError {
         EmptyState(icon: Icon.warning, title: "Couldn't load the issue", body: error, selectable: true)
       } else {
-        Loading(label: "Asking Linear…")
+        Loading(label: "Asking Linear…").padding(.top, 48)
       }
     }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .onGeometryChange(for: CGFloat.self, of: \.size.width) { width = $0 }
     .task(id: model.ref) { await model.load() }
     .environment(\.openURL, OpenURLAction(handler: openLink))
