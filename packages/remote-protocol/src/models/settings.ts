@@ -54,6 +54,8 @@ export const AppSettings = z.object({
   automations_enabled: z.boolean().optional(),
   /** Suggest replies after a turn ends, from the agent's last message. Defaults to true. */
   follow_up_suggestions: z.boolean().optional(),
+  /** Warm agents kept ready for the sessions clients show, 0 for none. Defaults to 1. */
+  warm_agents: z.number().int().min(0).max(2).optional(),
   /** Screen Argus opens on: the project picker, or the inbox. Defaults to home. */
   launch_route: z.enum(["home", "inbox"]).optional(),
   /** Move a Linear issue to its team's started state when a session starts from it. Defaults to true. */

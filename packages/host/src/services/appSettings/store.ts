@@ -63,6 +63,12 @@ export interface AppSettings {
    */
   follow_up_suggestions?: boolean;
   /**
+   * How many warm agents the host keeps for the sessions clients show, so a
+   * start there skips the CLI's spawn. Each is a live `claude` plus its MCP
+   * servers. 0 turns warming off; defaults to 1.
+   */
+  warm_agents?: number;
+  /**
    * Screen Argus opens on. `home` is the project picker; `inbox` is the
    * briefing. Defaults to `home` — the inbox only earns the launch slot once
    * automations are actually producing proposals.

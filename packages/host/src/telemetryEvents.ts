@@ -122,7 +122,20 @@ export interface EventMap {
     has_resume_id: boolean;
     permission_mode: string;
     session_kind: SessionKind;
+    /** Took the session's warm spare instead of spawning. */
+    warm: boolean;
   };
+  spare_discarded: {
+    reason:
+      | "account"
+      | "config"
+      | "evicted"
+      | "exited"
+      | "idle"
+      | "runner"
+      | "session";
+  };
+  spare_failed: undefined;
   agent_account_switched: {
     had_history: boolean;
     queued: boolean;

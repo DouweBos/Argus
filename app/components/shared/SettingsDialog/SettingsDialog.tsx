@@ -103,6 +103,7 @@ import { IntegrationsSection } from "./IntegrationsSection";
 import { RemoteAccessSection } from "./RemoteAccessSection";
 import styles from "./SettingsDialog.module.css";
 import { ToolsSection } from "./ToolsSection";
+import { WarmAgentsSetting } from "./WarmAgentsSetting";
 import { WorktreesSection } from "./WorktreesSection";
 
 const MODES: PermissionMode[] = ["auto", "ask", "plan", "review", "trusted"];
@@ -483,6 +484,7 @@ function PermissionsSection() {
           </div>
         </SettingsScreenField>
         <FollowUpSuggestionsToggle />
+        <WarmAgentsSetting />
         <SettingsScreenField
           label="Start new agents in"
           caption="What a prompt on a project's home runs in. You can switch it per prompt."

@@ -49,6 +49,25 @@ struct AgentsSettingsTab: View {
         }
       }
 
+      Section("Warm agents") {
+        if let settings = host.settings {
+          VStack(alignment: .leading, spacing: 4) {
+            Picker("Warm agents", selection: warmAgents(settings)) {
+              Text("Off").tag(0)
+              Text("1").tag(1)
+              Text("2").tag(2)
+            }
+            .pickerStyle(.segmented)
+            .fixedSize()
+            SettingsCaption(
+              "Agents kept started for the sessions you're looking at, so a new one is ready at once. "
+                + "Each is a running Claude Code process with its MCP servers.")
+          }
+        } else {
+          SettingsLoading()
+        }
+      }
+
       ImportCliChatsSection()
 
       SettingsGroup("Automations") {
@@ -118,6 +137,18 @@ struct AgentsSettingsTab: View {
         Task {
           await host.save(.followUpSuggestions, ["follow_up_suggestions": .bool(next)]) {
             $0.followUpSuggestions = next
+          }
+        }
+      })
+  }
+
+  private func warmAgents(_ settings: ArgusProtocol.AppSettings) -> Binding<Int> {
+    Binding(
+      get: { settings.warmAgents ?? 1 },
+      set: { next in
+        Task {
+          await host.save(.warmAgents, ["warm_agents": .number(Double(next))]) {
+            $0.warmAgents = next
           }
         }
       })

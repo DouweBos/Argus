@@ -9,15 +9,18 @@ import type { NewSpare } from "./spares";
 import { addHostEventSink } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../state";
+import { loadAppSettings } from "../appSettings/store";
 import {
   getClaudeAccount,
   resolveAccountForSession,
 } from "../claudeAuth/accounts";
+import { PREFS_CHANGED, type PrefsChange } from "../prefsChanged";
 import {
   currentConnectionId,
   onConnectionClose,
 } from "../remote/connectionScope";
 import { sessionRunnerId } from "../session/models";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import {
   clearSpares,
   discardSpare,
@@ -47,10 +50,18 @@ const viewers = new Map<string, Viewer>();
 const lastViewedAt = new Map<string, number>();
 /** Sessions whose last spawn failed; retried once a viewer arrives anew. */
 const failed = new Set<string>();
-let options: Omit<PolicyOptions, "spawn"> & Partial<PolicyOptions> = {
-  maxSpares: () => 1,
+/** The Warm agents setting: 0 – 2, 1 when unset. */
+function warmAgentsSetting(): number {
+  const value = loadAppSettings().warm_agents;
+
+  return typeof value === "number" ? Math.min(2, Math.max(0, value)) : 1;
+}
+
+const DEFAULTS: Omit<PolicyOptions, "spawn"> = {
+  maxSpares: warmAgentsSetting,
   spareIdleMs: DEFAULT_SPARE_IDLE_MS,
 };
+let options: Omit<PolicyOptions, "spawn"> & Partial<PolicyOptions> = DEFAULTS;
 let running = false;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
 let teardown: (() => void)[] = [];
@@ -256,6 +267,11 @@ function onHostEvent(channel: string, payload: unknown): void {
     case "session:updated":
       reconcile();
       break;
+    case PREFS_CHANGED:
+      if ((payload as PrefsChange | null)?.settings?.includes("warm_agents")) {
+        reconcile();
+      }
+      break;
   }
 }
 
@@ -265,11 +281,16 @@ export function startWarmPolicy(
   if (running) {
     return;
   }
-  options = { ...options, ...overrides };
+  options = { ...DEFAULTS, ...overrides };
   running = true;
   teardown = [
     addHostEventSink((channel, args) => onHostEvent(channel, args[0])),
     onSpareEvent((event) => {
+      if (event.type === "discarded") {
+        telemetryCapture("spare_discarded", { reason: event.reason });
+      } else if (event.type === "failed") {
+        telemetryCapture("spare_failed");
+      }
       // No retry until the view changes: a CLI that won't start keeps failing.
       if (
         event.type === "failed" ||

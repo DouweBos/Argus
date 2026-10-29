@@ -19,7 +19,8 @@ vi.mock("../claudeAuth/accounts", async (importOriginal) => ({
   resolveAccountForSession: () => "personal",
   envForAccount: () => ({ ...process.env }),
 }));
-vi.mock("../telemetry/telemetry", () => ({ capture: vi.fn() }));
+const capture = vi.hoisted(() => vi.fn());
+vi.mock("../telemetry/telemetry", () => ({ capture }));
 
 const { appState } = await import("../../state");
 const { registerRunner } = await import("../llm/registry");
@@ -127,6 +128,10 @@ describe("starting an agent in a session with a warm spare", () => {
     expect(agent.model).toBe("claude-opus-5-5");
     expect(agent.permissionMode).toBe("plan");
     expect(agent.handle.setModel).toHaveBeenCalledWith("claude-opus-5-5");
+    expect(capture).toHaveBeenCalledWith(
+      "agent_started",
+      expect.objectContaining({ warm: true, permission_mode: "plan" }),
+    );
   });
 
   it("isn't listed while it waits", async () => {

@@ -3,7 +3,8 @@ import type { NewSpare, SpareEvent } from "./spares";
 import type { Session } from "../session/models";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const h = vi.hoisted(() => ({ rateLimited: false }));
+const h = vi.hoisted(() => ({ rateLimited: false, capture: vi.fn() }));
+vi.mock("../telemetry/telemetry", () => ({ capture: h.capture }));
 vi.mock("../claudeAuth/accounts", () => ({
   resolveAccountForSession: () => "personal",
   getClaudeAccount: () => ({ id: "personal", rate_limited: h.rateLimited }),
@@ -17,6 +18,7 @@ const { getSpare, hasSpare, onSpareEvent, takeSpare } =
   await import("./spares");
 const { setViewingSession, startWarmPolicy, stopWarmPolicy } =
   await import("./warmPolicy");
+const { saveAppSettings } = await import("../appSettings/store");
 
 const spawn =
   vi.fn<(sessionId: string, runnerId?: string) => Promise<NewSpare>>();
@@ -240,5 +242,40 @@ describe("warm policy", () => {
       reason: "config",
     });
     expect(spawn).toHaveBeenCalledTimes(2);
+  });
+
+  it("counts every spare it drops, and why", async () => {
+    view("c1", "s1");
+    await settle();
+    appState.sessions.delete("s1");
+    emitHostEvent("session:deleted", "s1");
+
+    expect(h.capture).toHaveBeenCalledWith("spare_discarded", {
+      reason: "session",
+    });
+  });
+
+  it("follows the Warm agents setting", async () => {
+    stopWarmPolicy();
+    startWarmPolicy({ spawn, spareIdleMs: 30 });
+    saveAppSettings({ warm_agents: 0 });
+    view("c1", "s1");
+    await settle();
+
+    expect(spawn).not.toHaveBeenCalled();
+
+    saveAppSettings({ warm_agents: 2 });
+    view("c2", "s2");
+    await settle();
+
+    expect(hasSpare("s1")).toBe(true);
+    expect(hasSpare("s2")).toBe(true);
+
+    saveAppSettings({ warm_agents: 1 });
+    await settle();
+
+    expect(hasSpare("s1")).toBe(false);
+    expect(hasSpare("s2")).toBe(true);
+    saveAppSettings({ warm_agents: undefined });
   });
 });

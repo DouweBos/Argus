@@ -348,6 +348,7 @@ export async function startAgent(
       has_parent: Boolean(parentAgentId),
       permission_mode: permissionMode ?? "default",
       session_kind: argusSession.kind,
+      warm: false,
     });
   }
 
@@ -419,6 +420,7 @@ function announceStart(
     has_parent: Boolean(request.parentAgentId),
     permission_mode: request.permissionMode ?? "default",
     session_kind: argusSession.kind,
+    warm: true,
   });
   emitAgentStatus(agent.agentId, agent.status);
   info(
