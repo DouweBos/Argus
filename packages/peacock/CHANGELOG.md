@@ -1,5 +1,31 @@
 # @argus/peacock
 
+## 0.26.0
+
+### Minor Changes
+
+- eb99078: Sign in at houwert.dev/argus/app to use Argus from any browser: approve it once from your iPhone or Mac, then open any computer on your account through its tunnel.
+- 8639e2d: Add the projects you've used the Claude Code CLI in all at once with Import from Claude Code, next to Add repository. Busy, recently used ones are picked for you, and their chats come along into history.
+- 186cb29: Pick a colour theme — Amber, Grove, Ocean, Ember, Iris or Rose — in Settings → Appearance. Each tints the accent and backgrounds in both light and dark, on the desktop, the Mac app and the phone.
+- b5c699c: The issue board uses Linear's own status and label colors, opens on every status that has open issues, and lists all of your teams' statuses under hidden columns.
+- 032a7c6: Change an issue's status or priority from a menu you can search and pick from by number (`S` / `P` open it). Hovering shows how long the issue spent in each status.
+- 58be04d: Add Muted, a black-and-white colour theme that is now the default. Anyone who already picked a colour theme keeps it.
+- dcb1039: Add `ZoomPanImage` and `DesignLayerList`, and a heatmap mode for `ImageDiff`.
+- e0d008d: Add `FigmaIcon`, and `beforeLabel` / `afterLabel` on `ImageDiff` for comparisons that aren't before and after.
+- a3fa22c: Add `FilterMenu` and `FilterChip` for Linear-style filter bars.
+- f8b0a05: Add `InlineVideo`, and a `renderEmbed` hook on `Markdown` to swap links and images for richer embeds.
+- 093eb21: Add `IssueActivity` (an activity timeline with folded event runs and comment threads) and `LabelChip`.
+- 6118356: Add `IssueBoard`, `IssueCard`, `IssueStatusIcon` and `PriorityIcon` for tracker boards.
+- 2a80a61: Add `IssuePicker`, a searchable multi-select list of tracker issues anchored to a trigger.
+- b19fd9d: `Markdown` takes an `onLinkClick` to handle links in the app, and a `Chip`'s remove button no longer also clicks the chip.
+- a18f09b: The Usage screen gains Cost and Tokens tabs that chart your Claude Code usage over the past day, week, month or quarter, with an estimated API cost, a split by token type and a per-model breakdown.
+- 6c900e0: A new Usage screen shows how much of each Claude plan limit is left — the 5-hour session, weekly caps and monthly spend — with reset countdowns and whether you are ahead of pace.
+
+### Patch Changes
+
+- ade8944: Sessions with no line changes no longer show a "+0 −0" diff stat.
+- c7a4988: Switches use amber when they're on in the Muted colour theme.
+
 ## 0.25.1
 
 ### Patch Changes
