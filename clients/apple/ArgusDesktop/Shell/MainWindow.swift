@@ -76,10 +76,7 @@ struct MainWindow: View {
     .sheet(item: hostFolderRequest) { HostFolderPicker(request: $0) }
     .environment(imageViewer)
     .environment(\.codeOpener, model)
-    .toolbar {
-      HistoryButtons()
-      AttachedHostBadge()
-    }
+    .toolbar { HistoryButtons() }
     .themed()
     // A project added while we're up arrives as `projects.changed` alone.
     .task(id: store.projects.map(\.repoRoot)) {

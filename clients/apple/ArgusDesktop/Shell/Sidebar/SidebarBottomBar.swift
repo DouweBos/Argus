@@ -103,6 +103,7 @@ struct SidebarBottomBar: View {
         .help(destination.help)
       }
       Spacer(minLength: 0)
+      AttachedHostButton()
       notifications
     }
     .padding(.horizontal, 10)

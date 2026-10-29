@@ -304,8 +304,8 @@ worktrees and agents. Whichever starts first holds the lock
 Open Argus for Mac while the Electron app is running and it **opens as a
 second window on the Electron app's host** instead of starting its own:
 
-- A badge in the toolbar says **Attached to Argus (Electron)**. Both windows
-  show the same projects, sessions and agents, live. A message sent from
+- A link icon at the foot of the sidebar says it's **Attached to Argus
+  (Electron)**. Both windows show the same projects, sessions and agents, live. A message sent from
   either lands once, and a permission prompt answered in one disappears from
   the other.
 - What's on screen stays per window: the agent you have open, where you've
@@ -319,7 +319,7 @@ second window on the Electron app's host** instead of starting its own:
   stops them, and Argus for Mac says so; it reconnects by itself when the
   Electron app opens again, or **Start Argus Here** runs its own host instead.
 - To make Argus for Mac the one running the host, pick **Quit Argus (Electron)
-  and Take Over…** from the badge. It asks first, since quitting the Electron
+  and Take Over…** from the link icon. It asks first, since quitting the Electron
   app stops its agents.
 
 Open the Electron app while Argus for Mac is running and it offers to quit
