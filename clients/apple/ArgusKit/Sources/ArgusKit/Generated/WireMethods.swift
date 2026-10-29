@@ -3843,21 +3843,25 @@ extension ArgusProtocol {
     public struct LinearCommentParams: Codable, Sendable {
       public var issueId: String
       public var body: String
+      public var parentId: String?
 
       enum CodingKeys: String, CodingKey {
         case issueId = "issue_id"
         case body = "body"
+        case parentId = "parent_id"
       }
 
-      public init(issueId: String, body: String) {
+      public init(issueId: String, body: String, parentId: String? = nil) {
         self.issueId = issueId
         self.body = body
+        self.parentId = parentId
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(issueId, forKey: .issueId)
         try c.encode(body, forKey: .body)
+        try c.encodeIfPresent(parentId, forKey: .parentId)
       }
     }
 

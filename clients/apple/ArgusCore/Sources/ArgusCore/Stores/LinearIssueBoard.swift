@@ -33,7 +33,7 @@ extension ArgusProtocol.LinearIssue {
     self.init(
       id: detail.id, identifier: detail.identifier, title: detail.title, description: detail.description,
       url: detail.url, branchName: detail.branchName, state: detail.state, priority: detail.priority,
-      estimate: detail.estimate, teamId: detail.teamId, teamKey: detail.teamKey, teamName: detail.teamName,
+      estimate: detail.estimate, estimateType: detail.estimateType, teamId: detail.teamId, teamKey: detail.teamKey, teamName: detail.teamName,
       assignee: detail.assignee, assigneeAvatarUrl: detail.assigneeAvatarUrl, labels: detail.labels,
       project: detail.project.map { .init(id: $0.id, name: $0.name) },
       cycle: detail.cycle.map { .init(id: $0.id, number: $0.number, name: $0.name, isActive: $0.isActive) },
@@ -146,10 +146,26 @@ public enum LinearIssueBoard {
     issue.cycle.map { cycleLabel(number: $0.number, name: $0.name) }
   }
 
-  /// "3 pt", without a trailing ".0".
-  public static func estimateLabel(_ estimate: Double) -> String {
+  /// Linear stores t-shirt sizes as these numbers — `estimateName` in `linearLabels.ts`.
+  static let tShirt: [Double: String] = [
+    0: "None", 1: "XS", 2: "S", 3: "M", 5: "L", 8: "XL", 13: "XXL", 21: "XXXL",
+  ]
+
+  /// `M` on a t-shirt team, `3 pt` elsewhere, without a trailing ".0".
+  public static func estimateLabel(_ estimate: Double, type: String? = nil) -> String {
+    if type == "tShirt", let size = tShirt[estimate] { return size }
     let points = estimate.rounded() == estimate ? String(Int(estimate)) : String(estimate)
     return "\(points) pt"
+  }
+
+  /// The order the list reads in: a status at a time, most urgent first.
+  public static func listOrder(_ issues: [Issue]) -> [Issue] {
+    columns(issues).flatMap { $0.issues.sorted(by: byPriority) }
+  }
+
+  /// The order the board reads in: lane by lane, left to right across `columns`.
+  public static func boardOrder(_ columns: [Column]) -> [Issue] {
+    lanes(columns.flatMap(\.issues)).flatMap { lane in columns.flatMap { cell($0, lane: lane) } }
   }
 
   public static func date(_ epochMs: Double) -> Date {

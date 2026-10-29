@@ -113,6 +113,8 @@ public final class LinearIssueDetailModel {
   public var actionError: String?
   public private(set) var updating = false
   public private(set) var posting = false
+  /// The thread a reply is being posted in; nil for a new comment.
+  public private(set) var postingIn: String?
 
   private unowned let host: HostStore
   private let onChange: (ArgusProtocol.LinearIssue) -> Void
@@ -152,14 +154,15 @@ public final class LinearIssueDetailModel {
     await update(stateId: nil, priority: priority, revert: current)
   }
 
-  /// True once posted, so the composer can clear.
-  public func comment(_ body: String) async -> Bool {
+  /// True once posted, so the composer can clear. `parentId` replies in that thread.
+  public func comment(_ body: String, parentId: String? = nil) async -> Bool {
     let text = body.trimmingCharacters(in: .whitespacesAndNewlines)
     guard let issue, !text.isEmpty else { return false }
     posting = true
-    defer { posting = false }
+    postingIn = parentId
+    defer { (posting, postingIn) = (false, nil) }
     do {
-      try await host.commentOnLinearIssue(id: issue.id, body: text)
+      try await host.commentOnLinearIssue(id: issue.id, body: text, parentId: parentId)
       actionError = nil
       await load()
       return true

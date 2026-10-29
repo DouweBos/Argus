@@ -195,6 +195,18 @@ describe("linear over the wire", () => {
     expect(service.commentOnLinearIssueById).toHaveBeenCalledWith(
       "iss-1",
       "On it",
+      null,
+    );
+
+    await dispatch(
+      "linear.comment",
+      { issue_id: "iss-1", body: "Agreed", parent_id: "c-1" },
+      ctx(["monitor", "control"]),
+    );
+    expect(service.commentOnLinearIssueById).toHaveBeenLastCalledWith(
+      "iss-1",
+      "Agreed",
+      "c-1",
     );
 
     service.commentOnLinearIssueById.mockRejectedValueOnce(

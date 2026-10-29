@@ -1,9 +1,9 @@
 import ArgusUI
 import SwiftUI
 
-/// One Linear issue, as the desktop's issue detail: description, sub-issues,
-/// links, comments and properties. With `control`, change its status and
-/// priority, comment, or start an agent on it.
+/// One Linear issue as Linear shows it: properties, description, sub-issues,
+/// relations, resources and the activity timeline. With `control`, change its
+/// status and priority, comment, reply in a thread, or start an agent on it.
 struct IssueView: View {
   @Environment(HostStore.self) private var host
   let ref: String
@@ -39,6 +39,7 @@ private struct IssueContent: View {
     LinearIssueDetailView(
       model: model, canEdit: host.hasControl, canStart: host.hasControl && !host.projects.isEmpty,
       onOpenSession: open, onStart: start,
+      onOpenIssue: { router.push(.issue(ref: $0)) },
       onOpenDesign: { url in
         Telemetry.capture(.designOpened(source: .issue))
         router.push(.design(url: url, sessionId: nil))

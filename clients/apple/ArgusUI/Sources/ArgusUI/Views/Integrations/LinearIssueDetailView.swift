@@ -2,9 +2,9 @@ import ArgusCore
 import ArgusKit
 import SwiftUI
 
-/// The whole ticket: what to do next, its properties (status and priority
-/// changeable), description, sub-issues, links and comments — the desktop's
-/// issue detail, for the Mac's inspector and the phone's issue screen.
+/// The whole ticket the way Linear shows it: title, description, sub-issues,
+/// relations, resources and one activity timeline, with its properties in a
+/// sidebar when there's room — for the Mac's issue page and the phone's issue screen.
 public struct LinearIssueDetailView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
@@ -13,41 +13,53 @@ public struct LinearIssueDetailView: View {
   let canEdit: Bool
   /// False greys out "Start agent": no project picked, or no control.
   let canStart: Bool
+  /// Where the issue sits in the caller's list; nil hides previous/next.
+  let position: LinearIssueActivity.Position?
   let onOpenSession: (RemoteSession) -> Void
   let onStart: (HostStore.LinearIssue) -> Void
+  /// Another issue by identifier: previous/next, a sub-issue or a relation.
+  let onOpenIssue: ((String) -> Void)?
   /// Figma links, in the description, comments and links, open here instead of the browser.
   let onOpenDesign: ((String) -> Void)?
+  @State private var width: CGFloat = 0
 
   public init(
     model: LinearIssueDetailModel, canEdit: Bool, canStart: Bool,
+    position: LinearIssueActivity.Position? = nil,
     onOpenSession: @escaping (RemoteSession) -> Void,
     onStart: @escaping (HostStore.LinearIssue) -> Void,
+    onOpenIssue: ((String) -> Void)? = nil,
     onOpenDesign: ((String) -> Void)? = nil
   ) {
     self.model = model
     self.canEdit = canEdit
     self.canStart = canStart
+    self.position = position
     self.onOpenSession = onOpenSession
     self.onStart = onStart
+    self.onOpenIssue = onOpenIssue
     self.onOpenDesign = onOpenDesign
   }
+
+  /// Wide enough for the properties beside the content, like Linear.
+  private var wide: Bool { width >= 820 }
 
   public var body: some View {
     Group {
       if let issue = model.issue {
         ScrollView {
-          VStack(alignment: .leading, spacing: 18) {
-            header(issue)
-            actions(issue)
-            if let error = model.actionError { Banner(text: error, tone: .danger) }
-            LinearIssueProperties(model: model, issue: issue, canEdit: canEdit)
-            description(issue)
-            if !issue.children.isEmpty { subIssues(issue) }
-            if !issue.attachments.isEmpty { links(issue) }
-            LinearIssueComments(model: model, issue: issue, canComment: canEdit)
+          if wide {
+            HStack(alignment: .top, spacing: 40) {
+              main(issue).frame(maxWidth: 760, alignment: .leading)
+              LinearIssueProperties(model: model, issue: issue, canEdit: canEdit)
+                .frame(width: 240, alignment: .leading)
+            }
+            .padding(.horizontal, 32)
+            .padding(.vertical, 20)
+            .frame(maxWidth: .infinity, alignment: .top)
+          } else {
+            main(issue).padding(theme.space + 4)
           }
-          .padding(theme.space + 4)
-          .frame(maxWidth: .infinity, alignment: .leading)
         }
       } else if let error = model.loadError {
         EmptyState(icon: Icon.warning, title: "Couldn't load the issue", body: error, selectable: true)
@@ -55,8 +67,28 @@ public struct LinearIssueDetailView: View {
         Loading(label: "Asking Linear…")
       }
     }
+    .onGeometryChange(for: CGFloat.self, of: \.size.width) { width = $0 }
     .task(id: model.ref) { await model.load() }
     .environment(\.openURL, OpenURLAction(handler: openLink))
+  }
+
+  private func main(_ issue: HostStore.LinearIssueDetail) -> some View {
+    VStack(alignment: .leading, spacing: 20) {
+      LinearIssueToolbar(issue: issue, position: position, onOpenIssue: onOpenIssue)
+      header(issue)
+      actions(issue)
+      if let error = model.actionError { Banner(text: error, tone: .danger) }
+      if !wide {
+        LinearIssueProperties(model: model, issue: issue, canEdit: canEdit)
+      }
+      description(issue)
+      if !issue.children.isEmpty { subIssues(issue) }
+      if let relations = issue.relations, !relations.isEmpty { LinearIssueRelations(relations: relations, onOpen: onOpenIssue) }
+      if !issue.attachments.isEmpty { LinearIssueResources(attachments: issue.attachments) }
+      Divider().overlay(theme.borderSubtle)
+      LinearIssueActivityView(model: model, issue: issue, canComment: canEdit)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
   }
 
   private func openLink(_ url: URL) -> OpenURLAction.Result {
@@ -68,14 +100,12 @@ public struct LinearIssueDetailView: View {
   private func header(_ issue: HostStore.LinearIssueDetail) -> some View {
     VStack(alignment: .leading, spacing: 6) {
       if let parent = issue.parent {
-        MutedText("Sub-issue of \(parent.identifier) · \(parent.title)", lineLimit: 2)
+        issueLink(parent.identifier) {
+          MutedText("Sub-issue of \(parent.identifier) · \(parent.title)", lineLimit: 2)
+        }
       }
-      Text(issue.identifier)
-        .font(.scaled(size: 12, design: .monospaced))
-        .foregroundStyle(theme.textMuted)
-        .textSelection(.enabled)
       Text(issue.title)
-        .font(.scaled(size: 18, weight: .semibold))
+        .font(.scaled(size: 22, weight: .semibold))
         .foregroundStyle(theme.text)
         .textSelection(.enabled)
     }
@@ -90,14 +120,6 @@ public struct LinearIssueDetailView: View {
         Btn(label: "Start agent", small: true, icon: Icon.play, hugs: true) { onStart(summary) }
           .disabled(!canStart)
       }
-      if let url = URL(string: issue.url) {
-        Link(destination: url) {
-          Label("Open in Linear", systemImage: Icon.openExternal)
-            .font(.scaled(size: 13, weight: .semibold))
-            .foregroundStyle(theme.textSecondary)
-        }
-        .clickable()
-      }
     }
   }
 
@@ -105,193 +127,114 @@ public struct LinearIssueDetailView: View {
     if issue.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
       MutedText("No description.")
     } else {
-      MarkdownView(text: issue.description, baseSize: 14)
+      MarkdownView(text: issue.description, baseSize: 15)
     }
   }
 
   private func subIssues(_ issue: HostStore.LinearIssueDetail) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: 6) {
       SectionHeader(title: "Sub-issues", count: issue.children.count)
       ForEach(issue.children, id: \.identifier) { child in
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-          IssueStatusGlyph(type: child.state.type, size: 12)
-          Text(child.identifier)
-            .font(.scaled(size: 12, design: .monospaced))
-            .foregroundStyle(theme.textMuted)
-          BodyText(child.title, lineLimit: 2)
+        issueLink(child.identifier) {
+          LinearIssueLine(identifier: child.identifier, title: child.title, stateType: child.state.type)
         }
-        .accessibilityElement(children: .combine)
         .accessibilityLabel("\(child.identifier), \(child.title), \(child.state.name)")
       }
     }
   }
 
-  private func links(_ issue: HostStore.LinearIssueDetail) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      SectionHeader(title: "Links", count: issue.attachments.count)
-      ForEach(issue.attachments, id: \.url) { attachment in
-        if let url = URL(string: attachment.url) {
-          Link(destination: url) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-              Image(systemName: Icon.link).foregroundStyle(theme.textMuted)
-              Text(attachment.title).foregroundStyle(theme.text).lineLimit(1)
-              if let subtitle = attachment.subtitle {
-                Text(subtitle).foregroundStyle(theme.textMuted).lineLimit(1)
-              }
-            }
-            .font(.scaled(size: 13))
-          }
-          .clickable()
-        }
-      }
+  @ViewBuilder private func issueLink(_ identifier: String, @ViewBuilder label: () -> some View) -> some View {
+    if let onOpenIssue {
+      Button { onOpenIssue(identifier) } label: { label().contentShape(Rectangle()) }
+        .buttonStyle(.argusPlain)
+    } else {
+      label()
     }
   }
 }
 
-/// Status and priority as pickers when you may change them, the rest at a glance.
-struct LinearIssueProperties: View {
+/// One issue on a line: status, identifier, title.
+struct LinearIssueLine: View {
   @Environment(\.theme) private var theme
-  let model: LinearIssueDetailModel
-  let issue: HostStore.LinearIssueDetail
-  let canEdit: Bool
+  let identifier: String
+  let title: String
+  let stateType: String
 
   var body: some View {
-    Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 14, verticalSpacing: 10) {
-      row("Status") {
-        HStack(spacing: 6) {
-          IssueStatusGlyph(type: issue.state.type)
-          if canEdit {
-            Picker("Status", selection: stateSelection) {
-              ForEach(model.stateOptions) { Text($0.name).tag($0.id) }
-            }
-            .labelsHidden()
-            .fixedSize()
-            .disabled(model.updating)
-            .clickable()
-          } else {
-            value(issue.state.name)
-          }
-        }
-      }
-      row("Priority") {
-        HStack(spacing: 6) {
-          PriorityGlyph(priority: issue.priority)
-          if canEdit {
-            Picker("Priority", selection: prioritySelection) {
-              ForEach(LinearIssueBoard.priorityOrder, id: \.self) {
-                Text(LinearIssueBoard.priorityLabel($0)).tag($0)
-              }
-            }
-            .labelsHidden()
-            .fixedSize()
-            .disabled(model.updating)
-            .clickable()
-          } else {
-            value(LinearIssueBoard.priorityLabel(Int(issue.priority)))
-          }
-        }
-      }
-      row("Assignee") {
-        if let assignee = issue.assignee {
-          HStack(spacing: 6) {
-            LinearAvatar(name: assignee, url: issue.assigneeAvatarUrl, size: 18)
-            value(assignee)
-          }
-        } else {
-          MutedText("Unassigned")
-        }
-      }
-      row("Team") { value(issue.teamName) }
-      if let project = issue.project { row("Project") { value(project.name) } }
-      if let cycle = issue.cycle {
-        row("Cycle") {
-          value(LinearIssueBoard.cycleLabel(number: cycle.number, name: cycle.name) + (cycle.isActive ? " · current" : ""))
-        }
-      }
-      if let estimate = issue.estimate { row("Estimate") { value(LinearIssueBoard.estimateLabel(estimate)) } }
-      if !issue.labels.isEmpty {
-        row("Labels") {
-          ChipFlowLayout(spacing: 4, lineSpacing: 4) { ForEach(issue.labels, id: \.self) { Badge(label: $0) } }
-        }
-      }
-      row("Branch") {
-        Text(issue.branchName)
-          .font(.scaled(size: 12, design: .monospaced))
-          .foregroundStyle(theme.text)
-          .textSelection(.enabled)
-          .lineLimit(2)
-      }
-      row("Created") { value(Self.format(issue.createdAt)) }
-      row("Updated") { value(Self.format(issue.updatedAt)) }
-    }
-  }
-
-  private var stateSelection: Binding<String> {
-    Binding(get: { issue.state.id }, set: { id in Task { await model.setState(id) } })
-  }
-
-  private var prioritySelection: Binding<Int> {
-    Binding(get: { Int(issue.priority) }, set: { p in Task { await model.setPriority(p) } })
-  }
-
-  private func row(_ label: String, @ViewBuilder content: () -> some View) -> some View {
-    GridRow {
-      Text(label)
-        .font(.scaled(size: 12))
+    HStack(alignment: .firstTextBaseline, spacing: 8) {
+      IssueStatusGlyph(type: stateType, size: 12)
+      Text(identifier)
+        .font(.scaled(size: 12, design: .monospaced))
         .foregroundStyle(theme.textMuted)
-        .gridColumnAlignment(.leading)
-      content()
+      Text(title).font(.scaled(size: 13)).foregroundStyle(theme.text).lineLimit(1)
+      Spacer(minLength: 0)
     }
-  }
-
-  private func value(_ text: String) -> some View {
-    Text(text).font(.scaled(size: 13)).foregroundStyle(theme.text).lineLimit(2)
-  }
-
-  static func format(_ epochMs: Double) -> String {
-    LinearIssueBoard.date(epochMs).formatted(.dateTime.month(.abbreviated).day().year())
+    .accessibilityElement(children: .combine)
   }
 }
 
-/// The thread, oldest first, with a box to add to it as the computer's Linear user.
-struct LinearIssueComments: View {
-  @Environment(\.theme) private var theme
-  let model: LinearIssueDetailModel
-  let issue: HostStore.LinearIssueDetail
-  let canComment: Bool
-  @State private var draft = ""
+/// Related issues, a group per kind of relation.
+struct LinearIssueRelations: View {
+  let relations: [ArgusProtocol.LinearIssueDetailRelationsItem]
+  let onOpen: ((String) -> Void)?
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 10) {
-      SectionHeader(title: "Comments", count: issue.comments.count)
-      ForEach(Array(issue.comments.enumerated()), id: \.offset) { _, comment in
-        VStack(alignment: .leading, spacing: 4) {
-          HStack(spacing: 6) {
-            Text(comment.author ?? "Someone")
-              .font(.scaled(size: 12, weight: .semibold))
-              .foregroundStyle(theme.text)
-            Text(LinearIssueProperties.format(comment.createdAt))
-              .font(.scaled(size: 12))
-              .foregroundStyle(theme.textMuted)
+    VStack(alignment: .leading, spacing: 12) {
+      ForEach(LinearIssueActivity.relationGroups(relations)) { group in
+        VStack(alignment: .leading, spacing: 6) {
+          SectionHeader(title: group.title, count: group.issues.count)
+          ForEach(group.issues, id: \.identifier) { related in
+            let line = LinearIssueLine(identifier: related.identifier, title: related.title, stateType: related.state.type)
+            if let onOpen {
+              Button { onOpen(related.identifier) } label: { line.contentShape(Rectangle()) }
+                .buttonStyle(.argusPlain)
+            } else {
+              line
+            }
           }
-          MarkdownView(text: comment.body, baseSize: 13)
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.bgSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
-      }
-      if canComment {
-        ThemedTextField(placeholder: "Leave a comment…", text: $draft, multiline: true, lines: 3...8)
-        HStack {
-          Spacer()
-          Btn(label: model.posting ? "Posting…" : "Comment", small: true, hugs: true) {
-            Task { if await model.comment(draft) { draft = "" } }
-          }
-          .disabled(model.posting || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-          .keyboardShortcut(.return, modifiers: .command)
         }
       }
     }
+  }
+}
+
+/// Pull requests, commits and links on the issue: Linear's Resources.
+struct LinearIssueResources: View {
+  @Environment(\.theme) private var theme
+  let attachments: [ArgusProtocol.LinearAttachment]
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      SectionHeader(title: "Resources", count: attachments.count)
+      ForEach(attachments, id: \.url) { attachment in
+        if let url = URL(string: attachment.url) {
+          Link(destination: url) { row(attachment) }
+            .clickable()
+        }
+      }
+    }
+  }
+
+  private func row(_ attachment: ArgusProtocol.LinearAttachment) -> some View {
+    HStack(alignment: .firstTextBaseline, spacing: 8) {
+      Group {
+        if attachment.sourceType == "github" {
+          BrandIcon.github.resizable().scaledToFit().frame(width: 13, height: 13)
+        } else {
+          Image(systemName: Icon.link).font(.scaled(size: 12))
+        }
+      }
+      .foregroundStyle(theme.textMuted)
+      Text(attachment.title).font(.scaled(size: 13)).foregroundStyle(theme.text).lineLimit(1)
+      if let subtitle = attachment.subtitle {
+        Text(subtitle).font(.scaled(size: 12, design: .monospaced)).foregroundStyle(theme.textMuted).lineLimit(1)
+      }
+      Spacer(minLength: 8)
+      if let at = attachment.createdAt {
+        Text(Labels.timeAgo(at)).font(.scaled(size: 12)).foregroundStyle(theme.textMuted)
+      }
+    }
+    .padding(.vertical, 4)
+    .contentShape(Rectangle())
   }
 }

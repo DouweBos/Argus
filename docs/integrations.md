@@ -198,9 +198,11 @@ agent screen has the same references under its paperclip button; tap the
 issue to read it in the app, or a frame to open it in the design viewer.
 The inbox also links to **Linear issues**: your Assigned, Created or
 Subscribed issues in a section per status, with the same cards as the
-desktop. Tap one to read it in full, with its sub-issues, links and
-comments; with control you can also change its status and priority,
-comment, and **Start agent** or **Open session**. Figma links in an issue
+desktop. Tap one to read it as Linear lays it out: its properties, labels,
+description, sub-issues, related issues, resources and an activity timeline
+of changes and comment threads with their reactions; with control you can
+also change its status and priority, comment, reply in a thread, and
+**Start agent** or **Open session**. Figma links in an issue
 open in the design viewer instead of the browser. The iPhone's issue list
 and the Mac app's Issues screen have the desktop's **Filter** row too, with
 the same fields and remembered per tab.

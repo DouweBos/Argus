@@ -56,9 +56,11 @@ extension HostStore {
     ).issue
   }
 
-  public func commentOnLinearIssue(id: String, body: String) async throws {
+  /// `parentId` replies in that comment's thread.
+  public func commentOnLinearIssue(id: String, body: String, parentId: String? = nil) async throws {
     guard let backend else { return }
-    try await backend.request(ArgusProtocol.Methods.LinearComment.self, .init(issueId: id, body: body))
+    try await backend.request(
+      ArgusProtocol.Methods.LinearComment.self, .init(issueId: id, body: body, parentId: parentId))
   }
 
   /// The session already working on the issue, across every loaded project.

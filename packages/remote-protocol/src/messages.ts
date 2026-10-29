@@ -584,6 +584,8 @@ export const MethodParams = {
   "linear.comment": z.object({
     issue_id: z.string(),
     body: z.string().trim().min(1),
+    /** Replies in that comment's thread. */
+    parent_id: z.string().optional(),
   }),
   /** A Figma frame link, `node-id` and all. */
   "figma.frame_details": z.object({ url: z.string().trim().min(1).max(2000) }),
