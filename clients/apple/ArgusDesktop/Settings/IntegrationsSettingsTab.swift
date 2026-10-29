@@ -120,11 +120,17 @@ private struct IntegrationGroup: View {
       busy = false
       signingIn = false
     }
-    guard
-      await host.run(ArgusProtocol.Commands.IntegrationConnectOauth.self, .init(id: id)) != nil
-    else { return }
-    reconnecting = false
-    await store.loadIntegrations()
+    _ = await host.run(ArgusProtocol.Commands.IntegrationConnectOauth.self, .init(id: id))
+    // The request can give up before the browser finishes; the host keeps
+    // going, so check on it until the sign-in lands or its 5 minutes run out.
+    for _ in 0..<150 {
+      await store.loadIntegrations()
+      if store.integrations.contains(where: { $0.id == id && $0.connected && !$0.needsReauth }) {
+        reconnecting = false
+        return
+      }
+      try? await Task.sleep(for: .seconds(2))
+    }
   }
 
   private func disconnect() async {
