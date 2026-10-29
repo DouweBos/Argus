@@ -1147,6 +1147,7 @@
 		DE5C00000000000000000009 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = ArgusDesktop/ArgusDesktop.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -1177,6 +1178,7 @@
 		DE5C0000000000000000000A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
