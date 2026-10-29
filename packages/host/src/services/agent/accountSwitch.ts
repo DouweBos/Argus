@@ -5,6 +5,7 @@
  */
 
 import type { AgentSession } from "./models";
+import { emitHostEvent } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../state";
 import {
@@ -13,21 +14,31 @@ import {
 } from "../claudeAuth/accounts";
 import { setSessionClaudeAccount } from "../session/sessionOps";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
-import { respawnAgent } from "./agentService";
+import { respawnAgent, sendAgentMessage } from "./agentService";
 import { liveConversation } from "./conversation/live";
-import { forgetLimitResume, limitResumeAt } from "./limitResume";
+import { handoffCandidates } from "./limitHandoff";
+import {
+  CONTINUE_MESSAGE,
+  forgetLimitResume,
+  isLimitStalled,
+  limitResumeAt,
+} from "./limitResume";
+
+/** Which control asked for the move. */
+export type AccountSwitchSource = "limit_card" | "picker";
 
 interface QueuedSwitch {
   /** The pin to restore if the switch fails: the one before the first queued pick. */
   previousPin: string | null;
   /** The slot the idle waiter hangs on; a respawn by anything else drops it. */
   waitingOn: AgentSession;
+  source: AccountSwitchSource;
 }
 
 /** Busy agents waiting to move. The session pin holds the target, so the latest pick wins. */
 const queued = new Map<string, QueuedSwitch>();
 
-function isBusy(agent: AgentSession): boolean {
+export function isAgentBusy(agent: AgentSession): boolean {
   return (
     agent.status === "running" ||
     agent.status === "requires_action" ||
@@ -72,16 +83,18 @@ function applyQueued(agentId: string): void {
 
     return;
   }
-  if (isBusy(agent)) {
+  if (isAgentBusy(agent)) {
     // A queued message went out on the same idle.
     waitForIdle(agent, entry);
 
     return;
   }
   queued.delete(agentId);
-  moveAgent(agent, entry.previousPin, true).catch((e: unknown) => {
-    warn(`[agent:${agentId}] queued account switch failed: ${String(e)}`);
-  });
+  moveAgent(agent, entry.previousPin, true, entry.source).catch(
+    (e: unknown) => {
+      warn(`[agent:${agentId}] queued account switch failed: ${String(e)}`);
+    },
+  );
 }
 
 /**
@@ -92,6 +105,7 @@ async function moveAgent(
   agent: AgentSession,
   previousPin: string | null,
   wasQueued: boolean,
+  source: AccountSwitchSource,
 ): Promise<void> {
   const { agentId, sessionId } = agent;
   const hadHistory = agent.turnsCompleted > 0;
@@ -105,6 +119,7 @@ async function moveAgent(
     return;
   }
   const afterLimit =
+    isLimitStalled(agentId) ||
     limitResumeAt(agentId) !== null ||
     (agent.accountId
       ? getClaudeAccount(agent.accountId)?.rate_limited === true
@@ -114,6 +129,7 @@ async function moveAgent(
       had_history: hadHistory,
       queued: wasQueued,
       after_limit: afterLimit,
+      source,
       success,
     });
 
@@ -139,6 +155,7 @@ export async function switchSessionClaudeAccount(
   sessionId: string,
   accountId: string | null,
   agentId?: string | null,
+  source: AccountSwitchSource = "picker",
 ): Promise<void> {
   const previous = appState.sessions.get(sessionId)?.claude_account_id ?? null;
   setSessionClaudeAccount(sessionId, accountId);
@@ -154,9 +171,9 @@ export async function switchSessionClaudeAccount(
 
     return;
   }
-  if (isBusy(agent)) {
+  if (isAgentBusy(agent)) {
     if (!pending) {
-      const entry = { previousPin: previous, waitingOn: agent };
+      const entry = { previousPin: previous, waitingOn: agent, source };
       queued.set(agent.agentId, entry);
       waitForIdle(agent, entry);
     } else if (pending.waitingOn !== agent) {
@@ -166,7 +183,7 @@ export async function switchSessionClaudeAccount(
     return;
   }
   queued.delete(agent.agentId);
-  await moveAgent(agent, pending?.previousPin ?? previous, false);
+  await moveAgent(agent, pending?.previousPin ?? previous, false, source);
 }
 
 /** `switchSessionClaudeAccount` for the command surface, which answers `null`. */
@@ -178,4 +195,42 @@ export async function pinSessionClaudeAccount(
   await switchSessionClaudeAccount(sessionId, accountId, agentId);
 
   return null;
+}
+
+/**
+ * The limit card's button: pin the session to `accountId`, move the agent onto
+ * it and send the "continue" its stalled turn needs.
+ */
+export async function handoffAgentToAccount(
+  agentId: string,
+  accountId: string,
+): Promise<void> {
+  const agent = appState.agents.get(agentId);
+  if (!agent) {
+    throw `No agent found: ${agentId}`;
+  }
+  if (!isLimitStalled(agentId)) {
+    throw "This chat isn't waiting on a usage limit anymore.";
+  }
+  if (!handoffCandidates(agentId).some((a) => a.id === accountId)) {
+    throw "That account can't take over right now.";
+  }
+  if (isAgentBusy(agent)) {
+    throw "The agent is still working. Try again when its turn ends.";
+  }
+  await switchSessionClaudeAccount(
+    agent.sessionId,
+    accountId,
+    agentId,
+    "limit_card",
+  );
+  if (appState.agents.get(agentId)?.accountId !== accountId) {
+    throw "The agent couldn't move to that account.";
+  }
+  sendAgentMessage(agentId, CONTINUE_MESSAGE);
+  // The renderer only draws user bubbles for sends it made itself.
+  emitHostEvent(`agent:remote-message:${agentId}`, {
+    message: CONTINUE_MESSAGE,
+    author: "Argus",
+  });
 }

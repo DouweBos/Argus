@@ -83,6 +83,7 @@ import {
 } from "./contextWindow";
 import { stageConversation, takeStagedConversation } from "./conversation/live";
 import { fromSavedMessages } from "./conversation/reducer";
+import { noteLimitStallStarted } from "./limitHandoff";
 import {
   cancelLimitResume,
   forgetLimitResume,
@@ -930,7 +931,11 @@ export function onStreamLine(agentId: string, line: string): void {
           }
           session.turnWaiters.length = 0;
         }
-        onTurnResult(agentId, (message) => sendAgentMessage(agentId, message));
+        if (
+          onTurnResult(agentId, (message) => sendAgentMessage(agentId, message))
+        ) {
+          noteLimitStallStarted(agentId);
+        }
       }
     } catch {
       // Non-fatal.

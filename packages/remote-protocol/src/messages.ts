@@ -68,6 +68,7 @@ import {
 import {
   ClaudeUsageLimits,
   ClaudeUsageSummary,
+  LimitHandoffAccount,
   UsageRange,
 } from "./models/usage";
 import { ReportBlock } from "./report";
@@ -210,6 +211,11 @@ export const MethodParams = {
   }),
   "agents.interrupt": z.object({ agent_id: z.string() }),
   "agents.dismiss_limit_resume": z.object({ agent_id: z.string() }),
+  "agents.limit_handoff": z.object({ agent_id: z.string() }),
+  "agents.handoff_to_account": z.object({
+    agent_id: z.string(),
+    account_id: z.string(),
+  }),
   "agents.stop": z.object({ agent_id: z.string() }),
   "agents.set_model": z.object({ agent_id: z.string(), model: z.string() }),
   /**
@@ -767,6 +773,10 @@ export const MethodResult = {
   }),
   "agents.interrupt": z.object({ accepted: z.boolean() }),
   "agents.dismiss_limit_resume": z.object({ accepted: z.boolean() }),
+  "agents.limit_handoff": z.object({
+    accounts: z.array(LimitHandoffAccount),
+  }),
+  "agents.handoff_to_account": z.object({ accepted: z.boolean() }),
   "agents.stop": z.object({ accepted: z.boolean() }),
   "agents.set_model": z.object({ accepted: z.boolean() }),
   "agents.set_claude_account": z.object({ accepted: z.boolean() }),

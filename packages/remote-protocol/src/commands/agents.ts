@@ -12,6 +12,7 @@ import {
 } from "../models/agents";
 import { AgentForkPoint, AgentTranscriptPage } from "../models/conversation";
 import { ForkChatResult } from "../models/sessions";
+import { LimitHandoffAccount } from "../models/usage";
 import { type CommandSpec, NoParams, Void } from "./spec";
 
 const AgentId = z.object({ agentId: z.string() });
@@ -149,6 +150,18 @@ export const AGENT_COMMANDS = {
   },
   /** Drop the pending continue and hold off until a turn gets through. */
   dismiss_agent_limit_resume: { tier: "admin", params: AgentId, result: Void },
+  /** Other accounts a limit-stalled agent can move to; empty when it isn't stalled. */
+  get_agent_limit_handoff: {
+    tier: "admin",
+    params: AgentId,
+    result: z.array(LimitHandoffAccount),
+  },
+  /** Move a limit-stalled agent onto another account and continue its turn. */
+  handoff_agent_to_account: {
+    tier: "admin",
+    params: AgentId.extend({ accountId: z.string() }),
+    result: Void,
+  },
   list_queued_messages: {
     tier: "admin",
     params: AgentId,

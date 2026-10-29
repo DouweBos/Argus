@@ -127,6 +127,7 @@ export interface EventMap {
     had_history: boolean;
     queued: boolean;
     after_limit: boolean;
+    source: "limit_card" | "picker";
     success: boolean;
   };
   agent_limit_auto_continue: {
@@ -242,6 +243,7 @@ export interface EventMap {
     kind: "cloudflare_quick" | "cloudflare_token" | "tailscale_funnel";
     reason: "managed" | "user";
   };
+  limit_handoff_offered: { eligible_count_bucket: "1" | "2" | "3+" };
   lsp_feature_used: {
     feature:
       | "code_action"

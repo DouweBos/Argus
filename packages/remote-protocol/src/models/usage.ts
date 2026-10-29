@@ -32,6 +32,21 @@ export const ClaudeAccountLimits = z.object({
 });
 export type ClaudeAccountLimits = z.infer<typeof ClaudeAccountLimits>;
 
+/**
+ * Another signed-in Claude account an agent stalled on a usage limit can be
+ * handed to. Offered only for the user to pick: Argus never switches by itself.
+ */
+export const LimitHandoffAccount = z.object({
+  account_id: z.string(),
+  /** The account's label, else its email. */
+  label: z.string(),
+  /** The email when it isn't already the label, else the plan; null if neither. */
+  detail: z.string().nullable(),
+  /** The window closest to its limit; null when the plan's usage isn't known. */
+  usage: UsageLimitWindow.nullable(),
+});
+export type LimitHandoffAccount = z.infer<typeof LimitHandoffAccount>;
+
 export const ClaudeUsageLimits = z.object({
   accounts: z.array(ClaudeAccountLimits),
 });

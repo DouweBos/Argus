@@ -232,3 +232,12 @@ export function noteUsageRateLimitLine(accountId: string, line: string): void {
     cache.set(accountId, { ...cached, windows });
   }
 }
+
+/** One account's plan limits through the same cache and probe as the usage view. */
+export function getAccountLimits(id: string): Promise<ClaudeAccountLimits> {
+  return limitsFor(
+    listClaudeAccounts().find((a) => a.id === id),
+    id,
+    false,
+  );
+}

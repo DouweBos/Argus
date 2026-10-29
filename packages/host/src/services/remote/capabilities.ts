@@ -43,7 +43,10 @@ import { error as logError, info as logInfo } from "@argus/host/logger";
 import { appState } from "../../state";
 import { applyPushedEntries } from "../account/lifecycle";
 import { remoteAccountStatus, requestLinkFromPaired } from "../account/service";
-import { switchSessionClaudeAccount } from "../agent/accountSwitch";
+import {
+  handoffAgentToAccount,
+  switchSessionClaudeAccount,
+} from "../agent/accountSwitch";
 import {
   interruptAgent,
   respondToPermission,
@@ -57,7 +60,12 @@ import {
 import { loadConversation, loadHistoryIndex } from "../agent/chatHistory";
 import { agentContextWindow } from "../agent/contextWindow";
 import { liveCursor, readConversation } from "../agent/conversation/live";
-import { dismissLimitResume, limitResumeAt } from "../agent/limitResume";
+import { limitHandoffAccounts } from "../agent/limitHandoff";
+import {
+  dismissLimitResume,
+  isLimitStalled,
+  limitResumeAt,
+} from "../agent/limitResume";
 import { agentMcpStatus } from "../agent/mcpStatus";
 import {
   enqueueMessage,
@@ -624,6 +632,7 @@ export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
     last_activity_at: a.lastEventAt,
     awaiting: agentAwaiting(a.agentId),
     limit_resume_at: limitResumeAt(a.agentId),
+    limit_stalled: isLimitStalled(a.agentId),
   };
 }
 
@@ -1178,6 +1187,21 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { agent_id } = parse("agents.dismiss_limit_resume", params);
     requireAgent(agent_id);
     await control(() => dismissLimitResume(agent_id));
+
+    return { accepted: true };
+  },
+
+  "agents.limit_handoff": async (params) => {
+    const { agent_id } = parse("agents.limit_handoff", params);
+    requireAgent(agent_id);
+
+    return { accounts: await limitHandoffAccounts(agent_id) };
+  },
+
+  "agents.handoff_to_account": async (params) => {
+    const { agent_id, account_id } = parse("agents.handoff_to_account", params);
+    requireAgent(agent_id);
+    await control(() => handoffAgentToAccount(agent_id, account_id));
 
     return { accepted: true };
   },

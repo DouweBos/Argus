@@ -26,6 +26,7 @@ public struct ChatInputView: View {
 
   @State private var text = ""
   @State private var linkedProjects: [String] = []
+  @State private var handoffAccounts: [ArgusProtocol.LimitHandoffAccount] = []
   @State private var attachments: [RemoteImageAttachment] = []
   @State private var previews: [PlatformImage] = []
   @State private var picker: Picker?
@@ -101,6 +102,9 @@ public struct ChatInputView: View {
           Task { await host.dismissLimitResume(agentId: agentId) }
         }
       }
+      if !handoffAccounts.isEmpty {
+        LimitHandoffCard(agentId: agentId, accounts: handoffAccounts) { handoffAccounts = [] }
+      }
       if !slashSuggestions.isEmpty {
         suggestionList(slashSuggestions.map(\.name), hint: slashSuggestions.map(\.description))
       } else if !mentionItems.isEmpty {
@@ -123,6 +127,7 @@ public struct ChatInputView: View {
     .background(theme.bgSecondary.ignoresSafeArea(edges: .bottom))
     .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
     .task(id: agentId) { await load() }
+    .limitHandoffOffer(agentId: agentId, status: status, into: $handoffAccounts)
     .onChange(of: text) { _, value in
       preferences.set(value, for: PreferenceKey.draft(agentId: agentId))
       Task { await refreshBrowse() }

@@ -80,6 +80,8 @@ export const RemoteAgentStatus = z.object({
   awaiting: z.enum(["permission", "question", "plan"]).nullable().optional(),
   /** Unix ms a "continue" is scheduled for after a spent usage limit resets. */
   limit_resume_at: z.number().nullable().optional(),
+  /** The last turn ended on a spent usage limit and none has got through since. */
+  limit_stalled: z.boolean().optional(),
 });
 export type RemoteAgentStatus = z.infer<typeof RemoteAgentStatus>;
 

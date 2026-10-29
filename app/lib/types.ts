@@ -289,6 +289,7 @@ export type {
   ClaudeAccountLimits,
   ClaudeUsageLimits,
   ClaudeUsageSummary,
+  LimitHandoffAccount,
   UsageCostTotals,
   UsageLimitWindow,
   UsageModelRow,

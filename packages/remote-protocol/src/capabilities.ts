@@ -141,6 +141,10 @@ export const REMOTE_METHODS = {
   "agents.interrupt": "control",
   /** Cancel the automatic continue scheduled after a usage limit. */
   "agents.dismiss_limit_resume": "control",
+  /** Other Claude accounts a limit-stalled agent could be handed to. */
+  "agents.limit_handoff": "monitor",
+  /** Move a limit-stalled agent onto another Claude account and continue. */
+  "agents.handoff_to_account": "control",
   /** Stop (kill) an agent entirely — not just the current turn. */
   "agents.stop": "control",
   "agents.set_model": "control",

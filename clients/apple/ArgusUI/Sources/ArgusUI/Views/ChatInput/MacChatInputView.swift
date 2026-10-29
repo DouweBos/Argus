@@ -31,6 +31,7 @@
     @State var isDropTarget = false
     @State var images: [PendingImage] = []
     @State var linkedProjects: [String] = []
+    @State var handoffAccounts: [ArgusProtocol.LimitHandoffAccount] = []
     @State var controller = ComposerController()
     /// Esc closes a menu until the text changes again.
     @State var dismissedText: String?
@@ -78,6 +79,9 @@
             Task { await host.dismissLimitResume(agentId: agentId) }
           }
         }
+        if !handoffAccounts.isEmpty {
+          LimitHandoffCard(agentId: agentId, accounts: handoffAccounts) { handoffAccounts = [] }
+        }
         if !slashItems.isEmpty {
           SlashSuggestionList(items: slashItems, selected: menuIndex) { acceptSlash($0) }
         } else if let mention = mentionContext, !mentionItems.isEmpty {
@@ -98,6 +102,7 @@
       .padding(.top, 6)
       .padding(.bottom, 14)
       .task(id: agentId) { await load() }
+      .limitHandoffOffer(agentId: agentId, status: status, into: $handoffAccounts)
       .onChange(of: focusRequest) { _, _ in controller.focus() }
       .onChange(of: text) { _, value in
         preferences.set(value, for: PreferenceKey.draft(agentId: agentId))

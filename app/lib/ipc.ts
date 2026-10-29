@@ -50,6 +50,7 @@ import type {
   ClaudeAuthStatus,
   ClaudeUsageLimits,
   ClaudeUsageSummary,
+  LimitHandoffAccount,
   UsageRange,
   ConductorLogEntry,
   ConductorStatus,
@@ -2016,6 +2017,16 @@ export const getAgentLimitResume = (agentId: string): Promise<number | null> =>
 
 export const dismissAgentLimitResume = (agentId: string): Promise<void> =>
   invoke("dismiss_agent_limit_resume", { agentId });
+
+export const getAgentLimitHandoff = (
+  agentId: string,
+): Promise<LimitHandoffAccount[]> =>
+  invoke("get_agent_limit_handoff", { agentId });
+
+export const handoffAgentToAccount = (
+  agentId: string,
+  accountId: string,
+): Promise<void> => invoke("handoff_agent_to_account", { agentId, accountId });
 
 export const listQueuedMessages = (agentId: string): Promise<QueuedMessage[]> =>
   invoke("list_queued_messages", { agentId });

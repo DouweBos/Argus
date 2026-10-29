@@ -105,6 +105,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "agents.send": agent(),
   "agents.interrupt": agent(),
   "agents.dismiss_limit_resume": agent(),
+  "agents.limit_handoff": agent(),
+  "agents.handoff_to_account": agent(),
   "agents.stop": agent(),
   "agents.set_model": agent(),
   "agents.set_claude_account": agent(),

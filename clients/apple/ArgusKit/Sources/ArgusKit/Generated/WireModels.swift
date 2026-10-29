@@ -8431,6 +8431,35 @@ extension ArgusProtocol {
     }
   }
 
+  public struct LimitHandoffAccount: Codable, Sendable {
+    public var accountId: String
+    public var label: String
+    public var detail: String?
+    public var usage: UsageLimitWindow?
+
+    enum CodingKeys: String, CodingKey {
+      case accountId = "account_id"
+      case label = "label"
+      case detail = "detail"
+      case usage = "usage"
+    }
+
+    public init(accountId: String, label: String, detail: String? = nil, usage: UsageLimitWindow? = nil) {
+      self.accountId = accountId
+      self.label = label
+      self.detail = detail
+      self.usage = usage
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(accountId, forKey: .accountId)
+      try c.encode(label, forKey: .label)
+      try c.encode(detail, forKey: .detail)
+      try c.encode(usage, forKey: .usage)
+    }
+  }
+
   public struct LinearAttachment: Codable, Sendable {
     public var title: String
     public var createdAt: Double?
@@ -12717,6 +12746,7 @@ extension ArgusProtocol {
     public var lastActivityAt: Double?
     public var awaiting: RemoteAgentStatusAwaiting?
     public var limitResumeAt: Double?
+    public var limitStalled: Bool?
 
     enum CodingKeys: String, CodingKey {
       case agentId = "agent_id"
@@ -12733,9 +12763,10 @@ extension ArgusProtocol {
       case lastActivityAt = "last_activity_at"
       case awaiting = "awaiting"
       case limitResumeAt = "limit_resume_at"
+      case limitStalled = "limit_stalled"
     }
 
-    public init(agentId: String, sessionId: String, sessionLabel: String? = nil, projectName: String? = nil, title: String? = nil, status: RemoteAgentStatusStatus, model: String? = nil, contextWindow: Double? = nil, permissionMode: String? = nil, parentAgentId: String? = nil, createdAt: Double? = nil, lastActivityAt: Double? = nil, awaiting: RemoteAgentStatusAwaiting? = nil, limitResumeAt: Double? = nil) {
+    public init(agentId: String, sessionId: String, sessionLabel: String? = nil, projectName: String? = nil, title: String? = nil, status: RemoteAgentStatusStatus, model: String? = nil, contextWindow: Double? = nil, permissionMode: String? = nil, parentAgentId: String? = nil, createdAt: Double? = nil, lastActivityAt: Double? = nil, awaiting: RemoteAgentStatusAwaiting? = nil, limitResumeAt: Double? = nil, limitStalled: Bool? = nil) {
       self.agentId = agentId
       self.sessionId = sessionId
       self.sessionLabel = sessionLabel
@@ -12750,6 +12781,7 @@ extension ArgusProtocol {
       self.lastActivityAt = lastActivityAt
       self.awaiting = awaiting
       self.limitResumeAt = limitResumeAt
+      self.limitStalled = limitStalled
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -12768,6 +12800,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(lastActivityAt, forKey: .lastActivityAt)
       try c.encodeIfPresent(awaiting, forKey: .awaiting)
       try c.encodeIfPresent(limitResumeAt, forKey: .limitResumeAt)
+      try c.encodeIfPresent(limitStalled, forKey: .limitStalled)
     }
   }
 

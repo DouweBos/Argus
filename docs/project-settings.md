@@ -384,6 +384,12 @@ after five continues in a row that hit the limit again.
 "auto_continue_on_limit": true
 ```
 
+Separately from this setting, when you have more than one Claude account
+signed in, a chat stopped by the limit lists your other accounts that still
+have usage left, with **Continue here** next to each. Picking one moves the
+chat onto that account and continues it. Argus never switches accounts on its
+own, so a personal project never lands on a work plan by accident.
+
 ---
 
 ## `release_note_patterns` — surface text-file release notes

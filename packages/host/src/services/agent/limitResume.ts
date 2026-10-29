@@ -29,6 +29,8 @@ interface LimitState {
   resetsAt: number | null;
   /** This turn ended on the limit. */
   limitHit: boolean;
+  /** The last turn ended on the limit and none has got through since. */
+  stalled: boolean;
   /** Continues sent since the last turn that got through. */
   attempts: number;
   /** The user turned it off for this stall. */
@@ -46,6 +48,7 @@ function stateFor(agentId: string): LimitState {
     state = {
       resetsAt: null,
       limitHit: false,
+      stalled: false,
       attempts: 0,
       dismissed: false,
       dueAt: null,
@@ -105,22 +108,49 @@ function announce(agentId: string): void {
   emitHostEvent(`agent:limit-resume:${agentId}`, limitResumeAt(agentId));
 }
 
-/** Called on every `result`: schedule a continue if the turn hit the limit. */
+/** The agent's last turn ended on a spent limit and none has got through since. */
+export function isLimitStalled(agentId: string): boolean {
+  return states.get(agentId)?.stalled === true;
+}
+
+function setStalled(agentId: string, state: LimitState, stalled: boolean) {
+  if (state.stalled !== stalled) {
+    state.stalled = stalled;
+    emitHostEvent(`agent:limit-stall:${agentId}`, stalled);
+  }
+}
+
+/**
+ * Called on every `result`: schedule a continue if the turn hit the limit.
+ * True when this result started a stall.
+ */
 export function onTurnResult(
   agentId: string,
   send: (message: string) => void,
-): void {
+): boolean {
   const state = states.get(agentId);
   if (!state?.limitHit) {
     if (state) {
       state.attempts = 0;
       state.dismissed = false;
+      setStalled(agentId, state, false);
     }
 
-    return;
+    return false;
   }
   state.limitHit = false;
+  const started = !state.stalled;
+  setStalled(agentId, state, true);
+  scheduleContinue(agentId, state, send);
 
+  return started;
+}
+
+function scheduleContinue(
+  agentId: string,
+  state: LimitState,
+  send: (message: string) => void,
+): void {
   if (state.dismissed || !autoContinueEnabled(agentId)) {
     return;
   }
@@ -255,5 +285,8 @@ export function forgetLimitResume(agentId: string): void {
   states.delete(agentId);
   if (state?.dueAt != null) {
     announce(agentId);
+  }
+  if (state?.stalled) {
+    emitHostEvent(`agent:limit-stall:${agentId}`, false);
   }
 }

@@ -18,6 +18,7 @@ const {
   cancelLimitResume,
   dismissLimitResume,
   forgetLimitResume,
+  isLimitStalled,
   limitResumeAt,
   noteLimitHit,
   noteRateLimitLine,
@@ -163,5 +164,29 @@ describe("auto-continue after a plan limit", () => {
       vi.advanceTimersByTime(3 * 60_000);
     }
     expect(send).toHaveBeenCalledTimes(5);
+  });
+
+  it("marks the agent stalled until a turn gets through", () => {
+    project.enabled = false;
+    const stalls = () =>
+      emitted.filter(([c]) => c === "agent:limit-stall:a1").map(([, p]) => p);
+
+    noteLimitHit("a1");
+    expect(onTurnResult("a1", vi.fn())).toBe(true);
+    expect(isLimitStalled("a1")).toBe(true);
+    // A second refused turn is the same stall.
+    noteLimitHit("a1");
+    expect(onTurnResult("a1", vi.fn())).toBe(false);
+    onTurnResult("a1", vi.fn());
+    expect(isLimitStalled("a1")).toBe(false);
+    expect(stalls()).toEqual([true, false]);
+  });
+
+  it("ends the stall when the agent is forgotten", () => {
+    noteLimitHit("a1");
+    onTurnResult("a1", vi.fn());
+    forgetLimitResume("a1");
+    expect(isLimitStalled("a1")).toBe(false);
+    expect(emitted).toContainEqual(["agent:limit-stall:a1", false]);
   });
 });

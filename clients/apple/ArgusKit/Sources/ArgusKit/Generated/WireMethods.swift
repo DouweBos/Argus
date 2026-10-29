@@ -178,6 +178,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AgentsHandoffToAccountParams: Codable, Sendable {
+      public var agentId: String
+      public var accountId: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case accountId = "account_id"
+      }
+
+      public init(agentId: String, accountId: String) {
+        self.agentId = agentId
+        self.accountId = accountId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(accountId, forKey: .accountId)
+      }
+    }
+
+    public struct AgentsHandoffToAccountResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
     public struct AgentsImageParams: Codable, Sendable {
       public var agentId: String
       public var imageId: String
@@ -251,6 +289,40 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AgentsLimitHandoffParams: Codable, Sendable {
+      public var agentId: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+      }
+
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
+    }
+
+    public struct AgentsLimitHandoffResult: Codable, Sendable {
+      public var accounts: [LimitHandoffAccount]
+
+      enum CodingKeys: String, CodingKey {
+        case accounts = "accounts"
+      }
+
+      public init(accounts: [LimitHandoffAccount]) {
+        self.accounts = accounts
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accounts, forKey: .accounts)
       }
     }
 
@@ -6013,6 +6085,12 @@ extension ArgusProtocol {
       public static let name = "agents.dismiss_limit_resume"
     }
 
+    public enum AgentsHandoffToAccount: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsHandoffToAccountParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsHandoffToAccountResult
+      public static let name = "agents.handoff_to_account"
+    }
+
     public enum AgentsImage: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.AgentsImageParams
       public typealias Result = ArgusProtocol.MethodsTypes.AgentsImageResult
@@ -6023,6 +6101,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AgentsInterruptParams
       public typealias Result = ArgusProtocol.MethodsTypes.AgentsInterruptResult
       public static let name = "agents.interrupt"
+    }
+
+    public enum AgentsLimitHandoff: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsLimitHandoffParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsLimitHandoffResult
+      public static let name = "agents.limit_handoff"
     }
 
     public enum AgentsList: RemoteCommand {

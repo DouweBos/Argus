@@ -1,3 +1,4 @@
+import { handoffAgentToAccount } from "../services/agent/accountSwitch";
 import {
   checkClaudeCli,
   claimPrewarmAgent,
@@ -41,6 +42,7 @@ import {
   livePage,
   readConversation,
 } from "../services/agent/conversation/live";
+import { limitHandoffAccounts } from "../services/agent/limitHandoff";
 import {
   dismissLimitResume,
   limitResumeAt,
@@ -137,6 +139,12 @@ export function registerAgentCommands(): void {
   );
 
   defineTypedCommand("get_agent_limit_resume", (p) => limitResumeAt(p.agentId));
+  defineTypedCommand("get_agent_limit_handoff", (p) =>
+    limitHandoffAccounts(p.agentId),
+  );
+  defineTypedCommand("handoff_agent_to_account", (p) =>
+    handoffAgentToAccount(p.agentId, p.accountId),
+  );
   defineTypedCommand("dismiss_agent_limit_resume", (p) =>
     dismissLimitResume(p.agentId),
   );

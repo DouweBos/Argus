@@ -77,6 +77,7 @@ import { HuddleTypingBar } from "../HuddleShare";
 import { TaskList } from "../TaskList";
 import { TodoList } from "../TodoList";
 import styles from "./AgentChat.module.css";
+import { LimitHandoffCard } from "./LimitHandoffCard";
 import { LimitResumeBanner } from "./LimitResumeBanner";
 import { QueuedMessages } from "./QueuedMessages";
 import { useOlderTranscript } from "./useOlderTranscript";
@@ -1093,6 +1094,7 @@ export function AgentChat({
           )}
 
         {!readOnly && agentId && <LimitResumeBanner agentId={agentId} />}
+        {!readOnly && agentId && <LimitHandoffCard agentId={agentId} />}
 
         {!readOnly && agentId && queuedMessages.length > 0 && (
           <QueuedMessages agentId={agentId} messages={queuedMessages} />

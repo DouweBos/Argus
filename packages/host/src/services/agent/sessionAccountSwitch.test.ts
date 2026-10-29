@@ -142,6 +142,7 @@ describe("switchSessionClaudeAccount", () => {
       had_history: true,
       queued: false,
       after_limit: false,
+      source: "picker",
       success: true,
     });
   });

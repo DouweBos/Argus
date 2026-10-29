@@ -2413,6 +2413,23 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GetAgentLimitHandoffParams: Codable, Sendable {
+      public var agentId: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agentId"
+      }
+
+      public init(agentId: String) {
+        self.agentId = agentId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+      }
+    }
+
     public struct GetAgentLimitResumeParams: Codable, Sendable {
       public var agentId: String
 
@@ -5395,6 +5412,27 @@ extension ArgusProtocol {
         try c.encode(id, forKey: .id)
         try c.encode(filePath, forKey: .filePath)
         try c.encode(contents, forKey: .contents)
+      }
+    }
+
+    public struct HandoffAgentToAccountParams: Codable, Sendable {
+      public var agentId: String
+      public var accountId: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agentId"
+        case accountId = "accountId"
+      }
+
+      public init(agentId: String, accountId: String) {
+        self.agentId = agentId
+        self.accountId = accountId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(accountId, forKey: .accountId)
       }
     }
 
@@ -10644,6 +10682,13 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
+    public enum GetAgentLimitHandoff: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GetAgentLimitHandoffParams
+      public typealias Result = [ArgusProtocol.LimitHandoffAccount]
+      public static let name = "get_agent_limit_handoff"
+      public static let tier = "admin"
+    }
+
     public enum GetAgentLimitResume: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.GetAgentLimitResumeParams
       public typealias Result = Double?
@@ -11614,6 +11659,13 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.GitWriteConflictMergedParams
       public typealias Result = IgnoredResult
       public static let name = "git_write_conflict_merged"
+      public static let tier = "admin"
+    }
+
+    public enum HandoffAgentToAccount: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.HandoffAgentToAccountParams
+      public typealias Result = IgnoredResult
+      public static let name = "handoff_agent_to_account"
       public static let tier = "admin"
     }
 
