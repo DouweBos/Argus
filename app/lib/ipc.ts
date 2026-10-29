@@ -1839,7 +1839,7 @@ export const compareDesign = (
 /** A Linear upload downloaded by the host with the signed-in credential. */
 export const linearMedia = (
   url: string,
-): Promise<{ path: string; mimeType: string }> =>
+): Promise<{ mimeType: string; path: string; }> =>
   invoke("linear_media", { url });
 
 export const listLinearTeams = (): Promise<LinearTeam[]> =>
