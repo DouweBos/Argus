@@ -11,10 +11,16 @@ struct IntegrationsSettingsTab: View {
 
   var body: some View {
     SettingsPage {
-      ForEach([ArgusProtocol.IntegrationId.linear, .figma], id: \.rawValue) { id in
-        IntegrationGroup(id: id)
+      if let error = store.integrationsError {
+        // The Argus this window talks to can't answer: connecting here would fail too.
+        SettingsError(
+          text: "This computer's Argus didn't answer about integrations (\(error)). If another, older Argus is still running, quit it and reopen this one.")
+      } else {
+        ForEach([ArgusProtocol.IntegrationId.linear, .figma], id: \.rawValue) { id in
+          IntegrationGroup(id: id)
+        }
+        if store.linearConnected { LinearOptionsGroup() }
       }
-      if store.linearConnected { LinearOptionsGroup() }
       SettingsError(text: host.error)
     }
     .task { await store.loadIntegrations() }
