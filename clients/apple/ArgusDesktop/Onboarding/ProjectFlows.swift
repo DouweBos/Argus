@@ -101,7 +101,8 @@ private struct AddProjectSheet: View {
     }
     .padding(24)
     .frame(width: 560)
-    .frame(minHeight: 260)
+    // The review scrolls, and a sheet won't grow a scroll view on its own.
+    .frame(minHeight: 260, idealHeight: generator == nil ? 260 : 620)
     .task {
       guard let backend = model.backend else { return }
       do {
