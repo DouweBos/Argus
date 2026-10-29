@@ -1,4 +1,6 @@
+import AppKit
 import ArgusCore
+import ArgusKit
 import Foundation
 
 /// A session's agents and what the Agent menu, the palette and the tab bar do
@@ -43,6 +45,35 @@ extension DesktopModel {
       navigate(.session(id: sessionId, agentId: next))
     }
     Task { await store.stopAgent(agentId: agentId) }
+  }
+
+  /// Closes several tabs at once; the focus falls to the nearest one left open.
+  func closeAgents(_ ids: [String], inSession sessionId: String) {
+    let agents = agents(inSession: sessionId)
+    let closing = Set(ids)
+    if let focused = focusedAgentId(inSession: sessionId, agents: agents), closing.contains(focused) {
+      let index = agents.firstIndex { $0.agentId == focused } ?? 0
+      let before = agents[..<index].last { !closing.contains($0.agentId) }
+      let after = agents[index...].first { !closing.contains($0.agentId) }
+      navigate(.session(id: sessionId, agentId: (before ?? after)?.agentId))
+    }
+    Task { for id in ids { await store.stopAgent(agentId: id) } }
+  }
+
+  func renameAgent(_ agentId: String, to title: String) {
+    let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !title.isEmpty, let backend = store.backend else { return }
+    Task { _ = try? await backend.request(ArgusProtocol.Commands.SetAgentTitle.self, .init(agentId: agentId, title: title)) }
+  }
+
+  /// Shows the session's checkout in Finder; only this Mac's sessions have a path here.
+  func revealSessionInFinder(_ sessionId: String) {
+    guard host(ofSession: sessionId) == Hosts.local, let backend = store.backend else { return }
+    Task {
+      guard let path = (try? await backend.request(ArgusProtocol.Commands.GetSession.self, .init(id: sessionId)))??.path
+      else { return }
+      NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+    }
   }
 
   /// The session on screen, when it can take a new agent.

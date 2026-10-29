@@ -96,7 +96,10 @@ struct SessionView: View {
       AgentTabBar(
         agents: agents, focused: focusedAgentId, canStart: session?.status == .ready,
         select: { model.navigate(.session(id: sessionId, agentId: $0)) },
-        start: startAgent, close: closeAgent)
+        start: startAgent, close: closeAgent,
+        closeMany: { model.closeAgents($0, inSession: sessionId) },
+        rename: { model.renameAgent($0, to: $1) },
+        revealInFinder: { model.revealSessionInFinder(sessionId) })
       .padding(.trailing, SessionContextCardOverlay.barReserve)
       Group {
         if let session, session.status != .ready {
@@ -130,6 +133,11 @@ struct AgentTabBar: View {
   let select: (String) -> Void
   let start: () -> Void
   let close: (String) -> Void
+  var closeMany: ([String]) -> Void = { _ in }
+  var rename: (String, String) -> Void = { _, _ in }
+  var revealInFinder: () -> Void = {}
+  @State private var renaming: RemoteAgentStatus?
+  @State private var newTitle = ""
 
   var body: some View {
     HStack(spacing: 4) {
@@ -140,7 +148,9 @@ struct AgentTabBar: View {
               agent: agent, selected: agent.agentId == focused,
               children: childCounts[agent.agentId] ?? 0,
               subagentsRunning: subagentsRunning(agent.agentId),
-              select: { select(agent.agentId) }, close: { close(agent.agentId) })
+              select: { select(agent.agentId) }, close: { close(agent.agentId) }
+            )
+            .contextMenu { menu(for: agent) }
           }
         }
       }
@@ -154,9 +164,45 @@ struct AgentTabBar: View {
     .padding(.horizontal, 10)
     // A scroll view takes all the height it's offered; a tab bar is one row.
     .frame(height: Self.height)
+    .alert("Rename Agent", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+      TextField("Name", text: $newTitle)
+      Button("Rename") {
+        if let agent = renaming { rename(agent.agentId, newTitle) }
+        renaming = nil
+      }
+      Button("Cancel", role: .cancel) { renaming = nil }
+    }
   }
 
   static let height: CGFloat = 34
+
+  /// The desktop's tab menu: rename, copy, stop, reveal, then the ways to close tabs.
+  @ViewBuilder private func menu(for agent: RemoteAgentStatus) -> some View {
+    let ids = agents.map(\.agentId)
+    let index = ids.firstIndex(of: agent.agentId) ?? 0
+    Button("Rename Agent…") {
+      newTitle = agent.title ?? ""
+      renaming = agent
+    }
+    Button("Copy Agent ID") { Clipboard.copy(agent.agentId) }
+    Divider()
+    Button("Stop Agent") { Task { await store.interrupt(agentId: agent.agentId) } }
+      .disabled(agent.status != .running)
+    Button("Reveal Session in Finder", action: revealInFinder)
+    Divider()
+    Button("Close Agent") { close(agent.agentId) }
+    Button("Close Other Agents") { closeMany(ids.filter { $0 != agent.agentId }) }
+      .disabled(ids.count < 2)
+    Divider()
+    Button("Close Agents to the Left") { closeMany(Array(ids[..<index])) }
+      .disabled(index == 0)
+    Button("Close Agents to the Right") { closeMany(Array(ids[(index + 1)...])) }
+      .disabled(index >= ids.count - 1)
+    Divider()
+    Button("Close Idle Agents") { closeMany(agents.filter { $0.status != .running }.map(\.agentId)) }
+      .disabled(!agents.contains { $0.status != .running })
+    Button("Close All Agents", role: .destructive) { closeMany(ids) }
+  }
 
   /// Agents each agent spawned, across every agent the host has described.
   private var childCounts: [String: Int] {
@@ -229,9 +275,6 @@ struct AgentTab: View {
     .padding(.vertical, 4)
     .background(selected || hovering ? theme.selection.opacity(selected ? 1 : 0.55) : .clear, in: .rect(cornerRadius: 6))
     .onHover { hovering = $0 }
-    .contextMenu {
-      Button("Close Agent", action: close)
-    }
   }
 }
 
