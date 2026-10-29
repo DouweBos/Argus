@@ -7,6 +7,8 @@
     case below
     /// To the trigger's left, top edges aligned.
     case leading
+    /// To the trigger's right, top edges aligned.
+    case trailing
   }
 
   /// A key an interactive panel offers its content before the focused field sees it.
@@ -29,6 +31,49 @@
         FloatingPanelModifier(
           isPresented: isPresented, placement: placement, interactive: interactive, onKey: onKey,
           content: { AnyView(content()) }))
+    }
+  }
+
+  extension View {
+    /// A passive card beside this view once the pointer rests on it; leaving hides it.
+    public func hoverCard(
+      placement: FloatingPanelPlacement = .leading, enabled: Bool = true, onShow: (() -> Void)? = nil,
+      @ViewBuilder card: @escaping () -> some View
+    ) -> some View {
+      modifier(HoverCardModifier(placement: placement, enabled: enabled, onShow: onShow, card: { AnyView(card()) }))
+    }
+  }
+
+  private struct HoverCardModifier: ViewModifier {
+    let placement: FloatingPanelPlacement
+    let enabled: Bool
+    let onShow: (() -> Void)?
+    let card: () -> AnyView
+    @State private var shown = false
+    @State private var pending: Task<Void, Never>?
+
+    func body(content: Content) -> some View {
+      content
+        .onHover { inside in
+          pending?.cancel()
+          guard inside, enabled else {
+            shown = false
+            return
+          }
+          pending = Task {
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else { return }
+            shown = true
+            onShow?()
+          }
+        }
+        .onChange(of: enabled) { _, enabled in
+          if !enabled {
+            pending?.cancel()
+            shown = false
+          }
+        }
+        .floatingPanel(isPresented: $shown, placement: placement, interactive: false, content: card)
     }
   }
 
@@ -215,6 +260,13 @@
         let left = rect.minX - 12 - content.width
         frame = CGRect(
           origin: CGPoint(x: left >= screen.minX ? left : rect.maxX + 12, y: rect.maxY - content.height), size: content)
+      case .trailing:
+        let right = rect.maxX + 12
+        frame = CGRect(
+          origin: CGPoint(
+            x: right + content.width <= screen.maxX ? right : rect.minX - 12 - content.width,
+            y: rect.maxY - content.height),
+          size: content)
       }
       frame.origin.x = min(max(frame.minX, screen.minX + 4), screen.maxX - content.width - 4)
       frame.origin.y = min(max(frame.minY, screen.minY + 4), screen.maxY - content.height - 4)

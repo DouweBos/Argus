@@ -276,40 +276,12 @@ private struct LinearHoverCard<Content: View>: View {
 
 extension View {
   /// On the Mac, a card that floats beside this view after the pointer rests on it. Nothing on touch.
+  @ViewBuilder
   func propertyHoverCard(enabled: Bool = true, @ViewBuilder card: @escaping () -> some View) -> some View {
-    modifier(PropertyHoverCard(enabled: enabled, card: { AnyView(card()) }))
-  }
-}
-
-private struct PropertyHoverCard: ViewModifier {
-  let enabled: Bool
-  let card: () -> AnyView
-  @State private var shown = false
-  @State private var pending: Task<Void, Never>?
-
-  func body(content: Content) -> some View {
     #if os(macOS)
-      content
-        .onHover { inside in
-          pending?.cancel()
-          guard inside, enabled else {
-            shown = false
-            return
-          }
-          pending = Task {
-            try? await Task.sleep(for: .milliseconds(600))
-            if !Task.isCancelled { shown = true }
-          }
-        }
-        .onChange(of: enabled) { _, enabled in
-          if !enabled {
-            pending?.cancel()
-            shown = false
-          }
-        }
-        .floatingPanel(isPresented: $shown, placement: .leading, interactive: false, content: card)
+      hoverCard(placement: .leading, enabled: enabled, card: card)
     #else
-      content
+      self
     #endif
   }
 }

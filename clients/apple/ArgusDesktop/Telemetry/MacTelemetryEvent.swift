@@ -255,6 +255,8 @@ enum MacTelemetryEvent {
   case sidebarFiltered(kind: SidebarFilterKind)
   /// A session's context card was shown, hidden, or one of its actions used.
   case contextCardUsed(action: ContextCardAction)
+  /// A sidebar session's hover card opened; `hasChanges` says its diff wasn't empty.
+  case sessionHoverCardShown(hasChanges: Bool)
   /// An issue page's status or priority menu opened; the change itself is the host's `linear_issue_updated`.
   case issuePropertyMenuOpened(property: LinearIssueProperty.Kind, via: IssueMenuVia)
   /// A workspace issue search settled; once per term, never the term itself.
@@ -378,6 +380,7 @@ enum MacTelemetryEvent {
     case .sidebarProjectToggled: "mac_sidebar_project_toggled"
     case .sidebarFiltered: "mac_sidebar_filtered"
     case .contextCardUsed: "mac_context_card_used"
+    case .sessionHoverCardShown: "mac_session_hover_card_shown"
     case .issuePropertyMenuOpened: "mac_issue_property_menu_opened"
     case .issueSearched: "mac_issue_searched"
     case .homeUsageOpened: "mac_home_usage_opened"
@@ -486,6 +489,8 @@ enum MacTelemetryEvent {
       ["kind": kind.rawValue]
     case .contextCardUsed(let action):
       ["action": action.rawValue]
+    case .sessionHoverCardShown(let hasChanges):
+      ["has_changes": hasChanges]
     case .issuePropertyMenuOpened(let property, let via):
       ["property": property.rawValue, "via": via.rawValue]
     case .issueSearched(let results):
