@@ -74,7 +74,7 @@ export const ISSUE_DETAIL = `query ArgusIssue($id: String!) {
         id createdAt updatedDescription fromPriority toPriority fromEstimate toEstimate
         fromTitle toTitle fromDueDate toDueDate
         actor { displayName avatarUrl }
-        fromState { name } toState { name }
+        fromState { name type } toState { name type }
         fromAssignee { displayName } toAssignee { displayName }
         fromCycle { number name } toCycle { number name }
         fromProject { name } toProject { name }
@@ -184,8 +184,8 @@ export interface RawHistory {
   fromDueDate?: string | null;
   toDueDate?: string | null;
   actor?: { displayName: string; avatarUrl?: string | null } | null;
-  fromState?: { name: string } | null;
-  toState?: { name: string } | null;
+  fromState?: { name: string; type?: string } | null;
+  toState?: { name: string; type?: string } | null;
   fromAssignee?: { displayName: string } | null;
   toAssignee?: { displayName: string } | null;
   fromCycle?: { number: number; name?: string | null } | null;
@@ -294,6 +294,33 @@ function reactionCounts(
   return [...counts].map(([emoji, count]) => ({ emoji, count }));
 }
 
+/**
+ * Every status the issue has been in, oldest first, with when it entered it.
+ * The first one starts at creation: the state the first change left, or the
+ * current one when it never moved.
+ */
+function statusHistory(
+  raw: RawIssueDetail,
+): { name: string; type: string; enteredAt: number }[] {
+  const moves = (raw.history?.nodes ?? [])
+    .filter((h) => h.toState)
+    .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+  const first = moves[0]?.fromState ?? raw.state;
+
+  return [
+    {
+      name: first.name,
+      type: first.type ?? raw.state.type,
+      enteredAt: Date.parse(raw.createdAt),
+    },
+    ...moves.map((h) => ({
+      name: h.toState!.name,
+      type: h.toState!.type ?? raw.state.type,
+      enteredAt: Date.parse(h.createdAt),
+    })),
+  ];
+}
+
 /** A relation as seen from this issue: "blocks" turns into "blocked_by" from the other side. */
 const INVERSE: Record<string, string> = {
   blocks: "blocked_by",
@@ -362,6 +389,7 @@ export function toLinearIssueDetail(raw: RawIssueDetail): LinearIssueDetail {
         ...ref(r.issue),
       })),
     ],
+    statusHistory: statusHistory(raw),
     labelColors: raw.labels.nodes.map((l) => ({
       name: l.name,
       color: l.color ?? "#888888",

@@ -8888,6 +8888,31 @@ extension ArgusProtocol {
     }
   }
 
+  public struct LinearIssueDetailStatusHistoryItem: Codable, Sendable {
+    public var name: String
+    public var type: String
+    public var enteredAt: Double
+
+    enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case type = "type"
+      case enteredAt = "enteredAt"
+    }
+
+    public init(name: String, type: String, enteredAt: Double) {
+      self.name = name
+      self.type = type
+      self.enteredAt = enteredAt
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(name, forKey: .name)
+      try c.encode(type, forKey: .type)
+      try c.encode(enteredAt, forKey: .enteredAt)
+    }
+  }
+
   public struct LinearIssueDetailLabelColorsItem: Codable, Sendable {
     public var name: String
     public var color: String
@@ -8984,6 +9009,7 @@ extension ArgusProtocol {
     public var history: [LinearHistoryEvent]?
     public var subscribers: [LinearIssueDetailSubscribersItem]?
     public var relations: [LinearIssueDetailRelationsItem]?
+    public var statusHistory: [LinearIssueDetailStatusHistoryItem]?
     public var labelColors: [LinearIssueDetailLabelColorsItem]?
     public var attachments: [LinearAttachment]
     public var children: [LinearIssueDetailChildrenItem]
@@ -9017,12 +9043,13 @@ extension ArgusProtocol {
       case history = "history"
       case subscribers = "subscribers"
       case relations = "relations"
+      case statusHistory = "statusHistory"
       case labelColors = "labelColors"
       case attachments = "attachments"
       case children = "children"
     }
 
-    public init(id: String, identifier: String, title: String, description: String, url: String, branchName: String, state: LinearWorkflowState, priority: Double, estimate: Double? = nil, estimateType: String? = nil, teamId: String, teamKey: String, teamName: String, assignee: String? = nil, assigneeAvatarUrl: String? = nil, creator: String? = nil, dueDate: String? = nil, labels: [String], project: LinearIssueDetailProject? = nil, cycle: LinearIssueDetailCycle? = nil, parent: LinearIssueDetailParent? = nil, pullRequestCount: Double, createdAt: Double, updatedAt: Double, comments: [LinearComment], history: [LinearHistoryEvent]? = nil, subscribers: [LinearIssueDetailSubscribersItem]? = nil, relations: [LinearIssueDetailRelationsItem]? = nil, labelColors: [LinearIssueDetailLabelColorsItem]? = nil, attachments: [LinearAttachment], children: [LinearIssueDetailChildrenItem]) {
+    public init(id: String, identifier: String, title: String, description: String, url: String, branchName: String, state: LinearWorkflowState, priority: Double, estimate: Double? = nil, estimateType: String? = nil, teamId: String, teamKey: String, teamName: String, assignee: String? = nil, assigneeAvatarUrl: String? = nil, creator: String? = nil, dueDate: String? = nil, labels: [String], project: LinearIssueDetailProject? = nil, cycle: LinearIssueDetailCycle? = nil, parent: LinearIssueDetailParent? = nil, pullRequestCount: Double, createdAt: Double, updatedAt: Double, comments: [LinearComment], history: [LinearHistoryEvent]? = nil, subscribers: [LinearIssueDetailSubscribersItem]? = nil, relations: [LinearIssueDetailRelationsItem]? = nil, statusHistory: [LinearIssueDetailStatusHistoryItem]? = nil, labelColors: [LinearIssueDetailLabelColorsItem]? = nil, attachments: [LinearAttachment], children: [LinearIssueDetailChildrenItem]) {
       self.id = id
       self.identifier = identifier
       self.title = title
@@ -9051,6 +9078,7 @@ extension ArgusProtocol {
       self.history = history
       self.subscribers = subscribers
       self.relations = relations
+      self.statusHistory = statusHistory
       self.labelColors = labelColors
       self.attachments = attachments
       self.children = children
@@ -9086,6 +9114,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(history, forKey: .history)
       try c.encodeIfPresent(subscribers, forKey: .subscribers)
       try c.encodeIfPresent(relations, forKey: .relations)
+      try c.encodeIfPresent(statusHistory, forKey: .statusHistory)
       try c.encodeIfPresent(labelColors, forKey: .labelColors)
       try c.encode(attachments, forKey: .attachments)
       try c.encode(children, forKey: .children)

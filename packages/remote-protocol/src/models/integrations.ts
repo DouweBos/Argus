@@ -191,6 +191,12 @@ export const LinearIssueDetail = LinearIssue.extend({
       }),
     )
     .nullish(),
+  /** Each status the issue has been in, oldest first, for "time in status". */
+  statusHistory: z
+    .array(
+      z.object({ name: z.string(), type: z.string(), enteredAt: z.number() }),
+    )
+    .nullish(),
   /** Each label with its Linear color (`#rrggbb`). */
   labelColors: z
     .array(z.object({ name: z.string(), color: z.string() }))
