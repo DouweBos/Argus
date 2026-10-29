@@ -196,7 +196,7 @@ struct CodeHunksTests {
     #expect(edit.text == "there ")
   }
 
-  @Test func diffResultCountsLines() {
+  @MainActor @Test func diffResultCountsLines() {
     let result = CodeHunks(base: "a\nb\n", current: "a\nc\nd\n").diffResult(path: "f")
     #expect(result.stats.additions == 2)
     #expect(result.stats.deletions == 1)

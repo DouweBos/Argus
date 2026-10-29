@@ -75,9 +75,7 @@ struct MainWindow: View {
     }
     .sheet(item: hostFolderRequest) { HostFolderPicker(request: $0) }
     .environment(imageViewer)
-    .environment(\.openInCode) { [model] session, path, line in
-      model.openCode(session: session, path: path, line: line, source: .chatLink)
-    }
+    .environment(\.codeOpener, model)
     .toolbar {
       HistoryButtons()
       AttachedHostBadge()

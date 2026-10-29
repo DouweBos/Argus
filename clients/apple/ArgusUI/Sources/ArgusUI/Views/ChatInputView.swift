@@ -89,7 +89,7 @@ public struct ChatInputView: View {
   }
 
   /// A stopped agent's last status can still carry the continue it had queued.
-  static func pendingLimitResume(_ status: RemoteAgentStatus?) -> Double? {
+  nonisolated static func pendingLimitResume(_ status: RemoteAgentStatus?) -> Double? {
     guard let status, status.status != .stopped, status.status != .error else { return nil }
     return status.limitResumeAt
   }

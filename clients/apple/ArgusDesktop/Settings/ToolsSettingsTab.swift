@@ -45,7 +45,7 @@ private struct ToolRow: View {
   @Environment(\.theme) private var theme
   let tool: DesktopTool
   let toggles: [String: Bool]
-  let set: (Bool) -> Void
+  let set: @MainActor (Bool) -> Void
 
   var body: some View {
     let on = DesktopTool.userEnabled(tool.id, in: toggles)

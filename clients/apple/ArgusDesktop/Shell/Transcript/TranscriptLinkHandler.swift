@@ -189,6 +189,6 @@ private final class ClosureMenuItem: NSMenuItem {
 
 extension EnvironmentValues {
   @Entry var transcriptLinks: TranscriptLinkHandler?
-  /// A chat file link into the code view: session, worktree-relative path, 1-based line.
-  @Entry var openInCode: (@MainActor (String, String, Int?) -> Void)?
+  /// Where a chat file link opens in the code view; a reference, so SwiftUI can compare it.
+  @Entry var codeOpener: DesktopModel?
 }

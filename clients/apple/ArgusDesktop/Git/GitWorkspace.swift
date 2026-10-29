@@ -253,9 +253,7 @@ final class GitWorkspace {
       return result
     } catch {
       failure = GitFailure(error: error) ?? GitFailure.classify(HostStore.describe(error), operation: C.name)
-      // A metatype is immutable; Swift just can't prove `C.Type` is Sendable here.
-      nonisolated(unsafe) let again = command
-      retry = { [weak self] in _ = await self?.host(again, params, label: label, track: action) }
+      retry = { [weak self] in _ = await self?.host(command, params, label: label, track: action) }
       if let action { track(action, success: false) }
       await refreshAll()
       return nil

@@ -1,11 +1,11 @@
 import ArgusKit
 import Foundation
 
-extension ArgusProtocol.LinearIssue: Identifiable {}
-extension ArgusProtocol.LinearIssueDetail: Identifiable {}
-extension ArgusProtocol.LinearWorkflowState: Identifiable {}
+extension ArgusProtocol.LinearIssue: @retroactive Identifiable {}
+extension ArgusProtocol.LinearIssueDetail: @retroactive Identifiable {}
+extension ArgusProtocol.LinearWorkflowState: @retroactive Identifiable {}
 
-extension ArgusProtocol.LinearIssueScope: Identifiable {
+extension ArgusProtocol.LinearIssueScope: @retroactive Identifiable {
   public static let all: [Self] = [.assigned, .created, .subscribed]
   public var id: String { rawValue }
 

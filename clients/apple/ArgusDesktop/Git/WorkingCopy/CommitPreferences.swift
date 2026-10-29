@@ -31,6 +31,7 @@ enum CommitPreferences {
 }
 
 /// Saving the identity a repository commits as, so it can be picked elsewhere.
+@MainActor
 enum IdentityProfiles {
   /// Adds `identity` as a profile unless one already matches it; the label
   /// defaults to the email's domain ("Work" for work.com reads better, but a

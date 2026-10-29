@@ -152,6 +152,7 @@ extension TranscriptTableController {
 }
 
 /// Built cells waiting for their rows, oldest first.
+@MainActor
 struct PreparedCells {
   private(set) var cells: [String: TranscriptCell] = [:]
   private var order: [String] = []

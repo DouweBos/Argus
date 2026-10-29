@@ -1,5 +1,5 @@
 import ArgusUI
-import AVFoundation
+@preconcurrency import AVFoundation
 import SwiftUI
 
 /// Scan the desktop's QR (or paste its code), compare the six digits, done.

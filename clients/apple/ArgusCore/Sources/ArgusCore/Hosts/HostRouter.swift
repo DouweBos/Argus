@@ -375,6 +375,7 @@ public final class HostRouter: HostBackend {
 
   // MARK: HostBackend
 
+  @discardableResult
   public func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
     _ method: RemoteMethod, _ params: Params, as: Result.Type
   ) async throws -> Result {
@@ -391,6 +392,7 @@ public final class HostRouter: HostBackend {
     return (try ProtocolCodec.convert(result, to: Result.self), seq)
   }
 
+  @discardableResult
   public func request<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws
     -> C.Result
   {
@@ -409,6 +411,7 @@ public final class HostRouter: HostBackend {
 
   /// A command by name, with its own timeout — a remote git fetch outlives the
   /// default.
+  @discardableResult
   public func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
     method: String, _ params: Params, as: Result.Type, tier: String? = nil,
     timeout: Duration? = nil

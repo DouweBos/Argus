@@ -8,7 +8,7 @@ import SwiftUI
 /// (`TranscriptTable`), so a long chat costs the rows on screen.
 struct TranscriptView: View {
   @Environment(HostStore.self) private var host
-  @Environment(\.openInCode) private var openInCode
+  @Environment(\.codeOpener) private var codeOpener
 
   let agentKey: String
   let sessionId: String
@@ -171,7 +171,9 @@ struct TranscriptView: View {
   }
 
   private func start() async {
-    links.openInCode = openInCode.map { open in { [sessionId] path, line in open(sessionId, path, line) } }
+    links.openInCode = codeOpener.map { model in
+      { [sessionId] path, line in model.openCode(session: sessionId, path: path, line: line, source: .chatLink) }
+    }
     // Saved chats link to files in the worktree too.
     Task { [links] in await links.load() }
     guard fixture == nil else { return }
