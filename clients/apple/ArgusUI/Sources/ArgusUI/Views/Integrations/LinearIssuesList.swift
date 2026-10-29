@@ -42,7 +42,7 @@ public struct LinearIssuesList: View {
           }
         } header: {
           HStack(spacing: 6) {
-            IssueStatusGlyph(type: column.type, size: 12)
+            IssueStatusGlyph(type: column.type, color: column.color, size: 12)
             Text("\(column.name) · \(column.issues.count)")
           }
         }

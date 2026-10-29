@@ -46,6 +46,12 @@ extension HostStore {
     return (result.issue, result.states)
   }
 
+  /// A team's whole workflow. Admin-tier, so only this Mac's own host answers; empty elsewhere.
+  public func linearTeamStates(teamId: String) async throws -> [LinearWorkflowState] {
+    guard let backend, backend.kind == .local else { return [] }
+    return try await backend.request(ArgusProtocol.Commands.LinearTeamStates.self, .init(teamId: teamId))
+  }
+
   /// Moves an issue to another state or priority, as the connected user.
   public func updateLinearIssue(id: String, stateId: String? = nil, priority: Int? = nil) async throws
     -> LinearIssue?

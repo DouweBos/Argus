@@ -12,6 +12,8 @@
   /// A key an interactive panel offers its content before the focused field sees it.
   public enum FloatingPanelKey: Equatable, Sendable {
     case up, down, submit
+    /// Offered before Esc closes the panel, e.g. to step back out of a submenu.
+    case escape
     case character(Character)
   }
 
@@ -209,7 +211,7 @@
       let key: FloatingPanelKey
       switch event.keyCode {
       case 53:  // Esc
-        dismiss(restoreFocus: true, notify: true)
+        if onKey?(.escape) != true { dismiss(restoreFocus: true, notify: true) }
         return true
       case 125: key = .down
       case 126: key = .up

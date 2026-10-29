@@ -116,6 +116,7 @@ private struct MenuPresentation<Menu: View>: ViewModifier {
       case .up: onKey(.up)
       case .down: onKey(.down)
       case .submit: onKey(.submit)
+      case .escape: false
       case .character(let typed): onKey(.character(typed))
       }
     }
@@ -205,6 +206,8 @@ struct LinearPropertyMenuView: View {
 struct LinearTimeInStatusCard: View {
   @Environment(\.theme) private var theme
   let issue: HostStore.LinearIssueDetail
+  /// The team's workflow, for each status's colour.
+  let states: [HostStore.LinearWorkflowState]
   let canEdit: Bool
 
   private var stints: [LinearIssueProperty.Stint] {
@@ -221,7 +224,7 @@ struct LinearTimeInStatusCard: View {
       ForEach(stints, id: \.name) { stint in
         let isCurrent = stint.name == issue.state.name
         HStack(spacing: 10) {
-          IssueStatusGlyph(type: stint.type)
+          IssueStatusGlyph(type: stint.type, color: states.first { $0.name == stint.name }?.color)
           Text(stint.name).foregroundStyle(isCurrent ? theme.text : theme.textMuted).lineLimit(1)
           Spacer(minLength: 16)
           Text(LinearIssueProperty.shortDuration(stint.duration)).foregroundStyle(theme.textMuted)

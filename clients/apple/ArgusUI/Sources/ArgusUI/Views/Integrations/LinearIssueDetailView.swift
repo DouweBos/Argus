@@ -149,7 +149,9 @@ public struct LinearIssueDetailView: View {
       SectionHeader(title: "Sub-issues", count: issue.children.count)
       ForEach(issue.children, id: \.identifier) { child in
         issueLink(child.identifier) {
-          LinearIssueLine(identifier: child.identifier, title: child.title, stateType: child.state.type)
+          LinearIssueLine(
+            identifier: child.identifier, title: child.title, stateType: child.state.type,
+            stateColor: model.states.first { $0.name == child.state.name }?.color)
         }
         .accessibilityLabel("\(child.identifier), \(child.title), \(child.state.name)")
       }
@@ -172,10 +174,12 @@ struct LinearIssueLine: View {
   let identifier: String
   let title: String
   let stateType: String
+  /// The state's Linear colour, when the issue is on a team whose workflow is loaded.
+  var stateColor: String?
 
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 8) {
-      IssueStatusGlyph(type: stateType, size: 12)
+      IssueStatusGlyph(type: stateType, color: stateColor, size: 12)
       Text(identifier)
         .font(.scaled(size: 12, design: .monospaced))
         .foregroundStyle(theme.textMuted)

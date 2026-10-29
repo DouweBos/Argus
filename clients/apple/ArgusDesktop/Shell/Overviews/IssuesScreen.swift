@@ -78,7 +78,7 @@ private struct IssuesScreenContent: View {
       return LinearIssueBoard.listOrder(issues).map(\.identifier)
     case .board:
       let overrides = (try? JSONDecoder().decode([String: Bool].self, from: Data(columnsJSON.utf8))) ?? [:]
-      let columns = LinearIssueBoard.columns(issues).filter { !LinearIssueBoard.isHidden($0, overrides: overrides) }
+      let columns = LinearIssueBoard.columns(issues, states: model.workflowStates).filter { !LinearIssueBoard.isHidden($0, overrides: overrides) }
       return LinearIssueBoard.boardOrder(columns).map(\.identifier)
     }
   }
@@ -99,7 +99,7 @@ private struct IssuesScreenContent: View {
   @ViewBuilder private var issues: some View {
     switch layout {
     case .board:
-      IssuesBoard(issues: model.shownIssues ?? [], selected: issueRef, onOpen: open)
+      IssuesBoard(issues: model.shownIssues ?? [], states: model.workflowStates, selected: issueRef, onOpen: open)
     case .list:
       LinearIssuesList(model: model, connectHint: Self.connectHint, selected: issueRef, onOpen: open)
     }

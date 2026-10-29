@@ -3,13 +3,16 @@ import SwiftUI
 
 /// The circle Linear draws for a status: dashed, empty, half, checked or
 /// crossed — Peacock's `IssueStatusIcon`. Unknown types draw as unstarted.
+/// Tinted with the state's own Linear colour when there is one.
 public struct IssueStatusGlyph: View {
   @Environment(\.theme) private var theme
   let type: String
+  let hex: String?
   let size: CGFloat
 
-  public init(type: String, size: CGFloat = 14) {
+  public init(type: String, color hex: String? = nil, size: CGFloat = 14) {
     self.type = type
+    self.hex = hex
     self.size = size
   }
 
@@ -48,7 +51,8 @@ public struct IssueStatusGlyph: View {
   }
 
   private var color: Color {
-    switch type {
+    if let linear = Color(linearHex: hex) { return linear }
+    return switch type {
     case "triage": theme.error
     case "started": theme.warning
     case "completed": theme.success
@@ -103,6 +107,14 @@ public struct PriorityGlyph: View {
     .frame(width: size, height: size)
     .accessibilityElement()
     .accessibilityLabel(LinearIssueBoard.priorityLabel(priority))
+  }
+}
+
+extension Color {
+  /// A colour Linear sends as `#rrggbb` (a state's or a label's): data, not a theme colour.
+  init?(linearHex hex: String?) {
+    guard let rgba = hex.flatMap(Inspection.RGBA.init(hex:)) else { return nil }
+    self.init(.sRGB, red: rgba.red, green: rgba.green, blue: rgba.blue, opacity: rgba.alpha)
   }
 }
 

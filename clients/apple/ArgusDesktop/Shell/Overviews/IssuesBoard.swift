@@ -3,15 +3,18 @@ import ArgusUI
 import SwiftUI
 
 /// A column per status, a swimlane per priority you can fold away; empty
-/// lanes are left out — the desktop's Issues board.
+/// lanes are left out — the desktop's Issues board. Every state of the teams'
+/// workflows is a column, shown or listed under Hidden columns.
 struct IssuesBoard: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var store
   let issues: [HostStore.LinearIssue]
+  /// The teams' workflows, so states no issue is in still get a column.
+  let states: [HostStore.LinearWorkflowState]
   let selected: String?
   let onOpen: (HostStore.LinearIssue) -> Void
   @State private var collapsed: Set<Int> = []
-  /// Column id → hidden, against Linear's defaults; JSON so it survives relaunch.
+  /// Column id → hidden, against the defaults; JSON so it survives relaunch.
   @AppStorage("issues.columns") private var overridesJSON = "{}"
 
   private static let columnWidth: CGFloat = 270
@@ -27,7 +30,7 @@ struct IssuesBoard: View {
   }
 
   var body: some View {
-    let all = LinearIssueBoard.columns(issues)
+    let all = LinearIssueBoard.columns(issues, states: states)
     let columns = all.filter { !LinearIssueBoard.isHidden($0, overrides: overrides) }
     let hidden = all.filter { LinearIssueBoard.isHidden($0, overrides: overrides) }
     HStack(alignment: .top, spacing: 0) {
@@ -85,7 +88,7 @@ struct IssuesBoard: View {
 
   private func columnHead(_ column: LinearIssueBoard.Column) -> some View {
     HStack(spacing: 6) {
-      IssueStatusGlyph(type: column.type)
+      IssueStatusGlyph(type: column.type, color: column.color)
       Text(column.name).font(.scaled(size: 13, weight: .semibold)).foregroundStyle(theme.text)
       Text("\(column.issues.count)").font(.scaled(size: 12)).foregroundStyle(theme.textMuted)
       Spacer(minLength: 0)
@@ -102,7 +105,15 @@ struct IssuesBoard: View {
     .frame(width: Self.columnWidth)
   }
 
+  /// Every hidden state, empty ones too, like Linear's "Hidden columns".
   private func hiddenPanel(_ columns: [LinearIssueBoard.Column]) -> some View {
+    ScrollView(.vertical) { hiddenList(columns) }
+      .scrollBounceBehavior(.basedOnSize)
+      .frame(width: 220)
+      .padding(.trailing, 16)
+  }
+
+  private func hiddenList(_ columns: [LinearIssueBoard.Column]) -> some View {
     VStack(alignment: .leading, spacing: 6) {
       Text("Hidden columns").font(.scaled(size: 12)).foregroundStyle(theme.textMuted).padding(.vertical, 8)
       ForEach(columns) { column in
@@ -110,7 +121,7 @@ struct IssuesBoard: View {
           setHidden(column.id, false)
         } label: {
           HStack(spacing: 8) {
-            IssueStatusGlyph(type: column.type)
+            IssueStatusGlyph(type: column.type, color: column.color)
             Text(column.name).font(.scaled(size: 13)).foregroundStyle(theme.text)
             Spacer(minLength: 0)
             Text("\(column.issues.count)").font(.scaled(size: 12)).foregroundStyle(theme.textMuted)
@@ -124,8 +135,7 @@ struct IssuesBoard: View {
         .help("Show \(column.name)")
       }
     }
-    .frame(width: 220)
-    .padding(.trailing, 16)
+    .padding(.bottom, 16)
   }
 
   /// A full-width bar per priority, so the lanes read as rows across every column.
