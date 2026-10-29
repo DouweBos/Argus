@@ -13,6 +13,7 @@ import { figmaLinkHandler } from "../../../lib/designViewer";
 import { ago, issueTimeline } from "../../../lib/issueActivity";
 import { CommentComposer } from "./CommentComposer";
 import styles from "./IssueDetail.module.css";
+import { renderLinearEmbed } from "./linearEmbed";
 
 const openFigmaLink = figmaLinkHandler("issue");
 
@@ -65,7 +66,13 @@ export function IssueActivitySection({ issue }: { issue: LinearIssueDetail }) {
               author: c.author ?? "Someone",
               avatarUrl: c.authorAvatarUrl,
               time: ago(c.createdAt),
-              body: <Markdown text={c.body} onLinkClick={openFigmaLink} />,
+              body: (
+                <Markdown
+                  renderEmbed={renderLinearEmbed}
+                  text={c.body}
+                  onLinkClick={openFigmaLink}
+                />
+              ),
               reactions: c.reactions ?? undefined,
             }),
           ),

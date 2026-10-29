@@ -5932,6 +5932,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct LinearMediaParams: Codable, Sendable {
+      public var url: String
+
+      enum CodingKeys: String, CodingKey {
+        case url = "url"
+      }
+
+      public init(url: String) {
+        self.url = url
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(url, forKey: .url)
+      }
+    }
+
+    public struct LinearMediaResult: Codable, Sendable {
+      public var path: String
+      public var mimeType: String
+
+      enum CodingKeys: String, CodingKey {
+        case path = "path"
+        case mimeType = "mimeType"
+      }
+
+      public init(path: String, mimeType: String) {
+        self.path = path
+        self.mimeType = mimeType
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(path, forKey: .path)
+        try c.encode(mimeType, forKey: .mimeType)
+      }
+    }
+
     public struct LinearTeamStatesParams: Codable, Sendable {
       public var teamId: String
 
@@ -11786,6 +11824,13 @@ extension ArgusProtocol {
       public typealias Params = EmptyParams
       public typealias Result = [ArgusProtocol.LinearTeam]
       public static let name = "linear_list_teams"
+      public static let tier = "admin"
+    }
+
+    public enum LinearMedia: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.LinearMediaParams
+      public typealias Result = ArgusProtocol.CommandsTypes.LinearMediaResult
+      public static let name = "linear_media"
       public static let tier = "admin"
     }
 

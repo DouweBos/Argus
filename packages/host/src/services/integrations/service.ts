@@ -34,6 +34,11 @@ import {
   issueDesignUrls,
   issueImageUrls,
 } from "./linear/context";
+import {
+  cacheLinearMedia,
+  isLinearUpload,
+  type LinearMedia,
+} from "./linear/media";
 import { parseLinearRef } from "./linear/refs";
 import {
   cancelOAuth,
@@ -377,4 +382,13 @@ export function commentOnLinearIssueById(
     await api.comment(issueId, body, parentId);
     capture("linear_issue_updated", { field: "comment" });
   });
+}
+
+/** A Linear upload as a local file the clients can play or show. */
+export function linearMedia(url: string): Promise<LinearMedia> {
+  if (!isLinearUpload(url)) {
+    return Promise.reject("Only Linear uploads can be fetched this way.");
+  }
+
+  return withLinear((api) => cacheLinearMedia(url, api.authorization));
 }

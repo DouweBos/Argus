@@ -69,6 +69,27 @@ export interface MarkdownProps {
    * default navigation is then cancelled), false to let it open as usual.
    */
   onLinkClick?: (url: string) => boolean;
+  /**
+   * Swap a link or image for something richer (an inline video player, an
+   * image that needs a signed-in download). Return null to render it as usual.
+   */
+  renderEmbed?: (
+    kind: "image" | "link",
+    url: string,
+    label: string,
+  ) => ReactNode | null;
+}
+
+/** The plain text inside a link, for naming what it points at. */
+function textOf(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(textOf).join("");
+  }
+
+  return "";
 }
 
 /**
@@ -86,10 +107,13 @@ export const Markdown = memo(function Markdown({
   renderMermaid,
   baseProse = true,
   onLinkClick,
+  renderEmbed,
 }: MarkdownProps) {
   // Read through a ref so a new handler doesn't remount the rendered tree.
   const onLinkClickRef = useRef(onLinkClick);
   onLinkClickRef.current = onLinkClick;
+  const renderEmbedRef = useRef(renderEmbed);
+  renderEmbedRef.current = renderEmbed;
   // Memoized so custom component identities stay stable across re-renders;
   // react-markdown treats a new `pre` function as a new type and would
   // otherwise remount the subtree (tearing down inline mermaid diagrams).
@@ -117,7 +141,22 @@ export const Markdown = memo(function Markdown({
 
         return <input type={type} {...rest} />;
       },
+      img: ({ src, alt, ...rest }) => {
+        const source = typeof src === "string" ? src : undefined;
+        const embed =
+          source && renderEmbedRef.current?.("image", source, alt ?? "");
+        if (embed) {
+          return <>{embed}</>;
+        }
+
+        return <img alt={alt} src={source} {...rest} />;
+      },
       a: ({ href, children, ...rest }) => {
+        const embed =
+          href && renderEmbedRef.current?.("link", href, textOf(children));
+        if (embed) {
+          return <>{embed}</>;
+        }
         if (href && /^https?:/i.test(href)) {
           return (
             <a

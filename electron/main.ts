@@ -32,6 +32,7 @@ import { argusHomeDir } from "@argus/host/lib/argusHome";
 import { writeLogLine } from "@argus/host/lib/logFile";
 import { isServerMode, startPowerAssertion } from "@argus/host/serverMode";
 import { setColorScheme } from "@argus/host/services/browser/conductorInput";
+import { linearMediaDir } from "@argus/host/services/integrations/linear/media";
 import { LOCAL_GATEWAY_PORT } from "@argus/host/services/remote/remoteService";
 import { serveLocalUi } from "@argus/host/services/remote/serveLocalUi";
 import { refreshAllSessionBranches } from "@argus/host/services/session/branchTracker";
@@ -76,6 +77,17 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ]);
+
+/** Whether a canonical path sits inside `root` (resolved), for the argus-file allowlist. */
+async function isUnder(canonical: string, root: string): Promise<boolean> {
+  try {
+    const canonicalRoot = await fs.promises.realpath(root);
+
+    return canonical.startsWith(canonicalRoot + path.sep);
+  } catch {
+    return false;
+  }
+}
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (process.platform === "win32") {
@@ -977,7 +989,8 @@ app.whenReady().then(async () => {
       return new Response("Not found", { status: 404 });
     }
 
-    let allowed = false;
+    // Linear uploads the host downloaded for an issue's video players and images.
+    let allowed = await isUnder(canonical, linearMediaDir());
     for (const ws of appState.sessions.values()) {
       let canonicalRoot: string;
       try {
@@ -997,7 +1010,10 @@ app.whenReady().then(async () => {
       return new Response("Forbidden", { status: 403 });
     }
 
-    return net.fetch(pathToFileURL(canonical).href);
+    // Forward Range so video players can seek without loading the whole file.
+    return net.fetch(pathToFileURL(canonical).href, {
+      headers: request.headers,
+    });
   });
 
   // Set Content-Security-Policy and inject CORP headers for external images.
