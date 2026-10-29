@@ -55,11 +55,10 @@ public struct LinearIssueDetailView: View {
           if wide {
             HStack(alignment: .top, spacing: 40) {
               main(issue).frame(maxWidth: 760, alignment: .leading)
-              VStack(alignment: .leading, spacing: 16) {
-                actions(issue)
-                LinearIssueProperties(model: model, issue: issue, canEdit: canEdit, onMenuOpened: onPropertyMenu)
+              LinearIssueProperties(model: model, issue: issue, canEdit: canEdit, onMenuOpened: onPropertyMenu) {
+                actionRow(issue)
               }
-              .frame(width: 240, alignment: .leading)
+              .frame(width: ContextCardMetrics.width, alignment: .leading)
             }
             .padding(.horizontal, 32)
             .padding(.vertical, 20)
@@ -125,6 +124,25 @@ public struct LinearIssueDetailView: View {
         .font(.scaled(size: 22, weight: .semibold))
         .foregroundStyle(theme.text)
         .textSelection(.enabled)
+    }
+  }
+
+  /// Start agent / Open session as the card's lead row, highlighted like the card's selected segment.
+  @ViewBuilder private func actionRow(_ issue: HostStore.LinearIssueDetail) -> some View {
+    let summary = HostStore.LinearIssue(issue)
+    if let session = host.session(workingOn: summary) {
+      Button { onOpenSession(session) } label: {
+        ContextCardRow(icon: Icon.agent, title: "Open session")
+      }
+      .buttonStyle(ContextRowButtonStyle(selected: true))
+      .help("Go to the session working on this issue")
+    } else {
+      Button { onStart(summary) } label: {
+        ContextCardRow(icon: Icon.play, title: "Start agent")
+      }
+      .buttonStyle(ContextRowButtonStyle(selected: true))
+      .disabled(!canStart)
+      .help("Start an agent on this issue")
     }
   }
 

@@ -24,14 +24,17 @@ struct LinearPropertyPill<Label: View>: View {
     Button {
       isOpen = true
     } label: {
-      HStack(spacing: 8) { label() }
-        .padding(.horizontal, 8)
-        .frame(minHeight: 26)
-        .background(Capsule().fill(filled ? theme.selection : .clear))
-        .contentShape(Capsule())
+      HStack(spacing: 8) {
+        label()
+        Spacer(minLength: 4)
+        Image(systemName: Icon.chevronDown).font(.scaled(size: 10, weight: .semibold)).foregroundStyle(theme.textMuted)
+      }
+      .padding(.horizontal, 7)
+      .frame(minHeight: TextScale.shared(26))
+      .background(RoundedRectangle(cornerRadius: 7).fill(filled ? theme.selection : .clear))
+      .contentShape(.rect)
     }
     .buttonStyle(.argusPlain)
-    .padding(.leading, -8)
     .onHover { hovering = $0 }
     .onChange(of: isOpen, initial: true) { _, open in
       if open {
@@ -45,13 +48,7 @@ struct LinearPropertyPill<Label: View>: View {
     .modifier(presentation)
   }
 
-  private var filled: Bool {
-    #if os(macOS)
-      hovering || isOpen
-    #else
-      true
-    #endif
-  }
+  private var filled: Bool { hovering || isOpen }
 
   private var presented: Binding<Bool> {
     Binding(get: { isOpen && menu != nil }, set: { isOpen = $0 })

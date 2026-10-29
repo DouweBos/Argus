@@ -92,73 +92,81 @@ struct LinearIssueToolbar: View {
   }
 }
 
-/// Linear's Properties: status and priority as menus when you may change
-/// them (S and P open them on the Mac), then assignee, team, estimate, cycle,
-/// labels and project, each with who last changed it on hover.
-struct LinearIssueProperties: View {
+/// Linear's Properties in the context card's surface: what to do with the
+/// issue on top, then status and priority as menus when you may change them
+/// (S and P open them on the Mac), then the rest, each with who last changed
+/// it on hover.
+struct LinearIssueProperties<Actions: View>: View {
   @Environment(\.theme) private var theme
   let model: LinearIssueDetailModel
   let issue: HostStore.LinearIssueDetail
   let canEdit: Bool
   /// A status or priority menu opened; true when by its page key.
   var onMenuOpened: ((LinearIssueProperty.Kind, Bool) -> Void)?
+  @ViewBuilder var actions: () -> Actions
   @State private var open: LinearIssueProperty.Kind?
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 18) {
-      group("Properties") {
-        status
-        priority
-        changed(.assignee) {
-          if let assignee = issue.assignee {
-            LinearAvatar(name: assignee, url: issue.assigneeAvatarUrl, size: 16)
-            value(assignee)
-          } else {
-            Image(systemName: Icon.person).foregroundStyle(theme.textMuted)
-            muted("Unassigned")
-          }
-        }
-        row {
-          Image(systemName: "square.stack").foregroundStyle(theme.textMuted)
-          value(issue.teamName)
-        }
-        if let estimate = issue.estimate {
-          changed(.estimate) {
-            Image(systemName: "triangle").foregroundStyle(theme.textMuted)
-            value(LinearIssueBoard.estimateLabel(estimate, type: issue.estimateType))
-          }
-          .accessibilityLabel("Estimate \(LinearIssueBoard.estimateLabel(estimate, type: issue.estimateType))")
-        }
-        if let cycle = issue.cycle {
-          changed(.cycle) {
-            Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(theme.textMuted)
-            value(LinearIssueBoard.cycleLabel(number: cycle.number, name: cycle.name) + (cycle.isActive ? " · current" : ""))
-          }
-        }
-        if let due = issue.dueDate {
-          row {
-            Image(systemName: "calendar").foregroundStyle(theme.textMuted)
-            value("Due \(due)")
-          }
-        }
+    VStack(alignment: .leading, spacing: 0) {
+      if Actions.self != EmptyView.self {
+        actions()
+        ContextCardDivider()
       }
-      group("Labels") {
-        if issue.labels.isEmpty {
-          muted("No labels")
+      status
+      priority
+      changed(.assignee) {
+        if let assignee = issue.assignee {
+          LinearAvatar(name: assignee, url: issue.assigneeAvatarUrl, size: 14).frame(width: 16)
+          value(assignee)
         } else {
-          ChipFlowLayout(spacing: 6, lineSpacing: 6) {
-            ForEach(issue.labels, id: \.self) { LinearLabelChip(name: $0, hex: color(of: $0)) }
-          }
+          icon(Icon.person)
+          muted("Unassigned")
         }
       }
-      group("Project") {
-        changed(.project) {
-          Image(systemName: "cube").foregroundStyle(theme.textMuted)
-          if let project = issue.project { value(project.name) } else { muted("No project") }
+      row {
+        icon("square.stack")
+        value(issue.teamName)
+      }
+      if let estimate = issue.estimate {
+        changed(.estimate) {
+          icon("triangle")
+          value(LinearIssueBoard.estimateLabel(estimate, type: issue.estimateType))
         }
+        .accessibilityLabel("Estimate \(LinearIssueBoard.estimateLabel(estimate, type: issue.estimateType))")
+      }
+      if let cycle = issue.cycle {
+        changed(.cycle) {
+          icon("arrow.triangle.2.circlepath")
+          value(LinearIssueBoard.cycleLabel(number: cycle.number, name: cycle.name))
+          if cycle.isActive { muted("current") }
+        }
+      }
+      if let due = issue.dueDate {
+        row {
+          icon("calendar")
+          value("Due \(due)")
+        }
+      }
+      ContextCardDivider()
+      changed(.project) {
+        icon("cube")
+        if let project = issue.project { value(project.name) } else { muted("No project") }
+      }
+      if issue.labels.isEmpty {
+        row {
+          icon("tag")
+          muted("No labels")
+        }
+      } else {
+        ChipFlowLayout(spacing: 4, lineSpacing: 4) {
+          ForEach(issue.labels, id: \.self) { LinearLabelChip(name: $0, hex: color(of: $0)) }
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 4)
       }
     }
-    .font(.scaled(size: 12))
+    .padding(ContextCardMetrics.padding)
+    .floatingSurface()
     #if os(macOS)
       .pageKeys(enabled: canEdit && open == nil) { typed in
         switch typed {
@@ -196,13 +204,13 @@ struct LinearIssueProperties: View {
           },
           pick: { id in Task { await model.setState(id) } }
         ) {
-          IssueStatusGlyph(type: issue.state.type, color: issue.state.color)
+          IssueStatusGlyph(type: issue.state.type, color: issue.state.color).frame(width: 16)
           value(issue.state.name)
         }
         .disabled(model.updating)
       } else {
         row {
-          IssueStatusGlyph(type: issue.state.type, color: issue.state.color)
+          IssueStatusGlyph(type: issue.state.type, color: issue.state.color).frame(width: 16)
           value(issue.state.name)
         }
       }
@@ -221,13 +229,13 @@ struct LinearIssueProperties: View {
           icon: { id in AnyView(PriorityGlyph(priority: Int(id) ?? 0)) },
           pick: { id in if let priority = Int(id) { Task { await model.setPriority(priority) } } }
         ) {
-          PriorityGlyph(priority: issue.priority)
+          PriorityGlyph(priority: issue.priority).frame(width: 16)
           value(label)
         }
         .disabled(model.updating)
       } else {
         row {
-          PriorityGlyph(priority: issue.priority)
+          PriorityGlyph(priority: issue.priority).frame(width: 16)
           value(label)
         }
       }
@@ -246,25 +254,28 @@ struct LinearIssueProperties: View {
     issue.labelColors?.first { $0.name == label }?.color
   }
 
-  private func group(_ title: String, @ViewBuilder content: () -> some View) -> some View {
-    VStack(alignment: .leading, spacing: 10) {
-      Text(title).font(.scaled(size: 12, weight: .medium)).foregroundStyle(theme.textMuted)
+  /// A context card row: the same inset and height, so menus and facts line up.
+  private func row(@ViewBuilder content: () -> some View) -> some View {
+    HStack(spacing: 8) {
       content()
+      Spacer(minLength: 4)
     }
+    .padding(.horizontal, 7)
+    .frame(minHeight: TextScale.shared(26))
+    .contentShape(.rect)
+    .accessibilityElement(children: .combine)
   }
 
-  private func row(@ViewBuilder content: () -> some View) -> some View {
-    HStack(spacing: 8) { content() }
-      .frame(minHeight: 22)
-      .accessibilityElement(children: .combine)
+  private func icon(_ name: String) -> some View {
+    Image(systemName: name).font(.scaled(size: 12)).foregroundStyle(theme.textMuted).frame(width: 16)
   }
 
   private func value(_ text: String) -> some View {
-    Text(text).font(.scaled(size: 13)).foregroundStyle(theme.text).lineLimit(2)
+    Text(text).font(.scaled(size: 12)).foregroundStyle(theme.text).lineLimit(1).truncationMode(.middle)
   }
 
   private func muted(_ text: String) -> some View {
-    Text(text).font(.scaled(size: 13)).foregroundStyle(theme.textMuted)
+    Text(text).font(.scaled(size: 12)).foregroundStyle(theme.textMuted).lineLimit(1)
   }
 }
 
@@ -287,4 +298,13 @@ struct LinearLabelChip: View {
   }
 
   private var swatch: Color { Color(linearHex: hex) ?? theme.textMuted }
+}
+
+extension LinearIssueProperties where Actions == EmptyView {
+  init(
+    model: LinearIssueDetailModel, issue: HostStore.LinearIssueDetail, canEdit: Bool,
+    onMenuOpened: ((LinearIssueProperty.Kind, Bool) -> Void)? = nil
+  ) {
+    self.init(model: model, issue: issue, canEdit: canEdit, onMenuOpened: onMenuOpened) { EmptyView() }
+  }
 }
