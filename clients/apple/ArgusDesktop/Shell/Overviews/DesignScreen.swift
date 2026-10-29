@@ -27,6 +27,7 @@ private struct DesignScreenContent: View {
   let session: RemoteSession?
 
   init(model: DesignViewerModel, session: RemoteSession?) {
+    model.onFirstSelection = { MacTelemetry.capture(.designLayerSelected(source: $0)) }
     _model = State(initialValue: model)
     self.session = session
   }

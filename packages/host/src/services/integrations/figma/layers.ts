@@ -55,6 +55,8 @@ export function flattenLayers(root: TrimmedNode): FigmaLayer[] {
       name: node.name,
       type: node.type,
       depth,
+      x: node.at?.x ?? null,
+      y: node.at?.y ?? null,
       width: node.size?.w ?? null,
       height: node.size?.h ?? null,
       text: node.text ?? null,

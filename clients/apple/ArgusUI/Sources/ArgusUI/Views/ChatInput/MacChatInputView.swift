@@ -14,6 +14,8 @@
     @Environment(\.composerTyping) var composerTyping
     @Environment(\.composerDropInbox) var dropInbox
     @Environment(\.composerFocusRequest) var focusRequest
+    @Environment(\.composerRedirect) var redirect
+    @Environment(\.composerFooter) var footer
     let preferences = Preferences()
     let draftImages = DraftAttachments()
 
@@ -43,6 +45,7 @@
     /// A start composer's picks, handed to the agent it starts.
     @State var draftMode: RemotePermissionMode?
     @State var draftModel: String?
+    @State var draftEffort: String?
     @State var starting = false
 
     var status: RemoteAgentStatus? { host.statusByAgent[agentId] }
@@ -55,6 +58,12 @@
     var capabilities: RemoteAgentCapabilities { host.capabilitiesByAgent[agentId] ?? .empty }
     var hasContent: Bool {
       !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !images.isEmpty
+    }
+    /// Where sending starts an agent, when it doesn't go to the one here.
+    var sendTarget: ComposerStarter? { redirect ?? starter }
+    var canSend: Bool {
+      guard hasContent else { return false }
+      return sendTarget?.needsText != true || !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     var commands: [SlashCommandMenu.Command] {
@@ -77,7 +86,12 @@
         } else if !hasContent, !followUps.isEmpty {
           FollowUpSuggestionRow(items: followUps) { acceptFollowUp($0) }
         }
-        box
+        VStack(spacing: 0) {
+          box
+          if let footer {
+            footer.padding(.horizontal, 14)
+          }
+        }
       }
       .readingColumn()
       .padding(.top, 6)
@@ -164,7 +178,7 @@
             .help("Interrupt (⌘.)")
         } else {
           ComposerRoundButton(kind: .send, label: "Send") { submit() }
-            .disabled(!hasContent || !isEnabled)
+            .disabled(!canSend || !isEnabled)
             .help("Send (Return)")
         }
       }
@@ -339,7 +353,7 @@
             Task { await host.setModel(agentId: agentId, model: model) }
           }
         case .openModelPicker:
-          if starter == nil { showingModelMenu = true }
+          showingModelMenu = true
         }
         return
       }
@@ -347,7 +361,10 @@
       let display = typed.isEmpty ? "(see attached images)" : typed
       let body = LinkedProjects.buildPreamble(paths: linkedProjects, message: display)
       let attachments = images.map(\.attachment)
-      if let starter { return start(with: starter, body: body, display: display, images: attachments) }
+      if let target = sendTarget {
+        guard canSend else { return }
+        return start(with: target, body: body, display: display, images: attachments)
+      }
       let queue = isRunning
       clearComposer()
       // A link rides one message, like the desktop — not every one after it.
@@ -370,8 +387,13 @@
       with starter: ComposerStarter, body: String, display: String, images attachments: [RemoteImageAttachment]
     ) {
       starting = true
+      // Redirected from a live agent, the new one takes this one's settings.
+      let live = starter == nil
       let request = ComposerStart(
-        message: body, displayText: display, images: attachments, permissionMode: draftMode, model: draftModel)
+        message: body, displayText: display, images: attachments,
+        permissionMode: draftMode ?? (live ? permissionMode : nil),
+        model: draftModel ?? (live ? status?.model : nil),
+        effort: draftEffort ?? (live ? host.effortByAgent[agentId] : nil))
       Task {
         let started = await starter.start(request)
         starting = false
@@ -381,6 +403,7 @@
         preferences.remove(PreferenceKey.linkedProjects(agentId: agentId))
         draftMode = nil
         draftModel = nil
+        draftEffort = nil
       }
     }
 

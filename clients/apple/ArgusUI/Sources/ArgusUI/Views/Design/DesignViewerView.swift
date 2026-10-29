@@ -54,15 +54,26 @@ public struct DesignViewerView: View {
         if let comparison = model.comparison {
           ScrollView { comparisonView(comparison).padding(.bottom, theme.space) }
         } else {
-          ZoomPanImage(data: model.image, label: details.frame.name)
+          canvas(details)
             .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
         }
       }
       .padding(theme.space + 4)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
       Rectangle().fill(theme.border).frame(width: 1)
-      ScrollView {
-        sections(details).padding(theme.space + 4)
+      VStack(spacing: 0) {
+        ScrollViewReader { proxy in
+          ScrollView {
+            sections(details).padding(theme.space + 4)
+          }
+          .onChange(of: model.selectedLayerId) { _, id in
+            if let id { withAnimation(.snappy) { proxy.scrollTo(id, anchor: .center) } }
+          }
+        }
+        if let layer = model.selectedLayer {
+          Rectangle().fill(theme.border).frame(height: 1)
+          DesignLayerInspector(model: model, layer: layer).padding(theme.space + 4)
+        }
       }
       .frame(width: 340)
     }
@@ -76,15 +87,24 @@ public struct DesignViewerView: View {
         if let comparison = model.comparison {
           comparisonView(comparison)
         } else {
-          ZoomPanImage(data: model.image, label: details.frame.name)
+          canvas(details)
             .aspectRatio(max(details.frame.width, 1) / max(details.frame.height, 1), contentMode: .fit)
             .frame(maxHeight: 520)
             .frame(maxWidth: .infinity)
             .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
         }
+        if let layer = model.selectedLayer { DesignLayerInspector(model: model, layer: layer) }
         sections(details)
       }
       .padding(theme.space + 4)
+    }
+  }
+
+  private func canvas(_ details: HostStore.FigmaFrameDetails) -> some View {
+    ZoomPanImage(data: model.image, label: details.frame.name) { size, zoom in
+      DesignLayerOverlay(
+        model: model, frameSize: CGSize(width: details.frame.width, height: details.frame.height), size: size,
+        zoom: zoom)
     }
   }
 
@@ -163,7 +183,7 @@ public struct DesignViewerView: View {
   private func sections(_ details: HostStore.FigmaFrameDetails) -> some View {
     VStack(alignment: .leading, spacing: 20) {
       if !details.comments.isEmpty { DesignCommentsSection(comments: details.comments) }
-      DesignLayersSection(layers: details.layers)
+      DesignLayersSection(model: model)
       if !details.pages.isEmpty {
         DesignPagesSection(pages: details.pages, isCurrent: model.isCurrent) { url in
           Task { await model.open(url) }

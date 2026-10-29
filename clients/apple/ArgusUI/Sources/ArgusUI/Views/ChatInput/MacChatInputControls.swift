@@ -9,15 +9,12 @@
       // Wraps instead of growing: a fixed-size row widened the middle column
       // and squeezed the sidebar.
       ChipFlowLayout(spacing: 2) {
-        // No agent yet to report its models; `/model` still picks one.
-        if starter == nil {
-          modelMenu
-          if !effortLevels.isEmpty {
-            ComposerPillDivider()
-            effortMenu
-          }
+        modelMenu
+        if !effortLevels.isEmpty {
           ComposerPillDivider()
+          effortMenu
         }
+        ComposerPillDivider()
         permissionMenu
         ComposerPillDivider()
         projectMenu
@@ -28,17 +25,17 @@
 
     private var modelMenu: some View {
       ChromeMenuButton(isPresented: $showingModelMenu, edge: .above) {
-        if capabilities.models.isEmpty {
-          ChromeMenuEntry.note("This agent hasn't reported its models yet.")
+        if models.isEmpty {
+          ChromeMenuEntry.note("No agent has reported its models yet.")
         } else {
           ChromeMenuEntry.header("Model")
-          for model in capabilities.models {
-            ChromeMenuItem(model.displayName, subtitle: model.description, checked: model.value == status?.model) {
-              Task { await host.setModel(agentId: agentId, model: model.value) }
+          for model in models {
+            ChromeMenuItem(model.displayName, subtitle: model.description, checked: model.value == (pickedModel ?? "default")) {
+              setModel(model.value)
             }
           }
         }
-        if sessionId != nil, (host.claudeAccounts?.count ?? 0) > 1 {
+        if starter == nil, sessionId != nil, (host.claudeAccounts?.count ?? 0) > 1 {
           ChromeMenuEntry.divider
           ChromeMenuEntry.header("Account")
           ChromeMenuItem("Follow computer default", checked: accountId == Self.followDefaultAccount) {
@@ -78,12 +75,12 @@
     private var effortMenu: some View {
       ChromeMenuButton(edge: .above) {
         for level in [String?.none] + effortLevels.map(Optional.some) {
-          ChromeMenuItem(ComposerEffort.label(level), checked: level == host.effortByAgent[agentId]) {
-            Task { await host.setEffort(agentId: agentId, level: level) }
+          ChromeMenuItem(ComposerEffort.label(level), checked: level == effort) {
+            setEffort(level)
           }
         }
       } label: { open in
-        ComposerPillLabel(icon: Icon.clock, title: ComposerEffort.label(host.effortByAgent[agentId]), open: open)
+        ComposerPillLabel(icon: Icon.clock, title: ComposerEffort.label(effort), open: open)
       }
       .buttonStyle(.argusPlain)
       .fixedSize()
@@ -121,15 +118,46 @@
       return ComposerPermissionMode.canonical(status?.permissionMode)
     }
 
+    /// This agent's models; with no agent yet (or none reported), any agent's on the computer.
+    private var models: [RemoteModelInfo] {
+      if !capabilities.models.isEmpty { return capabilities.models }
+      return host.capabilitiesByAgent.sorted { $0.key < $1.key }.first { !$0.value.models.isEmpty }?.value.models ?? []
+    }
+
+    /// The model picked for the agent; nil is the CLI default.
+    private var pickedModel: String? {
+      if let starter { return draftModel ?? starter.defaultModel }
+      return status?.model
+    }
+
     private var currentModel: RemoteModelInfo? {
-      capabilities.models.first { $0.value == status?.model } ?? capabilities.models.first
+      models.first { $0.value == (pickedModel ?? "default") } ?? models.first
     }
 
     var effortLevels: [String] { ComposerEffort.levels(for: currentModel) }
 
+    private var effort: String? { starter != nil ? draftEffort : host.effortByAgent[agentId] }
+
     private var modelLabel: String {
-      guard let value = status?.model else { return "Model" }
-      return capabilities.models.first { $0.value == value }?.displayName ?? value
+      ModelName.label(for: pickedModel, in: models) ?? "Model"
+    }
+
+    private func setModel(_ value: String) {
+      if starter != nil {
+        draftModel = value
+        // Effort levels are per model.
+        draftEffort = nil
+      } else {
+        Task { await host.setModel(agentId: agentId, model: value) }
+      }
+    }
+
+    private func setEffort(_ level: String?) {
+      if starter != nil {
+        draftEffort = level
+      } else {
+        Task { await host.setEffort(agentId: agentId, level: level) }
+      }
     }
 
     private var linkableProjects: [RemoteProject] {

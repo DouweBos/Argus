@@ -26,6 +26,8 @@ export interface TrimmedNode {
   name: string;
   type: string;
   size?: { w: number; h: number };
+  /** Top-left relative to the trimmed root. */
+  at?: { x: number; y: number };
   layout?: Record<string, unknown>;
   fills?: unknown;
   strokes?: unknown;
@@ -39,7 +41,12 @@ interface RawNode {
   id: string;
   name: string;
   type: string;
-  absoluteBoundingBox?: { width: number; height: number };
+  absoluteBoundingBox?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
   layoutMode?: string;
   itemSpacing?: number;
   paddingLeft?: number;
@@ -57,17 +64,25 @@ interface RawNode {
   children?: RawNode[];
 }
 
-export function trimNode(node: RawNode, depth = 0): TrimmedNode {
+export function trimNode(
+  node: RawNode,
+  depth = 0,
+  origin = node.absoluteBoundingBox,
+): TrimmedNode {
   const trimmed: TrimmedNode = {
     id: node.id,
     name: node.name,
     type: node.type,
   };
-  if (node.absoluteBoundingBox) {
-    trimmed.size = {
-      w: Math.round(node.absoluteBoundingBox.width),
-      h: Math.round(node.absoluteBoundingBox.height),
-    };
+  const box = node.absoluteBoundingBox;
+  if (box) {
+    trimmed.size = { w: Math.round(box.width), h: Math.round(box.height) };
+    if (origin) {
+      trimmed.at = {
+        x: Math.round(box.x - origin.x),
+        y: Math.round(box.y - origin.y),
+      };
+    }
   }
   if (node.layoutMode && node.layoutMode !== "NONE") {
     trimmed.layout = {
@@ -116,7 +131,7 @@ export function trimNode(node: RawNode, depth = 0): TrimmedNode {
   if (visible.length > 0 && depth < MAX_NODE_DEPTH) {
     trimmed.children = visible
       .slice(0, MAX_CHILDREN)
-      .map((c) => trimNode(c, depth + 1));
+      .map((c) => trimNode(c, depth + 1, origin));
   }
 
   return trimmed;
@@ -208,7 +223,7 @@ export class FigmaApi {
         `/files/${fileKey}/nodes?ids=${encodeURIComponent(id)}&depth=1`,
       ),
       this.get<{ images: Record<string, string | null> }>(
-        `/images/${fileKey}?ids=${encodeURIComponent(id)}&format=png&scale=${scale}`,
+        `/images/${fileKey}?ids=${encodeURIComponent(id)}&format=png&scale=${scale}&use_absolute_bounds=true`,
       ),
     ]);
     const doc = nodes.nodes[id]?.document;

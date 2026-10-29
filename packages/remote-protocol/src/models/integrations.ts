@@ -240,6 +240,9 @@ export const FigmaLayer = z.object({
   name: z.string(),
   type: z.string(),
   depth: z.number(),
+  /** Top-left in frame points; nullish from hosts that predate it. */
+  x: z.number().nullish(),
+  y: z.number().nullish(),
   width: z.number().nullable(),
   height: z.number().nullable(),
   /** Text content, for text layers. */

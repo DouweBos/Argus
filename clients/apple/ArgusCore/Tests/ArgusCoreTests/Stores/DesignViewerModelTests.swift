@@ -13,7 +13,7 @@ struct DesignViewerModelTests {
     #"""
     {"details":{"ref":{"url":"u","fileKey":"k","nodeId":"\#(node)","name":"\#(name)","version":"\#(version)"},
      "frame":{"name":"\#(name)","image":"aGk=","width":390,"height":844},
-     "layers":[{"id":"1:3","name":"Title","type":"TEXT","depth":1,"width":200,"height":24,
+     "layers":[{"id":"1:3","name":"Title","type":"TEXT","depth":1,"x":0,"y":0,"width":200,"height":24,
        "text":"Welcome","fill":"#111111","font":"Inter 600 16/24"}],
      "comments":[{"author":"Ann","body":"Bigger"}],
      "file":{"name":"App","version":"\#(version)","lastModified":1700000000000},
@@ -100,6 +100,51 @@ struct DesignViewerModelTests {
     await model.compare(with: DesignCompareTarget(platform: .ios, deviceKey: "UDID", name: "iPhone"))
     #expect(model.compareError != nil)
     withExtendedLifetime(store) {}
+  }
+
+  @Test("selects the layer under a click, and clears on a new frame")
+  func selects() async {
+    let (model, backend, store) = await model()
+    await model.load()
+    var sources: [DesignViewerModel.SelectionSource] = []
+    model.onFirstSelection = { sources.append($0) }
+
+    model.select(at: CGPoint(x: 5, y: 5))
+    #expect(model.selectedLayer?.name == "Title")
+    model.select(at: CGPoint(x: 500, y: 5))
+    #expect(model.selectedLayerId == nil)
+    model.select("1:3", from: .tree)
+    #expect(sources == [.canvas])
+
+    backend.reply("figma.frame_details", Self.details(node: "3:4", name: "Sign up", version: "8"))
+    await model.open(Self.signup)
+    #expect(model.selectedLayerId == nil)
+    withExtendedLifetime(store) {}
+  }
+
+  @Test("reads the flattened layers back as a tree")
+  func layerTree() {
+    func layer(_ id: String, _ depth: Double, _ rect: CGRect? = nil) -> ArgusProtocol.FigmaLayer {
+      ArgusProtocol.FigmaLayer(
+        id: id, name: id, type: "FRAME", depth: depth, x: rect.map { Double($0.minX) }, y: rect.map { Double($0.minY) }, width: rect.map { Double($0.width) },
+        height: rect.map { Double($0.height) })
+    }
+    let tree = DesignLayerTree([
+      layer("root", 0, CGRect(x: 0, y: 0, width: 100, height: 100)),
+      layer("card", 1, CGRect(x: 10, y: 10, width: 50, height: 50)),
+      layer("icon", 2, CGRect(x: 20, y: 20, width: 10, height: 10)),
+      layer("label", 1, CGRect(x: 40, y: 40, width: 40, height: 10)),
+      layer("ghost", 1),
+    ])
+
+    #expect(tree.ancestors(of: "icon") == ["card", "root"])
+    #expect(tree.hasChildren("card"))
+    #expect(!tree.hasChildren("label"))
+    #expect(tree.visible(collapsed: ["card"]).map(\.id) == ["root", "card", "label", "ghost"])
+    #expect(tree.hit(CGPoint(x: 25, y: 25))?.id == "icon")
+    #expect(tree.hit(CGPoint(x: 45, y: 45))?.id == "label")
+    #expect(tree.hit(CGPoint(x: 90, y: 90))?.id == "root")
+    #expect(tree.hit(CGPoint(x: 200, y: 0)) == nil)
   }
 
   @Test("recognises Figma design links")

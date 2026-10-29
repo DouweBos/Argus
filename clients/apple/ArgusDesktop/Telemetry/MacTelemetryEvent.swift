@@ -270,6 +270,8 @@ enum MacTelemetryEvent {
   case transcriptWorkLogOpened(working: Bool)
   /// The image viewer was opened, paged, or an image copied, saved or opened in Preview from it.
   case imageViewerUsed(action: ImageViewerAction)
+  /// The first layer picked in a design viewer frame, on its render or in its layer list.
+  case designLayerSelected(source: DesignViewerModel.SelectionSource)
   /// A message's hover action was used; edit and fork report whether the host took it.
   case messageAction(action: MessageAction, role: MessageRole, success: Bool)
   /// A chat-input feature the host can't tell from a plain send.
@@ -392,6 +394,7 @@ enum MacTelemetryEvent {
     case .transcriptCopied: "mac_transcript_copied"
     case .transcriptWorkLogOpened: "mac_transcript_work_log_opened"
     case .imageViewerUsed: "mac_image_viewer_used"
+    case .designLayerSelected: "mac_design_layer_selected"
     case .messageAction: "mac_message_action"
     case .inputUsed: "mac_input_used"
     case .terminalUsed: "mac_terminal_used"
@@ -517,6 +520,8 @@ enum MacTelemetryEvent {
       ["working": working]
     case .imageViewerUsed(let action):
       ["action": action.rawValue]
+    case .designLayerSelected(let source):
+      ["source": source.rawValue]
     case .messageAction(let action, let role, let success):
       ["action": action.rawValue, "role": role.rawValue, "success": success]
     case .inputUsed(let affordance):

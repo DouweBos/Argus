@@ -423,8 +423,7 @@ public struct ChatInputView: View {
   }
 
   private var modelLabel: String {
-    guard let value = status?.model else { return "Model" }
-    return capabilities.models.first { $0.value == value }?.displayName ?? value
+    ModelName.label(for: status?.model, in: capabilities.models) ?? "Model"
   }
 
   /// Sentinel picker value for "follow the computer's active account".

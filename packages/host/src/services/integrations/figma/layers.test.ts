@@ -1,5 +1,5 @@
-import type { TrimmedNode } from "./client";
 import { describe, expect, it } from "vitest";
+import { type TrimmedNode, trimNode } from "./client";
 import { exportableNodes, flattenLayers, solidFill } from "./layers";
 
 const tree: TrimmedNode = {
@@ -29,7 +29,13 @@ const tree: TrimmedNode = {
       type: "FRAME",
       size: { w: 358, h: 200 },
       children: [
-        { id: "1:5", name: "Icon", type: "VECTOR", size: { w: 16, h: 16 } },
+        {
+          id: "1:5",
+          name: "Icon",
+          type: "VECTOR",
+          size: { w: 16, h: 16 },
+          at: { x: 32, y: 120 },
+        },
       ],
     },
   ],
@@ -46,6 +52,8 @@ describe("flattenLayers", () => {
       ["Icon", 2],
     ]);
     expect(rows[0].fill).toBe("#ffffff");
+    expect(rows[4]).toMatchObject({ x: 32, y: 120 });
+    expect(rows[2]).toMatchObject({ x: null, y: null });
     expect(rows[1]).toMatchObject({
       text: "Welcome back",
       font: "Inter 600 24/32",
@@ -68,5 +76,26 @@ describe("solidFill", () => {
 describe("exportableNodes", () => {
   it("finds small vectors and component instances, not big frames", () => {
     expect(exportableNodes(tree).map((n) => n.name)).toEqual(["Back", "Icon"]);
+  });
+});
+
+describe("trimNode", () => {
+  it("places children relative to the root frame", () => {
+    const trimmed = trimNode({
+      id: "1:1",
+      name: "Login",
+      type: "FRAME",
+      absoluteBoundingBox: { x: 1000, y: -200, width: 390, height: 844 },
+      children: [
+        {
+          id: "1:2",
+          name: "Title",
+          type: "TEXT",
+          absoluteBoundingBox: { x: 1016.4, y: -150, width: 200, height: 32 },
+        },
+      ],
+    });
+    expect(trimmed.at).toEqual({ x: 0, y: 0 });
+    expect(trimmed.children?.[0].at).toEqual({ x: 16, y: 50 });
   });
 });

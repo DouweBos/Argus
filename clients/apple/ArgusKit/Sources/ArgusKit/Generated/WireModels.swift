@@ -6318,6 +6318,8 @@ extension ArgusProtocol {
     public var name: String
     public var type: String
     public var depth: Double
+    public var x: Double?
+    public var y: Double?
     public var width: Double?
     public var height: Double?
     public var text: String?
@@ -6329,6 +6331,8 @@ extension ArgusProtocol {
       case name = "name"
       case type = "type"
       case depth = "depth"
+      case x = "x"
+      case y = "y"
       case width = "width"
       case height = "height"
       case text = "text"
@@ -6336,11 +6340,13 @@ extension ArgusProtocol {
       case font = "font"
     }
 
-    public init(id: String, name: String, type: String, depth: Double, width: Double? = nil, height: Double? = nil, text: String? = nil, fill: String? = nil, font: String? = nil) {
+    public init(id: String, name: String, type: String, depth: Double, x: Double? = nil, y: Double? = nil, width: Double? = nil, height: Double? = nil, text: String? = nil, fill: String? = nil, font: String? = nil) {
       self.id = id
       self.name = name
       self.type = type
       self.depth = depth
+      self.x = x
+      self.y = y
       self.width = width
       self.height = height
       self.text = text
@@ -6354,6 +6360,8 @@ extension ArgusProtocol {
       try c.encode(name, forKey: .name)
       try c.encode(type, forKey: .type)
       try c.encode(depth, forKey: .depth)
+      try c.encodeIfPresent(x, forKey: .x)
+      try c.encodeIfPresent(y, forKey: .y)
       try c.encode(width, forKey: .width)
       try c.encode(height, forKey: .height)
       try c.encode(text, forKey: .text)
@@ -14052,6 +14060,7 @@ extension ArgusProtocol {
     public var supportsEffort: Bool?
     public var supportedEffortLevels: [String]?
     public var supportsFastMode: Bool?
+    public var resolvedModel: String?
 
     enum CodingKeys: String, CodingKey {
       case value = "value"
@@ -14060,15 +14069,17 @@ extension ArgusProtocol {
       case supportsEffort = "supportsEffort"
       case supportedEffortLevels = "supportedEffortLevels"
       case supportsFastMode = "supportsFastMode"
+      case resolvedModel = "resolvedModel"
     }
 
-    public init(value: String, displayName: String, description: String, supportsEffort: Bool? = nil, supportedEffortLevels: [String]? = nil, supportsFastMode: Bool? = nil) {
+    public init(value: String, displayName: String, description: String, supportsEffort: Bool? = nil, supportedEffortLevels: [String]? = nil, supportsFastMode: Bool? = nil, resolvedModel: String? = nil) {
       self.value = value
       self.displayName = displayName
       self.description = description
       self.supportsEffort = supportsEffort
       self.supportedEffortLevels = supportedEffortLevels
       self.supportsFastMode = supportsFastMode
+      self.resolvedModel = resolvedModel
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -14079,6 +14090,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(supportsEffort, forKey: .supportsEffort)
       try c.encodeIfPresent(supportedEffortLevels, forKey: .supportedEffortLevels)
       try c.encodeIfPresent(supportsFastMode, forKey: .supportsFastMode)
+      try c.encodeIfPresent(resolvedModel, forKey: .resolvedModel)
     }
   }
 

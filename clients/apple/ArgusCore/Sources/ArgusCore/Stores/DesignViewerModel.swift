@@ -1,4 +1,5 @@
 import ArgusKit
+import CoreGraphics
 import Foundation
 import Observation
 
@@ -50,6 +51,20 @@ public final class DesignViewerModel {
   public private(set) var compareError: String?
   /// Frames visited before this one, to step back to.
   public private(set) var history: [String] = []
+  public private(set) var layerTree = DesignLayerTree([])
+  public private(set) var selectedLayerId: String?
+  /// The layer under the pointer, on the canvas or in the list.
+  public var hoveredLayerId: String?
+  /// Layers whose children the list hides.
+  public private(set) var collapsed: Set<String> = []
+  /// Called on the first layer picked in each frame, to measure the feature.
+  public var onFirstSelection: ((SelectionSource) -> Void)?
+  private var selectedOnce = false
+
+  public enum SelectionSource: String, Sendable {
+    case canvas
+    case tree
+  }
 
   private unowned let host: HostStore
 
@@ -85,6 +100,7 @@ public final class DesignViewerModel {
       let found = try await host.figmaFrameDetails(url: asked)
       guard asked == url else { return }
       details = found
+      layerTree = DesignLayerTree(found?.layers ?? [])
       image = found.flatMap { Data(base64Encoded: $0.frame.image) }
       loadError = found == nil ? "Figma couldn't render this link. Open a frame link, with node-id in it." : nil
     } catch {
@@ -125,6 +141,28 @@ public final class DesignViewerModel {
     compareError = nil
   }
 
+  public var selectedLayer: ArgusProtocol.FigmaLayer? { layerTree.layer(selectedLayerId) }
+
+  /// Picks a layer, opening its ancestors in the list; nil clears.
+  public func select(_ id: String?, from source: SelectionSource) {
+    selectedLayerId = id
+    guard let id else { return }
+    collapsed.subtract(layerTree.ancestors(of: id))
+    if !selectedOnce {
+      selectedOnce = true
+      onFirstSelection?(source)
+    }
+  }
+
+  /// Picks the layer under `point` in frame points; empty space clears.
+  public func select(at point: CGPoint) {
+    select(layerTree.hit(point)?.id, from: .canvas)
+  }
+
+  public func toggleCollapsed(_ id: String) {
+    if collapsed.contains(id) { collapsed.remove(id) } else { collapsed.insert(id) }
+  }
+
   /// Whether `frameURL` is the frame on screen, for marking it in the file's outline.
   public func isCurrent(_ frameURL: String) -> Bool {
     guard let nodeId = details?.ref.nodeId else { return false }
@@ -141,6 +179,8 @@ public final class DesignViewerModel {
     url = next
     details = nil
     image = nil
+    layerTree = DesignLayerTree([])
+    (selectedLayerId, hoveredLayerId, collapsed, selectedOnce) = (nil, nil, [], false)
     loadError = nil
     clearComparison()
     await load()

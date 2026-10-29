@@ -402,6 +402,8 @@ export const RemoteModelInfo = z.object({
   supportsEffort: z.boolean().optional(),
   supportedEffortLevels: z.array(z.string()).optional(),
   supportsFastMode: z.boolean().optional(),
+  /** The model id an alias (`opus`, `default`) currently runs. */
+  resolvedModel: z.string().optional(),
 });
 export type RemoteModelInfo = z.infer<typeof RemoteModelInfo>;
 

@@ -135,6 +135,8 @@ enum TelemetryEvent {
   case fileViewed(source: FileViewSource, language: String)
   /// A Figma frame opened in the design viewer.
   case designOpened(source: DesignSource)
+  /// The first layer picked in a design viewer frame, on its render or in its layer list.
+  case designLayerSelected(source: DesignViewerModel.SelectionSource)
   /// A worktree search finished; `results` is bucketed before it is sent.
   case fileSearchRun(regex: Bool, results: Int, truncated: Bool)
   /// A workspace issue search settled; once per term, never the term itself.
@@ -195,6 +197,7 @@ enum TelemetryEvent {
     case .warningsOpened: "ios_warnings_opened"
     case .fileViewed: "ios_file_viewed"
     case .designOpened: "ios_design_opened"
+    case .designLayerSelected: "ios_design_layer_selected"
     case .fileSearchRun: "ios_file_search_run"
     case .issueSearched: "ios_issue_searched"
     case .appError: "ios_app_error"
@@ -283,6 +286,8 @@ enum TelemetryEvent {
     case .fileViewed(let source, let language):
       ["source": source.rawValue, "language": language]
     case .designOpened(let source):
+      ["source": source.rawValue]
+    case .designLayerSelected(let source):
       ["source": source.rawValue]
     case .fileSearchRun(let regex, let results, let truncated):
       ["regex": regex, "result_bucket": Self.resultBucket(results), "truncated": truncated]

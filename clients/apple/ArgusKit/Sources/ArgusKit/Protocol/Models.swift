@@ -702,6 +702,8 @@ public struct RemoteModelInfo: Codable, Hashable, Sendable, Identifiable {
   public var supportsEffort: Bool?
   public var supportedEffortLevels: [String]?
   public var supportsFastMode: Bool?
+  /// The model id an alias (`opus`, `default`) currently runs; nil from older computers.
+  public var resolvedModel: String?
 
   public var id: String { value }
 }

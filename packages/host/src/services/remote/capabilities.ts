@@ -637,6 +637,7 @@ export function toRemoteAgentCapabilities(
       supportsEffort: m.supportsEffort,
       supportedEffortLevels: m.supportedEffortLevels,
       supportsFastMode: m.supportsFastMode,
+      resolvedModel: m.resolvedModel,
     })),
     commands: init.commands.map((c) => ({
       name: c.name,

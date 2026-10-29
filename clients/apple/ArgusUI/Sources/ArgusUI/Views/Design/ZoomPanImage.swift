@@ -1,22 +1,25 @@
 import SwiftUI
 
 /// A PNG fitted to its box that pinches to zoom and, once zoomed, drags to
-/// pan, with buttons for the same on a mouse.
-public struct ZoomPanImage: View {
+/// pan, with buttons for the same on a mouse. `overlay` draws over the image
+/// in its fitted size and moves with it; it gets the zoom, to keep strokes thin.
+public struct ZoomPanImage<Overlay: View>: View {
   @Environment(\.theme) private var theme
   let data: Data?
   let label: String
+  let overlay: (CGSize, CGFloat) -> Overlay
   @State private var image: PlatformImage?
   @State private var scale: CGFloat = 1
   @State private var baseScale: CGFloat = 1
   @State private var offset = CGSize.zero
   @State private var baseOffset = CGSize.zero
 
-  private static let range: ClosedRange<CGFloat> = 0.5...8
+  private static var range: ClosedRange<CGFloat> { 0.5...8 }
 
-  public init(data: Data?, label: String) {
+  public init(data: Data?, label: String, @ViewBuilder overlay: @escaping (CGSize, CGFloat) -> Overlay) {
     self.data = data
     self.label = label
+    self.overlay = overlay
   }
 
   public var body: some View {
@@ -28,6 +31,10 @@ public struct ZoomPanImage: View {
             .interpolation(.high)
             .scaledToFit()
             .accessibilityLabel(label)
+            .overlay {
+              let size = Self.fitted(image.size, in: geometry.size)
+              overlay(size, scale).frame(width: size.width, height: size.height)
+            }
         } else {
           ProgressView().controlSize(.small)
         }
@@ -100,7 +107,19 @@ public struct ZoomPanImage: View {
     (scale, baseScale, offset, baseOffset) = (1, 1, .zero, .zero)
   }
 
+  private static func fitted(_ image: CGSize, in box: CGSize) -> CGSize {
+    guard image.width > 0, image.height > 0 else { return .zero }
+    let factor = min(box.width / image.width, box.height / image.height)
+    return CGSize(width: image.width * factor, height: image.height * factor)
+  }
+
   private static func clamp(_ value: CGFloat) -> CGFloat {
     min(max(value, range.lowerBound), range.upperBound)
+  }
+}
+
+extension ZoomPanImage where Overlay == EmptyView {
+  public init(data: Data?, label: String) {
+    self.init(data: data, label: label) { _, _ in EmptyView() }
   }
 }

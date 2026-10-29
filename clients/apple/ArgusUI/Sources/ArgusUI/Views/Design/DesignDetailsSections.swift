@@ -2,61 +2,76 @@ import ArgusCore
 import ArgusKit
 import SwiftUI
 
-/// The frame's layers in drawing order, indented by depth, with what an
-/// implementer needs from each: size, text, font and fill.
+/// The frame's layers as a tree, in drawing order: pick one to outline it on
+/// the render and inspect it; fold a layer to hide its children.
 struct DesignLayersSection: View {
   @Environment(\.theme) private var theme
-  let layers: [ArgusProtocol.FigmaLayer]
+  let model: DesignViewerModel
 
   var body: some View {
+    let tree = model.layerTree
     VStack(alignment: .leading, spacing: 6) {
-      SectionHeader(title: "Layers", count: layers.count)
-      if layers.isEmpty {
+      SectionHeader(title: "Layers", count: tree.layers.count)
+      if tree.layers.isEmpty {
         MutedText("Figma sent no layers for this frame.")
       }
-      LazyVStack(alignment: .leading, spacing: 2) {
-        ForEach(layers, id: \.id) { row($0) }
+      LazyVStack(alignment: .leading, spacing: 0) {
+        ForEach(tree.visible(collapsed: model.collapsed), id: \.id) { row($0, parent: tree.hasChildren($0.id)) }
       }
     }
   }
 
-  private func row(_ layer: ArgusProtocol.FigmaLayer) -> some View {
-    HStack(alignment: .firstTextBaseline, spacing: 6) {
-      Image(systemName: Self.symbol(layer.type))
-        .font(.scaled(size: 10))
-        .foregroundStyle(theme.textMuted)
-        .frame(width: 14)
-      VStack(alignment: .leading, spacing: 2) {
+  private func row(_ layer: ArgusProtocol.FigmaLayer, parent: Bool) -> some View {
+    let selected = model.selectedLayerId == layer.id
+    let hovered = model.hoveredLayerId == layer.id
+    return HStack(spacing: 4) {
+      Button {
+        model.toggleCollapsed(layer.id)
+      } label: {
+        Image(systemName: model.collapsed.contains(layer.id) ? Icon.chevronRight : Icon.chevronDown)
+          .font(.scaled(size: 8, weight: .semibold))
+          .foregroundStyle(theme.textMuted)
+          .frame(width: 12, height: 18)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.argusPlain)
+      .opacity(parent ? 1 : 0)
+      .disabled(!parent)
+      .accessibilityLabel(model.collapsed.contains(layer.id) ? "Expand" : "Collapse")
+      .accessibilityHidden(!parent)
+      Button {
+        model.select(selected ? nil : layer.id, from: .tree)
+      } label: {
         HStack(spacing: 6) {
+          Image(systemName: Self.symbol(layer.type))
+            .font(.scaled(size: 10))
+            .foregroundStyle(selected ? theme.accent : theme.textMuted)
+            .frame(width: 14)
           Text(layer.name)
-            .font(.scaled(size: 12, weight: .medium))
+            .font(.scaled(size: 12, weight: selected ? .semibold : .medium))
             .foregroundStyle(theme.text)
             .lineLimit(1)
           if let size = Self.size(layer) {
-            Text(size).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(theme.textMuted)
+            Text(size).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(theme.textMuted).lineLimit(1)
           }
-          if let fill = layer.fill, let color = Self.color(fill) {
-            HStack(spacing: 3) {
-              RoundedRectangle(cornerRadius: 2)
-                .fill(color)
-                .frame(width: 10, height: 10)
-                .overlay(RoundedRectangle(cornerRadius: 2).stroke(theme.border, lineWidth: 1))
-              Text(fill).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(theme.textMuted)
-            }
-          }
+          Spacer(minLength: 0)
         }
-        if let text = layer.text, !text.isEmpty {
-          Text(text).font(.scaled(size: 12)).foregroundStyle(theme.textSecondary).lineLimit(3)
-        }
-        if let font = layer.font {
-          Text(font).font(.scaled(size: 11, design: .monospaced)).foregroundStyle(theme.textMuted)
-        }
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
       }
+      .buttonStyle(.argusPlain)
+      .accessibilityAddTraits(selected ? .isSelected : [])
     }
-    .padding(.leading, CGFloat(min(Int(layer.depth), 8)) * 12)
-    .padding(.vertical, 3)
-    .textSelection(.enabled)
-    .accessibilityElement(children: .combine)
+    .padding(.leading, CGFloat(min(Int(layer.depth), 10)) * 12)
+    .padding(.trailing, 6)
+    .background(
+      selected ? theme.accentSoft : hovered ? theme.bgSecondary : .clear,
+      in: RoundedRectangle(cornerRadius: 6)
+    )
+    .onHover { inside in
+      if inside { model.hoveredLayerId = layer.id } else if model.hoveredLayerId == layer.id { model.hoveredLayerId = nil }
+    }
+    .id(layer.id)
   }
 
   static func size(_ layer: ArgusProtocol.FigmaLayer) -> String? {

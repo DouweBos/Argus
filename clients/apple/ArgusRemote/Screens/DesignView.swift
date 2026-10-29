@@ -25,6 +25,7 @@ private struct DesignContent: View {
   let forSession: Bool
 
   init(model: DesignViewerModel, forSession: Bool) {
+    model.onFirstSelection = { Telemetry.capture(.designLayerSelected(source: $0)) }
     _model = State(initialValue: model)
     self.forSession = forSession
   }
