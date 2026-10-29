@@ -71,6 +71,14 @@ public struct LinearIssueDetailView: View {
     .onGeometryChange(for: CGFloat.self, of: \.size.width) { width = $0 }
     .task(id: model.ref) { await model.load() }
     .environment(\.openURL, OpenURLAction(handler: openLink))
+    .environment(\.linearMedia, mediaLoader)
+  }
+
+  /// Uploads play inline only when the host is this Mac: its cache path means nothing elsewhere.
+  private var mediaLoader: LinearMediaLoader? {
+    guard host.showsLinearMedia else { return nil }
+    let host = host
+    return LinearMediaLoader { try await host.linearMedia(url: $0) }
   }
 
   private func main(_ issue: HostStore.LinearIssueDetail) -> some View {

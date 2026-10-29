@@ -63,6 +63,16 @@ extension HostStore {
       ArgusProtocol.Methods.LinearComment.self, .init(issueId: id, body: body, parentId: parentId))
   }
 
+  /// Linear uploads come back as files on the host, so only this Mac's own host can show them.
+  public var showsLinearMedia: Bool { backend?.kind == .local }
+
+  /// A Linear upload downloaded into the host's cache, with the signed-in credential.
+  public func linearMedia(url: String) async throws -> URL? {
+    guard let backend, backend.kind == .local else { return nil }
+    let result = try await backend.request(ArgusProtocol.Commands.LinearMedia.self, .init(url: url))
+    return URL(fileURLWithPath: result.path)
+  }
+
   /// The session already working on the issue, across every loaded project.
   public func session(workingOn issue: LinearIssue) -> RemoteSession? {
     LinearIssueBoard.session(for: issue, in: sessionsByRepo.values.joined())

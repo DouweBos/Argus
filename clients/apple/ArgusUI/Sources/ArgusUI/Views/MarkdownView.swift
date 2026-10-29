@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusKit
 import SwiftUI
 
 /// Markdown, rendered as SwiftUI text.
@@ -9,6 +10,7 @@ import SwiftUI
 public struct MarkdownView: View {
   @Environment(\.theme) private var theme
   @Environment(\.openFileLink) private var openFileLink
+  @Environment(\.linearMedia) private var linearMedia
   let text: String
   var baseSize: CGFloat = 15
 
@@ -34,7 +36,18 @@ public struct MarkdownView: View {
         .font(.scaled(size: headingSize(level), weight: .bold))
         .padding(.top, 2)
     case .paragraph(let text):
-      inline(text).font(.scaled(size: baseSize))
+      if linearMedia != nil, text.contains("uploads.linear.app") {
+        VStack(alignment: .leading, spacing: 8) {
+          ForEach(Array(LinearMediaLink.segments(text).enumerated()), id: \.offset) { _, segment in
+            switch segment {
+            case .text(let text): inline(text).font(.scaled(size: baseSize))
+            case .media(let link): LinearMediaEmbed(link: link)
+            }
+          }
+        }
+      } else {
+        inline(text).font(.scaled(size: baseSize))
+      }
     case .code(let language, let body):
       CodeBlockView(language: language, code: body)
     case .quote(let text):
