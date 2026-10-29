@@ -20,12 +20,9 @@ extension HostStore {
       integrations = try await backend.request(
         ArgusProtocol.Methods.IntegrationsList.self, .init()
       ).integrations
-      integrationsError = nil
     } catch {
-      // Usually a computer running an Argus from before integrations; say so
-      // rather than look like nothing is connected.
+      // An older computer has no integrations to offer.
       integrations = []
-      integrationsError = error.localizedDescription
     }
   }
 
