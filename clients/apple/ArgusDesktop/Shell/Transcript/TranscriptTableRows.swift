@@ -30,6 +30,10 @@ enum TranscriptRow {
 
   struct FooterState: Equatable {
     var pending: [RemoteToolCall] = []
+    /// What else the foot draws from the store. A change re-measures the row:
+    /// left at its old height, the hosted foot is centred in it and clipped.
+    var working = false
+    var lists: [Int] = []
   }
 
   /// A hosting view's root: the column, the pane's environment (AppKit hosting

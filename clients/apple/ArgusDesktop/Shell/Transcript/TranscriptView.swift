@@ -40,7 +40,7 @@ struct TranscriptView: View {
     TranscriptTable(
       controller: controller, agentKey: agentKey, messages: messages,
       top: .init(hasOlder: hasOlder, loading: loadingOlder),
-      footer: .init(pending: pending)
+      footer: footer(pending)
     )
     // Each agent has its own table; another agent's can't be updated into this one.
     .id(agentKey)
@@ -154,6 +154,19 @@ struct TranscriptView: View {
   }
 
   // MARK: Helpers
+
+  private func footer(_ pending: [RemoteToolCall]) -> TranscriptRow.FooterState {
+    let state = Activity.derive(
+      status: host.statusByAgent[agentKey]?.status, pendingToolName: host.pendingToolByAgent[agentKey],
+      pendingToolInput: nil, hasPendingPermission: !pending.isEmpty
+    ).state
+    return .init(
+      pending: pending, working: state == .working || state == .blocked,
+      lists: [
+        host.tasksByAgent[agentKey]?.count ?? 0, host.todosByAgent[agentKey]?.count ?? 0,
+        host.queuedByAgent[agentKey]?.count ?? 0, host.failedByAgent[agentKey]?.count ?? 0,
+      ])
+  }
 
   private func pendingCalls(_ messages: [RemoteMessage]) -> [RemoteToolCall] {
     // Decisions sit at the tail; there's no need to walk two thousand messages.
