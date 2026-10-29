@@ -176,32 +176,39 @@ struct AgentTabBar: View {
 
   static let height: CGFloat = 34
 
+  private func track(_ action: String) {
+    MacTelemetry.capture(.agentTabMenuUsed(action: action))
+  }
+
   /// The desktop's tab menu: rename, copy, stop, reveal, then the ways to close tabs.
   @ViewBuilder private func menu(for agent: RemoteAgentStatus) -> some View {
     let ids = agents.map(\.agentId)
     let index = ids.firstIndex(of: agent.agentId) ?? 0
-    Button("Rename Agent…") {
+    Button("Rename Agent…") { track("rename");
       newTitle = agent.title ?? ""
       renaming = agent
     }
-    Button("Copy Agent ID") { Clipboard.copy(agent.agentId) }
+    Button("Copy Agent ID") { track("copy_id"); Clipboard.copy(agent.agentId) }
     Divider()
-    Button("Stop Agent") { Task { await store.interrupt(agentId: agent.agentId) } }
+    Button("Stop Agent") { track("stop"); Task { await store.interrupt(agentId: agent.agentId) } }
       .disabled(agent.status != .running)
-    Button("Reveal Session in Finder", action: revealInFinder)
+    Button("Reveal Session in Finder") {
+      track("reveal")
+      revealInFinder()
+    }
     Divider()
-    Button("Close Agent") { close(agent.agentId) }
-    Button("Close Other Agents") { closeMany(ids.filter { $0 != agent.agentId }) }
+    Button("Close Agent") { track("close"); close(agent.agentId) }
+    Button("Close Other Agents") { track("close_others"); closeMany(ids.filter { $0 != agent.agentId }) }
       .disabled(ids.count < 2)
     Divider()
-    Button("Close Agents to the Left") { closeMany(Array(ids[..<index])) }
+    Button("Close Agents to the Left") { track("close_left"); closeMany(Array(ids[..<index])) }
       .disabled(index == 0)
-    Button("Close Agents to the Right") { closeMany(Array(ids[(index + 1)...])) }
+    Button("Close Agents to the Right") { track("close_right"); closeMany(Array(ids[(index + 1)...])) }
       .disabled(index >= ids.count - 1)
     Divider()
-    Button("Close Idle Agents") { closeMany(agents.filter { $0.status != .running }.map(\.agentId)) }
+    Button("Close Idle Agents") { track("close_idle"); closeMany(agents.filter { $0.status != .running }.map(\.agentId)) }
       .disabled(!agents.contains { $0.status != .running })
-    Button("Close All Agents", role: .destructive) { closeMany(ids) }
+    Button("Close All Agents", role: .destructive) { track("close_all"); closeMany(ids) }
   }
 
   /// Agents each agent spawned, across every agent the host has described.
