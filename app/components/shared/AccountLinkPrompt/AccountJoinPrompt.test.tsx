@@ -33,6 +33,9 @@ vi.mock("../../../lib/ipc", async (importOriginal) => ({
   accountApproveJoin: (id: string) => approveMock(id),
 }));
 
+// Out here, not in each test: the real ipc module is slow to load on a busy run.
+const { AccountJoinPrompt } = await import("./AccountJoinPrompt");
+
 const tablet: AccountJoinRequest = {
   request_id: "req-1",
   kind: "device",
@@ -52,7 +55,6 @@ describe("accountJoinPrompt", () => {
   });
 
   it("asks to review a waiting device and starts the approval", async () => {
-    const { AccountJoinPrompt } = await import("./AccountJoinPrompt");
     render(<AccountJoinPrompt />);
 
     await screen.findByText("Douwe's iPhone wants to join your account");
@@ -68,7 +70,6 @@ describe("accountJoinPrompt", () => {
   });
 
   it("puts it away on Not now and stays quiet while not linked", async () => {
-    const { AccountJoinPrompt } = await import("./AccountJoinPrompt");
     const { unmount } = render(<AccountJoinPrompt />);
     await screen.findByText("Douwe's iPhone wants to join your account");
     fireEvent.click(screen.getByText("Not now"));

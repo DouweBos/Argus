@@ -148,19 +148,21 @@ describe("code file watching", () => {
     expect(watch.watchedCodeDirs()).toEqual([]);
   });
 
-  it("sees a real write through fs.watch", async () => {
+  it("sees a real write through fs.watch", { timeout: 15_000 }, async () => {
     watch.setWatchDirForTest(null);
     await watch.watchCodeFiles("s1", ["src/a.ts"]);
-    await fs.promises.writeFile(file("src/a.ts"), "from an agent");
+    // FSEvents can miss a write made the instant a watch starts, so keep writing.
     await vi.waitFor(
-      () =>
-        expect(changes()).toEqual([
+      async () => {
+        await fs.promises.writeFile(file("src/a.ts"), "from an agent");
+        expect(changes()).toContainEqual(
           expect.objectContaining({
             relativePath: "src/a.ts",
             hash: sha1(Buffer.from("from an agent")),
           }),
-        ]),
-      { timeout: 3000 },
+        );
+      },
+      { timeout: 10_000, interval: 250 },
     );
   });
 });
