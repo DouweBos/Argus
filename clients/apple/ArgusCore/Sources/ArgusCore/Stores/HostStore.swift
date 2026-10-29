@@ -46,8 +46,6 @@ public final class HostStore {
   public internal(set) var runners: [RemoteRunner] = []
   /// Linear and Figma as this computer has them connected; empty until loaded.
   public internal(set) var integrations: [ArgusProtocol.IntegrationStatus] = []
-  /// Why the last integrations load failed, if it did.
-  public internal(set) var integrationsError: String?
   public internal(set) var stoppedByRepo: [String: [RemoteStoppedAgent]] = [:]
   public internal(set) var messagesByAgent: [String: [RemoteMessage]] = [:]
   /// Locally-appended user messages awaiting confirmation in the next snapshot.
