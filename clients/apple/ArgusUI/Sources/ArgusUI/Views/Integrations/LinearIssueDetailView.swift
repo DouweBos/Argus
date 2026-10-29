@@ -21,6 +21,8 @@ public struct LinearIssueDetailView: View {
   let onOpenIssue: ((String) -> Void)?
   /// Figma links, in the description, comments and links, open here instead of the browser.
   let onOpenDesign: ((String) -> Void)?
+  /// The status or priority menu opened; true when by its page key.
+  let onPropertyMenu: ((LinearIssueProperty.Kind, Bool) -> Void)?
   @State private var width: CGFloat = 0
 
   public init(
@@ -29,7 +31,8 @@ public struct LinearIssueDetailView: View {
     onOpenSession: @escaping (RemoteSession) -> Void,
     onStart: @escaping (HostStore.LinearIssue) -> Void,
     onOpenIssue: ((String) -> Void)? = nil,
-    onOpenDesign: ((String) -> Void)? = nil
+    onOpenDesign: ((String) -> Void)? = nil,
+    onPropertyMenu: ((LinearIssueProperty.Kind, Bool) -> Void)? = nil
   ) {
     self.model = model
     self.canEdit = canEdit
@@ -39,6 +42,7 @@ public struct LinearIssueDetailView: View {
     self.onStart = onStart
     self.onOpenIssue = onOpenIssue
     self.onOpenDesign = onOpenDesign
+    self.onPropertyMenu = onPropertyMenu
   }
 
   /// Wide enough for the properties beside the content, like Linear.
@@ -51,7 +55,7 @@ public struct LinearIssueDetailView: View {
           if wide {
             HStack(alignment: .top, spacing: 40) {
               main(issue).frame(maxWidth: 760, alignment: .leading)
-              LinearIssueProperties(model: model, issue: issue, canEdit: canEdit)
+              LinearIssueProperties(model: model, issue: issue, canEdit: canEdit, onMenuOpened: onPropertyMenu)
                 .frame(width: 240, alignment: .leading)
             }
             .padding(.horizontal, 32)
@@ -88,7 +92,7 @@ public struct LinearIssueDetailView: View {
       actions(issue)
       if let error = model.actionError { Banner(text: error, tone: .danger) }
       if !wide {
-        LinearIssueProperties(model: model, issue: issue, canEdit: canEdit)
+        LinearIssueProperties(model: model, issue: issue, canEdit: canEdit, onMenuOpened: onPropertyMenu)
       }
       description(issue)
       if !issue.children.isEmpty { subIssues(issue) }

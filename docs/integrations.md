@@ -209,7 +209,10 @@ open in the design viewer instead of the browser. The iPhone's issue list
 and the Mac app's Issues screen have the desktop's **Filter** row too, with
 the same fields and remembered per tab. The Mac app plays screen recordings and shows
 images from Linear inline in an issue, like the desktop; the iPhone keeps
-them as links, since the files stay on the computer.
+them as links, since the files stay on the computer. An issue's status and
+priority open a searchable menu of their values, like Linear's; in the Mac app
+**S** and **P** open them, number keys pick a value, and resting on a property
+shows how long the issue spent in each status or who last changed it.
 
 The design viewer shows the frame to pinch and pan, its layers with their
 size, text, font and fill, the designers' comments, and the file's pages and

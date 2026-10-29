@@ -197,7 +197,10 @@ private struct IssuePage: View {
           model: model, canEdit: store.hasControl, canStart: canStart, position: position,
           onOpenSession: { desktop.open(session: $0.id) }, onStart: onStart,
           onOpenIssue: { desktop.navigate(.issues(scope: scope, issue: $0)) },
-          onOpenDesign: { desktop.navigate(.design(url: $0)) })
+          onOpenDesign: { desktop.navigate(.design(url: $0)) },
+          onPropertyMenu: { kind, byKey in
+            MacTelemetry.capture(.issuePropertyMenuOpened(property: kind, via: byKey ? .shortcut : .click))
+          })
       }
     }
     // Fill the window from the top, so the bar doesn't float mid-screen while loading.
