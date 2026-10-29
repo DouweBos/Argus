@@ -5925,6 +5925,37 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsViewingParams: Codable, Sendable {
+      public var sessionId: String?
+      public var runnerId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case runnerId = "runner_id"
+      }
+
+      public init(sessionId: String? = nil, runnerId: String? = nil) {
+        self.sessionId = sessionId
+        self.runnerId = runnerId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(runnerId, forKey: .runnerId)
+      }
+    }
+
+    public struct SessionsViewingResult: Codable, Sendable {
+
+      public init() {
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        _ = encoder.container(keyedBy: AnyCodingKey.self)
+      }
+    }
+
     public struct TerminalsListParams: Codable, Sendable {
       public var sessionId: String
 
@@ -6929,6 +6960,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsTagsParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsTagsResult
       public static let name = "sessions.tags"
+    }
+
+    public enum SessionsViewing: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsViewingParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsViewingResult
+      public static let name = "sessions.viewing"
     }
 
     public enum TerminalsList: RemoteCommand {

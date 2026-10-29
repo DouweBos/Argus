@@ -85,6 +85,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
 
   "projects.list": FILTER,
   "sessions.list": FILTER,
+  // Accepted and ignored: a guest's view never warms the owner's sessions.
+  "sessions.viewing": OPEN,
   "scratch_pads.list": FILTER,
   "agents.list": FILTER,
   "agents.stopped": FILTER,

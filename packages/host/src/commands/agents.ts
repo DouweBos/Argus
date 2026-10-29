@@ -55,6 +55,7 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../services/agent/messageQueue";
+import { setViewingSession } from "../services/agent/warmPolicy";
 import { defineTypedCommand } from "../services/command/registry";
 import { importAllCliChats } from "../services/externalChats/importer";
 import { generateChatTitle } from "../services/llm/titleGenerator";
@@ -95,6 +96,12 @@ export function registerAgentCommands(): void {
   );
   defineTypedCommand("set_agent_effort", (p) =>
     setAgentEffort(p.agentId, p.level ?? null),
+  );
+  defineTypedCommand("set_viewing_session", (p) =>
+    setViewingSession(p.sessionId, {
+      viewerId: p.viewerId,
+      runnerId: p.runnerId,
+    }),
   );
   defineTypedCommand("prewarm_agent", (p) => prewarmAgent(p.sessionId));
   defineTypedCommand("claim_prewarm_agent", (p) =>

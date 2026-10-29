@@ -10,12 +10,13 @@ import { createLogger } from "./logger";
 import { hostPlatform } from "./platform";
 import { stopPowerAssertion } from "./serverMode";
 import { startAccount, stopAccount } from "./services/account/service";
-import { destroyAllAgents } from "./services/agent/agentService";
+import { destroyAllAgents, spawnSpare } from "./services/agent/agentService";
 import {
   startHostConversations,
   stopHostConversations,
 } from "./services/agent/conversation/hostDriver";
 import { reapOrphanedAgentProcesses } from "./services/agent/reapOrphans";
+import { startWarmPolicy, stopWarmPolicy } from "./services/agent/warmPolicy";
 import { initAutomations } from "./services/automation/manager";
 import { initAutomationOutcomes } from "./services/automation/outcomes";
 import {
@@ -205,6 +206,7 @@ export function startHost(options: StartHostOptions = {}): StartedHost {
   registerHostCommands();
   // Until a UI claims them, the host folds agent conversations itself.
   startHostConversations();
+  startWarmPolicy({ spawn: spawnSpare });
 
   setWebClientDir(options.webClientDir ?? null);
   const remoteReady = (
@@ -248,6 +250,7 @@ export function stopHostServices(): void {
   stopVolumeWatcher();
   stopAllBranchTracking();
   stopHostConversations();
+  stopWarmPolicy();
   stopMcpServer();
   stopRemote();
   stopAccount();

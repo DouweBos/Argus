@@ -69,6 +69,7 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../agent/messageQueue";
+import { setViewingSession } from "../agent/warmPolicy";
 import { saveAppSettings } from "../appSettings/store";
 import { revisePlaybook } from "../automation/authoring";
 import { appDefaultAutonomy } from "../automation/autonomy";
@@ -877,6 +878,16 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const sessions = (await listSessions(repo_root)).map(toRemoteSession);
 
     return { sessions };
+  },
+
+  "sessions.viewing": async (params, ctx) => {
+    const { session_id, runner_id } = parse("sessions.viewing", params);
+    // Only the owner's own clients warm sessions: not a guest, not a monitor.
+    if (!ctx.scope && hasCapability(ctx, "control")) {
+      setViewingSession(session_id, { runnerId: runner_id });
+    }
+
+    return {};
   },
 
   "scratch_pads.list": async (params) => {

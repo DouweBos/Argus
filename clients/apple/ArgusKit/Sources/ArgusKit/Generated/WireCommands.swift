@@ -8691,6 +8691,31 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SetViewingSessionParams: Codable, Sendable {
+      public var sessionId: String?
+      public var viewerId: String?
+      public var runnerId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+        case viewerId = "viewerId"
+        case runnerId = "runnerId"
+      }
+
+      public init(sessionId: String? = nil, viewerId: String? = nil, runnerId: String? = nil) {
+        self.sessionId = sessionId
+        self.viewerId = viewerId
+        self.runnerId = runnerId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(viewerId, forKey: .viewerId)
+        try c.encodeIfPresent(runnerId, forKey: .runnerId)
+      }
+    }
+
     public struct ShowImageContextMenuParams: Codable, Sendable {
       public var src: String
       public var suggestedName: String?
@@ -12948,6 +12973,13 @@ extension ArgusProtocol {
       public typealias Result = ArgusProtocol.UserProjectSettings
       public static let name = "set_user_project_settings"
       public static let tier = "admin"
+    }
+
+    public enum SetViewingSession: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.SetViewingSessionParams
+      public typealias Result = IgnoredResult
+      public static let name = "set_viewing_session"
+      public static let tier = "monitor"
     }
 
     public enum ShowImageContextMenu: RemoteCommand {

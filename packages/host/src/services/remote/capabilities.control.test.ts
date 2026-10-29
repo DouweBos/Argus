@@ -123,6 +123,7 @@ vi.mock("../integrations/issueStart", () => ({
     images: [{ data: "aGk=", media_type: "image/png" }],
   })),
 }));
+vi.mock("../agent/warmPolicy", () => ({ setViewingSession: vi.fn() }));
 vi.mock("../llm/registry", () => ({
   getRunnerById: vi.fn((id: string) =>
     id === "codex" ? { id: "codex" } : null,
@@ -131,6 +132,7 @@ vi.mock("../llm/registry", () => ({
 
 const { appState } = await import("../../state");
 const { dispatch } = await import("./capabilities");
+const { setViewingSession } = vi.mocked(await import("../agent/warmPolicy"));
 const { sendAgentMessage, startAgent, stopAgent } = vi.mocked(
   await import("../agent/agentService"),
 );
@@ -626,5 +628,37 @@ describe("sessions.create with a prompt", () => {
         makeCtx(["monitor", "control"]),
       ),
     ).rejects.toThrow();
+  });
+});
+
+describe("sessions.viewing", () => {
+  beforeEach(() => setViewingSession.mockClear());
+
+  it("warms the session a control device looks at", async () => {
+    await dispatch(
+      "sessions.viewing",
+      { session_id: "s1", runner_id: "codex" },
+      makeCtx(["monitor", "control"]),
+    );
+
+    expect(setViewingSession).toHaveBeenCalledWith("s1", { runnerId: "codex" });
+  });
+
+  it("ignores a monitor-only device and a huddle guest", async () => {
+    await dispatch(
+      "sessions.viewing",
+      { session_id: "s1" },
+      makeCtx(["monitor"]),
+    );
+    await dispatch(
+      "sessions.viewing",
+      { session_id: "s1" },
+      {
+        ...makeCtx(["monitor", "control"]),
+        scope: { agent_ids: [], device_keys: [] },
+      },
+    );
+
+    expect(setViewingSession).not.toHaveBeenCalled();
   });
 });

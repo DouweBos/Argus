@@ -126,6 +126,14 @@ export const MethodParams = {
   }),
   "projects.list": z.object({}),
   "sessions.list": z.object({ repo_root: z.string() }),
+  /**
+   * The session this client is looking at, null for none, so the host keeps
+   * a warm agent there. `runner_id` is the start composer's runner pick.
+   */
+  "sessions.viewing": z.object({
+    session_id: z.string().nullable(),
+    runner_id: z.string().nullable().optional(),
+  }),
   "scratch_pads.list": z.object({}),
   "agents.list": z.object({
     session_id: z.string().optional(),
@@ -695,6 +703,7 @@ export const MethodResult = {
   }),
   "projects.list": z.object({ projects: z.array(RemoteProject) }),
   "sessions.list": z.object({ sessions: z.array(RemoteSession) }),
+  "sessions.viewing": z.object({}),
   "scratch_pads.list": z.object({ sessions: z.array(RemoteSession) }),
   "agents.list": z.object({ agents: z.array(RemoteAgentStatus) }),
   "agents.status": z.object({ agent: RemoteAgentStatus }),

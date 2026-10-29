@@ -94,6 +94,20 @@ export const AGENT_COMMANDS = {
     params: AgentId.extend({ level: z.string().nullish() }),
     result: Void,
   },
+  /**
+   * The session this window is looking at, null for none, so the host keeps a
+   * warm agent there. `viewerId` names the window; `runnerId` is its start
+   * composer's runner pick.
+   */
+  set_viewing_session: {
+    tier: "monitor",
+    params: z.object({
+      sessionId: z.string().nullable(),
+      viewerId: z.string().optional(),
+      runnerId: z.string().nullish(),
+    }),
+    result: Void,
+  },
   /** Spawn a hidden agent ahead of need, so the next start skips the handshake. */
   prewarm_agent: { tier: "admin", params: SessionId, result: AgentInfo },
   claim_prewarm_agent: {

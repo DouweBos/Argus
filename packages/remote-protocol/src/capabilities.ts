@@ -103,6 +103,7 @@ export const HOST_ONLY_COMMANDS = new Set([
 export const REMOTE_METHODS = {
   "projects.list": "monitor",
   "sessions.list": "monitor",
+  "sessions.viewing": "monitor",
   /** Sessions that belong to no project — delete/rename go through `sessions.*`. */
   "scratch_pads.list": "monitor",
   "agents.list": "monitor",
