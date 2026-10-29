@@ -155,7 +155,7 @@ private struct LinearOptionsGroup: View {
         SettingsRow(
           "Report back",
           description:
-            "Comment on the issue with a short summary, the pull request and before/after simulator screenshots."
+            "Comment on the issue with a short summary, the pull request, and the design next to a simulator screenshot."
         ) {
           Picker("Report back", selection: report(settings)) {
             Text("Off").tag(ArgusProtocol.AppSettingsLinearReport.off)

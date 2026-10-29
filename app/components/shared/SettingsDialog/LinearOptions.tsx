@@ -49,7 +49,7 @@ export function LinearOptions() {
       </SettingsScreenField>
       <SettingsScreenField
         label="Report back"
-        caption="Comment on the issue with a short summary, the pull request and before/after simulator screenshots."
+        caption="Comment on the issue with a short summary, the pull request, and the design next to a simulator screenshot."
       >
         <SegmentedControl<Report>
           aria-label="When to report back to Linear"
