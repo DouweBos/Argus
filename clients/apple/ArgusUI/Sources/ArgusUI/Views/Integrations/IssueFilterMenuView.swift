@@ -6,9 +6,11 @@ extension View {
   /// field's values beside them. `field` opens straight on that field's values.
   func issueFilterMenu(
     isPresented: Binding<Bool>, field: IssueFilter.Field?, issues: [HostStore.LinearIssue],
-    filters: Binding<[IssueFilter]>
+    states: [ArgusProtocol.LinearWorkflowState], filters: Binding<[IssueFilter]>
   ) -> some View {
-    modifier(IssueFilterMenuPresentation(isPresented: isPresented, field: field, issues: issues, filters: filters))
+    modifier(
+      IssueFilterMenuPresentation(
+        isPresented: isPresented, field: field, issues: issues, states: states, filters: filters))
   }
 }
 
@@ -17,6 +19,7 @@ private struct IssueFilterMenuPresentation: ViewModifier {
   @Binding var isPresented: Bool
   let field: IssueFilter.Field?
   let issues: [HostStore.LinearIssue]
+  let states: [ArgusProtocol.LinearWorkflowState]
   @Binding var filters: [IssueFilter]
   @State private var menu: IssueFilterMenu?
 
@@ -27,7 +30,7 @@ private struct IssueFilterMenuPresentation: ViewModifier {
         menu =
           open
           ? IssueFilterMenu(
-            issues: issues, field: field, filters: { binding.wrappedValue }, apply: { binding.wrappedValue = $0 })
+            issues: issues, states: states, field: field, filters: { binding.wrappedValue }, apply: { binding.wrappedValue = $0 })
           : nil
       }
       .modifier(presentation)
@@ -260,7 +263,7 @@ private struct IssueFilterValuesPanel: View {
     } label: {
       HStack(spacing: 10) {
         FilterOptionCheck(on: on)
-        FilterValueIcon(field: field, value: option.value, issues: menu.issues).frame(width: 16)
+        FilterValueIcon(field: field, value: option.value, issues: menu.issues, states: menu.states).frame(width: 16)
         Text(option.label).font(.scaled(size: 13)).foregroundStyle(theme.text).lineLimit(1)
         Spacer(minLength: 12)
         Text("\(option.count) issue\(option.count == 1 ? "" : "s")")
@@ -288,11 +291,12 @@ private struct FilterValueIcon: View {
   let field: IssueFilter.Field
   let value: String
   let issues: [HostStore.LinearIssue]
+  let states: [ArgusProtocol.LinearWorkflowState]
 
   var body: some View {
     switch field {
     case .status:
-      let state = issues.first { $0.state.name == value }?.state
+      let state = issues.first { $0.state.name == value }?.state ?? states.first { $0.name == value }
       IssueStatusGlyph(type: state?.type ?? "unstarted", color: state?.color)
     case .statusType:
       IssueStatusGlyph(type: value)

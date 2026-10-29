@@ -11,6 +11,7 @@ public final class IssueFilterMenu {
   public typealias Field = IssueFilter.Field
 
   public let issues: [ArgusProtocol.LinearIssue]
+  public let states: [ArgusProtocol.LinearWorkflowState]
   /// Opened from a filter chip: just that field's values, no field list.
   public let pinned: Field?
   /// The field whose values show; nil while only the fields do.
@@ -35,10 +36,11 @@ public final class IssueFilterMenu {
   private let apply: ([IssueFilter]) -> Void
 
   public init(
-    issues: [ArgusProtocol.LinearIssue], field: Field? = nil, filters: @escaping () -> [IssueFilter],
-    apply: @escaping ([IssueFilter]) -> Void
+    issues: [ArgusProtocol.LinearIssue], states: [ArgusProtocol.LinearWorkflowState] = [], field: Field? = nil,
+    filters: @escaping () -> [IssueFilter], apply: @escaping ([IssueFilter]) -> Void
   ) {
     self.issues = issues
+    self.states = states
     self.pinned = field
     self.field = field
     self.read = filters
@@ -68,7 +70,7 @@ public final class IssueFilterMenu {
   public var options: (shown: [IssueFilter.Option], unmatched: [IssueFilter.Option]) {
     guard let field, !field.isText else { return ([], []) }
     let picked = Set(picked)
-    let all = IssueFilters.options(field, issues: issues).filter { matches($0.label, valueQuery) }
+    let all = IssueFilters.options(field, issues: issues, states: states).filter { matches($0.label, valueQuery) }
     let unmatched = all.filter { $0.count == 0 && !picked.contains($0.value) }
     let shown = all.filter { $0.count > 0 || picked.contains($0.value) }
     return showsUnmatched ? (shown + unmatched, []) : (shown, unmatched)

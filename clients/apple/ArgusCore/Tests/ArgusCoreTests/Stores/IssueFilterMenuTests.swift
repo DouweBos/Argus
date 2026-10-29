@@ -43,6 +43,20 @@ struct IssueFilterMenuTests {
     #expect(menu.options.unmatched.isEmpty)
   }
 
+  @Test func listsStatusesInWorkflowOrderWithUnusedOnesUnmatched() {
+    let box = Box()
+    let states: [ArgusProtocol.LinearWorkflowState] = [
+      .init(id: "d", name: "Done", type: "completed", position: 0),
+      .init(id: "s", name: "Todo", type: "unstarted", position: 1),
+      .init(id: "b", name: "Backlog", type: "backlog", position: 0),
+    ]
+    let menu = IssueFilterMenu(
+      issues: [Self.issue("A", priority: 1)], states: states, field: .status,
+      filters: { box.filters }, apply: { box.filters = $0 })
+    #expect(menu.options.shown.map(\.value) == ["Todo"])
+    #expect(menu.options.unmatched.map(\.value) == ["Backlog", "Done"])
+  }
+
   @Test func returnTicksTheHighlightedValueAndCloses() {
     let box = Box()
     let menu = menu(box, field: .priority)

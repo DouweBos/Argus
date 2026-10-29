@@ -162,7 +162,10 @@ public enum IssueFilters {
   }
 
   /// The options a field offers for these issues, with how many match each.
-  public static func options(_ field: Field, issues: [Issue], now: Date = Date()) -> [IssueFilter.Option] {
+  public static func options(
+    _ field: Field, issues: [Issue], states: [ArgusProtocol.LinearWorkflowState] = [], now: Date = Date()
+  ) -> [IssueFilter.Option] {
+    if field == .status { return statusOptions(issues: issues, states: states) }
     let ms = now.timeIntervalSince1970 * 1000
     var counts: [String: Int] = [:]
     for issue in issues {
@@ -179,6 +182,14 @@ public enum IssueFilters {
     let empty: [(value: String, label: String)] =
       !fixedOnly(field) && counts[none] != nil ? [(none, noneLabel(field))] : []
     return (fixed + seen + empty).map { .init(value: $0.value, label: $0.label, count: counts[$0.value] ?? 0) }
+  }
+
+  /// Every status in workflow order, the board's columns: the teams' unused
+  /// states count zero, so the menu tucks them under "not matching".
+  private static func statusOptions(issues: [Issue], states: [ArgusProtocol.LinearWorkflowState]) -> [IssueFilter.Option] {
+    LinearIssueBoard.columns(issues, states: states).map {
+      .init(value: $0.name, label: $0.name, count: $0.issues.count)
+    }
   }
 
   public static func optionLabel(_ field: Field, _ value: String) -> String {

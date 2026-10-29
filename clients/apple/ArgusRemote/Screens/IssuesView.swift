@@ -34,7 +34,7 @@ private struct IssuesContent: View {
             value: $model.scope, options: ArgusProtocol.LinearIssueScope.all.map { ($0, $0.title) }
           )
           if let issues = model.issues, !issues.isEmpty {
-            IssueFilterBar(issues: issues, filters: $model.filters)
+            IssueFilterBar(issues: issues, states: model.workflowStates, filters: $model.filters)
           }
         }
         .padding(.horizontal)

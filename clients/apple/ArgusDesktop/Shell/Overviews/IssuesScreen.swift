@@ -89,7 +89,7 @@ private struct IssuesScreenContent: View {
     issues
       .safeAreaInset(edge: .top, spacing: 0) {
         if store.linearConnected, let issues = model.issues, !issues.isEmpty {
-          IssueFilterBar(issues: issues, filters: $model.filters)
+          IssueFilterBar(issues: issues, states: model.workflowStates, filters: $model.filters)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
         }

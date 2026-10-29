@@ -6,11 +6,17 @@ import SwiftUI
 public struct IssueFilterBar: View {
   /// The unfiltered issues, so each option shows how many it would match.
   let issues: [HostStore.LinearIssue]
+  /// The teams' workflow, so Status lists every state in order, unused ones too.
+  let states: [ArgusProtocol.LinearWorkflowState]
   @Binding var filters: [IssueFilter]
   @State private var adding = false
 
-  public init(issues: [HostStore.LinearIssue], filters: Binding<[IssueFilter]>) {
+  public init(
+    issues: [HostStore.LinearIssue], states: [ArgusProtocol.LinearWorkflowState] = [],
+    filters: Binding<[IssueFilter]>
+  ) {
     self.issues = issues
+    self.states = states
     _filters = filters
   }
 
@@ -24,9 +30,9 @@ public struct IssueFilterBar: View {
         }
         .buttonStyle(FilterBarButtonStyle())
         .help("Filter the issues like in Linear")
-        .issueFilterMenu(isPresented: $adding, field: nil, issues: issues, filters: $filters)
+        .issueFilterMenu(isPresented: $adding, field: nil, issues: issues, states: states, filters: $filters)
         ForEach(filters, id: \.field) { filter in
-          IssueFilterChip(filter: filter, issues: issues, filters: $filters)
+          IssueFilterChip(filter: filter, issues: issues, states: states, filters: $filters)
         }
         if !filters.isEmpty {
           Button("Clear") { filters = [] }
@@ -45,6 +51,7 @@ private struct IssueFilterChip: View {
   @Environment(\.theme) private var theme
   let filter: IssueFilter
   let issues: [HostStore.LinearIssue]
+  let states: [ArgusProtocol.LinearWorkflowState]
   @Binding var filters: [IssueFilter]
   @State private var editing = false
 
@@ -63,7 +70,7 @@ private struct IssueFilterChip: View {
       Button(IssueFilters.summary(filter)) { editing = true }
         .buttonStyle(ChipSegmentStyle(muted: false))
         .help("Change the values")
-        .issueFilterMenu(isPresented: $editing, field: filter.field, issues: issues, filters: $filters)
+        .issueFilterMenu(isPresented: $editing, field: filter.field, issues: issues, states: states, filters: $filters)
       separator
       Button {
         filters = IssueFilters.updating(filters, filter.field) { _ in nil }
