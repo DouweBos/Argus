@@ -38,6 +38,14 @@ describe("readCliSession", () => {
       },
       {
         ...base,
+        type: "user",
+        message: {
+          content:
+            "<task-notification>\n<task-id>a1</task-id>\n<status>completed</status>\n</task-notification>",
+        },
+      },
+      {
+        ...base,
         type: "assistant",
         timestamp: "2026-10-01T10:00:05Z",
         message: {

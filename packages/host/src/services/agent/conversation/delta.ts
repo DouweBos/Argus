@@ -10,6 +10,7 @@ import type {
   AgentTranscriptDelta,
   AgentTranscriptOp,
 } from "@argus/remote-protocol";
+import { isSubagentWorking } from "./background";
 
 type MetaPatch = NonNullable<AgentTranscriptDelta["meta"]>;
 
@@ -38,19 +39,13 @@ export function diffMessages(
 }
 
 /**
- * A Task/Agent call anywhere in the history that hasn't returned. Tolerates
- * the loose messages an old saved chat can hold.
+ * A Task/Agent call anywhere in the history still working, in the foreground
+ * or the background. Tolerates the loose messages an old saved chat can hold.
  */
 export function hasRunningSubagents(messages: ConversationMessage[]): boolean {
   for (let i = messages.length - 1; i >= 0; i--) {
-    for (const tc of messages[i]!.toolCalls ?? []) {
-      if (
-        (tc.name === "Task" || tc.name === "Agent") &&
-        tc.result === undefined &&
-        !tc.pendingPermission
-      ) {
-        return true;
-      }
+    if ((messages[i]!.toolCalls ?? []).some(isSubagentWorking)) {
+      return true;
     }
   }
 

@@ -234,6 +234,12 @@ struct TranscriptWorkLog: View, Equatable {
   }
 
   private func label(now: Date) -> String {
+    let base = workLabel(now: now)
+    guard let stillRunning = log.stillRunning else { return base }
+    return "\(base) · \(stillRunning)"
+  }
+
+  private func workLabel(now: Date) -> String {
     if working {
       guard let started = log.started else { return "Working…" }
       return "Working for \(ChromeText.duration(now.timeIntervalSince1970 - started / 1000))"

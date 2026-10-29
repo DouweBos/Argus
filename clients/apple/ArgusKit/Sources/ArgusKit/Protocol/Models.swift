@@ -314,6 +314,39 @@ public indirect enum RemoteToolCallChild: Codable, Hashable, Sendable {
   }
 }
 
+/// How a call launched with `run_in_background` is getting on. Its tool_result
+/// only says it started; the CLI's task notification settles it.
+public struct RemoteBackgroundTask: Codable, Hashable, Sendable {
+  public enum Status: String, Codable, Sendable {
+    case completed, failed, running, stopped
+  }
+
+  public var status: Status
+  /// Epoch milliseconds.
+  public var startedAt: Double
+  public var durationMs: Double?
+
+  public init(status: Status, startedAt: Double, durationMs: Double? = nil) {
+    self.status = status
+    self.startedAt = startedAt
+    self.durationMs = durationMs
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case status
+    case startedAt = "started_at"
+    case durationMs = "duration_ms"
+  }
+
+  public init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    // A status a newer host invents still settles the task.
+    status = Status(rawValue: try c.decode(String.self, forKey: .status)) ?? .stopped
+    startedAt = try c.decode(Double.self, forKey: .startedAt)
+    durationMs = try c.decodeIfPresent(Double.self, forKey: .durationMs)
+  }
+}
+
 public struct RemoteToolCall: Codable, Hashable, Sendable, Identifiable {
   public var id: String
   public var name: String
@@ -323,9 +356,10 @@ public struct RemoteToolCall: Codable, Hashable, Sendable, Identifiable {
   public var pendingPermission: Bool?
   public var isError: Bool?
   public var status: RemoteToolStatus
+  public var background: RemoteBackgroundTask? = nil
 
   enum CodingKeys: String, CodingKey {
-    case id, name, input, children, status
+    case id, name, input, children, status, background
     case resultBlocks = "result_blocks"
     case pendingPermission = "pending_permission"
     case isError = "is_error"

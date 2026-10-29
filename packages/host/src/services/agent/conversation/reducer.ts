@@ -17,6 +17,11 @@ import type {
 } from "./types";
 import { contextWindowFromModelUsage } from "../contextWindowUsage";
 import {
+  newToolCall,
+  withTaskNotification,
+  withTaskStarted,
+} from "./background";
+import {
   applyTaskCallsLive,
   extractTasksFromMessages,
   extractTodos,
@@ -102,6 +107,7 @@ function withAssistant(
   event: Extract<LlmStreamEvent, { type: "assistant" }>,
 ): AgentConversation {
   const content: LlmContentBlock[] = event.message.content ?? [];
+  const now = Date.now();
 
   // Sub-agent messages: nest under the parent Task/Agent tool call.
   if (event.parent_tool_use_id) {
@@ -115,7 +121,7 @@ function withAssistant(
           return [
             {
               kind: "tool_use",
-              toolCall: { id: block.id, name: block.name, input: block.input },
+              toolCall: newToolCall(block.id, block.name, block.input, now),
             },
           ];
         }
@@ -140,7 +146,7 @@ function withAssistant(
     if (block.type === "text") {
       textBlocks.push(block.text);
     } else if (block.type === "tool_use") {
-      toolCalls.push({ id: block.id, name: block.name, input: block.input });
+      toolCalls.push(newToolCall(block.id, block.name, block.input, now));
     }
   }
   // A thinking-only block or a synthetic stub: track the event, add no row.
@@ -158,7 +164,7 @@ function withAssistant(
     role: "assistant",
     textBlocks,
     toolCalls,
-    timestamp: Date.now(),
+    timestamp: now,
     usage: event.message.usage,
   };
   const lastTool =
@@ -232,6 +238,12 @@ export function reduceEvent(
           ...existing,
           lastEventType: `system:${event.subtype}:${event.state}`,
         };
+      }
+      if (event.subtype === "task_started") {
+        return withTaskStarted(existing, event, Date.now());
+      }
+      if (event.subtype === "task_notification") {
+        return withTaskNotification(existing, event, Date.now());
       }
       if (event.subtype === "api_retry") {
         return {

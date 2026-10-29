@@ -80,6 +80,12 @@ public struct ToolCallCard: View {
     }
   }
 
+  /// A subagent still at it; a background launch returns at once, so its task notification ends it.
+  private var isWorking: Bool {
+    if let background = call.background { return background.status == .running }
+    return call.status == .running && ToolCallSummary.isSubagent(call.name)
+  }
+
   private var displayName: String { ToolCallSummary.label(name: call.name, input: call.input) }
 
   /// The type is already the name, so an Agent call's summary is just its task.
@@ -107,7 +113,7 @@ public struct ToolCallCard: View {
       userExpanded = !expanded
     } label: {
       HStack(spacing: 6) {
-        if call.status == .running && ToolCallSummary.isSubagent(call.name) {
+        if isWorking {
           ProgressView().controlSize(.mini)
         } else {
           Image(systemName: expanded ? Icon.chevronDown : Icon.chevronRight)
@@ -125,7 +131,11 @@ public struct ToolCallCard: View {
         editStats
         if isPending { Badge(label: "needs approval", tone: .warning) }
         if call.isError == true { Badge(label: "error", tone: .danger) }
-        if call.status == .running && !isPending { Badge(label: "running", tone: .accent) }
+        if let background = call.background {
+          BackgroundTaskStatus(task: background)
+        } else if call.status == .running && !isPending {
+          Badge(label: "running", tone: .accent)
+        }
       }
       .contentShape(Rectangle())
     }

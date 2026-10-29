@@ -1,0 +1,22 @@
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.running {
+  color: var(--accent);
+}
+
+.completed,
+.stopped {
+  color: var(--text-muted);
+}
+
+.failed {
+  color: var(--error);
+}

@@ -21,6 +21,7 @@ type ChildLike<T> =
   | { kind: "tool_use"; toolCall: T };
 
 export interface ToolCallLike<T> {
+  background?: { durationMs?: number; startedAt: number; status: string };
   children?: ChildLike<T>[];
   isError?: boolean;
   name?: string;
@@ -39,7 +40,8 @@ export interface MessageLike<T> {
 export interface VisibilityOptions {
   /**
    * The agent is gone (stopped, or a saved chat), so a call without a result
-   * never gets one and shows as interrupted rather than forever running.
+   * never gets one and shows as interrupted rather than forever running, and a
+   * background call shows as stopped.
    */
   settled?: boolean;
 }
@@ -77,6 +79,10 @@ export function visibleToolCall<T extends ToolCallLike<T>>(
   }
   if (options.settled && tc.result == null && !tc.pendingPermission) {
     next = { ...next, result: INTERRUPTED_RESULT, isError: true };
+  }
+  // Its CLI is gone, so it will never report back.
+  if (options.settled && tc.background?.status === "running") {
+    next = { ...next, background: { ...tc.background, status: "stopped" } };
   }
 
   return next;

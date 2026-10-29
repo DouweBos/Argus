@@ -92,3 +92,69 @@ export const AwaitingPermission: Story = {
     },
   },
 };
+
+const BACKGROUND_CHILDREN = [
+  {
+    kind: "tool_use" as const,
+    toolCall: {
+      id: "bg-c1",
+      name: "Bash",
+      input: { command: "pnpm vitest run" },
+      result: "ok",
+    },
+  },
+];
+
+export const BackgroundAgentRunning: Story = {
+  args: {
+    toolCall: {
+      id: "bg1",
+      name: "Agent",
+      input: {
+        description: "Mac new-agent composer QoL",
+        subagent_type: "general-purpose",
+        run_in_background: true,
+      },
+      result: "Async agent launched successfully.",
+      background: { status: "running", startedAt: Date.now() - 252_000 },
+      children: BACKGROUND_CHILDREN,
+    },
+  },
+};
+
+export const BackgroundAgentDone: Story = {
+  args: {
+    toolCall: {
+      id: "bg2",
+      name: "Agent",
+      input: {
+        description: "Mac new-agent composer QoL",
+        subagent_type: "general-purpose",
+        run_in_background: true,
+      },
+      result: "Async agent launched successfully.",
+      background: {
+        status: "completed",
+        startedAt: Date.now() - 1_121_000,
+        durationMs: 1_121_000,
+      },
+      children: BACKGROUND_CHILDREN,
+    },
+  },
+};
+
+export const BackgroundBashFailed: Story = {
+  args: {
+    toolCall: {
+      id: "bg3",
+      name: "Bash",
+      input: { command: "pnpm lint", run_in_background: true },
+      result: "Command running in background with ID: b5vmmc4ng.",
+      background: {
+        status: "failed",
+        startedAt: Date.now(),
+        durationMs: 41_000,
+      },
+    },
+  },
+};

@@ -38,6 +38,10 @@
   min-width: 0;
 }
 
+.stillRunning {
+  color: var(--accent);
+}
+
 .icons {
   display: flex;
   align-items: center;

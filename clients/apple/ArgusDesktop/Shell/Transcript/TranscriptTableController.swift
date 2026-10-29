@@ -116,18 +116,53 @@ final class TranscriptTableController: NSObject, NSTableViewDataSource, NSTableV
     if position + 1 < all.count, let next = all[position + 1].messages.first {
       ended = next.role == .assistant ? next.timestamp : messages.last?.timestamp
     }
-    return .init(id: all[position].id, messages: messages, started: before, ended: ended)
+    let running = BackgroundTasks.running(in: turn(from: position).flatMap(\.messages))
+    return .init(
+      id: all[position].id, messages: messages, started: before, ended: ended,
+      stillRunning: BackgroundTasks.stillRunningLabel(running))
   }
 
-  /// A work log next to an inserted or removed row has a new span to show.
+  /// The segments from `position` to the end of its turn: the reply after the
+  /// log is where a background launch usually sits.
+  private func turn(from position: Int) -> ArraySlice<ToolGroups.Segment> {
+    let all = segments.segments
+    var end = position + 1
+    while end < all.count, !Self.startsTurn(all[end]) { end += 1 }
+    return all[position..<end]
+  }
+
+  private static func startsTurn(_ segment: ToolGroups.Segment) -> Bool {
+    guard case .single(let message) = segment else { return false }
+    return message.role != .assistant
+  }
+
+  /// A work log next to an inserted or removed row has a new span to show, and
+  /// one whose turn changed may have new background work to count.
   private func withNeighbouringLogs(_ change: TranscriptSegments.Change) -> TranscriptSegments.Change {
+    var change = withTurnLogs(change)
     guard !change.removed.isEmpty || !change.inserted.isEmpty else { return change }
-    var change = change
     for index in [change.inserted.lowerBound - 1, change.inserted.upperBound]
     where segments.segments.indices.contains(index) && !change.inserted.contains(index)
       && !change.reloaded.contains(index)
     {
       if case .collapsed = segments.segments[index] { change.reloaded.append(index) }
+    }
+    return change
+  }
+
+  /// The work log opening each changed segment's turn.
+  private func withTurnLogs(_ change: TranscriptSegments.Change) -> TranscriptSegments.Change {
+    let all = segments.segments
+    var change = change
+    for index in change.reloaded + Array(change.inserted) {
+      var log = index - 1
+      while log >= 0, !Self.startsTurn(all[log]) {
+        if case .collapsed = all[log] {
+          if !change.inserted.contains(log) && !change.reloaded.contains(log) { change.reloaded.append(log) }
+          break
+        }
+        log -= 1
+      }
     }
     return change
   }

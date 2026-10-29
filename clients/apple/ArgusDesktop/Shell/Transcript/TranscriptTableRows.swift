@@ -19,6 +19,8 @@ enum TranscriptRow {
     /// When the work ended: the reply after it, else its own last message;
     /// nil while it's the newest thing in the chat.
     var ended: Double?
+    /// What the turn launched in the background that hasn't reported back.
+    var stillRunning: String?
   }
 
   struct TopState: Equatable {

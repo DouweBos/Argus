@@ -3,6 +3,10 @@ import type {
   ToolCallInfo,
 } from "../../../stores/conversationStore";
 import { memo, useState } from "react";
+import {
+  runningBackgroundCalls,
+  stillRunningLabel,
+} from "@argus/host/services/agent/conversation/background";
 import { HoverTimestamp, Icons } from "@argus/peacock";
 import { ToolCallCard } from "../ToolCallCard";
 import { categorizeTools } from "../categorizeTools";
@@ -40,6 +44,7 @@ export const CollapsedToolGroup = memo(function CollapsedToolGroup({
   );
   const messageCount = messages.length;
   const categories = categorizeTools(messages);
+  const stillRunning = stillRunningLabel(runningBackgroundCalls(messages));
 
   const firstTimestamp = messages[0]?.timestamp;
   const lastTimestamp = messages[messages.length - 1]?.timestamp;
@@ -61,6 +66,9 @@ export const CollapsedToolGroup = memo(function CollapsedToolGroup({
         <span className={styles.summary}>
           {totalToolCalls} tool {totalToolCalls === 1 ? "call" : "calls"},{" "}
           {messageCount} {messageCount === 1 ? "message" : "messages"}
+          {stillRunning && (
+            <span className={styles.stillRunning}> · {stillRunning}</span>
+          )}
         </span>
         <span className={styles.icons}>
           {categories.read > 0 && (

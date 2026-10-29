@@ -39,6 +39,7 @@ export interface RawToolCall {
   isError?: boolean;
   pendingPermission?: boolean;
   children?: RawChild[];
+  background?: { status: string; startedAt: number; durationMs?: number };
 }
 export type RawChild =
   | { kind: "text"; text: string }
@@ -145,6 +146,20 @@ function toolStatus(tc: RawToolCall): RemoteToolCall["status"] {
   return tc.result != null ? "done" : "running";
 }
 
+const BACKGROUND_STATUSES = new Set(["completed", "failed", "running"]);
+
+function toRemoteBackground(
+  bg: NonNullable<RawToolCall["background"]>,
+): NonNullable<RemoteToolCall["background"]> {
+  return {
+    status: BACKGROUND_STATUSES.has(bg.status)
+      ? (bg.status as "completed" | "failed" | "running")
+      : "stopped",
+    started_at: bg.startedAt,
+    ...(bg.durationMs != null ? { duration_ms: bg.durationMs } : {}),
+  };
+}
+
 function toRemoteToolCall(messageId: string, tc: RawToolCall): RemoteToolCall {
   const id = tc.id ?? "";
   const status = toolStatus(tc);
@@ -167,6 +182,7 @@ function toRemoteToolCall(messageId: string, tc: RawToolCall): RemoteToolCall {
     ...(tc.pendingPermission ? { pending_permission: true } : {}),
     ...(tc.isError ? { is_error: true } : {}),
     status,
+    ...(tc.background ? { background: toRemoteBackground(tc.background) } : {}),
   };
 }
 

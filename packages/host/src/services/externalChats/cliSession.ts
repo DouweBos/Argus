@@ -35,7 +35,7 @@ const SESSION_ID =
 
 /** CLI bookkeeping that reaches the transcript as user text. */
 const NOISE =
-  /^\s*<(?:command-name|command-message|command-args|local-command-stdout|local-command-caveat|system-reminder|bash-input|bash-stdout|bash-stderr)>/;
+  /^\s*<(?:command-name|command-message|command-args|local-command-stdout|local-command-caveat|system-reminder|bash-input|bash-stdout|bash-stderr|task-notification)>/;
 
 export function isCliSessionId(id: string): boolean {
   return SESSION_ID.test(id);

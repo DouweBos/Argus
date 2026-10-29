@@ -7,6 +7,7 @@ import type {
   AgentTranscriptPage,
 } from "@argus/remote-protocol";
 import { create } from "zustand";
+import { hasRunningSubagents as hostHasRunningSubagents } from "@argus/host/services/agent/conversation/delta";
 import {
   fromSavedMessages,
   withPermissionPending,
@@ -549,8 +550,9 @@ export function firstUserText(
 /**
  * True when the agent has an in-flight Claude subagent — a `Task`/`Agent`
  * tool call that hasn't returned a result yet (and isn't waiting on a
- * permission prompt). The CLI can report the parent session `idle` between
- * tool calls while its subagents keep working, so this is the live signal
+ * permission prompt), or one launched in the background that hasn't reported
+ * back. The CLI can report the parent session `idle` between tool calls while
+ * its subagents keep working, so this is the live signal
  * that work is still happening under the hood. The host says so for the whole
  * history; a conversation nothing follows is scanned.
  */
@@ -563,20 +565,8 @@ function conversationHasRunningSubagents(
   if (conversation.runningSubagents !== undefined) {
     return conversation.runningSubagents;
   }
-  const { messages } = conversation;
-  for (let i = messages.length - 1; i >= 0; i--) {
-    for (const tc of messages[i].toolCalls) {
-      if (
-        (tc.name === "Task" || tc.name === "Agent") &&
-        tc.result === undefined &&
-        !tc.pendingPermission
-      ) {
-        return true;
-      }
-    }
-  }
 
-  return false;
+  return hostHasRunningSubagents(conversation.messages);
 }
 
 export const useHasRunningSubagents = (

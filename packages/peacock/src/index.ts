@@ -37,6 +37,8 @@ export * from "./components/Markdown/Markdown";
 export * from "./components/MessageBubble/MessageBubble";
 export * from "./components/TaskList/TaskList";
 export * from "./components/TodoList/TodoList";
+export * from "./components/BackgroundTaskStatus/BackgroundTaskStatus";
+export * from "./components/BackgroundTaskStatus/backgroundTask";
 export * from "./components/ToolCall/ToolCall";
 export * from "./components/ToolCall/helpers";
 export * from "./components/ToolCall/questions";

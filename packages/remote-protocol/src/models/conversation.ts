@@ -35,7 +35,23 @@ export type ConversationToolResultBlock = z.infer<
   typeof ConversationToolResultBlock
 >;
 
+/**
+ * A call launched with `run_in_background`: its tool_result only says it
+ * started, so how it went arrives later as the CLI's task notification.
+ */
+export const ConversationBackgroundTask = z.object({
+  /** How long it ran, once it settled. */
+  durationMs: z.number().optional(),
+  /** Epoch milliseconds. */
+  startedAt: z.number(),
+  status: z.enum(["completed", "failed", "running", "stopped"]),
+});
+export type ConversationBackgroundTask = z.infer<
+  typeof ConversationBackgroundTask
+>;
+
 export interface ConversationToolCall {
+  background?: ConversationBackgroundTask;
   /** What a Task/Agent call's subagent streamed. */
   children?: ConversationToolCallChild[];
   id: string;
@@ -53,6 +69,7 @@ export type ConversationToolCallChild =
 export const ConversationToolCall: z.ZodType<ConversationToolCall> = z.lazy(
   () =>
     z.object({
+      background: ConversationBackgroundTask.optional(),
       children: z.array(ConversationToolCallChild).optional(),
       id: z.string(),
       input: z.record(z.string(), z.unknown()),
@@ -138,7 +155,7 @@ export const AgentConversationMeta = z.object({
   pendingToolInput: z.record(z.string(), z.unknown()).nullable().optional(),
   pendingToolName: z.string().nullable().optional(),
   resuming: z.boolean().optional(),
-  /** A Task/Agent call anywhere in the history is still working. */
+  /** A Task/Agent call anywhere in the history is still working, in the foreground or the background. */
   runningSubagents: z.boolean().optional(),
   sessionId: z.string().optional(),
   slashCommands: z.array(AgentSlashCommand).optional(),

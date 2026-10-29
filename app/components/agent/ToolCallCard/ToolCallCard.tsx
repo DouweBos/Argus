@@ -81,6 +81,7 @@ function toToolCallData(tc: ToolCallInfo): ToolCallData {
     input: tc.input,
     isError: tc.isError,
     pendingPermission: tc.pendingPermission,
+    background: tc.background,
     result: mapResult(tc.result),
     children: tc.children?.map(
       (c): ToolCallChildData =>

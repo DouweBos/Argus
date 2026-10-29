@@ -4279,6 +4279,48 @@ extension ArgusProtocol {
     }
   }
 
+  public struct ConversationBackgroundTaskStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let completed = ConversationBackgroundTaskStatus(rawValue: "completed")
+    public static let failed = ConversationBackgroundTaskStatus(rawValue: "failed")
+    public static let running = ConversationBackgroundTaskStatus(rawValue: "running")
+    public static let stopped = ConversationBackgroundTaskStatus(rawValue: "stopped")
+  }
+
+  public struct ConversationBackgroundTask: Codable, Sendable {
+    public var durationMs: Double?
+    public var startedAt: Double
+    public var status: ConversationBackgroundTaskStatus
+
+    enum CodingKeys: String, CodingKey {
+      case durationMs = "durationMs"
+      case startedAt = "startedAt"
+      case status = "status"
+    }
+
+    public init(durationMs: Double? = nil, startedAt: Double, status: ConversationBackgroundTaskStatus) {
+      self.durationMs = durationMs
+      self.startedAt = startedAt
+      self.status = status
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(durationMs, forKey: .durationMs)
+      try c.encode(startedAt, forKey: .startedAt)
+      try c.encode(status, forKey: .status)
+    }
+  }
+
   public struct ConversationMessageRole: RawRepresentable, Codable, Hashable, Sendable {
     public var rawValue: String
     public init(rawValue: String) { self.rawValue = rawValue }
@@ -4549,6 +4591,7 @@ extension ArgusProtocol {
   }
 
   public struct ConversationToolCall: Codable, Sendable {
+    public var background: ConversationBackgroundTask?
     public var children: [ConversationToolCallChild]?
     public var id: String
     public var input: [String: JSONValue]
@@ -4558,6 +4601,7 @@ extension ArgusProtocol {
     public var result: JSONValue?
 
     enum CodingKeys: String, CodingKey {
+      case background = "background"
       case children = "children"
       case id = "id"
       case input = "input"
@@ -4567,7 +4611,8 @@ extension ArgusProtocol {
       case result = "result"
     }
 
-    public init(children: [ConversationToolCallChild]? = nil, id: String, input: [String: JSONValue], isError: Bool? = nil, name: String, pendingPermission: Bool? = nil, result: JSONValue? = nil) {
+    public init(background: ConversationBackgroundTask? = nil, children: [ConversationToolCallChild]? = nil, id: String, input: [String: JSONValue], isError: Bool? = nil, name: String, pendingPermission: Bool? = nil, result: JSONValue? = nil) {
+      self.background = background
       self.children = children
       self.id = id
       self.input = input
@@ -4579,6 +4624,7 @@ extension ArgusProtocol {
 
     public func encode(to encoder: Encoder) throws {
       var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encodeIfPresent(background, forKey: .background)
       try c.encodeIfPresent(children, forKey: .children)
       try c.encode(id, forKey: .id)
       try c.encode(input, forKey: .input)
@@ -13147,6 +13193,48 @@ extension ArgusProtocol {
     public static let succeeded = RemoteAutomationRunStatus(rawValue: "succeeded")
   }
 
+  public struct RemoteBackgroundTaskStatus: RawRepresentable, Codable, Hashable, Sendable {
+    public var rawValue: String
+    public init(rawValue: String) { self.rawValue = rawValue }
+    public init(from decoder: Decoder) throws {
+      rawValue = try decoder.singleValueContainer().decode(String.self)
+    }
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.singleValueContainer()
+      try c.encode(rawValue)
+    }
+
+    public static let completed = RemoteBackgroundTaskStatus(rawValue: "completed")
+    public static let failed = RemoteBackgroundTaskStatus(rawValue: "failed")
+    public static let running = RemoteBackgroundTaskStatus(rawValue: "running")
+    public static let stopped = RemoteBackgroundTaskStatus(rawValue: "stopped")
+  }
+
+  public struct RemoteBackgroundTask: Codable, Sendable {
+    public var status: RemoteBackgroundTaskStatus
+    public var startedAt: Double
+    public var durationMs: Double?
+
+    enum CodingKeys: String, CodingKey {
+      case status = "status"
+      case startedAt = "started_at"
+      case durationMs = "duration_ms"
+    }
+
+    public init(status: RemoteBackgroundTaskStatus, startedAt: Double, durationMs: Double? = nil) {
+      self.status = status
+      self.startedAt = startedAt
+      self.durationMs = durationMs
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(status, forKey: .status)
+      try c.encode(startedAt, forKey: .startedAt)
+      try c.encodeIfPresent(durationMs, forKey: .durationMs)
+    }
+  }
+
   public struct RemoteBranchCompare: Codable, Sendable {
     public var leftOnly: [RemoteCommitSummary]
     public var rightOnly: [RemoteCommitSummary]
@@ -15481,6 +15569,7 @@ extension ArgusProtocol {
     public var pendingPermission: Bool?
     public var isError: Bool?
     public var status: RemoteToolCallStatus
+    public var background: RemoteBackgroundTask?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -15491,9 +15580,10 @@ extension ArgusProtocol {
       case pendingPermission = "pending_permission"
       case isError = "is_error"
       case status = "status"
+      case background = "background"
     }
 
-    public init(id: String, name: String, input: [String: JSONValue], resultBlocks: [RemoteToolResultBlock], children: [RemoteToolCallChild]? = nil, pendingPermission: Bool? = nil, isError: Bool? = nil, status: RemoteToolCallStatus) {
+    public init(id: String, name: String, input: [String: JSONValue], resultBlocks: [RemoteToolResultBlock], children: [RemoteToolCallChild]? = nil, pendingPermission: Bool? = nil, isError: Bool? = nil, status: RemoteToolCallStatus, background: RemoteBackgroundTask? = nil) {
       self.id = id
       self.name = name
       self.input = input
@@ -15502,6 +15592,7 @@ extension ArgusProtocol {
       self.pendingPermission = pendingPermission
       self.isError = isError
       self.status = status
+      self.background = background
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -15514,6 +15605,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(pendingPermission, forKey: .pendingPermission)
       try c.encodeIfPresent(isError, forKey: .isError)
       try c.encode(status, forKey: .status)
+      try c.encodeIfPresent(background, forKey: .background)
     }
   }
 

@@ -1,3 +1,5 @@
+import type { BackgroundTaskData } from "../BackgroundTaskStatus/backgroundTask";
+
 export type ToolResultBlockData =
   | { type: "image"; mediaType: string; imageId?: string; data?: string }
   | { type: "text"; text: string };
@@ -15,6 +17,8 @@ export interface ToolCallData {
   isError?: boolean;
   pendingPermission?: boolean;
   children?: ToolCallChildData[];
+  /** Set when it keeps running past its tool_result (`run_in_background`). */
+  background?: BackgroundTaskData;
 }
 
 const PATH_SUMMARY_TOOLS = new Set([

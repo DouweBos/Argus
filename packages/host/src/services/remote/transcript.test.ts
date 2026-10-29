@@ -1,7 +1,7 @@
 import type { AgentTranscriptDelta } from "@argus/remote-protocol";
 import { EventPayloads } from "@argus/remote-protocol";
 import { describe, expect, it } from "vitest";
-import { toRemoteTranscriptDelta } from "./transcript";
+import { toRemoteMessage, toRemoteTranscriptDelta } from "./transcript";
 
 const delta: AgentTranscriptDelta = {
   agentId: "a1",
@@ -74,5 +74,27 @@ describe("toRemoteTranscriptDelta", () => {
     expect(toRemoteTranscriptDelta(delta, {})).toBe(
       toRemoteTranscriptDelta(delta, {}),
     );
+  });
+});
+
+describe("toRemoteMessage", () => {
+  it("forwards a background call's progress", () => {
+    const out = toRemoteMessage({
+      id: "m",
+      role: "assistant",
+      toolCalls: [
+        {
+          id: "a",
+          name: "Agent",
+          result: "Async agent launched",
+          background: { status: "completed", startedAt: 5, durationMs: 60_000 },
+        },
+      ],
+    });
+    expect(out.tool_calls[0]?.background).toEqual({
+      status: "completed",
+      started_at: 5,
+      duration_ms: 60_000,
+    });
   });
 });

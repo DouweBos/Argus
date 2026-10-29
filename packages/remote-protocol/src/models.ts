@@ -142,6 +142,15 @@ export const RemoteToolResultBlock = z.discriminatedUnion("type", [
 ]);
 export type RemoteToolResultBlock = z.infer<typeof RemoteToolResultBlock>;
 
+/** How a call launched with `run_in_background` is getting on. */
+export const RemoteBackgroundTask = z.object({
+  status: z.enum(["completed", "failed", "running", "stopped"]),
+  /** Epoch milliseconds. */
+  started_at: z.number(),
+  duration_ms: z.number().optional(),
+});
+export type RemoteBackgroundTask = z.infer<typeof RemoteBackgroundTask>;
+
 /** A tool invocation within an assistant message (structure-preserving). */
 export interface RemoteToolCall {
   id: string;
@@ -155,6 +164,8 @@ export interface RemoteToolCall {
   pending_permission?: boolean;
   is_error?: boolean;
   status: "done" | "error" | "pending" | "running";
+  /** Set when the call runs in the background past its own tool_result. */
+  background?: RemoteBackgroundTask;
 }
 
 /** Sub-agent output nested under a Task/Agent tool call. */
@@ -172,6 +183,7 @@ export const RemoteToolCall: z.ZodType<RemoteToolCall> = z.lazy(() =>
     pending_permission: z.boolean().optional(),
     is_error: z.boolean().optional(),
     status: z.enum(["done", "error", "pending", "running"]),
+    background: RemoteBackgroundTask.optional(),
   }),
 );
 

@@ -23,6 +23,7 @@ import {
   listQueue,
   promoteQueuedMessage,
 } from "../messageQueue";
+import { withBackgroundSettled } from "./background";
 import { parseCliDiagnostic } from "./cliDiagnostics";
 import {
   conversationOf,
@@ -110,6 +111,7 @@ function route(channel: string, payload: unknown): void {
       break;
     case "exit":
       entry.inflight = false;
+      update(id, entry, (c) => withBackgroundSettled(c, Date.now()));
       save(id);
       flushLive(id);
       break;
@@ -229,6 +231,7 @@ function statusChanged(agentId: string, entry: Tracked, status: string): void {
   }
   if (status === "stopped" || status === "error") {
     entry.inflight = false;
+    update(agentId, entry, (c) => withBackgroundSettled(c, Date.now()));
     save(agentId);
     untrack(agentId);
 

@@ -6,17 +6,40 @@
 
 import type {
   AgentCapabilities,
+  ConversationBackgroundTask as BackgroundTask,
   AgentSlashCommand as SlashCommand,
   ImageAttachment,
 } from "@argus/remote-protocol";
 
-export type { AgentCapabilities, ImageAttachment, SlashCommand };
+export type {
+  AgentCapabilities,
+  BackgroundTask,
+  ImageAttachment,
+  SlashCommand,
+};
 
 // ---------------------------------------------------------------------------
 // Claude Code stream-json event types
 // ---------------------------------------------------------------------------
 
 export type LlmStreamEvent =
+  | {
+      /** A background task (or a foreground one being tracked) began. */
+      is_backgrounded?: boolean;
+      subtype: "task_started";
+      task_id: string;
+      tool_use_id?: string;
+      type: "system";
+    }
+  | {
+      /** A task settled. `usage` is set for subagents. */
+      status: "completed" | "failed" | "stopped";
+      subtype: "task_notification";
+      task_id: string;
+      tool_use_id?: string;
+      type: "system";
+      usage?: { duration_ms?: number };
+    }
   | {
       /** Authoritative idle/running signal from the CLI. */
       state: "idle" | "requires_action" | "running";
@@ -161,6 +184,8 @@ export type ToolCallChild =
   | { kind: "tool_use"; toolCall: ToolCallInfo };
 
 export interface ToolCallInfo {
+  /** Set on a call that keeps running after its tool_result (`run_in_background`). */
+  background?: BackgroundTask;
   /**
    * Nested events streamed by a sub-agent (Task/Agent). Only populated on
    * parent Task/Agent tool calls whose sub-agent emitted text or tool_use

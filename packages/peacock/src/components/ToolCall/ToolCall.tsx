@@ -6,6 +6,7 @@ import {
 } from "react";
 import * as Icons from "../../icons/Icons";
 import { AnsweredQuestion } from "../AnsweredQuestion/AnsweredQuestion";
+import { BackgroundTaskStatus } from "../BackgroundTaskStatus/BackgroundTaskStatus";
 import { Badge } from "../Badge/Badge";
 import { DiffView, computeDiffStats } from "../DiffView/DiffView";
 import {
@@ -113,11 +114,14 @@ export function ToolCall(props: ToolCallProps) {
     : "";
   const summary = toolSummary(toolCall.name, toolCall.input);
   const hasResult = toolCall.result !== undefined;
-  const subAgentRunning =
-    isSubAgentParent &&
-    !hasResult &&
-    !toolCall.isError &&
-    !toolCall.pendingPermission;
+  const background = toolCall.background;
+  // A background launch returns at once; its task notification ends it.
+  const subAgentRunning = background
+    ? background.status === "running"
+    : isSubAgentParent &&
+      !hasResult &&
+      !toolCall.isError &&
+      !toolCall.pendingPermission;
   const isBash = toolCall.name === "Bash";
   const isPathSummary = isPathTool(toolCall.name);
   const isEdit =
@@ -326,12 +330,15 @@ export function ToolCall(props: ToolCallProps) {
             awaiting permission
           </Badge>
         )}
-        {hasResult && !toolCall.isError && !isPending && (
+        {background && (
+          <BackgroundTaskStatus task={background} spinner={false} />
+        )}
+        {!background && hasResult && !toolCall.isError && !isPending && (
           <Badge tone="neutral" className={styles.doneTag}>
             done
           </Badge>
         )}
-        {subAgentRunning && !isPending && (
+        {!background && subAgentRunning && !isPending && (
           <Badge tone="accent" className={styles.runningTag}>
             running
           </Badge>
