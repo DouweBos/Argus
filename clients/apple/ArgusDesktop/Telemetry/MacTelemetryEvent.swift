@@ -183,6 +183,12 @@ enum MacTelemetryEvent {
     case project
   }
 
+  /// How an issue's status or priority menu was opened.
+  enum IssueMenuVia: String {
+    case click
+    case shortcut
+  }
+
   /// What a session's context card was used for.
   enum ContextCardAction: String {
     case collapse
@@ -246,6 +252,8 @@ enum MacTelemetryEvent {
   case sidebarFiltered(kind: SidebarFilterKind)
   /// A session's context card was shown, hidden, or one of its actions used.
   case contextCardUsed(action: ContextCardAction)
+  /// An issue page's status or priority menu opened; the change itself is the host's `linear_issue_updated`.
+  case issuePropertyMenuOpened(property: LinearIssueProperty.Kind, via: IssueMenuVia)
   /// A deep link or launch route was opened; `screen` is its route pattern.
   case linkOpened(screen: String, outcome: LinkOutcome)
   /// A transcript link was used; `relative` is whether the path needed the worktree.
@@ -361,6 +369,7 @@ enum MacTelemetryEvent {
     case .sidebarProjectToggled: "mac_sidebar_project_toggled"
     case .sidebarFiltered: "mac_sidebar_filtered"
     case .contextCardUsed: "mac_context_card_used"
+    case .issuePropertyMenuOpened: "mac_issue_property_menu_opened"
     case .homeCardActed: "mac_home_card_acted"
     case .hostFolderPicked: "mac_host_folder_picked"
     case .tabUsed: "mac_tab_used"
@@ -464,6 +473,8 @@ enum MacTelemetryEvent {
       ["kind": kind.rawValue]
     case .contextCardUsed(let action):
       ["action": action.rawValue]
+    case .issuePropertyMenuOpened(let property, let via):
+      ["property": property.rawValue, "via": via.rawValue]
     case .homeCardActed(let card, let action):
       ["card": card.rawValue, "action": action.rawValue]
     case .hostFolderPicked(let stage):

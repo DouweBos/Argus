@@ -280,13 +280,29 @@ public struct ContextCard<Content: View>: View {
     VStack(alignment: .leading, spacing: 0) { content }
       .padding(ContextCardMetrics.padding)
       .frame(width: ContextCardMetrics.width)
-      .background {
-        if chrome {
-          RoundedRectangle(cornerRadius: theme.radius).fill(theme.surface)
-            .overlay(RoundedRectangle(cornerRadius: theme.radius).stroke(theme.border, lineWidth: 1))
-            .shadow(color: .black.opacity(theme.scheme == .dark ? 0.35 : 0.08), radius: 12, y: 4)
-        }
+      .floatingSurface(chrome)
+  }
+}
+
+extension View {
+  /// The context card's floating surface — fill, hairline, radius and shadow — for anything else that floats.
+  public func floatingSurface(_ shown: Bool = true) -> some View {
+    modifier(FloatingSurface(shown: shown))
+  }
+}
+
+private struct FloatingSurface: ViewModifier {
+  @Environment(\.theme) private var theme
+  let shown: Bool
+
+  func body(content: Content) -> some View {
+    content.background {
+      if shown {
+        RoundedRectangle(cornerRadius: theme.radius).fill(theme.surface)
+          .overlay(RoundedRectangle(cornerRadius: theme.radius).stroke(theme.border, lineWidth: 1))
+          .shadow(color: .black.opacity(theme.scheme == .dark ? 0.35 : 0.08), radius: 12, y: 4)
       }
+    }
   }
 }
 

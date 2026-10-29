@@ -92,20 +92,24 @@ struct LinearIssueToolbar: View {
   }
 }
 
-/// Linear's Properties: status and priority as pickers when you may change
-/// them, then assignee, team, estimate, cycle, labels and project.
+/// Linear's Properties: status and priority as menus when you may change
+/// them (S and P open them on the Mac), then assignee, team, estimate, cycle,
+/// labels and project, each with who last changed it on hover.
 struct LinearIssueProperties: View {
   @Environment(\.theme) private var theme
   let model: LinearIssueDetailModel
   let issue: HostStore.LinearIssueDetail
   let canEdit: Bool
+  /// A status or priority menu opened; true when by its page key.
+  var onMenuOpened: ((LinearIssueProperty.Kind, Bool) -> Void)?
+  @State private var open: LinearIssueProperty.Kind?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 18) {
       group("Properties") {
         status
         priority
-        row {
+        changed(.assignee) {
           if let assignee = issue.assignee {
             LinearAvatar(name: assignee, url: issue.assigneeAvatarUrl, size: 16)
             value(assignee)
@@ -119,14 +123,14 @@ struct LinearIssueProperties: View {
           value(issue.teamName)
         }
         if let estimate = issue.estimate {
-          row {
+          changed(.estimate) {
             Image(systemName: "triangle").foregroundStyle(theme.textMuted)
             value(LinearIssueBoard.estimateLabel(estimate, type: issue.estimateType))
           }
           .accessibilityLabel("Estimate \(LinearIssueBoard.estimateLabel(estimate, type: issue.estimateType))")
         }
         if let cycle = issue.cycle {
-          row {
+          changed(.cycle) {
             Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(theme.textMuted)
             value(LinearIssueBoard.cycleLabel(number: cycle.number, name: cycle.name) + (cycle.isActive ? " · current" : ""))
           }
@@ -148,61 +152,95 @@ struct LinearIssueProperties: View {
         }
       }
       group("Project") {
-        row {
+        changed(.project) {
           Image(systemName: "cube").foregroundStyle(theme.textMuted)
           if let project = issue.project { value(project.name) } else { muted("No project") }
         }
       }
     }
     .font(.scaled(size: 12))
+    #if os(macOS)
+      .pageKeys(enabled: canEdit && open == nil) { typed in
+        switch typed {
+        case "s": show(.status)
+        case "p": show(.priority)
+        default: return false
+        }
+        return true
+      }
+    #endif
+  }
+
+  private func show(_ kind: LinearIssueProperty.Kind, byKey: Bool = true) {
+    open = kind
+    onMenuOpened?(kind, byKey)
+  }
+
+  private func isOpen(_ kind: LinearIssueProperty.Kind) -> Binding<Bool> {
+    Binding(
+      get: { open == kind },
+      set: { shown in
+        if shown { show(kind, byKey: false) } else if open == kind { open = nil }
+      })
   }
 
   private var status: some View {
-    row {
-      IssueStatusGlyph(type: issue.state.type)
+    Group {
       if canEdit {
-        Picker("Status", selection: stateSelection) {
-          ForEach(model.stateOptions) { Text($0.name).tag($0.id) }
+        LinearPropertyPill(
+          options: LinearIssueProperty.statusOptions(model.stateOptions), current: issue.state.id,
+          placeholder: "Change status…", key: "S", isOpen: isOpen(.status),
+          icon: { id in AnyView(IssueStatusGlyph(type: model.stateOptions.first { $0.id == id }?.type ?? "")) },
+          pick: { id in Task { await model.setState(id) } }
+        ) {
+          IssueStatusGlyph(type: issue.state.type)
+          value(issue.state.name)
         }
-        .labelsHidden()
-        .fixedSize()
         .disabled(model.updating)
-        .clickable()
       } else {
-        value(issue.state.name)
+        row {
+          IssueStatusGlyph(type: issue.state.type)
+          value(issue.state.name)
+        }
       }
     }
+    .propertyHoverCard(enabled: open == nil) { LinearTimeInStatusCard(issue: issue, canEdit: canEdit) }
+    .accessibilityLabel("Status \(issue.state.name)")
   }
 
   private var priority: some View {
-    row {
-      PriorityGlyph(priority: issue.priority)
+    let label = LinearIssueBoard.priorityLabel(Int(issue.priority))
+    return Group {
       if canEdit {
-        Picker("Priority", selection: prioritySelection) {
-          ForEach(LinearIssueBoard.priorityOrder, id: \.self) {
-            Text(LinearIssueBoard.priorityLabel($0)).tag($0)
-          }
+        LinearPropertyPill(
+          options: LinearIssueProperty.priorityOptions, current: "\(Int(issue.priority))",
+          placeholder: "Change priority…", key: "P", isOpen: isOpen(.priority),
+          icon: { id in AnyView(PriorityGlyph(priority: Int(id) ?? 0)) },
+          pick: { id in if let priority = Int(id) { Task { await model.setPriority(priority) } } }
+        ) {
+          PriorityGlyph(priority: issue.priority)
+          value(label)
         }
-        .labelsHidden()
-        .fixedSize()
         .disabled(model.updating)
-        .clickable()
       } else {
-        value(LinearIssueBoard.priorityLabel(Int(issue.priority)))
+        row {
+          PriorityGlyph(priority: issue.priority)
+          value(label)
+        }
       }
     }
+    .propertyHoverCard(enabled: open == nil) { LinearLastChangeCard(kind: .priority, history: issue.history) }
+    .accessibilityLabel("Priority \(label)")
+  }
+
+  /// A read-only row that tells, on hover, who last changed it.
+  private func changed(_ kind: LinearIssueProperty.Kind, @ViewBuilder content: () -> some View) -> some View {
+    row(content: content)
+      .propertyHoverCard { LinearLastChangeCard(kind: kind, history: issue.history) }
   }
 
   private func color(of label: String) -> String? {
     issue.labelColors?.first { $0.name == label }?.color
-  }
-
-  private var stateSelection: Binding<String> {
-    Binding(get: { issue.state.id }, set: { id in Task { await model.setState(id) } })
-  }
-
-  private var prioritySelection: Binding<Int> {
-    Binding(get: { Int(issue.priority) }, set: { p in Task { await model.setPriority(p) } })
   }
 
   private func group(_ title: String, @ViewBuilder content: () -> some View) -> some View {
