@@ -14,12 +14,15 @@ export interface PickerPopoverProps {
   /** Distance between the trigger and the popover. */
   gap?: number;
   onClose: () => void;
-  /** Element the popover anchors to. It opens above, aligned to the left edge. */
+  /** Opens above the trigger by default; `below` for triggers near the top. */
+  placement?: "above" | "below";
+  /** Element the popover anchors to, aligned to its left edge. */
   triggerRef: RefObject<HTMLElement | null>;
 }
 
 interface Anchor {
-  bottom: number;
+  bottom?: number;
+  top?: number;
   left: number;
   minWidth: number;
 }
@@ -36,6 +39,7 @@ export function PickerPopover({
   children,
   gap = 6,
   onClose,
+  placement = "above",
   triggerRef,
 }: PickerPopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -57,7 +61,9 @@ export function PickerPopover({
       setAnchor({
         // Keep the whole popover on screen on a narrow phone.
         left: Math.max(8, Math.min(r.left, window.innerWidth - 8 - r.width)),
-        bottom: window.innerHeight - r.top + gap,
+        ...(placement === "below"
+          ? { top: r.bottom + gap }
+          : { bottom: window.innerHeight - r.top + gap }),
         minWidth: r.width,
       });
     };
@@ -71,7 +77,7 @@ export function PickerPopover({
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
     };
-  }, [triggerRef, gap]);
+  }, [triggerRef, gap, placement]);
 
   // pointerdown, not mousedown: on touch a synthetic mousedown only arrives
   // after the finger lifts, which makes dismissal feel a beat late.
@@ -116,6 +122,7 @@ export function PickerPopover({
       style={{
         left: anchor.left,
         bottom: anchor.bottom,
+        top: anchor.top,
         minWidth: anchor.minWidth,
       }}
     >

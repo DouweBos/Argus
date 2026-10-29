@@ -185,6 +185,11 @@
   min-width: 0;
 }
 
+/* The pill's padding hangs outside the column, so its text lines up with the rows. */
+.properties .menuValue {
+  margin: -6px 0 -6px -10px;
+}
+
 .withIcon {
   display: flex;
   align-items: center;

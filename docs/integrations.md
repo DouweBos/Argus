@@ -52,7 +52,9 @@ description, sub-issues, related issues, linked resources (pull requests and
 Figma frames), and the activity: every change to the issue and the comment
 threads, with replies, reactions and subscribers. Comment or reply as
 yourself. The sidebar shows status, priority, assignee, team, estimate,
-cycle, colored labels and project; change status and priority there. The top
+cycle, colored labels and project. Click status or priority (or press `S` /
+`P`) for a menu: type to filter, press a number to pick. Hover status to see
+how long the issue spent in each one, priority to see who last changed it. The top
 bar copies the link, ID or branch name and steps to the previous or next
 issue (also `k` / `j`; `Esc` goes back to the board). **Start agent** (in the
 project picked on the board) or **Open session** sits above the properties.
