@@ -1,4 +1,4 @@
-import type { AgentStatus, DeviceInfo, Session } from "../../../lib/types";
+import type { AgentStatus, Session } from "../../../lib/types";
 import type { AgentStatus as PeacockAgentStatus } from "@argus/peacock";
 import { useMemo } from "react";
 import { projectAccent } from "@argus/peacock";
@@ -13,7 +13,6 @@ import {
   firstUserText,
   useConversations,
 } from "../../../stores/conversationStore";
-import { useDevices } from "../../../stores/deviceStore";
 import {
   useRecentProjects,
   type RecentProject,
@@ -43,20 +42,9 @@ export interface HomeProject {
   sessions: Session[];
 }
 
-export interface HomeStats {
-  agentsIdle: number;
-  agentsRunning: number;
-  devicesRunning: number;
-  devicesTotal: number;
-  projects: number;
-  sessions: number;
-}
-
 export interface HomeData {
   activeAgents: HomeAgent[];
-  devices: DeviceInfo[];
   projects: HomeProject[];
-  stats: HomeStats;
 }
 
 function mapAgentStatus(status: AgentStatus["status"]): PeacockAgentStatus {
@@ -97,7 +85,6 @@ export function useHomeData(): HomeData & {
   const sessions = useSessions();
   const agentsRecord = useAgentsRecord();
   const conversations = useConversations();
-  const devices = useDevices();
   // This Mac's home is the combined view — every machine's projects, each
   // badged. A paired machine's tab shows only what lives on that machine.
   const routeHostId = useRouteHostId();
@@ -194,22 +181,12 @@ export function useHomeData(): HomeData & {
       return bKey - aKey;
     });
 
-    const stats: HomeStats = {
-      agentsRunning: activeAgents.filter((a) => a.status === "running").length,
-      agentsIdle: activeAgents.filter((a) => a.status === "idle").length,
-      devicesRunning: devices.filter((d) => d.online).length,
-      devicesTotal: devices.length,
-      sessions: sessions.length,
-      projects: projects.length,
-    };
-
-    return { projects, activeAgents, devices, stats, formatLastOpened };
+    return { projects, activeAgents, formatLastOpened };
   }, [
     recent,
     sessions,
     agentsRecord,
     conversations,
-    devices,
     routeHostId,
     showsEveryHost,
   ]);

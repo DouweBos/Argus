@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  AgentRow,
   Banner,
   Button,
   EmptyHome,
@@ -10,49 +9,26 @@ import {
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
 import { LOCAL_HOST_ID } from "../../../lib/transport/hostId";
-import { setActiveAgent } from "../../../stores/agentStore";
-import { setCenterView } from "../../../stores/centerViewStore";
 import { useHostConnections } from "../../../stores/connectionStore";
-import { deviceKeyFor, useDevicePoller } from "../../../stores/deviceStore";
 import {
   startNewSession,
   showCliImportDialog,
   showOpenProjectDialog,
 } from "../../../stores/dialogStore";
-import { setActiveCenterView } from "../../../stores/editorStore";
 import { removeRecentProject } from "../../../stores/recentProjectsStore";
-import { selectSession } from "../../../stores/sessionStore";
 import {
   openChangelogDialog,
   useUpdaterState,
 } from "../../../stores/updaterStore";
 import { SetupBanners } from "../SetupBanners";
 import styles from "./HomeScreen.module.css";
+import { HomeUsage } from "./HomeUsage";
 import { NeedsYouSection } from "./NeedsYouSection";
 import { RecentRunsSection } from "./RecentRunsSection";
 import { HOME_SHORTCUTS } from "./homeContent";
 import { useHomeData, type HomeProject } from "./useHomeData";
 
-function basename(p: string): string {
-  return p.split(/[/\\]/).filter(Boolean).pop() ?? p;
-}
-
-function agentMeta(status: string): string {
-  if (status === "running") {
-    return "running";
-  }
-  if (status === "error") {
-    return "blocked";
-  }
-  if (status === "pending") {
-    return "waiting";
-  }
-
-  return "idle";
-}
-
 export function HomeScreen() {
-  useDevicePoller(5000);
   const connections = useHostConnections();
   const data = useHomeData();
   const { openProject } = useProjects();
@@ -87,36 +63,9 @@ export function HomeScreen() {
     }
   };
 
-  const handleOpenSession = async (
-    sessionId: string,
-    repoPath: string,
-    agentId?: string,
-  ) => {
-    try {
-      await openProject(repoPath, { autoSelect: false });
-      selectSession(sessionId);
-      if (agentId) {
-        setActiveAgent(sessionId, agentId);
-        setActiveCenterView("agents");
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setOpenError(msg);
-    }
-  };
-
   const handleAddRepository = () => showOpenProjectDialog();
 
-  const openDevices = () => {
-    setCenterView("devices");
-  };
-
-  const openAgents = () => {
-    setCenterView("agents");
-  };
-
-  const { projects, activeAgents, devices, formatLastOpened } = data;
-  const runningDevices = devices.filter((d) => d.online);
+  const { projects, formatLastOpened } = data;
   const isEmpty = projects.length === 0;
 
   let updateLabel = "available";
@@ -193,6 +142,7 @@ export function HomeScreen() {
                   <Icons.ArgusLogo size={28} />
                   <h1 className={styles.title}>Argus</h1>
                 </div>
+                <HomeUsage className={styles.usage} />
               </div>
 
               <NeedsYouSection />
@@ -234,86 +184,6 @@ export function HomeScreen() {
                     ))}
                   </div>
                 )}
-              </div>
-
-              <div className={styles.twoCol}>
-                <div className={styles.section}>
-                  <div className={styles.sectionHead}>
-                    <span className={styles.eyebrow}>Active agents</span>
-                    <button
-                      type="button"
-                      className={styles.linkBtn}
-                      onClick={openAgents}
-                    >
-                      View all
-                    </button>
-                  </div>
-                  {activeAgents.length === 0 ? (
-                    <div className={styles.emptyCell}>
-                      No agents running. Start one from a session.
-                    </div>
-                  ) : (
-                    <div className={styles.rowList}>
-                      {activeAgents.slice(0, 6).map((a) => (
-                        <AgentRow
-                          key={a.id}
-                          name={a.displayName}
-                          project={basename(a.session.repo_root)}
-                          status={a.status}
-                          meta={agentMeta(a.status)}
-                          role="button"
-                          tabIndex={0}
-                          style={{ cursor: "pointer" }}
-                          onClick={() =>
-                            handleOpenSession(
-                              a.session.id,
-                              a.session.repo_root,
-                              a.id,
-                            )
-                          }
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className={styles.section}>
-                  <div className={styles.sectionHead}>
-                    <span className={styles.eyebrow}>Devices</span>
-                    <button
-                      type="button"
-                      className={styles.linkBtn}
-                      onClick={openDevices}
-                    >
-                      View all
-                    </button>
-                  </div>
-                  {runningDevices.length === 0 ? (
-                    <div className={styles.emptyCell}>
-                      No devices online. Boot a simulator or start an agent.
-                    </div>
-                  ) : (
-                    <div className={styles.rowList}>
-                      {runningDevices.slice(0, 6).map((d) => (
-                        <AgentRow
-                          key={deviceKeyFor(d)}
-                          name={d.name}
-                          project={
-                            d.repoRoot
-                              ? basename(d.repoRoot)
-                              : d.platform.toUpperCase()
-                          }
-                          status={d.reserved ? "running" : "idle"}
-                          meta={d.reserved ? "reserved" : "available"}
-                          role="button"
-                          tabIndex={0}
-                          style={{ cursor: "pointer" }}
-                          onClick={openDevices}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
 
               <RecentRunsSection />

@@ -46,6 +46,10 @@
   gap: var(--space-8);
 }
 
+.usage {
+  margin-left: auto;
+}
+
 .brandMark {
   display: flex;
   align-items: center;
@@ -130,13 +134,6 @@
   gap: var(--space-4);
 }
 
-.twoCol {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 24px;
-  min-width: 0;
-}
-
 .rowList {
   display: flex;
   flex-direction: column;
@@ -151,10 +148,4 @@
   font-size: var(--font-size-xs);
   border: 1px dashed var(--glass-border);
   border-radius: var(--border-radius);
-}
-
-@media (max-width: 900px) {
-  .twoCol {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }

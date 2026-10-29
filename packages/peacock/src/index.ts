@@ -115,6 +115,7 @@ export * from "./components/LogEntry/LogEntry";
 export * from "./components/PalettePill/PalettePill";
 export * from "./components/Planet/Planet";
 export * from "./components/PlanApproval/PlanApproval";
+export * from "./components/PlanLimitsStrip/PlanLimitsStrip";
 export * from "./components/PlatformChip/PlatformChip";
 export * from "./components/PriorityIcon/PriorityIcon";
 export * from "./components/ProgressBar/ProgressBar";

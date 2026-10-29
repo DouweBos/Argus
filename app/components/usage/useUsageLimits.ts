@@ -1,5 +1,6 @@
 import type { ClaudeUsageLimits } from "../../lib/types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
+import { create } from "zustand";
 import { getClaudeUsageLimits } from "../../lib/ipc";
 
 const POLL_MS = 60_000;
@@ -14,52 +15,50 @@ export interface UsageLimitsState {
   refreshing: boolean;
 }
 
-/** Plan limits, polled every minute while mounted (the host caches as long). */
-export function useUsageLimits(): UsageLimitsState {
-  const [data, setData] = useState<ClaudeUsageLimits | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
-  const alive = useRef(true);
-
-  const load = useCallback((force: boolean) => {
-    getClaudeUsageLimits(force)
-      .then((next) => {
-        if (alive.current) {
-          setData(next);
-          setError(null);
-        }
-      })
-      .catch((e: unknown) => {
-        if (alive.current) {
-          setError(String(e));
-        }
-      })
-      .finally(() => {
-        if (alive.current) {
-          setNow(Date.now());
-          setLoading(false);
-          setRefreshing(false);
-        }
-      });
-  }, []);
-
-  useEffect(() => {
-    alive.current = true;
-    load(false);
-    const timer = setInterval(() => load(false), POLL_MS);
-
-    return () => {
-      alive.current = false;
-      clearInterval(timer);
-    };
-  }, [load]);
-
-  const refresh = useCallback(() => {
-    setRefreshing(true);
+const store = create<UsageLimitsState>(() => ({
+  data: null,
+  error: null,
+  loading: true,
+  now: Date.now(),
+  refresh: () => {
+    store.setState({ refreshing: true });
     load(true);
-  }, [load]);
+  },
+  refreshing: false,
+}));
 
-  return { data, error, loading, now, refresh, refreshing };
+function load(force: boolean): void {
+  getClaudeUsageLimits(force)
+    .then((data) => store.setState({ data, error: null }))
+    .catch((e: unknown) => store.setState({ error: String(e) }))
+    .finally(() =>
+      store.setState({ now: Date.now(), loading: false, refreshing: false }),
+    );
+}
+
+// One poll however many screens show limits; it stops with the last of them.
+let subscribers = 0;
+let timer: ReturnType<typeof setInterval> | null = null;
+
+function subscribe(): () => void {
+  subscribers += 1;
+  if (subscribers === 1) {
+    load(false);
+    timer = setInterval(() => load(false), POLL_MS);
+  }
+
+  return () => {
+    subscribers -= 1;
+    if (subscribers === 0 && timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  };
+}
+
+/** Plan limits, polled every minute while anything shows them (the host caches as long). */
+export function useUsageLimits(): UsageLimitsState {
+  useEffect(subscribe, []);
+
+  return store();
 }

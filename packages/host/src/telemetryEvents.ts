@@ -215,6 +215,7 @@ export interface EventMap {
   };
   follow_up_used: { method: "click" | "tab" };
   follow_ups_suggested: { count: number; success: boolean };
+  home_usage_opened: { level: "critical" | "normal" | "warning" };
   host_lock_handover: { holder: "cli" | "electron" | "mac-server" | "mac" };
   integration_connected: {
     method: "key" | "oauth";
