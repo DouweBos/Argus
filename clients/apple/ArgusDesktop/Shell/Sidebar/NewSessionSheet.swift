@@ -6,8 +6,11 @@ import SwiftUI
 struct NewSessionSheet: View {
   @Environment(HostStore.self) private var store
   @Environment(\.dismiss) private var dismiss
-  let project: RemoteProject
+  /// More than one shows a project picker; the session goes in the picked one.
+  let projects: [RemoteProject]
   let onCreated: (RemoteSession) -> Void
+
+  @State private var projectRoot: String
 
   @State private var description = ""
   @State private var useExisting = false
@@ -20,10 +23,18 @@ struct NewSessionSheet: View {
   @State private var issues: [HostStore.LinearIssue] = []
   @State private var pickingIssues = false
 
-  init(project: RemoteProject, issues: [HostStore.LinearIssue] = [], onCreated: @escaping (RemoteSession) -> Void) {
-    self.project = project
+  init(
+    project: RemoteProject, choices: [RemoteProject] = [], issues: [HostStore.LinearIssue] = [],
+    onCreated: @escaping (RemoteSession) -> Void
+  ) {
+    self.projects = choices.isEmpty ? [project] : choices
     self.onCreated = onCreated
+    _projectRoot = State(initialValue: project.repoRoot)
     _issues = State(initialValue: issues)
+  }
+
+  private var project: RemoteProject {
+    projects.first { $0.repoRoot == projectRoot } ?? projects[0]
   }
 
   /// `sessions.branches` is addressed by session; the project root always exists.
@@ -45,6 +56,13 @@ struct NewSessionSheet: View {
 
   var body: some View {
     Form {
+      if projects.count > 1 {
+        Section {
+          Picker("Project", selection: $projectRoot) {
+            ForEach(projects) { Text($0.name).tag($0.repoRoot) }
+          }
+        }
+      }
       if store.linearConnected {
         Section {
           if !issues.isEmpty { PickedIssueChips(issues: $issues) }
@@ -112,8 +130,12 @@ struct NewSessionSheet: View {
       }
     }
     .sheet(isPresented: $pickingIssues) { IssuePickerSheet(selection: $issues) }
-    .task {
-      await store.loadIntegrations()
+    .task { await store.loadIntegrations() }
+    // Branches are the picked project's; a base from the last one means nothing here.
+    .task(id: projectRoot) {
+      baseBranch = ""
+      existingBranch = ""
+      branches = []
       if let rootSessionId { branches = await store.listBranches(sessionId: rootSessionId) }
     }
   }

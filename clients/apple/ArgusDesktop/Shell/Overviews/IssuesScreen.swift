@@ -26,7 +26,8 @@ private struct IssuesScreenContent: View {
   /// The board's hidden columns, so previous/next skips what the board hides.
   @AppStorage("issues.columns") private var columnsJSON = "{}"
   @State private var model: LinearIssuesModel
-  @State private var pickedRoot: String?
+  /// The project the last issue was started in, offered first next time.
+  @AppStorage("issues.startProject") private var lastRoot = ""
   @State private var starting: HostStore.LinearIssue?
   /// The field as typed; the route's `query` is what's searched, once typing settles.
   @State private var searchText: String
@@ -47,7 +48,7 @@ private struct IssuesScreenContent: View {
   }
 
   private var project: RemoteProject? {
-    store.projects.first { $0.repoRoot == pickedRoot } ?? store.projects.first
+    store.projects.first { $0.repoRoot == lastRoot } ?? store.projects.first
   }
 
   var body: some View {
@@ -65,7 +66,8 @@ private struct IssuesScreenContent: View {
       .toolbar { toolbar }
       .sheet(item: $starting) { issue in
         if let project {
-          NewSessionSheet(project: project, issues: [issue]) { session in
+          NewSessionSheet(project: project, choices: store.projects, issues: [issue]) { session in
+            lastRoot = session.repoRoot
             desktop.openAgents(session: session.id)
           }
         }
@@ -147,7 +149,8 @@ private struct IssuesScreenContent: View {
 
   @ToolbarContentBuilder private var toolbar: some ToolbarContent {
     if store.linearConnected, issueRef == nil {
-      ToolbarItemGroup {
+      // Segmented controls draw their own track; glass behind them doubles it.
+      ToolbarItem {
         // No segment while searching: the results are the workspace's, not a scope's.
         Picker("Issues", selection: scopeSelection) {
           ForEach(ArgusProtocol.LinearIssueScope.all) { Text($0.title).tag(Optional($0)) }
@@ -155,6 +158,9 @@ private struct IssuesScreenContent: View {
         .pickerStyle(.segmented)
         .fixedSize()
         .help("Whose issues to show")
+      }
+      .flatToolbarItem()
+      ToolbarItem {
         Picker("Layout", selection: $layout) {
           Label("Board", systemImage: "rectangle.split.3x1").tag(Layout.board)
           Label("List", systemImage: "list.bullet").tag(Layout.list)
@@ -163,13 +169,9 @@ private struct IssuesScreenContent: View {
         .labelStyle(.iconOnly)
         .fixedSize()
         .help("Show issues as a board or a list")
-        if store.projects.count > 1 {
-          Picker("Start in", selection: projectSelection) {
-            ForEach(store.projects) { Text("Start in \($0.name)").tag(String?.some($0.repoRoot)) }
-          }
-          .fixedSize()
-          .help("The project new agents start in")
-        }
+      }
+      .flatToolbarItem()
+      ToolbarItem {
         Button {
           Task { await model.refresh() }
         } label: {
@@ -200,10 +202,6 @@ private struct IssuesScreenContent: View {
     Binding(
       get: { query == nil ? scope : nil },
       set: { picked in picked.map { desktop.navigate(.issues(scope: $0)) } })
-  }
-
-  private var projectSelection: Binding<String?> {
-    Binding(get: { project?.repoRoot }, set: { pickedRoot = $0 })
   }
 }
 
