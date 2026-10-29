@@ -98,3 +98,10 @@
   font-size: 11px;
   color: var(--text-muted);
 }
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--label-color, var(--text-muted));
+}

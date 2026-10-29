@@ -23,7 +23,13 @@ function eventIcon(
 ): ReactNode {
   switch (event.kind) {
     case "status":
-      return <IssueStatusIcon size={12} type={issue.state.type} />;
+      return (
+        <IssueStatusIcon
+          color={issue.state.color}
+          size={12}
+          type={issue.state.type}
+        />
+      );
     case "priority":
       return <PriorityIcon size={12} priority={issue.priority} />;
     case "attachment":

@@ -69,6 +69,20 @@ describe("boardColumns", () => {
     ]);
     expect(columns[1].issues.map((i) => i.identifier)).toEqual(["B", "D"]);
   });
+
+  it("adds the teams' empty states as columns", () => {
+    const columns = boardColumns(
+      [issue({})],
+      [
+        { id: "x", name: "Todo", type: "unstarted", position: 1 },
+        { id: "y", name: "Blocked", type: "started", position: 2 },
+      ],
+    );
+    expect(columns.map((c) => [c.name, c.issues.length])).toEqual([
+      ["Todo", 1],
+      ["Blocked", 0],
+    ]);
+  });
 });
 
 describe("byPriority", () => {
@@ -121,17 +135,28 @@ describe("cycleLabel", () => {
 });
 
 describe("isColumnHidden", () => {
-  it("hides backlog and done-like columns until shown", () => {
-    expect(isColumnHidden({ id: "backlog", type: "backlog" }, {})).toBe(true);
-    expect(isColumnHidden({ id: "duplicate", type: "duplicate" }, {})).toBe(
-      true,
-    );
-    expect(isColumnHidden({ id: "todo", type: "unstarted" }, {})).toBe(false);
+  it("hides empty and finished columns until shown", () => {
+    const one = [issue({})];
     expect(
-      isColumnHidden({ id: "backlog", type: "backlog" }, { backlog: false }),
+      isColumnHidden({ id: "backlog", type: "backlog", issues: one }, {}),
     ).toBe(false);
     expect(
-      isColumnHidden({ id: "todo", type: "unstarted" }, { todo: true }),
+      isColumnHidden({ id: "blocked", type: "started", issues: [] }, {}),
+    ).toBe(true);
+    expect(
+      isColumnHidden({ id: "done", type: "completed", issues: one }, {}),
+    ).toBe(true);
+    expect(
+      isColumnHidden(
+        { id: "blocked", type: "started", issues: [] },
+        { blocked: false },
+      ),
+    ).toBe(false);
+    expect(
+      isColumnHidden(
+        { id: "todo", type: "unstarted", issues: one },
+        { todo: true },
+      ),
     ).toBe(true);
   });
 });
