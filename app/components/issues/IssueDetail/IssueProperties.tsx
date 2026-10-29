@@ -12,6 +12,7 @@ import {
 import { estimateName } from "@argus/remote-protocol";
 import { openExternalUrl } from "../../../lib/ipc";
 import {
+  byWorkflow,
   cycleLabel,
   formatIssueDate,
   PRIORITY_ORDER,
@@ -91,12 +92,14 @@ export function IssueProperties({ issue, onStart }: IssuePropertiesProps) {
                 type={issue.state.type}
               />
             }
-            items={(states ?? [issue.state]).map((s, i) => ({
-              value: s.id,
-              label: s.name,
-              icon: <IssueStatusIcon color={s.color} type={s.type} />,
-              shortcut: i < 10 ? String((i + 1) % 10) : undefined,
-            }))}
+            items={[...(states ?? [issue.state])]
+              .sort(byWorkflow)
+              .map((s, i) => ({
+                value: s.id,
+                label: s.name,
+                icon: <IssueStatusIcon color={s.color} type={s.type} />,
+                shortcut: i < 10 ? String((i + 1) % 10) : undefined,
+              }))}
             label={issue.state.name}
             placeholder="Change status…"
             selected={issue.state.id}

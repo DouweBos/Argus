@@ -67,7 +67,12 @@ export function OptionMenu({
   });
 
   return (
-    <PickerPopover placement="below" triggerRef={triggerRef} onClose={onClose}>
+    <PickerPopover
+      placement="below"
+      triggerRef={triggerRef}
+      width={260}
+      onClose={onClose}
+    >
       <div className={styles.search}>
         <Input
           autoFocus

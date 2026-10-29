@@ -18,10 +18,13 @@ export interface PickerPopoverProps {
   placement?: "above" | "below";
   /** Element the popover anchors to, aligned to its left edge. */
   triggerRef: RefObject<HTMLElement | null>;
+  /** A fixed width, for compact menus; it scales with the window otherwise. */
+  width?: number;
 }
 
 interface Anchor {
   bottom?: number;
+  maxHeight?: number;
   top?: number;
   left: number;
   minWidth: number;
@@ -41,6 +44,7 @@ export function PickerPopover({
   onClose,
   placement = "above",
   triggerRef,
+  width,
 }: PickerPopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
@@ -60,9 +64,15 @@ export function PickerPopover({
       const r = node.getBoundingClientRect();
       setAnchor({
         // Keep the whole popover on screen on a narrow phone.
-        left: Math.max(8, Math.min(r.left, window.innerWidth - 8 - r.width)),
+        left: Math.max(
+          8,
+          Math.min(r.left, window.innerWidth - 8 - (width ?? r.width)),
+        ),
         ...(placement === "below"
-          ? { top: r.bottom + gap }
+          ? {
+              top: r.bottom + gap,
+              maxHeight: window.innerHeight - r.bottom - gap - 8,
+            }
           : { bottom: window.innerHeight - r.top + gap }),
         minWidth: r.width,
       });
@@ -77,7 +87,7 @@ export function PickerPopover({
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
     };
-  }, [triggerRef, gap, placement]);
+  }, [triggerRef, gap, placement, width]);
 
   // pointerdown, not mousedown: on touch a synthetic mousedown only arrives
   // after the finger lifts, which makes dismissal feel a beat late.
@@ -124,6 +134,11 @@ export function PickerPopover({
         bottom: anchor.bottom,
         top: anchor.top,
         minWidth: anchor.minWidth,
+        width,
+        maxHeight:
+          anchor.maxHeight === undefined
+            ? undefined
+            : Math.min(320, anchor.maxHeight),
       }}
     >
       {children}

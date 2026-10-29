@@ -50,6 +50,14 @@ function typeRank(type: string): number {
   return rank === -1 ? TYPE_ORDER.length : rank;
 }
 
+/** Linear's workflow order: by category, then the team's own order. */
+export function byWorkflow(
+  a: Pick<LinearWorkflowState, "position" | "type">,
+  b: Pick<LinearWorkflowState, "position" | "type">,
+): number {
+  return typeRank(a.type) - typeRank(b.type) || a.position - b.position;
+}
+
 /**
  * One column per state the issues are in, plus the teams' other `states`
  * (empty). Teams name states differently, so same-named states share a column.
