@@ -23,3 +23,7 @@
 .duplicate {
   color: var(--text-muted);
 }
+
+.custom {
+  color: var(--issue-status-color);
+}

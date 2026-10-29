@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import styles from "./IssueStatusIcon.module.css";
 
 /** Linear's fixed workflow categories. */
@@ -12,6 +13,8 @@ export type IssueStatusType =
 
 export interface IssueStatusIconProps {
   className?: string;
+  /** The workflow state's own color (runtime data); the type's color otherwise. */
+  color?: string | null;
   size?: number;
   /** Anything Linear adds later renders as unstarted. */
   type: string;
@@ -30,19 +33,26 @@ const KNOWN = new Set<IssueStatusType>([
 /** The circle Linear draws for a status: dashed, empty, half, checked or crossed. */
 export function IssueStatusIcon({
   className,
+  color,
   size = 14,
   type,
 }: IssueStatusIconProps) {
   const kind = KNOWN.has(type as IssueStatusType)
     ? (type as IssueStatusType)
     : "unstarted";
-  const cls = [styles.icon, styles[kind], className].filter(Boolean).join(" ");
+  const cls = [styles.icon, styles[kind], color && styles.custom, className]
+    .filter(Boolean)
+    .join(" ");
+  const tint = color
+    ? ({ "--issue-status-color": color } as CSSProperties)
+    : undefined;
 
   return (
     <svg
       aria-hidden="true"
       className={cls}
       height={size}
+      style={tint}
       viewBox="0 0 14 14"
       width={size}
     >

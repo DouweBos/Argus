@@ -251,6 +251,7 @@ export const useLinearIssueDetail = (ref: string | null) =>
   store((s) => (ref ? (s.details[ref] ?? null) : null));
 export const useTeamStates = (teamId: string | null) =>
   store((s) => (teamId ? (s.statesByTeam[teamId] ?? null) : null));
+export const useStatesByTeam = () => store((s) => s.statesByTeam);
 export const useIssuesLayout = () => store((s) => s.layout);
 
 export function setColumnHidden(columnId: string, hidden: boolean): void {

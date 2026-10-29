@@ -3,7 +3,7 @@
  * a swimlane per priority, and which Argus session (if any) is on an issue.
  */
 
-import type { LinearIssue, Session } from "./types";
+import type { LinearIssue, LinearWorkflowState, Session } from "./types";
 
 /** Linear's state categories in the order work flows through them. */
 const TYPE_ORDER = [
@@ -16,27 +16,28 @@ const TYPE_ORDER = [
   "duplicate",
 ];
 
-/** Linear's own default: what's ready or in flight, not the backlog or what's done. */
-const HIDDEN_BY_DEFAULT = new Set([
-  "backlog",
-  "canceled",
-  "completed",
-  "duplicate",
-  "triage",
-]);
+/** Finished work stays out of the way even when it has issues. */
+const DONE_TYPES = new Set(["canceled", "completed", "duplicate"]);
 
-/** `overrides` maps a column id to an explicit hide (true) or show (false). */
+/**
+ * Linear's own default: every status with open issues, not empty ones or
+ * finished work. `overrides` maps a column id to an explicit hide or show.
+ */
 export function isColumnHidden(
-  column: Pick<BoardColumn, "id" | "type">,
+  column: Pick<BoardColumn, "id" | "issues" | "type">,
   overrides: Record<string, boolean>,
 ): boolean {
-  return overrides[column.id] ?? HIDDEN_BY_DEFAULT.has(column.type);
+  return (
+    overrides[column.id] ??
+    (column.issues.length === 0 || DONE_TYPES.has(column.type))
+  );
 }
 
 /** Urgent first, "no priority" last — Linear's own order. */
 export const PRIORITY_ORDER = [1, 2, 3, 4, 0];
 
 export interface BoardColumn {
+  color: string | null;
   id: string;
   issues: LinearIssue[];
   name: string;
@@ -50,22 +51,33 @@ function typeRank(type: string): number {
 }
 
 /**
- * One column per state the issues are in. Teams name states differently, so
- * same-named states across teams share a column.
+ * One column per state the issues are in, plus the teams' other `states`
+ * (empty). Teams name states differently, so same-named states share a column.
  */
-export function boardColumns(issues: LinearIssue[]): BoardColumn[] {
+export function boardColumns(
+  issues: LinearIssue[],
+  states: LinearWorkflowState[] = [],
+): BoardColumn[] {
   const columns = new Map<string, BoardColumn & { rank: number[] }>();
-  for (const issue of issues) {
-    const key = issue.state.name.toLowerCase();
-    const column = columns.get(key) ?? {
+  const columnFor = (state: LinearWorkflowState) => {
+    const key = state.name.toLowerCase();
+    const existing = columns.get(key) ?? {
       id: key,
-      name: issue.state.name,
-      type: issue.state.type,
+      name: state.name,
+      type: state.type,
+      color: state.color ?? null,
       issues: [],
-      rank: [typeRank(issue.state.type), issue.state.position],
+      rank: [typeRank(state.type), state.position],
     };
-    column.issues.push(issue);
-    columns.set(key, column);
+    columns.set(key, existing);
+
+    return existing;
+  };
+  for (const issue of issues) {
+    columnFor(issue.state).issues.push(issue);
+  }
+  for (const state of states) {
+    columnFor(state);
   }
 
   return [...columns.values()]
@@ -111,4 +123,14 @@ const DATE = new Intl.DateTimeFormat(undefined, {
 
 export function formatIssueDate(epochMs: number): string {
   return DATE.format(new Date(epochMs));
+}
+
+const MONTH = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  year: "numeric",
+});
+
+/** "Dec 2025", the way Linear dates a card. */
+export function formatIssueMonth(epochMs: number): string {
+  return MONTH.format(new Date(epochMs));
 }

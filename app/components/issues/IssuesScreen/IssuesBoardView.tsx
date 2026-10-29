@@ -1,5 +1,5 @@
 import type { LinearIssue } from "../../../lib/types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   IssueBoard,
   IssueCard,
@@ -14,8 +14,10 @@ import {
   PRIORITY_ORDER,
 } from "../../../lib/issueBoard";
 import {
+  loadTeamStates,
   setColumnHidden,
   useColumnOverrides,
+  useStatesByTeam,
 } from "../../../stores/linearIssuesStore";
 import { useIssueCardProps } from "./useIssueCardProps";
 
@@ -34,14 +36,27 @@ export function IssuesBoardView({
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const cardProps = useIssueCardProps();
   const overrides = useColumnOverrides();
-  const all = boardColumns(issues);
+  const statesByTeam = useStatesByTeam();
+  const teamIds = [...new Set(issues.map((i) => i.teamId))];
+  const teamKey = teamIds.sort().join(",");
+  // Every status of the teams involved, so empty ones can be shown too.
+  const all = boardColumns(
+    issues,
+    teamIds.flatMap((id) => statesByTeam[id] ?? []),
+  );
+
+  useEffect(() => {
+    for (const id of teamKey.split(",").filter(Boolean)) {
+      loadTeamStates(id).catch(() => {});
+    }
+  }, [teamKey]);
   const columns = all.filter((c) => !isColumnHidden(c, overrides));
   const shown = columns.flatMap((c) => c.issues);
   const toBoardColumn = (c: (typeof all)[number]) => ({
     id: c.id,
     title: c.name,
     count: c.issues.length,
-    icon: <IssueStatusIcon type={c.type} />,
+    icon: <IssueStatusIcon color={c.color} type={c.type} />,
   });
   // Lanes count only what's on the board, so a lane of hidden issues disappears.
   const lanes = PRIORITY_ORDER.map((priority) => ({

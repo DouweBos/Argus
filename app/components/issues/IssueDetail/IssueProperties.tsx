@@ -85,11 +85,16 @@ export function IssueProperties({ issue, onStart }: IssuePropertiesProps) {
           <IssuePropertyMenu
             card={<TimeInStatusCard issue={issue} />}
             hotkey="S"
-            icon={<IssueStatusIcon type={issue.state.type} />}
+            icon={
+              <IssueStatusIcon
+                color={issue.state.color}
+                type={issue.state.type}
+              />
+            }
             items={(states ?? [issue.state]).map((s, i) => ({
               value: s.id,
               label: s.name,
-              icon: <IssueStatusIcon type={s.type} />,
+              icon: <IssueStatusIcon color={s.color} type={s.type} />,
               shortcut: i < 10 ? String((i + 1) % 10) : undefined,
             }))}
             label={issue.state.name}
