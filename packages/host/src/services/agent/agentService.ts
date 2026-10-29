@@ -96,6 +96,7 @@ import { clearQueue } from "./messageQueue";
 import { resultSubtype } from "./models";
 import { clearSpares, hasSpare, killSpare, takeSpare } from "./spares";
 import { spawnConfigStamp } from "./spawnStamp";
+import { rememberStartOptions } from "./startOptions";
 
 // ---------------------------------------------------------------------------
 // Lazy device helpers
@@ -846,6 +847,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   });
 
   handle.on("capabilities", (payload: unknown) => {
+    rememberStartOptions(runner.id, payload);
     emitHostEvent(`agent:capabilities:${agentId}`, payload);
   });
 

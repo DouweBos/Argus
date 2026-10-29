@@ -9,6 +9,7 @@ import {
   QueuedImage,
   QueuedMessage,
   SavedConversation,
+  StartOptions,
 } from "../models/agents";
 import { AgentForkPoint, AgentTranscriptPage } from "../models/conversation";
 import { ForkChatResult } from "../models/sessions";
@@ -107,6 +108,15 @@ export const AGENT_COMMANDS = {
       runnerId: z.string().nullish(),
     }),
     result: Void,
+  },
+  /**
+   * Slash commands and models for a start composer: the session's warm agent's
+   * when it has one, else the last ones that runner reported.
+   */
+  get_start_options: {
+    tier: "monitor",
+    params: SessionId.extend({ runnerId: z.string().nullish() }),
+    result: StartOptions,
   },
   /** Spawn a hidden agent ahead of need, so the next start skips the handshake. */
   prewarm_agent: { tier: "admin", params: SessionId, result: AgentInfo },

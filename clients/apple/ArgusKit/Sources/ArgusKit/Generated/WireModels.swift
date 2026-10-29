@@ -16950,6 +16950,27 @@ extension ArgusProtocol {
     public static let rsa = SshKeyType(rawValue: "rsa")
   }
 
+  public struct StartOptions: Codable, Sendable {
+    public var models: [AgentModelInfo]
+    public var slashCommands: [AgentSlashCommand]
+
+    enum CodingKeys: String, CodingKey {
+      case models = "models"
+      case slashCommands = "slashCommands"
+    }
+
+    public init(models: [AgentModelInfo], slashCommands: [AgentSlashCommand]) {
+      self.models = models
+      self.slashCommands = slashCommands
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(models, forKey: .models)
+      try c.encode(slashCommands, forKey: .slashCommands)
+    }
+  }
+
   public struct StartScratchRunInputGuardrails: Codable, Sendable {
     public var confidenceThreshold: Double?
     public var maxConcurrentSessions: Double?

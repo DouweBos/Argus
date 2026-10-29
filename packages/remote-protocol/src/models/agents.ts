@@ -59,6 +59,13 @@ export const AgentCapabilities = z.object({
 });
 export type AgentCapabilities = z.infer<typeof AgentCapabilities>;
 
+/** What a start composer offers before its agent exists. */
+export const StartOptions = z.object({
+  models: z.array(AgentModelInfo),
+  slashCommands: z.array(AgentSlashCommand),
+});
+export type StartOptions = z.infer<typeof StartOptions>;
+
 /** A live agent, as the host reports it. */
 export const AgentInfo = z.object({
   agent_id: z.string(),

@@ -134,6 +134,11 @@ export const MethodParams = {
     session_id: z.string().nullable(),
     runner_id: z.string().nullable().optional(),
   }),
+  /** What a start composer offers before its agent exists; `runner_id` is its pick. */
+  "sessions.start_options": z.object({
+    session_id: z.string(),
+    runner_id: z.string().nullable().optional(),
+  }),
   "scratch_pads.list": z.object({}),
   "agents.list": z.object({
     session_id: z.string().optional(),
@@ -704,6 +709,9 @@ export const MethodResult = {
   "projects.list": z.object({ projects: z.array(RemoteProject) }),
   "sessions.list": z.object({ sessions: z.array(RemoteSession) }),
   "sessions.viewing": z.object({}),
+  "sessions.start_options": z.object({
+    capabilities: RemoteAgentCapabilities,
+  }),
   "scratch_pads.list": z.object({ sessions: z.array(RemoteSession) }),
   "agents.list": z.object({ agents: z.array(RemoteAgentStatus) }),
   "agents.status": z.object({ agent: RemoteAgentStatus }),

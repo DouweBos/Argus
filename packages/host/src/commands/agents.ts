@@ -55,6 +55,7 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../services/agent/messageQueue";
+import { getStartOptions } from "../services/agent/startOptions";
 import { setViewingSession } from "../services/agent/warmPolicy";
 import { defineTypedCommand } from "../services/command/registry";
 import { importAllCliChats } from "../services/externalChats/importer";
@@ -96,6 +97,9 @@ export function registerAgentCommands(): void {
   );
   defineTypedCommand("set_agent_effort", (p) =>
     setAgentEffort(p.agentId, p.level ?? null),
+  );
+  defineTypedCommand("get_start_options", (p) =>
+    getStartOptions(p.sessionId, p.runnerId),
   );
   defineTypedCommand("set_viewing_session", (p) =>
     setViewingSession(p.sessionId, {

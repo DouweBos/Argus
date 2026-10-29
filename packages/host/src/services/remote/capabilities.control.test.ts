@@ -124,6 +124,12 @@ vi.mock("../integrations/issueStart", () => ({
   })),
 }));
 vi.mock("../agent/warmPolicy", () => ({ setViewingSession: vi.fn() }));
+vi.mock("../agent/startOptions", () => ({
+  getStartOptions: vi.fn(async () => ({
+    slashCommands: [{ name: "review", description: "", argumentHint: "" }],
+    models: [{ value: "opus", displayName: "Opus", description: "" }],
+  })),
+}));
 vi.mock("../llm/registry", () => ({
   getRunnerById: vi.fn((id: string) =>
     id === "codex" ? { id: "codex" } : null,
@@ -660,5 +666,35 @@ describe("sessions.viewing", () => {
     );
 
     expect(setViewingSession).not.toHaveBeenCalled();
+  });
+});
+
+describe("sessions.start_options", () => {
+  it("answers in the input pickers' shape", async () => {
+    appState.sessions.set("s1", { id: "s1", repo_root: "/repo" } as never);
+
+    const result = await dispatch(
+      "sessions.start_options",
+      { session_id: "s1" },
+      makeCtx(["monitor", "control"]),
+    );
+
+    expect(result).toEqual({
+      capabilities: {
+        commands: [{ name: "review", description: "", argumentHint: "" }],
+        models: [{ value: "opus", displayName: "Opus", description: "" }],
+        agents: [],
+      },
+    });
+  });
+
+  it("is control-only", async () => {
+    await expect(
+      dispatch(
+        "sessions.start_options",
+        { session_id: "s1" },
+        makeCtx(["monitor"]),
+      ),
+    ).rejects.toMatchObject({ code: "capability_denied" });
   });
 });

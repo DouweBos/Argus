@@ -23,6 +23,7 @@ import type {
   AgentInfo as HostAgentInfo,
   AgentStatusValue as HostAgentStatusValue,
 } from "../services/agent/models";
+import type { StartOptions as HostStartOptions } from "../services/agent/startOptions";
 import type { InitializeResponse } from "../services/llm/runners/claudeCode/protocol";
 import type { AgentNotificationInput as HostAgentNotificationInput } from "../services/notifications/osNotification";
 import type {
@@ -44,12 +45,14 @@ import type {
   QueuedImage,
   QueuedMessage,
   SavedConversation,
+  StartOptions,
 } from "@argus/remote-protocol";
 
 export type AgentModelChecks = [
   Expect<Equal<AgentStatusValue, HostAgentStatusValue>>,
   Expect<Equal<AgentCapabilities, InitializeResponse>>,
   Expect<Equal<AgentInfo, HostAgentInfo>>,
+  Expect<Equal<StartOptions, HostStartOptions>>,
   Expect<Equal<ImageAttachment, HostImageAttachment>>,
   Expect<Equal<QueuedImage, HostQueuedImage>>,
   Expect<Equal<QueuedMessage, HostQueuedMessage>>,

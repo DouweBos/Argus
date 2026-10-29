@@ -2878,6 +2878,27 @@ extension ArgusProtocol {
       }
     }
 
+    public struct GetStartOptionsParams: Codable, Sendable {
+      public var sessionId: String
+      public var runnerId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "sessionId"
+        case runnerId = "runnerId"
+      }
+
+      public init(sessionId: String, runnerId: String? = nil) {
+        self.sessionId = sessionId
+        self.runnerId = runnerId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(runnerId, forKey: .runnerId)
+      }
+    }
+
     public struct GetUserProjectSettingsParams: Codable, Sendable {
       public var repoRoot: String
 
@@ -10915,6 +10936,13 @@ extension ArgusProtocol {
       public typealias Result = String
       public static let name = "get_session_untracked_diff"
       public static let tier = "admin"
+    }
+
+    public enum GetStartOptions: RemoteCommand {
+      public typealias Params = ArgusProtocol.CommandsTypes.GetStartOptionsParams
+      public typealias Result = ArgusProtocol.StartOptions
+      public static let name = "get_start_options"
+      public static let tier = "monitor"
     }
 
     public enum GetUserProjectSettings: RemoteCommand {

@@ -69,6 +69,7 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../agent/messageQueue";
+import { getStartOptions } from "../agent/startOptions";
 import { setViewingSession } from "../agent/warmPolicy";
 import { saveAppSettings } from "../appSettings/store";
 import { revisePlaybook } from "../automation/authoring";
@@ -635,7 +636,7 @@ export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
 
 /** Narrow a runner's initialize response to the input pickers' shape. */
 export function toRemoteAgentCapabilities(
-  init: InitializeResponse,
+  init: Pick<InitializeResponse, "agents" | "commands" | "models">,
 ): RemoteAgentCapabilities {
   return {
     models: init.models.map((m) => ({
@@ -1148,6 +1149,19 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
 
   // --- control-scoped ---------------------------------------------------
+
+  "sessions.start_options": async (params) => {
+    const { session_id, runner_id } = parse("sessions.start_options", params);
+    const options = await getStartOptions(session_id, runner_id);
+
+    return {
+      capabilities: toRemoteAgentCapabilities({
+        commands: options.slashCommands,
+        models: options.models,
+        agents: [],
+      }),
+    };
+  },
 
   "agents.capabilities": async (params) => {
     const { agent_id } = parse("agents.capabilities", params);

@@ -104,6 +104,7 @@ export const REMOTE_METHODS = {
   "projects.list": "monitor",
   "sessions.list": "monitor",
   "sessions.viewing": "monitor",
+  "sessions.start_options": "control",
   /** Sessions that belong to no project — delete/rename go through `sessions.*`. */
   "scratch_pads.list": "monitor",
   "agents.list": "monitor",

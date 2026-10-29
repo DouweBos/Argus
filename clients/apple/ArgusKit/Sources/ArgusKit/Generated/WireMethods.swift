@@ -5777,6 +5777,44 @@ extension ArgusProtocol {
       }
     }
 
+    public struct SessionsStartOptionsParams: Codable, Sendable {
+      public var sessionId: String
+      public var runnerId: String?
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case runnerId = "runner_id"
+      }
+
+      public init(sessionId: String, runnerId: String? = nil) {
+        self.sessionId = sessionId
+        self.runnerId = runnerId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(runnerId, forKey: .runnerId)
+      }
+    }
+
+    public struct SessionsStartOptionsResult: Codable, Sendable {
+      public var capabilities: RemoteAgentCapabilities
+
+      enum CodingKeys: String, CodingKey {
+        case capabilities = "capabilities"
+      }
+
+      public init(capabilities: RemoteAgentCapabilities) {
+        self.capabilities = capabilities
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(capabilities, forKey: .capabilities)
+      }
+    }
+
     public struct SessionsStashApplyParams: Codable, Sendable {
       public var sessionId: String
       public var index: Int
@@ -6936,6 +6974,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsSetBaseBranchParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsSetBaseBranchResult
       public static let name = "sessions.set_base_branch"
+    }
+
+    public enum SessionsStartOptions: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsStartOptionsParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsStartOptionsResult
+      public static let name = "sessions.start_options"
     }
 
     public enum SessionsStashApply: RemoteCommand {

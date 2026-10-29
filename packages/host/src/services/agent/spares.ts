@@ -43,7 +43,7 @@ export type SpareEvent =
 
 const pool = new Map<string, Spare>();
 /** In-flight spawns by ticket; a discard drops the ticket, so its spare is killed on arrival. */
-const filling = new Map<string, object>();
+const filling = new Map<string, { settled: Promise<void> }>();
 const listeners = new Set<(event: SpareEvent) => void>();
 
 export function onSpareEvent(
@@ -74,6 +74,26 @@ export function getSpare(sessionId: string): Spare | null {
 
 export function isFilling(sessionId: string): boolean {
   return filling.has(sessionId);
+}
+
+/** The session's spare, waiting up to `timeoutMs` for one that is on its way. */
+export async function awaitSpare(
+  sessionId: string,
+  timeoutMs: number,
+): Promise<Spare | null> {
+  const pending = filling.get(sessionId);
+  if (pending) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      pending.settled,
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, timeoutMs);
+      }),
+    ]);
+    clearTimeout(timer);
+  }
+
+  return getSpare(sessionId);
 }
 
 export function spareSessionIds(): string[] {
@@ -138,8 +158,21 @@ export async function fillSpare(
   if (pool.has(sessionId) || filling.has(sessionId)) {
     return;
   }
-  const ticket = {};
+  let settle: () => void = () => {};
+  const ticket = { settled: new Promise<void>((r) => (settle = r)) };
   filling.set(sessionId, ticket);
+  try {
+    await receive(sessionId, ticket, spawn);
+  } finally {
+    settle();
+  }
+}
+
+async function receive(
+  sessionId: string,
+  ticket: { settled: Promise<void> },
+  spawn: () => Promise<NewSpare>,
+): Promise<void> {
   let spawned: NewSpare;
   try {
     spawned = await spawn();
