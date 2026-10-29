@@ -160,7 +160,7 @@ struct SessionContextCard: View {
 
   // MARK: Git
 
-  /// The Linear issue the session was started from; opens it in the Issues inspector.
+  /// The Linear issue the session was started from; opens it on the Issues screen.
   private func linkedIssueRow(_ issue: RemoteLinkedIssue) -> some View {
     ContextSplitRow {
       MacTelemetry.capture(.contextCardUsed(action: .linkedIssue))

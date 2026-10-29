@@ -22,7 +22,7 @@ enum DesktopRoute: Hashable {
   /// `/pull-requests`: the PRs of interest across open projects.
   case pullRequests
   /// `/issues[/<scope>][/<IDENTIFIER>]`: your open Linear issues in a scope
-  /// (bare is assigned), optionally with one open in the inspector.
+  /// (bare is assigned), optionally with one open as a full page.
   case issues(scope: ArgusProtocol.LinearIssueScope = .assigned, issue: String? = nil)
   /// `/design?url=&session=`: a Figma frame in the design viewer, for a session when it has one.
   case design(url: String, sessionId: String? = nil)

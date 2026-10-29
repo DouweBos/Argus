@@ -222,14 +222,16 @@ simulator is desktop-only.
 
 The Mac app has the same flow in **New Session**: **Add Linear Issue…**
 picks the issues, and **Start N Agents** creates a session per issue. The
-session's context card lists its issue, which opens in the Issues inspector,
+session's context card lists its issue, which opens on the Issues screen,
 and each of its Figma frames, which open in the design viewer; each row's
 menu also opens it in Linear or Figma. The viewer is the same as on the
 phone, with the layers, comments and pages beside the frame, and compares
 against the simulator or emulator picked for the session in the runtime
-panel. Figma links in an issue's inspector open there too. With Linear
+panel. Figma links in an issue open there too. With Linear
 connected, the sidebar has the same **Issues** board as the desktop, with
 the same scopes and a Board/List switch it remembers; clicking a card opens
-the issue in an inspector beside the board. **Settings → Integrations** connects
+the issue as a full page, laid out like the phone's with its properties
+beside it, with copy link, ID and branch buttons and previous/next through
+the board or list. **Settings → Integrations** connects
 Linear and Figma with a key, reconnects or disconnects them, and holds the
 two Linear options above.

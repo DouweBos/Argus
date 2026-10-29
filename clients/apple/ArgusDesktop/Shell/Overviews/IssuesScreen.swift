@@ -3,8 +3,8 @@ import ArgusUI
 import SwiftUI
 
 /// `/issues[/<scope>][/<IDENTIFIER>]`: your open Linear issues as a board or
-/// a list, with the issue in the route open in the inspector — the desktop's
-/// Issues screen.
+/// a list; the issue in the route opens as a full page, like Linear's, with
+/// previous/next following the board or list.
 struct IssuesScreen: View {
   @Environment(HostStore.self) private var store
   let scope: ArgusProtocol.LinearIssueScope
@@ -21,6 +21,8 @@ private struct IssuesScreenContent: View {
   @Environment(DesktopModel.self) private var desktop
   @Environment(HostStore.self) private var store
   @AppStorage("issues.layout") private var layout = Layout.board
+  /// The board's hidden columns, so previous/next skips what the board hides.
+  @AppStorage("issues.columns") private var columnsJSON = "{}"
   @State private var model: LinearIssuesModel
   @State private var pickedRoot: String?
   @State private var starting: HostStore.LinearIssue?
@@ -39,25 +41,13 @@ private struct IssuesScreenContent: View {
   }
 
   var body: some View {
-    content
+    page
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .overlay { LinearIssuesPlaceholder(model: model, connectHint: Self.connectHint) }
       .refreshingLinearIssues(model)
       .onChange(of: scope, initial: true) { model.scope = scope }
-      .navigationTitle("Issues")
-      .navigationSubtitle(subtitle)
+      .navigationTitle(issueRef ?? "Issues")
+      .navigationSubtitle(issueRef == nil ? subtitle : scope.title)
       .toolbar { toolbar }
-      .inspector(isPresented: inspectorShown) {
-        if let issueRef {
-          IssueInspector(
-            ref: issueRef, canStart: store.hasControl && project != nil,
-            onChange: { model.replace($0) }, onStart: { starting = $0 },
-            onClose: { desktop.navigate(.issues(scope: scope)) }
-          )
-          .id(issueRef)
-          .inspectorColumnWidth(min: 340, ideal: 440, max: 640)
-        }
-      }
       .sheet(item: $starting) { issue in
         if let project {
           NewSessionSheet(project: project, issues: [issue]) { session in
@@ -65,6 +55,32 @@ private struct IssuesScreenContent: View {
           }
         }
       }
+  }
+
+  @ViewBuilder private var page: some View {
+    if let issueRef {
+      IssuePage(
+        ref: issueRef, scope: scope, position: LinearIssueActivity.position(of: issueRef, in: order),
+        canStart: store.hasControl && project != nil,
+        onChange: { model.replace($0) }, onStart: { starting = $0 }
+      )
+      .id(issueRef)
+    } else {
+      content.overlay { LinearIssuesPlaceholder(model: model, connectHint: Self.connectHint) }
+    }
+  }
+
+  /// The identifiers as the board or list shows them, top to bottom.
+  private var order: [String] {
+    let issues = model.shownIssues ?? []
+    switch layout {
+    case .list:
+      return LinearIssueBoard.listOrder(issues).map(\.identifier)
+    case .board:
+      let overrides = (try? JSONDecoder().decode([String: Bool].self, from: Data(columnsJSON.utf8))) ?? [:]
+      let columns = LinearIssueBoard.columns(issues).filter { !LinearIssueBoard.isHidden($0, overrides: overrides) }
+      return LinearIssueBoard.boardOrder(columns).map(\.identifier)
+    }
   }
 
   private static let connectHint = "Connect Linear in Settings → Integrations to see your issues."
@@ -90,7 +106,7 @@ private struct IssuesScreenContent: View {
   }
 
   @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-    if store.linearConnected {
+    if store.linearConnected, issueRef == nil {
       ToolbarItemGroup {
         Picker("Issues", selection: scopeSelection) {
           ForEach(ArgusProtocol.LinearIssueScope.all) { Text($0.title).tag($0) }
@@ -136,12 +152,6 @@ private struct IssuesScreenContent: View {
     desktop.navigate(.issues(scope: scope, issue: issue.identifier))
   }
 
-  private var inspectorShown: Binding<Bool> {
-    Binding(
-      get: { issueRef != nil },
-      set: { if !$0, issueRef != nil { desktop.navigate(.issues(scope: scope)) } })
-  }
-
   private var scopeSelection: Binding<ArgusProtocol.LinearIssueScope> {
     Binding(get: { scope }, set: { desktop.navigate(.issues(scope: $0)) })
   }
@@ -151,34 +161,42 @@ private struct IssuesScreenContent: View {
   }
 }
 
-/// The issue open beside the board: everything about it, editable with control.
-private struct IssueInspector: View {
+/// The issue as a full page: back to the list, previous/next, everything
+/// about it, editable with control.
+private struct IssuePage: View {
+  @Environment(\.theme) private var theme
   @Environment(DesktopModel.self) private var desktop
   @Environment(HostStore.self) private var store
   @State private var model: LinearIssueDetailModel?
   let ref: String
+  let scope: ArgusProtocol.LinearIssueScope
+  let position: LinearIssueActivity.Position?
   let canStart: Bool
   let onChange: (HostStore.LinearIssue) -> Void
   let onStart: (HostStore.LinearIssue) -> Void
-  let onClose: () -> Void
 
   var body: some View {
     VStack(spacing: 0) {
       HStack {
-        Spacer()
-        Button(action: onClose) {
-          Image(systemName: Icon.close).font(.system(size: 11, weight: .semibold))
-        }
-        .buttonStyle(.argusBorderless)
-        .help("Close the issue")
-        .keyboardShortcut(.cancelAction)
+        Breadcrumb([
+          .init(id: 0, title: "Issues", help: "Back to your issues") { desktop.navigate(.issues(scope: scope)) },
+          .init(id: 1, title: model?.issue.map { "\($0.identifier)  \($0.title)" } ?? ref),
+        ])
+        Spacer(minLength: 0)
+        Button("Back to issues") { desktop.navigate(.issues(scope: scope)) }
+          .keyboardShortcut(.cancelAction)
+          .opacity(0)
+          .frame(width: 0, height: 0)
+          .accessibilityHidden(true)
       }
-      .padding(.horizontal, 12)
-      .padding(.top, 8)
+      .padding(.horizontal, 16)
+      .frame(height: 36)
+      Divider().overlay(theme.borderSubtle)
       if let model {
         LinearIssueDetailView(
-          model: model, canEdit: store.hasControl, canStart: canStart,
+          model: model, canEdit: store.hasControl, canStart: canStart, position: position,
           onOpenSession: { desktop.open(session: $0.id) }, onStart: onStart,
+          onOpenIssue: { desktop.navigate(.issues(scope: scope, issue: $0)) },
           onOpenDesign: { desktop.navigate(.design(url: $0)) })
       }
     }
