@@ -448,11 +448,11 @@ public struct StatusDot: View {
     Circle()
       .fill(tone.color(theme))
       .frame(width: 7, height: 7)
-      .opacity(pulse && faded ? 0.3 : 1)
-      .animation(
-        pulse ? .easeInOut(duration: 0.7).repeatForever(autoreverses: true) : nil,
-        value: faded
-      )
+      // Scoped to opacity: an unscoped repeatForever also loops the layout
+      // that settles on appear, bouncing the dot between positions.
+      .animation(pulse ? .easeInOut(duration: 0.7).repeatForever(autoreverses: true) : nil) {
+        $0.opacity(pulse && faded ? 0.3 : 1)
+      }
       .onAppear { if pulse { faded = true } }
   }
 }

@@ -59,13 +59,13 @@ public struct ThinkingDots: View {
         Circle()
           .fill(tint ?? theme.textMuted)
           .frame(width: size, height: size)
-          .offset(y: bouncing ? -lift : 0)
+          // Scoped to the offset so the loop never picks up layout changes.
           .animation(
             .easeInOut(duration: 0.38)
               .repeatForever(autoreverses: true)
               // The stagger is the whole effect; without it they pulse as one.
-              .delay(Double(index) * 0.13),
-            value: bouncing)
+              .delay(Double(index) * 0.13)
+          ) { $0.offset(y: bouncing ? -lift : 0) }
       }
     }
     // Reserve the travel, or the bounce clips against the row above.
