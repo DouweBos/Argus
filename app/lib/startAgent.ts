@@ -3,10 +3,20 @@ import type { CanonicalPermissionMode } from "./permissionModes";
 import type { DesignRef, LinearIssueContext, LinkedIssue } from "./types";
 import { startPrompt } from "@argus/remote-protocol";
 import { setLinkedProjects } from "../stores/conversationStore";
-import { selectSession, setPendingPrompt } from "../stores/sessionStore";
+import {
+  getSessionState,
+  selectSession,
+  setPendingPrompt,
+} from "../stores/sessionStore";
+import {
+  DEFAULT_LLM_RUNNER,
+  getDefaultModel,
+  getDefaultPermissionMode,
+} from "../stores/settingsStore";
 import { sendUserMessageToAgent, startAgentInSession } from "./agentLifecycle";
 import { setSessionDesignRefs } from "./ipc";
 import { buildLinkedProjectsPreamble } from "./linkedProjectsPreamble";
+import { loadBaseBranches } from "./loadBaseBranches";
 import { createSessionInProject } from "./projectsService";
 
 /** Everything the start composer collected for the first agent. */
@@ -156,4 +166,32 @@ export async function startInNewWorktree(
     }),
   );
   selectSession(sessions[0].id, "home");
+}
+
+/**
+ * Start `prompt` straight away in a fresh worktree of `repoRoot`, with the
+ * start composer's defaults — e.g. a plan approved into a new session.
+ */
+export async function startPromptInNewWorktree(
+  repoRoot: string,
+  prompt: string,
+  runnerId: string | null,
+): Promise<void> {
+  const { sessions } = getSessionState();
+  const projectRootBranch =
+    sessions.find((s) => s.repo_root === repoRoot && s.kind === "project_root")
+      ?.branch ?? null;
+  const base = await loadBaseBranches(repoRoot, projectRootBranch).catch(
+    () => null,
+  );
+  await startInNewWorktree(repoRoot, base?.defaultBranch ?? undefined, {
+    designs: [],
+    images: [],
+    issues: [],
+    linkedProjects: [],
+    model: getDefaultModel() || "default",
+    permissionMode: getDefaultPermissionMode(),
+    prompt,
+    runnerId: runnerId ?? DEFAULT_LLM_RUNNER,
+  });
 }

@@ -17,13 +17,13 @@ import {
   type ToolCallData,
   type ToolResultBlockData,
 } from "@argus/peacock";
+import { startPromptInNewWorktree } from "../../../lib/startAgent";
 import { getAgent } from "../../../stores/agentStore";
 import {
   clearToolDraft,
   getToolDraft,
   setToolDraft,
 } from "../../../stores/conversationStore";
-import { startNewSession } from "../../../stores/dialogStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { getSessionState } from "../../../stores/sessionStore";
 import { Markdown } from "../../shared/Markdown";
@@ -253,8 +253,8 @@ export function ToolCallCard({
     );
   }, [onPermissionRespond, toolCall.id]);
 
-  // Repo the plan's session lives in — needed to seed a sibling session.
-  const planRepoRoot = useMemo(() => {
+  // The plan's session — its repo and runner seed the sibling session.
+  const planSession = useMemo(() => {
     if (!isExitPlanMode || !agentId) {
       return null;
     }
@@ -264,10 +264,10 @@ export function ToolCallCard({
     }
 
     return (
-      getSessionState().sessions.find((s) => s.id === agent.session_id)
-        ?.repo_root ?? null
+      getSessionState().sessions.find((s) => s.id === agent.session_id) ?? null
     );
   }, [isExitPlanMode, agentId]);
+  const planRepoRoot = planSession?.repo_root ?? null;
 
   // Hand the plan to a fresh session so the current one can keep planning
   // (or stay busy with another agent) instead of implementing it here.
@@ -275,10 +275,12 @@ export function ToolCallCard({
     if (!planRepoRoot) {
       return;
     }
-    startNewSession(
+    // A failed worktree is already reported by `createSessionInProject`.
+    startPromptInNewWorktree(
       planRepoRoot,
       `Implement the following plan:\n\n${planText}`,
-    );
+      planSession?.runner_id ?? null,
+    ).catch(() => {});
     onPermissionRespond?.(
       toolCall.id,
       "deny",
@@ -286,7 +288,7 @@ export function ToolCallCard({
       false,
       "The user approved this plan but handed it off to a new session to implement. Do not implement it here — stay in plan mode and wait for further instructions.",
     );
-  }, [planRepoRoot, planText, onPermissionRespond, toolCall.id]);
+  }, [planRepoRoot, planSession, planText, onPermissionRespond, toolCall.id]);
 
   const handlePlanFeedback = useCallback(
     (feedback: string) => {

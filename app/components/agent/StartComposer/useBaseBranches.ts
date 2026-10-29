@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  baseBranchOptions,
-  pickDefaultBaseBranch,
-} from "../../../lib/baseBranch";
-import { listAllBranches, readArgusConfig } from "../../../lib/ipc";
+import { loadBaseBranches } from "../../../lib/loadBaseBranches";
 
 interface BaseBranches {
   /** Preselected base; null until the branch list loads (or when it's empty). */
@@ -32,27 +28,11 @@ export function useBaseBranches(
       return;
     }
     let cancelled = false;
-    Promise.all([
-      listAllBranches(repoRoot),
-      readArgusConfig(repoRoot).catch(() => null),
-    ])
-      .then(([list, config]) => {
-        if (cancelled) {
-          return;
+    loadBaseBranches(repoRoot, projectRootBranch)
+      .then((loaded) => {
+        if (!cancelled) {
+          setState({ ...loaded, loading: false });
         }
-        const originRefs = list.originRefs ?? [];
-        const protectedBranches = config?.protected_branches ?? [];
-        setState({
-          defaultBranch: pickDefaultBaseBranch(
-            list.local,
-            originRefs,
-            config?.default_base_branch?.trim() || null,
-            protectedBranches,
-            projectRootBranch,
-          ),
-          loading: false,
-          options: baseBranchOptions(list.local, originRefs, protectedBranches),
-        });
       })
       .catch(() => {
         if (!cancelled) {
