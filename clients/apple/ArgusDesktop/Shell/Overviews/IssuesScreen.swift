@@ -3,15 +3,17 @@ import ArgusUI
 import SwiftUI
 
 /// `/issues[/<scope>][/<IDENTIFIER>]`: your open Linear issues as a board or
-/// a list; the issue in the route opens as a full page, like Linear's, with
-/// previous/next following the board or list.
+/// a list, or `/issues/search?q=` the whole workspace's matches; the issue in
+/// the route opens as a full page, like Linear's, with previous/next following
+/// the board or list.
 struct IssuesScreen: View {
   @Environment(HostStore.self) private var store
   let scope: ArgusProtocol.LinearIssueScope
   let issueRef: String?
+  let query: String?
 
   var body: some View {
-    IssuesScreenContent(model: LinearIssuesModel(host: store), scope: scope, issueRef: issueRef)
+    IssuesScreenContent(model: LinearIssuesModel(host: store), scope: scope, issueRef: issueRef, query: query)
   }
 }
 
@@ -26,14 +28,22 @@ private struct IssuesScreenContent: View {
   @State private var model: LinearIssuesModel
   @State private var pickedRoot: String?
   @State private var starting: HostStore.LinearIssue?
+  /// The field as typed; the route's `query` is what's searched, once typing settles.
+  @State private var searchText: String
+  @FocusState private var searchFocused: Bool
   let scope: ArgusProtocol.LinearIssueScope
   let issueRef: String?
+  let query: String?
 
-  init(model: LinearIssuesModel, scope: ArgusProtocol.LinearIssueScope, issueRef: String?) {
+  init(model: LinearIssuesModel, scope: ArgusProtocol.LinearIssueScope, issueRef: String?, query: String?) {
     model.scope = scope
+    model.query = query
+    model.onSearched = { MacTelemetry.capture(.issueSearched(results: MacTelemetryEvent.countBucket($0))) }
     _model = State(initialValue: model)
+    _searchText = State(initialValue: query ?? "")
     self.scope = scope
     self.issueRef = issueRef
+    self.query = query
   }
 
   private var project: RemoteProject? {
@@ -45,8 +55,13 @@ private struct IssuesScreenContent: View {
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .refreshingLinearIssues(model)
       .onChange(of: scope, initial: true) { model.scope = scope }
+      .onChange(of: query, initial: true) {
+        model.query = query
+        if LinearIssuesModel.term(searchText) != query { searchText = query ?? "" }
+      }
+      .task(id: searchText) { await search() }
       .navigationTitle(issueRef ?? "Issues")
-      .navigationSubtitle(issueRef == nil ? subtitle : scope.title)
+      .navigationSubtitle(issueRef == nil ? subtitle : query.map { "Results for \u{201C}\($0)\u{201D}" } ?? scope.title)
       .toolbar { toolbar }
       .sheet(item: $starting) { issue in
         if let project {
@@ -60,14 +75,39 @@ private struct IssuesScreenContent: View {
   @ViewBuilder private var page: some View {
     if let issueRef {
       IssuePage(
-        ref: issueRef, scope: scope, position: LinearIssueActivity.position(of: issueRef, in: order),
+        ref: issueRef, scope: scope, query: query, position: LinearIssueActivity.position(of: issueRef, in: order),
         canStart: store.hasControl && project != nil,
         onChange: { model.replace($0) }, onStart: { starting = $0 }
       )
       .id(issueRef)
+    } else if store.linearConnected {
+      content.overlay { LinearIssuesPlaceholder(model: model, connectHint: Self.connectHint) }
+        .searchable(text: $searchText, placement: .toolbar, prompt: "Search all issues…")
+        .searchFocused($searchFocused)
+        .background { findShortcut }
     } else {
       content.overlay { LinearIssuesPlaceholder(model: model, connectHint: Self.connectHint) }
     }
+  }
+
+  /// ⌘F puts the cursor in the search field.
+  private var findShortcut: some View {
+    Button("Search Issues") { searchFocused = true }
+      .keyboardShortcut("f", modifiers: .command)
+      .opacity(0)
+      .frame(width: 0, height: 0)
+      .accessibilityHidden(true)
+  }
+
+  /// Once typing settles: a new term is one navigation, refining it replaces
+  /// that step; clearing the field goes back to the scope at once.
+  private func search() async {
+    let term = LinearIssuesModel.term(searchText)
+    guard term != query else { return }
+    if term != nil {
+      do { try await Task.sleep(for: .milliseconds(300)) } catch { return }
+    }
+    desktop.navigate(.issues(scope: scope, query: term))
   }
 
   /// The identifiers as the board or list shows them, top to bottom.
@@ -108,8 +148,9 @@ private struct IssuesScreenContent: View {
   @ToolbarContentBuilder private var toolbar: some ToolbarContent {
     if store.linearConnected, issueRef == nil {
       ToolbarItemGroup {
+        // No segment while searching: the results are the workspace's, not a scope's.
         Picker("Issues", selection: scopeSelection) {
-          ForEach(ArgusProtocol.LinearIssueScope.all) { Text($0.title).tag($0) }
+          ForEach(ArgusProtocol.LinearIssueScope.all) { Text($0.title).tag(Optional($0)) }
         }
         .pickerStyle(.segmented)
         .fixedSize()
@@ -141,19 +182,24 @@ private struct IssuesScreenContent: View {
   }
 
   private var subtitle: String {
-    guard let issues = model.issues else { return "Open issues in Linear" }
+    guard let issues = model.issues else { return query == nil ? "Open issues in Linear" : "Searching Linear" }
     let shown = model.shownIssues?.count ?? issues.count
     let count = shown == issues.count ? "\(issues.count)" : "\(shown) of \(issues.count)"
+    if let query {
+      return "\(count) \(issues.count == 1 ? "result" : "results") for \u{201C}\(query)\u{201D}"
+    }
     return "\(count) open · \(scope.title.lowercased())"
   }
 
-  /// One navigation per click: the issue's own URL.
+  /// One navigation per click: the issue's own URL, under the search when there is one.
   private func open(_ issue: HostStore.LinearIssue) {
-    desktop.navigate(.issues(scope: scope, issue: issue.identifier))
+    desktop.navigate(.issues(scope: scope, issue: issue.identifier, query: query))
   }
 
-  private var scopeSelection: Binding<ArgusProtocol.LinearIssueScope> {
-    Binding(get: { scope }, set: { desktop.navigate(.issues(scope: $0)) })
+  private var scopeSelection: Binding<ArgusProtocol.LinearIssueScope?> {
+    Binding(
+      get: { query == nil ? scope : nil },
+      set: { picked in picked.map { desktop.navigate(.issues(scope: $0)) } })
   }
 
   private var projectSelection: Binding<String?> {
@@ -170,6 +216,7 @@ private struct IssuePage: View {
   @State private var model: LinearIssueDetailModel?
   let ref: String
   let scope: ArgusProtocol.LinearIssueScope
+  let query: String?
   let position: LinearIssueActivity.Position?
   let canStart: Bool
   let onChange: (HostStore.LinearIssue) -> Void
@@ -179,11 +226,13 @@ private struct IssuePage: View {
     VStack(spacing: 0) {
       HStack {
         Breadcrumb([
-          .init(id: 0, title: "Issues", help: "Back to your issues") { desktop.navigate(.issues(scope: scope)) },
+          .init(id: 0, title: query == nil ? "Issues" : "Search", help: query == nil ? "Back to your issues" : "Back to the results") {
+            desktop.navigate(.issues(scope: scope, query: query))
+          },
           .init(id: 1, title: model?.issue.map { "\($0.identifier)  \($0.title)" } ?? ref),
         ])
         Spacer(minLength: 0)
-        Button("Back to issues") { desktop.navigate(.issues(scope: scope)) }
+        Button("Back to issues") { desktop.navigate(.issues(scope: scope, query: query)) }
           .keyboardShortcut(.cancelAction)
           .opacity(0)
           .frame(width: 0, height: 0)
@@ -196,7 +245,7 @@ private struct IssuePage: View {
         LinearIssueDetailView(
           model: model, canEdit: store.hasControl, canStart: canStart, position: position,
           onOpenSession: { desktop.open(session: $0.id) }, onStart: onStart,
-          onOpenIssue: { desktop.navigate(.issues(scope: scope, issue: $0)) },
+          onOpenIssue: { desktop.navigate(.issues(scope: scope, issue: $0, query: query)) },
           onOpenDesign: { desktop.navigate(.design(url: $0)) },
           onPropertyMenu: { kind, byKey in
             MacTelemetry.capture(.issuePropertyMenuOpened(property: kind, via: byKey ? .shortcut : .click))

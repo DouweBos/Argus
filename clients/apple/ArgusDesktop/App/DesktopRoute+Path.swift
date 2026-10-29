@@ -23,11 +23,16 @@ extension DesktopRoute {
       self = .usage(tab, range: tab == .limits ? nil : Self.usageRange(query["range"]))
     case ("pull-requests", 1): self = .pullRequests
     case ("issues", 1...3):
-      // Electron's `/issues[/<scope>][/<IDENTIFIER>]`.
-      let scope = ArgusProtocol.LinearIssueScope.all.first { $0.rawValue == parts.dropFirst().first }
-      let rest = parts.dropFirst(scope == nil ? 1 : 2)
+      // Electron's `/issues[/<scope>][/<IDENTIFIER>]`, and `/issues/search[/<IDENTIFIER>]?q=`;
+      // a search without a term is the bare list.
+      let second = parts.dropFirst().first
+      let searching = second == Self.issueSearchSegment
+      let scope = ArgusProtocol.LinearIssueScope.all.first { $0.rawValue == second }
+      let rest = parts.dropFirst(scope == nil && !searching ? 1 : 2)
       guard rest.count <= 1 else { return nil }
-      self = .issues(scope: scope ?? .assigned, issue: rest.first)
+      self = .issues(
+        scope: scope ?? .assigned, issue: rest.first,
+        query: searching ? LinearIssuesModel.term(query["q"]) : nil)
     case ("design", 1):
       guard let url = query["url"].flatMap(\.nonEmpty) else { return nil }
       self = .design(url: url, sessionId: query["session"].flatMap(\.nonEmpty))
@@ -80,8 +85,9 @@ extension DesktopRoute {
     case .usage(let tab, let range): pattern + Self.query([("range", tab == .limits ? nil : range?.rawValue)])
     case .pullRequests: "/pull-requests"
     case .pullRequest(let repo, let number): "/pull-requests/\(repo)/\(number)"
-    case .issues(let scope, let issue):
-      (scope == .assigned ? "/issues" : "/issues/\(scope.rawValue)") + (issue.map { "/\(Self.encode($0))" } ?? "")
+    case .issues(let scope, let issue, let query):
+      Self.issuesBase(scope: scope, query: query) + (issue.map { "/\(Self.encode($0))" } ?? "")
+        + Self.query([("q", query)])
     case .design(let url, let sessionId): "/design" + Self.query([("url", url), ("session", sessionId)])
     case .automations: "/automations"
     case .quickRun(let runId): runId.map { "/automations/quick/runs/\(Self.encode($0))" } ?? "/automations/quick"

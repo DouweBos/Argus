@@ -2,9 +2,9 @@ import ArgusKit
 import Foundation
 import Observation
 
-/// The Issues screen's list of Linear issues for one scope. Shared by the
-/// Mac's board and the phone's list, so a change made in an issue's detail
-/// shows on both without asking Linear again.
+/// The Issues screen's list of Linear issues for one scope, or for a search
+/// of the whole workspace. Shared by the Mac's board and the phone's list, so
+/// a change made in an issue's detail shows on both without asking Linear again.
 @MainActor
 @Observable
 public final class LinearIssuesModel {
@@ -15,16 +15,29 @@ public final class LinearIssuesModel {
       error = nil
     }
   }
-  /// Nil until the first answer for this scope.
+  /// A search of the whole workspace, which wins over `scope`; nil lists the scope. Set it to a `term`.
+  public var query: String? {
+    didSet {
+      guard query != oldValue else { return }
+      issues = nil
+      error = nil
+      reported = false
+    }
+  }
+  /// Nil until the first answer for this scope or search.
   public private(set) var issues: [ArgusProtocol.LinearIssue]?
-  /// The scope's active filters, like a saved Linear view; remembered per scope.
+  /// The first answer to each search, with how many it found: once per search, never per refresh.
+  public var onSearched: ((Int) -> Void)?
+  /// The scope's active filters, like a saved Linear view; remembered per scope, and once for search.
   public var filters: [IssueFilter] {
-    get { filtersByScope[scope.rawValue] ?? [] }
+    get { filtersByScope[filterKey] ?? [] }
     set {
-      filtersByScope[scope.rawValue] = newValue
+      filtersByScope[filterKey] = newValue
       Self.save(filtersByScope, to: defaults)
     }
   }
+
+  private var filterKey: String { query == nil ? scope.rawValue : Self.searchFilterKey }
 
   /// `issues` after the filters: what the board and list show.
   public var shownIssues: [ArgusProtocol.LinearIssue]? {
@@ -38,6 +51,7 @@ public final class LinearIssuesModel {
     Set((issues ?? []).map(\.teamId)).sorted().flatMap { statesByTeam[$0] ?? [] }
   }
 
+  private var reported = false
   private var statesByTeam: [String: [ArgusProtocol.LinearWorkflowState]] = [:]
   private var filtersByScope: [String: [IssueFilter]]
   private let defaults: UserDefaults?
@@ -51,6 +65,15 @@ public final class LinearIssuesModel {
   }
 
   static let filtersKey = "issues.filters"
+  static let searchFilterKey = "search"
+  /// A search asks for fewer than a scope: Linear ranks them, so the top ones are what's wanted.
+  public nonisolated static let searchLimit = 50
+
+  /// What's worth searching for: trimmed, nil when nothing is left.
+  public nonisolated static func term(_ raw: String?) -> String? {
+    guard let trimmed = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else { return nil }
+    return trimmed
+  }
   /// The Mac's old Current cycle toggle, carried over into a filter once.
   static let legacyCycleKey = "issues.currentCycle"
 
@@ -80,16 +103,26 @@ public final class LinearIssuesModel {
       error = nil
       return
     }
-    let asked = scope
+    let asked = (scope: scope, query: query)
+    func current() -> Bool { asked.scope == scope && asked.query == query }
     refreshing = true
     defer { refreshing = false }
     do {
-      let found = try await host.linearIssues(query: "", scope: asked, limit: 100)
-      guard asked == scope else { return }
+      let found =
+        if let term = asked.query {
+          try await host.linearIssues(query: term, limit: Self.searchLimit)
+        } else {
+          try await host.linearIssues(query: "", scope: asked.scope, limit: 100)
+        }
+      guard current() else { return }
       issues = found
       error = nil
+      if asked.query != nil, !reported {
+        reported = true
+        onSearched?(found.count)
+      }
     } catch {
-      guard asked == scope else { return }
+      guard current() else { return }
       self.error = HostStore.describe(error)
     }
     await loadWorkflowStates()

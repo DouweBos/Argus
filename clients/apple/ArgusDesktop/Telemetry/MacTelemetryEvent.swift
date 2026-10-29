@@ -254,6 +254,8 @@ enum MacTelemetryEvent {
   case contextCardUsed(action: ContextCardAction)
   /// An issue page's status or priority menu opened; the change itself is the host's `linear_issue_updated`.
   case issuePropertyMenuOpened(property: LinearIssueProperty.Kind, via: IssueMenuVia)
+  /// A workspace issue search settled; once per term, never the term itself.
+  case issueSearched(results: String)
   /// A deep link or launch route was opened; `screen` is its route pattern.
   case linkOpened(screen: String, outcome: LinkOutcome)
   /// A transcript link was used; `relative` is whether the path needed the worktree.
@@ -370,6 +372,7 @@ enum MacTelemetryEvent {
     case .sidebarFiltered: "mac_sidebar_filtered"
     case .contextCardUsed: "mac_context_card_used"
     case .issuePropertyMenuOpened: "mac_issue_property_menu_opened"
+    case .issueSearched: "mac_issue_searched"
     case .homeCardActed: "mac_home_card_acted"
     case .hostFolderPicked: "mac_host_folder_picked"
     case .tabUsed: "mac_tab_used"
@@ -475,6 +478,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue]
     case .issuePropertyMenuOpened(let property, let via):
       ["property": property.rawValue, "via": via.rawValue]
+    case .issueSearched(let results):
+      ["result_bucket": results]
     case .homeCardActed(let card, let action):
       ["card": card.rawValue, "action": action.rawValue]
     case .hostFolderPicked(let stage):

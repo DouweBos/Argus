@@ -23,7 +23,9 @@ enum DesktopRoute: Hashable {
   case pullRequests
   /// `/issues[/<scope>][/<IDENTIFIER>]`: your open Linear issues in a scope
   /// (bare is assigned), optionally with one open as a full page.
-  case issues(scope: ArgusProtocol.LinearIssueScope = .assigned, issue: String? = nil)
+  /// `/issues/search[/<IDENTIFIER>]?q=`: a search of the whole workspace instead; the
+  /// scope stays on the route, off the URL, so clearing the search returns to it.
+  case issues(scope: ArgusProtocol.LinearIssueScope = .assigned, issue: String? = nil, query: String? = nil)
   /// `/design?url=&session=`: a Figma frame in the design viewer, for a session when it has one.
   case design(url: String, sessionId: String? = nil)
   /// `/pull-requests/:owner/:repo/:number`; `repo` is `owner/repo`.
@@ -43,6 +45,14 @@ enum DesktopRoute: Hashable {
   /// `/usage` (plan limits), `/usage/cost` or `/usage/tokens`, with `?range=`
   /// on the last two; nil is the default 30 days and stays off the URL.
   case usage(UsageTab, range: ArgusProtocol.UsageRange? = nil)
+
+  static let issueSearchSegment = "search"
+
+  /// `/issues`, `/issues/<scope>` or `/issues/search`, never the term.
+  static func issuesBase(scope: ArgusProtocol.LinearIssueScope, query: String?) -> String {
+    if query != nil { return "/issues/\(issueSearchSegment)" }
+    return scope == .assigned ? "/issues" : "/issues/\(scope.rawValue)"
+  }
 
   var sessionId: String? {
     switch self {
@@ -81,8 +91,8 @@ enum DesktopRoute: Hashable {
     case .sessionCode: "/sessions/:sessionId/code"
     case .pullRequests: "/pull-requests"
     case .pullRequest: "/pull-requests/:owner/:repo/:number"
-    case .issues(let scope, let issue):
-      (scope == .assigned ? "/issues" : "/issues/\(scope.rawValue)") + (issue == nil ? "" : "/:issue")
+    case .issues(let scope, let issue, let query):
+      Self.issuesBase(scope: scope, query: query) + (issue == nil ? "" : "/:issue")
     case .design: "/design"
     case .automations: "/automations"
     case .quickRun(let runId): runId == nil ? "/automations/quick" : "/automations/quick/runs/:runId"

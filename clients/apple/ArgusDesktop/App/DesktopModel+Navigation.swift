@@ -162,6 +162,8 @@ extension DesktopModel {
   /// A session's agents with none named, then naming the agent already in
   /// front: the same screen, so not a step back.
   private func names(_ current: DesktopRoute, as next: DesktopRoute) -> Bool {
+    // Refining a search is the same results screen: Back leaves the search, not each keystroke.
+    if case .issues(_, nil, _?) = current, case .issues(_, nil, _?) = next { return true }
     guard case .session(let id, nil) = current, case .session(id, let agentId?) = next else { return false }
     return agentId == focusedAgentId(inSession: id, agents: agents(inSession: id))
   }

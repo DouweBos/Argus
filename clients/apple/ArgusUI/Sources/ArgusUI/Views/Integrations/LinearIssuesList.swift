@@ -1,8 +1,8 @@
 import ArgusCore
 import SwiftUI
 
-/// Open Linear issues in one scope, a section per status with the most
-/// urgent first — the desktop's Issues list. Tapping one opens it. The
+/// Open Linear issues in one scope, or a search's results, a section per
+/// status with the most urgent first — the desktop's Issues list. Tapping one opens it. The
 /// screen keeps it loaded with `refreshingLinearIssues`.
 public struct LinearIssuesList: View {
   @Environment(HostStore.self) private var host
@@ -75,9 +75,15 @@ public struct LinearIssuesPlaceholder: View {
     if !host.linearConnected {
       EmptyState(icon: Icon.issue, title: "Linear isn't connected", body: connectHint)
     } else if let error = model.error, model.issues == nil {
-      EmptyState(icon: Icon.warning, title: "Couldn't fetch your issues", body: error, selectable: true)
+      EmptyState(
+        icon: Icon.warning, title: model.query == nil ? "Couldn't fetch your issues" : "Couldn't search Linear",
+        body: error, selectable: true)
     } else if model.issues == nil {
-      Loading(label: "Asking Linear…")
+      Loading(label: model.query == nil ? "Asking Linear…" : "Searching Linear…")
+    } else if let query = model.query, model.issues?.isEmpty == true {
+      EmptyState(
+        icon: Icon.search, title: "No issues match \u{201C}\(query)\u{201D}",
+        body: "Search looks through every issue in your Linear workspace.")
     } else if model.issues?.isEmpty == true {
       EmptyState(icon: Icon.check, title: "No open issues", body: model.scope.emptyText)
     } else if model.shownIssues?.isEmpty == true {
@@ -87,7 +93,7 @@ public struct LinearIssuesPlaceholder: View {
 }
 
 extension View {
-  /// Loads the issues once the host is ready and whenever the scope changes,
+  /// Loads the issues once the host is ready and whenever the scope or search changes,
   /// then every five minutes while Linear is connected.
   public func refreshingLinearIssues(_ model: LinearIssuesModel) -> some View {
     modifier(LinearIssuesRefresh(model: model))
@@ -100,7 +106,7 @@ private struct LinearIssuesRefresh: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .task(id: Key(ready: host.connection == .ready, scope: model.scope.rawValue)) {
+      .task(id: Key(ready: host.connection == .ready, scope: model.scope.rawValue, query: model.query)) {
         guard host.connection == .ready else { return }
         await host.loadIntegrations()
         await model.refresh()
@@ -113,5 +119,6 @@ private struct LinearIssuesRefresh: ViewModifier {
   private struct Key: Equatable {
     let ready: Bool
     let scope: String
+    let query: String?
   }
 }

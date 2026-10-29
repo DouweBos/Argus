@@ -29,6 +29,12 @@ struct DesktopRouteTests {
     ("/issues/created", .issues(scope: .created)),
     ("/issues/ENG-1", .issues(issue: "ENG-1")),
     ("/issues/subscribed/ENG-1", .issues(scope: .subscribed, issue: "ENG-1")),
+    ("/issues/search?q=RTN-9181", .issues(query: "RTN-9181")),
+    ("/issues/search?q=%20login%20bug%20", .issues(query: "login bug")),
+    ("/issues/search/RTN-9181?q=rtn", .issues(issue: "RTN-9181", query: "rtn")),
+    // A search without a term is the plain list.
+    ("/issues/search", .issues()),
+    ("/issues/search/ENG-1?q=", .issues(issue: "ENG-1")),
     ("/design?url=https%3A%2F%2Ffigma.com%2Fdesign%2Fk%2FA%3Fnode-id%3D1-2", .design(url: "https://figma.com/design/k/A?node-id=1-2")),
     ("/design?url=https%3A%2F%2Ffigma.com%2Fdesign%2Fk&session=s1", .design(url: "https://figma.com/design/k", sessionId: "s1")),
     ("/pull-requests/houwert/argus/42", .pullRequest(repo: "houwert/argus", number: 42)),
@@ -90,6 +96,7 @@ struct DesktopRouteTests {
     DesktopRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox, .proposal(id: "p 1"), .notifications, .usage(.limits), .usage(.cost), .usage(.tokens, range: ._90d),
     .pullRequests, .pullRequest(repo: "o/r", number: 7), .issues(), .issues(scope: .created),
     .issues(issue: "ENG-1"), .issues(scope: .subscribed, issue: "ENG-1"),
+    .issues(query: "a&b c"), .issues(issue: "ENG-1", query: "login?"),
     .design(url: "https://www.figma.com/design/k/App?node-id=1-2&t=a+b"), .design(url: "https://figma.com/file/k", sessionId: "s 1"),
     .automations, .quickRun(runId: nil),
     .quickRun(runId: "r"), .automation(id: "a", runId: nil), .automation(id: "a", runId: "r"),
@@ -114,6 +121,7 @@ struct DesktopRouteTests {
     #expect(DesktopRoute.usage(.limits).pattern == "/usage")
     #expect(DesktopRoute.usage(.cost).pattern == "/usage/cost")
     #expect(DesktopRoute.usage(.tokens).path == "/usage/tokens")
+    #expect(DesktopRoute.issues(scope: .created, query: "login bug").path == "/issues/search?q=login%20bug")
     #expect(DesktopRoute.usage(.cost, range: ._24h).path == "/usage/cost?range=24h")
     #expect(DesktopRoute.usage(.cost, range: ._24h).pattern == "/usage/cost")
   }
@@ -144,6 +152,8 @@ struct DesktopRouteTests {
       == "/sessions/:sessionId/git/blame")
     #expect(DesktopRoute.issues(scope: .created, issue: "ENG-1").pattern == "/issues/created/:issue")
     #expect(DesktopRoute.issues().pattern == "/issues")
+    #expect(DesktopRoute.issues(scope: .created, query: "secret").pattern == "/issues/search")
+    #expect(DesktopRoute.issues(issue: "ENG-1", query: "secret").pattern == "/issues/search/:issue")
   }
 
   @Test func aDeviceRouteIsTheDevicesScreenWithAPattern() {

@@ -137,6 +137,8 @@ enum TelemetryEvent {
   case designOpened(source: DesignSource)
   /// A worktree search finished; `results` is bucketed before it is sent.
   case fileSearchRun(regex: Bool, results: Int, truncated: Bool)
+  /// A workspace issue search settled; once per term, never the term itself.
+  case issueSearched(results: Int)
   /// `message` is scrubbed and truncated by `Telemetry` before it is sent.
   case appError(scope: String, message: String)
   /// The computer is too old for something the phone asked; `method` is a protocol name.
@@ -194,6 +196,7 @@ enum TelemetryEvent {
     case .fileViewed: "ios_file_viewed"
     case .designOpened: "ios_design_opened"
     case .fileSearchRun: "ios_file_search_run"
+    case .issueSearched: "ios_issue_searched"
     case .appError: "ios_app_error"
     case .hostFeatureUnsupported: "ios_host_feature_unsupported"
     case .telemetryEnabled: "telemetry_enabled"
@@ -283,6 +286,8 @@ enum TelemetryEvent {
       ["source": source.rawValue]
     case .fileSearchRun(let regex, let results, let truncated):
       ["regex": regex, "result_bucket": Self.resultBucket(results), "truncated": truncated]
+    case .issueSearched(let results):
+      ["result_bucket": Self.resultBucket(results)]
     case .appError(let scope, let message):
       ["scope": scope, "message": String(Telemetry.scrub(message).prefix(2000))]
     case .hostFeatureUnsupported(let method):
