@@ -33,7 +33,8 @@ extension ArgusProtocol.LinearIssue {
     self.init(
       id: detail.id, identifier: detail.identifier, title: detail.title, description: detail.description,
       url: detail.url, branchName: detail.branchName, state: detail.state, priority: detail.priority,
-      estimate: detail.estimate, estimateType: detail.estimateType, teamId: detail.teamId, teamKey: detail.teamKey, teamName: detail.teamName,
+      estimate: detail.estimate, estimateType: detail.estimateType,
+      labelColors: detail.labelColors?.map { .init(name: $0.name, color: $0.color) }, teamId: detail.teamId, teamKey: detail.teamKey, teamName: detail.teamName,
       assignee: detail.assignee, assigneeAvatarUrl: detail.assigneeAvatarUrl, labels: detail.labels,
       project: detail.project.map { .init(id: $0.id, name: $0.name) },
       cycle: detail.cycle.map { .init(id: $0.id, number: $0.number, name: $0.name, isActive: $0.isActive) },
@@ -54,6 +55,9 @@ public enum LinearIssueBoard {
     public let name: String
     /// Linear's category, for the column's glyph.
     public let type: String
+    /// Linear's own `#rrggbb` for the state, when it sent one.
+    public let color: String?
+    /// Empty for a state of the team's workflow no issue is in.
     public let issues: [Issue]
   }
 
@@ -69,32 +73,41 @@ public enum LinearIssueBoard {
     "triage", "backlog", "unstarted", "started", "completed", "canceled", "duplicate",
   ]
 
-  /// Linear's own default: what's ready or in flight, not the backlog or what's done.
-  static let hiddenByDefault: Set<String> = ["backlog", "canceled", "completed", "duplicate", "triage"]
+  /// Done, canceled and duplicate stay hidden until shown, like Linear's "My issues".
+  static let hiddenByDefault: Set<String> = ["canceled", "completed", "duplicate"]
 
-  /// `overrides` maps a column id to an explicit hide (true) or show (false).
+  /// `overrides` maps a column id to an explicit hide (true) or show (false);
+  /// otherwise a column shows when it has issues and isn't a closed state.
   public static func isHidden(_ column: Column, overrides: [String: Bool]) -> Bool {
-    overrides[column.id] ?? hiddenByDefault.contains(column.type)
+    overrides[column.id] ?? (column.issues.isEmpty || hiddenByDefault.contains(column.type))
   }
 
   /// Urgent first, "no priority" last — Linear's own order.
   public static let priorityOrder = [1, 2, 3, 4, 0]
 
-  /// One column per state the issues are in, in workflow order.
-  public static func columns(_ issues: [Issue]) -> [Column] {
+  /// One column per state the issues are in, plus every state in `states`
+  /// (the teams' workflows), in workflow order.
+  public static func columns(_ issues: [Issue], states: [ArgusProtocol.LinearWorkflowState] = []) -> [Column] {
     var order: [String] = []
     var byKey: [String: (state: ArgusProtocol.LinearWorkflowState, issues: [Issue])] = [:]
-    for issue in issues {
-      let key = issue.state.name.lowercased()
-      if byKey[key] == nil { order.append(key) }
-      byKey[key, default: (issue.state, [])].issues.append(issue)
+    func add(_ state: ArgusProtocol.LinearWorkflowState) -> String {
+      let key = state.name.lowercased()
+      if byKey[key] == nil {
+        order.append(key)
+        byKey[key] = (state, [])
+      } else if byKey[key]?.state.color == nil {
+        byKey[key]?.state.color = state.color
+      }
+      return key
     }
+    for state in states { _ = add(state) }
+    for issue in issues { byKey[add(issue.state)]?.issues.append(issue) }
     return order.compactMap { key in byKey[key].map { (key, $0.state, $0.issues) } }
       .sorted { a, b in
         let (ra, rb) = (typeRank(a.1.type), typeRank(b.1.type))
         return ra != rb ? ra < rb : a.1.position < b.1.position
       }
-      .map { Column(id: $0.0, name: $0.1.name, type: $0.1.type, issues: $0.2) }
+      .map { Column(id: $0.0, name: $0.1.name, type: $0.1.type, color: $0.1.color, issues: $0.2) }
   }
 
   /// A lane per priority that has issues, most urgent first.
@@ -151,11 +164,12 @@ public enum LinearIssueBoard {
     0: "None", 1: "XS", 2: "S", 3: "M", 5: "L", 8: "XL", 13: "XXL", 21: "XXXL",
   ]
 
-  /// `M` on a t-shirt team, `3 pt` elsewhere, without a trailing ".0".
-  public static func estimateLabel(_ estimate: Double, type: String? = nil) -> String {
+  /// `M` on a t-shirt team, `3 pt` elsewhere, without a trailing ".0"; `unit`
+  /// false drops the " pt" for a card that draws its own estimate glyph.
+  public static func estimateLabel(_ estimate: Double, type: String? = nil, unit: Bool = true) -> String {
     if type == "tShirt", let size = tShirt[estimate] { return size }
     let points = estimate.rounded() == estimate ? String(Int(estimate)) : String(estimate)
-    return "\(points) pt"
+    return unit ? "\(points) pt" : points
   }
 
   /// The order the list reads in: a status at a time, most urgent first.

@@ -190,21 +190,24 @@ struct LinearIssueProperties: View {
         LinearPropertyPill(
           options: LinearIssueProperty.statusOptions(model.stateOptions), current: issue.state.id,
           placeholder: "Change status…", key: "S", isOpen: isOpen(.status),
-          icon: { id in AnyView(IssueStatusGlyph(type: model.stateOptions.first { $0.id == id }?.type ?? "")) },
+          icon: { id in
+            let state = model.stateOptions.first { $0.id == id }
+            return AnyView(IssueStatusGlyph(type: state?.type ?? "", color: state?.color))
+          },
           pick: { id in Task { await model.setState(id) } }
         ) {
-          IssueStatusGlyph(type: issue.state.type)
+          IssueStatusGlyph(type: issue.state.type, color: issue.state.color)
           value(issue.state.name)
         }
         .disabled(model.updating)
       } else {
         row {
-          IssueStatusGlyph(type: issue.state.type)
+          IssueStatusGlyph(type: issue.state.type, color: issue.state.color)
           value(issue.state.name)
         }
       }
     }
-    .propertyHoverCard(enabled: open == nil) { LinearTimeInStatusCard(issue: issue, canEdit: canEdit) }
+    .propertyHoverCard(enabled: open == nil) { LinearTimeInStatusCard(issue: issue, states: model.stateOptions, canEdit: canEdit) }
     .accessibilityLabel("Status \(issue.state.name)")
   }
 
@@ -283,8 +286,5 @@ struct LinearLabelChip: View {
     .accessibilityElement(children: .combine)
   }
 
-  private var swatch: Color {
-    guard let rgba = hex.flatMap(Inspection.RGBA.init(hex:)) else { return theme.textMuted }
-    return Color(.sRGB, red: rgba.red, green: rgba.green, blue: rgba.blue, opacity: rgba.alpha)
-  }
+  private var swatch: Color { Color(linearHex: hex) ?? theme.textMuted }
 }

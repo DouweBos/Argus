@@ -72,6 +72,7 @@ struct LinearIssueBoardTests {
     #expect(LinearIssueBoard.cycleLabel(number: 59, name: "Sprint 4") == "Sprint 4")
     #expect(LinearIssueBoard.estimateLabel(3) == "3 pt")
     #expect(LinearIssueBoard.estimateLabel(0.5) == "0.5 pt")
+    #expect(LinearIssueBoard.estimateLabel(3, unit: false) == "3")
   }
 
   @Test func namesPriorities() {
@@ -96,15 +97,30 @@ struct LinearIssueBoardTests {
     #expect(LinearIssueBoard.session(for: issue("ENG-3", type: "started"), in: sessions) == nil)
   }
 
-  @Test func hidesBacklogAndDoneLikeColumnsUntilShown() {
-    let columns = LinearIssueBoard.columns([
-      issue("ENG-1", type: "backlog"), issue("ENG-2", type: "unstarted"), issue("ENG-3", type: "duplicate"),
-    ])
+  @Test func hidesEmptyAndClosedColumnsUntilShown() {
+    let columns = LinearIssueBoard.columns(
+      [issue("ENG-1", type: "backlog"), issue("ENG-2", type: "unstarted"), issue("ENG-3", type: "duplicate")],
+      states: [.init(id: "s", name: "Blocked", type: "started", position: 9)])
     let hidden = { (overrides: [String: Bool]) in
-      columns.filter { LinearIssueBoard.isHidden($0, overrides: overrides) }.map(\.type)
+      columns.filter { LinearIssueBoard.isHidden($0, overrides: overrides) }.map(\.name)
     }
 
-    #expect(hidden([:]) == ["backlog", "duplicate"])
-    #expect(hidden(["backlog": false, "unstarted": true]) == ["unstarted", "duplicate"])
+    #expect(hidden([:]) == ["Blocked", "duplicate"])
+    #expect(hidden(["blocked": false, "unstarted": true]) == ["unstarted", "duplicate"])
+  }
+
+  @Test func workflowStatesAddEmptyColumnsMergedAcrossTeams() {
+    let columns = LinearIssueBoard.columns(
+      [issue("ENG-1", type: "started", state: "In Progress", position: 2)],
+      states: [
+        .init(id: "a", name: "Done", type: "completed", position: 5),
+        .init(id: "b", name: "In Progress", type: "started", position: 2),
+        .init(id: "c", name: "in progress", type: "started", position: 2, color: "#f2c94c"),
+        .init(id: "d", name: "Todo", type: "unstarted", position: 1, color: "#e2e2e2"),
+      ])
+
+    #expect(columns.map(\.name) == ["Todo", "In Progress", "Done"])
+    #expect(columns.map(\.issues.count) == [0, 1, 0])
+    #expect(columns[1].color == "#f2c94c")
   }
 }

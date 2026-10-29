@@ -33,6 +33,12 @@ public final class LinearIssuesModel {
   public private(set) var error: String?
   public private(set) var refreshing = false
 
+  /// Every workflow state of the issues' teams, so the board can offer columns no issue is in yet.
+  public var workflowStates: [ArgusProtocol.LinearWorkflowState] {
+    Set((issues ?? []).map(\.teamId)).sorted().flatMap { statesByTeam[$0] ?? [] }
+  }
+
+  private var statesByTeam: [String: [ArgusProtocol.LinearWorkflowState]] = [:]
   private var filtersByScope: [String: [IssueFilter]]
   private let defaults: UserDefaults?
   private unowned let host: HostStore
@@ -86,9 +92,20 @@ public final class LinearIssuesModel {
       guard asked == scope else { return }
       self.error = HostStore.describe(error)
     }
+    await loadWorkflowStates()
     // "Agent on it" needs every project's sessions, not just the ones opened.
     for project in host.projects {
       await host.loadSessions(repoRoot: project.repoRoot)
+    }
+  }
+
+  /// Once per team: workflows rarely change, and a failure just leaves the board to the issues' own states.
+  private func loadWorkflowStates() async {
+    let teams = Set((issues ?? []).map(\.teamId)).subtracting(statesByTeam.keys)
+    for team in teams.sorted() {
+      if let states = try? await host.linearTeamStates(teamId: team), !states.isEmpty {
+        statesByTeam[team] = states
+      }
     }
   }
 

@@ -34,7 +34,7 @@ public struct LinearIssueCard: View {
         }
       }
       HStack(alignment: .firstTextBaseline, spacing: 6) {
-        IssueStatusGlyph(type: issue.state.type)
+        IssueStatusGlyph(type: issue.state.type, color: issue.state.color)
           .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 2 }
         Text(issue.title)
           .font(.scaled(size: 13, weight: .medium))
@@ -45,17 +45,28 @@ public struct LinearIssueCard: View {
       }
       ChipFlowLayout(spacing: 4, lineSpacing: 4) {
         chip { PriorityGlyph(priority: issue.priority, size: 12) }
-        if let estimate = issue.estimate { chip(LinearIssueBoard.estimateLabel(estimate, type: issue.estimateType)) }
-        if let cycle = LinearIssueBoard.cycleLabel(issue) { chip(cycle) }
+        if let estimate = issue.estimate {
+          chip(LinearIssueBoard.estimateLabel(estimate, type: issue.estimateType, unit: false), icon: "triangle")
+            .help("Estimate \(LinearIssueBoard.estimateLabel(estimate, type: issue.estimateType))")
+        }
+        if let cycle = issue.cycle {
+          chip("\(Int(cycle.number))", icon: "arrow.triangle.2.circlepath")
+            .help(LinearIssueBoard.cycleLabel(number: cycle.number, name: cycle.name))
+        }
         if let project = issue.project { chip(project.name) }
         if issue.pullRequestCount > 0 {
           let count = Int(issue.pullRequestCount)
           chip("\(count) PR\(count == 1 ? "" : "s")")
         }
-        ForEach(issue.labels, id: \.self) { chip($0) }
+        ForEach(issue.labels, id: \.self) { label in
+          chip {
+            Circle().fill(Color(linearHex: labelColor(label)) ?? theme.textMuted).frame(width: 7, height: 7)
+            Text(label).lineLimit(1)
+          }
+        }
         if agentOnIt { Badge(label: "Agent on it", tone: .accent) }
       }
-      Text("Created \(LinearIssueBoard.date(issue.createdAt).formatted(.dateTime.month(.abbreviated).day().year()))")
+      Text("Created \(LinearIssueBoard.date(issue.createdAt).formatted(.dateTime.month(.abbreviated).year()))")
         .font(.scaled(size: 11))
         .foregroundStyle(theme.textMuted)
     }
@@ -77,12 +88,19 @@ public struct LinearIssueCard: View {
     }
   }
 
-  private func chip(_ text: String) -> some View {
-    chip { Text(text).lineLimit(1) }
+  private func labelColor(_ name: String) -> String? {
+    issue.labelColors?.first { $0.name == name }?.color
+  }
+
+  private func chip(_ text: String, icon: String? = nil) -> some View {
+    chip {
+      if let icon { Image(systemName: icon).font(.scaled(size: 9, weight: .semibold)) }
+      Text(text).lineLimit(1)
+    }
   }
 
   private func chip(@ViewBuilder _ content: () -> some View) -> some View {
-    content()
+    HStack(spacing: 4) { content() }
       .font(.scaled(size: 11))
       .foregroundStyle(theme.textSecondary)
       .padding(.horizontal, 6)
