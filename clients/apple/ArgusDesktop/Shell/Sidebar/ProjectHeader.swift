@@ -83,8 +83,9 @@ struct ProjectHeader: View {
       Text(git?.branch ?? root.branch)
         .lineLimit(1)
         .truncationMode(.middle)
-        .frame(maxWidth: 90, alignment: .trailing)
     }
+    // Framed as a pair so a short branch keeps the dot beside it.
+    .frame(maxWidth: 100, alignment: .trailing)
     .font(.scaled(size: 11))
     .foregroundStyle(root.status == .error ? theme.error : theme.textMuted)
     .help(activity.statusText.map { "\(git?.branch ?? root.branch) · \($0)" } ?? (git?.branch ?? root.branch))
