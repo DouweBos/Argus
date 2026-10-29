@@ -1395,6 +1395,13 @@ export function sendAgentMessage(
   if (agentEntry.status === "stopped" || agentEntry.status === "error") {
     throw `Agent is not running: ${agentId}`;
   }
+  // Another client (the Mac app, a phone) can see a window's warm agent and
+  // send to it without claiming it; it'd never be folded or saved, and the
+  // window would discard it as soon as it navigated away.
+  if (agentEntry.prewarmed) {
+    agentEntry.prewarmed = false;
+    announceClaimed(agentEntry);
+  }
   cancelLimitResume(agentId);
   // The old child is being killed; stdin written now would be lost.
   const pendingRespawn = respawning.get(agentId);
@@ -1752,6 +1759,11 @@ export async function claimPrewarmAgent(
     await setAgentPermissionMode(agentId, opts.permissionMode);
   }
 
+  return announceClaimed(session);
+}
+
+/** Only now is it a real agent: the host folds and saves its conversation from here. */
+function announceClaimed(session: AgentSession): AgentInfo {
   const claimed: AgentInfo = {
     agent_id: session.agentId,
     session_id: session.sessionId,
@@ -1762,7 +1774,6 @@ export async function claimPrewarmAgent(
     model: session.model,
     runner_id: session.runner.id,
   };
-  // Only now is it a real agent: the host folds its conversation from here.
   emitHostEvent("agent:started", claimed);
 
   return claimed;
