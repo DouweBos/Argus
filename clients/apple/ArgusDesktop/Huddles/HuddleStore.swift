@@ -136,7 +136,7 @@ final class HuddleStore {
 
   /// Re-armed on every change to the rooms or the runtime selection.
   private func trackDevices() {
-    let wanted = withObservationTracking { wantedKeys() } onChange: {
+    let wanted = withObservationTracking { wantedKeys() } onChange: { [weak self] in
       Task { @MainActor [weak self] in self?.trackDevices() }
     }
     syncDevices(wanted)

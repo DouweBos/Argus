@@ -1,7 +1,7 @@
 import ArgusCore
 
 /// What the agent lines read: the server's wire type and the Mac app's store type both fit.
-public protocol HostMenuAgent {
+public protocol HostMenuAgent: SendableMetatype {
   var agentId: String { get }
   var sessionId: String { get }
   var sessionLabel: String? { get }

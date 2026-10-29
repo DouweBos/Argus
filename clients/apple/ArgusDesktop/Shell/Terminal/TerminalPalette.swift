@@ -25,7 +25,7 @@ struct TerminalPalette {
       0x5c5c72, 0xc53030, 0x0b8a5c, 0xa67400, 0x2a6fc0, 0xa14a98, 0x177c8c, 0x0d0d14,
     ])
 
-  func apply(to view: TerminalView) {
+  @MainActor func apply(to view: TerminalView) {
     view.installColors(ansi.map(Self.terminalColor))
     view.nativeBackgroundColor = Self.nsColor(background)
     view.nativeForegroundColor = Self.nsColor(foreground)

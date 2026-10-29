@@ -40,6 +40,7 @@ public final class LocalBackend: HostBackend {
     }
   }
 
+  @discardableResult
   public func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
     _ method: RemoteMethod, _ params: Params, as: Result.Type
   ) async throws -> Result {
@@ -48,6 +49,7 @@ public final class LocalBackend: HostBackend {
 
   /// By wire name: handing the command's metatype across the actor boundary
   /// trips Swift 6's sending checks.
+  @discardableResult
   public func request<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws
     -> C.Result
   {
@@ -68,6 +70,7 @@ public final class LocalBackend: HostBackend {
   }
 
   /// A local-only `ui.*` method.
+  @discardableResult
   public func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
     method: String, _ params: Params, as: Result.Type
   ) async throws -> Result {

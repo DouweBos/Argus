@@ -113,7 +113,7 @@ struct CodeHunks {
   // MARK: Diff view
 
   /// Every hunk with `context` lines around it, overlapping ones merged, for `DiffPane`.
-  func diffResult(path: String, context: Int = 3) -> DiffResult {
+  @MainActor func diffResult(path: String, context: Int = 3) -> DiffResult {
     var groups: [[LineDiff.Hunk]] = []
     for hunk in hunks {
       if let last = groups.last?.last, hunk.new.lowerBound - last.new.upperBound <= 2 * context {
@@ -133,7 +133,7 @@ struct CodeHunks {
       var lines: [GroveKit.DiffLine] = []
       var oldLine = oldStart
       var newLine = start
-      func add(_ type: DiffLineType, _ text: Substring) {
+      @MainActor func add(_ type: DiffLineType, _ text: Substring) {
         let id = "\(index):\(lines.count)"
         switch type {
         case .context:

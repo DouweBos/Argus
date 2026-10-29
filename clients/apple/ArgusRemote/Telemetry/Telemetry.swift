@@ -2,6 +2,7 @@ import ArgusCore
 import Foundation
 import MetricKit
 import PostHog
+import StoreKit
 import UIKit
 
 /// How much this install shares. `presence` is the floor and the default —
@@ -31,6 +32,7 @@ enum Telemetry {
   private static var client: PostHogSDK?
   private static var mode: TelemetryMode = .presence
   private static var distinctId = ""
+  private static var isTestFlight = false
   private static let crashes = CrashDiagnostics()
 
   static var currentMode: TelemetryMode { mode }
@@ -71,6 +73,7 @@ enum Telemetry {
     client = sdk
 
     captureHeartbeat()
+    Task { isTestFlight = await sandboxed() }
     installExceptionHandler()
     crashes.subscribe()
     capture(.launched)
@@ -181,8 +184,12 @@ enum Telemetry {
     }
   }
 
-  private static var isTestFlight: Bool {
-    Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+  /// TestFlight installs are signed for the sandbox store.
+  private static func sandboxed() async -> Bool {
+    switch try? await AppTransaction.shared {
+    case .verified(let transaction), .unverified(let transaction, _): transaction.environment == .sandbox
+    case nil: false
+    }
   }
 
   private static func infoString(_ key: String) -> String? {

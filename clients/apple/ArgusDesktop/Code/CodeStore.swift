@@ -89,6 +89,7 @@ final class CodeStore {
     model?.host(ofSession: sessionId) ?? Hosts.local
   }
 
+  @discardableResult
   func request<C: RemoteCommand>(_ command: C.Type, _ params: C.Params, session: String) async throws -> C.Result {
     guard let backend = host.backend else { throw CodeError.offline }
     return try await HostRouter.$pinned.withValue(hostId(of: session)) {

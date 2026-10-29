@@ -133,7 +133,7 @@ struct ResizableHSplit<Leading: View, Trailing: View>: View {
 
   /// The remembered width, held between its bounds and squeezed when the
   /// trailing pane would otherwise drop below its minimum.
-  static func leadingWidth(
+  nonisolated static func leadingWidth(
     stored: CGFloat, total: CGFloat, min lower: CGFloat, max upper: CGFloat, trailingMin: CGFloat,
     divider: CGFloat = 7
   ) -> CGFloat {

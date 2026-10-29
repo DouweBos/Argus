@@ -29,12 +29,14 @@ public final class GatewayBackend: HostBackend {
     return stream
   }
 
+  @discardableResult
   public func request<Params: Encodable & Sendable, Result: Decodable & Sendable>(
     _ method: RemoteMethod, _ params: Params, as: Result.Type
   ) async throws -> Result {
     try await transport.request(method, params, as: Result.self)
   }
 
+  @discardableResult
   public func request<C: RemoteCommand>(_ command: C.Type, _ params: C.Params) async throws
     -> C.Result
   {
