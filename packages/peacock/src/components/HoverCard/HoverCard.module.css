@@ -1,0 +1,20 @@
+.anchor {
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.card {
+  position: fixed;
+  z-index: 2100;
+  width: 230px;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  background: var(--bg-secondary-90);
+  box-shadow: 0 8px 24px var(--scrim-lg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  font-size: 13px;
+  color: var(--text-primary);
+  pointer-events: none;
+}

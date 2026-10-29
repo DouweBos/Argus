@@ -38,7 +38,7 @@ export interface CommentThread {
 }
 
 export type TimelineEntry =
-  | { at: number; event: LinearHistoryEvent; kind: "event"; }
+  | { at: number; event: LinearHistoryEvent; kind: "event" }
   | { at: number; kind: "thread"; thread: CommentThread };
 
 /** Comments grouped into threads; a reply whose parent is missing starts its own. */
@@ -76,4 +76,12 @@ export function issueOrder(issues: LinearIssue[]): string[] {
   return boardColumns(issues).flatMap((column) =>
     [...column.issues].sort(byPriority).map((i) => i.identifier),
   );
+}
+
+/** The latest change of one kind, for "Changed by X · 2d ago". */
+export function lastChange(
+  issue: LinearIssueDetail,
+  kind: LinearHistoryEvent["kind"],
+): LinearHistoryEvent | null {
+  return (issue.history ?? []).findLast((h) => h.kind === kind) ?? null;
 }

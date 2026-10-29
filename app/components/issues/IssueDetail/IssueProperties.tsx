@@ -8,7 +8,6 @@ import {
   LabelChip,
   PRIORITY_LABELS,
   PriorityIcon,
-  Select,
 } from "@argus/peacock";
 import { estimateName } from "@argus/remote-protocol";
 import { openExternalUrl } from "../../../lib/ipc";
@@ -25,6 +24,8 @@ import {
 } from "../../../stores/linearIssuesStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
 import styles from "./IssueDetail.module.css";
+import { LastChangeCard, TimeInStatusCard } from "./IssuePropertyCards";
+import { IssuePropertyMenu } from "./IssuePropertyMenu";
 
 interface IssuePropertiesProps {
   issue: LinearIssueDetail;
@@ -80,34 +81,42 @@ export function IssueProperties({ issue, onStart }: IssuePropertiesProps) {
 
       <dl className={styles.properties}>
         <dt>Status</dt>
-        <dd className={styles.withIcon}>
-          <IssueStatusIcon type={issue.state.type} />
-          <Select
-            aria-label="Status"
-            value={issue.state.id}
-            onChange={(e) => change({ stateId: e.target.value })}
-          >
-            {(states ?? [issue.state]).map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </Select>
+        <dd className={styles.menuValue}>
+          <IssuePropertyMenu
+            card={<TimeInStatusCard issue={issue} />}
+            hotkey="S"
+            icon={<IssueStatusIcon type={issue.state.type} />}
+            items={(states ?? [issue.state]).map((s, i) => ({
+              value: s.id,
+              label: s.name,
+              icon: <IssueStatusIcon type={s.type} />,
+              shortcut: i < 10 ? String((i + 1) % 10) : undefined,
+            }))}
+            label={issue.state.name}
+            placeholder="Change status…"
+            selected={issue.state.id}
+            onSelect={(stateId) => change({ stateId })}
+          />
         </dd>
         <dt>Priority</dt>
-        <dd className={styles.withIcon}>
-          <PriorityIcon priority={issue.priority} />
-          <Select
-            aria-label="Priority"
-            value={String(issue.priority)}
-            onChange={(e) => change({ priority: Number(e.target.value) })}
-          >
-            {PRIORITY_ORDER.map((p) => (
-              <option key={p} value={p}>
-                {PRIORITY_LABELS[p]}
-              </option>
-            ))}
-          </Select>
+        <dd className={styles.menuValue}>
+          <IssuePropertyMenu
+            card={
+              <LastChangeCard issue={issue} kind="priority" title="Priority" />
+            }
+            hotkey="P"
+            icon={<PriorityIcon priority={issue.priority} />}
+            items={[0, ...PRIORITY_ORDER.slice(0, -1)].map((p) => ({
+              value: String(p),
+              label: PRIORITY_LABELS[p],
+              icon: <PriorityIcon priority={p} />,
+              shortcut: String(p),
+            }))}
+            label={PRIORITY_LABELS[issue.priority] ?? "No priority"}
+            placeholder="Change priority…"
+            selected={String(issue.priority)}
+            onSelect={(p) => change({ priority: Number(p) })}
+          />
         </dd>
         <dt>Assignee</dt>
         <dd className={styles.withIcon}>
