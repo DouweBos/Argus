@@ -39,7 +39,7 @@ import { log } from "../app/lib/logger";
 // Configuration — bump this when upgrading conductor
 // ---------------------------------------------------------------------------
 
-const CONDUCTOR_VERSION = "0.33.3";
+const CONDUCTOR_VERSION = "0.34.2";
 
 // ---------------------------------------------------------------------------
 // Paths
