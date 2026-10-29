@@ -63,6 +63,8 @@ struct IssuesBoard: View {
       .padding(.horizontal, 16)
       .padding(.bottom, 16)
     }
+    // A board narrower or shorter than the window starts top-left, not centred.
+    .defaultScrollAnchor(.topLeading)
   }
 
   private func columnHead(_ column: LinearIssueBoard.Column) -> some View {
