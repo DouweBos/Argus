@@ -212,6 +212,18 @@ describe("an unscoped context is unaffected", () => {
     expect(devices.devices).toHaveLength(2);
   });
 
+  it("leaves out a window's warm spare agent", async () => {
+    appState.agents.set("warm", {
+      ...agentFixture("warm", "s1"),
+      prewarmed: true,
+    } as never);
+    const agents = (await dispatch("agents.list", {}, ctx)) as {
+      agents: { agent_id: string }[];
+    };
+
+    expect(agents.agents.map((a) => a.agent_id).sort()).toEqual(["a1", "a2"]);
+  });
+
   it("still reaches the methods a scope would refuse", async () => {
     await expect(
       dispatch("devices.claim", { device_id: "udid-2" }, ctx),
