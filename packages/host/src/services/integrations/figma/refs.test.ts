@@ -24,6 +24,27 @@ describe("parseFigmaUrl", () => {
     });
   });
 
+  it("reads branch links from the branch file", () => {
+    expect(
+      parseFigmaUrl(
+        "https://www.figma.com/design/MainKey1/branch/BranchKey2/My-App?m=auto&node-id=19039-31365",
+      ),
+    ).toEqual({ fileKey: "BranchKey2", nodeId: "19039:31365" });
+    expect(
+      parseFigmaUrl(
+        "https://www.figma.com/design/MainKey1/branch/BranchKey2/My-App",
+      ),
+    ).toEqual({ fileKey: "BranchKey2", nodeId: null });
+  });
+
+  it("keeps the file key for plain design links", () => {
+    expect(
+      parseFigmaUrl(
+        "https://www.figma.com/design/MainKey1/branch-notes?node-id=1-2",
+      ),
+    ).toEqual({ fileKey: "MainKey1", nodeId: "1:2" });
+  });
+
   it("rejects other URLs", () => {
     expect(parseFigmaUrl("https://example.com/design/abc")).toBeNull();
     expect(parseFigmaUrl("not a url")).toBeNull();

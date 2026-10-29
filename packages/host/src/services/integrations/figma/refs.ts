@@ -5,7 +5,7 @@ export interface FigmaRef {
 }
 
 const FILE_URL =
-  /^https?:\/\/(?:www\.)?figma\.com\/(?:design|file|proto|board)\/([A-Za-z0-9]+)(?:\/[^?#]*)?(?:\?([^#]*))?/;
+  /^https?:\/\/(?:www\.)?figma\.com\/(?:design|file|proto|board)\/([A-Za-z0-9]+)(?:\/branch\/([A-Za-z0-9]+))?(?:\/[^?#]*)?(?:\?([^#]*))?/;
 
 /** The file and frame a figma.com link points at, or null for anything else. */
 export function parseFigmaUrl(url: string): FigmaRef | null {
@@ -13,11 +13,12 @@ export function parseFigmaUrl(url: string): FigmaRef | null {
   if (!match) {
     return null;
   }
-  const nodeParam = new URLSearchParams(match[2] ?? "").get("node-id");
+  const nodeParam = new URLSearchParams(match[3] ?? "").get("node-id");
 
   // Links carry `12-34`; the API wants `12:34`.
   return {
-    fileKey: match[1],
+    // Branch links must read the branch file; the main key serves the main file's version.
+    fileKey: match[2] ?? match[1],
     nodeId: nodeParam ? nodeParam.replaceAll("-", ":") : null,
   };
 }
