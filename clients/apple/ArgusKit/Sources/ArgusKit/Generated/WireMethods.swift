@@ -5979,7 +5979,7 @@ extension ArgusProtocol {
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(sessionId, forKey: .sessionId)
+        try c.encodeIfPresent(sessionId, forKey: .sessionId)
         try c.encodeIfPresent(runnerId, forKey: .runnerId)
       }
     }

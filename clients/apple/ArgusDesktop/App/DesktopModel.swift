@@ -48,7 +48,11 @@ final class DesktopModel {
   /// The supervised host alone: platform requests and telemetry are this Mac's.
   private(set) var localBackend: LocalBackend?
 
-  var route: DesktopRoute = .home
+  var route: DesktopRoute = .home {
+    didSet {
+      if route.sessionId != oldValue.sessionId { viewedSessionChanged(from: oldValue.sessionId) }
+    }
+  }
   /// The project the New Session sheet is open for.
   var newSessionProject: RemoteProject?
   /// The session the Delete sheet is open for.
@@ -211,6 +215,7 @@ final class DesktopModel {
     await MacTelemetry.attach(local, applyMode: !isAttached)
     if supplied > 0 { MacTelemetry.capture(.prefsSupplied(keys: supplied)) }
     hosts.bind(router)
+    viewedSessionChanged(from: nil)
     // Only the app running the host may put it on an account.
     if !isAttached { localAccountLink.backend = local }
     Task { await account.start() }

@@ -76,6 +76,12 @@ public final class HostStore {
   /// Resolved image bytes keyed by `agentId:imageId`, as data URIs.
   public internal(set) var imageCache: [String: String] = [:]
   public internal(set) var capabilitiesByAgent: [String: RemoteAgentCapabilities] = [:]
+  /// A start composer's slash commands and models, per session, before its agent exists.
+  public internal(set) var startOptionsBySession: [String: RemoteAgentCapabilities] = [:]
+  /// The session this client last said it shows, said again after a reconnect.
+  public internal(set) var viewingSessionId: String?
+  var viewingRunnerId: String?
+  var viewingToken = 0
   /// Each agent's MCP servers as last fetched, and why the last fetch failed.
   public internal(set) var mcpServersByAgent: [String: AgentMcpServers] = [:]
   public internal(set) var mcpServersErrorByAgent: [String: String] = [:]
@@ -237,6 +243,9 @@ public final class HostStore {
     answered = []
     imageCache = [:]
     capabilitiesByAgent = [:]
+    startOptionsBySession = [:]
+    viewingSessionId = nil
+    viewingRunnerId = nil
     mcpServersByAgent = [:]
     mcpServersErrorByAgent = [:]
     statusByAgent = [:]
@@ -278,6 +287,8 @@ public final class HostStore {
         resyncTranscripts()
         resyncQueues()
         followAgents()
+        // The host forgot what a dropped connection was looking at.
+        Task { await sendViewing() }
       }
     case .media(let bytes):
       guard let message = MediaMessage.parse(bytes) else { return }

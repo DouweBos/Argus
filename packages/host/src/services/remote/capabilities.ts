@@ -885,7 +885,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { session_id, runner_id } = parse("sessions.viewing", params);
     // Only the owner's own clients warm sessions: not a guest, not a monitor.
     if (!ctx.scope && hasCapability(ctx, "control")) {
-      setViewingSession(session_id, { runnerId: runner_id });
+      setViewingSession(session_id ?? null, { runnerId: runner_id });
     }
 
     return {};

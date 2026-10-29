@@ -33,8 +33,8 @@ public struct StartAgentSheet: View {
   let sessionId: String?
   /// "Current checkout" on a project's root, "This session" anywhere else.
   let currentLabel: String
-  /// Models are reported per agent, so this offers whatever a live agent in
-  /// this project last reported — and nothing when none has.
+  /// What a live agent in this project last reported; the host's start
+  /// options for the session replace it once they arrive.
   let models: [RemoteModelInfo]
   let onStarted: (Started, Workspace) -> Void
 
@@ -51,6 +51,9 @@ public struct StartAgentSheet: View {
   /// Each gets its own worktree on Linear's branch name.
   @State private var issues: [HostStore.LinearIssue] = []
   @State private var pickingIssues = false
+  /// This sheet's viewing hint, and the session it covered.
+  @State private var viewingToken: Int?
+  @State private var coveredSession: String?
 
   public init(
     repoRoot: String?,
@@ -179,6 +182,18 @@ public struct StartAgentSheet: View {
           branches = await host.listBranches(sessionId: sessionId)
         }
       }
+      // Starting here takes the host's warm agent: keep one ready while this is open.
+      .task(id: warmTarget) {
+        guard let sessionId else { return }
+        if viewingToken == nil { coveredSession = host.viewingSessionId }
+        viewingToken = await host.reportViewing(
+          sessionId: workspace == .current ? sessionId : coveredSession, runnerId: runner)
+        await host.loadStartOptions(sessionId: sessionId, runnerId: runner)
+      }
+      .onDisappear {
+        guard let viewingToken else { return }
+        Task { await host.stopViewing(token: viewingToken, restoring: coveredSession) }
+      }
     }
   }
 
@@ -191,6 +206,13 @@ public struct StartAgentSheet: View {
     if starting { return "Starting…" }
     return issues.count > 1 ? "Start \(issues.count) agents" : "Start agent"
   }
+
+  private struct WarmTarget: Equatable {
+    let workspace: Workspace
+    let runner: String?
+  }
+
+  private var warmTarget: WarmTarget { WarmTarget(workspace: workspace, runner: runner) }
 
   private var selectedRunner: RemoteRunner? {
     runner.flatMap { id in host.runners.first { $0.id == id } }
@@ -207,7 +229,10 @@ public struct StartAgentSheet: View {
       return declared.map { .init(value: $0.value, label: $0.displayName, hint: $0.description) }
     }
 
-    return models.map { .init(value: $0.value, label: $0.displayName, hint: $0.description) }
+    let started = sessionId.flatMap { host.startOptionsBySession[$0]?.models } ?? []
+    return (started.isEmpty ? models : started).map {
+      .init(value: $0.value, label: $0.displayName, hint: $0.description)
+    }
   }
 
   private var modelLabel: String {

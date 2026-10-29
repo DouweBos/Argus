@@ -57,7 +57,11 @@
       if starter != nil { return true }
       return status.map { $0.status != .stopped && $0.status != .error } ?? true
     }
-    var capabilities: RemoteAgentCapabilities { host.capabilitiesByAgent[agentId] ?? .empty }
+    /// A start composer offers the CLI its start will take; an agent, its own.
+    var capabilities: RemoteAgentCapabilities {
+      if starter != nil, let sessionId { return host.startOptionsBySession[sessionId] ?? .empty }
+      return host.capabilitiesByAgent[agentId] ?? .empty
+    }
     var hasContent: Bool {
       !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !images.isEmpty
     }
@@ -453,7 +457,10 @@
         mentionDirectories = MentionPicker.directories(of: mentionFiles)
         if host.claudeAccounts == nil { await host.refreshClaudeAccounts() }
       }
-      guard starter == nil else { return }
+      guard starter == nil else {
+        if let sessionId { await host.loadStartOptions(sessionId: sessionId) }
+        return
+      }
       await host.loadQueue(agentId: agentId)
       await host.loadCapabilities(agentId: agentId)
     }

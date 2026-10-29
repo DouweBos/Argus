@@ -14,6 +14,7 @@ struct AgentView: View {
 
   @State private var confirmingStop = false
   @State private var showingMcp = false
+  @State private var viewingToken: Int?
 
   private var sessionId: String? { host.statusByAgent[agentId]?.sessionId }
 
@@ -109,6 +110,15 @@ struct AgentView: View {
       }
       // Fetched once, not polled: this only decides where the device button goes.
       if host.connection == .ready { await host.refreshDevices() }
+    }
+    // The computer keeps a warm agent in the session on screen, so the next start there is instant.
+    .task(id: sessionId) {
+      guard host.hasControl, let sessionId else { return }
+      viewingToken = await host.reportViewing(sessionId: sessionId)
+    }
+    .onDisappear {
+      guard let viewingToken else { return }
+      Task { await host.stopViewing(token: viewingToken) }
     }
     .sheet(isPresented: $showingMcp) {
       NavigationStack {

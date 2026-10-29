@@ -131,13 +131,13 @@ export const MethodParams = {
    * a warm agent there. `runner_id` is the start composer's runner pick.
    */
   "sessions.viewing": z.object({
-    session_id: z.string().nullable(),
-    runner_id: z.string().nullable().optional(),
+    session_id: z.string().nullish(),
+    runner_id: z.string().nullish(),
   }),
   /** What a start composer offers before its agent exists; `runner_id` is its pick. */
   "sessions.start_options": z.object({
     session_id: z.string(),
-    runner_id: z.string().nullable().optional(),
+    runner_id: z.string().nullish(),
   }),
   "scratch_pads.list": z.object({}),
   "agents.list": z.object({
