@@ -63,7 +63,7 @@ import { showAgentNotification } from "../services/notifications/osNotification"
 export function registerAgentCommands(): void {
   defineTypedCommand("check_claude_cli", () => checkClaudeCli());
   defineTypedCommand("start_agent", async ({ seedFrom, ...p }) => {
-    const agent = await launchAgent(p);
+    const agent = await launchAgent({ ...p, fresh: Boolean(seedFrom) });
     if (seedFrom) {
       seedForkedConversation(agent.agent_id, seedFrom, p.resumeSessionId);
     }

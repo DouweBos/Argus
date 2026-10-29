@@ -36,9 +36,10 @@ import type {
   SimulatorReservation,
 } from "../../state";
 import type { ConversationMessage } from "./conversation/types";
+import type { NewSpare } from "./spares";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
 import type { LlmRunner, PermissionPreHook } from "../llm/runners/types";
-import type { RuntimePlatform, SessionKind } from "../session/models";
+import type { RuntimePlatform, Session, SessionKind } from "../session/models";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -93,6 +94,8 @@ import {
 } from "./limitResume";
 import { clearQueue } from "./messageQueue";
 import { resultSubtype } from "./models";
+import { clearSpares, hasSpare, killSpare, takeSpare } from "./spares";
+import { spawnConfigStamp } from "./spawnStamp";
 
 // ---------------------------------------------------------------------------
 // Lazy device helpers
@@ -252,23 +255,7 @@ function seedResumedConversation(
   }
 }
 
-/**
- * Spawn a new agent process for the given session. See claude.ts for the
- * full lifecycle docs — Phase 1 preserves the legacy signature exactly so
- * callers (`commands/agents.ts`, `mcp/server.ts`) don't change.
- */
-export async function startAgent(
-  sessionId: string,
-  model?: string,
-  permissionMode?: string,
-  resumeSessionId?: string,
-  appendSystemPrompt?: string,
-  platformsOverride?: RuntimePlatform[],
-  parentAgentId?: string,
-  reuseAgentId?: string,
-  presetAgentId?: string,
-  runnerIdOverride?: string,
-): Promise<AgentInfo> {
+function liveSession(sessionId: string): Session & { path: string } {
   const argusSession = appState.sessions.get(sessionId);
   if (!argusSession) {
     throw `Session not found: ${sessionId}`;
@@ -281,21 +268,219 @@ export async function startAgent(
     emitHostEvent("session:deleted", sessionId);
     throw `Session working directory no longer exists: ${argusSession.path}`;
   }
-  const worktreePath = argusSession.path;
+
+  return argusSession as Session & { path: string };
+}
+
+/**
+ * Spawn a new agent process for the given session — or hand over the
+ * session's warm spare when the request is one a spare can serve. A taken
+ * spare keeps its own id: it is baked into the CLI's env, MCP header and
+ * system prompt, so `presetAgentId` only names a fresh spawn.
+ */
+export async function startAgent(
+  sessionId: string,
+  model?: string,
+  permissionMode?: string,
+  resumeSessionId?: string,
+  appendSystemPrompt?: string,
+  platformsOverride?: RuntimePlatform[],
+  parentAgentId?: string,
+  reuseAgentId?: string,
+  presetAgentId?: string,
+  runnerIdOverride?: string,
+  allowSpare = true,
+): Promise<AgentInfo> {
+  const argusSession = liveSession(sessionId);
+  const previous = reuseAgentId ? appState.agents.get(reuseAgentId) : null;
+  const plan = resolveSpawnPlan(argusSession, {
+    model,
+    permissionMode,
+    previous,
+    runnerIdOverride,
+  });
+
+  // Everything else a spare can't take is spawn-only: a resume, extra system
+  // prompt, platforms baked into the runtime section, `bypassPermissions`.
+  const spareable =
+    allowSpare &&
+    !reuseAgentId &&
+    !resumeSessionId &&
+    !appendSystemPrompt &&
+    !platformsOverride?.length &&
+    plan.permissionMode !== "trusted" &&
+    plan.permissionMode !== "bypassPermissions";
+  if (spareable && hasSpare(sessionId)) {
+    const spare = takeSpare(sessionId, {
+      runnerId: plan.runner.id,
+      accountId: plan.accountId,
+      configStamp: await spawnConfigStamp(argusSession),
+    });
+    const adopted = spare && (await adoptSpare(spare, plan));
+    if (adopted) {
+      return announceStart(adopted, argusSession, {
+        model,
+        permissionMode,
+        parentAgentId,
+      });
+    }
+  }
 
   const agentId = reuseAgentId ?? presetAgentId ?? crypto.randomUUID();
+  const agentSession = await spawnAgentSession({
+    argusSession,
+    agentId,
+    plan,
+    resumeSessionId,
+    appendSystemPrompt,
+    platformsOverride,
+    parentAgentId,
+    previous,
+    reused: Boolean(reuseAgentId),
+    register: true,
+  });
 
-  const previousAgentForModel = reuseAgentId
-    ? appState.agents.get(reuseAgentId)
-    : null;
+  if (!reuseAgentId) {
+    telemetryCapture("agent_started", {
+      has_model: Boolean(model),
+      has_resume_id: Boolean(resumeSessionId),
+      has_parent: Boolean(parentAgentId),
+      permission_mode: permissionMode ?? "default",
+      session_kind: argusSession.kind,
+    });
+  }
+
+  emitAgentStatus(agentId, agentSession.status);
+  info(`[agent:${agentId}] started for session ${sessionId}`);
+
+  // Wait for the runner's initialize handshake before returning.
+  try {
+    await agentSession.handle.waitForInit();
+  } catch (e) {
+    throw `Agent failed to initialize: ${String(e)}`;
+  }
+
+  return agentInfoOf(agentSession);
+}
+
+function agentInfoOf(agent: AgentSession): AgentInfo {
+  return {
+    agent_id: agent.agentId,
+    session_id: agent.sessionId,
+    status: agent.status,
+    parent_agent_id: agent.parentAgentId,
+    created_at: agent.createdAt,
+    capabilities: agent.handle.initializeResponse(),
+    model: agent.model,
+    runner_id: agent.runner.id,
+  };
+}
+
+/**
+ * Bring a taken spare to what the request resolved to. Out of the pool and
+ * not yet listed, so a failed runtime switch just costs a fresh spawn.
+ */
+async function adoptSpare(
+  spare: AgentSession,
+  plan: SpawnPlan,
+): Promise<AgentSession | null> {
+  try {
+    if (plan.model && plan.model !== spare.model) {
+      await spare.handle.setModel(plan.model);
+      spare.model = plan.model;
+    }
+    if (plan.permissionMode !== spare.permissionMode) {
+      await spare.handle.setPermissionMode(plan.permissionMode);
+      spare.permissionMode = plan.permissionMode;
+    }
+  } catch (e) {
+    warn(`[agent:${spare.agentId}] spare refused its settings: ${String(e)}`);
+    killSpare(spare);
+
+    return null;
+  }
+
+  return spare;
+}
+
+function announceStart(
+  agent: AgentSession,
+  argusSession: Session,
+  request: { model?: string; permissionMode?: string; parentAgentId?: string },
+): AgentInfo {
+  agent.parentAgentId = request.parentAgentId ?? null;
+  agent.createdAt = Date.now();
+  agent.lastEventAt = agent.createdAt;
+  appState.agents.set(agent.agentId, agent);
+  telemetryCapture("agent_started", {
+    has_model: Boolean(request.model),
+    has_resume_id: false,
+    has_parent: Boolean(request.parentAgentId),
+    permission_mode: request.permissionMode ?? "default",
+    session_kind: argusSession.kind,
+  });
+  emitAgentStatus(agent.agentId, agent.status);
+  info(
+    `[agent:${agent.agentId}] took the warm spare for session ${agent.sessionId}`,
+  );
+
+  return agentInfoOf(agent);
+}
+
+/**
+ * Spawn the session's warm spare: a fresh agent past initialize, under the
+ * session's runner and account, kept out of `appState.agents`.
+ */
+export async function spawnSpare(
+  sessionId: string,
+  runnerId?: string,
+): Promise<NewSpare> {
+  const argusSession = liveSession(sessionId);
+  const plan = resolveSpawnPlan(argusSession, { runnerIdOverride: runnerId });
+  const configStamp = await spawnConfigStamp(argusSession);
+  const agent = await spawnAgentSession({
+    argusSession,
+    agentId: crypto.randomUUID(),
+    plan,
+    reused: false,
+    register: false,
+  });
+  try {
+    await agent.handle.waitForInit();
+  } catch (e) {
+    killSpare(agent);
+    throw `Spare failed to initialize: ${String(e)}`;
+  }
+
+  return { agent, configStamp };
+}
+
+/** What a spawn settles before it has an agent id. */
+interface SpawnPlan {
+  runner: LlmRunner;
+  model: string | null;
+  permissionMode: string;
+  accountId: string;
+}
+
+function resolveSpawnPlan(
+  argusSession: Session,
+  opts: {
+    model?: string;
+    permissionMode?: string;
+    previous?: AgentSession | null;
+    runnerIdOverride?: string;
+  },
+): SpawnPlan {
+  const previousAgentForModel = opts.previous;
 
   // Resolve the permission mode: explicit caller override → the mode the
   // reused slot ran with (restore-at-turn / restart) → app-wide default.
   // Applied at spawn time via `--permission-mode`, which is the only way the
   // Claude CLI honours spawn-only modes like `auto`. Every agent gets a
-  // deliberate mode here — not just prewarms.
+  // deliberate mode here — spares included.
   const effectivePermissionMode =
-    permissionMode ??
+    opts.permissionMode ??
     previousAgentForModel?.permissionMode ??
     DEFAULT_AGENT_PERMISSION_MODE;
 
@@ -305,7 +490,7 @@ export async function startAgent(
   // sessions persisted before `runner_id` existed default to `"claude-code"`.
   const sessionDefaultRunnerId = sessionRunnerId(argusSession);
   const runnerId =
-    runnerIdOverride ??
+    opts.runnerIdOverride ??
     previousAgentForModel?.runner.id ??
     sessionDefaultRunnerId;
   let runner: LlmRunner | null = getRunnerById(runnerId);
@@ -313,7 +498,7 @@ export async function startAgent(
     // Runner was unregistered between session create and now — fall back
     // to today's single-runner behaviour rather than failing the spawn.
     warn(
-      `[agent:${agentId}] session.runner_id "${runnerId}" not registered; falling back to default runner`,
+      `[session:${argusSession.id}] runner_id "${runnerId}" not registered; falling back to default runner`,
     );
     runner = resolveDefaultRunner();
   }
@@ -343,10 +528,49 @@ export async function startAgent(
         ? (argusSession.model ?? previousAgentForModel?.model ?? null)
         : (previousAgentForModel?.model ?? null),
     },
-    agentOverride: { model: model ?? null },
+    agentOverride: { model: opts.model ?? null },
     ...(onSessionRunner ? { argusConfig: projectLlmConfig } : {}),
     runnerDefaultModel: runner.defaultModel?.() ?? null,
   });
+
+  return {
+    runner,
+    model: effectiveModel,
+    permissionMode: effectivePermissionMode,
+    accountId: resolveAccountForSession(argusSession),
+  };
+}
+
+interface SpawnArgs {
+  argusSession: Session & { path: string };
+  agentId: string;
+  plan: SpawnPlan;
+  resumeSessionId?: string;
+  appendSystemPrompt?: string;
+  platformsOverride?: RuntimePlatform[];
+  parentAgentId?: string;
+  /** The slot a respawn reuses; its counters carry over. */
+  previous?: AgentSession | null;
+  reused: boolean;
+  /** Listed in `appState.agents` before its first event lands; a spare stays out. */
+  register: boolean;
+}
+
+/** Spawn the CLI and wire its events; the caller decides when it's listed. */
+async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
+  const {
+    argusSession,
+    agentId,
+    plan,
+    resumeSessionId,
+    appendSystemPrompt,
+    platformsOverride,
+    parentAgentId,
+    previous,
+  } = args;
+  const { runner, accountId } = args.plan;
+  const sessionId = argusSession.id;
+  const worktreePath = argusSession.path;
 
   // Per-agent debug log.
   const agentLogsDir = path.join(argusHomeDir(), "agents");
@@ -378,7 +602,6 @@ export async function startAgent(
   // acquisition; long MCP timeouts so wait_for_agent etc. don't time out.
   // `envForAccount` also clears an inherited credential dir, so a session
   // pinned to the default account isn't dragged onto the globally active one.
-  const accountId = resolveAccountForSession(argusSession);
   const env = envForAccount(accountId);
   env.PATH = `${getConductorBinDir()}:${env.PATH ?? ""}`;
   env.ARGUS_AGENT_ID = agentId;
@@ -388,11 +611,6 @@ export async function startAgent(
   }
   env.MCP_TOOL_TIMEOUT = "86400000";
   env.MCP_TIMEOUT = env.MCP_TIMEOUT ?? "30000";
-
-  // Carry over `suppressStatus` and `createdAt` etc. from any previous slot
-  // (restore-at-turn). Reading early so we can fall through to an early
-  // `agentSession` skeleton; the handle is wired below.
-  const previous = reuseAgentId ? appState.agents.get(reuseAgentId) : null;
 
   // Combine prompts: kind-specific → project context → project-level →
   // runtime → caller-provided.
@@ -525,8 +743,8 @@ export async function startAgent(
     agentId,
     sessionId,
     cwd: worktreePath,
-    model: effectiveModel,
-    permissionMode: effectivePermissionMode,
+    model: plan.model,
+    permissionMode: plan.permissionMode,
     resumeRef: resumeSessionId ?? null,
     systemPrompt: combinedPrompt,
     mcpServers,
@@ -560,17 +778,19 @@ export async function startAgent(
     lastToolName: previous?.lastToolName ?? null,
     contextWindow: previous?.contextWindow ?? null,
     inflightPrompts: 0,
-    model: effectiveModel,
-    permissionMode: effectivePermissionMode,
+    model: plan.model,
+    permissionMode: plan.permissionMode,
     accountId,
   };
-  appState.agents.set(agentId, agentSession);
+  if (args.register) {
+    appState.agents.set(agentId, agentSession);
+  }
 
   // A resume spawn inherits a finished conversation: start it from saved
   // history so every client shows the prior turns instead of an empty chat.
   // Restore-at-turn is excluded: its agent already holds a deliberately
   // truncated transcript.
-  if (resumeSessionId && !reuseAgentId) {
+  if (resumeSessionId && !args.reused) {
     seedResumedConversation(agentId, argusSession.repo_root, resumeSessionId);
   }
 
@@ -710,38 +930,7 @@ export async function startAgent(
     }
   });
 
-  if (!reuseAgentId) {
-    telemetryCapture("agent_started", {
-      has_model: Boolean(model),
-      has_resume_id: Boolean(resumeSessionId),
-      has_parent: Boolean(parentAgentId),
-      permission_mode: permissionMode ?? "default",
-      session_kind: argusSession.kind,
-    });
-  }
-
-  emitAgentStatus(agentId, agentSession.status);
-  info(`[agent:${agentId}] started for session ${sessionId}`);
-
-  // Wait for the runner's initialize handshake before returning.
-  try {
-    await handle.waitForInit();
-  } catch (e) {
-    throw `Agent failed to initialize: ${String(e)}`;
-  }
-
-  const agentInfo: AgentInfo = {
-    agent_id: agentId,
-    session_id: sessionId,
-    status: agentSession.status,
-    parent_agent_id: parentAgentId ?? null,
-    created_at: agentSession.createdAt,
-    capabilities: handle.initializeResponse(),
-    model: agentSession.model,
-    runner_id: runner.id,
-  };
-
-  return agentInfo;
+  return agentSession;
 }
 
 // ---------------------------------------------------------------------------
@@ -1085,8 +1274,9 @@ export async function restoreAgentAtTurn(args: {
 }
 
 /**
- * A client's fresh start under its own optimistic id, announced as
- * `agent:started` so every window and paired device picks it up.
+ * A client's start, announced as `agent:started` so every window and paired
+ * device picks it up. The result's id is the agent's: a taken spare keeps its
+ * own rather than the client's optimistic one.
  */
 export async function launchAgent(opts: {
   sessionId: string;
@@ -1096,6 +1286,8 @@ export async function launchAgent(opts: {
   appendSystemPrompt?: string;
   agentId?: string;
   runnerId?: string;
+  /** A fork seeds its own transcript, so it never takes the warm spare. */
+  fresh?: boolean;
 }): Promise<AgentInfo> {
   const agent = await startAgent(
     opts.sessionId,
@@ -1108,6 +1300,7 @@ export async function launchAgent(opts: {
     undefined,
     opts.agentId,
     opts.runnerId,
+    !opts.fresh,
   );
   emitHostEvent("agent:started", agent);
 
@@ -1150,6 +1343,7 @@ export async function stopAgent(agentId: string): Promise<void> {
  * sessions. Best-effort and bounded by `handle.kill()`'s own backstop.
  */
 export async function destroyAllAgents(): Promise<void> {
+  clearSpares();
   const sessions = Array.from(appState.agents.values());
   if (sessions.length === 0) {
     return;

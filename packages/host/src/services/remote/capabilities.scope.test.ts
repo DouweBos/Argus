@@ -213,10 +213,10 @@ describe("an unscoped context is unaffected", () => {
   });
 
   it("leaves out a window's warm spare agent", async () => {
-    appState.agents.set("warm", {
-      ...agentFixture("warm", "s1"),
-      prewarmed: true,
-    } as never);
+    appState.agents.set(
+      "warm",
+      Object.assign(agentFixture("warm", "s1"), { prewarmed: true }),
+    );
     const agents = (await dispatch("agents.list", {}, ctx)) as {
       agents: { agent_id: string }[];
     };

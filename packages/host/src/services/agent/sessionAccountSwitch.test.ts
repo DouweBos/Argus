@@ -112,6 +112,19 @@ describe("switchSessionClaudeAccount", () => {
     expect(agent.status).toBe("error");
   });
 
+  it("drops the session's warm spare, which runs on the old account", async () => {
+    const { fillSpare, hasSpare } = await import("./spares");
+    const spare = { ...addAgent(), agentId: "warm" } as AgentSession;
+    appState.agents.clear();
+    spare.handle.on = () => {};
+    await fillSpare("s1", async () => ({ agent: spare, configStamp: "x" }));
+
+    await switchSessionClaudeAccount("s1", "work");
+
+    expect(hasSpare("s1")).toBe(false);
+    expect(kill).toHaveBeenCalled();
+  });
+
   it("restores the old pin when the restart fails", async () => {
     addAgent();
 
