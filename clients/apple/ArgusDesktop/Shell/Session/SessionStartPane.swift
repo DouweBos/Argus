@@ -10,6 +10,7 @@ struct SessionStartPane: View {
   /// Images and files dropped on the pane go to the composer.
   @State private var drops = ComposerDropInbox()
   @State private var dropTargeted = false
+  @State private var workspace = StartWorkspace()
 
   var body: some View {
     VStack(spacing: 0) {
@@ -19,6 +20,7 @@ struct SessionStartPane: View {
       ChatInputView(startingIn: sessionId, starter: model.composerStarter(session: sessionId)) { affordance in
         MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))
       }
+      .startWorkspace(workspace, session: model.session(sessionId))
       // Shares the height with the space above, which centres the composer.
       Color.clear.frame(maxHeight: .infinity)
     }

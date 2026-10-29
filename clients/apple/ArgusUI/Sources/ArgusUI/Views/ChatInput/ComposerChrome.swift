@@ -2,7 +2,7 @@
   import SwiftUI
 
   /// A composer setting as an inline pill: icon, value and a chevron, quiet until hovered.
-  struct ComposerPillLabel: View {
+  public struct ComposerPillLabel: View {
     @Environment(\.theme) private var theme
     @Environment(\.isEnabled) private var isEnabled
     let icon: String
@@ -13,7 +13,15 @@
     var open = false
     @State private var hovering = false
 
-    var body: some View {
+    public init(icon: String, title: String? = nil, accent: Bool = false, chevron: Bool = true, open: Bool = false) {
+      self.icon = icon
+      self.title = title
+      self.accent = accent
+      self.chevron = chevron
+      self.open = open
+    }
+
+    public var body: some View {
       HStack(spacing: 5) {
         Image(systemName: icon).font(.scaled(size: 11))
         if let title {

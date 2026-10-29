@@ -52,7 +52,8 @@
     var isRunning: Bool { status?.status == .running }
     /// The desktop only takes input from a live agent.
     var isEnabled: Bool {
-      if starter != nil { return !starting }
+      if starting { return false }
+      if starter != nil { return true }
       return status.map { $0.status != .stopped && $0.status != .error } ?? true
     }
     var capabilities: RemoteAgentCapabilities { host.capabilitiesByAgent[agentId] ?? .empty }
@@ -384,7 +385,7 @@
 
     /// Starts the agent; the draft stays put until it has.
     private func start(
-      with starter: ComposerStarter, body: String, display: String, images attachments: [RemoteImageAttachment]
+      with target: ComposerStarter, body: String, display: String, images attachments: [RemoteImageAttachment]
     ) {
       starting = true
       // Redirected from a live agent, the new one takes this one's settings.
@@ -395,7 +396,7 @@
         model: draftModel ?? (live ? status?.model : nil),
         effort: draftEffort ?? (live ? host.effortByAgent[agentId] : nil))
       Task {
-        let started = await starter.start(request)
+        let started = await target.start(request)
         starting = false
         guard started else { return }
         clearComposer()

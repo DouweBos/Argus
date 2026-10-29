@@ -227,6 +227,8 @@ enum MacTelemetryEvent {
   case homeCardActed(card: HomeCard, action: HomeCardAction)
   /// A scratch pad was created from the sidebar.
   case scratchPadCreated
+  /// A start composer's workspace was switched; the worktree it creates is the host's `session_created`.
+  case startWorkspacePicked(workspace: String)
   /// On connect this app handed the host preferences it had no value for yet.
   case prefsSupplied(keys: Int)
   /// A window tab was opened, closed or switched to.
@@ -389,6 +391,7 @@ enum MacTelemetryEvent {
     case .loginItem: "mac_login_item"
     case .navigatedHistory: "mac_navigated_history"
     case .scratchPadCreated: "mac_scratch_pad_created"
+    case .startWorkspacePicked: "mac_start_workspace_picked"
     case .prefsSupplied: "mac_prefs_supplied"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
@@ -511,6 +514,8 @@ enum MacTelemetryEvent {
       ["keys": keys]
     case .scratchPadCreated:
       [:]
+    case .startWorkspacePicked(let workspace):
+      ["workspace": workspace]
     case .transcriptLinkOpened(let action, let relative):
       ["action": action.rawValue, "relative": relative]
     case .transcriptFindUsed(let matches, let navigated):

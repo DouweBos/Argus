@@ -463,6 +463,7 @@ Everything the host already sees (`agent_started`, `session_created`,
 | `mac_menu_bar_toggled` | The menu bar item was shown or hidden | `shown`, `via` (`settings` the General tab's switch, `menu_bar` dragged off the menu bar with ⌘), `server_installed` — whether an Argus Server is installed on this Mac, which turns the item off by default |
 | `mac_login_item` | **Open at Login** was switched in Settings → General or the menu bar item | `enabled`, `status` (`enabled`, `requires_approval`, `off`) — what macOS made of it |
 | `mac_scratch_pad_created` | A scratch pad was created from the sidebar (the host captures the agent it starts) | — |
+| `mac_start_workspace_picked` | A start composer's workspace was switched between the current checkout and a new worktree (the host captures the session and agent a send creates) | `workspace` (`current`, `worktree`) |
 | `mac_prefs_supplied` | On connecting to its host, the app handed it preferences or picks the host had no value for yet (the host already held the rest, which the app took) | `keys` — how many |
 | `mac_transcript_link_opened` | A file or URL link in a transcript was used | `action` (`open`, `open_in_editor`, `reveal`, `copy_path`, `open_url`, `copy_link`), `relative` (the path needed the session's worktree) |
 | `mac_transcript_find_used` | Find in chat closed after a search | `matches_bucket` (`0`, `1-9`, `10-99`, `100+`), `navigated` (stepped between matches) |

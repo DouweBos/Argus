@@ -247,6 +247,7 @@ struct AgentPane: View {
   @State private var drops = ComposerDropInbox()
   @State private var dropTargeted = false
   @State private var loaded = false
+  @State private var workspace = StartWorkspace()
 
   /// Nothing said yet, nothing queued, and the agent isn't at work.
   private var fresh: Bool {
@@ -275,6 +276,7 @@ struct AgentPane: View {
       ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
         MacTelemetry.capture(.inputUsed(affordance: affordance.rawValue))
       }
+      .startWorkspace(workspace, session: fresh ? model.session(sessionId) : nil, replacing: agentId)
       // Shares the height with the transcript above, which centres the composer.
       if fresh { Color.clear.frame(maxHeight: .infinity) }
     }
@@ -293,34 +295,5 @@ struct AgentPane: View {
     .onDisappear {
       Task { await store.watchAgent(agentId, on: false) }
     }
-  }
-}
-
-/// "What should we work on?" over a new agent's composer, with where it works.
-struct AgentStartTitle: View {
-  @Environment(\.theme) private var theme
-  @Environment(DesktopModel.self) private var model
-  @Environment(HostStore.self) private var store
-  let sessionId: String
-
-  private var place: String {
-    model.session(sessionId).map(store.placeName(of:)) ?? ""
-  }
-
-  var body: some View {
-    VStack(spacing: 6) {
-      Text("What should we work on?")
-        .font(.scaled(size: 26, weight: .medium))
-        .foregroundStyle(theme.text)
-      if !place.isEmpty {
-        Text(place)
-          .font(.scaled(size: 13))
-          .foregroundStyle(theme.textSecondary)
-      }
-    }
-    .multilineTextAlignment(.center)
-    .frame(maxWidth: .infinity)
-    .readingColumn()
-    .allowsHitTesting(false)
   }
 }
