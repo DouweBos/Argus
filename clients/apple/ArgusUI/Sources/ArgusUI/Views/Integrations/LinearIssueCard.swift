@@ -50,7 +50,7 @@ public struct LinearIssueCard: View {
             .help("Estimate \(LinearIssueBoard.estimateLabel(estimate, type: issue.estimateType))")
         }
         if let cycle = issue.cycle {
-          chip("\(Int(cycle.number))", icon: "arrow.triangle.2.circlepath")
+          chip(LinearIssueBoard.cycleShortLabel(number: cycle.number, name: cycle.name), icon: "arrow.triangle.2.circlepath")
             .help(LinearIssueBoard.cycleLabel(number: cycle.number, name: cycle.name))
         }
         if let project = issue.project { chip(project.name) }

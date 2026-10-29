@@ -70,6 +70,7 @@ struct LinearIssueBoardTests {
   @Test func labelsCyclesAndEstimates() {
     #expect(LinearIssueBoard.cycleLabel(number: 59, name: nil) == "Cycle 59")
     #expect(LinearIssueBoard.cycleLabel(number: 59, name: "Sprint 4") == "Sprint 4")
+    #expect(LinearIssueBoard.cycleShortLabel(number: 24, name: "Cycle 59") == "59")
     #expect(LinearIssueBoard.estimateLabel(3) == "3 pt")
     #expect(LinearIssueBoard.estimateLabel(0.5) == "0.5 pt")
     #expect(LinearIssueBoard.estimateLabel(3, unit: false) == "3")

@@ -155,6 +155,11 @@ public enum LinearIssueBoard {
     return "Cycle \(Int(number))"
   }
 
+  /// The card's short form: Linear names cycles "Cycle 59" while their `number` counts differently.
+  public static func cycleShortLabel(number: Double, name: String?) -> String {
+    cycleLabel(number: number, name: name).replacingOccurrences(of: "Cycle ", with: "")
+  }
+
   public static func cycleLabel(_ issue: Issue) -> String? {
     issue.cycle.map { cycleLabel(number: $0.number, name: $0.name) }
   }

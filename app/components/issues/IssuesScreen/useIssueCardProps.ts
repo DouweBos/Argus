@@ -1,7 +1,11 @@
 import type { LinearIssue } from "../../../lib/types";
 import type { IssueCardProps } from "@argus/peacock";
 import { estimateName } from "@argus/remote-protocol";
-import { formatIssueMonth, sessionForIssue } from "../../../lib/issueBoard";
+import {
+  cycleLabel,
+  formatIssueMonth,
+  sessionForIssue,
+} from "../../../lib/issueBoard";
 import { useSessions } from "../../../stores/sessionStore";
 
 /** What a card shows for an issue, including whether an agent is on it. */
@@ -15,9 +19,8 @@ export function useIssueCardProps() {
       ? { name: issue.assignee, avatarUrl: issue.assigneeAvatarUrl }
       : null,
     badge: sessionForIssue(issue, sessions) ? "Agent on it" : undefined,
-    cycle: issue.cycle
-      ? (issue.cycle.name ?? String(issue.cycle.number))
-      : null,
+    // Linear names cycles "Cycle 59"; their `number` counts differently.
+    cycle: cycleLabel(issue.cycle)?.replace(/^Cycle /, "") ?? null,
     estimate:
       issue.estimate == null
         ? null
