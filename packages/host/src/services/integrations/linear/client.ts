@@ -293,7 +293,11 @@ export class LinearApi {
     return toLinearIssue(data.issueUpdate.issue);
   }
 
-  async comment(issueId: string, body: string): Promise<void> {
-    await this.query(COMMENT, { issueId, body });
+  async comment(
+    issueId: string,
+    body: string,
+    parentId: string | null = null,
+  ): Promise<void> {
+    await this.query(COMMENT, { issueId, body, parentId });
   }
 }

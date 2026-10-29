@@ -10,11 +10,12 @@ import type {
   LinearIssueScope,
   LinearWorkflowState,
 } from "@argus/remote-protocol";
+import { historyEvents } from "./history";
 
 const ISSUE_FIELDS = `
   id identifier title description url branchName priority estimate createdAt updatedAt
   state { id name type position }
-  team { id key name }
+  team { id key name issueEstimationType }
   assignee { displayName avatarUrl }
   creator { displayName }
   dueDate
@@ -53,9 +54,36 @@ export const SEARCH_ISSUES = `query ArgusSearchIssues($term: String!, $first: In
 export const ISSUE_DETAIL = `query ArgusIssue($id: String!) {
   issue(id: $id) {
     ${ISSUE_FIELDS}
-    comments(first: 100) { nodes { body createdAt user { displayName } } }
-    attachments(first: 25) { nodes { title subtitle url sourceType } }
+    labels { nodes { name color } }
+    comments(first: 100) {
+      nodes {
+        id body createdAt
+        parent { id }
+        user { displayName avatarUrl }
+        reactions { emoji }
+      }
+    }
+    attachments(first: 25) { nodes { title subtitle url sourceType createdAt } }
     children(first: 50) { nodes { identifier title state { name type } } }
+    subscribers(first: 25) { nodes { displayName avatarUrl } }
+    relations(first: 25) { nodes { type relatedIssue { identifier title state { name type } } } }
+    inverseRelations(first: 25) { nodes { type issue { identifier title state { name type } } } }
+    creator { displayName avatarUrl }
+    history(first: 100) {
+      nodes {
+        id createdAt updatedDescription fromPriority toPriority fromEstimate toEstimate
+        fromTitle toTitle fromDueDate toDueDate
+        actor { displayName avatarUrl }
+        fromState { name } toState { name }
+        fromAssignee { displayName } toAssignee { displayName }
+        fromCycle { number name } toCycle { number name }
+        fromProject { name } toProject { name }
+        fromParent { identifier } toParent { identifier }
+        addedLabels { name } removedLabels { name }
+        attachment { title }
+        relationChanges { identifier type }
+      }
+    }
   }
 }`;
 
@@ -79,8 +107,8 @@ export const UPDATE_ISSUE = `mutation ArgusUpdateIssue($id: String!, $input: Iss
   issueUpdate(id: $id, input: $input) { issue { ${ISSUE_FIELDS} } }
 }`;
 
-export const COMMENT = `mutation ArgusComment($issueId: String!, $body: String!) {
-  commentCreate(input: { issueId: $issueId, body: $body }) { success }
+export const COMMENT = `mutation ArgusComment($issueId: String!, $body: String!, $parentId: String) {
+  commentCreate(input: { issueId: $issueId, body: $body, parentId: $parentId }) { success }
 }`;
 
 export const FILE_UPLOAD = `mutation ArgusFileUpload($contentType: String!, $filename: String!, $size: Int!) {
@@ -116,7 +144,12 @@ export interface RawIssue {
   createdAt: string;
   updatedAt: string;
   state: LinearWorkflowState;
-  team: { id: string; key: string; name: string };
+  team: {
+    id: string;
+    key: string;
+    name: string;
+    issueEstimationType?: string | null;
+  };
   assignee?: { displayName: string; avatarUrl?: string | null } | null;
   creator?: { displayName: string } | null;
   dueDate?: string | null;
@@ -132,12 +165,54 @@ export interface RawIssue {
   attachments: { nodes: { url: string; sourceType?: string | null }[] };
 }
 
-export interface RawIssueDetail extends Omit<RawIssue, "attachments"> {
+interface RawIssueRef {
+  identifier: string;
+  title: string;
+  state: { name: string; type: string };
+}
+
+export interface RawHistory {
+  id: string;
+  createdAt: string;
+  updatedDescription?: boolean | null;
+  fromPriority?: number | null;
+  toPriority?: number | null;
+  fromEstimate?: number | null;
+  toEstimate?: number | null;
+  fromTitle?: string | null;
+  toTitle?: string | null;
+  fromDueDate?: string | null;
+  toDueDate?: string | null;
+  actor?: { displayName: string; avatarUrl?: string | null } | null;
+  fromState?: { name: string } | null;
+  toState?: { name: string } | null;
+  fromAssignee?: { displayName: string } | null;
+  toAssignee?: { displayName: string } | null;
+  fromCycle?: { number: number; name?: string | null } | null;
+  toCycle?: { number: number; name?: string | null } | null;
+  fromProject?: { name: string } | null;
+  toProject?: { name: string } | null;
+  fromParent?: { identifier: string } | null;
+  toParent?: { identifier: string } | null;
+  addedLabels?: { name: string }[] | null;
+  removedLabels?: { name: string }[] | null;
+  attachment?: { title: string } | null;
+  relationChanges?: { identifier: string; type: string }[] | null;
+}
+
+export interface RawIssueDetail extends Omit<
+  RawIssue,
+  "attachments" | "labels"
+> {
+  labels: { nodes: { name: string; color?: string | null }[] };
   comments: {
     nodes: {
+      id: string;
       body: string;
       createdAt: string;
-      user?: { displayName: string } | null;
+      parent?: { id: string } | null;
+      user?: { displayName: string; avatarUrl?: string | null } | null;
+      reactions?: { emoji: string }[] | null;
     }[];
   };
   attachments: {
@@ -146,15 +221,17 @@ export interface RawIssueDetail extends Omit<RawIssue, "attachments"> {
       subtitle?: string | null;
       url: string;
       sourceType?: string | null;
+      createdAt?: string | null;
     }[];
   };
-  children: {
-    nodes: {
-      identifier: string;
-      title: string;
-      state: { name: string; type: string };
-    }[];
-  };
+  children: { nodes: RawIssueRef[] };
+  subscribers?: {
+    nodes: { displayName: string; avatarUrl?: string | null }[];
+  } | null;
+  relations?: { nodes: { type: string; relatedIssue: RawIssueRef }[] } | null;
+  inverseRelations?: { nodes: { type: string; issue: RawIssueRef }[] } | null;
+  creator?: { displayName: string; avatarUrl?: string | null } | null;
+  history?: { nodes: RawHistory[] } | null;
 }
 
 const PULL_REQUEST = /\/(?:pull|merge_requests)\/\d+/;
@@ -175,6 +252,7 @@ export function toLinearIssue(raw: RawIssue | RawIssueDetail): LinearIssue {
     },
     priority: raw.priority,
     estimate: raw.estimate ?? null,
+    estimateType: raw.team.issueEstimationType ?? null,
     teamId: raw.team.id,
     teamKey: raw.team.key,
     teamName: raw.team.name,
@@ -205,12 +283,53 @@ export function toLinearIssue(raw: RawIssue | RawIssueDetail): LinearIssue {
   };
 }
 
+function reactionCounts(
+  reactions: { emoji: string }[] | null | undefined,
+): { emoji: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const r of reactions ?? []) {
+    counts.set(r.emoji, (counts.get(r.emoji) ?? 0) + 1);
+  }
+
+  return [...counts].map(([emoji, count]) => ({ emoji, count }));
+}
+
+/** A relation as seen from this issue: "blocks" turns into "blocked_by" from the other side. */
+const INVERSE: Record<string, string> = {
+  blocks: "blocked_by",
+  duplicate: "duplicate_of",
+  related: "related",
+  similar: "similar",
+};
+
 export function toLinearIssueDetail(raw: RawIssueDetail): LinearIssueDetail {
+  const ref = (r: RawIssueRef) => ({
+    identifier: r.identifier,
+    title: r.title,
+    state: { name: r.state.name, type: r.state.type },
+  });
+  const creation = {
+    id: `created-${raw.id}`,
+    createdAt: Date.parse(raw.createdAt),
+    actor: raw.creator?.displayName ?? null,
+    actorAvatarUrl: raw.creator?.avatarUrl ?? null,
+    kind: "created" as const,
+    text: "created the issue",
+  };
+
   return {
-    ...toLinearIssue(raw),
+    ...toLinearIssue({
+      ...raw,
+      labels: { nodes: raw.labels.nodes.map((l) => ({ name: l.name })) },
+      attachments: { nodes: raw.attachments.nodes },
+    }),
     comments: raw.comments.nodes
       .map((c) => ({
+        id: c.id,
+        parentId: c.parent?.id ?? null,
         author: c.user?.displayName ?? null,
+        authorAvatarUrl: c.user?.avatarUrl ?? null,
+        reactions: reactionCounts(c.reactions),
         body: c.body,
         createdAt: Date.parse(c.createdAt),
       }))
@@ -220,11 +339,32 @@ export function toLinearIssueDetail(raw: RawIssueDetail): LinearIssueDetail {
       subtitle: a.subtitle ?? null,
       url: a.url,
       sourceType: a.sourceType ?? null,
+      createdAt: a.createdAt ? Date.parse(a.createdAt) : null,
     })),
-    children: raw.children.nodes.map((c) => ({
-      identifier: c.identifier,
-      title: c.title,
-      state: { name: c.state.name, type: c.state.type },
+    children: raw.children.nodes.map(ref),
+    history: [
+      creation,
+      ...(raw.history?.nodes ?? [])
+        .flatMap((h) => historyEvents(h, raw.team.issueEstimationType ?? null))
+        .sort((a, b) => a.createdAt - b.createdAt),
+    ],
+    subscribers: (raw.subscribers?.nodes ?? []).map((u) => ({
+      name: u.displayName,
+      avatarUrl: u.avatarUrl ?? null,
+    })),
+    relations: [
+      ...(raw.relations?.nodes ?? []).map((r) => ({
+        type: r.type,
+        ...ref(r.relatedIssue),
+      })),
+      ...(raw.inverseRelations?.nodes ?? []).map((r) => ({
+        type: INVERSE[r.type] ?? r.type,
+        ...ref(r.issue),
+      })),
+    ],
+    labelColors: raw.labels.nodes.map((l) => ({
+      name: l.name,
+      color: l.color ?? "#888888",
     })),
   };
 }

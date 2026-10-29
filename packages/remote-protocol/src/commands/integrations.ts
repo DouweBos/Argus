@@ -77,9 +77,14 @@ export const INTEGRATION_COMMANDS = {
     }),
     result: LinearIssue,
   },
+  /** `parentId` replies in that comment's thread. */
   linear_comment_issue: {
     tier: "admin",
-    params: z.object({ issueId: z.string(), body: z.string().min(1) }),
+    params: z.object({
+      issueId: z.string(),
+      body: z.string().min(1),
+      parentId: z.string().nullish(),
+    }),
     result: Void,
   },
   linear_list_teams: {

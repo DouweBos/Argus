@@ -43,7 +43,7 @@ export function registerIntegrationCommands(): void {
     updateLinearIssue(p.issueId, { priority: p.priority, stateId: p.stateId }),
   );
   defineTypedCommand("linear_comment_issue", (p) =>
-    commentOnLinearIssueById(p.issueId, p.body),
+    commentOnLinearIssueById(p.issueId, p.body, p.parentId ?? null),
   );
   defineTypedCommand("linear_file_issue", (p) =>
     fileLinearIssue({ ...p, screenshot: p.screenshot ?? null }),
