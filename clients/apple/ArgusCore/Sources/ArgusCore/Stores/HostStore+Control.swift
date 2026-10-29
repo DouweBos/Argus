@@ -426,6 +426,8 @@ extension HostStore {
         as: Result.self
       ).agent
       statusByAgent[agent.agentId] = agent
+      // The tab can't hang on `agent:started` alone: a missed event loses it.
+      if let repoRoot = repoRoot(forSessionId: sessionId) { await loadAgents(repoRoot: repoRoot) }
       return agent
     } catch {
       report(error)
