@@ -230,14 +230,17 @@ public struct UsageLimitsStrip: View {
     return VStack(alignment: .leading, spacing: 4) {
       HStack(spacing: 6) {
         Text(window.label).foregroundStyle(theme.textMuted).lineLimit(1)
+        if let reset = UsageLimitFormat.resetCaption(resetsAtMs: window.resetsAt, now: now) {
+          Text("· \(reset.prefix(1).lowercased() + reset.dropFirst())")
+            .foregroundStyle(theme.textMuted.opacity(0.7))
+            .lineLimit(1)
+        }
         Spacer(minLength: 4)
         Text("\(left)% left").monospacedDigit().foregroundStyle(tone == .accent ? theme.textSecondary : tone.color(theme))
       }
       .font(.scaled(size: 11))
       UsageBar(fraction: UsageLimitFormat.fraction(usedPercent: window.usedPercent), tone: tone)
     }
-    .help(UsageLimitFormat.resetCaption(resetsAtMs: window.resetsAt, now: now) ?? window.label)
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("\(window.label), \(left)% left")
   }
 }
