@@ -45,7 +45,7 @@ public struct LinearIssueCard: View {
       }
       ChipFlowLayout(spacing: 4, lineSpacing: 4) {
         chip { PriorityGlyph(priority: issue.priority, size: 12) }
-        if let estimate = issue.estimate { chip(LinearIssueBoard.estimateLabel(estimate)) }
+        if let estimate = issue.estimate { chip(LinearIssueBoard.estimateLabel(estimate, type: issue.estimateType)) }
         if let cycle = LinearIssueBoard.cycleLabel(issue) { chip(cycle) }
         if let project = issue.project { chip(project.name) }
         if issue.pullRequestCount > 0 {

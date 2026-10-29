@@ -1999,8 +1999,10 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { issue };
   },
   "linear.comment": async (params) => {
-    const { issue_id, body } = parse("linear.comment", params);
-    await control(() => commentOnLinearIssueById(issue_id, body));
+    const { issue_id, body, parent_id } = parse("linear.comment", params);
+    await control(() =>
+      commentOnLinearIssueById(issue_id, body, parent_id ?? null),
+    );
 
     return { accepted: true };
   },

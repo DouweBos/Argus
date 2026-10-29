@@ -87,4 +87,17 @@ struct LinearIssueDetailModelTests {
     #expect(backend.calls("linear.comment").first?.params == .object(["issue_id": .string("i1"), "body": .string("On it")]))
     withExtendedLifetime(store) {}
   }
+
+  @Test("a reply goes to its thread")
+  func repliesInThread() async {
+    let (model, backend, store) = await model()
+    await model.load()
+
+    backend.reply("linear.comment", #"{"accepted":true}"#)
+    #expect(await model.comment("Agreed", parentId: "c1") == true)
+    #expect(
+      backend.calls("linear.comment").first?.params
+        == .object(["issue_id": .string("i1"), "body": .string("Agreed"), "parent_id": .string("c1")]))
+    withExtendedLifetime(store) {}
+  }
 }
