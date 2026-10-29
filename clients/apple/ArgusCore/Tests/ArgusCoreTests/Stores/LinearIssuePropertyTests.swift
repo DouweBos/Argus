@@ -37,6 +37,16 @@ struct LinearIssuePropertyTests {
     #expect(keys == ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", nil, nil])
   }
 
+  @Test("statuses follow the workflow, not the team's raw order")
+  func statusOrder() {
+    let states = [
+      ("Done", "completed", 1.0), ("Ready for QA", "completed", 0.0), ("In Review", "started", 3.0),
+      ("Todo", "unstarted", 0.0), ("Backlog", "backlog", 0.0), ("Triage", "triage", 0.0),
+    ].map { ArgusProtocol.LinearWorkflowState(id: $0.0, name: $0.0, type: $0.1, position: $0.2) }
+    #expect(LinearIssueProperty.statusOptions(states).map(\.title)
+      == ["Triage", "Backlog", "Todo", "In Review", "Ready for QA", "Done"])
+  }
+
   @Test("priorities run urgent to low, then none, keyed by their number")
   func priorityKeys() {
     let options = LinearIssueProperty.priorityOptions

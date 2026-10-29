@@ -37,7 +37,11 @@ public enum LinearIssueProperty {
 
   /// The team's workflow in order, keyed 1…9 then 0, the rest unkeyed.
   public static func statusOptions(_ states: [ArgusProtocol.LinearWorkflowState]) -> [Option] {
-    states.enumerated().map { index, state in
+    // Linear's workflow order, the same as the board's columns.
+    let ordered = states.sorted {
+      (LinearIssueBoard.typeRank($0.type), $0.position) < (LinearIssueBoard.typeRank($1.type), $1.position)
+    }
+    return ordered.enumerated().map { index, state in
       let key: Character? = index < 9 ? Character("\(index + 1)") : index == 9 ? "0" : nil
       return Option(id: state.id, title: state.name, key: key)
     }
