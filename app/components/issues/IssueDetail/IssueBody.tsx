@@ -5,6 +5,7 @@ import { openExternalUrl } from "../../../lib/ipc";
 import { ago } from "../../../lib/issueActivity";
 import { appNavigate } from "../../../lib/router";
 import styles from "./IssueDetail.module.css";
+import { renderLinearEmbed } from "./linearEmbed";
 
 const openFigmaLink = figmaLinkHandler("issue");
 
@@ -63,6 +64,7 @@ export function IssueBody({ issue }: { issue: LinearIssueDetail }) {
       {issue.description.trim() ? (
         <Markdown
           className={styles.description}
+          renderEmbed={renderLinearEmbed}
           text={issue.description}
           onLinkClick={openFigmaLink}
         />

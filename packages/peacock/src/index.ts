@@ -97,6 +97,7 @@ export * from "./components/ImageDiff/ImageDiff";
 export * from "./components/ZoomPanImage/ZoomPanImage";
 export * from "./components/DesignLayerList/DesignLayerList";
 export * from "./components/InboxItemRow/InboxItemRow";
+export * from "./components/InlineVideo/InlineVideo";
 export * from "./components/IssueActivity/IssueActivity";
 export * from "./components/IssueBoard/IssueBoard";
 export * from "./components/IssueCard/IssueCard";

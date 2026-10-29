@@ -15,6 +15,7 @@ import {
   listIntegrations,
   fileLinearIssue,
   linearIssueContext,
+  linearMedia,
   linearTeamStates,
   listLinearTeams,
   listLinearIssues,
@@ -38,6 +39,7 @@ export function registerIntegrationCommands(): void {
   defineTypedCommand("linear_get_issue", (p) => getLinearIssue(p.ref));
   defineTypedCommand("linear_issue_context", (p) => linearIssueContext(p.ref));
   defineTypedCommand("linear_list_teams", () => listLinearTeams());
+  defineTypedCommand("linear_media", (p) => linearMedia(p.url));
   defineTypedCommand("linear_team_states", (p) => linearTeamStates(p.teamId));
   defineTypedCommand("linear_update_issue", (p) =>
     updateLinearIssue(p.issueId, { priority: p.priority, stateId: p.stateId }),

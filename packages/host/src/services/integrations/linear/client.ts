@@ -186,6 +186,13 @@ export class LinearApi {
     return true;
   }
 
+  /** The header Linear's uploads expect for this credential. */
+  get authorization(): string {
+    return this.credential.method === "key"
+      ? this.credential.secret
+      : `Bearer ${this.credential.secret}`;
+  }
+
   /** An `uploads.linear.app` image, or null when it isn't one an agent can take. */
   async image(
     url: string,

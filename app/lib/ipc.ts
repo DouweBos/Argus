@@ -1806,8 +1806,7 @@ export const commentOnLinearIssue = (
   issueId: string,
   body: string,
   parentId?: string | null,
-): Promise<void> =>
-  invoke("linear_comment_issue", { issueId, body, parentId });
+): Promise<void> => invoke("linear_comment_issue", { issueId, body, parentId });
 
 export const setSessionDesignRefs = (
   sessionId: string,
@@ -1836,6 +1835,12 @@ export const compareDesign = (
   deviceKey: string,
 ): Promise<DesignComparison> =>
   invoke("design_compare", { url, platform, deviceKey });
+
+/** A Linear upload downloaded by the host with the signed-in credential. */
+export const linearMedia = (
+  url: string,
+): Promise<{ path: string; mimeType: string }> =>
+  invoke("linear_media", { url });
 
 export const listLinearTeams = (): Promise<LinearTeam[]> =>
   invoke("linear_list_teams", {});

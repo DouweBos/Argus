@@ -106,6 +106,12 @@ export const INTEGRATION_COMMANDS = {
     }),
     result: LinearIssue,
   },
+  /** Downloads a Linear upload once into the host's cache; returns the local file. */
+  linear_media: {
+    tier: "admin",
+    params: z.object({ url: z.string() }),
+    result: z.object({ path: z.string(), mimeType: z.string() }),
+  },
   /** Null when the URL isn't a Figma link. */
   figma_design_ref: {
     tier: "admin",
