@@ -88,12 +88,18 @@
   /// What a menu on screen shows and which row the keyboard or pointer is on.
   @MainActor @Observable
   final class ChromeMenuModel {
-    var entries: [ChromeMenuEntry] = [] {
-      didSet {
-        if let highlighted, !selectable.contains(highlighted) { self.highlighted = nil }
-      }
-    }
+    // No didSet reading state back: the anchor sets this inside a SwiftUI
+    // update, and a read there makes it depend on its own write and loop.
+    var entries: [ChromeMenuEntry] = []
     var highlighted: Int?
+
+    /// The highlighted row, if it is still an enabled item.
+    var highlightedItem: ChromeMenuItem? {
+      guard let highlighted, entries.indices.contains(highlighted),
+        let item = entries[highlighted].item, !item.disabled
+      else { return nil }
+      return item
+    }
 
     var selectable: [Int] {
       entries.indices.filter { entries[$0].item.map { !$0.disabled } ?? false }

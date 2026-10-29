@@ -1,7 +1,10 @@
 #if os(macOS)
+  import Observation
   import Testing
 
   @testable import ArgusUI
+
+  private final class Flag: @unchecked Sendable { var set = false }
 
   @Suite("Chrome menu")
   @MainActor
@@ -56,6 +59,33 @@
       #expect(model.highlighted == 0)
       model.move(-1)
       #expect(model.highlighted == 4)
+    }
+
+    @Test("replacing the rows doesn't read the model, or the anchor re-renders forever")
+    func entriesWriteIsUntracked() {
+      let model = ChromeMenuModel()
+      model.entries = ChromeMenuEntry.tidy(entries(projects: ["A", "B", "C"], settings: false))
+      model.highlighted = 2
+      let dependsOnModel = Flag()
+      withObservationTracking {
+        model.entries = ChromeMenuEntry.tidy(entries(projects: ["A", "B"], settings: false))
+      } onChange: {
+        dependsOnModel.set = true
+      }
+      model.highlighted = 4
+      model.entries = []
+      #expect(!dependsOnModel.set)
+      #expect(model.highlightedItem == nil)
+    }
+
+    @Test("the highlighted item is only an enabled row")
+    func highlightedItem() {
+      let model = ChromeMenuModel()
+      model.entries = ChromeMenuEntry.tidy(entries(projects: ["A", "B", "C"], settings: false))
+      model.highlighted = 2
+      #expect(model.highlightedItem?.title == "A")
+      model.highlighted = 3
+      #expect(model.highlightedItem == nil)
     }
 
     @Test("a row's letter picks it, shown as its hint, unless the row is disabled")

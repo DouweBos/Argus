@@ -279,7 +279,7 @@
       case 126:  // ↑
         model.move(-1)
       case 36, 76:  // Return, Enter
-        if let index = model.highlighted, let item = model.entries[index].item { pick(item) }
+        if let item = model.highlightedItem { pick(item) }
       case 53:  // Esc
         dismiss(restoreFocus: true, notify: true)
       default:
