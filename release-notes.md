@@ -1,155 +1,36 @@
 
 ### Minor Changes
 
-- a7fd4d3: Name each iPhone, Mac and computer in its settings (or with `account set name` in `argus-host`). It joins your Argus account under that name, changing it renames it on the account, and a rename from another device shows up in the setting too.
-- a7fd4d3: The desktop app has a new Account screen in Settings: link this computer with a code, see every computer on your account with online status, attach to them from Hosts without pairing, and approve other computers joining.
-- a7fd4d3: The desktop app can approve a phone or Mac that signs in to your account after comparing a six-digit code, lists the devices on your account, and can rename or remove them. A device removed from your phone is disconnected from every computer it's connected to right away.
-- a7fd4d3: A second iPhone that signs in to your account now asks to join and gets in once you approve it from a device already on the account, after both show the same six-digit code. Settings → Account lists your devices, lets you rename or remove them, and a prompt appears when one is waiting to join.
-- a7fd4d3: The Mac app can join an account that already has devices by approval, approve phones and other Macs that sign in, and list, rename and remove the devices on your account.
-- a7fd4d3: Sign in to your Argus account on the iPhone app with Apple, GitHub or an emailed code. Computers on your account show up with their current addresses and online status, and connect without scanning a QR code; add one by typing the code it shows.
-- a7fd4d3: Computers can now join an Argus account: link a desktop or a headless host with a short code, and the devices signed in to your account find it at its current address without scanning a pairing code.
-- a7fd4d3: Argus for Mac has an Argus Account section in Settings: signing in puts this Mac's host on your account with no code, lists every host on the account in Hosts without pairing, and adds other computers by their code.
-- a7fd4d3: Computers linked to your Argus account now get their own tunnel, so your devices reach them from anywhere with nothing to set up, and Tailscale connects directly when both ends are on your tailnet. The Cloudflare quick tunnel, named tunnel and Tailscale Funnel settings are gone; a tunnel you had set up keeps running until the new one replaces it.
-- a7fd4d3: Every host list in the desktop app and the Mac app's machines menu now shows whether a computer on your account is online, or when it was last seen.
-- a7fd4d3: Settings on iPhone and iPad now open with your Argus account: your picture, name and email, or a sign-in card when you are signed out.
-- a7fd4d3: The Mac app's Settings show who is signed in to Argus at the top of the list, with your picture, name and email.
-- a7fd4d3: Computers on your Argus account can send notifications to every phone on it, even one that has never opened that computer. They stay end-to-end encrypted, and a computer removed from the account can no longer reach your phone.
-- a7fd4d3: The iPhone app gets notifications from every computer on your Argus account, prompts you when a new device asks to join, and picks up removals without being opened.
-- a7fd4d3: Sign in at houwert.dev/argus/app to use Argus from any browser: approve it once from your iPhone or Mac, then open any computer on your account through its tunnel.
-- a7fd4d3: Watching an iOS simulator from your phone or another Mac now adapts the video to the connection, lowering quality smoothly on a slow link instead of stuttering, while the picture on the host stays full quality.
-- a7fd4d3: Chats you ran with the Claude Code CLI in a project's folder — in a terminal or another app — now show up in that project's chat history, marked Imported, and can be resumed in Argus. Turn it off or import right away in Settings → Agents.
-- a7fd4d3: Add the projects you've used the Claude Code CLI in all at once with Import from Claude Code, next to Add repository. Busy, recently used ones are picked for you, and their chats come along into history.
-- a7fd4d3: Pick a colour theme — Amber, Grove, Ocean, Ember, Iris or Rose — in Settings → Appearance. Each tints the accent and backgrounds in both light and dark, on the desktop, the Mac app and the phone.
-- a7fd4d3: The runtime panel's Design mode shows how much of the screen differs from the design, with a heatmap next to the slider and side-by-side views.
-- a7fd4d3: Figma links in issues and design chips in the start composer open in the design viewer; what you'd typed in the composer is still there when you come back.
-- a7fd4d3: Agents now build UI against the Figma design in a loop: the session's frames are saved in its worktree, agents can export the frame's icons, and a new compare tool diffs the running simulator against the design at the same pixel size. Pull requests link the ticket and design, and the Linear comment shows the design next to the implementation.
-- a7fd4d3: The iPhone app opens Figma frames in a design viewer with their layers, comments and pages. Figma links in issues open there, sessions show their issue and designs, and a session's design can be compared against a running simulator.
-- a7fd4d3: The Mac app opens Figma frames in a design viewer with their layers, comments and pages, and compares them against the session's simulator. The session's context card lists its issue and design frames, and Figma links in issues open in the viewer.
-- a7fd4d3: Figma frames open in a design viewer inside Argus: zoom and pan the frame, read its layers and designer comments, move between the file's frames, and — from a session — see whether the design changed and compare it against the simulator.
-- a7fd4d3: The phone app lists EAS Simulator hosts with their running sessions, and with control access can start a billed session (after confirming the cost) or end one from the device screen.
-- a7fd4d3: Argus for Mac can add, edit and check EAS Simulator hosts under Settings → Tools, and waits for a slow simulator boot instead of timing out after 30 seconds.
-- a7fd4d3: Add EAS Simulator hosts: stream and drive iOS simulators in Expo's cloud alongside your local and SSH devices. Each opened device is a billed session with run, idle and concurrency limits, stopped when you close it, remove the host or quit Argus.
-- a7fd4d3: Argus Server updates to the new native Argus Server from its menu bar: pick **Install New Argus Server** (or let it install when idle) and it swaps itself for the native app, keeping your devices, sessions and account.
-- a7fd4d3: Connect Figma in Settings → Integrations and give agents the designs to match: paste a frame link into the start composer, or let a Linear issue bring its own. Agents can read frames, layers and designer comments, and the runtime panel's new Design mode compares a frame with the running app.
-- a7fd4d3: Sign in to Figma through the browser from Settings → Integrations, instead of pasting a personal access token that expires.
-- a7fd4d3: When an agent finishes, Argus suggests replies based on its last message. Pick one above the chat input, or press Tab, to fill it in — on the desktop, the web and the iPhone. Turn it off under Settings → Agents.
-- a7fd4d3: The Home screen shows how much of your Claude plan limits is left at the top, and opens the Usage screen when clicked. The Active agents and Devices sections are gone from Home.
-- a7fd4d3: On the phone, starting an agent now asks what it should do and where it runs — this session, a new worktree, or an existing branch — in one sheet, and a new worktree keeps the model and permission mode you picked.
-- a7fd4d3: Filter the Issues board like in Linear: team, status, assignee, creator, priority, estimate, labels, due and other dates, project, cycle (including Current cycle), pull requests and text, each switchable between is and is not.
-- a7fd4d3: The issue board uses Linear's own status and label colors, opens on every status that has open issues, and lists all of your teams' statuses under hidden columns.
-- a7fd4d3: Filter your Linear issues on iPhone by team, status, assignee, priority, labels, cycle, text and more.
-- a7fd4d3: Filter the Mac app's Issues board and list like in Linear, with the same fields as the desktop, including Current cycle.
-- a7fd4d3: Change an issue's status or priority from a menu you can search and pick from by number (`S` / `P` open it). Hovering shows how long the issue spent in each status.
-- a7fd4d3: Search every issue in your Linear workspace from the Issues screen in the Mac app (⌘F) and on iPhone, not just the ones assigned to, created by or subscribed to by you.
-- a7fd4d3: Search every issue in your Linear workspace from the Issues screen, not just the ones assigned to, created by or followed by you.
-- a7fd4d3: File a Linear bug straight from the simulator or emulator, with a screenshot and the device attached, and optionally hand it to a new agent right away.
-- a7fd4d3: Videos and images attached to Linear issues play and show inline in the issue, instead of as links you have to open in Linear.
-- a7fd4d3: Connect Linear in Settings → Integrations with a personal API key. Argus keeps the sign-in itself, so it no longer depends on an MCP login staying alive.
-- a7fd4d3: The iPhone app's Linear issues show the same cards as the desktop, switch between Assigned, Created and Subscribed, and open into a full issue view where you can change its status and priority, comment, and start an agent.
-- a7fd4d3: Argus for Mac's Issues screen is now a Linear board with status columns and priority swimlanes, a list view, Assigned / Created / Subscribed scopes, and an issue inspector where you comment, change status and priority, and start an agent.
-- a7fd4d3: The Issues screen is now a Linear board: a column per status, a swimlane per priority, Assigned / Created / Subscribed views, and a detail view where you read the whole ticket, comment, change its status and priority, and start an agent on it.
-- a7fd4d3: The iPhone shows a Linear issue the way Linear does: properties, coloured labels, related issues, resources, and an activity timeline of changes and comment threads you can reply in.
-- a7fd4d3: In the Mac app, a Linear issue opens as a full page with its properties beside it, copy link, ID and branch buttons, previous and next issue, and an activity timeline with threaded replies.
-- a7fd4d3: Issues open as a full page like in Linear: the whole activity feed with comment threads, replies and reactions, related issues, linked pull requests, colored labels, t-shirt estimates, and previous / next to walk your list.
-- a7fd4d3: Start agents from Linear issues on your iPhone: pick one or several in New agent and each gets its own worktree and agent. Sessions started from an issue link back to it, and the computer's page shows which integrations are connected.
-- a7fd4d3: The Mac app can start sessions from Linear issues in New Session, shows a session's issue in its context card, and connects Linear and Figma in Settings → Integrations.
-- a7fd4d3: The iPhone app has a Linear issues list in the inbox: open the session already on an issue, or start an agent on it in the project you pick.
-- a7fd4d3: The Mac app's sidebar shows an Issues screen while Linear is connected, listing your open issues with the session on each or a one-click start.
-- a7fd4d3: A new Issues screen in the sidebar lists your open Linear issues, shows which ones an agent is already working on, and starts an agent on any of the others in one click.
-- a7fd4d3: Automations that watch Linear fetch your issues through the Linear connection in Settings → Integrations, so they no longer spend agent time on it or stop when an MCP sign-in expires.
-- a7fd4d3: Sign in to Linear through the browser from Settings → Integrations, on the desktop and the Mac app, as an alternative to pasting an API key. The sign-in refreshes itself.
-- a7fd4d3: When a session's pull request opens or it merges, Argus comments on its Linear issue with the changes and screenshots of the session's simulators. Choose when under Settings → Integrations → Report back.
-- a7fd4d3: Start agents from Linear issues: pick one or several in the start composer, or paste an issue link. Each issue gets its own worktree on Linear's branch name, moves to In Progress, and agents can read and comment on issues themselves.
-- a7fd4d3: Argus for Mac checks for updates on your update channel, and **Check for Updates…** in the Argus menu checks right away.
-- a7fd4d3: The Mac app's dropdowns now open right below their button as a styled list with icons, shortcuts and checkmarks, and "Open in" shows each editor's own app icon.
-- a7fd4d3: The Mac app has a calmer, flatter look: a searchable sidebar with compact session rows and its other screens as small icons along the bottom, a "Project / Session" breadcrumb with icon toggles in the toolbar, and a small card showing the session's machine, editor, branch, push and changes.
-- a7fd4d3: The Mac app has a Git menu with Grove's shortcuts for fetch, pull, push, branch, merge, rebase, pull requests, commit and stash while a session's git panel is open.
-- a7fd4d3: The Mac app's Home shows your Claude plan limits at a glance next to the title and drops the Active agents and Devices sections.
-- a7fd4d3: The Mac app's issue board matches Linear's: it opens on the backlog and every status with open issues, lists all of your teams' statuses under hidden columns, uses Linear's status and label colors, and filters from a searchable two-step menu.
-- a7fd4d3: An issue's status and priority open a searchable menu like Linear's, with number keys to pick a value and S / P to open it in the Mac app. Hovering a property shows how long the issue spent in each status, or who last changed it.
-- a7fd4d3: The Mac app plays videos and shows images attached to Linear issues inline in the issue.
-- a7fd4d3: Argus for Mac has a menu bar item: agents that need you and what's running, pairing a device, approving a join, your Argus account and updates. Turn it off, or have Argus open at login, in Settings → General; it starts off when Argus Server is installed.
-- a7fd4d3: Mac chats read in one centred column: replies sit on the page, each turn's tool calls fold into a "Worked for …" line you can open, and the message box keeps model, effort and permission mode as pills along its foot. A new agent opens on a centred "What should we work on?" prompt.
-- a7fd4d3: In the Mac app, a session's context card now switches between its Agent, Code and Git views and lists its recent chats in a searchable dialog. Sessions open on their agents, with the "What should we work on?" composer when none are running yet.
-- a7fd4d3: The Mac app's Settings now lists its sections on the left and lays each one out as clean groups of rows, with colour scheme and colour theme picked from preview cards. The command palette groups its results with their shortcuts and shows the keys that drive it.
-- a7fd4d3: The Mac app's terminals, device, browser, files, diff and pull request now open as tabs in one side panel that stays closed until you open it, with a + menu, letter shortcuts and a button to fill the window.
-- a7fd4d3: Add Muted, a black-and-white colour theme that is now the default. Anyone who already picked a colour theme keeps it.
-- a7fd4d3: Argus Server is now a native Mac app: a menu bar item that keeps your agents running, pairs devices with a QR code, links to your Argus account and approves joins, opens at login, comes back after a crash, and updates itself when no agent is running.
-- a7fd4d3: First-run onboarding now suggests the projects you've used the Claude Code CLI in, with their chat counts and when you last worked there, so you can pick several and add them in one go.
-- a7fd4d3: Stream and control iOS simulators running on another Mac over SSH. Add the Mac under Settings → Tools → Device hosts, and its simulators show up in every device picker, on the Mac app and on your phone, labelled with that Mac's name.
-- a7fd4d3: The iPhone app, the Mac app and the desktop app move to a faster way into a computer when your network changes, and fall back to the next one when an address stops answering.
-- a7fd4d3: Argus Server's menu bar item can now link the server to your Argus account, approve devices waiting to join, switch the managed tunnel, rename the computer and unlink it.
-- a7fd4d3: A session shows chips for its issue and design frames next to its name; the issue opens over the Issues board and the frames in the design viewer.
-- a7fd4d3: Start an agent by typing on a project's home: choose whether it runs in the current checkout or a new worktree, and the branch is named from your prompt. This replaces the separate New Session and Start Agent dialogs.
-- a7fd4d3: The Usage screen gains Cost and Tokens tabs that chart your Claude Code usage over the past day, week, month or quarter, with an estimated API cost, a split by token type and a per-model breakdown.
-- a7fd4d3: A new Usage screen shows how much of each Claude plan limit is left — the 5-hour session, weekly caps and monthly spend — with reset countdowns and whether you are ahead of pace.
+- eb319bc: The session card on the Mac and the agent screen on iOS show the agent's MCP servers and whether each one connected, along with the Claude account it runs as.
+- e2df032: Agents and commands Claude starts in the background now show that they are still running, with a live timer, and how long they took once they finish. The turn summary on the Mac also says how many are still running.
+- d57839f: Switching the Claude account in a chat now moves the running conversation onto the new account. A busy agent switches as soon as its current turn ends.
+- ec21488: The design viewer in the Mac and iOS apps lets you select layers: click one on the frame or in the layer tree to outline it, see its position, size, fill, font and text, and fold groups in the tree.
+- 3ac31a4: When a chat hits your Claude plan's usage limit, it now offers your other signed-in accounts that still have usage left, so you can continue on one of them with a click. Argus never switches accounts on its own.
+- 8470213: Right-click an agent tab in the Mac app to rename it, copy its ID, stop it, reveal its session in Finder, or close it, the others, those to either side, the idle ones or all of them.
+- 7dc99f4: The Mac app's new-agent composer lets you start in the current checkout or a new worktree off a base branch, shows the branch and its open pull request, lets you switch project from the title, and its model pill names the model it will run.
+- 2b1182f: Resting the pointer on a session in the Mac sidebar shows a card with its branch, changes, upstream state and agent activity.
+- 61d8ed4: Starting an agent from the Mac app or your phone is as instant as on the desktop: Argus keeps an agent warmed up for the session you're looking at, on whichever device you're looking from.
+- 7746acf: Settings has a Warm agents option: keep none, one or two agents started for the sessions you're looking at, trading memory for instant starts.
 
 ### Patch Changes
 
-- a7fd4d3: A Mac or iPhone waiting to join your account now picks up where it left off after a restart instead of asking again, and a device approved while it was closed shows the code to check and joins once you confirm it.
-- a7fd4d3: Computers on your Argus account now flip between online and offline while the list is open, instead of only when you reopen it.
-- a7fd4d3: Clickable chips in the Mac app now show the pointing-hand cursor.
-- a7fd4d3: Chat history no longer fills up with one-off title generation chats from the Claude Code CLI.
-- a7fd4d3: Bundles conductor 0.34.2, which can drive macOS apps and picks devices by name.
-- a7fd4d3: The context meter shows the right window size for 1M-context models like Opus 5.5 and Sonnet 5 from the first message, and remembers it across restarts.
-- a7fd4d3: EAS Simulator devices show apps that turn sideways upright, with taps landing where you touch.
-- a7fd4d3: The desktop and Mac apps now ask you to confirm the cost before booting an EAS Simulator device starts a billed session.
-- a7fd4d3: Sessions on an external drive become available again as soon as the drive is reconnected.
-- a7fd4d3: The Sign in with GitHub button shows the GitHub mark on the Mac and the iPhone.
-- a7fd4d3: Sessions with no line changes no longer show a "+0 −0" diff stat.
-- a7fd4d3: When the Mac or iPhone app asks a host running an older Argus for something it doesn't support yet, it now says the host needs updating instead of showing an "unknown command" error.
-- a7fd4d3: Figma links to frames nested inside components now open the right frame, and moving a Linear issue to In Progress works whichever way the issue was referenced.
-- a7fd4d3: A computer on your Argus account shows its own id under Gateway on the iPhone instead of an empty device line.
-- a7fd4d3: The Issues board hides Triage, Backlog and done, canceled or duplicate statuses by default, like Linear, lists them beside the board to show again, and has a Current cycle filter.
-- a7fd4d3: The "Land this work" card on a session's home is cleaner: the branch and its base sit in the header, commit sits next to the change count, and push, pull request and merge share one row.
-- a7fd4d3: The Mac app's account settings show proper buttons with the pointing hand.
-- a7fd4d3: The released Mac app signs in with Apple in a browser sheet, since Apple doesn't allow the system sheet in apps distributed outside the App Store.
-- a7fd4d3: Opening a running automation's session in the Mac app shows its agent's live transcript again, labelled as an automation instead of by its run id.
-- a7fd4d3: The Mac app shows the pointing hand over every clickable control, not just tabs.
-- a7fd4d3: In the Mac app, ⌘W closes the agent tab in front before closing the window tab or the window.
-- a7fd4d3: The Mac app's code view now matches the rest of the app: a flat navigator that starts below the toolbar, quiet Files/Search/Changes tabs and a calmer editor tab bar.
-- a7fd4d3: The Mac app's git view now matches the rest of the app: a flat refs sidebar that starts below the toolbar, quiet tabs, and a calmer commit box, file list and diff.
-- a7fd4d3: In the Mac app, the copy, edit and fork buttons on your own messages appear beside the message instead of covering it.
-- a7fd4d3: An issue's properties sit in a card like the session card, with Start agent on top and status and priority as rows that open their menus.
-- a7fd4d3: Linking this Mac to your Argus account says why it failed instead of doing nothing.
-- a7fd4d3: Signing in to Linear or Figma from the Mac app's settings now shows as connected once you approve in the browser, even if that takes a while.
-- a7fd4d3: Project icons in the Mac app show each project's colour again, matching the desktop app.
-- a7fd4d3: Hovering a project in the Mac app's sidebar turns its icon into the collapse chevron.
-- a7fd4d3: Run and Share only show on a session's Agent view in the Mac app.
-- a7fd4d3: In the Mac app, a message you just sent shows its whole bubble straight away instead of starting cut off.
-- a7fd4d3: Argus for Mac offers Sign in with Apple for your Argus Account, next to GitHub and an emailed code.
-- a7fd4d3: The Mac app's Status filter lists statuses in workflow order and tucks the ones no issue is in under "options not matching any issues", like Linear.
-- a7fd4d3: The Mac app shows the pointing hand when hovering agent tabs and other tab strips.
-- a7fd4d3: The Mac app's session toolbar shows its view and panel buttons in native toolbar capsules.
-- a7fd4d3: Toolbar buttons in the Mac app use the system's own hover and pressed states.
-- a7fd4d3: The side panel toggle and run controls sit at the right edge of the Mac app's toolbar.
-- a7fd4d3: Switches use amber when they're on in the Muted colour theme.
-- a7fd4d3: Onboarding shows in Argus's amber colors, whatever color theme is picked later.
-- a7fd4d3: The Back, Skip and Continue buttons in the Mac app's first-run setup stay pinned to the bottom while the step scrolls.
-- a7fd4d3: A session's Recent Chats no longer lists chats that are still running, and a past chat that can't be opened now says why instead of looking empty. Past chats from scratch pads and automation runs can be read from the Mac and iPhone apps.
-- a7fd4d3: Sending a queued message now adds it to the agent's current turn instead of stopping the agent, so its running work and background tasks carry on.
-- a7fd4d3: The whole segment of a segmented control is clickable, not just its label.
-- a7fd4d3: Sessions created elsewhere no longer stay stuck on "Setting up…" in the Mac and iPhone apps once their setup finishes.
-- a7fd4d3: The sidebar's ahead and behind counts now update right after you push, pull or fetch.
-- a7fd4d3: Simulator video is no longer reachable by other machines on your network; remote viewers still connect through the paired, encrypted connection.
-- a7fd4d3: Queued messages in the web client can now be sent right away.
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-- Updated dependencies [a7fd4d3]
-  - @argus/peacock@0.26.0
+- 9d18850: On the Mac, "Attached to" moves out of the toolbar into a small link icon at the foot of the sidebar.
+- 1dfceb5: Figma links to a branch now open the branch's version of the frame instead of the main file's.
+- 1d9d12e: The "Attached to" badge in the Mac toolbar no longer sits inside a second background.
+- d56e256: The Mac app and phone no longer show the desktop window's background spare agent as an empty chat, so a prompt typed there can't vanish.
+- 73c26cd: The Issues toolbar on the Mac draws its scope and layout switches without a doubled background, and you pick the project when you start an agent on an issue instead of in the toolbar.
+- e96f9b7: ⌘W in the Mac app no longer closes the whole window when there is no agent or tab left to close.
+- 0a2a454: The Mac app now asks before ⌘W closes an agent tab, since closing it stops the agent.
+- b2f9513: A new agent's tab in the Mac app no longer disappears when you start another agent.
+- 96cfc9e: The Mac app no longer cuts off the agent's working indicator, or a queued first message, at the foot of a new chat.
+- db19fdc: Toggling a linked project, or any option that keeps its menu open, no longer freezes the Mac app.
+- 1ae2d52: The plan review buttons sit in a single row, and stack into a column only when there isn't room.
+- 0d75df5: Approving a plan in a new session starts that session and its agent again, instead of only opening the project with the plan filled in.
+- 0125d4a: The full plan view on the Mac opens at a readable size instead of a narrow strip.
+- 4183fbc: The running indicator in a project's sidebar header sits next to its branch name again.
+- a9fdcdf: The agent status dot no longer bounces around while the agent is working or waiting for permission.
+- 625cb98: The Add Project sheet on the Mac opens tall enough to review the suggested project setup without cramped scrolling.
+- a50b5f2: A chat started in the Mac app from an empty agent tab the desktop window had warmed up is now saved to Recent Chats, and is no longer stopped when the desktop window navigates away.
+- Updated dependencies [e2df032]
+  - @argus/peacock@0.27.0
 

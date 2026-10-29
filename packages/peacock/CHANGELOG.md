@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.27.0
+
+### Minor Changes
+
+- e2df032: Agents and commands Claude starts in the background now show that they are still running, with a live timer, and how long they took once they finish. The turn summary on the Mac also says how many are still running.
+
 ## 0.26.0
 
 ### Minor Changes
