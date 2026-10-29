@@ -371,9 +371,10 @@ export function updateLinearIssue(
 export function commentOnLinearIssueById(
   issueId: string,
   body: string,
+  parentId: string | null = null,
 ): Promise<void> {
   return withLinear(async (api) => {
-    await api.comment(issueId, body);
+    await api.comment(issueId, body, parentId);
     capture("linear_issue_updated", { field: "comment" });
   });
 }

@@ -85,6 +85,8 @@ export const LinearIssue = z.object({
   /** Linear's 0–4, where 1 is urgent and 0 is none. */
   priority: z.number(),
   estimate: z.number().nullable(),
+  /** The team's estimate scale: `tShirt`, `fibonacci`, `linear`, `exponential`. */
+  estimateType: z.string().nullish(),
   teamId: z.string(),
   teamKey: z.string(),
   teamName: z.string(),
@@ -114,7 +116,15 @@ export const LinearIssue = z.object({
 export type LinearIssue = z.infer<typeof LinearIssue>;
 
 export const LinearComment = z.object({
+  id: z.string().nullish(),
+  /** The comment this one replies to; null starts a thread. */
+  parentId: z.string().nullish(),
   author: z.string().nullable(),
+  authorAvatarUrl: z.string().nullish(),
+  /** Emoji with how many people reacted with it. */
+  reactions: z
+    .array(z.object({ emoji: z.string(), count: z.number() }))
+    .nullish(),
   body: z.string(),
   /** Epoch milliseconds. */
   createdAt: z.number(),
@@ -123,6 +133,8 @@ export type LinearComment = z.infer<typeof LinearComment>;
 
 export const LinearAttachment = z.object({
   title: z.string(),
+  /** Epoch milliseconds. */
+  createdAt: z.number().nullish(),
   subtitle: z.string().nullable(),
   url: z.string(),
   /** `github`, `gitlab`, `slack`, … when Linear knows. */
@@ -130,8 +142,60 @@ export const LinearAttachment = z.object({
 });
 export type LinearAttachment = z.infer<typeof LinearAttachment>;
 
+/** One line of an issue's activity: who did what, already phrased. */
+export const LinearHistoryEvent = z.object({
+  id: z.string(),
+  /** Epoch milliseconds. */
+  createdAt: z.number(),
+  /** Null when Linear itself did it (cycle rollover, automations). */
+  actor: z.string().nullable(),
+  actorAvatarUrl: z.string().nullable(),
+  /** What changed, for the icon. */
+  kind: z.enum([
+    "assignee",
+    "attachment",
+    "created",
+    "cycle",
+    "description",
+    "due",
+    "estimate",
+    "labels",
+    "other",
+    "parent",
+    "priority",
+    "project",
+    "relation",
+    "status",
+    "title",
+  ]),
+  /** "set priority to High" — the actor's name goes in front. */
+  text: z.string(),
+});
+export type LinearHistoryEvent = z.infer<typeof LinearHistoryEvent>;
+
 export const LinearIssueDetail = LinearIssue.extend({
   comments: z.array(LinearComment),
+  /** Oldest first, starting with the issue's creation. */
+  history: z.array(LinearHistoryEvent).nullish(),
+  subscribers: z
+    .array(z.object({ name: z.string(), avatarUrl: z.string().nullable() }))
+    .nullish(),
+  relations: z
+    .array(
+      z.object({
+        /** `related`, `blocks`, `blocked_by`, `duplicate`, `duplicate_of`. */
+        type: z.string(),
+        identifier: z.string(),
+        title: z.string(),
+        state: z.object({ name: z.string(), type: z.string() }),
+      }),
+    )
+    .nullish(),
+  /** Each label with its Linear color (`#rrggbb`). */
+  labelColors: z
+    .array(z.object({ name: z.string(), color: z.string() }))
+    .nullish(),
+
   attachments: z.array(LinearAttachment),
   children: z.array(
     z.object({
