@@ -36,24 +36,43 @@ struct IssuesBoard: View {
     }
   }
 
+  private static let columnSpacing: CGFloat = 12
+
+  /// The width every lane spans: all columns and the gaps between them.
+  private func boardWidth(_ count: Int) -> CGFloat {
+    CGFloat(count) * Self.columnWidth + CGFloat(max(count - 1, 0)) * Self.columnSpacing
+  }
+
   private func board(_ columns: [LinearIssueBoard.Column]) -> some View {
-    ScrollView([.horizontal, .vertical]) {
-      LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
+    // A two-axis scroll view centres content smaller than itself; filling at
+    // least the viewport and aligning top-leading keeps the board in the corner.
+    GeometryReader { viewport in
+      ScrollView([.horizontal, .vertical]) {
+        boardContent(columns)
+          .frame(
+            minWidth: viewport.size.width, minHeight: viewport.size.height, alignment: .topLeading)
+      }
+    }
+  }
+
+  private func boardContent(_ columns: [LinearIssueBoard.Column]) -> some View {
+    LazyVStack(alignment: .leading, spacing: 0, pinnedViews: .sectionHeaders) {
         Section {
           // Lanes count only what's on the board, so a lane of hidden issues disappears.
           ForEach(LinearIssueBoard.lanes(columns.flatMap(\.issues))) { lane in
-            laneHead(lane)
+            laneHead(lane, width: boardWidth(columns.count))
             if !collapsed.contains(lane.priority) {
-              HStack(alignment: .top, spacing: 12) {
+              HStack(alignment: .top, spacing: Self.columnSpacing) {
                 ForEach(columns) { column in
                   cell(LinearIssueBoard.cell(column, lane: lane))
                 }
               }
-              .padding(.bottom, 12)
+              .padding(.top, 6)
+              .padding(.bottom, 16)
             }
           }
         } header: {
-          HStack(spacing: 12) {
+          HStack(spacing: Self.columnSpacing) {
             ForEach(columns) { columnHead($0) }
           }
           .padding(.vertical, 8)
@@ -62,9 +81,6 @@ struct IssuesBoard: View {
       }
       .padding(.horizontal, 16)
       .padding(.bottom, 16)
-    }
-    // A board narrower or shorter than the window starts top-left, not centred.
-    .defaultScrollAnchor(.topLeading)
   }
 
   private func columnHead(_ column: LinearIssueBoard.Column) -> some View {
@@ -112,7 +128,8 @@ struct IssuesBoard: View {
     .padding(.trailing, 16)
   }
 
-  private func laneHead(_ lane: LinearIssueBoard.Lane) -> some View {
+  /// A full-width bar per priority, so the lanes read as rows across every column.
+  private func laneHead(_ lane: LinearIssueBoard.Lane, width: CGFloat) -> some View {
     let folded = collapsed.contains(lane.priority)
     return Button {
       if folded { collapsed.remove(lane.priority) } else { collapsed.insert(lane.priority) }
@@ -123,10 +140,14 @@ struct IssuesBoard: View {
           .foregroundStyle(theme.textMuted)
           .frame(width: 10)
         PriorityGlyph(priority: lane.priority)
-        Text(lane.title).font(.scaled(size: 12, weight: .semibold)).foregroundStyle(theme.textSecondary)
+        Text(lane.title).font(.scaled(size: 13, weight: .semibold)).foregroundStyle(theme.text)
         Text("\(lane.count)").font(.scaled(size: 12)).foregroundStyle(theme.textMuted)
+        Spacer(minLength: 0)
       }
-      .padding(.vertical, 6)
+      .padding(.horizontal, 10)
+      .padding(.vertical, 8)
+      .frame(width: width, alignment: .leading)
+      .background(theme.bgSecondary, in: RoundedRectangle(cornerRadius: 8))
       .contentShape(Rectangle())
     }
     .buttonStyle(.argusPlain)
@@ -147,6 +168,10 @@ struct IssuesBoard: View {
         .buttonStyle(.argusPlain)
       }
     }
-    .frame(width: Self.columnWidth, alignment: .top)
+    // Inset so the padded cell is exactly a column wide, under its header.
+    .frame(width: Self.columnWidth - 12, alignment: .top)
+    .frame(minHeight: 44, alignment: .top)
+    .padding(6)
+    .background(theme.bgSecondary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8))
   }
 }
