@@ -43,7 +43,6 @@ function addAgent(agentId: string, over: Partial<AgentSession> = {}): void {
     model: "claude-opus-5",
     turnsCompleted: 0,
     inflightPrompts: 0,
-    prewarmed: false,
     ...over,
   } as AgentSession);
 }

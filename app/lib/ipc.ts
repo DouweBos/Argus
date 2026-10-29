@@ -109,6 +109,7 @@ import type {
   RemoteConfigPatch,
   RemoteStatus,
   Session,
+  StartOptions,
   UploadedAttachment,
   UserProjectSettings,
   DeviceOrientation,
@@ -1286,21 +1287,18 @@ export const setAgentEffort = (
   level: string | null,
 ): Promise<void> => invoke("set_agent_effort", { agentId, level });
 
-export const prewarmAgent = (sessionId: string): Promise<AgentStatus> =>
-  invoke("prewarm_agent", { sessionId });
+export const setViewingSession = (
+  sessionId: string | null,
+  viewerId: string,
+  runnerId?: string | null,
+): Promise<void> =>
+  invoke("set_viewing_session", { sessionId, viewerId, runnerId });
 
-export const claimPrewarmAgent = (
-  agentId: string,
-  opts: { model?: string; permissionMode?: string } = {},
-): Promise<AgentStatus> =>
-  invoke("claim_prewarm_agent", {
-    agentId,
-    model: opts.model,
-    permissionMode: opts.permissionMode,
-  });
-
-export const discardPrewarmAgent = (agentId: string): Promise<void> =>
-  invoke("discard_prewarm_agent", { agentId });
+export const getStartOptions = (
+  sessionId: string,
+  runnerId?: string | null,
+): Promise<StartOptions> =>
+  invoke("get_start_options", { sessionId, runnerId });
 
 export const respondToPermission = (
   agentId: string,

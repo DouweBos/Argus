@@ -10,14 +10,11 @@
 
 export {
   checkClaudeCli,
-  claimPrewarmAgent,
-  discardPrewarmAgent,
   emitMcpSystemMessage,
   ensureSimulatorForAgent,
   ensureWebBrowserForAgent,
   interruptAgent,
   listAgents,
-  prewarmAgent,
   respondToPermission,
   restoreAgentAtTurn,
   sendAgentMessage,

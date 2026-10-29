@@ -73,7 +73,6 @@ export class WatcherHandle {
     for (const a of appState.agents.values()) {
       if (
         a.sessionId === this.sessionId &&
-        !a.prewarmed &&
         a.status !== "stopped" &&
         a.status !== "error"
       ) {

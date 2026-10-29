@@ -118,17 +118,6 @@ export const AGENT_COMMANDS = {
     params: SessionId.extend({ runnerId: z.string().nullish() }),
     result: StartOptions,
   },
-  /** Spawn a hidden agent ahead of need, so the next start skips the handshake. */
-  prewarm_agent: { tier: "admin", params: SessionId, result: AgentInfo },
-  claim_prewarm_agent: {
-    tier: "admin",
-    params: AgentId.extend({
-      model: z.string().optional(),
-      permissionMode: z.string().optional(),
-    }),
-    result: AgentInfo,
-  },
-  discard_prewarm_agent: { tier: "admin", params: AgentId, result: Void },
   /** Snapshot the session worktree before a prompt, to restore it later. */
   create_checkpoint: { tier: "admin", params: SessionId, result: Checkpoint },
   restore_checkpoint: { tier: "admin", params: CheckpointRef, result: Void },

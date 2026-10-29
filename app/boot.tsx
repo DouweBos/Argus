@@ -19,11 +19,11 @@ import { initHuddleDeviceMirror } from "./lib/huddleDeviceMirror";
 import { getTelemetryInit, setTelemetryModeOnMain } from "./lib/ipc";
 import { initNotificationsListener } from "./lib/notificationsService";
 import { initPendingSessionPrompts } from "./lib/pendingSessionPrompts";
-import { initPrewarm } from "./lib/prewarmService";
 import { bootstrapProjects } from "./lib/projectsService";
 import { initPushNotificationsListener } from "./lib/pushNotificationsService";
 import { initSessionEventListeners } from "./lib/sessionEventListeners";
 import { initTelemetry, capture as telemetryCapture } from "./lib/telemetry";
+import { initViewingHint } from "./lib/viewingHint";
 import { initConductorLogListener } from "./stores/conductorLogStore";
 import { initDevicePolling } from "./stores/deviceStore";
 import { initHuddleRooms } from "./stores/huddleStore";
@@ -125,11 +125,9 @@ export function boot(popoutMode: string | null, params: URLSearchParams): void {
     initPushNotificationsListener();
     // Dispatch captured initial prompts once their session's worktree is ready.
     initPendingSessionPrompts();
-    // Keep at most one Claude subprocess warmed up — for the currently
-    // selected, agent-less session — so its start composer gets real
-    // model + slash-command lists ahead of time and the first send skips
-    // the spawn + initialize wait.
-    initPrewarm();
+    // Tell the host which session this window shows, so it keeps a warm
+    // agent there and the first start skips the spawn + initialize wait.
+    initViewingHint();
     // Keep the poppedOut-agents set in sync with the backend so every window's
     // tab bar hides agents that are currently detached.
     initAgentPopoutSync();

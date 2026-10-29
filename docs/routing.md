@@ -230,7 +230,7 @@ Wired in `app/components/layout/NavigationDeepLinkBridge.tsx`:
 
 Title-bar buttons read `useCanGoBack()` / `useCanGoForward()` from `tabStore`.
 The `router:historychange` event dispatched from `useRegisterNavigator` is now
-only a "the route changed" ping (the prewarm service listens to it).
+only a "the route changed" ping (the viewing hint listens to it).
 
 ## Deep links
 

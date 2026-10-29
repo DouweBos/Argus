@@ -50,7 +50,6 @@ describe("watcherHandle", () => {
       agentId: "agent-1",
       sessionId: "ws-1",
       status: "idle",
-      prewarmed: false,
     } as never);
   });
 

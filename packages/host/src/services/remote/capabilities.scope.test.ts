@@ -212,14 +212,21 @@ describe("an unscoped context is unaffected", () => {
     expect(devices.devices).toHaveLength(2);
   });
 
-  it("leaves out a window's warm spare agent", async () => {
-    appState.agents.set(
-      "warm",
-      Object.assign(agentFixture("warm", "s1"), { prewarmed: true }),
-    );
+  it("never lists a session's warm spare", async () => {
+    const { clearSpares, fillSpare } = await import("../agent/spares");
+    const spare = agentFixture("warm", "s1") as {
+      handle: Record<string, unknown>;
+    };
+    spare.handle.on = () => {};
+    spare.handle.kill = async () => {};
+    await fillSpare("s1", async () => ({
+      agent: spare as never,
+      configStamp: "x",
+    }));
     const agents = (await dispatch("agents.list", {}, ctx)) as {
       agents: { agent_id: string }[];
     };
+    clearSpares();
 
     expect(agents.agents.map((a) => a.agent_id).sort()).toEqual(["a1", "a2"]);
   });

@@ -1596,13 +1596,6 @@ export function sendAgentMessage(
   if (agentEntry.status === "stopped" || agentEntry.status === "error") {
     throw `Agent is not running: ${agentId}`;
   }
-  // Another client (the Mac app, a phone) can see a window's warm agent and
-  // send to it without claiming it; it'd never be folded or saved, and the
-  // window would discard it as soon as it navigated away.
-  if (agentEntry.prewarmed) {
-    agentEntry.prewarmed = false;
-    announceClaimed(agentEntry);
-  }
   cancelLimitResume(agentId);
   // The old child is being killed; stdin written now would be lost.
   const pendingRespawn = respawning.get(agentId);
@@ -1785,9 +1778,6 @@ export async function setAgentEffort(
 export function listAgents(sessionId: string): AgentInfo[] {
   const result: AgentInfo[] = [];
   for (const session of appState.agents.values()) {
-    if (session.prewarmed) {
-      continue;
-    }
     if (session.sessionId === sessionId) {
       result.push({
         agent_id: session.agentId,
@@ -1822,7 +1812,7 @@ export async function respawnAgent(
   if (!session) {
     return;
   }
-  const { sessionId, parentAgentId, prewarmed } = session;
+  const { sessionId, parentAgentId } = session;
 
   // Silence the kill → spawn status flicker in the UI.
   session.suppressStatus = true;
@@ -1864,81 +1854,8 @@ export async function respawnAgent(
     const fresh = appState.agents.get(agentId);
     if (fresh) {
       fresh.suppressStatus = false;
-      // A warm slot stays warm across the swap — the renderer's prewarm slot
-      // still points at this id.
-      fresh.prewarmed = prewarmed;
     }
   }
-}
-
-// ---------------------------------------------------------------------------
-// prewarm_agent / claim_prewarm_agent / discard_prewarm_agent
-// ---------------------------------------------------------------------------
-
-export async function prewarmAgent(sessionId: string): Promise<AgentInfo> {
-  // Prewarms spawn before the user picks a mode, so they take the spawn-time
-  // default (DEFAULT_AGENT_PERMISSION_MODE). The claim only needs a runtime
-  // `set_permission_mode` when the user actually chose a different mode.
-  // The Claude CLI accepts runtime switches to every mode except `trusted`
-  // (`bypassPermissions`), which remains spawn-only.
-  const spawned = await startAgent(sessionId);
-  const session = appState.agents.get(spawned.agent_id);
-  if (session) {
-    session.prewarmed = true;
-  }
-
-  return spawned;
-}
-
-export async function claimPrewarmAgent(
-  agentId: string,
-  opts: { model?: string; permissionMode?: string } = {},
-): Promise<AgentInfo> {
-  const session = appState.agents.get(agentId);
-  if (!session) {
-    throw `No agent found: ${agentId}`;
-  }
-  if (!session.prewarmed) {
-    throw `Agent ${agentId} is not prewarmed`;
-  }
-  // Flip prewarmed off up front so a concurrent reconcile() → discardSlot()
-  // (e.g. the user navigating away mid-claim) doesn't stopAgent() the
-  // subprocess out from under us and leave the just-claimed agent in error.
-  session.prewarmed = false;
-
-  if (opts.model && opts.model !== session.model) {
-    await setAgentModel(agentId, opts.model);
-  }
-  if (opts.permissionMode && opts.permissionMode !== session.permissionMode) {
-    await setAgentPermissionMode(agentId, opts.permissionMode);
-  }
-
-  return announceClaimed(session);
-}
-
-/** Only now is it a real agent: the host folds and saves its conversation from here. */
-function announceClaimed(session: AgentSession): AgentInfo {
-  const claimed: AgentInfo = {
-    agent_id: session.agentId,
-    session_id: session.sessionId,
-    status: session.status,
-    parent_agent_id: session.parentAgentId,
-    created_at: session.createdAt,
-    capabilities: session.handle.initializeResponse(),
-    model: session.model,
-    runner_id: session.runner.id,
-  };
-  emitHostEvent("agent:started", claimed);
-
-  return claimed;
-}
-
-export async function discardPrewarmAgent(agentId: string): Promise<void> {
-  const session = appState.agents.get(agentId);
-  if (!session || !session.prewarmed) {
-    return;
-  }
-  await stopAgent(agentId);
 }
 
 // ---------------------------------------------------------------------------

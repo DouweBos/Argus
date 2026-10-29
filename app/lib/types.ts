@@ -273,6 +273,7 @@ export type {
   AgentCapabilities,
   AgentModelInfo as ModelInfo,
   AgentSlashCommand as SlashCommand,
+  StartOptions,
 } from "@argus/remote-protocol";
 
 // ---------------------------------------------------------------------------

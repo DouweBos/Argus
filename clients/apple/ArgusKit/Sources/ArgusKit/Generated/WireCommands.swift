@@ -1129,31 +1129,6 @@ extension ArgusProtocol {
       }
     }
 
-    public struct ClaimPrewarmAgentParams: Codable, Sendable {
-      public var agentId: String
-      public var model: String?
-      public var permissionMode: String?
-
-      enum CodingKeys: String, CodingKey {
-        case agentId = "agentId"
-        case model = "model"
-        case permissionMode = "permissionMode"
-      }
-
-      public init(agentId: String, model: String? = nil, permissionMode: String? = nil) {
-        self.agentId = agentId
-        self.model = model
-        self.permissionMode = permissionMode
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(agentId, forKey: .agentId)
-        try c.encodeIfPresent(model, forKey: .model)
-        try c.encodeIfPresent(permissionMode, forKey: .permissionMode)
-      }
-    }
-
     public struct ClaudeAccountsAddParams: Codable, Sendable {
       public var useConsole: Bool?
 
@@ -2151,23 +2126,6 @@ extension ArgusProtocol {
         try c.encode(id, forKey: .id)
         try c.encode(patch, forKey: .patch)
         try c.encodeIfPresent(staged, forKey: .staged)
-      }
-    }
-
-    public struct DiscardPrewarmAgentParams: Codable, Sendable {
-      public var agentId: String
-
-      enum CodingKeys: String, CodingKey {
-        case agentId = "agentId"
-      }
-
-      public init(agentId: String) {
-        self.agentId = agentId
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(agentId, forKey: .agentId)
       }
     }
 
@@ -7438,23 +7396,6 @@ extension ArgusProtocol {
       }
     }
 
-    public struct PrewarmAgentParams: Codable, Sendable {
-      public var sessionId: String
-
-      enum CodingKeys: String, CodingKey {
-        case sessionId = "sessionId"
-      }
-
-      public init(sessionId: String) {
-        self.sessionId = sessionId
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(sessionId, forKey: .sessionId)
-      }
-    }
-
     public struct ProbeWorktreeLocationParams: Codable, Sendable {
       public var baseDir: String
       public var repoRoot: String?
@@ -10301,13 +10242,6 @@ extension ArgusProtocol {
       public static let tier = "admin"
     }
 
-    public enum ClaimPrewarmAgent: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.ClaimPrewarmAgentParams
-      public typealias Result = ArgusProtocol.AgentInfo
-      public static let name = "claim_prewarm_agent"
-      public static let tier = "admin"
-    }
-
     public enum ClaudeAccountsAdd: RemoteCommand {
       public typealias Params = ArgusProtocol.CommandsTypes.ClaudeAccountsAddParams
       public typealias Result = ArgusProtocol.ClaudeLoginUrl
@@ -10641,13 +10575,6 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.DiscardHunkParams
       public typealias Result = IgnoredResult
       public static let name = "discard_hunk"
-      public static let tier = "admin"
-    }
-
-    public enum DiscardPrewarmAgent: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.DiscardPrewarmAgentParams
-      public typealias Result = IgnoredResult
-      public static let name = "discard_prewarm_agent"
       public static let tier = "admin"
     }
 
@@ -12545,13 +12472,6 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.CommandsTypes.PreviewReleaseNotesParams
       public typealias Result = ArgusProtocol.ReleaseNotesPreview
       public static let name = "preview_release_notes"
-      public static let tier = "admin"
-    }
-
-    public enum PrewarmAgent: RemoteCommand {
-      public typealias Params = ArgusProtocol.CommandsTypes.PrewarmAgentParams
-      public typealias Result = ArgusProtocol.AgentInfo
-      public static let name = "prewarm_agent"
       public static let tier = "admin"
     }
 

@@ -16,9 +16,6 @@ import { appState } from "@argus/host/state";
  * This mirrors the renderer's `inflight` tracking.
  */
 export function isAgentActive(a: AgentSession): boolean {
-  if (a.prewarmed) {
-    return false;
-  }
   if (a.status === "stopped" || a.status === "error") {
     return false;
   }

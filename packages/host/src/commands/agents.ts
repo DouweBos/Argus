@@ -1,12 +1,9 @@
 import { handoffAgentToAccount } from "../services/agent/accountSwitch";
 import {
   checkClaudeCli,
-  claimPrewarmAgent,
-  discardPrewarmAgent,
   interruptAgent,
   launchAgent,
   listAgents,
-  prewarmAgent,
   respondToPermission,
   restoreAgentAtTurn,
   sendAgentMessage,
@@ -106,16 +103,6 @@ export function registerAgentCommands(): void {
       viewerId: p.viewerId,
       runnerId: p.runnerId,
     }),
-  );
-  defineTypedCommand("prewarm_agent", (p) => prewarmAgent(p.sessionId));
-  defineTypedCommand("claim_prewarm_agent", (p) =>
-    claimPrewarmAgent(p.agentId, {
-      model: p.model,
-      permissionMode: p.permissionMode,
-    }),
-  );
-  defineTypedCommand("discard_prewarm_agent", (p) =>
-    discardPrewarmAgent(p.agentId),
   );
 
   defineTypedCommand("create_checkpoint", (p) => createCheckpoint(p.sessionId));

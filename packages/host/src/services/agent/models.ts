@@ -158,19 +158,10 @@ export interface AgentSession {
    */
   model: string | null;
   /**
-   * When true, this agent was eagerly spawned by the renderer to warm up
-   * the CLI subprocess + initialize handshake before the user actually
-   * needs it. Prewarmed agents are hidden from `listAgents` (so MCP tools
-   * and child-counters don't see them) and stay invisible to the UI until
-   * the renderer "claims" them by calling `claim_prewarm_agent`. On claim
-   * the flag flips to false and the slot becomes a normal agent.
-   */
-  prewarmed?: boolean;
-  /**
    * Permission mode the agent was last spawned with (canonical name, e.g.
-   * `auto` / `ask` / `plan` / `review` / `trusted`). Recorded so the prewarm
-   * claim path can skip a redundant runtime `set_permission_mode` when the
-   * claimed mode matches the spawn-time mode. Most modes (including `auto`)
+   * `auto` / `ask` / `plan` / `review` / `trusted`). Recorded so taking a warm
+   * spare can skip a redundant runtime `set_permission_mode` when the
+   * requested mode matches the spawn-time mode. Most modes (including `auto`)
    * can be switched at runtime via the control protocol; `trusted`
    * (`bypassPermissions`) is still spawn-only.
    */

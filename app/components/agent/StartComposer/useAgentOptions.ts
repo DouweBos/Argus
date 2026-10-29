@@ -1,11 +1,10 @@
 import type { CanonicalPermissionMode } from "../../../lib/permissionModes";
+import type { StartOptions } from "../../../lib/types";
 import type { RunnerSelection } from "../ModelPicker";
-import { useCallback, useMemo, useState } from "react";
-import { setAgentRunner } from "../../../lib/ipc";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { getStartOptions } from "../../../lib/ipc";
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
-import { refreshPrewarm } from "../../../lib/prewarmService";
-import { pushError } from "../../../stores/notificationsStore";
-import { usePrewarmSlot } from "../../../stores/prewarmStore";
+import { setComposerRunner } from "../../../lib/viewingHint";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { useSessions } from "../../../stores/sessionStore";
 import {
@@ -26,20 +25,38 @@ export function useAgentOptions(sessionId: string) {
   const [model, setModel] = useState(() => getDefaultModel() || "default");
   const [linkedProjects, setLinkedProjects] = useState<string[]>([]);
 
-  // Prefer capabilities from the session's prewarmed subprocess — those match
-  // the CLI the agent will claim. Fall back to whatever the most recent
-  // conversation reported while prewarm is still spawning or has failed.
-  const prewarmSlot = usePrewarmSlot(sessionId);
-  const cached = useMemo(() => getLastKnownCapabilities(), []);
-  const slashCommands = prewarmSlot?.slashCommands.length
-    ? prewarmSlot.slashCommands
-    : cached.slashCommands;
-
   const session = useSessions().find((s) => s.id === sessionId) ?? null;
   const registeredRunners = useRegisteredRunners();
-  const [runnerId, setRunnerId] = useState(
-    session?.runner_id ?? DEFAULT_LLM_RUNNER,
-  );
+  const sessionRunnerId = session?.runner_id ?? DEFAULT_LLM_RUNNER;
+  const [runnerId, setRunnerId] = useState(sessionRunnerId);
+
+  // The host answers from the CLI the start will take, else what that runner
+  // last reported; the local cache covers the round trip.
+  const [startOptions, setStartOptions] = useState<StartOptions | null>(null);
+  useEffect(() => {
+    let live = true;
+    getStartOptions(sessionId, runnerId)
+      .then((options) => live && setStartOptions(options))
+      .catch(() => {});
+
+    return () => {
+      live = false;
+    };
+  }, [sessionId, runnerId]);
+  const cached = useMemo(() => getLastKnownCapabilities(), []);
+  const slashCommands = startOptions?.slashCommands.length
+    ? startOptions.slashCommands
+    : cached.slashCommands;
+
+  // Warm the session's spare under the picked runner; the pick dies with the composer.
+  useEffect(() => {
+    setComposerRunner(
+      sessionId,
+      runnerId === sessionRunnerId ? null : runnerId,
+    );
+  }, [sessionId, runnerId, sessionRunnerId]);
+  useEffect(() => () => setComposerRunner(sessionId, null), [sessionId]);
+
   const runner: RunnerSelection = {
     currentId: runnerId,
     locked: false,
@@ -53,14 +70,6 @@ export function useAgentOptions(sessionId: string) {
       // runner's ids, so reset to the newly picked runner's default.
       setModel(next?.defaultModel ?? next?.models?.[0]?.value ?? "default");
       setRunnerId(id);
-      // Re-bind the warm subprocess now so starting is still instant; it ran
-      // under the old runner's env.
-      const warmAgentId = prewarmSlot?.agentId;
-      if (warmAgentId) {
-        setAgentRunner(warmAgentId, id)
-          .then(() => refreshPrewarm(sessionId))
-          .catch((err) => pushError(String(err), "set_agent_runner"));
-      }
     },
   };
 
@@ -72,8 +81,14 @@ export function useAgentOptions(sessionId: string) {
       return declared;
     }
 
-    return prewarmSlot?.models.length ? prewarmSlot.models : cached.models;
-  }, [registeredRunners, runnerId, prewarmSlot, cached.models]);
+    return startOptions?.models.length
+      ? startOptions.models.map((m) => ({
+          value: m.value,
+          displayName: m.displayName,
+          description: m.description,
+        }))
+      : cached.models;
+  }, [registeredRunners, runnerId, startOptions, cached.models]);
 
   const toggleLinkedProject = useCallback((path: string) => {
     setLinkedProjects((prev) =>

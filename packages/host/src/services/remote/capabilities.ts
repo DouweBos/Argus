@@ -904,10 +904,6 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
     const agents = [...appState.agents.values()]
       .filter((a) => {
-        // A window's warm spare: another client would show it as a new chat.
-        if (a.prewarmed) {
-          return false;
-        }
         if (session_id) {
           return a.sessionId === session_id;
         }

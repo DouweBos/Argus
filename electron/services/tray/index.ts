@@ -168,9 +168,6 @@ function buildMenu(): Menu {
   // one live agent), and sessions tell us which project bucket they fall in.
   const sessionAgents = new Map<string, AgentSession[]>();
   for (const agent of appState.agents.values()) {
-    if (agent.prewarmed) {
-      continue;
-    }
     const list = sessionAgents.get(agent.sessionId) ?? [];
     list.push(agent);
     sessionAgents.set(agent.sessionId, list);
@@ -457,9 +454,6 @@ function refreshTray(): void {
   let total = 0;
   let running = 0;
   for (const a of appState.agents.values()) {
-    if (a.prewarmed) {
-      continue;
-    }
     total += 1;
     if (isAgentActive(a)) {
       running += 1;

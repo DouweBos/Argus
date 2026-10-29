@@ -7,15 +7,16 @@ import {
 } from "../stores/agentStore";
 import { setActiveCenterView } from "../stores/editorStore";
 import { pushError } from "../stores/notificationsStore";
-import { clearPrewarm, getPrewarmSlot } from "../stores/prewarmStore";
 import { selectSession } from "../stores/sessionStore";
 import { getDefaultPermissionMode } from "../stores/settingsStore";
-import { notifyMessageSent, startAgentListening } from "./agentEventService";
+import {
+  notifyMessageSent,
+  startAgentListening,
+  stopAgentListening,
+} from "./agentEventService";
 import { huddleAuthor } from "./huddleAuthor";
 import {
-  claimPrewarmAgent,
   type ImageAttachment,
-  setAgentRunner,
   startAgent as apiStartAgent,
   submitAgentMessage,
 } from "./ipc";
@@ -48,39 +49,6 @@ export async function startAgentInSession(
   // silently falls back to the CLI's prompt-for-everything default.
   const permissionMode = options.permissionMode ?? getDefaultPermissionMode();
 
-  // Prefer claiming a prewarmed slot — the Claude subprocess is already
-  // alive and past initialize, so the user-facing path is sub-second.
-  // `resumeSessionId` and `seedFrom` are incompatible with prewarms (the warm
-  // slot was started fresh, not resumed) so fall back to a normal spawn then.
-  if (!resumeSessionId && !seedFrom) {
-    const slot = getPrewarmSlot(sessionId);
-    if (slot && slot.status === "ready" && slot.agentId) {
-      try {
-        // The warm subprocess was spawned under the session's runner; a
-        // no-op when the dialog already re-bound it on pick.
-        if (runnerId) {
-          await setAgentRunner(slot.agentId, runnerId);
-        }
-        const claimed = await claimPrewarm(slot.agentId, sessionId, {
-          focus,
-          model,
-          permissionMode,
-        });
-
-        return claimed;
-      } catch (err) {
-        // Fall through to a normal spawn — the warm slot may have died, or
-        // the model/permission change was rejected. Better to take the slow
-        // path than fail the user's action.
-        // eslint-disable-next-line no-console
-        console.warn(
-          "[prewarm] claim failed, falling back to fresh spawn:",
-          err instanceof Error ? err.message : String(err),
-        );
-      }
-    }
-  }
-
   // Optimistic path: mint the agent id on the renderer so the agent row,
   // active selection, and center-view switch can land in the store
   // synchronously. The backend's `start_agent` spawns a child process and
@@ -111,8 +79,11 @@ export async function startAgentInSession(
       runnerId,
       seedFrom,
     );
+    // The host took its warm spare, which keeps its own id: move the tab over.
+    if (info.agent_id !== agentId) {
+      return adoptStartedAgent(optimistic, info, focus);
+    }
     // Reconcile backend-authoritative fields onto the optimistic entry.
-    // The id is identical, so no replace — just patch any drift.
     updateAgent(agentId, {
       status: info.status,
       parent_agent_id: info.parent_agent_id,
@@ -134,56 +105,21 @@ export async function startAgentInSession(
   }
 }
 
-/**
- * Claim a prewarmed Claude subprocess as a real agent. Applies any model /
- * permission-mode change requested by the caller (via the existing control
- * protocol — no respawn) and registers the agent with the renderer stores
- * the same way `startAgentInSession` would. The prewarm slot is cleared on
- * success so the prewarm service can spin up a fresh one.
- */
-async function claimPrewarm(
-  agentId: string,
-  sessionId: string,
-  opts: { focus: boolean; model?: string; permissionMode?: string },
-): Promise<AgentStatus> {
-  startAgentListening(agentId);
-  // Drop the prewarm slot *before* registering the agent. `addAgent` fires
-  // the agentStore subscriber synchronously, which re-runs the prewarm
-  // reconcile loop; if the slot is still there it sees `shouldPrewarm=false`
-  // (a real agent now exists for this session) and discards the very slot
-  // we're mid-claim of, SIGTERM'ing the backing Claude process.
-  clearPrewarm(sessionId);
-  const optimistic: AgentStatus = {
-    agent_id: agentId,
-    session_id: sessionId,
-    status: "idle",
-    permission_mode: opts.permissionMode,
-    created_at: Date.now(),
-  };
-  addAgent(optimistic);
-  if (opts.focus) {
-    focusAgent(sessionId, agentId);
+function adoptStartedAgent(
+  optimistic: AgentStatus,
+  info: AgentStatus,
+  focus: boolean,
+): AgentStatus {
+  stopAgentListening(optimistic.agent_id);
+  removeAgent(optimistic.agent_id);
+  addAgent({ ...optimistic, ...info });
+  startAgentListening(info.agent_id);
+  if (focus) {
+    focusAgent(info.session_id, info.agent_id);
   }
+  refetch(info.agent_id).catch(() => {});
 
-  try {
-    const info = await claimPrewarmAgent(agentId, {
-      model: opts.model,
-      permissionMode: opts.permissionMode,
-    });
-    updateAgent(agentId, {
-      status: info.status,
-      parent_agent_id: info.parent_agent_id,
-      created_at: info.created_at,
-      model: info.model,
-      runner_id: info.runner_id,
-    });
-    refetch(agentId).catch(() => {});
-
-    return info;
-  } catch (err) {
-    removeAgent(agentId);
-    throw err;
-  }
+  return info;
 }
 
 /**

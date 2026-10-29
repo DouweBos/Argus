@@ -23,7 +23,7 @@ vi.mock("../telemetry/telemetry", () => ({ capture: vi.fn() }));
 
 const { appState } = await import("../../state");
 const { registerRunner } = await import("../llm/registry");
-const { startAgent, spawnSpare } = await import("./agentService");
+const { listAgents, startAgent, spawnSpare } = await import("./agentService");
 const { clearSpares, fillSpare, hasSpare } = await import("./spares");
 
 type FakeHandle = LlmRunnerHandle & {
@@ -133,6 +133,7 @@ describe("starting an agent in a session with a warm spare", () => {
     await warm();
 
     expect(appState.agents.size).toBe(0);
+    expect(listAgents("s1")).toEqual([]);
   });
 
   it.each([
