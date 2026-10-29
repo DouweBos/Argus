@@ -73,7 +73,6 @@ import { buildMergedMcpServers } from "../mcp/userConfig";
 import { loadArgusConfig } from "../session/argusConfig";
 import { incrementCommandMetric } from "../session/commandMetrics";
 import { sessionRunnerId } from "../session/models";
-import { setSessionClaudeAccount } from "../session/sessionOps";
 import { simulatorPool } from "../simulator/pool";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { loadConversationByRunnerSession } from "./chatHistory";
@@ -558,6 +557,7 @@ export async function startAgent(
     costUsd: previous?.costUsd ?? 0,
     lastToolUseAt: previous?.lastToolUseAt ?? null,
     lastToolName: previous?.lastToolName ?? null,
+    contextWindow: previous?.contextWindow ?? null,
     inflightPrompts: 0,
     model: effectiveModel,
     permissionMode: effectivePermissionMode,
@@ -1607,15 +1607,15 @@ export function listAgents(sessionId: string): AgentInfo[] {
 const respawning = new Map<string, Promise<void>>();
 
 /**
- * Restart a message-free agent in place so it picks up new spawn-time
- * settings — a runner or Claude account switch. The agent id is reused so the
- * tab and conversation slot survive the swap, and the runner already stamped
- * on the slot is what the new subprocess spawns under. `keepModel` holds on to
- * the model, which only a runner switch invalidates.
+ * Restart an agent in place so it picks up new spawn-time settings — a runner
+ * or Claude account switch. The agent id is reused so the tab and conversation
+ * slot survive the swap, and the runner already stamped on the slot is what
+ * the new subprocess spawns under. `keepModel` holds on to the model, which
+ * only a runner switch invalidates; `resumeRef` carries the conversation over.
  */
 export async function respawnAgent(
   agentId: string,
-  opts: { keepModel?: boolean } = {},
+  opts: { keepModel?: boolean; resumeRef?: string } = {},
 ): Promise<void> {
   const session = appState.agents.get(agentId);
   if (!session) {
@@ -1639,7 +1639,7 @@ export async function respawnAgent(
       sessionId,
       undefined,
       undefined,
-      undefined,
+      opts.resumeRef,
       undefined,
       undefined,
       parentAgentId ?? undefined,
@@ -1668,53 +1668,6 @@ export async function respawnAgent(
       fresh.prewarmed = prewarmed;
     }
   }
-}
-
-/**
- * The model picker's account switch. Pins the session, and restarts the
- * picker's own agent on the new account while that agent has no conversation
- * yet — the account is baked into the subprocess env at spawn.
- */
-export async function switchSessionClaudeAccount(
-  sessionId: string,
-  accountId: string | null,
-  agentId?: string | null,
-): Promise<void> {
-  const previous = appState.sessions.get(sessionId)?.claude_account_id ?? null;
-  setSessionClaudeAccount(sessionId, accountId);
-
-  const agent = agentId ? appState.agents.get(agentId) : undefined;
-  if (
-    !agent ||
-    agent.sessionId !== sessionId ||
-    agent.status === "stopped" ||
-    agent.status === "error" ||
-    agent.turnsCompleted > 0 ||
-    agent.inflightPrompts > 0 ||
-    agent.accountId ===
-      resolveAccountForSession(appState.sessions.get(sessionId))
-  ) {
-    return;
-  }
-
-  try {
-    await respawnAgent(agent.agentId, { keepModel: true });
-  } catch (e) {
-    // Don't leave the picker claiming an account the agent never got onto.
-    setSessionClaudeAccount(sessionId, previous);
-    throw e;
-  }
-}
-
-/** `switchSessionClaudeAccount` for the command surface, which answers `null`. */
-export async function pinSessionClaudeAccount(
-  sessionId: string,
-  accountId: string | null,
-  agentId: string | null,
-): Promise<null> {
-  await switchSessionClaudeAccount(sessionId, accountId, agentId);
-
-  return null;
 }
 
 // ---------------------------------------------------------------------------

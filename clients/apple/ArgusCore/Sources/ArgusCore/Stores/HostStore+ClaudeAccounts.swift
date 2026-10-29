@@ -41,8 +41,8 @@ extension HostStore {
   }
 
   /// Pin the agent's session to an account, or pass nil to follow the
-  /// computer's active one. The agent restarts on it while it hasn't been
-  /// messaged yet — the account is fixed when its process starts.
+  /// computer's active one. The host moves the agent onto it, conversation and
+  /// all, once any running turn ends.
   public func setSessionClaudeAccount(sessionId: String, accountId: String?, agentId: String) async {
     hooks.track(.claudeAccountChanged(action: .pin))
     guard let backend else { return }

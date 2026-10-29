@@ -1,12 +1,35 @@
+import type * as AgentServiceModule from "./agentService";
 import type { AgentSession } from "./models";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { capture, forgetLimitResume, limitResumeAt } = vi.hoisted(() => ({
+  capture: vi.fn(),
+  forgetLimitResume: vi.fn(),
+  limitResumeAt: vi.fn<() => number | null>(),
+}));
 
 vi.mock("@argus/host/bus", () => ({ emitHostEvent: () => {} }));
 vi.mock("../claudeAuth/accounts", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   resolveAccountForSession: (s: { claude_account_id?: string | null }) =>
     s?.claude_account_id ?? "default",
+  getClaudeAccount: () => undefined,
 }));
+vi.mock("../telemetry/telemetry", () => ({ capture }));
+vi.mock("./limitResume", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  forgetLimitResume,
+  limitResumeAt,
+}));
+vi.mock("./conversation/live", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  liveConversation: () => ({ sessionId: "claude-1" }),
+}));
+vi.mock("./agentService", async (importOriginal) => {
+  const actual = await importOriginal<typeof AgentServiceModule>();
+
+  return { ...actual, respawnAgent: vi.fn(actual.respawnAgent) };
+});
 
 const pins: (string | null)[] = [];
 vi.mock("../session/sessionOps", () => ({
@@ -16,9 +39,12 @@ vi.mock("../session/sessionOps", () => ({
   },
 }));
 
+// First: agentService reaches accountSwitch through a cycle, which would bind it to the unmocked respawn.
+const { switchSessionClaudeAccount } = await import("./accountSwitch");
 const { appState } = await import("../../state");
-const { switchSessionClaudeAccount } = await import("./agentService");
+const { respawnAgent } = await import("./agentService");
 
+const respawn = vi.mocked(respawnAgent);
 const kill = vi.fn<() => Promise<void>>();
 
 function addAgent(over: Partial<AgentSession> = {}): AgentSession {
@@ -40,10 +66,22 @@ function addAgent(over: Partial<AgentSession> = {}): AgentSession {
   return agent;
 }
 
+/** Bring a busy agent to idle the way the stream does. */
+async function goIdle(agent: AgentSession): Promise<void> {
+  agent.status = "idle";
+  agent.inflightPrompts = 0;
+  for (const resolve of agent.turnWaiters) {
+    resolve("idle");
+  }
+  agent.turnWaiters.length = 0;
+  await new Promise((r) => setTimeout(r, 0));
+}
+
 describe("switchSessionClaudeAccount", () => {
   beforeEach(() => {
     appState.agents.clear();
     appState.sessions.clear();
+    appState.agentPendingPermissions.clear();
     // No worktree path, so the respawn's spawn fails the way a real one can.
     appState.sessions.set("s1", {
       id: "s1",
@@ -51,6 +89,10 @@ describe("switchSessionClaudeAccount", () => {
     } as never);
     pins.length = 0;
     kill.mockReset().mockResolvedValue();
+    respawn.mockClear();
+    capture.mockClear();
+    forgetLimitResume.mockClear();
+    limitResumeAt.mockReset().mockReturnValue(null);
   });
 
   it("restarts a fresh agent on the picked account, keeping its model", async () => {
@@ -60,6 +102,10 @@ describe("switchSessionClaudeAccount", () => {
       switchSessionClaudeAccount("s1", "default", "a1"),
     ).rejects.toMatch(/still initializing/);
 
+    expect(respawn).toHaveBeenCalledWith("a1", {
+      keepModel: true,
+      resumeRef: undefined,
+    });
     expect(kill).toHaveBeenCalled();
     expect(agent.model).toBe("claude-opus-5-5");
     // Its old child is gone, so it can't keep looking alive.
@@ -74,23 +120,104 @@ describe("switchSessionClaudeAccount", () => {
     ).rejects.toBeDefined();
 
     expect(pins).toEqual(["default", "personal"]);
+    expect(capture).toHaveBeenCalledWith(
+      "agent_account_switched",
+      expect.objectContaining({ success: false }),
+    );
+    expect(forgetLimitResume).not.toHaveBeenCalled();
   });
 
-  it("only pins when the agent has already talked", async () => {
-    addAgent({ turnsCompleted: 1 });
+  it("resumes an agent with history on the new account", async () => {
+    addAgent({ turnsCompleted: 2 });
+    respawn.mockResolvedValueOnce();
 
     await switchSessionClaudeAccount("s1", "default", "a1");
 
     expect(pins).toEqual(["default"]);
-    expect(kill).not.toHaveBeenCalled();
+    expect(respawn).toHaveBeenCalledWith("a1", {
+      keepModel: true,
+      resumeRef: "claude-1",
+    });
+    expect(capture).toHaveBeenCalledWith("agent_account_switched", {
+      had_history: true,
+      queued: false,
+      after_limit: false,
+      success: true,
+    });
   });
 
-  it("leaves an agent with its first prompt in flight alone", async () => {
-    addAgent({ status: "running", inflightPrompts: 1 });
+  it("waits for a busy agent's turn to end, then moves it", async () => {
+    const agent = addAgent({
+      status: "running",
+      inflightPrompts: 1,
+      turnsCompleted: 1,
+    });
+    respawn.mockResolvedValueOnce();
 
     await switchSessionClaudeAccount("s1", "default", "a1");
 
-    expect(kill).not.toHaveBeenCalled();
+    expect(pins).toEqual(["default"]);
+    expect(respawn).not.toHaveBeenCalled();
+
+    await goIdle(agent);
+
+    expect(respawn).toHaveBeenCalledWith("a1", {
+      keepModel: true,
+      resumeRef: "claude-1",
+    });
+    expect(capture).toHaveBeenCalledWith(
+      "agent_account_switched",
+      expect.objectContaining({ queued: true, success: true }),
+    );
+  });
+
+  it("treats an agent waiting on a permission as busy", async () => {
+    addAgent({ turnsCompleted: 1 });
+    appState.agentPendingPermissions.set("a1", new Map([["t1", {} as never]]));
+
+    await switchSessionClaudeAccount("s1", "default", "a1");
+
+    expect(respawn).not.toHaveBeenCalled();
+    await switchSessionClaudeAccount("s1", "personal", "a1");
+  });
+
+  it("applies only the latest pick queued behind a turn", async () => {
+    const agent = addAgent({ status: "running", turnsCompleted: 1 });
+    respawn.mockRejectedValueOnce("spawn failed");
+
+    await switchSessionClaudeAccount("s1", "default", "a1");
+    await switchSessionClaudeAccount("s1", "work", "a1");
+    expect(agent.turnWaiters).toHaveLength(1);
+
+    await goIdle(agent);
+
+    expect(respawn).toHaveBeenCalledTimes(1);
+    // The failed move rolls back to the pin from before the first pick.
+    expect(pins).toEqual(["default", "work", "personal"]);
+  });
+
+  it("drops a queued move when the agent's own account is picked again", async () => {
+    const agent = addAgent({ status: "running", turnsCompleted: 1 });
+
+    await switchSessionClaudeAccount("s1", "default", "a1");
+    await switchSessionClaudeAccount("s1", "personal", "a1");
+    await goIdle(agent);
+
+    expect(respawn).not.toHaveBeenCalled();
+  });
+
+  it("cancels a pending limit auto-continue once moved", async () => {
+    addAgent({ turnsCompleted: 1 });
+    limitResumeAt.mockReturnValue(Date.now() + 60_000);
+    respawn.mockResolvedValueOnce();
+
+    await switchSessionClaudeAccount("s1", "default", "a1");
+
+    expect(forgetLimitResume).toHaveBeenCalledWith("a1");
+    expect(capture).toHaveBeenCalledWith(
+      "agent_account_switched",
+      expect.objectContaining({ after_limit: true, success: true }),
+    );
   });
 
   it("doesn't restart an agent already on the account", async () => {

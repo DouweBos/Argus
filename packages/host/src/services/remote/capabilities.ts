@@ -43,6 +43,7 @@ import { error as logError, info as logInfo } from "@argus/host/logger";
 import { appState } from "../../state";
 import { applyPushedEntries } from "../account/lifecycle";
 import { remoteAccountStatus, requestLinkFromPaired } from "../account/service";
+import { switchSessionClaudeAccount } from "../agent/accountSwitch";
 import {
   interruptAgent,
   respondToPermission,
@@ -52,7 +53,6 @@ import {
   setAgentPermissionMode,
   startAgent,
   stopAgent,
-  switchSessionClaudeAccount,
 } from "../agent/agentService";
 import { loadConversation, loadHistoryIndex } from "../agent/chatHistory";
 import { agentContextWindow } from "../agent/contextWindow";

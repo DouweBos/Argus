@@ -47,7 +47,9 @@ started with.
 model picker in the chat input grows an **Account** section. Pin a session there
 to run it on a specific account regardless of which one is active — handy when
 one account is rate-limited and you want work to continue on another in
-parallel. Sessions default to _Follow app default_.
+parallel. Sessions default to _Follow app default_. Picking an account moves the
+chat's agent onto it and carries the conversation over; an agent in the middle
+of a turn moves as soon as that turn ends.
 
 Your first account is adopted from whatever `claude` was already logged into, so
 upgrading Argus never costs you a re-authentication.

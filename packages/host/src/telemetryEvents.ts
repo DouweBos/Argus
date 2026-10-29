@@ -123,6 +123,12 @@ export interface EventMap {
     permission_mode: string;
     session_kind: SessionKind;
   };
+  agent_account_switched: {
+    had_history: boolean;
+    queued: boolean;
+    after_limit: boolean;
+    success: boolean;
+  };
   agent_limit_auto_continue: {
     action: "cancelled" | "dismissed" | "gave_up" | "scheduled" | "sent";
     has_reset_time: boolean;

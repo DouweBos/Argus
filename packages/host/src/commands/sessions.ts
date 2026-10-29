@@ -1,4 +1,4 @@
-import { pinSessionClaudeAccount } from "../services/agent/agentService";
+import { pinSessionClaudeAccount } from "../services/agent/accountSwitch";
 import { defineTypedCommand } from "../services/command/registry";
 import {
   importCliProjects,
