@@ -183,3 +183,54 @@ struct UsageBar: View {
     .accessibilityHidden(true)
   }
 }
+
+/// The Usage screen's plan limits, small: each window's label, what's left and
+/// a thin bar, for a glance from elsewhere. Renders nothing without limits.
+public struct UsageLimitsStrip: View {
+  @Environment(\.theme) private var theme
+  let limits: ArgusProtocol.ClaudeUsageLimits?
+
+  public init(limits: ArgusProtocol.ClaudeUsageLimits?) {
+    self.limits = limits
+  }
+
+  private var accounts: [ArgusProtocol.ClaudeAccountLimits] {
+    (limits?.accounts ?? []).filter { $0.status == .ok && !$0.windows.isEmpty }
+  }
+
+  public var body: some View {
+    TimelineView(.periodic(from: .now, by: 30)) { context in
+      HStack(spacing: 16) {
+        ForEach(accounts, id: \.accountId) { account in
+          ForEach(account.windows, id: \.id) { window in
+            meter(window, account: accounts.count > 1 ? account.label : nil, now: context.date)
+          }
+        }
+      }
+    }
+  }
+
+  private func meter(_ window: ArgusProtocol.UsageLimitWindow, account: String?, now: Date) -> some View {
+    let left = UsageLimitFormat.percentLeft(usedPercent: window.usedPercent)
+    let tone: Tone =
+      switch UsageLimitFormat.level(usedPercent: window.usedPercent) {
+      case .normal: .accent
+      case .warning: .warning
+      case .critical: .danger
+      }
+    let title = account.map { "\($0) · \(window.label)" } ?? window.label
+    return VStack(alignment: .leading, spacing: 4) {
+      HStack(spacing: 6) {
+        Text(title).foregroundStyle(theme.textMuted).lineLimit(1)
+        Spacer(minLength: 4)
+        Text("\(left)% left").monospacedDigit().foregroundStyle(tone == .accent ? theme.textSecondary : tone.color(theme))
+      }
+      .font(.scaled(size: 11, weight: .medium))
+      UsageBar(fraction: UsageLimitFormat.fraction(usedPercent: window.usedPercent), tone: tone)
+    }
+    .frame(width: 156)
+    .help(UsageLimitFormat.resetCaption(resetsAtMs: window.resetsAt, now: now) ?? window.label)
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("\(title), \(left)% left")
+  }
+}

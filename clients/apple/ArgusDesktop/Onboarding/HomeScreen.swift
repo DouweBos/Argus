@@ -3,8 +3,8 @@ import ArgusKit
 import ArgusUI
 import SwiftUI
 
-/// `/`: the project picker — what needs fixing, your projects, the agents at
-/// work and the devices that are up.
+/// `/`: the project picker — plan limits at a glance, what needs fixing,
+/// your projects and the latest automation runs.
 struct HomeScreen: View {
   @Environment(DesktopModel.self) private var model
   @Environment(HostStore.self) private var store
@@ -24,13 +24,8 @@ struct HomeScreen: View {
     }
     .background(theme.bg)
     .navigationTitle("Home")
-    .task {
-      await store.refreshDevices()
-      // Every 5 s while the screen is up, as the desktop polls.
-      while !Task.isCancelled {
-        try? await Task.sleep(for: .seconds(5))
-        await store.refreshDevices()
-      }
+    .liveRefresh(enabled: store.connection == .ready, every: .seconds(60)) {
+      await store.loadUsageLimits()
     }
   }
 
@@ -46,6 +41,14 @@ struct HomeScreen: View {
         HStack(spacing: 10) {
           Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 32, height: 32)
           Text("Argus").font(.scaled(size: 24, weight: .semibold))
+          Spacer(minLength: 16)
+          Button {
+            model.navigate(.usage(.limits))
+          } label: {
+            UsageLimitsStrip(limits: store.usageLimits).contentShape(.rect)
+          }
+          .buttonStyle(.argusPlain)
+          .help("Plan limits — open Usage")
         }
         HomeNeedsYouSection()
         section("Projects") {
@@ -56,18 +59,6 @@ struct HomeScreen: View {
         } content: {
           LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 12)], spacing: 12) {
             ForEach(projects) { HomeProjectCard(project: $0) }
-          }
-        }
-        HStack(alignment: .top, spacing: 20) {
-          section("Active agents") {
-            Button("View all") { model.navigate(.agents) }.buttonStyle(.accentLink)
-          } content: {
-            HomeAgentsList()
-          }
-          section("Devices") {
-            Button("View all") { model.navigate(.devices) }.buttonStyle(.accentLink)
-          } content: {
-            HomeDevicesList()
           }
         }
         HomeRecentRunsSection()
@@ -217,75 +208,6 @@ private struct HomeProjectCard: View {
     case .requiresAction: .warning
     case .stopped: .success
     case .idle: .muted
-    }
-  }
-}
-
-private struct HomeAgentsList: View {
-  @Environment(DesktopModel.self) private var model
-  @Environment(HostStore.self) private var store
-  @Environment(\.theme) private var theme
-
-  var body: some View {
-    let agents = store.recentAgents.map { store.statusByAgent[$0.agentId] ?? $0 }
-      .filter { $0.status != .stopped }
-      .sorted { Labels.activityRank($0) < Labels.activityRank($1) }
-    if !store.recentAgentsLoaded {
-      ProgressView().controlSize(.small)
-    } else if agents.isEmpty {
-      Text("No agents running. Start one from a session.").foregroundStyle(theme.textMuted).font(.scaled(.callout))
-    } else {
-      VStack(alignment: .leading, spacing: 2) {
-        ForEach(agents.prefix(6)) { agent in
-          Button {
-            model.navigate(.session(id: agent.sessionId, agentId: agent.agentId))
-          } label: {
-            HStack(spacing: 8) {
-              StatusDot(tone: agent.status == .running ? .accent : .muted, pulse: agent.status == .running)
-              Text(Labels.agentName(agent)).lineLimit(1)
-              Spacer()
-              Text(agent.projectName ?? "").font(.scaled(.caption)).foregroundStyle(theme.textMuted)
-              Text(Labels.metaLabel(agent.status)).font(.scaled(.caption)).foregroundStyle(theme.textSecondary)
-            }
-            .padding(.vertical, 5)
-            .contentShape(Rectangle())
-          }
-          .buttonStyle(.argusPlain)
-        }
-      }
-    }
-  }
-}
-
-private struct HomeDevicesList: View {
-  @Environment(DesktopModel.self) private var model
-  @Environment(HostStore.self) private var store
-  @Environment(\.theme) private var theme
-
-  var body: some View {
-    let devices = store.devices.filter(\.booted)
-    if !store.devicesLoaded {
-      ProgressView().controlSize(.small)
-    } else if devices.isEmpty {
-      Text("No devices online. Boot a simulator or start an agent.").foregroundStyle(theme.textMuted).font(.scaled(.callout))
-    } else {
-      VStack(alignment: .leading, spacing: 2) {
-        ForEach(devices.prefix(6), id: \.id) { device in
-          Button {
-            model.navigate(.devices)
-          } label: {
-            HStack(spacing: 8) {
-              StatusDot(tone: .success)
-              Text(device.name).lineLimit(1)
-              Spacer()
-              Text(device.platform.rawValue.uppercased()).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
-            }
-            .padding(.vertical, 5)
-            .contentShape(Rectangle())
-          }
-          .buttonStyle(.argusPlain)
-        }
-      }
     }
   }
 }
