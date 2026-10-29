@@ -32,6 +32,8 @@ struct AttachedHostBadge: ToolbarContent {
         .fixedSize()
         .help("This window is attached to the Argus host \(holder.appName) runs")
       }
+      // It draws its own capsule; the toolbar's glass would double it.
+      .flatToolbarItem()
     }
   }
 }
