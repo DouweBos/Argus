@@ -205,7 +205,9 @@ also change its status and priority, comment, reply in a thread, and
 **Start agent** or **Open session**. Figma links in an issue
 open in the design viewer instead of the browser. The iPhone's issue list
 and the Mac app's Issues screen have the desktop's **Filter** row too, with
-the same fields and remembered per tab.
+the same fields and remembered per tab. The Mac app plays screen recordings and shows
+images from Linear inline in an issue, like the desktop; the iPhone keeps
+them as links, since the files stay on the computer.
 
 The design viewer shows the frame to pinch and pan, its layers with their
 size, text, font and fill, the designers' comments, and the file's pages and
