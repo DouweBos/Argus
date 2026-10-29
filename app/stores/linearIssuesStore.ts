@@ -189,11 +189,13 @@ export async function changeLinearIssue(
   replaceIssue(await updateLinearIssue(issueId, change));
 }
 
+/** `parentId` replies in that comment's thread. */
 export async function postLinearComment(
   issue: LinearIssue,
   body: string,
+  parentId: string | null = null,
 ): Promise<void> {
-  await commentOnLinearIssue(issue.id, body);
+  await commentOnLinearIssue(issue.id, body, parentId);
   await loadLinearIssueDetail(issue.identifier);
 }
 

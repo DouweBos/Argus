@@ -5,10 +5,12 @@ import {
   Button,
   Icons,
   IssueStatusIcon,
+  LabelChip,
   PRIORITY_LABELS,
   PriorityIcon,
   Select,
 } from "@argus/peacock";
+import { estimateName } from "@argus/remote-protocol";
 import { openExternalUrl } from "../../../lib/ipc";
 import {
   cycleLabel,
@@ -144,7 +146,7 @@ export function IssueProperties({ issue, onStart }: IssuePropertiesProps) {
         {issue.estimate != null && (
           <>
             <dt>Estimate</dt>
-            <dd>{issue.estimate} pt</dd>
+            <dd>{estimateName(issue.estimate, issue.estimateType)}</dd>
           </>
         )}
         {issue.labels.length > 0 && (
@@ -152,9 +154,11 @@ export function IssueProperties({ issue, onStart }: IssuePropertiesProps) {
             <dt>Labels</dt>
             <dd className={styles.labels}>
               {issue.labels.map((l) => (
-                <span key={l} className={styles.label}>
-                  {l}
-                </span>
+                <LabelChip
+                  key={l}
+                  color={issue.labelColors?.find((c) => c.name === l)?.color}
+                  name={l}
+                />
               ))}
             </dd>
           </>

@@ -47,11 +47,15 @@ Each card shows priority, estimate, cycle, project, linked pull requests,
 labels and the assignee. **Agent on it** marks issues that already have a
 session: started from the issue, or on its Linear branch.
 
-Click a card to open the issue: its description, sub-issues, links and
-comments. You can comment as yourself, change its status and priority, and
-**Start agent** (in the project picked at the top) or **Open session**.
-Images in descriptions are hosted by Linear and may not load in Argus; open
-the issue in Linear to see them.
+Click a card to open the issue as a full page, like in Linear: the
+description, sub-issues, related issues, linked resources (pull requests and
+Figma frames), and the activity: every change to the issue and the comment
+threads, with replies, reactions and subscribers. Comment or reply as
+yourself. The sidebar shows status, priority, assignee, team, estimate,
+cycle, colored labels and project; change status and priority there. The top
+bar copies the link, ID or branch name and steps to the previous or next
+issue (also `k` / `j`; `Esc` goes back to the board). **Start agent** (in the
+project picked on the board) or **Open session** sits above the properties.
 
 ## Starting from an issue
 

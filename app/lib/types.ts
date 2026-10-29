@@ -200,6 +200,8 @@ export type {
   FigmaLayer,
   IntegrationId,
   IntegrationStatus,
+  LinearComment,
+  LinearHistoryEvent,
   LinearIssue,
   LinearIssueContext,
   LinearIssueDetail,

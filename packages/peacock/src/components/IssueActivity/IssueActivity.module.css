@@ -1,0 +1,118 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.event {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.eventIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.actor {
+  color: var(--text-primary);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.fold {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 8px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  background: var(--bg-secondary);
+  margin: 4px 0;
+}
+
+.comment,
+.reply {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+}
+
+.reply {
+  border-top: 1px solid var(--glass-border);
+  padding-left: 40px;
+}
+
+.commentHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.author {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.body {
+  font-size: 14px;
+  color: var(--text-primary);
+  min-width: 0;
+}
+
+.reactions {
+  display: flex;
+  gap: 4px;
+}
+
+.reaction {
+  padding: 1px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.threadFooter {
+  border-top: 1px solid var(--glass-border);
+  padding: 8px 14px;
+}
