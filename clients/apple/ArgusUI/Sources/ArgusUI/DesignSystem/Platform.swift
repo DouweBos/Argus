@@ -70,7 +70,12 @@ extension View {
     #if os(iOS)
       fullScreenCover(isPresented: isPresented, content: content)
     #else
-      sheet(isPresented: isPresented, content: content)
+      // A sheet takes its content's ideal size, and a scroll view has none.
+      sheet(isPresented: isPresented) {
+        content()
+          .frame(minWidth: 640, idealWidth: 900, minHeight: 480, idealHeight: 820)
+          .presentationSizing(.fitted)
+      }
     #endif
   }
 }
