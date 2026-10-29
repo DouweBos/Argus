@@ -235,6 +235,8 @@ enum MacTelemetryEvent {
   case tabUsed(action: TabAction)
   /// A session's Home, Agents, Code or Git panel was picked from the toolbar, the View menu or the palette.
   case sessionPanelSwitched(panel: String, via: PanelSwitchSource)
+  /// ⌘W asked before closing an agent tab; `closed` is whether it went ahead.
+  case agentCloseConfirmed(closed: Bool, running: Bool)
   /// One of the keyboard commands for agents, panels and screens was used.
   case menuCommandUsed(action: MenuCommandAction, via: MenuCommandSource)
   /// An item in the menu-bar item's menu that does something.
@@ -388,6 +390,7 @@ enum MacTelemetryEvent {
     case .hostFolderPicked: "mac_host_folder_picked"
     case .tabUsed: "mac_tab_used"
     case .sessionPanelSwitched: "mac_session_panel_switched"
+    case .agentCloseConfirmed: "mac_agent_close_confirmed"
     case .menuCommandUsed: "mac_menu_command_used"
     case .menuBarUsed: "mac_menu_bar_used"
     case .menuBarToggled: "mac_menu_bar_toggled"
@@ -505,6 +508,8 @@ enum MacTelemetryEvent {
       ["action": action.rawValue]
     case .sessionPanelSwitched(let panel, let via):
       ["panel": panel, "via": via.rawValue]
+    case .agentCloseConfirmed(let closed, let running):
+      ["closed": closed, "running": running]
     case .menuCommandUsed(let action, let via):
       ["action": action.rawValue, "via": via.rawValue]
     case .menuBarUsed(let action):

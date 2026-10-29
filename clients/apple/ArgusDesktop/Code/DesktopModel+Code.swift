@@ -1,3 +1,4 @@
+import AppKit
 import ArgusCore
 import Foundation
 
@@ -21,10 +22,24 @@ extension DesktopModel {
       return
     }
     if case .session(let id, _) = route, let agent = agentInFront {
-      closeAgent(agent.agentId, inSession: id)
+      if Self.confirmCloseAgent(agent) { closeAgent(agent.agentId, inSession: id) }
       return
     }
     closeTab()
+  }
+
+  /// ⌘W is easy to hit by accident, and closing an agent stops it.
+  private static func confirmCloseAgent(_ agent: RemoteAgentStatus) -> Bool {
+    let running = agent.status == .running
+    let alert = NSAlert()
+    let name = agent.title.map { "“\($0)”" } ?? "this agent"
+    alert.messageText = running ? "Stop \(name)? It is still working." : "Close \(name)?"
+    alert.informativeText = "Closing the tab stops the agent. You can resume it later from Recent Chats."
+    alert.addButton(withTitle: running ? "Stop Agent" : "Close")
+    alert.addButton(withTitle: "Cancel")
+    let closed = alert.runModal() == .alertFirstButtonReturn
+    MacTelemetry.capture(.agentCloseConfirmed(closed: closed, running: running))
+    return closed
   }
 
   /// Before quitting: Save All, Don't Save or Cancel. False cancels the quit.
