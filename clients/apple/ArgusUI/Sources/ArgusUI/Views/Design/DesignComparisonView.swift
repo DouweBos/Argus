@@ -18,10 +18,14 @@ struct DesignComparisonView: View {
     VStack(alignment: .leading, spacing: 8) {
       HStack(spacing: 8) {
         VStack(alignment: .leading, spacing: 2) {
-          Text("\(percent)% of pixels differ")
+          Text(notOnScreen ? "Not on screen" : "\(percent)% of pixels differ")
             .font(.scaled(size: 14, weight: .semibold))
             .foregroundStyle(tone.color(theme))
-          if let deviceName { MutedText("Against \(deviceName)", lineLimit: 1) }
+          if notOnScreen {
+            MutedText("Scroll the component into view, then compare again.", lineLimit: 2)
+          } else if let deviceName {
+            MutedText("Against \(deviceName)", lineLimit: 1)
+          }
         }
         Spacer(minLength: 0)
         IconBtn(systemName: Icon.close, label: "Close compare", size: 13, action: onClose)
@@ -50,8 +54,12 @@ struct DesignComparisonView: View {
     }
   }
 
+  /// A component frame the host couldn't find on the screenshot; its diff means nothing.
+  private var notOnScreen: Bool { comparison.match?.found == false }
+
   /// Under 2% reads as a match, as the agents' compare tool treats it.
   private var tone: Tone {
-    percent < 2 ? .success : percent < 10 ? .warning : .danger
+    if notOnScreen { return .warning }
+    return percent < 2 ? .success : percent < 10 ? .warning : .danger
   }
 }

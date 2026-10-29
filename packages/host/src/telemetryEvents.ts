@@ -187,6 +187,8 @@ export interface EventMap {
   design_compare_opened: undefined;
   design_compared: {
     diff_bucket: "<2%" | "<10%" | "<30%" | ">=30%";
+    matched: boolean;
+    mode: "component" | "screen";
     source: "agent" | "app";
   };
   design_ref_added: { from: "issue" | "paste" };

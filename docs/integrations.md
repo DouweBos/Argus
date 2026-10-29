@@ -137,6 +137,9 @@ asked to build against them in a loop:
 - `design_compare` after each visible change. It renders the frame at the
   simulator's exact pixel size, diffs it against the screen, and returns the
   share of differing pixels with the design, the screenshot and a heatmap.
+  The frame can be a whole screen or a single component: a component is
+  found on the screen first and only the area it covers is compared. When it
+  isn't on screen, the tool says so instead of reporting a diff.
   The latest screenshot and heatmap are kept in `.argus/design/compare/`.
 - `conductor assert-screenshot <reference.png>` works on the same files as a
   pass/fail gate.

@@ -5265,6 +5265,7 @@ extension ArgusProtocol {
     public var design: String
     public var screenshot: String
     public var diff: String
+    public var match: DesignMatch?
 
     enum CodingKeys: String, CodingKey {
       case differingFraction = "differingFraction"
@@ -5273,15 +5274,17 @@ extension ArgusProtocol {
       case design = "design"
       case screenshot = "screenshot"
       case diff = "diff"
+      case match = "match"
     }
 
-    public init(differingFraction: Double, width: Double, height: Double, design: String, screenshot: String, diff: String) {
+    public init(differingFraction: Double, width: Double, height: Double, design: String, screenshot: String, diff: String, match: DesignMatch? = nil) {
       self.differingFraction = differingFraction
       self.width = width
       self.height = height
       self.design = design
       self.screenshot = screenshot
       self.diff = diff
+      self.match = match
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -5292,6 +5295,52 @@ extension ArgusProtocol {
       try c.encode(design, forKey: .design)
       try c.encode(screenshot, forKey: .screenshot)
       try c.encode(diff, forKey: .diff)
+      try c.encodeIfPresent(match, forKey: .match)
+    }
+  }
+
+  public struct DesignMatch: Codable, Sendable {
+    public var x: Double
+    public var y: Double
+    public var width: Double
+    public var height: Double
+    public var scale: Double
+    public var confidence: Double
+    public var found: Bool
+    public var component: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case x = "x"
+      case y = "y"
+      case width = "width"
+      case height = "height"
+      case scale = "scale"
+      case confidence = "confidence"
+      case found = "found"
+      case component = "component"
+    }
+
+    public init(x: Double, y: Double, width: Double, height: Double, scale: Double, confidence: Double, found: Bool, component: Bool) {
+      self.x = x
+      self.y = y
+      self.width = width
+      self.height = height
+      self.scale = scale
+      self.confidence = confidence
+      self.found = found
+      self.component = component
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var c = encoder.container(keyedBy: CodingKeys.self)
+      try c.encode(x, forKey: .x)
+      try c.encode(y, forKey: .y)
+      try c.encode(width, forKey: .width)
+      try c.encode(height, forKey: .height)
+      try c.encode(scale, forKey: .scale)
+      try c.encode(confidence, forKey: .confidence)
+      try c.encode(found, forKey: .found)
+      try c.encode(component, forKey: .component)
     }
   }
 

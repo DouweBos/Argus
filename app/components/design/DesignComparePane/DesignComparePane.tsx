@@ -33,15 +33,21 @@ export function DesignComparePane({
   );
   const tone =
     comparison && comparison.differingFraction < 0.02 ? "success" : "warning";
+  const notOnScreen = comparison?.match?.found === false;
 
   return (
     <div className={styles.root}>
       <div className={styles.toolbar}>
         {leading}
         <span className={styles.spacer} />
-        {comparison && (
+        {comparison && !notOnScreen && (
           <Badge tone={tone} size="tag">
             {formatDiffering(comparison.differingFraction)} differs
+          </Badge>
+        )}
+        {notOnScreen && (
+          <Badge tone="warning" size="tag">
+            Not on screen
           </Badge>
         )}
         {loading && <Spinner size="xs" tone="muted" />}
@@ -61,7 +67,13 @@ export function DesignComparePane({
         </p>
       )}
       {error && <p className={styles.error}>{error}</p>}
-      {comparison && (
+      {notOnScreen && (
+        <p className={styles.hint}>
+          This component isn&rsquo;t on the device&rsquo;s screen. Scroll it
+          into view, then retake the screenshot.
+        </p>
+      )}
+      {comparison && !notOnScreen && (
         <div className={styles.diff}>
           <ImageDiff
             before={`${PNG}${comparison.design}`}

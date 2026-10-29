@@ -40,7 +40,7 @@ function designSection(designs: DesignRef[]): string | null {
     "",
     "Work in a loop while you build:",
     "1. `figma_get_frame` for the full spec, and `figma_export_assets` for icons and images rather than redrawing them.",
-    "2. After each visible change, run the app on your simulator and call `design_compare` with the frame link. It renders the frame at your simulator's exact size, diffs it against the screen, and returns the score with a heatmap of what differs.",
+    "2. After each visible change, run the app on your simulator and call `design_compare` with the frame link. It renders the frame at your simulator's exact size, diffs it against the screen, and returns the score with a heatmap of what differs. A component frame works too: it's found on the screen and only that area is compared.",
     "3. Fix what the heatmap shows that isn't real data or the status bar, and compare again. `conductor assert-screenshot <reference.png> --threshold <n>` works on the same files for a pass/fail gate.",
     "",
     "Don't call UI work done until it matches the design; say in your final message which differences remain and why.",

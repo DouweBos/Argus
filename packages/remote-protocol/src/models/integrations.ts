@@ -276,6 +276,23 @@ export const FigmaFrameDetails = z.object({
 });
 export type FigmaFrameDetails = z.infer<typeof FigmaFrameDetails>;
 
+/** Where the frame was found on the screenshot, in screenshot pixels. */
+export const DesignMatch = z.object({
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  /** Pixels per Figma point the frame was rendered at. */
+  scale: z.number(),
+  /** 0–1: how well the frame correlates with the screen there. */
+  confidence: z.number(),
+  /** False when a component wasn't on screen; the diff is then meaningless. */
+  found: z.boolean(),
+  /** The frame was a component located on the screen, not a whole screen. */
+  component: z.boolean(),
+});
+export type DesignMatch = z.infer<typeof DesignMatch>;
+
 /** A frame and a device screenshot at the same pixel size, and where they differ. */
 export const DesignComparison = z.object({
   /** 0–1: share of pixels that differ noticeably. */
@@ -287,5 +304,6 @@ export const DesignComparison = z.object({
   screenshot: z.string(),
   /** Differences in red over a faded screenshot. */
   diff: z.string(),
+  match: DesignMatch.optional(),
 });
 export type DesignComparison = z.infer<typeof DesignComparison>;

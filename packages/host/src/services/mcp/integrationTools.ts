@@ -7,7 +7,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { appState } from "../../state";
-import { compareToDesign } from "../design/compare";
+import {
+  compareToDesign,
+  describeMatch,
+  outlineMatch,
+} from "../design/compare";
 import { exportDesignAssets, saveComparison } from "../design/files";
 import { figmaApi, figmaDesignContext } from "../integrations/figma/service";
 import {
@@ -60,7 +64,7 @@ function registerDesignLoopTools(
 ): void {
   server.tool(
     "design_compare",
-    "Compare the running app to a Figma frame: renders the frame at the device's exact pixel size, screenshots the device, and returns the share of differing pixels plus the design, the screenshot and a heatmap (differences in red). Use it after each visible UI change and fix what isn't real data or the status bar. Uses your reserved iOS simulator unless you name a device.",
+    "Compare the running app to a Figma frame: screenshots the device, renders the frame at the device's pixel size, and returns the share of differing pixels plus the design, the screenshot and a heatmap (differences in red). The frame can be a whole screen or a single component (a card, a row, a button): a component is rendered at the device's pixel ratio, found on the screen first, and only that rectangle is compared; the reply says where it matched and how confidently. Use it after each visible UI change and fix what isn't real data or the status bar. Uses your reserved iOS simulator unless you name a device.",
     {
       url: z.string().describe("The Figma frame link (with ?node-id=)."),
       platform: z
@@ -96,34 +100,43 @@ function registerDesignLoopTools(
           ? await saveComparison(worktree, url, result).catch(() => null)
           : null;
         const percent = (result.differingFraction * 100).toFixed(1);
+        const match = result.match;
+        const image = (data: string) => ({
+          type: "image" as const,
+          data,
+          mimeType: "image/png",
+        });
+        if (match && !match.found) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `The component isn't on screen (the closest spot is ${describeMatch(match)}), so there's no meaningful diff. Scroll it into view or navigate to it, then compare again. Images: the design, then your whole screen.`,
+              },
+              image(result.design),
+              image(outlineMatch(png, match)),
+            ],
+          };
+        }
 
         return {
           content: [
             {
               type: "text" as const,
               text: [
-                `${percent}% of pixels differ (${result.width}×${result.height}px compared).`,
-                "Images: the design, your screen, then the heatmap.",
+                `${percent}% of pixels differ (${result.width}×${result.height}px compared${match?.component ? `, matched ${describeMatch(match)}` : ""}).`,
+                match?.component
+                  ? "Images: the design, your screen at the match, the heatmap, then your whole screen with the match outlined."
+                  : "Images: the design, your screen, then the heatmap.",
                 saved ? `Saved to ${saved}.` : "",
               ]
                 .filter(Boolean)
                 .join(" "),
             },
-            {
-              type: "image" as const,
-              data: result.design,
-              mimeType: "image/png",
-            },
-            {
-              type: "image" as const,
-              data: result.screenshot,
-              mimeType: "image/png",
-            },
-            {
-              type: "image" as const,
-              data: result.diff,
-              mimeType: "image/png",
-            },
+            image(result.design),
+            image(result.screenshot),
+            image(result.diff),
+            ...(match?.component ? [image(outlineMatch(png, match))] : []),
           ],
         };
       } catch (err) {
