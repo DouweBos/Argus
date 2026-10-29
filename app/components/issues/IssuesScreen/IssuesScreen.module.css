@@ -31,3 +31,19 @@
   gap: 6px;
   margin-bottom: 16px;
 }
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 220px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  color: var(--text-muted);
+}
+
+.search:focus-within {
+  border-color: var(--accent);
+}

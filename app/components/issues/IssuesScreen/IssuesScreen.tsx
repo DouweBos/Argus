@@ -1,5 +1,6 @@
-import type { LinearIssue, LinearIssueScope } from "../../../lib/types";
-import { type ReactNode, useEffect, useState } from "react";
+import type { IssueScope } from "../../../lib/router";
+import type { LinearIssue } from "../../../lib/types";
+import { type ReactNode, useState } from "react";
 import {
   Button,
   EmptyState,
@@ -15,21 +16,21 @@ import { useCurrentRoute } from "../../../lib/routeHooks";
 import { appNavigate } from "../../../lib/router";
 import {
   type IssuesLayout,
-  refreshLinearIssues,
   setIssuesLayout,
   useIssueFilters,
   useIssuesLayout,
   useLinearConnected,
-  useLinearIssueList,
 } from "../../../stores/linearIssuesStore";
 import { useSessionProjects } from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
 import { openStartDraft } from "../../../stores/startDraftStore";
 import { IssueDetailPage } from "../IssueDetail/IssueDetailPage";
 import { IssueFilterBar } from "./IssueFilterBar";
+import { IssueSearchField } from "./IssueSearchField";
 import { IssuesBoardView } from "./IssuesBoardView";
 import { IssuesListView } from "./IssuesListView";
 import styles from "./IssuesScreen.module.css";
+import { useIssueResults } from "./useIssueResults";
 
 const SCOPES = [
   { value: "assigned" as const, label: "Assigned" },
@@ -37,9 +38,10 @@ const SCOPES = [
   { value: "subscribed" as const, label: "Subscribed" },
 ];
 
-const SCOPE_TITLES: Record<LinearIssueScope, string> = {
+const SCOPE_TITLES: Record<IssueScope, string> = {
   assigned: "Assigned to me",
   created: "Created by me",
+  search: "Search",
   subscribed: "Subscribed",
 };
 
@@ -58,9 +60,15 @@ function basename(p: string): string {
  * leaving Argus.
  */
 export function IssuesScreen() {
-  const { issueRef, issueScope } = useCurrentRoute();
+  const { issueQuery, issueRef, issueScope } = useCurrentRoute();
   const connected = useLinearConnected();
-  const { data: allIssues, error, loading } = useLinearIssueList(issueScope);
+  const searching = issueScope === "search";
+  const {
+    data: allIssues,
+    error,
+    loading,
+    refresh,
+  } = useIssueResults(issueScope, issueQuery);
   const filters = useIssueFilters(issueScope);
   const data = allIssues && applyFilters(allIssues, filters);
   const layout = useIssuesLayout();
@@ -68,14 +76,13 @@ export function IssuesScreen() {
   const [pickedRoot, setPickedRoot] = useState<string | null>(null);
   const repoRoot = pickedRoot ?? projects[0]?.repoRoot ?? null;
 
-  useEffect(() => {
-    if (connected) {
-      refreshLinearIssues(issueScope).catch(() => {});
-    }
-  }, [connected, issueScope]);
-
   const open = (issue: LinearIssue) =>
-    appNavigate({ view: "issues", issueScope, issueRef: issue.identifier });
+    appNavigate({
+      view: "issues",
+      issueScope,
+      issueRef: issue.identifier,
+      issueQuery,
+    });
   const start = repoRoot
     ? (identifier: string) => {
         openStartDraft(repoRoot, {
@@ -122,12 +129,8 @@ export function IssuesScreen() {
     content = (
       <EmptyState
         icon={<Icons.CheckIcon size={20} />}
-        title="No open issues here"
-        body={
-          filters.length > 0
-            ? "No open issues match these filters."
-            : "Open issues in this view show up here."
-        }
+        title={searching ? "No issues match" : "No open issues here"}
+        body={emptyBody(searching, issueQuery, filters.length > 0)}
       />
     );
   } else if (layout === "board") {
@@ -148,11 +151,16 @@ export function IssuesScreen() {
         listTitle={SCOPE_TITLES[issueScope]}
         order={issueOrder(data ?? [])}
         onClose={() =>
-          appNavigate({ view: "issues", issueScope, issueRef: null })
+          appNavigate({
+            view: "issues",
+            issueScope,
+            issueRef: null,
+            issueQuery,
+          })
         }
         onOpen={(identifier) =>
           appNavigate(
-            { view: "issues", issueScope, issueRef: identifier },
+            { view: "issues", issueScope, issueRef: identifier, issueQuery },
             { replace: true },
           )
         }
@@ -165,7 +173,11 @@ export function IssuesScreen() {
     <GridScreen>
       <GridScreen.Header
         title="Issues"
-        subtitle="Your open Linear issues"
+        subtitle={
+          searching && issueQuery
+            ? `${data?.length ?? "…"} results for “${issueQuery}”`
+            : "Your open Linear issues"
+        }
         actions={
           connected && (
             <div className={styles.headerActions}>
@@ -191,7 +203,7 @@ export function IssuesScreen() {
                 disabled={loading}
                 leading={<Icons.RefreshIcon size={12} />}
                 onClick={() => {
-                  refreshLinearIssues(issueScope).catch(() => {});
+                  refresh().catch(() => {});
                 }}
               >
                 {loading ? "Refreshing…" : "Refresh"}
@@ -202,7 +214,7 @@ export function IssuesScreen() {
       />
       {connected && (
         <div className={styles.toolbar}>
-          <SegmentedControl<LinearIssueScope>
+          <SegmentedControl<IssueScope>
             aria-label="Whose issues"
             options={SCOPES}
             value={issueScope}
@@ -211,6 +223,10 @@ export function IssuesScreen() {
             }
           />
           <div className={styles.toolbarEnd}>
+            <IssueSearchField
+              key={searching ? "search" : "scope"}
+              query={issueQuery}
+            />
             <SegmentedControl<IssuesLayout>
               aria-label="Layout"
               options={LAYOUTS}
@@ -226,4 +242,20 @@ export function IssuesScreen() {
       {content}
     </GridScreen>
   );
+}
+
+function emptyBody(
+  searching: boolean,
+  query: string | null,
+  filtered: boolean,
+): string {
+  if (searching) {
+    return query
+      ? `Nothing in Linear matches “${query}”${filtered ? " with these filters" : ""}.`
+      : "Type to search every issue in the workspace.";
+  }
+
+  return filtered
+    ? "No open issues match these filters."
+    : "Open issues in this view show up here.";
 }

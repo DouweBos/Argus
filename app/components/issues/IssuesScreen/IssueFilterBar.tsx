@@ -1,4 +1,5 @@
-import type { LinearIssue, LinearIssueScope } from "../../../lib/types";
+import type { IssueScope } from "../../../lib/router";
+import type { LinearIssue } from "../../../lib/types";
 import { useRef, useState } from "react";
 import { Button, FilterChip, FilterMenu, Icons } from "@argus/peacock";
 import {
@@ -46,7 +47,7 @@ function operator(filter: IssueFilter): string {
 interface IssueFilterBarProps {
   /** The unfiltered issues, so each option shows how many it would match. */
   issues: LinearIssue[];
-  scope: LinearIssueScope;
+  scope: IssueScope;
 }
 
 /** Linear's filter row: Filter, one chip per active filter, Clear. */

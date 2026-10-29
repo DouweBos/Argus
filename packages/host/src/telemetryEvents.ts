@@ -227,6 +227,7 @@ export interface EventMap {
     action: "add" | "clear" | "flip" | "remove";
     field: string;
   };
+  issue_searched: { results_bucket: "0" | "1-5" | "6-20" | "21+" };
   issue_report_posted: { has_screenshots: boolean; trigger: "merge" | "pr" };
   linear_issue_updated: { field: "comment" | "priority" | "status" };
   /** Mirrors `LegacyTunnelKind` in `services/remote/legacyTunnels.ts`. */

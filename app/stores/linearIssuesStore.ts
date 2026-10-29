@@ -1,4 +1,5 @@
 import type { IssueFilter } from "../lib/issueFilters";
+import type { IssueScope } from "../lib/router";
 import type {
   LinearIssue,
   LinearIssueDetail,
@@ -16,6 +17,7 @@ import {
   listLinearTeamStates,
   updateLinearIssue,
 } from "../lib/ipc";
+import { capture } from "../lib/telemetry";
 
 const POLL_MS = 5 * 60 * 1000;
 const LIMIT = 150;
@@ -34,6 +36,11 @@ interface ScopeList {
   loading: boolean;
 }
 
+interface SearchList extends ScopeList {
+  /** What the data answers; a newer term replaces it. */
+  term: string | null;
+}
+
 interface LinearIssuesState {
   /** Board columns shown (false) or hidden (true) against the defaults. */
   columnOverrides: Record<string, boolean>;
@@ -41,9 +48,11 @@ interface LinearIssuesState {
   connected: boolean;
   details: Record<string, LinearIssueDetail>;
   /** Active filters per scope, like a saved Linear view. */
-  filters: Record<LinearIssueScope, IssueFilter[]>;
+  filters: Record<IssueScope, IssueFilter[]>;
   layout: IssuesLayout;
   lists: Record<LinearIssueScope, ScopeList>;
+  /** The latest search across the whole workspace. */
+  search: SearchList;
   statesByTeam: Record<string, LinearWorkflowState[]>;
 }
 
@@ -67,10 +76,11 @@ function saveJson(key: string, value: unknown): void {
   }
 }
 
-function loadFilters(): Record<LinearIssueScope, IssueFilter[]> {
-  const saved = loadJson<Partial<
-    Record<LinearIssueScope, IssueFilter[]>
-  > | null>(FILTERS_KEY, null);
+function loadFilters(): Record<IssueScope, IssueFilter[]> {
+  const saved = loadJson<Partial<Record<IssueScope, IssueFilter[]>> | null>(
+    FILTERS_KEY,
+    null,
+  );
   const legacyCycle: IssueFilter[] = loadJson(LEGACY_CYCLE_KEY, false)
     ? [{ field: "cycle", negate: false, values: ["current"] }]
     : [];
@@ -78,6 +88,7 @@ function loadFilters(): Record<LinearIssueScope, IssueFilter[]> {
   return {
     assigned: saved?.assigned ?? legacyCycle,
     created: saved?.created ?? [],
+    search: saved?.search ?? [],
     subscribed: saved?.subscribed ?? [],
   };
 }
@@ -97,6 +108,7 @@ const store = create<LinearIssuesState>(() => ({
   details: {},
   layout: loadLayout(),
   lists: { assigned: EMPTY, created: EMPTY, subscribed: EMPTY },
+  search: { ...EMPTY, term: null },
   statesByTeam: {},
 }));
 
@@ -132,6 +144,47 @@ export function refreshLinearIssues(
   return request;
 }
 
+const SEARCH_LIMIT = 50;
+let searchSeq = 0;
+
+function resultsBucket(count: number): "0" | "1-5" | "6-20" | "21+" {
+  if (count === 0) {
+    return "0";
+  }
+  if (count <= 5) {
+    return "1-5";
+  }
+
+  return count <= 20 ? "6-20" : "21+";
+}
+
+/** Search the whole workspace; only the latest term's answer lands. */
+export function searchLinearIssues(term: string): Promise<void> {
+  const seq = ++searchSeq;
+  store.setState((s) => ({
+    search: {
+      term,
+      data: s.search.term === term ? s.search.data : null,
+      error: null,
+      loading: true,
+    },
+  }));
+  const settle = (patch: Partial<SearchList>) => {
+    if (seq === searchSeq) {
+      store.setState((s) => ({
+        search: { ...s.search, ...patch, loading: false },
+      }));
+    }
+  };
+
+  return listLinearIssues(term, SEARCH_LIMIT)
+    .then((data) => {
+      settle({ data, error: null });
+      capture("issue_searched", { results_bucket: resultsBucket(data.length) });
+    })
+    .catch((err: unknown) => settle({ error: message(err) }));
+}
+
 /** Swap an updated issue into every list and cached detail that holds it. */
 function replaceIssue(issue: LinearIssue): void {
   store.setState((s) => {
@@ -145,12 +198,19 @@ function replaceIssue(issue: LinearIssue): void {
         };
       }
     }
+    const found = s.search.data;
+    const search = found?.some((i) => i.id === issue.id)
+      ? {
+          ...s.search,
+          data: found.map((i) => (i.id === issue.id ? issue : i)),
+        }
+      : s.search;
     const cached = s.details[issue.identifier];
     const details = cached
       ? { ...s.details, [issue.identifier]: { ...cached, ...issue } }
       : s.details;
 
-    return { lists, details };
+    return { lists, details, search };
   });
 }
 
@@ -247,6 +307,7 @@ export function useLinearIssuesSync(): void {
 export const useLinearConnected = () => store((s) => s.connected);
 export const useLinearIssueList = (scope: LinearIssueScope) =>
   store((s) => s.lists[scope]);
+export const useLinearIssueSearch = () => store((s) => s.search);
 export const useLinearIssueDetail = (ref: string | null) =>
   store((s) => (ref ? (s.details[ref] ?? null) : null));
 export const useTeamStates = (teamId: string | null) =>
@@ -264,7 +325,7 @@ export function setColumnHidden(columnId: string, hidden: boolean): void {
 }
 
 export function setIssueFilters(
-  scope: LinearIssueScope,
+  scope: IssueScope,
   filters: IssueFilter[],
 ): void {
   const next = { ...store.getState().filters, [scope]: filters };
@@ -273,5 +334,5 @@ export function setIssueFilters(
 }
 
 export const useColumnOverrides = () => store((s) => s.columnOverrides);
-export const useIssueFilters = (scope: LinearIssueScope) =>
+export const useIssueFilters = (scope: IssueScope) =>
   store((s) => s.filters[scope]);

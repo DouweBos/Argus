@@ -30,6 +30,28 @@ describe("issues routes", () => {
     }
   });
 
+  it("carries a search term only on /issues/search", () => {
+    expect(parseRoute("/issues/search?q=ugc%20card")).toMatchObject({
+      issueScope: "search",
+      issueQuery: "ugc card",
+      issueRef: null,
+    });
+    expect(parseRoute("/issues/search/RTN-9181?q=ugc")).toMatchObject({
+      issueRef: "RTN-9181",
+      issueQuery: "ugc",
+    });
+    expect(parseRoute("/issues?q=ugc")).toMatchObject({ issueQuery: null });
+    for (const path of [
+      "/issues/search?q=ugc%20card",
+      "/issues/search/RTN-9181?q=ugc",
+    ]) {
+      expect(routeToPath(parseRoute(path))).toBe(path);
+    }
+    expect(routePattern("/issues/search/RTN-9181?q=ugc")).toBe(
+      "/issues/search/:issue",
+    );
+  });
+
   it("keeps identifiers out of telemetry patterns", () => {
     expect(routePattern("/issues/created/ENG-1")).toBe(
       "/issues/created/:issue",

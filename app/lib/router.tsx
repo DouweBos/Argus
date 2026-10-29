@@ -164,6 +164,8 @@ export interface ParsedRoute extends DesignRouteFields {
    * know whose projects, devices and agents they are showing.
    */
   hostId: HostId;
+  /** `?q=` of `/issues/search`: the term searched across the whole workspace. */
+  issueQuery: string | null;
   /** The issue open over the Issues screen (`STR-123`), if any. */
   issueRef: string | null;
   /** Whose issues the Issues screen lists. Only meaningful when view=issues. */
@@ -184,8 +186,14 @@ export interface ParsedRoute extends DesignRouteFields {
 
 const VALID_PANELS: SessionPanel[] = ["agents", "git", "home"];
 
-export type IssueScope = "assigned" | "created" | "subscribed";
-const ISSUE_SCOPES: IssueScope[] = ["assigned", "created", "subscribed"];
+/** `search` lists `?q=` results from the whole workspace instead of your issues. */
+export type IssueScope = "assigned" | "created" | "search" | "subscribed";
+const ISSUE_SCOPES: IssueScope[] = [
+  "assigned",
+  "created",
+  "search",
+  "subscribed",
+];
 
 /** `/issues[/<scope>][/<IDENTIFIER>]` — the bare path is your assigned issues. */
 function issueRouteFields(pathname: string): {
@@ -204,6 +212,14 @@ function issueRouteFields(pathname: string): {
   };
 }
 
+function issueQueryFor(pathname: string, raw: string | null): string | null {
+  const term = raw?.trim();
+
+  const [first, second] = pathname.split("/").filter(Boolean);
+
+  return first === "issues" && second === "search" && term ? term : null;
+}
+
 /**
  * Parse a URL (pathname, optionally with a query string) into a normalised
  * route descriptor. `?host=` names the attached host the view reads from.
@@ -219,6 +235,7 @@ export function parseRoute(url: string): ParsedRoute {
   return {
     ...route,
     ...issueRouteFields(pathname),
+    issueQuery: issueQueryFor(pathname, params.get("q")),
     ...designRouteFields(pathname, params),
     hostId: hostId && hostId.length > 0 ? hostId : LOCAL_HOST_ID,
     usageRange: usageRangeFor(route.usageTab, params.get("range")),
@@ -229,6 +246,7 @@ export function parseRoute(url: string): ParsedRoute {
 type NonPathFields =
   | keyof DesignRouteFields
   | "hostId"
+  | "issueQuery"
   | "issueRef"
   | "issueScope"
   | "usageRange";
@@ -518,9 +536,12 @@ function routePathname(route: Partial<ParsedRoute>): string {
     const scope = route.issueScope ?? "assigned";
     const base = scope === "assigned" ? "/issues" : `/issues/${scope}`;
 
-    return route.issueRef
+    const path = route.issueRef
       ? `${base}/${encodeURIComponent(route.issueRef)}`
       : base;
+    const term = route.issueQuery?.trim();
+
+    return term ? `${path}?q=${encodeURIComponent(term)}` : path;
   }
   if (
     route.view === "agents" ||
