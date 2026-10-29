@@ -55,8 +55,11 @@ public struct LinearIssueDetailView: View {
           if wide {
             HStack(alignment: .top, spacing: 40) {
               main(issue).frame(maxWidth: 760, alignment: .leading)
-              LinearIssueProperties(model: model, issue: issue, canEdit: canEdit, onMenuOpened: onPropertyMenu)
-                .frame(width: 240, alignment: .leading)
+              VStack(alignment: .leading, spacing: 16) {
+                actions(issue)
+                LinearIssueProperties(model: model, issue: issue, canEdit: canEdit, onMenuOpened: onPropertyMenu)
+              }
+              .frame(width: 240, alignment: .leading)
             }
             .padding(.horizontal, 32)
             .padding(.vertical, 20)
@@ -89,7 +92,8 @@ public struct LinearIssueDetailView: View {
     VStack(alignment: .leading, spacing: 20) {
       LinearIssueToolbar(issue: issue, position: position, onOpenIssue: onOpenIssue)
       header(issue)
-      actions(issue)
+      // Wide, it heads the properties column instead.
+      if !wide { actions(issue) }
       if let error = model.actionError { Banner(text: error, tone: .danger) }
       if !wide {
         LinearIssueProperties(model: model, issue: issue, canEdit: canEdit, onMenuOpened: onPropertyMenu)
