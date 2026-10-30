@@ -1,47 +1,36 @@
 .overlay {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  padding: var(--space-8);
-  background: var(--scrim-lg);
-  backdrop-filter: blur(var(--glass-blur));
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space-6);
   z-index: 3;
 }
 
-.card {
+.pill {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--space-5);
-  max-width: 280px;
-  padding: var(--space-10) var(--space-12);
-  text-align: center;
-  background: var(--surface-3);
+  gap: var(--space-4);
+  max-width: 100%;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-6);
+  background: var(--surface-3-solid);
   border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--border-radius-pill);
   box-shadow: var(--shadow-lg);
 }
 
 .icon {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
+  flex-shrink: 0;
   color: var(--warning);
-  background: var(--warning-overlay-sm);
-  border-radius: var(--border-radius-pill);
 }
 
 .title {
-  margin: 0;
-  font: var(--type-ui);
-  color: var(--text-primary);
-}
-
-.body {
-  margin: 0;
+  min-width: 0;
+  overflow: hidden;
   font: var(--type-caption);
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

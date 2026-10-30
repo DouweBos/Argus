@@ -221,25 +221,31 @@ private struct SubscribeKey: Hashable {
   var ready: Bool
 }
 
-/// Someone else is driving: say who, and offer to take it.
+/// Someone else is driving: say who, and offer to take it. Taps are blocked,
+/// but the picture stays in plain view so a demo can still be watched.
 struct RuntimeClaimOverlay: View {
   @Environment(\.theme) private var theme
   let holderLabel: String
   let takeControl: () -> Void
 
   var body: some View {
-    ZStack {
-      theme.mediaBg.opacity(0.6)
-      VStack(spacing: 10) {
-        Text("\(holderLabel) is controlling this device")
-          .font(.scaled(size: 12, weight: .medium))
-          .foregroundStyle(theme.text)
-        Button("Take Control", action: takeControl)
-          .buttonStyle(.borderedProminent)
-          .controlSize(.small)
+    Color.clear
+      .contentShape(.rect)
+      .overlay(alignment: .bottom) {
+        HStack(spacing: 8) {
+          Image(systemName: "lock.fill").font(.scaled(size: 10)).foregroundStyle(theme.warning)
+          Text("\(holderLabel) is controlling this device")
+            .font(.scaled(size: 12, weight: .medium))
+            .foregroundStyle(theme.text)
+            .lineLimit(1)
+          Button("Take Control", action: takeControl)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        }
+        .padding(.leading, 12).padding(.trailing, 6).padding(.vertical, 6)
+        .background(theme.bgSecondary, in: .capsule)
+        .overlay { Capsule().strokeBorder(theme.border, lineWidth: 1) }
+        .padding(12)
       }
-      .padding(16)
-      .background(theme.bgSecondary, in: .rect(cornerRadius: theme.radiusSmall))
-    }
   }
 }

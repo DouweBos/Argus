@@ -11,12 +11,13 @@ export interface DeviceControlOverlayProps {
 }
 
 /**
- * "Controlled by …" scrim over a live device or browser picture.
+ * "Controlled by …" notice over a live device or browser picture.
  *
  * One host arbitrates input between every client watching a screen, and the
- * loser's touches are refused. Saying so up front — and blocking the pointer —
- * beats letting someone tap at a picture that never answers. The same overlay
- * covers simulators and the embedded browser: one arbitration scheme, one UX.
+ * loser's touches are refused. The overlay blocks the pointer so nobody taps at
+ * a picture that never answers, but leaves the picture itself in plain view:
+ * watching someone demo is the point. One overlay for simulators and the
+ * embedded browser: one arbitration scheme, one UX.
  */
 export function DeviceControlOverlay({
   holderLabel,
@@ -29,16 +30,14 @@ export function DeviceControlOverlay({
 
   return (
     <div className={styles.overlay} role="status">
-      <div className={styles.card}>
+      <div
+        className={styles.pill}
+        title={`Another client is driving this ${subject}. Its input wins until you take over.`}
+      >
         <span className={styles.icon}>
-          <LockIcon size={16} />
+          <LockIcon size={12} />
         </span>
-        <p className={styles.title}>Controlled by {holderLabel}</p>
-        <p className={styles.body}>
-          {subject === "browser"
-            ? "Another client is driving this browser. Its input wins until you take over."
-            : "Another client is driving this device. Its input wins until you take over."}
-        </p>
+        <span className={styles.title}>Controlled by {holderLabel}</span>
         <Button size="sm" variant="primary" onClick={onTakeControl}>
           Take control
         </Button>
