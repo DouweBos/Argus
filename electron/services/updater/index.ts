@@ -5,6 +5,10 @@
  *
  * Update feed is configured in `electron-builder.release.cjs` (publish: generic
  * pointing at houwert.dev/argus/updates). Only runs in packaged builds.
+ *
+ * Once a native Argus for Mac release publishes `cutover-mac.yml`, a desktop
+ * whose secrets are off `safeStorage` follows that feed instead: Squirrel.Mac
+ * swaps the native app (same bundle id and team) in over this one.
  */
 
 import { app } from "electron";
@@ -12,6 +16,8 @@ import { autoUpdater } from "electron-updater";
 import type { UpdateInfo } from "electron-updater";
 import { emitHostEvent } from "@argus/host/bus";
 import { loadAppSettings } from "@argus/host/services/appSettings/store";
+import { findLegacySecretStores } from "@argus/host/services/secrets/legacyStores";
+import { capture } from "@argus/host/services/telemetry/telemetry";
 import { createLogger } from "../../../app/lib/logger";
 
 const logger = createLogger("updater");
@@ -60,6 +66,7 @@ let state: UpdaterState = {
   lastCheckedAt: null,
 };
 let initialized = false;
+let cutoverReported = false;
 let onBeforeQuitAndInstall: (() => void) | null = null;
 
 /**
@@ -94,6 +101,58 @@ function normalizeReleaseNotes(
     .join("\n\n");
 }
 
+const FEED_URL = "https://houwert.dev/argus/updates";
+const CUTOVER_CHANNEL = "cutover";
+
+async function cutoverPublished(): Promise<boolean> {
+  try {
+    const res = await fetch(`${FEED_URL}/${CUTOVER_CHANNEL}-mac.yml`, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The native app reads paired devices and MCP sign-ins only once this app has
+ * moved them off `safeStorage`, and after the swap nothing could, so a desktop
+ * still holding one stays on its own feed and retries the move next launch.
+ * Renderer prefs need no check: the renderer copies them on every load.
+ */
+async function feedChannel(): Promise<string> {
+  const channel = loadAppSettings().updater_channel ?? "latest";
+  if (!(await cutoverPublished())) {
+    return channel;
+  }
+  const migrated = findLegacySecretStores().length === 0;
+  if (!cutoverReported) {
+    cutoverReported = true;
+    capture("electron_desktop_cutover", {
+      stage: migrated ? "offered" : "held_back",
+    });
+  }
+
+  return migrated ? CUTOVER_CHANNEL : channel;
+}
+
+// Pinned to the houwert.dev reverse proxy regardless of what `publish:`
+// resolves to in the packaged app-update.yml: the Argus repo on GitHub is
+// private, so the github provider 404s on `releases.atom`. Beta builds publish
+// under `beta-mac.yml`; alpha (`alpha-mac.yml`) isn't offered in the settings
+// dialog, collaborators install it from the GitHub release page.
+async function pointFeed(): Promise<void> {
+  autoUpdater.setFeedURL({
+    provider: "generic",
+    url: FEED_URL,
+    channel: await feedChannel(),
+    useMultipleRangeRequest: true,
+  });
+}
+
 /** Wire electron-updater event handlers. Idempotent. */
 export function initUpdater(): void {
   if (initialized) {
@@ -105,24 +164,6 @@ export function initUpdater(): void {
     return;
   }
   initialized = true;
-
-  // Pin the feed to the houwert.dev reverse proxy regardless of what
-  // `publish:` resolves to in the packaged app-update.yml. The Argus repo
-  // on GitHub is private, so falling back to the github provider yields
-  // a 404 on `releases.atom`.
-  //
-  // Channel is configurable for beta testers — beta builds publish under
-  // `beta-mac.yml`. Production users on the default `latest` feed never see
-  // them. Alpha builds (`alpha-mac.yml`) exist but are not exposed in the
-  // settings dialog; they're installed manually from the GitHub release
-  // page by repo collaborators. See `app/components/shared/SettingsDialog`.
-  const channel = loadAppSettings().updater_channel ?? "latest";
-  autoUpdater.setFeedURL({
-    provider: "generic",
-    url: "https://houwert.dev/argus/updates",
-    channel,
-    useMultipleRangeRequest: true,
-  });
 
   // The user reads the changelog before deciding whether to update, so we
   // never start a download until they click "Download" in the dialog. And
@@ -217,6 +258,7 @@ export async function checkForUpdates(options?: {
     setState({ phase: "checking", error: null });
   }
   try {
+    await pointFeed();
     await autoUpdater.checkForUpdates();
   } catch (err) {
     setState({

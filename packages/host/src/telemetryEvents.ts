@@ -232,6 +232,7 @@ export interface EventMap {
   eas_session_start_failed: { reason: EasFailure };
   eas_session_start_prompted: { outcome: "cancelled" | "confirmed" };
   eas_session_started: { wait_bucket: "<1m" | "<3m" | "<10m" | ">=10m" };
+  electron_desktop_cutover: { stage: "held_back" | "offered" };
   electron_server_handoff: {
     stage: "blocked_by_agents" | "failed" | "installing" | "offered";
   };
