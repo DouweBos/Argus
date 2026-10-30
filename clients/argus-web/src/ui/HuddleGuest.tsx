@@ -40,7 +40,12 @@ import { ChatInput } from "./ChatInput";
 import { ConnectionBadge } from "./ConnectionBadge";
 import { DeviceScreen } from "./DeviceScreen";
 import { HuddleGate } from "./HuddleGate";
-import { loadDevicePanelWidth, saveDevicePanelWidth } from "./sidebarWidth";
+import {
+  loadChatPanelWidth,
+  loadDevicePanelWidth,
+  saveChatPanelWidth,
+  saveDevicePanelWidth,
+} from "./sidebarWidth";
 import { useIsWide } from "./useIsWide";
 
 export function HuddleGuest({ token }: { token: string }) {
@@ -93,12 +98,20 @@ function HuddleRoom({ view }: { view: HuddleView }) {
   const refreshDevices = useAppStore((s) => s.refreshDevices);
   const sayInHuddle = useAppStore((s) => s.sayInHuddle);
   const hasDevice = panes.includes("device");
-  const unread = useUnreadCount(view.chat.length, pane === "chat");
   // Wide enough for both at once: the device stops being a pane you switch to
   // and becomes a panel beside the conversation, the way the desktop shows it.
   const isWide = useIsWide();
   const splitDevice = isWide && hasDevice;
+  // The room chat gets a column of its own too, open unless the guest hides it.
+  const [chatColumnOpen, setChatColumnOpen] = useState(true);
+  const chatColumn = isWide && chatColumnOpen;
+  const unread = useUnreadCount(
+    view.chat.length,
+    isWide ? chatColumnOpen : pane === "chat",
+  );
   const onDeviceResize = useCallback((w: number) => saveDevicePanelWidth(w), []);
+  const onChatResize = useCallback((w: number) => saveChatPanelWidth(w), []);
+  const lastMessage = view.chat[view.chat.length - 1];
 
   useEffect(() => {
     if (connection === "ready" && agentId) {
@@ -121,6 +134,22 @@ function HuddleRoom({ view }: { view: HuddleView }) {
       setPane((p) => (p === "device" ? "agent" : p));
     }
   }, [hasDevice, splitDevice]);
+
+  // A column now holds the chat, so it's no longer a pane to switch to.
+  useEffect(() => {
+    if (isWide) {
+      setPane((p) => (p === "chat" ? "agent" : p));
+    }
+  }, [isWide]);
+
+  // Someone else speaking brings a hidden chat column back.
+  const lastFromOthers =
+    lastMessage && lastMessage.member_id !== view.you ? lastMessage.id : null;
+  useEffect(() => {
+    if (lastFromOthers) {
+      setChatColumnOpen(true);
+    }
+  }, [lastFromOthers]);
 
   // The list is already scoped to the room, so this is the device or nothing.
   const device = devices.find((d) => d.id === view.deviceKey) ?? null;
@@ -159,7 +188,11 @@ function HuddleRoom({ view }: { view: HuddleView }) {
               )}
             </SidebarHeaderAction>
             <SidebarHeaderAction
-              onClick={() => setPane(pane === "chat" ? "agent" : "chat")}
+              onClick={() =>
+                isWide
+                  ? setChatColumnOpen((open) => !open)
+                  : setPane(pane === "chat" ? "agent" : "chat")
+              }
               title="Chat with the room"
               aria-label="Chat with the room"
             >
@@ -202,22 +235,14 @@ function HuddleRoom({ view }: { view: HuddleView }) {
         </div>
       )}
 
-      <div className={`aw-huddle-body${splitDevice ? " aw-huddle-split" : ""}`}>
+      <div
+        className={`aw-huddle-body${splitDevice || chatColumn ? " aw-huddle-split" : ""}`}
+      >
         <div className="aw-pane">
           <div className="aw-main">
             {pane === "agent" && <AgentTranscript agentId={agentId} />}
             {pane === "chat" && (
-              <HuddleChat
-                emptyLabel="Nothing said yet. This stays between the people here — the agent never sees it."
-                messages={view.chat.map((m) => ({
-                  id: m.id,
-                  author: m.author,
-                  text: m.text,
-                  at: m.at,
-                  mine: m.member_id != null && m.member_id === view.you,
-                }))}
-                onSend={sayInHuddle}
-              />
+              <RoomChat view={view} onSend={sayInHuddle} />
             )}
             {pane === "device" && <DevicePane device={device} />}
           </div>
@@ -247,12 +272,51 @@ function HuddleRoom({ view }: { view: HuddleView }) {
             </div>
           </ResizablePanel>
         )}
+
+        {isWide && (
+          <ResizablePanel
+            collapsed={!chatColumnOpen}
+            defaultWidth={loadChatPanelWidth()}
+            maxWidth={600}
+            minWidth={240}
+            side="right"
+            unit="pixel"
+            onResize={onChatResize}
+          >
+            <div className="aw-huddle-chat">
+              <RoomChat view={view} onSend={sayInHuddle} />
+            </div>
+          </ResizablePanel>
+        )}
       </div>
 
       {settingsOpen && (
         <HuddleSettingsDialog onClose={() => setSettingsOpen(false)} />
       )}
     </div>
+  );
+}
+
+/** The side conversation between the people in the room. */
+function RoomChat({
+  view,
+  onSend,
+}: {
+  view: HuddleView;
+  onSend: (text: string) => void;
+}) {
+  return (
+    <HuddleChat
+      emptyLabel="Nothing said yet. This stays between the people here — the agent never sees it."
+      messages={view.chat.map((m) => ({
+        id: m.id,
+        author: m.author,
+        text: m.text,
+        at: m.at,
+        mine: m.member_id != null && m.member_id === view.you,
+      }))}
+      onSend={onSend}
+    />
   );
 }
 

@@ -648,6 +648,15 @@ button {
   border-left: 1px solid var(--border);
 }
 
+/* The room chat's column, right of the device. */
+.aw-huddle-chat {
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+}
+
 /* Hosted client (houwert.dev/argus/app): the account screens before a computer opens. */
 .aw-hosted {
   gap: 16px;
