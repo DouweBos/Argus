@@ -42,6 +42,8 @@ struct TerminalSurface: NSViewRepresentable {
       context.coordinator.scheme = scheme
       (scheme == .dark ? TerminalPalette.dark : .light).apply(to: view)
     }
+    // A tab kept alive behind another still lays its I-beam over whatever is in front unless hidden.
+    view.isHidden = !isActive
     if isActive {
       search.bind(view)
       // Typing goes to the tab you're looking at, as in the desktop app.
