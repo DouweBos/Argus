@@ -36,14 +36,21 @@ struct RecentChatsSheet: View {
   @State private var entries: [ArgusProtocol.ChatHistoryEntry] = []
   @State private var loaded = false
   @State private var query = ""
+  /// The host's matches for `query`, titles and message text, by history id.
+  @State private var hits: (query: String, matches: [String: [ArgusProtocol.ChatHistoryMessageMatch]])?
   @State private var searched = false
   @State private var viewing: ViewedChat?
   @State private var confirmingClear = false
 
+  private var needle: String { query.trimmingCharacters(in: .whitespaces) }
+
   private var shown: [ArgusProtocol.ChatHistoryEntry] {
-    let needle = query.trimmingCharacters(in: .whitespaces)
     guard !needle.isEmpty else { return entries }
-    return entries.filter { $0.title.localizedCaseInsensitiveContains(needle) }
+    // Titles narrow at once; message hits follow when the host answers.
+    guard let hits, hits.query == needle else {
+      return entries.filter { $0.title.localizedCaseInsensitiveContains(needle) }
+    }
+    return entries.filter { hits.matches[$0.id] != nil }
   }
 
   var body: some View {
@@ -54,6 +61,7 @@ struct RecentChatsSheet: View {
     }
     .frame(width: 520, height: 460)
     .task(id: SessionChats.reloadKey(session, store: store)) { await load() }
+    .task(id: needle) { await search(needle) }
     .onChange(of: query) { _, value in
       guard !searched, !value.isEmpty else { return }
       searched = true
@@ -81,7 +89,7 @@ struct RecentChatsSheet: View {
         Button("Done") { dismiss() }
           .keyboardShortcut(.cancelAction)
       }
-      TextField("Search chats", text: $query)
+      TextField("Search chats & messages", text: $query)
         .textFieldStyle(.roundedBorder)
     }
     .padding(16)
@@ -95,12 +103,12 @@ struct RecentChatsSheet: View {
         icon: Icon.history, title: entries.isEmpty ? "No chats yet" : "No matches",
         message: entries.isEmpty
           ? "Chats this session's agents have finished show up here."
-          : "No chat title matches \u{201C}\(query)\u{201D}.")
+          : "No chat mentions \u{201C}\(needle)\u{201D}.")
     } else {
       ScrollView {
         LazyVStack(spacing: 0) {
           ForEach(shown, id: \.id) { entry in
-            ChatHistoryRow(entry: entry) {
+            ChatHistoryRow(entry: entry, matches: needle.isEmpty ? [] : hits?.matches[entry.id] ?? []) {
               view(entry)
             } resume: {
               Task { await resume(entry) }
@@ -118,6 +126,18 @@ struct RecentChatsSheet: View {
   private func load() async {
     entries = await SessionChats.load(session, store: store) ?? entries
     loaded = true
+  }
+
+  /// The whole repo's history, searched on the host; the session's entries pick out their own.
+  private func search(_ needle: String) async {
+    guard !needle.isEmpty, let backend = store.backend else { return }
+    try? await Task.sleep(for: .milliseconds(120))
+    guard !Task.isCancelled,
+      let results = try? await backend.request(
+        ArgusProtocol.Commands.SearchChatHistory.self, .init(repoRoot: session.repoRoot, query: needle)),
+      !Task.isCancelled
+    else { return }
+    hits = (needle, Dictionary(results.map { ($0.entry.id, $0.messageMatches) }, uniquingKeysWith: { a, _ in a }))
   }
 
   /// Paged from the host like a stopped agent's transcript, so a long chat
@@ -161,6 +181,7 @@ struct ViewedChat: Identifiable {
 private struct ChatHistoryRow: View {
   @Environment(\.theme) private var theme
   let entry: ArgusProtocol.ChatHistoryEntry
+  let matches: [ArgusProtocol.ChatHistoryMessageMatch]
   let open: () -> Void
   let resume: () -> Void
   let delete: () -> Void
@@ -175,6 +196,9 @@ private struct ChatHistoryRow: View {
             if entry.importedFrom == .claudeCode {
               Badge(label: "Imported").help("Imported · Claude Code")
             }
+          }
+          ForEach(Array(matches.enumerated()), id: \.offset) { _, match in
+            MatchSnippet(match: match)
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -201,6 +225,38 @@ private struct ChatHistoryRow: View {
       ended.formatted(.relative(presentation: .named)), entry.sessionBranch,
       "\(count) msg\(count == 1 ? "" : "s")",
     ].joined(separator: " · ")
+  }
+}
+
+/// A message line that matched the search, its hit in bold.
+private struct MatchSnippet: View {
+  @Environment(\.theme) private var theme
+  let match: ArgusProtocol.ChatHistoryMessageMatch
+
+  var body: some View {
+    (Text(role).foregroundStyle(theme.textMuted) + Text("  ") + snippet)
+      .font(.scaled(.caption))
+      .foregroundStyle(theme.textSecondary)
+      .lineLimit(2)
+      .padding(.top, 2)
+  }
+
+  private var role: String {
+    switch match.role {
+    case .assistant: "Assistant"
+    case .system: "System"
+    default: "You"
+    }
+  }
+
+  /// The host's offsets are UTF-16, as JavaScript counts them.
+  private var snippet: Text {
+    let text = match.snippet as NSString
+    let start = min(Int(match.matchStart), text.length)
+    let end = min(max(Int(match.matchEnd), start), text.length)
+    return Text(text.substring(to: start))
+      + Text(text.substring(with: NSRange(location: start, length: end - start))).bold().foregroundStyle(theme.text)
+      + Text(text.substring(from: end))
   }
 }
 
