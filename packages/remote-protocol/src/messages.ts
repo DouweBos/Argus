@@ -87,6 +87,10 @@ export type RemotePlatform = z.infer<typeof RemotePlatform>;
 
 const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
 
+// Bounded so a remote can't stream an unbounded prompt into agent stdin, but loose
+// enough for a pasted build log; the 16 MB gateway frame is the hard ceiling.
+const MAX_PROMPT = 1_000_000;
+
 /**
  * The editable half of an automation. Create sends it whole; update sends a
  * partial. `repo_roots` carries real paths — the host rejects any it doesn't
@@ -216,10 +220,9 @@ export const MethodParams = {
   "agents.capabilities": z.object({ agent_id: z.string() }),
   "agents.send": z.object({
     agent_id: z.string(),
-    // Bounded to keep a remote from streaming an unbounded prompt into agent stdin.
-    message: z.string().max(100_000),
+    message: z.string().max(MAX_PROMPT),
     /** What the clients show, when the sent text carries a preamble. */
-    display_text: z.string().max(100_000).optional(),
+    display_text: z.string().max(MAX_PROMPT).optional(),
     images: z.array(RemoteImageAttachment).max(20).optional(),
   }),
   "agents.interrupt": z.object({ agent_id: z.string() }),
@@ -260,16 +263,16 @@ export const MethodParams = {
   "agents.queue_list": z.object({ agent_id: z.string() }),
   "agents.queue_add": z.object({
     agent_id: z.string(),
-    message: z.string().max(100_000),
+    message: z.string().max(MAX_PROMPT),
     /** What the clients show, when the sent text carries a preamble. */
-    display_text: z.string().max(100_000).optional(),
+    display_text: z.string().max(MAX_PROMPT).optional(),
     images: z.array(RemoteImageAttachment).max(20).optional(),
   }),
   "agents.queue_remove": z.object({ agent_id: z.string(), id: z.string() }),
   "agents.queue_update": z.object({
     agent_id: z.string(),
     id: z.string(),
-    message: z.string().max(100_000),
+    message: z.string().max(MAX_PROMPT),
   }),
   "agents.queue_send_now": z.object({ agent_id: z.string(), id: z.string() }),
   "scratch_pads.create": z.object({
@@ -282,7 +285,7 @@ export const MethodParams = {
     use_existing_branch: z.boolean().optional(),
     base_branch: z.string().optional(),
     /** Start an agent on this once setup finishes — the host waits, not the client. */
-    prompt: z.string().max(100_000).optional(),
+    prompt: z.string().max(MAX_PROMPT).optional(),
     /** What that agent starts on; each falls back to the host's default. */
     model: z.string().optional(),
     permission_mode: RemotePermissionMode.optional(),

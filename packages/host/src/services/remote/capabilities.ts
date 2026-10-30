@@ -704,7 +704,11 @@ function parse<M extends RemoteMethod>(
   const schema = MethodParams[method] as unknown as z.ZodType<ParamsOf<M>>;
   const result = schema.safeParse(params);
   if (!result.success) {
-    throw new GatewayError("bad_request", `invalid params for ${method}`);
+    const first = result.error.issues[0];
+    throw new GatewayError(
+      "bad_request",
+      `invalid params for ${method}${first ? `: ${first.path.join(".") || "(root)"} ${first.message}` : ""}`,
+    );
   }
 
   return result.data;
