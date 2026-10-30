@@ -40,7 +40,11 @@ import {
   getManagedTunnelState,
   type ManagedTunnelState,
 } from "./managedTunnel";
-import { probeGatewayUrl } from "./reachability";
+import {
+  probeGatewayUrl,
+  QUICK_TUNNEL_RETRY_DELAYS_MS,
+  type ProbeOpts,
+} from "./reachability";
 import { cloudflaredMissingError, quickTunnelError } from "./shareError";
 import {
   getTunnelState,
@@ -340,11 +344,12 @@ function unreachableReason(kind: EndpointKind, url: string): string {
 async function confirmReachable(
   kind: EndpointKind,
   url: string,
+  probe?: ProbeOpts,
 ): Promise<boolean> {
   if (kind === "lan") {
     return true;
   }
-  const ok = await probeGatewayUrl(url);
+  const ok = await probeGatewayUrl(url, probe);
   markTunnelReachability(kind, url, ok, unreachableReason(kind, url));
 
   return ok;
@@ -446,7 +451,11 @@ export async function acquirePublicUrl(
   huddleOwnsCloudflare = true;
   try {
     const url = await waitForTunnelUrl("cloudflare", timeoutMs);
-    if (!(await confirmReachable("cloudflare", url))) {
+    const fresh = {
+      awaitPublicDns: true,
+      retryDelaysMs: QUICK_TUNNEL_RETRY_DELAYS_MS,
+    };
+    if (!(await confirmReachable("cloudflare", url, fresh))) {
       throw new Error(unreachableReason("cloudflare", url));
     }
     publicUrlRefs += 1;

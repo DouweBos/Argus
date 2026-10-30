@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getGatewayNonce, HEALTH_PATH } from "./gatewayHealth";
-import { probeGatewayUrl } from "./reachability";
+import { probeGatewayUrl, waitForPublicDns } from "./reachability";
 
 const NO_RETRY = { retryDelaysMs: [] };
 
@@ -66,5 +66,55 @@ describe("probeGatewayUrl", () => {
       probeGatewayUrl("wss://demo.trycloudflare.com", { retryDelaysMs: [1] }),
     ).resolves.toBe(true);
     expect(calls).toBe(2);
+  });
+});
+
+describe("waitForPublicDns", () => {
+  const notFound = () =>
+    Object.assign(new Error("queryA ENOTFOUND"), { code: "ENOTFOUND" });
+
+  it("waits until public DNS has the new hostname", async () => {
+    let calls = 0;
+    const resolve4 = vi.fn(async () => {
+      calls += 1;
+      if (calls < 3) {
+        throw notFound();
+      }
+
+      return ["104.16.230.132"];
+    });
+
+    await waitForPublicDns("demo.trycloudflare.com", {
+      pollMs: 1,
+      resolver: { resolve4 },
+    });
+    expect(resolve4).toHaveBeenCalledTimes(3);
+  });
+
+  it("stops waiting when public resolvers can't be reached", async () => {
+    const resolve4 = vi.fn(async () => {
+      throw Object.assign(new Error("queryA ECONNREFUSED"), {
+        code: "ECONNREFUSED",
+      });
+    });
+
+    await waitForPublicDns("demo.trycloudflare.com", {
+      pollMs: 1,
+      resolver: { resolve4 },
+    });
+    expect(resolve4).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives up after its timeout", async () => {
+    const resolve4 = vi.fn(async () => {
+      throw notFound();
+    });
+
+    await waitForPublicDns("demo.trycloudflare.com", {
+      timeoutMs: 20,
+      pollMs: 5,
+      resolver: { resolve4 },
+    });
+    expect(resolve4.mock.calls.length).toBeGreaterThan(1);
   });
 });

@@ -154,6 +154,7 @@ vi.mock("./tunnelManager", () => ({
 }));
 vi.mock("./reachability", () => ({
   probeGatewayUrl: async (url: string) => reach.unreachable.has(url) === false,
+  QUICK_TUNNEL_RETRY_DELAYS_MS: [],
 }));
 const tailnet = vi.hoisted(() => ({ on: false }));
 vi.mock("node:os", () => ({
