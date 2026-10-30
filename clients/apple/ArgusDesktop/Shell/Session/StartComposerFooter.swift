@@ -17,6 +17,8 @@ final class StartWorkspace {
   private(set) var preselected: String?
   private(set) var loading = false
   private var loaded = false
+  /// The checkout's local branches, read each time its branch menu opens.
+  private(set) var localBranches: [String]?
 
   var base: String? { picked ?? preselected }
 
@@ -36,6 +38,12 @@ final class StartWorkspace {
       local: branches.local, originRefs: branches.originRefs,
       configured: argus?.defaultBaseBranch.flatMap { $0.isEmpty ? nil : $0 }, protected: protected,
       projectRootBranch: projectRootBranch)
+  }
+
+  func loadLocalBranches(repoRoot: String, backend: HostRouter?) async {
+    guard let backend else { return }
+    let list = try? await backend.request(ArgusProtocol.Commands.ListAllBranches.self, .init(repoRoot: repoRoot))
+    localBranches = list?.local ?? localBranches ?? []
   }
 }
 
@@ -77,6 +85,7 @@ struct StartComposerFooter: View {
   @Environment(HostStore.self) private var store
   let session: RemoteSession
   let workspace: StartWorkspace
+  @State private var branchMenuOpen = false
 
   private var currentLabel: String { session.kind == .projectRoot ? "Current checkout" : "This worktree" }
 
@@ -160,15 +169,38 @@ struct StartComposerFooter: View {
     return workspace.loading ? "Loading branches…" : "Project default"
   }
 
-  /// The checkout stays on its branch, as on the desktop; switching it is the git panel's job.
+  /// Switches the checkout in place, through the git panel's checkout so a dirty tree still asks.
   private var currentBranch: some View {
-    HStack(spacing: 5) {
-      Image(systemName: Icon.branch).font(.scaled(size: 11))
-      Text(session.branch).font(.scaled(size: 12)).lineLimit(1).truncationMode(.middle)
+    ChromeMenuButton(isPresented: $branchMenuOpen, edge: .above) {
+      ChromeMenuEntry.header("Switch branch")
+      if let branches = workspace.localBranches {
+        if branches.isEmpty { ChromeMenuEntry.note("No branches") }
+        for branch in branches {
+          ChromeMenuItem(branch, checked: branch == session.branch) { switchBranch(to: branch) }
+        }
+      } else {
+        ChromeMenuEntry.note("Loading branches…")
+      }
+    } label: { open in
+      ComposerPillLabel(icon: Icon.branch, title: session.branch, chevronOnHover: true, open: open)
     }
-    .foregroundStyle(theme.textSecondary)
-    .padding(.horizontal, 7)
+    .buttonStyle(.argusPlain)
+    .fixedSize()
     .help("The branch this checkout is on")
+    .task(id: branchMenuOpen) {
+      guard branchMenuOpen else { return }
+      await workspace.loadLocalBranches(repoRoot: session.repoRoot, backend: model.backend)
+    }
+  }
+
+  private func switchBranch(to branch: String) {
+    guard branch != session.branch else { return }
+    MacTelemetry.capture(.startBranchSwitched)
+    Task {
+      guard let git = await model.git.open(session) else { return }
+      await RefActions(workspace: git, session: session, model: model, theme: theme).checkout(branch)
+      await store.loadSessions(repoRoot: session.repoRoot)
+    }
   }
 
   private func pullRequestButton(_ pr: RemotePullRequest) -> some View {

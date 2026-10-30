@@ -9,15 +9,21 @@
     var title: String?
     var accent = false
     var chevron = true
+    /// Shows the chevron only on hover or while open, keeping its space so the title doesn't shift.
+    var chevronOnHover = false
     /// Its dropdown is showing.
     var open = false
     @State private var hovering = false
 
-    public init(icon: String, title: String? = nil, accent: Bool = false, chevron: Bool = true, open: Bool = false) {
+    public init(
+      icon: String, title: String? = nil, accent: Bool = false, chevron: Bool = true, chevronOnHover: Bool = false,
+      open: Bool = false
+    ) {
       self.icon = icon
       self.title = title
       self.accent = accent
       self.chevron = chevron
+      self.chevronOnHover = chevronOnHover
       self.open = open
     }
 
@@ -29,6 +35,7 @@
         }
         if chevron {
           Image(systemName: Icon.chevronDown).font(.scaled(size: 8, weight: .semibold))
+            .opacity(!chevronOnHover || ((hovering || open) && isEnabled) ? 1 : 0)
         }
       }
       .foregroundStyle(

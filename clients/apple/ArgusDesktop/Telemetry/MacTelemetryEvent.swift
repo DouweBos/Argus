@@ -229,6 +229,8 @@ enum MacTelemetryEvent {
   case scratchPadCreated
   /// A start composer's workspace was switched; the worktree it creates is the host's `session_created`.
   case startWorkspacePicked(workspace: String)
+  /// The current checkout's branch was switched from a start composer; the checkout itself is `mac_git_used`.
+  case startBranchSwitched
   /// On connect this app handed the host preferences it had no value for yet.
   case prefsSupplied(keys: Int)
   /// A window tab was opened, closed or switched to.
@@ -401,6 +403,7 @@ enum MacTelemetryEvent {
     case .navigatedHistory: "mac_navigated_history"
     case .scratchPadCreated: "mac_scratch_pad_created"
     case .startWorkspacePicked: "mac_start_workspace_picked"
+    case .startBranchSwitched: "mac_start_branch_switched"
     case .prefsSupplied: "mac_prefs_supplied"
     case .transcriptLinkOpened: "mac_transcript_link_opened"
     case .transcriptFindUsed: "mac_transcript_find_used"
@@ -527,7 +530,7 @@ enum MacTelemetryEvent {
       ["direction": direction.rawValue, "via": via.rawValue]
     case .prefsSupplied(let keys):
       ["keys": keys]
-    case .scratchPadCreated:
+    case .scratchPadCreated, .startBranchSwitched:
       [:]
     case .startWorkspacePicked(let workspace):
       ["workspace": workspace]
