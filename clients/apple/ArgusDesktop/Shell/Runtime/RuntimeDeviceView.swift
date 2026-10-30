@@ -69,7 +69,8 @@ struct RuntimeDeviceView: View {
   private var stage: some View {
     GeometryReader { proxy in
       ZStack {
-        theme.mediaBg
+        // The panel's canvas around the picture, so a letterboxed device doesn't sit in a black slab.
+        theme.bg
         DeviceVideoView(handle: handle) { status = .streaming }
           .frame(width: geometry.renderedSize.width, height: geometry.renderedSize.height)
           .rotationEffect(.degrees(rotation))
