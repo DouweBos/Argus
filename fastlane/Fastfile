@@ -1,6 +1,13 @@
+require "digest"
+require "time"
+require "yaml"
+
 default_platform(:mac)
 
 TEAM_ID      = "CKZT75PN5T"
+# Electron's bundle id: Squirrel.Mac only swaps in a bundle that satisfies the
+# running desktop's designated requirement, so Argus for Mac takes it over.
+MAC_APP_BUNDLE_ID = "dev.houwert.argus"
 # electron-builder reads CSC_NAME and adds the type prefix internally — it
 # rejects values that already start with "Apple Development:" or
 # "Developer ID Application:", so we pass the bare common name.
@@ -30,18 +37,18 @@ platform :mac do
     match(**match_options)
   end
 
-  desc "Sync the Developer ID profile for Argus for Mac (dev.houwert.argus.mac), which Sign in with Apple needs. Pass generate:true once to create and upload it."
+  desc "Sync the Developer ID profile for Argus for Mac (dev.houwert.argus), which Sign in with Apple needs. Pass generate:true once to create and upload it."
   lane :mac_app_profile do |options|
     api_key = ENV["APP_STORE_CONNECT_API_KEY_ID"] ? load_app_store_connect_api_key : nil
     UI.user_error!("CI must authenticate via APP_STORE_CONNECT_API_KEY_* env vars") if is_ci && api_key.nil?
 
-    # Installs as "match Direct dev.houwert.argus.mac macos", the name the
+    # Installs as "match Direct dev.houwert.argus macos", the name the
     # ArgusDesktop Release config pins.
     match_options = {
       type:                       "developer_id",
       readonly:                   !options.fetch(:generate, false),
       platform:                   "macos",
-      app_identifier:             "dev.houwert.argus.mac",
+      app_identifier:             MAC_APP_BUNDLE_ID,
       skip_provisioning_profiles: false,
     }
     match_options[:api_key] = api_key if api_key
@@ -142,6 +149,38 @@ platform :mac do
 
   desc "Argus Server (native, clients/apple/ArgusServer): archive, Developer ID export, notarize, staple, zip, Sparkle appcast, GitHub release upload. Pass channel:beta|alpha for pre-releases, publish:false to stop before uploading. Needs SPARKLE_PUBLIC_ED_KEY and SPARKLE_ED_PRIVATE_KEY."
   lane :mac_server_release do |options|
+    release_native_app(
+      options,
+      scheme:       "ArgusServer",
+      app_name:     "Argus Server",
+      zip_prefix:   "Argus-Server",
+      product:      "argus-server",
+      out_dir:      "release-mac-server",
+    )
+  end
+
+  desc "Argus for Mac (native, clients/apple/ArgusDesktop): as mac_server_release, plus a .dmg and, on production, cutover-mac.yml, the feed the Electron desktop updates into it from. Needs the profile from mac_app_profile."
+  lane :mac_app_release do |options|
+    release_native_app(
+      options,
+      scheme:       "ArgusDesktop",
+      app_name:     "Argus",
+      zip_prefix:   "Argus-Mac",
+      product:      "argus-mac",
+      out_dir:      "release-mac-app",
+      bundle_id:    MAC_APP_BUNDLE_ID,
+      dmg_name:     "Argus",
+      electron_cutover: true,
+    )
+  end
+
+  # ---------------------------------------------------------------
+  # Helpers
+  # ---------------------------------------------------------------
+
+  # Archive, export, notarize and publish a native app with its Sparkle
+  # appcast. `bundle_id` is set for an app with profile-bound entitlements.
+  def release_native_app(options, scheme:, app_name:, zip_prefix:, product:, out_dir:, bundle_id: nil, dmg_name: nil, electron_cutover: false)
     publish = options.fetch(:publish, true)
     channel = options.fetch(:channel, "production")
     unless ["production", "beta", "alpha"].include?(channel)
@@ -161,32 +200,33 @@ platform :mac do
     UI.user_error!("Missing SPARKLE_ED_PRIVATE_KEY") if private_key.nil? || private_key.empty?
 
     api_key = load_app_store_connect_api_key
-    # Plain Developer ID: the server has no profile-bound entitlements.
-    match(
+    match_options = {
       type:                       "developer_id",
       readonly:                   true,
       api_key:                    api_key,
       platform:                   "macos",
-      skip_provisioning_profiles: true,
-    )
+      skip_provisioning_profiles: bundle_id.nil?,
+    }
+    match_options[:app_identifier] = bundle_id if bundle_id
+    match(**match_options)
 
     version = read_package_version
     # Sparkle orders builds by CFBundleVersion, so it has to grow with every release.
     build_number = sh("git rev-list --count HEAD", log: false).strip
-    UI.success("Releasing Argus Server v#{version} (#{build_number}) on #{feed_channel}")
+    UI.success("Releasing #{app_name} v#{version} (#{build_number}) on #{feed_channel}")
 
     root = File.expand_path("..", __dir__)
-    out = File.join(root, "release-mac-server")
+    out = File.join(root, out_dir)
     FileUtils.rm_rf(out)
     FileUtils.mkdir_p(out)
-    archive = File.join(out, "ArgusServer.xcarchive")
+    archive = File.join(out, "#{scheme}.xcarchive")
     derived = File.join(out, "dd")
 
     sh("cd #{root.shellescape} && pnpm install --frozen-lockfile && pnpm build:web-client")
     sh([
       "xcodebuild", "archive",
       "-project", File.join(root, "clients/apple/ArgusRemote.xcodeproj"),
-      "-scheme", "ArgusServer",
+      "-scheme", scheme,
       "-configuration", "Release",
       "-destination", "generic/platform=macOS",
       "-archivePath", archive,
@@ -196,6 +236,10 @@ platform :mac do
       "SPARKLE_PUBLIC_ED_KEY=#{public_key}",
     ].shelljoin)
 
+    profiles = bundle_id ? <<~XML : ""
+      <key>provisioningProfiles</key>
+      <dict><key>#{bundle_id}</key><string>match Direct #{bundle_id} macos</string></dict>
+    XML
     export_options = File.join(out, "ExportOptions.plist")
     File.write(export_options, <<~PLIST)
       <?xml version="1.0" encoding="UTF-8"?>
@@ -206,13 +250,15 @@ platform :mac do
         <key>teamID</key><string>#{TEAM_ID}</string>
         <key>signingStyle</key><string>manual</string>
         <key>signingCertificate</key><string>Developer ID Application</string>
+        #{profiles}
       </dict>
       </plist>
     PLIST
     sh(["xcodebuild", "-exportArchive", "-archivePath", archive, "-exportOptionsPlist", export_options, "-exportPath", out].shelljoin)
 
-    app = File.join(out, "Argus Server.app")
-    zip = File.join(out, "Argus-Server-#{version}-arm64.zip")
+    app = File.join(out, "#{app_name}.app")
+    zip_name = "#{zip_prefix}-#{version}-arm64.zip"
+    zip = File.join(out, zip_name)
 
     # Notarize the zip, staple the app, then zip the stapled app for shipping.
     prepare_notarize_env
@@ -231,7 +277,7 @@ platform :mac do
     feeds = File.join(out, "feeds")
     FileUtils.mkdir_p(feeds)
     FileUtils.cp(zip, feeds)
-    appcast_name = "argus-server-#{feed_channel}.xml"
+    appcast_name = "#{product}-#{feed_channel}.xml"
     appcast = File.join(feeds, appcast_name)
     sh("curl -fsSL https://houwert.dev/argus/updates/#{appcast_name} -o #{appcast.shellescape} || rm -f #{appcast.shellescape}")
     key_file = File.join(out, "sparkle-ed.key")
@@ -243,22 +289,65 @@ platform :mac do
       "--download-url-prefix", "https://houwert.dev/argus/updates/",
       "-o", appcast, feeds,
     ].shelljoin)
+    assets = [zip, appcast]
+
+    # Named like Electron's, so the website's `Argus-latest-arm64.dmg` link keeps resolving.
+    if dmg_name
+      stage = File.join(out, "dmg")
+      FileUtils.mkdir_p(stage)
+      sh(["ditto", app, File.join(stage, File.basename(app))].shelljoin)
+      File.symlink("/Applications", File.join(stage, "Applications"))
+      dmg = File.join(out, "#{dmg_name}-#{version}-arm64.dmg")
+      sh(["hdiutil", "create", "-volname", app_name, "-srcfolder", stage, "-ov", "-format", "UDZO", dmg].shelljoin)
+      sh(["codesign", "--sign", "Developer ID Application: #{SIGN_IDENTITY_RELEASE}", "--timestamp", dmg].shelljoin)
+      sh([
+        "xcrun", "notarytool", "submit", dmg, "--wait",
+        "--key", ENV["APPLE_API_KEY"], "--key-id", ENV["APPLE_API_KEY_ID"], "--issuer", ENV["APPLE_API_ISSUER"],
+      ].shelljoin)
+      sh(["xcrun", "stapler", "staple", dmg].shelljoin)
+      assets << dmg
+    end
+
+    # Publishing this is the cutover: every Electron desktop that has migrated
+    # its secrets follows it, and Squirrel.Mac swaps this app in (same bundle
+    # id and team). Stable only, so no Electron user lands on a pre-release.
+    if electron_cutover && channel == "production"
+      assets << write_electron_feed(File.join(out, "cutover-mac.yml"), zip, version)
+    end
 
     if publish
       tag = "v#{version}"
       ENV["GH_TOKEN"] ||= ENV["GITHUB_TOKEN"]
       prerelease = channel == "production" ? "" : " --prerelease"
       sh("gh release view #{tag} >/dev/null 2>&1 || gh release create #{tag} --title #{tag} --notes ''#{prerelease}")
-      sh(["gh", "release", "upload", tag, zip, appcast, "--clobber"].shelljoin)
-      UI.success("Published Argus Server #{version} to #{tag} (#{appcast_name})")
+      sh(["gh", "release", "upload", tag, *assets, "--clobber"].shelljoin)
+      UI.success("Published #{app_name} #{version} to #{tag} (#{assets.map { |a| File.basename(a) }.join(", ")})")
     else
-      UI.success("Built #{zip} and #{appcast}; not published")
+      UI.success("Built #{assets.join(", ")}; not published")
     end
   end
 
-  # ---------------------------------------------------------------
-  # Helpers
-  # ---------------------------------------------------------------
+  # An electron-updater manifest for a zip, in the shape electron-builder
+  # writes `latest-mac.yml`, so the Electron desktop's "What's new" shows notes.
+  def write_electron_feed(path, zip, version)
+    notes_file = ENV["ARGUS_RELEASE_NOTES_FILE"]
+    if notes_file.nil? || notes_file.empty?
+      notes_file = File.expand_path("../release-notes.md", __dir__)
+      sh("cd .. && pnpm exec tsx scripts/extract-release-notes.ts #{notes_file.shellescape}")
+    end
+    sha512 = Digest::SHA512.file(zip).base64digest
+    file = { "url" => File.basename(zip), "sha512" => sha512, "size" => File.size(zip) }
+    feed = {
+      "version"      => version,
+      "files"        => [file],
+      "path"         => file["url"],
+      "sha512"       => sha512,
+      "releaseDate"  => Time.now.utc.iso8601(3),
+    }
+    feed["releaseNotes"] = File.read(notes_file) if File.exist?(notes_file)
+    File.write(path, feed.to_yaml)
+    path
+  end
 
   # Build the in-memory `api_key` hash that match / notarize actions
   # accept. Reads the `.p8` body, key id, and issuer id from env vars.

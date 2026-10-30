@@ -11,6 +11,15 @@ on:
           - beta
           - alpha
         default: production
+      app:
+        # `mac` ships Argus for Mac, and on production that is the cutover:
+        # its cutover-mac.yml moves every migrated Electron desktop onto it.
+        description: "Desktop app"
+        type: choice
+        options:
+          - electron
+          - mac
+        default: electron
 
 concurrency:
   # Each channel gets its own concurrency group so an alpha cut doesn't queue
@@ -21,7 +30,7 @@ concurrency:
 jobs:
   release:
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: write
       id-token: write
@@ -181,12 +190,19 @@ jobs:
           # the CHANGELOG section for this version.
           ARGUS_RELEASE_NOTES_FILE: ${{ github.workspace }}/release-notes.md
 
+          # --- Sparkle (Argus for Mac only) ---
+          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+
           FASTLANE_SKIP_UPDATE_CHECK: "1"
           FASTLANE_HIDE_CHANGELOG: "1"
           CI: "true"
           NODE_OPTIONS: "--max-old-space-size=8192"
+          APP: ${{ github.event.inputs.app || 'electron' }}
         run: |
-          bundle exec fastlane mac release \
+          lane=release
+          [ "$APP" = "mac" ] && lane=mac_app_release
+          bundle exec fastlane mac "$lane" \
             allow_dirty:true \
             allow_any_branch:true \
             channel:${{ env.CHANNEL }}

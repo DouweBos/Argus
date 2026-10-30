@@ -12,16 +12,16 @@ Node host core the Mac app does, in a server mode. It replaces the Electron
 build of Argus Server, which is deprecated (see
 [Moving from the Electron server](#moving-from-the-electron-server)).
 
-|                      | Argus for Mac           | Argus Server               |
-| -------------------- | ----------------------- | -------------------------- |
-| Bundle id            | `dev.houwert.argus.mac` | `dev.houwert.argus.server` |
-| State (`ARGUS_HOME`) | `~/.argus`              | `~/.argus-server`          |
-| Gateway port         | 47615                   | 47617                      |
-| Window               | yes                     | none — menu bar item only  |
-| Dock tile            | yes                     | no (`LSUIElement`)         |
-| `argus://` links     | claims the scheme       | never claims it            |
-| Distribution         | `.dmg`                  | notarized `.zip`           |
-| Macs                 | Apple silicon           | Apple silicon              |
+|                      | Argus for Mac       | Argus Server               |
+| -------------------- | ------------------- | -------------------------- |
+| Bundle id            | `dev.houwert.argus` | `dev.houwert.argus.server` |
+| State (`ARGUS_HOME`) | `~/.argus`          | `~/.argus-server`          |
+| Gateway port         | 47615               | 47617                      |
+| Window               | yes                 | none — menu bar item only  |
+| Dock tile            | yes                 | no (`LSUIElement`)         |
+| `argus://` links     | claims the scheme   | never claims it            |
+| Distribution         | `.dmg`              | notarized `.zip`           |
+| Macs                 | Apple silicon       | Apple silicon              |
 
 The server ships the same payload as the Mac app: the Node runtime, the host,
 the simulator bridge, `scrcpy-server.jar`, the agent prompts, the conductor

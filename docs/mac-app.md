@@ -330,6 +330,12 @@ gateway, with the same paired devices.
 
 ## Moving from the Electron app
 
+Once Argus for Mac is released, the Electron app offers it as its next update
+and installs it in place, the same way it installs any update, without a new
+download. It only does so after it has moved your paired devices and MCP
+sign-ins to the format both apps read (step 1 below); until then it keeps
+updating as the Electron app and tries the move again each time it opens.
+
 Everything the host keeps carries over by itself: projects, sessions and
 their worktrees, chat history, automations, each project's `.argus.json`,
 and your settings — appearance, display size, agent defaults, custom
