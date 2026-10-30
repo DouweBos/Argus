@@ -83,6 +83,12 @@ private struct SidePanelTabContent: View {
       RuntimePanel(sessionId: sessionId, browser: true)
     case .terminal:
       EmptyView()
+    case .huddleChat:
+      if let sessionId, let room = model.huddleRoom(session: sessionId) {
+        HuddleChatPanel(huddles: model.huddles, room: room)
+      } else {
+        EmptyState(icon: tab.kind.symbol, title: "No huddle", body: "Share this agent to chat with the people you let in.")
+      }
     case .files, .diff, .pullRequest:
       if let session, session.status == .ready {
         switch tab.kind {

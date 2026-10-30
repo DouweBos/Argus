@@ -27,8 +27,26 @@ extension DesktopModel {
     switch kind {
     case .pullRequest: return sessionPullRequest(session) != nil
     case .diff, .files: return !session.isOutsideProjects
+    case .huddleChat: return huddleRoom(session: id) != nil
     default: return true
     }
+  }
+
+  /// The agent a session's huddle shares: the routed one, else the session's first.
+  func huddleAgentId(session: String) -> String? {
+    if let id = route.agentId { return id }
+    return store.agentsByRepo.values.joined()
+      .filter { $0.sessionId == session }
+      .min { ($0.createdAt ?? 0) < ($1.createdAt ?? 0) }?.agentId
+  }
+
+  func huddleRoom(session: String) -> ArgusProtocol.HuddleRoomModel? {
+    huddles.room(forAgent: huddleAgentId(session: session))
+  }
+
+  /// The huddle chat is the side panel's tab in front.
+  func huddleChatShown(session: String) -> Bool {
+    panels.isOpen(session) && panels.selected(session, terminals: panelTerminalIds(session))?.kind == .huddleChat
   }
 
   /// The open pull request whose head is the session's branch, among those `gh` lists.

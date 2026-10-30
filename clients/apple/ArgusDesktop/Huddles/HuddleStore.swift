@@ -19,8 +19,6 @@ final class HuddleStore {
   @ObservationIgnored private var typingReporters: [String: HuddleTypingReporter] = [:]
   /// Chat messages read so far, per room, for the Chat button's count.
   var readCounts: [String: Int] = [:]
-  /// The side chat is docked beside the agent.
-  var chatOpen = false
   /// Who drives each shared device, by device key; live rooms' keys only.
   private(set) var drivers: [String: HuddleDrivers] = [:]
 

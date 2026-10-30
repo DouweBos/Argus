@@ -2,8 +2,8 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// The huddle's side chat, docked beside the agent: a conversation that runs
-/// as long as the huddle does, which the agent never sees.
+/// The huddle's side chat, a side panel tab: a conversation that runs as long
+/// as the huddle does, which the agent never sees.
 struct HuddleChatPanel: View {
   @Environment(\.theme) private var theme
   let huddles: HuddleStore
@@ -92,8 +92,7 @@ struct HuddleTypingBar: View {
 }
 
 extension View {
-  /// A shared agent's pane: the host's typing reaches the room, and the side
-  /// chat docks beside it.
+  /// A shared agent's pane: the host's typing reaches the room.
   func huddleAgent(_ agentId: String) -> some View {
     modifier(HuddleAgentModifier(agentId: agentId))
   }
@@ -105,16 +104,9 @@ private struct HuddleAgentModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     let huddles = model.huddles
-    let room = huddles.room(forAgent: agentId)
     content
       .environment(\.composerTyping, ComposerTyping { agentId, typing in
         huddles.composerTyping(agentId: agentId, typing: typing)
       })
-      .inspector(isPresented: Binding(get: { huddles.chatOpen && room != nil }, set: { huddles.chatOpen = $0 })) {
-        if let room {
-          HuddleChatPanel(huddles: huddles, room: room)
-            .inspectorColumnWidth(min: 240, ideal: 300, max: 420)
-        }
-      }
   }
 }

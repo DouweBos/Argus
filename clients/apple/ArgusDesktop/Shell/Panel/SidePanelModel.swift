@@ -10,6 +10,7 @@ enum PanelTabKind: String, Codable, CaseIterable {
   case diff
   case pullRequest = "pull_request"
   case device
+  case huddleChat = "huddle_chat"
 
   var title: String {
     switch self {
@@ -19,6 +20,7 @@ enum PanelTabKind: String, Codable, CaseIterable {
     case .diff: "Diff"
     case .pullRequest: "Pull Request"
     case .device: "Device"
+    case .huddleChat: "Huddle Chat"
     }
   }
 
@@ -30,6 +32,7 @@ enum PanelTabKind: String, Codable, CaseIterable {
     case .diff: "plus.forwardslash.minus"
     case .pullRequest: "arrow.triangle.pull"
     case .device: Icon.simulator
+    case .huddleChat: "bubble.left.and.bubble.right"
     }
   }
 
@@ -42,6 +45,7 @@ enum PanelTabKind: String, Codable, CaseIterable {
     case .diff: "d"
     case .pullRequest: "p"
     case .device: "m"
+    case .huddleChat: "h"
     }
   }
 

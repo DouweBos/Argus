@@ -7,19 +7,12 @@ import SwiftUI
 /// Chat button opens the side chat.
 struct HuddleToolbarButton: View {
   @Environment(DesktopModel.self) private var model
-  @Environment(HostStore.self) private var store
   let sessionId: String
   /// A row in the session's context card rather than a toolbar pill.
   var inCard = false
   @State private var sheetOpen = false
 
-  /// The agent on screen: the routed one, else the session's first.
-  private var agentId: String? {
-    if let id = model.route.agentId { return id }
-    return store.agentsByRepo.values.joined()
-      .filter { $0.sessionId == sessionId }
-      .min { ($0.createdAt ?? 0) < ($1.createdAt ?? 0) }?.agentId
-  }
+  private var agentId: String? { model.huddleAgentId(session: sessionId) }
 
   var body: some View {
     let huddles = model.huddles
@@ -40,12 +33,13 @@ struct HuddleToolbarButton: View {
       }
     }
     if let room {
+      let unread = model.huddleChatShown(session: sessionId) ? 0 : huddles.unread(room)
       Button {
-        huddles.chatOpen.toggle()
+        model.togglePanelTab(.huddleChat, via: .button)
       } label: {
-        label("Huddle Chat", "bubble.left.and.bubble.right", count: huddles.chatOpen ? 0 : huddles.unread(room))
+        label("Huddle Chat", PanelTabKind.huddleChat.symbol, count: unread)
       }
-      .overlay(alignment: .topTrailing) { if !inCard { PillBadge(huddles.chatOpen ? 0 : huddles.unread(room)) } }
+      .overlay(alignment: .topTrailing) { if !inCard { PillBadge(unread) } }
       .help("Huddle chat — just the people here, not the agent")
     }
   }
