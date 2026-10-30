@@ -15,7 +15,7 @@ struct GeneralSettingsTab: View {
       DeviceNameSection()
 
       SettingsGroup("Startup") {
-        SettingsRow("Launch screen", description: "Where Argus lands when it opens. Restored window tabs still win.") {
+        SettingsRow("Launch screen", description: "Where Argus lands when it opens.") {
           Picker("Launch screen", selection: launchRoute) {
             Text("Home").tag(ArgusProtocol.AppSettingsLaunchRoute.home)
             Text("Inbox").tag(ArgusProtocol.AppSettingsLaunchRoute.inbox)

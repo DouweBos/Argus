@@ -12,13 +12,13 @@ struct WindowTab: Identifiable, Equatable {
   var pinned: Bool { id == Self.localId }
 
   /// What persists: the path (its host rides in `?host=`), never the history.
+  /// A launch always lands on "This Mac" at the Launch screen; other tabs keep their place.
   private struct Saved: Codable {
     let id: String
     let path: String
   }
 
   private static let tabsKey = "window.tabs"
-  private static let activeKey = "window.activeTab"
 
   @MainActor
   static func restored() -> [WindowTab] {
@@ -27,20 +27,13 @@ struct WindowTab: Identifiable, Equatable {
     let tabs = saved.compactMap { entry in
       DesktopLocation(path: entry.path).map { WindowTab(id: entry.id, location: $0) }
     }
-    let local = tabs.first { $0.pinned } ?? WindowTab(id: localId, location: .init(route: .home))
-    return [local] + tabs.filter { !$0.pinned }
+    return [WindowTab(id: localId, location: .init(route: .home))] + tabs.filter { !$0.pinned }
   }
 
   @MainActor
-  static func restoredActive() -> String {
-    HomeDefaults.shared.string(forKey: activeKey) ?? localId
-  }
-
-  @MainActor
-  static func save(_ tabs: [WindowTab], active: String) {
+  static func save(_ tabs: [WindowTab]) {
     let saved = tabs.map { Saved(id: $0.id, path: $0.location.path) }
     HomeDefaults.shared.set(try? JSONEncoder().encode(saved), forKey: tabsKey)
-    HomeDefaults.shared.set(active, forKey: activeKey)
   }
 }
 
@@ -136,14 +129,6 @@ extension DesktopModel {
   /// Saved on every change of screen, so a relaunch restores each tab's place.
   func persistTabs() {
     stashActiveTab()
-    WindowTab.save(tabs, active: activeTabId)
-  }
-
-  /// At launch: back on the tab that was showing, unless something else
-  /// already picked a screen.
-  func restoreActiveTab() {
-    guard route == .home, pendingLocation == nil, let tab = activeTab, tab.location.route != .home || tab.location.host != nil
-    else { return }
-    open(tab.location)
+    WindowTab.save(tabs)
   }
 }

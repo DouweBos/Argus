@@ -83,7 +83,6 @@ final class DesktopModel {
   /// An agent opened the moment it was spawned, before any list names it.
   var spawnedAgent: String?
   private var launchRouteApplied = false
-  private var tabRestored = false
   /// The active tab's back and forward.
   var history = NavigationHistory()
   /// A navigation already made a history step this run-loop pass: a second
@@ -96,7 +95,7 @@ final class DesktopModel {
   /// The window's tabs, each a saved location with its own history; the
   /// active one's live state is `route`, `history` and the focused host.
   var tabs: [WindowTab] = WindowTab.restored()
-  var activeTabId = WindowTab.restoredActive()
+  var activeTabId = WindowTab.localId
 
   init() {
     supervisor = HostSupervisor(configuration: HostLocation.current.configuration())
@@ -290,16 +289,9 @@ final class DesktopModel {
     #if DEBUG
       applyDevRoute()
     #endif
-    restoreActiveTabOnce()
     await applyLaunchRoute()
     resolvePendingLocation()
     await menuBar.reconnected()
-  }
-
-  private func restoreActiveTabOnce() {
-    guard !tabRestored else { return }
-    tabRestored = true
-    restoreActiveTab()
   }
 
   /// The Launch screen setting, once per launch and only while nothing else
