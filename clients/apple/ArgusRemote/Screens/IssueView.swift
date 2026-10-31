@@ -66,8 +66,8 @@ private struct IssueContent: View {
       StartAgentSheet(
         repoRoot: start.project.repoRoot, sessionId: nil, workspace: .worktree, models: [],
         defaultMode: app.defaultPermissionMode, issues: [start.issue]
-      ) { _, chosen in
-        Telemetry.capture(.agentStartSubmitted(workspace: chosen.rawValue, changedWorkspace: false))
+      ) { _, sent in
+        Telemetry.capture(.agentStartSubmitted(sent, openedOn: sent.workspace))
         Task { await host.loadSessions(repoRoot: start.project.repoRoot) }
       }
     }

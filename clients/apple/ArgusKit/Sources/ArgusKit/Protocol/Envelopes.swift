@@ -35,6 +35,7 @@ public enum RemoteMethod: String, Codable, Sendable {
   case terminalsRead = "terminals.read"
   case terminalsScrollback = "terminals.scrollback"
   case sessionsBranches = "sessions.branches"
+  case projectsBaseBranches = "projects.base_branches"
   case sessionsCheckout = "sessions.checkout"
   case sessionsCreateBranch = "sessions.create_branch"
   case sessionsDeleteBranch = "sessions.delete_branch"

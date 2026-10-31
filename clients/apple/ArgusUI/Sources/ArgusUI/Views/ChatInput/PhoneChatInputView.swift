@@ -1,6 +1,5 @@
 #if os(iOS)
   import ArgusCore
-  import PhotosUI
   import SwiftUI
 
   /// The phone chat input: menus and suggestions over the attachments, the
@@ -13,9 +12,6 @@
     @State private var controller: PastingTextController
     @State private var handoffAccounts: [ArgusProtocol.LimitHandoffAccount] = []
     @State private var picker: PhoneComposerPicker?
-    @State private var photoItems: [PhotosPickerItem] = []
-    @State private var showingCamera = false
-    @State private var showingPhotoLibrary = false
     @State private var showingAttachMenu = false
     @State private var inputHeight = PastingTextView.collapsedHeight
 
@@ -71,21 +67,7 @@
         picker = .model
       }
       .sheet(item: $picker) { PhoneComposerPickerSheet(composer: composer, which: $0) }
-      // Compatible: HEIC arrives as JPEG, which the API reads and stays under the gateway's frame limit.
-      .photosPicker(
-        isPresented: $showingPhotoLibrary, selection: $photoItems, matching: .images,
-        preferredItemEncoding: .compatible)
-      .onChange(of: photoItems) { _, items in Task { await attach(items) } }
-      .confirmationDialog("Attach", isPresented: $showingAttachMenu, titleVisibility: .hidden) {
-        Button("Photo Library") { showingPhotoLibrary = true }
-        Button("Take Photo") { showingCamera = true }
-        Button("Cancel", role: .cancel) {}
-      }
-      .fullScreenCover(isPresented: $showingCamera) {
-        CameraPicker { photo in
-          composer.attach(ImageAttachments.pending(photo: photo).map { [$0] } ?? [], via: .imageAttach)
-        }
-      }
+      .phoneImageAttach(isPresented: $showingAttachMenu) { composer.attach($0, via: .imageAttach) }
     }
 
     private var inputRow: some View {
@@ -125,31 +107,7 @@
     }
 
     private var attachmentStrip: some View {
-      ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: 6) {
-          ForEach(composer.images) { pending in
-            Image(platformImage: pending.preview)
-              .resizable()
-              .scaledToFill()
-              .frame(width: 56, height: 56)
-              .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
-              .overlay(alignment: .topTrailing) {
-                Button {
-                  composer.removeImage(pending.id)
-                } label: {
-                  Image(systemName: Icon.close)
-                    .font(.scaled(size: 9, weight: .bold))
-                    .foregroundStyle(theme.onAccent)
-                    .padding(4)
-                    .background(Circle().fill(theme.accent))
-                }
-                .buttonStyle(.argusPlain)
-                .offset(x: 6, y: -6)
-              }
-          }
-        }
-        .padding(.top, 6)
-      }
+      PendingImageStrip(images: composer.images) { composer.removeImage($0) }
     }
 
     /// "Message" while empty; otherwise a command's argument hint or the rest of a follow-up, as ghost text.
@@ -157,14 +115,6 @@
       if composer.text.isEmpty { return Text("Message").foregroundStyle(theme.textMuted) }
       guard let hint = composer.argumentHint else { return nil }
       return Text("\(Text(composer.text).foregroundStyle(.clear))\(Text(hint).foregroundStyle(theme.textMuted))")
-    }
-
-    private func attach(_ items: [PhotosPickerItem]) async {
-      for item in items {
-        guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
-        composer.attach(ImageAttachments.pending(data: data).map { [$0] } ?? [], via: .imageAttach)
-      }
-      photoItems = []
     }
   }
 #endif

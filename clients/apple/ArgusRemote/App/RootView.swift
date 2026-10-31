@@ -254,9 +254,8 @@ struct RootView: View {
         workspace: .worktree,
         models: [],
         defaultMode: app.defaultPermissionMode
-      ) { started, chosen in
-        Telemetry.capture(
-          .agentStartSubmitted(workspace: chosen.rawValue, changedWorkspace: chosen != .worktree))
+      ) { started, sent in
+        Telemetry.capture(.agentStartSubmitted(sent, openedOn: .worktree))
         if case .agent(let agent) = started {
           router.apply(
             .agent(

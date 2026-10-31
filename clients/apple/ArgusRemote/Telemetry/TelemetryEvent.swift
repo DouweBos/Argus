@@ -160,7 +160,7 @@ enum TelemetryEvent {
   case defaultChanged(setting: DefaultSetting, value: String)
   /// The start sheet sent its agent off. `workspace` is `current`, `worktree`
   /// or `existing`; `changedWorkspace` says it isn't the one the sheet opened on.
-  case agentStartSubmitted(workspace: String, changedWorkspace: Bool)
+  case agentStartSubmitted(workspace: String, changedWorkspace: Bool, hasImages: Bool, effortSet: Bool)
   /// The warnings list was opened; `count` is how many it held.
   case warningsOpened(count: Int)
   /// An agent's MCP servers list was opened.
@@ -336,8 +336,8 @@ enum TelemetryEvent {
       ["appearance": appearance]
     case .defaultChanged(let setting, let value):
       ["setting": setting.rawValue, "value": value]
-    case .agentStartSubmitted(let workspace, let changedWorkspace):
-      ["workspace": workspace, "changed_workspace": changedWorkspace]
+    case .agentStartSubmitted(let workspace, let changedWorkspace, let hasImages, let effortSet):
+      ["workspace": workspace, "changed_workspace": changedWorkspace, "has_images": hasImages, "effort_set": effortSet]
     case .warningsOpened(let count):
       ["count": count]
     case .transcriptWorkLogOpened(let working):
@@ -387,5 +387,14 @@ enum TelemetryEvent {
     case ..<5000: "l"
     default: "xl"
     }
+  }
+
+  /// The start sheet's send, against the workspace it opened on.
+  static func agentStartSubmitted(
+    _ sent: StartAgentSheet.Submission, openedOn opened: StartAgentSheet.Workspace
+  ) -> TelemetryEvent {
+    .agentStartSubmitted(
+      workspace: sent.workspace.rawValue, changedWorkspace: sent.workspace != opened, hasImages: sent.hasImages,
+      effortSet: sent.effortSet)
   }
 }

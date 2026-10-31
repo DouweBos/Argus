@@ -170,8 +170,10 @@ import {
   gitStashApply,
   gitStashDrop,
   gitStashList,
+  listAllBranches,
   mergeSessionIntoBase,
   pushSessionBranch,
+  readArgusConfig,
   setSessionBaseBranch,
   stageAll,
 } from "../session/sessionOps";
@@ -1720,6 +1722,20 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     ];
 
     return { branches };
+  },
+
+  "projects.base_branches": async (params) => {
+    const { repo_root } = parse("projects.base_branches", params);
+    requireKnownRepoRoot(repo_root);
+    const branches = await listAllBranches(repo_root);
+    const config = readArgusConfig(repo_root);
+
+    return {
+      local: branches.local,
+      origin_refs: branches.originRefs,
+      protected_branches: config.protected_branches,
+      default_base_branch: config.default_base_branch || null,
+    };
   },
 
   "sessions.checkout": async (params) => {

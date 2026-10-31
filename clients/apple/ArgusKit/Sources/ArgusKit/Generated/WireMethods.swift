@@ -4436,6 +4436,52 @@ extension ArgusProtocol {
       }
     }
 
+    public struct ProjectsBaseBranchesParams: Codable, Sendable {
+      public var repoRoot: String
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repo_root"
+      }
+
+      public init(repoRoot: String) {
+        self.repoRoot = repoRoot
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+      }
+    }
+
+    public struct ProjectsBaseBranchesResult: Codable, Sendable {
+      public var local: [String]
+      public var originRefs: [String]
+      public var protectedBranches: [String]
+      public var defaultBaseBranch: String?
+
+      enum CodingKeys: String, CodingKey {
+        case local = "local"
+        case originRefs = "origin_refs"
+        case protectedBranches = "protected_branches"
+        case defaultBaseBranch = "default_base_branch"
+      }
+
+      public init(local: [String], originRefs: [String], protectedBranches: [String], defaultBaseBranch: String? = nil) {
+        self.local = local
+        self.originRefs = originRefs
+        self.protectedBranches = protectedBranches
+        self.defaultBaseBranch = defaultBaseBranch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(local, forKey: .local)
+        try c.encode(originRefs, forKey: .originRefs)
+        try c.encode(protectedBranches, forKey: .protectedBranches)
+        try c.encode(defaultBaseBranch, forKey: .defaultBaseBranch)
+      }
+    }
+
     public struct ProjectsListParams: Codable, Sendable {
 
       public init() {
@@ -7019,6 +7065,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.PermissionRespondParams
       public typealias Result = ArgusProtocol.MethodsTypes.PermissionRespondResult
       public static let name = "permission.respond"
+    }
+
+    public enum ProjectsBaseBranches: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.ProjectsBaseBranchesParams
+      public typealias Result = ArgusProtocol.MethodsTypes.ProjectsBaseBranchesResult
+      public static let name = "projects.base_branches"
     }
 
     public enum ProjectsList: RemoteCommand {

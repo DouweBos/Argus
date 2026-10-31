@@ -98,4 +98,20 @@ struct StartAgentTests {
     #expect(await eventually { !backend.calls("agents.send").isEmpty })
     #expect(opened == "s-2")
   }
+
+  @Test("the phone preselects a base from the gateway's read")
+  func basePickerOverGateway() async {
+    let (store, backend) = await store(.gateway)
+    backend.reply(
+      "projects.base_branches",
+      #"{"local":["feature","main"],"origin_refs":["origin/main","origin/develop"],"protected_branches":[],"default_base_branch":"develop"}"#
+    )
+    let picker = BaseBranchPicker()
+
+    await picker.load(repoRoot: "/r", projectRootBranch: "main", store: store)
+
+    #expect(picker.base == "origin/develop")
+    #expect(picker.options == ["feature", "main", "origin/main", "origin/develop"])
+    #expect(backend.calls("list_all_branches").isEmpty)
+  }
 }

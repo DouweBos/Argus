@@ -395,9 +395,8 @@ struct ProjectView: View {
       repoRoot: repoRoot, sessionId: sessionId,
       currentLabel: isRoot ? "Current checkout" : "This session",
       workspace: workspace, models: knownModels, defaultMode: app.defaultPermissionMode
-    ) { started, chosen in
-      Telemetry.capture(
-        .agentStartSubmitted(workspace: chosen.rawValue, changedWorkspace: chosen != workspace))
+    ) { started, sent in
+      Telemetry.capture(.agentStartSubmitted(sent, openedOn: workspace))
       if case .agent(let agent) = started {
         router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
       }

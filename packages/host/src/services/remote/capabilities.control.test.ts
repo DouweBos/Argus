@@ -134,6 +134,15 @@ vi.mock("../session/gitBranchOps", () => ({
   ]),
 }));
 vi.mock("../session/sessionOps", () => ({
+  listAllBranches: vi.fn(async () => ({
+    local: ["feature/x", "main"],
+    remote: ["main"],
+    originRefs: ["origin/main"],
+  })),
+  readArgusConfig: vi.fn(() => ({
+    protected_branches: ["main"],
+    default_base_branch: "",
+  })),
   getSessionBranchDiff: vi.fn(async () => "diff --git a b"),
   getSessionFullDiff: vi.fn(async () => "diff --git HEAD"),
   getSessionUntrackedDiff: vi.fn(async () => "diff --git new"),
@@ -642,6 +651,34 @@ describe("read-only changes review (monitor scope)", () => {
       ),
     );
     expect(working.diff).toBe("diff --git HEADdiff --git new");
+  });
+});
+
+describe("projects.base_branches", () => {
+  it("reads a known project's branches and base preference", async () => {
+    const res = MethodResult["projects.base_branches"].parse(
+      await dispatch(
+        "projects.base_branches",
+        { repo_root: "/repo" },
+        makeCtx(["monitor"]),
+      ),
+    );
+    expect(res).toEqual({
+      local: ["feature/x", "main"],
+      origin_refs: ["origin/main"],
+      protected_branches: ["main"],
+      default_base_branch: null,
+    });
+  });
+
+  it("refuses a repo that isn't a project", async () => {
+    await expect(
+      dispatch(
+        "projects.base_branches",
+        { repo_root: "/elsewhere" },
+        makeCtx(["monitor"]),
+      ),
+    ).rejects.toThrow();
   });
 });
 

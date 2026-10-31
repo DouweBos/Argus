@@ -154,6 +154,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "terminals.read": DENIED,
   "terminals.scrollback": DENIED,
   "sessions.branches": session(),
+  // Only useful for creating a session, which a guest can't.
+  "projects.base_branches": DENIED,
   "sessions.diff": session(),
   "sessions.merge_blockers": session(),
 

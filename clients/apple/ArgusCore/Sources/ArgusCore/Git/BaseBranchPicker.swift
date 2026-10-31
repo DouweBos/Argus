@@ -34,14 +34,19 @@ public final class BaseBranchPicker {
       protected: source.protectedBranches, projectRootBranch: projectRootBranch)
   }
 
+  /// The admin commands where this is the computer itself; the gateway's
+  /// one read where it's a phone.
   private static func source(repoRoot: String, backend: any HostBackend) async
-    -> (local: [String], originRefs: [String], protectedBranches: [String], defaultBaseBranch: String?)?
+    -> ArgusProtocol.MethodsTypes.ProjectsBaseBranchesResult?
   {
+    guard backend.kind == .local else {
+      return try? await backend.request(ArgusProtocol.Methods.ProjectsBaseBranches.self, .init(repoRoot: repoRoot))
+    }
     async let list = try? backend.request(ArgusProtocol.Commands.ListAllBranches.self, .init(repoRoot: repoRoot))
     async let config = try? backend.request(ArgusProtocol.Commands.ReadArgusConfig.self, .init(repoRoot: repoRoot))
     let (branches, argus) = await (list, config)
     guard let branches else { return nil }
-    return (
+    return .init(
       local: branches.local, originRefs: branches.originRefs, protectedBranches: argus?.protectedBranches ?? [],
       defaultBaseBranch: argus?.defaultBaseBranch)
   }

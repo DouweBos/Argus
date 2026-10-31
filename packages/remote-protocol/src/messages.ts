@@ -378,6 +378,8 @@ export const MethodParams = {
   "terminals.read": z.object({ terminal_id: z.string() }),
   "terminals.scrollback": z.object({ terminal_id: z.string() }),
   "sessions.branches": z.object({ session_id: z.string() }),
+  /** What a new worktree may branch from, and what `.argus.json` prefers. */
+  "projects.base_branches": z.object({ repo_root: z.string() }),
   "sessions.checkout": z.object({
     session_id: z.string(),
     branch: z.string().trim().min(1),
@@ -888,6 +890,13 @@ export const MethodResult = {
     exit_code: z.number().int().nullable(),
   }),
   "sessions.branches": z.object({ branches: z.array(RemoteGitBranch) }),
+  "projects.base_branches": z.object({
+    local: z.array(z.string()),
+    /** Every `origin/<name>` ref, including names that also exist locally. */
+    origin_refs: z.array(z.string()),
+    protected_branches: z.array(z.string()),
+    default_base_branch: z.string().nullable(),
+  }),
   "sessions.checkout": z.object({
     accepted: z.boolean(),
     /** Set when the checkout was refused because the tree is dirty. */

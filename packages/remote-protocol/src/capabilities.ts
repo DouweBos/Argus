@@ -210,6 +210,8 @@ export const REMOTE_METHODS = {
   "terminals.scrollback": "monitor",
   /** List the branches of a session's repo (local, plus remote-only ones). */
   "sessions.branches": "monitor",
+  /** A project's branches and `.argus.json` base preference, to preselect a new worktree's base. */
+  "projects.base_branches": "monitor",
   /** Switch the checked-out branch. Host-side these branch ops only work on a
    *  project root — session worktrees are pinned to their own branch. */
   "sessions.checkout": "control",

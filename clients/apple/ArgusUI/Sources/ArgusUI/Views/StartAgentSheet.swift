@@ -20,13 +20,20 @@ public struct StartAgentSheet: View {
     case session(RemoteSession)
   }
 
-  private enum Picker: String, Identifiable {
-    case runner, model, mode, base, existing
+  /// What was sent, for the caller's telemetry.
+  public struct Submission {
+    public let workspace: Workspace
+    public let hasImages: Bool
+    public let effortSet: Bool
+  }
+
+  enum Picker: String, Identifiable {
+    case runner, model, effort, mode, base, existing, linked
     var id: String { rawValue }
   }
 
-  @Environment(HostStore.self) private var host
-  @Environment(\.dismiss) private var dismiss
+  @Environment(HostStore.self) var host
+  @Environment(\.dismiss) var dismiss
 
   let repoRoot: String?
   /// The session "current" means; also where the branch list is read from.
@@ -36,20 +43,25 @@ public struct StartAgentSheet: View {
   /// What a live agent in this project last reported; the host's start
   /// options for the session replace it once they arrive.
   let models: [RemoteModelInfo]
-  let onStarted: (Started, Workspace) -> Void
+  let onStarted: (Started, Submission) -> Void
 
-  @State private var prompt = ""
-  @State private var workspace: Workspace
-  @State private var branches: [RemoteGitBranch] = []
-  @State private var baseBranch = ""
-  @State private var existingBranch = ""
-  @State private var runner: String?
-  @State private var model: String?
-  @State private var mode: RemotePermissionMode?
-  @State private var picker: Picker?
-  @State private var starting = false
+  @State var prompt = ""
+  @State var workspace: Workspace
+  @State var branches: [RemoteGitBranch] = []
+  /// A new worktree's base, preselected as the Mac does.
+  @State var bases = BaseBranchPicker()
+  @State var existingBranch = ""
+  @State var runner: String?
+  @State var model: String?
+  @State var effort: String?
+  @State var mode: RemotePermissionMode?
+  @State var images: [PendingImage] = []
+  @State var linkedProjects: [String] = []
+  @State var picker: Picker?
+  @State private var showingAttachMenu = false
+  @State var starting = false
   /// Each gets its own worktree on Linear's branch name.
-  @State private var issues: [HostStore.LinearIssue] = []
+  @State var issues: [HostStore.LinearIssue] = []
   @State private var pickingIssues = false
   /// This sheet's viewing hint, and the session it covered.
   @State private var viewingToken: Int?
@@ -63,7 +75,7 @@ public struct StartAgentSheet: View {
     models: [RemoteModelInfo],
     defaultMode: RemotePermissionMode? = nil,
     issues: [HostStore.LinearIssue] = [],
-    onStarted: @escaping (Started, Workspace) -> Void
+    onStarted: @escaping (Started, Submission) -> Void
   ) {
     self.repoRoot = repoRoot
     self.sessionId = sessionId
@@ -75,7 +87,7 @@ public struct StartAgentSheet: View {
     _issues = State(initialValue: issues)
   }
 
-  private var trimmedPrompt: String {
+  var trimmedPrompt: String {
     prompt.trimmingCharacters(in: .whitespacesAndNewlines)
   }
 
@@ -109,6 +121,14 @@ public struct StartAgentSheet: View {
           ThemedTextField(
             placeholder: issues.isEmpty ? "Fix the flaky login test" : "Anything to add (optional)",
             text: $prompt, multiline: true, lines: 3...8)
+          if issues.isEmpty {
+            #if os(iOS)
+              if !images.isEmpty {
+                PendingImageStrip(images: images) { id in images.removeAll { $0.id == id } }
+              }
+            #endif
+            attachButtons
+          }
           if repoRoot != nil, host.linearConnected {
             if !issues.isEmpty { PickedIssueChips(issues: $issues) }
             Btn(label: "Add Linear issue", tone: .secondary, small: true, icon: Icon.issue) {
@@ -119,10 +139,7 @@ public struct StartAgentSheet: View {
 
         if !issues.isEmpty {
           Field(label: "Where", caption: "A new worktree per issue, on Linear's branch name.") {
-            Btn(
-              label: baseBranch.isEmpty ? "Base: project default" : "Base: \(baseBranch)",
-              tone: .secondary, small: true
-            ) { picker = .base }
+            Btn(label: baseLabel, tone: .secondary, small: true) { picker = .base }
           }
         } else if workspaceOptions.count > 1 {
           Field(label: "Where") {
@@ -132,10 +149,7 @@ public struct StartAgentSheet: View {
             case .current:
               EmptyView()
             case .worktree:
-              Btn(
-                label: baseBranch.isEmpty ? "Base: project default" : "Base: \(baseBranch)",
-                tone: .secondary, small: true
-              ) { picker = .base }
+              Btn(label: baseLabel, tone: .secondary, small: true) { picker = .base }
             case .existing:
               Btn(
                 label: existingBranch.isEmpty ? "Pick a branch" : existingBranch,
@@ -156,6 +170,11 @@ public struct StartAgentSheet: View {
               label: "Model: \(modelLabel)", tone: .secondary, small: true
             ) { picker = .model }
           }
+          if issues.isEmpty, !effortLevels.isEmpty {
+            Btn(
+              label: "Effort: \(ComposerEffort.label(effort))", tone: .secondary, small: true
+            ) { picker = .effort }
+          }
           Btn(
             label: "Permission mode: \(mode?.label ?? "default")", tone: .secondary, small: true
           ) { picker = .mode }
@@ -172,6 +191,9 @@ public struct StartAgentSheet: View {
         }
       }
       .sheet(item: $picker) { which in picked(which) }
+      #if os(iOS)
+        .phoneImageAttach(isPresented: $showingAttachMenu) { images += $0 }
+      #endif
       .background {
         Color.clear.sheet(isPresented: $pickingIssues) { IssuePickerSheet(selection: $issues) }
       }
@@ -190,6 +212,11 @@ public struct StartAgentSheet: View {
           sessionId: workspace == .current ? sessionId : coveredSession, runnerId: runner)
         await host.loadStartOptions(sessionId: sessionId, runnerId: runner)
       }
+      // Only a new worktree needs a base.
+      .task(id: workspace == .worktree || !issues.isEmpty) {
+        guard let repoRoot, workspace == .worktree || !issues.isEmpty else { return }
+        await bases.load(repoRoot: repoRoot, projectRootBranch: projectRootBranch, store: host)
+      }
       .onDisappear {
         guard let viewingToken else { return }
         Task { await host.stopViewing(token: viewingToken, restoring: coveredSession) }
@@ -207,148 +234,32 @@ public struct StartAgentSheet: View {
     return issues.count > 1 ? "Start \(issues.count) agents" : "Start agent"
   }
 
+  @ViewBuilder
+  private var attachButtons: some View {
+    #if os(iOS)
+      Btn(label: "Attach image", tone: .secondary, small: true, icon: Icon.image) { showingAttachMenu = true }
+    #endif
+    if !linkableProjects.isEmpty {
+      Btn(
+        label: linkedProjects.isEmpty ? "Link project" : "\(linkedProjects.count) linked",
+        tone: .secondary, small: true, icon: Icon.link
+      ) { picker = .linked }
+    }
+  }
+
+  private var baseLabel: String {
+    if let base = bases.base { return "Base: \(base)" }
+    return bases.loading ? "Base: loading…" : "Base: project default"
+  }
+
+  private var projectRootBranch: String? {
+    repoRoot.flatMap { host.sessionsByRepo[$0]?.first { $0.kind == .projectRoot }?.branch }
+  }
+
   private struct WarmTarget: Equatable {
     let workspace: Workspace
     let runner: String?
   }
 
   private var warmTarget: WarmTarget { WarmTarget(workspace: workspace, runner: runner) }
-
-  private var selectedRunner: RemoteRunner? {
-    runner.flatMap { id in host.runners.first { $0.id == id } }
-  }
-
-  private var runnerLabel: String {
-    selectedRunner?.displayName ?? runner ?? "default"
-  }
-
-  /// A custom runner declares its own models; the gateway it points at would
-  /// reject the ids a Claude Code handshake reported, so they never mix.
-  private var modelOptions: [PickerSheet<String>.Option] {
-    if let declared = selectedRunner?.models, !declared.isEmpty {
-      return declared.map { .init(value: $0.value, label: $0.displayName, hint: $0.description) }
-    }
-
-    let started = sessionId.flatMap { host.startOptionsBySession[$0]?.models } ?? []
-    return (started.isEmpty ? models : started).map {
-      .init(value: $0.value, label: $0.displayName, hint: $0.description)
-    }
-  }
-
-  private var modelLabel: String {
-    guard let model else { return "default" }
-
-    return modelOptions.first { $0.value == model }?.label ?? model
-  }
-
-  private var branchOptions: [PickerSheet<String>.Option] {
-    branches.map {
-      .init(
-        value: $0.name, label: $0.name,
-        hint: $0.scope == .remote ? "remote" : $0.lastCommitSubject)
-    }
-  }
-
-  @ViewBuilder
-  private func picked(_ which: Picker) -> some View {
-    switch which {
-    case .runner:
-      PickerSheet(
-        title: "Runner",
-        options: [.init(value: "", label: "Default", hint: "Use the computer's default")]
-          + host.runners.map {
-            .init(value: $0.id, label: $0.displayName, hint: $0.isCustom ? "custom" : nil)
-          },
-        selected: [runner ?? ""]
-      ) { value in
-        runner = value.isEmpty ? nil : value
-        // Model ids don't carry across runners, so a switch drops the model.
-        model = nil
-      }
-    case .model:
-      PickerSheet(
-        title: "Model", options: modelOptions,
-        selected: Set([model].compactMap { $0 })
-      ) { value in
-        model = value
-      }
-    case .mode:
-      PickerSheet(
-        title: "Permission mode",
-        options: RemotePermissionMode.allCases.map { .init(value: $0.rawValue, label: $0.label) },
-        selected: Set([mode?.rawValue].compactMap { $0 })
-      ) { value in
-        mode = RemotePermissionMode(rawValue: value)
-      }
-    case .base:
-      PickerSheet(
-        title: "Base branch", options: branchOptions, selected: [baseBranch],
-        emptyMessage: "This project reported no branches."
-      ) { value in
-        baseBranch = value
-      }
-    case .existing:
-      PickerSheet(
-        title: "Existing branch", options: branchOptions, selected: [existingBranch],
-        emptyMessage: "This project reported no branches."
-      ) { value in
-        existingBranch = value
-      }
-    }
-  }
-
-  private func start() {
-    starting = true
-    let chosen = issues.isEmpty ? workspace : .worktree
-    Task {
-      let started: Started?
-      if !issues.isEmpty {
-        started = await startFromIssues()
-      } else {
-        switch chosen {
-        case .current:
-          started = await startHere()
-        case .worktree, .existing:
-          started = await startInNewSession(existing: chosen == .existing)
-        }
-      }
-      starting = false
-      guard let started else { return }
-      onStarted(started, chosen)
-      dismiss()
-    }
-  }
-
-  private func startFromIssues() async -> Started? {
-    guard let repoRoot else { return nil }
-    let sessions = await host.startFromIssues(
-      issues, repoRoot: repoRoot, baseBranch: baseBranch.isEmpty ? nil : baseBranch,
-      prompt: trimmedPrompt, model: model, permissionMode: mode, runnerId: runner)
-    return sessions.first.map { .session($0) }
-  }
-
-  private func startHere() async -> Started? {
-    guard let sessionId,
-      let agent = await host.spawnAgent(
-        sessionId: sessionId, model: model, permissionMode: mode, runnerId: runner)
-    else { return nil }
-    if !trimmedPrompt.isEmpty {
-      await host.sendMessage(agentId: agent.agentId, message: trimmedPrompt)
-    }
-    return .agent(agent)
-  }
-
-  private func startInNewSession(existing: Bool) async -> Started? {
-    guard let repoRoot,
-      let session = await host.createSession(
-        repoRoot: repoRoot,
-        branch: existing ? existingBranch : "",
-        description: trimmedPrompt,
-        useExistingBranch: existing ? true : nil,
-        baseBranch: !existing && !baseBranch.isEmpty ? baseBranch : nil,
-        prompt: trimmedPrompt.isEmpty ? nil : trimmedPrompt,
-        model: model, permissionMode: mode, runnerId: runner)
-    else { return nil }
-    return .session(session)
-  }
 }
