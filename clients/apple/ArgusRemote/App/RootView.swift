@@ -121,7 +121,8 @@ struct RootView: View {
       .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
       .shadow(color: .black.opacity(0.25), radius: 10, y: 3)
       .padding(.horizontal, 16)
-      .padding(.bottom, 12)
+      // The overlay sits over the whole TabView, so clear its floating bar.
+      .padding(.bottom, sizeClass == .regular ? 12 : 64)
       .onTapGesture { app.host.clearError() }
       .task(id: message) {
         try? await Task.sleep(for: .seconds(6))
