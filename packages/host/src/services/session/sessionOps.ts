@@ -1369,8 +1369,13 @@ export async function pushSessionBranch(id: string): Promise<{
   if (!ws) {
     throw `Session not found: ${id}`;
   }
-  if (ws.kind !== "worktree") {
+  // The project root is often on a feature branch too; only folders with no
+  // git of their own (scratch pads, automation runs) have nothing to push.
+  if (ws.kind !== "worktree" && ws.kind !== "project_root") {
     throw `Cannot push a ${ws.kind} session`;
+  }
+  if (!ws.branch || ws.branch === "HEAD") {
+    throw "Check out a branch before pushing";
   }
 
   // Prefer `origin`; fall back to the first configured remote.
@@ -1405,12 +1410,15 @@ export async function pushSessionBranch(id: string): Promise<{
   // without it the PR body opens blank. Single top-level templates are
   // auto-detected by GitHub from `?expand=1` alone.
   const template = pickPullRequestTemplate(ws.repo_root);
-  const prUrl = buildPullRequestUrl(
-    remoteUrl,
-    ws.branch,
-    ws.base_branch ?? null,
-    template,
-  );
+  // Nothing to open a pull request from on a branch like `main`.
+  const prUrl = isBranchProtected(ws.repo_root, ws.branch)
+    ? null
+    : buildPullRequestUrl(
+        remoteUrl,
+        ws.branch,
+        ws.base_branch ?? null,
+        template,
+      );
 
   return { branch: ws.branch, prUrl, remoteName };
 }
