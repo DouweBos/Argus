@@ -149,7 +149,7 @@ public struct UsageMeterRow: View {
         .font(.scaled(size: 22, weight: .semibold))
         .monospacedDigit()
         .foregroundStyle(tone == .accent ? theme.text : tone.color(theme))
-      UsageBar(fraction: UsageLimitFormat.fraction(usedPercent: window.usedPercent), tone: tone)
+      UsageBar(fraction: UsageLimitFormat.fractionLeft(usedPercent: window.usedPercent), tone: tone)
       if reset != nil || pace != nil {
         HStack(spacing: 8) {
           if let reset { Text(reset) }
@@ -239,7 +239,7 @@ public struct UsageLimitsStrip: View {
         Text("\(left)% left").monospacedDigit().foregroundStyle(tone == .accent ? theme.textSecondary : tone.color(theme))
       }
       .font(.scaled(size: 11))
-      UsageBar(fraction: UsageLimitFormat.fraction(usedPercent: window.usedPercent), tone: tone)
+      UsageBar(fraction: UsageLimitFormat.fractionLeft(usedPercent: window.usedPercent), tone: tone)
     }
     .accessibilityElement(children: .combine)
   }

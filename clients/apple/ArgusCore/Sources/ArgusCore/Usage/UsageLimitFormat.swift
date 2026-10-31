@@ -14,9 +14,9 @@ public enum UsageLimitFormat {
     Int((100 - min(100, max(0, usedPercent))).rounded(.down))
   }
 
-  /// The used share as a 0–1 fraction for a progress bar.
-  public static func fraction(usedPercent: Double) -> Double {
-    min(1, max(0, usedPercent / 100))
+  /// The share left as a 0–1 fraction, so the bar drains in step with the "% left" label.
+  public static func fractionLeft(usedPercent: Double) -> Double {
+    1 - min(1, max(0, usedPercent / 100))
   }
 
   public static func level(usedPercent: Double) -> UsageLevel {

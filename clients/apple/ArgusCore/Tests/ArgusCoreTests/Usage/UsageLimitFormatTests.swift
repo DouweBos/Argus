@@ -16,6 +16,13 @@ struct UsageLimitFormatTests {
     #expect(UsageLimitFormat.percentLeft(usedPercent: -5) == 100)
   }
 
+  @Test func fractionLeftMatchesPercentLeft() {
+    #expect(UsageLimitFormat.fractionLeft(usedPercent: 25) == 0.75)
+    #expect(UsageLimitFormat.fractionLeft(usedPercent: 0) == 1)
+    #expect(UsageLimitFormat.fractionLeft(usedPercent: 120) == 0)
+    #expect(UsageLimitFormat.fractionLeft(usedPercent: -5) == 1)
+  }
+
   @Test func levelCrossesAtEightyAndNinetyFive() {
     #expect(UsageLimitFormat.level(usedPercent: 80) == .normal)
     #expect(UsageLimitFormat.level(usedPercent: 80.5) == .warning)
