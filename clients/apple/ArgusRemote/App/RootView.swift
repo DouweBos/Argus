@@ -37,7 +37,7 @@ struct RootView: View {
         navigation
         // One presenter for the whole app, so any transcript image can open
         // without threading modal state through every view between.
-        .overlay { ImageViewerOverlay() }
+        .overlay { ImageViewerOverlay { Telemetry.capture(.imageViewerUsed(action: $0)) } }
         // A device waiting to join the account is announced wherever the user is.
         .modifier(JoinRequestPrompt())
         .environment(app)

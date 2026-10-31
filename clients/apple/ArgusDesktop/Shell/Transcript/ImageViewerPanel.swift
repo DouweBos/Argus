@@ -31,15 +31,15 @@ struct ImageViewerPanel: View {
         close()
         return .handled
       }
-      .onKeyPress(.leftArrow) { page(by: -1) }
-      .onKeyPress(.rightArrow) { page(by: 1) }
+      .onKeyPress(.leftArrow) { page(viewer.previous()) }
+      .onKeyPress(.rightArrow) { page(viewer.next()) }
       .task(id: current) { await host.loadImage(agentId: viewer.agentKey, imageId: current) }
       .transition(.opacity)
     }
   }
 
   private func card(_ imageId: String, room: CGSize) -> some View {
-    let image = ViewedImage(store: host, agentKey: viewer.agentKey, imageId: imageId)
+    let image = ImageViewerItem(store: host, agentKey: viewer.agentKey, imageId: imageId)
     let header: CGFloat = 40
     let fitted = image.fitted(in: CGSize(width: room.width - 32, height: room.height - header - 32))
     return VStack(spacing: 0) {
@@ -69,9 +69,9 @@ struct ImageViewerPanel: View {
         }
         if viewer.imageIds.count > 1 {
           HStack {
-            IconBtn(systemName: Icon.chevronLeft, label: "Previous image (←)", size: 13) { _ = page(by: -1) }
+            IconBtn(systemName: Icon.chevronLeft, label: "Previous image (←)", size: 13) { page(viewer.previous()) }
             Spacer()
-            IconBtn(systemName: Icon.chevronRight, label: "Next image (→)", size: 13) { _ = page(by: 1) }
+            IconBtn(systemName: Icon.chevronRight, label: "Next image (→)", size: 13) { page(viewer.next()) }
           }
           .padding(.horizontal, 8)
         }
@@ -91,19 +91,17 @@ struct ImageViewerPanel: View {
   }
 
   private var title: String {
-    guard viewer.imageIds.count > 1, let index = viewer.currentIndex else { return "Image" }
-    return "Image \(index + 1) of \(viewer.imageIds.count)"
+    viewer.positionLabel.map { "Image \($0)" } ?? "Image"
   }
 
-  private func page(by step: Int) -> KeyPress.Result {
-    guard let index = viewer.currentIndex, viewer.imageIds.count > 1 else { return .ignored }
-    let next = (index + step + viewer.imageIds.count) % viewer.imageIds.count
-    viewer.current = viewer.imageIds[next]
+  @discardableResult
+  private func page(_ paged: Bool) -> KeyPress.Result {
+    guard paged else { return .ignored }
     MacTelemetry.capture(.imageViewerUsed(action: .page))
     return .handled
   }
 
-  private func act(_ action: MacTelemetryEvent.ImageViewerAction, _ image: ViewedImage) {
+  private func act(_ action: MacTelemetryEvent.ImageViewerAction, _ image: ImageViewerItem) {
     guard let data = image.data else { return NSSound.beep() }
     switch action {
     case .copy:
@@ -124,45 +122,6 @@ struct ImageViewerPanel: View {
 
   private func close() {
     viewer.dismiss()
-  }
-}
-
-/// A transcript image's bytes from the store's cache.
-@MainActor
-private struct ViewedImage {
-  let data: Data?
-  let mediaType: String
-  let image: NSImage?
-  let imageId: String
-
-  init(store: HostStore, agentKey: String, imageId: String) {
-    self.imageId = imageId
-    let uri = store.cachedImage(agentId: agentKey, imageId: imageId)
-    let parsed = uri.flatMap(Self.parse)
-    data = parsed?.data
-    mediaType = parsed?.mediaType ?? "image/png"
-    image = data.flatMap(NSImage.init(data:))
-  }
-
-  var fileName: String {
-    let ext = mediaType.split(separator: "/").last.map { $0 == "jpeg" ? "jpg" : String($0) } ?? "png"
-    let stem = imageId.replacingOccurrences(of: ":", with: "-").replacingOccurrences(of: "/", with: "-")
-    return "argus-\(stem).\(ext)"
-  }
-
-  /// Within `room`, never past the image's own size.
-  func fitted(in room: CGSize) -> CGSize {
-    guard let size = image?.size, size.width > 0, size.height > 0 else { return CGSize(width: 240, height: 160) }
-    let scale = min(1, room.width / size.width, room.height / size.height)
-    return CGSize(width: max(1, (size.width * scale).rounded()), height: max(1, (size.height * scale).rounded()))
-  }
-
-  private static func parse(_ uri: String) -> (data: Data, mediaType: String)? {
-    guard uri.hasPrefix("data:"), let comma = uri.firstIndex(of: ","),
-      let data = Data(base64Encoded: String(uri[uri.index(after: comma)...]))
-    else { return nil }
-    let header = uri[uri.index(uri.startIndex, offsetBy: 5)..<comma]
-    return (data, header.split(separator: ";").first.map(String.init) ?? "image/png")
   }
 }
 

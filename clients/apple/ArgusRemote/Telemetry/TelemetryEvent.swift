@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import Foundation
 
 /// Every event this client sends, with its props attached to the case — the
@@ -133,6 +134,8 @@ enum TelemetryEvent {
   /// `strategy` is only meaningful for a merge — nil elsewhere.
   case workLanded(action: LandAction, success: Bool, strategy: String? = nil)
   case deviceWatched(durationMs: Int, interacted: Bool)
+  /// The image on screen in the viewer was copied or its share sheet opened.
+  case imageViewerUsed(action: ImageViewerOverlay.Action)
   case claudeAccountChanged(action: AccountAction)
   case automationEdited(action: AutomationAction)
   case runActed(action: RunAction)
@@ -220,6 +223,7 @@ enum TelemetryEvent {
     case .agentControlled: "ios_agent_controlled"
     case .workLanded: "ios_work_landed"
     case .deviceWatched: "ios_device_watched"
+    case .imageViewerUsed: "ios_image_viewer_used"
     case .claudeAccountChanged: "ios_claude_account_changed"
     case .automationEdited: "ios_automation_edited"
     case .runActed: "ios_run_acted"
@@ -304,6 +308,8 @@ enum TelemetryEvent {
       ]
     case .deviceWatched(let durationMs, let interacted):
       ["duration_ms": durationMs, "interacted": interacted]
+    case .imageViewerUsed(let action):
+      ["action": action.rawValue]
     case .claudeAccountChanged(let action):
       ["action": action.rawValue]
     case .automationEdited(let action):

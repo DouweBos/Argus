@@ -51,6 +51,7 @@ public enum Icon {
   public static let eye = "eye"
   public static let copy = "doc.on.doc"
   public static let download = "square.and.arrow.down"
+  public static let share = "square.and.arrow.up"
   public static let lock = "lock"
   public static let clock = "clock"
   public static let envelope = "tray"

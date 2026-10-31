@@ -13,10 +13,7 @@ import SwiftUI
 extension PlatformImage {
   /// Transcript images arrive as `data:<mime>;base64,…`.
   public static func fromDataURI(_ uri: String) -> PlatformImage? {
-    guard let comma = uri.firstIndex(of: ","),
-      let data = Data(base64Encoded: String(uri[uri.index(after: comma)...]))
-    else { return nil }
-    return PlatformImage(data: data)
+    ImageViewerItem.parse(uri).flatMap { PlatformImage(data: $0.data) }
   }
 
   public func jpegData(quality: CGFloat) -> Data? {

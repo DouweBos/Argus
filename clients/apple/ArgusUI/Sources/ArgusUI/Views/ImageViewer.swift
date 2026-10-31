@@ -1,6 +1,10 @@
 import ArgusCore
 import SwiftUI
 
+#if canImport(UIKit)
+  import UIKit
+#endif
+
 /// One full-screen image presenter for the whole app, so any transcript image
 /// can open without threading modal state through every view between.
 ///
@@ -36,11 +40,34 @@ public final class ImageViewerState {
   public var currentIndex: Int? {
     current.flatMap { imageIds.firstIndex(of: $0) }
   }
+
+  /// "2 of 3", or nil for a lone image.
+  public var positionLabel: String? {
+    guard imageIds.count > 1, let index = currentIndex else { return nil }
+    return "\(index + 1) of \(imageIds.count)"
+  }
+
+  /// Step to the next image, wrapping; false when there is nowhere to go.
+  @discardableResult
+  public func next() -> Bool { page(by: 1) }
+
+  @discardableResult
+  public func previous() -> Bool { page(by: -1) }
+
+  private func page(by step: Int) -> Bool {
+    guard imageIds.count > 1, let index = currentIndex else { return false }
+    current = imageIds[(index + step + imageIds.count) % imageIds.count]
+    return true
+  }
 }
 
 /// Pinch, double-tap, pan, swipe down to dismiss, and swipe across to page.
+/// Copy and Share act on the image on screen; Share covers Save to Photos.
 public struct ImageViewerOverlay: View {
+  public enum Action: String, Sendable { case copy, share }
+
   @Environment(ImageViewerState.self) private var viewer
+  @Environment(HostStore.self) private var host
   @State private var zoomed = false
   @State private var dismissProgress: CGFloat = 0
 
@@ -79,12 +106,15 @@ public struct ImageViewerOverlay: View {
 
         VStack {
           HStack {
+            if let current = viewer.current {
+              actions(ImageViewerItem(store: host, agentKey: viewer.agentKey, imageId: current))
+            }
             Spacer()
             IconBtn(systemName: Icon.close, label: "Close", tint: .white) { close() }
           }
           Spacer()
-          if viewer.imageIds.count > 1, let index = viewer.currentIndex {
-            Text("\(index + 1) of \(viewer.imageIds.count)")
+          if let position = viewer.positionLabel {
+            Text(position)
               .font(.scaled(size: 12))
               .foregroundStyle(.white.opacity(0.7))
               .padding(.bottom, 12)
@@ -97,13 +127,40 @@ public struct ImageViewerOverlay: View {
     }
   }
 
+  @ViewBuilder
+  private func actions(_ item: ImageViewerItem) -> some View {
+    if let image = item.image {
+      #if canImport(UIKit)
+        IconBtn(systemName: Icon.copy, label: "Copy Image", tint: .white) {
+          UIPasteboard.general.image = image
+          onAction(.copy)
+        }
+      #endif
+      let shared = Image(platformImage: image)
+      ShareLink(item: shared, preview: SharePreview(item.fileName, image: shared)) {
+        Image(systemName: Icon.share)
+          .font(.scaled(size: 17, weight: .medium))
+          .foregroundStyle(.white)
+          .frame(width: 32, height: 32)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.argusPlain)
+      .accessibilityLabel("Share Image")
+      .simultaneousGesture(TapGesture().onEnded { onAction(.share) })
+    }
+  }
+
   private func close() {
     zoomed = false
     dismissProgress = 0
     viewer.dismiss()
   }
 
-  public init() {}
+  private let onAction: (Action) -> Void
+
+  public init(onAction: @escaping (Action) -> Void = { _ in }) {
+    self.onAction = onAction
+  }
 }
 
 /// One page: loads its own bytes, and owns its own zoom so swiping away and
