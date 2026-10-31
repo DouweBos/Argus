@@ -58,7 +58,11 @@ struct SessionDetailsView: View {
         .textInputAutocapitalization(renaming == .branch ? .never : .sentences)
         .autocorrectionDisabled(renaming == .branch)
       Button("Cancel", role: .cancel) { renaming = nil }
+      // The Mac's rename sheet refuses an empty name too.
       Button("Save", action: submitRename)
+        .disabled(renameValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    } message: {
+      if renaming == .branch { Text("Spaces become hyphens.") }
     }
     .confirmationDialog("Delete this session?", isPresented: $confirmingDelete, titleVisibility: .visible) {
       Button("Delete session", role: .destructive) { delete(branch: false) }
