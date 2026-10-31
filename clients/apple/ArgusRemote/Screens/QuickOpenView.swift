@@ -21,15 +21,10 @@ struct QuickOpenView: View {
     List {
       if !host.hasControl {
         ControlRequiredBanner(action: "browse files")
-        .listRowBackground(Color.clear)
+          .listRowBackground(Color.clear)
+          .listRowSeparator(.hidden)
       } else if matcher == nil {
-        Loading(label: "Listing files…").listRowBackground(Color.clear)
-      } else if results.isEmpty {
-        EmptyState(
-          icon: Icon.search, title: "No matching files",
-          body: query.isEmpty ? "This session has no files." : "Nothing in this worktree matches “\(query)”."
-        )
-        .listRowBackground(Color.clear)
+        Loading(label: "Listing files…").listRowSeparator(.hidden)
       } else {
         ForEach(results, id: \.path) { match in
           NavigationLink(
@@ -39,6 +34,13 @@ struct QuickOpenView: View {
           }
         }
       }
+    }
+    // Plain: a grouped list opens with a section's worth of gap under the search field.
+    .listStyle(.plain)
+    .emptyState(when: host.hasControl && matcher != nil && results.isEmpty) {
+      EmptyState(
+        icon: Icon.search, title: "No matching files",
+        body: query.isEmpty ? "This session has no files." : "Nothing in this worktree matches “\(query)”.")
     }
     .searchable(
       text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "File name")

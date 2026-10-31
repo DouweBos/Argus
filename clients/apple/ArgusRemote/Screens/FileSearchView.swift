@@ -24,11 +24,18 @@ struct FileSearchView: View {
     List {
       if !host.hasControl {
         ControlRequiredBanner(action: "search files")
-        .listRowBackground(Color.clear)
+          .listRowBackground(Color.clear)
+          .listRowSeparator(.hidden)
       } else {
-        options.listRowBackground(Color.clear)
+        options
+          .listRowSeparator(.hidden)
         if let store { results(store) }
       }
+    }
+    // Plain: hits read as one compact list under each file, not a card apiece.
+    .listStyle(.plain)
+    .emptyState(when: host.hasControl && placeholder != nil) {
+      if let placeholder { placeholder }
     }
     .searchable(
       text: $text, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search this worktree")
@@ -67,21 +74,32 @@ struct FileSearchView: View {
     .font(.scaled(size: 12))
   }
 
+  /// Idle or empty, centred on the screen rather than sat in a row.
+  private var placeholder: EmptyState<EmptyView>? {
+    switch store?.phase {
+    case .idle:
+      EmptyState(icon: Icon.search, title: "Search files", body: "Find text across every file in this session.")
+    case .done(0, _):
+      EmptyState(icon: Icon.search, title: "No results", body: "Nothing in this worktree matches.")
+    default: nil
+    }
+  }
+
   @ViewBuilder
   private func results(_ store: FileSearchStore) -> some View {
     switch store.phase {
-    case .idle:
-      EmptyState(icon: Icon.search, title: "Search files", body: "Find text across every file in this session.")
-        .listRowBackground(Color.clear)
+    case .idle, .done(0, _):
+      EmptyView()
     case .failed(let message):
-      Banner(text: message, tone: .danger).listRowBackground(Color.clear)
-    case .running where store.groups.isEmpty:
-      Loading(label: "Searching…").listRowBackground(Color.clear)
-    case .done(0, _):
-      EmptyState(icon: Icon.search, title: "No results", body: "Nothing in this worktree matches.")
+      Banner(text: message, tone: .danger)
         .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+    case .running where store.groups.isEmpty:
+      Loading(label: "Searching…")
+        .listRowSeparator(.hidden)
     default:
-      MutedText(summary(store), lineLimit: 1).listRowBackground(Color.clear)
+      MutedText(summary(store), lineLimit: 2)
+        .listRowSeparator(.hidden)
       ForEach(store.groups) { group in
         Section {
           ForEach(Array(group.matches.enumerated()), id: \.offset) { _, match in
@@ -93,10 +111,7 @@ struct FileSearchView: View {
             }
           }
         } header: {
-          HStack(spacing: 6) {
-            FileTypeIcon(path: group.path, size: 14)
-            MonoText(text: group.path, size: 11, color: theme.textSecondary, lineLimit: 1, truncateHead: true)
-          }
+          FileSearchGroupHeader(path: group.path, count: group.matches.count)
         }
       }
     }

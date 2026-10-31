@@ -2,7 +2,8 @@ import ArgusCore
 import ArgusKit
 import SwiftUI
 
-/// A quick-open result: the file name, its directory, the matched letters in accent.
+/// A quick-open result: the file name, its directory, the matched letters in
+/// accent, worded and set as the Mac's quick open.
 public struct FuzzyFileRow: View {
   @Environment(\.theme) private var theme
   let match: FuzzyFileMatcher.Match
@@ -17,23 +18,25 @@ public struct FuzzyFileRow: View {
     HStack(spacing: 8) {
       FileTypeIcon(path: path)
       VStack(alignment: .leading, spacing: 2) {
-        Text(highlighted(path, from: nameStart, to: path.utf16.count))
-          .font(.scaled(size: 14, weight: .medium, design: .monospaced))
+        Text(highlighted(path, from: nameStart, to: path.utf16.count, base: theme.text))
+          .font(.scaled(.body))
           .lineLimit(1)
         if nameStart > 0 {
-          Text(highlighted(path, from: 0, to: nameStart - 1))
-            .font(.scaled(size: 11, design: .monospaced))
+          Text(highlighted(path, from: 0, to: nameStart - 1, base: theme.textSecondary))
+            .font(.scaled(.caption))
             .lineLimit(1)
             .truncationMode(.head)
         }
       }
       Spacer(minLength: 4)
-      if match.isBoosted { Badge(label: "changed", tone: .accent) }
+      if match.isBoosted {
+        Text("Changed").font(.scaled(.caption)).foregroundStyle(theme.warning)
+      }
     }
   }
 
   /// `path[from..<to]` (UTF-16) with the matched letters picked out.
-  private func highlighted(_ path: String, from: Int, to: Int) -> AttributedString {
+  private func highlighted(_ path: String, from: Int, to: Int, base: Color) -> AttributedString {
     let units = Array(path.utf16)
     let hits = Set(match.indices)
     var out = AttributedString()
@@ -42,7 +45,8 @@ public struct FuzzyFileRow: View {
     func flush() {
       guard !run.isEmpty else { return }
       var piece = AttributedString(String(decoding: run, as: UTF16.self))
-      piece.foregroundColor = runIsHit ? theme.accent : (from == 0 ? theme.textMuted : theme.text)
+      piece.foregroundColor = runIsHit ? theme.accent : base
+      if runIsHit { piece.inlinePresentationIntent = .stronglyEmphasized }
       out += piece
       run = []
     }
@@ -54,6 +58,36 @@ public struct FuzzyFileRow: View {
     }
     flush()
     return out
+  }
+}
+
+/// A worktree-search file group's header: the file's name, its directory and
+/// how many hits it holds, as the Mac's search navigator heads them.
+public struct FileSearchGroupHeader: View {
+  @Environment(\.theme) private var theme
+  let path: String
+  let count: Int
+
+  public init(path: String, count: Int) {
+    self.path = path
+    self.count = count
+  }
+
+  public var body: some View {
+    let name = SessionFilePaths.fileName(path)
+    let directory = String(path.dropLast(name.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    HStack(spacing: 6) {
+      FileTypeIcon(path: path, size: 16)
+      Text(name).font(.scaled(.subheadline).weight(.semibold)).foregroundStyle(theme.text).lineLimit(1)
+      if !directory.isEmpty {
+        Text(directory)
+          .font(.scaled(.footnote)).foregroundStyle(theme.textSecondary)
+          .lineLimit(1).truncationMode(.head)
+      }
+      Spacer(minLength: 6)
+      Text(verbatim: "\(count)").font(.scaled(.footnote)).foregroundStyle(theme.textSecondary)
+    }
+    .textCase(nil)
   }
 }
 
