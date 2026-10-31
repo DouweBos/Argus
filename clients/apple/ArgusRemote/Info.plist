@@ -44,7 +44,7 @@
 		<string>remote-notification</string>
 	</array>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Unlock Argus Remote to look in on your agents.</string>
+	<string>Unlock Argus to look in on your agents.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Scan the pairing QR code shown in Argus, or take a photo to send to an agent.</string>
 	<key>NSLocalNetworkUsageDescription</key>

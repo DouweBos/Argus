@@ -59,7 +59,7 @@ struct StoppedAgentView: View {
           MutedText(
             host.hasControl
               ? "This agent's session is gone, so there's nothing to resume into."
-              : "This agent has stopped. Ask the desktop for control to resume it.")
+              : "This agent has stopped. Grant this phone control in Argus on your computer to resume it.")
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)

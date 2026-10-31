@@ -54,10 +54,7 @@ struct DeviceView: View {
     VStack(spacing: 0) {
       stage
       if !host.hasControl {
-        Banner(
-          text:
-            "This device can watch but not control. Grant it control in Argus → Settings → Remote Access to tap and type here."
-        )
+        ControlRequiredBanner(action: "tap and type here")
         .padding(theme.space)
       } else if let holder = otherHolder {
         // Input would be refused outright, so say who has it and offer to take

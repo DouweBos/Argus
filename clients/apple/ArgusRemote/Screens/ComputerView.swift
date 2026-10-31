@@ -63,11 +63,11 @@ struct ComputerView: View {
     Field(label: "Connection") {
       HStack(spacing: 8) {
         if active {
-          ConnectionBadge(state: host.connection)
+          Badge(label: host.connection.label, tone: host.connection.tone)
         } else {
           Badge(label: "Not connected")
         }
-        MutedText("Can: \(computer.capabilities.joined(separator: ", "))")
+        MutedText(GrantLabel.text(computer.capabilities))
       }
       if !active {
         Btn(label: "Connect and open projects") {

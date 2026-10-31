@@ -45,7 +45,7 @@ struct PairView: View {
       SectionHeader(title: "Or scan a QR code")
     }
     MutedText(
-      "In Argus, open Settings → Remote Access → Start pairing. A scanned pairing works on the same Wi-Fi, or over Tailscale when both devices are on your tailnet.")
+      "In Argus on your computer, open Settings → Remote → Start Pairing…. A scanned pairing works on the same Wi-Fi, or over Tailscale when both devices are on your tailnet.")
 
     QRScannerView { code in begin(code) }
       .aspectRatio(1, contentMode: .fit)

@@ -23,10 +23,7 @@ struct FileSearchView: View {
   var body: some View {
     List {
       if !host.hasControl {
-        Banner(
-          text:
-            "This device can watch but not control. Grant it control in Argus → Settings → Remote Access to search files."
-        )
+        ControlRequiredBanner(action: "search files")
         .listRowBackground(Color.clear)
       } else {
         options.listRowBackground(Color.clear)

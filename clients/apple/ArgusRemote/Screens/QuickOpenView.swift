@@ -20,10 +20,7 @@ struct QuickOpenView: View {
   var body: some View {
     List {
       if !host.hasControl {
-        Banner(
-          text:
-            "This device can watch but not control. Grant it control in Argus → Settings → Remote Access to browse files."
-        )
+        ControlRequiredBanner(action: "browse files")
         .listRowBackground(Color.clear)
       } else if matcher == nil {
         Loading(label: "Listing files…").listRowBackground(Color.clear)

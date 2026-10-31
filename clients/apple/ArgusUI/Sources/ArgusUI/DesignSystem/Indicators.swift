@@ -14,26 +14,55 @@ public struct ConnectionBadge: View {
   }
 
   public var body: some View {
-    StatusDot(tone: tone, pulse: state != .ready)
+    StatusDot(tone: state.tone, pulse: state != .ready)
       .padding(.horizontal, 8)
-      .accessibilityLabel(label)
+      .accessibilityLabel(state.label)
   }
+}
 
-  private var tone: Tone {
-    switch state {
-    case .ready: .success
-    case .offline: .warning
-    case .connecting, .handshaking: .muted
-    }
-  }
-
-  private var label: String {
-    switch state {
+extension Transport.State {
+  /// The state in words, for wherever the badge's dot needs spelling out.
+  public var label: String {
+    switch self {
     case .ready: "Connected"
     case .offline: "Reconnecting"
     case .connecting: "Connecting"
     case .handshaking: "Securing"
     }
+  }
+
+  public var tone: Tone {
+    switch self {
+    case .ready: .success
+    case .offline: .warning
+    case .connecting, .handshaking: .muted
+    }
+  }
+}
+
+/// What a computer lets this device do, in words rather than tier names.
+public enum GrantLabel {
+  public static func text(_ capabilities: [String]) -> String {
+    if capabilities.contains("admin") { return "Full access" }
+    if capabilities.contains("control") { return "Full control" }
+    if capabilities.contains("monitor") { return "Watch and approve" }
+    return "Nothing yet"
+  }
+}
+
+/// Said wherever a watch-only device hits something that needs control.
+public struct ControlRequiredBanner: View {
+  let action: String
+
+  /// `action` finishes "Grant it control in Argus … to ___", e.g. "read files".
+  public init(action: String) {
+    self.action = action
+  }
+
+  public var body: some View {
+    Banner(
+      text: "This device can watch but not control. Grant it control in Argus on your computer, "
+        + "under Settings → Remote, to \(action).")
   }
 }
 

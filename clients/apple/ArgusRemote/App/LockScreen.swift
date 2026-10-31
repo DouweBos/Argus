@@ -22,8 +22,8 @@ struct LockScreen: View {
       VStack(spacing: 18) {
         Spacer()
         sigil
-        Badge(label: "LOCKED", tone: .muted)
-        TitleText("Argus Remote")
+        Badge(label: "Locked", tone: .muted)
+        TitleText("Argus")
         Text("Your agents keep working while you're away. Unlock to look in on them.")
           .font(.system(size: 14))
           .foregroundStyle(theme.textMuted)

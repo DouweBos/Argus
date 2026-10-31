@@ -507,7 +507,7 @@ struct RootView: View {
       let context = LAContext()
       let ok = (try? await context.evaluatePolicy(
         .deviceOwnerAuthenticationWithBiometrics,
-        localizedReason: "Unlock Argus Remote")) ?? false
+        localizedReason: "Unlock Argus")) ?? false
       guard ok else { return }
       unlocked = true
       await app.initialize()

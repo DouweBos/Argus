@@ -65,10 +65,7 @@ struct FileView: View {
   private var content: some View {
     if !host.hasControl {
       Screen {
-        Banner(
-          text:
-            "This device can watch but not control. Grant it control in Argus → Settings → Remote Access to read files."
-        )
+        ControlRequiredBanner(action: "read files")
       }
     } else if let failure {
       Screen {

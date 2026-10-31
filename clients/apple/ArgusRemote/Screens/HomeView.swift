@@ -20,7 +20,7 @@ struct HomeView: View {
           title: "No computers yet",
           body: """
             Sign in to your Argus account and your computers show up here. Or pair \
-            with one by QR code from Settings → Remote Access on the computer.
+            with one by QR code from Settings → Remote in Argus on the computer.
             """)
         if !app.account.isSignedIn {
           Btn(label: "Sign in") { router.push(.account) }
