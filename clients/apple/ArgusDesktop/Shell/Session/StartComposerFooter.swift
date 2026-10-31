@@ -40,10 +40,8 @@ final class StartWorkspace {
       projectRootBranch: projectRootBranch)
   }
 
-  func loadLocalBranches(repoRoot: String, backend: HostRouter?) async {
-    guard let backend else { return }
-    let list = try? await backend.request(ArgusProtocol.Commands.ListAllBranches.self, .init(repoRoot: repoRoot))
-    localBranches = list?.local ?? localBranches ?? []
+  func loadLocalBranches(repoRoot: String, model: DesktopModel) async {
+    localBranches = await model.localBranches(repoRoot: repoRoot) ?? localBranches ?? []
   }
 }
 
@@ -189,18 +187,14 @@ struct StartComposerFooter: View {
     .help("The branch this checkout is on")
     .task(id: branchMenuOpen) {
       guard branchMenuOpen else { return }
-      await workspace.loadLocalBranches(repoRoot: session.repoRoot, backend: model.backend)
+      await workspace.loadLocalBranches(repoRoot: session.repoRoot, model: model)
     }
   }
 
   private func switchBranch(to branch: String) {
     guard branch != session.branch else { return }
     MacTelemetry.capture(.startBranchSwitched)
-    Task {
-      guard let git = await model.git.open(session) else { return }
-      await RefActions(workspace: git, session: session, model: model, theme: theme).checkout(branch)
-      await store.loadSessions(repoRoot: session.repoRoot)
-    }
+    Task { await model.switchBranch(session, to: branch, theme: theme) }
   }
 
   private func pullRequestButton(_ pr: RemotePullRequest) -> some View {

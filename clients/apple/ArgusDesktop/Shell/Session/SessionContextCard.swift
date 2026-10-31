@@ -30,6 +30,8 @@ struct SessionContextCard: View {
   @State private var renamingBranch = false
   @State private var showingChats = false
   @State private var chatCount: Int?
+  /// For the branch row's switcher; read while the card is open.
+  @State private var localBranches: [String] = []
   @AppStorage("argus:contextCard.editor") private var lastEditor = ""
 
   init(session: RemoteSession, panel: SessionPanel) {
@@ -54,6 +56,10 @@ struct SessionContextCard: View {
     }
     .task(id: "\(session.id):\(session.status.rawValue)") { await loadPaths() }
     .task(id: SessionChats.reloadKey(session, store: store)) { await loadChatCount() }
+    .task(id: collapsed || !ready || session.isOutsideProjects ? nil : "\(session.id):\(git?.branch ?? session.branch)") {
+      guard !collapsed, ready, !session.isOutsideProjects else { return }
+      localBranches = await model.localBranches(repoRoot: session.repoRoot) ?? localBranches
+    }
     .liveRefresh(enabled: !collapsed && ready && !session.isOutsideProjects, every: .seconds(10)) {
       await store.loadGitStatus(sessionId: session.id)
     }
@@ -207,6 +213,16 @@ struct SessionContextCard: View {
         ChromeMenuItem("Rename Branch…", icon: .symbol(Icon.pencil)) { renamingBranch = true }
       }
       ChromeMenuItem("Copy Branch Name", icon: .symbol(Icon.copy)) { Clipboard.copy(git?.branch ?? session.branch) }
+      if localBranches.count > 1 {
+        ChromeMenuEntry.header("Switch Branch")
+        for branch in localBranches {
+          ChromeMenuItem(branch, checked: branch == (git?.branch ?? session.branch)) {
+            guard branch != (git?.branch ?? session.branch) else { return }
+            MacTelemetry.capture(.contextCardUsed(action: .switchBranch))
+            Task { await model.switchBranch(session, to: branch, theme: theme) }
+          }
+        }
+      }
     }
     .help(session.baseBranch.map { "\(session.branch) from \($0)" } ?? session.branch)
   }
