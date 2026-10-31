@@ -11,32 +11,44 @@ struct HomeView: View {
 
 
   var body: some View {
-    Screen {
+    List {
       if !app.loaded {
-        Loading(label: "Unlocking…")
-      } else if app.hosts.isEmpty {
-        EmptyState(
-          icon: Icon.desktop,
-          title: "No computers yet",
-          body: """
-            Sign in to your Argus account and your computers show up here. Or pair \
-            with one by QR code from Settings → Remote in Argus on the computer.
-            """)
-        if !app.account.isSignedIn {
-          Btn(label: "Sign in") { router.push(.account) }
+        Loading(label: "Unlocking…").listRowBackground(Color.clear)
+      } else if !app.hosts.isEmpty {
+        Section {
+          ForEach(app.hosts) { computer in
+            hostRow(computer)
+          }
+        } footer: {
+          Text("Tap a computer to connect to it; the app talks to one at a time.")
         }
-        Btn(label: "Scan a QR code", tone: app.account.isSignedIn ? .primary : .secondary) {
+        Section {
+          if app.account.isSignedIn {
+            NavigationLink(value: Route.addComputer) {
+              Label("Add a computer to your account", systemImage: Icon.plus)
+            }
+          }
+          NavigationLink(value: Route.pair) {
+            Label("Pair with a QR code", systemImage: Icon.camera)
+          }
+        }
+      }
+    }
+    .emptyState(when: app.loaded && app.hosts.isEmpty) {
+      EmptyState(
+        icon: Icon.desktop,
+        title: "No computers yet",
+        body: """
+          Sign in to your Argus account and your computers show up here. Or pair \
+          with one by QR code from Settings → Remote in Argus on the computer.
+          """
+      ) {
+        if !app.account.isSignedIn {
+          Btn(label: "Sign in", hugs: true) { router.push(.account) }
+        }
+        Btn(label: "Scan a QR code", tone: app.account.isSignedIn ? .primary : .secondary, hugs: true) {
           router.push(.pair)
         }
-      } else {
-        SectionHeader(title: "Computers", count: app.hosts.count)
-        ForEach(app.hosts) { computer in
-          hostCard(computer)
-        }
-        if app.account.isSignedIn {
-          Btn(label: "Add a computer to your account", tone: .secondary) { router.push(.addComputer) }
-        }
-        Btn(label: "Pair another computer", tone: .secondary) { router.push(.pair) }
       }
     }
     .navigationTitle("Computers")
@@ -47,35 +59,49 @@ struct HomeView: View {
     }
   }
 
-  private func hostCard(_ computer: DeviceIdentity) -> some View {
+  /// Tapping the row connects; the info button opens its details, as Wi-Fi does.
+  private func hostRow(_ computer: DeviceIdentity) -> some View {
     let active = computer.deviceId == app.activeHostId
-    return Card {
-      HStack(spacing: 8) {
-        Image(systemName: Icon.desktop)
-          .font(.system(size: 15))
-          .foregroundStyle(active ? theme.accent : theme.textSecondary)
-        VStack(alignment: .leading, spacing: 2) {
-          BodyText(computer.label, lineLimit: 1)
-          if let presence = app.presence(of: computer) {
-            MutedText(
-              AccountPresenceLabel.text(online: presence.online, lastSeen: presence.lastSeen), lineLimit: 1)
-          } else {
-            MutedText(DeviceIdentity.gatewayHost(computer.url), lineLimit: 1)
+    return HStack(spacing: 10) {
+      Button { open(computer) } label: {
+        HStack(spacing: 10) {
+          Image(systemName: active ? "checkmark" : Icon.desktop)
+            .foregroundStyle(active ? theme.accent : theme.textSecondary)
+            .frame(width: 22)
+          VStack(alignment: .leading, spacing: 2) {
+            Text(computer.label).foregroundStyle(theme.text).lineLimit(1)
+            Text(subtitle(computer, active: active))
+              .font(.footnote)
+              .foregroundStyle(theme.textMuted)
+              .lineLimit(1)
           }
+          Spacer(minLength: 6)
         }
-        Spacer(minLength: 6)
-        if active {
-          ConnectionBadge(state: host.connection)
-        } else {
-          Badge(label: "Tap to connect")
-        }
-        IconBtn(systemName: Icon.ellipsis, label: "\(computer.label) settings") {
-          router.push(.computer(deviceId: computer.deviceId))
-        }
+        .contentShape(Rectangle())
       }
-      .contentShape(Rectangle())
-      .onTapGesture { open(computer) }
+      .buttonStyle(.argusPlain)
+      .accessibilityHint(active ? "Connected" : "Connects to this computer")
+
+      Button {
+        router.push(.computer(deviceId: computer.deviceId))
+      } label: {
+        Image(systemName: "info.circle")
+          .font(.title3)
+          .foregroundStyle(theme.accent)
+          .frame(width: 44, height: 44)
+          .contentShape(Rectangle())
+      }
+      .buttonStyle(.argusPlain)
+      .accessibilityLabel("\(computer.label) details")
     }
+  }
+
+  private func subtitle(_ computer: DeviceIdentity, active: Bool) -> String {
+    if active { return host.connection.label }
+    if let presence = app.presence(of: computer) {
+      return AccountPresenceLabel.text(online: presence.online, lastSeen: presence.lastSeen)
+    }
+    return DeviceIdentity.gatewayHost(computer.url)
   }
 
   /// Navigate first, connect second.
