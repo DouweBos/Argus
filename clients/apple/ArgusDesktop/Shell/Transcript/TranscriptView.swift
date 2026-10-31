@@ -36,7 +36,7 @@ struct TranscriptView: View {
 
   var body: some View {
     let messages = messages
-    let pending = pendingCalls(messages)
+    let pending = host.pendingCalls(agentKey: agentKey, in: messages)
     TranscriptTable(
       controller: controller, agentKey: agentKey, messages: messages,
       top: .init(hasOlder: hasOlder, loading: loadingOlder),
@@ -166,13 +166,6 @@ struct TranscriptView: View {
         host.tasksByAgent[agentKey]?.count ?? 0, host.todosByAgent[agentKey]?.count ?? 0,
         host.queuedByAgent[agentKey]?.count ?? 0, host.failedByAgent[agentKey]?.count ?? 0,
       ])
-  }
-
-  private func pendingCalls(_ messages: [RemoteMessage]) -> [RemoteToolCall] {
-    // Decisions sit at the tail; there's no need to walk two thousand messages.
-    messages.suffix(40).flatMap { message in
-      message.toolCalls.filter { host.isToolCallPending(agentKey: agentKey, call: $0) }
-    }
   }
 
   private var toolTextRenderer: ToolTextRenderer {

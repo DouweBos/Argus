@@ -127,65 +127,6 @@ public struct TranscriptMessageView: View {
   }
 }
 
-/// The decision a pending call is waiting on. Shared by top-level calls and
-/// sub-agent calls, which need an answer just the same.
-struct PendingCallForm: View {
-  @Environment(HostStore.self) private var host
-
-  let agentKey: String
-  let call: RemoteToolCall
-
-  var body: some View { form(for: call) }
-
-  /// The repo behind this agent, for seeding a sibling session from a plan.
-  private var planRepoRoot: String? {
-    guard let sessionId = host.statusByAgent[agentKey]?.sessionId else { return nil }
-
-    return host.repoRoot(forSessionId: sessionId)
-  }
-
-  /// Which form a pending call gets: a question, a plan, or plain allow/deny.
-  @ViewBuilder
-  private func form(for call: RemoteToolCall) -> some View {
-    switch PendingForm.of(name: call.name, input: call.input) {
-    case .question(let questions):
-      QuestionFormView(
-        questions: questions,
-        onSubmit: { answer in respond(call, "deny", answer) },
-        onCancel: { respond(call, "deny", CannedReply.cancelQuestion) })
-    case .plan(let plan):
-      PlanApprovalView(
-        plan: plan,
-        onApprove: {
-          host.noteLeftPlanMode(agentId: agentKey)
-          respond(call, "allow", nil)
-        },
-        onKeepPlanning: { respond(call, "deny", CannedReply.keepPlanning) },
-        onFeedback: { feedback in
-          respond(call, "deny", CannedReply.planFeedback(feedback))
-        },
-        // No repo, nowhere to put the session — same rule as the desktop.
-        onApproveInNewSession: planRepoRoot.map { repoRoot in
-          {
-            Task { await host.handOffPlan(repoRoot: repoRoot, plan: plan) }
-            respond(call, "deny", CannedReply.planHandoff)
-          }
-        })
-    case .buttons:
-      PermissionButtons(
-        onAllow: { respond(call, "allow", nil) },
-        onDeny: { respond(call, "deny", nil) })
-    }
-  }
-
-  private func respond(_ call: RemoteToolCall, _ decision: String, _ message: String?) {
-    Task {
-      await host.respond(
-        agentId: agentKey, toolUseId: call.id, decision: decision, message: message)
-    }
-  }
-}
-
 /// Stands in for the timestamp until the computer has the message.
 struct SendingLabel: View {
   var body: some View {
