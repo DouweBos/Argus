@@ -145,6 +145,40 @@ public enum FileLinks {
     return ((worktree as NSString).appendingPathComponent(path) as NSString).standardizingPath
   }
 
+  // MARK: Link URLs
+
+  /// File links travel through rendered text as URLs on a private scheme, so
+  /// the text system hit-tests them like any link. Both apps read it back here.
+  public static let scheme = "argus-file"
+
+  public static func url(for ref: FileRef) -> URL? {
+    var components = URLComponents()
+    components.scheme = scheme
+    components.host = "open"
+    components.queryItems =
+      [URLQueryItem(name: "path", value: ref.path)]
+      + (ref.line.map { [URLQueryItem(name: "line", value: String($0))] } ?? [])
+      + (ref.column.map { [URLQueryItem(name: "col", value: String($0))] } ?? [])
+    return components.url
+  }
+
+  public static func fileRef(from url: URL) -> FileRef? {
+    guard url.scheme == scheme,
+      let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
+      let path = items.first(where: { $0.name == "path" })?.value
+    else { return nil }
+    func int(_ name: String) -> Int? { items.first { $0.name == name }?.value.flatMap(Int.init) }
+    return FileRef(path: path, line: int("line"), column: int("col"))
+  }
+
+  /// What a match links to: a file on the private scheme, a URL as written.
+  public static func url(for kind: Kind) -> URL? {
+    switch kind {
+    case .file(let ref): url(for: ref)
+    case .url(let raw): URL(string: raw)
+    }
+  }
+
   // MARK: Internals
 
   private static func filePaths(in text: NSString, range: NSRange) -> [Match] {

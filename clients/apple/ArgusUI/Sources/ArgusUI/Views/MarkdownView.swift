@@ -13,10 +13,13 @@ public struct MarkdownView: View {
   @Environment(\.linearMedia) private var linearMedia
   let text: String
   var baseSize: CGFloat = 15
+  /// What a person typed: only `@paths` link as files, as on the Mac.
+  var mentions = false
 
-  public init(text: String, baseSize: CGFloat = 15) {
+  public init(text: String, baseSize: CGFloat = 15, mentions: Bool = false) {
     self.text = text
     self.baseSize = baseSize
+    self.mentions = mentions
   }
 
   public var body: some View {
@@ -88,7 +91,7 @@ public struct MarkdownView: View {
     guard var attributed = try? AttributedString(markdown: source, options: options) else {
       return Text(source).foregroundColor(theme.text)
     }
-    if openFileLink != nil { attributed = attributed.linkingFilePaths() }
+    attributed = attributed.linkified(files: openFileLink != nil, mentions: mentions)
     return Text(attributed).foregroundColor(theme.text)
   }
 }

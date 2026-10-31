@@ -42,7 +42,7 @@ final class TranscriptLinkHandler {
   // MARK: Click
 
   func open(_ url: URL) {
-    if let ref = TranscriptLink.fileRef(from: url) {
+    if let ref = FileLinks.fileRef(from: url) {
       openFile(ref)
     } else {
       MacTelemetry.capture(.transcriptLinkOpened(action: .openUrl, relative: false))
@@ -60,7 +60,7 @@ final class TranscriptLinkHandler {
   // MARK: Context menu
 
   func menuItems(for url: URL) -> [NSMenuItem] {
-    guard let ref = TranscriptLink.fileRef(from: url) else {
+    guard let ref = FileLinks.fileRef(from: url) else {
       return [
         item("Open Link") { [weak self] in self?.open(url) },
         item("Copy Link") {

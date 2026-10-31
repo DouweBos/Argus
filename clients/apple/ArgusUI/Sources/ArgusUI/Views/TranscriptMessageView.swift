@@ -57,7 +57,7 @@ public struct TranscriptMessageView: View {
   private var bubble: some View {
     VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
       ForEach(Array(textBlocks.enumerated()), id: \.offset) { _, block in
-        MarkdownView(text: block, baseSize: 15)
+        MarkdownView(text: block, baseSize: 15, mentions: isUser)
       }
       ForEach(message.toolCalls) { call in
         ToolCallCard(agentKey: agentKey, call: call, depth: 0)

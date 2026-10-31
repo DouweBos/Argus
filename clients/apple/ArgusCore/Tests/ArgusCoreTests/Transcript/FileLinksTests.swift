@@ -120,6 +120,16 @@ struct FileLinksTests {
       ])
   }
 
+  @Test("a file link's URL keeps line and column through the round trip")
+  func linkURLRoundTrip() throws {
+    let ref = Ref(path: "src/a b.ts", line: 4, column: 9)
+    let url = try #require(FileLinks.url(for: ref))
+    #expect(url.scheme == FileLinks.scheme)
+    #expect(FileLinks.fileRef(from: url) == ref)
+    #expect(FileLinks.fileRef(from: URL(string: "https://x.dev/a.ts")!) == nil)
+    #expect(FileLinks.url(for: .url("https://x.dev")) == URL(string: "https://x.dev"))
+  }
+
   @Test("relative paths resolve against the worktree, ~ against home")
   func resolve() {
     #expect(FileLinks.resolve("/a/../b/c.ts", worktree: "/w") == "/b/c.ts")

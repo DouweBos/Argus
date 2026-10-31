@@ -89,29 +89,3 @@ enum TranscriptBlock: Int {
   case quote
   case rule
 }
-
-/// File links travel through the text view as URLs on a private scheme, so
-/// they get NSTextView's link cursor and hit-testing for free.
-enum TranscriptLink {
-  static let scheme = "argus-file"
-
-  static func url(for ref: FileLinks.FileRef) -> URL? {
-    var components = URLComponents()
-    components.scheme = scheme
-    components.host = "open"
-    components.queryItems =
-      [URLQueryItem(name: "path", value: ref.path)]
-      + (ref.line.map { [URLQueryItem(name: "line", value: String($0))] } ?? [])
-      + (ref.column.map { [URLQueryItem(name: "col", value: String($0))] } ?? [])
-    return components.url
-  }
-
-  static func fileRef(from url: URL) -> FileLinks.FileRef? {
-    guard url.scheme == scheme,
-      let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
-      let path = items.first(where: { $0.name == "path" })?.value
-    else { return nil }
-    func int(_ name: String) -> Int? { items.first { $0.name == name }?.value.flatMap(Int.init) }
-    return FileLinks.FileRef(path: path, line: int("line"), column: int("col"))
-  }
-}

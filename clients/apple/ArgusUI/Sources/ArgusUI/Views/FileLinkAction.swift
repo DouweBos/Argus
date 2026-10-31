@@ -17,40 +17,18 @@ extension EnvironmentValues {
   @Entry public var openFileLink: OpenFileLinkAction?
 }
 
-/// File links travel through `Text` as URLs on a private scheme, so SwiftUI hit-tests them.
-public enum FileLinkURL {
-  public static let scheme = "argus-file"
-
-  public static func url(for ref: FileLinks.FileRef) -> URL? {
-    var components = URLComponents()
-    components.scheme = scheme
-    components.host = "open"
-    components.queryItems =
-      [URLQueryItem(name: "path", value: ref.path)]
-      + (ref.line.map { [URLQueryItem(name: "line", value: String($0))] } ?? [])
-    return components.url
-  }
-
-  public static func fileRef(from url: URL) -> FileLinks.FileRef? {
-    guard url.scheme == scheme,
-      let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
-      let path = items.first(where: { $0.name == "path" })?.value
-    else { return nil }
-    let line = items.first { $0.name == "line" }?.value.flatMap(Int.init)
-    return FileLinks.FileRef(path: path, line: line)
-  }
-}
-
 extension AttributedString {
-  /// File paths become `argus-file:` links, except where markdown already made a link.
-  public func linkingFilePaths() -> AttributedString {
+  /// Bare URLs, and file paths when `files`, become links, except where markdown
+  /// already made one. `mentions` is for what a person typed: only `@paths` count
+  /// as files there, as on the Mac.
+  public func linkified(files: Bool, mentions: Bool = false) -> AttributedString {
     let plain = String(characters)
-    let matches = FileLinks.matches(in: plain)
+    let matches = mentions ? FileLinks.mentionMatches(in: plain) : FileLinks.matches(in: plain)
     guard !matches.isEmpty else { return self }
     var out = self
     for match in matches {
-      guard case .file(let ref) = match.kind, let url = FileLinkURL.url(for: ref),
-        let range = Range(match.range, in: plain)
+      if case .file = match.kind, !files { continue }
+      guard let url = FileLinks.url(for: match.kind), let range = Range(match.range, in: plain)
       else { continue }
       let start = plain.unicodeScalars.distance(from: plain.startIndex, to: range.lowerBound)
       let length = plain.unicodeScalars.distance(from: range.lowerBound, to: range.upperBound)
@@ -73,7 +51,7 @@ struct FileLinkHandling: ViewModifier {
       content.environment(
         \.openURL,
         OpenURLAction { url in
-          if let ref = FileLinkURL.fileRef(from: url) {
+          if let ref = FileLinks.fileRef(from: url) {
             openFileLink(ref)
           } else {
             openURL(url)

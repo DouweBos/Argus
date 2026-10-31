@@ -221,12 +221,7 @@ enum TranscriptMarkdown {
         if value != nil { linked = true; stop.pointee = true }
       }
       guard !linked else { continue }
-      let url: URL? =
-        switch match.kind {
-        case .file(let ref): TranscriptLink.url(for: ref)
-        case .url(let raw): URL(string: raw)
-        }
-      if let url { string.addAttribute(.link, value: url, range: match.range) }
+      if let url = FileLinks.url(for: match.kind) { string.addAttribute(.link, value: url, range: match.range) }
     }
   }
 }
