@@ -95,6 +95,7 @@ extension AutomationsStore {
   }
 
   private func gatewayFailed(_ summary: String, _ error: Error) {
+    guard !HostStore.isCancellation(error) else { return }
     self.error = "\(summary) — \(HostStore.describe(error))"
     host.hooks.errorReported(error, "automations")
   }

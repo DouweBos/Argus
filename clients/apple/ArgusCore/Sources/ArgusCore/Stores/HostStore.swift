@@ -524,6 +524,7 @@ public final class HostStore {
   // MARK: Error surface
 
   public func report(_ error: Error, scope: String = "app") {
+    guard !Self.isCancellation(error) else { return }
     lastError = Self.describe(error)
     hooks.errorReported(error, scope)
   }
@@ -534,6 +535,11 @@ public final class HostStore {
   }
 
   public func clearError() { lastError = nil }
+
+  /// A task cancelled by a disappearing view or a newer refresh — never the user's problem.
+  public nonisolated static func isCancellation(_ error: Error) -> Bool {
+    error is CancellationError || (error as? URLError)?.code == .cancelled
+  }
 
   /// The method a host too old for this client lacked, if that's what failed.
   /// Expected version skew, so callers count it rather than report it.

@@ -39,7 +39,10 @@ public struct HostStoreHooks: Sendable {
     agentNotificationClicked: @escaping @MainActor @Sendable (String, String) -> Void = { _, _ in }
   ) {
     self.track = track
-    self.errorReported = errorReported
+    self.errorReported = { error, scope in
+      guard !HostStore.isCancellation(error) else { return }
+      errorReported(error, scope)
+    }
     self.notify = notify
     self.agentsSeen = agentsSeen
     self.endpointsChanged = endpointsChanged

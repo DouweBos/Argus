@@ -267,6 +267,22 @@ struct HostStoreTests {
     #expect(HostStore.unsupportedMethod(Transport.TransportError.timedOut) == nil)
   }
 
+  @Test("a cancelled request never reaches the user")
+  func cancellationIsSilent() async {
+    var reported: [String] = []
+    let store = HostStore(hooks: HostStoreHooks(errorReported: { _, scope in reported.append(scope) }))
+    let backend = FakeBackend()
+    backend.fail(.githubPullRequests, with: CancellationError())
+    await store.attach(backend)
+    let pulls = PullRequestsStore(host: store)
+    await pulls.refresh()
+    store.report(URLError(.cancelled))
+    #expect(pulls.error == nil)
+    #expect(store.lastError == nil)
+    #expect(reported.isEmpty)
+    #expect(!HostStore.isCancellation(Transport.TransportError.timedOut))
+  }
+
   @Test("reset forgets the previous computer")
   func reset() async throws {
     let store = HostStore()

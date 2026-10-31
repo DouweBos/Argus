@@ -258,6 +258,7 @@ public final class ProposalsStore {
   /// Show it, and send it — a failure the user sees is one worth knowing
   /// about, scrubbed of anything from their work.
   private func fail(_ summary: String, _ error: Error) {
+    guard !HostStore.isCancellation(error) else { return }
     self.error = "\(summary) — \(HostStore.describe(error))"
     report(error)
   }
