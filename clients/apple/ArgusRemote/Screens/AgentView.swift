@@ -50,7 +50,7 @@ struct AgentView: View {
           .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
       } else if host.hasControl {
         ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
-          if affordance == .followUp { Telemetry.capture(.followUpUsed) }
+          Telemetry.capture(affordance == .followUp ? .followUpUsed : .inputUsed(affordance: affordance.rawValue))
         }
       }
     }

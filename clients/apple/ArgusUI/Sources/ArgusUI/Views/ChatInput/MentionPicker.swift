@@ -35,8 +35,9 @@ public enum MentionPicker {
     return Context(query: query, start: at)
   }
 
+  /// A query naming a path browses the tree; anything else searches the flat file list.
   public static func isBrowsing(_ query: String) -> Bool {
-    MentionQuery.isBrowsing(query)
+    query.contains("/") || query.hasPrefix("~") || query.hasPrefix(".")
   }
 
   /// `src/comp` → (`src/`, `comp`); `~Work` → (`~/`, `work`).

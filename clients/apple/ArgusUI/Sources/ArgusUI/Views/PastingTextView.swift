@@ -12,14 +12,16 @@
     public static let collapsedHeight: CGFloat = 36
 
     @Binding public var text: String
+    /// UTF-16 offset of the insertion point, for the caret-aware `@` menu.
+    @Binding public var caret: Int
     @Binding public var height: CGFloat
-    public var placeholder: String
+    let controller: PastingTextController
     public var minHeight: CGFloat = Self.collapsedHeight
     public var maxHeight: CGFloat = 120
     public var onPasteImages: ([PlatformImage]) -> Void
 
     public func makeCoordinator() -> Coordinator {
-      Coordinator(text: $text, height: $height, minHeight: minHeight, maxHeight: maxHeight)
+      Coordinator(text: $text, caret: $caret, height: $height, minHeight: minHeight, maxHeight: maxHeight)
     }
 
     public func makeUIView(context: Context) -> ImagePastingTextView {
@@ -42,6 +44,8 @@
       view.isScrollEnabled = false
       // The field lives in a stack that already scrolls; let it grow instead.
       view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+      view.text = text
+      controller.textView = view
       return view
     }
 
@@ -51,8 +55,13 @@
       // TextKit lays out lazily, so without forcing it `sizeThatFits` still
       // reports the height of the message that was just sent. `layoutIfNeeded`
       // is not enough: it lays out the view, not the text.
+      context.coordinator.isUpdating = true
+      defer { context.coordinator.isUpdating = false }
       if view.text != text {
         view.text = text
+        // A restored draft puts the caret at the end; the menus read it from there.
+        let location = view.selectedRange.location
+        Task { @MainActor in if caret != location { caret = location } }
         if let layout = view.textLayoutManager {
           layout.ensureLayout(for: layout.documentRange)
         } else {
@@ -68,13 +77,19 @@
 
     public final class Coordinator: NSObject, UITextViewDelegate {
       private let text: Binding<String>
+      private let caret: Binding<Int>
       private let height: Binding<CGFloat>
       private let minHeight: CGFloat
       private let maxHeight: CGFloat
       private var pendingHeight: Task<Void, Never>?
+      /// Set while `updateUIView` writes the text, whose selection change mustn't write state back mid-update.
+      var isUpdating = false
 
-      public init(text: Binding<String>, height: Binding<CGFloat>, minHeight: CGFloat, maxHeight: CGFloat) {
+      public init(
+        text: Binding<String>, caret: Binding<Int>, height: Binding<CGFloat>, minHeight: CGFloat, maxHeight: CGFloat
+      ) {
         self.text = text
+        self.caret = caret
         self.height = height
         self.minHeight = minHeight
         self.maxHeight = maxHeight
@@ -82,7 +97,14 @@
 
       public func textViewDidChange(_ textView: UITextView) {
         text.wrappedValue = textView.text
+        caret.wrappedValue = textView.selectedRange.location
         recalculateHeight(textView)
+      }
+
+      public func textViewDidChangeSelection(_ textView: UITextView) {
+        guard !isUpdating else { return }
+        let location = textView.selectedRange.location
+        if caret.wrappedValue != location { caret.wrappedValue = location }
       }
 
       public func recalculateHeight(_ textView: UITextView) {
@@ -125,6 +147,38 @@
           height.wrappedValue = newHeight
         }
       }
+    }
+  }
+
+  /// The phone composer's `ComposerEditor`, over its `UITextView`.
+  @MainActor
+  final class PastingTextController: ComposerEditor {
+    fileprivate weak var textView: ImagePastingTextView?
+
+    var caret: Int { textView?.selectedRange.location ?? 0 }
+
+    func replace(with text: String, caret: Int?) {
+      guard let view = textView else { return }
+      let length = (text as NSString).length
+      if let all = view.textRange(from: view.beginningOfDocument, to: view.endOfDocument) {
+        // Through `UITextInput`, so the edit is one undo step.
+        view.replace(all, withText: text)
+      } else {
+        view.text = text
+      }
+      view.selectedRange = NSRange(location: min(caret ?? length, length), length: 0)
+      view.delegate?.textViewDidChange?(view)
+    }
+
+    func reset() {
+      guard let view = textView else { return }
+      view.text = ""
+      view.undoManager?.removeAllActions()
+      view.delegate?.textViewDidChange?(view)
+    }
+
+    func focus() {
+      textView?.becomeFirstResponder()
     }
   }
 

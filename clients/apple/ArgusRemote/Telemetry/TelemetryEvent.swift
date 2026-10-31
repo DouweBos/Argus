@@ -127,6 +127,8 @@ enum TelemetryEvent {
   case proposalOpenedAsRun
   /// A suggested reply filled the message field.
   case followUpUsed
+  /// A message-field feature the host can't see; follow-ups have their own event.
+  case inputUsed(affordance: String)
   case settingChanged(setting: Setting, enabled: Bool)
   /// A colour theme preset id.
   case colorThemeChanged(theme: String)
@@ -203,6 +205,7 @@ enum TelemetryEvent {
     case .memoryEdited: "ios_memory_edited"
     case .proposalOpenedAsRun: "ios_proposal_opened"
     case .followUpUsed: "ios_follow_up_used"
+    case .inputUsed: "ios_input_used"
     case .settingChanged: "ios_setting_changed"
     case .colorThemeChanged: "ios_color_theme_changed"
     case .defaultChanged: "ios_default_changed"
@@ -293,6 +296,8 @@ enum TelemetryEvent {
       ["setting": setting.rawValue, "enabled": enabled]
     case .colorThemeChanged(let theme):
       ["theme": theme]
+    case .inputUsed(let affordance):
+      ["affordance": affordance]
     case .defaultChanged(let setting, let value):
       ["setting": setting.rawValue, "value": value]
     case .agentStartSubmitted(let workspace, let changedWorkspace):
