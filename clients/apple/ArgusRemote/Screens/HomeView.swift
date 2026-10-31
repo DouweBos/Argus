@@ -29,7 +29,7 @@ struct HomeView: View {
             }
           }
           NavigationLink(value: Route.pair) {
-            Label("Pair with a QR code", systemImage: Icon.camera)
+            Label("Pair with a QR code", systemImage: Icon.qrCode)
           }
         }
       }

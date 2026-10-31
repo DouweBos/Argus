@@ -47,7 +47,7 @@ struct JoinAccountView: View {
     if let error = account.error {
       Banner(text: error, tone: .danger)
     }
-    Btn(label: "Pair with a QR code instead", tone: .ghost) { router.push(.pair) }
+    Btn(label: "Pair with a QR code instead", tone: .secondary, icon: Icon.qrCode) { router.push(.pair) }
     Btn(label: "Sign out", tone: .ghost) { Task { await account.signOut() } }
   }
 

@@ -87,8 +87,8 @@ struct AccountView: View {
       Task { await account.signInWithApple(idToken: token) }
     }
     .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
-    .frame(height: 46)
-    .frame(maxWidth: 420)
+    .frame(height: 44)
+    .frame(maxWidth: Layout.maxControlWidth)
 
     Btn(label: "Sign in with GitHub", tone: .secondary, image: BrandIcon.github) {
       Task { await account.signIn(with: .github) }
@@ -99,9 +99,9 @@ struct AccountView: View {
         MutedText("Enter the code we emailed to \(email).")
         ThemedTextField(placeholder: "123456", text: $code, input: .code) { verifyCode() }
         HStack(spacing: 8) {
-          Btn(label: "Verify", small: true, hugs: true) { verifyCode() }
+          Btn(label: "Verify", hugs: true) { verifyCode() }
             .disabled(code.trimmingCharacters(in: .whitespaces).isEmpty)
-          Btn(label: "Use another email", tone: .ghost, small: true) {
+          Btn(label: "Use another email", tone: .ghost) {
             code = ""
             account.cancelEmailCode()
           }
@@ -109,7 +109,7 @@ struct AccountView: View {
       } else {
         MutedText("Or get a sign-in code by email")
         ThemedTextField(placeholder: "you@example.com", text: $email, input: .code) { sendCode() }
-        Btn(label: "Email me a code", tone: .secondary, small: true) { sendCode() }
+        Btn(label: "Email me a code", tone: .secondary) { sendCode() }
           .disabled(!email.contains("@"))
       }
     }
@@ -118,7 +118,7 @@ struct AccountView: View {
       Banner(text: error, tone: .danger)
     }
 
-    Btn(label: "Pair with a QR code instead", tone: .ghost) { router.push(.pair) }
+    Btn(label: "Pair with a QR code instead", tone: .secondary, icon: Icon.qrCode) { router.push(.pair) }
   }
 
   private func sendCode() {

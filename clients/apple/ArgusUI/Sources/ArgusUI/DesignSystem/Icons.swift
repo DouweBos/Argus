@@ -32,6 +32,7 @@ public enum Icon {
   public static let reply = "arrowshape.turn.up.left"
   public static let paperclip = "paperclip"
   public static let camera = "camera"
+  public static let qrCode = "qrcode.viewfinder"
   public static let plus = "plus"
   public static let close = "xmark"
   public static let ellipsis = "ellipsis"
