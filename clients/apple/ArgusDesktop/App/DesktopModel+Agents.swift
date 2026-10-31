@@ -9,11 +9,7 @@ extension DesktopModel {
   /// The host's agents in a session, oldest first, each with the latest
   /// status (and title) it announced laid over the listed one.
   func agents(inSession id: String) -> [RemoteAgentStatus] {
-    guard let session = session(id) else { return [] }
-    return (store.agentsByRepo[session.repoRoot] ?? [])
-      .filter { $0.sessionId == id }
-      .map { store.statusByAgent[$0.agentId] ?? $0 }
-      .sorted { ($0.createdAt ?? 0) < ($1.createdAt ?? 0) }
+    session(id).map(store.agents(inSession:)) ?? []
   }
 
   /// The routed agent, else the first — a session always shows something.
@@ -94,7 +90,8 @@ extension DesktopModel {
   func cycleAgent(by offset: Int) {
     guard case .session(let id, _) = route else { return }
     let agents = agents(inSession: id)
-    guard let next = Self.cycled(agents.map(\.agentId), from: focusedAgentId(inSession: id, agents: agents), by: offset)
+    guard
+      let next = AgentOrder.cycled(agents.map(\.agentId), from: focusedAgentId(inSession: id, agents: agents), by: offset)
     else { return }
     navigate(.session(id: id, agentId: next))
   }
@@ -105,11 +102,6 @@ extension DesktopModel {
     let agents = agents(inSession: id)
     guard agents.indices.contains(index) else { return }
     navigate(.session(id: id, agentId: agents[index].agentId))
-  }
-
-  nonisolated static func cycled(_ ids: [String], from current: String?, by offset: Int) -> String? {
-    guard ids.count > 1, let current, let index = ids.firstIndex(of: current) else { return nil }
-    return ids[((index + offset) % ids.count + ids.count) % ids.count]
   }
 
   func interruptAgentInFront() {

@@ -16,7 +16,7 @@ struct ProjectView: View {
   @State private var spawningIn: SpawnTarget?
   @State private var showingStopped = false
   @State private var expandedStopped: Set<String> = []
-  @State private var renameTarget: Group?
+  @State private var renameTarget: SessionGroup?
   @State private var renameKind: RenameKind?
   @State private var renameValue = ""
 
@@ -41,7 +41,7 @@ struct ProjectView: View {
         .listRowBackground(Color.clear)
       }
 
-      ForEach(groups, id: \.sessionId) { group in
+      ForEach(groups) { group in
         Section {
           if let session = group.session, SessionReferences.any(in: session) {
             SessionReferenceLinks(session: session)
@@ -60,34 +60,34 @@ struct ProjectView: View {
                 status: agent.status,
                 attention: Labels.awaitingLabel(agent),
                 model: agent.model,
-                meta: Labels.metaLabel(agent.status))
+                meta: Labels.statusLabel(agent.status))
             }
           }
 
-          if !group.stopped.isEmpty {
-            stoppedDisclosure(group.stopped, isExpanded: expansion(group.sessionId))
+          if !stopped(in: group).isEmpty {
+            stoppedDisclosure(stopped(in: group), isExpanded: expansion(group.id))
           }
 
           // Changes, branches and new agents all need the session's files.
           // Offering them would only produce a failure from the computer.
           if group.session?.isUnavailable != true {
-            NavigationLink(value: Route.changes(sessionId: group.sessionId, label: group.label)) {
+            NavigationLink(value: Route.changes(sessionId: group.id, label: group.label)) {
               Label("Changes", systemImage: Icon.branch)
             }
-            NavigationLink(value: Route.terminals(sessionId: group.sessionId, label: group.label)) {
+            NavigationLink(value: Route.terminals(sessionId: group.id, label: group.label)) {
               Label("Terminals", systemImage: Icon.terminal)
             }
             if canManageBranches(group.session) {
               NavigationLink(
                 value: Route.branches(
-                  sessionId: group.sessionId, repoRoot: repoRoot, label: group.label)
+                  sessionId: group.id, repoRoot: repoRoot, label: group.label)
               ) {
                 Label("Branches", systemImage: Icon.repo)
               }
             }
             if host.hasControl {
               Button {
-                spawningIn = SpawnTarget(id: group.sessionId)
+                spawningIn = SpawnTarget(id: group.id)
               } label: {
                 Label("New agent", systemImage: Icon.plus)
               }
@@ -141,16 +141,16 @@ struct ProjectView: View {
     .onResume(connected: host.connection == .ready) { await refreshGitStatus() }
   }
 
-  private func delete(_ group: Group, branch: Bool) {
+  private func delete(_ group: SessionGroup, branch: Bool) {
     Task {
-      await host.deleteSession(id: group.sessionId, repoRoot: repoRoot, deleteBranch: branch)
+      await host.deleteSession(id: group.id, repoRoot: repoRoot, deleteBranch: branch)
       await refresh()
     }
   }
 
   /// The session's name, branch and git state, plus its actions — a section
   /// header rather than a card, so the rows below it are ordinary cells.
-  private func sessionHeader(_ group: Group) -> some View {
+  private func sessionHeader(_ group: SessionGroup) -> some View {
     VStack(alignment: .leading, spacing: 4) {
       HStack(spacing: 6) {
         Text(group.label)
@@ -169,8 +169,8 @@ struct ProjectView: View {
         }
         if group.session?.isUnavailable == true {
           Badge(label: "unavailable", tone: .muted)
-        } else if let status = group.session?.status, status != .ready {
-          Badge(label: status.rawValue, tone: status == .error ? .danger : .warning)
+        } else if let status = group.session?.status, let label = SessionActivity.statusLabel(status) {
+          Badge(label: label, tone: status == .error ? .danger : .warning)
         }
         Spacer(minLength: 4)
         if host.hasControl { sessionMenu(group) }
@@ -183,7 +183,7 @@ struct ProjectView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
       } else {
-        let git = host.gitStatusBySession[group.sessionId]
+        let git = host.gitStatusBySession[group.id]
         // The project root is named "Project root", so its branch — the one
         // checked out in the repo itself — shows up nowhere else.
         if let branch = branchLabel(group, git: git) {
@@ -205,7 +205,7 @@ struct ProjectView: View {
     // Nothing to fetch for a session the computer itself can't read.
     .task {
       guard group.session?.isUnavailable != true else { return }
-      await host.loadGitStatus(sessionId: group.sessionId)
+      await host.loadGitStatus(sessionId: group.id)
     }
   }
 
@@ -225,7 +225,7 @@ struct ProjectView: View {
   }
 
   /// The branch behind a session, unless its own name already says it.
-  private func branchLabel(_ group: Group, git: RemoteGitStatus?) -> String? {
+  private func branchLabel(_ group: SessionGroup, git: RemoteGitStatus?) -> String? {
     let branch = git?.branch ?? group.session?.branch ?? ""
     guard !branch.isEmpty, branch != group.label else { return nil }
 
@@ -240,8 +240,7 @@ struct ProjectView: View {
       if let deletions = git.diffDeletions, deletions > 0 {
         Text("-\(deletions)").foregroundStyle(theme.error)
       }
-      if git.ahead > 0 { Text("↑\(git.ahead)") }
-      if git.behind > 0 { Text("↓\(git.behind)") }
+      if GitUpstreamText.isNoteworthy(git) { Text(GitUpstreamText.describe(git)).lineLimit(1) }
       if git.dirtyCount > 0 { Text("\(git.dirtyCount) changed") }
       if git.conflictCount > 0 {
         Text("\(git.conflictCount) conflicts").foregroundStyle(theme.error)
@@ -253,7 +252,7 @@ struct ProjectView: View {
   }
 
   @ViewBuilder
-  private func sessionMenu(_ group: Group) -> some View {
+  private func sessionMenu(_ group: SessionGroup) -> some View {
     // Every action here rewrites the worktree or its branch; none of them can
     // run while the computer can't reach the files.
     if group.session?.isUnavailable == true {
@@ -263,7 +262,7 @@ struct ProjectView: View {
     }
   }
 
-  private func sessionActions(_ group: Group) -> some View {
+  private func sessionActions(_ group: SessionGroup) -> some View {
     Menu {
       Button("Rename", systemImage: Icon.pencil) {
         renameTarget = group
@@ -336,53 +335,13 @@ struct ProjectView: View {
     host.hasControl && session?.kind == .projectRoot
   }
 
-  struct Group: Identifiable, Equatable {
-    var id: String { sessionId }
+  /// Sessions with their agents, project root first — the order the Mac sidebar uses.
+  private var groups: [SessionGroup] { host.sessionGroups(repoRoot: repoRoot) }
 
-    var sessionId: String
-    var label: String
-    var session: RemoteSession?
-    var agents: [RemoteAgentStatus]
-    /// Ended conversations from this session's branch, newest first.
-    var stopped: [RemoteStoppedAgent] = []
-  }
-
-  /// Agents grouped by session, project root first — the order the desktop
-  /// sidebar uses.
-  private var groups: [Group] {
-    var ordered: [String] = []
-    var byId: [String: Group] = [:]
-
-    for agent in agents {
-      if byId[agent.sessionId] == nil {
-        ordered.append(agent.sessionId)
-        byId[agent.sessionId] = Group(
-          sessionId: agent.sessionId, label: agent.sessionLabel ?? "Session",
-          session: nil, agents: [])
-      }
-      byId[agent.sessionId]?.agents.append(agent)
-    }
-    for session in sessions {
-      if byId[session.id] == nil {
-        ordered.append(session.id)
-        byId[session.id] = Group(
-          sessionId: session.id, label: session.displayName ?? session.branch,
-          session: session, agents: [])
-      } else {
-        byId[session.id]?.session = session
-      }
-      // A stopped agent only records the branch it ran on, so that is the
-      // join back to the session — the same one the desktop makes.
-      byId[session.id]?.stopped = stoppedByBranch[session.branch] ?? []
-    }
-    return ordered.compactMap { byId[$0] }.enumerated()
-      .sorted { left, right in
-        let leftRoot = left.element.session?.kind == .projectRoot
-        let rightRoot = right.element.session?.kind == .projectRoot
-        if leftRoot != rightRoot { return leftRoot }
-        return left.offset < right.offset
-      }
-      .map(\.element)
+  /// Ended conversations from a session's branch, newest first. A stopped agent
+  /// only records its branch, so that is the join back to the session.
+  private func stopped(in group: SessionGroup) -> [RemoteStoppedAgent] {
+    group.session.map { stoppedByBranch[$0.branch] ?? [] } ?? []
   }
 
   private var stoppedByBranch: [String: [RemoteStoppedAgent]] {
@@ -441,9 +400,9 @@ struct ProjectView: View {
     Task {
       switch kind {
       case .name:
-        await host.renameSession(id: group.sessionId, repoRoot: repoRoot, name: value)
+        await host.renameSession(id: group.id, repoRoot: repoRoot, name: value)
       case .branch:
-        await host.renameSessionBranch(id: group.sessionId, repoRoot: repoRoot, branch: value)
+        await host.renameSessionBranch(id: group.id, repoRoot: repoRoot, branch: value)
       }
       await refresh()
     }
@@ -451,7 +410,7 @@ struct ProjectView: View {
 
   private func refreshGitStatus() async {
     for group in groups where group.session?.isUnavailable != true {
-      await host.loadGitStatus(sessionId: group.sessionId)
+      await host.loadGitStatus(sessionId: group.id)
     }
   }
 

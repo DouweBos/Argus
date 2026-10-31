@@ -17,16 +17,10 @@ struct ProjectSidebarSection: View {
   private var root: RemoteSession? { sessions.first { $0.kind == .projectRoot } }
   private var worktrees: [RemoteSession] { sessions.filter { $0.kind != .projectRoot } }
 
-  /// Worktrees to list: the search's matches, else all unless folded shut.
-  static func visibleWorktrees(_ worktrees: [RemoteSession], shown: Set<String>?, collapsed: Bool) -> [RemoteSession] {
-    if let shown { return worktrees.filter { shown.contains($0.id) } }
-    return collapsed ? [] : worktrees
-  }
-
   var body: some View {
     VStack(alignment: .leading, spacing: 1) {
       header
-      ForEach(Self.visibleWorktrees(worktrees, shown: shown, collapsed: collapsed)) { session in
+      ForEach(SessionSearch.visibleWorktrees(worktrees, shown: shown, collapsed: collapsed)) { session in
         SidebarRow(selected: model.route.sessionId == session.id, enabled: !session.isUnavailable) {
           model.open(session: session.id)
         } content: {
@@ -78,7 +72,7 @@ struct ProjectSidebarSection: View {
   }
 
   private func agents(in session: RemoteSession) -> [RemoteAgentStatus] {
-    (store.agentsByRepo[session.repoRoot] ?? []).filter { $0.sessionId == session.id }
+    store.agents(inSession: session)
   }
 }
 

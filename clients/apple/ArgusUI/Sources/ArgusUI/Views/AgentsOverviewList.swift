@@ -11,12 +11,7 @@ public struct AgentsOverviewList: View {
     self.open = open
   }
 
-  private var agents: [RemoteAgentStatus] {
-    host.recentAgents.sorted {
-      let (left, right) = (Labels.activityRank($0), Labels.activityRank($1))
-      return left != right ? left < right : Labels.lastActivity($0) > Labels.lastActivity($1)
-    }
-  }
+  private var agents: [RemoteAgentStatus] { host.recentAgentsByActivity }
 
   public var body: some View {
     let agents = agents

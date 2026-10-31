@@ -113,7 +113,7 @@ struct SidebarView: View {
     let listed = projects.flatMap { project -> [RemoteSession] in
       let sessions = store.sessionsByRepo[project.repoRoot] ?? []
       let root = sessions.filter { $0.kind == .projectRoot }
-      let worktrees = ProjectSidebarSection.visibleWorktrees(
+      let worktrees = SessionSearch.visibleWorktrees(
         sessions.filter { $0.kind != .projectRoot }, shown: shownSessions,
         collapsed: collapse.isCollapsed(project.repoRoot))
       return root + worktrees
@@ -137,7 +137,7 @@ struct SidebarView: View {
     guard filter.isSearching else { return nil }
     let all = store.projects.flatMap { project in
       (store.sessionsByRepo[project.repoRoot] ?? []).filter {
-        filter.matches(project.name) || filter.matches($0.displayName ?? "") || filter.matches($0.branch)
+        SessionSearch.matches($0, projectName: project.name, query: filter.query)
       }
     }
     return Set(all.map(\.id))
@@ -146,33 +146,26 @@ struct SidebarView: View {
   /// This Mac's projects first, then each host's in pairing order, narrowed to
   /// the machine and project picked, and to the search's matches.
   private var projects: [RemoteProject] {
-    let order = Dictionary(uniqueKeysWithValues: hosts.machines.enumerated().map { ($1, $0) })
     let shown = shownSessions
-    return store.projects
+    let narrowed = store.projects
       .filter { model.machineFilter == nil || model.host(ofProject: $0.repoRoot) == model.machineFilter }
       .filter { filter.project == nil || filter.project == $0.repoRoot }
       .filter { project in
         guard let shown else { return true }
         return (store.sessionsByRepo[project.repoRoot] ?? []).contains { shown.contains($0.id) }
       }
-      .enumerated()
-      .sorted { a, b in
-        let ha = order[model.host(ofProject: a.element.repoRoot)] ?? .max
-        let hb = order[model.host(ofProject: b.element.repoRoot)] ?? .max
-        return ha == hb ? a.offset < b.offset : ha < hb
-      }
-      .map(\.element)
+    return SessionSearch.ordered(narrowed, by: hosts.machines) { model.host(ofProject: $0.repoRoot) }
   }
 
   private var scratchPads: [RemoteSession] {
     guard filter.project == nil else { return [] }
     return store.scratchPads.filter {
       (model.machineFilter == nil || model.host(ofSession: $0.id) == model.machineFilter)
-        && (!filter.isSearching || filter.matches($0.displayName ?? "") || filter.matches($0.branch))
+        && (!filter.isSearching || SessionSearch.matches($0, projectName: nil, query: filter.query))
     }
   }
 
   private func agents(in session: RemoteSession) -> [RemoteAgentStatus] {
-    (store.agentsByRepo[session.repoRoot] ?? []).filter { $0.sessionId == session.id }
+    store.agents(inSession: session)
   }
 }

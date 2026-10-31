@@ -27,7 +27,7 @@ final class SidebarFilter {
   var isActive: Bool { isSearching || project != nil }
 
   func matches(_ text: String) -> Bool {
-    text.localizedCaseInsensitiveContains(query)
+    SessionSearch.matches(text, query: query)
   }
 }
 

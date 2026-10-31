@@ -102,14 +102,7 @@ struct ProjectsView: View {
   /// before the merely recent.
   @ViewBuilder
   private var recentAgents: some View {
-    let recent = host.recentAgents
-      .sorted {
-        let left = Labels.activityRank($0)
-        let right = Labels.activityRank($1)
-        if left != right { return left < right }
-        return Labels.lastActivity($0) > Labels.lastActivity($1)
-      }
-      .prefix(8)
+    let recent = host.recentAgentsByActivity.prefix(8)
 
     if !recent.isEmpty {
       Section {
@@ -121,7 +114,7 @@ struct ProjectsView: View {
               name: Labels.agentName(agent),
               status: agent.status,
               attention: Labels.awaitingLabel(agent),
-              meta: location(agent) ?? Labels.metaLabel(agent.status))
+              meta: location(agent) ?? Labels.statusLabel(agent.status))
           }
         }
         // The full list, across every project and session.

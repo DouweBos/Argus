@@ -179,7 +179,8 @@ struct RootView: View {
         Section("Projects") {
           ForEach(app.host.projects) { project in
             DisclosureGroup(isExpanded: projectExpansion(project)) {
-              let groups = sessionGroups(in: project)
+              // `recentAgents` spans every project, so the agents cost no extra fetch.
+              let groups = app.host.sessionGroups(repoRoot: project.repoRoot)
               if groups.isEmpty {
                 Text("Nothing running")
                   .font(.footnote)
@@ -216,7 +217,7 @@ struct RootView: View {
                     .foregroundStyle(theme.accent)
                   }
                 } label: {
-                  Label(group.label, systemImage: Icon.branch).lineLimit(1)
+                  sessionLabel(group)
                 }
               }
               if app.host.hasControl {
@@ -278,62 +279,19 @@ struct RootView: View {
     }
   }
 
-  /// A session in the sidebar tree, with whatever is running inside it.
-  struct SessionGroup: Identifiable {
-    var id: String
-    var label: String
-    var agents: [RemoteAgentStatus]
-    /// The project root — `main` — which belongs at the top of its project.
-    var isRoot: Bool
-  }
-
-  /// Project → session → agents.
-  ///
-  /// `recentAgents` already spans every project, so the agents cost no extra
-  /// fetch. Sessions are only listed once a project has been expanded — that
-  /// is what makes an idle session with no agents visible at all.
-  private func sessionGroups(in project: RemoteProject) -> [SessionGroup] {
-    let agents = app.host.recentAgents.filter { $0.projectName == project.name }
-    var order: [String] = []
-    var byId: [String: SessionGroup] = [:]
-
-    for session in app.host.sessionsByRepo[project.repoRoot] ?? [] {
-      order.append(session.id)
-      byId[session.id] = SessionGroup(
-        id: session.id, label: session.displayName ?? session.branch, agents: [],
-        isRoot: session.kind == .projectRoot)
-    }
-    for agent in agents {
-      if byId[agent.sessionId] == nil {
-        order.append(agent.sessionId)
-        let label = agent.sessionLabel ?? "Session"
-        byId[agent.sessionId] = SessionGroup(
-          id: agent.sessionId, label: label, agents: [],
-          // Until a project is expanded its sessions haven't been fetched,
-          // so `kind` is unavailable and the branch name is all we have.
-          isRoot: label == "main" || label == "master")
+  /// A session's name with the Mac sidebar's dot while it works, waits or fails.
+  @ViewBuilder
+  private func sessionLabel(_ group: SessionGroup) -> some View {
+    let activity = group.session.map { SessionActivity(session: $0, agents: group.agents) }
+    Label {
+      Text(group.label).lineLimit(1)
+    } icon: {
+      if let activity, activity.showsDot {
+        StatusDot(tone: activity.tone, pulse: activity.isBusy && !activity.session.isUnavailable)
+      } else {
+        Image(systemName: Icon.branch)
       }
-      byId[agent.sessionId]?.agents.append(agent)
     }
-
-    return order.compactMap { byId[$0] }.map { group in
-      var sorted = group
-      sorted.agents.sort {
-        let left = Labels.activityRank($0)
-        let right = Labels.activityRank($1)
-        if left != right { return left < right }
-        return Labels.lastActivity($0) > Labels.lastActivity($1)
-      }
-      return sorted
-    }
-    // The project root first; everything else keeps the order the computer
-    // gave, which already matches the desktop's sidebar.
-    .enumerated()
-    .sorted { left, right in
-      if left.element.isRoot != right.element.isRoot { return left.element.isRoot }
-      return left.offset < right.offset
-    }
-    .map(\.element)
   }
 
   /// Expanding a project is when its sessions are worth fetching.

@@ -28,12 +28,13 @@ public enum Labels {
     }
   }
 
-  public static func metaLabel(_ status: RemoteAgentState) -> String {
+  /// One word for an agent's state, the same on every screen.
+  public static func statusLabel(_ status: RemoteAgentState) -> String {
     switch status {
     case .running: "running"
     case .requiresAction: "needs input"
-    case .error: "blocked"
-    case .stopped: "done"
+    case .error: "error"
+    case .stopped: "stopped"
     case .idle: "idle"
     }
   }

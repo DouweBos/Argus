@@ -59,7 +59,7 @@ struct SessionHoverCard: View {
     if git.dirtyCount > 0 {
       row("Uncommitted") { value("\(git.dirtyCount) file\(git.dirtyCount == 1 ? "" : "s")") }
     }
-    row("Upstream") { value(upstream(git), tone: git.behind > 0 ? .warning : nil) }
+    row("Upstream") { value(GitUpstreamText.describe(git), tone: git.behind > 0 ? .warning : nil) }
     if git.conflictCount > 0 {
       row("Conflicts") { value("\(git.conflictCount) file\(git.conflictCount == 1 ? "" : "s")", tone: .danger) }
     }
@@ -69,14 +69,6 @@ struct SessionHoverCard: View {
       }
     }
     if git.stashCount > 0 { row("Stashes") { value("\(git.stashCount)") } }
-  }
-
-  private func upstream(_ git: RemoteGitStatus) -> String {
-    guard let upstream = git.upstream else { return "Not pushed" }
-    var parts: [String] = []
-    if git.ahead > 0 { parts.append("↑\(git.ahead)") }
-    if git.behind > 0 { parts.append("↓\(git.behind)") }
-    return parts.isEmpty ? "Up to date with \(upstream)" : "\(parts.joined(separator: " ")) \(upstream)"
   }
 
   private func row(_ label: String, @ViewBuilder content: () -> some View) -> some View {

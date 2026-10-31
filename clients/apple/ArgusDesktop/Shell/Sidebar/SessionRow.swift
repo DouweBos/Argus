@@ -2,44 +2,6 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// What a session's agents are up to, as one dot and a line of text.
-struct SessionActivity {
-  let session: RemoteSession
-  let agents: [RemoteAgentStatus]
-
-  var isBusy: Bool {
-    session.status == .initializing || agents.contains { $0.status == .running }
-  }
-
-  var tone: Tone {
-    if session.isUnavailable { return .muted }
-    switch session.status {
-    case .error: return .danger
-    case .initializing, .deleting: return .muted
-    case .ready:
-      return agents.contains { $0.awaiting != nil } ? .warning : (isBusy ? .accent : .muted)
-    }
-  }
-
-  /// Worth a dot: working, waiting on you, or broken. An idle session shows none.
-  var showsDot: Bool { tone != .muted || session.status == .initializing }
-
-  /// "Setting up…", the error, or how many agents there are.
-  var statusText: String? {
-    switch session.status {
-    case .initializing: "Setting up…"
-    case .deleting: "Deleting…"
-    case .error: session.setupError ?? "Setup failed"
-    case .ready: agents.isEmpty ? nil : "\(agents.count) agent\(agents.count == 1 ? "" : "s")"
-    }
-  }
-
-  /// When one of its agents last did something, in epoch milliseconds.
-  var lastActive: Double? {
-    agents.compactMap { $0.lastActivityAt ?? $0.createdAt }.max()
-  }
-}
-
 /// One session in the sidebar: a dot when something's happening, its title,
 /// and how long ago its agents were last active.
 struct SessionRow: View {

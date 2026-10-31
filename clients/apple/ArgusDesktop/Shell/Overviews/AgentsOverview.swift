@@ -17,14 +17,7 @@ struct AgentsOverview: View {
   private var rows: [Row] {
     let sessions = Dictionary(
       store.sessionsByRepo.values.joined().map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-    // Live status over the listed one, so a running agent reads as running.
-    return store.recentAgents
-      .map { store.statusByAgent[$0.agentId] ?? $0 }
-      .sorted {
-        let (left, right) = (Labels.activityRank($0), Labels.activityRank($1))
-        return left != right ? left < right : Labels.lastActivity($0) > Labels.lastActivity($1)
-      }
-      .map { Row(agent: $0, session: sessions[$0.sessionId]) }
+    return store.recentAgentsByActivity.map { Row(agent: $0, session: sessions[$0.sessionId]) }
   }
 
   var body: some View {
@@ -55,7 +48,7 @@ struct AgentsOverview: View {
           }
           .width(min: 140)
           TableColumn("Status") { row in
-            Text(Labels.awaitingLabel(row.agent) ?? statusLabel(row.agent.status))
+            Text(Labels.awaitingLabel(row.agent) ?? Labels.statusLabel(row.agent.status))
               .foregroundStyle(.secondary)
           }
           .width(min: 60, ideal: 80)
@@ -96,16 +89,6 @@ struct AgentsOverview: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .navigationTitle("Agents")
     .task { await store.loadRecentAgents() }
-  }
-
-  private func statusLabel(_ status: RemoteAgentState) -> String {
-    switch status {
-    case .running: "running"
-    case .error: "error"
-    case .stopped: "stopped"
-    case .requiresAction: "needs input"
-    case .idle: "idle"
-    }
   }
 
   private func projectName(_ repoRoot: String) -> String {
