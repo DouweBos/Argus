@@ -50,19 +50,24 @@ public struct LandWorkCard: View {
 
       if hasUncommitted {
         ThemedTextField(placeholder: "Commit message", text: $message, multiline: true)
-        HStack(spacing: 12) {
-          MutedText(changeSummary)
-          if allowsAmend {
-            Toggle(isOn: $amend) { MutedText("Amend last commit") }
-              .toggleStyle(.argusSwitch)
-              .fixedSize()
+        // A phone can't fit the summary, the toggle and the button on one line;
+        // squeezed together the button wrapped a letter per line.
+        ViewThatFits(in: .horizontal) {
+          HStack(spacing: 12) {
+            commitDetails
+            Spacer(minLength: 0)
+            commitButton(hugs: true)
           }
-          Spacer(minLength: 0)
-          Btn(
-            label: busy == "commit" ? "Committing…" : amend ? "Amend" : "Commit all",
-            small: true, icon: Icon.check, hugs: true
-          ) { commit() }
-          .disabled(!canCommit)
+          VStack(alignment: .leading, spacing: 8) {
+            ViewThatFits(in: .horizontal) {
+              commitDetails
+              VStack(alignment: .leading, spacing: 8) {
+                MutedText(changeSummary)
+                amendToggle
+              }
+            }
+            commitButton(hugs: false)
+          }
         }
       } else {
         HStack(spacing: 6) {
@@ -145,6 +150,30 @@ public struct LandWorkCard: View {
       text += " · \(counts)"
     }
     return text
+  }
+
+  private var commitDetails: some View {
+    HStack(spacing: 12) {
+      MutedText(changeSummary).fixedSize()
+      amendToggle
+    }
+  }
+
+  @ViewBuilder private var amendToggle: some View {
+    if allowsAmend {
+      Toggle(isOn: $amend) { MutedText("Amend last commit") }
+        .toggleStyle(.argusSwitch)
+        .fixedSize()
+    }
+  }
+
+  private func commitButton(hugs: Bool) -> some View {
+    Btn(
+      label: busy == "commit" ? "Committing…" : amend ? "Amend" : "Commit all",
+      small: true, icon: Icon.check, hugs: hugs
+    ) { commit() }
+    .fixedSize(horizontal: hugs, vertical: false)
+    .disabled(!canCommit)
   }
 
   private func pushButton(hugs: Bool) -> some View {
