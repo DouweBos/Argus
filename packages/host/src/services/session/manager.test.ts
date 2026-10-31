@@ -302,6 +302,16 @@ describe("listSessions — a worktree made outside Argus", () => {
     expect(session.setup_pending).toBeFalsy();
   });
 
+  it("adopts Claude Code's own worktrees inside the repo too", async () => {
+    worktreePath = path.join(repoRoot, ".claude", "worktrees", "by-claude");
+    fs.mkdirSync(worktreePath, { recursive: true });
+    fs.writeFileSync(path.join(worktreePath, ".git"), "gitdir: elsewhere");
+
+    expect((await listSessions(repoRoot)).map((s) => s.path)).toEqual([
+      worktreePath,
+    ]);
+  });
+
   it("owes setup when the project has some, until it's marked ready", async () => {
     argusConfig.commands = ["pnpm install"];
     const [session] = await listSessions(repoRoot);

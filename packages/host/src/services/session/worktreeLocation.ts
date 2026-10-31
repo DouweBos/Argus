@@ -15,6 +15,7 @@
  * that reads the settings stores.
  */
 
+import path from "node:path";
 import { argusHomeDir } from "../../lib/argusHome";
 import { canonicalPath } from "../../lib/canonicalPath";
 import { loadAppSettings } from "../appSettings/store";
@@ -101,14 +102,22 @@ export function worktreeRootsForRepo(repoRoot: string): string[] {
   ];
 }
 
+/** Where Claude Code puts the worktrees it makes itself. */
+export function claudeWorktreesRoot(repoRoot: string): string {
+  return path.join(repoRoot, ".claude", "worktrees");
+}
+
 /**
- * True when the path sits under any root this repo's worktrees may use.
+ * True when the path sits under any root this repo's worktrees may use, or
+ * Claude Code's own. That one is only adopted from: nothing else Argus does to
+ * its roots (sidecars, old metadata) belongs inside a repo.
  * Compared canonically: git lists `/private/tmp/…` for a root set as `/tmp/…`.
  */
 export function isKnownWorktreePath(repoRoot: string, target: string): boolean {
   const real = canonicalPath(target);
 
-  return worktreeRootsForRepo(repoRoot).some((root) =>
-    isInsideRoot(canonicalPath(root), real),
-  );
+  return [
+    ...worktreeRootsForRepo(repoRoot),
+    claudeWorktreesRoot(repoRoot),
+  ].some((root) => isInsideRoot(canonicalPath(root), real));
 }
