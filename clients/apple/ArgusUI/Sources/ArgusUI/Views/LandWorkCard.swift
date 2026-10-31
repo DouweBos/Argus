@@ -134,7 +134,7 @@ public struct LandWorkCard: View {
       SectionHeader(title: "Land this work")
       Spacer(minLength: 8)
       Chip(
-        label: "\(status?.branch ?? "branch") → \(baseLabel)", icon: Icon.branch, mono: true
+        label: "\(status?.branch ?? "branch") → \(baseLabel)", icon: Icon.branch
       ) { changingBase = true }
       .help("Change the base branch")
       .disabled(busy != nil)

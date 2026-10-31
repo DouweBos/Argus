@@ -70,7 +70,8 @@ struct ChangesView: View {
     var parts = [status.branch]
     if status.ahead > 0 { parts.append("↑\(status.ahead)") }
     if status.behind > 0 { parts.append("↓\(status.behind)") }
-    parts.append(status.dirtyCount > 0 ? "\(status.dirtyCount) changed" : "clean")
+    // The working tree, whichever diff is on screen: say so.
+    parts.append(status.dirtyCount > 0 ? "\(status.dirtyCount) uncommitted" : "nothing uncommitted")
     if status.conflictCount > 0 { parts.append("\(status.conflictCount) conflicts") }
     return parts.joined(separator: " · ")
   }
