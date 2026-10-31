@@ -105,7 +105,7 @@ struct RunView: View {
         Banner(text: error, tone: .danger)
       }
 
-      HStack(spacing: 8) {
+      FlowRow(spacing: 8) {
         if let agentId = run.hostAgentId {
           Btn(label: "Open agent", tone: .secondary, small: true, icon: Icon.agent) {
             router.push(.agent(id: agentId, label: run.automationName))
@@ -144,7 +144,7 @@ struct RunView: View {
 
   private func figure(_ label: String, _ value: String) -> some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text(label).font(.system(size: 10)).foregroundStyle(theme.textMuted)
+      Text(label).font(.caption2).foregroundStyle(theme.textMuted)
       MonoText(text: value, size: 13, color: theme.text)
     }
   }

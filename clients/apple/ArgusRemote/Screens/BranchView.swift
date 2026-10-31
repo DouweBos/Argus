@@ -39,7 +39,7 @@ struct BranchView: View {
             BodyText("Compare with \(current)")
             Spacer(minLength: 6)
             Image(systemName: Icon.chevronRight)
-              .font(.system(size: 12, weight: .semibold))
+              .font(.scaled(size: 12, weight: .semibold))
               .foregroundStyle(theme.textMuted)
           }
         }

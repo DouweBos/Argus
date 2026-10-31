@@ -112,7 +112,7 @@ private struct AccountRow: View {
       HStack(spacing: theme.space) {
         VStack(alignment: .leading, spacing: 4) {
           Text(account.displayName)
-            .font(.system(size: 15, weight: .semibold))
+            .font(.subheadline.weight(.semibold))
             .foregroundStyle(theme.text)
           if !account.subtitle.isEmpty {
             Text(account.subtitle)

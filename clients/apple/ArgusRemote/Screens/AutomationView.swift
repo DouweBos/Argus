@@ -106,7 +106,7 @@ struct AutomationView: View {
       Card(onTap: { openMemory = MemorySelection(memory: memory) }) {
         HStack(spacing: 8) {
           Text(memory.name)
-            .font(.system(size: 13, weight: .semibold, design: .monospaced))
+            .font(.footnote.weight(.semibold).monospaced())
             .foregroundStyle(theme.text)
           Spacer(minLength: 6)
           Badge(label: memory.type.rawValue)
@@ -126,7 +126,7 @@ struct AutomationView: View {
     Card {
       HStack(spacing: 8) {
         Image(systemName: Icon.clock)
-          .font(.system(size: 13))
+          .font(.footnote)
           .foregroundStyle(theme.textSecondary)
         BodyText(Labels.triggerLabel(automation))
         Spacer(minLength: 6)

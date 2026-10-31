@@ -25,7 +25,7 @@ struct LockScreen: View {
         Badge(label: "Locked", tone: .muted)
         TitleText("Argus")
         Text("Your agents keep working while you're away. Unlock to look in on them.")
-          .font(.system(size: 14))
+          .font(.scaled(size: 14))
           .foregroundStyle(theme.textMuted)
           .multilineTextAlignment(.center)
           .padding(.horizontal, 32)
@@ -37,7 +37,7 @@ struct LockScreen: View {
         .disabled(!canAuthenticate)
         .padding(.horizontal, 24)
         Text("Nothing leaves this phone unencrypted.")
-          .font(.system(size: 12))
+          .font(.scaled(size: 12))
           .foregroundStyle(theme.textMuted)
           .padding(.bottom, 8)
       }

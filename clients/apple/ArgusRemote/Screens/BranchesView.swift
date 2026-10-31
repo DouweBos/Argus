@@ -80,7 +80,7 @@ struct BranchesView: View {
                 BodyText(branch.name, lineLimit: 1)
                 if branch.pinned == true {
                   Image(systemName: Icon.pin)
-                    .font(.system(size: 11))
+                    .font(.caption2)
                     .foregroundStyle(theme.textMuted)
                 }
                 if branch.isCurrent { Badge(label: "current", tone: .accent) }

@@ -154,7 +154,7 @@ struct AccountView: View {
       caption: "The same on every device on your account. If one ever shows a different code, it's looking at a different account."
     ) {
       Text(account.safetyCode ?? "—")
-        .font(.system(size: 20, weight: .semibold, design: .monospaced))
+        .font(.title3.weight(.semibold).monospaced())
         .foregroundStyle(theme.text)
         .textSelection(.enabled)
     }

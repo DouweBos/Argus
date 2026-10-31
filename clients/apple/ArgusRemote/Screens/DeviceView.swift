@@ -88,7 +88,7 @@ struct DeviceView: View {
         video
         if session.status != .streaming {
           Text(placeholder)
-            .font(.system(size: 13))
+            .font(.footnote)
             .foregroundStyle(theme.textMuted)
             .multilineTextAlignment(.center)
             .padding(theme.space)
