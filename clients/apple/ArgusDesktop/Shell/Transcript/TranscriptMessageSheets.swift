@@ -23,7 +23,7 @@ struct EditMessageSheet: View {
     return String(joined.dropLast(linked.rest.count))
   }
 
-  private var original: String { TranscriptModel.textBlocks(message).joined(separator: "\n\n") }
+  private var original: String { message.displayBlocks.joined(separator: "\n\n") }
 
   private var trimmed: String { draft.trimmingCharacters(in: .whitespacesAndNewlines) }
 

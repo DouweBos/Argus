@@ -180,7 +180,7 @@ struct TranscriptWorkLog: View, Equatable {
   @Environment(TranscriptModel.self) private var model
 
   let agentKey: String
-  let log: TranscriptRow.WorkLog
+  let log: WorkLog
 
   private var expanded: Bool { model.expandedGroups.contains(log.id) }
   /// The newest thing in the chat while the agent is still at it.
@@ -228,31 +228,10 @@ struct TranscriptWorkLog: View, Equatable {
       .contentShape(Rectangle())
     }
     .buttonStyle(.argusPlain)
-    .help(Self.callCount(log.messages))
+    .help(log.callCountLabel)
     .accessibilityLabel(label(now: .now))
     .accessibilityValue(expanded ? "expanded" : "collapsed")
   }
 
-  private func label(now: Date) -> String {
-    let base = workLabel(now: now)
-    guard let stillRunning = log.stillRunning else { return base }
-    return "\(base) · \(stillRunning)"
-  }
-
-  private func workLabel(now: Date) -> String {
-    if working {
-      guard let started = log.started else { return "Working…" }
-      return "Working for \(ChromeText.duration(now.timeIntervalSince1970 - started / 1000))"
-    }
-    let end = log.ended ?? log.messages.last?.timestamp
-    guard let started = log.started ?? log.messages.first?.timestamp, let end, end > started else {
-      return Self.callCount(log.messages)
-    }
-    return "Worked for \(ChromeText.duration((end - started) / 1000))"
-  }
-
-  private static func callCount(_ messages: [RemoteMessage]) -> String {
-    let count = ToolGroups.countToolCalls(messages)
-    return "\(count) tool call\(count == 1 ? "" : "s")"
-  }
+  private func label(now: Date) -> String { log.label(working: working, now: now) }
 }

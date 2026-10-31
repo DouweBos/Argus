@@ -9,7 +9,7 @@ public struct TranscriptSegments: Sendable {
   /// Index in `messages` of each segment's first message.
   private var starts: [Int] = []
   private let hoistImageReads: Bool
-  private let folding: ToolGroups.Folding
+  public let folding: ToolGroups.Folding
 
   public init(hoistImageReads: Bool = false, folding: ToolGroups.Folding = .runs) {
     self.hoistImageReads = hoistImageReads
@@ -67,8 +67,8 @@ public struct TranscriptSegments: Sendable {
       while first > 0, isToolRun(segments[first - 1]) { first -= 1 }
       while last < segments.count - 1, isToolRun(segments[last + 1]) { last += 1 }
     case .turns:
-      while first > 0, !startsTurn(segments[first]) { first -= 1 }
-      while last < segments.count - 1, !startsTurn(segments[last + 1]) { last += 1 }
+      while first > 0, !Self.startsTurn(segments[first]) { first -= 1 }
+      while last < segments.count - 1, !Self.startsTurn(segments[last + 1]) { last += 1 }
     }
     let oldStart = first == 0 ? 0 : starts[first]
     let oldEnd = last + 1 < starts.count ? starts[last + 1] : old.count
@@ -110,12 +110,6 @@ public struct TranscriptSegments: Sendable {
     case .collapsed: true
     case .single(let message): ToolGroups.isToolCallOnly(message, hoistImageReads: hoistImageReads)
     }
-  }
-
-  /// A message of the user's (or the system's): a turn's work never folds across one.
-  private func startsTurn(_ segment: ToolGroups.Segment) -> Bool {
-    guard case .single(let message) = segment else { return false }
-    return message.role != .assistant
   }
 
   /// `ToolGroups.group` over `range`, with each segment's first index.

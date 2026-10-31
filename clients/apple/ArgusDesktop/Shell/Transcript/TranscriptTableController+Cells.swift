@@ -42,7 +42,7 @@ extension TranscriptTableController {
     cell.host.kind = kind(index)
     if case .segment(.single(let message)) = row(index) {
       cell.tip = TranscriptMessageRow.timestamp(message)
-      cell.hover = TranscriptModel.textBlocks(message).isEmpty ? nil : (message, model, environment)
+      cell.hover = message.displayBlocks.isEmpty ? nil : (message, model, environment)
     } else {
       cell.tip = nil
       cell.hover = nil

@@ -10,19 +10,6 @@ enum TranscriptRow {
   case work(WorkLog)
   case footer(FooterState)
 
-  /// A turn's folded work and the span it took.
-  struct WorkLog: Equatable {
-    var id: String
-    var messages: [RemoteMessage]
-    /// When the turn began: the message before the log, epoch milliseconds.
-    var started: Double?
-    /// When the work ended: the reply after it, else its own last message;
-    /// nil while it's the newest thing in the chat.
-    var ended: Double?
-    /// What the turn launched in the background that hasn't reported back.
-    var stillRunning: String?
-  }
-
   struct TopState: Equatable {
     var hasOlder = false
     var loading = false

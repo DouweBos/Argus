@@ -66,7 +66,7 @@ final class TranscriptModel {
 
   /// The message's text as it's laid out, cached until its blocks or the text scale change.
   func text(for message: RemoteMessage) -> TranscriptRendered? {
-    let blocks = Self.textBlocks(message)
+    let blocks = message.displayBlocks
     guard !blocks.isEmpty else { return nil }
     let scale = TextScale.shared.factor
     if let cached = rendered.object(forKey: message.id as NSString), cached.source == blocks, cached.scale == scale {
@@ -78,17 +78,6 @@ final class TranscriptModel {
       : TranscriptMarkdown.render(markdown: blocks.joined(separator: "\n\n"))
     rendered.setObject(Rendered(source: blocks, scale: scale, text: text), forKey: message.id as NSString)
     return text
-  }
-
-  /// What the bubble shows: the user's own words without the linked-projects
-  /// preamble, and no blank blocks.
-  static func textBlocks(_ message: RemoteMessage) -> [String] {
-    if message.role == .user,
-      let linked = LinkedProjects.parsePreamble(message.textBlocks.joined(separator: "\n"))
-    {
-      return linked.rest.isEmpty ? [] : [linked.rest]
-    }
-    return message.textBlocks.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
   }
 
   static func textUnit(_ messageId: String) -> String { "m:\(messageId)" }

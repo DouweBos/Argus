@@ -51,7 +51,7 @@ struct MessageHoverBar: View {
 
   /// The message's own words, blocks a blank line apart, without the linked-projects preamble.
   private func copy() {
-    let text = TranscriptModel.textBlocks(message).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+    let text = message.displayBlocks.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
       .filter { !$0.isEmpty }.joined(separator: "\n\n")
     guard !text.isEmpty else { return NSSound.beep() }
     TranscriptSystem.copy(text)
