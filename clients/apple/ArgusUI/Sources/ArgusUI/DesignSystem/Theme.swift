@@ -73,7 +73,7 @@ public struct Theme: Sendable, Equatable {
       borderStrong: neutrals.borderStrong,
       text: SystemColor.label,
       textSecondary: SystemColor.secondaryLabel,
-      textMuted: SystemColor.tertiaryLabel,
+      textMuted: Neutrals.mutedText,
       accent: accent,
       accentSoft: accentSoft,
       accentBorder: accentBorder,
@@ -219,6 +219,16 @@ public enum ThemePreference: String, CaseIterable, Sendable {
 /// The surfaces and hairlines a scheme draws its chrome with.
 private struct Neutrals {
   var bg, bgSecondary, sidebar, surface, selection, border, borderSubtle, borderStrong: Color
+
+  /// Captions and hints. iOS's tertiary label is too faint on its grouped
+  /// backgrounds, so the phone uses the secondary one.
+  static var mutedText: Color {
+    #if os(macOS)
+      SystemColor.tertiaryLabel
+    #else
+      SystemColor.secondaryLabel
+    #endif
+  }
 
   static func `for`(_ scheme: ColorScheme) -> Neutrals {
     #if os(macOS)

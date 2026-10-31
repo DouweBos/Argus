@@ -123,6 +123,15 @@ public struct ThemedTextField: View {
     self.onSubmit = onSubmit
   }
 
+  /// The system's placeholder grey nearly vanishes on the field's fill.
+  private var prompt: Text? {
+    #if os(iOS)
+      Text(placeholder).foregroundStyle(theme.textMuted)
+    #else
+      nil
+    #endif
+  }
+
   private var font: Font { mono ? .scaled(size: 14, design: .monospaced) : .scaled(size: 15) }
 
   public var body: some View {
@@ -131,10 +140,10 @@ public struct ThemedTextField: View {
         #if os(macOS)
           GrowingTextEditor(placeholder: placeholder, text: $text, lines: lines, font: font)
         #else
-          TextField(placeholder, text: $text, axis: .vertical).lineLimit(lines)
+          TextField(placeholder, text: $text, prompt: prompt, axis: .vertical).lineLimit(lines)
         #endif
       } else {
-        TextField(placeholder, text: $text)
+        TextField(placeholder, text: $text, prompt: prompt)
       }
     }
     .font(font)

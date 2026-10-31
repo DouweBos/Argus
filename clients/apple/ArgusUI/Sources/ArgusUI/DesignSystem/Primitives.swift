@@ -293,11 +293,22 @@ public struct Btn: View {
       .frame(maxWidth: tone == .ghost || hugs ? nil : .infinity, alignment: .center)
     }
     .buttonStyle(.argusPlain)
-    .opacity(isEnabled ? 1 : 0.4)
+    .opacity(isEnabled || greysOut ? 1 : 0.4)
+  }
+
+  /// On iOS a disabled primary button greys out like the system's, rather than
+  /// fading an accent that may be near-white to nothing.
+  private var greysOut: Bool {
+    #if os(iOS)
+      tone == .primary && !isEnabled
+    #else
+      false
+    #endif
   }
 
   private var foreground: Color {
-    switch tone {
+    if greysOut { return theme.textMuted }
+    return switch tone {
     case .primary: theme.onAccent
     case .secondary: theme.text
     case .danger: theme.error
@@ -306,7 +317,8 @@ public struct Btn: View {
   }
 
   private var background: Color {
-    switch tone {
+    if greysOut { return theme.bgTertiary }
+    return switch tone {
     case .primary: theme.accent
     case .secondary: theme.bgTertiary
     case .danger: theme.errorSoft
