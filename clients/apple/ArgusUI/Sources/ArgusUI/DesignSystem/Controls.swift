@@ -61,6 +61,21 @@ public struct SegmentedControl<Value: Hashable>: View {
   }
 
   public var body: some View {
+    #if os(iOS)
+      // The system control, as Settings and every other iOS app draw it.
+      Picker("", selection: $value) {
+        ForEach(options, id: \.value) { option in
+          Text(option.label).tag(option.value)
+        }
+      }
+      .pickerStyle(.segmented)
+      .labelsHidden()
+    #else
+      pills
+    #endif
+  }
+
+  private var pills: some View {
     HStack(spacing: 2) {
       ForEach(options, id: \.value) { option in
         Button {
