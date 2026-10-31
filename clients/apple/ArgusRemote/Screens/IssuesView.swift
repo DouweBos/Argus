@@ -13,6 +13,7 @@ struct IssuesView: View {
 }
 
 private struct IssuesContent: View {
+  @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @State private var model: LinearIssuesModel
@@ -29,6 +30,9 @@ private struct IssuesContent: View {
       connectHint: "Connect Linear in Argus on your computer to see your issues here.",
       onOpen: { router.push(.issue(ref: $0.identifier)) }
     )
+    // An empty list draws plain white; keep the grouped grey either way.
+    .scrollContentBackground(.hidden)
+    .background(theme.bg)
     .safeAreaInset(edge: .top, spacing: 0) {
       if host.linearConnected {
         VStack(spacing: 8) {
@@ -47,7 +51,7 @@ private struct IssuesContent: View {
         .background(.bar)
       }
     }
-    .searchable(text: $searchText, prompt: "Search all issues…")
+    .searchable(if: host.linearConnected, text: $searchText, prompt: "Search all issues…")
     .task(id: searchText) {
       let term = LinearIssuesModel.term(searchText)
       guard term != model.query else { return }
@@ -58,5 +62,17 @@ private struct IssuesContent: View {
     }
     .refreshingLinearIssues(model)
     .navigationTitle("Issues")
+  }
+}
+
+extension View {
+  /// Nothing to search until Linear is connected, so no field either.
+  @ViewBuilder
+  fileprivate func searchable(if enabled: Bool, text: Binding<String>, prompt: String) -> some View {
+    if enabled {
+      searchable(text: text, prompt: prompt)
+    } else {
+      self
+    }
   }
 }
