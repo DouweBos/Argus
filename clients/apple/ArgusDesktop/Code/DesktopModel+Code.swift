@@ -4,10 +4,7 @@ import Foundation
 
 extension DesktopModel {
   /// A session from any list the window knows it by.
-  func session(_ id: String) -> RemoteSession? {
-    store.sessionsByRepo.values.joined().first { $0.id == id }
-      ?? store.scratchPads.first { $0.id == id } ?? store.adoptedSessions[id]
-  }
+  func session(_ id: String) -> RemoteSession? { store.session(id: id) }
 
   /// The code view is on a file, so ⌘W has an editor tab to close.
   var showsEditorTab: Bool {

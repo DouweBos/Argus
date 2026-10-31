@@ -2,19 +2,6 @@ import ArgusCore
 import Foundation
 import SwiftUI
 
-/// The first message of an agent that doesn't exist yet, as a start composer collected it.
-public struct ComposerStart: Sendable {
-  public let message: String
-  public let displayText: String
-  public let images: [RemoteImageAttachment]
-  /// Nil keeps the starter's default.
-  public let permissionMode: RemotePermissionMode?
-  /// Picked in the model pill or with `/model`; nil lets the runner choose.
-  public let model: String?
-  /// Picked in the effort pill; nil keeps the model's default.
-  public let effort: String?
-}
-
 /// Turns a composer with no agent behind it into a start composer: its
 /// pills and `/plan`/`/model` set up the agent, and sending starts it.
 public struct ComposerStarter {

@@ -11,34 +11,12 @@ final class StartWorkspace {
   }
 
   var kind: Kind = .current
-  /// The base the user picked; nil keeps the preselected one.
-  var picked: String?
-  private(set) var options: [String] = []
-  private(set) var preselected: String?
-  private(set) var loading = false
-  private var loaded = false
+  /// The new worktree's base, preselected as the desktop does.
+  let bases = BaseBranchPicker()
   /// The checkout's local branches, read each time its branch menu opens.
   private(set) var localBranches: [String]?
 
-  var base: String? { picked ?? preselected }
-
-  /// Read once, when a worktree is first asked for — the current checkout never needs them.
-  func loadBranches(repoRoot: String, projectRootBranch: String?, backend: HostRouter?) async {
-    guard !loaded, let backend else { return }
-    loaded = true
-    loading = true
-    async let list = try? backend.request(ArgusProtocol.Commands.ListAllBranches.self, .init(repoRoot: repoRoot))
-    async let config = try? backend.request(ArgusProtocol.Commands.ReadArgusConfig.self, .init(repoRoot: repoRoot))
-    let (branches, argus) = await (list, config)
-    loading = false
-    guard let branches else { return }
-    let protected = argus?.protectedBranches ?? []
-    options = BaseBranchChoice.options(local: branches.local, originRefs: branches.originRefs, protected: protected)
-    preselected = BaseBranchChoice.preselected(
-      local: branches.local, originRefs: branches.originRefs,
-      configured: argus?.defaultBaseBranch.flatMap { $0.isEmpty ? nil : $0 }, protected: protected,
-      projectRootBranch: projectRootBranch)
-  }
+  var base: String? { bases.base }
 
   func loadLocalBranches(repoRoot: String, model: DesktopModel) async {
     localBranches = await model.localBranches(repoRoot: repoRoot) ?? localBranches ?? []
@@ -113,8 +91,7 @@ struct StartComposerFooter: View {
     .padding(.top, -1)
     .task(id: workspace.kind) {
       guard workspace.kind == .worktree else { return }
-      await workspace.loadBranches(
-        repoRoot: session.repoRoot, projectRootBranch: projectRootBranch, backend: model.backend)
+      await workspace.bases.load(repoRoot: session.repoRoot, projectRootBranch: projectRootBranch, store: store)
     }
     .task {
       if !model.pullRequests.loaded { await model.pullRequests.refresh() }
@@ -148,11 +125,11 @@ struct StartComposerFooter: View {
   private var baseMenu: some View {
     ChromeMenuButton(edge: .above) {
       ChromeMenuEntry.header("Base branch")
-      if workspace.options.isEmpty {
-        ChromeMenuEntry.note(workspace.loading ? "Loading branches…" : "No branches")
+      if workspace.bases.options.isEmpty {
+        ChromeMenuEntry.note(workspace.bases.loading ? "Loading branches…" : "No branches")
       }
-      for branch in workspace.options {
-        ChromeMenuItem(branch, checked: branch == workspace.base) { workspace.picked = branch }
+      for branch in workspace.bases.options {
+        ChromeMenuItem(branch, checked: branch == workspace.base) { workspace.bases.picked = branch }
       }
     } label: { open in
       ComposerPillLabel(icon: Icon.branch, title: baseTitle, open: open)
@@ -164,7 +141,7 @@ struct StartComposerFooter: View {
 
   private var baseTitle: String {
     if let base = workspace.base { return "from \(base)" }
-    return workspace.loading ? "Loading branches…" : "Project default"
+    return workspace.bases.loading ? "Loading branches…" : "Project default"
   }
 
   /// Switches the checkout in place, through the git panel's checkout so a dirty tree still asks.
