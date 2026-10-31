@@ -16,14 +16,7 @@ struct PullRequestsView: View {
 
       if !store.loaded {
         Loading(label: "Asking GitHub…").listRowBackground(Color.clear)
-      } else if store.pullRequests.isEmpty {
-        EmptyState(
-          icon: Icon.pullRequests,
-          title: "No pull requests",
-          body: "Nothing open that's yours to review or land."
-        )
-        .listRowBackground(Color.clear)
-      } else {
+      } else if !store.pullRequests.isEmpty {
         if !groups.contains(where: { $0.bucket.needsAttention }) {
           Label("Nothing waiting on you right now.", systemImage: Icon.check)
             .foregroundStyle(.secondary)
@@ -44,6 +37,12 @@ struct PullRequestsView: View {
           }
         }
       }
+    }
+    .emptyState(when: store.loaded && store.pullRequests.isEmpty) {
+      EmptyState(
+        icon: Icon.pullRequests,
+        title: "No pull requests",
+        body: "Nothing open that's yours to review or land.")
     }
     .navigationTitle("Pull requests")
     .refreshable { await store.refresh() }

@@ -13,27 +13,21 @@ struct ProjectsView: View {
 
   private var hostName: String { app.identity?.label ?? "Argus" }
 
+  private var noProjects: Bool {
+    !app.hosts.isEmpty && app.loaded && host.connection == .ready && host.projects.isEmpty
+      && host.recentAgents.isEmpty
+  }
+
   var body: some View {
     List {
       if app.loaded, app.hosts.isEmpty {
-        EmptyState(
-          icon: Icon.desktop,
-          title: "No computers paired",
-          body: "Pair with Argus on your Mac to drive its agents from here.")
-        .listRowBackground(Color.clear)
-        Button("Pair a computer") { router.push(.pair) }
+        EmptyView()
       } else if !app.loaded || (host.connection != .ready && host.projects.isEmpty) {
         Loading(label: "Connecting to \(hostName)…")
           .listRowBackground(Color.clear)
       } else {
         recentAgents
-        if host.projects.isEmpty {
-          EmptyState(
-            icon: Icon.folder,
-            title: "No projects open",
-            body: "Open a repository in Argus on \(hostName) and it'll show up here.")
-          .listRowBackground(Color.clear)
-        } else {
+        if !host.projects.isEmpty {
           Section("Projects") {
             ForEach(host.projects) { project in
               NavigationLink(
@@ -50,6 +44,21 @@ struct ProjectsView: View {
         }
         scratchPads
       }
+    }
+    .emptyState(when: app.loaded && app.hosts.isEmpty) {
+      EmptyState(
+        icon: Icon.desktop,
+        title: "No computers paired",
+        body: "Pair with Argus on your Mac to drive its agents from here."
+      ) {
+        Btn(label: "Pair a computer", icon: Icon.plus, hugs: true) { router.push(.pair) }
+      }
+    }
+    .emptyState(when: noProjects) {
+      EmptyState(
+        icon: Icon.folder,
+        title: "No projects open",
+        body: "Open a repository in Argus on \(hostName) and it'll show up here.")
     }
     .navigationTitle(hostName)
     .confirmationDialog(

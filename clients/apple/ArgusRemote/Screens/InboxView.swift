@@ -12,6 +12,8 @@ struct InboxView: View {
   @Environment(ProposalsStore.self) private var proposals
   @Environment(PullRequestsStore.self) private var pullRequests
 
+  private var inboxEmpty: Bool { proposals.proposals.isEmpty && proposals.started.isEmpty }
+
   var body: some View {
     List {
       if let error = proposals.error {
@@ -41,13 +43,7 @@ struct InboxView: View {
       if !proposals.loaded {
         Loading(label: "Reading the inbox…")
           .listRowBackground(Color.clear)
-      } else if proposals.proposals.isEmpty && proposals.started.isEmpty {
-        EmptyState(
-          icon: Icon.envelope,
-          title: "Nothing needs you",
-          body: "When an automation finds something worth deciding on, it shows up here.")
-        .listRowBackground(Color.clear)
-      } else {
+      } else if !inboxEmpty {
         Section("Decide") {
           ForEach(proposals.started) { proposal in
             StartedProposalCard(
@@ -80,6 +76,12 @@ struct InboxView: View {
           }
         }
       }
+    }
+    .emptyState(when: proposals.loaded && inboxEmpty) {
+      EmptyState(
+        icon: Icon.inbox,
+        title: "Nothing needs you",
+        body: "When an automation finds something worth deciding on, it shows up here.")
     }
     .navigationTitle("Inbox")
     .refreshable {

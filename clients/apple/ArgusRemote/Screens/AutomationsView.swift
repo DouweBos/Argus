@@ -22,13 +22,7 @@ struct AutomationsView: View {
       if !store.loaded {
         Loading(label: "Reading automations…")
           .listRowBackground(Color.clear)
-      } else if store.automations.isEmpty && store.runs.isEmpty {
-        EmptyState(
-          icon: Icon.clock,
-          title: "No automations",
-          body: "Use + to run a playbook once, or to set one on a schedule.")
-        .listRowBackground(Color.clear)
-      } else {
+      } else if !store.automations.isEmpty || !store.runs.isEmpty {
         let recent = Array(store.runs.prefix(Self.recentRuns))
         if !recent.isEmpty {
           Section("Recent runs") {
@@ -51,6 +45,12 @@ struct AutomationsView: View {
           }
         }
       }
+    }
+    .emptyState(when: store.loaded && store.automations.isEmpty && store.runs.isEmpty) {
+      EmptyState(
+        icon: Icon.automations,
+        title: "No automations",
+        body: "Use + to run a playbook once, or to set one on a schedule.")
     }
     .navigationTitle("Automations")
     .toolbar {

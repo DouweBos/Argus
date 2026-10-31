@@ -507,7 +507,8 @@ public struct StatusDot: View {
 }
 
 /// A pane with nothing to show, centred in all the room it's given. Inside a
-/// scroll view or list it only gets its own height, so put it over one instead.
+/// scroll view or list it only gets its own height, so put it over one with
+/// `.emptyState(when:)` instead.
 public struct EmptyState<Actions: View>: View {
   let icon: String
   let title: String
@@ -544,6 +545,19 @@ public struct EmptyState<Actions: View>: View {
 extension EmptyState where Actions == EmptyView {
   public init(icon: String, title: String, body: String? = nil, selectable: Bool = false) {
     self.init(icon: icon, title: title, body: body, selectable: selectable) { EmptyView() }
+  }
+}
+
+extension View {
+  /// Centres `placeholder` over this list or scroll view while `isEmpty`, rather
+  /// than top-aligned in a row of it.
+  public func emptyState<Placeholder: View>(
+    when isEmpty: Bool, @ViewBuilder _ placeholder: () -> Placeholder
+  ) -> some View {
+    let placeholder = placeholder()
+    return overlay {
+      if isEmpty { placeholder }
+    }
   }
 }
 

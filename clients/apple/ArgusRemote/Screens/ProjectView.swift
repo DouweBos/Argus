@@ -31,17 +31,6 @@ struct ProjectView: View {
 
   var body: some View {
     List {
-      if groups.isEmpty {
-        EmptyState(
-          icon: Icon.agent,
-          title: "No sessions",
-          body: host.hasControl
-            ? "Create a session, then start an agent in it."
-            : "Start an agent in this project from Argus on your computer and it'll appear here."
-        )
-        .listRowBackground(Color.clear)
-      }
-
       ForEach(groups) { group in
         Section {
           if let session = group.session, SessionReferences.any(in: session) {
@@ -100,6 +89,19 @@ struct ProjectView: View {
       }
 
       stoppedSection
+    }
+    .emptyState(when: groups.isEmpty) {
+      EmptyState(
+        icon: Icon.agent,
+        title: "No sessions",
+        body: host.hasControl
+          ? "Start an agent and it gets a session of its own."
+          : "Start an agent in this project from Argus on your computer and it'll appear here."
+      ) {
+        if host.hasControl {
+          Btn(label: "Start agent", icon: Icon.plus, hugs: true) { creatingSession = true }
+        }
+      }
     }
     .navigationTitle(name)
     .navigationBarTitleDisplayMode(.inline)

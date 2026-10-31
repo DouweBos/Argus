@@ -30,15 +30,7 @@ struct ClaudeAccountsView: View {
 
       if host.claudeAccounts == nil {
         Loading(label: "Loading accounts…").listRowSeparator(.hidden)
-      } else if host.claudeAccounts?.isEmpty == true {
-        EmptyState(
-          icon: Icon.person,
-          title: "No Claude accounts",
-          body: "Add one and agents can run on that subscription instead of "
-            + "whichever account Claude was signed into first."
-        )
-        .listRowSeparator(.hidden)
-      } else {
+      } else if host.claudeAccounts?.isEmpty == false {
         Section("Accounts") {
           ForEach(host.claudeAccounts ?? []) { account in
             AccountRow(
@@ -55,6 +47,13 @@ struct ClaudeAccountsView: View {
           }
         }
       }
+    }
+    .emptyState(when: host.claudeAccounts?.isEmpty == true) {
+      EmptyState(
+        icon: Icon.person,
+        title: "No Claude accounts",
+        body: "Add one and agents can run on that subscription instead of "
+          + "whichever account Claude was signed into first.")
     }
     .scrollContentBackground(.hidden)
     .safeAreaInset(edge: .bottom, spacing: 0) {

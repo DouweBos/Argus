@@ -10,13 +10,7 @@ struct DevicesView: View {
 
   var body: some View {
     List {
-      if host.devices.isEmpty {
-        EmptyState(
-          icon: Icon.simulator,
-          title: "No devices running",
-          body: "Boot a simulator or emulator in Argus on your computer and it'll show up here.")
-        .listRowBackground(Color.clear)
-      } else {
+      if !host.devices.isEmpty {
         Section("Devices") {
           ForEach(host.devices) { device in
             NavigationLink(
@@ -36,6 +30,12 @@ struct DevicesView: View {
           }
         }
       }
+    }
+    .emptyState(when: host.devices.isEmpty) {
+      EmptyState(
+        icon: Icon.devices,
+        title: "No devices running",
+        body: "Boot a simulator or emulator in Argus on your computer and it'll show up here.")
     }
     .navigationTitle("Devices")
     .refreshable { await host.refreshDevices() }

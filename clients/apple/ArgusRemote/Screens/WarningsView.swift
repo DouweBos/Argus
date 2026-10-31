@@ -9,12 +9,6 @@ struct WarningsView: View {
 
   var body: some View {
     List {
-      if app.warnings.isEmpty {
-        EmptyState(
-          icon: Icon.check, title: "Nothing went wrong",
-          body: "Failures shown while you use the app are kept here until it quits.")
-        .listRowBackground(Color.clear)
-      }
       ForEach(app.warnings) { warning in
         VStack(alignment: .leading, spacing: 4) {
           BodyText(warning.message)
@@ -22,6 +16,11 @@ struct WarningsView: View {
           MutedText(Labels.timeAgo(warning.at.timeIntervalSince1970 * 1000))
         }
       }
+    }
+    .emptyState(when: app.warnings.isEmpty) {
+      EmptyState(
+        icon: Icon.check, title: "Nothing went wrong",
+        body: "Failures shown while you use the app are kept here until it quits.")
     }
     .navigationTitle("Warnings & errors")
     .navigationBarTitleDisplayMode(.inline)
