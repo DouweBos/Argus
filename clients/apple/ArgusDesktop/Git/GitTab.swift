@@ -1,3 +1,4 @@
+import ArgusCore
 import Foundation
 
 /// A git panel view as its tab bar shows it, Grove's `RepositoryTab`. Each

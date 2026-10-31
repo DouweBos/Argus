@@ -1,4 +1,5 @@
 import AppKit
+import ArgusCore
 import SwiftUI
 
 /// A Git menu action. Sheets need the git panel's theme and session, so, as Grove's

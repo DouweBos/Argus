@@ -1,10 +1,10 @@
-import ArgusCore
+import ArgusKit
 import Foundation
 
 /// Paths as `docs/routing.md` spells them, for deep links (`argus://…`) and
 /// `ARGUS_DEV_ROUTE`, parsed the way Electron's `parseRoute` reads them.
-extension DesktopRoute {
-  init?(path raw: String) {
+extension ArgusRoute {
+  public init?(path raw: String) {
     let (path, query) = Self.split(raw)
     let parts = path.split(separator: "/").map { $0.removingPercentEncoding ?? String($0) }
     switch (parts.first, parts.count) {
@@ -61,18 +61,18 @@ extension DesktopRoute {
   }
 
   /// `argus://sessions/abc/agents` → `/sessions/abc/agents`, as Electron reads it.
-  init?(deepLink url: URL) {
+  public init?(deepLink url: URL) {
     guard url.scheme == "argus" else { return nil }
     self.init(path: Self.path(ofDeepLink: url))
   }
 
-  static func path(ofDeepLink url: URL) -> String {
+  public static func path(ofDeepLink url: URL) -> String {
     let query = url.query(percentEncoded: true).map { "?\($0)" } ?? ""
     return "/" + (url.host(percentEncoded: true) ?? "") + url.path(percentEncoded: true) + query
   }
 
   /// The path this route is at, without `?host=`; `init(path:)` reads it back.
-  var path: String {
+  public var path: String {
     switch self {
     case .home: "/"
     case .agents: "/agents"
@@ -102,7 +102,7 @@ extension DesktopRoute {
   }
 
   /// A known range other than the default; anything else reads as the default.
-  static func usageRange(_ raw: String?) -> ArgusProtocol.UsageRange? {
+  public static func usageRange(_ raw: String?) -> ArgusProtocol.UsageRange? {
     guard let range = raw.map(ArgusProtocol.UsageRange.init(rawValue:)),
       ArgusProtocol.UsageRange.all.contains(range), range != .default
     else { return nil }
@@ -110,20 +110,20 @@ extension DesktopRoute {
   }
 
   /// `?a=1&b=2` from the items that have a value; empty when none do.
-  static func query(_ items: [(String, String?)]) -> String {
+  public static func query(_ items: [(String, String?)]) -> String {
     var components = URLComponents()
     components.queryItems = items.compactMap { name, value in value.map { URLQueryItem(name: name, value: $0) } }
     return components.percentEncodedQuery.map { $0.isEmpty ? "" : "?\($0)" } ?? ""
   }
 
-  static func encode(_ segment: String) -> String {
+  public static func encode(_ segment: String) -> String {
     var allowed = CharacterSet.urlPathAllowed
     allowed.remove(charactersIn: "/?#&=")
     return segment.addingPercentEncoding(withAllowedCharacters: allowed) ?? segment
   }
 
   /// The path and its query items; a malformed query reads as none.
-  static func split(_ raw: String) -> (path: String, query: [String: String]) {
+  public static func split(_ raw: String) -> (path: String, query: [String: String]) {
     let pieces = raw.split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)
     let path = pieces.first.map(String.init) ?? raw
     guard pieces.count > 1 else { return (path, [:]) }
@@ -136,31 +136,31 @@ extension DesktopRoute {
 }
 
 /// A route plus the machine it reads from: `?host=<id>` on any path, as in
-/// Electron's router. Nil host is this Mac.
-struct DesktopLocation: Hashable {
-  var route: DesktopRoute
-  var host: HostId?
+/// Electron's router. Nil host is the local one (`Hosts.local`).
+public struct ArgusLocation: Hashable, Sendable {
+  public var route: ArgusRoute
+  public var host: HostId?
 
-  init(route: DesktopRoute, host: HostId? = nil) {
+  public init(route: ArgusRoute, host: HostId? = nil) {
     self.route = route
     self.host = host == Hosts.local ? nil : host
   }
 
-  init?(path raw: String) {
-    guard let route = DesktopRoute(path: raw) else { return nil }
-    let host = DesktopRoute.split(raw).query["host"]
+  public init?(path raw: String) {
+    guard let route = ArgusRoute(path: raw) else { return nil }
+    let host = ArgusRoute.split(raw).query["host"]
     self.init(route: route, host: host?.isEmpty == false ? host : nil)
   }
 
-  init?(deepLink url: URL) {
+  public init?(deepLink url: URL) {
     guard url.scheme == "argus" else { return nil }
-    self.init(path: DesktopRoute.path(ofDeepLink: url))
+    self.init(path: ArgusRoute.path(ofDeepLink: url))
   }
 
-  var path: String {
+  public var path: String {
     let base = route.path
     guard let host else { return base }
-    let item = "host=\(DesktopRoute.encode(host))"
+    let item = "host=\(ArgusRoute.encode(host))"
     return base + (base.contains("?") ? "&" : "?") + item
   }
 }
@@ -170,7 +170,7 @@ extension GitRoute {
   /// (encoded as one segment, or spread over several when a link didn't), and
   /// the query arguments of `compare`, `blame` and `interactive-rebase`.
   /// Bare `/git` is the working copy, as Electron's default sub-view.
-  init?(segments: [String], query: [String: String]) {
+  public init?(segments: [String], query: [String: String]) {
     let rest = segments.dropFirst().joined(separator: "/")
     let ref = rest.isEmpty ? nil : rest
     switch segments.first {
@@ -196,11 +196,11 @@ extension GitRoute {
   }
 
   /// What follows `/git/` in a path, query included.
-  var pathSuffix: String {
-    let query = DesktopRoute.query
+  public var pathSuffix: String {
+    let query = ArgusRoute.query
     switch self {
-    case .branches(let name?): return "branches/\(DesktopRoute.encode(name))"
-    case .tags(let name): return "tags/\(DesktopRoute.encode(name))"
+    case .branches(let name?): return "branches/\(ArgusRoute.encode(name))"
+    case .tags(let name): return "tags/\(ArgusRoute.encode(name))"
     case .compare(let left, let right): return "compare" + query([("left", left), ("right", right)])
     case .blame(let path, let ref): return "blame" + query([("path", path), ("ref", ref)])
     case .interactiveRebase(let from): return "interactive-rebase" + query([("from", from)])

@@ -1,12 +1,11 @@
 import ArgusCore
+import ArgusKit
 import Foundation
 import Testing
 
-@testable import Argus
-
-struct DesktopRouteTests {
+struct ArgusRouteTests {
   @Test(arguments: [
-    ("/", DesktopRoute.home),
+    ("/", ArgusRoute.home),
     ("/agents", .agents),
     ("/runtimes", .runtimes),
     ("/devices", .devices),
@@ -49,8 +48,8 @@ struct DesktopRouteTests {
     ("/sessions/s1/agents", .session(id: "s1", agentId: nil)),
     ("/sessions/s1/agents/a1", .session(id: "s1", agentId: "a1")),
   ])
-  func parsesTopLevelRoutes(path: String, route: DesktopRoute) {
-    #expect(DesktopRoute(path: path) == route)
+  func parsesTopLevelRoutes(path: String, route: ArgusRoute) {
+    #expect(ArgusRoute(path: path) == route)
   }
 
   @Test(arguments: [
@@ -81,7 +80,7 @@ struct DesktopRouteTests {
     ("/sessions/s1/git/interactive-rebase?from=abc123", .interactiveRebase(from: "abc123")),
   ])
   func parsesGitRoutes(path: String, view: GitRoute) {
-    #expect(DesktopRoute(path: path) == .sessionGit(id: "s1", view: view))
+    #expect(ArgusRoute(path: path) == .sessionGit(id: "s1", view: view))
   }
 
   @Test(arguments: [
@@ -89,11 +88,11 @@ struct DesktopRouteTests {
     "/issues/created/ENG-1/extra", "/design", "/design?url=", "/design/extra?url=x",
   ])
   func rejectsUnknownPaths(path: String) {
-    #expect(DesktopRoute(path: path) == nil)
+    #expect(ArgusRoute(path: path) == nil)
   }
 
   @Test(arguments: [
-    DesktopRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox, .proposal(id: "p 1"), .notifications, .usage(.limits), .usage(.cost), .usage(.tokens, range: ._90d),
+    ArgusRoute.home, .agents, .runtimes, .devices, .device(platform: "android", deviceKey: "avd:P 9"), .inbox, .proposal(id: "p 1"), .notifications, .usage(.limits), .usage(.cost), .usage(.tokens, range: ._90d),
     .pullRequests, .pullRequest(repo: "o/r", number: 7), .issues(), .issues(scope: .created),
     .issues(issue: "ENG-1"), .issues(scope: .subscribed, issue: "ENG-1"),
     .issues(query: "a&b c"), .issues(issue: "ENG-1", query: "login?"),
@@ -109,57 +108,56 @@ struct DesktopRouteTests {
     .sessionGit(id: "s", view: .interactiveRebase(from: "abc")),
     .sessionGit(id: "s", view: .branchesReview),
   ])
-  func pathsRoundTrip(route: DesktopRoute) {
-    #expect(DesktopRoute(path: route.path) == route, "\(route.path)")
+  func pathsRoundTrip(route: ArgusRoute) {
+    #expect(ArgusRoute(path: route.path) == route, "\(route.path)")
   }
 
   @Test func designPatternLeavesTheLinkOut() {
-    #expect(DesktopRoute.design(url: "https://figma.com/design/k", sessionId: "s").pattern == "/design")
+    #expect(ArgusRoute.design(url: "https://figma.com/design/k", sessionId: "s").pattern == "/design")
   }
 
   @Test func usageTabsAreTheirOwnPatterns() {
-    #expect(DesktopRoute.usage(.limits).pattern == "/usage")
-    #expect(DesktopRoute.usage(.cost).pattern == "/usage/cost")
-    #expect(DesktopRoute.usage(.tokens).path == "/usage/tokens")
-    #expect(DesktopRoute.issues(scope: .created, query: "login bug").path == "/issues/search?q=login%20bug")
-    #expect(DesktopRoute.usage(.cost, range: ._24h).path == "/usage/cost?range=24h")
-    #expect(DesktopRoute.usage(.cost, range: ._24h).pattern == "/usage/cost")
+    #expect(ArgusRoute.usage(.limits).pattern == "/usage")
+    #expect(ArgusRoute.usage(.cost).pattern == "/usage/cost")
+    #expect(ArgusRoute.usage(.tokens).path == "/usage/tokens")
+    #expect(ArgusRoute.issues(scope: .created, query: "login bug").path == "/issues/search?q=login%20bug")
+    #expect(ArgusRoute.usage(.cost, range: ._24h).path == "/usage/cost?range=24h")
+    #expect(ArgusRoute.usage(.cost, range: ._24h).pattern == "/usage/cost")
   }
 
   @Test func deepLinksReadTheHostAsThePathsFirstSegment() {
     let url = URL(string: "argus://sessions/s1/git/compare?left=main&right=dev&host=mini")!
-    #expect(DesktopRoute(deepLink: url) == .sessionGit(id: "s1", view: .compare(left: "main", right: "dev")))
-    #expect(DesktopLocation(deepLink: url)?.host == "mini")
-    #expect(DesktopRoute(deepLink: URL(string: "https://sessions/s1")!) == nil)
+    #expect(ArgusRoute(deepLink: url) == .sessionGit(id: "s1", view: .compare(left: "main", right: "dev")))
+    #expect(ArgusLocation(deepLink: url)?.host == "mini")
+    #expect(ArgusRoute(deepLink: URL(string: "https://sessions/s1")!) == nil)
   }
 
   @Test func locationsCarryTheFocusedHost() {
-    let remote = DesktopLocation(path: "/sessions/s1/agents?host=box")
-    #expect(remote == DesktopLocation(route: .session(id: "s1", agentId: nil), host: "box"))
-    #expect(DesktopLocation(path: "/agents")?.host == nil)
-    #expect(DesktopLocation(path: "/agents?host=")?.host == nil)
-    #expect(DesktopLocation(route: .agents, host: "local").host == nil)
-    #expect(DesktopLocation(route: .agents, host: "box").path == "/agents?host=box")
-    let git = DesktopLocation(route: .sessionGit(id: "s", view: .compare(left: "a", right: "b")), host: "box")
+    let remote = ArgusLocation(path: "/sessions/s1/agents?host=box")
+    #expect(remote == ArgusLocation(route: .session(id: "s1", agentId: nil), host: "box"))
+    #expect(ArgusLocation(path: "/agents")?.host == nil)
+    #expect(ArgusLocation(path: "/agents?host=")?.host == nil)
+    #expect(ArgusLocation(route: .agents, host: "local").host == nil)
+    #expect(ArgusLocation(route: .agents, host: "box").path == "/agents?host=box")
+    let git = ArgusLocation(route: .sessionGit(id: "s", view: .compare(left: "a", right: "b")), host: "box")
     #expect(git.path == "/sessions/s/git/compare?left=a&right=b&host=box")
-    #expect(DesktopLocation(path: git.path) == git)
+    #expect(ArgusLocation(path: git.path) == git)
   }
 
   @Test func patternsNeverCarryIds() {
-    #expect(DesktopRoute.sessionGit(id: "secret", view: .branches("secret-branch")).pattern
+    #expect(ArgusRoute.sessionGit(id: "secret", view: .branches("secret-branch")).pattern
       == "/sessions/:sessionId/git/branches/:branchName")
-    #expect(DesktopRoute.sessionGit(id: "s", view: .blame(path: "secret.txt", ref: nil)).pattern
+    #expect(ArgusRoute.sessionGit(id: "s", view: .blame(path: "secret.txt", ref: nil)).pattern
       == "/sessions/:sessionId/git/blame")
-    #expect(DesktopRoute.issues(scope: .created, issue: "ENG-1").pattern == "/issues/created/:issue")
-    #expect(DesktopRoute.issues().pattern == "/issues")
-    #expect(DesktopRoute.issues(scope: .created, query: "secret").pattern == "/issues/search")
-    #expect(DesktopRoute.issues(issue: "ENG-1", query: "secret").pattern == "/issues/search/:issue")
+    #expect(ArgusRoute.issues(scope: .created, issue: "ENG-1").pattern == "/issues/created/:issue")
+    #expect(ArgusRoute.issues().pattern == "/issues")
+    #expect(ArgusRoute.issues(scope: .created, query: "secret").pattern == "/issues/search")
+    #expect(ArgusRoute.issues(issue: "ENG-1", query: "secret").pattern == "/issues/search/:issue")
   }
 
   @Test func aDeviceRouteIsTheDevicesScreenWithAPattern() {
-    let route = DesktopRoute.device(platform: "ios", deviceKey: "U1")
-    #expect(route.isDevices && DesktopRoute.devices.isDevices && !DesktopRoute.agents.isDevices)
+    let route = ArgusRoute.device(platform: "ios", deviceKey: "U1")
+    #expect(route.isDevices && ArgusRoute.devices.isDevices && !ArgusRoute.agents.isDevices)
     #expect(route.pattern == "/devices/:platform/:deviceKey")
-    #expect(DeviceRef(platform: "ios", deviceKey: "U1") == DeviceRef(platform: "ios", deviceKey: "U1"))
   }
 }
