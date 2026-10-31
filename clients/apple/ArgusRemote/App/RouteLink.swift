@@ -31,6 +31,8 @@ extension PhoneDestination {
     case .agents: return PhoneDestination(section: .projects, route: .agents)
     case .devices: return PhoneDestination(section: .devices)
     case .device(_, let key):
+      await settle(host)
+      if !host.devicesLoaded, host.connection == .ready { await host.refreshDevices() }
       guard let device = host.devices.first(where: { $0.id == key }) else {
         return PhoneDestination(section: .devices, isFallback: true)
       }
@@ -107,6 +109,7 @@ extension PhoneDestination {
   @MainActor
   private static func session(_ id: String, host: HostStore) async -> RemoteSession? {
     if let session = host.session(id: id) { return session }
+    await settle(host)
     // Sessions load per project as their screens open; a link can arrive first.
     for project in host.projects where host.sessionsByRepo[project.repoRoot] == nil {
       await host.loadSessions(repoRoot: project.repoRoot)
@@ -114,6 +117,24 @@ extension PhoneDestination {
     }
     await host.adoptSession(id: id)
     return host.session(id: id)
+  }
+
+  /// A link opened at launch lands before the computer has answered; give the
+  /// first project list a bounded wait rather than falling back to Home.
+  @MainActor
+  static func settle(_ host: HostStore, timeout: Duration = .seconds(8)) async {
+    let deadline = ContinuousClock.now + timeout
+    var asked = false
+    while !host.projectsLoaded, ContinuousClock.now < deadline, !Task.isCancelled {
+      if host.connection == .ready, !asked {
+        asked = true
+        await host.refreshProjects()
+        continue
+      }
+      // A reconnect drops the first answer; ask again once it's back.
+      if host.connection != .ready { asked = false }
+      try? await Task.sleep(for: .milliseconds(150))
+    }
   }
 
   private static func label(_ session: RemoteSession) -> String {
