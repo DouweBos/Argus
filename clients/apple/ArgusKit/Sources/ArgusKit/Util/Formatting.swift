@@ -44,10 +44,13 @@ public enum Labels {
     agent.lastActivityAt ?? agent.createdAt ?? 0
   }
 
+  /// Its title; "New agent" until the computer names it from the first turn.
   public static func agentName(_ agent: RemoteAgentStatus) -> String {
     let title = agent.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-    return title.isEmpty ? "Agent \(agent.agentId.prefix(8))" : title
+    return title.isEmpty ? untitledAgent : title
   }
+
+  public static let untitledAgent = "New agent"
 
   /// The pending auto-continue after a usage limit, phrased as a banner.
   public static func limitResumeBanner(_ millis: Double, now: Date = Date()) -> String {

@@ -16,8 +16,6 @@ struct RootView: View {
   @State private var proposals: ProposalsStore?
   @State private var pullRequests: PullRequestsStore?
   @State private var imageViewer = ImageViewerState()
-  /// The project a new session is being named for, and the name being typed.
-  @State private var newSessionProject: RemoteProject?
 
   @Environment(\.scenePhase) private var scenePhase
   @State private var askingConsent = false
@@ -149,13 +147,13 @@ struct RootView: View {
     .accessibilityLabel("Reconnecting to \(app.identity?.label ?? "your computer")")
   }
 
-  /// Sidebar beside detail. The sidebar carries the hierarchy — sections,
-  /// then each project as a collapsible group of its agents — so the agents
-  /// beside the one you are reading stay a tap away.
+  /// Sidebar beside detail. The sidebar lists sections, then each project's
+  /// sessions, as the Mac's does — so the sessions beside the one you are
+  /// reading stay a tap away.
   private var columns: some View {
     @Bindable var router = router
     return NavigationSplitView {
-      sidebar
+      SessionSidebar()
         .navigationTitle("Argus")
         .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 380)
     } detail: {
@@ -165,171 +163,6 @@ struct RootView: View {
       }
     }
     .navigationSplitViewStyle(.balanced)
-  }
-
-  private func statusDot(_ agent: RemoteAgentStatus) -> some View {
-    StatusDot(
-      tone: agent.awaiting != nil ? .warning : agent.status.tone,
-      pulse: agent.awaiting == nil && agent.status == .running,
-      accessibilityLabel: Labels.awaitingLabel(agent) ?? Labels.statusLabel(agent.status))
-  }
-
-  private var sidebar: some View {
-    @Bindable var router = router
-    return List(selection: selection) {
-      Section {
-        ForEach(AppSection.allCases) { section in
-          Label(section.title, systemImage: section.symbol)
-            .tag(SidebarItem.section(section))
-        }
-      }
-
-      if !app.host.projects.isEmpty {
-        Section("Projects") {
-          ForEach(app.host.projects) { project in
-            DisclosureGroup(isExpanded: projectExpansion(project)) {
-              // `recentAgents` spans every project, so the agents cost no extra fetch.
-              let groups = app.host.sessionGroups(repoRoot: project.repoRoot)
-              if groups.isEmpty {
-                Text("Nothing running")
-                  .font(.footnote)
-                  .foregroundStyle(.secondary)
-              }
-              ForEach(groups) { group in
-                DisclosureGroup(isExpanded: expansion(for: group.id)) {
-                  if group.agents.isEmpty {
-                    Text("No agents")
-                      .font(.footnote)
-                      .foregroundStyle(.secondary)
-                  }
-                  ForEach(group.agents) { agent in
-                    Label {
-                      Text(Labels.agentName(agent)).lineLimit(1)
-                    } icon: {
-                      statusDot(agent)
-                    }
-                    .tag(
-                      SidebarItem.agent(
-                        id: agent.agentId, label: Labels.agentName(agent),
-                        repoRoot: project.repoRoot, projectName: project.name))
-                  }
-                  if app.host.hasControl {
-                    Button {
-                      spawnAgent(in: group.id, project: project)
-                    } label: {
-                      Label("New agent", systemImage: Icon.plus)
-                        .font(.footnote)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(theme.accent)
-                  }
-                } label: {
-                  sessionLabel(group)
-                }
-              }
-              if app.host.hasControl {
-                Button {
-                  newSessionProject = project
-                } label: {
-                  Label("New session", systemImage: Icon.plus)
-                    .font(.footnote)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(theme.accent)
-              }
-            } label: {
-              Label(project.name, systemImage: Icon.folder).lineLimit(1)
-            }
-          }
-        }
-      }
-    }
-    .listStyle(.sidebar)
-    .sheet(item: $newSessionProject) { project in
-      StartAgentSheet(
-        repoRoot: project.repoRoot,
-        sessionId: app.host.sessionsByRepo[project.repoRoot]?
-          .first { $0.kind == .projectRoot }?.id,
-        currentLabel: "Current checkout",
-        workspace: .worktree,
-        models: [],
-        defaultMode: app.defaultPermissionMode
-      ) { started, sent in
-        Telemetry.capture(.agentStartSubmitted(sent, openedOn: .worktree))
-        if case .agent(let agent) = started {
-          router.apply(
-            .agent(
-              id: agent.agentId, label: Labels.agentName(agent),
-              repoRoot: project.repoRoot, projectName: project.name))
-        }
-        Task {
-          // Show it straight away rather than waiting for the next poll.
-          await app.host.loadSessions(repoRoot: project.repoRoot)
-          router.expandedProjects.insert(project.repoRoot)
-        }
-      }
-    }
-  }
-
-  private func spawnAgent(in sessionId: String, project: RemoteProject) {
-    Task {
-      guard
-        let agent = await app.host.spawnAgent(
-          sessionId: sessionId, permissionMode: app.defaultPermissionMode)
-      else { return }
-      router.apply(
-        .agent(
-          id: agent.agentId, label: Labels.agentName(agent),
-          repoRoot: project.repoRoot, projectName: project.name))
-      await app.host.loadRecentAgents()
-    }
-  }
-
-  /// A session's name with the Mac sidebar's dot while it works, waits or fails.
-  @ViewBuilder
-  private func sessionLabel(_ group: SessionGroup) -> some View {
-    let activity = group.session.map { SessionActivity(session: $0, agents: group.agents) }
-    Label {
-      Text(group.label).lineLimit(1)
-    } icon: {
-      if let activity, activity.showsDot {
-        StatusDot(tone: activity.tone, pulse: activity.isBusy && !activity.session.isUnavailable)
-      } else {
-        Image(systemName: Icon.branch)
-      }
-    }
-  }
-
-  /// Expanding a project is when its sessions are worth fetching.
-  private func projectExpansion(_ project: RemoteProject) -> Binding<Bool> {
-    Binding(
-      get: { router.expandedProjects.contains(project.repoRoot) },
-      set: { open in
-        if open {
-          router.expandedProjects.insert(project.repoRoot)
-          Task { await app.host.loadSessions(repoRoot: project.repoRoot) }
-        } else {
-          router.expandedProjects.remove(project.repoRoot)
-        }
-      })
-  }
-
-  private var selection: Binding<SidebarItem?> {
-    Binding(
-      get: { router.sidebarSelection },
-      set: { router.apply($0) })
-  }
-
-  private func expansion(for repoRoot: String) -> Binding<Bool> {
-    Binding(
-      get: { router.expandedProjects.contains(repoRoot) },
-      set: { open in
-        if open {
-          router.expandedProjects.insert(repoRoot)
-        } else {
-          router.expandedProjects.remove(repoRoot)
-        }
-      })
   }
 
   private var tabs: some View {
@@ -382,8 +215,10 @@ struct RootView: View {
       AllAgentsView()
     case .project(let repoRoot, let name):
       ProjectView(repoRoot: repoRoot, name: name)
+    case .session(let id, let label, let repoRoot):
+      SessionView(sessionId: id, label: label, repoRoot: repoRoot)
     case .agent(let id, let label):
-      AgentView(agentId: id, label: label)
+      SessionView(sessionId: nil, label: label, agentId: id)
     case .stoppedAgent(let historyId, let repoRoot, let label, let branch, let runner):
       StoppedAgentView(
         historyId: historyId, repoRoot: repoRoot, label: label,

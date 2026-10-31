@@ -12,6 +12,9 @@ enum Route: Hashable {
   /// Every agent across projects, as the desktop's `/agents`.
   case agents
   case project(repoRoot: String, name: String)
+  /// One session: its agents as tabs, its tools in a details sheet.
+  case session(id: String, label: String, repoRoot: String)
+  /// The same screen, opened on one agent before its session is known.
   case agent(id: String, label: String)
   case stoppedAgent(historyId: String, repoRoot: String, label: String, branch: String, runnerSessionId: String)
   case changes(sessionId: String, label: String)
@@ -69,7 +72,7 @@ enum Route: Hashable {
   var pattern: String {
     switch self {
     case .agents: ArgusRoute.agents.pattern
-    case .agent: ArgusRoute.session(id: "", agentId: nil).pattern
+    case .session, .agent: ArgusRoute.session(id: "", agentId: nil).pattern
     case .changes(let id, _): ArgusRoute.sessionGit(id: id, view: .working).pattern
     case .stashes(let id, _): ArgusRoute.sessionGit(id: id, view: .stashes).pattern
     case .branches(let id, _, _): ArgusRoute.sessionGit(id: id, view: .branches(nil)).pattern
@@ -156,15 +159,15 @@ enum SidebarItem: Hashable {
   case section(AppSection)
   /// Carries its project so selecting it can seed the same stack the user
   /// would have built by hand.
-  case agent(id: String, label: String, repoRoot: String, projectName: String)
+  case session(id: String, label: String, repoRoot: String, projectName: String)
 
-  /// Identity is the agent id alone — the surrounding detail is there to
+  /// Identity is the session id alone — the surrounding detail is there to
   /// build the path, not to tell two selections apart. Without this, a
   /// selection made from the sidebar wouldn't match one made by navigating.
   static func == (lhs: SidebarItem, rhs: SidebarItem) -> Bool {
     switch (lhs, rhs) {
     case (.section(let a), .section(let b)): a == b
-    case (.agent(let a, _, _, _), .agent(let b, _, _, _)): a == b
+    case (.session(let a, _, _, _), .session(let b, _, _, _)): a == b
     default: false
     }
   }
@@ -174,7 +177,7 @@ enum SidebarItem: Hashable {
     case .section(let section):
       hasher.combine(0)
       hasher.combine(section)
-    case .agent(let id, _, _, _):
+    case .session(let id, _, _, _):
       hasher.combine(1)
       hasher.combine(id)
     }
@@ -193,9 +196,9 @@ final class Router {
 
   /// True wherever there is room for a sidebar beside the content.
   var isSplit = false
-  /// The sidebar's selection, and which project groups are open in it.
+  /// The sidebar's selection, and which projects are folded shut in it.
   var sidebarSelection: SidebarItem? = .section(.projects)
-  var expandedProjects: Set<String> = []
+  var collapsedProjects: Set<String> = []
   /// When set, the detail column is rooted on this project instead of the
   /// section's own screen — so an agent opened from the sidebar has its
   /// project behind it without needing a second entry in the path.
@@ -217,10 +220,10 @@ final class Router {
       return
     }
     detailStack.append(route)
-    if case .agent(let id, let label) = route {
-      // Equality is by id, so the empty project fields still match the
-      // sidebar's own entry and keep its row highlighted.
-      sidebarSelection = .agent(id: id, label: label, repoRoot: "", projectName: "")
+    if case .session(let id, let label, let repoRoot) = route {
+      // Equality is by id, so the empty project name still matches the
+      // sidebar's own entry and keeps its row highlighted.
+      sidebarSelection = .session(id: id, label: label, repoRoot: repoRoot, projectName: "")
     }
   }
 
@@ -233,7 +236,7 @@ final class Router {
   }
 
   /// Apply a sidebar selection: a section swaps what the detail column shows,
-  /// an agent opens in it.
+  /// a session opens in it.
   func apply(_ item: SidebarItem?) {
     guard let item else { return }
     switch item {
@@ -241,22 +244,22 @@ final class Router {
       if self.section != section { self.section = section }
       detailProject = nil
       detailStack = []
-    case .agent(let id, let label, let repoRoot, let projectName):
+    case .session(let id, let label, let repoRoot, let projectName):
       // A shortcut into the normal path, not a replacement for it: the
       // project goes underneath so back lands where it always does.
-      // An agent always lives under Projects, but only write that when it
+      // A session always lives under Projects, but only write that when it
       // actually changes — an `@Observable` write invalidates on assignment,
       // not on difference.
       if section != .projects { section = .projects }
-      // Root the column on the project and push only the agent. Assigning a
+      // Root the column on the project and push only the session. Assigning a
       // two-element path in one update loses the second push; one push
       // against a stable root does not.
       let project = repoRoot.isEmpty ? nil : ProjectRef(repoRoot: repoRoot, name: projectName)
-      let agent = Route.agent(id: id, label: label)
+      let opened = Route.session(id: id, label: label, repoRoot: repoRoot)
       guard detailProject != project else {
         // Same project already rooting the column: nothing about the root
         // changes, so the push lands on its own.
-        detailStack = [agent]
+        detailStack = [opened]
         break
       }
       // Changing what roots the column and pushing onto it in the same
@@ -267,7 +270,7 @@ final class Router {
       detailStack = []
       Task { @MainActor [weak self] in
         guard let self, self.detailProject == project, self.detailStack.isEmpty else { return }
-        self.detailStack = [agent]
+        self.detailStack = [opened]
       }
     }
     sidebarSelection = item
@@ -291,6 +294,9 @@ final class Router {
     self.section = section
     if isSplit {
       detailStack = [route]
+      if case .session(let id, let label, let repoRoot) = route {
+        sidebarSelection = .session(id: id, label: label, repoRoot: repoRoot, projectName: "")
+      }
     } else {
       paths[section] = [route]
     }

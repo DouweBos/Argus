@@ -244,8 +244,9 @@ code (`ArgusRoute` in ArgusCore), so a link opens the same screen everywhere
 it can:
 
 - **Mac app** — every route above, `?host=` included.
-- **iOS app** — the phone is agent-centric: `/sessions/:id/agents/:agentId` opens
-  the agent, a bare session opens its project, and `/git/*` and `/code` open the
+- **iOS app** — `/sessions/:id/agents` opens the session screen (its agents as
+  tabs, its tools in a details sheet), `/sessions/:id/agents/:agentId` the same
+  screen on that agent's tab, and `/git/*` and `/code` open the
   phone's changes, stashes, branches, compare or file screens. A screen the
   phone doesn't have opens its nearest parent (`/runtimes` → projects, an
   unknown device → devices). `?host=` selects that paired computer when the

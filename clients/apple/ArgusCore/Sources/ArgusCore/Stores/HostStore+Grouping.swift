@@ -8,6 +8,15 @@ extension HostStore {
     return AgentOrder.byCreation(AgentOrder.overlaid(listed, live: statusByAgent))
   }
 
+  /// The same, plus any only the cross-project list has yet — for a session
+  /// opened before its project's agents load.
+  public func agents(inSessionId id: String, repoRoot: String) -> [RemoteAgentStatus] {
+    var seen = Set<String>()
+    let listed = ((agentsByRepo[repoRoot] ?? []) + recentAgents)
+      .filter { $0.sessionId == id && seen.insert($0.agentId).inserted }
+    return AgentOrder.byCreation(AgentOrder.overlaid(listed, live: statusByAgent))
+  }
+
   /// Every agent across projects: what wants you first, then the most recent.
   public var recentAgentsByActivity: [RemoteAgentStatus] {
     AgentOrder.byActivity(AgentOrder.overlaid(recentAgents, live: statusByAgent))

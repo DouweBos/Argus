@@ -27,6 +27,9 @@
 		774DC572A2AF220B00F3CF38 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6C14566E26586DC89C61830 /* HomeView.swift */; };
 		792DC62433CAABA830D81267 /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7C60136A1C7D698866F581E8 /* ArgusKit */; };
 		79ABC516E0AC2C4AE453BB1A /* AgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8501B834EC04B6A657B28A71 /* AgentView.swift */; };
+		B35E55100000000000000001 /* SessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35E55100000000000000002 /* SessionView.swift */; };
+		B35E55100000000000000003 /* SessionDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35E55100000000000000004 /* SessionDetailsView.swift */; };
+		B35E55100000000000000005 /* SessionSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35E55100000000000000006 /* SessionSidebar.swift */; };
 		7E2A00000000000000000003 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 7E2A00000000000000000002 /* SwiftTerm */; };
 		801B94D184E882085D5A21C1 /* HardwareKeyCatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 195DBDEBD1CDBCE511CAA5C8 /* HardwareKeyCatcher.swift */; };
 		85B885DE197E4591E333C07D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6939D496D536368D99A574 /* SettingsView.swift */; };
@@ -159,6 +162,9 @@
 		7B760406B1B2B956C52E89F9 /* DeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceView.swift; sourceTree = "<group>"; };
 		8346E6C1D03B823ABD7DCA02 /* ArgusRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ArgusRemote.entitlements; sourceTree = "<group>"; };
 		8501B834EC04B6A657B28A71 /* AgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentView.swift; sourceTree = "<group>"; };
+		B35E55100000000000000002 /* SessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionView.swift; sourceTree = "<group>"; };
+		B35E55100000000000000004 /* SessionDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetailsView.swift; sourceTree = "<group>"; };
+		B35E55100000000000000006 /* SessionSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionSidebar.swift; sourceTree = "<group>"; };
 		894443D21C1F9129A450074B /* DescribeAutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DescribeAutomationView.swift; sourceTree = "<group>"; };
 		95ACC76BC6E417BE6A706B18 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9798D9FC585435B89959E156 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -349,6 +355,8 @@
 			isa = PBXGroup;
 			children = (
 				8501B834EC04B6A657B28A71 /* AgentView.swift */,
+				B35E55100000000000000002 /* SessionView.swift */,
+				B35E55100000000000000004 /* SessionDetailsView.swift */,
 				4510F50B6943CA7B6707AABE /* AutomationsView.swift */,
 				21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */,
 				D15E7D98AC7167AE4C6BCF68 /* AutomationEditorView.swift */,
@@ -446,6 +454,7 @@
 				9798D9FC585435B89959E156 /* RootView.swift */,
 				6FCAD11D552D483C0C92312A /* Route.swift */,
 				A11CE0000000000000000002 /* RouteLink.swift */,
+				B35E55100000000000000006 /* SessionSidebar.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -813,6 +822,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				79ABC516E0AC2C4AE453BB1A /* AgentView.swift in Sources */,
+				B35E55100000000000000001 /* SessionView.swift in Sources */,
+				B35E55100000000000000003 /* SessionDetailsView.swift in Sources */,
+				B35E55100000000000000005 /* SessionSidebar.swift in Sources */,
 				FAEB2F8A18B2B7EEA189693B /* AppStore+Push.swift in Sources */,
 				AC0A00000000000000000005 /* AppStore+Account.swift in Sources */,
 				E79376838450019576305370 /* AppStore.swift in Sources */,

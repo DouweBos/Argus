@@ -118,6 +118,14 @@ enum TelemetryEvent {
     case delete
   }
 
+  /// What was done on a session screen that the computer never sees.
+  enum SessionAction: String {
+    /// The session details sheet was opened.
+    case openDetails = "open_details"
+    /// Another agent's tab was picked.
+    case switchAgent = "switch_agent"
+  }
+
   /// Where adding a computer to the account started.
   enum ComputerAddedVia: String {
     /// A link code typed into the phone.
@@ -171,6 +179,8 @@ enum TelemetryEvent {
   case notificationsCleared(scope: ClearScope)
   /// An agent's MCP servers list was opened.
   case mcpServersOpened
+  /// The session screen's details were opened, or its agent tabs used.
+  case sessionUsed(action: SessionAction)
   /// A turn's folded work was opened in a chat; `working` says the agent was still on it.
   case transcriptWorkLogOpened(working: Bool)
   /// A message's menu was used; `success` says the host took the edit or fork (always true for copy).
@@ -249,6 +259,7 @@ enum TelemetryEvent {
     case .warningsOpened: "ios_warnings_opened"
     case .notificationsCleared: "ios_notifications_cleared"
     case .mcpServersOpened: "ios_mcp_servers_opened"
+    case .sessionUsed: "ios_session_used"
     case .transcriptWorkLogOpened: "ios_transcript_work_log_opened"
     case .messageAction: "ios_message_action"
     case .chatHistoryUsed: "ios_chat_history_used"
@@ -354,6 +365,8 @@ enum TelemetryEvent {
     case .messageAction(let action, let role, let success):
       ["action": action.rawValue, "role": role.rawValue, "success": success]
     case .chatHistoryUsed(let action):
+      ["action": action.rawValue]
+    case .sessionUsed(let action):
       ["action": action.rawValue]
     case .fileViewed(let source, let language):
       ["source": source.rawValue, "language": language]

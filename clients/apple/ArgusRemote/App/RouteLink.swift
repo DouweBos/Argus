@@ -19,8 +19,8 @@ struct RouteHints {
 
 extension PhoneDestination {
   /// The phone screen for a route the Mac and Electron share (`argus://` links,
-  /// Handoff, the dev driver). The desktop is session-centric and the phone
-  /// agent-centric, so a session lands on its project.
+  /// Handoff, the dev driver). A session lands on its session screen, an
+  /// agent on the same screen with that agent's tab in front.
   @MainActor
   static func resolve(_ route: ArgusRoute, host: HostStore, hints: RouteHints = RouteHints()) async
     -> PhoneDestination
@@ -58,7 +58,11 @@ extension PhoneDestination {
       let label = host.statusByAgent[agentId].map(Labels.agentName) ?? hints.agentLabel ?? "Agent"
       return PhoneDestination(section: .projects, route: .agent(id: agentId, label: label))
     case .session(let id, nil):
-      return await sessionHome(id, host: host, hints: hints)
+      guard let session = await session(id, host: host) else {
+        return await sessionHome(id, host: host, hints: hints)
+      }
+      return PhoneDestination(
+        section: .projects, route: .session(id: id, label: label(session), repoRoot: session.repoRoot))
     case .sessionGit(let id, let view):
       guard let session = await session(id, host: host) else {
         return await sessionHome(id, host: host, hints: hints)
@@ -88,7 +92,7 @@ extension PhoneDestination {
     }
   }
 
-  /// A session without an agent: its project, or the projects list when it has none.
+  /// A session the phone can't find: its project, or the projects list when it has none.
   @MainActor
   private static func sessionHome(_ id: String, host: HostStore, hints: RouteHints) async -> PhoneDestination {
     let repoRoot = await session(id, host: host).flatMap { $0.isOutsideProjects ? nil : $0.repoRoot } ?? hints.repoRoot
@@ -102,17 +106,18 @@ extension PhoneDestination {
   /// A held session, or one fetched by id when no list the phone has carries it.
   @MainActor
   private static func session(_ id: String, host: HostStore) async -> RemoteSession? {
-    func held() -> RemoteSession? {
-      host.sessionsByRepo.values.lazy.flatMap { $0 }.first { $0.id == id }
-        ?? host.scratchPads.first { $0.id == id } ?? host.adoptedSessions[id]
+    if let session = host.session(id: id) { return session }
+    // Sessions load per project as their screens open; a link can arrive first.
+    for project in host.projects where host.sessionsByRepo[project.repoRoot] == nil {
+      await host.loadSessions(repoRoot: project.repoRoot)
+      if let session = host.session(id: id) { return session }
     }
-    if let session = held() { return session }
     await host.adoptSession(id: id)
-    return held()
+    return host.session(id: id)
   }
 
   private static func label(_ session: RemoteSession) -> String {
-    session.displayName ?? session.branch
+    SessionActivity.title(session)
   }
 }
 

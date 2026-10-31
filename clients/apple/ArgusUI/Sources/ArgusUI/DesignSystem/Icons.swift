@@ -66,6 +66,8 @@ public enum Icon {
   public static let openExternal = "arrow.up.forward.square"
   public static let warning = "exclamationmark.triangle"
   public static let mcp = "server.rack"
+  /// A session's details: branch, changes, tools.
+  public static let details = "info.circle"
   public static let image = "photo"
   public static let rotate = "rotate.right"
   public static let fold = "book.closed"

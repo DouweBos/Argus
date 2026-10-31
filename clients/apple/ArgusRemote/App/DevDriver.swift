@@ -296,6 +296,7 @@
       case "projects": self = .projects
       case "project": self = .project(repoRoot: arg(1), name: arg(2))
       case "agent": self = .agent(id: arg(1), label: arg(2))
+      case "session": self = .session(id: arg(1), label: arg(2), repoRoot: arg(3))
       case "terminals": self = .terminals(sessionId: arg(1), label: arg(2))
       case "terminal": self = .terminal(id: arg(1), label: arg(2))
       case "changes": self = .changes(sessionId: arg(1), label: arg(2))
