@@ -309,12 +309,19 @@ public struct IconBtn: View {
       Image(systemName: systemName)
         .font(.scaled(size: size, weight: .medium))
         .foregroundStyle(tint ?? theme.textSecondary)
-        .frame(width: 32, height: 32)
+        .frame(width: IconBtn.side, height: IconBtn.side)
         .contentShape(Rectangle())
     }
     .buttonStyle(.argusPlain)
     .accessibilityLabel(label)
   }
+
+  /// A finger needs 44pt; a pointer is happy with the 32pt the Mac draws.
+  #if os(iOS)
+    static let side: CGFloat = 44
+  #else
+    static let side: CGFloat = 32
+  #endif
 }
 
 // MARK: - Status and labels
