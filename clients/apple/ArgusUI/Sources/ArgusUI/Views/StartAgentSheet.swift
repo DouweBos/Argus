@@ -32,6 +32,7 @@ public struct StartAgentSheet: View {
     var id: String { rawValue }
   }
 
+  @Environment(\.theme) private var theme
   @Environment(HostStore.self) var host
   @Environment(\.dismiss) var dismiss
 
@@ -66,6 +67,8 @@ public struct StartAgentSheet: View {
   /// This sheet's viewing hint, and the session it covered.
   @State private var viewingToken: Int?
   @State private var coveredSession: String?
+  /// The form's own height, so the sheet opens no taller than it needs.
+  @State private var formHeight: CGFloat = 0
 
   public init(
     repoRoot: String?,
@@ -117,71 +120,10 @@ public struct StartAgentSheet: View {
   public var body: some View {
     NavigationStack {
       Screen {
-        Field(label: "What should it do?", caption: promptCaption) {
-          ThemedTextField(
-            placeholder: issues.isEmpty ? "Fix the flaky login test" : "Anything to add (optional)",
-            text: $prompt, multiline: true, lines: 3...8)
-          if issues.isEmpty {
-            #if os(iOS)
-              if !images.isEmpty {
-                PendingImageStrip(images: images) { id in images.removeAll { $0.id == id } }
-              }
-            #endif
-            attachButtons
+        VStack(alignment: .leading, spacing: theme.space) { form }
+          .onGeometryChange(for: CGFloat.self) { ($0.size.height / 20).rounded(.up) * 20 } action: {
+            formHeight = $0
           }
-          if repoRoot != nil, host.linearConnected {
-            if !issues.isEmpty { PickedIssueChips(issues: $issues) }
-            Btn(label: "Add Linear issue", tone: .secondary, small: true, icon: Icon.issue) {
-              pickingIssues = true
-            }
-          }
-        }
-
-        if !issues.isEmpty {
-          Field(label: "Where", caption: "A new worktree per issue, on Linear's branch name.") {
-            Btn(label: baseLabel, tone: .secondary, small: true) { picker = .base }
-          }
-        } else if workspaceOptions.count > 1 {
-          Field(label: "Where") {
-            SegmentedControl(value: $workspace, options: workspaceOptions)
-
-            switch workspace {
-            case .current:
-              EmptyView()
-            case .worktree:
-              Btn(label: baseLabel, tone: .secondary, small: true) { picker = .base }
-            case .existing:
-              Btn(
-                label: existingBranch.isEmpty ? "Pick a branch" : existingBranch,
-                tone: .secondary, small: true
-              ) { picker = .existing }
-            }
-          }
-        }
-
-        Field(label: "Start it on", caption: "Blank uses the computer's default.") {
-          if !host.runners.isEmpty {
-            Btn(
-              label: "Runner: \(runnerLabel)", tone: .secondary, small: true
-            ) { picker = .runner }
-          }
-          if !modelOptions.isEmpty {
-            Btn(
-              label: "Model: \(modelLabel)", tone: .secondary, small: true
-            ) { picker = .model }
-          }
-          if issues.isEmpty, !effortLevels.isEmpty {
-            Btn(
-              label: "Effort: \(ComposerEffort.label(effort))", tone: .secondary, small: true
-            ) { picker = .effort }
-          }
-          Btn(
-            label: "Permission mode: \(mode?.label ?? "default")", tone: .secondary, small: true
-          ) { picker = .mode }
-        }
-
-        Btn(label: startLabel, icon: Icon.plus) { start() }
-          .disabled(!canStart)
       }
       .navigationTitle("New agent")
       .inlineNavigationTitle()
@@ -222,6 +164,77 @@ public struct StartAgentSheet: View {
         Task { await host.stopViewing(token: viewingToken, restoring: coveredSession) }
       }
     }
+    #if os(iOS)
+      .presentationDetents(formHeight > 0 ? [.height(formHeight + Self.sheetChrome), .large] : [.large])
+    #endif
+  }
+
+  /// The navigation bar, the screen's padding and the home indicator around the form.
+  private static let sheetChrome: CGFloat = 110
+
+  @ViewBuilder
+  private var form: some View {
+    Field(label: "What should it do?", caption: promptCaption) {
+      ThemedTextField(
+        placeholder: issues.isEmpty ? "Fix the flaky login test" : "Anything to add (optional)",
+        text: $prompt, multiline: true, lines: 3...8)
+      if issues.isEmpty {
+        #if os(iOS)
+          if !images.isEmpty {
+            PendingImageStrip(images: images) { id in images.removeAll { $0.id == id } }
+          }
+        #endif
+        attachButtons
+      }
+      if repoRoot != nil, host.linearConnected {
+        if !issues.isEmpty { PickedIssueChips(issues: $issues) }
+        Btn(label: "Add Linear issue", tone: .secondary, small: true, icon: Icon.issue) {
+          pickingIssues = true
+        }
+      }
+    }
+
+    if !issues.isEmpty {
+      Field(label: "Where", caption: "A new worktree per issue, on Linear's branch name.") {
+        StartOptionRow(title: "Base", value: baseValue) { picker = .base }
+      }
+    } else if workspaceOptions.count > 1 {
+      Field(label: "Where") {
+        SegmentedControl(value: $workspace, options: workspaceOptions)
+
+        switch workspace {
+        case .current:
+          EmptyView()
+        case .worktree:
+          StartOptionRow(title: "Base", value: baseValue) { picker = .base }
+        case .existing:
+          StartOptionRow(title: "Branch", value: existingBranch.isEmpty ? "Pick one" : existingBranch) {
+            picker = .existing
+          }
+        }
+      }
+    }
+
+    Field(label: "Start it on", caption: "Default uses the computer's default.") {
+      VStack(spacing: 0) {
+        if !host.runners.isEmpty {
+          StartOptionRow(title: "Runner", value: runnerLabel) { picker = .runner }
+          Divider()
+        }
+        if !modelOptions.isEmpty {
+          StartOptionRow(title: "Model", value: modelLabel) { picker = .model }
+          Divider()
+        }
+        if issues.isEmpty, !effortLevels.isEmpty {
+          StartOptionRow(title: "Effort", value: ComposerEffort.label(effort)) { picker = .effort }
+          Divider()
+        }
+        StartOptionRow(title: "Permission mode", value: mode?.label ?? "default") { picker = .mode }
+      }
+    }
+
+    Btn(label: startLabel, icon: Icon.plus) { start() }
+      .disabled(!canStart)
   }
 
   private var promptCaption: String? {
@@ -247,9 +260,9 @@ public struct StartAgentSheet: View {
     }
   }
 
-  private var baseLabel: String {
-    if let base = bases.base { return "Base: \(base)" }
-    return bases.loading ? "Base: loading…" : "Base: project default"
+  private var baseValue: String {
+    if let base = bases.base { return base }
+    return bases.loading ? "Loading…" : "Project default"
   }
 
   private var projectRootBranch: String? {
@@ -262,4 +275,32 @@ public struct StartAgentSheet: View {
   }
 
   private var warmTarget: WarmTarget { WarmTarget(workspace: workspace, runner: runner) }
+}
+
+/// One start option: its name, the current choice, and a menu's up-down
+/// chevron, so it reads as a picker rather than a button.
+private struct StartOptionRow: View {
+  @Environment(\.theme) private var theme
+  let title: String
+  let value: String
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      HStack(spacing: 8) {
+        Text(title).foregroundStyle(theme.text)
+        Spacer(minLength: 8)
+        Text(value).foregroundStyle(theme.textSecondary).lineLimit(1).truncationMode(.middle)
+        Image(systemName: Icon.chevronUpDown)
+          .font(.scaled(size: 11, weight: .semibold))
+          .foregroundStyle(theme.textMuted)
+      }
+      .font(.scaled(size: 15))
+      .frame(maxWidth: .infinity, minHeight: 44)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.argusPlain)
+    .accessibilityElement(children: .combine)
+    .accessibilityHint("Opens a list to choose from")
+  }
 }

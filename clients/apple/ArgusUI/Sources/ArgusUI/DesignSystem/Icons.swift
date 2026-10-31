@@ -11,6 +11,7 @@ public enum Icon {
   public static let chevronDown = "chevron.down"
   public static let chevronLeft = "chevron.left"
   public static let chevronUp = "chevron.up"
+  public static let chevronUpDown = "chevron.up.chevron.down"
   public static let folder = "folder"
   public static let file = "doc"
   public static let branch = "arrow.triangle.branch"
