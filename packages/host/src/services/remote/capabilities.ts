@@ -160,6 +160,7 @@ import {
   getSessionBranchDiff,
   getSessionFullDiff,
   getSessionMergeBlockers,
+  getSessionUntrackedDiff,
   gitCommit,
   gitStashApply,
   gitStashDrop,
@@ -1818,12 +1819,22 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "sessions.diff": async (params) => {
     const { session_id, mode } = parse("sessions.diff", params);
     requireSession(session_id);
-    const diff = await control(() =>
-      mode === "working"
-        ? getSessionFullDiff(session_id)
-        : getSessionBranchDiff(session_id, {}),
-    );
-    const base = appState.sessions.get(session_id)?.base_branch ?? null;
+    const session = appState.sessions.get(session_id);
+    // `git diff` skips untracked files, which the changed-file count includes.
+    const withUntracked =
+      mode === "working" ||
+      (session?.kind !== "project_root" && !!session?.base_branch);
+    const diff = await control(async () => {
+      const tracked =
+        mode === "working"
+          ? await getSessionFullDiff(session_id)
+          : await getSessionBranchDiff(session_id, {});
+
+      return withUntracked
+        ? tracked + (await getSessionUntrackedDiff(session_id))
+        : tracked;
+    });
+    const base = session?.base_branch ?? null;
 
     return { diff, base_branch: base };
   },

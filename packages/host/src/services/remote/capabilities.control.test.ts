@@ -107,6 +107,7 @@ vi.mock("../session/gitBranchOps", () => ({
 vi.mock("../session/sessionOps", () => ({
   getSessionBranchDiff: vi.fn(async () => "diff --git a b"),
   getSessionFullDiff: vi.fn(async () => "diff --git HEAD"),
+  getSessionUntrackedDiff: vi.fn(async () => "diff --git new"),
 }));
 vi.mock("../integrations/issueStart", () => ({
   prepareIssueStart: vi.fn(async (ref: string, prompt: string) => ({
@@ -524,6 +525,22 @@ describe("read-only changes review (monitor scope)", () => {
     expect(getSessionBranchDiff).toHaveBeenCalledWith("s1", {});
     await dispatch("sessions.diff", { session_id: "s1", mode: "working" }, ctx);
     expect(getSessionFullDiff).toHaveBeenCalledWith("s1");
+  });
+
+  it("diff lists untracked files after the tracked ones", async () => {
+    const ctx = makeCtx(["monitor"]);
+    const branch = MethodResult["sessions.diff"].parse(
+      await dispatch("sessions.diff", { session_id: "s1" }, ctx),
+    );
+    expect(branch.diff).toBe("diff --git a bdiff --git new");
+    const working = MethodResult["sessions.diff"].parse(
+      await dispatch(
+        "sessions.diff",
+        { session_id: "s1", mode: "working" },
+        ctx,
+      ),
+    );
+    expect(working.diff).toBe("diff --git HEADdiff --git new");
   });
 });
 
