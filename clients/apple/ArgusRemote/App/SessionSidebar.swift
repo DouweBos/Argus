@@ -74,9 +74,10 @@ struct SessionSidebar: View {
     }
   }
 
-  /// The project's name, with a `+` for a new session as on the Mac's project header.
+  /// The project's badge and name, with a `+` for a new session as on the Mac's project header.
   private func header(_ project: RemoteProject) -> some View {
-    HStack {
+    HStack(spacing: 6) {
+      ProjectBadge(project.name, key: project.repoRoot)
       Text(project.name).lineLimit(1)
       Spacer(minLength: 4)
       if host.hasControl {
