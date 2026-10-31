@@ -20,8 +20,8 @@ struct SettingsView: View {
       Section {
         NavigationLink(value: Route.notifications) {
           LabeledContent {
-            if app.unseenWarnings > 0 {
-              Badge(label: "\(app.unseenWarnings)", tone: .danger)
+            if app.notifications.unseenCount > 0 {
+              Badge(label: "\(app.notifications.unseenCount)", tone: .danger)
             }
           } label: {
             Label("Notifications", systemImage: Icon.notifications)

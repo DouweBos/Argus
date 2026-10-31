@@ -109,6 +109,10 @@ enum TelemetryEvent {
   }
 
   /// What was done in a session's saved chats.
+  enum ClearScope: String {
+    case one, all
+  }
+
   enum ChatHistoryAction: String {
     case search
     case delete
@@ -163,6 +167,8 @@ enum TelemetryEvent {
   case agentStartSubmitted(workspace: String, changedWorkspace: Bool, hasImages: Bool, effortSet: Bool)
   /// The warnings list was opened; `count` is how many it held.
   case warningsOpened(count: Int)
+  /// One notification was swiped away, or the whole list cleared.
+  case notificationsCleared(scope: ClearScope)
   /// An agent's MCP servers list was opened.
   case mcpServersOpened
   /// A turn's folded work was opened in a chat; `working` says the agent was still on it.
@@ -241,6 +247,7 @@ enum TelemetryEvent {
     case .defaultChanged: "ios_default_changed"
     case .agentStartSubmitted: "ios_agent_start_submitted"
     case .warningsOpened: "ios_warnings_opened"
+    case .notificationsCleared: "ios_notifications_cleared"
     case .mcpServersOpened: "ios_mcp_servers_opened"
     case .transcriptWorkLogOpened: "ios_transcript_work_log_opened"
     case .messageAction: "ios_message_action"
@@ -340,6 +347,8 @@ enum TelemetryEvent {
       ["workspace": workspace, "changed_workspace": changedWorkspace, "has_images": hasImages, "effort_set": effortSet]
     case .warningsOpened(let count):
       ["count": count]
+    case .notificationsCleared(let scope):
+      ["scope": scope.rawValue]
     case .transcriptWorkLogOpened(let working):
       ["working": working]
     case .messageAction(let action, let role, let success):

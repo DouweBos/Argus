@@ -38,8 +38,7 @@ final class AppStore {
   /// the computer, as the desktop's own default does for its agents.
   var defaultPermissionMode: RemotePermissionMode?
   /// Failures shown this launch, newest first — the phone's `/notifications`.
-  var warnings: [AppWarning] = []
-  var unseenWarnings = 0
+  let notifications = NotificationsLog()
   /// Mirrored from `Telemetry` so the Settings toggle has something to bind to.
   var telemetryMode: TelemetryMode = .presence
   var pushState: PushState = .off
@@ -72,9 +71,11 @@ final class AppStore {
     host.hooks = HostStoreHooks(
       track: { Telemetry.capture(TelemetryEvent($0)) },
       errorReported: { [weak self] error, scope in
-        self?.noteWarning(HostStore.describe(error))
+        let unsupported = HostStore.unsupportedMethod(error)
+        self?.notifications.push(
+          unsupported == nil ? .error : .warning, HostStore.describe(error), source: scope)
         // Version skew, not a bug: count it once per method rather than report it.
-        if let method = HostStore.unsupportedMethod(error) {
+        if let method = unsupported {
           if self?.unsupportedSeen.insert(method).inserted == true {
             Telemetry.capture(.hostFeatureUnsupported(method: method))
           }
@@ -351,33 +352,4 @@ final class AppStore {
     preferences.set(mode?.rawValue, for: PreferenceKey.defaultPermissionMode)
     Telemetry.capture(.defaultChanged(setting: .permissionMode, value: mode?.rawValue ?? "computer"))
   }
-
-  // MARK: Warnings
-
-  private static let warningCap = 50
-
-  private func noteWarning(_ message: String) {
-    // A polling screen repeats its failure every few seconds; keep one entry.
-    if warnings.first?.message == message {
-      warnings[0] = AppWarning(message: message, at: Date())
-      return
-    }
-    warnings.insert(AppWarning(message: message, at: Date()), at: 0)
-    if warnings.count > Self.warningCap { warnings.removeLast(warnings.count - Self.warningCap) }
-    unseenWarnings += 1
-  }
-
-  func markWarningsSeen() { unseenWarnings = 0 }
-
-  func clearWarnings() {
-    warnings = []
-    unseenWarnings = 0
-  }
-}
-
-/// One failure the user was shown, kept so a toast that vanished can be read.
-struct AppWarning: Identifiable, Hashable {
-  let id = UUID()
-  let message: String
-  let at: Date
 }

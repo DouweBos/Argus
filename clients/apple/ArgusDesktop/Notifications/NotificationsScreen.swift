@@ -51,6 +51,9 @@ private struct NotificationRow: View {
         Text(entry.message).textSelection(.enabled)
         HStack(spacing: 6) {
           Text(entry.level.rawValue).font(.scaled(.caption)).foregroundStyle(.secondary)
+          if entry.count > 1 {
+            Text("×\(entry.count)").font(.scaled(.caption)).foregroundStyle(.secondary)
+          }
           if let source = entry.source {
             Text(source).font(.scaled(.caption)).foregroundStyle(.secondary)
           }
