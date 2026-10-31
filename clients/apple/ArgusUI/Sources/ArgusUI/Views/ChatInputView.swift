@@ -167,7 +167,7 @@ public struct ChatInputView: View {
           Chip(label: accountLabel, icon: Icon.person) { picker = .account }
         }
         Chip(
-          label: mode.label, icon: Icon.lock,
+          label: ComposerPermissionMode.label(mode), icon: Icon.lock,
           tone: mode == .auto ? nil : .accent
         ) { picker = .mode }
         if currentModelSupportsEffort {
@@ -424,7 +424,7 @@ public struct ChatInputView: View {
   // MARK: Pickers
 
   private var mode: RemotePermissionMode {
-    RemotePermissionMode(rawValue: status?.permissionMode ?? "") ?? .auto
+    ComposerPermissionMode.canonical(status?.permissionMode)
   }
 
   private var modelLabel: String {
@@ -489,7 +489,11 @@ public struct ChatInputView: View {
     case .mode:
       PickerSheet(
         title: "Permission mode",
-        options: RemotePermissionMode.allCases.map { .init(value: $0.rawValue, label: $0.label) },
+        options: RemotePermissionMode.allCases.map {
+          .init(
+            value: $0.rawValue, label: ComposerPermissionMode.label($0),
+            hint: ComposerPermissionMode.description($0))
+        },
         selected: [mode.rawValue]
       ) { value in
         guard let picked = RemotePermissionMode(rawValue: value) else { return }
