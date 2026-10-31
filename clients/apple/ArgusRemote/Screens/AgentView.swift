@@ -47,11 +47,7 @@ struct AgentView: View {
       }
       .environment(\.messageMenu, messageMenu)
       if isGone {
-        MutedText("This agent has stopped, so it can't take new messages.")
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(theme.space)
-          .background(theme.bgSecondary)
-          .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
+        TranscriptFooterNote("This agent has stopped, so it can't take new messages.")
       } else if host.hasControl {
         ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
           Telemetry.capture(affordance == .followUp ? .followUpUsed : .inputUsed(affordance: affordance.rawValue))

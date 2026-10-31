@@ -46,7 +46,7 @@ struct StoppedAgentView: View {
             .messageAction(action: .copy, role: message.role == .user ? .user : .assistant, success: true))
         })
 
-      VStack(alignment: .leading, spacing: 6) {
+      TranscriptFooterNote {
         if host.hasControl, let session {
           Btn(
             label: resuming ? "Resuming…" : "Resume in a new agent",
@@ -62,10 +62,6 @@ struct StoppedAgentView: View {
               : "This agent has stopped. Grant this phone control in Argus on your computer to resume it.")
         }
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(theme.space)
-      .background(theme.bgSecondary)
-      .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
     }
     .background(theme.bg.ignoresSafeArea())
     .navigationTitle(label)
