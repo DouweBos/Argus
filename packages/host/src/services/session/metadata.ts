@@ -49,6 +49,8 @@ export interface SessionMeta {
    * still be listed — `git worktree list` is not readable for it.
    */
   branch?: string;
+  /** See `Session.setup_pending`. */
+  setup_pending?: boolean;
   /** Last known session kind, for the same reason. */
   kind?: "automation_host" | "project_root" | "scratch_pad" | "worktree";
   /** Epoch ms the worktree was last confirmed present on disk. */

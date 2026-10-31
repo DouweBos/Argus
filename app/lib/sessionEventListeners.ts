@@ -51,6 +51,7 @@ export function initSessionEventListeners(): void {
     model?: string | null;
     path?: string;
     runner_id?: string | null;
+    setup_pending?: boolean;
     status?: Session["status"];
     volume?: string | null;
   }>("session:updated", (event) => {
@@ -63,6 +64,7 @@ export function initSessionEventListeners(): void {
       status,
       runner_id,
       model,
+      setup_pending,
       volume,
     } = event.payload;
     if (!getSessionState().sessions.some((w) => w.id === id)) {
@@ -92,6 +94,9 @@ export function initSessionEventListeners(): void {
     }
     if (volume !== undefined) {
       patch.volume = volume;
+    }
+    if (setup_pending !== undefined) {
+      patch.setup_pending = setup_pending;
     }
     updateSession(id, patch);
   });

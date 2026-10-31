@@ -90,6 +90,11 @@ export interface Session {
   /** Figma frames the session's work should match. */
   design_refs?: DesignRef[] | null;
   /**
+   * A worktree made outside Argus and adopted from disk: the project's setup
+   * never ran in it. Cleared once setup runs or the user marks it ready.
+   */
+  setup_pending?: boolean;
+  /**
    * Whether the session's files are reachable right now. Orthogonal to
    * `status`: a session can be mid-setup *and* on a drive that just got
    * unplugged, and it has to come back as whatever it was. Absent means

@@ -51,6 +51,8 @@ export const RemoteSession = z.object({
   linked_issue: LinkedIssue.nullable().optional(),
   /** The Figma frames its work should match. Absent on older hosts. */
   design_refs: z.array(DesignRef).nullable().optional(),
+  /** Made outside Argus, so the project's setup never ran in it. Absent on older hosts. */
+  setup_pending: z.boolean().optional(),
 });
 export type RemoteSession = z.infer<typeof RemoteSession>;
 

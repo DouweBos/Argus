@@ -533,6 +533,7 @@ function toRemoteSession(s: Session): RemoteSession {
     volume: s.volume ? (s.volume.split("/").pop() ?? null) : null,
     linked_issue: s.linked_issue ?? null,
     design_refs: s.design_refs ?? null,
+    setup_pending: s.setup_pending ?? false,
   };
 }
 

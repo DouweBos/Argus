@@ -15173,6 +15173,7 @@ extension ArgusProtocol {
     public var volume: String?
     public var linkedIssue: LinkedIssue?
     public var designRefs: [DesignRef]?
+    public var setupPending: Bool?
 
     enum CodingKeys: String, CodingKey {
       case id = "id"
@@ -15190,9 +15191,10 @@ extension ArgusProtocol {
       case volume = "volume"
       case linkedIssue = "linked_issue"
       case designRefs = "design_refs"
+      case setupPending = "setup_pending"
     }
 
-    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil) {
+    public init(id: String, repoRoot: String, kind: RemoteSessionKind, branch: String, displayName: String? = nil, baseBranch: String? = nil, claudeAccountId: String? = nil, status: RemoteSessionStatus, setupError: String? = nil, progress: RemoteSessionProgress? = nil, availability: RemoteSessionAvailability? = nil, unavailableVolume: String? = nil, volume: String? = nil, linkedIssue: LinkedIssue? = nil, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil) {
       self.id = id
       self.repoRoot = repoRoot
       self.kind = kind
@@ -15208,6 +15210,7 @@ extension ArgusProtocol {
       self.volume = volume
       self.linkedIssue = linkedIssue
       self.designRefs = designRefs
+      self.setupPending = setupPending
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -15227,6 +15230,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(volume, forKey: .volume)
       try c.encodeIfPresent(linkedIssue, forKey: .linkedIssue)
       try c.encodeIfPresent(designRefs, forKey: .designRefs)
+      try c.encodeIfPresent(setupPending, forKey: .setupPending)
     }
   }
 
@@ -16578,6 +16582,7 @@ extension ArgusProtocol {
     public var id: String
     public var kind: SessionKind
     public var designRefs: [DesignRef]?
+    public var setupPending: Bool?
     public var linkedIssue: LinkedIssue?
     public var model: String?
     public var path: String
@@ -16600,6 +16605,7 @@ extension ArgusProtocol {
       case id = "id"
       case kind = "kind"
       case designRefs = "design_refs"
+      case setupPending = "setup_pending"
       case linkedIssue = "linked_issue"
       case model = "model"
       case path = "path"
@@ -16612,7 +16618,7 @@ extension ArgusProtocol {
       case volume = "volume"
     }
 
-    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
+    public init(availability: SessionAvailability? = nil, baseBranch: String? = nil, branch: String, claudeAccountId: String? = nil, description: String, displayName: String? = nil, envIndex: Double? = nil, id: String, kind: SessionKind, designRefs: [DesignRef]? = nil, setupPending: Bool? = nil, linkedIssue: LinkedIssue? = nil, model: String? = nil, path: String, repoRoot: String, runnerId: String? = nil, setupTerminalId: String? = nil, status: SessionStatus, unavailableReason: String? = nil, unavailableVolume: String? = nil, volume: String? = nil) {
       self.availability = availability
       self.baseBranch = baseBranch
       self.branch = branch
@@ -16623,6 +16629,7 @@ extension ArgusProtocol {
       self.id = id
       self.kind = kind
       self.designRefs = designRefs
+      self.setupPending = setupPending
       self.linkedIssue = linkedIssue
       self.model = model
       self.path = path
@@ -16647,6 +16654,7 @@ extension ArgusProtocol {
       try c.encode(id, forKey: .id)
       try c.encode(kind, forKey: .kind)
       try c.encodeIfPresent(designRefs, forKey: .designRefs)
+      try c.encodeIfPresent(setupPending, forKey: .setupPending)
       try c.encodeIfPresent(linkedIssue, forKey: .linkedIssue)
       try c.encodeIfPresent(model, forKey: .model)
       try c.encode(path, forKey: .path)

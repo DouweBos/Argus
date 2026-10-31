@@ -48,6 +48,8 @@ struct ProjectView: View {
           }
           if let session = group.session, session.status == .error, !session.isUnavailable {
             SetupFailedRow(session: session)
+          } else if let session = group.session, session.setupPending == true, !session.isUnavailable {
+            SetupPendingRow(session: session)
           }
           ForEach(group.agents) { agent in
             NavigationLink(

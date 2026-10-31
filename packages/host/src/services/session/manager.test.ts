@@ -5,8 +5,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appState } from "../../state";
+import { humanizeBranchName } from "../llm/titleGenerator";
 import { addWorktree, git } from "./git";
-import { createSession, listSessions } from "./manager";
+import { clearSessionSetupError, createSession, listSessions } from "./manager";
+import { resolveWorktreeRoot } from "./worktreeLocation";
 
 vi.mock("../../main", () => ({
   getMainWindow: () => null,
@@ -26,8 +28,12 @@ vi.mock("./git", async () => {
 vi.mock("./setup", () => ({
   runSetupPipeline: vi.fn(async () => {}),
 }));
+const argusConfig = vi.hoisted(() => ({ commands: [] as string[] }));
 vi.mock("./argusConfig", () => ({
-  loadArgusConfig: () => null,
+  loadArgusConfig: () =>
+    argusConfig.commands.length
+      ? { setup: { copy: [], symlink: [], commands: argusConfig.commands } }
+      : null,
 }));
 
 function makeSession(partial: Partial<Session>): Session {
@@ -255,5 +261,59 @@ describe("listSessions — ARGUS_HOME behind a symlink (/tmp on macOS)", () => {
     expect(listed.map((s) => [s.id, s.description])).toEqual([
       [session.id, "kept"],
     ]);
+  });
+});
+
+describe("listSessions — a worktree made outside Argus", () => {
+  let home: string;
+  let repoRoot: string;
+  let worktreePath: string;
+
+  beforeEach(() => {
+    appState.sessions.clear();
+    home = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "argus-")));
+    vi.stubEnv("ARGUS_HOME", home);
+    repoRoot = path.join(home, "repo");
+    fs.mkdirSync(repoRoot);
+    appState.repoRoots.add(repoRoot);
+    worktreePath = path.join(resolveWorktreeRoot(repoRoot).root, "by-hand");
+    fs.mkdirSync(worktreePath, { recursive: true });
+    fs.writeFileSync(path.join(worktreePath, ".git"), "gitdir: elsewhere");
+    vi.mocked(git).mockImplementation(async (_cwd, args) =>
+      args[0] === "worktree" && args[1] === "list"
+        ? `worktree ${worktreePath}\nHEAD abc\nbranch refs/heads/douwe/live-activities\n`
+        : "",
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.mocked(git).mockImplementation(async () => "");
+    argusConfig.commands = [];
+    fs.rmSync(home, { recursive: true, force: true });
+  });
+
+  it("names it from its branch, like a new session", async () => {
+    const [session] = await listSessions(repoRoot);
+
+    expect(session.display_name).toBe(
+      humanizeBranchName("douwe/live-activities"),
+    );
+    expect(session.setup_pending).toBeFalsy();
+  });
+
+  it("owes setup when the project has some, until it's marked ready", async () => {
+    argusConfig.commands = ["pnpm install"];
+    const [session] = await listSessions(repoRoot);
+    expect(session.setup_pending).toBe(true);
+
+    // Kept across a restart.
+    appState.sessions.clear();
+    const [again] = await listSessions(repoRoot);
+    expect(again.setup_pending).toBe(true);
+
+    clearSessionSetupError(again.id);
+    appState.sessions.clear();
+    expect((await listSessions(repoRoot))[0].setup_pending).toBeFalsy();
   });
 });

@@ -23,6 +23,11 @@ struct SessionStartPane: View {
       .startWorkspace(workspace, session: model.session(sessionId))
       // Shares the height with the space above, which centres the composer.
       Color.clear.frame(maxHeight: .infinity)
+        .overlay(alignment: .top) {
+          if let session = model.session(sessionId), session.setupPending == true {
+            SetupPendingRow(session: session).frame(maxWidth: 520).padding(.top, 18)
+          }
+        }
     }
     .contentShape(.rect)
     .onDrop(of: ComposerDropInbox.types, isTargeted: $dropTargeted, perform: drops.accept)

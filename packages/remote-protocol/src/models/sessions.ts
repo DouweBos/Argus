@@ -52,6 +52,11 @@ export const Session = z.object({
   kind: SessionKind,
   /** Figma frames the session's work should match. */
   design_refs: z.array(DesignRef).nullish(),
+  /**
+   * A worktree made outside Argus and adopted from disk: the project's setup
+   * never ran in it. Cleared once setup runs or the user marks it ready.
+   */
+  setup_pending: z.boolean().optional(),
   /** The tracker issue the session was started from. */
   linked_issue: LinkedIssue.nullish(),
   /**

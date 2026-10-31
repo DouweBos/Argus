@@ -64,7 +64,12 @@ import {
   saveMetadata,
   type SessionMeta,
 } from "./metadata";
-import { defaultArgusConfig, type Session, type SessionStatus } from "./models";
+import {
+  defaultArgusConfig,
+  type Session,
+  type SessionStatus,
+  type SetupConfig,
+} from "./models";
 import { clearSessionProgress, trackDeleteProgress } from "./progress";
 import { loadPersistedRepoRoots, persistRepoRoots } from "./repoRootsStore";
 import { runSetupPipeline } from "./setup";
@@ -298,6 +303,9 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
 
     // Persisted metadata overwrites (it survives restarts).
     const m = getMeta(meta, ws.path);
+    // Made outside Argus: nothing named it, and its setup never ran. An entry
+    // without a name is one an earlier listing adopted the same way.
+    const adopted = !existing && (!m || m.display_name == null);
     if (m) {
       ws.id = m.id;
       ws.display_name = m.display_name;
@@ -308,6 +316,16 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       ws.claude_account_id = m.claude_account_id ?? null;
       ws.linked_issue = m.linked_issue ?? null;
       ws.design_refs = m.design_refs ?? null;
+      ws.setup_pending = m.setup_pending;
+    } else if (existing) {
+      ws.setup_pending = existing.setup_pending;
+    }
+    if (adopted) {
+      ws.display_name = humanizeBranchName(ws.branch);
+      ws.setup_pending = hasSetupSteps(repoRoot) || undefined;
+      telemetryCapture("session_adopted", {
+        setup_pending: Boolean(ws.setup_pending),
+      });
     }
 
     stampAvailability(ws);
@@ -372,6 +390,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
         claude_account_id: w.claude_account_id ?? null,
         linked_issue: w.linked_issue ?? null,
         design_refs: w.design_refs ?? null,
+        setup_pending: w.setup_pending || undefined,
         // Recorded so the row can still be drawn with the files unreachable.
         branch: w.branch,
         kind: w.kind,
@@ -1345,7 +1364,20 @@ export function clearSessionSetupError(id: string): void {
   if (!session) {
     throw `Session not found: ${id}`;
   }
-  if (typeof session.status === "string" || !("error" in session.status)) {
+  const failed =
+    typeof session.status === "object" && "error" in session.status;
+  const pending = Boolean(session.setup_pending) && !failed;
+  if (session.setup_pending) {
+    clearSetupPending(session);
+  }
+  if (pending) {
+    telemetryCapture("session_setup_recovered", {
+      action: "mark_ready",
+      pending: true,
+      success: true,
+    });
+  }
+  if (!failed) {
     return;
   }
 
@@ -1354,6 +1386,7 @@ export function clearSessionSetupError(id: string): void {
   emitHostEvent(`session:status:${id}`, "ready");
   telemetryCapture("session_setup_recovered", {
     action: "mark_ready",
+    pending: false,
     success: true,
   });
 }
@@ -1369,8 +1402,14 @@ export function retrySessionSetup(id: string): void {
   if (!session) {
     throw `Session not found: ${id}`;
   }
-  if (typeof session.status !== "object" || !("error" in session.status)) {
+  const failed =
+    typeof session.status === "object" && "error" in session.status;
+  if (!failed && !session.setup_pending) {
     throw `Session ${id} is not in a failed-setup state`;
+  }
+  const pending = !failed;
+  if (session.setup_pending) {
+    clearSetupPending(session);
   }
 
   session.status = "initializing";
@@ -1395,6 +1434,7 @@ export function retrySessionSetup(id: string): void {
       emitHostEvent(`session:status:${id}`, "ready");
       telemetryCapture("session_setup_recovered", {
         action: "retry",
+        pending,
         success: true,
       });
       reconfigureAutoFetch(
@@ -1418,9 +1458,45 @@ export function retrySessionSetup(id: string): void {
       emitHostEvent(`session:status:${id}`, `error:${errMsg}`);
       telemetryCapture("session_setup_recovered", {
         action: "retry",
+        pending,
         success: false,
       });
     });
+}
+
+/** Whether the project's `.argus.json` gives setup anything to do. */
+function hasSetupSteps(repoRoot: string): boolean {
+  let setup: SetupConfig;
+  try {
+    setup = (loadArgusConfig(repoRoot) ?? defaultArgusConfig()).setup;
+  } catch {
+    return false;
+  }
+
+  return (
+    setup.copy.length > 0 ||
+    setup.symlink.length > 0 ||
+    setup.commands.length > 0
+  );
+}
+
+function clearSetupPending(session: Session): void {
+  session.setup_pending = undefined;
+  appState.sessions.set(session.id, session);
+  emitHostEvent("session:updated", { id: session.id, setup_pending: false });
+  try {
+    const meta = loadMetadata(session.repo_root);
+    const entry = getMeta(meta, session.path);
+    if (entry) {
+      meta.set(normalizeMetaKey(session.path), {
+        ...entry,
+        setup_pending: undefined,
+      });
+      saveMetadata(session.repo_root, meta);
+    }
+  } catch {
+    // Non-fatal: the next listing rewrites the index from memory.
+  }
 }
 
 export function renameSession(id: string, displayName: string): void {

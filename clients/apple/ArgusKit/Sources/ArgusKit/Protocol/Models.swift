@@ -63,6 +63,8 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var linkedIssue: RemoteLinkedIssue?
   /// The Figma frames its work should match. Nil on older computers.
   public var designRefs: [RemoteDesignRef]?
+  /// Made outside Argus, so the project's setup never ran in it. Nil on older computers.
+  public var setupPending: Bool?
 
   public var isUnavailable: Bool { availability == .unavailable }
   /// A scratch pad or automation run: its own folder, no project, no git.
@@ -81,6 +83,7 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
     case volume
     case linkedIssue = "linked_issue"
     case designRefs = "design_refs"
+    case setupPending = "setup_pending"
   }
 }
 

@@ -21,6 +21,7 @@ import { RenameBranchDialog } from "../RenameBranchDialog/RenameBranchDialog";
 import { ReadyToMergeCard } from "../RepoHomeScreen/ReadyToMergeCard";
 import styles from "../homeLayout.module.css";
 import { InitializationStatus } from "./InitializationStatus";
+import { SetupPendingCallout } from "./SetupPendingCallout";
 
 interface SessionHomeScreenProps {
   onResumeHistory: (sessionId: string) => void;
@@ -223,6 +224,10 @@ export function SessionHomeScreen({
               </>
             }
           />
+        )}
+
+        {!setupError && session?.setup_pending && (
+          <SetupPendingCallout sessionId={sessionId} />
         )}
 
         <ActiveAgentsPanel repoRoot={repoRoot} sessionId={sessionId} />

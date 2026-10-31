@@ -317,6 +317,7 @@ export interface EventMap {
     has_explicit_branch: boolean;
     use_existing_branch: boolean;
   };
+  session_adopted: { setup_pending: boolean };
   session_deleted: {
     delete_branch: boolean;
     kind: SessionKind;
@@ -327,6 +328,8 @@ export interface EventMap {
   session_prompt_dispatched: { success: boolean };
   session_setup_recovered: {
     action: "mark_ready" | "retry";
+    /** A worktree made outside Argus whose setup never ran, not a failed one. */
+    pending: boolean;
     success: boolean;
   };
   session_started_from_issue: { source: "linear" };
