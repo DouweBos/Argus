@@ -116,7 +116,7 @@ private struct LastRunCell: View {
   var body: some View {
     if let latest = store.runs(for: automationId).first {
       HStack(spacing: 6) {
-        Badge(label: latest.status.rawValue, tone: latest.status.tone).fixedSize()
+        Badge(label: latest.status.label, tone: latest.status.tone).fixedSize()
         Text(Labels.timeAgo(latest.startedAt)).foregroundStyle(.secondary)
       }
     } else {

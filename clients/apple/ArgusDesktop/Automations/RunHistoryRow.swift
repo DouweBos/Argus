@@ -15,7 +15,7 @@ struct RunHistoryRow: View {
   var body: some View {
     HStack(spacing: 10) {
       Circle().fill(run.unreadReport ? theme.accent : .clear).frame(width: 6, height: 6)
-      Badge(label: run.status.rawValue, tone: run.status.tone)
+      Badge(label: run.status.label, tone: run.status.tone)
       Button(action: open) {
         VStack(alignment: .leading, spacing: 2) {
           Text(AutomationText.timestamp(run.startedAt))

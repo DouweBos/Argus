@@ -6,12 +6,14 @@ import SwiftUI
 /// Automations are the one thing in Argus that happens while nobody is
 /// looking, which is exactly what you want to check from a phone.
 struct AutomationsView: View {
+  @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
   @Environment(AutomationsStore.self) private var store
 
-  /// Enough to see what fired overnight without scrolling past the automations.
-  private static let recentRuns = 8
+  /// Folded so the runs don't push the automations themselves off screen.
+  private static let recentRuns = 3
+  @State private var showingAllRuns = false
 
   var body: some View {
     List {
@@ -23,28 +25,44 @@ struct AutomationsView: View {
         Loading(label: "Reading automations…")
           .listRowBackground(Color.clear)
       } else if !store.automations.isEmpty || !store.runs.isEmpty {
-        let recent = Array(store.runs.prefix(Self.recentRuns))
-        if !recent.isEmpty {
-          Section("Recent runs") {
-            ForEach(recent) { run in
-              NavigationLink(value: Route.run(id: run.id, label: run.automationName)) {
-                RunRow(run: run, showName: true)
-              }
-            }
-          }
-        }
         if !store.automations.isEmpty {
           Section {
             ForEach(store.automations) { automation in
+              let latest = store.runs(for: automation.id).first
               NavigationLink(
                 value: Route.automation(id: automation.id, label: automation.name)
               ) {
-                AutomationRow(automation: automation, lastRun: store.runs(for: automation.id).first?.status)
+                AutomationRow(automation: automation, lastRun: latest?.status, lastRunAt: latest?.startedAt)
+              }
+              .swipeActions(edge: .trailing) {
+                if host.hasControl, latest?.isActive != true {
+                  Button {
+                    Task { await store.runNow(automationId: automation.id) }
+                  } label: {
+                    Label("Run now", systemImage: Icon.play)
+                  }
+                  .tint(theme.accent)
+                  .disabled(store.triggering.contains(automation.id) || host.connection != .ready)
+                }
               }
             }
           } header: {
             // Alone on the screen it would only repeat the title.
-            if !recent.isEmpty { Text("Automations") }
+            if !store.runs.isEmpty { Text("Automations") }
+          }
+        }
+        if !store.runs.isEmpty {
+          Section("Recent runs") {
+            ForEach(showingAllRuns ? store.runs : Array(store.runs.prefix(Self.recentRuns))) { run in
+              NavigationLink(value: Route.run(id: run.id, label: run.automationName)) {
+                RunRow(run: run, showName: true)
+              }
+            }
+            if store.runs.count > Self.recentRuns {
+              Button(showingAllRuns ? "Show fewer" : "See all \(store.runs.count)") {
+                withAnimation { showingAllRuns.toggle() }
+              }
+            }
           }
         }
       }

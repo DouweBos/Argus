@@ -89,8 +89,8 @@ struct RunView: View {
   private func summary(_ run: RemoteAutomationRun) -> some View {
     Card {
       HStack(spacing: 8) {
-        Badge(label: run.status.rawValue, tone: run.status.tone)
-        if run.isQuick { Badge(label: "quick") }
+        Badge(label: run.status.label, tone: run.status.tone)
+        if run.isQuick { Badge(label: "Quick") }
         Spacer(minLength: 6)
       }
       MutedText(run.triggerReason)

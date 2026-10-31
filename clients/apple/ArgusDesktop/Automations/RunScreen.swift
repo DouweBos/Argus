@@ -79,8 +79,8 @@ struct RunScreen: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 16) {
         HStack(spacing: 8) {
-          Badge(label: run.status.rawValue, tone: run.status.tone)
-          if run.isQuick { Badge(label: "quick") }
+          Badge(label: run.status.label, tone: run.status.tone)
+          if run.isQuick { Badge(label: "Quick") }
           Text(run.isQuick ? "\(run.triggerReason) · \(run.automationName)" : run.triggerReason)
             .foregroundStyle(theme.textSecondary)
         }

@@ -61,6 +61,19 @@ public enum AutomationText {
     }
   }
 
+  /// A run's outcome in words. Both wire shapes share the raw values.
+  public static func runLabel(_ rawValue: String) -> String {
+    switch rawValue {
+    case "queued": "Queued"
+    case "running": "Running"
+    case "succeeded": "Succeeded"
+    case "failed": "Failed"
+    case "skipped": "Skipped"
+    case "cancelled": "Cancelled"
+    default: rawValue.capitalized
+    }
+  }
+
   /// What happened to a proposal nobody can act on any more. A withdrawal
   /// names the automation: it was Argus's call, and the reason is its evidence.
   public static func decidedNote(
@@ -113,8 +126,10 @@ public enum AutomationText {
 
 extension RemoteAutomationRunStatus {
   public var tone: Tone { AutomationText.runTone(rawValue) }
+  public var label: String { AutomationText.runLabel(rawValue) }
 }
 
 extension ArgusProtocol.AutomationRunStatus {
   public var tone: Tone { AutomationText.runTone(rawValue) }
+  public var label: String { AutomationText.runLabel(rawValue) }
 }

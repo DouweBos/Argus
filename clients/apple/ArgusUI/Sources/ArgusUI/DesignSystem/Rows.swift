@@ -93,10 +93,13 @@ public struct StoppedAgentRow: View {
 public struct AutomationRow: View {
   let automation: RemoteAutomation
   let lastRun: RemoteAutomationRunStatus?
+  /// When the latest run started, in epoch millis.
+  let lastRunAt: Double?
 
-  public init(automation: RemoteAutomation, lastRun: RemoteAutomationRunStatus? = nil) {
+  public init(automation: RemoteAutomation, lastRun: RemoteAutomationRunStatus? = nil, lastRunAt: Double? = nil) {
     self.automation = automation
     self.lastRun = lastRun
+    self.lastRunAt = lastRunAt
   }
 
   /// The latest run's outcome, as the Mac's last-run badge shows it.
@@ -108,13 +111,19 @@ public struct AutomationRow: View {
 
   public var body: some View {
     HStack(spacing: 10) {
-      StatusDot(tone: Self.dotTone(automation, lastRun: lastRun), pulse: automation.running)
+      StatusDot(
+        tone: Self.dotTone(automation, lastRun: lastRun), pulse: automation.running,
+        accessibilityLabel: lastRun.map { "Last run \($0.label)" })
       VStack(alignment: .leading, spacing: 2) {
         Text(automation.name).lineLimit(1)
         Text("\(Labels.triggerLabel(automation)) · \(state)")
           .font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
       }
-      Spacer(minLength: 0)
+      Spacer(minLength: 6)
+      if let lastRunAt {
+        Text(Labels.timeAgo(lastRunAt))
+          .font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
+      }
     }
   }
 
@@ -144,7 +153,7 @@ public struct RunRow: View {
       }
       VStack(alignment: .leading, spacing: 3) {
         HStack(spacing: 6) {
-          Badge(label: run.status.rawValue, tone: run.status.tone)
+          Badge(label: run.status.label, tone: run.status.tone)
           if showName {
             Text(run.automationName).lineLimit(1)
           }
