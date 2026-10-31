@@ -15,12 +15,7 @@ public struct TranscriptMessageView: View {
     return LinkedProjects.parsePreamble(message.textBlocks.joined(separator: "\n"))
   }
 
-  private var textBlocks: [String] {
-    if let linked { return [linked.rest] }
-    return message.textBlocks.filter {
-      !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-  }
+  private var textBlocks: [String] { message.displayBlocks }
 
   private var isUser: Bool { message.role == .user }
 
