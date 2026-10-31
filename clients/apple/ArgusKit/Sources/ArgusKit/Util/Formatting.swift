@@ -96,20 +96,44 @@ public enum Labels {
     let (minute, hour, dayOfMonth, month, dayOfWeek) =
       (parts[0], parts[1], parts[2], parts[3], parts[4])
 
-    if minute.hasPrefix("*/"), hour == "*", dayOfMonth == "*", month == "*", dayOfWeek == "*" {
-      let every = minute.dropFirst(2)
-      return "every \(every) minutes"
+    let everyDay = dayOfMonth == "*" && month == "*" && dayOfWeek == "*"
+    if minute.hasPrefix("*/"), Int(minute.dropFirst(2)) != nil, hour == "*", everyDay {
+      return "every \(minute.dropFirst(2)) minutes"
     }
-    guard let hourValue = Int(hour), let minuteValue = Int(minute),
-      dayOfMonth == "*", month == "*"
-    else { return cron }
+    guard let minuteValue = Int(minute), (0..<60).contains(minuteValue), month == "*" else { return cron }
+    if everyDay {
+      if hour == "*" { return "hourly at :\(String(format: "%02d", minuteValue))" }
+      if hour.hasPrefix("*/"), let step = Int(hour.dropFirst(2)), minuteValue == 0 { return "every \(step) hours" }
+    }
+    guard let hourValue = Int(hour), (0..<24).contains(hourValue) else { return cron }
     let time = String(format: "%02d:%02d", hourValue, minuteValue)
 
-    switch dayOfWeek {
-    case "*": return "\(time) daily"
-    case "1-5": return "\(time) weekdays"
-    default: return cron
+    if dayOfWeek == "*" {
+      if dayOfMonth == "*" { return "\(time) daily" }
+      guard let day = Int(dayOfMonth), (1...31).contains(day) else { return cron }
+      return "\(time) monthly on the \(ordinal(day))"
     }
+    guard dayOfMonth == "*" else { return cron }
+    switch dayOfWeek {
+    case "1-5": return "\(time) weekdays"
+    case "0,6", "6,0", "6-7": return "\(time) weekends"
+    default:
+      let days = dayOfWeek.split(separator: ",").map { Int($0) }
+      guard !days.isEmpty, days.allSatisfy({ $0.map((0...7).contains) == true }) else { return cron }
+      let names = days.compactMap { $0 }.map { weekdayNames[$0 % 7] }
+      return names.count == 1 ? "\(time) \(names[0])s" : "\(time) \(names.map { $0.prefix(3) }.joined(separator: ", "))"
+    }
+  }
+
+  private static let weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+  private static func ordinal(_ day: Int) -> String {
+    let suffix =
+      switch day {
+      case 11, 12, 13: "th"
+      default: ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][day % 10]
+      }
+    return "\(day)\(suffix)"
   }
 
   public static func triggerLabel(_ automation: RemoteAutomation) -> String {
