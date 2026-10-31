@@ -47,7 +47,11 @@ final class CodeSession {
   private(set) var fileListLoading = false
   @ObservationIgnored private var fileListStale = true
   @ObservationIgnored private(set) var matcher = FuzzyFileMatcher(paths: [])
-  let search: CodeSearchModel
+  let search: FileSearchStore
+  /// The Search navigator's fields, kept while it's hidden.
+  var searchForm = CodeSearchForm()
+  /// Bumped to focus the search field.
+  private(set) var searchFocusRequest = 0
   @ObservationIgnored lazy var editorConfigs = EditorConfigCache { [weak self] path in
     await self?.readText(path)
   }
@@ -60,12 +64,27 @@ final class CodeSession {
     self.sessionId = sessionId
     self.store = store
     tabs = CodeTabList.restored(sessionId: sessionId)
-    search = CodeSearchModel(sessionId: sessionId)
-    search.session = self
+    search = FileSearchStore(transport: store, sessionId: sessionId)
+    search.debounce = .milliseconds(300)
+    search.onFinished = { query, count, truncated in
+      MacTelemetry.capture(
+        .editorSearchRun(
+          scope: .worktree, regex: query.regex, resultBucket: MacTelemetryEvent.countBucket(count),
+          truncated: truncated))
+    }
     quickOpen.code = self
   }
 
   var model: DesktopModel? { store?.model }
+
+  func focusSearch() { searchFocusRequest += 1 }
+
+  /// Find References' locations in the Search navigator, under the symbol's name.
+  func showReferences(_ matches: [ArgusProtocol.CodeSearchMatch], title: String) {
+    searchForm.text = title
+    searchForm.regex = false
+    search.show(matches, title: title)
+  }
 
   // MARK: Route
 
@@ -128,7 +147,7 @@ final class CodeSession {
   /// The session was deleted.
   func dispose() {
     for path in Array(files.keys) { discard(path) }
-    search.cancel()
+    Task { [search] in await search.cancel() }
     gitRefresh?.cancel()
     if subscribed {
       subscribed = false

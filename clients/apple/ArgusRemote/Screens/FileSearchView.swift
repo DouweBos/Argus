@@ -50,9 +50,7 @@ struct FileSearchView: View {
     // Debounced: a new keystroke cancels the wait, and `run` cancels the last search.
     .task(id: query) {
       guard host.hasControl, let store else { return }
-      try? await Task.sleep(for: .milliseconds(350))
-      guard !Task.isCancelled else { return }
-      await store.run(query)
+      store.schedule(query)
     }
     .onDisappear {
       guard let store else { return }

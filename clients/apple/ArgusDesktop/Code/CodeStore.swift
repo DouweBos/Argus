@@ -30,6 +30,9 @@ final class CodeStore {
   /// Extra status-bar items after the built-in ones (language server state, problems).
   @ObservationIgnored var statusBarAccessory: (@MainActor (CodeSession, CodeFile) -> AnyView)?
   @ObservationIgnored private var stopObserving: (() -> Void)?
+  /// Running worktree searches, by search id; see `startFileSearch`.
+  @ObservationIgnored var searchObservers:
+    [String: (session: String, deliver: @MainActor (ArgusProtocol.CodeSearchEvent) -> Void)] = [:]
   @ObservationIgnored lazy var formatting = CodeFormatting(
     sink: self, mode: { AppPreferences.shared.editorFormatOnSave },
     languageServer: { [weak self] session, path, document in
@@ -115,7 +118,7 @@ final class CodeStore {
     } else if let searchId = channel.dropping(prefix: "code:search:") {
       guard let payload, let event = try? ProtocolCodec.convert(payload, to: ArgusProtocol.CodeSearchEvent.self)
       else { return }
-      sessions.values.first { $0.search.searchId == searchId }?.search.receive(event)
+      searchObservers[searchId]?.deliver(event)
     } else if let id = channel.dropping(prefix: "session:branch-changed:") ?? channel.dropping(prefix: "session:diff-changed:") {
       sessions[id]?.gitStatusChanged()
     } else if channel == "git_status_changed" {
@@ -136,6 +139,39 @@ final class CodeStore {
     guard let session = sessions.removeValue(forKey: id) else { return }
     session.dispose()
     CodeTabList.forget(sessionId: id)
+  }
+}
+
+/// The Mac searches through `code_search`, which takes include/exclude globs the
+/// gateway's `files.search` doesn't; batches arrive as `code:search:<id>` broadcasts.
+extension CodeStore: FileSearchTransport {
+  func startFileSearch(
+    sessionId: String, searchId: String, query: FileSearchQuery,
+    deliver: @escaping @MainActor (ArgusProtocol.CodeSearchEvent) -> Void
+  ) async throws {
+    searchObservers[searchId] = (sessionId, deliver)
+    // Subscribe first: the first batch can arrive before the response.
+    await subscribe("code-search:\(searchId)", session: sessionId, on: true)
+    let params = ArgusProtocol.CommandsTypes.CodeSearchParams(
+      query: query.text, regex: query.regex, caseSensitive: query.caseSensitive, wholeWord: query.wholeWord,
+      include: query.include, exclude: query.exclude, maxResults: query.maxResults, id: sessionId,
+      searchId: searchId)
+    do {
+      _ = try await request(ArgusProtocol.Commands.CodeSearch.self, params, session: sessionId)
+    } catch {
+      endFileSearch(searchId: searchId)
+      throw error
+    }
+  }
+
+  func cancelFileSearch(sessionId: String, searchId: String) async {
+    endFileSearch(searchId: searchId)
+    _ = try? await request(ArgusProtocol.Commands.CodeSearchCancel.self, .init(searchId: searchId), session: sessionId)
+  }
+
+  func endFileSearch(searchId: String) {
+    guard let sessionId = searchObservers.removeValue(forKey: searchId)?.session else { return }
+    Task { await self.subscribe("code-search:\(searchId)", session: sessionId, on: false) }
   }
 }
 

@@ -17,7 +17,7 @@ struct CodeNavigator: View {
       switch code.navigatorMode {
       case .changes: CodeChangesList(code: code, activePath: activePath)
       case .files: CodeFilesTree(code: code, activePath: activePath)
-      case .search: CodeSearchView(search: code.search, code: code)
+      case .search: CodeSearchView(code: code)
       }
     }
   }

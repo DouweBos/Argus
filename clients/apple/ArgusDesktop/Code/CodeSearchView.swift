@@ -6,10 +6,10 @@ import SwiftUI
 /// a click opens the file at the line.
 struct CodeSearchView: View {
   @Environment(\.theme) private var theme
-  @Bindable var search: CodeSearchModel
-  let code: CodeSession
+  @Bindable var code: CodeSession
   @FocusState private var focused: Bool
-  @State private var debounce: Task<Void, Never>?
+
+  private var search: FileSearchStore { code.search }
 
   var body: some View {
     VStack(spacing: 0) {
@@ -17,35 +17,33 @@ struct CodeSearchView: View {
       Rectangle().fill(theme.border).frame(height: 1)
       results
     }
-    .onChange(of: search.focusRequest, initial: true) { focused = true }
-    .onChange(of: SearchOptions(search)) { _, _ in
-      debounce?.cancel()
-      debounce = Task {
-        try? await Task.sleep(for: .milliseconds(300))
-        if !Task.isCancelled { search.run() }
-      }
-    }
+    .onChange(of: code.searchFocusRequest, initial: true) { focused = true }
+    .onChange(of: code.searchForm.query) { _, query in search.schedule(query) }
+  }
+
+  private func run() {
+    Task { await search.run(code.searchForm.query) }
   }
 
   private var form: some View {
     VStack(spacing: 6) {
       HStack(spacing: 4) {
-        TextField("Search the worktree", text: $search.query)
+        TextField("Search the worktree", text: $code.searchForm.text)
           .quietField()
           .focused($focused)
-          .onSubmit(search.run)
+          .onSubmit(run)
           .accessibilityLabel("Search query")
-        toggle("Aa", isOn: $search.isCaseSensitive, help: "Match case")
-        toggle("ab", isOn: $search.isWholeWord, help: "Whole word", underline: true)
-        toggle(".*", isOn: $search.isRegex, help: "Regular expression")
+        toggle("Aa", isOn: $code.searchForm.caseSensitive, help: "Match case")
+        toggle("ab", isOn: $code.searchForm.wholeWord, help: "Whole word", underline: true)
+        toggle(".*", isOn: $code.searchForm.regex, help: "Regular expression")
       }
-      DisclosureGroup("Files to include or exclude", isExpanded: $search.showsFilters) {
+      DisclosureGroup("Files to include or exclude", isExpanded: $code.searchForm.showsFilters) {
         VStack(spacing: 4) {
-          TextField("Include, e.g. src/**, *.swift", text: $search.include)
-          TextField("Exclude, e.g. **/Generated/**", text: $search.exclude)
+          TextField("Include, e.g. src/**, *.swift", text: $code.searchForm.include)
+          TextField("Exclude, e.g. **/Generated/**", text: $code.searchForm.exclude)
         }
         .quietField()
-        .onSubmit(search.run)
+        .onSubmit(run)
       }
       .font(.scaled(size: 11))
       summary
@@ -59,24 +57,24 @@ struct CodeSearchView: View {
       if search.isRunning { ProgressView().controlSize(.mini) }
       if let error = search.error {
         Text(error).foregroundStyle(theme.error).lineLimit(2)
-      } else if !search.query.isEmpty, !search.isRunning || search.matchCount > 0 {
+      } else if !code.searchForm.text.isEmpty, !search.isRunning || search.matchCount > 0 {
         Text(countLabel).foregroundStyle(theme.textSecondary)
       }
       Spacer()
-      if search.isRunning { Button("Stop", action: search.cancel).buttonStyle(.accentLink) }
+      if search.isRunning { Button("Stop") { Task { await search.cancel() } }.buttonStyle(.accentLink) }
     }
     .font(.scaled(size: 11))
   }
 
   private var countLabel: String {
-    let files = search.results.count
+    let files = search.groups.count
     let base = "\(search.matchCount) result\(search.matchCount == 1 ? "" : "s") in \(files) file\(files == 1 ? "" : "s")"
-    return search.truncated ? base + " (first \(CodeSearchModel.maxResults) shown)" : base
+    return search.truncated ? base + " (first \(FileSearchStore.maxResults) shown)" : base
   }
 
   private var results: some View {
     List {
-      ForEach(search.results) { file in
+      ForEach(search.groups) { file in
         Section {
           ForEach(Array(file.matches.enumerated()), id: \.offset) { _, match in
             CodeSearchMatchRow(match: match)
@@ -112,18 +110,21 @@ struct CodeSearchView: View {
   }
 }
 
-/// What a change re-runs the search on.
-private struct SearchOptions: Equatable {
-  let query: String
-  let regex: Bool
-  let caseSensitive: Bool
-  let wholeWord: Bool
+/// The Search navigator's fields; any change re-runs the search once typing settles.
+struct CodeSearchForm {
+  var text = ""
+  var regex = false
+  var caseSensitive = false
+  var wholeWord = false
+  /// Comma-separated globs.
+  var include = ""
+  var exclude = ""
+  var showsFilters = false
 
-  @MainActor init(_ search: CodeSearchModel) {
-    query = search.query
-    regex = search.isRegex
-    caseSensitive = search.isCaseSensitive
-    wholeWord = search.isWholeWord
+  var query: FileSearchQuery {
+    FileSearchQuery(
+      text: text, regex: regex, caseSensitive: caseSensitive, wholeWord: wholeWord,
+      include: FileSearchQuery.globs(include), exclude: FileSearchQuery.globs(exclude))
   }
 }
 

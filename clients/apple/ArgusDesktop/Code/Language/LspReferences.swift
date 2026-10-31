@@ -19,7 +19,7 @@ enum LspReferences {
       if let open = code.files[path]?.document { return open.text }
       return await code.readText(path)
     }
-    code.search.show(matches, title: name)
+    code.showReferences(matches, title: name)
     code.navigatorVisible = true
     code.navigatorMode = .search
   }

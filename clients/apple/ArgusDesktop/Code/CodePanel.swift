@@ -60,7 +60,7 @@ struct CodePanel: View {
       Button("Find in Files") {
         code.navigatorVisible = true
         code.navigatorMode = .search
-        code.search.focus()
+        code.focusSearch()
       }
       .keyboardShortcut("f", modifiers: [.command, .shift])
     }

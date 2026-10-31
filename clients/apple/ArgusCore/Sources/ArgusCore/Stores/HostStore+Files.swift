@@ -62,15 +62,26 @@ public struct FileSearchQuery: Equatable, Sendable {
   public var caseSensitive: Bool
   public var wholeWord: Bool
   public var maxResults: Int?
+  /// Globs the search is limited to / skips. The gateway's `files.search` takes neither.
+  public var include: [String]?
+  public var exclude: [String]?
 
   public init(
     text: String, regex: Bool = false, caseSensitive: Bool = false, wholeWord: Bool = false,
-    maxResults: Int? = nil
+    maxResults: Int? = nil, include: [String]? = nil, exclude: [String]? = nil
   ) {
     self.text = text
     self.regex = regex
     self.caseSensitive = caseSensitive
     self.wholeWord = wholeWord
     self.maxResults = maxResults
+    self.include = include
+    self.exclude = exclude
+  }
+
+  /// Comma-separated globs as a list; nil when there are none.
+  public static func globs(_ text: String) -> [String]? {
+    let globs = text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+    return globs.isEmpty ? nil : globs
   }
 }

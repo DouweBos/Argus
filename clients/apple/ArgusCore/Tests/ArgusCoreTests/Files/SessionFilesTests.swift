@@ -87,6 +87,42 @@ struct HostStoreFilesTests {
     #expect(search.phase == .running)
   }
 
+  @Test func scheduleDebouncesToTheLastQuery() async throws {
+    let backend = RecordingBackend(kind: .gateway)
+    backend.reply("files.search", #"{"search_id":"x"}"#)
+    let store = HostStore()
+    await store.attach(backend)
+    let search = FileSearchStore(host: store, sessionId: "s1")
+    search.debounce = .milliseconds(20)
+
+    search.schedule(FileSearchQuery(text: "f"))
+    search.schedule(FileSearchQuery(text: "fo"))
+    #expect(await eventually { !backend.calls("files.search").isEmpty })
+    try await Task.sleep(for: .milliseconds(40))
+    let calls = backend.calls("files.search")
+    #expect(calls.count == 1)
+    guard case .object(let params)? = calls.first?.params else { return }
+    #expect(params["query"] == .string("fo"))
+  }
+
+  @Test func shownReferencesSurviveTheirOwnTitleBeingScheduled() async throws {
+    let backend = RecordingBackend(kind: .gateway)
+    let store = HostStore()
+    await store.attach(backend)
+    let search = FileSearchStore(host: store, sessionId: "s1")
+    search.debounce = .milliseconds(1)
+    let event = try JSONDecoder().decode(
+      ArgusProtocol.CodeSearchEvent.self, from: Data(Self.matches("r", ["a.ts", "a.ts"]).utf8))
+    let batch = try #require({ if case .matches(let b) = event { b } else { nil } }())
+
+    search.show(batch.matches, title: "foo")
+    search.schedule(FileSearchQuery(text: "foo"))
+    try await Task.sleep(for: .milliseconds(30))
+    #expect(backend.calls("files.search").isEmpty)
+    #expect(search.phase == .done(count: 2, truncated: false))
+    #expect(search.groups.map(\.path) == ["a.ts"])
+  }
+
   nonisolated static func searchId(_ call: RecordingBackend.Call) -> String? {
     guard case .object(let params) = call.params, case .string(let id) = params["search_id"] else {
       return nil
