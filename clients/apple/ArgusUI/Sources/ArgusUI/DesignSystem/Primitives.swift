@@ -4,6 +4,8 @@ public enum Layout {
   /// Where a full-width control stops growing. Past this a button is just a
   /// long strip of colour, which on an iPad is most of the screen.
   public static let maxControlWidth: CGFloat = 420
+  /// Where a screen's column stops growing on a wide iPad, as the Mac's Inbox.
+  public static let maxReadingWidth: CGFloat = 820
 }
 
 // MARK: - Typography
@@ -81,6 +83,9 @@ public struct MonoText: View {
 /// A scrolling screen body with the standard padding and background.
 public struct Screen<Content: View>: View {
   @Environment(\.theme) private var theme
+  #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+  #endif
   var scroll = true
   @ViewBuilder var content: Content
 
@@ -93,18 +98,31 @@ public struct Screen<Content: View>: View {
     Group {
       if scroll {
         ScrollView {
-          VStack(alignment: .leading, spacing: theme.space) { content }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(theme.space)
+          column
         }
         .scrollDismissesKeyboard(.interactively)
       } else {
-        VStack(alignment: .leading, spacing: theme.space) { content }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(theme.space)
+        column
       }
     }
     .background(theme.bg.ignoresSafeArea())
+  }
+
+  private var column: some View {
+    VStack(alignment: .leading, spacing: theme.space) { content }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(theme.space)
+      .frame(maxWidth: maxWidth)
+      .frame(maxWidth: .infinity)
+  }
+
+  /// An iPad detail column is ~1000pt; cards and forms that wide stop reading as one.
+  private var maxWidth: CGFloat? {
+    #if os(iOS)
+      sizeClass == .regular ? Layout.maxReadingWidth : nil
+    #else
+      nil
+    #endif
   }
 }
 
