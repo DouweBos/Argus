@@ -3,10 +3,9 @@
   import SwiftUI
   import UniformTypeIdentifiers
 
-  /// Imperative handle on the composer's text view, for the edits SwiftUI
-  /// can't express: undoable replacements, caret placement and focus.
+  /// The Mac composer's `ComposerEditor`, over its `NSTextView`.
   @MainActor
-  final class ComposerController {
+  final class ComposerController: ComposerEditor {
     private weak var textView: ComposerTextView?
     fileprivate var wantsFocus = false
 
@@ -44,12 +43,6 @@
     }
 
     var caret: Int { textView?.selectedRange().location ?? 0 }
-  }
-
-  /// What arrived by paste or drop, for the parent to attach or mention.
-  enum ComposerDrop {
-    case images([PendingImage], pasted: Bool)
-    case files([URL])
   }
 
   /// The macOS composer: an `NSTextView` that grows with its text, draws its

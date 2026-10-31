@@ -82,7 +82,11 @@ public struct ChatInputView: View {
 
   public var body: some View {
     #if os(macOS)
-      MacChatInputView(agentId: agentId, sessionId: sessionId, onAffordance: onAffordance, starter: starter)
+      // A model per agent: switching agents starts a fresh composer over that agent's draft.
+      MacChatInputView(
+        host: host, agentId: agentId, sessionId: sessionId, onAffordance: onAffordance, starter: starter
+      )
+      .id(agentId)
     #else
       phoneBody
     #endif

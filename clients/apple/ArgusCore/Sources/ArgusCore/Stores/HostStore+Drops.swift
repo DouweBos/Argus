@@ -11,6 +11,11 @@ extension HostStore {
     public var paths: [String]
     /// One message per file that couldn't be made available to the agent.
     public var errors: [String]
+
+    public init(paths: [String], errors: [String]) {
+      self.paths = paths
+      self.errors = errors
+    }
   }
 
   /// Files dropped on the chat, as paths the agent can open: their own paths
