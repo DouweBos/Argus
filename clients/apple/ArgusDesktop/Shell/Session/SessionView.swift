@@ -83,13 +83,9 @@ struct SessionView: View {
   }
 
   /// The session's name; the branch only as a subtitle, and only when it adds something.
-  static func title(_ session: RemoteSession) -> String {
-    session.displayName.flatMap { $0.isEmpty ? nil : $0 } ?? session.branch
-  }
+  static func title(_ session: RemoteSession) -> String { SessionActivity.title(session) }
 
-  static func subtitle(_ session: RemoteSession) -> String {
-    title(session) == session.branch ? "" : session.branch
-  }
+  static func subtitle(_ session: RemoteSession) -> String { SessionActivity.subtitle(session) ?? "" }
 
   private var agentsPane: some View {
     VStack(spacing: 0) {
@@ -259,7 +255,7 @@ struct AgentTab: View {
               .help("Spawned by another agent")
               .accessibilityLabel("Subagent")
           }
-          Text(agent.title ?? "Agent").lineLimit(1)
+          Text(Labels.agentName(agent)).lineLimit(1)
           if children > 0 {
             Badge(label: "\(children)", tone: .accent)
               .help("\(children) subagent\(children == 1 ? "" : "s")")

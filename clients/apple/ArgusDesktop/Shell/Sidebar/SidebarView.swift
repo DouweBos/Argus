@@ -86,7 +86,7 @@ struct SidebarView: View {
         SidebarRow(selected: model.route.sessionId == pad.id) {
           model.open(session: pad.id)
         } content: {
-          SessionRow(session: pad, agents: agents(in: pad))
+          SidebarSessionRow(session: pad, agents: agents(in: pad))
         }
         .contextMenu {
           Button("Open in New Tab") {

@@ -24,7 +24,7 @@ struct ProjectSidebarSection: View {
         SidebarRow(selected: model.route.sessionId == session.id, enabled: !session.isUnavailable) {
           model.open(session: session.id)
         } content: {
-          SessionRow(session: session, agents: agents(in: session))
+          SidebarSessionRow(session: session, agents: agents(in: session))
         }
         .contextMenu { sessionMenu(session) }
       }
