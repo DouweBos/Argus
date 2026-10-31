@@ -1,16 +1,17 @@
 import ArgusUI
 import SwiftUI
 
-/// Every pull request the computer thinks is yours to look at — authored by
-/// you, assigned to you, or waiting on your review.
+/// Every pull request the computer thinks is yours to look at, bucketed as the
+/// Mac app does: what needs you first, the quiet ones after.
 struct PullRequestsView: View {
   @Environment(HostStore.self) private var host
   @Environment(PullRequestsStore.self) private var store
 
   var body: some View {
+    let groups = PullRequestBucket.group(store.pullRequests)
     List {
       if let error = store.error {
-        Banner(text: error, tone: .danger).listRowBackground(Color.clear)
+        Banner(text: PullRequestLabels.explain(error), tone: .danger).listRowBackground(Color.clear)
       }
 
       if !store.loaded {
@@ -23,13 +24,23 @@ struct PullRequestsView: View {
         )
         .listRowBackground(Color.clear)
       } else {
-        ForEach(store.pullRequests) { pullRequest in
-          NavigationLink(
-            value: Route.pullRequest(
-              repo: pullRequest.repo, number: pullRequest.number,
-              label: pullRequest.title)
-          ) {
-            PullRequestRow(pullRequest: pullRequest)
+        if !groups.contains(where: { $0.bucket.needsAttention }) {
+          Label("Nothing waiting on you right now.", systemImage: Icon.check)
+            .foregroundStyle(.secondary)
+        }
+        ForEach(groups, id: \.bucket) { group in
+          Section {
+            ForEach(group.prs) { pullRequest in
+              NavigationLink(
+                value: Route.pullRequest(
+                  repo: pullRequest.repo, number: pullRequest.number,
+                  label: pullRequest.title)
+              ) {
+                PullRequestRow(pullRequest: pullRequest)
+              }
+            }
+          } header: {
+            Text("\(group.bucket.title) · \(group.prs.count)")
           }
         }
       }
@@ -42,9 +53,8 @@ struct PullRequestsView: View {
   }
 }
 
-/// One PR in the list: what it is, where it's going, and why you're seeing it.
+/// One PR in the list: what it is, its review state, and why you're seeing it.
 struct PullRequestRow: View {
-  @Environment(\.theme) private var theme
   let pullRequest: RemotePullRequest
 
   var body: some View {
@@ -53,34 +63,22 @@ struct PullRequestRow: View {
         BodyText(pullRequest.title, lineLimit: 2)
         Spacer(minLength: 4)
         if pullRequest.isDraft {
-          Badge(label: "draft", tone: .muted)
+          Badge(label: "Draft", tone: .muted)
         }
-        if let decision = pullRequest.reviewDecision, let tone = reviewTone(decision) {
-          Badge(label: reviewLabel(decision), tone: tone)
+        if let decision = pullRequest.reviewDecision, let review = PullRequestLabels.review(decision) {
+          Badge(label: review.label, tone: review.tone)
         }
       }
-      MutedText("\(pullRequest.repo) #\(pullRequest.number)", lineLimit: 1)
+      MutedText(
+        "\(pullRequest.repo) #\(pullRequest.number) · updated \(PullRequestLabels.relative(pullRequest.updatedAt))",
+        lineLimit: 1)
       if !pullRequest.reasons.isEmpty {
-        MutedText(pullRequest.reasons.joined(separator: " · "), lineLimit: 1)
+        HStack(spacing: 4) {
+          ForEach(pullRequest.reasons, id: \.self) { reason in
+            Badge(label: PullRequestLabels.reason(reason), tone: PullRequestLabels.reasonTone(reason))
+          }
+        }
       }
-    }
-  }
-
-  private func reviewLabel(_ decision: String) -> String {
-    switch decision {
-    case "APPROVED": "approved"
-    case "CHANGES_REQUESTED": "changes"
-    case "REVIEW_REQUIRED": "review"
-    default: decision.lowercased()
-    }
-  }
-
-  private func reviewTone(_ decision: String) -> Tone? {
-    switch decision {
-    case "APPROVED": .success
-    case "CHANGES_REQUESTED": .danger
-    case "REVIEW_REQUIRED": .warning
-    default: nil
     }
   }
 }

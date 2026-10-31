@@ -23,7 +23,7 @@ struct PullRequestView: View {
   var body: some View {
     Screen {
       if let error = store.error {
-        Banner(text: error, tone: .danger)
+        Banner(text: PullRequestLabels.explain(error), tone: .danger)
       }
       if let detail {
         header(detail)
