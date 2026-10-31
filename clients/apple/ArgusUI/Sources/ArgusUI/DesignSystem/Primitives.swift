@@ -481,11 +481,14 @@ public struct StatusDot: View {
   @Environment(\.theme) private var theme
   var tone: Tone
   var pulse = false
+  /// What the colour means, for VoiceOver; without one the dot is decoration.
+  var label: String?
   @State private var faded = false
 
-  public init(tone: Tone, pulse: Bool = false) {
+  public init(tone: Tone, pulse: Bool = false, accessibilityLabel label: String? = nil) {
     self.tone = tone
     self.pulse = pulse
+    self.label = label
   }
 
   public var body: some View {
@@ -498,6 +501,8 @@ public struct StatusDot: View {
         $0.opacity(pulse && faded ? 0.3 : 1)
       }
       .onAppear { if pulse { faded = true } }
+      .accessibilityHidden(label == nil)
+      .accessibilityLabel(label ?? "")
   }
 }
 

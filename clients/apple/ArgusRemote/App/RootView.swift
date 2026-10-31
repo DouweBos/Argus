@@ -166,6 +166,13 @@ struct RootView: View {
     .navigationSplitViewStyle(.balanced)
   }
 
+  private func statusDot(_ agent: RemoteAgentStatus) -> some View {
+    StatusDot(
+      tone: agent.awaiting != nil ? .warning : agent.status.tone,
+      pulse: agent.awaiting == nil && agent.status == .running,
+      accessibilityLabel: Labels.awaitingLabel(agent) ?? Labels.statusLabel(agent.status))
+  }
+
   private var sidebar: some View {
     @Bindable var router = router
     return List(selection: selection) {
@@ -198,9 +205,7 @@ struct RootView: View {
                     Label {
                       Text(Labels.agentName(agent)).lineLimit(1)
                     } icon: {
-                      StatusDot(
-                        tone: agent.awaiting != nil ? .warning : agent.status.tone,
-                        pulse: agent.awaiting == nil && agent.status == .running)
+                      statusDot(agent)
                     }
                     .tag(
                       SidebarItem.agent(
