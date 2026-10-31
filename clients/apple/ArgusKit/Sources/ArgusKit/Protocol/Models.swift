@@ -193,6 +193,8 @@ public struct RemoteStoppedAgent: Codable, Hashable, Sendable, Identifiable {
   public var endedAt: Double
   /// Another app the chat was read in from (`claude_code`); nil when it ran here.
   public var importedFrom: String?
+  /// The runner it ran on, so a resume picks the same one. Nil from older hosts.
+  public var runnerId: String?
 
   public var id: String { historyId }
   public var isImported: Bool { importedFrom != nil }
@@ -205,6 +207,7 @@ public struct RemoteStoppedAgent: Codable, Hashable, Sendable, Identifiable {
     case startedAt = "started_at"
     case endedAt = "ended_at"
     case importedFrom = "imported_from"
+    case runnerId = "runner_id"
   }
 }
 

@@ -120,6 +120,10 @@ export const REMOTE_METHODS = {
   "agents.stopped_transcript": "monitor",
   /** Resolve an image inside a stopped agent's saved transcript. */
   "agents.stopped_image": "monitor",
+  /** Search the saved chats' titles and message text. */
+  "agents.history_search": "monitor",
+  /** Delete a saved chat from the project's history. */
+  "agents.history_delete": "control",
   /** Approve/deny a permission prompt the gateway forwarded — approving a
    * tool call runs code on the host, so this needs control, not monitor. */
   "permission.respond": "control",

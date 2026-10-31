@@ -2,20 +2,8 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// A session's past chats, imported ones included, as the host lists them by branch.
 @MainActor
 enum SessionChats {
-  static func load(_ session: RemoteSession, store: HostStore) async -> [ArgusProtocol.ChatHistoryEntry]? {
-    guard let backend = store.backend else { return nil }
-    let entries = try? await backend.request(
-      ArgusProtocol.Commands.ListChatHistory.self, .init(repoRoot: session.repoRoot))
-    // History is written while an agent runs; a live one is its tab, not a past chat, as on the desktop.
-    let live = Set((store.agentsByRepo[session.repoRoot] ?? []).map(\.agentId))
-    return entries?
-      .filter { $0.sessionBranch == session.branch && !($0.agentId.map(live.contains) ?? false) }
-      .sorted { $0.endedAt > $1.endedAt }
-  }
-
   /// Reloads as agents come and go, since a stopped agent's chat lands here.
   static func reloadKey(_ session: RemoteSession, store: HostStore) -> String {
     "\(session.repoRoot)|\(session.branch)|\(store.agentsByRepo[session.repoRoot]?.count ?? 0)"
@@ -33,25 +21,18 @@ struct RecentChatsSheet: View {
   /// Called after a delete, so the card's count follows.
   let changed: () -> Void
 
-  @State private var entries: [ArgusProtocol.ChatHistoryEntry] = []
+  @State private var entries: [RemoteStoppedAgent] = []
   @State private var loaded = false
   @State private var query = ""
   /// The host's matches for `query`, titles and message text, by history id.
-  @State private var hits: (query: String, matches: [String: [ArgusProtocol.ChatHistoryMessageMatch]])?
+  @State private var hits: (query: String, matches: [String: [ChatHistoryMatch]])?
   @State private var searched = false
   @State private var viewing: ViewedChat?
   @State private var confirmingClear = false
 
   private var needle: String { query.trimmingCharacters(in: .whitespaces) }
 
-  private var shown: [ArgusProtocol.ChatHistoryEntry] {
-    guard !needle.isEmpty else { return entries }
-    // Titles narrow at once; message hits follow when the host answers.
-    guard let hits, hits.query == needle else {
-      return entries.filter { $0.title.localizedCaseInsensitiveContains(needle) }
-    }
-    return entries.filter { hits.matches[$0.id] != nil }
-  }
+  private var shown: [RemoteStoppedAgent] { HostStore.filterChats(entries, query: needle, hits: hits) }
 
   var body: some View {
     VStack(spacing: 0) {
@@ -124,47 +105,39 @@ struct RecentChatsSheet: View {
   }
 
   private func load() async {
-    entries = await SessionChats.load(session, store: store) ?? entries
+    entries = await store.chatHistory(for: session) ?? entries
     loaded = true
   }
 
   /// The whole repo's history, searched on the host; the session's entries pick out their own.
   private func search(_ needle: String) async {
-    guard !needle.isEmpty, let backend = store.backend else { return }
+    guard !needle.isEmpty else { return }
     try? await Task.sleep(for: .milliseconds(120))
     guard !Task.isCancelled,
-      let results = try? await backend.request(
-        ArgusProtocol.Commands.SearchChatHistory.self, .init(repoRoot: session.repoRoot, query: needle)),
+      let matches = await store.searchChatHistory(repoRoot: session.repoRoot, query: needle),
       !Task.isCancelled
     else { return }
-    hits = (needle, Dictionary(results.map { ($0.entry.id, $0.messageMatches) }, uniquingKeysWith: { a, _ in a }))
+    hits = (needle, matches)
   }
 
   /// Paged from the host like a stopped agent's transcript, so a long chat
   /// opens at its newest page instead of decoding the whole file.
-  private func view(_ entry: ArgusProtocol.ChatHistoryEntry) {
-    viewing = ViewedChat(entry: entry, key: HostStore.stoppedKey(repoRoot: session.repoRoot, historyId: entry.id))
+  private func view(_ entry: RemoteStoppedAgent) {
+    viewing = ViewedChat(
+      entry: entry, key: HostStore.stoppedKey(repoRoot: session.repoRoot, historyId: entry.historyId))
     MacTelemetry.capture(.chatHistoryUsed(action: .view))
   }
 
-  /// A new agent on the chat's Claude session and runner; the host seeds its transcript.
-  private func resume(_ entry: ArgusProtocol.ChatHistoryEntry) async {
-    guard
-      let agent = await store.spawnAgent(
-        sessionId: session.id, resumeSessionId: entry.sessionId, runnerId: entry.runnerId)
-    else { return }
+  private func resume(_ entry: RemoteStoppedAgent) async {
+    guard let agent = await store.resumeChat(entry, sessionId: session.id) else { return }
     dismiss()
     // Open it straight away, as the desktop does; the transcript fills in.
     model.open(spawned: agent.agentId, session: session.id)
     MacTelemetry.capture(.chatHistoryUsed(action: .resume))
   }
 
-  private func delete(_ doomed: [ArgusProtocol.ChatHistoryEntry]) async {
-    guard let backend = store.backend else { return }
-    for entry in doomed {
-      _ = try? await backend.request(
-        ArgusProtocol.Commands.DeleteChatHistory.self, .init(repoRoot: session.repoRoot, historyId: entry.id))
-    }
+  private func delete(_ doomed: [RemoteStoppedAgent]) async {
+    await store.deleteChatHistory(repoRoot: session.repoRoot, historyIds: doomed.map(\.historyId))
     await load()
     changed()
     MacTelemetry.capture(.chatHistoryUsed(action: doomed.count > 1 ? .clear : .delete))
@@ -173,15 +146,15 @@ struct RecentChatsSheet: View {
 
 /// A saved chat on screen, by its stopped-transcript key.
 struct ViewedChat: Identifiable {
-  let entry: ArgusProtocol.ChatHistoryEntry
+  let entry: RemoteStoppedAgent
   let key: String
-  var id: String { entry.id }
+  var id: String { entry.historyId }
 }
 
 private struct ChatHistoryRow: View {
   @Environment(\.theme) private var theme
-  let entry: ArgusProtocol.ChatHistoryEntry
-  let matches: [ArgusProtocol.ChatHistoryMessageMatch]
+  let entry: RemoteStoppedAgent
+  let matches: [ChatHistoryMatch]
   let open: () -> Void
   let resume: () -> Void
   let delete: () -> Void
@@ -193,7 +166,7 @@ private struct ChatHistoryRow: View {
           Text(entry.title).lineLimit(1)
           HStack(spacing: 6) {
             Text(meta).font(.scaled(.caption)).foregroundStyle(theme.textSecondary).lineLimit(1)
-            if entry.importedFrom == .claudeCode {
+            if entry.isImported {
               Badge(label: "Imported").help("Imported · Claude Code")
             }
           }
@@ -220,43 +193,11 @@ private struct ChatHistoryRow: View {
 
   private var meta: String {
     let ended = Date(timeIntervalSince1970: entry.endedAt / 1000)
-    let count = Int(entry.messageCount)
+    let count = entry.messageCount
     return [
-      ended.formatted(.relative(presentation: .named)), entry.sessionBranch,
+      ended.formatted(.relative(presentation: .named)), entry.branch,
       "\(count) msg\(count == 1 ? "" : "s")",
     ].joined(separator: " · ")
-  }
-}
-
-/// A message line that matched the search, its hit in bold.
-private struct MatchSnippet: View {
-  @Environment(\.theme) private var theme
-  let match: ArgusProtocol.ChatHistoryMessageMatch
-
-  var body: some View {
-    (Text(role).foregroundStyle(theme.textMuted) + Text("  ") + snippet)
-      .font(.scaled(.caption))
-      .foregroundStyle(theme.textSecondary)
-      .lineLimit(2)
-      .padding(.top, 2)
-  }
-
-  private var role: String {
-    switch match.role {
-    case .assistant: "Assistant"
-    case .system: "System"
-    default: "You"
-    }
-  }
-
-  /// The host's offsets are UTF-16, as JavaScript counts them.
-  private var snippet: Text {
-    let text = match.snippet as NSString
-    let start = min(Int(match.matchStart), text.length)
-    let end = min(max(Int(match.matchEnd), start), text.length)
-    return Text(text.substring(to: start))
-      + Text(text.substring(with: NSRange(location: start, length: end - start))).bold().foregroundStyle(theme.text)
-      + Text(text.substring(from: end))
   }
 }
 

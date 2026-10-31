@@ -105,6 +105,8 @@ export const RemoteStoppedAgent = z.object({
   ended_at: z.number(),
   /** Set when the chat was read in from another app's history, not run here. */
   imported_from: z.enum(["claude_code"]).optional(),
+  /** The runner it ran on, so a resume picks the same one. Absent on older hosts. */
+  runner_id: z.string().optional(),
 });
 export type RemoteStoppedAgent = z.infer<typeof RemoteStoppedAgent>;
 

@@ -50,6 +50,22 @@ vi.mock("../agent/conversation/forkAt", () => ({
   })),
 }));
 vi.mock("../agent/chatHistory", () => ({
+  deleteHistoryEntry: vi.fn(),
+  searchChatHistory: vi.fn(() => [
+    {
+      entry: { id: "h1" },
+      metaMatch: false,
+      messageMatches: [
+        {
+          role: "user",
+          snippet: "fix the bug",
+          matchStart: 8,
+          matchEnd: 11,
+          messageIndex: 0,
+        },
+      ],
+    },
+  ]),
   loadConversation: vi.fn(() => null),
   loadHistoryIndex: vi.fn(() =>
     Array.from({ length: 25 }, (_, i) => ({
@@ -166,6 +182,7 @@ const { rewindAgent } = vi.mocked(
   await import("../agent/conversation/actions"),
 );
 const { forkChatAt } = vi.mocked(await import("../agent/conversation/forkAt"));
+const { deleteHistoryEntry } = vi.mocked(await import("../agent/chatHistory"));
 
 /** Every `startAgent` override past the session id, left unset. */
 const SPAWN_DEFAULTS = Array<undefined>(9).fill(undefined);
@@ -216,6 +233,7 @@ const CONTROL_METHODS = [
   "agents.capabilities",
   "agents.rewind",
   "agents.fork",
+  "agents.history_delete",
   "permission.respond",
 ] as const;
 
@@ -426,6 +444,36 @@ describe("control capability gating", () => {
     });
     expect(res.session_id).toBe("s1");
     expect(res.agent.agent_id).toBe("a1");
+  });
+
+  it("searches and deletes saved chats", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    const found = MethodResult["agents.history_search"].parse(
+      await dispatch(
+        "agents.history_search",
+        { repo_root: "/repo", query: "bug" },
+        ctx,
+      ),
+    );
+    expect(found.results).toEqual([
+      {
+        history_id: "h1",
+        message_matches: [
+          {
+            role: "user",
+            snippet: "fix the bug",
+            match_start: 8,
+            match_end: 11,
+          },
+        ],
+      },
+    ]);
+    await dispatch(
+      "agents.history_delete",
+      { repo_root: "/repo", history_id: "h1" },
+      ctx,
+    );
+    expect(deleteHistoryEntry).toHaveBeenCalledWith("/repo", "h1");
   });
 
   it("allows a control device to stop an agent", async () => {

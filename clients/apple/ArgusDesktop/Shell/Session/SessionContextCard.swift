@@ -130,7 +130,7 @@ struct SessionContextCard: View {
   }
 
   private func loadChatCount() async {
-    if let entries = await SessionChats.load(session, store: store) { chatCount = entries.count }
+    if let entries = await store.chatHistory(for: session) { chatCount = entries.count }
   }
 
   // MARK: Machine and editor

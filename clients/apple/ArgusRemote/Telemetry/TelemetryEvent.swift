@@ -107,6 +107,12 @@ enum TelemetryEvent {
     case assistant
   }
 
+  /// What was done in a session's saved chats.
+  enum ChatHistoryAction: String {
+    case search
+    case delete
+  }
+
   /// Where adding a computer to the account started.
   enum ComputerAddedVia: String {
     /// A link code typed into the phone.
@@ -158,6 +164,8 @@ enum TelemetryEvent {
   case transcriptWorkLogOpened(working: Bool)
   /// A message's menu was used; `success` says the host took the edit or fork (always true for copy).
   case messageAction(action: MessageAction, role: MessageRole, success: Bool)
+  /// A session's saved chats were searched (first keystroke) or one was deleted.
+  case chatHistoryUsed(action: ChatHistoryAction)
   /// A session file opened in the read-only viewer.
   case fileViewed(source: FileViewSource, language: String)
   /// A Figma frame opened in the design viewer.
@@ -229,6 +237,7 @@ enum TelemetryEvent {
     case .mcpServersOpened: "ios_mcp_servers_opened"
     case .transcriptWorkLogOpened: "ios_transcript_work_log_opened"
     case .messageAction: "ios_message_action"
+    case .chatHistoryUsed: "ios_chat_history_used"
     case .fileViewed: "ios_file_viewed"
     case .designOpened: "ios_design_opened"
     case .designLayerSelected: "ios_design_layer_selected"
@@ -324,6 +333,8 @@ enum TelemetryEvent {
       ["working": working]
     case .messageAction(let action, let role, let success):
       ["action": action.rawValue, "role": role.rawValue, "success": success]
+    case .chatHistoryUsed(let action):
+      ["action": action.rawValue]
     case .fileViewed(let source, let language):
       ["source": source.rawValue, "language": language]
     case .designOpened(let source):

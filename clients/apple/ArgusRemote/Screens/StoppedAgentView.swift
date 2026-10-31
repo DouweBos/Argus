@@ -9,6 +9,7 @@ struct StoppedAgentView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
+  @Environment(\.dismiss) private var dismiss
 
   let historyId: String
   let repoRoot: String
@@ -17,6 +18,7 @@ struct StoppedAgentView: View {
   let runnerSessionId: String
 
   @State private var resuming = false
+  @State private var confirmingDelete = false
 
   private var key: String {
     HostStore.stoppedKey(repoRoot: repoRoot, historyId: historyId)
@@ -69,13 +71,20 @@ struct StoppedAgentView: View {
     .navigationTitle(label)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
+      ToolbarItemGroup(placement: .topBarTrailing) {
         if let session {
           IconBtn(systemName: Icon.branch, label: "View changes") {
             router.push(.changes(sessionId: session.id, label: branch))
           }
         }
+        if host.hasControl {
+          IconBtn(systemName: Icon.trash, label: "Delete chat") { confirmingDelete = true }
+        }
       }
+    }
+    .confirmationDialog("Delete this saved chat?", isPresented: $confirmingDelete, titleVisibility: .visible) {
+      Button("Delete", role: .destructive, action: delete)
+      Button("Cancel", role: .cancel) {}
     }
     .task { await host.loadSessions(repoRoot: repoRoot) }
   }
@@ -83,11 +92,24 @@ struct StoppedAgentView: View {
   private func resume(_ session: RemoteSession) {
     resuming = true
     Task {
-      let agent = await host.spawnAgent(
-        sessionId: session.id, resumeSessionId: runnerSessionId)
+      // The runner it ran on, when the list has it; older hosts don't say.
+      let agent =
+        if let chat = host.stoppedChat(repoRoot: repoRoot, historyId: historyId) {
+          await host.resumeChat(chat, sessionId: session.id)
+        } else {
+          await host.spawnAgent(sessionId: session.id, resumeSessionId: runnerSessionId)
+        }
       resuming = false
       guard let agent else { return }
       router.push(.agent(id: agent.agentId, label: label))
+    }
+  }
+
+  private func delete() {
+    Task {
+      await host.deleteChatHistory(repoRoot: repoRoot, historyIds: [historyId])
+      Telemetry.capture(.chatHistoryUsed(action: .delete))
+      dismiss()
     }
   }
 }

@@ -127,6 +127,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   // guest has no business reading agents that ran before the huddle.
   "agents.stopped_transcript": DENIED,
   "agents.stopped_image": DENIED,
+  "agents.history_search": DENIED,
+  "agents.history_delete": DENIED,
   // Spawning is creating an agent outside the scope by definition.
   "agents.spawn": DENIED,
   // Scoped to its source agent; the handler still refuses any scoped guest,

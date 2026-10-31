@@ -15,6 +15,7 @@ struct ProjectView: View {
   @State private var creatingSession = false
   @State private var spawningIn: SpawnTarget?
   @State private var showingStopped = false
+  @State private var searchingChats = false
   @State private var expandedStopped: Set<String> = []
   @State private var renameTarget: SessionGroup?
   @State private var renameKind: RenameKind?
@@ -103,6 +104,11 @@ struct ProjectView: View {
     .navigationTitle(name)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
+      if !(host.stoppedByRepo[repoRoot] ?? []).isEmpty {
+        ToolbarItem(placement: .topBarTrailing) {
+          IconBtn(systemName: Icon.history, label: "Search saved chats") { searchingChats = true }
+        }
+      }
       if host.hasControl {
         ToolbarItem(placement: .topBarTrailing) {
           Button {
@@ -111,6 +117,16 @@ struct ProjectView: View {
             Label("Start agent", systemImage: Icon.plus)
           }
         }
+      }
+    }
+    .sheet(isPresented: $searchingChats) {
+      ChatSearchSheet(repoRoot: repoRoot) { chat in
+        router.push(
+          .stoppedAgent(
+            historyId: chat.historyId, repoRoot: repoRoot, label: chat.title,
+            branch: chat.branch, runnerSessionId: chat.runnerSessionId))
+      } searched: {
+        Telemetry.capture(.chatHistoryUsed(action: .search))
       }
     }
     .sheet(isPresented: $creatingSession) {
@@ -307,6 +323,16 @@ struct ProjectView: View {
             branch: agent.branch, runnerSessionId: agent.runnerSessionId)
         ) {
           StoppedAgentRow(agent: agent, showBranch: label != nil)
+        }
+        .swipeActions {
+          if host.hasControl {
+            Button("Delete", systemImage: Icon.trash, role: .destructive) {
+              Task {
+                await host.deleteChatHistory(repoRoot: repoRoot, historyIds: [agent.historyId])
+                Telemetry.capture(.chatHistoryUsed(action: .delete))
+              }
+            }
+          }
         }
       }
     } label: {

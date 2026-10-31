@@ -1,0 +1,68 @@
+import ArgusCore
+import ArgusKit
+import Foundation
+import Testing
+
+@MainActor
+@Suite("Chat history")
+struct ChatHistoryTests {
+  private static let session = try! ProtocolCodec.decoder.decode(
+    RemoteSession.self,
+    from: Data(
+      #"{"id":"s-1","kind":"worktree","branch":"feat/a","display_name":"A","description":"","path":"/wt/a","repo_root":"/repo","status":"ready"}"#
+        .utf8))
+
+  private static func chat(_ id: String, branch: String, ended: Int, title: String = "chat") -> String {
+    #"{"history_id":"\#(id)","runner_session_id":"r-\#(id)","title":"\#(title)","branch":"\#(branch)","message_count":2,"started_at":0,"ended_at":\#(ended),"runner_id":"codex"}"#
+  }
+
+  private func attached() async -> (HostStore, FakeBackend) {
+    let store = HostStore()
+    let backend = FakeBackend()
+    backend.reply(
+      .agentsStopped,
+      #"{"agents":[\#(Self.chat("h1", branch: "feat/a", ended: 1)),\#(Self.chat("h2", branch: "main", ended: 3)),\#(Self.chat("h3", branch: "feat/a", ended: 2, title: "Login fix"))]}"#
+    )
+    await store.attach(backend)
+    return (store, backend)
+  }
+
+  @Test("a session's chats are its branch's, newest first")
+  func listsByBranch() async throws {
+    let (store, _) = await attached()
+    let chats = try #require(await store.chatHistory(for: Self.session))
+    #expect(chats.map(\.historyId) == ["h3", "h1"])
+  }
+
+  @Test("titles narrow at once; the host's hits take over for their query")
+  func filters() async throws {
+    let (store, _) = await attached()
+    let chats = try #require(await store.chatHistory(for: Self.session))
+    #expect(HostStore.filterChats(chats, query: "login", hits: nil).map(\.historyId) == ["h3"])
+    #expect(HostStore.filterChats(chats, query: "login", hits: ("login", ["h1": []])).map(\.historyId) == ["h1"])
+    #expect(HostStore.filterChats(chats, query: "login", hits: ("log", ["h1": []])).map(\.historyId) == ["h3"])
+  }
+
+  @Test("resuming a chat picks the runner it ran on")
+  func resumePassesRunner() async throws {
+    let (store, backend) = await attached()
+    backend.reply(.agentsSpawn, #"{"agent":{"agent_id":"a-1","session_id":"s-1","status":"idle","created_at":1}}"#)
+    let chat = try #require(await store.chatHistory(for: Self.session)?.first)
+
+    _ = await store.resumeChat(chat, sessionId: "s-1")
+
+    let params = try #require(backend.params(.agentsSpawn))
+    #expect(params["resume_session_id"] as? String == "r-h3")
+    #expect(params["runner_id"] as? String == "codex")
+  }
+
+  @Test("a match splits around its hit by UTF-16 offsets")
+  func matchParts() {
+    let match = ChatHistoryMatch(role: .user, snippet: "👋 fix the bug", matchStart: 3, matchEnd: 6)
+    #expect(match.parts.before == "👋 ")
+    #expect(match.parts.hit == "fix")
+    #expect(match.parts.after == " the bug")
+    let wild = ChatHistoryMatch(role: .user, snippet: "abc", matchStart: 9, matchEnd: 2)
+    #expect(wild.parts.before == "abc" && wild.parts.hit.isEmpty)
+  }
+}

@@ -15381,6 +15381,7 @@ extension ArgusProtocol {
     public var startedAt: Double
     public var endedAt: Double
     public var importedFrom: RemoteStoppedAgentImportedFrom?
+    public var runnerId: String?
 
     enum CodingKeys: String, CodingKey {
       case historyId = "history_id"
@@ -15393,9 +15394,10 @@ extension ArgusProtocol {
       case startedAt = "started_at"
       case endedAt = "ended_at"
       case importedFrom = "imported_from"
+      case runnerId = "runner_id"
     }
 
-    public init(historyId: String, runnerSessionId: String, title: String, branch: String, description: String? = nil, model: String? = nil, messageCount: Int, startedAt: Double, endedAt: Double, importedFrom: RemoteStoppedAgentImportedFrom? = nil) {
+    public init(historyId: String, runnerSessionId: String, title: String, branch: String, description: String? = nil, model: String? = nil, messageCount: Int, startedAt: Double, endedAt: Double, importedFrom: RemoteStoppedAgentImportedFrom? = nil, runnerId: String? = nil) {
       self.historyId = historyId
       self.runnerSessionId = runnerSessionId
       self.title = title
@@ -15406,6 +15408,7 @@ extension ArgusProtocol {
       self.startedAt = startedAt
       self.endedAt = endedAt
       self.importedFrom = importedFrom
+      self.runnerId = runnerId
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -15420,6 +15423,7 @@ extension ArgusProtocol {
       try c.encode(startedAt, forKey: .startedAt)
       try c.encode(endedAt, forKey: .endedAt)
       try c.encodeIfPresent(importedFrom, forKey: .importedFrom)
+      try c.encodeIfPresent(runnerId, forKey: .runnerId)
     }
   }
 

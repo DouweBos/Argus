@@ -285,6 +285,148 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AgentsHistoryDeleteParams: Codable, Sendable {
+      public var repoRoot: String
+      public var historyId: String
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repo_root"
+        case historyId = "history_id"
+      }
+
+      public init(repoRoot: String, historyId: String) {
+        self.repoRoot = repoRoot
+        self.historyId = historyId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+        try c.encode(historyId, forKey: .historyId)
+      }
+    }
+
+    public struct AgentsHistoryDeleteResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AgentsHistorySearchParams: Codable, Sendable {
+      public var repoRoot: String
+      public var query: String
+
+      enum CodingKeys: String, CodingKey {
+        case repoRoot = "repo_root"
+        case query = "query"
+      }
+
+      public init(repoRoot: String, query: String) {
+        self.repoRoot = repoRoot
+        self.query = query
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(repoRoot, forKey: .repoRoot)
+        try c.encode(query, forKey: .query)
+      }
+    }
+
+    public struct AgentsHistorySearchResultResultsItemMessageMatchesItemRole: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let assistant = AgentsHistorySearchResultResultsItemMessageMatchesItemRole(rawValue: "assistant")
+      public static let system = AgentsHistorySearchResultResultsItemMessageMatchesItemRole(rawValue: "system")
+      public static let user = AgentsHistorySearchResultResultsItemMessageMatchesItemRole(rawValue: "user")
+    }
+
+    public struct AgentsHistorySearchResultResultsItemMessageMatchesItem: Codable, Sendable {
+      public var role: AgentsHistorySearchResultResultsItemMessageMatchesItemRole
+      public var snippet: String
+      public var matchStart: Int
+      public var matchEnd: Int
+
+      enum CodingKeys: String, CodingKey {
+        case role = "role"
+        case snippet = "snippet"
+        case matchStart = "match_start"
+        case matchEnd = "match_end"
+      }
+
+      public init(role: AgentsHistorySearchResultResultsItemMessageMatchesItemRole, snippet: String, matchStart: Int, matchEnd: Int) {
+        self.role = role
+        self.snippet = snippet
+        self.matchStart = matchStart
+        self.matchEnd = matchEnd
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(role, forKey: .role)
+        try c.encode(snippet, forKey: .snippet)
+        try c.encode(matchStart, forKey: .matchStart)
+        try c.encode(matchEnd, forKey: .matchEnd)
+      }
+    }
+
+    public struct AgentsHistorySearchResultResultsItem: Codable, Sendable {
+      public var historyId: String
+      public var messageMatches: [AgentsHistorySearchResultResultsItemMessageMatchesItem]
+
+      enum CodingKeys: String, CodingKey {
+        case historyId = "history_id"
+        case messageMatches = "message_matches"
+      }
+
+      public init(historyId: String, messageMatches: [AgentsHistorySearchResultResultsItemMessageMatchesItem]) {
+        self.historyId = historyId
+        self.messageMatches = messageMatches
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(historyId, forKey: .historyId)
+        try c.encode(messageMatches, forKey: .messageMatches)
+      }
+    }
+
+    public struct AgentsHistorySearchResult: Codable, Sendable {
+      public var results: [AgentsHistorySearchResultResultsItem]
+
+      enum CodingKeys: String, CodingKey {
+        case results = "results"
+      }
+
+      public init(results: [AgentsHistorySearchResultResultsItem]) {
+        self.results = results
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(results, forKey: .results)
+      }
+    }
+
     public struct AgentsImageParams: Codable, Sendable {
       public var agentId: String
       public var imageId: String
@@ -6283,6 +6425,18 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AgentsHandoffToAccountParams
       public typealias Result = ArgusProtocol.MethodsTypes.AgentsHandoffToAccountResult
       public static let name = "agents.handoff_to_account"
+    }
+
+    public enum AgentsHistoryDelete: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsHistoryDeleteParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsHistoryDeleteResult
+      public static let name = "agents.history_delete"
+    }
+
+    public enum AgentsHistorySearch: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsHistorySearchParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsHistorySearchResult
+      public static let name = "agents.history_search"
     }
 
     public enum AgentsImage: RemoteCommand {

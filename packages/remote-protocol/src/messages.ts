@@ -183,6 +183,15 @@ export const MethodParams = {
     history_id: z.string(),
     image_id: z.string(),
   }),
+  /** Titles and message text across the project's saved chats. */
+  "agents.history_search": z.object({
+    repo_root: z.string(),
+    query: z.string().min(1).max(500),
+  }),
+  "agents.history_delete": z.object({
+    repo_root: z.string(),
+    history_id: z.string(),
+  }),
   "permission.respond": z.object({
     agent_id: z.string(),
     tool_use_id: z.string(),
@@ -783,6 +792,24 @@ export const MethodResult = {
     data: z.string(),
     media_type: z.string(),
   }),
+  /** Saved chats that match, by history id; message matches are capped per chat. */
+  "agents.history_search": z.object({
+    results: z.array(
+      z.object({
+        history_id: z.string(),
+        message_matches: z.array(
+          z.object({
+            role: z.enum(["assistant", "system", "user"]),
+            snippet: z.string(),
+            /** UTF-16 offsets of the hit within `snippet`. */
+            match_start: z.number().int().nonnegative(),
+            match_end: z.number().int().nonnegative(),
+          }),
+        ),
+      }),
+    ),
+  }),
+  "agents.history_delete": z.object({ accepted: z.boolean() }),
   "permission.respond": z.object({
     accepted: z.boolean(),
     /** The rule an `always_allow` added. Absent from hosts that predate it. */

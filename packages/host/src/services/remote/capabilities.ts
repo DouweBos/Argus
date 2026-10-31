@@ -54,7 +54,12 @@ import {
   stopAgent,
 } from "../agent/agentService";
 import { alwaysAllowRule } from "../agent/alwaysAllowRule";
-import { loadConversation, loadHistoryIndex } from "../agent/chatHistory";
+import {
+  deleteHistoryEntry,
+  loadConversation,
+  loadHistoryIndex,
+  searchChatHistory,
+} from "../agent/chatHistory";
 import { agentContextWindow } from "../agent/contextWindow";
 import { liveCursor, readConversation } from "../agent/conversation/live";
 import { limitHandoffAccounts } from "../agent/limitHandoff";
@@ -1007,7 +1012,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
   "agents.stopped": async (params) => {
     const { repo_root, limit } = parse("agents.stopped", params);
-    requireKnownRepoRoot(repo_root);
+    requireKnownHistoryRoot(repo_root);
     // The index is already newest-first. Chat history is also written while an
     // agent is still running, so drop anything still live — those belong to
     // `agents.list`, and listing them here would double them up.
@@ -1030,6 +1035,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         started_at: e.createdAt,
         ended_at: e.endedAt,
         ...(e.importedFrom ? { imported_from: e.importedFrom } : {}),
+        ...(e.runnerId ? { runner_id: e.runnerId } : {}),
       }),
     );
 
@@ -1065,6 +1071,31 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
 
     return { data: found.data, media_type: found.media_type };
+  },
+
+  "agents.history_search": async (params) => {
+    const { repo_root, query } = parse("agents.history_search", params);
+    requireKnownHistoryRoot(repo_root);
+
+    return {
+      results: searchChatHistory(repo_root, query).map((r) => ({
+        history_id: r.entry.id,
+        message_matches: r.messageMatches.map((m) => ({
+          role: m.role,
+          snippet: m.snippet,
+          match_start: m.matchStart,
+          match_end: m.matchEnd,
+        })),
+      })),
+    };
+  },
+
+  "agents.history_delete": async (params) => {
+    const { repo_root, history_id } = parse("agents.history_delete", params);
+    requireKnownHistoryRoot(repo_root);
+    await control(() => deleteHistoryEntry(repo_root, history_id));
+
+    return { accepted: true };
   },
 
   "permission.respond": async (params, ctx) => {
