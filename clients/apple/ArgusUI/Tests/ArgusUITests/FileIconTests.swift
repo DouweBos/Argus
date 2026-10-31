@@ -25,7 +25,7 @@ struct FileIconTests {
     "exact file names win, case-insensitively",
     arguments: [
       ("package.json", "nodejs"), ("Podfile", "ruby"), ("Gemfile", "gemfile"), ("Dockerfile", "docker"),
-      ("README.md", "readme"), ("LICENSE", "license"), ("CHANGELOG.md", "changelog"), ("tsconfig.json", "tsconfig"),
+      ("LICENSE", "license"), ("CHANGELOG.md", "changelog"), ("tsconfig.json", "tsconfig"),
       ("pnpm-lock.yaml", "pnpm"), ("yarn.lock", "yarn"), ("package-lock.json", "nodejs"), (".gitignore", "git"),
       ("AndroidManifest.xml", "android"), ("vite.config.ts", "vite"), ("eslint.config.js", "eslint"),
       (".prettierrc", "prettier"), ("babel.config.js", "babel"), ("Package.resolved", "lock"),
@@ -50,7 +50,7 @@ struct FileIconTests {
     arguments: [
       ("App.swift", "swift"), ("View.m", "objective-c"), ("View.h", "h"), ("Bridge.mm", "objective-cpp"),
       ("Main.kt", "kotlin"), ("Main.java", "java"), ("index.ts", "typescript"), ("App.tsx", "react_ts"),
-      ("App.jsx", "react"), ("index.js", "javascript"), ("data.json", "json"), ("notes.md", "markdown"),
+      ("App.jsx", "react"), ("index.js", "javascript"), ("data.json", "json"), ("notes.md", "markdown"), ("README.md", "markdown"),
       ("ci.yml", "yaml"), ("mise.toml", "toml"), (".env", "tune"), ("run.sh", "console"), ("x.py", "python"),
       ("Info.plist", "xml"), ("App.entitlements", "xml"), ("Debug.xcconfig", "settings"),
       ("project.pbxproj", "settings"), ("Main.storyboard", "xml"), ("photo.HEIC", "image"), ("logo.svg", "svg"),

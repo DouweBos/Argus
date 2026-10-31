@@ -53,8 +53,8 @@ const FILE_ICONS = [
   "test-ts",
   "test-js",
   "test-jsx",
+  // No "readme": its blue info glyph reads as an alert, so READMEs take their extension's icon.
   "markdown",
-  "readme",
   "license",
   "changelog",
   "contributing",
