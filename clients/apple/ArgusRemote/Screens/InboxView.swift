@@ -10,7 +10,6 @@ struct InboxView: View {
   @Environment(Router.self) private var router
   @Environment(ProposalsStore.self) private var proposals
   @Environment(AutomationsStore.self) private var automations
-  @Environment(PullRequestsStore.self) private var pullRequests
   /// The failure and cleared windows are relative to now.
   @State private var now = Date()
 
@@ -24,26 +23,6 @@ struct InboxView: View {
     List {
       if let error = proposals.error {
         Banner(text: error, tone: .danger).listRowBackground(Color.clear)
-      }
-
-      // PRs are the other thing waiting on a decision, and they arrive the
-      // same way: while nobody was looking.
-      Section {
-        NavigationLink(value: Route.pullRequests) {
-          HStack(spacing: 8) {
-            Label("Pull requests", systemImage: Icon.pullRequests)
-            Spacer(minLength: 4)
-            if !pullRequests.pullRequests.isEmpty {
-              Badge(label: "\(pullRequests.pullRequests.count)", tone: .accent)
-            }
-          }
-        }
-        // Only once the computer has Linear connected; the key never leaves it.
-        if host.linearConnected {
-          NavigationLink(value: Route.issues) {
-            Label("Linear issues", systemImage: Icon.issue)
-          }
-        }
       }
 
       if !proposals.loaded {
@@ -60,10 +39,7 @@ struct InboxView: View {
         body: "Your automations have nothing waiting on you. This is what a quiet inbox looks like.")
     }
     .navigationTitle("Inbox")
-    .refreshable {
-      await refresh()
-      await pullRequests.refresh()
-    }
+    .refreshable { await refresh() }
     .liveRefresh(enabled: host.connection == .ready) { await refresh() }
     .task {
       while !Task.isCancelled {
@@ -71,12 +47,8 @@ struct InboxView: View {
         now = Date()
       }
     }
-    .task(id: host.connection) {
-      guard host.connection == .ready else { return }
-      await host.loadIntegrations()
-      if !pullRequests.loaded { await pullRequests.refresh() }
-    }
   }
+
 
   private func refresh() async {
     async let listed: Void = proposals.refresh()
@@ -91,7 +63,7 @@ struct InboxView: View {
     // "on it" group doesn't list it twice.
     let local = Set(proposals.started.map(\.id))
     if !items.pending.isEmpty || !proposals.started.isEmpty {
-      Section("Decide") {
+      Section(items.pending.isEmpty ? "Decide" : "Decide · \(items.pending.count) waiting") {
         ForEach(proposals.started) { proposal in
           StartedProposalCard(
             proposal: proposal,
@@ -102,7 +74,7 @@ struct InboxView: View {
       }
     }
     if !items.reports.isEmpty {
-      Section("New reports") {
+      Section("New reports · \(items.reports.count)") {
         ForEach(items.reports) { run in
           InboxRunRow(run: run, icon: Icon.file, tone: .accent)
         }
@@ -110,7 +82,7 @@ struct InboxView: View {
     }
     let started = items.started.filter { !local.contains($0.id) }
     if !started.isEmpty {
-      Section("Argus is on it") {
+      Section("Argus is on it · \(started.count)") {
         ForEach(started) { proposal in
           NavigationLink(
             value: proposal.agentId.map { Route.agent(id: $0, label: proposal.title) }
@@ -124,7 +96,7 @@ struct InboxView: View {
       }
     }
     if !items.failed.isEmpty {
-      Section("Needs a look") {
+      Section("Needs a look · \(items.failed.count)") {
         ForEach(items.failed) { run in
           InboxRunRow(run: run, icon: Icon.warning, tone: .danger)
             .swipeActions {
@@ -137,7 +109,7 @@ struct InboxView: View {
       }
     }
     if !items.cleared.isEmpty {
-      Section("Argus cleared these") {
+      Section("Argus cleared these · \(items.cleared.count)") {
         ForEach(items.cleared) { proposal in
           NavigationLink(value: Route.proposal(id: proposal.id)) {
             InboxProposalRow(

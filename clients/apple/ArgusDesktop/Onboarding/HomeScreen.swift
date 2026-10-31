@@ -160,7 +160,7 @@ private struct HomeProjectCard: View {
     let sessions = (store.sessionsByRepo[project.repoRoot] ?? []).filter { $0.kind == .worktree }
     VStack(alignment: .leading, spacing: 8) {
       HStack {
-        Image(systemName: "folder.fill").foregroundStyle(theme.accent)
+        ProjectBadge(project.name, key: project.repoRoot, size: 20)
         Text(project.name).font(.scaled(size: 14, weight: .semibold)).lineLimit(1)
         if model.host(ofProject: project.repoRoot) != Hosts.local { HostBadge(hostId: model.host(ofProject: project.repoRoot)) }
         Spacer()
@@ -173,15 +173,7 @@ private struct HomeProjectCard: View {
         .help("New session in \(project.name)")
       }
       Text(HostScopedPath.path(project.repoRoot)).font(.scaled(.caption)).foregroundStyle(theme.textMuted).lineLimit(1).truncationMode(.middle)
-      HStack(spacing: 6) {
-        ForEach(agents.prefix(8)) { StatusDot(tone: tone($0.status), pulse: $0.status == .running) }
-        Text(summary(agents: agents.count, sessions: sessions.count))
-          .font(.scaled(.caption)).foregroundStyle(theme.textSecondary)
-        Spacer()
-        if let last = agents.map(Labels.lastActivity).max(), last > 0 {
-          Text(Labels.timeAgo(last)).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
-        }
-      }
+      ProjectActivityLine(agents: agents, sessions: sessions.count)
     }
     .padding(12)
     .background(hovering ? theme.bgHover : theme.bgSecondary)
@@ -206,21 +198,6 @@ private struct HomeProjectCard: View {
           NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: project.repoRoot)])
         }
       }
-    }
-  }
-
-  private func summary(agents: Int, sessions: Int) -> String {
-    let s = "\(sessions) session\(sessions == 1 ? "" : "s")"
-    return agents == 0 ? s : "\(s) · \(agents) agent\(agents == 1 ? "" : "s")"
-  }
-
-  private func tone(_ status: RemoteAgentState) -> Tone {
-    switch status {
-    case .running: .accent
-    case .error: .danger
-    case .requiresAction: .warning
-    case .stopped: .success
-    case .idle: .muted
     }
   }
 }

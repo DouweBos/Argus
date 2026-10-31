@@ -126,6 +126,11 @@ enum TelemetryEvent {
     case switchAgent = "switch_agent"
   }
 
+  /// Which of Home's links into another screen was followed.
+  enum HomeAction: String {
+    case usage, inbox, agents, automations
+  }
+
   /// Where adding a computer to the account started.
   enum ComputerAddedVia: String {
     /// A link code typed into the phone.
@@ -181,6 +186,8 @@ enum TelemetryEvent {
   case mcpServersOpened
   /// The session screen's details were opened, or its agent tabs used.
   case sessionUsed(action: SessionAction)
+  /// A section link on Home was followed, to measure what Home leads people to.
+  case homeUsed(action: HomeAction)
   /// A turn's folded work was opened in a chat; `working` says the agent was still on it.
   case transcriptWorkLogOpened(working: Bool)
   /// A message's menu was used; `success` says the host took the edit or fork (always true for copy).
@@ -260,6 +267,7 @@ enum TelemetryEvent {
     case .notificationsCleared: "ios_notifications_cleared"
     case .mcpServersOpened: "ios_mcp_servers_opened"
     case .sessionUsed: "ios_session_used"
+    case .homeUsed: "ios_home_used"
     case .transcriptWorkLogOpened: "ios_transcript_work_log_opened"
     case .messageAction: "ios_message_action"
     case .chatHistoryUsed: "ios_chat_history_used"
@@ -367,6 +375,8 @@ enum TelemetryEvent {
     case .chatHistoryUsed(let action):
       ["action": action.rawValue]
     case .sessionUsed(let action):
+      ["action": action.rawValue]
+    case .homeUsed(let action):
       ["action": action.rawValue]
     case .fileViewed(let source, let language):
       ["source": source.rawValue, "language": language]

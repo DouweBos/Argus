@@ -1,7 +1,9 @@
 import ArgusUI
 import SwiftUI
 
-/// The active computer's projects, plus the agents worth jumping back into.
+/// `/`: Home, as on the Mac — which computer this is, plan limits, what needs
+/// you, each project's activity, the agents worth jumping back into, and the
+/// latest automation runs.
 struct ProjectsView: View {
   @Environment(\.theme) private var theme
   @Environment(AppStore.self) private var app
@@ -10,6 +12,10 @@ struct ProjectsView: View {
 
   @State private var openingPad = false
   @State private var padToDelete: RemoteSession?
+  /// The project a new session is being started in.
+  @State private var newSessionProject: RemoteProject?
+
+  private static let recentAgentLimit = 5
 
   private var hostName: String { app.identity?.label ?? "Argus" }
 
@@ -22,27 +28,19 @@ struct ProjectsView: View {
     List {
       if app.loaded, app.hosts.isEmpty {
         EmptyView()
-      } else if !app.loaded || (host.connection != .ready && host.projects.isEmpty) {
-        Loading(label: "Connecting to \(hostName)…")
-          .listRowBackground(Color.clear)
       } else {
-        recentAgents
-        if !host.projects.isEmpty {
-          Section("Projects") {
-            ForEach(host.projects) { project in
-              NavigationLink(
-                value: Route.project(repoRoot: project.repoRoot, name: project.name)
-              ) {
-                VStack(alignment: .leading, spacing: 2) {
-                  Label(project.name, systemImage: Icon.folder).lineLimit(1)
-                  Text(tildePath(project.repoRoot))
-                    .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
-                }
-              }
-            }
-          }
+        Section { ComputerSwitcher() }
+        if !app.loaded || (host.connection != .ready && host.projects.isEmpty) {
+          Loading(label: "Connecting to \(hostName)…")
+            .listRowBackground(Color.clear)
+        } else {
+          planLimits
+          HomeNeedsYouSection()
+          projects
+          recentAgents
+          HomeRecentRunsSection()
+          scratchPads
         }
-        scratchPads
       }
     }
     .emptyState(when: app.loaded && app.hosts.isEmpty) {
@@ -54,13 +52,7 @@ struct ProjectsView: View {
         Btn(label: "Pair a computer", icon: Icon.plus, hugs: true) { router.push(.pair) }
       }
     }
-    .emptyState(when: noProjects) {
-      EmptyState(
-        icon: Icon.folder,
-        title: "No projects open",
-        body: "Open a repository in Argus on \(hostName) and it'll show up here.")
-    }
-    .navigationTitle(hostName)
+    .navigationTitle("Home")
     .confirmationDialog(
       "Delete \(padToDelete?.displayName ?? "scratch pad")?",
       isPresented: Binding(
@@ -74,44 +66,82 @@ struct ProjectsView: View {
     } message: {
       Text("Its agents are stopped and every file in its folder is removed.")
     }
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) { computerMenu }
-    }
+    .sheet(item: $newSessionProject) { newSession($0) }
     .refreshable { await refresh() }
     .liveRefresh(enabled: app.identity != nil && host.connection == .ready) { await refresh() }
-  }
-
-  /// Which computer this is, and how to get to another — the switcher lives
-  /// in the toolbar now that the home screen is no longer the app's root.
-  private var computerMenu: some View {
-    Menu {
-      Picker("Computer", selection: hostSelection) {
-        ForEach(app.hosts) { host in
-          Text(host.label).tag(host.deviceId as String?)
-        }
+    .liveRefresh(enabled: app.identity != nil && host.connection == .ready, every: .seconds(60)) {
+      await host.loadUsageLimits()
+    }
+    // A project's session count needs its sessions; agents come from the cross-project list.
+    .task(id: host.projects.map(\.repoRoot)) {
+      for project in host.projects where host.sessionsByRepo[project.repoRoot] == nil {
+        await host.loadSessions(repoRoot: project.repoRoot)
       }
-      Divider()
-      Button("Pair a computer…", systemImage: Icon.plus) { router.push(.pair) }
-      Button("Manage computers…", systemImage: Icon.desktop) { router.push(.computers) }
-    } label: {
-      Label("Computer", systemImage: Icon.desktop)
     }
   }
 
-  private var hostSelection: Binding<String?> {
-    Binding(
-      get: { app.activeHostId },
-      set: { id in
-        guard let id else { return }
-        Task { await app.selectHost(id) }
-      })
+  @ViewBuilder
+  private var planLimits: some View {
+    if !UsageLimitsStrip.accounts(host.usageLimits).isEmpty {
+      Section {
+        UsageLimitsStrip(limits: host.usageLimits)
+          .padding(.vertical, 4)
+      } header: {
+        HomeSectionHeader(title: "Plan limits", action: ("View usage", { followHomeLink(.usage) { router.push(.usage) } }))
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var projects: some View {
+    if host.projects.isEmpty {
+      if noProjects {
+        Section("Projects") {
+          MutedText("Open a repository in Argus on \(hostName) and it'll show up here.")
+        }
+      }
+    } else {
+      Section("Projects") {
+        ForEach(host.projects) { project in
+          NavigationLink(value: Route.project(repoRoot: project.repoRoot, name: project.name)) {
+            projectRow(project)
+          }
+          .swipeActions {
+            if host.hasControl {
+              Button("New session", systemImage: Icon.plus) { newSessionProject = project }
+                .tint(theme.accent)
+            }
+          }
+          .contextMenu {
+            if host.hasControl {
+              Button("New session…", systemImage: Icon.plus) { newSessionProject = project }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /// The Mac's project card in a row: badge and name, then each agent as a
+  /// dot, the counts, and when it last moved.
+  private func projectRow(_ project: RemoteProject) -> some View {
+    let agents = host.agents(inProject: project.repoRoot)
+    let sessions = (host.sessionsByRepo[project.repoRoot] ?? []).count { $0.kind == .worktree }
+    return HStack(alignment: .firstTextBaseline, spacing: 10) {
+      ProjectBadge(project.name, key: project.repoRoot, size: 22)
+      VStack(alignment: .leading, spacing: 4) {
+        Text(project.name).fontWeight(.medium).lineLimit(1)
+        ProjectActivityLine(agents: agents, sessions: sessions)
+      }
+    }
+    .padding(.vertical, 2)
   }
 
   /// Agents across every project: the ones still working, or waiting on you,
-  /// before the merely recent.
+  /// before the merely recent. The full list is the Agents tab.
   @ViewBuilder
   private var recentAgents: some View {
-    let recent = host.recentAgentsByActivity.prefix(8)
+    let recent = host.recentAgentsByActivity.prefix(Self.recentAgentLimit)
 
     if !recent.isEmpty {
       Section {
@@ -126,12 +156,8 @@ struct ProjectsView: View {
               meta: location(agent) ?? Labels.statusLabel(agent.status))
           }
         }
-        // The full list, across every project and session.
-        NavigationLink(value: Route.agents) {
-          Label("All agents", systemImage: Icon.agent)
-        }
       } header: {
-        Text("Recent agents")
+        HomeSectionHeader(title: "Recent agents", action: ("See all", { followHomeLink(.agents) { router.show(.agents) } }))
       }
     }
   }
@@ -167,6 +193,23 @@ struct ProjectsView: View {
     }
   }
 
+  private func newSession(_ project: RemoteProject) -> some View {
+    StartAgentSheet(
+      repoRoot: project.repoRoot,
+      sessionId: host.sessionsByRepo[project.repoRoot]?.first { $0.kind == .projectRoot }?.id,
+      currentLabel: "Current checkout",
+      workspace: .worktree,
+      models: host.knownModels(repoRoot: project.repoRoot),
+      defaultMode: app.defaultPermissionMode
+    ) { started, sent in
+      Telemetry.capture(.agentStartSubmitted(sent, openedOn: .worktree))
+      guard case .agent(let agent) = started else { return }
+      router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
+      // Count it straight away rather than waiting for the next poll.
+      Task { await host.loadSessions(repoRoot: project.repoRoot) }
+    }
+  }
+
   private func open(_ agent: @escaping () async -> RemoteAgentStatus?) {
     openingPad = true
     Task {
@@ -184,10 +227,6 @@ struct ProjectsView: View {
       .filter { !$0.isEmpty }
       .joined(separator: " · ")
       .nilIfEmpty
-  }
-
-  private func tildePath(_ path: String) -> String {
-    path.replacing(/^\/(?:Users|home)\/[^\/]+/) { _ in "~" }
   }
 
   private func refresh() async {

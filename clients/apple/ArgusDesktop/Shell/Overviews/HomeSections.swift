@@ -123,20 +123,17 @@ struct HomeNeedsYouSection: View {
   private static let maxFailed = 2
 
   var body: some View {
-    let items = model.inbox.items(sessionIds: Set(store.sessionsByRepo.values.joined().map(\.id)))
-    let waiting = items.pending.count + items.failed.count
-    if waiting > 0 {
-      let proposals = items.pending.prefix(Self.maxProposals)
-      let runs = items.failed.prefix(Self.maxFailed)
-      let hidden = waiting - proposals.count - runs.count
-      HomeSection(title: "Needs you", note: "\(waiting) waiting") {
+    let needs = model.inbox.items(sessionIds: Set(store.sessionsByRepo.values.joined().map(\.id)))
+      .needsYou(maxProposals: Self.maxProposals, maxFailed: Self.maxFailed)
+    if needs.waiting > 0 {
+      HomeSection(title: "Needs you", note: "\(needs.waiting) waiting") {
         Button("Open inbox") { model.navigate(.inbox) }.buttonStyle(.accentLink)
       } content: {
         VStack(alignment: .leading, spacing: 8) {
-          ForEach(Array(proposals), id: \.id) { ProposalSummaryRow(proposal: $0) }
-          ForEach(Array(runs), id: \.id) { FailedRow(run: $0) }
-          if hidden > 0 {
-            Button("\(hidden) more in the inbox") { model.navigate(.inbox) }.buttonStyle(.accentLink)
+          ForEach(needs.proposals, id: \.id) { ProposalSummaryRow(proposal: $0) }
+          ForEach(needs.failed, id: \.id) { FailedRow(run: $0) }
+          if needs.hidden > 0 {
+            Button("\(needs.hidden) more in the inbox") { model.navigate(.inbox) }.buttonStyle(.accentLink)
           }
         }
       }

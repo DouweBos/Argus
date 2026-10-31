@@ -126,9 +126,9 @@ final class NotificationRouter: NSObject {
       if let hostId = app.hostId(forAgent: agentId), hostId != app.activeHostId {
         await app.selectHost(hostId)
       }
-      // `open` rather than `push`: an agent belongs under Projects, and a tap
+      // `open` rather than `push`: an agent belongs under Home, and a tap
       // should land there whatever section was last on screen.
-      router.open(.agent(id: agentId, label: label), in: .projects)
+      router.open(.agent(id: agentId, label: label), in: .home)
     }
   }
 }

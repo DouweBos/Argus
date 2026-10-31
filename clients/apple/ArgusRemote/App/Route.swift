@@ -65,6 +65,8 @@ enum Route: Hashable {
   case addComputer
   case claudeAccounts
   case usage
+  /// The phone's fifth tab: every destination without a tab of its own.
+  case more
 
   /// The route pattern, never a project, branch, agent or device name — the
   /// Mac's `ArgusRoute.pattern` where the phone has the same screen, so one
@@ -114,35 +116,77 @@ enum Route: Hashable {
     case .addComputer: "/settings/computers/new"
     case .account: "/settings/account"
     case .claudeAccounts: "/settings/claude-accounts"
+    case .more: "/more"
     }
   }
 }
 
-/// The top-level sections. These are tabs on a phone and a sidebar on an
-/// iPad — one `TabView` with `.sidebarAdaptable` gives both, so there is no
-/// separate split-view hierarchy to keep in step.
+/// The top-level destinations, as the Mac's sidebar lists them. A phone has
+/// room for five tabs, so the rest live under More; an iPad's sidebar lists
+/// them all.
 enum AppSection: String, Hashable, CaseIterable, Identifiable {
-  case projects, inbox, automations, devices, settings
+  case home, inbox, agents, devices, automations, issues, pullRequests, usage, notifications, settings, more
 
   var id: String { rawValue }
 
+  /// The phone's tab bar.
+  static let tabs: [AppSection] = [.home, .inbox, .agents, .automations, .more]
+  /// The iPad sidebar's everyday rows, then the occasional ones — the Mac's
+  /// primary list and its foot. Issues only shows with Linear connected.
+  static let primary: [AppSection] = [.home, .inbox, .agents, .devices, .automations, .issues]
+  static let secondary: [AppSection] = [.pullRequests, .usage, .notifications, .settings]
+  /// What More lists, in order.
+  static let underMore: [AppSection] = [.pullRequests, .issues, .devices, .usage, .notifications, .settings]
+
+  /// Where this section lives on a phone: its own tab, or More.
+  var tab: AppSection { Self.tabs.contains(self) ? self : .more }
+
+  /// The screen at the section's root.
+  var root: Route {
+    switch self {
+    case .home: .projects
+    case .inbox: .inbox
+    case .agents: .agents
+    case .devices: .devices
+    case .automations: .automations
+    case .issues: .issues
+    case .pullRequests: .pullRequests
+    case .usage: .usage
+    case .notifications: .notifications
+    case .settings: .settings
+    case .more: .more
+    }
+  }
+
   var title: String {
     switch self {
-    case .projects: "Projects"
+    case .home: "Home"
     case .inbox: "Inbox"
-    case .automations: "Automations"
+    case .agents: "Agents"
     case .devices: "Devices"
+    case .automations: "Automations"
+    case .issues: "Issues"
+    case .pullRequests: "Pull Requests"
+    case .usage: "Usage"
+    case .notifications: "Notifications"
     case .settings: "Settings"
+    case .more: "More"
     }
   }
 
   var symbol: String {
     switch self {
-    case .projects: Icon.projects
+    case .home: Icon.home
     case .inbox: Icon.inbox
-    case .automations: Icon.automations
+    case .agents: Icon.agents
     case .devices: Icon.devices
+    case .automations: Icon.automations
+    case .issues: Icon.issues
+    case .pullRequests: Icon.pullRequests
+    case .usage: Icon.usage
+    case .notifications: Icon.notifications
     case .settings: Icon.settings
+    case .more: Icon.more
     }
   }
 }
@@ -190,14 +234,14 @@ enum SidebarItem: Hashable {
 @MainActor
 @Observable
 final class Router {
-  var section: AppSection = .projects
+  var section: AppSection = .home
   /// One stack per section, used on a phone and in the middle column.
   var paths: [AppSection: [Route]] = [:]
 
   /// True wherever there is room for a sidebar beside the content.
   var isSplit = false
   /// The sidebar's selection, and which projects are folded shut in it.
-  var sidebarSelection: SidebarItem? = .section(.projects)
+  var sidebarSelection: SidebarItem? = .section(.home)
   var collapsedProjects: Set<String> = []
   /// When set, the detail column is rooted on this project instead of the
   /// section's own screen — so an agent opened from the sidebar has its
@@ -227,12 +271,16 @@ final class Router {
     }
   }
 
-  /// Opening a section fresh clears whatever the detail column was showing —
-  /// an agent from one project has no business sitting beside another.
-  func select(_ section: AppSection) {
-    guard section != self.section else { return }
-    self.section = section
-    detailStack = []
+  /// Open a section at its root. On a phone one without a tab opens inside
+  /// More, so back lands on More's list.
+  func show(_ section: AppSection) {
+    guard !isSplit else {
+      apply(.section(section))
+      return
+    }
+    let tab = section.tab
+    self.section = tab
+    paths[tab] = tab == section ? [] : [section.root]
   }
 
   /// Apply a sidebar selection: a section swaps what the detail column shows,
@@ -247,10 +295,10 @@ final class Router {
     case .session(let id, let label, let repoRoot, let projectName):
       // A shortcut into the normal path, not a replacement for it: the
       // project goes underneath so back lands where it always does.
-      // A session always lives under Projects, but only write that when it
+      // A session always lives under Home, but only write that when it
       // actually changes — an `@Observable` write invalidates on assignment,
       // not on difference.
-      if section != .projects { section = .projects }
+      if section != .home { section = .home }
       // Root the column on the project and push only the session. Assigning a
       // two-element path in one update loses the second push; one push
       // against a stable root does not.
@@ -277,13 +325,26 @@ final class Router {
   }
 
   /// Carry open destinations across a rotation or a Split View resize.
+  ///
+  /// A phone's More tab has no sidebar row: its first screen becomes the
+  /// section on the way to an iPad, and goes back under More on the way back.
   func adopt(split: Bool) {
     guard split != isSplit else { return }
     if split {
-      detailStack = paths[section] ?? []
+      var stack = paths[section] ?? []
       paths[section] = []
+      if section == .more, let first = stack.first,
+        let owner = AppSection.underMore.first(where: { $0.root == first })
+      {
+        section = owner
+        stack.removeFirst()
+      }
+      detailStack = stack
+      sidebarSelection = .section(section)
     } else {
-      paths[section] = detailStack
+      let tab = section.tab
+      paths[tab] = (tab == section ? [] : [section.root]) + detailStack
+      section = tab
       detailStack = []
     }
     isSplit = split
@@ -291,14 +352,23 @@ final class Router {
 
   /// Switch section and open something — used by a notification tap.
   func open(_ route: Route, in section: AppSection) {
-    self.section = section
+    guard route != section.root else {
+      show(section)
+      return
+    }
     if isSplit {
+      self.section = section
+      detailProject = nil
       detailStack = [route]
       if case .session(let id, let label, let repoRoot) = route {
         sidebarSelection = .session(id: id, label: label, repoRoot: repoRoot, projectName: "")
+      } else {
+        sidebarSelection = .section(section)
       }
     } else {
-      paths[section] = [route]
+      let tab = section.tab
+      self.section = tab
+      paths[tab] = (tab == section ? [] : [section.root]) + [route]
     }
   }
 

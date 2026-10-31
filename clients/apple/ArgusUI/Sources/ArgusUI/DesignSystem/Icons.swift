@@ -11,7 +11,9 @@ public enum Icon {
   public static let chevronDown = "chevron.down"
   public static let chevronLeft = "chevron.left"
   public static let chevronUp = "chevron.up"
+  /// A menu that picks one of several, like the computer switcher.
   public static let chevronUpDown = "chevron.up.chevron.down"
+  public static let proposal = "lightbulb"
   public static let folder = "folder"
   public static let file = "doc"
   public static let branch = "arrow.triangle.branch"
@@ -93,6 +95,8 @@ public enum Icon {
   public static let issues = issue
   public static let settings = gear
   public static let notifications = "bell"
+  /// The phone's tab for every destination without one of its own.
+  public static let more = "ellipsis.circle"
   /// A session's uncommitted changes.
   public static let changes = "plusminus"
 }

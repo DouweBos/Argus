@@ -79,6 +79,8 @@
 		D5E51A9E0000DE5160000010 /* DesignView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E51A9E0000DE5160000011 /* DesignView.swift */; };
 		ED1700000000000000000004 /* ArgusEditor in Frameworks */ = {isa = PBXBuildFile; productRef = ED1700000000000000000003 /* ArgusEditor */; };
 		F70136FC258ED77D2D4D337A /* WarningsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */; };
+		B4A0C0DE00000000000000A1 /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A0C0DE00000000000000A2 /* MoreView.swift */; };
+		B4A0C0DE00000000000000B1 /* HomeSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A0C0DE00000000000000B2 /* HomeSections.swift */; };
 		FAEB2F8A18B2B7EEA189693B /* AppStore+Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */; };
 		FEED000100000000000000A3 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = FEED000100000000000000A2 /* PostHog */; };
 		FEED000100000000000000C1 /* Telemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEED000100000000000000B1 /* Telemetry.swift */; };
@@ -148,6 +150,8 @@
 		2A25C129590BCC456E86F7A6 /* DevDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevDriver.swift; sourceTree = "<group>"; };
 		2AA1C76CC7A23652BD96252A /* InboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxView.swift; sourceTree = "<group>"; };
 		2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WarningsView.swift; sourceTree = "<group>"; };
+		B4A0C0DE00000000000000A2 /* MoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreView.swift; sourceTree = "<group>"; };
+		B4A0C0DE00000000000000B2 /* HomeSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSections.swift; sourceTree = "<group>"; };
 		3E4CF7C9E04D0A1D6F57EDA5 /* LockScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen.swift; sourceTree = "<group>"; };
 		4510F50B6943CA7B6707AABE /* AutomationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationsView.swift; sourceTree = "<group>"; };
 		46E305D96C871BB99B7DB468 /* ComputerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComputerView.swift; sourceTree = "<group>"; };
@@ -363,6 +367,8 @@
 				15A4D014E40765F1D11AAEF5 /* QuickRunView.swift */,
 				0EF27D5904269DE56D427462 /* StashesView.swift */,
 				2D2B658D4E9F4BB13ED4CC29 /* WarningsView.swift */,
+				B4A0C0DE00000000000000A2 /* MoreView.swift */,
+				B4A0C0DE00000000000000B2 /* HomeSections.swift */,
 				A1E0F1000000000000000006 /* FileSearchView.swift */,
 				A1E0F1000000000000000004 /* QuickOpenView.swift */,
 				A1E0F1000000000000000002 /* FileView.swift */,
@@ -834,6 +840,8 @@
 				5891A5D53C0F0C7CEF4DE90D /* QuickRunView.swift in Sources */,
 				61D0A65B0EF57B4FB152AFF6 /* StashesView.swift in Sources */,
 				F70136FC258ED77D2D4D337A /* WarningsView.swift in Sources */,
+				B4A0C0DE00000000000000A1 /* MoreView.swift in Sources */,
+				B4A0C0DE00000000000000B1 /* HomeSections.swift in Sources */,
 				A1E0F1000000000000000005 /* FileSearchView.swift in Sources */,
 				A1E0F1000000000000000003 /* QuickOpenView.swift in Sources */,
 				A1E0F1000000000000000001 /* FileView.swift in Sources */,

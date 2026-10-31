@@ -17,18 +17,6 @@ struct SettingsView: View {
         .accessibilityHint("Opens your Argus account")
       }
 
-      Section {
-        NavigationLink(value: Route.notifications) {
-          LabeledContent {
-            if app.notifications.unseenCount > 0 {
-              Badge(label: "\(app.notifications.unseenCount)", tone: .danger)
-            }
-          } label: {
-            Label("Notifications", systemImage: Icon.notifications)
-          }
-        }
-      }
-
       Section(UIDevice.current.userInterfaceIdiom == .pad ? "This iPad" : "This iPhone") {
         row(.name, value: app.deviceName)
         row(.appearance, value: app.themePreference.label)

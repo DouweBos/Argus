@@ -26,9 +26,9 @@ extension PhoneDestination {
     -> PhoneDestination
   {
     switch route {
-    case .home: return PhoneDestination(section: .projects)
-    case .runtimes: return PhoneDestination(section: .projects, isFallback: true)
-    case .agents: return PhoneDestination(section: .projects, route: .agents)
+    case .home: return PhoneDestination(section: .home)
+    case .runtimes: return PhoneDestination(section: .home, isFallback: true)
+    case .agents: return PhoneDestination(section: .agents)
     case .devices: return PhoneDestination(section: .devices)
     case .device(_, let key):
       await settle(host)
@@ -41,43 +41,43 @@ extension PhoneDestination {
         route: .device(id: device.id, platform: device.platform, name: device.name, isTv: device.isTv))
     case .inbox: return PhoneDestination(section: .inbox)
     case .proposal(let id): return PhoneDestination(section: .inbox, route: .proposal(id: id))
-    case .pullRequests: return PhoneDestination(section: .inbox, route: .pullRequests)
+    case .pullRequests: return PhoneDestination(section: .pullRequests)
     case .pullRequest(let repo, let number):
-      return PhoneDestination(section: .inbox, route: .pullRequest(repo: repo, number: number, label: "#\(number)"))
+      return PhoneDestination(section: .pullRequests, route: .pullRequest(repo: repo, number: number, label: "#\(number)"))
     case .issues(_, let issue, _):
-      return PhoneDestination(section: .inbox, route: issue.map { .issue(ref: $0) } ?? .issues)
+      return PhoneDestination(section: .issues, route: issue.map { .issue(ref: $0) })
     case .design(let url, let sessionId):
-      return PhoneDestination(section: .projects, route: .design(url: url, sessionId: sessionId))
+      return PhoneDestination(section: .home, route: .design(url: url, sessionId: sessionId))
     case .automations: return PhoneDestination(section: .automations)
     case .quickRun(nil): return PhoneDestination(section: .automations, route: .quickRun)
     case .quickRun(let runId?), .automation(_, let runId?):
       return PhoneDestination(section: .automations, route: .run(id: runId, label: "Run"))
     case .automation(let id, nil):
       return PhoneDestination(section: .automations, route: .automation(id: id, label: "Automation"))
-    case .notifications: return PhoneDestination(section: .settings, route: .notifications)
-    case .usage: return PhoneDestination(section: .settings, route: .usage)
+    case .notifications: return PhoneDestination(section: .notifications)
+    case .usage: return PhoneDestination(section: .usage)
     case .session(_, let agentId?):
       let label = host.statusByAgent[agentId].map(Labels.agentName) ?? hints.agentLabel ?? "Agent"
-      return PhoneDestination(section: .projects, route: .agent(id: agentId, label: label))
+      return PhoneDestination(section: .home, route: .agent(id: agentId, label: label))
     case .session(let id, nil):
       guard let session = await session(id, host: host) else {
         return await sessionHome(id, host: host, hints: hints)
       }
       return PhoneDestination(
-        section: .projects, route: .session(id: id, label: label(session), repoRoot: session.repoRoot))
+        section: .home, route: .session(id: id, label: label(session), repoRoot: session.repoRoot))
     case .sessionGit(let id, let view):
       guard let session = await session(id, host: host) else {
         return await sessionHome(id, host: host, hints: hints)
       }
-      return PhoneDestination(section: .projects, route: gitScreen(view, session: session))
+      return PhoneDestination(section: .home, route: gitScreen(view, session: session))
     case .sessionCode(let id, let path, let line):
       guard let session = await session(id, host: host) else {
         return await sessionHome(id, host: host, hints: hints)
       }
       guard let path else {
-        return PhoneDestination(section: .projects, route: .quickOpen(sessionId: id, label: label(session)))
+        return PhoneDestination(section: .home, route: .quickOpen(sessionId: id, label: label(session)))
       }
-      return PhoneDestination(section: .projects, route: .file(sessionId: id, path: path, line: line, source: .link))
+      return PhoneDestination(section: .home, route: .file(sessionId: id, path: path, line: line, source: .link))
     }
   }
 
@@ -98,11 +98,11 @@ extension PhoneDestination {
   @MainActor
   private static func sessionHome(_ id: String, host: HostStore, hints: RouteHints) async -> PhoneDestination {
     let repoRoot = await session(id, host: host).flatMap { $0.isOutsideProjects ? nil : $0.repoRoot } ?? hints.repoRoot
-    guard let repoRoot else { return PhoneDestination(section: .projects, isFallback: true) }
+    guard let repoRoot else { return PhoneDestination(section: .home, isFallback: true) }
     let name =
       host.projects.first { $0.repoRoot == repoRoot }?.name ?? hints.projectName
       ?? URL(fileURLWithPath: repoRoot).lastPathComponent
-    return PhoneDestination(section: .projects, route: .project(repoRoot: repoRoot, name: name))
+    return PhoneDestination(section: .home, route: .project(repoRoot: repoRoot, name: name))
   }
 
   /// A held session, or one fetched by id when no list the phone has carries it.
@@ -148,8 +148,7 @@ extension Router {
     if let route = destination.route {
       open(route, in: destination.section)
     } else {
-      apply(.section(destination.section))
-      popToRoot()
+      show(destination.section)
     }
   }
 }

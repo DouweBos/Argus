@@ -110,6 +110,18 @@ struct RootView: View {
       }
     }
     .animation(.easeOut(duration: 0.25), value: app.host.lastError)
+    // A section's root is never pushed, so its screen view is sent here.
+    .onChange(of: router.section, initial: true) { _, section in Telemetry.screen(section.root) }
+    // The Inbox badge and Home's "needs you" read the inbox from any tab.
+    .liveRefresh(enabled: app.identity != nil && app.host.connection == .ready, every: .seconds(60)) {
+      await proposals?.refresh()
+      await automations?.refresh()
+    }
+    // Whether Linear is connected decides if Issues is listed at all.
+    .task(id: app.host.connection == .ready) {
+      guard app.host.connection == .ready else { return }
+      await app.host.loadIntegrations()
+    }
   }
 
   /// Every failed request already sets `lastError`; without this the app just
@@ -168,15 +180,31 @@ struct RootView: View {
   private var tabs: some View {
     @Bindable var router = router
     return TabView(selection: $router.section) {
-      ForEach(AppSection.allCases) { section in
+      ForEach(AppSection.tabs) { section in
         Tab(section.title, systemImage: section.symbol, value: section) {
           NavigationStack(path: pathBinding(section)) {
-            root(for: section)
+            Self.sectionRoot(section)
               .navigationDestination(for: Route.self) { destination($0) }
           }
         }
+        .badge(badge(for: section))
       }
     }
+  }
+
+  /// What waits behind a tab: decisions, failures and reports on Inbox,
+  /// unseen notifications on More.
+  private func badge(for section: AppSection) -> Int {
+    switch section {
+    case .inbox: inboxCount
+    case .more: app.notifications.unseenCount
+    default: 0
+    }
+  }
+
+  private var inboxCount: Int {
+    guard let proposals, let automations else { return 0 }
+    return proposals.items(runs: automations.runs, sessionIds: []).actionCount
   }
 
   private func pathBinding(_ section: AppSection) -> Binding<[Route]> {
@@ -185,14 +213,24 @@ struct RootView: View {
       set: { router.paths[section] = $0 })
   }
 
+  /// A section's own screen, for a tab or the detail column's root.
   @ViewBuilder
-  private func root(for section: AppSection) -> some View {
+  static func sectionRoot(_ section: AppSection) -> some View {
     switch section {
-    case .projects: ProjectsView()
+    case .home: ProjectsView()
     case .inbox: InboxView()
-    case .automations: AutomationsView()
+    case .agents: AllAgentsView()
     case .devices: DevicesView()
+    case .automations: AutomationsView()
+    case .issues: IssuesView()
+    case .pullRequests: PullRequestsView()
+    case .usage:
+      HostUsageView()
+        .navigationTitle("Usage")
+        .navigationBarTitleDisplayMode(.inline)
+    case .notifications: WarningsView()
     case .settings: SettingsView()
+    case .more: MoreView()
     }
   }
 
@@ -302,6 +340,8 @@ struct RootView: View {
       HostUsageView()
         .navigationTitle("Usage")
         .navigationBarTitleDisplayMode(.inline)
+    case .more:
+      MoreView()
     }
   }
 
@@ -365,13 +405,7 @@ private struct DetailRoot: View {
     if let project = router.detailProject {
       ProjectView(repoRoot: project.repoRoot, name: project.name)
     } else {
-      switch router.section {
-      case .projects: ProjectsView()
-      case .inbox: InboxView()
-      case .automations: AutomationsView()
-      case .devices: DevicesView()
-      case .settings: SettingsView()
-      }
+      RootView.sectionRoot(router.section)
     }
   }
 }

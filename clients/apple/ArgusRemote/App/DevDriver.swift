@@ -85,7 +85,7 @@
       case "route":
         let section = AppSection(rawValue: command["section"] as? String ?? "") ?? router.section
         guard let path = command["path"] as? String else {
-          router.select(section)
+          router.show(section)
           router.popToRoot()
           return ["ok": true]
         }

@@ -63,6 +63,24 @@ public struct InboxGroups<Proposal: InboxProposal, Run: InboxRun>: Sendable {
 
   /// How many things are actually waiting on you — what a badge would show.
   public var actionCount: Int { pending.count + failed.count + reports.count }
+
+  /// Home's slice of the inbox: enough to act on without home turning into it.
+  public func needsYou(maxProposals: Int = 2, maxFailed: Int = 2) -> NeedsYou {
+    let proposals = Array(pending.prefix(maxProposals))
+    let runs = Array(failed.prefix(maxFailed))
+    let waiting = pending.count + failed.count
+    return NeedsYou(
+      proposals: proposals, failed: runs, waiting: waiting, hidden: waiting - proposals.count - runs.count)
+  }
+
+  public struct NeedsYou: Sendable {
+    public var proposals: [Proposal]
+    public var failed: [Run]
+    /// Decisions plus failures — reports are news, not something waiting.
+    public var waiting: Int
+    /// Waiting but past the cut, for "N more in the inbox".
+    public var hidden: Int
+  }
 }
 
 /// The Mac's inbox, over the host's catalog.

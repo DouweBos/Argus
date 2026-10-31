@@ -248,10 +248,19 @@ it can:
   tabs, its tools in a details sheet), `/sessions/:id/agents/:agentId` the same
   screen on that agent's tab, and `/git/*` and `/code` open the
   phone's changes, stashes, branches, compare or file screens. A screen the
-  phone doesn't have opens its nearest parent (`/runtimes` → projects, an
+  phone doesn't have opens its nearest parent (`/runtimes` → Home, an
   unknown device → devices). `?host=` selects that paired computer when the
   phone knows it by that id; otherwise the link reads from the current one.
-  Handoff from the desktop goes through the same mapping.
+  A link opened right after launch waits (up to a few seconds) for the
+  computer's first project list before it falls back. Handoff from the
+  desktop goes through the same mapping.
+
+  The phone's tabs are the Mac's top-level destinations that fit five:
+  Home (`/`), Inbox (`/inbox`), Agents (`/agents`), Automations
+  (`/automations`) and More (`/more`, phone-only). More lists Pull Requests,
+  Issues (with Linear connected), Devices, Usage, Notifications and Settings;
+  a link to one of those opens it inside More. The iPad sidebar lists every
+  destination instead, the Mac's primary rows then its footer ones.
 
 ## Invariants
 

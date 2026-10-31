@@ -63,6 +63,12 @@ struct InboxStoreTests {
     #expect(items.reports.first?.reportPreview == "Weekly")
     #expect(items.actionCount == 4)
     #expect(!items.isEmpty)
+
+    let home = items.needsYou(maxProposals: 2, maxFailed: 1)
+    #expect(home.proposals.map(\.id) == ["pending"])
+    #expect(home.failed.map(\.id) == ["failed"])
+    #expect(home.waiting == 3)
+    #expect(home.hidden == 1)
   }
 
   static func remoteProposal(_ id: String, _ status: String, extra: String = "") -> String {

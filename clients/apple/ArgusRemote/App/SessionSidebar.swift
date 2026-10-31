@@ -8,17 +8,22 @@ struct SessionSidebar: View {
   @Environment(AppStore.self) private var app
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
+  @Environment(ProposalsStore.self) private var proposals
+  @Environment(AutomationsStore.self) private var automations
 
   /// The project a new session is being started in.
   @State private var newSessionProject: RemoteProject?
 
   var body: some View {
     List(selection: selection) {
+      if !app.hosts.isEmpty {
+        Section { ComputerSwitcher() }
+      }
       Section {
-        ForEach(AppSection.allCases) { section in
-          Label(section.title, systemImage: section.symbol)
-            .tag(SidebarItem.section(section))
-        }
+        ForEach(AppSection.primary.filter { $0 != .issues || host.linearConnected }) { sectionRow($0) }
+      }
+      Section {
+        ForEach(AppSection.secondary) { sectionRow($0) }
       }
 
       ForEach(host.projects) { project in
@@ -61,6 +66,20 @@ struct SessionSidebar: View {
         // Show it straight away rather than waiting for the next poll.
         Task { await host.loadSessions(repoRoot: project.repoRoot) }
       }
+    }
+  }
+
+  private func sectionRow(_ section: AppSection) -> some View {
+    Label(section.title, systemImage: section.symbol)
+      .badge(badge(for: section))
+      .tag(SidebarItem.section(section))
+  }
+
+  private func badge(for section: AppSection) -> Int {
+    switch section {
+    case .inbox: proposals.items(runs: automations.runs, sessionIds: []).actionCount
+    case .notifications: app.notifications.unseenCount
+    default: 0
     }
   }
 
