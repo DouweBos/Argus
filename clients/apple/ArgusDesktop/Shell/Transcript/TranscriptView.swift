@@ -77,7 +77,7 @@ struct TranscriptView: View {
     .sheet(item: Bindable(model).messageAction) { action in
       switch action {
       case .edit(let message): EditMessageSheet(agentKey: agentKey, message: message)
-      case .fork(let message): ForkMessageSheet(agentKey: agentKey, sessionId: sessionId, message: message)
+      case .fork(let message): ForkMessageSheet(agentKey: agentKey, message: message)
       }
     }
     .environment(\.transcriptActionsEnabled, HostStore.parseStoppedKey(agentKey) == nil)

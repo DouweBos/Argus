@@ -6,6 +6,7 @@ import SwiftUI
 public struct TranscriptMessageView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
+  @Environment(\.messageMenu) private var menu
 
   let agentKey: String
   let message: RemoteMessage
@@ -56,8 +57,15 @@ public struct TranscriptMessageView: View {
 
   private var bubble: some View {
     VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
-      ForEach(Array(textBlocks.enumerated()), id: \.offset) { _, block in
-        MarkdownView(text: block, baseSize: 15, mentions: isUser)
+      if !textBlocks.isEmpty {
+        // On the text alone: a long press on a tool card or its prompt isn't about the message.
+        VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
+          ForEach(Array(textBlocks.enumerated()), id: \.offset) { _, block in
+            MarkdownView(text: block, baseSize: 15, mentions: isUser)
+          }
+        }
+        .contentShape(.rect)
+        .messageMenu(menu, for: message)
       }
       ForEach(message.toolCalls) { call in
         ToolCallCard(agentKey: agentKey, call: call, depth: 0)

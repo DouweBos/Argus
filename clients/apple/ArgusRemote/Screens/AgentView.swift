@@ -15,6 +15,14 @@ struct AgentView: View {
   @State private var confirmingStop = false
   @State private var showingMcp = false
   @State private var viewingToken: Int?
+  @State private var messageSheet: MessageSheet?
+
+  /// The edit or fork sheet a message's menu opened.
+  struct MessageSheet: Identifiable {
+    let message: RemoteMessage
+    let fork: Bool
+    var id: String { "\(fork ? "fork" : "edit"):\(message.id)" }
+  }
 
   private var sessionId: String? { host.statusByAgent[agentId]?.sessionId }
 
@@ -42,6 +50,7 @@ struct AgentView: View {
       AgentTranscriptView(agentKey: agentId, isLive: !isGone) { working in
         Telemetry.capture(.transcriptWorkLogOpened(working: working))
       }
+      .environment(\.messageMenu, messageMenu)
       if isGone {
         MutedText("This agent has stopped, so it can't take new messages.")
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -122,6 +131,9 @@ struct AgentView: View {
       guard let viewingToken else { return }
       Task { await host.stopViewing(token: viewingToken) }
     }
+    .sheet(item: $messageSheet) { sheet in
+      messageSheetView(sheet)
+    }
     .sheet(isPresented: $showingMcp) {
       NavigationStack {
         AgentMcpServersView(agentId: agentId)
@@ -153,6 +165,42 @@ struct AgentView: View {
           ? "It stops mid-turn and anything still queued for it is discarded."
           : "Its process ends and anything still queued for it is discarded.")
     }
+  }
+
+  /// Copy for any message; edit and fork only while the agent runs and this phone has control.
+  private var messageMenu: MessageMenu {
+    MessageMenu(canChange: host.hasControl && !isGone) { action, message in
+      switch action {
+      case .copy:
+        guard let text = message.copyText else { return }
+        Clipboard.copy(text)
+        Telemetry.capture(.messageAction(action: .copy, role: Self.role(message), success: true))
+      case .edit: messageSheet = MessageSheet(message: message, fork: false)
+      case .fork: messageSheet = MessageSheet(message: message, fork: true)
+      }
+    }
+  }
+
+  @ViewBuilder
+  private func messageSheetView(_ sheet: MessageSheet) -> some View {
+    let role = Self.role(sheet.message)
+    if sheet.fork {
+      MessageForkSheet(agentKey: agentId, message: sheet.message) { forked, target in
+        Telemetry.capture(
+          .messageAction(
+            action: target == .session ? .forkSession : .forkAgent, role: role, success: forked != nil))
+        guard let forked else { return }
+        router.push(.agent(id: forked.agent.agentId, label: Labels.agentName(forked.agent)))
+      }
+    } else {
+      MessageEditSheet(agentKey: agentId, message: sheet.message) { success in
+        Telemetry.capture(.messageAction(action: .edit, role: role, success: success))
+      }
+    }
+  }
+
+  private static func role(_ message: RemoteMessage) -> TelemetryEvent.MessageRole {
+    message.role == .user ? .user : .assistant
   }
 
   /// File paths in the transcript open the viewer; reading needs control.

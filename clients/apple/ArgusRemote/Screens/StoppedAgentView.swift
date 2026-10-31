@@ -34,6 +34,15 @@ struct StoppedAgentView: View {
       AgentTranscriptView(agentKey: key, isLive: false) { working in
         Telemetry.capture(.transcriptWorkLogOpened(working: working))
       }
+      // A saved chat only copies; there is no live conversation to edit or fork.
+      .environment(
+        \.messageMenu,
+        MessageMenu(canChange: false) { action, message in
+          guard action == .copy, let text = message.copyText else { return }
+          Clipboard.copy(text)
+          Telemetry.capture(
+            .messageAction(action: .copy, role: message.role == .user ? .user : .assistant, success: true))
+        })
 
       VStack(alignment: .leading, spacing: 6) {
         if host.hasControl, let session {

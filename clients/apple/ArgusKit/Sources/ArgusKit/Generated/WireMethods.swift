@@ -178,6 +178,75 @@ extension ArgusProtocol {
       }
     }
 
+    public struct AgentsForkParamsInto: RawRepresentable, Codable, Hashable, Sendable {
+      public var rawValue: String
+      public init(rawValue: String) { self.rawValue = rawValue }
+      public init(from decoder: Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(String.self)
+      }
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+      }
+
+      public static let session = AgentsForkParamsInto(rawValue: "session")
+      public static let agent = AgentsForkParamsInto(rawValue: "agent")
+    }
+
+    public struct AgentsForkParams: Codable, Sendable {
+      public var agentId: String
+      public var messageId: String
+      public var into: AgentsForkParamsInto
+      public var description: String?
+      public var branch: String?
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case messageId = "message_id"
+        case into = "into"
+        case description = "description"
+        case branch = "branch"
+      }
+
+      public init(agentId: String, messageId: String, into: AgentsForkParamsInto, description: String? = nil, branch: String? = nil) {
+        self.agentId = agentId
+        self.messageId = messageId
+        self.into = into
+        self.description = description
+        self.branch = branch
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(messageId, forKey: .messageId)
+        try c.encode(into, forKey: .into)
+        try c.encodeIfPresent(description, forKey: .description)
+        try c.encodeIfPresent(branch, forKey: .branch)
+      }
+    }
+
+    public struct AgentsForkResult: Codable, Sendable {
+      public var sessionId: String
+      public var agent: RemoteAgentStatus
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case agent = "agent"
+      }
+
+      public init(sessionId: String, agent: RemoteAgentStatus) {
+        self.sessionId = sessionId
+        self.agent = agent
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+        try c.encode(agent, forKey: .agent)
+      }
+    }
+
     public struct AgentsHandoffToAccountParams: Codable, Sendable {
       public var agentId: String
       public var accountId: String
@@ -584,6 +653,48 @@ extension ArgusProtocol {
     }
 
     public struct AgentsQueueUpdateResult: Codable, Sendable {
+      public var accepted: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case accepted = "accepted"
+      }
+
+      public init(accepted: Bool) {
+        self.accepted = accepted
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(accepted, forKey: .accepted)
+      }
+    }
+
+    public struct AgentsRewindParams: Codable, Sendable {
+      public var agentId: String
+      public var messageId: String
+      public var text: String
+
+      enum CodingKeys: String, CodingKey {
+        case agentId = "agent_id"
+        case messageId = "message_id"
+        case text = "text"
+      }
+
+      public init(agentId: String, messageId: String, text: String) {
+        self.agentId = agentId
+        self.messageId = messageId
+        self.text = text
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(agentId, forKey: .agentId)
+        try c.encode(messageId, forKey: .messageId)
+        try c.encode(text, forKey: .text)
+      }
+    }
+
+    public struct AgentsRewindResult: Codable, Sendable {
       public var accepted: Bool
 
       enum CodingKeys: String, CodingKey {
@@ -6162,6 +6273,12 @@ extension ArgusProtocol {
       public static let name = "agents.dismiss_limit_resume"
     }
 
+    public enum AgentsFork: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsForkParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsForkResult
+      public static let name = "agents.fork"
+    }
+
     public enum AgentsHandoffToAccount: RemoteCommand {
       public typealias Params = ArgusProtocol.MethodsTypes.AgentsHandoffToAccountParams
       public typealias Result = ArgusProtocol.MethodsTypes.AgentsHandoffToAccountResult
@@ -6226,6 +6343,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.AgentsQueueUpdateParams
       public typealias Result = ArgusProtocol.MethodsTypes.AgentsQueueUpdateResult
       public static let name = "agents.queue_update"
+    }
+
+    public enum AgentsRewind: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.AgentsRewindParams
+      public typealias Result = ArgusProtocol.MethodsTypes.AgentsRewindResult
+      public static let name = "agents.rewind"
     }
 
     public enum AgentsSend: RemoteCommand {

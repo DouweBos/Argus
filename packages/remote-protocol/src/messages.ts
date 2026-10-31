@@ -278,6 +278,23 @@ export const MethodParams = {
     message: z.string().max(MAX_PROMPT),
   }),
   "agents.queue_send_now": z.object({ agent_id: z.string(), id: z.string() }),
+  /** Rewind to just before a user message and send `text` in its place. */
+  "agents.rewind": z.object({
+    agent_id: z.string(),
+    message_id: z.string(),
+    text: z.string().min(1).max(MAX_PROMPT),
+  }),
+  /**
+   * Fork the chat at a message into a new agent: in a new session branched at
+   * that point, or in this one. `description` names the new session.
+   */
+  "agents.fork": z.object({
+    agent_id: z.string(),
+    message_id: z.string(),
+    into: z.enum(["session", "agent"]),
+    description: z.string().max(500).optional(),
+    branch: z.string().max(200).optional(),
+  }),
   "scratch_pads.create": z.object({
     name: z.string().trim().max(80).optional(),
   }),
@@ -818,6 +835,8 @@ export const MethodResult = {
   "agents.queue_update": z.object({ accepted: z.boolean() }),
   /** `mid_turn`: the agent was busy, so the message joined its running turn. */
   "agents.queue_send_now": z.object({ mid_turn: z.boolean() }),
+  "agents.rewind": z.object({ accepted: z.boolean() }),
+  "agents.fork": z.object({ session_id: z.string(), agent: RemoteAgentStatus }),
   "sessions.create": z.object({ session: RemoteSession }),
   "scratch_pads.create": z.object({ session: RemoteSession }),
   "sessions.files": z.object({ files: z.array(z.string()) }),

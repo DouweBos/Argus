@@ -16,15 +16,6 @@ struct EditMessageSheet: View {
   @State private var working = false
   @State private var error: String?
 
-  /// The linked-projects preamble goes back on as it came off.
-  private var preamble: String? {
-    let joined = message.textBlocks.joined(separator: "\n")
-    guard let linked = LinkedProjects.parsePreamble(joined) else { return nil }
-    return String(joined.dropLast(linked.rest.count))
-  }
-
-  private var original: String { message.displayBlocks.joined(separator: "\n\n") }
-
   private var trimmed: String { draft.trimmingCharacters(in: .whitespacesAndNewlines) }
 
   var body: some View {
@@ -42,24 +33,23 @@ struct EditMessageSheet: View {
         Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
         Button("Edit & Restore") { submit() }
           .keyboardShortcut(.return, modifiers: .command)
-          .disabled(trimmed.isEmpty || trimmed == original.trimmingCharacters(in: .whitespacesAndNewlines) || working)
+          .disabled(
+            trimmed.isEmpty || trimmed == message.editableText.trimmingCharacters(in: .whitespacesAndNewlines)
+              || working)
       }
     }
     .padding(20)
     .frame(width: 520)
-    .onAppear { draft = original }
+    .onAppear { draft = message.editableText }
   }
 
   private func submit() {
-    guard let backend = host.backend else { return }
     working = true
     error = nil
-    let text = (preamble ?? "") + trimmed
+    let edited = trimmed
     Task {
       do {
-        _ = try await backend.request(
-          ArgusProtocol.Commands.RewindAgent.self,
-          .init(agentId: agentKey, messageId: message.id, resend: .init(text: text)))
+        try await host.rewind(agentId: agentKey, message: message, edited: edited)
         MacTelemetry.capture(.messageAction(action: .edit, role: .user, success: true))
         dismiss()
       } catch {
@@ -80,15 +70,9 @@ struct ForkMessageSheet: View {
   @Environment(\.theme) private var theme
 
   let agentKey: String
-  let sessionId: String
   let message: RemoteMessage
 
-  private enum Target: String, CaseIterable {
-    case session = "New session"
-    case agent = "New agent here"
-  }
-
-  @State private var target = Target.session
+  @State private var target = HostStore.MessageForkTarget.session
   @State private var summary = ""
   @State private var branch = ""
   @State private var working = false
@@ -100,7 +84,8 @@ struct ForkMessageSheet: View {
     VStack(alignment: .leading, spacing: 12) {
       Text("Fork chat").font(.scaled(.headline))
       Picker("Fork into", selection: $target) {
-        ForEach(Target.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+        Text("New session").tag(HostStore.MessageForkTarget.session)
+        Text("New agent here").tag(HostStore.MessageForkTarget.agent)
       }
       .pickerStyle(.segmented)
       .labelsHidden()
@@ -126,57 +111,23 @@ struct ForkMessageSheet: View {
   }
 
   private func submit() {
-    guard let backend = host.backend else { return }
     working = true
     error = nil
     let target = target
-    let summary = summary.trimmingCharacters(in: .whitespaces)
-    let branch = branch.trimmingCharacters(in: .whitespaces)
+    let action: MacTelemetryEvent.MessageAction = target == .session ? .forkSession : .forkAgent
     Task {
       do {
-        let point = try await backend.request(
-          ArgusProtocol.Commands.AgentForkPoint.self, .init(agentId: agentKey, messageId: message.id))
-        let into: String
-        let resume: String?
-        if target == .session {
-          let forked = try await backend.request(
-            ArgusProtocol.Commands.ForkSession.self,
-            .init(
-              sourceSessionId: sessionId, branch: branch, description: summary, forkTimestampMs: point.timestampMs,
-              forkTurnNumber: Double(point.turnNumber), sourceClaudeSessionId: point.claudeSessionId,
-              replayOps: point.replayOps))
-          into = forked.session.id
-          resume = forked.claudeSessionId
-        } else {
-          guard let claude = point.claudeSessionId else { throw ForkError.noSession }
-          let forked = try await backend.request(
-            ArgusProtocol.Commands.ForkChatInSession.self,
-            .init(
-              sourceSessionId: sessionId, sourceClaudeSessionId: claude, forkTimestampMs: point.timestampMs,
-              forkTurnNumber: Double(point.turnNumber)))
-          into = sessionId
-          resume = forked.claudeSessionId
-        }
-        // The host seeds the new agent's transcript with the chat up to the fork.
-        let agent = try await backend.request(
-          ArgusProtocol.Commands.StartAgent.self,
-          .init(
-            sessionId: into, resumeSessionId: resume,
-            seedFrom: .init(agentId: agentKey, throughMessageId: message.id)))
-        MacTelemetry.capture(
-          .messageAction(action: target == .session ? .forkSession : .forkAgent, role: role, success: true))
+        let forked = try await host.fork(
+          agentId: agentKey, message: message, into: target,
+          description: target == .session ? summary : nil, branch: target == .session ? branch : nil)
+        MacTelemetry.capture(.messageAction(action: action, role: role, success: true))
         dismiss()
-        desktop.open(spawned: agent.agentId, session: into)
+        desktop.open(spawned: forked.agent.agentId, session: forked.sessionId)
       } catch {
-        MacTelemetry.capture(
-          .messageAction(action: target == .session ? .forkSession : .forkAgent, role: role, success: false))
-        self.error = error is ForkError ? "This conversation has no Claude session to fork from yet." : HostStore.describe(error)
+        MacTelemetry.capture(.messageAction(action: action, role: role, success: false))
+        self.error = HostStore.describe(error)
         working = false
       }
     }
-  }
-
-  private enum ForkError: Error {
-    case noSession
   }
 }

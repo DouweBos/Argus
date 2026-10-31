@@ -1370,6 +1370,39 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return control(() => sendQueuedMessageNow(agent_id, id));
   },
 
+  "agents.rewind": async (params) => {
+    const { agent_id, message_id, text } = parse("agents.rewind", params);
+    requireAgent(agent_id);
+    // Loaded on use: the conversation stack reaches back to this gateway for push.
+    const { rewindAgent } = await import("../agent/conversation/actions");
+    await control(() =>
+      rewindAgent(agent_id, message_id, { resend: { text } }),
+    );
+
+    return { accepted: true };
+  },
+
+  "agents.fork": async (params, ctx) => {
+    const { agent_id, message_id, into, description, branch } = parse(
+      "agents.fork",
+      params,
+    );
+    if (ctx.scope) {
+      throw new GatewayError("capability_denied", "agents.fork");
+    }
+    requireAgent(agent_id);
+    const { forkChatAt } = await import("../agent/conversation/forkAt");
+    const forked = await control(() =>
+      forkChatAt(agent_id, message_id, into, { description, branch }),
+    );
+    const agent = appState.agents.get(forked.agent.agent_id);
+    if (!agent) {
+      throw new GatewayError("internal", "forked agent vanished");
+    }
+
+    return { session_id: forked.sessionId, agent: toRemoteAgentStatus(agent) };
+  },
+
   "sessions.create": async (params) => {
     const {
       repo_root,

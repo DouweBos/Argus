@@ -164,6 +164,10 @@ export const REMOTE_METHODS = {
   "agents.queue_update": "control",
   /** Delivers a queued message first, into a busy agent's running turn. */
   "agents.queue_send_now": "control",
+  /** Edit a sent message: the conversation rewinds to it and resends. */
+  "agents.rewind": "control",
+  /** Fork the chat at a message into a new agent, here or in a new session. */
+  "agents.fork": "control",
   /** Create a new session inside an existing project (never a new project). */
   "sessions.create": "control",
   /** Create a scratch pad: a session in its own directory, outside any project. */

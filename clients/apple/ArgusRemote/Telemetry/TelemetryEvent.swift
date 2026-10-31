@@ -94,6 +94,19 @@ enum TelemetryEvent {
     case unreachable
   }
 
+  /// What a message's long-press menu did.
+  enum MessageAction: String {
+    case copy
+    case edit
+    case forkSession = "fork_session"
+    case forkAgent = "fork_agent"
+  }
+
+  enum MessageRole: String {
+    case user
+    case assistant
+  }
+
   /// Where adding a computer to the account started.
   enum ComputerAddedVia: String {
     /// A link code typed into the phone.
@@ -143,6 +156,8 @@ enum TelemetryEvent {
   case mcpServersOpened
   /// A turn's folded work was opened in a chat; `working` says the agent was still on it.
   case transcriptWorkLogOpened(working: Bool)
+  /// A message's menu was used; `success` says the host took the edit or fork (always true for copy).
+  case messageAction(action: MessageAction, role: MessageRole, success: Bool)
   /// A session file opened in the read-only viewer.
   case fileViewed(source: FileViewSource, language: String)
   /// A Figma frame opened in the design viewer.
@@ -213,6 +228,7 @@ enum TelemetryEvent {
     case .warningsOpened: "ios_warnings_opened"
     case .mcpServersOpened: "ios_mcp_servers_opened"
     case .transcriptWorkLogOpened: "ios_transcript_work_log_opened"
+    case .messageAction: "ios_message_action"
     case .fileViewed: "ios_file_viewed"
     case .designOpened: "ios_design_opened"
     case .designLayerSelected: "ios_design_layer_selected"
@@ -306,6 +322,8 @@ enum TelemetryEvent {
       ["count": count]
     case .transcriptWorkLogOpened(let working):
       ["working": working]
+    case .messageAction(let action, let role, let success):
+      ["action": action.rawValue, "role": role.rawValue, "success": success]
     case .fileViewed(let source, let language):
       ["source": source.rawValue, "language": language]
     case .designOpened(let source):

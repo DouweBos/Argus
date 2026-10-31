@@ -120,6 +120,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "agents.queue_remove": agent(),
   "agents.queue_update": agent(),
   "agents.queue_send_now": agent(),
+  "agents.rewind": agent(),
   "permission.respond": agent(),
 
   // Keyed by a history id, not an agent id — nothing a scope can name, and a
@@ -128,6 +129,9 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "agents.stopped_image": DENIED,
   // Spawning is creating an agent outside the scope by definition.
   "agents.spawn": DENIED,
+  // Scoped to its source agent; the handler still refuses any scoped guest,
+  // since the fork it starts is outside the scope.
+  "agents.fork": agent(),
 
   // This connection's own device record and push registration.
   "device.rename": OPEN,

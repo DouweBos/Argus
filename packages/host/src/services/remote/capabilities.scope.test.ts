@@ -364,6 +364,16 @@ describe("a scoped context reaching anything else", () => {
     ]);
   });
 
+  it("refuses a fork even of the guest's own agent", async () => {
+    const result = await denied(
+      "agents.fork",
+      { agent_id: "a1", message_id: "m1", into: "agent" },
+      ctx,
+    );
+
+    expect(result).toMatch(/^capability_denied: agents\.fork$/);
+  });
+
   it("denies a missing or non-string subject rather than falling through", async () => {
     const results = await Promise.all([
       denied("agents.status", {}, ctx),

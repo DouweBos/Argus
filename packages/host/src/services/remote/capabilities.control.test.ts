@@ -36,6 +36,19 @@ vi.mock("../file/operations", () => ({
 vi.mock("../mcp/projectDiscovery", () => ({
   collectAllProjects: vi.fn(() => [{ path: "/repo" }]),
 }));
+vi.mock("../agent/conversation/actions", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  rewindAgent: vi.fn(async () => ({
+    claude_session_id: null,
+    restoredPrompt: "",
+  })),
+}));
+vi.mock("../agent/conversation/forkAt", () => ({
+  forkChatAt: vi.fn(async () => ({
+    sessionId: "s1",
+    agent: { agent_id: "a1" },
+  })),
+}));
 vi.mock("../agent/chatHistory", () => ({
   loadConversation: vi.fn(() => null),
   loadHistoryIndex: vi.fn(() =>
@@ -149,6 +162,10 @@ const { getSessionFullDiff, getSessionBranchDiff } = vi.mocked(
 const { gitCheckout, gitCreateBranch, gitDeleteBranch, gitStashAndCheckout } =
   vi.mocked(await import("../session/gitBranchOps"));
 const { GitError } = await import("../session/gitError");
+const { rewindAgent } = vi.mocked(
+  await import("../agent/conversation/actions"),
+);
+const { forkChatAt } = vi.mocked(await import("../agent/conversation/forkAt"));
 
 /** Every `startAgent` override past the session id, left unset. */
 const SPAWN_DEFAULTS = Array<undefined>(9).fill(undefined);
@@ -197,6 +214,8 @@ const CONTROL_METHODS = [
   "files.search",
   "files.search_cancel",
   "agents.capabilities",
+  "agents.rewind",
+  "agents.fork",
   "permission.respond",
 ] as const;
 
@@ -373,6 +392,40 @@ describe("control capability gating", () => {
 
     expect(all.agents).toHaveLength(25);
     expect(capped.agents).toHaveLength(5);
+  });
+
+  it("rewinds to an edited message", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    await dispatch(
+      "agents.rewind",
+      { agent_id: "a1", message_id: "m1", text: "try again" },
+      ctx,
+    );
+    expect(rewindAgent).toHaveBeenCalledWith("a1", "m1", {
+      resend: { text: "try again" },
+    });
+  });
+
+  it("forks a chat into a new agent and returns where it went", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    const res = MethodResult["agents.fork"].parse(
+      await dispatch(
+        "agents.fork",
+        {
+          agent_id: "a1",
+          message_id: "m1",
+          into: "session",
+          description: "try it",
+        },
+        ctx,
+      ),
+    );
+    expect(forkChatAt).toHaveBeenCalledWith("a1", "m1", "session", {
+      description: "try it",
+      branch: undefined,
+    });
+    expect(res.session_id).toBe("s1");
+    expect(res.agent.agent_id).toBe("a1");
   });
 
   it("allows a control device to stop an agent", async () => {
