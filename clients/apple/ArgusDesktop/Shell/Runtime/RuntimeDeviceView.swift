@@ -5,8 +5,6 @@ import SwiftUI
 /// mouse and keyboard back out as touches and key presses. The renderer's
 /// `IosDeviceStreamView` / `AndroidDeviceStreamView` with `CanvasStreamBody`.
 struct RuntimeDeviceView: View {
-  private enum Status { case connecting, error, noVideo, streaming }
-
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var store
   @Environment(RuntimeModel.self) private var runtime
@@ -16,33 +14,27 @@ struct RuntimeDeviceView: View {
   let isTv: Bool
 
   @State private var handle = DeviceVideoView.Handle()
-  @State private var status = Status.connecting
-  @State private var codedSize = CGSize.zero
+  @State private var session = DeviceSession { watch in
+    MacTelemetry.capture(
+      .deviceWatched(
+        platform: watch.platform.rawValue, durationMs: watch.durationMs,
+        interacted: watch.interacted))
+  }
   @State private var stageSize = CGSize.zero
-  @State private var detach: (() -> Void)?
-  @State private var watchStart: Date?
-  @State private var interacted = false
   @State private var width: CGFloat = 0
 
   private static let remoteBesideMinWidth: CGFloat = 640
-
-  private static let noVideoTimeout = Duration.seconds(10)
-  private static let startAttempts = 6
-  private static let retryDelay = Duration.seconds(5)
 
   private var deviceState: RemoteDeviceState? { store.deviceStates[deviceId] }
   private var rotation: Double { Double(deviceState?.display?.rotation ?? 0) }
 
   private var geometry: DeviceGeometry {
-    DeviceGeometry(coded: codedSize, stage: stageSize, rotation: rotation)
+    DeviceGeometry(coded: session.codedSize, stage: stageSize, rotation: rotation)
   }
 
   /// Someone other than this Mac holds the device; input would be refused.
   private var otherHolder: RemoteDeviceClaim? {
-    guard let holder = store.deviceClaims[deviceId]?.holder,
-      let mine = store.connectionId
-    else { return nil }
-    return holder.connectionId == mine ? nil : holder
+    DeviceSession.otherHolder(store.deviceClaims[deviceId], connectionId: store.connectionId)
   }
 
   var body: some View {
@@ -63,7 +55,7 @@ struct RuntimeDeviceView: View {
       guard store.connection == .ready else { return }
       await subscribe()
     }
-    .onDisappear { teardown() }
+    .onDisappear { session.stop() }
   }
 
   private var stage: some View {
@@ -71,11 +63,11 @@ struct RuntimeDeviceView: View {
       ZStack {
         // The panel's canvas around the picture, so a letterboxed device doesn't sit in a black slab.
         theme.bg
-        DeviceVideoView(handle: handle) { status = .streaming }
+        DeviceVideoView(handle: handle) { session.markStreaming() }
           .frame(width: geometry.renderedSize.width, height: geometry.renderedSize.height)
           .rotationEffect(.degrees(rotation))
         RuntimeInputView(onInput: receive)
-        if status != .streaming {
+        if session.status != .streaming {
           Text(placeholder)
             .font(.scaled(size: 12))
             .foregroundStyle(theme.textMuted)
@@ -97,8 +89,8 @@ struct RuntimeDeviceView: View {
   }
 
   private var placeholder: String {
-    switch status {
-    case .connecting: codedSize == .zero ? "Connecting to device…" : "Decoding first frame…"
+    switch session.status {
+    case .connecting: session.codedSize == .zero ? "Connecting to device…" : "Decoding first frame…"
     case .error: "Couldn't start the stream. Is the device still booted?"
     case .noVideo: "No video from this device — it's booted but not producing a stream."
     case .streaming: ""
@@ -113,7 +105,7 @@ struct RuntimeDeviceView: View {
     case .pointer(let phase, let point, let secondary, _):
       // A TV is driven by its remote, not by clicking its picture.
       guard !secondary, !isTv, let normalized = geometry.normalize(point) else { return }
-      interacted = true
+      session.markInteracted()
       store.deviceTouch(
         deviceId: deviceId, platform: platform, x: normalized.x, y: normalized.y,
         eventType: phase.rawValue)
@@ -137,7 +129,7 @@ struct RuntimeDeviceView: View {
     guard
       let key = KeyMap.nativeKey(platform: platform, macKeyCode: keyCode, modifierFlags: modifiers)
     else { return }
-    interacted = true
+    session.markInteracted()
     store.deviceKeyboard(
       deviceId: deviceId, platform: platform, keyCode: key.keyCode, modifiers: key.modifiers,
       isDown: down)
@@ -149,67 +141,19 @@ struct RuntimeDeviceView: View {
   ]
 
   private func sendButton(_ button: String) {
-    interacted = true
+    session.markInteracted()
     store.deviceButton(deviceId: deviceId, platform: platform, button: button)
   }
 
   // MARK: Stream
 
   private func subscribe() async {
-    teardown()
-    status = .connecting
-    codedSize = .zero
-    watchStart = Date()
-    interacted = false
-
-    let handle = handle
-    let sink: (MediaMessage) -> Void = { message in
-      switch message {
-      case .config(_, let codec, let width, let height, let description):
-        codedSize = CGSize(width: width, height: height)
-        handle.configure(codec: codec, width: width, height: height, description: description)
-      case .frame(_, let keyFrame, let timestamp, let data):
-        handle.enqueue(data, isKeyFrame: keyFrame, timestampMillis: timestamp)
-      case .jpeg:
-        break
-      }
-    }
-    // A device that only just booted refuses capture until it has finished
-    // starting up, so a failed start is retried for a while.
-    var attached: (() -> Void)?
-    for attempt in 0..<Self.startAttempts {
-      attached = await runtime.streams.attach(.device(deviceId, platform), sink)
-      if attached != nil || Task.isCancelled { break }
-      if attempt + 1 < Self.startAttempts { try? await Task.sleep(for: Self.retryDelay) }
-    }
-    guard let stop = attached else {
-      if !Task.isCancelled { status = .error }
-      return
-    }
-    // Superseded while starting: the next subscription owns the view now.
-    guard !Task.isCancelled else { return stop() }
-    detach = stop
-
-    // Take the device unless someone else is already driving it; the host
-    // pushes `device.claim` from here on.
-    await store.loadClaimStatus(deviceId: deviceId)
-    if otherHolder == nil { await store.claimDevice(deviceId: deviceId) }
-    await store.deviceState(deviceId: deviceId, platform: platform)
-
-    try? await Task.sleep(for: Self.noVideoTimeout)
-    if !Task.isCancelled, status == .connecting { status = .noVideo }
-  }
-
-  private func teardown() {
-    if let watchStart {
-      MacTelemetry.capture(
-        .deviceWatched(
-          platform: platform.rawValue,
-          durationMs: Int(Date().timeIntervalSince(watchStart) * 1000), interacted: interacted))
-    }
-    watchStart = nil
-    detach?()
-    detach = nil
+    await session.run(
+      deviceId: deviceId, platform: platform, host: store, claim: true,
+      attach: { [runtime, deviceId, platform] sink in
+        await runtime.streams.attach(.device(deviceId, platform), sink)
+      },
+      sink: handle.receive)
   }
 }
 

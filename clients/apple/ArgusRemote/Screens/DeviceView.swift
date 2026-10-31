@@ -3,8 +3,6 @@ import SwiftUI
 
 /// A live mirrored device: H.264 in, touches and keystrokes back out.
 struct DeviceView: View {
-  private enum Status { case connecting, error, noVideo, streaming }
-
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
 
@@ -14,27 +12,26 @@ struct DeviceView: View {
   let isTv: Bool
 
   @State private var handle = DeviceVideoView.Handle()
-  @State private var status = Status.connecting
-  @State private var codedSize = CGSize.zero
+  @State private var session = DeviceSession(timing: Self.timing) { watch in
+    Telemetry.capture(.deviceWatched(durationMs: watch.durationMs, interacted: watch.interacted))
+  }
+  @State private var streams: RuntimeStreamHub?
   @State private var stageSize = CGSize.zero
   @State private var keyboardText = ""
   @State private var keyboardFocused = false
   @FocusState private var keyboardField: Bool
-  @State private var unregister: (() -> Void)?
   @State private var lastDragPoint: CGPoint?
   @State private var busy = false
-  /// When this screen started watching, and whether anything was driven from
-  /// it — a glance and a working session are worth telling apart.
-  @State private var watchStart: Date?
-  @State private var interacted = false
   @State private var confirmingEnd = false
 
   /// An EAS Simulator session: a billed cloud device that can't rotate.
   private var isEas: Bool { deviceId.hasPrefix("eas:") }
 
-  /// Booted but producing nothing decodable — worth saying so rather than
-  /// spinning forever.
-  private static let noVideoTimeout = Duration.seconds(10)
+  private static let timing = {
+    var timing = DeviceSession.Timing()
+    timing.startAttempts = 1
+    return timing
+  }()
   /// Minimum finger travel, in points, between injected drag samples.
   private static let dragMinTravel: CGFloat = 2
 
@@ -47,7 +44,7 @@ struct DeviceView: View {
   private var rotation: Double { Double(deviceState?.display?.rotation ?? 0) }
 
   private var geometry: DeviceGeometry {
-    DeviceGeometry(coded: codedSize, stage: stageSize, rotation: rotation)
+    DeviceGeometry(coded: session.codedSize, stage: stageSize, rotation: rotation)
   }
 
   var body: some View {
@@ -86,7 +83,7 @@ struct DeviceView: View {
       Text("The cloud device goes away and stops billing.")
     }
     .task(id: host.connection) { await subscribe() }
-    .onDisappear { teardown() }
+    .onDisappear { session.stop() }
   }
 
   private var stage: some View {
@@ -94,7 +91,7 @@ struct DeviceView: View {
       ZStack {
         theme.mediaBg
         video
-        if status != .streaming {
+        if session.status != .streaming {
           Text(placeholder)
             .font(.system(size: 13))
             .foregroundStyle(theme.textMuted)
@@ -115,13 +112,13 @@ struct DeviceView: View {
   /// fills the width instead of being letterboxed into a portrait box.
   private var video: some View {
     let rendered = geometry.renderedSize
-    return DeviceVideoView(handle: handle) { status = .streaming }
+    return DeviceVideoView(handle: handle) { session.markStreaming() }
       .frame(width: rendered.width, height: rendered.height)
       .rotationEffect(.degrees(rotation))
   }
 
   private var placeholder: String {
-    switch status {
+    switch session.status {
     case .connecting: "Connecting to device…"
     case .error: "Couldn't start the stream. Is the device still booted?"
     case .noVideo: "No video from this device — it's booted but not producing a stream."
@@ -155,14 +152,14 @@ struct DeviceView: View {
 
   private func send(_ point: CGPoint, phase: Int) {
     guard let normalized = geometry.normalize(point) else { return }
-    interacted = true
+    session.markInteracted()
     host.deviceTouch(
       deviceId: deviceId, platform: platform,
       x: normalized.x, y: normalized.y, eventType: phase)
   }
 
   private func sendButton(_ button: String) {
-    interacted = true
+    session.markInteracted()
     host.deviceButton(deviceId: deviceId, platform: platform, button: button)
   }
 
@@ -254,7 +251,7 @@ struct DeviceView: View {
 
   private func sendKey(_ character: String) {
     guard let key = KeyMap.nativeKey(platform: platform, character: character) else { return }
-    interacted = true
+    session.markInteracted()
     host.deviceKeyboard(
       deviceId: deviceId, platform: platform, keyCode: key.keyCode,
       modifiers: key.modifiers, isDown: true)
@@ -267,65 +264,18 @@ struct DeviceView: View {
 
   private func subscribe() async {
     guard host.connection == .ready else { return }
-    status = .connecting
-    if watchStart == nil { watchStart = Date() }
-
-    guard let streamId = await host.watchDevice(deviceId: deviceId, platform: platform) else {
-      status = .error
-      return
-    }
-    unregister = host.registerMediaSink(streamId: streamId) { message in
-      switch message {
-      case .config(_, let codec, let width, let height, let description):
-        codedSize = CGSize(width: width, height: height)
-        handle.configure(
-          codec: codec, width: width, height: height, description: description)
-      case .frame(_, let keyFrame, let timestamp, let data):
-        handle.enqueue(data, isKeyFrame: keyFrame, timestampMillis: timestamp)
-      case .jpeg:
-        break
-      }
-    }
-
-    // Take the device unless someone else is already driving it; the host
-    // pushes `device.claim` from here on.
-    if host.hasControl {
-      await host.loadClaimStatus(deviceId: deviceId)
-      if otherHolder == nil {
-        await host.claimDevice(deviceId: deviceId)
-      }
-    }
-
-    // Seed the pose; the host pushes `device.state` from here on while it is
-    // being watched.
-    await host.deviceState(deviceId: deviceId, platform: platform)
-
-    Task {
-      try? await Task.sleep(for: Self.noVideoTimeout)
-      if status == .connecting { status = .noVideo }
-    }
+    let hub = streams ?? RuntimeStreamHub(store: host)
+    streams = hub
+    await session.run(
+      deviceId: deviceId, platform: platform, host: host, claim: host.hasControl,
+      attach: { [deviceId, platform] sink in
+        await hub.attach(.device(deviceId, platform), sink)
+      },
+      sink: handle.receive)
   }
 
   /// The claim, when someone other than this phone holds it.
   private var otherHolder: RemoteDeviceClaim? {
-    guard let holder = host.deviceClaims[deviceId]?.holder else { return nil }
-
-    return holder.connectionId == host.connectionId ? nil : holder
-  }
-
-  private func teardown() {
-    if let watchStart {
-      Telemetry.capture(
-        .deviceWatched(
-          durationMs: Int(Date().timeIntervalSince(watchStart) * 1000), interacted: interacted))
-    }
-    unregister?()
-    unregister = nil
-    Task {
-      // Let go before leaving, so the next client isn't locked out by a screen
-      // nobody is looking at.
-      await host.releaseDevice(deviceId: deviceId)
-      await host.unwatchDevice(deviceId: deviceId)
-    }
+    DeviceSession.otherHolder(host.deviceClaims[deviceId], connectionId: host.connectionId)
   }
 }

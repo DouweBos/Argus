@@ -29,6 +29,18 @@ public struct DeviceVideoView {
     public func enqueue(_ data: Data, isKeyFrame: Bool, timestampMillis: Double) {
       view?.enqueue(data, isKeyFrame: isKeyFrame, timestampMillis: timestampMillis)
     }
+
+    /// Feed one stream message; JPEGs are the browser's and not drawn here.
+    public func receive(_ message: MediaMessage) {
+      switch message {
+      case .config(_, let codec, let width, let height, let description):
+        configure(codec: codec, width: width, height: height, description: description)
+      case .frame(_, let keyFrame, let timestamp, let data):
+        enqueue(data, isKeyFrame: keyFrame, timestampMillis: timestamp)
+      case .jpeg:
+        break
+      }
+    }
   }
 
   public let handle: Handle

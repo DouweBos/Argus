@@ -1,4 +1,4 @@
-import ArgusCore
+import ArgusKit
 import Foundation
 
 /// Shares one host stream between every view showing the same device or
@@ -6,14 +6,14 @@ import Foundation
 /// panel and a popout of the same simulator would otherwise steal each other's
 /// frames, and the first to close would stop the other's picture.
 @MainActor
-final class RuntimeStreamHub {
-  enum Subject: Hashable {
+public final class RuntimeStreamHub {
+  public enum Subject: Hashable {
     case device(String, RemotePlatform)
     case browser(String)
   }
 
   private final class Entry {
-    var sinks: [UUID: (MediaMessage) -> Void] = [:]
+    var sinks: [UUID: @MainActor (MediaMessage) -> Void] = [:]
     /// Replayed to a late joiner: the decoder needs the parameter sets and
     /// everything since the last keyframe, a JPEG only the last frame.
     var config: MediaMessage?
@@ -34,13 +34,15 @@ final class RuntimeStreamHub {
   private let store: HostStore
   private var entries: [Key: Entry] = [:]
 
-  init(store: HostStore) {
+  public init(store: HostStore) {
     self.store = store
   }
 
   /// Start receiving `subject`'s frames; nil when the host couldn't start the
   /// stream. Call the returned closure to stop.
-  func attach(_ subject: Subject, _ sink: @escaping (MediaMessage) -> Void) async -> (() -> Void)? {
+  public func attach(
+    _ subject: Subject, _ sink: @escaping @MainActor (MediaMessage) -> Void
+  ) async -> (() -> Void)? {
     let key = Key(subject: subject, host: host(of: subject))
     let entry = entries[key] ?? Entry()
     entries[key] = entry
