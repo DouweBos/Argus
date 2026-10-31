@@ -251,14 +251,16 @@ extension HostStore {
 
   // MARK: Permissions
 
-  /// `alwaysAllow` is an "Always allow" rule for the rest of the session. Only
-  /// a local backend can pass one — the remote method has no field for it.
+  /// `alwaysAllow` is an "Always allow" rule for the rest of the session. The
+  /// gateway derives the same rule itself, so a phone only asks for one.
   public func respond(
     agentId: String, toolUseId: String, decision: String, message: String? = nil,
     alwaysAllow: String? = nil, fromNotification: Bool = false
   ) async {
     hooks.track(
-      .permissionAnswered(approved: decision == "allow", fromNotification: fromNotification))
+      .permissionAnswered(
+        approved: decision == "allow", alwaysAllow: alwaysAllow != nil,
+        fromNotification: fromNotification))
     // Clear the inline form at once; the round trip only confirms it.
     let key = promptKey(agentId, toolUseId)
     let prompt = prompts.removeValue(forKey: key)
@@ -285,13 +287,19 @@ extension HostStore {
       let tool_use_id: String
       let decision: String
       let message: String?
+      let always_allow: Bool?
     }
+    struct Result: Decodable { let allow_rule: String? }
     do {
-      try await backend.request(
+      let result = try await backend.request(
         .permissionRespond,
         Params(
-          agent_id: agentId, tool_use_id: toolUseId, decision: decision, message: message),
-        as: IgnoredResult.self)
+          agent_id: agentId, tool_use_id: toolUseId, decision: decision, message: message,
+          always_allow: alwaysAllow != nil ? true : nil),
+        as: Result.self)
+      if alwaysAllow != nil, result.allow_rule == nil {
+        lastError = Self.alwaysAllowUnsupported
+      }
       await refreshTranscript(agentId: agentId)
     } catch {
       // Refused or lost: put the prompt back so it can be answered again.
@@ -301,6 +309,10 @@ extension HostStore {
       hooks.decisionUndelivered(agentId, toolUseId, decision)
     }
   }
+
+  /// An older computer ignores the request and allows the call just once.
+  public nonisolated static let alwaysAllowUnsupported =
+    "Allowed once. Update Argus on your computer to always allow from here."
 
   /// Why an answer didn't land, in words: the host's own reason otherwise.
   public nonisolated static func refusedAnswerMessage(_ error: Error) -> String {

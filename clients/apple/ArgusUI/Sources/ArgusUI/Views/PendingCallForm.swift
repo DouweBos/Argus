@@ -99,9 +99,9 @@ struct PendingCallForm: View {
     }
   }
 
-  /// Only the local backend can send a session rule.
+  /// A session rule outlives this one call, so it needs the control grant.
   private var alwaysAllow: (rule: String, action: () -> Void)? {
-    guard host.backend?.kind == .local else { return nil }
+    guard host.hasControl else { return nil }
     let rule = AlwaysAllowRule.rule(name: call.name, input: call.input)
     return (rule, {
       Task {

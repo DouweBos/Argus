@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alwaysAllowRule } from "../alwaysAllowRule";
+import { alwaysAllowRule } from "./alwaysAllowRule";
 
 describe("alwaysAllowRule", () => {
   it("generates Bash rule with binary prefix", () => {

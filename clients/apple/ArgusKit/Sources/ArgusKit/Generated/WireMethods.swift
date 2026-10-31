@@ -4134,19 +4134,22 @@ extension ArgusProtocol {
       public var toolUseId: String
       public var decision: PermissionRespondParamsDecision
       public var message: String?
+      public var alwaysAllow: Bool?
 
       enum CodingKeys: String, CodingKey {
         case agentId = "agent_id"
         case toolUseId = "tool_use_id"
         case decision = "decision"
         case message = "message"
+        case alwaysAllow = "always_allow"
       }
 
-      public init(agentId: String, toolUseId: String, decision: PermissionRespondParamsDecision, message: String? = nil) {
+      public init(agentId: String, toolUseId: String, decision: PermissionRespondParamsDecision, message: String? = nil, alwaysAllow: Bool? = nil) {
         self.agentId = agentId
         self.toolUseId = toolUseId
         self.decision = decision
         self.message = message
+        self.alwaysAllow = alwaysAllow
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -4155,23 +4158,28 @@ extension ArgusProtocol {
         try c.encode(toolUseId, forKey: .toolUseId)
         try c.encode(decision, forKey: .decision)
         try c.encodeIfPresent(message, forKey: .message)
+        try c.encodeIfPresent(alwaysAllow, forKey: .alwaysAllow)
       }
     }
 
     public struct PermissionRespondResult: Codable, Sendable {
       public var accepted: Bool
+      public var allowRule: String?
 
       enum CodingKeys: String, CodingKey {
         case accepted = "accepted"
+        case allowRule = "allow_rule"
       }
 
-      public init(accepted: Bool) {
+      public init(accepted: Bool, allowRule: String? = nil) {
         self.accepted = accepted
+        self.allowRule = allowRule
       }
 
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(accepted, forKey: .accepted)
+        try c.encodeIfPresent(allowRule, forKey: .allowRule)
       }
     }
 

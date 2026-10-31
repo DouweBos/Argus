@@ -53,6 +53,7 @@ import {
   startAgent,
   stopAgent,
 } from "../agent/agentService";
+import { alwaysAllowRule } from "../agent/alwaysAllowRule";
 import { loadConversation, loadHistoryIndex } from "../agent/chatHistory";
 import { agentContextWindow } from "../agent/contextWindow";
 import { liveCursor, readConversation } from "../agent/conversation/live";
@@ -1066,29 +1067,38 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
 
   "permission.respond": async (params, ctx) => {
-    const { agent_id, tool_use_id, decision, message } = parse(
+    const { agent_id, tool_use_id, decision, message, always_allow } = parse(
       "permission.respond",
       params,
     );
     // Only answer a prompt THIS gateway forwarded to THIS device — no
-    // pre-authorization, no allow-rule injection. `message` rides along with a
-    // deny to carry AskUserQuestion answers / plan feedback (never an allow
-    // rule), keeping this within the monitor+approve scope.
+    // pre-authorization. `message` rides along with a deny to carry
+    // AskUserQuestion answers / plan feedback. An always-allow rule is derived
+    // here from the prompt itself, never taken from the device.
     const key = permissionKey(agent_id, tool_use_id);
     if (!ctx.outstandingPermissions.has(key)) {
       throw new GatewayError("bad_request", "no such outstanding prompt");
     }
+    const prompt = appState.agentPendingPermissions
+      .get(agent_id)
+      ?.get(tool_use_id);
+    const allowRule =
+      decision === "allow" && always_allow && prompt
+        ? alwaysAllowRule(prompt.tool_name, prompt.tool_input)
+        : undefined;
     respondToPermission(
       agent_id,
       tool_use_id,
       decision,
-      undefined,
-      false,
+      allowRule,
+      allowRule !== undefined,
       decision === "deny" ? message : undefined,
     );
     ctx.outstandingPermissions.delete(key);
 
-    return { accepted: true };
+    return allowRule
+      ? { accepted: true, allow_rule: allowRule }
+      : { accepted: true };
   },
 
   "device.rename": async (params, ctx) => {

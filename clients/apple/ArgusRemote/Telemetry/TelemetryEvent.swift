@@ -103,7 +103,7 @@ enum TelemetryEvent {
   case hostSwitched(hostCount: Int)
   case messageSent(queued: Bool, hasImages: Bool, length: Int)
   case messageSendFailed(retried: Bool)
-  case permissionAnswered(approved: Bool, fromNotification: Bool)
+  case permissionAnswered(approved: Bool, alwaysAllow: Bool, fromNotification: Bool)
   case agentControlled(action: AgentAction)
   /// `strategy` is only meaningful for a merge — nil elsewhere.
   case workLanded(action: LandAction, success: Bool, strategy: String? = nil)
@@ -252,8 +252,8 @@ enum TelemetryEvent {
       ["queued": queued, "has_images": hasImages, "length_bucket": Self.bucket(length)]
     case .messageSendFailed(let retried):
       ["retried": retried]
-    case .permissionAnswered(let approved, let fromNotification):
-      ["approved": approved, "from_notification": fromNotification]
+    case .permissionAnswered(let approved, let alwaysAllow, let fromNotification):
+      ["approved": approved, "always_allow": alwaysAllow, "from_notification": fromNotification]
     case .agentControlled(let action):
       ["action": action.rawValue]
     case .workLanded(let action, let success, let strategy):

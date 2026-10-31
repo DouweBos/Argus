@@ -3,6 +3,7 @@ import type {
   ToolResultBlock,
 } from "../../../stores/conversationStore";
 import { useCallback, useMemo, type ReactNode } from "react";
+import { alwaysAllowRule } from "@argus/host/services/agent/alwaysAllowRule";
 import {
   Button,
   HoverActionButton,
@@ -28,7 +29,6 @@ import { openImageViewer } from "../../../stores/imageViewerStore";
 import { getSessionState } from "../../../stores/sessionStore";
 import { Markdown } from "../../shared/Markdown";
 import { FileLinkHandler, LinkifiedText } from "../FileLinkHandler";
-import { alwaysAllowRule } from "../alwaysAllowRule";
 
 interface ToolCallCardProps {
   /** Agent ID — needed to route permission responses. */

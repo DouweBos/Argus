@@ -94,7 +94,7 @@ public enum StoreEvent: Sendable, Equatable {
 
   case messageSent(queued: Bool, hasImages: Bool, length: Int)
   case messageSendFailed(retried: Bool)
-  case permissionAnswered(approved: Bool, fromNotification: Bool)
+  case permissionAnswered(approved: Bool, alwaysAllow: Bool, fromNotification: Bool)
   case agentControlled(action: AgentAction)
   /// `strategy` is only meaningful for a merge — nil elsewhere.
   case workLanded(action: LandAction, success: Bool, strategy: String? = nil)

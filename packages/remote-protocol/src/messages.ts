@@ -190,6 +190,9 @@ export const MethodParams = {
     /** Optional message sent with a deny — carries AskUserQuestion answers or
      * plan feedback, so the client can respond inline like the desktop. */
     message: z.string().optional(),
+    /** With an allow: also allow this kind of call for the rest of the session.
+     * The host derives the rule from the prompt; the client can't name one. */
+    always_allow: z.boolean().optional(),
   }),
   "device.rename": z.object({ name: z.string().trim().min(1).max(60) }),
   "device.capabilities": z.object({}),
@@ -763,7 +766,11 @@ export const MethodResult = {
     data: z.string(),
     media_type: z.string(),
   }),
-  "permission.respond": z.object({ accepted: z.boolean() }),
+  "permission.respond": z.object({
+    accepted: z.boolean(),
+    /** The rule an `always_allow` added. Absent from hosts that predate it. */
+    allow_rule: z.string().optional(),
+  }),
   "device.rename": z.object({ accepted: z.boolean() }),
   "device.capabilities": z.object({ capabilities: z.array(z.string()) }),
   "device.push_info": z.object({

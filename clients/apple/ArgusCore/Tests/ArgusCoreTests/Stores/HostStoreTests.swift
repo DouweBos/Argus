@@ -231,6 +231,24 @@ struct HostStoreTests {
     #expect(HostStore.refusedAnswerMessage(gone).hasPrefix("That prompt is no longer waiting"))
   }
 
+  @Test("always allow from a phone asks the gateway for the rule")
+  func alwaysAllowOverGateway() async {
+    let backend = FakeBackend(kind: .gateway)
+    backend.reply(.permissionRespond, #"{"accepted":true,"allow_rule":"Bash(npm *)"}"#)
+    let store = HostStore()
+    await store.attach(backend)
+    await store.respond(agentId: "a1", toolUseId: "t1", decision: "allow", alwaysAllow: "Bash(npm *)")
+    #expect(backend.params(.permissionRespond)?["always_allow"] as? Bool == true)
+    #expect(store.lastError == nil)
+
+    backend.reply(.permissionRespond, #"{"accepted":true}"#)
+    await store.respond(agentId: "a1", toolUseId: "t2", decision: "allow", alwaysAllow: "Bash(npm *)")
+    #expect(store.lastError == HostStore.alwaysAllowUnsupported)
+
+    await store.respond(agentId: "a1", toolUseId: "t3", decision: "allow")
+    #expect(backend.params(.permissionRespond)?["always_allow"] == nil)
+  }
+
   @Test("a host too old for a method explains itself instead of erroring")
   func unsupportedByHost() async {
     var reported: [String] = []

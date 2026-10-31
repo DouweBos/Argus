@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import { alwaysAllowRule } from "@argus/host/services/agent/alwaysAllowRule";
 import { Badge, Button } from "@argus/peacock";
 import { respondToPermission } from "../../../lib/ipc";
 import { formatToolName } from "../../../lib/toolLabels";
@@ -20,7 +21,6 @@ import {
   useSelectedSessionId,
   useSessions,
 } from "../../../stores/sessionStore";
-import { alwaysAllowRule } from "../../agent/alwaysAllowRule";
 import styles from "./PermissionBanner.module.css";
 
 interface PendingEntry {

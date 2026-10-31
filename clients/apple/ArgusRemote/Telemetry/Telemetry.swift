@@ -255,8 +255,9 @@ extension TelemetryEvent {
       self = .messageSent(queued: queued, hasImages: hasImages, length: length)
     case .messageSendFailed(let retried):
       self = .messageSendFailed(retried: retried)
-    case .permissionAnswered(let approved, let fromNotification):
-      self = .permissionAnswered(approved: approved, fromNotification: fromNotification)
+    case .permissionAnswered(let approved, let alwaysAllow, let fromNotification):
+      self = .permissionAnswered(
+        approved: approved, alwaysAllow: alwaysAllow, fromNotification: fromNotification)
     case .agentControlled(let action):
       self = .agentControlled(action: action)
     case .workLanded(let action, let success, let strategy):

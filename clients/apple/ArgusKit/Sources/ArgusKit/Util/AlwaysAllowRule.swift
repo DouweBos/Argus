@@ -1,7 +1,7 @@
 import Foundation
 
 /// The rule an "Always allow" answer adds for the rest of the session, as
-/// `app/components/agent/alwaysAllowRule.ts` derives it: a command's binary,
+/// `packages/host/src/services/agent/alwaysAllowRule.ts` derives it: a command's binary,
 /// a file's extension, a URL's domain, else the whole tool.
 public enum AlwaysAllowRule {
   public static func rule(name: String, input: [String: JSONValue]) -> String {
