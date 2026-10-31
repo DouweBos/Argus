@@ -147,6 +147,41 @@ struct ComposerControlsTests {
   }
 }
 
+@Suite("ComposerOptions")
+struct ComposerOptionsTests {
+  private func models(_ values: String...) throws -> [RemoteModelInfo] {
+    let json = values.map { "{\"value\":\"\($0)\",\"displayName\":\"\($0)\",\"description\":\"\"}" }
+    return try JSONDecoder().decode([RemoteModelInfo].self, from: Data("[\(json.joined(separator: ","))]".utf8))
+  }
+
+  @Test("an agent's own models win; without them, another agent's")
+  func fallback() throws {
+    let own = try models("opus")
+    var other = RemoteAgentCapabilities.empty
+    other.models = try models("default", "sonnet")
+    let byAgent = ["a": .empty, "b": other]
+    #expect(ComposerOptions.models(own: own, byAgent: byAgent).map(\.value) == ["opus"])
+    #expect(ComposerOptions.models(own: [], byAgent: byAgent).map(\.value) == ["default", "sonnet"])
+    #expect(ComposerOptions.models(own: [], byAgent: ["a": .empty]).isEmpty)
+  }
+
+  @Test("no pick is the CLI default; an unknown one falls back to the first")
+  func current() throws {
+    let list = try models("default", "sonnet")
+    #expect(ComposerOptions.current(nil, in: list)?.value == "default")
+    #expect(ComposerOptions.current("sonnet", in: list)?.value == "sonnet")
+    #expect(ComposerOptions.current("gone", in: list)?.value == "default")
+  }
+
+  @Test("the session's own project isn't linkable")
+  func linkable() throws {
+    let json = #"[{"repo_root":"/a","name":"A"},{"repo_root":"/b","name":"B"}]"#
+    let projects = try JSONDecoder().decode([RemoteProject].self, from: Data(json.utf8))
+    #expect(ComposerOptions.linkable(projects, ownRepoRoot: "/a").map(\.repoRoot) == ["/b"])
+    #expect(ComposerOptions.linkable(projects, ownRepoRoot: nil).count == 2)
+  }
+}
+
 @Suite("ImageAttachments")
 struct ImageAttachmentsTests {
   private static let pixel = Data(
@@ -167,6 +202,23 @@ struct ImageAttachmentsTests {
     let pending = try #require(ImageAttachments.pending(data: tiff, type: .tiff))
     #expect(pending.attachment.mediaType == "image/png")
     #expect(Data(base64Encoded: pending.attachment.data)?.prefix(4) == Self.pixel.prefix(4))
+  }
+
+  @Test("unnamed bytes are typed by sniffing")
+  func sniffed() throws {
+    let png = try #require(ImageAttachments.pending(data: Self.pixel))
+    #expect(png.attachment.mediaType == "image/png")
+    #expect(png.attachment.data == Self.pixel.base64EncodedString())
+    let tiff = try #require(PlatformImage(data: Self.pixel)?.tiffRepresentation)
+    #expect(ImageAttachments.pending(data: tiff)?.attachment.mediaType == "image/png")
+    #expect(ImageAttachments.pending(data: Data("nope".utf8)) == nil)
+  }
+
+  @Test("a camera photo goes out as JPEG, a pasted image as PNG")
+  func photo() throws {
+    let image = try #require(PlatformImage(data: Self.pixel))
+    #expect(ImageAttachments.pending(photo: image)?.attachment.mediaType == "image/jpeg")
+    #expect(ImageAttachments.pending(image: image)?.attachment.mediaType == "image/png")
   }
 
   @Test("non-images are refused")

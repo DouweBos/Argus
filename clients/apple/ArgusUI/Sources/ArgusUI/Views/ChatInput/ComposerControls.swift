@@ -66,6 +66,27 @@ public enum ComposerEffort {
   }
 }
 
+/// What the composer's model and project pickers offer.
+public enum ComposerOptions {
+  /// The agent's own models; with none reported, any agent's on the computer.
+  public static func models(
+    own: [RemoteModelInfo], byAgent: [String: RemoteAgentCapabilities]
+  ) -> [RemoteModelInfo] {
+    if !own.isEmpty { return own }
+    return byAgent.sorted { $0.key < $1.key }.first { !$0.value.models.isEmpty }?.value.models ?? []
+  }
+
+  /// The picked model's entry; nil is the CLI default.
+  public static func current(_ picked: String?, in models: [RemoteModelInfo]) -> RemoteModelInfo? {
+    models.first { $0.value == (picked ?? "default") } ?? models.first
+  }
+
+  /// Every project but the session's own — linking it to itself adds nothing.
+  public static func linkable(_ projects: [RemoteProject], ownRepoRoot: String?) -> [RemoteProject] {
+    projects.filter { $0.repoRoot != ownRepoRoot }
+  }
+}
+
 /// What a key press in the composer does. Pure, so the bindings are testable.
 public enum ComposerKey: Equatable, Sendable {
   case returnKey(shift: Bool)

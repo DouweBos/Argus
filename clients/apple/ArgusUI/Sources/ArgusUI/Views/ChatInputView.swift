@@ -27,8 +27,7 @@ public struct ChatInputView: View {
   @State private var text = ""
   @State private var linkedProjects: [String] = []
   @State private var handoffAccounts: [ArgusProtocol.LimitHandoffAccount] = []
-  @State private var attachments: [RemoteImageAttachment] = []
-  @State private var previews: [PlatformImage] = []
+  @State private var images: [PendingImage] = []
   @State private var picker: Picker?
   @State private var photoItems: [PhotosPickerItem] = []
   @State private var showingCamera = false
@@ -49,7 +48,7 @@ public struct ChatInputView: View {
     host.capabilitiesByAgent[agentId] ?? .empty
   }
   private var hasContent: Bool {
-    !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !attachments.isEmpty
+    !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !images.isEmpty
   }
   /// Offered only while the input is empty and the agent waits on the user.
   private var followUps: [String] {
@@ -106,7 +105,7 @@ public struct ChatInputView: View {
         LimitHandoffCard(agentId: agentId, accounts: handoffAccounts) { handoffAccounts = [] }
       }
       if !slashSuggestions.isEmpty {
-        suggestionList(slashSuggestions.map(\.name), hint: slashSuggestions.map(\.description))
+        PhoneSlashList(commands: slashSuggestions) { acceptCommand($0) }
       } else if !mentionItems.isEmpty {
         mentionList
       } else if !followUps.isEmpty {
@@ -116,7 +115,7 @@ public struct ChatInputView: View {
         }
       }
 
-      if !previews.isEmpty { attachmentStrip }
+      if !images.isEmpty { attachmentStrip }
 
       chipRow
       inputRow
@@ -133,7 +132,10 @@ public struct ChatInputView: View {
       Task { await refreshBrowse() }
     }
     .sheet(item: $picker) { which in pickerSheet(which) }
-    .photosPicker(isPresented: $showingPhotoLibrary, selection: $photoItems, matching: .images)
+    // Compatible: HEIC arrives as JPEG, which the API reads and stays under the gateway's frame limit.
+    .photosPicker(
+      isPresented: $showingPhotoLibrary, selection: $photoItems, matching: .images,
+      preferredItemEncoding: .compatible)
     .onChange(of: photoItems) { _, items in Task { await attach(items) } }
     .confirmationDialog("Attach", isPresented: $showingAttachMenu, titleVisibility: .hidden) {
       Button("Photo Library") { showingPhotoLibrary = true }
@@ -144,7 +146,7 @@ public struct ChatInputView: View {
     }
     #if os(iOS)
       .fullScreenCover(isPresented: $showingCamera) {
-        CameraPicker { image in append(image) }
+        CameraPicker { photo in add(ImageAttachments.pending(photo: photo)) }
       }
     #endif
   }
@@ -170,10 +172,8 @@ public struct ChatInputView: View {
           label: ComposerPermissionMode.label(mode), icon: Icon.lock,
           tone: mode == .auto ? nil : .accent
         ) { picker = .mode }
-        if currentModelSupportsEffort {
-          Chip(label: host.effortByAgent[agentId] ?? "effort", icon: Icon.clock) {
-            picker = .effort
-          }
+        if !effortLevels.isEmpty {
+          Chip(label: ComposerEffort.label(effort), icon: Icon.clock) { picker = .effort }
         }
         Chip(
           label: linkedProjects.isEmpty ? "Link project" : "\(linkedProjects.count) linked",
@@ -192,11 +192,10 @@ public struct ChatInputView: View {
           text: $text,
           height: $inputHeight,
           placeholder: "Message",
-          onPasteImages: { images in images.forEach(append) })
-        if text.isEmpty {
-          Text("Message")
+          onPasteImages: { pasted in pasted.forEach { add(ImageAttachments.pending(image: $0)) } })
+        if let ghost = placeholder {
+          ghost
             .font(.scaled(size: 15))
-            .foregroundStyle(theme.textMuted)
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .allowsHitTesting(false)
@@ -227,17 +226,16 @@ public struct ChatInputView: View {
   private var attachmentStrip: some View {
     ScrollView(.horizontal, showsIndicators: false) {
       HStack(spacing: 6) {
-        ForEach(Array(previews.enumerated()), id: \.offset) { index, image in
-          Image(platformImage: image)
+        ForEach(images) { pending in
+          Image(platformImage: pending.preview)
             .resizable()
             .scaledToFill()
             .frame(width: 56, height: 56)
             .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
             .overlay(alignment: .topTrailing) {
               Button {
-                previews.remove(at: index)
-                attachments.remove(at: index)
-                draftImages.save(attachments, agentId: agentId)
+                images.removeAll { $0.id == pending.id }
+                saveImages()
               } label: {
                 Image(systemName: Icon.close)
                   .font(.scaled(size: 9, weight: .bold))
@@ -254,46 +252,21 @@ public struct ChatInputView: View {
     }
   }
 
-  private func suggestionList(_ items: [String], hint: [String]?) -> some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 0) {
-        ForEach(Array(items.enumerated()), id: \.offset) { index, item in
-          Button {
-            acceptCommand(item)
-          } label: {
-            VStack(alignment: .leading, spacing: 1) {
-              Text(item).font(.scaled(size: 14)).foregroundStyle(theme.text)
-              if let hint, index < hint.count, !hint[index].isEmpty {
-                Text(hint[index])
-                  .font(.scaled(size: 11))
-                  .foregroundStyle(theme.textMuted)
-                  .lineLimit(1)
-              }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 6)
-            .contentShape(Rectangle())
-          }
-          .buttonStyle(.argusPlain)
-        }
-      }
-    }
-    .frame(maxHeight: 190)
-    .padding(.horizontal, 8)
-    .background(theme.bgTertiary)
-    .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
+  /// "Message" while empty; after an accepted `/command `, its argument hint as ghost text.
+  private var placeholder: Text? {
+    if text.isEmpty { return Text("Message").foregroundStyle(theme.textMuted) }
+    guard let hint = SlashCommandMenu.argumentHint(for: text, in: commands) else { return nil }
+    return Text("\(Text(text).foregroundStyle(.clear))\(Text(hint).foregroundStyle(theme.textMuted))")
   }
 
   // MARK: Autocomplete
 
-  /// Slash commands only while the first token is still being typed.
-  private var slashSuggestions: [RemoteSlashCommand] {
-    guard text.hasPrefix("/"), !text.contains(" "), !text.contains("\n") else { return [] }
-    let needle = String(text.dropFirst()).lowercased()
-    return capabilities.commands
-      .filter { needle.isEmpty || $0.name.lowercased().contains(needle) }
-      .prefix(8)
-      .map { $0 }
+  private var commands: [SlashCommandMenu.Command] {
+    SlashCommandMenu.merged(capabilities.commands.map(SlashCommandMenu.Command.init))
+  }
+
+  private var slashSuggestions: [SlashCommandMenu.Command] {
+    SlashCommandMenu.suggestions(for: text, in: commands)
   }
 
   private var mentionQuery: String? { MentionQuery.detect(in: text) }
@@ -342,8 +315,9 @@ public struct ChatInputView: View {
   }
 
   /// Completing a slash command replaces the whole first token.
-  private func acceptCommand(_ name: String) {
-    text = "/\(name) "
+  private func acceptCommand(_ command: SlashCommandMenu.Command) {
+    onAffordance?(.slashCommand)
+    text = SlashCommandMenu.accepted(command)
   }
 
   private var mentionList: some View {
@@ -427,9 +401,23 @@ public struct ChatInputView: View {
     ComposerPermissionMode.canonical(status?.permissionMode)
   }
 
-  private var modelLabel: String {
-    ModelName.label(for: status?.model, in: capabilities.models) ?? "Model"
+  /// This agent's models; with none reported yet, any agent's on the computer.
+  private var models: [RemoteModelInfo] {
+    ComposerOptions.models(own: capabilities.models, byAgent: host.capabilitiesByAgent)
   }
+
+  private var modelLabel: String {
+    ModelName.label(for: status?.model, in: models) ?? "Model"
+  }
+
+  private var effortLevels: [String] {
+    ComposerEffort.levels(for: ComposerOptions.current(status?.model, in: models))
+  }
+
+  private var effort: String? { host.effortByAgent[agentId] }
+
+  /// The effort picker's value for "no level": the CLI default.
+  private static let defaultEffort = ""
 
   /// Sentinel picker value for "follow the computer's active account".
   private static let followDefaultAccount = ""
@@ -446,21 +434,17 @@ public struct ChatInputView: View {
     accountName(pinnedAccountId) ?? "Default account"
   }
 
-  private var currentModelSupportsEffort: Bool {
-    capabilities.models.first { $0.value == status?.model }?.supportsEffort == true
-  }
-
   @ViewBuilder
   private func pickerSheet(_ which: Picker) -> some View {
     switch which {
     case .model:
       PickerSheet(
         title: "Model",
-        options: capabilities.models.map {
+        options: models.map {
           .init(value: $0.value, label: $0.displayName, hint: $0.description)
         },
-        selected: Set([status?.model].compactMap { $0 }),
-        emptyMessage: "This agent hasn't reported its models yet."
+        selected: [status?.model ?? "default"],
+        emptyMessage: "No agent has reported its models yet."
       ) { value in
         Task { await host.setModel(agentId: agentId, model: value) }
       }
@@ -500,21 +484,23 @@ public struct ChatInputView: View {
         Task { await host.setPermissionMode(agentId: agentId, mode: picked) }
       }
     case .effort:
-      let levels =
-        capabilities.models.first { $0.value == status?.model }?.supportedEffortLevels ?? []
       PickerSheet(
         title: "Effort",
-        options: levels.map { .init(value: $0, label: $0.capitalized) },
-        selected: Set([host.effortByAgent[agentId]].compactMap { $0 })
+        options: ([Self.defaultEffort] + effortLevels).map {
+          .init(value: $0, label: ComposerEffort.label($0 == Self.defaultEffort ? nil : $0))
+        },
+        selected: [effort ?? Self.defaultEffort]
       ) { value in
-        Task { await host.setEffort(agentId: agentId, level: value) }
+        let level = value == Self.defaultEffort ? nil : value
+        Task { await host.setEffort(agentId: agentId, level: level) }
       }
     case .project:
       PickerSheet(
         title: "Linked projects",
-        options: host.projects.map { .init(value: $0.repoRoot, label: $0.name, hint: $0.repoRoot) },
+        options: linkableProjects.map { .init(value: $0.repoRoot, label: $0.name, hint: $0.repoRoot) },
         selected: Set(linkedProjects),
-        multi: true
+        multi: true,
+        emptyMessage: "No other projects"
       ) { value in
         if let index = linkedProjects.firstIndex(of: value) {
           linkedProjects.remove(at: index)
@@ -525,6 +511,10 @@ public struct ChatInputView: View {
           linkedProjects, for: PreferenceKey.linkedProjects(agentId: agentId))
       }
     }
+  }
+
+  private var linkableProjects: [RemoteProject] {
+    ComposerOptions.linkable(host.projects, ownRepoRoot: sessionId.flatMap { host.repoRoot(forSessionId: $0) })
   }
 
   // MARK: Actions
@@ -539,41 +529,58 @@ public struct ChatInputView: View {
   }
 
   private func submit() {
+    guard hasContent else { return }
     let typed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    // Handled here rather than sent to the CLI, as on the desktop.
+    if images.isEmpty, linkedProjects.isEmpty, let local = SlashCommandMenu.local(typed) {
+      clearComposer()
+      switch local {
+      case .togglePlan:
+        let next: RemotePermissionMode = mode == .plan ? .auto : .plan
+        Task { await host.setPermissionMode(agentId: agentId, mode: next) }
+      case .setModel(let model):
+        Task { await host.setModel(agentId: agentId, model: model) }
+      case .openModelPicker:
+        picker = .model
+      }
+      return
+    }
+
     let display = typed.isEmpty ? "(see attached images)" : typed
     let body = LinkedProjects.buildPreamble(paths: linkedProjects, message: display)
-    let images = attachments
+    let attachments = images.map(\.attachment)
+    let queue = isRunning
 
-    text = ""
-    attachments = []
-    previews = []
-    // Collapse outright. Re-measuring an emptied text view has proved too
-    // easy to get wrong, and the answer for no text is never in doubt.
-    inputHeight = PastingTextView.collapsedHeight
-    preferences.remove(PreferenceKey.draft(agentId: agentId))
-    draftImages.remove(agentId: agentId)
+    clearComposer()
     // A link rides one message, like the desktop — not every one after it.
     linkedProjects = []
     preferences.remove(PreferenceKey.linkedProjects(agentId: agentId))
 
     Task {
-      if isRunning {
+      if queue {
         await host.queueMessage(
-          agentId: agentId, message: body, images: images, displayText: display)
+          agentId: agentId, message: body, images: attachments, displayText: display)
       } else {
         await host.sendMessage(
-          agentId: agentId, message: body, images: images, displayText: display)
+          agentId: agentId, message: body, images: attachments, displayText: display)
       }
     }
   }
 
+  private func clearComposer() {
+    text = ""
+    images = []
+    // Collapse outright. Re-measuring an emptied text view has proved too
+    // easy to get wrong, and the answer for no text is never in doubt.
+    inputHeight = PastingTextView.collapsedHeight
+    preferences.remove(PreferenceKey.draft(agentId: agentId))
+    draftImages.remove(agentId: agentId)
+  }
+
   private func load() async {
     text = preferences.string(PreferenceKey.draft(agentId: agentId)) ?? ""
-    let restored = draftImages.load(agentId: agentId).compactMap { attachment in
-      Data(base64Encoded: attachment.data).flatMap(PlatformImage.init(data:)).map { (attachment, $0) }
-    }
-    attachments = restored.map(\.0)
-    previews = restored.map(\.1)
+    images = draftImages.load(agentId: agentId).compactMap(ImageAttachments.pending(restoring:))
     linkedProjects =
       preferences.decode(PreferenceKey.linkedProjects(agentId: agentId), as: [String].self)
       ?? []
@@ -593,19 +600,20 @@ public struct ChatInputView: View {
 
   private func attach(_ items: [PhotosPickerItem]) async {
     for item in items {
-      guard let data = try? await item.loadTransferable(type: Data.self),
-        let image = PlatformImage(data: data)
-      else { continue }
-      append(image)
+      guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+      add(ImageAttachments.pending(data: data))
     }
     photoItems = []
   }
 
-  private func append(_ image: PlatformImage) {
-    guard let jpeg = image.jpegData(quality: 0.8) else { return }
-    previews.append(image)
-    attachments.append(
-      RemoteImageAttachment(data: jpeg.base64EncodedString(), mediaType: "image/jpeg"))
-    draftImages.save(attachments, agentId: agentId)
+  private func add(_ image: PendingImage?) {
+    guard let image else { return }
+    images.append(image)
+    saveImages()
+  }
+
+  /// Images ride the draft as its text does, so a switch away or a relaunch keeps them.
+  private func saveImages() {
+    draftImages.save(images.map(\.attachment), agentId: agentId)
   }
 }

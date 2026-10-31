@@ -1,5 +1,6 @@
 import ArgusKit
 import Foundation
+import ImageIO
 import UniformTypeIdentifiers
 
 #if canImport(UIKit)
@@ -44,6 +45,24 @@ public enum ImageAttachments {
     return PendingImage(
       preview: image,
       attachment: RemoteImageAttachment(data: png.base64EncodedString(), mediaType: "image/png"))
+  }
+
+  /// Bytes from a source that doesn't name their format (the photo library), typed by sniffing.
+  public static func pending(data: Data) -> PendingImage? {
+    let type = CGImageSourceCreateWithData(data as CFData, nil)
+      .flatMap(CGImageSourceGetType)
+      .flatMap { UTType($0 as String) }
+    return pending(data: data, type: type)
+  }
+
+  /// A camera frame has no source bytes; JPEG keeps a full-size photo under the gateway's frame limit.
+  public static func pending(photo: PlatformImage) -> PendingImage? {
+    photo.jpegData(quality: 0.8).flatMap { pending(data: $0, type: .jpeg) }
+  }
+
+  /// A pasted image with no source bytes, as lossless PNG.
+  public static func pending(image: PlatformImage) -> PendingImage? {
+    pngData(image).flatMap { pending(data: $0, type: .png) }
   }
 
   /// A saved draft's image back in the composer, as it was attached.

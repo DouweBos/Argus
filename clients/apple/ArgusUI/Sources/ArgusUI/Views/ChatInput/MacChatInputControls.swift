@@ -120,8 +120,7 @@
 
     /// This agent's models; with no agent yet (or none reported), any agent's on the computer.
     private var models: [RemoteModelInfo] {
-      if !capabilities.models.isEmpty { return capabilities.models }
-      return host.capabilitiesByAgent.sorted { $0.key < $1.key }.first { !$0.value.models.isEmpty }?.value.models ?? []
+      ComposerOptions.models(own: capabilities.models, byAgent: host.capabilitiesByAgent)
     }
 
     /// The model picked for the agent; nil is the CLI default.
@@ -130,9 +129,7 @@
       return status?.model
     }
 
-    private var currentModel: RemoteModelInfo? {
-      models.first { $0.value == (pickedModel ?? "default") } ?? models.first
-    }
+    private var currentModel: RemoteModelInfo? { ComposerOptions.current(pickedModel, in: models) }
 
     var effortLevels: [String] { ComposerEffort.levels(for: currentModel) }
 
@@ -161,8 +158,7 @@
     }
 
     private var linkableProjects: [RemoteProject] {
-      let own = sessionId.flatMap { host.repoRoot(forSessionId: $0) }
-      return host.projects.filter { $0.repoRoot != own }
+      ComposerOptions.linkable(host.projects, ownRepoRoot: sessionId.flatMap { host.repoRoot(forSessionId: $0) })
     }
 
     var contextTokens: Int {
