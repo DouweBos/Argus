@@ -57,6 +57,7 @@ struct RootView: View {
       }
     }
     .environment(\.theme, theme)
+    .tracksDynamicType()
     // Outside the gate, like a notification tap: a handoff that lands while
     // the app is locked is parked, not lost.
     .onContinueUserActivity(Handoff.activityType) { activity in
