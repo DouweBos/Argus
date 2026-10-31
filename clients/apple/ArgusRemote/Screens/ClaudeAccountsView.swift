@@ -198,7 +198,7 @@ private struct ClaudeLoginSheet: View {
               + "the code it shows below.",
             tone: .accent
           )
-          Field(label: "PASTE THE CODE") {
+          Field(label: "Paste the code") {
             ThemedTextField(placeholder: "Code from your computer", text: $code, input: .code)
               .focused($codeFocused)
           }
@@ -321,7 +321,7 @@ private struct RenameSheet: View {
         if let error = host.lastError {
           Banner(text: error, tone: .danger)
         }
-        Field(label: "NAME") {
+        Field(label: "Name") {
           ThemedTextField(placeholder: account.email ?? account.id, text: $draft, input: .name)
         }
       }

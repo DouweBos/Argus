@@ -11,7 +11,7 @@ struct DevicesView: View {
   var body: some View {
     List {
       if !host.devices.isEmpty {
-        Section("Devices") {
+        Section {
           ForEach(host.devices) { device in
             NavigationLink(
               value: Route.device(

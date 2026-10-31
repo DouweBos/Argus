@@ -34,7 +34,7 @@ struct AutomationsView: View {
           }
         }
         if !store.automations.isEmpty {
-          Section("Automations") {
+          Section {
             ForEach(store.automations) { automation in
               NavigationLink(
                 value: Route.automation(id: automation.id, label: automation.name)
@@ -42,6 +42,9 @@ struct AutomationsView: View {
                 AutomationRow(automation: automation, lastRun: store.runs(for: automation.id).first?.status)
               }
             }
+          } header: {
+            // Alone on the screen it would only repeat the title.
+            if !recent.isEmpty { Text("Automations") }
           }
         }
       }

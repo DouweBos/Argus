@@ -445,7 +445,7 @@ public struct QueuedMessageEditor: View {
   public var body: some View {
     NavigationStack {
       Screen {
-        Field(label: "MESSAGE", caption: "Sent when the agent finishes its turn.") {
+        Field(label: "Message", caption: "Sent when the agent finishes its turn.") {
           ThemedTextField(placeholder: "Message", text: $text, multiline: true, lines: 4...16)
             .focused($focused)
         }

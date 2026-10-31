@@ -46,7 +46,7 @@ public struct RunFeedbackSheet: View {
         }
 
         Field(
-          label: "LET IT REMOVE PROPOSALS",
+          label: "Let it remove proposals",
           caption: "Off, feedback can only add to the inbox. Turn it on only if you are "
             + "asking for something in there to go."
         ) {

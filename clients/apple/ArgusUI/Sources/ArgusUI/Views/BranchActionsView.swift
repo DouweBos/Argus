@@ -263,7 +263,7 @@ public struct BranchNameSheet: View {
   public var body: some View {
     NavigationStack {
       Screen {
-        Field(label: "BRANCH NAME") {
+        Field(label: "Branch name") {
           ThemedTextField(placeholder: "new-branch-name", text: $name, mono: true, input: .code)
         }
         if offerCheckout {

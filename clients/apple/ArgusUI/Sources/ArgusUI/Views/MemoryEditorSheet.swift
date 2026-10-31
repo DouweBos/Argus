@@ -72,19 +72,19 @@ public struct MemoryEditorSheet: View {
 
   @ViewBuilder
   private var fields: some View {
-    Field(label: "NAME", caption: "Lowercase kebab-case; also the file name.") {
+    Field(label: "Name", caption: "Lowercase kebab-case; also the file name.") {
       ThemedTextField(
         placeholder: "session-merge-flow", text: $draft.name, mono: true, input: .code)
     }
-    Field(label: "TYPE") {
+    Field(label: "Type") {
       SegmentedControl(
         value: $draft.type,
         options: RemoteAutomationMemory.Kind.allCases.map { ($0, $0.rawValue.capitalized) })
     }
-    Field(label: "DESCRIPTION", caption: "One line, shown in the index every run reads.") {
+    Field(label: "Description", caption: "One line, shown in the index every run reads.") {
       ThemedTextField(placeholder: "Where session merges are implemented", text: $draft.description)
     }
-    Field(label: "MEMORY") {
+    Field(label: "Memory") {
       ThemedTextField(
         placeholder: "Markdown", text: $draft.body, multiline: true, lines: 8...24, mono: true)
     }

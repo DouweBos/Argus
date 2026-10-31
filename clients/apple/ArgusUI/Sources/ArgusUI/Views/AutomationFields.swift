@@ -47,7 +47,7 @@ public struct AutomationFields: View {
   }
 
   private var basics: some View {
-    Field(label: "BASICS") {
+    Field(label: "Basics") {
       ThemedTextField(placeholder: "Name", text: $draft.name, input: .name)
       if showsSchedule {
         ThemedTextField(placeholder: "What it does", text: $draft.description, multiline: true)
@@ -101,7 +101,7 @@ public struct AutomationFields: View {
   }
 
   private var scope: some View {
-    Field(label: "SCOPE", caption: "Repos the run may read, and what feeds it work.") {
+    Field(label: "Scope", caption: "Repos the run may read, and what feeds it work.") {
       Btn(label: projectsLabel, tone: .secondary, small: true) { sheet = .projects }
       Btn(label: sourcesLabel, tone: .secondary, small: true) { sheet = .sources }
     }
@@ -134,7 +134,7 @@ public struct AutomationFields: View {
   }
 
   private var playbook: some View {
-    Field(label: "PLAYBOOK", caption: "Markdown instructions handed to the run's agent.") {
+    Field(label: "Playbook", caption: "Markdown instructions handed to the run's agent.") {
       ThemedTextField(
         placeholder: "What should this run do?", text: $draft.playbook,
         multiline: true, lines: 6...24, mono: true)
@@ -152,7 +152,7 @@ public struct AutomationFields: View {
 
   private var extraInstructions: some View {
     Field(
-      label: "EXTRA INSTRUCTIONS",
+      label: "Extra instructions",
       caption: "Added after the playbook on every run; they win where the two disagree."
     ) {
       ThemedTextField(

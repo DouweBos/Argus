@@ -164,17 +164,35 @@ public struct SectionHeader: View {
 
   public var body: some View {
     HStack(spacing: 6) {
-      Text(title.uppercased())
-        .font(.scaled(size: 11, weight: .bold))
+      Text(SectionHeader.cased(title))
+        .font(SectionHeader.font)
         .foregroundStyle(theme.textMuted)
       if let count {
         Text("\(count)")
-          .font(.scaled(size: 11, weight: .bold))
+          .font(SectionHeader.font)
           .foregroundStyle(theme.textMuted.opacity(0.7))
       }
       Spacer(minLength: 0)
     }
     .padding(.top, 4)
+  }
+
+  /// iOS 26's own list headers are sentence case, so ours match them there;
+  /// the Mac keeps its small caps labels.
+  static func cased(_ title: String) -> String {
+    #if os(iOS)
+      title
+    #else
+      title.uppercased()
+    #endif
+  }
+
+  static var font: Font {
+    #if os(iOS)
+      .scaled(size: 13, weight: .semibold)
+    #else
+      .scaled(size: 11, weight: .bold)
+    #endif
   }
 }
 
@@ -194,7 +212,7 @@ public struct Field<Content: View>: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(label)
-        .font(.scaled(size: 11, weight: .bold))
+        .font(SectionHeader.font)
         .foregroundStyle(theme.textMuted)
       content
       if let caption {

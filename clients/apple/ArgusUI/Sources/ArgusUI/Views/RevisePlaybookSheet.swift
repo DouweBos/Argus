@@ -52,7 +52,7 @@ public struct RevisePlaybookSheet: View {
         }
 
         if let text = revised {
-          Field(label: "REVISED PLAYBOOK", caption: "Edit it here if you want.") {
+          Field(label: "Revised playbook", caption: "Edit it here if you want.") {
             ThemedTextField(
               placeholder: "Playbook",
               text: Binding(get: { text }, set: { revised = $0 }),

@@ -105,7 +105,7 @@ public struct StartAgentSheet: View {
   public var body: some View {
     NavigationStack {
       Screen {
-        Field(label: "WHAT SHOULD IT DO?", caption: promptCaption) {
+        Field(label: "What should it do?", caption: promptCaption) {
           ThemedTextField(
             placeholder: issues.isEmpty ? "Fix the flaky login test" : "Anything to add (optional)",
             text: $prompt, multiline: true, lines: 3...8)
@@ -118,14 +118,14 @@ public struct StartAgentSheet: View {
         }
 
         if !issues.isEmpty {
-          Field(label: "WHERE", caption: "A new worktree per issue, on Linear's branch name.") {
+          Field(label: "Where", caption: "A new worktree per issue, on Linear's branch name.") {
             Btn(
               label: baseBranch.isEmpty ? "Base: project default" : "Base: \(baseBranch)",
               tone: .secondary, small: true
             ) { picker = .base }
           }
         } else if workspaceOptions.count > 1 {
-          Field(label: "WHERE") {
+          Field(label: "Where") {
             SegmentedControl(value: $workspace, options: workspaceOptions)
 
             switch workspace {
@@ -145,7 +145,7 @@ public struct StartAgentSheet: View {
           }
         }
 
-        Field(label: "START IT ON", caption: "Blank uses the computer's default.") {
+        Field(label: "Start it on", caption: "Blank uses the computer's default.") {
           if !host.runners.isEmpty {
             Btn(
               label: "Runner: \(runnerLabel)", tone: .secondary, small: true

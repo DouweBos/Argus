@@ -285,7 +285,7 @@ public struct OpenPullRequestSheet: View {
   public var body: some View {
     NavigationStack {
       Screen {
-        Field(label: "PULL REQUEST", caption: "Push the branch first — GitHub needs it.") {
+        Field(label: "Pull request", caption: "Push the branch first — GitHub needs it.") {
           ThemedTextField(placeholder: "Title", text: $title)
           ThemedTextField(
             placeholder: "Description", text: $summary, multiline: true, lines: 4...12)
