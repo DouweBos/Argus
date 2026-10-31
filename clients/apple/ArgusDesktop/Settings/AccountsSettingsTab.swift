@@ -7,10 +7,10 @@ import SwiftUI
 struct AccountsSettingsTab: View {
   @Environment(HostStore.self) private var store
   @Environment(HostSettingsModel.self) private var host
-  @State private var login = ClaudeLoginFlow()
+  @State private var useConsole = false
+  @State private var startingLogin = false
   @State private var renaming: RemoteClaudeAccount?
   @State private var removing: RemoteClaudeAccount?
-  @State private var unobserve: (() -> Void)?
 
   private var accounts: [RemoteClaudeAccount] { store.claudeAccounts ?? [] }
 
@@ -37,7 +37,7 @@ struct AccountsSettingsTab: View {
               MacTelemetry.capture(.settingsChanged(setting: .accountSelected))
             }
           } onReauth: {
-            login.start(accountId: account.id, host: host) { await store.refreshClaudeAccounts() }
+            startLogin(accountId: account.id)
           } onRename: {
             renaming = account
           } onRemove: {
@@ -46,22 +46,18 @@ struct AccountsSettingsTab: View {
         }
       }
 
-      ClaudeLoginSection(login: login, firstAccount: accounts.isEmpty) {
-        await store.refreshClaudeAccounts()
-      }
+      ClaudeLoginSection(
+        useConsole: $useConsole, starting: startingLogin, firstAccount: accounts.isEmpty
+      ) { startLogin(accountId: nil) }
 
-      SettingsError(text: login.error ?? host.error)
+      SettingsError(text: loginError ?? host.error)
     }
     .task {
       await store.refreshClaudeAccounts()
     }
-    .onAppear {
-      unobserve = store.observeIpc { channel, args, _ in
-        login.handle(channel: channel, args: args)
-        if channel.hasPrefix("claude-auth:") { Task { await store.refreshClaudeAccounts() } }
-      }
+    .onChange(of: store.claudeLogin?.pending) { _, pending in
+      if pending == false { Task { await store.refreshClaudeAccounts() } }
     }
-    .onDisappear { unobserve?() }
     .sheet(item: $renaming) { account in
       RenameAccountSheet(account: account) { label in
         await store.renameClaudeAccount(id: account.id, label: label)
@@ -81,6 +77,27 @@ struct AccountsSettingsTab: View {
       }
     } message: {
       Text("This signs the account out of Argus and forgets it.")
+    }
+  }
+
+  private var loginError: String? {
+    guard let login = store.claudeLogin, login.ok == false else { return nil }
+    return login.error ?? "Login failed."
+  }
+
+  /// A new account when `accountId` is nil, else that account in place.
+  private func startLogin(accountId: String?) {
+    startingLogin = true
+    Task {
+      let started =
+        if let accountId {
+          await store.startClaudeLogin(accountId: accountId, useConsole: useConsole)
+        } else {
+          await store.addClaudeAccount(useConsole: useConsole)
+        }
+      startingLogin = false
+      if started { MacTelemetry.capture(.settingsChanged(setting: accountId == nil ? .accountAdded : .accountReauth)) }
+      await store.refreshClaudeAccounts()
     }
   }
 

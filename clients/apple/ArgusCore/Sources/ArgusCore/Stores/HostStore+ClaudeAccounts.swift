@@ -82,9 +82,10 @@ extension HostStore {
   /// Open the computer's browser and watch what it reports. The account it
   /// lands on isn't known until the refresh arrives, so the list simply fills
   /// in — `claude_accounts.add` is the branch for a brand new one.
-  public func addClaudeAccount(useConsole: Bool) async {
+  @discardableResult
+  public func addClaudeAccount(useConsole: Bool) async -> Bool {
     hooks.track(.claudeAccountChanged(action: .add))
-    guard let backend else { return }
+    guard let backend else { return false }
     struct Params: Encodable { let use_console: Bool }
     struct Result: Decodable { let url: String }
     do {
@@ -93,9 +94,11 @@ extension HostStore {
       claudeLogin = RemoteClaudeLoginState(pending: true, needsCode: false)
       openLoginURL(result.url)
       await refreshClaudeAccounts()
+      return true
     } catch {
       claudeLogin = nil
       report(error, scope: "claude_accounts")
+      return false
     }
   }
 
@@ -140,9 +143,10 @@ extension HostStore {
   // MARK: Signing in again
 
   /// Re-authenticate an account whose credentials died. Same browser dance as
-  /// adding one, onto an entry that already exists.
-  public func startClaudeLogin(accountId: String?) async {
-    guard let backend else { return }
+  /// adding one, onto an entry that already exists. Nil `useConsole` keeps the account's kind.
+  @discardableResult
+  public func startClaudeLogin(accountId: String?, useConsole: Bool? = nil) async -> Bool {
+    guard let backend else { return false }
     struct Params: Encodable {
       let account_id: String?
       let use_console: Bool?
@@ -151,13 +155,15 @@ extension HostStore {
     do {
       let result = try await backend.request(
         .claudeAccountsLoginStart,
-        Params(account_id: accountId, use_console: nil),
+        Params(account_id: accountId, use_console: useConsole),
         as: Result.self)
       claudeLogin = RemoteClaudeLoginState(pending: true, needsCode: false)
       openLoginURL(result.url)
+      return true
     } catch {
       claudeLogin = nil
       report(error, scope: "claude_accounts")
+      return false
     }
   }
 
@@ -210,10 +216,11 @@ extension HostStore {
     claudeLogin = state
   }
 
-  /// The URL is for reading, not tapping — it authorises on the computer's
-  /// browser, so following it here cannot complete anything. Surfacing it is
-  /// what lets the user open the same link on that machine.
+  /// The CLI opens the computer's browser itself. Over the gateway the URL is
+  /// for reading, not tapping — it authorises on that machine, so surfacing it
+  /// is what lets the user open the same link there.
   private func openLoginURL(_ url: String) {
-    lastError = "Sign in opened on your computer: \(url)"
+    claudeLoginURL = url
+    if backend?.kind == .gateway { lastError = "Sign in opened on your computer: \(url)" }
   }
 }

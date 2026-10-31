@@ -110,7 +110,11 @@ public final class HostStore {
   /// The range a summary request is in flight for.
   public internal(set) var usageSummaryLoadingRange: ArgusProtocol.UsageRange?
   /// The computer's in-flight Claude sign-in, if any.
-  public internal(set) var claudeLogin: RemoteClaudeLoginState?
+  public internal(set) var claudeLogin: RemoteClaudeLoginState? {
+    didSet { if claudeLogin?.pending != true { claudeLoginURL = nil } }
+  }
+  /// The sign-in page of the attempt in `claudeLogin`, for reopening it.
+  public internal(set) var claudeLoginURL: String?
   /// Fold and orientation for watched devices, keyed by device id.
   public internal(set) var deviceStates: [String: RemoteDeviceState] = [:]
   /// Who is driving each watched device, and this connection's own id so the
