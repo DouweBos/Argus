@@ -155,33 +155,31 @@ struct InboxView: View {
 
   private func card(_ proposal: RemoteProposal) -> some View {
     ProposalCard(
-      proposal: proposal,
+      content: ProposalCardContent(proposal),
       busy: proposals.busy.contains(proposal.id),
       starting: proposals.isStarting(proposal),
       requestError: proposals.requestErrors[proposal.id],
       canDecide: host.hasControl,
-      onAccept: { accept(proposal) },
-      onCleanup: { Task { await proposals.performCleanup(id: proposal.id) } },
-      onDismiss: { reason in
-        Task { await proposals.dismiss(id: proposal.id, reason: reason) }
-      },
-      onResolve: { note in
-        Task { await proposals.resolve(id: proposal.id, note: note) }
-      },
-      onOpenRun: proposal.runId.map { runId in
-        {
-          Telemetry.capture(.proposalOpenedAsRun)
-          router.push(.run(id: runId, label: proposal.automationName))
-        }
-      },
-      onOpenDetails: { router.push(.proposal(id: proposal.id)) })
+      actions: ProposalCardActions(
+        start: { accept(proposal, note: $0) },
+        requestRevision: { note in Task { _ = await proposals.requestRevision(id: proposal.id, note: note) } },
+        resolve: { note in Task { await proposals.resolve(id: proposal.id, note: note) } },
+        dismiss: { reason in Task { await proposals.dismiss(id: proposal.id, reason: reason) } },
+        cleanup: { Task { await proposals.performCleanup(id: proposal.id) } },
+        openRun: proposal.runId.map { runId in
+          {
+            Telemetry.capture(.proposalOpenedAsRun)
+            router.push(.run(id: runId, label: proposal.automationName))
+          }
+        },
+        openDetails: { router.push(.proposal(id: proposal.id)) }))
   }
 
   /// Go and watch the agent when it came up inside the request; a slower
   /// start shows its progress on the card instead.
-  private func accept(_ proposal: RemoteProposal) {
+  private func accept(_ proposal: RemoteProposal, note: String?) {
     Task {
-      guard let agentId = await proposals.accept(id: proposal.id) else { return }
+      guard let agentId = await proposals.accept(id: proposal.id, note: note) else { return }
       router.push(.agent(id: agentId, label: proposal.title))
     }
   }
