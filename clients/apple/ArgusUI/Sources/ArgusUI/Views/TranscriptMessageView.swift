@@ -77,9 +77,12 @@ public struct TranscriptMessageView: View {
     .padding(message.toolCalls.isEmpty ? 11 : 6)
     .background(isUser ? theme.accentSoft : theme.bgSecondary)
     .clipShape(RoundedRectangle(cornerRadius: theme.radius))
-    .overlay(
-      RoundedRectangle(cornerRadius: theme.radius)
-        .stroke(isUser ? theme.accentBorder : theme.border, lineWidth: 1))
+    // A sent message is a quiet fill, as on the Mac; only the reply keeps a hairline.
+    .overlay {
+      if !isUser {
+        RoundedRectangle(cornerRadius: theme.radius).stroke(theme.border, lineWidth: 0.5)
+      }
+    }
   }
 
   @ViewBuilder
