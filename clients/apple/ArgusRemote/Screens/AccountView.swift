@@ -193,7 +193,7 @@ struct AccountView: View {
           .foregroundStyle(host.online ? theme.success : theme.textSecondary)
         VStack(alignment: .leading, spacing: 2) {
           BodyText(host.name, lineLimit: 1)
-          MutedText(AccountPresenceLabel.text(online: host.online, lastSeen: host.lastSeen), lineLimit: 1)
+          MutedText(AccountPresenceText.text(online: host.online, lastSeen: host.lastSeen), lineLimit: 1)
         }
         Spacer(minLength: 6)
         Menu {
@@ -209,17 +209,5 @@ struct AccountView: View {
         }
       }
     }
-  }
-}
-
-/// "Online", or "Offline · last seen 2 h ago".
-enum AccountPresenceLabel {
-  static func text(online: Bool, lastSeen: Double?, now: Date = Date()) -> String {
-    if online { return "Online" }
-    guard let lastSeen else { return "Offline" }
-    let seen = Date(timeIntervalSince1970: lastSeen / 1000)
-    let formatter = RelativeDateTimeFormatter()
-    formatter.unitsStyle = .abbreviated
-    return "Offline · last seen \(formatter.localizedString(for: seen, relativeTo: now))"
   }
 }

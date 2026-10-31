@@ -25,10 +25,10 @@ public enum RemoteAutonomy: String, Codable, Sendable, CaseIterable {
 
   public var label: String {
     switch self {
-    case .autoMerge: "auto merge"
-    case .draft: "draft"
-    case .pr: "pr"
-    case .propose: "propose"
+    case .autoMerge: "Auto-merge"
+    case .draft: "Draft"
+    case .pr: "Pull request"
+    case .propose: "Propose"
     }
   }
 }

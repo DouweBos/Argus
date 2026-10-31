@@ -90,7 +90,7 @@ struct ComputerView: View {
 
     if let presence = app.presence(of: computer) {
       Field(label: "Account", caption: "On your Argus account, so it connects without a QR code.") {
-        MutedText(AccountPresenceLabel.text(online: presence.online, lastSeen: presence.lastSeen))
+        MutedText(AccountPresenceText.text(online: presence.online, lastSeen: presence.lastSeen))
       }
     }
 

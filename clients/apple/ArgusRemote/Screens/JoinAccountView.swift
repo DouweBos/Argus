@@ -64,7 +64,7 @@ struct SasCode: View {
 
   var body: some View {
     Card {
-      Text(AddComputerView.grouped(sas))
+      Text(AccountMemberText.groupedCode(sas))
         .font(.system(size: 30, weight: .semibold, design: .monospaced))
         .kerning(4)
         .frame(maxWidth: .infinity)

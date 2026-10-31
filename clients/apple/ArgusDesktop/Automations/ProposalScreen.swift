@@ -71,24 +71,8 @@ struct ProposalScreen: View {
     .buttonStyle(.accentLink)
   }
 
-  /// What happened to a proposal nobody can act on any more. A withdrawal
-  /// names the automation: it was Argus's call, and the reason is its evidence.
   private func decidedNote(_ proposal: ArgusProtocol.Proposal) -> String? {
-    let by = model.automations.automations.first { $0.id == proposal.automationId }?.name
-      ?? "the automation"
-    let cleared = proposal.clearedReason.map { ": \($0)" }
-    switch proposal.status {
-    case .pending: return nil
-    case .accepted: return "You started this. It is in the session below."
-    case .autoStarted: return "Argus started this itself — the guardrails allowed it."
-    case .dismissed:
-      return proposal.dismissedReason.map { "You dismissed this: \($0)" } ?? "You dismissed this."
-    case .resolved:
-      return proposal.resolvedNote.map { "You marked this done: \($0)" }
-        ?? "You marked this done — you handled it yourself."
-    case .superseded: return "A later run of \(by) proposed the same work again\(cleared ?? ".")"
-    default:
-      return "\(by) withdrew this\(cleared ?? " — the signal behind it went away.")"
-    }
+    AutomationText.decidedNote(
+      proposal, automation: model.automations.automations.first { $0.id == proposal.automationId }?.name)
   }
 }

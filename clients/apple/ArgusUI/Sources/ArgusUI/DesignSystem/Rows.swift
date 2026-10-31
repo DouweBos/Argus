@@ -13,17 +13,6 @@ extension RemoteAgentState {
   }
 }
 
-extension RemoteAutomationRunStatus {
-  public var tone: Tone {
-    switch self {
-    case .running, .queued: .accent
-    case .succeeded: .success
-    case .failed, .cancelled: .danger
-    case .skipped: .warning
-    }
-  }
-}
-
 public struct AgentRow: View {
   @Environment(\.theme) private var theme
   let name: String

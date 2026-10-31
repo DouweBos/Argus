@@ -160,36 +160,3 @@ struct AccountRenameSheet: View {
     dismiss()
   }
 }
-
-enum AccountMemberText {
-  static func icon(_ member: AccountMember?) -> String {
-    switch member?.kind {
-    case "ios": "iphone"
-    case "mac": "laptopcomputer"
-    case "web": "globe"
-    default: "desktopcomputer"
-    }
-  }
-
-  static func kind(_ member: AccountMember?) -> String {
-    guard let member else { return "" }
-    if member.role == .host { return member.platform == "linux" ? "Linux host" : "Mac host" }
-    switch member.kind {
-    case "ios": return "iPhone"
-    case "mac": return "Mac app"
-    case "web": return "Browser"
-    default: return "Desktop app"
-    }
-  }
-
-  /// Kind, date, and the code it was approved with, so a device approved
-  /// while it was away can check it.
-  static func detail(_ member: AccountMember, code: String?) -> String {
-    let base = "\(kind(member)) · added \(added(member))"
-    return code.map { "\(base) · code \($0.prefix(3)) \($0.suffix(3))" } ?? base
-  }
-
-  static func added(_ member: AccountMember) -> String {
-    Date(timeIntervalSince1970: member.createdAt / 1000).formatted(date: .abbreviated, time: .omitted)
-  }
-}

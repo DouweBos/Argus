@@ -155,18 +155,9 @@ public struct ProposalCard: View {
   private var startProgress: some View {
     HStack(spacing: 8) {
       ProgressView().controlSize(.small)
-      MutedText(stageLabel)
+      MutedText(AutomationText.stage(proposal.startStage?.rawValue))
     }
     .accessibilityElement(children: .combine)
-  }
-
-  private var stageLabel: String {
-    switch proposal.startStage {
-    case .creatingWorktree: "Creating worktree…"
-    case .settingUp: "Running setup…"
-    case .startingAgent: "Starting agent…"
-    case nil: "Starting…"
-    }
   }
 
   private var startFailure: String? {

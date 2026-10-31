@@ -61,7 +61,7 @@ struct ProposalCardView: View {
       if starting {
         HStack(spacing: 8) {
           ProgressView().controlSize(.small)
-          MutedText(AutomationText.stage(proposal.startStage))
+          MutedText(AutomationText.stage(proposal.startStage?.rawValue))
         }
       } else if let startError {
         Banner(text: startError, tone: .danger, title: "Couldn't start.").textSelection(.enabled)

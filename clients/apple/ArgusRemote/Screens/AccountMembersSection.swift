@@ -60,10 +60,10 @@ struct AccountMembersSection: View {
     let member = request.subject?.member
     return Card {
       HStack(spacing: 8) {
-        Image(systemName: Self.icon(member)).foregroundStyle(theme.accent)
+        Image(systemName: AccountMemberText.icon(member)).foregroundStyle(theme.accent)
         VStack(alignment: .leading, spacing: 2) {
           BodyText(member?.name ?? "Unknown", lineLimit: 1)
-          MutedText(Self.kindLabel(member), lineLimit: 1)
+          MutedText(AccountMemberText.kind(member), lineLimit: 1)
         }
         Spacer(minLength: 6)
         Btn(label: "Deny", tone: .ghost, small: true, hugs: true) {
@@ -78,10 +78,10 @@ struct AccountMembersSection: View {
     let isSelf = device.id == account.memberId
     return Card {
       HStack(spacing: 8) {
-        Image(systemName: Self.icon(device)).foregroundStyle(theme.textSecondary)
+        Image(systemName: AccountMemberText.icon(device)).foregroundStyle(theme.textSecondary)
         VStack(alignment: .leading, spacing: 2) {
           BodyText(isSelf ? "\(device.name) (this phone)" : device.name, lineLimit: 1)
-          MutedText(Self.detail(device, code: account.approvalCode(for: device.id)), lineLimit: 1)
+          MutedText(AccountMemberText.detail(device, code: account.approvalCode(for: device.id)), lineLimit: 1)
         }
         Spacer(minLength: 6)
         Menu {
@@ -99,36 +99,5 @@ struct AccountMembersSection: View {
         }
       }
     }
-  }
-
-  static func icon(_ member: AccountMember?) -> String {
-    switch member?.kind {
-    case "ios": "iphone"
-    case "mac": "laptopcomputer"
-    case "web": "globe"
-    default: Icon.desktop
-    }
-  }
-
-  static func kindLabel(_ member: AccountMember?) -> String {
-    guard let member else { return "" }
-    if member.role == .host { return member.platform == "linux" ? "Linux computer" : "Mac computer" }
-    switch member.kind {
-    case "ios": return "iPhone"
-    case "mac": return "Mac app"
-    case "web": return "Browser"
-    default: return "Desktop app"
-    }
-  }
-
-  /// Kind, date, and the code it was approved with, so a device approved
-  /// while it was away can check it.
-  static func detail(_ member: AccountMember, code: String?) -> String {
-    let base = "\(kindLabel(member)) · added \(added(member))"
-    return code.map { "\(base) · code \(AddComputerView.grouped($0))" } ?? base
-  }
-
-  static func added(_ member: AccountMember) -> String {
-    Date(timeIntervalSince1970: member.createdAt / 1000).formatted(date: .abbreviated, time: .omitted)
   }
 }

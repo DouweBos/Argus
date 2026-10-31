@@ -99,7 +99,7 @@ struct HomeView: View {
   private func subtitle(_ computer: DeviceIdentity, active: Bool) -> String {
     if active { return host.connection.label }
     if let presence = app.presence(of: computer) {
-      return AccountPresenceLabel.text(online: presence.online, lastSeen: presence.lastSeen)
+      return AccountPresenceText.text(online: presence.online, lastSeen: presence.lastSeen)
     }
     return DeviceIdentity.gatewayHost(computer.url)
   }

@@ -45,7 +45,7 @@ struct MacHostLinkSection: View {
         VStack(alignment: .leading, spacing: 8) {
           Text("\(sas.approverName) is adding this Mac. Only confirm if it shows the same code:")
             .foregroundStyle(.secondary)
-          Text("\(sas.sas.prefix(3)) \(sas.sas.suffix(3))")
+          Text(AccountMemberText.groupedCode(sas.sas))
             .font(.scaled(size: 28, weight: .semibold, design: .monospaced))
           HStack {
             Button("Codes Match") { Task { await link.confirm(true) } }

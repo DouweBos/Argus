@@ -23,7 +23,7 @@ struct ProposalView: View {
         Banner(text: error, tone: .danger)
       }
       if let proposal {
-        if let decided = Self.decidedNote(proposal) {
+        if let decided = AutomationText.decidedNote(proposal) {
           Banner(text: decided, tone: .muted)
         }
         ProposalCard(
@@ -132,26 +132,5 @@ struct ProposalView: View {
   private func act(_ action: () async -> Void) async {
     await action()
     await proposals.load(id: proposalId)
-  }
-
-  /// What happened to a proposal nobody can act on any more, as the desktop says it.
-  static func decidedNote(_ proposal: RemoteProposal) -> String? {
-    let by = proposal.automationName
-    let cleared = proposal.clearedReason.map { ": \($0)" }
-    switch proposal.status {
-    case .pending: return nil
-    case .accepted:
-      return proposal.acceptedNote.map { "You started this, with the note: \($0)" }
-        ?? "You started this."
-    case .autoStarted: return "Argus started this itself — the guardrails allowed it."
-    case .dismissed:
-      return proposal.dismissedReason.map { "You dismissed this: \($0)" } ?? "You dismissed this."
-    case .resolved:
-      return proposal.resolvedNote.map { "You marked this done: \($0)" }
-        ?? "You marked this done — you handled it yourself."
-    case .superseded: return "A later run of \(by) proposed the same work again\(cleared ?? ".")"
-    case .withdrawn:
-      return "\(by) withdrew this\(cleared ?? " — the signal behind it went away.")"
-    }
   }
 }

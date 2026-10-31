@@ -60,7 +60,7 @@ struct AddComputerView: View {
     TitleText("Compare the codes")
     MutedText("\(hostName) shows a code too. Only confirm if they're the same.")
     Card {
-      Text(Self.grouped(sas))
+      Text(AccountMemberText.groupedCode(sas))
         .font(.system(size: 30, weight: .semibold, design: .monospaced))
         .kerning(4)
         .frame(maxWidth: .infinity)
@@ -74,10 +74,5 @@ struct AddComputerView: View {
   private func submit() {
     guard AccountCodec.normalizeUserCode(code).count == 9 else { return }
     Task { await account.link(code: code) }
-  }
-
-  /// `482 093`, as the computer prints it.
-  static func grouped(_ sas: String) -> String {
-    sas.count == 6 ? "\(sas.prefix(3)) \(sas.suffix(3))" : sas
   }
 }

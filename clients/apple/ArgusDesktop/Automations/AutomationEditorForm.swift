@@ -195,7 +195,7 @@ struct AutonomySection: View {
     Section {
       Picker("Autonomy", selection: $autonomy) {
         Text("Inherit").tag(RemoteAutonomy?.none)
-        ForEach(RemoteAutonomy.allRungs, id: \.self) { Text(AutomationText.autonomy($0)).tag(RemoteAutonomy?.some($0)) }
+        ForEach(RemoteAutonomy.allRungs, id: \.self) { Text($0.label).tag(RemoteAutonomy?.some($0)) }
       }
       .pickerStyle(.segmented)
       number("Confidence threshold", "Below this, a proposal waits for you.", \.confidenceThreshold)

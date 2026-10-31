@@ -158,7 +158,7 @@ private struct AddHostByCode: View {
     case .confirm(let sas, let hostName):
       VStack(alignment: .leading, spacing: 8) {
         Text("\(hostName) shows a code too. Only confirm if they're the same:").foregroundStyle(.secondary)
-        Text("\(sas.prefix(3)) \(sas.suffix(3))")
+        Text(AccountMemberText.groupedCode(sas))
           .font(.scaled(size: 28, weight: .semibold, design: .monospaced))
           .accessibilityLabel("Check code \(sas)")
         HStack {
@@ -189,12 +189,3 @@ private struct AddHostByCode: View {
 }
 
 /// "Online", or "Offline · last seen 2 hr. ago".
-enum AccountPresenceText {
-  static func text(online: Bool, lastSeen: Double?, now: Date = Date()) -> String {
-    if online { return "Online" }
-    guard let lastSeen else { return "Offline" }
-    let formatter = RelativeDateTimeFormatter()
-    formatter.unitsStyle = .abbreviated
-    return "Offline · last seen \(formatter.localizedString(for: Date(timeIntervalSince1970: lastSeen / 1000), relativeTo: now))"
-  }
-}

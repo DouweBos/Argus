@@ -86,7 +86,7 @@ struct AccountCodeText: View {
   let sas: String
 
   var body: some View {
-    Text("\(sas.prefix(3)) \(sas.suffix(3))")
+    Text(AccountMemberText.groupedCode(sas))
       .font(.scaled(size: 28, weight: .semibold, design: .monospaced))
       .accessibilityLabel("Check code \(sas)")
   }
