@@ -39,7 +39,9 @@ struct AgentView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      AgentTranscriptView(agentKey: agentId, isLive: !isGone)
+      AgentTranscriptView(agentKey: agentId, isLive: !isGone) { working in
+        Telemetry.capture(.transcriptWorkLogOpened(working: working))
+      }
       if isGone {
         MutedText("This agent has stopped, so it can't take new messages.")
           .frame(maxWidth: .infinity, alignment: .leading)

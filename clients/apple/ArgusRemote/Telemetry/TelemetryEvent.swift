@@ -133,6 +133,8 @@ enum TelemetryEvent {
   case warningsOpened(count: Int)
   /// An agent's MCP servers list was opened.
   case mcpServersOpened
+  /// A turn's folded work was opened in a chat; `working` says the agent was still on it.
+  case transcriptWorkLogOpened(working: Bool)
   /// A session file opened in the read-only viewer.
   case fileViewed(source: FileViewSource, language: String)
   /// A Figma frame opened in the design viewer.
@@ -198,6 +200,7 @@ enum TelemetryEvent {
     case .agentStartSubmitted: "ios_agent_start_submitted"
     case .warningsOpened: "ios_warnings_opened"
     case .mcpServersOpened: "ios_mcp_servers_opened"
+    case .transcriptWorkLogOpened: "ios_transcript_work_log_opened"
     case .fileViewed: "ios_file_viewed"
     case .designOpened: "ios_design_opened"
     case .designLayerSelected: "ios_design_layer_selected"
@@ -286,6 +289,8 @@ enum TelemetryEvent {
       ["workspace": workspace, "changed_workspace": changedWorkspace]
     case .warningsOpened(let count):
       ["count": count]
+    case .transcriptWorkLogOpened(let working):
+      ["working": working]
     case .fileViewed(let source, let language):
       ["source": source.rawValue, "language": language]
     case .designOpened(let source):

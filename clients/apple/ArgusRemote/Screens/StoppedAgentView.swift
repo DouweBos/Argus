@@ -31,7 +31,9 @@ struct StoppedAgentView: View {
   var body: some View {
     VStack(spacing: 0) {
 
-      AgentTranscriptView(agentKey: key, isLive: false)
+      AgentTranscriptView(agentKey: key, isLive: false) { working in
+        Telemetry.capture(.transcriptWorkLogOpened(working: working))
+      }
 
       VStack(alignment: .leading, spacing: 6) {
         if host.hasControl, let session {

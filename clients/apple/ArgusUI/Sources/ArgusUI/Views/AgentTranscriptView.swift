@@ -20,17 +20,24 @@ public struct AgentTranscriptView: View {
   /// Opening an agent lands at the newest message; the first content pass
   /// jumps there without animating so it never reads as a scroll.
   @State private var hasLandedAtBottom = false
+  @State private var rows = Rows()
+  @State private var expandedLogs: Set<String> = []
+  /// A turn's work log was opened; says whether the agent was still on it.
+  var onWorkLogOpened: (Bool) -> Void = { _ in }
 
   private static let bottomAnchor = "transcript-bottom"
 
   private var messages: [RemoteMessage] { host.visibleMessages(for: agentKey) }
-  private var segments: [ToolGroups.Segment] {
-    ToolGroups.group(messages, hoistImageReads: autoExpandImageReads)
+
+  /// The rows, regrouped only where the messages changed.
+  private func items(_ messages: [RemoteMessage]) -> [TranscriptItem] {
+    rows.items(messages, hoistImageReads: autoExpandImageReads)
   }
 
-  public init(agentKey: String, isLive: Bool = true) {
+  public init(agentKey: String, isLive: Bool = true, onWorkLogOpened: @escaping (Bool) -> Void = { _ in }) {
     self.agentKey = agentKey
     self.isLive = isLive
+    self.onWorkLogOpened = onWorkLogOpened
   }
 
   public var body: some View {
@@ -50,12 +57,15 @@ public struct AgentTranscriptView: View {
               items: todos.map { ($0.activeForm ?? $0.content, $0.status, nil) })
           }
 
-          ForEach(segments) { segment in
-            switch segment {
-            case .single(let message):
+          ForEach(items(messages)) { item in
+            switch item {
+            case .message(let message):
               TranscriptMessageView(agentKey: agentKey, message: message)
-            case .collapsed(let group):
-              CollapsedToolGroupView(agentKey: agentKey, messages: group)
+            case .run(let group):
+              ForEach(group) { TranscriptMessageView(agentKey: agentKey, message: $0) }
+            case .work(let log):
+              WorkLogRow(
+                agentKey: agentKey, log: log, expanded: expandedBinding(log.id), onOpen: onWorkLogOpened)
             }
           }
 
@@ -90,6 +100,7 @@ public struct AgentTranscriptView: View {
       .onChange(of: agentKey) { _, _ in
         hasLandedAtBottom = false
         atBottom = true
+        expandedLogs = []
       }
       // Over the scroll view, not in it: only the pane can centre it.
       .overlay {
@@ -175,6 +186,14 @@ public struct AgentTranscriptView: View {
     }
   }
 
+  private func expandedBinding(_ id: String) -> Binding<Bool> {
+    Binding(
+      get: { expandedLogs.contains(id) },
+      set: { open in
+        if open { expandedLogs.insert(id) } else { expandedLogs.remove(id) }
+      })
+  }
+
   private var hasPendingPermission: Bool {
     messages.contains { message in
       message.toolCalls.contains { host.hasPendingCall(agentKey: agentKey, in: $0) }
@@ -219,6 +238,22 @@ public struct AgentTranscriptView: View {
     // usual casualty. One catch-up fetch closes that window.
     try? await Task.sleep(for: .milliseconds(600))
     await host.loadTranscript(agentId: agentKey)
+  }
+}
+
+/// The transcript's rows across renders. Unobserved: the messages they come from are.
+@MainActor
+private final class Rows {
+  private var built = TranscriptItems()
+  private var hoistImageReads = false
+
+  func items(_ messages: [RemoteMessage], hoistImageReads: Bool) -> [TranscriptItem] {
+    if hoistImageReads != self.hoistImageReads {
+      self.hoistImageReads = hoistImageReads
+      built = TranscriptItems(hoistImageReads: hoistImageReads)
+    }
+    built.update(messages)
+    return built.items
   }
 }
 
