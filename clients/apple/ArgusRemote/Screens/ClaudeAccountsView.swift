@@ -63,7 +63,7 @@ struct ClaudeAccountsView: View {
           .background(theme.bg)
       }
     }
-    .navigationTitle("Claude accounts")
+    .navigationTitle("Claude Accounts")
     .navigationBarTitleDisplayMode(.inline)
     .task {
       await host.refreshClaudeAccounts()
@@ -220,7 +220,7 @@ private struct ClaudeLoginSheet: View {
             .disabled(working)
         }
       }
-      .navigationTitle("Sign in")
+      .navigationTitle("Sign In")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -286,7 +286,7 @@ private struct AddAccountSheet: View {
         }
         Btn(label: "Add and sign in", icon: Icon.plus, action: add)
       }
-      .navigationTitle("Add account")
+      .navigationTitle("Add Account")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

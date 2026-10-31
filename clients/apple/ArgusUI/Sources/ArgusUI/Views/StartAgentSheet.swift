@@ -125,7 +125,7 @@ public struct StartAgentSheet: View {
             formHeight = $0
           }
       }
-      .navigationTitle("New agent")
+      .navigationTitle("New Agent")
       .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

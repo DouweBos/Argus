@@ -60,7 +60,7 @@ public struct RevisePlaybookSheet: View {
           }
         }
       }
-      .navigationTitle("Rewrite the playbook")
+      .navigationTitle("Rewrite the Playbook")
       .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

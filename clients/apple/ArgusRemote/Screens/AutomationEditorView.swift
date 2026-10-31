@@ -50,7 +50,7 @@ struct AutomationEditorView: View {
         Loading(label: "Reading the automation…")
       }
     }
-    .navigationTitle(isNew ? "New automation" : "Edit")
+    .navigationTitle(isNew ? "New Automation" : "Edit")
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItem(placement: .confirmationAction) {

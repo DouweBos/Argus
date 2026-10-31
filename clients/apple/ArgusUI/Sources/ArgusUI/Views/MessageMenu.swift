@@ -84,7 +84,7 @@ public struct MessageEditSheet: View {
         }
         if let error { Text(error).font(.scaled(.footnote)).foregroundStyle(theme.error) }
       }
-      .navigationTitle("Edit message")
+      .navigationTitle("Edit Message")
       .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -173,7 +173,7 @@ public struct MessageForkSheet: View {
         }
         if let error { Text(error).font(.scaled(.footnote)).foregroundStyle(theme.error) }
       }
-      .navigationTitle("Fork chat")
+      .navigationTitle("Fork Chat")
       .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

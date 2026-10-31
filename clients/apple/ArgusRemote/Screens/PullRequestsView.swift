@@ -44,7 +44,7 @@ struct PullRequestsView: View {
         title: "No pull requests",
         body: "Nothing open that's yours to review or land.")
     }
-    .navigationTitle("Pull requests")
+    .navigationTitle("Pull Requests")
     .refreshable { await store.refresh() }
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(30)) {
       await store.refresh()

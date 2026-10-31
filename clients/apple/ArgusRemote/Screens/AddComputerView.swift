@@ -31,7 +31,7 @@ struct AddComputerView: View {
         }
       }
     }
-    .navigationTitle("Add a computer")
+    .navigationTitle("Add a Computer")
     .navigationBarTitleDisplayMode(.inline)
     .onAppear {
       // A link already under way (handed over by a paired computer) stays.

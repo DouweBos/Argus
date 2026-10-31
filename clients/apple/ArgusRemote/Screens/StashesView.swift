@@ -47,7 +47,7 @@ struct StashesView: View {
         }
       }
     }
-    .navigationTitle("Stashes & tags · \(label)")
+    .navigationTitle("Stashes & Tags · \(label)")
     .navigationBarTitleDisplayMode(.inline)
     .task { await refresh() }
     .refreshable { await refresh() }

@@ -79,10 +79,10 @@ struct AutomationsView: View {
         ToolbarItem(placement: .topBarTrailing) {
           Menu {
             NavigationLink(value: Route.quickRun) {
-              Label("Quick run", systemImage: Icon.play)
+              Label("Quick Run", systemImage: Icon.play)
             }
-            NavigationLink(value: Route.automationEditor(id: nil, label: "New automation")) {
-              Label("New automation", systemImage: Icon.clock)
+            NavigationLink(value: Route.automationEditor(id: nil, label: "New Automation")) {
+              Label("New Automation", systemImage: Icon.clock)
             }
             NavigationLink(value: Route.describeAutomation) {
               Label("Describe it", systemImage: Icon.agent)

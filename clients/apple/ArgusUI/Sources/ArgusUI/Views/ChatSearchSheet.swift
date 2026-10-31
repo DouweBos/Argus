@@ -58,7 +58,7 @@ public struct ChatSearchSheet: View {
         }
       }
       .searchable(text: $query, prompt: "Search chats & messages")
-      .navigationTitle("Saved chats")
+      .navigationTitle("Saved Chats")
       .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

@@ -39,7 +39,7 @@ public struct MemoryEditorSheet: View {
           reader(memory)
         }
       }
-      .navigationTitle(memory == nil ? "Add memory" : draft.name)
+      .navigationTitle(memory == nil ? "Add Memory" : draft.name)
       .inlineNavigationTitle()
       .toolbar { toolbar }
       .alert("Delete this memory?", isPresented: $confirmingDelete) {

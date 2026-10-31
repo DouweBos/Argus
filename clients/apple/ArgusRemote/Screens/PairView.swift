@@ -28,7 +28,7 @@ struct PairView: View {
         confirming(sas: sas)
       }
     }
-    .navigationTitle("Pair a computer")
+    .navigationTitle("Pair a Computer")
     .navigationBarTitleDisplayMode(.inline)
     .onDisappear { cancel() }
   }

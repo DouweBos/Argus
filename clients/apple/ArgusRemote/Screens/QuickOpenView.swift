@@ -46,7 +46,7 @@ struct QuickOpenView: View {
       text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "File name")
     .autocorrectionDisabled()
     .textInputAutocapitalization(.never)
-    .navigationTitle("Open file · \(label)")
+    .navigationTitle("Open File · \(label)")
     .navigationBarTitleDisplayMode(.inline)
     .refreshable { await load() }
     .task(id: host.connection == .ready) {

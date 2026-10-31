@@ -55,7 +55,7 @@ public struct RunFeedbackSheet: View {
             .toggleStyle(.argusSwitch)
         }
       }
-      .navigationTitle("Give feedback")
+      .navigationTitle("Give Feedback")
       .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

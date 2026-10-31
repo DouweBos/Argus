@@ -29,7 +29,7 @@ struct DescribeAutomationView: View {
           .disabled(description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
       }
     }
-    .navigationTitle("Describe an automation")
+    .navigationTitle("Describe an Automation")
     .navigationBarTitleDisplayMode(.inline)
   }
 

@@ -28,7 +28,7 @@ public struct IssuePickerSheet: View {
       .padding(.top, 10)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
       .background(theme.bg)
-      .navigationTitle("Linear issues")
+      .navigationTitle("Linear Issues")
       .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .confirmationAction) {

@@ -18,7 +18,7 @@ enum SettingsPage: String, Hashable {
     case .connection: "Connection"
     case .agents: "Agents"
     case .automations: "Automations"
-    case .deviceHosts: "Device hosts"
+    case .deviceHosts: "Device Hosts"
     }
   }
 

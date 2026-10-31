@@ -42,7 +42,7 @@ struct SettingsView: View {
           row(.agents)
           row(.automations)
           NavigationLink(value: Route.claudeAccounts) {
-            Label("Claude accounts", systemImage: Icon.person)
+            Label("Claude Accounts", systemImage: Icon.person)
           }
           NavigationLink(value: Route.usage) {
             Label("Usage", systemImage: Icon.usage)
@@ -56,7 +56,7 @@ struct SettingsView: View {
       Section {
         if app.hosts.isEmpty {
           NavigationLink(value: Route.pair) {
-            Label("Pair a computer", systemImage: Icon.plus)
+            Label("Pair a Computer", systemImage: Icon.plus)
           }
         } else {
           NavigationLink(value: Route.computers) {

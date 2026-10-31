@@ -31,7 +31,7 @@ struct QuickRunView: View {
         "Nothing is saved. If it turns out to be worth keeping, the run itself "
           + "can be promoted to an automation.")
     }
-    .navigationTitle("Quick run")
+    .navigationTitle("Quick Run")
     .navigationBarTitleDisplayMode(.inline)
     .task { await store.loadSources() }
   }

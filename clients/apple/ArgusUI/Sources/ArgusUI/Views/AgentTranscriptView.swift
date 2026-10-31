@@ -450,7 +450,7 @@ public struct QueuedMessageEditor: View {
             .focused($focused)
         }
       }
-      .navigationTitle("Edit queued message")
+      .navigationTitle("Edit Queued Message")
       .inlineNavigationTitle()
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
