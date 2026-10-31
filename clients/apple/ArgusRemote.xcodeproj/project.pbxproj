@@ -56,6 +56,7 @@
 		AC0A00000000000000000011 /* ArgusAuth in Frameworks */ = {isa = PBXBuildFile; productRef = AC0A00000000000000000013 /* ArgusAuth */; };
 		AD0D5B2D0F246BA5D6CAF9F2 /* AutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */; };
 		AE5043C2BADDF974895EAC5C /* Route.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCAD11D552D483C0C92312A /* Route.swift */; };
+		A11CE0000000000000000001 /* RouteLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE0000000000000000002 /* RouteLink.swift */; };
 		B7241A133F6BBFBAFFDDBDE2 /* CommitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71A133F6BBFBAFFDDBDE2AD /* CommitView.swift */; };
 		B739591B2E634B37E1941AC9 /* BranchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7591B2E634B37E1941AC94D /* BranchView.swift */; };
 		B77BE7692399E9374B9372E5 /* PushTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33859C3DC1F6B2FE094BDF8 /* PushTokens.swift */; };
@@ -151,6 +152,7 @@
 		63A254961B044F508401BE46 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
 		6502F79F862A2272184C48C6 /* RunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunView.swift; sourceTree = "<group>"; };
 		6FCAD11D552D483C0C92312A /* Route.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Route.swift; sourceTree = "<group>"; };
+		A11CE0000000000000000002 /* RouteLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteLink.swift; sourceTree = "<group>"; };
 		74103E5844EC73EB127B8F8A /* PullRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestView.swift; sourceTree = "<group>"; };
 		7B760406B1B2B956C52E89F9 /* DeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceView.swift; sourceTree = "<group>"; };
 		8346E6C1D03B823ABD7DCA02 /* ArgusRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ArgusRemote.entitlements; sourceTree = "<group>"; };
@@ -437,6 +439,7 @@
 				B33859C3DC1F6B2FE094BDF8 /* PushTokens.swift */,
 				9798D9FC585435B89959E156 /* RootView.swift */,
 				6FCAD11D552D483C0C92312A /* Route.swift */,
+				A11CE0000000000000000002 /* RouteLink.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -850,6 +853,7 @@
 				B77BE7692399E9374B9372E5 /* PushTokens.swift in Sources */,
 				A5D4478D135C8571D9B0C25E /* RootView.swift in Sources */,
 				AE5043C2BADDF974895EAC5C /* Route.swift in Sources */,
+				A11CE0000000000000000001 /* RouteLink.swift in Sources */,
 				55304875735519F780DBE883 /* RunView.swift in Sources */,
 				85B885DE197E4591E333C07D /* SettingsView.swift in Sources */,
 				FEED000100000000000000C1 /* Telemetry.swift in Sources */,

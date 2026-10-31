@@ -60,52 +60,53 @@ enum Route: Hashable {
   case claudeAccounts
   case usage
 
-  /// The pattern only — never a project, branch, agent or device name. The
-  /// desktop's `routePattern()` does the same thing for the same reason: a
-  /// screen name is useful, the thing being looked at is not ours to send.
-  var telemetryName: String {
+  /// The route pattern, never a project, branch, agent or device name — the
+  /// Mac's `ArgusRoute.pattern` where the phone has the same screen, so one
+  /// screen reads the same from either app. Phone-only screens follow its style.
+  var pattern: String {
     switch self {
-    case .pair: "pair"
-    case .computer: "computer"
-    case .projects: "projects"
-    case .agents: "agents"
-    case .project: "project"
-    case .agent: "agent"
-    case .stoppedAgent: "stopped_agent"
-    case .changes: "changes"
-    case .file: "file"
-    case .quickOpen: "quick_open"
-    case .fileSearch: "file_search"
-    case .terminals: "terminals"
-    case .terminal: "terminal"
-    case .stashes: "stashes"
-    case .branches: "branches"
-    case .branch: "branch"
-    case .commit: "commit"
-    case .branchCompare: "branch_compare"
-    case .devices: "devices"
-    case .device: "device"
-    case .inbox: "inbox"
-    case .proposal: "proposal"
-    case .pullRequests: "pull_requests"
-    case .issues: "issues"
-    case .issue: "issue"
-    case .design: "design"
-    case .pullRequest: "pull_request"
-    case .automations: "automations"
-    case .automation: "automation"
-    case .quickRun: "quick_run"
-    case .automationEditor: "automation_editor"
-    case .describeAutomation: "describe_automation"
-    case .automationDraft: "automation_draft"
-    case .run: "run"
-    case .settings: "settings"
-    case .notifications: "notifications"
-    case .computers: "computers"
-    case .account: "account"
-    case .addComputer: "add_computer"
-    case .claudeAccounts: "claude_accounts"
-    case .usage: "usage"
+    case .agents: ArgusRoute.agents.pattern
+    case .agent: ArgusRoute.session(id: "", agentId: nil).pattern
+    case .changes(let id, _): ArgusRoute.sessionGit(id: id, view: .working).pattern
+    case .stashes(let id, _): ArgusRoute.sessionGit(id: id, view: .stashes).pattern
+    case .branches(let id, _, _): ArgusRoute.sessionGit(id: id, view: .branches(nil)).pattern
+    case .branch(let id, _, let branch): ArgusRoute.sessionGit(id: id, view: .branches(branch.name)).pattern
+    case .branchCompare(let id, let left, let right):
+      ArgusRoute.sessionGit(id: id, view: .compare(left: left, right: right)).pattern
+    case .file(let id, let path, let line, _): ArgusRoute.sessionCode(id: id, path: path, line: line).pattern
+    case .devices: ArgusRoute.devices.pattern
+    case .device(let id, let platform, _, _): ArgusRoute.device(platform: platform.rawValue, deviceKey: id).pattern
+    case .inbox: ArgusRoute.inbox.pattern
+    case .proposal(let id): ArgusRoute.proposal(id: id).pattern
+    case .pullRequests: ArgusRoute.pullRequests.pattern
+    case .pullRequest(let repo, let number, _): ArgusRoute.pullRequest(repo: repo, number: number).pattern
+    case .issues: ArgusRoute.issues().pattern
+    case .issue(let ref): ArgusRoute.issues(issue: ref).pattern
+    case .design(let url, let sessionId): ArgusRoute.design(url: url, sessionId: sessionId).pattern
+    case .automations: ArgusRoute.automations.pattern
+    case .automation(let id, _): ArgusRoute.automation(id: id, runId: nil).pattern
+    case .quickRun: ArgusRoute.quickRun(runId: nil).pattern
+    case .run(let id, _): ArgusRoute.automation(id: "", runId: id).pattern
+    case .notifications: ArgusRoute.notifications.pattern
+    case .usage: ArgusRoute.usage(.limits).pattern
+    case .projects: ArgusRoute.home.pattern
+    case .project: "/projects/:repoRoot"
+    case .stoppedAgent: "/projects/:repoRoot/stopped-agents/:historyId"
+    case .quickOpen: "/sessions/:sessionId/code/quick-open"
+    case .fileSearch: "/sessions/:sessionId/code/search"
+    case .terminals: "/sessions/:sessionId/terminals"
+    case .terminal: "/terminals/:terminalId"
+    case .commit: "/sessions/:sessionId/git/commits/:hash"
+    case .automationEditor(let id, _): id == nil ? "/automations/new" : "/automations/:automationId/edit"
+    case .describeAutomation: "/automations/describe"
+    case .automationDraft: "/automations/draft"
+    case .pair: "/pair"
+    case .settings: "/settings"
+    case .computers: "/settings/computers"
+    case .computer: "/settings/computers/:deviceId"
+    case .addComputer: "/settings/computers/new"
+    case .account: "/settings/account"
+    case .claudeAccounts: "/settings/claude-accounts"
     }
   }
 }

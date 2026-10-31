@@ -63,6 +63,10 @@ struct RootView: View {
       guard let handoff = Handoff(userInfo: activity.userInfo) else { return }
       NotificationRouter.shared.open(handoff)
     }
+    .onOpenURL { url in
+      guard let location = ArgusLocation(deepLink: url) else { return }
+      NotificationRouter.shared.open(location)
+    }
     .preferredColorScheme(app.themePreference.colorScheme)
     // Asked before pairing, so nothing is sent on a choice not yet made.
     .sheet(isPresented: $askingConsent) { TelemetryConsentSheet() }

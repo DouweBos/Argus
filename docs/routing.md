@@ -238,6 +238,20 @@ The main process can dispatch a navigation by sending a
 `navigation:goto` IPC event with `{ path: "/sessions/abc" }`. The bridge
 forwards it to `navigate(path)`.
 
+`argus://<path>` reads the path from the URL's host on: `argus://sessions/abc/agents`
+is `/sessions/abc/agents`. The Mac app and the iOS app parse it with the same
+code (`ArgusRoute` in ArgusCore), so a link opens the same screen everywhere
+it can:
+
+- **Mac app** — every route above, `?host=` included.
+- **iOS app** — the phone is agent-centric: `/sessions/:id/agents/:agentId` opens
+  the agent, a bare session opens its project, and `/git/*` and `/code` open the
+  phone's changes, stashes, branches, compare or file screens. A screen the
+  phone doesn't have opens its nearest parent (`/runtimes` → projects, an
+  unknown device → devices). `?host=` selects that paired computer when the
+  phone knows it by that id; otherwise the link reads from the current one.
+  Handoff from the desktop goes through the same mapping.
+
 ## Invariants
 
 1. **Every screen change pushes exactly one history entry.** If you find

@@ -1,5 +1,5 @@
 #if DEBUG
-  import ArgusKit
+  import ArgusCore
   import SwiftUI
   import UIKit
 
@@ -8,7 +8,8 @@
   ///
   /// `ARGUS_DEV_DRIVER=<dir>` (pass it as `SIMCTL_CHILD_ARGUS_DEV_DRIVER`): each
   /// `cmd-<n>.json` is run once and answered in `out-<n>.json`. Ops: `pair`
-  /// (`code`), `route` (`section`, `path`), `back`, `tree`, `press` (accessibility
+  /// (`code`), `route` (`path`: an `argus://` path like `/sessions/<id>/agents`,
+  /// or the older `name:arg` with a `section`), `back`, `tree`, `press` (accessibility
   /// label, optional `index`), `type` (`text`, into the first text field or view).
   @MainActor
   final class DevDriver {
@@ -87,6 +88,21 @@
           router.select(section)
           router.popToRoot()
           return ["ok": true]
+        }
+        if path.hasPrefix("/") {
+          guard let location = ArgusLocation(path: path) else { return ["ok": false, "error": "bad path"] }
+          let out = command["_out"] as? URL
+          Task {
+            if let host = location.host, host != app.activeHostId { await app.selectHost(host) }
+            let destination = await PhoneDestination.resolve(location.route, host: app.host)
+            router.open(destination)
+            let result: [String: Any] = [
+              "ok": true, "section": destination.section.rawValue,
+              "screen": destination.route?.pattern ?? "", "fallback": destination.isFallback,
+            ]
+            if let out, let json = try? JSONSerialization.data(withJSONObject: result) { try? json.write(to: out) }
+          }
+          return ["pending": true]
         }
         guard let route = Route(devPath: path) else { return ["ok": false, "error": "bad path"] }
         router.open(route, in: section)

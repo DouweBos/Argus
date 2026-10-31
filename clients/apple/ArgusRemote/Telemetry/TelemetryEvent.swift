@@ -42,6 +42,12 @@ enum TelemetryEvent {
     case session
   }
 
+  /// How a screen named by a route reached the phone.
+  enum LinkSource: String {
+    case link
+    case handoff
+  }
+
   enum Setting: String {
     case autoExpandImageReads = "auto_expand_image_reads"
   }
@@ -171,6 +177,9 @@ enum TelemetryEvent {
   case accountWoken(reason: WakeReason, outcome: WakeOutcome)
   /// A live connection moved to a better route (e.g. tunnel → Wi-Fi) without dropping.
   case routeUpgraded(from: RemoteEndpoint.Kind, to: RemoteEndpoint.Kind)
+  /// An `argus://` link or a Handoff opened a screen; `screen` is its route pattern,
+  /// `fallback` that the phone has no such screen and opened its parent.
+  case linkOpened(screen: String, via: LinkSource, fallback: Bool)
 
   var name: String {
     switch self {
@@ -220,6 +229,7 @@ enum TelemetryEvent {
     case .accountPushRegistered: "ios_account_push_registered"
     case .accountWoken: "ios_account_woken"
     case .routeUpgraded: "ios_route_upgraded"
+    case .linkOpened: "ios_link_opened"
     }
   }
 
@@ -307,6 +317,8 @@ enum TelemetryEvent {
       ["method": method]
     case .routeUpgraded(let from, let to):
       ["from": from.rawValue, "to": to.rawValue]
+    case .linkOpened(let screen, let via, let fallback):
+      ["screen": screen, "via": via.rawValue, "fallback": fallback]
     }
   }
 

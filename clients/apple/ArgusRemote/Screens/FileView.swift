@@ -8,6 +8,8 @@ enum FileViewSource: String, Hashable {
   case changes
   case quickOpen = "quick_open"
   case search
+  /// An `argus://` link or the dev driver.
+  case link
 }
 
 /// One session file, read-only and highlighted. `path` is as the link had it: an

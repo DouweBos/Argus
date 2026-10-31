@@ -103,11 +103,11 @@ enum Telemetry {
   }
 
   /// A route pattern, never a title or an identifier — see
-  /// `Route.telemetryName`.
+  /// `Route.pattern`.
   static func screen(_ route: Route) {
     guard let client, mode == .full else { return }
     client.capture(
-      "$screen", properties: baseProps().merging(["$screen_name": route.telemetryName]) { _, new in new })
+      "$screen", properties: baseProps().merging(["$screen_name": route.pattern]) { _, new in new })
   }
 
   static func captureException(

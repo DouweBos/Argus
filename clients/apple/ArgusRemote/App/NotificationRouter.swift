@@ -3,8 +3,7 @@ import SwiftUI
 import UserNotifications
 
 /// Turns a tapped notification into a screen, an Approve/Deny button into an
-/// answer, and a Handoff from the desktop into the same screen the Mac had
-/// open.
+/// answer, and a Handoff or an `argus://` link into the screen it names.
 ///
 /// Registered before the biometric gate is passed, because a background tap
 /// must never be dropped. A tap that lands while the app is still locked is
@@ -66,14 +65,13 @@ final class NotificationRouter: NSObject {
     switch pending {
     case .agent(let id, let label): open(agentId: id, label: label)
     case .handoff(let handoff): open(handoff)
+    case .link(let location): open(location)
     }
   }
 
-  /// Continue what the Mac had on screen. The desktop is session-centric and
-  /// this app agent-centric, so an agent is preferred and the project is the
-  /// fallback for a session with nothing running in it.
+  /// Continue what the Mac had on screen, read as the route it names.
   func open(_ handoff: Handoff) {
-    guard ready, let app, let router else {
+    guard ready, let app else {
       pendingOpen = .handoff(handoff)
       return
     }
@@ -82,18 +80,35 @@ final class NotificationRouter: NSObject {
       app.host.showError("That computer isn't paired with this phone.")
       return
     }
-    if let agentId = handoff.agentId, router.isShowingAgent(agentId) { return }
+    let route = ArgusRoute.session(id: handoff.sessionId, agentId: handoff.agentId)
+    let hints = RouteHints(
+      agentLabel: handoff.label, repoRoot: handoff.repoRoot, projectName: handoff.projectName)
+    open(route, on: host.deviceId, hints: hints, via: .handoff)
+  }
 
+  /// An `argus://` link. `?host=` picks the paired computer it names; a link
+  /// naming none, or one this phone doesn't know, reads from the current one.
+  func open(_ location: ArgusLocation) {
+    guard ready, let app else {
+      pendingOpen = .link(location)
+      return
+    }
+    guard !app.hosts.isEmpty else {
+      app.host.showError("Pair a computer before opening Argus links.")
+      return
+    }
+    let hostId = location.host.flatMap { id in app.hosts.first { $0.deviceId == id }?.deviceId }
+    open(location.route, on: hostId, hints: RouteHints(), via: .link)
+  }
+
+  private func open(_ route: ArgusRoute, on hostId: String?, hints: RouteHints, via: TelemetryEvent.LinkSource) {
+    guard let app, let router else { return }
+    if let agentId = route.agentId, router.isShowingAgent(agentId) { return }
     Task {
-      if host.deviceId != app.activeHostId { await app.selectHost(host.deviceId) }
-      if let agentId = handoff.agentId {
-        router.open(
-          .agent(id: agentId, label: handoff.label ?? "Agent"), in: .projects)
-      } else if let repoRoot = handoff.repoRoot {
-        router.open(
-          .project(repoRoot: repoRoot, name: handoff.projectName ?? "Project"),
-          in: .projects)
-      }
+      if let hostId, hostId != app.activeHostId { await app.selectHost(hostId) }
+      let destination = await PhoneDestination.resolve(route, host: app.host, hints: hints)
+      Telemetry.capture(.linkOpened(screen: route.pattern, via: via, fallback: destination.isFallback))
+      router.open(destination)
     }
   }
 
@@ -122,6 +137,7 @@ final class NotificationRouter: NSObject {
 private enum PendingOpen {
   case agent(id: String, label: String)
   case handoff(Handoff)
+  case link(ArgusLocation)
 }
 
 /// UIKit asserts its completion handlers run on the main thread; the `async`
