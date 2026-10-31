@@ -67,12 +67,12 @@ private struct WindowPreview: View {
     HStack(spacing: 0) {
       VStack(alignment: .leading, spacing: 5) {
         ForEach(0..<4, id: \.self) { index in
-          Capsule().fill(index == 1 ? theme.borderStrong : theme.border).frame(width: index == 1 ? 26 : 20, height: 4)
+          Capsule().fill(index == 1 ? theme.borderStrong : theme.border).frame(maxWidth: index == 1 ? 26 : 20).frame(height: 4)
         }
         Spacer(minLength: 0)
       }
       .padding(8)
-      .frame(width: 44, alignment: .leading)
+      .frame(width: Self.sidebarWidth, alignment: .leading)
       .frame(maxHeight: .infinity)
       .background(theme.sidebar)
       Rectangle().fill(theme.border).frame(width: 1)
@@ -81,11 +81,11 @@ private struct WindowPreview: View {
           Spacer()
           Capsule().fill(theme.border).frame(width: 34, height: 7)
         }
-        Capsule().fill(theme.borderStrong).frame(width: 52, height: 4)
-        Capsule().fill(theme.border).frame(width: 40, height: 4)
+        Capsule().fill(theme.borderStrong).frame(maxWidth: 52).frame(height: 4)
+        Capsule().fill(theme.border).frame(maxWidth: 40).frame(height: 4)
         Spacer(minLength: 0)
         HStack {
-          Capsule().fill(theme.border).frame(width: 36, height: 4)
+          Capsule().fill(theme.border).frame(maxWidth: 36).frame(height: 4)
           Spacer()
           Circle().fill(theme.accent).frame(width: 8, height: 8)
         }
@@ -99,6 +99,13 @@ private struct WindowPreview: View {
     }
     .background(theme.bg)
   }
+
+  /// Narrower on a phone, where three cards share ~340pt.
+  #if os(iOS)
+    private static let sidebarWidth: CGFloat = 30
+  #else
+    private static let sidebarWidth: CGFloat = 44
+  #endif
 }
 
 /// Each colour theme as a card: its light and dark accents side by side.
