@@ -14,9 +14,7 @@ struct ClaudeAccountsView: View {
 
   var body: some View {
     List {
-      if let error = host.lastError {
-        Banner(text: error, tone: .danger).listRowSeparator(.hidden)
-      }
+      // No inline error: the app-wide toast already shows `lastError`.
       if let login = host.claudeLogin, login.pending {
         // A sign-in is always about some row; the banner is the way back to it.
         Button {
