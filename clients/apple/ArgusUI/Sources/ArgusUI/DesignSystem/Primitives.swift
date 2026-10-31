@@ -124,12 +124,7 @@ public struct Card<Content: View>: View {
     let card = VStack(alignment: .leading, spacing: 8) { content }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(theme.space)
-      .background(theme.bgSecondary)
-      .clipShape(RoundedRectangle(cornerRadius: theme.radius))
-      .overlay(
-        RoundedRectangle(cornerRadius: theme.radius)
-          .stroke(tone?.color(theme).opacity(0.5) ?? theme.border, lineWidth: 1)
-      )
+      .cardSurface(stroke: tone?.color(theme).opacity(0.5))
 
     if let onTap {
       Button(action: onTap) { card }.buttonStyle(.argusPlain)
@@ -190,10 +185,34 @@ public struct Field<Content: View>: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(theme.space)
-    .background(theme.bgSecondary)
-    .clipShape(RoundedRectangle(cornerRadius: theme.radius))
-    .overlay(
-      RoundedRectangle(cornerRadius: theme.radius).stroke(theme.border, lineWidth: 1))
+    .cardSurface()
+  }
+}
+
+/// `Card` and `Field`'s surface. On iOS it's `card()`'s hairline, so a card
+/// sits beside the system's list cells; the Mac keeps its 1pt outline.
+private struct LegacyCardSurface: ViewModifier {
+  @Environment(\.theme) private var theme
+  let stroke: Color?
+
+  func body(content: Content) -> some View {
+    #if os(iOS)
+      let shape = RoundedRectangle(cornerRadius: theme.radius, style: .continuous)
+      let width: CGFloat = stroke == nil ? 0.5 : 1
+    #else
+      let shape = RoundedRectangle(cornerRadius: theme.radius)
+      let width: CGFloat = 1
+    #endif
+    content
+      .background(theme.bgSecondary)
+      .clipShape(shape)
+      .overlay(shape.stroke(stroke ?? theme.border, lineWidth: width))
+  }
+}
+
+extension View {
+  fileprivate func cardSurface(stroke: Color? = nil) -> some View {
+    modifier(LegacyCardSurface(stroke: stroke))
   }
 }
 
