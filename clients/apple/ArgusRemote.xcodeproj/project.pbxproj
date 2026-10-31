@@ -30,6 +30,8 @@
 		7E2A00000000000000000003 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 7E2A00000000000000000002 /* SwiftTerm */; };
 		801B94D184E882085D5A21C1 /* HardwareKeyCatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 195DBDEBD1CDBCE511CAA5C8 /* HardwareKeyCatcher.swift */; };
 		85B885DE197E4591E333C07D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6939D496D536368D99A574 /* SettingsView.swift */; };
+		0158CE36A787BB752FF40244 /* SettingsComputerPages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08E83348F7B9EDCAD5E06F17 /* SettingsComputerPages.swift */; };
+		1246C2A1D64856EDBCF299A5 /* SettingsPages.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD946F22E6B6B5258324CDCB /* SettingsPages.swift */; };
 		8B82B5637BDFB9252A8D9AD0 /* BranchesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01FFCA8035ABC8A01D2C6CF /* BranchesView.swift */; };
 		91BEB5E2000254899FF02DBF /* DescribeAutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 894443D21C1F9129A450074B /* DescribeAutomationView.swift */; };
 		97AF0DF41C25983BAD9692C1 /* PullRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74103E5844EC73EB127B8F8A /* PullRequestView.swift */; };
@@ -178,6 +180,8 @@
 		AC0A00000000000000000006 /* AppStore+Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Account.swift"; sourceTree = "<group>"; };
 		AC0A00000000000000000014 /* ArgusAuth */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ArgusAuth; sourceTree = SOURCE_ROOT; };
 		AC6939D496D536368D99A574 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		08E83348F7B9EDCAD5E06F17 /* SettingsComputerPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsComputerPages.swift; sourceTree = "<group>"; };
+		FD946F22E6B6B5258324CDCB /* SettingsPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPages.swift; sourceTree = "<group>"; };
 		B33859C3DC1F6B2FE094BDF8 /* PushTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushTokens.swift; sourceTree = "<group>"; };
 		B6C14566E26586DC89C61830 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		C01FFCA8035ABC8A01D2C6CF /* BranchesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchesView.swift; sourceTree = "<group>"; };
@@ -382,6 +386,8 @@
 				A0194276208D56EEC2428E4B /* ProjectView.swift */,
 				6502F79F862A2272184C48C6 /* RunView.swift */,
 				AC6939D496D536368D99A574 /* SettingsView.swift */,
+				08E83348F7B9EDCAD5E06F17 /* SettingsComputerPages.swift */,
+				FD946F22E6B6B5258324CDCB /* SettingsPages.swift */,
 				13099DE3A6A5F9047693B53C /* StoppedAgentView.swift */,
 			);
 			path = Screens;
@@ -856,6 +862,8 @@
 				A11CE0000000000000000001 /* RouteLink.swift in Sources */,
 				55304875735519F780DBE883 /* RunView.swift in Sources */,
 				85B885DE197E4591E333C07D /* SettingsView.swift in Sources */,
+				0158CE36A787BB752FF40244 /* SettingsComputerPages.swift in Sources */,
+				1246C2A1D64856EDBCF299A5 /* SettingsPages.swift in Sources */,
 				FEED000100000000000000C1 /* Telemetry.swift in Sources */,
 				FEED000100000000000000C2 /* TelemetryEvent.swift in Sources */,
 				FEED000100000000000000C3 /* CrashDiagnostics.swift in Sources */,

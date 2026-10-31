@@ -451,6 +451,8 @@ struct RootView: View {
       RunView(runId: id, label: label)
     case .settings:
       SettingsView()
+    case .settingsPage(let page):
+      page.screen
     case .notifications:
       WarningsView()
     case .computers:

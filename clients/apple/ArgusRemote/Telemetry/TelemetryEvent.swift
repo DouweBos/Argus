@@ -151,6 +151,8 @@ enum TelemetryEvent {
   case settingChanged(setting: Setting, enabled: Bool)
   /// A colour theme preset id.
   case colorThemeChanged(theme: String)
+  /// `system`, `light` or `dark`.
+  case appearanceChanged(appearance: String)
   /// `value` is the enum's raw value, or `computer` / `none` when cleared.
   case defaultChanged(setting: DefaultSetting, value: String)
   /// The start sheet sent its agent off. `workspace` is `current`, `worktree`
@@ -231,6 +233,7 @@ enum TelemetryEvent {
     case .inputUsed: "ios_input_used"
     case .settingChanged: "ios_setting_changed"
     case .colorThemeChanged: "ios_color_theme_changed"
+    case .appearanceChanged: "ios_appearance_changed"
     case .defaultChanged: "ios_default_changed"
     case .agentStartSubmitted: "ios_agent_start_submitted"
     case .warningsOpened: "ios_warnings_opened"
@@ -323,6 +326,8 @@ enum TelemetryEvent {
       ["theme": theme]
     case .inputUsed(let affordance):
       ["affordance": affordance]
+    case .appearanceChanged(let appearance):
+      ["appearance": appearance]
     case .defaultChanged(let setting, let value):
       ["setting": setting.rawValue, "value": value]
     case .agentStartSubmitted(let workspace, let changedWorkspace):

@@ -312,6 +312,9 @@
       case "automation": self = .automation(id: arg(1), label: arg(2))
       case "run": self = .run(id: arg(1), label: arg(2))
       case "settings": self = .settings
+      case "settingsPage":
+        guard let page = SettingsPage(rawValue: arg(1)) else { return nil }
+        self = .settingsPage(page)
       case "devices": self = .devices
       case "pullRequests": self = .pullRequests
       case "issues": self = .issues

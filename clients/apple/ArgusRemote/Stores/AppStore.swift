@@ -327,8 +327,10 @@ final class AppStore {
   }
 
   func setThemePreference(_ preference: ThemePreference) {
+    guard preference != themePreference else { return }
     themePreference = preference
     preferences.set(preference.rawValue, for: PreferenceKey.theme)
+    Telemetry.capture(.appearanceChanged(appearance: preference.rawValue))
   }
 
   func setColorTheme(_ theme: ColorTheme) {

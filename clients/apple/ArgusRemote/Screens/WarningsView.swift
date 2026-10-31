@@ -22,7 +22,7 @@ struct WarningsView: View {
         icon: Icon.check, title: "Nothing went wrong",
         body: "Failures shown while you use the app are kept here until it quits.")
     }
-    .navigationTitle("Warnings & errors")
+    .navigationTitle("Notifications")
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
       if !app.warnings.isEmpty {
