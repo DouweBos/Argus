@@ -17,19 +17,30 @@ public struct AgentsOverviewList: View {
     let agents = agents
     List {
       if !agents.isEmpty {
+        // The large title's subtitle, not a section heading over the rows.
+        Text(Self.summary(agents))
+          .font(.scaled(.footnote))
+          .foregroundStyle(.secondary)
+          .listRowBackground(Color.clear)
+          .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
         Section {
           ForEach(agents) { agent in
             Button { open(agent) } label: {
-              AgentRow(
-                name: Labels.agentName(agent), status: agent.status,
-                attention: Labels.awaitingLabel(agent),
-                meta: [agent.projectName, agent.sessionLabel]
-                  .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
+              HStack(spacing: 8) {
+                AgentRow(
+                  name: Labels.agentName(agent), status: agent.status,
+                  attention: Labels.awaitingLabel(agent),
+                  meta: [agent.projectName, agent.sessionLabel]
+                    .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
+                // It pushes, so it says so the way a NavigationLink would.
+                Image(systemName: Icon.chevronRight)
+                  .font(.scaled(.footnote).weight(.semibold))
+                  .foregroundStyle(.tertiary)
+              }
+              .contentShape(Rectangle())
             }
             .buttonStyle(.argusPlain)
           }
-        } header: {
-          Text(Self.summary(agents))
         }
       }
     }
