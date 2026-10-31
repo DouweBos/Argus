@@ -12,7 +12,7 @@ struct DeviceView: View {
   let isTv: Bool
 
   @State private var handle = DeviceVideoView.Handle()
-  @State private var session = DeviceSession(timing: Self.timing) { watch in
+  @State private var session = DeviceSession { watch in
     Telemetry.capture(.deviceWatched(durationMs: watch.durationMs, interacted: watch.interacted))
   }
   @State private var streams: RuntimeStreamHub?
@@ -27,11 +27,6 @@ struct DeviceView: View {
   /// An EAS Simulator session: a billed cloud device that can't rotate.
   private var isEas: Bool { deviceId.hasPrefix("eas:") }
 
-  private static let timing = {
-    var timing = DeviceSession.Timing()
-    timing.startAttempts = 1
-    return timing
-  }()
   /// Minimum finger travel, in points, between injected drag samples.
   private static let dragMinTravel: CGFloat = 2
 
