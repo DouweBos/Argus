@@ -103,16 +103,23 @@ public struct StoppedAgentRow: View {
 
 public struct AutomationRow: View {
   let automation: RemoteAutomation
+  let lastRun: RemoteAutomationRunStatus?
 
-  public init(automation: RemoteAutomation) {
+  public init(automation: RemoteAutomation, lastRun: RemoteAutomationRunStatus? = nil) {
     self.automation = automation
+    self.lastRun = lastRun
+  }
+
+  /// The latest run's outcome, as the Mac's last-run badge shows it.
+  static func dotTone(_ automation: RemoteAutomation, lastRun: RemoteAutomationRunStatus?) -> Tone {
+    if automation.running { return .accent }
+    if let lastRun { return lastRun.tone }
+    return automation.enabled ? .success : .muted
   }
 
   public var body: some View {
     HStack(spacing: 10) {
-      StatusDot(
-        tone: automation.running ? .accent : (automation.enabled ? .success : .muted),
-        pulse: automation.running)
+      StatusDot(tone: Self.dotTone(automation, lastRun: lastRun), pulse: automation.running)
       VStack(alignment: .leading, spacing: 2) {
         Text(automation.name).lineLimit(1)
         Text("\(Labels.triggerLabel(automation)) · \(state)")

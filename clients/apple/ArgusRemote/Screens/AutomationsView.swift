@@ -45,7 +45,7 @@ struct AutomationsView: View {
               NavigationLink(
                 value: Route.automation(id: automation.id, label: automation.name)
               ) {
-                AutomationRow(automation: automation)
+                AutomationRow(automation: automation, lastRun: store.runs(for: automation.id).first?.status)
               }
             }
           }
