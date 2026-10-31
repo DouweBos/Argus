@@ -11,6 +11,8 @@ import Observation
 @Observable
 public final class ProposalsStore {
   public internal(set) var proposals: [RemoteProposal] = []
+  /// The newest proposals in any state, for the inbox's started and cleared groups.
+  public internal(set) var recent: [RemoteProposal] = []
   public internal(set) var busy: Set<String> = []
   public internal(set) var loaded = false
   public internal(set) var error: String?
@@ -35,6 +37,7 @@ public final class ProposalsStore {
 
   public func clear() {
     proposals = []
+    recent = []
     busy = []
     loaded = false
     error = nil
@@ -96,14 +99,30 @@ public final class ProposalsStore {
     }
   }
 
+  /// The Mac's inbox groups. Pending comes from its own list so a busy
+  /// automation's history can't push a decision out of the recent window.
+  public func items(
+    runs: [RemoteAutomationRun], sessionIds: Set<String>, now: Date = Date()
+  ) -> RemoteInboxItems {
+    let pendingIds = Set(proposals.map(\.id))
+    return RemoteInboxItems(
+      proposals: proposals + recent.filter { !pendingIds.contains($0.id) && $0.status != .pending },
+      runs: runs, sessionIds: sessionIds, now: now.timeIntervalSince1970 * 1000)
+  }
+
   public func refresh() async {
     guard let backend = host.backend else { return }
     struct Params: Encodable { let status: String }
+    struct RecentParams: Encodable { let limit: Int }
     struct Result: Decodable { let proposals: [RemoteProposal] }
+    // Best effort: without it the inbox still has its decisions.
+    async let latest = try? backend.request(
+      .proposalsList, RecentParams(limit: 100), as: Result.self)
     do {
       let result = try await backend.request(
         .proposalsList, Params(status: "pending"), as: Result.self)
       proposals = result.proposals
+      if let latest = await latest { recent = latest.proposals }
       error = nil
     } catch {
       fail("Couldn't read the inbox", error)

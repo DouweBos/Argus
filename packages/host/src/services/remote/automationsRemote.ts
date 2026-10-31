@@ -98,6 +98,7 @@ export function toRemoteAutomationRun(run: AutomationRun): RemoteAutomationRun {
     cost_usd: run.cost_usd,
     error: run.error,
     unread_report: hasUnreadReport(run),
+    report_read: run.report_read,
     host_session_id: run.host_session_id,
     host_agent_id: run.host_agent_id,
   };

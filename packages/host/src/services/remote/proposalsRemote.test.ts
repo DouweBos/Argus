@@ -113,6 +113,7 @@ describe("the inbox a phone sees", () => {
     expect(sent?.status).toBe("dismissed");
     expect(sent?.dismissed_reason).toBe("not worth it");
     expect(sent?.superseded_by).toBeNull();
+    expect(sent?.cleared_at).toBeNull();
     expect(remoteProposal("nope")).toBeNull();
   });
 });

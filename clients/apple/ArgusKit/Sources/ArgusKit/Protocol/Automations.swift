@@ -306,6 +306,8 @@ public struct RemoteAutomationRun: Codable, Hashable, Sendable, Identifiable {
   public var error: String?
   /// It wrote a report, nobody has read it, and nothing newer has replaced it.
   public var unreadReport: Bool
+  /// Opened or dismissed. Absent from older computers, which never said.
+  public var reportRead: Bool?
   public var hostSessionId: String?
   public var hostAgentId: String?
 
@@ -324,6 +326,7 @@ public struct RemoteAutomationRun: Codable, Hashable, Sendable, Identifiable {
     case finishedAt = "finished_at"
     case costUsd = "cost_usd"
     case unreadReport = "unread_report"
+    case reportRead = "report_read"
     case hostSessionId = "host_session_id"
     case hostAgentId = "host_agent_id"
   }
@@ -567,6 +570,7 @@ public struct RemoteProposal: Codable, Hashable, Sendable, Identifiable {
   /// A rework asked for and not yet picked up by a run.
   public var revisionRequest: String?
   public var clearedReason: String?
+  public var clearedAt: Double?
   public var supersededBy: String?
 
   enum CodingKeys: String, CodingKey {
@@ -586,6 +590,7 @@ public struct RemoteProposal: Codable, Hashable, Sendable, Identifiable {
     case resolvedNote = "resolved_note"
     case revisionRequest = "revision_request"
     case clearedReason = "cleared_reason"
+    case clearedAt = "cleared_at"
     case supersededBy = "superseded_by"
   }
 }

@@ -300,11 +300,18 @@ public final class AutomationsStore {
 
     if let index = runs.firstIndex(where: { $0.id == id }) {
       runs[index].unreadReport = false
+      runs[index].reportRead = true
     }
     if var detail = detailByRun[id] {
       detail.run.unreadReport = false
       detailByRun[id] = detail
     }
+  }
+
+  /// Dismissing a failure from the inbox is reading it; it asks for no reason.
+  public func dismissRun(id: String) async {
+    await markRunRead(id: id)
+    host.hooks.track(.runActed(action: .markRead))
   }
 
   public func runNow(automationId: String) async {

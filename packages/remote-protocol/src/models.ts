@@ -834,6 +834,9 @@ export const RemoteAutomationRun = z.object({
   error: z.string().nullable(),
   /** It wrote a report, nobody has read it, and nothing newer has replaced it. */
   unread_report: z.boolean(),
+  /** Opened or dismissed — a failed run read this way leaves the inbox.
+   *  Optional so an older host's runs still parse. */
+  report_read: z.boolean().optional(),
   /** The run's own session, so a client can open the agent that did the work. */
   host_session_id: z.string().nullable(),
   host_agent_id: z.string().nullable(),
@@ -932,6 +935,8 @@ export const RemoteProposal = z.object({
   resolved_note: z.string().nullable().optional(),
   revision_request: z.string().nullable().optional(),
   cleared_reason: z.string().nullable().optional(),
+  /** When a later run superseded or withdrew it; the inbox lists it for a day. */
+  cleared_at: z.number().nullable().optional(),
   superseded_by: z.string().nullable().optional(),
 });
 export type RemoteProposal = z.infer<typeof RemoteProposal>;

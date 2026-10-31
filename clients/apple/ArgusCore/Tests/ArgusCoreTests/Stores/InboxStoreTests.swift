@@ -65,6 +65,55 @@ struct InboxStoreTests {
     #expect(!items.isEmpty)
   }
 
+  static func remoteProposal(_ id: String, _ status: String, extra: String = "") -> String {
+    #"{"id":"\#(id)","automation_id":"a1","automation_name":"A","title":"T","summary":"S","#
+      + #""rationale":"","confidence":0.9,"cta":null,"status":"\#(status)","project":null,"#
+      + #""source_label":null,"source_url":null,"agent_id":null,"#
+      + #""start_stage":null,"start_error":null,"created_at":\#(now)\#(extra)}"#
+  }
+
+  static func remoteRun(
+    _ id: String, _ status: String, started: Double = now, unread: Bool = false,
+    read: String = ""
+  ) -> String {
+    #"{"id":"\#(id)","automation_id":"a1","automation_name":"A","is_quick":false,"#
+      + #""status":"\#(status)","trigger_reason":"manual","started_at":\#(started),"#
+      + #""unread_report":\#(unread)\#(read)}"#
+  }
+
+  @Test("the phone's wire shapes group the same way")
+  func remoteGrouping() throws {
+    let proposals = try Self.decode(
+      "[" + [
+        Self.remoteProposal("pending", "pending"),
+        Self.remoteProposal("live", "accepted", extra: #","session_id":"s1""#),
+        Self.remoteProposal("merged", "auto_started", extra: #","session_id":"gone""#),
+        Self.remoteProposal("fresh", "withdrawn", extra: #","cleared_at":\#(Self.now - Self.hour)"#),
+        Self.remoteProposal("stale", "superseded", extra: #","cleared_at":\#(Self.now - 25 * Self.hour)"#),
+        Self.remoteProposal("no", "dismissed"),
+      ].joined(separator: ",") + "]",
+      as: [RemoteProposal].self)
+    let runs = try Self.decode(
+      "[" + [
+        Self.remoteRun("failed", "failed"),
+        Self.remoteRun("old-failure", "failed", started: Self.now - 25 * Self.hour),
+        Self.remoteRun("read-failure", "failed", read: #","report_read":true"#),
+        Self.remoteRun("report", "succeeded", unread: true),
+        Self.remoteRun("read-report", "succeeded"),
+        Self.remoteRun("running", "running", unread: true),
+        Self.remoteRun("failed-with-report", "failed", unread: true),
+      ].joined(separator: ",") + "]",
+      as: [RemoteAutomationRun].self)
+
+    let items = RemoteInboxItems(proposals: proposals, runs: runs, sessionIds: ["s1"], now: Self.now)
+    #expect(items.pending.map(\.id) == ["pending"])
+    #expect(items.started.map(\.id) == ["live"])
+    #expect(items.cleared.map(\.id) == ["fresh"])
+    #expect(items.failed.map(\.id) == ["failed", "failed-with-report"])
+    #expect(items.reports.map(\.id) == ["report"])
+    #expect(items.actionCount == 4)
+  }
+
   @Test("proposals:changed replaces the list and a run event upserts one run")
   func liveUpdates() async throws {
     let host = HostStore()

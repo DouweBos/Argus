@@ -13207,6 +13207,7 @@ extension ArgusProtocol {
     public var costUsd: Double?
     public var error: String?
     public var unreadReport: Bool
+    public var reportRead: Bool?
     public var hostSessionId: String?
     public var hostAgentId: String?
 
@@ -13222,11 +13223,12 @@ extension ArgusProtocol {
       case costUsd = "cost_usd"
       case error = "error"
       case unreadReport = "unread_report"
+      case reportRead = "report_read"
       case hostSessionId = "host_session_id"
       case hostAgentId = "host_agent_id"
     }
 
-    public init(id: String, automationId: String, automationName: String, isQuick: Bool, status: RemoteAutomationRunStatus, triggerReason: String, startedAt: Double, finishedAt: Double? = nil, costUsd: Double? = nil, error: String? = nil, unreadReport: Bool, hostSessionId: String? = nil, hostAgentId: String? = nil) {
+    public init(id: String, automationId: String, automationName: String, isQuick: Bool, status: RemoteAutomationRunStatus, triggerReason: String, startedAt: Double, finishedAt: Double? = nil, costUsd: Double? = nil, error: String? = nil, unreadReport: Bool, reportRead: Bool? = nil, hostSessionId: String? = nil, hostAgentId: String? = nil) {
       self.id = id
       self.automationId = automationId
       self.automationName = automationName
@@ -13238,6 +13240,7 @@ extension ArgusProtocol {
       self.costUsd = costUsd
       self.error = error
       self.unreadReport = unreadReport
+      self.reportRead = reportRead
       self.hostSessionId = hostSessionId
       self.hostAgentId = hostAgentId
     }
@@ -13255,6 +13258,7 @@ extension ArgusProtocol {
       try c.encode(costUsd, forKey: .costUsd)
       try c.encode(error, forKey: .error)
       try c.encode(unreadReport, forKey: .unreadReport)
+      try c.encodeIfPresent(reportRead, forKey: .reportRead)
       try c.encode(hostSessionId, forKey: .hostSessionId)
       try c.encode(hostAgentId, forKey: .hostAgentId)
     }
@@ -14477,6 +14481,7 @@ extension ArgusProtocol {
     public var resolvedNote: String?
     public var revisionRequest: String?
     public var clearedReason: String?
+    public var clearedAt: Double?
     public var supersededBy: String?
 
     enum CodingKeys: String, CodingKey {
@@ -14503,10 +14508,11 @@ extension ArgusProtocol {
       case resolvedNote = "resolved_note"
       case revisionRequest = "revision_request"
       case clearedReason = "cleared_reason"
+      case clearedAt = "cleared_at"
       case supersededBy = "superseded_by"
     }
 
-    public init(id: String, automationId: String, automationName: String, runId: String? = nil, title: String, summary: String, rationale: String, confidence: Double, cta: RemoteProposalCta? = nil, status: RemoteProposalStatus, project: String? = nil, sourceLabel: String? = nil, sourceUrl: String? = nil, sessionId: String? = nil, agentId: String? = nil, startStage: RemoteProposalStartStage? = nil, startError: String? = nil, createdAt: Double, acceptedNote: String? = nil, dismissedReason: String? = nil, resolvedNote: String? = nil, revisionRequest: String? = nil, clearedReason: String? = nil, supersededBy: String? = nil) {
+    public init(id: String, automationId: String, automationName: String, runId: String? = nil, title: String, summary: String, rationale: String, confidence: Double, cta: RemoteProposalCta? = nil, status: RemoteProposalStatus, project: String? = nil, sourceLabel: String? = nil, sourceUrl: String? = nil, sessionId: String? = nil, agentId: String? = nil, startStage: RemoteProposalStartStage? = nil, startError: String? = nil, createdAt: Double, acceptedNote: String? = nil, dismissedReason: String? = nil, resolvedNote: String? = nil, revisionRequest: String? = nil, clearedReason: String? = nil, clearedAt: Double? = nil, supersededBy: String? = nil) {
       self.id = id
       self.automationId = automationId
       self.automationName = automationName
@@ -14530,6 +14536,7 @@ extension ArgusProtocol {
       self.resolvedNote = resolvedNote
       self.revisionRequest = revisionRequest
       self.clearedReason = clearedReason
+      self.clearedAt = clearedAt
       self.supersededBy = supersededBy
     }
 
@@ -14558,6 +14565,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(resolvedNote, forKey: .resolvedNote)
       try c.encodeIfPresent(revisionRequest, forKey: .revisionRequest)
       try c.encodeIfPresent(clearedReason, forKey: .clearedReason)
+      try c.encodeIfPresent(clearedAt, forKey: .clearedAt)
       try c.encodeIfPresent(supersededBy, forKey: .supersededBy)
     }
   }

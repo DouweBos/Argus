@@ -61,6 +61,7 @@ describe("the run a phone sees", () => {
     const marked = markRemoteRunRead(runId);
 
     expect(marked?.run.unread_report).toBe(false);
+    expect(marked?.run.report_read).toBe(true);
   });
 
   it("never flags a run that wrote nothing", () => {

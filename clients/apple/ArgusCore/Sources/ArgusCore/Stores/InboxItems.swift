@@ -1,15 +1,33 @@
 import ArgusKit
 import Foundation
 
+/// Where a proposal sits in the inbox, whichever wire shape it came in.
+public enum InboxProposalPhase: Sendable {
+  case pending, started, cleared, decided
+}
+
+/// What the inbox needs of a proposal: the catalog's on the Mac, the gateway's on the phone.
+public protocol InboxProposal: Sendable {
+  var inboxPhase: InboxProposalPhase { get }
+  var sessionId: String? { get }
+  var clearedAt: Double? { get }
+}
+
+/// What the inbox needs of a run.
+public protocol InboxRun: Sendable {
+  var isFailed: Bool { get }
+  /// Opened or dismissed; a failure read this way leaves the inbox.
+  var isRead: Bool { get }
+  var startedAt: Double { get }
+  var hasUnreadReport: Bool { get }
+}
+
 /// What the inbox is made of, grouped by what you would do about it rather
 /// than by which automation produced it — the desktop's `useInboxItems`.
-public struct InboxItems: Sendable {
-  public typealias Proposal = ArgusProtocol.Proposal
-  public typealias Run = ArgusProtocol.AutomationRun
-
+public struct InboxGroups<Proposal: InboxProposal, Run: InboxRun>: Sendable {
   /// A failure or a cleared proposal older than this is history, not an inbox item.
-  public static let window: Double = 24 * 60 * 60 * 1000
-  public static let maxFailedRuns = 5
+  public static var window: Double { 24 * 60 * 60 * 1000 }
+  public static var maxFailedRuns: Int { 5 }
 
   /// Decisions waiting on you.
   public var pending: [Proposal]
@@ -24,21 +42,19 @@ public struct InboxItems: Sendable {
 
   /// `now` is in milliseconds, like every host timestamp.
   public init(proposals: [Proposal], runs: [Run], sessionIds: Set<String>, now: Double) {
-    pending = proposals.filter { $0.status == .pending }
+    pending = proposals.filter { $0.inboxPhase == .pending }
     // A merged or deleted session leaves its proposal started with nothing to open.
     started = proposals.filter {
-      ($0.status == .accepted || $0.status == .autoStarted)
-        && $0.sessionId.map(sessionIds.contains) == true
+      $0.inboxPhase == .started && $0.sessionId.map(sessionIds.contains) == true
     }
     cleared = proposals.filter {
-      ($0.status == .superseded || $0.status == .withdrawn)
-        && $0.clearedAt.map { now - $0 < Self.window } == true
+      $0.inboxPhase == .cleared && $0.clearedAt.map { now - $0 < Self.window } == true
     }
     failed = Array(
-      runs.filter { $0.status == .failed && !$0.reportRead && now - $0.startedAt < Self.window }
+      runs.filter { $0.isFailed && !$0.isRead && now - $0.startedAt < Self.window }
         .prefix(Self.maxFailedRuns))
     // A failed run is already listed as a failure; its report would ask twice.
-    reports = runs.filter { $0.status != .failed && $0.hasUnreadReport }
+    reports = runs.filter { !$0.isFailed && $0.hasUnreadReport }
   }
 
   public var isEmpty: Bool {
@@ -47,6 +63,45 @@ public struct InboxItems: Sendable {
 
   /// How many things are actually waiting on you — what a badge would show.
   public var actionCount: Int { pending.count + failed.count + reports.count }
+}
+
+/// The Mac's inbox, over the host's catalog.
+public typealias InboxItems = InboxGroups<ArgusProtocol.Proposal, ArgusProtocol.AutomationRun>
+/// The phone's inbox, over the gateway's narrowed shapes.
+public typealias RemoteInboxItems = InboxGroups<RemoteProposal, RemoteAutomationRun>
+
+extension InboxProposalPhase {
+  fileprivate init(pending: Bool, started: Bool, cleared: Bool) {
+    self = pending ? .pending : started ? .started : cleared ? .cleared : .decided
+  }
+}
+
+extension ArgusProtocol.Proposal: InboxProposal {
+  public var inboxPhase: InboxProposalPhase {
+    .init(
+      pending: status == .pending, started: status == .accepted || status == .autoStarted,
+      cleared: status == .superseded || status == .withdrawn)
+  }
+}
+
+extension RemoteProposal: InboxProposal {
+  public var inboxPhase: InboxProposalPhase {
+    .init(
+      pending: status == .pending, started: status == .accepted || status == .autoStarted,
+      cleared: status == .superseded || status == .withdrawn)
+  }
+}
+
+extension ArgusProtocol.AutomationRun: InboxRun {
+  public var isFailed: Bool { status == .failed }
+  public var isRead: Bool { reportRead }
+}
+
+extension RemoteAutomationRun: InboxRun {
+  public var isFailed: Bool { status == .failed }
+  /// An older computer never says, so its failures stay until they age out.
+  public var isRead: Bool { reportRead ?? false }
+  public var hasUnreadReport: Bool { unreadReport && !isActive }
 }
 
 extension ArgusProtocol.AutomationRun {

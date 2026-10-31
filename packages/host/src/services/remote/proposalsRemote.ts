@@ -57,6 +57,7 @@ export function toRemoteProposal(proposal: Proposal): RemoteProposal {
     resolved_note: proposal.resolved_note,
     revision_request: proposal.revision_request,
     cleared_reason: proposal.cleared_reason,
+    cleared_at: proposal.cleared_at,
     superseded_by: proposal.superseded_by,
   };
 }
