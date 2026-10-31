@@ -127,9 +127,12 @@ private struct TranscriptFooter: View {
       TranscriptPrompts(agentKey: agentKey, pending: state.pending)
 
       let queued = host.queuedByAgent[agentKey] ?? []
-      if !queued.isEmpty {
-        SectionHeader(title: "Queued", count: queued.count)
+      // Queue adds still on their way to the host.
+      let sending = host.sendingQueuedByAgent[agentKey] ?? []
+      if !queued.isEmpty || !sending.isEmpty {
+        SectionHeader(title: "Queued", count: queued.count + sending.count)
         ForEach(queued) { QueuedMessageCard(agentKey: agentKey, message: $0) }
+        ForEach(sending) { QueuedMessageCard(agentKey: agentKey, message: $0, sending: true) }
       }
       let failed = host.failedByAgent[agentKey] ?? []
       if !failed.isEmpty {

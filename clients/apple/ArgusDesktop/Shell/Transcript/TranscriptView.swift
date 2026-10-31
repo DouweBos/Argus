@@ -164,7 +164,8 @@ struct TranscriptView: View {
       pending: pending, working: state == .working || state == .blocked,
       lists: [
         host.tasksByAgent[agentKey]?.count ?? 0, host.todosByAgent[agentKey]?.count ?? 0,
-        host.queuedByAgent[agentKey]?.count ?? 0, host.failedByAgent[agentKey]?.count ?? 0,
+        host.queuedByAgent[agentKey]?.count ?? 0, host.sendingQueuedByAgent[agentKey]?.count ?? 0,
+        host.failedByAgent[agentKey]?.count ?? 0,
       ])
   }
 
