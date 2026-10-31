@@ -288,37 +288,45 @@ public struct Btn: View {
   }
 
   public var body: some View {
-    Button(action: action) {
-      HStack(spacing: 6) {
-        if let icon {
-          Image(systemName: icon).font(.scaled(size: small ? 11 : 13, weight: .semibold))
-        } else if let image {
-          image.resizable().scaledToFit().frame(width: small ? 12 : 15, height: small ? 12 : 15)
-        }
-        Text(label).font(.scaled(size: small ? 13 : 15, weight: .semibold))
-      }
-      .frame(maxWidth: tone == .ghost || hugs ? nil : Layout.maxControlWidth)
-      .padding(.vertical, small ? 7 : 11)
-      .padding(.horizontal, small ? 12 : 14)
-      .foregroundStyle(foreground)
-      .background(background)
-      .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
-      .overlay(
-        RoundedRectangle(cornerRadius: theme.radiusSmall)
-          .stroke(border, lineWidth: tone == .secondary ? 1 : 0))
-      // Centre the capped button in whatever space it was given, rather than
-      // letting it sit against the leading edge of a wide layout.
-      .frame(maxWidth: tone == .ghost || hugs ? nil : .infinity, alignment: .center)
+    // The system's plain style dims a disabled label on iOS; a greyed button
+    // draws its own disabled look, so it skips the Button altogether.
+    if greysOut {
+      face.accessibilityElement(children: .combine).accessibilityAddTraits(.isButton)
+    } else {
+      Button(action: action) { face }
+        .buttonStyle(.argusPlain)
+        .opacity(isEnabled ? 1 : 0.4)
     }
-    .buttonStyle(.argusPlain)
-    .opacity(isEnabled || greysOut ? 1 : 0.4)
   }
 
-  /// On iOS a disabled primary button greys out like the system's, rather than
+  private var face: some View {
+    HStack(spacing: 6) {
+      if let icon {
+        Image(systemName: icon).font(.scaled(size: small ? 11 : 13, weight: .semibold))
+      } else if let image {
+        image.resizable().scaledToFit().frame(width: small ? 12 : 15, height: small ? 12 : 15)
+      }
+      Text(label).font(.scaled(size: small ? 13 : 15, weight: .semibold))
+    }
+    .frame(maxWidth: tone == .ghost || hugs ? nil : Layout.maxControlWidth)
+    .padding(.vertical, small ? 7 : 11)
+    .padding(.horizontal, small ? 12 : 14)
+    .foregroundStyle(foreground)
+    .background(background)
+    .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
+    .overlay(
+      RoundedRectangle(cornerRadius: theme.radiusSmall)
+        .stroke(border, lineWidth: tone == .secondary ? 1 : 0))
+    // Centre the capped button in whatever space it was given, rather than
+    // letting it sit against the leading edge of a wide layout.
+    .frame(maxWidth: tone == .ghost || hugs ? nil : .infinity, alignment: .center)
+  }
+
+  /// On iOS a disabled filled button greys out like the system's, rather than
   /// fading an accent that may be near-white to nothing.
   private var greysOut: Bool {
     #if os(iOS)
-      tone == .primary && !isEnabled
+      (tone == .primary || tone == .secondary) && !isEnabled
     #else
       false
     #endif
