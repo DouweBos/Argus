@@ -15,14 +15,14 @@ struct SidebarDestination {
   /// The everyday screens, listed under the sidebar's search.
   @MainActor static let primary: [SidebarDestination] = [
     .init(title: "Home", symbol: Icon.home, shortcut: "⇧⌘H", route: .home) { $0 == .home },
-    .init(title: "Inbox", symbol: "tray", shortcut: "⇧⌘I", route: .inbox) {
+    .init(title: "Inbox", symbol: Icon.inbox, shortcut: "⇧⌘I", route: .inbox) {
       if case .proposal = $0 { return true }
       return $0 == .inbox
     },
-    .init(title: "Agents", symbol: "sparkles", shortcut: "⌥⌘1", route: .agents) { $0 == .agents },
-    .init(title: "Devices", symbol: "iphone.gen3", shortcut: "⌥⌘2", route: .devices) { $0.isDevices },
-    .init(title: "Runtimes", symbol: "play.rectangle", shortcut: "⌥⌘3", route: .runtimes) { $0 == .runtimes },
-    .init(title: "Automations", symbol: "clock.arrow.circlepath", shortcut: nil, route: .automations) {
+    .init(title: "Agents", symbol: Icon.agents, shortcut: "⌥⌘1", route: .agents) { $0 == .agents },
+    .init(title: "Devices", symbol: Icon.devices, shortcut: "⌥⌘2", route: .devices) { $0.isDevices },
+    .init(title: "Runtimes", symbol: Icon.runtimes, shortcut: "⌥⌘3", route: .runtimes) { $0 == .runtimes },
+    .init(title: "Automations", symbol: Icon.automations, shortcut: nil, route: .automations) {
       switch $0 {
       case .automations, .automation, .quickRun: true
       default: false
@@ -32,7 +32,7 @@ struct SidebarDestination {
 
   /// The occasional ones, as icons along the sidebar's foot.
   @MainActor static let footer: [SidebarDestination] = [
-    .init(title: "Pull Requests", symbol: "arrow.triangle.pull", shortcut: "⌥⌘4", route: .pullRequests) {
+    .init(title: "Pull Requests", symbol: Icon.pullRequests, shortcut: "⌥⌘4", route: .pullRequests) {
       if case .pullRequest = $0 { return true }
       return $0 == .pullRequests
     },

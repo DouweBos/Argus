@@ -18,7 +18,7 @@ struct PullRequestsView: View {
         Loading(label: "Asking GitHub…").listRowBackground(Color.clear)
       } else if store.pullRequests.isEmpty {
         EmptyState(
-          icon: Icon.repo,
+          icon: Icon.pullRequests,
           title: "No pull requests",
           body: "Nothing open that's yours to review or land."
         )

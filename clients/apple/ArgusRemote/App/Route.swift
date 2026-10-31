@@ -1,4 +1,5 @@
 import ArgusCore
+import ArgusUI
 import Foundation
 
 /// Every screen the stack can push. One case per screen, carrying exactly what
@@ -131,11 +132,11 @@ enum AppSection: String, Hashable, CaseIterable, Identifiable {
 
   var symbol: String {
     switch self {
-    case .projects: "folder"
-    case .inbox: "tray"
-    case .automations: "clock"
-    case .devices: "iphone"
-    case .settings: "gearshape"
+    case .projects: Icon.projects
+    case .inbox: Icon.inbox
+    case .automations: Icon.automations
+    case .devices: Icon.devices
+    case .settings: Icon.settings
     }
   }
 }

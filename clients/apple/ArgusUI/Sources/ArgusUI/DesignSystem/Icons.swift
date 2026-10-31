@@ -75,4 +75,19 @@ public enum Icon {
   public static let notification = "bell.fill"
   public static let androidBack = "arrow.left"
   public static let androidRecents = "square.on.square"
+
+  // MARK: Destinations — one glyph per screen, read by both apps' navigation.
+
+  public static let projects = "folder"
+  public static let inbox = "tray"
+  public static let agents = "sparkles"
+  public static let automations = "clock.arrow.circlepath"
+  public static let devices = "iphone.gen3"
+  public static let runtimes = "play.rectangle"
+  public static let pullRequests = pullRequest
+  public static let issues = issue
+  public static let settings = gear
+  public static let notifications = "bell"
+  /// A session's uncommitted changes.
+  public static let changes = "plusminus"
 }

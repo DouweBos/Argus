@@ -1,5 +1,6 @@
 import AppKit
 import ArgusCore
+import ArgusUI
 
 /// The palette's own commands: navigation, sessions, projects and the app.
 /// Git registers its own source once the git views land.
@@ -16,15 +17,15 @@ enum BuiltinPalette {
 
   private static func navigate(_ model: DesktopModel) -> [PaletteCommand] {
     let screens: [(DesktopRoute, String, String)] = [
-      (.home, "Home", "house"),
-      (.inbox, "Inbox", "tray"),
-      (.automations, "Automations", "clock.arrow.circlepath"),
+      (.home, "Home", Icon.home),
+      (.inbox, "Inbox", Icon.inbox),
+      (.automations, "Automations", Icon.automations),
       (.quickRun(runId: nil), "Quick Run", "bolt"),
-      (.agents, "Agents", "sparkles"),
-      (.runtimes, "Runtimes", "play.rectangle"),
-      (.devices, "Devices", "iphone.gen3"),
+      (.agents, "Agents", Icon.agents),
+      (.runtimes, "Runtimes", Icon.runtimes),
+      (.devices, "Devices", Icon.devices),
       (.notifications, "Notifications", "exclamationmark.triangle"),
-      (.usage(.limits), "Usage", "gauge.with.dots.needle.33percent"),
+      (.usage(.limits), "Usage", Icon.usage),
     ]
     var commands = screens.map { route, title, image in
       PaletteCommand(

@@ -73,7 +73,7 @@ struct ProjectView: View {
           // Offering them would only produce a failure from the computer.
           if group.session?.isUnavailable != true {
             NavigationLink(value: Route.changes(sessionId: group.id, label: group.label)) {
-              Label("Changes", systemImage: Icon.branch)
+              Label("Changes", systemImage: Icon.changes)
             }
             NavigationLink(value: Route.terminals(sessionId: group.id, label: group.label)) {
               Label("Terminals", systemImage: Icon.terminal)
@@ -83,7 +83,7 @@ struct ProjectView: View {
                 value: Route.branches(
                   sessionId: group.id, repoRoot: repoRoot, label: group.label)
               ) {
-                Label("Branches", systemImage: Icon.repo)
+                Label("Branches", systemImage: Icon.branch)
               }
             }
             if host.hasControl {

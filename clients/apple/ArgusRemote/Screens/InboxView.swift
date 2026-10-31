@@ -23,7 +23,7 @@ struct InboxView: View {
       Section {
         NavigationLink(value: Route.pullRequests) {
           HStack(spacing: 8) {
-            Label("Pull requests", systemImage: Icon.repo)
+            Label("Pull requests", systemImage: Icon.pullRequests)
             Spacer(minLength: 4)
             if !pullRequests.pullRequests.isEmpty {
               Badge(label: "\(pullRequests.pullRequests.count)", tone: .accent)
