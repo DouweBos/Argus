@@ -24,19 +24,33 @@ public enum CodeBlockHighlighting {
   public static func runs(for code: String, language: SyntaxLanguage) async -> [SyntaxRun]? {
     let key = CacheKey(code: code, language: language)
     if let cached = cache.withLock({ $0[key] }) { return cached }
-    let runs = await Task.detached(priority: .userInitiated) { () -> [SyntaxRun]? in
-      guard
-        SyntaxLimits.highlightingDisabledReason(byteCount: code.utf8.count, text: code) == nil
-      else { return nil }
-      return SyntaxHighlighter.highlight(code, language: language)
-    }.value
-    if code.utf16.count <= maxCachedLength {
-      cache.withLock { cache in
-        if cache.count >= maxCacheEntries { cache.removeAll(keepingCapacity: true) }
-        cache[key] = runs
-      }
-    }
+    let runs = await Task.detached(priority: .userInitiated) { parse(code, language: language) }.value
+    remember(runs, for: key)
     return runs
+  }
+
+  /// `runs(for:language:)` parsed on the caller, for layout that can't wait (the Mac
+  /// transcript renders a message's text synchronously). Same cache and limits.
+  public static func runsNow(for code: String, language: SyntaxLanguage) -> [SyntaxRun]? {
+    let key = CacheKey(code: code, language: language)
+    if let cached = cache.withLock({ $0[key] }) { return cached }
+    let runs = parse(code, language: language)
+    remember(runs, for: key)
+    return runs
+  }
+
+  private static func parse(_ code: String, language: SyntaxLanguage) -> [SyntaxRun]? {
+    guard SyntaxLimits.highlightingDisabledReason(byteCount: code.utf8.count, text: code) == nil
+    else { return nil }
+    return SyntaxHighlighter.highlight(code, language: language)
+  }
+
+  private static func remember(_ runs: [SyntaxRun]?, for key: CacheKey) {
+    guard key.code.utf16.count <= maxCachedLength else { return }
+    cache.withLock { cache in
+      if cache.count >= maxCacheEntries { cache.removeAll(keepingCapacity: true) }
+      cache[key] = runs
+    }
   }
 
   /// The whole of `code` as one coloured string.

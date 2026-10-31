@@ -1,5 +1,6 @@
 import AppKit
 import ArgusCore
+import ArgusSyntax
 import ArgusUI
 
 /// Transcript text as one attributed string per message, so a single TextKit 2
@@ -50,9 +51,35 @@ enum TranscriptMarkdown {
     let out = NSMutableAttributedString(
       string: body.hasSuffix("\n") ? String(body.dropLast()) : body,
       attributes: [.font: TranscriptStyle.code, .foregroundColor: TranscriptStyle.secondary, .paragraphStyle: style])
-    TranscriptSyntax.highlight(out, language: language)
+    highlight(out, language: language)
     linkify(out, mentions: false)
     return out
+  }
+
+  /// The shared tree-sitter highlighter's runs as colours; a diff, which has no
+  /// grammar, gets its added and removed lines marked.
+  private static func highlight(_ code: NSMutableAttributedString, language: String?) {
+    guard let language else { return }
+    if let syntax = SyntaxLanguage(languageName: language) {
+      guard let runs = CodeBlockHighlighting.runsNow(for: code.string, language: syntax) else { return }
+      let bold = NSFont.monospacedSystemFont(ofSize: TranscriptStyle.code.pointSize, weight: .bold)
+      for run in runs where NSMaxRange(run.range) <= code.length {
+        code.addAttribute(
+          .foregroundColor, value: TranscriptStyle.syntax[run.capture] ?? TranscriptStyle.secondary, range: run.range)
+        if run.capture.isBold { code.addAttribute(.font, value: bold, range: run.range) }
+      }
+    } else if ["diff", "patch"].contains(language.lowercased()) {
+      let text = code.string as NSString
+      for line in CodeBlockHighlighting.lineRanges(of: text) where line.length > 0 {
+        let head = text.substring(with: line)
+        let color: NSColor? =
+          head.hasPrefix("@@") ? TranscriptStyle.syntax[.keyword]
+          : head.hasPrefix("+++") || head.hasPrefix("---") ? TranscriptStyle.muted
+          : head.hasPrefix("+") ? TranscriptStyle.inserted
+          : head.hasPrefix("-") ? TranscriptStyle.error : nil
+        if let color { code.addAttribute(.foregroundColor, value: color, range: line) }
+      }
+    }
   }
 
   /// Tool output and commands: monospaced, linkified, no markdown.

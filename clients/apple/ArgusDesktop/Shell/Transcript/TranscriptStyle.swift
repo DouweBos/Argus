@@ -1,5 +1,6 @@
 import AppKit
 import ArgusCore
+import ArgusSyntax
 import ArgusUI
 import SwiftUI
 
@@ -28,14 +29,12 @@ enum TranscriptStyle {
   /// A fenced block: a scrim under the text and a hairline round it, as on the desktop.
   static let codeBlockBackground = dynamic(light: Theme.light.mediaBg.opacity(0.045), dark: Theme.dark.mediaBg.opacity(0.32))
   static let codeBlockBorder = NSColor.separatorColor
-  static let syntaxString = dynamic(light: Theme.light.success, dark: Theme.dark.success)
-  static let syntaxNumber = dynamic(light: Theme.light.warning, dark: Theme.dark.warning)
-  static let syntaxKeyword = NSColor(name: nil) { appearance in
-    let purple = NSColor(Theme.dark.brandPurple)
-    // The brand purple is too dark to read on a dark background as it is.
-    return appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-      ? purple.blended(withFraction: 0.35, of: .white) ?? purple : purple
-  }
+  /// Fenced code's colours, the shared syntax palette per appearance.
+  static let syntax: [SyntaxCapture: NSColor] = Dictionary(
+    uniqueKeysWithValues: SyntaxCapture.allCases.map {
+      ($0, dynamic(light: SyntaxPalette.light.color($0), dark: SyntaxPalette.dark.color($0)))
+    })
+  static let inserted = dynamic(light: Theme.light.success, dark: Theme.dark.success)
   static let matchBackground = themed { accent, scheme, muted in
     accent.opacity(muted ? 0.16 : scheme == .light ? 0.22 : 0.25)
   }
