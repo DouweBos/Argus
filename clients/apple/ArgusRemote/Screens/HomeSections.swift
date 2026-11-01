@@ -13,47 +13,51 @@ struct ComputerSwitcher: View {
   private var name: String { app.identity?.label ?? "No computer" }
 
   var body: some View {
-    Menu {
-      Picker("Computer", selection: hostSelection) {
-        ForEach(app.hosts) { host in
-          Text(host.label).tag(host.deviceId as String?)
-        }
-      }
-      Divider()
-      Button("Pair a computer…", systemImage: Icon.plus) { router.push(.pair) }
-      Button("Manage computers…", systemImage: Icon.desktop) { router.push(.computers) }
-    } label: {
-      HStack(spacing: 12) {
-        // At accessibility sizes the name needs the width more than the glyph does.
-        if !typeSize.isAccessibilitySize {
-          Image(systemName: Icon.desktop)
-            .font(.scaled(size: 18))
-            .foregroundStyle(theme.accent)
-            .frame(width: 28)
-        }
-        // The status sits on the label line so a long computer name gets the full width.
-        VStack(alignment: .leading, spacing: 2) {
-          HStack(spacing: 6) {
-            Text("Computer")
-            StatusDot(tone: host.connection.tone, pulse: host.connection != .ready)
-            Text(host.connection.label)
+    row
+      .accessibilityHidden(true)
+      // iOS 26's menu morph hides its label while open; a clear label keeps the card on screen.
+      .overlay {
+        Menu {
+          Picker("Computer", selection: hostSelection) {
+            ForEach(app.hosts) { host in
+              Text(host.label).tag(host.deviceId as String?)
+            }
           }
-          .font(.scaled(.caption)).foregroundStyle(theme.textSecondary)
-          .lineLimit(1)
-          Text(name).font(.scaled(size: 16, weight: .semibold)).foregroundStyle(theme.text)
-            .lineLimit(2)
+          Divider()
+          Button("Pair a computer…", systemImage: Icon.plus) { router.push(.pair) }
+          Button("Manage computers…", systemImage: Icon.desktop) { router.push(.computers) }
+        } label: {
+          Color.clear.contentShape(.rect)
         }
-        // A menu label centres wrapped text otherwise.
-        .multilineTextAlignment(.leading)
-        Spacer(minLength: 8)
-        Image(systemName: Icon.chevronUpDown).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
+        .accessibilityLabel("Computer, \(name), \(host.connection.label)")
+        .accessibilityHint("Switches computers")
       }
-      .contentShape(.rect)
+  }
+
+  private var row: some View {
+    HStack(spacing: 12) {
+      // At accessibility sizes the name needs the width more than the glyph does.
+      if !typeSize.isAccessibilitySize {
+        Image(systemName: Icon.desktop)
+          .font(.scaled(size: 18))
+          .foregroundStyle(theme.accent)
+          .frame(width: 28)
+      }
+      // The status sits on the label line so a long computer name gets the full width.
+      VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 6) {
+          Text("Computer")
+          StatusDot(tone: host.connection.tone, pulse: host.connection != .ready)
+          Text(host.connection.label)
+        }
+        .font(.scaled(.caption)).foregroundStyle(theme.textSecondary)
+        .lineLimit(1)
+        Text(name).font(.scaled(size: 16, weight: .semibold)).foregroundStyle(theme.text)
+          .lineLimit(2)
+      }
+      Spacer(minLength: 8)
+      Image(systemName: Icon.chevronUpDown).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
     }
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel("Computer, \(name), \(host.connection.label)")
-    .accessibilityHint("Switches computers")
-    .accessibilityAddTraits(.isButton)
   }
 
   private var hostSelection: Binding<String?> {
