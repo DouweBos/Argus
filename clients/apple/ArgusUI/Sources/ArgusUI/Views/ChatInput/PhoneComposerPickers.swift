@@ -8,36 +8,37 @@
     var id: String { rawValue }
   }
 
-  /// The phone composer's chips — context, model, account, mode, effort,
-  /// linked projects — and the sheet each opens.
+  /// The phone composer's chips, in the Mac's order — model (and account),
+  /// effort, mode, linked projects — after the context meter. They wrap rather
+  /// than scroll, so none sits hidden past the edge.
   struct PhoneComposerChips: View {
     let composer: ComposerModel
     @Binding var picker: PhoneComposerPicker?
 
     var body: some View {
-      ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: 6) {
-          Spacer(minLength: 0).frame(width: 1)
-          if composer.contextTokens > 0 {
-            ContextMeter(tokens: composer.contextTokens, limit: composer.contextLimit)
-          }
-          Chip(label: composer.modelLabel, icon: Icon.agent) { picker = .model }
-          if composer.offersAccounts {
-            Chip(label: composer.accountLabel, icon: Icon.person) { picker = .account }
-          }
-          Chip(
-            label: ComposerPermissionMode.label(composer.permissionMode), icon: Icon.lock,
-            tone: composer.permissionMode == .auto ? nil : .accent
-          ) { picker = .mode }
-          if !composer.effortLevels.isEmpty {
-            Chip(label: ComposerEffort.label(composer.effort), icon: Icon.clock) { picker = .effort }
-          }
-          Chip(
-            label: composer.linkedProjects.isEmpty ? "Link project" : "\(composer.linkedProjects.count) linked",
-            icon: Icon.link
-          ) { picker = .project }
+      ChipFlowLayout(spacing: 6, lineSpacing: 6) {
+        if composer.contextTokens > 0 {
+          ContextMeter(tokens: composer.contextTokens, limit: composer.contextLimit)
         }
+        Chip(label: composer.modelLabel, icon: Icon.agent) { picker = .model }
+        if composer.offersAccounts {
+          Chip(label: composer.accountLabel, icon: Icon.person) { picker = .account }
+        }
+        if !composer.effortLevels.isEmpty {
+          Chip(label: ComposerEffort.label(composer.effort), icon: Icon.clock) { picker = .effort }
+        }
+        Chip(
+          label: ComposerPermissionMode.label(composer.permissionMode), icon: Icon.lock,
+          tone: composer.permissionMode == .auto ? nil : .accent
+        ) { picker = .mode }
+        // Only the icon until something is linked, as on the Mac.
+        Chip(
+          label: composer.linkedProjects.isEmpty ? "" : "\(composer.linkedProjects.count) linked",
+          icon: Icon.link, tone: composer.linkedProjects.isEmpty ? nil : .accent
+        ) { picker = .project }
+        .accessibilityLabel(composer.linkedProjects.isEmpty ? "Link project" : "\(composer.linkedProjects.count) linked")
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
   }
 

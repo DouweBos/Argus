@@ -425,6 +425,7 @@ public struct Badge: View {
   }
 }
 
+/// A capsule label, tappable with an action. An empty label beside an icon shows just the icon.
 public struct Chip: View {
   @Environment(\.theme) private var theme
   let label: String
@@ -452,9 +453,11 @@ public struct Chip: View {
       if let icon {
         Image(systemName: icon).font(.scaled(size: 10, weight: .medium))
       }
-      Text(label)
-        .font(.scaled(size: 12, design: mono ? .monospaced : .default))
-        .lineLimit(1)
+      if !label.isEmpty || icon == nil {
+        Text(label)
+          .font(.scaled(size: 12, design: mono ? .monospaced : .default))
+          .lineLimit(1)
+      }
     }
     .foregroundStyle(tone?.color(theme) ?? theme.textSecondary)
     .padding(.horizontal, 9)
