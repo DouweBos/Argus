@@ -9,8 +9,8 @@ import {
   notificationsSupported,
   requestNotificationPermission,
 } from "../lib/notify";
-import { NameField, SignOutField } from "../hosted/AccountFields";
 import { useConnectionStore } from "../stores/connection";
+import { accountFields } from "./accountFields";
 import { usePushStore } from "../stores/push";
 import { webPushSupported, type WebPushState } from "../lib/webpush";
 import {
@@ -96,6 +96,8 @@ export function Settings() {
   };
 
   if (account) {
+    const fields = accountFields();
+
     return (
       <div className="aw-settings">
         <SettingsScreenField
@@ -106,9 +108,9 @@ export function Settings() {
             Switch computer
           </Button>
         </SettingsScreenField>
-        <NameField />
+        {fields && <fields.Name />}
         <AppearanceField theme={theme} />
-        <SignOutField />
+        {fields && <fields.SignOut />}
       </div>
     );
   }
