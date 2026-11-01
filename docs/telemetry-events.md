@@ -417,7 +417,7 @@ stay honest.
 | `ios_account_woken`                        | A content-free wake-up from the account service was handled in the background                                                                                     | `reason` (`join` — someone asked to join, `changed` — someone was added or removed), `outcome` (`prompted`, `refreshed`, `removed`, `unreachable`)          |
 | `telemetry_enabled` / `telemetry_disabled` | The privacy toggle moved                                                                                                                                          | — (shared with desktop on purpose: same signal)                                                                                                             |
 
-The phone also sends `describe` on `ios_automation_edited`, `delete` and
+The phone also sends `describe` and `regenerate` (a shown draft drafted again) on `ios_automation_edited`, `delete` and
 `mark_read` on `ios_run_acted`, and `request_revision` on
 `ios_proposal_handled`, `amend` on `ios_work_landed`, and `stash_apply`,
 `stash_pop` and `stash_drop` on `ios_branch_acted`. `ios_default_changed`'s `value` is the mode or rung

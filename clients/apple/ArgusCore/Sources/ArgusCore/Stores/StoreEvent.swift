@@ -39,6 +39,8 @@ public enum StoreEvent: Sendable, Equatable {
     case revisePlaybook = "revise_playbook"
     /// Drafted from a description; nothing is saved until it is created.
     case describe
+    /// A shown draft drafted again from the same description.
+    case regenerate
   }
 
   /// What was done to a run.

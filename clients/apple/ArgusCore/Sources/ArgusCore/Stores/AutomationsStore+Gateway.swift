@@ -50,9 +50,9 @@ extension AutomationsStore {
     }
   }
 
-  /// "Describe it": the computer drafts one from a sentence, for the editor
-  /// to review. Nothing is saved.
-  public func draftOverGateway(description: String) async
+  /// "Describe it": the computer drafts one from a sentence, for review.
+  /// Nothing is saved. `regenerating` redrafts one already shown.
+  public func draftOverGateway(description: String, regenerating: Bool = false) async
     -> (automation: RemoteAutomationDetail, notes: [String])?
   {
     guard let backend = host.backend else { return nil }
@@ -69,7 +69,7 @@ extension AutomationsStore {
         .automationsDraft,
         Params(description: description, timezone: TimeZone.current.identifier),
         as: Result.self)
-      host.hooks.track(.automationEdited(action: .describe))
+      host.hooks.track(.automationEdited(action: regenerating ? .regenerate : .describe))
       error = nil
       return (result.automation, result.notes)
     } catch {

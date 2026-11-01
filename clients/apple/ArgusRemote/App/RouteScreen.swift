@@ -214,8 +214,6 @@ struct RouteScreen: View {
       AutomationEditorView(automationId: id)
     case .describeAutomation:
       DescribeAutomationView()
-    case .automationDraft(let detail, let notes):
-      AutomationEditorView(automationId: nil, prefill: detail, notes: notes)
     case .run(let id, let label):
       RunView(runId: id, label: label)
     case .settings:
