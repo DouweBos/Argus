@@ -2,13 +2,13 @@ import type {
   ConversationMessage,
   ToolCallInfo,
 } from "../../../stores/conversationStore";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useMemo, useRef, useState } from "react";
 import {
-  Button,
   Chip,
-  HoverActionButton,
   Icons,
+  MessageActions,
   MessageBubble,
+  MessageEditForm,
   type MessageImage,
 } from "@argus/peacock";
 import { showImageContextMenu } from "../../../lib/ipc";
@@ -37,70 +37,6 @@ interface ChatMessageProps {
   ) => Promise<void> | void;
   onRestore?: (message: ConversationMessage) => void;
   onSaveToolCallToDisk?: (toolCall: ToolCallInfo) => void;
-}
-
-function TimestampGutter({ timestamp }: { timestamp: number }) {
-  const d = new Date(timestamp);
-  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-  return (
-    <time
-      className={styles.timestamp}
-      dateTime={d.toISOString()}
-      title={d.toLocaleString()}
-    >
-      {time}
-    </time>
-  );
-}
-
-function MessageActions({
-  onCopy,
-  onEdit,
-  onFork,
-  onRestore,
-}: {
-  onCopy?: () => void;
-  onEdit?: () => void;
-  onFork?: () => void;
-  onRestore?: () => void;
-}) {
-  if (!onCopy && !onEdit && !onFork && !onRestore) {
-    return null;
-  }
-
-  return (
-    <>
-      {onCopy && (
-        <HoverActionButton
-          icon={<Icons.CopyIcon size={12} />}
-          label="Copy message"
-          onClick={onCopy}
-        />
-      )}
-      {onEdit && (
-        <HoverActionButton
-          icon={<Icons.PencilIcon size={12} />}
-          label="Edit message"
-          onClick={onEdit}
-        />
-      )}
-      {onRestore && (
-        <HoverActionButton
-          icon={<Icons.HistoryIcon size={12} />}
-          label="Restore files and chat to this point"
-          onClick={onRestore}
-        />
-      )}
-      {onFork && (
-        <HoverActionButton
-          icon={<Icons.BranchIcon size={12} />}
-          label="Fork workspace and chat from here"
-          onClick={onFork}
-        />
-      )}
-    </>
-  );
 }
 
 /** Build MessageImage descriptors for an attachment strip. */
@@ -141,16 +77,7 @@ export const ChatMessage = memo(function ChatMessage({
     height: number;
     width: number;
   } | null>(null);
-  const editRef = useRef<HTMLTextAreaElement>(null);
   const userMsgRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (isEditing && editRef.current) {
-      editRef.current.focus();
-      const len = editRef.current.value.length;
-      editRef.current.setSelectionRange(len, len);
-    }
-  }, [isEditing]);
 
   const isUnread = useIsMessageUnread(agentId, message.id);
 
@@ -207,9 +134,8 @@ export const ChatMessage = memo(function ChatMessage({
     return parsed?.paths ?? [];
   }, [message.textBlocks]);
 
-  const submitEdit = () => {
-    const trimmed = draft.trim();
-    if (!trimmed || !onEdit) {
+  const submitEdit = (trimmed: string) => {
+    if (!onEdit) {
       return;
     }
     const next = buildLinkedProjectsPreamble(editPreamblePaths, trimmed);
@@ -290,50 +216,13 @@ export const ChatMessage = memo(function ChatMessage({
 
     if (isEditing) {
       return (
-        <div ref={userMsgRef} className={styles.userMsg}>
-          <TimestampGutter timestamp={message.timestamp} />
-          <div
-            className={styles.userEdit}
-            style={bubbleSize ? { minWidth: bubbleSize.width } : undefined}
-          >
-            <div className={styles.userEditGrow} data-value={draft}>
-              <textarea
-                ref={editRef}
-                cols={1}
-                rows={1}
-                className={styles.userEditArea}
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    e.preventDefault();
-                    setIsEditing(false);
-                  } else if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                    e.preventDefault();
-                    submitEdit();
-                  }
-                }}
-              />
-            </div>
-            <div className={styles.userEditActions}>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsEditing(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={!draft.trim()}
-                onClick={submitEdit}
-              >
-                Save
-              </Button>
-            </div>
-          </div>
-        </div>
+        <MessageEditForm
+          initialText={draft}
+          minWidth={bubbleSize?.width}
+          timestamp={message.timestamp}
+          onCancel={() => setIsEditing(false)}
+          onSave={submitEdit}
+        />
       );
     }
 

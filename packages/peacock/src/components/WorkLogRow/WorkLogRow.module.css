@@ -1,0 +1,53 @@
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 20px;
+}
+
+.summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  min-height: 28px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.summary:hover:not(:disabled) {
+  color: var(--text-secondary);
+}
+
+.summary:disabled {
+  cursor: default;
+}
+
+.working {
+  font-variant-numeric: tabular-nums;
+}
+
+.chevron {
+  transition: transform var(--transition-fast);
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 -20px;
+}
+
+.rule {
+  height: 1px;
+  background: var(--border-subtle);
+}
