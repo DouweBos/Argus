@@ -27,6 +27,34 @@ export type FileViewSource = "changes" | "link" | "quick_open" | "search";
 export type QuickOpenVia = "screen" | "shortcut";
 
 export type TerminalKind = "run" | "setup" | "shell";
+/** How an inbox proposal was answered. */
+export type ProposalAction =
+  | "accept"
+  | "cleanup"
+  | "dismiss"
+  | "request_revision"
+  | "resolve";
+
+/** What was done to a run. */
+export type RunAction =
+  | "cancel"
+  | "delete"
+  | "feedback"
+  | "mark_read"
+  | "save_scratch"
+  | "start"
+  | "start_scratch";
+
+/** What was done to an automation's definition. */
+export type AutomationAction =
+  | "create"
+  | "delete"
+  | "describe"
+  | "disable"
+  | "enable"
+  | "regenerate"
+  | "revise_playbook"
+  | "save";
 
 export interface EventMap {
   web_launched: { build: WebBuild; paired: boolean };
@@ -58,6 +86,11 @@ export interface EventMap {
   web_chat_history_used: { action: "delete" | "search" };
   web_transcript_work_log_opened: { working: boolean };
   web_mcp_servers_opened: undefined;
+  web_proposal_handled: { action: ProposalAction };
+  web_proposal_opened: undefined;
+  web_run_acted: { action: RunAction };
+  web_automation_edited: { action: AutomationAction };
+  web_memory_edited: { action: "delete" | "save" };
   telemetry_enabled: undefined;
   telemetry_disabled: undefined;
 }

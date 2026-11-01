@@ -756,4 +756,31 @@ button {
   flex: 1 1 auto;
   min-height: 280px;
   border-radius: var(--border-radius-sm);
+/* Inbox and automation screens: Peacock views, a little air under the bar. */
+.aw-automations {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+/* A header action carrying a count, e.g. the inbox's decisions waiting. */
+.aw-badged {
+  position: relative;
+}
+
+.aw-badge-count {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: var(--border-radius-pill);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+  text-align: center;
 }

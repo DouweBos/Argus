@@ -43,13 +43,22 @@ describe("screenFromPath", () => {
       { name: "changes", sessionId: "s1", mode: "branch" },
     ],
     ["/sessions/s1/agents/a1?host=h1", { name: "agent", sessionId: "s1", agentId: "a1" }],
+    ["/inbox", { name: "inbox" }],
+    ["/inbox/proposals/p1", { name: "proposal", proposalId: "p1" }],
+    ["/automations", { name: "automations" }],
+    ["/automations/a1", { name: "automation", automationId: "a1" }],
+    [
+      "/automations/a1/runs/r1",
+      { name: "automationRun", automationId: "a1", runId: "r1" },
+    ],
+    ["/automations/quick", { name: "quickRun" }],
+    ["/automations/quick/runs/r1", { name: "quickRunDetail", runId: "r1" }],
+    ["/automations/describe", { name: "describe" }],
   ])("reads %s", (path, screen) => {
     expect(screenFromPath(path)).toEqual(screen);
   });
 
   it.each([
-    "/inbox",
-    "/automations/a1",
     "/pull-requests/o/r/1",
     "/usage/cost",
     "/devices/web/tab-1",
@@ -87,6 +96,14 @@ describe("pathForScreen", () => {
     "/sessions/s1/terminals",
     "/sessions/s1/terminals/t1",
     "/sessions/s1/git/working/diff?path=src%2Fapp.ts",
+    "/inbox",
+    "/inbox/proposals/p1",
+    "/automations",
+    "/automations/a1",
+    "/automations/a1/runs/r1",
+    "/automations/quick",
+    "/automations/quick/runs/r1",
+    "/automations/describe",
   ])("round-trips %s", (path) => {
     expect(pathForScreen(screenFromPath(path))).toBe(path);
   });
@@ -165,6 +182,12 @@ describe("screenPattern", () => {
     expect(
       screenPattern({ name: "device", platform: "ios", deviceKey: "d" }),
     ).toBe("/devices/:platform/:deviceKey");
+    expect(
+      screenPattern({ name: "automationRun", automationId: "a", runId: "r" }),
+    ).toBe("/automations/:automationId/runs/:runId");
+    expect(screenPattern({ name: "proposal", proposalId: "p" })).toBe(
+      "/inbox/proposals/:proposalId",
+    );
   });
 });
 
@@ -172,6 +195,10 @@ describe("paneFor", () => {
   it("keeps the project list and a project in the master pane", () => {
     expect(paneFor(HOME)).toBe("master");
     expect(paneFor({ name: "project", projectKey: "k" })).toBe("master");
+    expect(paneFor({ name: "inbox" })).toBe("master");
+    expect(paneFor({ name: "automations" })).toBe("master");
+    expect(paneFor({ name: "proposal", proposalId: "p" })).toBe("detail");
+    expect(paneFor({ name: "quickRun" })).toBe("detail");
   });
 
   it("puts everything opened out of a project in the detail pane", () => {

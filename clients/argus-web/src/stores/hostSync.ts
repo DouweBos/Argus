@@ -17,6 +17,7 @@ import {
   resyncAgentStatuses,
   resyncQueues,
 } from "./agents";
+import { resetAutomations } from "./automations";
 import { installConnectionHooks, watchLiveness } from "./connection";
 import { receiveClaim, receiveDeviceState, resetDevices } from "./devices";
 import { resetFiles } from "./files";
@@ -39,6 +40,7 @@ import {
   resetProjects,
 } from "./projects";
 import { resetStart } from "./start";
+import { resetProposals } from "./proposals";
 import {
   cancelPrompt,
   flushPendingDecisions,
@@ -142,6 +144,8 @@ export function resetHostStores(): void {
   resetFileSearch();
   resetTerminals();
   resetDevices();
+  resetProposals();
+  resetAutomations();
 }
 
 let installed = false;

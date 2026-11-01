@@ -18,6 +18,22 @@ let lastMaster: Screen = HOME;
 
 const sessionOf = sessionOfScreen;
 
+/** The list an inbox or automations screen opened from, which sits beside it. */
+function listOf(screen: Screen): Screen | null {
+  switch (screen.name) {
+    case "proposal":
+      return { name: "inbox" };
+    case "automation":
+    case "automationRun":
+    case "quickRun":
+    case "quickRunDetail":
+    case "describe":
+      return { name: "automations" };
+    default:
+      return null;
+  }
+}
+
 /**
  * What the master pane shows beside `screen`: itself when it is a master
  * screen; the project a session-scoped detail belongs to, once its sessions
@@ -30,6 +46,10 @@ export function useMasterScreen(screen: Screen): Screen {
     lastMaster = screen;
 
     return screen;
+  }
+  const list = listOf(screen);
+  if (list) {
+    return list;
   }
   const sessionId = sessionOf(screen);
   const repoRoot = sessionId ? repoOfSession(sessionId) : null;
@@ -59,7 +79,11 @@ export function parentOf(screen: Screen): Screen {
 
       return repoRoot ? projectScreen(repoRoot) : HOME;
     }
+    case "automationRun":
+      return { name: "automation", automationId: screen.automationId };
+    case "quickRunDetail":
+      return { name: "quickRun" };
     default:
-      return HOME;
+      return listOf(screen) ?? HOME;
   }
 }

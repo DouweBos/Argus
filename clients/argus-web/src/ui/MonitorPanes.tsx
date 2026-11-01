@@ -24,6 +24,14 @@ import { useConnectionStore } from "../stores/connection";
 import { useDevicesStore } from "../stores/devices";
 import { useProjectsStore } from "../stores/projects";
 import { AgentTranscript } from "./transcript/AgentTranscript";
+import { AutomationScreen } from "./automations/AutomationScreen";
+import { AutomationsScreen } from "./automations/AutomationsScreen";
+import { DescribeScreen } from "./automations/DescribeScreen";
+import { InboxScreen } from "./automations/InboxScreen";
+import { ProposalScreen } from "./automations/ProposalScreen";
+import { QuickRunScreen } from "./automations/QuickRunScreen";
+import { RunScreen } from "./automations/RunScreen";
+import { useInboxBadge } from "./automations/useInbox";
 import { ChangesView } from "./ChangesView";
 import { ChatInput } from "./ChatInput";
 import { ConnectionBadge } from "./ConnectionBadge";
@@ -152,6 +160,32 @@ function ScreenBody({
     case "terminals":
     case "fileDiff":
       return <LazySessionTool screen={screen} />;
+    case "inbox":
+      return <InboxScreen />;
+    case "proposal":
+      return <ProposalScreen proposalId={screen.proposalId} />;
+    case "automations":
+      return <AutomationsScreen />;
+    case "automation":
+      return (
+        <AutomationScreen
+          automationId={screen.automationId}
+          key={screen.automationId}
+        />
+      );
+    case "automationRun":
+      return (
+        <RunScreen
+          parent={{ name: "automation", automationId: screen.automationId }}
+          runId={screen.runId}
+        />
+      );
+    case "quickRun":
+      return <QuickRunScreen />;
+    case "quickRunDetail":
+      return <RunScreen parent={{ name: "quickRun" }} runId={screen.runId} />;
+    case "describe":
+      return <DescribeScreen />;
   }
 }
 
@@ -180,9 +214,26 @@ function RootLeading() {
 function RootActions() {
   const connection = useConnectionStore((s) => s.connection);
   const refreshProjects = useProjectsStore((s) => s.refreshProjects);
+  const waiting = useInboxBadge();
 
   return (
     <>
+      <SidebarHeaderAction
+        className="aw-badged"
+        onClick={() => appNavigate({ name: "inbox" })}
+        title={waiting > 0 ? `Inbox — ${waiting} waiting` : "Inbox"}
+        aria-label={waiting > 0 ? `Inbox, ${waiting} waiting` : "Inbox"}
+      >
+        <Icons.EnvelopeIcon size={14} />
+        {waiting > 0 && <span className="aw-badge-count">{waiting}</span>}
+      </SidebarHeaderAction>
+      <SidebarHeaderAction
+        onClick={() => appNavigate({ name: "automations" })}
+        title="Automations"
+        aria-label="Automations"
+      >
+        <Icons.ClockIcon size={14} />
+      </SidebarHeaderAction>
       <SidebarHeaderAction
         onClick={() => appNavigate({ name: "devices" })}
         title="Devices"
@@ -510,6 +561,14 @@ function PaneIcon({ screen }: { screen: Screen }) {
       return <Icons.GearIcon size={14} />;
     case "chat":
       return <Icons.HistoryIcon size={14} />;
+    case "proposal":
+      return <Icons.EnvelopeIcon size={14} />;
+    case "automation":
+    case "automationRun":
+    case "quickRun":
+    case "quickRunDetail":
+    case "describe":
+      return <Icons.ClockIcon size={14} />;
     default:
       return <Icons.AgentIcon size={14} />;
   }

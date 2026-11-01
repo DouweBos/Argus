@@ -38,7 +38,16 @@ export type Screen =
   | { name: "terminals"; sessionId: string; terminalId: string | null }
   | { name: "devices" }
   | { name: "device"; platform: RemotePlatform; deviceKey: string }
-  | { name: "settings" };
+  | { name: "settings" }
+  | { name: "inbox" }
+  | { name: "proposal"; proposalId: string }
+  | { name: "automations" }
+  | { name: "automation"; automationId: string }
+  | { name: "automationRun"; automationId: string; runId: string }
+  | { name: "quickRun" }
+  | { name: "quickRunDetail"; runId: string }
+  /** Web and iOS only: on the Mac this is Automations with a sheet. */
+  | { name: "describe" };
 
 export type Pane = "detail" | "master";
 
@@ -46,9 +55,15 @@ export const HOME: Screen = { name: "projects" };
 
 /** Which pane a screen occupies once there is room for two. */
 export function paneFor(screen: Screen): Pane {
-  return screen.name === "projects" || screen.name === "project"
-    ? "master"
-    : "detail";
+  switch (screen.name) {
+    case "projects":
+    case "project":
+    case "inbox":
+    case "automations":
+      return "master";
+    default:
+      return "detail";
+  }
 }
 
 /** FNV-1a over UTF-16 units, from a given basis. */
@@ -148,6 +163,9 @@ export function screenFromPath(path: string): Screen {
   if (parts[0] === "settings" && parts.length === 1) {
     return { name: "settings" };
   }
+  if (parts[0] === "automations" && parts[1] === "describe") {
+    return { name: "describe" };
+  }
   if (parts[0] === "devices" && parts.length === 3) {
     const platform = parts[1];
     if (platform === "ios" || platform === "android") {
@@ -161,6 +179,27 @@ export function screenFromPath(path: string): Screen {
   switch (route.view) {
     case "devices":
       return { name: "devices" };
+    case "inbox":
+      return route.proposalId
+        ? { name: "proposal", proposalId: route.proposalId }
+        : { name: "inbox" };
+    case "automations":
+      if (route.automationQuick) {
+        return route.automationRunId
+          ? { name: "quickRunDetail", runId: route.automationRunId }
+          : { name: "quickRun" };
+      }
+      if (route.automationId && route.automationRunId) {
+        return {
+          name: "automationRun",
+          automationId: route.automationId,
+          runId: route.automationRunId,
+        };
+      }
+
+      return route.automationId
+        ? { name: "automation", automationId: route.automationId }
+        : { name: "automations" };
     case "session": {
       const sessionId = decode(route.sessionId ?? "");
       if (route.panel === "git") {
@@ -248,6 +287,22 @@ export function pathForScreen(screen: Screen): string {
         panel: "git",
         gitView: screen.mode,
       });
+    case "inbox":
+      return "/inbox";
+    case "proposal":
+      return `/inbox/proposals/${encodeURIComponent(screen.proposalId)}`;
+    case "automations":
+      return "/automations";
+    case "automation":
+      return `/automations/${encodeURIComponent(screen.automationId)}`;
+    case "automationRun":
+      return `/automations/${encodeURIComponent(screen.automationId)}/runs/${encodeURIComponent(screen.runId)}`;
+    case "quickRun":
+      return "/automations/quick";
+    case "quickRunDetail":
+      return `/automations/quick/runs/${encodeURIComponent(screen.runId)}`;
+    case "describe":
+      return "/automations/describe";
   }
 }
 
@@ -288,6 +343,22 @@ export function screenPattern(screen: Screen): string {
       return screen.terminalId
         ? "/terminals/:terminalId"
         : "/sessions/:sessionId/terminals";
+    case "inbox":
+      return "/inbox";
+    case "proposal":
+      return "/inbox/proposals/:proposalId";
+    case "automations":
+      return "/automations";
+    case "automation":
+      return "/automations/:automationId";
+    case "automationRun":
+      return "/automations/:automationId/runs/:runId";
+    case "quickRun":
+      return "/automations/quick";
+    case "quickRunDetail":
+      return "/automations/quick/runs/:runId";
+    case "describe":
+      return "/automations/describe";
   }
 }
 

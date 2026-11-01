@@ -290,10 +290,16 @@ it can:
   | `/sessions/:sessionId/terminals`        | The session's terminals, read-only and live; `/terminals/:terminalId` puts one in front                                               |
   | `/devices`, `/devices/:platform/:key`   | Devices, and one device's live screen; an unknown device opens `/devices`                                                             |
   | `/settings`                             | Settings (web and iOS only)                                                                                                           |
+  | `/inbox`, `/inbox/proposals/:id`        | The inbox in the Mac's groups, and one proposal in full with its decision                                                             |
+  | `/automations`, `/automations/:id`      | Automations, and one automation: its editor, memories and run history                                                                 |
+  | `/automations/:id/runs/:runId`          | One run: its report, feedback and the agent that did it                                                                               |
+  | `/automations/quick[/runs/:runId]`      | Quick Run and one quick run                                                                                                           |
+  | `/automations/describe`                 | Describe an automation (web and iOS)                                                                                                  |
 
   Any other route opens its nearest parent, as on iOS, which today is Home.
-  From tablet width the project list (or the project an agent belongs to)
-  stays beside the screen the URL names; browsing it while something is open
+  From tablet width the project list (or the project an agent belongs to,
+  or the inbox or automations list a screen opened from) stays beside the
+  screen the URL names; browsing it while something is open
   moves that pane only, and Close returns to it. Back from a screen a link
   opened goes to its parent rather than out of the app.
 

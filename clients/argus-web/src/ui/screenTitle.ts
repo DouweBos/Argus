@@ -9,8 +9,10 @@ import type { RemoteAgentStatus } from "../lib/protocol";
 import { projectKey, type Screen } from "../routing/screens";
 import { useAgentsStore } from "../stores/agents";
 import { useChatsStore } from "../stores/chats";
+import { useAutomationsStore } from "../stores/automations";
 import { useDevicesStore } from "../stores/devices";
 import { useProjectsStore } from "../stores/projects";
+import { useProposalsStore } from "../stores/proposals";
 
 export function agentLabel(
   agentId: string,
@@ -33,6 +35,11 @@ export function useScreenTitle(screen: Screen): string {
 
     return session?.display_name ?? session?.branch ?? null;
   };
+  const automations = useAutomationsStore((s) => s.automations);
+  const runs = useAutomationsStore((s) => s.runs);
+  const proposal = useProposalsStore((s) =>
+    screen.name === "proposal" ? s.detailById[screen.proposalId] : undefined,
+  );
 
   function withSession(title: string, sessionId: string): string {
     const session = Object.values(sessionsByRepo)
@@ -89,5 +96,23 @@ export function useScreenTitle(screen: Screen): string {
           .find((c) => c.history_id === screen.historyId)
           ?.title.trim() || "Saved chat"
       );
+    case "inbox":
+      return "Inbox";
+    case "proposal":
+      return proposal?.title ?? "Proposal";
+    case "automations":
+      return "Automations";
+    case "automation":
+      return (
+        automations.find((a) => a.id === screen.automationId)?.name ??
+        "Automation"
+      );
+    case "automationRun":
+    case "quickRunDetail":
+      return runs.find((r) => r.id === screen.runId)?.automation_name ?? "Run";
+    case "quickRun":
+      return "Quick Run";
+    case "describe":
+      return "Describe an Automation";
   }
 }
