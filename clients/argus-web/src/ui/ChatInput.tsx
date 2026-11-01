@@ -40,14 +40,13 @@ import type {
 import { useAppStore } from "../lib/store";
 import { useMentionPicker } from "./useMentionPicker";
 
-const PERMISSION_MODES: RemotePermissionMode[] = [
-  "auto",
-  "ask",
-  "plan",
-  "review",
-  "trusted",
-];
-const PERMISSION_LABELS: Record<RemotePermissionMode, string> = {
+/** The computer never lets a remote switch an agent into Trusted, so it isn't offered. */
+const PERMISSION_MODES: RemotePermissionMode[] = ["auto", "ask", "plan", "review"];
+
+/** What the chip can show: an agent started Trusted on the computer still says so. */
+type ShownMode = RemotePermissionMode | "trusted";
+
+const PERMISSION_LABELS: Record<ShownMode, string> = {
   auto: "Auto",
   ask: "Ask",
   plan: "Plan",
@@ -55,10 +54,12 @@ const PERMISSION_LABELS: Record<RemotePermissionMode, string> = {
   trusted: "Trusted",
 };
 
-function canonicalMode(mode: string | null | undefined): RemotePermissionMode {
-  return mode && (PERMISSION_MODES as string[]).includes(mode)
-    ? (mode as RemotePermissionMode)
-    : "auto";
+function canonicalMode(mode: string | null | undefined): ShownMode {
+  if (mode === "trusted") {
+    return mode;
+  }
+
+  return PERMISSION_MODES.find((m) => m === mode) ?? "auto";
 }
 
 const NO_FOLLOW_UPS: string[] = [];
@@ -439,7 +440,8 @@ export function ChatInput({
         e.preventDefault();
         const next =
           PERMISSION_MODES[
-            (PERMISSION_MODES.indexOf(mode) + 1) % PERMISSION_MODES.length
+            (PERMISSION_MODES.findIndex((m) => m === mode) + 1) %
+              PERMISSION_MODES.length
           ];
         setPermissionMode(agentId, next).catch(() => {});
 
