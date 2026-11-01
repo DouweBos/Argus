@@ -1,46 +1,33 @@
 /**
  * What the inbox is made of — shared with the home screen, so the two never
- * disagree about what counts as waiting on you.
+ * disagree about what counts as waiting on you. The grouping is
+ * `@argus/client-core`'s, the same the web client and the phone use.
  */
 
 import type { AutomationRun, Proposal } from "../../lib/types";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  inboxGroups,
+  type InboxGroups,
+  type InboxRunReader,
+} from "@argus/client-core";
 import { isUnreadReport } from "../../lib/automations";
 import { useAllRuns } from "../../stores/automationStore";
-import {
-  useClearedProposals,
-  usePendingProposals,
-  useStartedProposals,
-} from "../../stores/proposalStore";
+import { useProposals } from "../../stores/proposalStore";
 import { useSessions } from "../../stores/sessionStore";
 
-/** A run that failed days ago is history, not an inbox item. */
-const FAILED_RUN_WINDOW_MS = 24 * 60 * 60 * 1000;
-const MAX_FAILED_RUNS = 5;
+export type InboxItems = InboxGroups<Proposal, AutomationRun>;
 
-export interface InboxItems {
-  /** Taken off your hands by a later run, for information. */
-  cleared: Proposal[];
-  /** Recent failures nobody dismissed — the automation needs a look. */
-  failed: AutomationRun[];
-  /** Decisions waiting on you. */
-  pending: Proposal[];
-  /** Finished runs whose report nobody has opened yet. */
-  reports: AutomationRun[];
-  /** Work Argus already started, for information. */
-  started: Proposal[];
-}
+const CATALOG_RUN_READER: InboxRunReader<AutomationRun> = {
+  isRead: (run) => run.report_read,
+  hasUnreadReport: isUnreadReport,
+};
 
 export function useInboxItems(): InboxItems {
-  const pending = usePendingProposals();
+  const proposals = useProposals();
   const sessions = useSessions();
-  // A merged or deleted session leaves its proposal started; there is nothing left to open.
-  const started = useStartedProposals().filter((p) =>
-    sessions.some((s) => s.id === p.session_id),
-  );
-  const cleared = useClearedProposals();
   const runs = useAllRuns();
-  // The cut-off below is relative to now, so it has to move while the screen
+  // The cut-offs are relative to now, so they have to move while the screen
   // stays open.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -49,25 +36,15 @@ export function useInboxItems(): InboxItems {
     return () => clearInterval(timer);
   }, []);
 
-  const failed = runs
-    .filter(
-      (r) =>
-        r.status === "failed" &&
-        !r.report_read &&
-        now - r.started_at < FAILED_RUN_WINDOW_MS,
-    )
-    .slice(0, MAX_FAILED_RUNS);
-
-  // A failed run is already listed as a failure; listing its report too would
-  // ask twice for the same acknowledgement.
-  const reports = runs.filter(
-    (r) => r.status !== "failed" && isUnreadReport(r),
+  return useMemo(
+    () =>
+      inboxGroups({
+        proposals,
+        runs,
+        reader: CATALOG_RUN_READER,
+        sessionIds: new Set(sessions.map((s) => s.id)),
+        now,
+      }),
+    [proposals, runs, sessions, now],
   );
-
-  return { cleared, failed, pending, reports, started };
-}
-
-/** How many things are actually waiting on you — what a badge would show. */
-export function inboxActionCount(items: InboxItems): number {
-  return items.pending.length + items.failed.length + items.reports.length;
 }

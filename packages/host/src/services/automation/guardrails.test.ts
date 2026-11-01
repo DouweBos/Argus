@@ -4,8 +4,13 @@
  * when a playbook is actively arguing against them.
  */
 
+import {
+  AUTONOMY_LEVELS as CLIENT_AUTONOMY_LEVELS,
+  DEFAULT_GUARDRAILS as CLIENT_DEFAULT_GUARDRAILS,
+} from "@argus/client-core";
 import { describe, expect, it } from "vitest";
 import {
+  AUTONOMY_LEVELS,
   DEFAULT_GUARDRAILS,
   LEGACY_DEFAULT_MAX_COST_USD,
   atLeastAutonomy,
@@ -213,5 +218,12 @@ describe("the spend ceiling", () => {
     const chosen = normalizeGuardrails({ max_cost_usd_per_run: 12 });
     expect(migrateSpendCeiling(chosen)).toBe(false);
     expect(chosen.max_cost_usd_per_run).toBe(12);
+  });
+});
+
+describe("client defaults", () => {
+  it("match what the host fills in", () => {
+    expect(CLIENT_DEFAULT_GUARDRAILS).toEqual(DEFAULT_GUARDRAILS);
+    expect(CLIENT_AUTONOMY_LEVELS).toEqual(AUTONOMY_LEVELS);
   });
 });

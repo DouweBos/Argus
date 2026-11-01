@@ -1,89 +1,31 @@
 /**
- * Presentation helpers for automations — formatting, status tone and the
- * cron preview. The cron evaluator itself is the host's, imported rather than
- * reimplemented so the times the editor promises are the times that fire.
+ * Presentation helpers for automations. The shared half — labels, tones,
+ * times and the cron preview — is `@argus/client-core`'s, so the desktop and
+ * the web client read the same; this adds the catalog-shaped wrappers.
  */
 
-import type {
-  Automation,
-  AutomationRun,
-  AutomationRunStatus,
-  AutomationTrigger,
-  AutonomyLevel,
-} from "./types";
-import type { BadgeTone } from "@argus/peacock";
+import type { Automation, AutomationRun, AutomationTrigger } from "./types";
 import {
-  computeNextRun,
-  isValidCron,
-} from "@argus/host/services/automation/cron";
-import {
+  nextRunLabel as nextRunLabelFor,
+  reportPreview as reportPreviewLine,
+} from "@argus/client-core";
+
+export {
+  AUTONOMY_CAPTIONS,
+  AUTONOMY_LABELS,
   AUTONOMY_LEVELS,
+  cronError,
   DEFAULT_GUARDRAILS,
-} from "@argus/host/services/automation/guardrails";
-import { reportPreview as reportPreviewLine } from "@argus/host/services/automation/reportPreview";
-
-export { AUTONOMY_LEVELS, DEFAULT_GUARDRAILS, isValidCron };
-
-/** What each rung on the ladder actually permits, for the editor and Settings. */
-export const AUTONOMY_LABELS: Record<AutonomyLevel, string> = {
-  propose: "Propose",
-  draft: "Draft",
-  pr: "Pull request",
-  auto_merge: "Auto-merge",
-};
-
-export const AUTONOMY_CAPTIONS: Record<AutonomyLevel, string> = {
-  propose: "Put it in the inbox and touch nothing.",
-  draft: "Open a worktree, implement it, commit — then stop.",
-  pr: "Also push the branch and open a draft pull request.",
-  auto_merge: "Also merge it once CI is green. Opt-in only.",
-};
-
-/** The zone the machine is in — the default for a new schedule. */
-export function localTimezone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-}
-
-/**
- * The next `count` instants a cron expression fires at, empty when it does not
- * parse. Drives the editor preview: "every five minutes" and "at five past
- * every hour" look alike until you see the times they produce.
- */
-export function nextFireTimes(
-  cron: string,
-  timezone: string,
-  count: number,
-  from: number = Date.now(),
-): number[] {
-  const out: number[] = [];
-  let cursor = from;
-  try {
-    for (let i = 0; i < count; i += 1) {
-      const next = computeNextRun(cron, timezone, cursor);
-      if (next === null) {
-        break;
-      }
-      out.push(next);
-      cursor = next;
-    }
-  } catch {
-    return [];
-  }
-
-  return out;
-}
-
-/** Why a cron expression is rejected, or null when it is fine. */
-export function cronError(cron: string, timezone: string): string | null {
-  if (!isValidCron(cron)) {
-    return "Five fields, `min hour dom mon dow`.";
-  }
-  if (nextFireTimes(cron, timezone, 1).length === 0) {
-    return "Valid, but never fires within the next four years.";
-  }
-
-  return null;
-}
+  formatCost,
+  formatRelative,
+  formatRunDuration as formatDuration,
+  formatTimestamp,
+  isRunActive,
+  isValidCron,
+  localTimezone,
+  nextFireTimes,
+  runStatusTone,
+} from "@argus/client-core";
 
 /** One-line description of a trigger, for list rows. */
 export function triggerLabel(trigger: AutomationTrigger): string {
@@ -92,26 +34,9 @@ export function triggerLabel(trigger: AutomationTrigger): string {
     : "Manual only";
 }
 
-const STATUS_TONE: Record<AutomationRunStatus, BadgeTone> = {
-  cancelled: "neutral",
-  failed: "error",
-  queued: "neutral",
-  running: "accent",
-  skipped: "warning",
-  succeeded: "success",
-};
-
-export function runStatusTone(status: AutomationRunStatus): BadgeTone {
-  return STATUS_TONE[status];
-}
-
-export function isRunActive(run: AutomationRun): boolean {
-  return run.status === "queued" || run.status === "running";
-}
-
 /** A finished run whose report nobody has looked at, and nothing has replaced. */
 export function isUnreadReport(run: AutomationRun): boolean {
-  if (run.report_read || isRunActive(run)) {
+  if (run.report_read || run.status === "queued" || run.status === "running") {
     return false;
   }
 
@@ -125,68 +50,11 @@ export function reportPreview(run: AutomationRun): string {
   return reportPreviewLine(run) ?? "Report ready to read.";
 }
 
-/** Wall-clock time and date, in the viewer's zone. */
-export function formatTimestamp(ms: number | null): string {
-  if (ms === null) {
-    return "—";
-  }
-
-  return new Date(ms).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-/** Coarse "2h ago" / "in 3m" phrasing. Null renders as an em dash. */
-export function formatRelative(ms: number | null, now = Date.now()): string {
-  if (ms === null) {
-    return "—";
-  }
-  const delta = ms - now;
-  const abs = Math.abs(delta);
-  let unit = `${Math.round(abs / 86_400_000)}d`;
-  if (abs < 60_000) {
-    unit = `${Math.max(1, Math.round(abs / 1000))}s`;
-  } else if (abs < 3_600_000) {
-    unit = `${Math.round(abs / 60_000)}m`;
-  } else if (abs < 86_400_000) {
-    unit = `${Math.round(abs / 3_600_000)}h`;
-  }
-
-  return delta > 0 ? `in ${unit}` : `${unit} ago`;
-}
-
-/** How long a run took, or how long it has been going. */
-export function formatDuration(run: AutomationRun, now = Date.now()): string {
-  const end = run.finished_at ?? now;
-  const seconds = Math.max(0, Math.round((end - run.started_at) / 1000));
-  if (seconds < 60) {
-    return `${seconds}s`;
-  }
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) {
-    return `${minutes}m ${seconds % 60}s`;
-  }
-
-  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
-}
-
-export function formatCost(costUsd: number | null): string {
-  return costUsd === null ? "—" : `$${costUsd.toFixed(2)}`;
-}
-
 /** What the list shows under "next run". */
 export function nextRunLabel(automation: Automation): string {
-  if (automation.trigger.kind !== "schedule") {
-    return "Manual";
-  }
-  if (!automation.enabled) {
-    return "Paused";
-  }
-
-  return automation.next_run_at === null
-    ? "—"
-    : `${formatTimestamp(automation.next_run_at)} (${formatRelative(automation.next_run_at)})`;
+  return nextRunLabelFor({
+    enabled: automation.enabled,
+    next_run_at: automation.next_run_at,
+    trigger_kind: automation.trigger.kind,
+  });
 }

@@ -299,6 +299,9 @@ importers:
 
   packages/host:
     dependencies:
+      '@argus/client-core':
+        specifier: workspace:*
+        version: link:../client-core
       '@argus/remote-protocol':
         specifier: workspace:*
         version: link:../remote-protocol

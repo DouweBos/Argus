@@ -3,14 +3,10 @@
  * own page all have to agree about what a recommended action is called.
  */
 
-import type { ProposalAction, ProposalStartStage } from "./types";
+import type { ProposalAction } from "./types";
 import type { BadgeTone } from "@argus/peacock";
 
-export const PROPOSAL_START_STAGE_LABELS: Record<ProposalStartStage, string> = {
-  creating_worktree: "Creating worktree…",
-  setting_up: "Running setup…",
-  starting_agent: "Starting agent…",
-};
+export { PROPOSAL_START_STAGE_LABELS } from "@argus/client-core";
 
 export const PROPOSAL_ACTION_LABELS: Record<ProposalAction, string> = {
   ignore: "suggests ignoring",
