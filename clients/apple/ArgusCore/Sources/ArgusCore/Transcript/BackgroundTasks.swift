@@ -8,6 +8,14 @@ public enum BackgroundTasks {
     messages.flatMap { message in message.toolCalls.filter { $0.background?.status == .running } }
   }
 
+  /// When the last settled background call finished, epoch milliseconds.
+  public static func lastFinished(in messages: [RemoteMessage]) -> Double? {
+    messages.flatMap(\.toolCalls).compactMap { call -> Double? in
+      guard let task = call.background, task.status != .running, let duration = task.durationMs else { return nil }
+      return task.startedAt + duration
+    }.max()
+  }
+
   /// "1 agent still running", "2 background tasks still running", or nil.
   public static func stillRunningLabel(_ calls: [RemoteToolCall]) -> String? {
     let count = calls.count

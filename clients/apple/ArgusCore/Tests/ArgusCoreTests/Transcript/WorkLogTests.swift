@@ -13,9 +13,11 @@ struct WorkLogTests {
   }
 
   private func tool(
-    _ id: String, at time: Double? = nil, background: String? = nil, text: String? = nil, name: String = "Agent"
+    _ id: String, at time: Double? = nil, background: String? = nil, ranFor: Double? = nil, text: String? = nil,
+    name: String = "Agent"
   ) -> RemoteMessage {
-    let bg = background.map { #","background":{"status":"\#($0)","started_at":1000}"# } ?? ""
+    let duration = ranFor.map { #","duration_ms":\#($0)"# } ?? ""
+    let bg = background.map { #","background":{"status":"\#($0)","started_at":1000\#(duration)}"# } ?? ""
     let stamp = time.map { #","timestamp":\#($0)"# } ?? ""
     let blocks = text.map { #"["\#($0)"]"# } ?? "[]"
     let json =
@@ -66,6 +68,18 @@ struct WorkLogTests {
     ])
     #expect(log.map(\.stillRunning) == ["1 agent still running", "2 agents still running"])
     #expect(logs([user("u"), tool("a", background: "completed"), reply("r")])[0].stillRunning == nil)
+  }
+
+  @Test("a turn's work runs until its last background agent finished")
+  func backgroundSpan() {
+    let finished = logs([
+      user("u", at: 500), tool("a", at: 1000, background: "completed", ranFor: 600_000), reply("r", at: 2000),
+    ])
+    #expect(finished[0].ended == 601_000)
+    let quick = logs([
+      user("u", at: 500), tool("a", at: 1000, background: "completed", ranFor: 10), reply("r", at: 2000),
+    ])
+    #expect(quick[0].ended == 2000)
   }
 
   @Test("a run fold has no work log")

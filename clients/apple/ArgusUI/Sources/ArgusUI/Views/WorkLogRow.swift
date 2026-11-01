@@ -14,7 +14,10 @@ struct WorkLogRow: View {
   var onOpen: (Bool) -> Void = { _ in }
 
   /// The newest thing in the chat while the agent is still at it.
-  private var working: Bool { log.ended == nil && host.statusByAgent[agentKey]?.status == .running }
+  /// Still at it: the newest thing in a running chat, or a background agent it launched is.
+  private var working: Bool {
+    log.stillRunning != nil || (log.ended == nil && host.statusByAgent[agentKey]?.status == .running)
+  }
 
   private var awaitsDecision: Bool {
     log.messages.contains { message in

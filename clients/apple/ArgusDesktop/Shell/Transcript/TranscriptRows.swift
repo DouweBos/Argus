@@ -184,7 +184,10 @@ struct TranscriptWorkLog: View, Equatable {
 
   private var expanded: Bool { model.expandedGroups.contains(log.id) }
   /// The newest thing in the chat while the agent is still at it.
-  private var working: Bool { log.ended == nil && host.statusByAgent[agentKey]?.status == .running }
+  /// Still at it: the newest thing in a running chat, or a background agent it launched is.
+  private var working: Bool {
+    log.stillRunning != nil || (log.ended == nil && host.statusByAgent[agentKey]?.status == .running)
+  }
 
   nonisolated static func == (a: Self, b: Self) -> Bool {
     a.agentKey == b.agentKey && a.log == b.log

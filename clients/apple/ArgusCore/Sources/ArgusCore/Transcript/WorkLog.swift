@@ -82,7 +82,12 @@ extension TranscriptSegments {
     if position + 1 < all.count, let next = all[position + 1].messages.first {
       ended = next.role == .assistant ? next.timestamp : messages.last?.timestamp
     }
-    let running = BackgroundTasks.running(in: turn(from: position).flatMap(\.messages))
+    let turnMessages = turn(from: position).flatMap(\.messages)
+    let running = BackgroundTasks.running(in: turnMessages)
+    // Background agents are part of the turn's work: it ends when the last of them does.
+    if let settled = BackgroundTasks.lastFinished(in: turnMessages), let end = ended, settled > end {
+      ended = settled
+    }
     return WorkLog(
       id: all[position].id, messages: messages, started: before, ended: ended,
       stillRunning: BackgroundTasks.stillRunningLabel(running))
