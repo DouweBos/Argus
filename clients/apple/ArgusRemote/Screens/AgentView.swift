@@ -101,6 +101,15 @@ struct AgentView: View {
       let agent = await host.resumeAgent(agentId)
       resuming = false
       guard let agent else { return }
+      open(agent, label: label)
+    }
+  }
+
+  /// A new agent in this session opens as its tab here, as on the Mac; one elsewhere is pushed.
+  private func open(_ agent: RemoteAgentStatus, label: String) {
+    if let sessionId, agent.sessionId == sessionId {
+      router.focusedAgents[sessionId] = agent.agentId
+    } else {
       router.push(.agent(id: agent.agentId, label: label))
     }
   }
@@ -128,7 +137,7 @@ struct AgentView: View {
           .messageAction(
             action: target == .session ? .forkSession : .forkAgent, role: role, success: forked != nil))
         guard let forked else { return }
-        router.push(.agent(id: forked.agent.agentId, label: Labels.agentName(forked.agent)))
+        open(forked.agent, label: Labels.agentName(forked.agent))
       }
     } else {
       MessageEditSheet(agentKey: agentId, message: sheet.message) { success in

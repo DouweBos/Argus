@@ -89,6 +89,8 @@ public struct PillTabBar<ID: Hashable, Trailing: View>: View {
         .help(tab.title)
         .accessibilityLabel(tab.title)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+        // So a scroll view around the bar can bring the selected tab into view.
+        .id(tab.id)
       }
       trailing
         .buttonStyle(PillItemButtonStyle(iconOnly: false))

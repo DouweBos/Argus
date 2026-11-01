@@ -41,7 +41,9 @@ struct SessionView: View {
     guard let id = resolvedSessionId, let root = resolvedRepoRoot else { return [] }
     return AgentOrder.sessionTabs(
       listed: host.agents(inSessionId: id, repoRoot: root),
-      kept: ([agentId].compactMap { $0 } + shown).filter { !closed.contains($0) },
+      // The tab picked too, live, so a fork or resume opened here shows before the list has it.
+      kept: ([agentId] + shown + [focused.flatMap { host.isGone($0) ? nil : $0 }])
+        .compactMap { $0 }.filter { !closed.contains($0) },
       status: { host.statusByAgent[$0] }, isGone: host.isGone)
   }
 
@@ -134,6 +136,17 @@ struct SessionView: View {
   // MARK: Tabs and content
 
   private var tabBar: some View {
+    ScrollViewReader { proxy in
+      tabStrip
+        // A tab opened from elsewhere (a fork, a resume) can land off the edge.
+        .onChange(of: focusedAgentId, initial: true) { _, id in
+          guard let id else { return }
+          withAnimation(.snappy) { proxy.scrollTo(id, anchor: .center) }
+        }
+    }
+  }
+
+  private var tabStrip: some View {
     ScrollView(.horizontal, showsIndicators: false) {
       PillTabBar(
         tabs: agents.map { agent in
