@@ -9,23 +9,12 @@ public struct FileDiffCard: View {
   let onViewFile: ((Int?) -> Void)?
   @State private var expanded = false
 
-  private var tone: Tone {
-    switch file.status {
-    case .added: .success
-    case .deleted: .danger
-    case .modified, .renamed: .accent
-    }
-  }
 
   public init(file: DiffFile, onViewFile: ((Int?) -> Void)? = nil) {
     self.file = file
     self.onViewFile = onViewFile
   }
 
-  private var firstChangedLine: Int? {
-    file.hunks.lazy.flatMap(\.lines).first { $0.kind == .add }?.newNumber
-      ?? file.hunks.first?.lines.first?.newNumber
-  }
 
   public var body: some View {
     Card {
@@ -51,7 +40,7 @@ public struct FileDiffCard: View {
               .font(.scaled(size: 11, design: .monospaced))
               .foregroundStyle(theme.error)
           }
-          Badge(label: file.status.label, tone: tone)
+          Badge(label: file.status.label, tone: file.status.tone)
         }
         .contentShape(Rectangle())
       }
@@ -63,31 +52,46 @@ public struct FileDiffCard: View {
 
       if let onViewFile, file.status != .deleted {
         Button {
-          onViewFile(firstChangedLine)
+          onViewFile(file.firstChangedLine)
         } label: {
           Label("View file", systemImage: Icon.file).font(.scaled(size: 12, weight: .medium))
         }
         .buttonStyle(.accentLink)
       }
 
-      if expanded {
-        if file.isBinary {
-          MutedText("Binary file — nothing to show.")
-        } else {
-          ForEach(file.hunks) { hunk in
-            VStack(alignment: .leading, spacing: 0) {
-              Text(hunk.header)
-                .font(.scaled(size: 11, design: .monospaced))
-                .foregroundStyle(theme.textMuted)
-                .padding(.vertical, 4)
-                .padding(.horizontal, 6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(theme.bgTertiary)
-              DiffLinesView(lines: hunk.lines)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
-          }
+      if expanded { DiffHunksView(file: file) }
+    }
+  }
+}
+
+/// A file's hunks, each under its `@@` header; "nothing to show" for a binary.
+public struct DiffHunksView: View {
+  @Environment(\.theme) private var theme
+  let file: DiffFile
+  var collapsesLongHunks: Bool
+
+  /// `collapsesLongHunks` folds each hunk past a dozen lines, for a diff among others.
+  public init(file: DiffFile, collapsesLongHunks: Bool = true) {
+    self.file = file
+    self.collapsesLongHunks = collapsesLongHunks
+  }
+
+  public var body: some View {
+    if file.isBinary {
+      MutedText("Binary file — nothing to show.")
+    } else {
+      ForEach(file.hunks) { hunk in
+        VStack(alignment: .leading, spacing: 0) {
+          Text(hunk.header)
+            .font(.scaled(size: 11, design: .monospaced))
+            .foregroundStyle(theme.textMuted)
+            .padding(.vertical, 4)
+            .padding(.horizontal, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.bgTertiary)
+          DiffLinesView(lines: hunk.lines, collapses: collapsesLongHunks)
         }
+        .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
       }
     }
   }
@@ -97,16 +101,18 @@ public struct FileDiffCard: View {
 public struct DiffLinesView: View {
   @Environment(\.theme) private var theme
   let lines: [DiffLine]
+  var collapses: Bool
   @State private var showAll = false
 
   private static let collapsedCount = 12
 
-  public init(lines: [DiffLine]) {
+  public init(lines: [DiffLine], collapses: Bool = true) {
     self.lines = lines
+    self.collapses = collapses
   }
 
   public var body: some View {
-    let visible = showAll ? lines : Array(lines.prefix(Self.collapsedCount))
+    let visible = showAll || !collapses ? lines : Array(lines.prefix(Self.collapsedCount))
 
     VStack(alignment: .leading, spacing: 0) {
       // One text for every line, its bands drawn behind it: a view per line
@@ -118,7 +124,7 @@ public struct DiffLinesView: View {
           .textRenderer(DiffBands(bands: visible.map(background)))
           .padding(.vertical, 1)
       }
-      if lines.count > Self.collapsedCount {
+      if collapses, lines.count > Self.collapsedCount {
         Button(showAll ? "Collapse" : "See all \(lines.count) lines") { showAll.toggle() }
           .font(.scaled(size: 12))
           .foregroundStyle(theme.accent)
@@ -193,5 +199,23 @@ private struct DiffBands: TextRenderer {
       }
       context.draw(line)
     }
+  }
+}
+
+extension DiffFileStatus {
+  public var tone: Tone {
+    switch self {
+    case .added: .success
+    case .deleted: .danger
+    case .modified, .renamed: .accent
+    }
+  }
+}
+
+extension DiffFile {
+  /// Where "View file" opens: the first added line, else the first line shown.
+  public var firstChangedLine: Int? {
+    hunks.lazy.flatMap(\.lines).first { $0.kind == .add }?.newNumber
+      ?? hunks.first?.lines.first?.newNumber
   }
 }

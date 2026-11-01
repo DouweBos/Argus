@@ -18,6 +18,8 @@ enum Route: Hashable {
   case agent(id: String, label: String)
   case stoppedAgent(historyId: String, repoRoot: String, label: String, branch: String, runnerSessionId: String)
   case changes(sessionId: String, label: String)
+  /// One changed file's diff; `mode` is the Changes screen's `branch` or `working`.
+  case fileDiff(sessionId: String, path: String, mode: String)
   /// One session file, read-only. `path` may be absolute; `line` is 1-based.
   case file(sessionId: String, path: String, line: Int?, source: FileViewSource)
   /// Fuzzy file finder over a session's worktree.
@@ -76,6 +78,7 @@ enum Route: Hashable {
     case .agents: ArgusRoute.agents.pattern
     case .session, .agent: ArgusRoute.session(id: "", agentId: nil).pattern
     case .changes(let id, _): ArgusRoute.sessionGit(id: id, view: .working).pattern
+    case .fileDiff: "/sessions/:sessionId/git/working/diff"
     case .stashes(let id, _): ArgusRoute.sessionGit(id: id, view: .stashes).pattern
     case .branches(let id, _, _): ArgusRoute.sessionGit(id: id, view: .branches(nil)).pattern
     case .branch(let id, _, let branch): ArgusRoute.sessionGit(id: id, view: .branches(branch.name)).pattern

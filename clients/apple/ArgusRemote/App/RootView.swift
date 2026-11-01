@@ -263,6 +263,8 @@ struct RootView: View {
         branch: branch, runnerSessionId: runner)
     case .changes(let sessionId, let label):
       ChangesView(sessionId: sessionId, label: label)
+    case .fileDiff(let sessionId, let path, let mode):
+      FileDiffView(sessionId: sessionId, path: path, mode: mode)
     case .file(let sessionId, let path, let line, let source):
       FileView(sessionId: sessionId, path: path, line: line, source: source)
     case .quickOpen(let sessionId, let label):

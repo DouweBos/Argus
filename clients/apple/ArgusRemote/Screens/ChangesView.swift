@@ -41,8 +41,17 @@ struct ChangesView: View {
             ? "This session has no changes vs its base branch — try Uncommitted for working-tree edits."
             : "No uncommitted changes in the working tree.")
       } else {
-        ForEach(files) { file in
-          FileDiffCard(file: file, onViewFile: host.hasControl ? { viewFile(file, line: $0) } : nil)
+        // A list to pick from; each file's diff is a screen of its own.
+        Card {
+          VStack(spacing: 0) {
+            ForEach(Array(files.enumerated()), id: \.element.id) { index, file in
+              if index > 0 { Divider().padding(.leading, 24) }
+              NavigationLink(value: Route.fileDiff(sessionId: sessionId, path: file.displayPath, mode: mode)) {
+                ChangedFileRow(file: file).padding(.vertical, 8)
+              }
+              .buttonStyle(.argusPlain)
+            }
+          }
         }
       }
 
@@ -74,10 +83,6 @@ struct ChangesView: View {
     parts.append(status.dirtyCount > 0 ? "\(status.dirtyCount) uncommitted" : "nothing uncommitted")
     if status.conflictCount > 0 { parts.append("\(status.conflictCount) conflicts") }
     return parts.joined(separator: " · ")
-  }
-
-  private func viewFile(_ file: DiffFile, line: Int?) {
-    router.push(.file(sessionId: sessionId, path: file.displayPath, line: line, source: .changes))
   }
 
   private func refresh() async {

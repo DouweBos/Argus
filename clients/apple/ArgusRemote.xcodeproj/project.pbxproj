@@ -68,6 +68,7 @@
 		B77C1EA73DE9EF93E59424EF /* BranchCompareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71EA73DE9EF93E59424EF83 /* BranchCompareView.swift */; };
 		C230860282D4938F66D435CF /* PairView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2978877FCC50AC76553762A /* PairView.swift */; };
 		C8A9E8FF4A15285665BCF2F8 /* ChangesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC699CB84E030428A8060A13 /* ChangesView.swift */; };
+		5D1F0A2B3C4D5E6F70819203 /* FileDiffView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D1F0A2B3C4D5E6F70819204 /* FileDiffView.swift */; };
 		DE5C0000000000000000000E /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000B /* ArgusKit */; };
 		DE5C0000000000000000000F /* ArgusCore in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000C /* ArgusCore */; };
 		DE5C00000000000000000010 /* ArgusUI in Frameworks */ = {isa = PBXBuildFile; productRef = DE5C0000000000000000000D /* ArgusUI */; };
@@ -205,6 +206,7 @@
 		DE5C00000000000000000002 /* Argus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Argus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E3E0EB550BA6630F2052ABE5 /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
 		EC699CB84E030428A8060A13 /* ChangesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangesView.swift; sourceTree = "<group>"; };
+		5D1F0A2B3C4D5E6F70819204 /* FileDiffView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileDiffView.swift; sourceTree = "<group>"; };
 		ED1700000000000000000002 /* ArgusEditor */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ArgusEditor; sourceTree = SOURCE_ROOT; };
 		F71A133F6BBFBAFFDDBDE2AD /* CommitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommitView.swift; sourceTree = "<group>"; };
 		F71EA73DE9EF93E59424EF83 /* BranchCompareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchCompareView.swift; sourceTree = "<group>"; };
@@ -384,6 +386,7 @@
 				F71A133F6BBFBAFFDDBDE2AD /* CommitView.swift */,
 				F7591B2E634B37E1941AC94D /* BranchView.swift */,
 				EC699CB84E030428A8060A13 /* ChangesView.swift */,
+				5D1F0A2B3C4D5E6F70819204 /* FileDiffView.swift */,
 				46E305D96C871BB99B7DB468 /* ComputerView.swift */,
 				AC0A00000000000000000004 /* AddComputerView.swift */,
 				AC0A00000000000000000008 /* ApproveJoinView.swift */,
@@ -859,6 +862,7 @@
 				B7241A133F6BBFBAFFDDBDE2 /* CommitView.swift in Sources */,
 				B739591B2E634B37E1941AC9 /* BranchView.swift in Sources */,
 				C8A9E8FF4A15285665BCF2F8 /* ChangesView.swift in Sources */,
+				5D1F0A2B3C4D5E6F70819203 /* FileDiffView.swift in Sources */,
 				71F924F0B3BDE15E0083BDEE /* ComputerView.swift in Sources */,
 				AC0A00000000000000000003 /* AddComputerView.swift in Sources */,
 				AC0A00000000000000000007 /* ApproveJoinView.swift in Sources */,
