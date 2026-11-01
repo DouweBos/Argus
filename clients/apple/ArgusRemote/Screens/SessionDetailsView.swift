@@ -7,6 +7,7 @@ import SwiftUI
 struct SessionDetailsView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
+  @Environment(\.stackPush) private var stackPush
 
   let session: RemoteSession
   /// The agent in front, for its MCP servers.
@@ -169,15 +170,15 @@ struct SessionDetailsView: View {
     Section {
       rowButton("Devices", icon: Icon.simulator, chevron: true) { openDevices() }
       if let agentId, !host.isGone(agentId) {
-        NavigationLink {
-          AgentMcpServersView(agentId: agentId)
-            .frame(maxHeight: .infinity, alignment: .top)
-            .background(theme.bg.ignoresSafeArea())
-            .navigationTitle("MCP Servers")
-            .navigationBarTitleDisplayMode(.inline)
-            .onAppear { Telemetry.capture(.mcpServersOpened) }
-        } label: {
-          Label("MCP servers", systemImage: Icon.mcp)
+        if let stackPush {
+          rowButton("MCP servers", icon: Icon.mcp, chevron: true) { stackPush(.mcpServers(agentId: agentId)) }
+        } else {
+          // The phone's sheet has a stack of its own, with no routes on it.
+          NavigationLink {
+            McpServersScreen(agentId: agentId)
+          } label: {
+            Label("MCP servers", systemImage: Icon.mcp)
+          }
         }
       }
     }
@@ -295,6 +296,21 @@ struct SessionDetailsView: View {
       await host.loadSessions(repoRoot: session.repoRoot)
       deleted()
     }
+  }
+}
+
+/// An agent's MCP servers, from its session's details.
+struct McpServersScreen: View {
+  @Environment(\.theme) private var theme
+  let agentId: String
+
+  var body: some View {
+    AgentMcpServersView(agentId: agentId)
+      .frame(maxHeight: .infinity, alignment: .top)
+      .background(theme.bg.ignoresSafeArea())
+      .navigationTitle("MCP Servers")
+      .navigationBarTitleDisplayMode(.inline)
+      .onAppear { Telemetry.capture(.mcpServersOpened) }
   }
 }
 

@@ -29,6 +29,8 @@ enum Route: Hashable {
   /// A session's terminals, read-only.
   case terminals(sessionId: String, label: String)
   case terminal(id: String, label: String)
+  /// An agent's MCP servers; pushed from the iPad side panel's details.
+  case mcpServers(agentId: String)
   /// A session's stashes and tags.
   case stashes(sessionId: String, label: String)
   case branches(sessionId: String, repoRoot: String, label: String)
@@ -107,6 +109,7 @@ enum Route: Hashable {
     case .fileSearch: "/sessions/:sessionId/code/search"
     case .terminals: "/sessions/:sessionId/terminals"
     case .terminal: "/terminals/:terminalId"
+    case .mcpServers: "/agents/:agentId/mcp"
     case .commit: "/sessions/:sessionId/git/commits/:hash"
     case .automationEditor(let id, _): id == nil ? "/automations/new" : "/automations/:automationId/edit"
     case .describeAutomation: "/automations/describe"
@@ -262,6 +265,18 @@ final class Router {
   /// Pushed by the detail root once its new root is up: a task queued beside
   /// the root change still ran before it, and the push was lost.
   var pendingDetail: Route?
+
+  /// The iPad session side panel: shown or not, its tab, and what was opened
+  /// inside it. Here rather than on the screen so a size-class change, which
+  /// rebuilds the screen, keeps them.
+  var panelOpen = false
+  var panelTab: SessionPanelTab = .changes
+  /// Per session, so each one's panel is as it was left.
+  var panelPaths: [String: [Route]] = [:]
+  var panelWidth: CGFloat = 380
+  /// The agent tab in front on each session screen, keyed by session (or by
+  /// agent, before its session is known); kept for the same reason.
+  var focusedAgents: [String: String] = [:]
 
   /// What the sidebar highlights, read off the route: the session open in the
   /// detail column (or about to be), else the section.

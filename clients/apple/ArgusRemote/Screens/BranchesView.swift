@@ -11,6 +11,7 @@ struct BranchesView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
+  @Environment(\.stackPush) private var stackPush
 
   let sessionId: String
   let repoRoot: String
@@ -72,7 +73,7 @@ struct BranchesView: View {
       SectionHeader(title: title, count: items.count)
       ForEach(items) { branch in
         Card(onTap: {
-          router.push(.branch(sessionId: sessionId, repoRoot: repoRoot, branch: branch))
+          (stackPush ?? router.push)(.branch(sessionId: sessionId, repoRoot: repoRoot, branch: branch))
         }) {
           HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {

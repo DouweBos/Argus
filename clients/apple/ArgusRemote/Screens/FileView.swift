@@ -43,10 +43,7 @@ struct FileView: View {
       .background(theme.bg.ignoresSafeArea())
       .navigationTitle(SessionFilePaths.fileName(shownPath))
       .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .principal) { title }
-        ToolbarItem(placement: .topBarTrailing) { menu }
-      }
+      .screenBar { title } trailing: { menu }
       .alert("Go to line", isPresented: $jumping) {
         TextField("Line", text: $jumpText).keyboardType(.numberPad)
         Button("Go") { jump() }

@@ -12,8 +12,8 @@ struct DevicesView: View {
       ForEach(groups, id: \.host) { group in
         Section {
           ForEach(group.devices) { device in
-            NavigationLink(
-              value: Route.device(
+            StackLink(
+              route: .device(
                 id: device.id, platform: device.platform, name: device.name,
                 isTv: device.isTv)
             ) {

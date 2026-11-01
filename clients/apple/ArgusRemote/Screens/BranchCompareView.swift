@@ -5,6 +5,7 @@ import SwiftUI
 struct BranchCompareView: View {
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
+  @Environment(\.stackPush) private var stackPush
 
   let sessionId: String
   let left: String
@@ -55,7 +56,7 @@ struct BranchCompareView: View {
         subject: commit.subject, hash: commit.hash, author: commit.author,
         millis: commit.timestamp
       ) {
-        router.push(.commit(sessionId: sessionId, hash: commit.hash, subject: commit.subject))
+        (stackPush ?? router.push)(.commit(sessionId: sessionId, hash: commit.hash, subject: commit.subject))
       }
     }
   }

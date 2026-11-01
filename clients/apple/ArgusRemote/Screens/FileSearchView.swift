@@ -37,8 +37,7 @@ struct FileSearchView: View {
     .emptyState(when: host.hasControl && placeholder != nil, grouped: false) {
       if let placeholder { placeholder }
     }
-    .searchable(
-      text: $text, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search this worktree")
+    .screenSearch(text: $text, prompt: "Search this worktree")
     .autocorrectionDisabled()
     .textInputAutocapitalization(.never)
     .navigationTitle("Search · \(label)")
@@ -103,8 +102,8 @@ struct FileSearchView: View {
       ForEach(store.groups) { group in
         Section {
           ForEach(Array(group.matches.enumerated()), id: \.offset) { _, match in
-            NavigationLink(
-              value: Route.file(
+            StackLink(
+              route: .file(
                 sessionId: sessionId, path: match.relativePath, line: match.line, source: .search)
             ) {
               FileSearchMatchRow(match: match)

@@ -126,6 +126,13 @@ enum TelemetryEvent {
     case switchAgent = "switch_agent"
   }
 
+  /// What was done with the iPad session's side panel.
+  enum SessionPanelAction: String {
+    case open, close
+    /// Another tab was picked while it was open.
+    case switchTab = "switch_tab"
+  }
+
   /// Which of Home's links into another screen was followed.
   enum HomeAction: String {
     case usage, inbox, agents, automations
@@ -186,6 +193,8 @@ enum TelemetryEvent {
   case mcpServersOpened
   /// The session screen's details were opened, or its agent tabs used.
   case sessionUsed(action: SessionAction)
+  /// The iPad session side panel was opened, closed or switched; `tab` is the one in front after.
+  case sessionPanelUsed(action: SessionPanelAction, tab: SessionPanelTab)
   /// A section link on Home was followed, to measure what Home leads people to.
   case homeUsed(action: HomeAction)
   /// A turn's folded work was opened in a chat; `working` says the agent was still on it.
@@ -267,6 +276,7 @@ enum TelemetryEvent {
     case .notificationsCleared: "ios_notifications_cleared"
     case .mcpServersOpened: "ios_mcp_servers_opened"
     case .sessionUsed: "ios_session_used"
+    case .sessionPanelUsed: "ios_session_panel_used"
     case .homeUsed: "ios_home_used"
     case .transcriptWorkLogOpened: "ios_transcript_work_log_opened"
     case .messageAction: "ios_message_action"
@@ -376,6 +386,8 @@ enum TelemetryEvent {
       ["action": action.rawValue]
     case .sessionUsed(let action):
       ["action": action.rawValue]
+    case .sessionPanelUsed(let action, let tab):
+      ["action": action.rawValue, "tab": tab.rawValue]
     case .homeUsed(let action):
       ["action": action.rawValue]
     case .fileViewed(let source, let language):

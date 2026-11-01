@@ -9,6 +9,7 @@ struct BranchView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
+  @Environment(\.stackPush) private var stackPush
   @Environment(\.dismiss) private var dismiss
 
   let sessionId: String
@@ -33,7 +34,7 @@ struct BranchView: View {
       }
       if let current, current != branch.name {
         Card(onTap: {
-          router.push(.branchCompare(sessionId: sessionId, left: current, right: branch.ref))
+          (stackPush ?? router.push)(.branchCompare(sessionId: sessionId, left: current, right: branch.ref))
         }) {
           HStack {
             BodyText("Compare with \(current)")
@@ -82,7 +83,7 @@ struct BranchView: View {
       ForEach(commits) { commit in
         CommitRow(subject: commit.subject, hash: commit.shortHash, author: commit.author,
                   millis: Self.millis(commit.date)) {
-          router.push(.commit(sessionId: sessionId, hash: commit.hash, subject: commit.subject))
+          (stackPush ?? router.push)(.commit(sessionId: sessionId, hash: commit.hash, subject: commit.subject))
         }
       }
     } else {

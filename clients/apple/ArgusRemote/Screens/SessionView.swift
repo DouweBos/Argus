@@ -15,8 +15,16 @@ struct SessionView: View {
   /// The agent to put in front first.
   var agentId: String?
 
-  @State private var focused: String?
+  /// The tab picked; on the router so a rotation or resize, which rebuilds this screen, keeps it.
+  private var focused: String? {
+    get { router.focusedAgents[focusKey] }
+    nonmutating set { router.focusedAgents[focusKey] = newValue }
+  }
+  private var focusKey: String { resolvedSessionId ?? agentId ?? label }
   @State private var showingDetails = false
+  @State private var width: CGFloat = 0
+  /// What the chat keeps when the side panel is open beside it.
+  private static let minChatWidth: CGFloat = 380
   @State private var startingAgent = false
   @State private var confirmingStop = false
 
@@ -64,21 +72,34 @@ struct SessionView: View {
   }
 
   var body: some View {
-    VStack(spacing: 0) {
-      if agents.count > 1 { tabBar }
-      if let session, !session.isUnavailable, session.status == .error || session.setupPending == true {
-        setupBanner(session)
+    HStack(spacing: 0) {
+      VStack(spacing: 0) {
+        if agents.count > 1 { tabBar }
+        if let session, !session.isUnavailable, session.status == .error || session.setupPending == true {
+          setupBanner(session)
+        }
+        content
       }
-      content
+      // Only where there is room beside the chat; a phone keeps the details sheet.
+      if router.isSplit, router.panelOpen, let session {
+        SidePanelColumn(session: session, maxWidth: width - Self.minChatWidth)
+          .transition(.move(edge: .trailing))
+      }
     }
+    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+    .animation(.snappy(duration: 0.25), value: router.panelOpen)
     .background(theme.bg.ignoresSafeArea())
     .navigationTitle(title)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar { toolbar }
     // The composer needs the room, and a conversation is a place you leave by going back.
     .toolbar(.hidden, for: .tabBar)
-    // A sheet on iPad too: an `.inspector` on a pushed screen pops its stack.
+    // A sheet on a phone; on iPad the details are the side panel's first tab.
     .sheet(isPresented: $showingDetails) { details }
+    // Pinned once shown, so the panel's MCP row and a rebuilt screen agree on the agent in front.
+    .onChange(of: focusedAgentId, initial: true) { _, id in
+      if let sid = resolvedSessionId, router.focusedAgents[sid] != id { router.focusedAgents[sid] = id }
+    }
     .sheet(isPresented: $startingAgent) {
       if let session { StartInSessionSheet(session: session) { focus($0) } }
     }
@@ -186,7 +207,11 @@ struct SessionView: View {
       if host.hasControl, let id = focusedAgentId, !host.isGone(id) {
         IconBtn(systemName: Icon.stop, label: "Shut down agent") { confirmingStop = true }
       }
-      if session != nil {
+      if session != nil, router.isSplit {
+        IconBtn(
+          systemName: Icon.sidePanel, label: router.panelOpen ? "Hide side panel" : "Show side panel"
+        ) { togglePanel() }
+      } else if session != nil {
         IconBtn(systemName: Icon.details, label: "Session details") {
           showingDetails.toggle()
           if showingDetails { Telemetry.capture(.sessionUsed(action: .openDetails)) }
@@ -215,6 +240,11 @@ struct SessionView: View {
   }
 
   // MARK: Actions
+
+  private func togglePanel() {
+    router.panelOpen.toggle()
+    Telemetry.capture(.sessionPanelUsed(action: router.panelOpen ? .open : .close, tab: router.panelTab))
+  }
 
   private func open(_ route: Route) {
     showingDetails = false

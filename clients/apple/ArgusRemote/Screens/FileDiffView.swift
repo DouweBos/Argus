@@ -5,6 +5,7 @@ import SwiftUI
 struct FileDiffView: View {
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
+  @Environment(\.stackPush) private var stackPush
 
   let sessionId: String
   let path: String
@@ -29,14 +30,12 @@ struct FileDiffView: View {
     }
     .navigationTitle(SessionFilePaths.fileName(path))
     .navigationBarTitleDisplayMode(.inline)
-    .toolbar {
+    .screenBar {
       if host.hasControl, let file, file.status != .deleted {
-        ToolbarItem(placement: .topBarTrailing) {
-          Button {
-            router.push(.file(sessionId: sessionId, path: path, line: file.firstChangedLine, source: .changes))
-          } label: {
-            Label("View file", systemImage: Icon.file)
-          }
+        Button {
+          (stackPush ?? router.push)(.file(sessionId: sessionId, path: path, line: file.firstChangedLine, source: .changes))
+        } label: {
+          Label("View file", systemImage: Icon.file)
         }
       }
     }

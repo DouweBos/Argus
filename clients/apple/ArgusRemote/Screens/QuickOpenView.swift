@@ -27,8 +27,8 @@ struct QuickOpenView: View {
         Loading(label: "Listing files…").listRowSeparator(.hidden)
       } else {
         ForEach(results, id: \.path) { match in
-          NavigationLink(
-            value: Route.file(sessionId: sessionId, path: match.path, line: nil, source: .quickOpen)
+          StackLink(
+            route: .file(sessionId: sessionId, path: match.path, line: nil, source: .quickOpen)
           ) {
             FuzzyFileRow(match: match)
           }
@@ -42,8 +42,7 @@ struct QuickOpenView: View {
         icon: Icon.search, title: "No matching files",
         body: query.isEmpty ? "This session has no files." : "Nothing in this worktree matches “\(query)”.")
     }
-    .searchable(
-      text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "File name")
+    .screenSearch(text: $query, prompt: "File name")
     .autocorrectionDisabled()
     .textInputAutocapitalization(.never)
     .navigationTitle("Open File · \(label)")

@@ -11,7 +11,8 @@
   /// (`code`), `route` (`path`: an `argus://` path like `/sessions/<id>/agents`,
   /// or the older `name:arg` with a `section`), `back`, `tree`, `press` (accessibility
   /// label, optional `index`), `type` (`text`, into the first text field or view; `clear` empties it first),
-  /// `dismiss` (the keyboard), `sidebar` (select a session row: `id`, `label`, `repoRoot`, `projectName`).
+  /// `dismiss` (the keyboard), `sidebar` (select a session row: `id`, `label`, `repoRoot`, `projectName`),
+  /// `traits` (`sizeClass`, `orientation`).
   @MainActor
   final class DevDriver {
     private let dir: URL
@@ -145,6 +146,9 @@
           "sidebar": router.sidebarSelection.map { "\($0)" } ?? "",
           "project": router.detailProject?.name ?? "",
           "stack": (router.isSplit ? router.detailStack : router.path(for: router.section)).map(\.pattern),
+          "panel": router.panelOpen ? router.panelTab.rawValue : "",
+          "panelStack": router.panelPaths.values.flatMap { $0.map(\.pattern) },
+          "focusedAgents": router.focusedAgents,
         ]
       case "tree":
         return [
@@ -203,6 +207,20 @@
         return ["ok": true]
       case "dismiss":
         window?.endEditing(true)
+        return ["ok": true]
+      case "traits":
+        // What a Split View resize (`sizeClass`: compact, regular, none) or a rotation (`orientation`) does.
+        guard let window, let scene = window.windowScene else { return ["ok": false, "error": "no scene"] }
+        switch command["sizeClass"] as? String {
+        case "compact": window.traitOverrides.horizontalSizeClass = .compact
+        case "regular": window.traitOverrides.horizontalSizeClass = .regular
+        case "none": window.traitOverrides.remove(UITraitHorizontalSizeClass.self)
+        default: break
+        }
+        if let orientation = command["orientation"] as? String {
+          let mask: UIInterfaceOrientationMask = orientation == "landscape" ? .landscapeRight : .portrait
+          scene.requestGeometryUpdate(.iOS(interfaceOrientations: mask))
+        }
         return ["ok": true]
       default:
         return ["ok": false, "error": "unknown op"]

@@ -71,6 +71,8 @@ public enum Icon {
   public static let mcp = "server.rack"
   /// A session's details: branch, changes, tools.
   public static let details = "info.circle"
+  /// The trailing panel beside a session's chat.
+  public static let sidePanel = "sidebar.right"
   public static let image = "photo"
   public static let rotate = "rotate.right"
   public static let fold = "book.closed"

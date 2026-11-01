@@ -260,7 +260,10 @@ it can:
   (`/automations`) and More (`/more`, phone-only). More lists Pull Requests,
   Issues (with Linear connected), Devices, Usage, Notifications and Settings;
   a link to one of those opens it inside More. The iPad sidebar lists every
-  destination instead, the Mac's primary rows then its footer ones.
+  destination instead, the Mac's primary rows then its footer ones, and
+  highlights the session a link opened. On iPad the session screen's details
+  are a side panel beside the chat (Details, Changes, Files, Terminals,
+  Device), as on the Mac; it isn't part of the link.
 
 ## Invariants
 

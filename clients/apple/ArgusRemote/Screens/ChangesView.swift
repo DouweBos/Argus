@@ -9,6 +9,7 @@ struct ChangesView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
+  @Environment(\.stackPush) private var stackPush
 
   let sessionId: String
   let label: String
@@ -46,7 +47,7 @@ struct ChangesView: View {
           VStack(spacing: 0) {
             ForEach(Array(files.enumerated()), id: \.element.id) { index, file in
               if index > 0 { Divider().padding(.leading, 24) }
-              NavigationLink(value: Route.fileDiff(sessionId: sessionId, path: file.displayPath, mode: mode)) {
+              StackLink(route: .fileDiff(sessionId: sessionId, path: file.displayPath, mode: mode), chevron: false) {
                 ChangedFileRow(file: file).padding(.vertical, 8)
               }
               .buttonStyle(.argusPlain)
@@ -61,8 +62,12 @@ struct ChangesView: View {
     }
     .navigationTitle("Changes · \(label)")
     .navigationBarTitleDisplayMode(.inline)
-    .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
+    .screenBar {
+      if let stackPush {
+        Button { stackPush(.stashes(sessionId: sessionId, label: label)) } label: {
+          Label("Stashes & tags", systemImage: Icon.history)
+        }
+      } else {
         NavigationLink(value: Route.stashes(sessionId: sessionId, label: label)) {
           Label("Stashes & tags", systemImage: Icon.history)
         }
