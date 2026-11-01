@@ -61,7 +61,6 @@ public struct MenuChip<Value: Hashable>: View {
       Chip(label: chipLabel, icon: icon, tone: tone, mono: mono)
     }
     .menuIndicator(.hidden)
-    .fixedSize()
     .clickable()
     .accessibilityLabel("\(title): \(valueLabel)")
   }

@@ -55,23 +55,10 @@
     }
 
     private var workspaceMenu: some View {
-      Menu {
-        Picker("Workspace", selection: kind) {
-          ForEach(flow.options, id: \.self) { kind in
-            Button {
-            } label: {
-              Text(label(kind))
-              if let hint = hint(kind) { Text(hint) }
-            }
-            .tag(kind)
-          }
-        }
-        .pickerStyle(.inline)
-      } label: {
-        Chip(label: label(flow.workspace.kind), icon: icon(flow.workspace.kind))
-      }
-      .clickable()
-      .accessibilityLabel("Workspace: \(label(flow.workspace.kind))")
+      MenuChip(
+        "Workspace", selection: kind,
+        options: flow.options.map { .init(value: $0, label: label($0), hint: hint($0)) },
+        icon: icon(flow.workspace.kind))
     }
 
     private var kind: Binding<StartWorkspace.Kind> {
