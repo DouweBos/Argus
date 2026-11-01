@@ -1,0 +1,22 @@
+.terminal {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-4);
+  background: var(--terminal-bg);
+  overflow: hidden;
+}
+
+.surface {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

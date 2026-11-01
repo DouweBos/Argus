@@ -1,0 +1,5 @@
+.mark {
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+}

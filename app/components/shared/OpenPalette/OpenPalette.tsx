@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Icons, Kbd, useDismissOnEscape } from "@argus/peacock";
+import { type ReactNode, useMemo, useState } from "react";
+import { Icons, type PaletteGroup, PaletteDialog } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
 import {
   closeOpenPalette,
@@ -11,7 +11,6 @@ import {
   useSelectedSessionId,
   useSessions,
 } from "../../../stores/sessionStore";
-import styles from "./OpenPalette.module.css";
 
 type OpenGroup = "open-project" | "recent-project" | "session";
 
@@ -49,10 +48,6 @@ function OpenPaletteContent() {
   const selectedId = useSelectedSessionId();
   const { openProject } = useProjects();
   const [query, setQuery] = useState("");
-  const [activeIndex, setActiveIndex] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const activeItemRef = useRef<HTMLButtonElement>(null);
-  useDismissOnEscape(closeOpenPalette);
 
   const items = useMemo<OpenItem[]>(() => {
     const out: OpenItem[] = [];
@@ -119,115 +114,37 @@ function OpenPaletteContent() {
   }, [items, query]);
 
   const groups = useMemo(() => groupItems(filtered), [filtered]);
-  const ordered = useMemo(() => groups.flatMap((g) => g.items), [groups]);
-
-  const safeIndex = Math.min(Math.max(activeIndex, 0), ordered.length - 1);
-
-  useEffect(() => {
-    activeItemRef.current?.scrollIntoView({ block: "nearest" });
-  }, [safeIndex]);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  const onOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      closeOpenPalette();
-    }
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActiveIndex(Math.min(safeIndex + 1, ordered.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActiveIndex(Math.max(safeIndex - 1, 0));
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      const pick = ordered[safeIndex];
-      if (pick) {
-        pick.run();
-      }
-    }
-  };
+  const byId = useMemo(
+    () => new Map(filtered.map((it) => [it.id, it])),
+    [filtered],
+  );
 
   return (
-    <div
-      className={styles.overlay}
-      onClick={onOverlayClick}
-      role="presentation"
-    >
-      <div
-        aria-label="Open project or session"
-        aria-modal="true"
-        className={styles.palette}
-        role="dialog"
-      >
-        <div className={styles.searchRow}>
-          <Icons.SearchIcon size={14} />
-          <input
-            ref={inputRef}
-            aria-label="Search projects and sessions"
-            autoComplete="off"
-            autoFocus
-            className={styles.input}
-            placeholder="Search projects and sessions…"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setActiveIndex(0);
-            }}
-            onKeyDown={onKeyDown}
-          />
-          <Kbd keys={["esc"]} />
-        </div>
-
-        <div className={styles.results}>
-          {filtered.length === 0 && (
-            <div className={styles.empty}>No matches.</div>
-          )}
-          {groups.map((g) => (
-            <div key={g.key} className={styles.group}>
-              <div className={styles.groupHead}>{g.label}</div>
-              {g.items.map((it) => {
-                const globalIdx = ordered.indexOf(it);
-                const active = globalIdx === safeIndex;
-
-                return (
-                  <button
-                    key={it.id}
-                    ref={active ? activeItemRef : undefined}
-                    className={`${styles.item} ${active ? styles.itemActive : ""}`}
-                    type="button"
-                    onClick={() => it.run()}
-                    onMouseEnter={() => setActiveIndex(globalIdx)}
-                  >
-                    <span className={styles.itemIcon}>{it.icon}</span>
-                    <span className={styles.itemText}>
-                      <span className={styles.itemTitle}>{it.title}</span>
-                      {it.sublabel && (
-                        <span className={styles.itemSub}>{it.sublabel}</span>
-                      )}
-                    </span>
-                    {it.hint && <Kbd keys={it.hint} />}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    <PaletteDialog
+      ariaLabel="Search projects and sessions"
+      groups={groups}
+      placeholder="Search projects and sessions…"
+      query={query}
+      onClose={closeOpenPalette}
+      onQueryChange={setQuery}
+      onSelect={(item) => byId.get(item.id)?.run()}
+    />
   );
 }
 
-function groupItems(items: OpenItem[]) {
+function groupItems(items: OpenItem[]): PaletteGroup[] {
   return GROUP_ORDER.map((key) => ({
     key,
     label: GROUP_LABELS[key],
-    items: items.filter((it) => it.group === key),
+    items: items
+      .filter((it) => it.group === key)
+      .map(({ hint, icon, id, sublabel, title }) => ({
+        hint,
+        icon,
+        id,
+        sublabel,
+        title,
+      })),
   })).filter((g) => g.items.length > 0);
 }
 

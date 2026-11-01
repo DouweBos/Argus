@@ -467,6 +467,80 @@ html[data-theme="light"] {
   --color-theme-rose-accent: #c23a73;
 }
 
+/* Syntax highlighting (CodeViewer) and the terminal's ANSI palette
+   (TerminalView, read at runtime since xterm paints on a canvas). Fixed
+   identities per scheme; colour themes leave them alone. */
+html,
+html[data-theme="dark"] {
+  --syntax-comment: #7a7f8f;
+  --syntax-keyword: #c792ea;
+  --syntax-string: #a5d6a7;
+  --syntax-number: #f5a97f;
+  --syntax-title: #82aaff;
+  --syntax-type: #ffcb6b;
+  --syntax-attr: #89ddff;
+  --syntax-variable: #f07178;
+  --syntax-meta: #9aa5ce;
+  --syntax-addition: #7ec699;
+  --syntax-deletion: #f07178;
+
+  --terminal-bg: #202020;
+  --terminal-fg: #e8e8e8;
+  --terminal-cursor: #509050;
+  --terminal-selection: #383838;
+  --terminal-black: #303030;
+  --terminal-red: #a05050;
+  --terminal-green: #509050;
+  --terminal-yellow: #b8a050;
+  --terminal-blue: #5a8ab0;
+  --terminal-magenta: #a06090;
+  --terminal-cyan: #509090;
+  --terminal-white: #b0b0b0;
+  --terminal-bright-black: #505050;
+  --terminal-bright-red: #a05050;
+  --terminal-bright-green: #509050;
+  --terminal-bright-yellow: #b8a050;
+  --terminal-bright-blue: #5a8ab0;
+  --terminal-bright-magenta: #a06090;
+  --terminal-bright-cyan: #509090;
+  --terminal-bright-white: #e8e8e8;
+}
+
+html[data-theme="light"] {
+  --syntax-comment: #6a737d;
+  --syntax-keyword: #8a3a80;
+  --syntax-string: #1f7a3a;
+  --syntax-number: #b35900;
+  --syntax-title: #1f5ea8;
+  --syntax-type: #8a6300;
+  --syntax-attr: #0f6b78;
+  --syntax-variable: #b3261e;
+  --syntax-meta: #5c5c72;
+  --syntax-addition: #00704a;
+  --syntax-deletion: #b3261e;
+
+  --terminal-bg: #ffffff;
+  --terminal-fg: #0d0d14;
+  --terminal-cursor: #00704a;
+  --terminal-selection: #d0d3da;
+  --terminal-black: #2f2f40;
+  --terminal-red: #b3261e;
+  --terminal-green: #00704a;
+  --terminal-yellow: #8a6300;
+  --terminal-blue: #1f5ea8;
+  --terminal-magenta: #8a3a80;
+  --terminal-cyan: #0f6b78;
+  --terminal-white: #5c5c72;
+  --terminal-bright-black: #5c5c72;
+  --terminal-bright-red: #c53030;
+  --terminal-bright-green: #0b8a5c;
+  --terminal-bright-yellow: #a67400;
+  --terminal-bright-blue: #2a6fc0;
+  --terminal-bright-magenta: #a14a98;
+  --terminal-bright-cyan: #177c8c;
+  --terminal-bright-white: #0d0d14;
+}
+
 html:not([data-theme="light"])[data-color-theme]:not(
     [data-color-theme="amber"]
   ) {

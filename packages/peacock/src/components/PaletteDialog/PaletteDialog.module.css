@@ -131,3 +131,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+@media (max-width: 600px) {
+  .overlay {
+    padding: var(--space-8) var(--space-6);
+  }
+
+  .palette {
+    max-height: 80vh;
+  }
+}

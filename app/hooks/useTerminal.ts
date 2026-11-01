@@ -10,6 +10,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { readTerminalTheme, watchTerminalTheme } from "@argus/peacock";
 import {
   openExternalUrl,
   startTerminal,
@@ -22,71 +23,11 @@ import {
   drainPending,
 } from "../lib/terminalBufferService";
 import { cacheBuffer, getBuffer } from "../stores/terminalStore";
-import {
-  getResolvedTheme,
-  subscribeResolvedTheme,
-  type ResolvedTheme,
-} from "../stores/themeStore";
 import "@xterm/xterm/css/xterm.css";
 
 const DEFAULT_FONT_SIZE = 13;
 const MIN_FONT_SIZE = 8;
 const MAX_FONT_SIZE = 24;
-
-// Terminal palettes — ANSI colors plus xterm-specific surfaces. Dark palette
-// preserves the previous muted look; light palette is tuned for legibility on
-// the near-white app background (tokens.css --bg-primary #fafbfc).
-const DARK_TERMINAL_THEME = {
-  background: "#202020",
-  foreground: "#e8e8e8",
-  cursor: "#509050",
-  cursorAccent: "#202020",
-  selectionBackground: "#383838",
-  black: "#303030",
-  red: "#a05050",
-  green: "#509050",
-  yellow: "#b8a050",
-  blue: "#5a8ab0",
-  magenta: "#a06090",
-  cyan: "#509090",
-  white: "#b0b0b0",
-  brightBlack: "#505050",
-  brightRed: "#a05050",
-  brightGreen: "#509050",
-  brightYellow: "#b8a050",
-  brightBlue: "#5a8ab0",
-  brightMagenta: "#a06090",
-  brightCyan: "#509090",
-  brightWhite: "#e8e8e8",
-} as const;
-
-const LIGHT_TERMINAL_THEME = {
-  background: "#ffffff",
-  foreground: "#0d0d14",
-  cursor: "#00704a",
-  cursorAccent: "#ffffff",
-  selectionBackground: "#d0d3da",
-  black: "#2f2f40",
-  red: "#b3261e",
-  green: "#00704a",
-  yellow: "#8a6300",
-  blue: "#1f5ea8",
-  magenta: "#8a3a80",
-  cyan: "#0f6b78",
-  white: "#5c5c72",
-  brightBlack: "#5c5c72",
-  brightRed: "#c53030",
-  brightGreen: "#0b8a5c",
-  brightYellow: "#a67400",
-  brightBlue: "#2a6fc0",
-  brightMagenta: "#a14a98",
-  brightCyan: "#177c8c",
-  brightWhite: "#0d0d14",
-} as const;
-
-function terminalThemeFor(theme: ResolvedTheme) {
-  return theme === "light" ? LIGHT_TERMINAL_THEME : DARK_TERMINAL_THEME;
-}
 
 interface UseTerminalOptions {
   onExit?: (code: number) => void;
@@ -237,7 +178,7 @@ export function useTerminal({
     }
 
     const term = new Terminal({
-      theme: terminalThemeFor(getResolvedTheme()),
+      theme: readTerminalTheme(),
       fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
       fontSize: fontSizeRef.current,
       lineHeight: 1.4,
@@ -393,8 +334,8 @@ export function useTerminal({
     });
 
     // Restyle the terminal when the app theme changes.
-    const unsubscribeTheme = subscribeResolvedTheme((next) => {
-      term.options.theme = terminalThemeFor(next);
+    const unsubscribeTheme = watchTerminalTheme(() => {
+      term.options.theme = readTerminalTheme();
     });
 
     // ResizeObserver to keep terminal dimensions in sync

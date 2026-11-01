@@ -264,9 +264,72 @@ export const Colors: Story = {
           />
         </div>
       </section>
+      <section>
+        <h3 className="eyebrow">Syntax (CodeViewer)</h3>
+        <div style={row}>
+          {SYNTAX_TOKENS.map((name) => (
+            <Token
+              key={name}
+              name={`--syntax-${name}`}
+              value="per scheme"
+              preview={<div style={swatch(`var(--syntax-${name})`)} />}
+            />
+          ))}
+        </div>
+      </section>
+      <section>
+        <h3 className="eyebrow">Terminal (TerminalView)</h3>
+        <div style={row}>
+          {TERMINAL_TOKENS.map((name) => (
+            <Token
+              key={name}
+              name={`--terminal-${name}`}
+              value="per scheme"
+              preview={<div style={swatch(`var(--terminal-${name})`)} />}
+            />
+          ))}
+        </div>
+      </section>
     </div>
   ),
 };
+
+const SYNTAX_TOKENS = [
+  "comment",
+  "keyword",
+  "string",
+  "number",
+  "title",
+  "type",
+  "attr",
+  "variable",
+  "meta",
+  "addition",
+  "deletion",
+];
+
+const TERMINAL_TOKENS = [
+  "bg",
+  "fg",
+  "cursor",
+  "selection",
+  "black",
+  "red",
+  "green",
+  "yellow",
+  "blue",
+  "magenta",
+  "cyan",
+  "white",
+  "bright-black",
+  "bright-red",
+  "bright-green",
+  "bright-yellow",
+  "bright-blue",
+  "bright-magenta",
+  "bright-cyan",
+  "bright-white",
+];
 
 export const Typography: Story = {
   render: () => (
