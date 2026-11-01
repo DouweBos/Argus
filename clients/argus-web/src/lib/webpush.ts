@@ -9,6 +9,8 @@
 
 import type { Transport } from "@argus/remote-client";
 import { routeAgentOpen } from "./notify";
+import type { ResultOf } from "./protocol";
+import { request } from "./request";
 
 type Decide = (
   agentId: string,
@@ -127,11 +129,7 @@ export function startServiceWorkerRouting(): () => void {
     navigator.serviceWorker.removeEventListener("message", onMessage);
 }
 
-interface PushInfo {
-  configured: boolean;
-  enabled: boolean;
-  vapid_public_key: string | null;
-}
+type PushInfo = ResultOf<"device.push_info">;
 
 /**
  * Subscribe this browser and hand the subscription to the desktop. Safe to call
@@ -150,7 +148,7 @@ export async function registerWebPush(
 
   let info: PushInfo;
   try {
-    info = await transport.request<PushInfo>("device.push_info", {});
+    info = await request(transport, "device.push_info", {});
   } catch {
     return "unavailable";
   }
@@ -191,14 +189,11 @@ export async function registerWebPush(
   }
 
   try {
-    const res = await transport.request<{ configured: boolean }>(
-      "device.register_push",
-      {
-        service: "webpush",
-        token: subscription.endpoint,
-        keys: { p256dh, auth },
-      },
-    );
+    const res = await request(transport, "device.register_push", {
+      service: "webpush",
+      token: subscription.endpoint,
+      keys: { p256dh, auth },
+    });
 
     return res.configured ? "registered" : "unconfigured";
   } catch {
@@ -210,7 +205,9 @@ export async function registerWebPush(
 export async function unregisterWebPush(
   transport: Transport | null,
 ): Promise<void> {
-  await transport?.request("device.unregister_push", {}).catch(() => {});
+  if (transport) {
+    await request(transport, "device.unregister_push", {}).catch(() => {});
+  }
   const reg = await ensureServiceWorker();
   const subscription = await reg?.pushManager.getSubscription();
   await subscription?.unsubscribe().catch(() => {});

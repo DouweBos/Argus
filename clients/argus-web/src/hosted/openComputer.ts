@@ -9,20 +9,17 @@ import type { Transport } from "@argus/remote-client";
 import { accountSession } from "../account/accountStore";
 import type { AccountComputer } from "../account/directory";
 import type { AccountSession } from "../account/session";
+import { request } from "../lib/request";
 import { useAppStore } from "../lib/store";
 
 export async function syncHost(
   session: AccountSession,
   transport: Transport,
 ): Promise<void> {
-  const status = await transport.request<{
-    linked: boolean;
-    account_id_hash: string | null;
-    head_seq: number | null;
-  }>("account.status", {});
+  const status = await request(transport, "account.status", {});
   const payload = session.syncPayload(status);
   if (payload) {
-    await transport.request("account.sync", payload);
+    await request(transport, "account.sync", payload);
   }
 }
 

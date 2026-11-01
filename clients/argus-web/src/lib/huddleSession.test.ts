@@ -12,13 +12,18 @@ import {
 } from "./huddleSession";
 import type { HuddleStatePayload } from "./protocol";
 
+/** What the host sends once its defaults are filled in. */
+const ROOM = { members: [], you: null, host_typing: false, host_label: "" };
+
 const PENDING: HuddleStatePayload = {
+  ...ROOM,
   room_id: "room-1",
   state: "pending",
   agent_id: null,
   device_key: null,
 };
 const APPROVED: HuddleStatePayload = {
+  ...ROOM,
   room_id: "room-1",
   state: "approved",
   agent_id: "ag1",
@@ -175,6 +180,7 @@ describe("naming the host", () => {
               member_id: "m1",
               label: "Bo",
               connected: true,
+              driving: false,
               typing: true,
             },
           ],
@@ -204,7 +210,7 @@ describe("the room's side chat, as a guest folds it in", () => {
 
   it("appends what someone just said", () => {
     const next = applyHuddleChat(
-      { room_id: "r", messages: [line("2", "second")] },
+      { room_id: "r", messages: [line("2", "second")], replace: false },
       view([line("1", "first")]),
     );
 
@@ -222,7 +228,7 @@ describe("the room's side chat, as a guest folds it in", () => {
 
   it("never doubles a line it already holds", () => {
     const next = applyHuddleChat(
-      { room_id: "r", messages: [line("1", "first")] },
+      { room_id: "r", messages: [line("1", "first")], replace: false },
       view([line("1", "first")]),
     );
 
@@ -231,7 +237,13 @@ describe("the room's side chat, as a guest folds it in", () => {
 
   it("survives a roster change — typing must not wipe what was said", () => {
     const next = applyHuddleState(
-      { room_id: "r", state: "approved", agent_id: "ag1", device_key: null },
+      {
+        ...ROOM,
+        room_id: "r",
+        state: "approved",
+        agent_id: "ag1",
+        device_key: null,
+      },
       view([line("1", "first")]),
     );
 

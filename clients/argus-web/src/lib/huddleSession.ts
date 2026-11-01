@@ -14,6 +14,7 @@ import type {
   HuddleMember,
   HuddleStatePayload,
 } from "./protocol";
+import { request, type Requester } from "./request";
 
 /**
  * Where the guest stands. `connecting` covers the socket and the join round
@@ -135,9 +136,7 @@ export function typingNames(view: HuddleView): string[] {
   return view.hostTyping ? [hostLabel(view), ...guests] : guests;
 }
 
-export interface HuddleRequester {
-  request: <T>(method: string, params: unknown) => Promise<T>;
-}
+export type HuddleRequester = Requester;
 
 /** Present the token. A key already approved for this room comes back approved. */
 export async function requestJoin(
@@ -148,7 +147,7 @@ export async function requestJoin(
   clientId?: string,
 ): Promise<HuddleView> {
   try {
-    const payload = await transport.request<HuddleStatePayload>("huddle.join", {
+    const payload = await request(transport, "huddle.join", {
       token,
       label,
       ...(clientId ? { client_id: clientId } : {}),
