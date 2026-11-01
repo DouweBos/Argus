@@ -53,18 +53,25 @@ struct FileDiffView: View {
 /// A changed file as a list row: icon, path, counts and what happened to it.
 struct ChangedFileRow: View {
   @Environment(\.theme) private var theme
+  @Environment(\.dynamicTypeSize) private var typeSize
   let file: DiffFile
   var showsChevron = true
 
   var body: some View {
     HStack(spacing: 8) {
       FileTypeIcon(path: file.displayPath, size: 14)
-      MonoText(text: file.displayPath, size: 12, color: theme.text, lineLimit: 1, truncateHead: true)
-      Spacer(minLength: 6)
-      if ChangeCounts.hasChanges(additions: file.additions, deletions: file.deletions) {
-        ChangeCounts(additions: file.additions, deletions: file.deletions)
+      // At accessibility sizes the path gets a line of its own rather than "…".
+      if typeSize.isAccessibilitySize {
+        VStack(alignment: .leading, spacing: 4) {
+          path
+          HStack(spacing: 8) { facts }
+        }
+        Spacer(minLength: 0)
+      } else {
+        path
+        Spacer(minLength: 6)
+        facts
       }
-      Badge(label: file.status.label, tone: file.status.tone)
       if showsChevron {
         Image(systemName: Icon.chevronRight)
           .font(.scaled(.caption).weight(.semibold))
@@ -73,5 +80,16 @@ struct ChangedFileRow: View {
     }
     .contentShape(Rectangle())
     .accessibilityElement(children: .combine)
+  }
+
+  private var path: some View {
+    MonoText(text: file.displayPath, size: 12, color: theme.text, lineLimit: 1, truncateHead: true)
+  }
+
+  @ViewBuilder private var facts: some View {
+    if ChangeCounts.hasChanges(additions: file.additions, deletions: file.deletions) {
+      ChangeCounts(additions: file.additions, deletions: file.deletions)
+    }
+    Badge(label: file.status.label, tone: file.status.tone)
   }
 }

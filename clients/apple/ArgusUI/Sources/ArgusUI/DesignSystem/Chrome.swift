@@ -100,12 +100,23 @@ public struct ProjectBadge: View {
     self.size = size
   }
 
+  private var side: CGFloat {
+    #if os(iOS)
+      TextScale.shared.dynamic(size)
+    #else
+      TextScale.shared(size)
+    #endif
+  }
+
   public var body: some View {
     let tint = key.map(ProjectAccent.color(for:))
     Text(ChromeText.initials(name))
       .font(.scaled(size: size * 0.5, weight: .semibold))
+      // Initials grow on a different curve than the square; shrink rather than become "…".
+      .lineLimit(1)
+      .minimumScaleFactor(0.5)
       .foregroundStyle(tint ?? theme.textSecondary)
-      .frame(width: TextScale.shared(size), height: TextScale.shared(size))
+      .frame(width: side, height: side)
       .background(tint.map { $0.opacity(0.2) } ?? theme.selection, in: .rect(cornerRadius: 4))
       .accessibilityHidden(true)
   }
@@ -423,6 +434,8 @@ public struct ChangeCounts: View {
         Text("−\(deletions.formatted())").foregroundStyle(theme.error)
       }
       .font(.scaled(size: 11, design: .monospaced))
+      // Numbers never break across lines.
+      .fixedSize()
       .accessibilityElement(children: .ignore)
       .accessibilityLabel("\(additions) lines added, \(deletions) removed")
     }

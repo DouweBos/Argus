@@ -8,6 +8,7 @@ struct ComputerSwitcher: View {
   @Environment(AppStore.self) private var app
   @Environment(HostStore.self) private var host
   @Environment(Router.self) private var router
+  @Environment(\.dynamicTypeSize) private var typeSize
 
   private var name: String { app.identity?.label ?? "No computer" }
 
@@ -23,10 +24,13 @@ struct ComputerSwitcher: View {
       Button("Manage computers…", systemImage: Icon.desktop) { router.push(.computers) }
     } label: {
       HStack(spacing: 12) {
-        Image(systemName: Icon.desktop)
-          .font(.scaled(size: 18))
-          .foregroundStyle(theme.accent)
-          .frame(width: 28)
+        // At accessibility sizes the name needs the width more than the glyph does.
+        if !typeSize.isAccessibilitySize {
+          Image(systemName: Icon.desktop)
+            .font(.scaled(size: 18))
+            .foregroundStyle(theme.accent)
+            .frame(width: 28)
+        }
         // The status sits on the label line so a long computer name gets the full width.
         VStack(alignment: .leading, spacing: 2) {
           HStack(spacing: 6) {
@@ -35,9 +39,12 @@ struct ComputerSwitcher: View {
             Text(host.connection.label)
           }
           .font(.scaled(.caption)).foregroundStyle(theme.textSecondary)
+          .lineLimit(1)
           Text(name).font(.scaled(size: 16, weight: .semibold)).foregroundStyle(theme.text)
             .lineLimit(2)
         }
+        // A menu label centres wrapped text otherwise.
+        .multilineTextAlignment(.leading)
         Spacer(minLength: 8)
         Image(systemName: Icon.chevronUpDown).font(.scaled(.caption)).foregroundStyle(theme.textMuted)
       }

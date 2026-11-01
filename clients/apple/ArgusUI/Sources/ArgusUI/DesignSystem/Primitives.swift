@@ -415,10 +415,13 @@ public struct Badge: View {
     Text(label)
       .font(.scaled(size: 11, weight: .semibold))
       .foregroundStyle(tone.color(theme))
+      // A pill never wraps; at large text it wins the width before its neighbours.
+      .lineLimit(1)
       .padding(.horizontal, 7)
       .padding(.vertical, 3)
       .background(tone.soft(theme))
       .clipShape(Capsule())
+      .layoutPriority(1)
   }
 }
 
