@@ -153,7 +153,8 @@ struct ProjectsView: View {
               name: Labels.agentName(agent),
               status: agent.status,
               attention: Labels.awaitingLabel(agent),
-              meta: location(agent) ?? Labels.statusLabel(agent.status))
+              meta: location(agent) ?? Labels.statusLabel(agent.status),
+              project: agent.projectName, projectKey: host.repoRoot(ofAgent: agent))
           }
         }
       } header: {

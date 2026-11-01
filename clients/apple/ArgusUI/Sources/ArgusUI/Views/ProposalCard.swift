@@ -17,6 +17,8 @@ public struct ProposalCardContent {
   /// What the run recommends; the phone's narrowed shape doesn't carry it.
   public var action: (label: String, tone: Tone)?
   public var project: String?
+  /// The project's repo root, which colours its badge.
+  public var projectKey: String?
   public var automationName: String?
   public var createdAt: Double
   public var cta: Cta?
@@ -26,12 +28,13 @@ public struct ProposalCardContent {
   public var startError: String?
   public var isPending: Bool
 
-  public init(_ proposal: RemoteProposal) {
+  public init(_ proposal: RemoteProposal, projectKey: String? = nil) {
     title = proposal.title
     summary = proposal.summary
     rationale = proposal.rationale
     confidence = proposal.confidence
     project = proposal.project
+    self.projectKey = projectKey
     automationName = proposal.automationName
     createdAt = proposal.createdAt
     cta = proposal.cta.flatMap {
@@ -54,6 +57,7 @@ public struct ProposalCardContent {
       AutomationText.actionLabel(proposal.recommendedAction), AutomationText.actionTone(proposal.recommendedAction)
     )
     project = AutomationText.project(proposal.repoRoot)
+    projectKey = proposal.repoRoot
     self.automationName = automationName
     createdAt = proposal.createdAt
     cta = proposal.cta.flatMap {
@@ -243,7 +247,12 @@ public struct ProposalCard: View {
         Badge(
           label: "\(Int((content.confidence * 100).rounded()))% sure",
           tone: content.confidence >= 0.7 ? .success : .muted)
-        if let project = content.project { Badge(label: project) }
+        if let project = content.project {
+          HStack(spacing: 4) {
+            ProjectBadge(project, key: content.projectKey, size: 14)
+            Badge(label: project)
+          }
+        }
         if let name = content.automationName { Badge(label: name) }
         MutedText(Labels.timeAgo(content.createdAt))
       }

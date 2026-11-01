@@ -20,7 +20,7 @@ struct ProposalView: View {
       }
       if let proposal {
         ProposalCard(
-          content: ProposalCardContent(proposal),
+          content: ProposalCardContent(proposal, projectKey: host.repoRoot(ofProjectNamed: proposal.project)),
           decided: AutomationText.decidedNote(proposal),
           busy: proposals.busy.contains(proposal.id),
           starting: proposals.isStarting(proposal),

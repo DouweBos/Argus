@@ -20,19 +20,26 @@ public struct AgentRow: View {
   var attention: String?
   var model: String?
   var meta: String?
+  /// The project it works in, badged at the head of the meta line, for lists that span projects.
+  var project: String?
+  var projectKey: String?
 
   public init(
     name: String,
     status: RemoteAgentState,
     attention: String? = nil,
     model: String? = nil,
-    meta: String? = nil
+    meta: String? = nil,
+    project: String? = nil,
+    projectKey: String? = nil
   ) {
     self.name = name
     self.status = status
     self.attention = attention
     self.model = model
     self.meta = meta
+    self.project = project?.nilIfEmpty
+    self.projectKey = projectKey
   }
 
   public var body: some View {
@@ -45,7 +52,10 @@ public struct AgentRow: View {
       VStack(alignment: .leading, spacing: 2) {
         Text(name).lineLimit(1)
         if let subtitle {
-          Text(subtitle).font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
+          HStack(spacing: 5) {
+            if let project { ProjectBadge(project, key: projectKey, size: 14) }
+            Text(subtitle).font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
+          }
         }
       }
       Spacer(minLength: 6)

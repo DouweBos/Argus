@@ -48,6 +48,16 @@ struct ProjectView: View {
     .navigationTitle(name)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {
+      // Badged, as the Mac's project header, so it reads as the project the rows elsewhere show.
+      ToolbarItem(placement: .principal) {
+        HStack(spacing: 6) {
+          ProjectBadge(name, key: repoRoot, size: 18)
+          Text(name).font(.scaled(.headline)).lineLimit(1)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(name)
+        .accessibilityAddTraits(.isHeader)
+      }
       if !(host.stoppedByRepo[repoRoot] ?? []).isEmpty {
         ToolbarItem(placement: .topBarTrailing) {
           IconBtn(systemName: Icon.history, label: "Search saved chats") { searchingChats = true }

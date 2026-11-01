@@ -31,7 +31,8 @@ public struct AgentsOverviewList: View {
                   name: Labels.agentName(agent), status: agent.status,
                   attention: Labels.awaitingLabel(agent),
                   meta: [agent.projectName, agent.sessionLabel]
-                    .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
+                    .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "),
+                  project: agent.projectName, projectKey: host.repoRoot(ofAgent: agent))
                 // It pushes, so it says so the way a NavigationLink would.
                 Image(systemName: Icon.chevronRight)
                   .font(.scaled(.footnote).weight(.semibold))

@@ -129,7 +129,7 @@ struct InboxView: View {
 
   private func card(_ proposal: RemoteProposal) -> some View {
     ProposalCard(
-      content: ProposalCardContent(proposal),
+      content: ProposalCardContent(proposal, projectKey: host.repoRoot(ofProjectNamed: proposal.project)),
       busy: proposals.busy.contains(proposal.id),
       starting: proposals.isStarting(proposal),
       requestError: proposals.requestErrors[proposal.id],

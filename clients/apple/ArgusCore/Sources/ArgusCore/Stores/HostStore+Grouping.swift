@@ -17,6 +17,17 @@ extension HostStore {
     return AgentOrder.byCreation(AgentOrder.overlaid(listed, live: statusByAgent))
   }
 
+  /// The repo an agent works in, which picks its project badge's colour.
+  public func repoRoot(ofAgent agent: RemoteAgentStatus) -> String? {
+    repoRoot(forSessionId: agent.sessionId) ?? repoRoot(ofProjectNamed: agent.projectName)
+  }
+
+  /// A project's repo by the name the phone's shapes carry; nil for none or an unlisted one.
+  public func repoRoot(ofProjectNamed name: String?) -> String? {
+    guard let name, !name.isEmpty else { return nil }
+    return projects.first { $0.name == name }?.repoRoot
+  }
+
   /// Every agent across projects: what wants you first, then the most recent.
   public var recentAgentsByActivity: [RemoteAgentStatus] {
     AgentOrder.byActivity(AgentOrder.overlaid(recentAgents, live: statusByAgent))
