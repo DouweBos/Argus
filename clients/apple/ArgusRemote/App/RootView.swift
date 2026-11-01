@@ -397,6 +397,12 @@ struct RootView: View {
 
 /// The detail column's root.
 ///
+private struct DetailRootKey: Hashable {
+  var section: AppSection
+  var project: ProjectRef?
+  var selection: SidebarItem?
+}
+
 /// Deliberately its own view: the stack's root identity is this type, so
 /// changing section re-renders it instead of re-creating the stack and
 /// dropping whatever was pushed.
@@ -411,8 +417,8 @@ private struct DetailRoot: View {
         RootView.sectionRoot(router.section)
       }
     }
-    .task(id: router.section) {
-      guard let route = router.pendingDetail, router.detailProject == nil else { return }
+    .task(id: DetailRootKey(section: router.section, project: router.detailProject, selection: router.sidebarSelection)) {
+      guard let route = router.pendingDetail, router.detailStack.isEmpty else { return }
       router.pendingDetail = nil
       router.detailStack = [route]
     }

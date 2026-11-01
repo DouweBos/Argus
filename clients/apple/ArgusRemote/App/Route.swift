@@ -257,7 +257,8 @@ final class Router {
   /// identity, which re-creates the `NavigationStack` and throws away a path
   /// set in the same update — so seeding a path underneath never arrived.
   var detailStack: [Route] = []
-  /// Pushed by the detail root once it shows the section `open(_:in:)` switched to.
+  /// Pushed by the detail root once its new root is up: a task queued beside
+  /// the root change still ran before it, and the push was lost.
   var pendingDetail: Route?
 
 
@@ -292,6 +293,7 @@ final class Router {
   /// a session opens in it.
   func apply(_ item: SidebarItem?) {
     guard let item else { return }
+    pendingDetail = nil
     switch item {
     case .section(let section):
       if self.section != section { self.section = section }
@@ -321,10 +323,7 @@ final class Router {
       // tap the user was having to make.
       detailProject = project
       detailStack = []
-      Task { @MainActor [weak self] in
-        guard let self, self.detailProject == project, self.detailStack.isEmpty else { return }
-        self.detailStack = [opened]
-      }
+      pendingDetail = opened
     }
     sidebarSelection = item
   }
@@ -362,19 +361,20 @@ final class Router {
       return
     }
     if isSplit {
-      if case .session(let id, let label, let repoRoot) = route {
-        sidebarSelection = .session(id: id, label: label, repoRoot: repoRoot, projectName: "")
-      } else {
-        sidebarSelection = .section(section)
-      }
-      guard self.section != section || detailProject != nil else {
+      let selection: SidebarItem =
+        if case .session(let id, let label, let repoRoot) = route {
+          .session(id: id, label: label, repoRoot: repoRoot, projectName: "")
+        } else {
+          .section(section)
+        }
+      guard self.section != section || detailProject != nil || sidebarSelection != selection else {
         detailStack = [route]
         return
       }
-      // A new root and a push in one update loses the push (see `apply`), and
-      // a task queued here still runs before the new root is up: the detail
-      // root pushes it once it has appeared for the new section.
-      self.section = section
+      // A new root, or a new sidebar selection (the split view pops its
+      // detail to the root on one), drops a push made in the same update.
+      if self.section != section { self.section = section }
+      sidebarSelection = selection
       detailProject = nil
       detailStack = []
       pendingDetail = route
@@ -407,6 +407,7 @@ final class Router {
   }
 
   func popToRoot() {
+    pendingDetail = nil
     paths[section] = []
     detailProject = nil
     detailStack = []
