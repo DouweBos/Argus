@@ -65,6 +65,8 @@ public struct SessionRow: View {
           Text(ChromeText.shortAge(lastActive))
             .font(Self.detailFont.monospacedDigit())
             .foregroundStyle(selected ? .white.opacity(0.75) : theme.textMuted)
+            // The title truncates first; an age broken across lines reads as nothing.
+            .fixedSize()
         }
       }
     }

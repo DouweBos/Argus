@@ -243,9 +243,11 @@ final class Router {
 
   /// True wherever there is room for a sidebar beside the content.
   var isSplit = false
-  /// The sidebar's selection, and which projects are folded shut in it.
-  var sidebarSelection: SidebarItem? = .section(.home)
+  /// Projects folded shut in the sidebar.
   var collapsedProjects: Set<String> = []
+  /// The session an agent belongs to, once the host has reported it; how an
+  /// agent route finds its sidebar row.
+  @ObservationIgnored var sessionOfAgent: @MainActor (String) -> String? = { _ in nil }
   /// When set, the detail column is rooted on this project instead of the
   /// section's own screen — so an agent opened from the sidebar has its
   /// project behind it without needing a second entry in the path.
@@ -261,6 +263,26 @@ final class Router {
   /// the root change still ran before it, and the push was lost.
   var pendingDetail: Route?
 
+  /// What the sidebar highlights, read off the route: the session open in the
+  /// detail column (or about to be), else the section.
+  var sidebarSelection: SidebarItem? {
+    for route in detailStack.reversed() + [pendingDetail].compactMap({ $0 }) {
+      if let item = sessionItem(route) { return item }
+    }
+    return .section(section)
+  }
+
+  /// The sidebar row a route lives under, when it is a session's screen.
+  private func sessionItem(_ route: Route) -> SidebarItem? {
+    switch route {
+    case .session(let id, let label, let repoRoot):
+      // Equality is by id, so the empty project name still matches the sidebar's row.
+      .session(id: id, label: label, repoRoot: repoRoot, projectName: "")
+    case .agent(let id, let label):
+      sessionOfAgent(id).map { .session(id: $0, label: label, repoRoot: "", projectName: "") }
+    default: nil
+    }
+  }
 
   func path(for section: AppSection) -> [Route] { paths[section] ?? [] }
 
@@ -270,11 +292,6 @@ final class Router {
       return
     }
     detailStack.append(route)
-    if case .session(let id, let label, let repoRoot) = route {
-      // Equality is by id, so the empty project name still matches the
-      // sidebar's own entry and keeps its row highlighted.
-      sidebarSelection = .session(id: id, label: label, repoRoot: repoRoot, projectName: "")
-    }
   }
 
   /// Open a section at its root. On a phone one without a tab opens inside
@@ -325,7 +342,6 @@ final class Router {
       detailStack = []
       pendingDetail = opened
     }
-    sidebarSelection = item
   }
 
   /// Carry open destinations across a rotation or a Split View resize.
@@ -344,7 +360,6 @@ final class Router {
         stack.removeFirst()
       }
       detailStack = stack
-      sidebarSelection = .section(section)
     } else {
       let tab = section.tab
       paths[tab] = (tab == section ? [] : [section.root]) + detailStack
@@ -361,12 +376,7 @@ final class Router {
       return
     }
     if isSplit {
-      let selection: SidebarItem =
-        if case .session(let id, let label, let repoRoot) = route {
-          .session(id: id, label: label, repoRoot: repoRoot, projectName: "")
-        } else {
-          .section(section)
-        }
+      let selection = sessionItem(route) ?? .section(section)
       guard self.section != section || detailProject != nil || sidebarSelection != selection else {
         detailStack = [route]
         return
@@ -374,7 +384,6 @@ final class Router {
       // A new root, or a new sidebar selection (the split view pops its
       // detail to the root on one), drops a push made in the same update.
       if self.section != section { self.section = section }
-      sidebarSelection = selection
       detailProject = nil
       detailStack = []
       pendingDetail = route

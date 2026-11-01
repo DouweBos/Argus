@@ -356,6 +356,7 @@ struct RootView: View {
     if automations == nil { automations = AutomationsStore(host: app.host) }
     if proposals == nil { proposals = ProposalsStore(host: app.host) }
     if pullRequests == nil { pullRequests = PullRequestsStore(host: app.host) }
+    router.sessionOfAgent = { [host = app.host] in host.statusByAgent[$0]?.sessionId }
     router.adopt(split: sizeClass == .regular)
     NotificationRouter.shared.configure(app: app, router: router)
     await NotificationRouter.shared.registerCategories()
