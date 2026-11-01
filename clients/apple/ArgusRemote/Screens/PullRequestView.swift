@@ -14,8 +14,7 @@ struct PullRequestView: View {
 
   @State private var comment = ""
   @State private var busy = false
-  @State private var strategy: RemoteMergeStrategy = .squash
-  @State private var pickingStrategy = false
+  @AppStorage(RemoteMergeStrategy.preferenceKey) private var strategy: RemoteMergeStrategy = .squash
   @State private var confirmingMerge = false
 
   private var detail: RemotePullRequestDetail? { store.detailById["\(repo)#\(number)"] }
@@ -39,7 +38,6 @@ struct PullRequestView: View {
     }
     .navigationTitle(detail?.title ?? label)
     .navigationBarTitleDisplayMode(.inline)
-    .sheet(isPresented: $pickingStrategy) { strategySheet }
     .alert("Merge this pull request?", isPresented: $confirmingMerge) {
       Button("Cancel", role: .cancel) {}
       Button("Merge") { merge() }
@@ -113,23 +111,33 @@ struct PullRequestView: View {
       Btn(label: busy ? "Working…" : "Comment", tone: .secondary, small: true) { postComment() }
         .disabled(busy || comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-      Btn(label: strategy.label, tone: .secondary, small: true) { pickingStrategy = true }
-      Btn(label: busy ? "Merging…" : "Merge", small: true) { confirmingMerge = true }
-        .disabled(busy || detail.mergeable == "CONFLICTING")
+      // A split button, as GitHub's: the remembered strategy, the others behind the chevron.
+      HStack(spacing: 8) {
+        Btn(label: busy ? "Merging…" : strategy.label, small: true, icon: Icon.merge) { confirmingMerge = true }
+        strategyMenu
+      }
+      .disabled(busy || detail.mergeable == "CONFLICTING")
       if !detail.checksPassing && !detail.checks.isEmpty {
         MutedText("Checks aren't green yet.")
       }
     }
   }
 
-  private var strategySheet: some View {
-    PickerSheet(
-      title: "Merge strategy",
-      options: RemoteMergeStrategy.allCases.map { .init(value: $0.rawValue, label: $0.label) },
-      selected: [strategy.rawValue]
-    ) { value in
-      strategy = RemoteMergeStrategy(rawValue: value) ?? .squash
+  private var strategyMenu: some View {
+    Menu {
+      Picker("Merge strategy", selection: $strategy) {
+        ForEach(RemoteMergeStrategy.allCases, id: \.self) { Text($0.label).tag($0) }
+      }
+    } label: {
+      Image(systemName: Icon.chevronDown)
+        .font(.scaled(size: 12, weight: .semibold))
+        .foregroundStyle(theme.text)
+        .frame(width: 34, height: 32)
+        .overlay(RoundedRectangle(cornerRadius: theme.radiusSmall).stroke(theme.border, lineWidth: 1))
+        .contentShape(.rect)
     }
+    .accessibilityLabel("Merge strategy")
+    .accessibilityValue(strategy.label)
   }
 
   private func stateLabel(_ detail: RemotePullRequestDetail) -> String {

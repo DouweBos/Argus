@@ -233,7 +233,7 @@ private struct MergePullRequestSheet: View {
   @Environment(\.dismiss) private var dismiss
   let detail: ArgusProtocol.PullRequestDetail
   let merge: (RemoteMergeStrategy) -> Void
-  @AppStorage("pullRequestMergeStrategy") private var strategy: RemoteMergeStrategy = .squash
+  @AppStorage(RemoteMergeStrategy.preferenceKey) private var strategy: RemoteMergeStrategy = .squash
 
   var body: some View {
     Form {

@@ -115,6 +115,9 @@ public struct RemotePullRequestDetail: Codable, Hashable, Sendable, Identifiable
 public enum RemoteMergeStrategy: String, Codable, Sendable, CaseIterable {
   case squash, merge, rebase
 
+  /// The last one used, remembered by every app that merges.
+  public static let preferenceKey = "pullRequestMergeStrategy"
+
   public var label: String {
     switch self {
     case .squash: "Squash and merge"
