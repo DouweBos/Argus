@@ -59,7 +59,7 @@ struct SessionView: View {
 
   /// The agent in front, else the session; the line under it says where.
   private var title: String {
-    if let focusedAgent { return Labels.agentName(focusedAgent) }
+    if let focusedAgent { return Labels.agentName(focusedAgent, among: agents) }
     return focusedAgentId == nil ? sessionTitle : label
   }
 
@@ -132,7 +132,7 @@ struct SessionView: View {
       PillTabBar(
         tabs: agents.map { agent in
           PillTab(
-            id: agent.agentId, title: Labels.agentName(agent), symbol: Icon.agent,
+            id: agent.agentId, title: Labels.agentName(agent, among: agents), symbol: Icon.agent,
             indicator: agent.awaiting != nil)
         },
         selection: focusedAgentId, compact: true

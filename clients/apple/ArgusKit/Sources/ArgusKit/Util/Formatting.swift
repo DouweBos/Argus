@@ -50,6 +50,17 @@ public enum Labels {
     return title.isEmpty ? untitledAgent : title
   }
 
+  /// Its title among the tabs it sits with: untitled siblings number by start
+  /// time ("New agent", "New agent 2"), so no two tabs read the same.
+  public static func agentName(_ agent: RemoteAgentStatus, among siblings: [RemoteAgentStatus]) -> String {
+    let name = agentName(agent)
+    guard name == untitledAgent else { return name }
+    let untitled = siblings.filter { agentName($0) == untitledAgent && $0.sessionId == agent.sessionId }
+      .sorted { ($0.createdAt ?? 0, $0.agentId) < ($1.createdAt ?? 0, $1.agentId) }
+    guard let rank = untitled.firstIndex(where: { $0.agentId == agent.agentId }), rank > 0 else { return name }
+    return "\(untitledAgent) \(rank + 1)"
+  }
+
   public static let untitledAgent = "New agent"
 
   /// The pending auto-continue after a usage limit, phrased as a banner.

@@ -141,7 +141,7 @@ struct AgentTabBar: View {
         HStack(spacing: 4) {
           ForEach(agents) { agent in
             AgentTab(
-              agent: agent, selected: agent.agentId == focused,
+              agent: agent, name: Labels.agentName(agent, among: agents), selected: agent.agentId == focused,
               children: childCounts[agent.agentId] ?? 0,
               subagentsRunning: subagentsRunning(agent.agentId),
               select: { select(agent.agentId) }, close: { close(agent.agentId) }
@@ -229,6 +229,8 @@ struct AgentTabBar: View {
 struct AgentTab: View {
   @Environment(\.theme) private var theme
   let agent: RemoteAgentStatus
+  /// Told apart from the bar's other untitled agents.
+  let name: String
   let selected: Bool
   /// Agents this one spawned.
   var children = 0
@@ -255,7 +257,7 @@ struct AgentTab: View {
               .help("Spawned by another agent")
               .accessibilityLabel("Subagent")
           }
-          Text(Labels.agentName(agent)).lineLimit(1)
+          Text(name).lineLimit(1)
           if children > 0 {
             Badge(label: "\(children)", tone: .accent)
               .help("\(children) subagent\(children == 1 ? "" : "s")")
