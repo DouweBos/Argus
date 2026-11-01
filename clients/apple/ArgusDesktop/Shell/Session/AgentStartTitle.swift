@@ -20,13 +20,7 @@ struct AgentStartTitle: View {
   var body: some View {
     VStack(spacing: 6) {
       if let project {
-        HStack(alignment: .firstTextBaseline, spacing: 0) {
-          Text("What should we build in ")
-          projectMenu(project)
-          Text("?")
-        }
-        .font(.scaled(size: 26, weight: .medium))
-        .foregroundStyle(theme.text)
+        AgentStartHeading { projectMenu(project) }
         Button("or start without a project") {
           Task { await model.newScratchPad() }
         }
@@ -35,9 +29,7 @@ struct AgentStartTitle: View {
         .foregroundStyle(theme.textSecondary)
         .help("Start in a scratch pad, outside any project")
       } else {
-        Text("What should we work on?")
-          .font(.scaled(size: 26, weight: .medium))
-          .foregroundStyle(theme.text)
+        AgentStartHeading()
         if let session {
           Text(store.placeName(of: session))
             .font(.scaled(size: 13))

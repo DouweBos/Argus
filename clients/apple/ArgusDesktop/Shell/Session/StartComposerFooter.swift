@@ -2,27 +2,6 @@ import ArgusCore
 import ArgusUI
 import SwiftUI
 
-/// Where a new agent's first message goes: the checkout in front of you, or a
-/// new worktree off a base branch, as the desktop's start composer offers.
-@MainActor @Observable
-final class StartWorkspace {
-  enum Kind: String {
-    case current, worktree
-  }
-
-  var kind: Kind = .current
-  /// The new worktree's base, preselected as the desktop does.
-  let bases = BaseBranchPicker()
-  /// The checkout's local branches, read each time its branch menu opens.
-  private(set) var localBranches: [String]?
-
-  var base: String? { bases.base }
-
-  func loadLocalBranches(repoRoot: String, model: DesktopModel) async {
-    localBranches = await model.localBranches(repoRoot: repoRoot) ?? localBranches ?? []
-  }
-}
-
 extension View {
   /// Puts the workspace strip under a start composer and, for a new worktree, sends there.
   func startWorkspace(_ workspace: StartWorkspace, session: RemoteSession?, replacing agentId: String? = nil)
@@ -62,12 +41,10 @@ struct StartComposerFooter: View {
   let session: RemoteSession
   let workspace: StartWorkspace
   @State private var branchMenuOpen = false
+  /// The checkout's local branches, read each time its branch menu opens.
+  @State private var localBranches: [String]?
 
-  private var currentLabel: String { session.kind == .projectRoot ? "Current checkout" : "This worktree" }
-
-  private var projectRootBranch: String? {
-    store.sessionsByRepo[session.repoRoot]?.first { $0.kind == .projectRoot }?.branch
-  }
+  private var currentLabel: String { StartWorkspace.currentLabel(for: session.kind) }
 
   var body: some View {
     HStack(spacing: 4) {
@@ -91,7 +68,7 @@ struct StartComposerFooter: View {
     .padding(.top, -1)
     .task(id: workspace.kind) {
       guard workspace.kind == .worktree else { return }
-      await workspace.bases.load(repoRoot: session.repoRoot, projectRootBranch: projectRootBranch, store: store)
+      await workspace.loadBases(repoRoot: session.repoRoot, store: store)
     }
     .task {
       if !model.pullRequests.loaded { await model.pullRequests.refresh() }
@@ -109,13 +86,13 @@ struct StartComposerFooter: View {
         currentLabel, subtitle: session.branch, icon: .symbol(Icon.folder), checked: workspace.kind == .current
       ) { pick(.current) }
       ChromeMenuItem(
-        "New worktree", subtitle: "A new branch, named from the prompt", icon: .symbol("folder.badge.plus"),
+        StartWorkspace.worktreeLabel, subtitle: StartWorkspace.worktreeHint, icon: .symbol("folder.badge.plus"),
         checked: workspace.kind == .worktree
       ) { pick(.worktree) }
     } label: { open in
       ComposerPillLabel(
         icon: workspace.kind == .worktree ? "folder.badge.plus" : Icon.folder,
-        title: workspace.kind == .worktree ? "New worktree" : currentLabel, open: open)
+        title: workspace.kind == .worktree ? StartWorkspace.worktreeLabel : currentLabel, open: open)
     }
     .buttonStyle(.argusPlain)
     .fixedSize()
@@ -132,23 +109,18 @@ struct StartComposerFooter: View {
         ChromeMenuItem(branch, checked: branch == workspace.base) { workspace.bases.picked = branch }
       }
     } label: { open in
-      ComposerPillLabel(icon: Icon.branch, title: baseTitle, open: open)
+      ComposerPillLabel(icon: Icon.branch, title: workspace.baseTitle, open: open)
     }
     .buttonStyle(.argusPlain)
     .fixedSize()
     .help("Branch the new worktree starts from")
   }
 
-  private var baseTitle: String {
-    if let base = workspace.base { return "from \(base)" }
-    return workspace.bases.loading ? "Loading branches…" : "Project default"
-  }
-
   /// Switches the checkout in place, through the git panel's checkout so a dirty tree still asks.
   private var currentBranch: some View {
     ChromeMenuButton(isPresented: $branchMenuOpen, edge: .above) {
       ChromeMenuEntry.header("Switch branch")
-      if let branches = workspace.localBranches {
+      if let branches = localBranches {
         if branches.isEmpty { ChromeMenuEntry.note("No branches") }
         for branch in branches {
           ChromeMenuItem(branch, checked: branch == session.branch) { switchBranch(to: branch) }
@@ -164,7 +136,7 @@ struct StartComposerFooter: View {
     .help("The branch this checkout is on")
     .task(id: branchMenuOpen) {
       guard branchMenuOpen else { return }
-      await workspace.loadLocalBranches(repoRoot: session.repoRoot, model: model)
+      localBranches = await model.localBranches(repoRoot: session.repoRoot) ?? localBranches ?? []
     }
   }
 
