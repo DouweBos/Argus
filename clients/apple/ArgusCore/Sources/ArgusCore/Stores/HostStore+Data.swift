@@ -458,7 +458,8 @@ extension HostStore {
     for session in sessionsByRepo[repoRoot] ?? [] { await refreshGitStatus(sessionId: session.id) }
   }
 
-  public func loadDiff(sessionId: String, mode: String) async -> String {
+  /// Throws rather than answering "", which would read as "no changes".
+  public func loadDiff(sessionId: String, mode: String) async throws -> String {
     guard let backend else { return "" }
     struct Params: Encodable {
       let session_id: String
@@ -468,9 +469,9 @@ extension HostStore {
       let diff: String
       let base_branch: String?
     }
-    let result = try? await backend.request(
-      .sessionsDiff, Params(session_id: sessionId, mode: mode), as: Result.self)
-    return result?.diff ?? ""
+    return try await backend.request(
+      .sessionsDiff, Params(session_id: sessionId, mode: mode), as: Result.self
+    ).diff
   }
 
   public func listBranches(sessionId: String) async -> [RemoteGitBranch] {

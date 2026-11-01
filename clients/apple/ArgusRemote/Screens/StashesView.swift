@@ -111,8 +111,12 @@ struct StashesView: View {
   }
 
   private func refresh() async {
-    stashes = await host.listStashes(sessionId: sessionId)
-    tags = await host.listTags(sessionId: sessionId)
+    let listed = await host.listStashes(sessionId: sessionId)
+    let tagged = await host.listTags(sessionId: sessionId)
+    // Left mid-load: an unanswered list isn't an empty one.
+    guard !Task.isCancelled else { return }
+    stashes = listed
+    tags = tagged
     loaded = true
   }
 }

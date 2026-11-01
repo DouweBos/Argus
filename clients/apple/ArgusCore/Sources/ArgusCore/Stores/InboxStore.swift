@@ -61,6 +61,8 @@ public final class InboxStore {
     async let ran = try? backend.request(
       ArgusProtocol.Commands.AutomationRunsList.self, .init())
     let (proposals, runs) = await (listed, ran)
+    // A screen left mid-load answered nothing; settling would read as "none".
+    if proposals == nil && runs == nil && Task.isCancelled { return }
     if let proposals { self.proposals = Self.newestFirst(proposals) }
     if let runs { self.runs = runs.sorted { $0.startedAt > $1.startedAt } }
     loaded = true

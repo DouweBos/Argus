@@ -19,15 +19,22 @@ struct InboxScreen: View {
 
   var body: some View {
     let items = items
+    let phase = LoadPhase(loaded: inbox.loaded, error: inbox.error, isEmpty: items.isEmpty)
     Group {
-      if items.isEmpty {
-        if inbox.loaded { empty } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
-      } else {
-        sections(items)
+      switch phase {
+      case .loading: ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+      case .failed(let error):
+        EmptyState(icon: "exclamationmark.triangle", title: "Inbox unavailable", body: error) {
+          Button("Try Again") { Task { await inbox.refresh() } }
+        }
+      case .empty: empty
+      case .content: sections(items)
       }
     }
     .safeAreaInset(edge: .top) {
-      if let error = inbox.error { Banner(text: error, tone: .danger).padding([.horizontal, .top]) }
+      if phase.showsContent, let error = inbox.error {
+        Banner(text: error, tone: .danger).padding([.horizontal, .top])
+      }
     }
     .navigationTitle("Inbox")
     .navigationSubtitle(

@@ -48,7 +48,11 @@ public struct AgentsOverviewList: View {
     // Over the list, not in it: a row only gets its own height.
     .overlay {
       if agents.isEmpty {
-        EmptyState(icon: Icon.agent, title: "No agents", body: "Start one from a session to see it here.")
+        if host.recentAgentsLoaded {
+          EmptyState(icon: Icon.agent, title: "No agents", body: "Start one from a session to see it here.")
+        } else {
+          Loading(label: "Reading agents…").frame(maxHeight: .infinity)
+        }
       }
     }
     .refreshable { await host.loadRecentAgents() }

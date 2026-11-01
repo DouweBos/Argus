@@ -16,6 +16,8 @@ struct ChangesView: View {
 
   @State private var mode = "branch"
   @State private var diff: String?
+  /// Why the diff didn't load; a failed refresh keeps the last diff on screen.
+  @State private var failure: String?
 
   private var files: [DiffFile] { diff.map(DiffParser.parse) ?? [] }
 
@@ -32,7 +34,12 @@ struct ChangesView: View {
         }
       }
 
-      if diff == nil {
+      if diff == nil, let failure {
+        EmptyState(icon: Icon.warning, title: "Couldn't load changes", body: failure, selectable: true) {
+          Btn(label: "Retry", tone: .secondary, small: true, icon: Icon.refresh) { Task { await refresh() } }
+            .fixedSize()
+        }
+      } else if diff == nil {
         Loading(label: "Loading changes…")
       } else if files.isEmpty {
         EmptyState(
@@ -76,6 +83,7 @@ struct ChangesView: View {
     .liveRefresh(enabled: host.connection == .ready, every: .seconds(5)) { await refresh() }
     .onChange(of: mode) { _, _ in
       diff = nil
+      failure = nil
       Task { await refresh() }
     }
   }
@@ -92,6 +100,15 @@ struct ChangesView: View {
 
   private func refresh() async {
     await host.loadGitStatus(sessionId: sessionId)
-    diff = await host.loadDiff(sessionId: sessionId, mode: mode)
+    let asked = mode
+    do {
+      let loaded = try await host.loadDiff(sessionId: sessionId, mode: asked)
+      // A switch of mode mid-load would otherwise get the other mode's diff.
+      guard asked == mode else { return }
+      diff = loaded
+      failure = nil
+    } catch where !HostStore.isCancellation(error) {
+      if asked == mode { failure = HostStore.describe(error) }
+    } catch {}
   }
 }

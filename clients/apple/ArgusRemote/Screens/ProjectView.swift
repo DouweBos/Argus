@@ -32,7 +32,12 @@ struct ProjectView: View {
       }
       stoppedSection
     }
-    .emptyState(when: groups.isEmpty) {
+    // Agents can name a session before the project's sessions arrive, so
+    // only an answered list means "none".
+    .loadPhase(
+      LoadPhase(loaded: host.sessionsByRepo[repoRoot] != nil, error: nil, isEmpty: groups.isEmpty),
+      loading: "Reading sessions…"
+    ) {
       EmptyState(
         icon: Icon.agent,
         title: "No sessions",

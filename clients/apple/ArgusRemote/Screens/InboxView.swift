@@ -20,19 +20,22 @@ struct InboxView: View {
   }
 
   var body: some View {
+    let items = items
+    let phase = LoadPhase(
+      loaded: proposals.loaded, error: proposals.error,
+      isEmpty: items.isEmpty && proposals.started.isEmpty)
     List {
-      if let error = proposals.error {
-        Banner(text: error, tone: .danger).listRowBackground(Color.clear)
-      }
-
-      if !proposals.loaded {
-        Loading(label: "Reading the inbox…")
-          .listRowBackground(Color.clear)
-      } else {
+      if phase.showsContent {
+        if let error = proposals.error {
+          Banner(text: error, tone: .danger).listRowBackground(Color.clear)
+        }
         groups(items)
       }
     }
-    .emptyState(when: proposals.loaded && items.isEmpty && proposals.started.isEmpty) {
+    .loadPhase(
+      phase, loading: "Reading the inbox…", failedTitle: "Inbox unavailable",
+      retry: { await refresh() }
+    ) {
       EmptyState(
         icon: Icon.inbox,
         title: "Nothing needs you",

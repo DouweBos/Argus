@@ -57,6 +57,8 @@ public final class AutomationsStore {
       .automationsRuns, RunsParams(limit: Self.runLimit), as: RunsResult.self)
 
     let (listed, ran) = await (list, recent)
+    // A screen left mid-load answered nothing; settling would read as "none".
+    if listed == nil && ran == nil && Task.isCancelled { return }
     if let listed { automations = listed.automations }
     if let ran {
       runs = ran.runs
@@ -69,6 +71,10 @@ public final class AutomationsStore {
     } else {
       error = nil
     }
+  }
+
+  public var phase: LoadPhase {
+    LoadPhase(loaded: loaded, error: error, isEmpty: automations.isEmpty && runs.isEmpty)
   }
 
   // MARK: Authoring

@@ -26,9 +26,7 @@ struct ClaudeAccountsView: View {
         .listRowSeparator(.hidden)
       }
 
-      if host.claudeAccounts == nil {
-        Loading(label: "Loading accounts…").listRowSeparator(.hidden)
-      } else if host.claudeAccounts?.isEmpty == false {
+      if host.claudeAccounts?.isEmpty == false {
         Section("Accounts") {
           ForEach(host.claudeAccounts ?? []) { account in
             AccountRow(
@@ -46,7 +44,11 @@ struct ClaudeAccountsView: View {
         }
       }
     }
-    .emptyState(when: host.claudeAccounts?.isEmpty == true) {
+    .loadPhase(
+      LoadPhase(
+        loaded: host.claudeAccounts != nil, error: nil, isEmpty: host.claudeAccounts?.isEmpty ?? true),
+      loading: "Loading accounts…"
+    ) {
       EmptyState(
         icon: Icon.person,
         title: "No Claude accounts",

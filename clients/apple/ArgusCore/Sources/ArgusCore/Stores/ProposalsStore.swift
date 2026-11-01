@@ -125,6 +125,8 @@ public final class ProposalsStore {
       if let latest = await latest { recent = latest.proposals }
       error = nil
     } catch {
+      // A screen left mid-load answered nothing; settling would read as "none".
+      if HostStore.isCancellation(error) { return }
       fail("Couldn't read the inbox", error)
       loaded = true
       return

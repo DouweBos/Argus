@@ -31,7 +31,10 @@ struct DevicesView: View {
         }
       }
     }
-    .emptyState(when: devices.isEmpty) {
+    .loadPhase(
+      LoadPhase(loaded: host.devicesLoaded, error: nil, isEmpty: devices.isEmpty),
+      loading: "Looking for devices…"
+    ) {
       EmptyState(
         icon: Icon.devices,
         title: "No devices running",

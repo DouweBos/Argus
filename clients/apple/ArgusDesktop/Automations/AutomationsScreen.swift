@@ -14,15 +14,22 @@ struct AutomationsScreen: View {
   private var quickRuns: Int { store.runs.count { $0.isQuick } }
 
   var body: some View {
+    let phase = LoadPhase(loaded: store.loaded, error: store.error, isEmpty: store.automations.isEmpty)
     Group {
-      if store.automations.isEmpty {
-        if store.loaded { empty } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
-      } else {
-        table
+      switch phase {
+      case .loading: ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+      case .failed(let error):
+        EmptyState(icon: "exclamationmark.triangle", title: "Automations unavailable", body: error) {
+          Button("Try Again") { Task { await store.refresh() } }
+        }
+      case .empty: empty
+      case .content: table
       }
     }
     .safeAreaInset(edge: .top) {
-      if let error = store.error { Banner(text: error, tone: .danger).padding([.horizontal, .top]) }
+      if phase.showsContent, let error = store.error {
+        Banner(text: error, tone: .danger).padding([.horizontal, .top])
+      }
     }
     .navigationTitle("Automations")
     .navigationSubtitle(AutomationText.plural(store.automations.count, "automation"))

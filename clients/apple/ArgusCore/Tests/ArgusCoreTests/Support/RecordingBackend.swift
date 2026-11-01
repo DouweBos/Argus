@@ -15,6 +15,7 @@ final class RecordingBackend: HostBackend, @unchecked Sendable {
   private var replies: [String: String] = [:]
   private var dynamic: [String: () -> String] = [:]
   private var failing: Set<String> = []
+  private var cancelling: Set<String> = []
   private var log: [Call] = []
   private var subs: [(String, Bool)] = []
   private var seq = 0
@@ -29,6 +30,8 @@ final class RecordingBackend: HostBackend, @unchecked Sendable {
   func reply(_ name: String, _ json: String) { lock.withLock { replies[name] = json } }
   func reply(_ name: String, _ make: @escaping () -> String) { lock.withLock { dynamic[name] = make } }
   func fail(_ name: String) { lock.withLock { _ = failing.insert(name) } }
+  /// Answer as the transport does when the caller's task is cancelled mid-request.
+  func cancel(_ name: String) { lock.withLock { _ = cancelling.insert(name) } }
 
   var calls: [Call] { lock.withLock { log } }
   func calls(_ name: String) -> [Call] { calls.filter { $0.name == name } }
@@ -91,10 +94,11 @@ final class RecordingBackend: HostBackend, @unchecked Sendable {
     _ name: String, _ params: some Encodable, as _: Result.Type
   ) throws -> Result {
     let encoded = (try? JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(params))) ?? .null
-    let (json, fails) = lock.withLock { () -> (String?, Bool) in
+    let (json, fails, cancels) = lock.withLock { () -> (String?, Bool, Bool) in
       log.append(Call(name: name, params: encoded))
-      return (dynamic[name]?() ?? replies[name], failing.contains(name))
+      return (dynamic[name]?() ?? replies[name], failing.contains(name), cancelling.contains(name))
     }
+    if cancels { throw CancellationError() }
     if fails { throw Failure() }
     return try ProtocolCodec.decoder.decode(Result.self, from: Data((json ?? "{}").utf8))
   }

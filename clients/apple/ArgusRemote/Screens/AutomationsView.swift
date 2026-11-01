@@ -17,14 +17,10 @@ struct AutomationsView: View {
 
   var body: some View {
     List {
-      if let error = store.error {
-        Banner(text: error, tone: .danger).listRowBackground(Color.clear)
-      }
-
-      if !store.loaded {
-        Loading(label: "Reading automations…")
-          .listRowBackground(Color.clear)
-      } else if !store.automations.isEmpty || !store.runs.isEmpty {
+      if store.phase.showsContent {
+        if let error = store.error {
+          Banner(text: error, tone: .danger).listRowBackground(Color.clear)
+        }
         if !store.automations.isEmpty {
           Section {
             ForEach(store.automations) { automation in
@@ -67,7 +63,10 @@ struct AutomationsView: View {
         }
       }
     }
-    .emptyState(when: store.loaded && store.automations.isEmpty && store.runs.isEmpty) {
+    .loadPhase(
+      store.phase, loading: "Reading automations…", failedTitle: "Automations unavailable",
+      retry: { await store.refresh() }
+    ) {
       EmptyState(
         icon: Icon.automations,
         title: "No automations",

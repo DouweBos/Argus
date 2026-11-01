@@ -37,6 +37,8 @@ public final class PullRequestsStore {
       ).pull_requests
       error = nil
     } catch {
+      // A screen left mid-load answered nothing; settling would read as "none".
+      if HostStore.isCancellation(error) { return }
       // `gh` missing or unauthenticated is the usual cause, and it is worth
       // saying so rather than showing an empty list.
       fail("Couldn't read pull requests", error)

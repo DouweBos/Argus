@@ -15,6 +15,8 @@ public struct ChatSearchSheet: View {
   @State private var query = ""
   @State private var hits: (query: String, matches: [String: [ChatHistoryMatch]])?
   @State private var counted = false
+  /// The last query the host answered, hits or not, so "No matches" waits for it.
+  @State private var answered: String?
 
   public init(repoRoot: String, open: @escaping (RemoteStoppedAgent) -> Void, searched: @escaping () -> Void) {
     self.repoRoot = repoRoot
@@ -49,7 +51,9 @@ public struct ChatSearchSheet: View {
         }
       }
       .overlay {
-        if shown.isEmpty {
+        if shown.isEmpty, host.stoppedByRepo[repoRoot] == nil || (!needle.isEmpty && answered != needle) {
+          Loading(label: needle.isEmpty ? "Reading saved chats…" : "Searching…").frame(maxHeight: .infinity)
+        } else if shown.isEmpty {
           EmptyState(
             icon: Icon.history, title: needle.isEmpty ? "No saved chats" : "No matches",
             body: needle.isEmpty
@@ -78,10 +82,10 @@ public struct ChatSearchSheet: View {
   private func search(_ needle: String) async {
     guard !needle.isEmpty else { return }
     try? await Task.sleep(for: .milliseconds(200))
-    guard !Task.isCancelled,
-      let matches = await host.searchChatHistory(repoRoot: repoRoot, query: needle),
-      !Task.isCancelled
-    else { return }
-    hits = (needle, matches)
+    guard !Task.isCancelled else { return }
+    let matches = await host.searchChatHistory(repoRoot: repoRoot, query: needle)
+    guard !Task.isCancelled else { return }
+    answered = needle
+    if let matches { hits = (needle, matches) }
   }
 }

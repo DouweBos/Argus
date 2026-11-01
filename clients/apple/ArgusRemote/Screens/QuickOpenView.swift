@@ -57,8 +57,10 @@ struct QuickOpenView: View {
   private func load() async {
     guard host.hasControl else { return }
     async let files = host.listFiles(sessionId: sessionId)
-    async let diff = host.loadDiff(sessionId: sessionId, mode: "branch")
+    async let diff = (try? await host.loadDiff(sessionId: sessionId, mode: "branch")) ?? ""
     let (paths, patch) = await (files, diff)
+    // Left mid-load: an unanswered list isn't an empty one.
+    guard !Task.isCancelled else { return }
     changed = Set(DiffParser.parse(patch).filter { $0.status != .deleted }.map(\.displayPath))
     matcher = FuzzyFileMatcher(paths: paths)
   }

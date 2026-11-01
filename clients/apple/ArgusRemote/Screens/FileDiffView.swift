@@ -13,6 +13,7 @@ struct FileDiffView: View {
 
   @State private var file: DiffFile?
   @State private var loaded = false
+  @State private var failure: String?
 
   var body: some View {
     Screen {
@@ -22,6 +23,11 @@ struct FileDiffView: View {
           MutedText("from \(file.oldPath)", lineLimit: 1)
         }
         DiffHunksView(file: file, collapsesLongHunks: false)
+      } else if let failure {
+        EmptyState(icon: Icon.warning, title: "Couldn't load changes", body: failure, selectable: true) {
+          Btn(label: "Retry", tone: .secondary, small: true, icon: Icon.refresh) { Task { await refresh() } }
+            .fixedSize()
+        }
       } else if loaded {
         EmptyState(icon: Icon.branch, title: "No changes", body: "This file no longer differs.")
       } else {
@@ -43,9 +49,14 @@ struct FileDiffView: View {
   }
 
   private func refresh() async {
-    let diff = await host.loadDiff(sessionId: sessionId, mode: mode)
-    file = DiffParser.parse(diff).first { $0.displayPath == path }
-    loaded = true
+    do {
+      let diff = try await host.loadDiff(sessionId: sessionId, mode: mode)
+      file = DiffParser.parse(diff).first { $0.displayPath == path }
+      failure = nil
+      loaded = true
+    } catch where !HostStore.isCancellation(error) {
+      failure = HostStore.describe(error)
+    } catch {}
   }
 }
 

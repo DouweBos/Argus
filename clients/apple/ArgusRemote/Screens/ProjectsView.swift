@@ -20,8 +20,8 @@ struct ProjectsView: View {
   private var hostName: String { app.identity?.label ?? "Argus" }
 
   private var noProjects: Bool {
-    !app.hosts.isEmpty && app.loaded && host.connection == .ready && host.projects.isEmpty
-      && host.recentAgents.isEmpty
+    !app.hosts.isEmpty && app.loaded && host.connection == .ready && host.projectsLoaded
+      && host.projects.isEmpty && host.recentAgents.isEmpty
   }
 
   var body: some View {
@@ -30,7 +30,7 @@ struct ProjectsView: View {
         EmptyView()
       } else {
         Section { ComputerSwitcher() }
-        if !app.loaded || (host.connection != .ready && host.projects.isEmpty) {
+        if !app.loaded || ((host.connection != .ready || !host.projectsLoaded) && host.projects.isEmpty) {
           Loading(label: "Connecting to \(hostName)…")
             .listRowBackground(Color.clear)
         } else {

@@ -114,7 +114,10 @@ struct BranchesView: View {
   }
 
   private func refresh() async {
-    branches = await host.listBranches(sessionId: sessionId)
+    let listed = await host.listBranches(sessionId: sessionId)
+    // Left mid-load: an unanswered list isn't an empty one.
+    guard !Task.isCancelled else { return }
+    branches = listed
     loaded = true
   }
 }

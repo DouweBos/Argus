@@ -90,18 +90,19 @@ struct PullRequestList: View {
 
   @ViewBuilder
   private var states: some View {
-    if !loaded {
+    switch LoadPhase(loaded: loaded, error: error, isEmpty: pullRequests.isEmpty) {
+    case .loading:
       ProgressView("Asking GitHub…").controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
-    } else if let error, pullRequests.isEmpty {
+    case .failed(let error):
       QuietEmptyState(
         icon: "exclamationmark.triangle", title: "Couldn't fetch pull requests",
         message: PullRequestLabels.explain(error)
       ) {
         Button("Try Again", action: retry)
       }
-    } else if pullRequests.isEmpty {
+    case .empty:
       QuietEmptyState(icon: "arrow.triangle.pull", title: emptyTitle, message: emptyText)
-    } else {
+    case .content:
       list
     }
   }

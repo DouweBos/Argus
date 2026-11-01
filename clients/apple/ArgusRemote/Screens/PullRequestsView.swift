@@ -10,13 +10,10 @@ struct PullRequestsView: View {
   var body: some View {
     let groups = PullRequestBucket.group(store.pullRequests)
     List {
-      if let error = store.error {
-        Banner(text: PullRequestLabels.explain(error), tone: .danger).listRowBackground(Color.clear)
-      }
-
-      if !store.loaded {
-        Loading(label: "Asking GitHub…").listRowBackground(Color.clear)
-      } else if !store.pullRequests.isEmpty {
+      if !store.pullRequests.isEmpty {
+        if let error = store.error {
+          Banner(text: PullRequestLabels.explain(error), tone: .danger).listRowBackground(Color.clear)
+        }
         if !groups.contains(where: { $0.bucket.needsAttention }) {
           Label("Nothing waiting on you right now.", systemImage: Icon.check)
             .foregroundStyle(.secondary)
@@ -38,7 +35,13 @@ struct PullRequestsView: View {
         }
       }
     }
-    .emptyState(when: store.loaded && store.pullRequests.isEmpty) {
+    .loadPhase(
+      LoadPhase(
+        loaded: store.loaded, error: store.error.map(PullRequestLabels.explain),
+        isEmpty: store.pullRequests.isEmpty),
+      loading: "Asking GitHub…", failedTitle: "Couldn't fetch pull requests",
+      retry: { await store.refresh() }
+    ) {
       EmptyState(
         icon: Icon.pullRequests,
         title: "No pull requests",
