@@ -23,6 +23,8 @@ describe("the linked-projects preamble", () => {
   });
 
   it("treats text that merely mentions brackets as plain", () => {
-    expect(parseLinkedProjectsPreamble("[not a preamble] do the thing")).toBeNull();
+    expect(
+      parseLinkedProjectsPreamble("[not a preamble] do the thing"),
+    ).toBeNull();
   });
 });

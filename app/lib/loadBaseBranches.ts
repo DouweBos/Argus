@@ -1,4 +1,4 @@
-import { baseBranchOptions, pickDefaultBaseBranch } from "./baseBranch";
+import { baseBranchOptions, pickDefaultBaseBranch } from "@argus/client-core";
 import { listAllBranches, readArgusConfig } from "./ipc";
 
 export interface LoadedBaseBranches {

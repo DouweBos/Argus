@@ -38,7 +38,7 @@ import type {
 import {
   buildLinkedProjectsPreamble,
   parseLinkedProjectsPreamble,
-} from "../lib/linkedProjects";
+} from "@argus/client-core";
 import { useAgentsStore } from "../stores/agents";
 import { useConnectionStore } from "../stores/connection";
 import { usePromptsStore } from "../stores/prompts";

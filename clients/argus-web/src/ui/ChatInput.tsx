@@ -31,7 +31,7 @@ import {
   type PendingImage,
 } from "../lib/images";
 import { hasHardwareKeyboard } from "../lib/keyboard";
-import { buildLinkedProjectsPreamble } from "../lib/linkedProjects";
+import { buildLinkedProjectsPreamble } from "@argus/client-core";
 import type {
   RemoteModelInfo,
   RemotePermissionMode,
