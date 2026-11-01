@@ -63,22 +63,33 @@ extension HostStore {
 
   /// Stage everything and commit. Returns git's own output, or nil when it
   /// refused — the message is already on `lastError` by then.
-  public func commit(sessionId: String, message: String, amend: Bool = false) async -> String? {
+  public func commit(
+    sessionId: String, message: String, amend: Bool = false, signOff: Bool = false,
+    sign: Bool = false
+  ) async -> String? {
     guard let backend else { return nil }
     struct Params: Encodable {
       let session_id: String
       let message: String
       /// Omitted unless set, so an older computer never sees a key it rejects.
       let amend: Bool?
+      let sign_off: Bool?
+      let sign: Bool?
     }
     struct Result: Decodable { let output: String }
     do {
       let output = try await backend.request(
         .sessionsCommit,
-        Params(session_id: sessionId, message: message, amend: amend ? true : nil),
+        Params(
+          session_id: sessionId, message: message, amend: amend ? true : nil,
+          sign_off: signOff ? true : nil, sign: sign ? true : nil),
         as: Result.self
       ).output
       hooks.track(.workLanded(action: amend ? .amend : .commit, success: true))
+      hooks.track(
+        .commitComposed(
+          hasDescription: CommitMessage(parsing: message).hasDescription, signOff: signOff,
+          signed: sign))
       await loadGitStatus(sessionId: sessionId)
 
       return output
@@ -88,6 +99,38 @@ extension HostStore {
 
       return nil
     }
+  }
+
+  /// Who a session's commits are authored as, and whether they can be signed.
+  public struct CommitIdentity: Decodable, Sendable, Equatable {
+    public let name: String
+    public let email: String
+    public let can_sign: Bool
+
+    public init(name: String, email: String, can_sign: Bool) {
+      self.name = name
+      self.email = email
+      self.can_sign = can_sign
+    }
+
+    /// `Name <email>`, or nil when git has neither.
+    public var label: String? {
+      switch (name.isEmpty, email.isEmpty) {
+      case (true, true): nil
+      case (false, true): name
+      case (true, false): email
+      case (false, false): "\(name) <\(email)>"
+      }
+    }
+  }
+
+  /// Nil from an older computer that doesn't know the method — the composer
+  /// then just doesn't show who commits.
+  public func commitIdentity(sessionId: String) async -> CommitIdentity? {
+    guard let backend else { return nil }
+    struct Params: Encodable { let session_id: String }
+    return try? await backend.request(
+      .sessionsCommitIdentity, Params(session_id: sessionId), as: CommitIdentity.self)
   }
 
   public struct PushResult: Decodable, Sendable {

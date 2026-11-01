@@ -102,6 +102,8 @@ public enum StoreEvent: Sendable, Equatable {
   case agentControlled(action: AgentAction)
   /// `strategy` is only meaningful for a merge — nil elsewhere.
   case workLanded(action: LandAction, success: Bool, strategy: String? = nil)
+  /// Which composer parts a successful commit used.
+  case commitComposed(hasDescription: Bool, signOff: Bool, signed: Bool)
   case claudeAccountChanged(action: AccountAction)
   case automationEdited(action: AutomationAction)
   case runActed(action: RunAction)

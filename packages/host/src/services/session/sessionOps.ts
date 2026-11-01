@@ -438,10 +438,17 @@ export async function gitCommit(
   id: string,
   message: string,
   amend: boolean,
+  options: { signOff?: boolean; sign?: boolean } = {},
 ): Promise<string> {
   const args = ["commit", "-m", message];
   if (amend) {
     args.push("--amend");
+  }
+  if (options.signOff) {
+    args.push("--signoff");
+  }
+  if (options.sign) {
+    args.push("-S");
   }
 
   const wt = sessionPath(id);
@@ -486,6 +493,17 @@ export async function getGitAuthor(id: string): Promise<[string, string]> {
   }
 
   return [name, email];
+}
+
+/** Whether git has a key to sign this session's commits with. */
+export async function canSignCommits(id: string): Promise<boolean> {
+  try {
+    const key = await git(sessionPath(id), ["config", "user.signingkey"]);
+
+    return key.trim().length > 0;
+  } catch {
+    return false;
+  }
 }
 
 /** Return the full commit message of the most recent commit in a session. */

@@ -159,6 +159,7 @@ enum TelemetryEvent {
   case agentControlled(action: AgentAction)
   /// `strategy` is only meaningful for a merge — nil elsewhere.
   case workLanded(action: LandAction, success: Bool, strategy: String? = nil)
+  case commitComposed(hasDescription: Bool, signOff: Bool, signed: Bool)
   case deviceWatched(durationMs: Int, interacted: Bool)
   /// The image on screen in the viewer was copied or its share sheet opened.
   case imageViewerUsed(action: ImageViewerOverlay.Action)
@@ -256,6 +257,7 @@ enum TelemetryEvent {
     case .permissionAnswered: "ios_permission_answered"
     case .agentControlled: "ios_agent_controlled"
     case .workLanded: "ios_work_landed"
+    case .commitComposed: "ios_commit_composed"
     case .deviceWatched: "ios_device_watched"
     case .imageViewerUsed: "ios_image_viewer_used"
     case .claudeAccountChanged: "ios_claude_account_changed"
@@ -344,6 +346,8 @@ enum TelemetryEvent {
         "action": action.rawValue, "success": success,
         "strategy": strategy ?? "none",
       ]
+    case .commitComposed(let hasDescription, let signOff, let signed):
+      ["has_description": hasDescription, "sign_off": signOff, "signed": signed]
     case .deviceWatched(let durationMs, let interacted):
       ["duration_ms": durationMs, "interacted": interacted]
     case .imageViewerUsed(let action):

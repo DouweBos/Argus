@@ -170,6 +170,8 @@ import {
   getSessionFullDiff,
   getSessionMergeBlockers,
   getSessionUntrackedDiff,
+  canSignCommits,
+  getGitAuthor,
   gitCommit,
   gitStashApply,
   gitStashDrop,
@@ -1934,7 +1936,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { diff, base_branch: base };
   },
   "sessions.commit": async (params) => {
-    const { session_id, message, stage_all, amend } = parse(
+    const { session_id, message, stage_all, amend, sign_off, sign } = parse(
       "sessions.commit",
       params,
     );
@@ -1946,10 +1948,23 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         await stageAll(session_id);
       }
 
-      return await gitCommit(session_id, message, amend ?? false);
+      return await gitCommit(session_id, message, amend ?? false, {
+        signOff: sign_off,
+        sign,
+      });
     });
 
     return { output };
+  },
+
+  "sessions.commit_identity": async (params) => {
+    const { session_id } = parse("sessions.commit_identity", params);
+    requireSession(session_id);
+    const [[name, email], canSign] = await control(() =>
+      Promise.all([getGitAuthor(session_id), canSignCommits(session_id)]),
+    );
+
+    return { name, email, can_sign: canSign };
   },
   "sessions.stashes": async (params) => {
     const { session_id } = parse("sessions.stashes", params);

@@ -5127,19 +5127,25 @@ extension ArgusProtocol {
       public var message: String
       public var stageAll: Bool?
       public var amend: Bool?
+      public var signOff: Bool?
+      public var sign: Bool?
 
       enum CodingKeys: String, CodingKey {
         case sessionId = "session_id"
         case message = "message"
         case stageAll = "stage_all"
         case amend = "amend"
+        case signOff = "sign_off"
+        case sign = "sign"
       }
 
-      public init(sessionId: String, message: String, stageAll: Bool? = nil, amend: Bool? = nil) {
+      public init(sessionId: String, message: String, stageAll: Bool? = nil, amend: Bool? = nil, signOff: Bool? = nil, sign: Bool? = nil) {
         self.sessionId = sessionId
         self.message = message
         self.stageAll = stageAll
         self.amend = amend
+        self.signOff = signOff
+        self.sign = sign
       }
 
       public func encode(to encoder: Encoder) throws {
@@ -5148,6 +5154,8 @@ extension ArgusProtocol {
         try c.encode(message, forKey: .message)
         try c.encodeIfPresent(stageAll, forKey: .stageAll)
         try c.encodeIfPresent(amend, forKey: .amend)
+        try c.encodeIfPresent(signOff, forKey: .signOff)
+        try c.encodeIfPresent(sign, forKey: .sign)
       }
     }
 
@@ -5203,6 +5211,48 @@ extension ArgusProtocol {
       public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(diff, forKey: .diff)
+      }
+    }
+
+    public struct SessionsCommitIdentityParams: Codable, Sendable {
+      public var sessionId: String
+
+      enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+      }
+
+      public init(sessionId: String) {
+        self.sessionId = sessionId
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(sessionId, forKey: .sessionId)
+      }
+    }
+
+    public struct SessionsCommitIdentityResult: Codable, Sendable {
+      public var name: String
+      public var email: String
+      public var canSign: Bool
+
+      enum CodingKeys: String, CodingKey {
+        case name = "name"
+        case email = "email"
+        case canSign = "can_sign"
+      }
+
+      public init(name: String, email: String, canSign: Bool) {
+        self.name = name
+        self.email = email
+        self.canSign = canSign
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(name, forKey: .name)
+        try c.encode(email, forKey: .email)
+        try c.encode(canSign, forKey: .canSign)
       }
     }
 
@@ -7291,6 +7341,12 @@ extension ArgusProtocol {
       public typealias Params = ArgusProtocol.MethodsTypes.SessionsCommitDiffParams
       public typealias Result = ArgusProtocol.MethodsTypes.SessionsCommitDiffResult
       public static let name = "sessions.commit_diff"
+    }
+
+    public enum SessionsCommitIdentity: RemoteCommand {
+      public typealias Params = ArgusProtocol.MethodsTypes.SessionsCommitIdentityParams
+      public typealias Result = ArgusProtocol.MethodsTypes.SessionsCommitIdentityResult
+      public static let name = "sessions.commit_identity"
     }
 
     public enum SessionsCompareBranches: RemoteCommand {

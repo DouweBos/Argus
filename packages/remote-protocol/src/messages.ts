@@ -465,7 +465,12 @@ export const MethodParams = {
     stage_all: z.boolean().optional(),
     /** Fold into the last commit instead of making a new one. */
     amend: z.boolean().optional(),
+    /** Add a `Signed-off-by` trailer for the committer. */
+    sign_off: z.boolean().optional(),
+    /** Sign the commit with the computer's configured key. */
+    sign: z.boolean().optional(),
   }),
+  "sessions.commit_identity": z.object({ session_id: z.string() }),
   "sessions.stashes": z.object({ session_id: z.string() }),
   /** Apply a stash; `drop` also removes it once applied (a pop). */
   "sessions.stash_apply": z.object({
@@ -936,6 +941,13 @@ export const MethodResult = {
   }),
   /** Git's own output, so a refusal reads the same as it does in a terminal. */
   "sessions.commit": z.object({ output: z.string() }),
+  /** Who a commit is authored as; empty strings when git has no identity. */
+  "sessions.commit_identity": z.object({
+    name: z.string(),
+    email: z.string(),
+    /** A signing key is configured, so `sign` can work. */
+    can_sign: z.boolean(),
+  }),
   "sessions.stashes": z.object({ stashes: z.array(GitStashEntry) }),
   /** Git's own output, so a conflicting apply reads as it does in a terminal. */
   "sessions.stash_apply": z.object({ output: z.string() }),

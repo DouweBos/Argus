@@ -262,6 +262,8 @@ extension TelemetryEvent {
       self = .agentControlled(action: action)
     case .workLanded(let action, let success, let strategy):
       self = .workLanded(action: action, success: success, strategy: strategy)
+    case .commitComposed(let hasDescription, let signOff, let signed):
+      self = .commitComposed(hasDescription: hasDescription, signOff: signOff, signed: signed)
     case .claudeAccountChanged(let action):
       self = .claudeAccountChanged(action: action)
     case .automationEdited(let action):

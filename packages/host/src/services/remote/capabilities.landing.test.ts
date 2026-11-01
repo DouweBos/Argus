@@ -27,6 +27,7 @@ const WRITES = [
 
 const READS = [
   "sessions.merge_blockers",
+  "sessions.commit_identity",
   "sessions.stashes",
   "sessions.tags",
   "github.pull_requests",
@@ -63,5 +64,6 @@ describe("landing work over the wire", () => {
     expect(METHOD_SCOPE["github.pull_request_template"].kind).toBe("denied");
     expect(METHOD_SCOPE["sessions.stashes"].kind).toBe("denied");
     expect(METHOD_SCOPE["sessions.tags"].kind).toBe("denied");
+    expect(METHOD_SCOPE["sessions.commit_identity"].kind).toBe("denied");
   });
 });

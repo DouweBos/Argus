@@ -236,6 +236,7 @@ export const REMOTE_METHODS = {
    *  merging lands it on the base branch, which the host still refuses for a
    *  protected branch or a conflicting tree. */
   "sessions.commit": "control",
+  "sessions.commit_identity": "monitor",
   "sessions.push": "control",
   "sessions.merge_base": "control",
   /** Stashes and tags are reads; applying or dropping a stash rewrites the
