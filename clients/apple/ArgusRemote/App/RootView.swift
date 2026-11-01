@@ -16,6 +16,8 @@ struct RootView: View {
   @State private var proposals: ProposalsStore?
   @State private var pullRequests: PullRequestsStore?
   @State private var imageViewer = ImageViewerState()
+  @State private var sidebar = SidebarFit.State(shown: true, autoHidden: false)
+  @State private var splitWidth: CGFloat = 0
 
   @Environment(\.scenePhase) private var scenePhase
   @State private var askingConsent = false
@@ -164,10 +166,10 @@ struct RootView: View {
   /// reading stay a tap away.
   private var columns: some View {
     @Bindable var router = router
-    return NavigationSplitView {
+    return NavigationSplitView(columnVisibility: sidebarVisibility) {
       SessionSidebar()
         .navigationTitle("Argus")
-        .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 380)
+        .navigationSplitViewColumnWidth(min: 240, ideal: Self.sidebarWidth, max: 380)
     } detail: {
       NavigationStack(path: $router.detailStack) {
         DetailRoot()
@@ -175,7 +177,32 @@ struct RootView: View {
       }
     }
     .navigationSplitViewStyle(.balanced)
+    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+      splitWidth = width
+      fitSidebar()
+    }
+    .onChange(of: router.panelBesideChat) { fitSidebar() }
   }
+
+  /// The chat keeps its room beside the side panel: on an 11" iPad in portrait
+  /// the sidebar gives way while the panel is open, as the Mac's does.
+  private func fitSidebar() {
+    let cramped =
+      router.panelBesideChat
+      && SidebarFit.panelCramped(
+        width: splitWidth, sidebar: Self.sidebarWidth, panel: SidePanelColumn.widths.lowerBound,
+        chat: SessionView.minChatWidth)
+    let next = SidebarFit.fit(sidebar, cramped: cramped)
+    if next != sidebar { withAnimation(.snappy(duration: 0.25)) { sidebar = next } }
+  }
+
+  private var sidebarVisibility: Binding<NavigationSplitViewVisibility> {
+    Binding(
+      get: { sidebar.shown ? .all : .detailOnly },
+      set: { sidebar.shown = $0 != .detailOnly })
+  }
+
+  private static let sidebarWidth: CGFloat = 300
 
   private var tabs: some View {
     @Bindable var router = router

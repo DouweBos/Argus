@@ -142,13 +142,11 @@ extension MainWindow {
   /// the side panel keeps its place; it comes back once there's space.
   private func fitColumns() {
     let cramped = model.route.gitView != nil && windowWidth > 0 && windowWidth < Self.roomyGitWidth
-    if cramped, columns == .all {
-      columns = .detailOnly
-      sidebarAutoHidden = true
-    } else if !cramped, sidebarAutoHidden {
-      if columns == .detailOnly { columns = .all }
-      sidebarAutoHidden = false
-    }
+    let now = SidebarFit.State(shown: columns != .detailOnly, autoHidden: sidebarAutoHidden)
+    let next = SidebarFit.fit(now, cramped: cramped)
+    guard next != now else { return }
+    columns = next.shown ? .all : .detailOnly
+    sidebarAutoHidden = next.autoHidden
   }
 
   private var contentMinWidth: CGFloat {

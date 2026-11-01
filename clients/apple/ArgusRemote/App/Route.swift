@@ -274,6 +274,15 @@ final class Router {
   /// Per session, so each one's panel is as it was left.
   var panelPaths: [String: [Route]] = [:]
   var panelWidth: CGFloat = 380
+
+  /// The side panel is open beside a session's chat in the detail column.
+  var panelBesideChat: Bool {
+    guard isSplit, panelOpen else { return false }
+    switch detailStack.last {
+    case .session, .agent: return true
+    default: return false
+    }
+  }
   /// The agent tab in front on each session screen, keyed by session (or by
   /// agent, before its session is known); kept for the same reason.
   var focusedAgents: [String: String] = [:]

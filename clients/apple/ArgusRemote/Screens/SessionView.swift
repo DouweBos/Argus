@@ -24,7 +24,7 @@ struct SessionView: View {
   @State private var showingDetails = false
   @State private var width: CGFloat = 0
   /// What the chat keeps when the side panel is open beside it.
-  private static let minChatWidth: CGFloat = 380
+  static let minChatWidth: CGFloat = 380
   /// Tabs this screen has shown; one that stops stays until closed or the screen is left, as on the Mac.
   @State private var shown: [String] = []
   @State private var closed: Set<String> = []
@@ -142,6 +142,14 @@ struct SessionView: View {
         .onChange(of: focusedAgentId, initial: true) { _, id in
           guard let id else { return }
           withAnimation(.snappy) { proxy.scrollTo(id, anchor: .center) }
+        }
+        // Or as the side panel opens beside it and the strip narrows.
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { _ in
+          guard let id = focusedAgentId else { return }
+          // Once the panel's slide-in settles; a scroll asked for mid-resize is dropped.
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(.snappy) { proxy.scrollTo(id, anchor: .center) }
+          }
         }
     }
   }
