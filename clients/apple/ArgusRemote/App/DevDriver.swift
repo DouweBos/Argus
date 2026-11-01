@@ -10,7 +10,8 @@
   /// `cmd-<n>.json` is run once and answered in `out-<n>.json`. Ops: `pair`
   /// (`code`), `route` (`path`: an `argus://` path like `/sessions/<id>/agents`,
   /// or the older `name:arg` with a `section`), `back`, `tree`, `press` (accessibility
-  /// label, optional `index`), `type` (`text`, into the first text field or view).
+  /// label, optional `index`), `type` (`text`, into the first text field or view; `clear` empties it first),
+  /// `dismiss` (the keyboard).
   @MainActor
   final class DevDriver {
     private let dir: URL
@@ -145,7 +146,9 @@
         return [
           "ok": true,
           "labels": elements().map {
-            command["types"] as? Bool == true ? "\($0.label) <\(type(of: $0.element))>" : $0.label
+            command["types"] as? Bool == true ? "\($0.label) <\(type(of: $0.element))>"
+              : command["frames"] as? Bool == true ? "\($0.label) @\(NSCoder.string(for: $0.element.accessibilityFrame))"
+              : $0.label
           },
         ]
       case "press":
@@ -182,7 +185,13 @@
         guard inputs.indices.contains(index) else { return ["ok": false, "error": "no field"] }
         let field = inputs[index]
         field.becomeFirstResponder()
+        if command["clear"] as? Bool == true, let input = field as? UIKeyInput {
+          while input.hasText { input.deleteBackward() }
+        }
         (field as? UIKeyInput)?.insertText(text)
+        return ["ok": true]
+      case "dismiss":
+        window?.endEditing(true)
         return ["ok": true]
       default:
         return ["ok": false, "error": "unknown op"]
