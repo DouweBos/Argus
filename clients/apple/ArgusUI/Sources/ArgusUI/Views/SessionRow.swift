@@ -10,7 +10,7 @@ public struct SessionRow: View {
   let git: RemoteGitStatus?
   /// The phone also says which branch and how many agents, since it has no hover card.
   var detailed: Bool
-  /// On a selected iPad sidebar row, whose fill is the tint under white labels.
+  /// On a selected iPad sidebar row: the system colours its labels for the fill, tinted or greyed.
   var selected: Bool
 
   public init(
@@ -33,12 +33,12 @@ public struct SessionRow: View {
       VStack(alignment: .leading, spacing: detailed ? 2 : 1) {
         Text(activity.title)
           .font(Self.titleFont)
-          .foregroundStyle(selected ? .white : theme.text)
+          .foregroundStyle(selected ? AnyShapeStyle(.primary) : AnyShapeStyle(theme.text))
           .lineLimit(1)
         if let detail {
           Text(detail)
             .font(Self.detailFont)
-            .foregroundStyle(selected ? .white.opacity(0.75) : session.status == .error ? theme.error : theme.textMuted)
+            .foregroundStyle(selected ? AnyShapeStyle(.secondary) : AnyShapeStyle(session.status == .error ? theme.error : theme.textMuted))
             .lineLimit(1)
         }
       }
@@ -64,7 +64,7 @@ public struct SessionRow: View {
         if let lastActive = activity.lastActive {
           Text(ChromeText.shortAge(lastActive))
             .font(Self.detailFont.monospacedDigit())
-            .foregroundStyle(selected ? .white.opacity(0.75) : theme.textMuted)
+            .foregroundStyle(selected ? AnyShapeStyle(.secondary) : AnyShapeStyle(theme.textMuted))
             // The title truncates first; an age broken across lines reads as nothing.
             .fixedSize()
         }
