@@ -17,6 +17,7 @@ public struct AgentTranscriptView: View {
 
   @State private var loadingOlder = false
   @State private var atBottom = true
+  @State private var overflows = false
   /// Opening an agent lands at the newest message; the first content pass
   /// jumps there without animating so it never reads as a scroll.
   @State private var hasLandedAtBottom = false
@@ -86,7 +87,12 @@ public struct AgentTranscriptView: View {
         guard count > 0 else { return }
         if !hasLandedAtBottom {
           hasLandedAtBottom = true
-          proxy.scrollTo(Self.bottomAnchor, anchor: .bottom)
+          // After the new rows lay out, and only when they overflow: scrolling a
+          // chat that fits to its bottom leaves a blank band above it on iOS.
+          Task { @MainActor in
+            await Task.yield()
+            if overflows { proxy.scrollTo(Self.bottomAnchor, anchor: .bottom) }
+          }
           return
         }
         // Follow the tail only while the reader is already at it. Yanking
@@ -143,6 +149,11 @@ public struct AgentTranscriptView: View {
           >= geometry.contentSize.height - 60
       } action: { _, isAtBottom in
         atBottom = isAtBottom
+      }
+      .onScrollGeometryChange(for: Bool.self) { geometry in
+        geometry.contentSize.height > geometry.containerSize.height
+      } action: { _, value in
+        overflows = value
       }
     }
     .task(id: agentKey) { await start() }
