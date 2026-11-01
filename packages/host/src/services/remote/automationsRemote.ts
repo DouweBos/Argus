@@ -44,6 +44,7 @@ import {
   requireAutomation,
   updateAutomation,
 } from "../automation/manager";
+import { reportPreview } from "../automation/reportPreview";
 import {
   saveScratchRunAsAutomation,
   startScratchRun,
@@ -99,6 +100,7 @@ export function toRemoteAutomationRun(run: AutomationRun): RemoteAutomationRun {
     error: run.error,
     unread_report: hasUnreadReport(run),
     report_read: run.report_read,
+    report_preview: reportPreview(run),
     host_session_id: run.host_session_id,
     host_agent_id: run.host_agent_id,
   };

@@ -13208,6 +13208,7 @@ extension ArgusProtocol {
     public var error: String?
     public var unreadReport: Bool
     public var reportRead: Bool?
+    public var reportPreview: String?
     public var hostSessionId: String?
     public var hostAgentId: String?
 
@@ -13224,11 +13225,12 @@ extension ArgusProtocol {
       case error = "error"
       case unreadReport = "unread_report"
       case reportRead = "report_read"
+      case reportPreview = "report_preview"
       case hostSessionId = "host_session_id"
       case hostAgentId = "host_agent_id"
     }
 
-    public init(id: String, automationId: String, automationName: String, isQuick: Bool, status: RemoteAutomationRunStatus, triggerReason: String, startedAt: Double, finishedAt: Double? = nil, costUsd: Double? = nil, error: String? = nil, unreadReport: Bool, reportRead: Bool? = nil, hostSessionId: String? = nil, hostAgentId: String? = nil) {
+    public init(id: String, automationId: String, automationName: String, isQuick: Bool, status: RemoteAutomationRunStatus, triggerReason: String, startedAt: Double, finishedAt: Double? = nil, costUsd: Double? = nil, error: String? = nil, unreadReport: Bool, reportRead: Bool? = nil, reportPreview: String? = nil, hostSessionId: String? = nil, hostAgentId: String? = nil) {
       self.id = id
       self.automationId = automationId
       self.automationName = automationName
@@ -13241,6 +13243,7 @@ extension ArgusProtocol {
       self.error = error
       self.unreadReport = unreadReport
       self.reportRead = reportRead
+      self.reportPreview = reportPreview
       self.hostSessionId = hostSessionId
       self.hostAgentId = hostAgentId
     }
@@ -13259,6 +13262,7 @@ extension ArgusProtocol {
       try c.encode(error, forKey: .error)
       try c.encode(unreadReport, forKey: .unreadReport)
       try c.encodeIfPresent(reportRead, forKey: .reportRead)
+      try c.encodeIfPresent(reportPreview, forKey: .reportPreview)
       try c.encode(hostSessionId, forKey: .hostSessionId)
       try c.encode(hostAgentId, forKey: .hostAgentId)
     }

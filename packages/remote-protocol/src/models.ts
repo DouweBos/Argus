@@ -837,6 +837,8 @@ export const RemoteAutomationRun = z.object({
   /** Opened or dismissed — a failed run read this way leaves the inbox.
    *  Optional so an older host's runs still parse. */
   report_read: z.boolean().optional(),
+  /** First line of the report, truncated; null without one. Absent from older hosts. */
+  report_preview: z.string().nullable().optional(),
   /** The run's own session, so a client can open the agent that did the work. */
   host_session_id: z.string().nullable(),
   host_agent_id: z.string().nullable(),

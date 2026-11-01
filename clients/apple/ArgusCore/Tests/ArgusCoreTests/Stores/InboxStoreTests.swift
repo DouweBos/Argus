@@ -120,6 +120,18 @@ struct InboxStoreTests {
     #expect(items.actionCount == 4)
   }
 
+  @Test("a phone row previews the report, and an older computer's the trigger")
+  func remoteSummary() throws {
+    let runs = try Self.decode(
+      "[" + [
+        Self.remoteRun("new", "succeeded", unread: true, read: #","report_preview":"Nothing on fire.""#),
+        Self.remoteRun("old", "succeeded", unread: true),
+        Self.remoteRun("empty", "succeeded", read: #","report_preview":null"#),
+      ].joined(separator: ",") + "]",
+      as: [RemoteAutomationRun].self)
+    #expect(runs.map(\.summary) == ["Nothing on fire.", "manual", "manual"])
+  }
+
   @Test("proposals:changed replaces the list and a run event upserts one run")
   func liveUpdates() async throws {
     let host = HostStore()

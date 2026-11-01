@@ -308,8 +308,16 @@ public struct RemoteAutomationRun: Codable, Hashable, Sendable, Identifiable {
   public var unreadReport: Bool
   /// Opened or dismissed. Absent from older computers, which never said.
   public var reportRead: Bool?
+  /// First line of the report, truncated. Absent from older computers and runs without one.
+  public var reportPreview: String?
   public var hostSessionId: String?
   public var hostAgentId: String?
+
+  /// What a list row says under the name: the report, else why the run fired.
+  public var summary: String {
+    if let reportPreview, !reportPreview.isEmpty { return reportPreview }
+    return triggerReason
+  }
 
   /// Queued or running — the two states a Cancel button applies to.
   public var isActive: Bool {
@@ -327,6 +335,7 @@ public struct RemoteAutomationRun: Codable, Hashable, Sendable, Identifiable {
     case costUsd = "cost_usd"
     case unreadReport = "unread_report"
     case reportRead = "report_read"
+    case reportPreview = "report_preview"
     case hostSessionId = "host_session_id"
     case hostAgentId = "host_agent_id"
   }

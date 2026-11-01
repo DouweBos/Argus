@@ -178,7 +178,7 @@ private struct InboxRunRow: View {
         Image(systemName: icon).foregroundStyle(tone == .danger ? theme.error : theme.textSecondary)
         VStack(alignment: .leading, spacing: 2) {
           Text(run.automationName).lineLimit(1)
-          Text(run.error ?? run.triggerReason)
+          Text(run.error ?? run.summary)
             .font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(2)
         }
         Spacer(minLength: 6)

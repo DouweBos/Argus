@@ -162,6 +162,8 @@ public struct RunRow: View {
           .font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(1)
         if let error = run.error, !error.isEmpty {
           Text(error).font(.scaled(.footnote)).foregroundStyle(theme.error).lineLimit(2)
+        } else if let preview = run.reportPreview, !preview.isEmpty {
+          Text(preview).font(.scaled(.footnote)).foregroundStyle(.secondary).lineLimit(2)
         }
       }
       Spacer(minLength: 6)

@@ -75,6 +75,30 @@ describe("the run a phone sees", () => {
     expect(toRemoteAutomationRun(failed).unread_report).toBe(false);
   });
 
+  it("previews the report's first line, kept short", () => {
+    const run = getAutomationRun(runWithReport());
+    expect(run && toRemoteAutomationRun(run).report_preview).toBe(
+      "Nothing on fire.",
+    );
+
+    const long = updateRun(runWithReport(), {
+      report_markdown: null,
+      report_blocks: [
+        { type: "markdown", text: `\n## ${"x".repeat(400)}\nmore` },
+      ],
+    });
+    const preview = toRemoteAutomationRun(long).report_preview ?? "";
+    expect(preview).toHaveLength(160);
+    expect(preview.startsWith("xxx")).toBe(true);
+    expect(preview.endsWith("…")).toBe(true);
+  });
+
+  it("previews nothing for a run without a report", () => {
+    const run = createRun("a1", "running", "manual");
+
+    expect(toRemoteAutomationRun(run).report_preview).toBeNull();
+  });
+
   it("says nothing about a run it does not have", () => {
     expect(markRemoteRunRead("no-such-run")).toBeNull();
   });
