@@ -89,6 +89,9 @@ export class ControlHandler {
     }
   >();
 
+  /** Text every subagent gets at start, via the `SubagentStart` hook. */
+  private subagentContext: string | null = null;
+
   constructor(private readonly agentId: string) {}
 
   // -------------------------------------------------------------------------
@@ -99,7 +102,10 @@ export class ControlHandler {
    * Build a `control_request` with `subtype: "initialize"`.
    * Returns the JSON string to write to stdin.
    */
-  buildInitializeRequest(appendSystemPrompt?: string): string {
+  buildInitializeRequest(
+    appendSystemPrompt?: string,
+    subagentContext?: string,
+  ): string {
     const requestId = crypto.randomUUID();
     this.initializeRequestId = requestId;
 
@@ -113,6 +119,14 @@ export class ControlHandler {
     };
     if (appendSystemPrompt) {
       request.appendSystemPrompt = appendSystemPrompt;
+    }
+    // `--append-system-prompt` only reaches the main loop; Agent-tool and
+    // Workflow subagents get this through a hook answered over stdio instead.
+    if (subagentContext) {
+      this.subagentContext = subagentContext;
+      request.hooks = {
+        SubagentStart: [{ hookCallbackIds: [SUBAGENT_CONTEXT_HOOK_ID] }],
+      };
     }
 
     return JSON.stringify({
@@ -222,6 +236,15 @@ export class ControlHandler {
     emit: (channel: string, data: unknown) => void,
   ): string | null {
     const payload = request.request;
+
+    if (payload.subtype === "hook_callback") {
+      return buildHookResponse(
+        request.request_id,
+        payload.callback_id === SUBAGENT_CONTEXT_HOOK_ID
+          ? this.subagentContext
+          : null,
+      );
+    }
 
     if (payload.subtype !== "can_use_tool") {
       // For non-permission control requests (initialize, elicitation, etc.)
@@ -490,6 +513,29 @@ export class ControlHandler {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+export const SUBAGENT_CONTEXT_HOOK_ID = "argus_subagent_context";
+
+/** Answer a hook callback; no context is an empty, no-op hook result. */
+function buildHookResponse(requestId: string, context: string | null): string {
+  const response: ControlResponse = {
+    type: "control_response",
+    response: {
+      subtype: "success",
+      request_id: requestId,
+      response: context
+        ? {
+            hookSpecificOutput: {
+              hookEventName: "SubagentStart",
+              additionalContext: context,
+            },
+          }
+        : {},
+    },
+  };
+
+  return JSON.stringify(response);
+}
 
 /**
  * Build a serialised `control_response` message.

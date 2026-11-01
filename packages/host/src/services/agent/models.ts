@@ -179,6 +179,8 @@ export interface AgentSession {
   prePlanPermissionMode?: string | null;
   /** Claude account the subprocess was spawned with. */
   accountId?: string;
+  /** Spawned with the conductor guide in its prompt and its subagents'. */
+  conductorGuide?: boolean;
 }
 
 // ---------------------------------------------------------------------------

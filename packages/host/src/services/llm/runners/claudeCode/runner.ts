@@ -128,6 +128,7 @@ export class ClaudeCodeRunner implements LlmRunner {
       child,
       stdin: child.stdin,
       combinedSystemPrompt: args.systemPrompt,
+      subagentContext: args.subagentContext,
       permissionPreHook: args.permissionPreHook,
     });
   }

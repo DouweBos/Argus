@@ -124,6 +124,8 @@ export interface EventMap {
     session_kind: SessionKind;
     /** Took the session's warm spare instead of spawning. */
     warm: boolean;
+    /** Its prompt, and its subagents', carry the conductor guide. */
+    conductor_guide: boolean;
   };
   spare_discarded: {
     reason:

@@ -96,7 +96,7 @@ import { AccountSection } from "./AccountSection";
 import { AutomationDefaults } from "./AutomationDefaults";
 import { ClaudeAccountSection } from "./ClaudeAccountSection";
 import { CustomRunnersSection } from "./CustomRunnersSection";
-import { FollowUpSuggestionsToggle } from "./FollowUpSuggestionsToggle";
+import { HostSettingToggle } from "./HostSettingToggle";
 import { HostsSection } from "./HostsSection";
 import { ImportCliChatsField } from "./ImportCliChatsField";
 import { IntegrationsSection } from "./IntegrationsSection";
@@ -483,7 +483,20 @@ function PermissionsSection() {
             ))}
           </div>
         </SettingsScreenField>
-        <FollowUpSuggestionsToggle />
+        <HostSettingToggle
+          setting="follow_up_suggestions"
+          label="Follow-up suggestions"
+          caption="When an agent finishes, a small model reads its last message and suggests replies you can pick in the chat input."
+        >
+          Suggest replies
+        </HostSettingToggle>
+        <HostSettingToggle
+          setting="conductor_guide"
+          label="Device guide"
+          caption="In projects with simulators, emulators or a browser, tell agents and every subagent they spawn to drive devices with conductor. Applies to agents started after the change."
+        >
+          Teach agents to use conductor
+        </HostSettingToggle>
         <WarmAgentsSetting />
         <SettingsScreenField
           label="Start new agents in"

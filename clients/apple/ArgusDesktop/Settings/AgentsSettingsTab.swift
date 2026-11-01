@@ -49,6 +49,19 @@ struct AgentsSettingsTab: View {
         }
       }
 
+      Section("Device guide") {
+        if let settings = host.settings {
+          VStack(alignment: .leading, spacing: 4) {
+            Toggle("Teach agents to use conductor", isOn: conductorGuide(settings))
+            SettingsCaption(
+              "In projects with simulators, emulators or a browser, tell agents and every subagent they spawn "
+                + "to drive devices with conductor. Applies to agents started after the change.")
+          }
+        } else {
+          SettingsLoading()
+        }
+      }
+
       Section("Warm agents") {
         if let settings = host.settings {
           VStack(alignment: .leading, spacing: 4) {
@@ -137,6 +150,18 @@ struct AgentsSettingsTab: View {
         Task {
           await host.save(.followUpSuggestions, ["follow_up_suggestions": .bool(next)]) {
             $0.followUpSuggestions = next
+          }
+        }
+      })
+  }
+
+  private func conductorGuide(_ settings: ArgusProtocol.AppSettings) -> Binding<Bool> {
+    Binding(
+      get: { settings.conductorGuide != false },
+      set: { next in
+        Task {
+          await host.save(.conductorGuide, ["conductor_guide": .bool(next)]) {
+            $0.conductorGuide = next
           }
         }
       })

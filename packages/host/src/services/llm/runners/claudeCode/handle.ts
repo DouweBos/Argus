@@ -43,6 +43,8 @@ export interface ClaudeCodeHandleInit {
   child: ChildProcess;
   stdin: Writable;
   combinedSystemPrompt: string;
+  /** Added to every subagent's context when it starts. */
+  subagentContext?: string;
   permissionPreHook?: PermissionPreHook;
 }
 
@@ -104,6 +106,7 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
     // waitForInit()` before sending user prompts.
     const initRequest = this.controlHandler.buildInitializeRequest(
       init.combinedSystemPrompt || undefined,
+      init.subagentContext || undefined,
     );
     this.safeWriteLine(initRequest);
   }

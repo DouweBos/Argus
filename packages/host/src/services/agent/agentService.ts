@@ -24,18 +24,13 @@
  *     - `agent:permission-mode-changed:{agentId}` permission-mode swap
  */
 
+import type { ConversationMessage } from "./conversation/types";
 import type {
   AgentInfo,
   AgentResult,
   AgentSession,
   AgentStatusValue,
 } from "./models";
-import type {
-  AndroidDeviceSession,
-  BrowserSession,
-  SimulatorReservation,
-} from "../../state";
-import type { ConversationMessage } from "./conversation/types";
 import type { NewSpare } from "./spares";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
 import type { LlmRunner, PermissionPreHook } from "../llm/runners/types";
@@ -94,6 +89,11 @@ import {
 } from "./limitResume";
 import { clearQueue } from "./messageQueue";
 import { resultSubtype } from "./models";
+import {
+  buildRuntimeSection,
+  conductorGuideEnabled,
+  resolveRuntimePlatforms,
+} from "./runtimePrompt";
 import { clearSpares, hasSpare, killSpare, takeSpare } from "./spares";
 import { spawnConfigStamp } from "./spawnStamp";
 import { rememberStartOptions } from "./startOptions";
@@ -349,6 +349,7 @@ export async function startAgent(
       permission_mode: permissionMode ?? "default",
       session_kind: argusSession.kind,
       warm: false,
+      conductor_guide: agentSession.conductorGuide === true,
     });
   }
 
@@ -421,6 +422,7 @@ function announceStart(
     permission_mode: request.permissionMode ?? "default",
     session_kind: argusSession.kind,
     warm: true,
+    conductor_guide: agent.conductorGuide === true,
   });
   emitAgentStatus(agent.agentId, agent.status);
   info(
@@ -628,18 +630,23 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
   } catch {
     // Config missing or invalid — non-fatal.
   }
-  const resolvedPlatforms =
-    platformsOverride && platformsOverride.length > 0
-      ? platformsOverride
-      : (configPlatforms ?? []);
-
-  const runtimeSection = buildRuntimeSection({
-    platforms: new Set(resolvedPlatforms),
-    iosReservation: appState.simulatorReservations.get(agentId) ?? null,
-    androidDevices: [...appState.androidDevices.values()],
-    browserSession: appState.browserSessions.get(sessionId) ?? null,
-    browserUrl,
-  });
+  const iosReservation = appState.simulatorReservations.get(agentId) ?? null;
+  const browserSession = appState.browserSessions.get(sessionId) ?? null;
+  const runtimeSection = conductorGuideEnabled()
+    ? buildRuntimeSection({
+        platforms: resolveRuntimePlatforms({
+          override: platformsOverride,
+          configPlatforms,
+          repoRoot: argusSession.repo_root,
+          hasIosReservation: iosReservation !== null,
+          hasBrowserSession: browserSession !== null,
+        }),
+        iosReservation,
+        androidDevices: [...appState.androidDevices.values()],
+        browserSession,
+        browserUrl,
+      })
+    : null;
 
   const systemPrompt = getSystemPromptForKind(argusSession.kind);
   const projectContext = `## Current Project\n\nYou are working in **${argusSession.repo_root}**. When using MCP tools that accept a \`project_path\` parameter, always pass \`${argusSession.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.\n\nYour own agent ID is \`${agentId}\`. The Argus MCP already knows who you are, so you normally don't need to pass it — \`parent_agent_id\` on \`spawn_agent\`/\`create_session\`/\`send_agent_message\` defaults to you automatically.`;
@@ -750,6 +757,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     permissionMode: plan.permissionMode,
     resumeRef: resumeSessionId ?? null,
     systemPrompt: combinedPrompt,
+    subagentContext: runtimeSection ?? undefined,
     mcpServers,
     debugLogPath,
     env,
@@ -784,6 +792,7 @@ async function spawnAgentSession(args: SpawnArgs): Promise<AgentSession> {
     model: plan.model,
     permissionMode: plan.permissionMode,
     accountId,
+    conductorGuide: runtimeSection !== null,
   };
   if (args.register) {
     appState.agents.set(agentId, agentSession);
@@ -1916,169 +1925,8 @@ export function respondToPermission(
 }
 
 // ---------------------------------------------------------------------------
-// Helpers — runtime section + status emission
+// Helpers — status emission
 // ---------------------------------------------------------------------------
-
-interface RuntimeContext {
-  platforms: Set<RuntimePlatform>;
-  iosReservation: SimulatorReservation | null;
-  androidDevices: AndroidDeviceSession[];
-  browserSession: BrowserSession | null;
-  browserUrl: string | null;
-}
-
-function buildRuntimeSection(ctx: RuntimeContext): string {
-  const {
-    platforms,
-    iosReservation,
-    androidDevices,
-    browserSession,
-    browserUrl,
-  } = ctx;
-  const lines: string[] = [
-    "## Runtime Environment",
-    "",
-    "You are running inside **Argus**, an agentic IDE. The user can see your code editor, a terminal, and one or more **runtime views** side by side. These runtime views show the live state of the app or website you are working on — the user is looking at them right now.",
-  ];
-
-  if (platforms.has("ios")) {
-    lines.push("", "### iOS Simulator", "");
-    if (iosReservation) {
-      lines.push(
-        `Your iOS simulator is **${iosReservation.deviceName}** (UDID \`${iosReservation.udid}\`) — reserved exclusively for this agent. Other parallel agents have their own separate simulators; never try to use theirs.`,
-        "",
-        "Conductor automatically targets your simulator when you run `conductor <cmd>` with no `--device` flag — do **not** call `conductor start-device` yourself.",
-        "",
-        `When you launch the app via a native tool that doesn't use conductor (e.g. \`pnpm ios\`, \`npx expo run:ios\`, \`xcrun simctl\`), you MUST target your simulator explicitly by name or UDID, otherwise it will install on whatever simulator happens to be booted first and collide with other agents. Examples:`,
-        `- \`pnpm ios --device "${iosReservation.deviceName}"\``,
-        `- \`xcrun simctl install ${iosReservation.udid} <path/to/app>\``,
-        "",
-        `The UDID is also available in your environment as \`$CONDUCTOR_IOS_DEVICE_ID\`.`,
-      );
-    } else {
-      lines.push(
-        "An iOS simulator is attached to your session. It will be provisioned automatically the first time you run a `conductor` command — do **not** call `conductor start-device` yourself.",
-      );
-    }
-  }
-
-  if (platforms.has("tvos")) {
-    lines.push(
-      "",
-      "### tvOS Simulator",
-      "",
-      "A tvOS simulator may be available. Use `conductor list-devices` to find a booted tvOS device, then target it explicitly with `--device <udid>` (or `--device-name`). Native installs (e.g. `xcrun simctl install <udid> <path/to/app>`) must also target the UDID directly.",
-    );
-  }
-
-  if (platforms.has("android")) {
-    lines.push("", "### Android Emulator", "");
-    if (androidDevices.length > 0) {
-      for (const d of androidDevices) {
-        lines.push(
-          `An Android ${d.type} **${d.deviceName}** (serial \`${d.serial}\`) is booted. Target it with \`conductor <command> --device ${d.serial}\`.`,
-        );
-      }
-    } else {
-      lines.push(
-        "An Android emulator may be available. Use `conductor list-devices` to check for booted Android devices. Conductor commands work the same way for Android — just target the Android device ID with `--device`.",
-      );
-    }
-  }
-
-  if (platforms.has("web")) {
-    const browserDefault = browserUrl
-      ? `, currently loaded at **${browserUrl}**`
-      : "";
-    // `browserSession` is the live attachment signal — `platforms` only means
-    // the project targets web, not that a browser view is actually mounted.
-    const intro = browserSession
-      ? `A web browser view is attached to your session${browserDefault}. A live CDP session is already wired to this session's webview. The user can see this browser view in the runtime panel. When the user asks about "the website", "the page", or "what site we're on", they are referring to this web browser view.`
-      : `This project targets the web. A web browser view is not currently attached to your session — the user can open one in the runtime panel${browserDefault ? ` (it defaults to **${browserUrl}**)` : ""}. Once a browser view is open, the commands below work against it. When the user asks about "the website" or "the page", they mean that browser view.`;
-    lines.push(
-      "",
-      "### Web Browser",
-      "",
-      intro,
-      "",
-      "To interact with the web browser view, use `conductor` with `--device web`:",
-      "- `conductor inspect --device web` — see what's on the web page (ARIA tree, element names)",
-      "- `conductor capture-ui --device web` — screenshot + ARIA tree in one call (prefer this when you need both)",
-      "- `conductor take-screenshot --device web` — viewport screenshot. Add `--full-page` to capture the entire scrollable document in one image.",
-      '- `conductor tap-on "element" --device web` — click an element in the web page',
-      '- `conductor input-text "text" --device web` — type text into the focused field',
-      "- `conductor open-link <url> --device web` — navigate the web browser to a URL",
-      "- `conductor set-viewport --preset mobile|tablet|desktop --device web` (or explicit `--width N --height N`) — resize the browser viewport. Useful for responsive checks; the current URL is preserved across the resize, so one browser session can be screenshotted at multiple form factors.",
-      "",
-      "Argus wires `--device web` directly to this session's webview via CDP — conductor does **not** spawn a separate browser window. If the webview is reloaded or the runtime panel is torn down, run `conductor daemon-stop --device web` once to clear the stale connection; the next command will reconnect automatically.",
-      "",
-      "This repo may already ship tooling that emulates a browser (e.g. a dev server with a headless Chrome/Playwright/Puppeteer instance, or an existing CDP-exposing process). Prefer connecting `conductor` to such an emulator over CDP rather than spawning a new web browser — reuse the running instance instead of standing up a duplicate.",
-    );
-  }
-
-  lines.push("", "### Using conductor", "");
-  lines.push(
-    "Use the `conductor` CLI to interact with and observe all runtime views. Run `conductor --help` for usage, or `conductor workspace info` to auto-detect the project type, bundle IDs, Metro port, and available devices before you start.",
-    "",
-    "Device targeting:",
-  );
-  if (platforms.has("ios")) {
-    lines.push(
-      '- **iOS simulator**: `conductor <command>` (no `--device` flag needed — auto-provisioned on first use). To target a specific booted device when multiple exist, use `--device-name "<name>"` (e.g. a reference simulator running a different build).',
-    );
-  }
-  if (platforms.has("tvos")) {
-    lines.push(
-      "- **tvOS simulator**: `conductor <command> --device <tvos-udid>` (run `conductor list-devices` to find the UDID).",
-    );
-  }
-  if (platforms.has("android")) {
-    lines.push(
-      "- **Android emulator**: `conductor <command> --device <android-id>` (run `conductor list-devices` to find the ID).",
-    );
-  }
-  if (platforms.has("web")) {
-    lines.push("- **Web browser**: `conductor <command> --device web`");
-  }
-
-  if (
-    platforms.has("ios") ||
-    platforms.has("android") ||
-    platforms.has("tvos")
-  ) {
-    lines.push(
-      "",
-      "Common commands for mobile UI validation:",
-      "- `conductor capture-ui --output <path>` — one shot: screenshot + accessibility hierarchy + a11y snapshot. **Prefer this over separate `take-screenshot` + `inspect` calls** when you need both the image and the element tree; it's faster and one round-trip.",
-      "- `conductor take-screenshot --output <path>` — just the image. Read the file back to see it.",
-      "- `conductor inspect` — just the accessibility tree (element IDs, labels, text). Add `--at <x,y>` to query the topmost element at a point.",
-      '- `conductor tap-on "<element>"` — tap by text/accessibility label. Supports relational matchers (`--below`, `--right-of`, …) and state filters (`--enabled`, `--focused`).',
-      '- `conductor input-text "<text>"` — type into the focused text field.',
-      "- `conductor swipe <direction>` / `conductor scroll <direction>` / `conductor scroll-until-visible <element>` — navigate lists and scroll views.",
-      "- `conductor foreground-app` — print the bundle ID / package name of the app currently in foreground.",
-      "- `conductor launch-app <bundleId>` — launch. Add `--clear-state` to reset app data, `--clear-keychain` (iOS) to wipe credentials, `--argument key=value` to pass launch args.",
-      '- `conductor assert-visible "<element>"` / `assert-not-visible "<element>"` — quick invariants for tests.',
-      "- `conductor hide-keyboard` — dismiss the on-screen keyboard.",
-      "",
-      '**Batching multi-step interactions:** when you need to drive several steps in a row (tap → tap → input → assert), prefer `conductor run-sequence --file plan.json` over a chain of individual Bash calls. The JSON shape is `{"steps":[{"cmd":"tap-on","args":["Login"]}, …]}`; it runs serially against one session and stops on the first failure. Many fewer process spawns, much cheaper on tokens, and the failure point is unambiguous.',
-      "",
-      "**React Native projects:** after editing JS, run `conductor metro reload` to refresh the bundle without restarting native — much faster than rebuilding. `conductor metro stop` kills the bundler if you need a clean restart. For debugging the running app, `conductor debug evaluate '<expr>'` runs JS in the Hermes/Fusebox runtime, `conductor debug component-tree` prints the React tree, and `conductor network logs` shows recent HTTP traffic.",
-      "",
-      "**When something breaks:** `conductor logs --recent 200` (or `--source metro` / `--source device`) for app/device logs without leaving anything streaming. `conductor crashes list` / `conductor crashes show <id>` for native crashes. `conductor capture-ui` to confirm what's actually on screen right now.",
-      "",
-      "**Recording flows:** if you want to capture an interaction as a reproducible YAML flow, `conductor flow record start --out path.yaml`, drive the app (manually or via more conductor commands), then `conductor flow record finish`. Replay later with `conductor run-flow path.yaml`.",
-      "",
-      "When validating UI changes, capture the before/after state and compare. If the project has reference screenshots or a design spec (commonly under `legacy/`, `docs/`, or referenced in the project config), compare against those rather than relying on memory.",
-    );
-  }
-
-  lines.push(
-    "",
-    "When the user asks about what they see, what's on screen, or what the app/website is showing, use conductor to answer from the device's current state.",
-  );
-
-  return lines.join("\n");
-}
 
 function emitAgentStatus(agentId: string, status: AgentStatusValue): void {
   const session = appState.agents.get(agentId);

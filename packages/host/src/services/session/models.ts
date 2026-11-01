@@ -311,9 +311,8 @@ export interface ArgusConfig {
   save_chat_history?: boolean | null;
   /**
    * Runtime platforms this project targets (e.g. `["ios", "web"]`).
-   * When set, the agent system prompt only describes these runtimes instead
-   * of the full iOS + Android + tvOS + Web set. If omitted, iOS, Android,
-   * and Web are described (backward compatible — tvOS is opt-in).
+   * Agents (and their subagents) get the conductor guide for these runtimes.
+   * If omitted they are inferred from the repo; `[]` means no guide.
    */
   platforms?: RuntimePlatform[] | null;
   /**

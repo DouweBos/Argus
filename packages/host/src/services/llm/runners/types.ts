@@ -94,6 +94,11 @@ export interface LlmRunnerSpawnArgs {
   resumeRef: string | null;
   /** Combined system prompt (runner-agnostic; renderer-side instructions). */
   systemPrompt: string;
+  /**
+   * Context every subagent the agent spawns gets at start (Claude Code: the
+   * `SubagentStart` hook), since the system prompt only reaches the main loop.
+   */
+  subagentContext?: string;
   /** MCP server map. Runner ignores when capabilities.supportsMcp is false. */
   mcpServers: McpServers;
   /** Path to the per-agent debug log file the runner should write to. */

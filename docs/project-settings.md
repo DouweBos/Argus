@@ -174,9 +174,14 @@ in particular.
 
 ## `platforms` — runtime targets
 
-Tells the agent system prompt which runtimes to describe. If omitted,
-iOS, Android, and Web are included; declare `platforms` to opt into
-tvOS or to narrow the set to only what your project ships.
+Tells agents which runtimes to drive. Every agent in a project with a
+runtime, and every subagent it spawns, gets a guide to the `conductor`
+CLI for those platforms. If omitted, Argus infers them from the project
+(Expo or React Native means iOS and Android, a web framework or a `dev`
+script means Web, native `ios/` and `android/` folders count too); a
+project with none gets no guide. Declare `platforms` to opt into tvOS or
+to narrow the set to what your project ships. `[]` turns the guide off for
+the project; **Device guide** in app settings turns it off everywhere.
 
 ```jsonc
 "platforms": ["ios", "tvos"]

@@ -1583,6 +1583,7 @@ extension ArgusProtocol {
     public var serverAutoInstallUpdates: Bool?
     public var automationsEnabled: Bool?
     public var followUpSuggestions: Bool?
+    public var conductorGuide: Bool?
     public var warmAgents: Int?
     public var launchRoute: AppSettingsLaunchRoute?
     public var linearMarkStarted: Bool?
@@ -1622,6 +1623,7 @@ extension ArgusProtocol {
       case serverAutoInstallUpdates = "server_auto_install_updates"
       case automationsEnabled = "automations_enabled"
       case followUpSuggestions = "follow_up_suggestions"
+      case conductorGuide = "conductor_guide"
       case warmAgents = "warm_agents"
       case launchRoute = "launch_route"
       case linearMarkStarted = "linear_mark_started"
@@ -1653,7 +1655,7 @@ extension ArgusProtocol {
       case gitIgnoreWhitespace = "git_ignore_whitespace"
     }
 
-    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, warmAgents: Int? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, defaultModel: String? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
+    public init(worktreesBaseDir: String? = nil, automationWorktreesBaseDir: String? = nil, defaultLlm: AppSettingsDefaultLlm? = nil, mcpServers: [String: [String: JSONValue]]? = nil, updaterChannel: AppSettingsUpdaterChannel? = nil, serverAutoInstallUpdates: Bool? = nil, automationsEnabled: Bool? = nil, followUpSuggestions: Bool? = nil, conductorGuide: Bool? = nil, warmAgents: Int? = nil, launchRoute: AppSettingsLaunchRoute? = nil, linearMarkStarted: Bool? = nil, linearReport: AppSettingsLinearReport? = nil, defaultAutonomy: AutonomyLevel? = nil, maxConcurrentAutomationSessions: Double? = nil, automationDailyBudgetUsd: Double? = nil, automationAllowedCommands: [String]? = nil, automationAllowedTools: [String]? = nil, remoteEnabled: Bool? = nil, remoteProvider: AppSettingsRemoteProvider? = nil, remoteTailscaleEnabled: Bool? = nil, remoteCloudflareEnabled: Bool? = nil, remoteTunnelMode: AppSettingsRemoteTunnelMode? = nil, remoteTunnelToken: String? = nil, remotePublicUrl: String? = nil, remoteNotifyWhenFocused: Bool? = nil, theme: AppSettingsTheme? = nil, colorTheme: ColorTheme? = nil, importCliChats: Bool? = nil, uiScale: AppSettingsUiScale? = nil, defaultPermissionMode: AppSettingsDefaultPermissionMode? = nil, defaultModel: String? = nil, customEditors: [AppSettingsCustomEditorsItem]? = nil, huddleDisplayName: String? = nil, telemetryMode: AppSettingsTelemetryMode? = nil, gitFileView: AppSettingsGitFileView? = nil, gitDiffLayout: AppSettingsGitDiffLayout? = nil, gitIgnoreWhitespace: Bool? = nil) {
       self.worktreesBaseDir = worktreesBaseDir
       self.automationWorktreesBaseDir = automationWorktreesBaseDir
       self.defaultLlm = defaultLlm
@@ -1662,6 +1664,7 @@ extension ArgusProtocol {
       self.serverAutoInstallUpdates = serverAutoInstallUpdates
       self.automationsEnabled = automationsEnabled
       self.followUpSuggestions = followUpSuggestions
+      self.conductorGuide = conductorGuide
       self.warmAgents = warmAgents
       self.launchRoute = launchRoute
       self.linearMarkStarted = linearMarkStarted
@@ -1703,6 +1706,7 @@ extension ArgusProtocol {
       try c.encodeIfPresent(serverAutoInstallUpdates, forKey: .serverAutoInstallUpdates)
       try c.encodeIfPresent(automationsEnabled, forKey: .automationsEnabled)
       try c.encodeIfPresent(followUpSuggestions, forKey: .followUpSuggestions)
+      try c.encodeIfPresent(conductorGuide, forKey: .conductorGuide)
       try c.encodeIfPresent(warmAgents, forKey: .warmAgents)
       try c.encodeIfPresent(launchRoute, forKey: .launchRoute)
       try c.encodeIfPresent(linearMarkStarted, forKey: .linearMarkStarted)
