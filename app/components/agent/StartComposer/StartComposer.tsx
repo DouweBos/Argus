@@ -1,12 +1,12 @@
 import type { LinearIssueContext } from "../../../lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Button,
+  BranchChip,
   FileMentionPicker,
-  Icons,
   ImageAttachmentStrip,
   SlashCommandList,
-  TextArea,
+  StartComposer as Composer,
+  StartWorkspaceChip,
 } from "@argus/peacock";
 import { openDesignViewer } from "../../../lib/designViewer";
 import { ACCEPTED_IMAGE_TYPES } from "../../../lib/imageAttachments";
@@ -27,7 +27,6 @@ import { AgentOptionChips } from "./AgentOptionChips";
 import { DesignChips } from "./DesignChips";
 import { IssueChips } from "./IssueChips";
 import styles from "./StartComposer.module.css";
-import { BaseBranchChip, WorkspaceChip } from "./WorkspaceChips";
 import {
   clearComposerStash,
   peekComposerStash,
@@ -187,16 +186,6 @@ export function StartComposer({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (assist.handlePickerKey(e)) {
-      return;
-    }
-    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-      e.preventDefault();
-      submit();
-    }
-  };
-
   const openDesign = (url: string) => {
     stashComposer(sessionId, {
       designs: designDraft.designs,
@@ -211,98 +200,54 @@ export function StartComposer({
   const currentLabel = isProjectRoot ? "Current checkout" : "This worktree";
 
   return (
-    <form
-      className={styles.composer}
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-    >
-      <div
-        className={styles.promptStack}
-        onDragOver={(e) => {
-          if (Array.from(e.dataTransfer?.types ?? []).includes("Files")) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "copy";
-          }
-        }}
-        onDrop={handleDrop}
-      >
-        {assist.suggestions.length > 0 && (
-          <SlashCommandList
-            header="Commands"
-            items={assist.suggestions}
-            selectedIndex={assist.suggestionIndex}
-            onSelect={assist.handleSelectSuggestion}
-            onSelectedIndexChange={assist.handleSuggestionIndexChange}
-          />
-        )}
-        {assist.mention.mentionContext && assist.suggestions.length === 0 && (
-          <FileMentionPicker
-            headerText={assist.mention.headerText}
-            items={assist.mention.items}
-            selectedIndex={assist.mention.selectedIndex}
-            onSelect={(i) => assist.mention.selectItem(promptRef.current, i)}
-            onSelectedIndexChange={assist.handleMentionIndexChange}
-          />
-        )}
-        <div className={styles.promptWrap}>
-          <TextArea
-            ref={promptRef}
-            autoFocus={autoFocus}
-            aria-label="Prompt"
-            placeholder="What should we work on?"
-            rows={4}
-            value={prompt}
-            disabled={!startable}
-            onChange={assist.handleChange}
-            onKeyDown={handleKeyDown}
-            onPaste={issueDraft.pasteOr(
-              designDraft.pasteOr(images.handlePaste),
-            )}
-            onSelect={() => assist.mention.updateMentions(promptRef.current)}
-          />
-          <button
-            aria-label="Attach image"
-            className={styles.attachBtn}
-            type="button"
-            title="Attach image"
-            disabled={!startable}
-            onClick={() => images.fileInputRef.current?.click()}
-          >
-            <Icons.PaperclipIcon />
-          </button>
-        </div>
-      </div>
-
-      <ImageAttachmentStrip
-        items={images.images}
-        onPreview={images.handlePreview}
-        onRemove={images.handleRemove}
-      />
-      <input
-        ref={images.fileInputRef}
-        accept={ACCEPTED_IMAGE_TYPES}
-        className={styles.hiddenFileInput}
-        multiple
-        tabIndex={-1}
-        type="file"
-        onChange={images.handleFileSelect}
-      />
-
-      <div className={styles.footer}>
-        <div className={styles.chips}>
+    <Composer
+      above={
+        <>
+          {assist.suggestions.length > 0 && (
+            <SlashCommandList
+              header="Commands"
+              items={assist.suggestions}
+              selectedIndex={assist.suggestionIndex}
+              onSelect={assist.handleSelectSuggestion}
+              onSelectedIndexChange={assist.handleSuggestionIndexChange}
+            />
+          )}
+          {assist.mention.mentionContext && assist.suggestions.length === 0 && (
+            <FileMentionPicker
+              headerText={assist.mention.headerText}
+              items={assist.mention.items}
+              selectedIndex={assist.mention.selectedIndex}
+              onSelect={(i) => assist.mention.selectItem(promptRef.current, i)}
+              onSelectedIndexChange={assist.handleMentionIndexChange}
+            />
+          )}
+        </>
+      }
+      attachments={
+        <ImageAttachmentStrip
+          items={images.images}
+          onPreview={images.handlePreview}
+          onRemove={images.handleRemove}
+        />
+      }
+      autoFocus={autoFocus}
+      canSubmit={canSubmit}
+      chips={
+        <>
           {canBranch && (
-            <WorkspaceChip
+            <StartWorkspaceChip
               currentBranch={session?.branch ?? null}
               currentLabel={currentLabel}
               value={workspace}
-              onChange={setPickedWorkspace}
-              onPickExistingBranch={() => setExistingBranchOpen(true)}
+              onChange={(next) =>
+                next === "existing"
+                  ? setExistingBranchOpen(true)
+                  : setPickedWorkspace(next)
+              }
             />
           )}
           {isWorktree && (
-            <BaseBranchChip
+            <BranchChip
               loading={base.loading}
               options={base.options}
               value={baseBranch}
@@ -321,24 +266,40 @@ export function StartComposer({
             onPermissionModeChange={options.handlePermissionModeChange}
             onToggleLinkedProject={options.handleToggleLinkedProject}
           />
-        </div>
-        <Button
-          variant="primary"
-          type="submit"
-          leading={<Icons.AgentStartIcon size={12} />}
-          disabled={!canSubmit}
-        >
-          {startLabel(submitting, isWorktree ? issueCount : 0)}
-        </Button>
-      </div>
-
+        </>
+      }
+      disabled={!startable}
+      prompt={prompt}
+      promptRef={promptRef}
+      submitLabel={startLabel(submitting, isWorktree ? issueCount : 0)}
+      onAttach={() => images.fileInputRef.current?.click()}
+      onDrop={handleDrop}
+      onPaste={issueDraft.pasteOr(designDraft.pasteOr(images.handlePaste))}
+      onPromptChange={(_, e) => assist.handleChange(e)}
+      onPromptKeyDown={(e) => {
+        assist.handlePickerKey(e);
+      }}
+      onSelect={() => assist.mention.updateMentions(promptRef.current)}
+      onSubmit={() => {
+        submit().catch(() => {});
+      }}
+    >
+      <input
+        ref={images.fileInputRef}
+        accept={ACCEPTED_IMAGE_TYPES}
+        className={styles.hiddenFileInput}
+        multiple
+        tabIndex={-1}
+        type="file"
+        onChange={images.handleFileSelect}
+      />
       {existingBranchOpen && repoRoot && (
         <ExistingBranchDialog
           repoRoot={repoRoot}
           onClose={() => setExistingBranchOpen(false)}
         />
       )}
-    </form>
+    </Composer>
   );
 }
 

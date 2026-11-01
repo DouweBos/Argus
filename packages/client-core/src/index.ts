@@ -13,6 +13,7 @@ export * from "./terminals/terminalFeed";
 export * from "./routes/design";
 export * from "./routes/route";
 export * from "./startAgent";
+export * from "./mcpServers";
 export * from "./transcript/backgroundTasks";
 export * from "./transcript/messageText";
 export * from "./transcript/toolGroups";

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Button,
+  ChatHistoryList,
   IconBadge,
   Icons,
   projectAccent,
@@ -11,11 +12,10 @@ import {
 import { useArgusJson } from "../../../hooks/useArgusJson";
 import { useArgusVersionCheck } from "../../../hooks/useArgusVersionCheck";
 import { useChatHistory } from "../../../hooks/useChatHistory";
-import { createHeadSession } from "../../../lib/ipc";
+import { createHeadSession, searchChatHistory } from "../../../lib/ipc";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
-import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { StartComposer } from "../../agent/StartComposer";
 import { SetupConfigDialog } from "../../sidebar/SetupConfigDialog";
 import { ActiveAgentsPanel } from "../ActiveAgentsPanel";
@@ -201,7 +201,7 @@ export function RepoHomeScreen({
             entries={history.entries}
             title="Chat history"
             meta={`${history.entries.length} sessions`}
-            repoRoot={repoRoot}
+            search={(query) => searchChatHistory(repoRoot, query)}
             onClearAll={() => history.clearAll()}
             onDelete={(historyId) => history.remove(historyId)}
             onResume={onResumeHistory}

@@ -2,15 +2,19 @@ import { useMemo, useState } from "react";
 import {
   Button,
   CalloutCard,
+  ChatHistoryList,
   IconBadge,
   Icons,
   projectAccent,
 } from "@argus/peacock";
 import { useChatHistory } from "../../../hooks/useChatHistory";
-import { clearSessionSetupError, retrySessionSetup } from "../../../lib/ipc";
+import {
+  clearSessionSetupError,
+  retrySessionSetup,
+  searchChatHistory,
+} from "../../../lib/ipc";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { setPendingPrompt, useSessions } from "../../../stores/sessionStore";
-import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { StartComposer } from "../../agent/StartComposer";
 import { SessionReferenceChips } from "../../shared/SessionReferenceChips/SessionReferenceChips";
 import { ActiveAgentsPanel } from "../ActiveAgentsPanel";
@@ -245,7 +249,7 @@ export function SessionHomeScreen({
             entries={sessionHistoryEntries}
             title="Chat history"
             meta={`${sessionHistoryEntries.length} in this session`}
-            repoRoot={repoRoot}
+            search={(query) => searchChatHistory(repoRoot, query)}
             onClearAll={() => history.clearAll()}
             onDelete={(historyId) => history.remove(historyId)}
             onResume={onResumeHistory}

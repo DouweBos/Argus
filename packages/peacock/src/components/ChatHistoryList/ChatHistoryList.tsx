@@ -2,11 +2,19 @@ import type {
   ChatHistoryEntry,
   ChatHistoryMessageMatch,
   ChatHistorySearchResult,
-} from "../../../lib/chatHistory";
-import { useEffect, useMemo, useState } from "react";
-import { Badge, Button, Icons, Input, SectionPanel } from "@argus/peacock";
-import { searchChatHistory } from "../../../lib/ipc";
+} from "@argus/remote-protocol";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { CloseIcon, PinIcon, SearchIcon, TrashIcon } from "../../icons/Icons";
+import { Badge } from "../Badge/Badge";
+import { Button } from "../Button/Button";
+import { Input } from "../Input/Input";
+import { SectionPanel } from "../SectionPanel/SectionPanel";
 import styles from "./ChatHistoryList.module.css";
+
+/** Search hits across saved chats; resolves to the matching entries with their message snippets. */
+export type ChatHistorySearch = (
+  query: string,
+) => Promise<ChatHistorySearchResult[]>;
 
 const SEARCH_DEBOUNCE_MS = 120;
 
@@ -91,7 +99,7 @@ function EntryRow({
             className={styles.pinMark}
             title="Pinned: resumed when Argus restarts"
           >
-            <Icons.PinIcon size={10} />
+            <PinIcon size={10} />
           </span>
         )}
         {entry.title}
@@ -163,22 +171,24 @@ function EntryRow({
             onDelete(entry.id);
           }}
         >
-          <Icons.CloseIcon size={10} />
+          <CloseIcon size={10} />
         </Button>
       </div>
     </div>
   );
 }
 
-interface ChatHistoryListProps {
+export interface ChatHistoryListProps {
   entries: ChatHistoryEntry[];
   meta: string;
   onClearAll?: () => void;
   onDelete: (historyId: string) => void;
+  /** Called with the entry's runner session id. */
   onResume: (sessionId: string) => void;
   onSetPinned?: (historyId: string, pinned: boolean) => void;
   onView: (historyId: string) => void;
-  repoRoot: string | null;
+  /** Searches titles and message text; omit to hide the search field. */
+  search?: ChatHistorySearch;
   title: string;
 }
 
@@ -186,7 +196,7 @@ export function ChatHistoryList({
   entries,
   title,
   meta,
-  repoRoot,
+  search,
   onView,
   onResume,
   onDelete,
@@ -201,9 +211,16 @@ export function ChatHistoryList({
   }>({ query: "", results: null, searching: false });
 
   const trimmed = query.trim();
+  // Callers pass a fresh closure each render; a search only restarts on a new query.
+  const searchRef = useRef(search);
+  useLayoutEffect(() => {
+    searchRef.current = search;
+  });
+  const canSearch = !!search;
 
   useEffect(() => {
-    if (!trimmed || !repoRoot) {
+    const run = searchRef.current;
+    if (!trimmed || !run) {
       return;
     }
 
@@ -218,7 +235,7 @@ export function ChatHistoryList({
               searching: true,
             },
       );
-      searchChatHistory(repoRoot, trimmed)
+      run(trimmed)
         .then((results) => {
           if (cancelled) {
             return;
@@ -237,7 +254,7 @@ export function ChatHistoryList({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [trimmed, repoRoot]);
+  }, [trimmed, canSearch]);
 
   const effectiveResults =
     trimmed && searchState.query === trimmed ? searchState.results : null;
@@ -255,18 +272,21 @@ export function ChatHistoryList({
 
   const action = (
     <div className={styles.headerActions}>
-      <div className={styles.searchWrap}>
-        <Icons.SearchIcon size={12} className={styles.searchIcon} />
-        <Input
-          bare
-          type="search"
-          placeholder="Search chats & messages"
-          className={styles.searchInput}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-        />
-      </div>
+      {search && (
+        <div className={styles.searchWrap}>
+          <SearchIcon size={12} className={styles.searchIcon} />
+          <Input
+            bare
+            aria-label="Search chats"
+            type="search"
+            placeholder="Search chats & messages"
+            className={styles.searchInput}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
       {onClearAll && (
         <button
           className={styles.clearAll}
@@ -277,7 +297,7 @@ export function ChatHistoryList({
             onClearAll();
           }}
         >
-          <Icons.TrashIcon size={12} />
+          <TrashIcon size={12} />
         </button>
       )}
     </div>
