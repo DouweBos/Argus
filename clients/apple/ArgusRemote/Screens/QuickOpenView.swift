@@ -37,7 +37,7 @@ struct QuickOpenView: View {
     }
     // Plain: a grouped list opens with a section's worth of gap under the search field.
     .listStyle(.plain)
-    .emptyState(when: host.hasControl && matcher != nil && results.isEmpty) {
+    .emptyState(when: host.hasControl && matcher != nil && results.isEmpty, grouped: false) {
       EmptyState(
         icon: Icon.search, title: "No matching files",
         body: query.isEmpty ? "This session has no files." : "Nothing in this worktree matches “\(query)”.")

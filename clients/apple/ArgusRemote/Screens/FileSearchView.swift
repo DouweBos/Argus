@@ -34,7 +34,7 @@ struct FileSearchView: View {
     }
     // Plain: hits read as one compact list under each file, not a card apiece.
     .listStyle(.plain)
-    .emptyState(when: host.hasControl && placeholder != nil) {
+    .emptyState(when: host.hasControl && placeholder != nil, grouped: false) {
       if let placeholder { placeholder }
     }
     .searchable(

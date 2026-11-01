@@ -590,12 +590,21 @@ extension View {
   /// Centres `placeholder` over this list or scroll view while `isEmpty`, rather
   /// than top-aligned in a row of it.
   public func emptyState<Placeholder: View>(
-    when isEmpty: Bool, @ViewBuilder _ placeholder: () -> Placeholder
+    when isEmpty: Bool, grouped: Bool = true, @ViewBuilder _ placeholder: () -> Placeholder
   ) -> some View {
     let placeholder = placeholder()
-    return overlay {
-      if isEmpty { placeholder }
-    }
+    return
+      overlay {
+        if isEmpty { placeholder }
+      }
+      #if os(iOS)
+        // A grouped list with no rows draws plain white; keep its grey so the
+        // screen doesn't flash when the first row arrives.
+        .scrollContentBackground(isEmpty && grouped ? .hidden : .automatic)
+        .background {
+          if isEmpty && grouped { Color(uiColor: .systemGroupedBackground).ignoresSafeArea() }
+        }
+      #endif
   }
 }
 
