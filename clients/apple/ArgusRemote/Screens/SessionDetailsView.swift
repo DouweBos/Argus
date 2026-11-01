@@ -314,12 +314,11 @@ struct StartInSessionSheet: View {
       defaultMode: app.defaultPermissionMode
     ) { outcome, sent in
       Telemetry.capture(.agentStartSubmitted(sent, openedOn: .current))
-      guard case .agent(let agent) = outcome else { return }
       // A new worktree is another session; open it rather than a tab here.
-      if agent.sessionId == session.id {
+      if case .agent(let agent) = outcome, agent.sessionId == session.id {
         started(agent)
       } else {
-        router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
+        router.push(Route(outcome))
       }
     }
   }

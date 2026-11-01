@@ -58,11 +58,12 @@ struct SessionSidebar: View {
         defaultMode: app.defaultPermissionMode
       ) { started, sent in
         Telemetry.capture(.agentStartSubmitted(sent, openedOn: .worktree))
-        guard case .agent(let agent) = started else { return }
-        router.apply(
-          .session(
-            id: agent.sessionId, label: agent.sessionLabel ?? Labels.agentName(agent),
-            repoRoot: project.repoRoot, projectName: project.name))
+        let (id, label): (String, String) =
+          switch started {
+          case .agent(let agent): (agent.sessionId, agent.sessionLabel ?? Labels.agentName(agent))
+          case .session(let session): (session.id, SessionActivity.title(session))
+          }
+        router.apply(.session(id: id, label: label, repoRoot: project.repoRoot, projectName: project.name))
         // Show it straight away rather than waiting for the next poll.
         Task { await host.loadSessions(repoRoot: project.repoRoot) }
       }

@@ -203,8 +203,7 @@ struct ProjectsView: View {
       defaultMode: app.defaultPermissionMode
     ) { started, sent in
       Telemetry.capture(.agentStartSubmitted(sent, openedOn: .worktree))
-      guard case .agent(let agent) = started else { return }
-      router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
+      router.push(Route(started))
       // Count it straight away rather than waiting for the next poll.
       Task { await host.loadSessions(repoRoot: project.repoRoot) }
     }

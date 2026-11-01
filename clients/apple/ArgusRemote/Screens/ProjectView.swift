@@ -150,9 +150,7 @@ struct ProjectView: View {
       workspace: .worktree, models: host.knownModels(repoRoot: repoRoot), defaultMode: app.defaultPermissionMode
     ) { started, sent in
       Telemetry.capture(.agentStartSubmitted(sent, openedOn: .worktree))
-      if case .agent(let agent) = started {
-        router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
-      }
+      router.push(Route(started))
       Task { await refresh() }
     }
   }

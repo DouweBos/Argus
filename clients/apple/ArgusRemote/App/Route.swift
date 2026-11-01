@@ -407,3 +407,16 @@ final class Router {
     return false
   }
 }
+
+extension Route {
+  /// What a start sheet lands on: the agent, or a new worktree's session,
+  /// whose agent joins as a tab once setup finishes.
+  init(_ started: StartAgentSheet.Started) {
+    switch started {
+    case .agent(let agent):
+      self = .agent(id: agent.agentId, label: Labels.agentName(agent))
+    case .session(let session):
+      self = .session(id: session.id, label: SessionActivity.title(session), repoRoot: session.repoRoot)
+    }
+  }
+}
