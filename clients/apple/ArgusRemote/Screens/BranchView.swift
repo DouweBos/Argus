@@ -3,8 +3,8 @@ import SwiftUI
 
 /// One branch: where it stands, what you can do with it, and its history.
 ///
-/// Opened from the branches list. Actions need control; without it this is a
-/// read-only view of the branch and its commits.
+/// Opened from the branches list. The actions are the list's context menu,
+/// grouped; without control this is a read-only view of the branch and its commits.
 struct BranchView: View {
   @Environment(\.theme) private var theme
   @Environment(HostStore.self) private var host
@@ -18,19 +18,20 @@ struct BranchView: View {
 
   @State private var current: String?
   @State private var commits: [RemoteCommit]?
+  @State private var actions: BranchActions
+
+  init(sessionId: String, repoRoot: String, branch: RemoteGitBranch) {
+    self.sessionId = sessionId
+    self.repoRoot = repoRoot
+    _branch = State(initialValue: branch)
+    _actions = State(initialValue: BranchActions(sessionId: sessionId, repoRoot: repoRoot))
+  }
 
   var body: some View {
     Screen {
       header
       if host.hasControl {
-        BranchActionsView(
-          sessionId: sessionId, repoRoot: repoRoot, branch: branch, current: current,
-          onChanged: { await reload() },
-          onRenamed: { name in
-            branch.name = name
-            await reload()
-          },
-          onDeleted: { dismiss() })
+        BranchActionBar(branch: branch, actions: actions)
       }
       if let current, current != branch.name {
         Card(onTap: {
@@ -49,7 +50,13 @@ struct BranchView: View {
     }
     .navigationTitle(branch.name)
     .navigationBarTitleDisplayMode(.inline)
-    .task { await reload() }
+    .branchActionPrompts(actions)
+    .task {
+      actions.onChanged = { await reload() }
+      actions.onRenamed = { _, name in branch.name = name }
+      actions.onDeleted = { _ in dismiss() }
+      await reload()
+    }
     .refreshable { await reload() }
   }
 
@@ -97,6 +104,8 @@ struct BranchView: View {
       branch = fresh
     }
     current = branches.first(where: \.isCurrent)?.name
+    actions.current = current
+    actions.branches = branches
     commits = await host.branchLog(sessionId: sessionId, ref: branch.ref) ?? commits ?? []
   }
 
