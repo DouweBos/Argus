@@ -29,19 +29,24 @@ extension View {
   @ViewBuilder
   func messageMenu(_ menu: MessageMenu?, for message: RemoteMessage) -> some View {
     if let menu, !HostStore.isOptimistic(id: message.id), message.copyText != nil || menu.canChange {
-      contextMenu {
-        if message.copyText != nil {
-          Button("Copy", systemImage: Icon.copy) { menu.perform(.copy, message) }
-        }
-        if menu.canChange {
-          if message.role == .user {
-            Button("Edit", systemImage: Icon.pencil) { menu.perform(.edit, message) }
-          }
-          Button("Fork from Here", systemImage: Icon.branch) { menu.perform(.fork, message) }
-        }
-      }
+      // Also as named actions: a long-press menu alone is out of VoiceOver's reach.
+      contextMenu { menuItems(menu, for: message) }
+        .accessibilityActions { menuItems(menu, for: message) }
     } else {
       self
+    }
+  }
+
+  @ViewBuilder
+  private func menuItems(_ menu: MessageMenu, for message: RemoteMessage) -> some View {
+    if message.copyText != nil {
+      Button("Copy", systemImage: Icon.copy) { menu.perform(.copy, message) }
+    }
+    if menu.canChange {
+      if message.role == .user {
+        Button("Edit", systemImage: Icon.pencil) { menu.perform(.edit, message) }
+      }
+      Button("Fork from Here", systemImage: Icon.branch) { menu.perform(.fork, message) }
     }
   }
 }
