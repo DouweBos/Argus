@@ -274,6 +274,7 @@ describe("control capability gating", () => {
       permissionMode: "auto",
       parentAgentId: null,
       createdAt: 0,
+      runner: { id: "claude-code" },
       handle: {
         initializeResponse: () => ({
           models: [],

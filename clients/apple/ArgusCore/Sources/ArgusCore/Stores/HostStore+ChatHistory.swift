@@ -85,4 +85,15 @@ extension HostStore {
   public func resumeChat(_ chat: RemoteStoppedAgent, sessionId: String) async -> RemoteAgentStatus? {
     await spawnAgent(sessionId: sessionId, resumeSessionId: chat.runnerSessionId, runnerId: chat.runnerId)
   }
+
+  /// A stopped agent picks up again only once its runner reported a session to resume.
+  public func canResume(agentId: String) -> Bool {
+    statusByAgent[agentId]?.runnerSessionId != nil
+  }
+
+  /// A new agent in the same session, on the stopped one's conversation and runner.
+  public func resumeAgent(_ agentId: String) async -> RemoteAgentStatus? {
+    guard let status = statusByAgent[agentId], let ref = status.runnerSessionId else { return nil }
+    return await spawnAgent(sessionId: status.sessionId, resumeSessionId: ref, runnerId: status.runnerId)
+  }
 }

@@ -193,6 +193,7 @@ function agentFixture(agentId: string, sessionId: string) {
     toolUsesTotal: 0,
     costUsd: 0,
     turnsCompleted: 0,
+    runner: { id: "claude-code" },
     handle: { initializeResponse: () => null },
   } as never;
 }

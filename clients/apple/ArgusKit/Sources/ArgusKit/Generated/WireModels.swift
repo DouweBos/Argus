@@ -12800,6 +12800,8 @@ extension ArgusProtocol {
     public var awaiting: RemoteAgentStatusAwaiting?
     public var limitResumeAt: Double?
     public var limitStalled: Bool?
+    public var runnerSessionId: String?
+    public var runnerId: String?
 
     enum CodingKeys: String, CodingKey {
       case agentId = "agent_id"
@@ -12817,9 +12819,11 @@ extension ArgusProtocol {
       case awaiting = "awaiting"
       case limitResumeAt = "limit_resume_at"
       case limitStalled = "limit_stalled"
+      case runnerSessionId = "runner_session_id"
+      case runnerId = "runner_id"
     }
 
-    public init(agentId: String, sessionId: String, sessionLabel: String? = nil, projectName: String? = nil, title: String? = nil, status: RemoteAgentStatusStatus, model: String? = nil, contextWindow: Double? = nil, permissionMode: String? = nil, parentAgentId: String? = nil, createdAt: Double? = nil, lastActivityAt: Double? = nil, awaiting: RemoteAgentStatusAwaiting? = nil, limitResumeAt: Double? = nil, limitStalled: Bool? = nil) {
+    public init(agentId: String, sessionId: String, sessionLabel: String? = nil, projectName: String? = nil, title: String? = nil, status: RemoteAgentStatusStatus, model: String? = nil, contextWindow: Double? = nil, permissionMode: String? = nil, parentAgentId: String? = nil, createdAt: Double? = nil, lastActivityAt: Double? = nil, awaiting: RemoteAgentStatusAwaiting? = nil, limitResumeAt: Double? = nil, limitStalled: Bool? = nil, runnerSessionId: String? = nil, runnerId: String? = nil) {
       self.agentId = agentId
       self.sessionId = sessionId
       self.sessionLabel = sessionLabel
@@ -12835,6 +12839,8 @@ extension ArgusProtocol {
       self.awaiting = awaiting
       self.limitResumeAt = limitResumeAt
       self.limitStalled = limitStalled
+      self.runnerSessionId = runnerSessionId
+      self.runnerId = runnerId
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -12854,6 +12860,8 @@ extension ArgusProtocol {
       try c.encodeIfPresent(awaiting, forKey: .awaiting)
       try c.encodeIfPresent(limitResumeAt, forKey: .limitResumeAt)
       try c.encodeIfPresent(limitStalled, forKey: .limitStalled)
+      try c.encodeIfPresent(runnerSessionId, forKey: .runnerSessionId)
+      try c.encodeIfPresent(runnerId, forKey: .runnerId)
     }
   }
 

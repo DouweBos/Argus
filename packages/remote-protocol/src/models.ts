@@ -84,6 +84,10 @@ export const RemoteAgentStatus = z.object({
   limit_resume_at: z.number().nullable().optional(),
   /** The last turn ended on a spent usage limit and none has got through since. */
   limit_stalled: z.boolean().optional(),
+  /** Runner session id once the runner reported one, so a stopped agent can be resumed. */
+  runner_session_id: z.string().optional(),
+  /** The runner it runs on, so a resume picks the same one. */
+  runner_id: z.string().optional(),
 });
 export type RemoteAgentStatus = z.infer<typeof RemoteAgentStatus>;
 

@@ -61,7 +61,11 @@ import {
   searchChatHistory,
 } from "../agent/chatHistory";
 import { agentContextWindow } from "../agent/contextWindow";
-import { liveCursor, readConversation } from "../agent/conversation/live";
+import {
+  liveConversation,
+  liveCursor,
+  readConversation,
+} from "../agent/conversation/live";
 import { limitHandoffAccounts } from "../agent/limitHandoff";
 import {
   dismissLimitResume,
@@ -625,6 +629,8 @@ function awaitingForTool(name: string | undefined): "plan" | "question" | null {
 }
 
 export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
+  const runnerSessionId = liveConversation(a.agentId)?.sessionId;
+
   return {
     agent_id: a.agentId,
     session_id: a.sessionId,
@@ -641,6 +647,8 @@ export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
     awaiting: agentAwaiting(a.agentId),
     limit_resume_at: limitResumeAt(a.agentId),
     limit_stalled: isLimitStalled(a.agentId),
+    ...(runnerSessionId ? { runner_session_id: runnerSessionId } : {}),
+    runner_id: a.runner.id,
   };
 }
 

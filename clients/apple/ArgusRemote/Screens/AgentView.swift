@@ -14,6 +14,7 @@ struct AgentView: View {
 
   @State private var viewingToken: Int?
   @State private var messageSheet: MessageSheet?
+  @State private var resuming = false
 
   /// The edit or fork sheet a message's menu opened.
   struct MessageSheet: Identifiable {
@@ -47,7 +48,7 @@ struct AgentView: View {
       }
       .environment(\.messageMenu, messageMenu)
       if isGone {
-        TranscriptFooterNote("This agent has stopped, so it can't take new messages.")
+        stoppedFooter
       } else if host.hasControl {
         ChatInputView(agentId: agentId, sessionId: sessionId) { affordance in
           Telemetry.capture(affordance == .followUp ? .followUpUsed : .inputUsed(affordance: affordance.rawValue))
@@ -77,6 +78,30 @@ struct AgentView: View {
     }
     .sheet(item: $messageSheet) { sheet in
       messageSheetView(sheet)
+    }
+  }
+
+  /// A control device picks the conversation back up in a fresh agent, as a saved chat does.
+  @ViewBuilder
+  private var stoppedFooter: some View {
+    if host.hasControl, host.canResume(agentId: agentId) {
+      TranscriptFooterNote {
+        MutedText("This agent has stopped.")
+        Btn(label: resuming ? "Resuming…" : "Resume in a new agent", icon: Icon.plus, action: resume)
+          .disabled(resuming)
+      }
+    } else {
+      TranscriptFooterNote("This agent has stopped, so it can't take new messages.")
+    }
+  }
+
+  private func resume() {
+    resuming = true
+    Task {
+      let agent = await host.resumeAgent(agentId)
+      resuming = false
+      guard let agent else { return }
+      router.push(.agent(id: agent.agentId, label: label))
     }
   }
 

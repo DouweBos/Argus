@@ -136,6 +136,7 @@ const AGENT = {
   permissionMode: "ask",
   parentAgentId: null,
   createdAt: 0,
+  runner: { id: "claude-code" },
 };
 
 describe("agent status attention", () => {
@@ -240,6 +241,21 @@ describe("agent status attention", () => {
       }),
     );
     await expect(statusOf()).resolves.toBeNull();
+  });
+
+  it("carries what a resume needs once the runner reports a session", async () => {
+    const status = async () =>
+      MethodResult["agents.status"].parse(
+        await dispatch("agents.status", { agent_id: "a1" }, ctx),
+      ).agent;
+    await expect(status()).resolves.toMatchObject({
+      runner_id: "claude-code",
+    });
+    expect((await status()).runner_session_id).toBeUndefined();
+    seedLive("a1", asConversation({ sessionId: "cli-1", messages: [] }));
+    await expect(status()).resolves.toMatchObject({
+      runner_session_id: "cli-1",
+    });
   });
 });
 

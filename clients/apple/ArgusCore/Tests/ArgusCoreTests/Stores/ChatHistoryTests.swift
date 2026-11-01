@@ -56,6 +56,26 @@ struct ChatHistoryTests {
     #expect(params["runner_id"] as? String == "codex")
   }
 
+  @Test("a stopped agent resumes on its own conversation and runner")
+  func resumeStoppedAgent() async throws {
+    let (store, backend) = await attached()
+    backend.reply(
+      .agentsStatus,
+      #"{"agent":{"agent_id":"a-0","session_id":"s-1","status":"stopped","runner_session_id":"cli-0","runner_id":"codex"}}"#)
+    backend.reply(.agentsSpawn, #"{"agent":{"agent_id":"a-1","session_id":"s-1","status":"idle","created_at":1}}"#)
+    #expect(!store.canResume(agentId: "a-0"))
+    await store.loadAgentStatus(agentId: "a-0")
+    #expect(store.canResume(agentId: "a-0"))
+
+    let resumed = await store.resumeAgent("a-0")
+
+    #expect(resumed?.agentId == "a-1")
+    let params = try #require(backend.params(.agentsSpawn))
+    #expect(params["session_id"] as? String == "s-1")
+    #expect(params["resume_session_id"] as? String == "cli-0")
+    #expect(params["runner_id"] as? String == "codex")
+  }
+
   @Test("a match splits around its hit by UTF-16 offsets")
   func matchParts() {
     let match = ChatHistoryMatch(role: .user, snippet: "👋 fix the bug", matchStart: 3, matchEnd: 6)

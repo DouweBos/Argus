@@ -159,6 +159,9 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
   public var limitResumeAt: Double?
   /// The last turn ended on a spent usage limit and none has got through since.
   public var limitStalled: Bool?
+  /// What a resume picks up, once the runner has reported a session; nil from older hosts.
+  public var runnerSessionId: String?
+  public var runnerId: String?
 
   public var id: String { agentId }
 
@@ -176,6 +179,8 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
     case awaiting
     case limitResumeAt = "limit_resume_at"
     case limitStalled = "limit_stalled"
+    case runnerSessionId = "runner_session_id"
+    case runnerId = "runner_id"
   }
 }
 
