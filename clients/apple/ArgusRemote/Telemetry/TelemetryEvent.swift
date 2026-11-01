@@ -124,6 +124,8 @@ enum TelemetryEvent {
     case openDetails = "open_details"
     /// Another agent's tab was picked.
     case switchAgent = "switch_agent"
+    /// A stopped agent's tab was closed.
+    case closeAgentTab = "close_agent_tab"
   }
 
   /// What was done with the iPad session's side panel.

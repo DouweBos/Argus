@@ -102,6 +102,22 @@ struct AgentOrderTests {
     ]
     #expect(AgentOrder.byActivity(agents).map(\.agentId) == ["ask", "run", "idle"])
   }
+
+  @Test("a kept agent that stopped keeps its tab, in creation order; others drop")
+  func sessionTabsKeepStopped() {
+    let listed = [agent("live", created: 2), agent("old", created: 0)]
+    let stopped = ["shut": agent("shut", status: "stopped", created: 1), "old": agent("old", status: "stopped")]
+    let tabs = AgentOrder.sessionTabs(
+      listed: listed, kept: ["shut"], status: { stopped[$0] }, isGone: { stopped[$0] != nil })
+    #expect(tabs.map(\.agentId) == ["shut", "live"])
+  }
+
+  @Test("closing a tab hands focus to the one before it, else after")
+  func neighbour() {
+    #expect(AgentOrder.neighbour(of: "b", in: ["a", "b", "c"]) == "a")
+    #expect(AgentOrder.neighbour(of: "a", in: ["a", "b"]) == "b")
+    #expect(AgentOrder.neighbour(of: "a", in: ["a"]) == nil)
+  }
 }
 
 @Suite("Session groups")

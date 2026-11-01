@@ -25,6 +25,9 @@ struct SessionView: View {
   @State private var width: CGFloat = 0
   /// What the chat keeps when the side panel is open beside it.
   private static let minChatWidth: CGFloat = 380
+  /// Tabs this screen has shown; one that stops stays until closed or the screen is left, as on the Mac.
+  @State private var shown: [String] = []
+  @State private var closed: Set<String> = []
   @State private var startingAgent = false
   @State private var confirmingStop = false
 
@@ -32,15 +35,14 @@ struct SessionView: View {
   private var session: RemoteSession? { resolvedSessionId.flatMap(host.session(id:)) }
   private var resolvedRepoRoot: String? { session?.repoRoot ?? repoRoot }
 
-  /// Its live agents, oldest first; the one this screen was opened on stays
-  /// even once it stops, so its transcript doesn't vanish underfoot.
+  /// Its live agents, oldest first; the one this screen was opened on, and any
+  /// it has shown, stay once they stop, so a transcript doesn't vanish underfoot.
   private var agents: [RemoteAgentStatus] {
     guard let id = resolvedSessionId, let root = resolvedRepoRoot else { return [] }
-    var list = host.agents(inSessionId: id, repoRoot: root).filter { !host.isGone($0.agentId) }
-    if let agentId, !list.contains(where: { $0.agentId == agentId }), let opened = host.statusByAgent[agentId] {
-      list.append(opened)
-    }
-    return list
+    return AgentOrder.sessionTabs(
+      listed: host.agents(inSessionId: id, repoRoot: root),
+      kept: ([agentId].compactMap { $0 } + shown).filter { !closed.contains($0) },
+      status: { host.statusByAgent[$0] }, isGone: host.isGone)
   }
 
   /// The tab picked, else the one it opened on, else whatever wants you most.
@@ -99,6 +101,10 @@ struct SessionView: View {
     // Pinned once shown, so the panel's MCP row and a rebuilt screen agree on the agent in front.
     .onChange(of: focusedAgentId, initial: true) { _, id in
       if let sid = resolvedSessionId, router.focusedAgents[sid] != id { router.focusedAgents[sid] = id }
+    }
+    .onChange(of: agents.map(\.agentId), initial: true) { _, ids in
+      let new = ids.filter { !shown.contains($0) && !closed.contains($0) }
+      if !new.isEmpty { shown += new }
     }
     .sheet(isPresented: $startingAgent) {
       if let session { StartInSessionSheet(session: session) { focus($0) } }
@@ -204,7 +210,9 @@ struct SessionView: View {
       .accessibilityElement(children: .combine)
     }
     ToolbarItemGroup(placement: .topBarTrailing) {
-      if host.hasControl, let id = focusedAgentId, !host.isGone(id) {
+      if let id = focusedAgentId, host.isGone(id), id != agentId || agents.count > 1 {
+        IconBtn(systemName: Icon.close, label: "Close agent tab") { closeTab(id) }
+      } else if host.hasControl, let id = focusedAgentId, !host.isGone(id) {
         IconBtn(systemName: Icon.stop, label: "Shut down agent") { confirmingStop = true }
       }
       if session != nil, router.isSplit {
@@ -257,13 +265,18 @@ struct SessionView: View {
     if let root = resolvedRepoRoot { Task { await host.loadAgents(repoRoot: root) } }
   }
 
-  /// Stops the agent in front and moves to the next live one, if any.
+  /// Stops the agent in front; its tab stays, with Resume, until it's closed.
   private func stopFocused() {
     guard let id = focusedAgentId else { return }
-    let next = agents.first { $0.agentId != id && !host.isGone($0.agentId) }?.agentId
-    Task {
-      await host.stopAgent(agentId: id)
-      focused = next
-    }
+    focused = id
+    Task { await host.stopAgent(agentId: id) }
+  }
+
+  /// Drops a stopped agent's tab; the one before it takes over, as on the Mac.
+  private func closeTab(_ id: String) {
+    let next = AgentOrder.neighbour(of: id, in: agents.map(\.agentId))
+    closed.insert(id)
+    focused = next
+    Telemetry.capture(.sessionUsed(action: .closeAgentTab))
   }
 }

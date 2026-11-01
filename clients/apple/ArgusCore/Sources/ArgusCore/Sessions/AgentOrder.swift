@@ -21,6 +21,26 @@ public enum AgentOrder {
     agents.sorted { ($0.createdAt ?? 0) < ($1.createdAt ?? 0) }
   }
 
+  /// A session screen's tabs, oldest first: its live agents, plus the `kept` ones it has
+  /// shown that stopped since, so a shut-down tab stays (with its Resume) until closed.
+  public static func sessionTabs(
+    listed: [RemoteAgentStatus], kept: [String], status: (String) -> RemoteAgentStatus?, isGone: (String) -> Bool
+  ) -> [RemoteAgentStatus] {
+    let keep = Set(kept)
+    var tabs = listed.filter { !isGone($0.agentId) || keep.contains($0.agentId) }
+    for id in kept where !tabs.contains(where: { $0.agentId == id }) {
+      if let agent = status(id) { tabs.append(agent) }
+    }
+    return byCreation(tabs)
+  }
+
+  /// The tab that takes over when `closing` closes: the one before it, else the one after.
+  public static func neighbour(of closing: String, in ids: [String]) -> String? {
+    guard let index = ids.firstIndex(of: closing) else { return ids.first }
+    let rest = ids.filter { $0 != closing }
+    return rest.isEmpty ? nil : rest[min(max(index - 1, 0), rest.count - 1)]
+  }
+
   /// The next or previous of `ids` from `current`, wrapping; nil when there is nowhere to go.
   public static func cycled(_ ids: [String], from current: String?, by offset: Int) -> String? {
     guard ids.count > 1, let current, let index = ids.firstIndex(of: current) else { return nil }
