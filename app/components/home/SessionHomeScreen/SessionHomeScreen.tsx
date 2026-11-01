@@ -249,6 +249,7 @@ export function SessionHomeScreen({
             onClearAll={() => history.clearAll()}
             onDelete={(historyId) => history.remove(historyId)}
             onResume={onResumeHistory}
+            onSetPinned={(id, pinned) => history.setPinned(id, pinned)}
             onView={onViewHistory}
           />
         )}

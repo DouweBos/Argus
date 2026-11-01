@@ -1,6 +1,10 @@
 import type { ChatHistoryEntry } from "../lib/chatHistory";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { deleteChatHistory, listChatHistory } from "../lib/ipc";
+import {
+  deleteChatHistory,
+  listChatHistory,
+  setChatHistoryPinned,
+} from "../lib/ipc";
 import { useAgentsRecord } from "../stores/agentStore";
 import { useConversations } from "../stores/conversationStore";
 
@@ -10,6 +14,7 @@ export interface UseChatHistoryResult {
   loaded: boolean;
   refresh: () => void;
   remove: (historyId: string) => void;
+  setPinned: (historyId: string, pinned: boolean) => void;
 }
 
 export function useChatHistory(repoRoot: string | null): UseChatHistoryResult {
@@ -89,5 +94,17 @@ export function useChatHistory(repoRoot: string | null): UseChatHistoryResult {
     ).then(refresh);
   }, [repoRoot, entries, refresh]);
 
-  return { clearAll, entries, loaded, refresh, remove };
+  const setPinned = useCallback(
+    (historyId: string, pinned: boolean) => {
+      if (!repoRoot) {
+        return;
+      }
+      setChatHistoryPinned(repoRoot, historyId, pinned)
+        .then(refresh)
+        .catch(() => {});
+    },
+    [repoRoot, refresh],
+  );
+
+  return { clearAll, entries, loaded, refresh, remove, setPinned };
 }

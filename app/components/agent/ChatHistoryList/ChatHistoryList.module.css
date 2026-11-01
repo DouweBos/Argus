@@ -179,3 +179,10 @@
   border-radius: 2px;
   padding: 0 2px;
 }
+
+.pinMark {
+  display: inline-flex;
+  margin-right: var(--space-2);
+  color: var(--text-muted);
+  vertical-align: middle;
+}

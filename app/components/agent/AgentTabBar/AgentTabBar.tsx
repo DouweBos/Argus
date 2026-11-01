@@ -16,9 +16,11 @@ import {
   interruptAgent,
   openAgentPopout,
   revealInFinder,
+  setAgentPinned,
 } from "../../../lib/ipc";
 import {
   reorderAgent,
+  updateAgent,
   useAgentsRecord,
   usePoppedOutAgents,
 } from "../../../stores/agentStore";
@@ -178,6 +180,15 @@ function AgentTab({
       {hasParent && (
         <span className={styles.parentBadge} title="Spawned by another agent">
           &#8618;
+        </span>
+      )}
+      {agent.pinned && (
+        <span
+          aria-label="Pinned"
+          className={styles.pinBadge}
+          title="Pinned: resumed when Argus restarts"
+        >
+          <Icons.PinIcon size={10} />
         </span>
       )}
       <span className={styles.label}>{label}</span>
@@ -472,6 +483,15 @@ export function AgentTabBar({
         label: "Mark as Read",
         disabled: !hasUnreadForTarget,
         onClick: () => clearAgentUnread(targetId),
+      },
+      {
+        label: target.pinned ? "Unpin Chat" : "Pin Chat",
+        onClick: () => {
+          const pinned = !target.pinned;
+          setAgentPinned(targetId, pinned)
+            .then((r) => updateAgent(targetId, { pinned: r.pinned }))
+            .catch(() => {});
+        },
       },
       { separator: true },
       {

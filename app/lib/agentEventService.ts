@@ -15,7 +15,7 @@ import {
 } from "../stores/conversationStore";
 import { unwatchQueue, watchQueue } from "../stores/queueStore";
 import { type UnlistenFn, listen } from "./events";
-import { stopAgent as apiStopAgent } from "./ipc";
+import { stopAgent as apiStopAgent, listAgents } from "./ipc";
 import { followTranscript } from "./transcriptSync";
 
 /**
@@ -53,6 +53,8 @@ export function initExternalAgentStarted(): void {
         parent_agent_id: info.parent_agent_id,
         created_at: info.created_at,
         model: info.model,
+        runner_id: info.runner_id,
+        pinned: info.pinned,
       });
       startAgentListening(info.agent_id);
       // An agent spawned without a prompt (the phone's "New agent") is idle and
@@ -61,6 +63,25 @@ export function initExternalAgentStarted(): void {
         notifyMessageSent(info.agent_id);
       }
     },
+  );
+}
+
+/**
+ * Pick up agents already live on the host when a project opens — pinned chats
+ * the host resumed at boot can start before this window is listening.
+ */
+export async function hydrateLiveAgents(sessionIds: string[]): Promise<void> {
+  await Promise.all(
+    sessionIds.map(async (sessionId) => {
+      const live = await listAgents(sessionId).catch(() => []);
+      for (const agent of live) {
+        if (getAgentState().agents[agent.agent_id]) {
+          continue;
+        }
+        addAgent(agent);
+        startAgentListening(agent.agent_id);
+      }
+    }),
   );
 }
 
@@ -156,6 +177,9 @@ export function startAgentListening(agentId: string): void {
   );
   on<string | null>(agentId, "agent:effort-changed", (effort) =>
     updateAgent(agentId, { effort: effort ?? null }),
+  );
+  on<boolean>(agentId, "agent:pinned", (pinned) =>
+    updateAgent(agentId, { pinned }),
   );
 }
 

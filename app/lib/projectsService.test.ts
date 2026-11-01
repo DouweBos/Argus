@@ -24,7 +24,10 @@ vi.mock("./ipc", () => ({
   listSessions: vi.fn(async () => []),
   listProjects: vi.fn(async () => []),
 }));
-vi.mock("./agentEventService", () => ({ stopAgentListening: vi.fn() }));
+vi.mock("./agentEventService", () => ({
+  hydrateLiveAgents: vi.fn(async () => undefined),
+  stopAgentListening: vi.fn(),
+}));
 
 const REMOTE = "host-b";
 const REMOTE_ONLY_PATH = "/Users/someone/Work/OnlyOnTheOtherMac";

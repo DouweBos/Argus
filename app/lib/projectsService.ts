@@ -30,7 +30,7 @@ import {
   selectSession,
   sessionHostId,
 } from "../stores/sessionStore";
-import { stopAgentListening } from "./agentEventService";
+import { hydrateLiveAgents, stopAgentListening } from "./agentEventService";
 import {
   addRepoRoot as apiAddRepoRoot,
   createHeadSession as apiCreateHeadSession,
@@ -81,6 +81,7 @@ export async function openProject(
 
     const sessions = await listSessions(path);
     mergeSessionsForProject(path, sessions, hostId);
+    hydrateLiveAgents(sessions.map((s) => s.id)).catch(() => undefined);
 
     const shouldAutoSelect = options?.autoSelect !== false;
     const projectSessions = getSessionState().sessions.filter(

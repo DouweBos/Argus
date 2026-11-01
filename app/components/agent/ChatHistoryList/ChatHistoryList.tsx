@@ -70,6 +70,7 @@ interface EntryRowProps {
   matches: ChatHistoryMessageMatch[];
   onDelete: (historyId: string) => void;
   onResume: (sessionId: string) => void;
+  onSetPinned?: (historyId: string, pinned: boolean) => void;
   onView: (historyId: string) => void;
 }
 
@@ -79,10 +80,22 @@ function EntryRow({
   onView,
   onResume,
   onDelete,
+  onSetPinned,
 }: EntryRowProps) {
   return (
     <div className={styles.entry} onClick={() => onView(entry.id)}>
-      <span className={styles.entryTitle}>{entry.title}</span>
+      <span className={styles.entryTitle}>
+        {entry.pinned && (
+          <span
+            aria-label="Pinned"
+            className={styles.pinMark}
+            title="Pinned: resumed when Argus restarts"
+          >
+            <Icons.PinIcon size={10} />
+          </span>
+        )}
+        {entry.title}
+      </span>
       <div className={styles.entryMeta}>
         <span>{formatRelativeDate(entry.endedAt)}</span>
         <span className={styles.dot} />
@@ -124,6 +137,23 @@ function EntryRow({
         >
           Resume
         </Button>
+        {onSetPinned && !entry.importedFrom && (
+          <Button
+            variant="ghost"
+            size="sm"
+            title={
+              entry.pinned
+                ? "Unpin: stop resuming it when Argus restarts"
+                : "Pin: resume it when Argus restarts"
+            }
+            onClick={(e) => {
+              e.stopPropagation();
+              onSetPinned(entry.id, !entry.pinned);
+            }}
+          >
+            {entry.pinned ? "Unpin" : "Pin"}
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"
@@ -146,6 +176,7 @@ interface ChatHistoryListProps {
   onClearAll?: () => void;
   onDelete: (historyId: string) => void;
   onResume: (sessionId: string) => void;
+  onSetPinned?: (historyId: string, pinned: boolean) => void;
   onView: (historyId: string) => void;
   repoRoot: string | null;
   title: string;
@@ -160,6 +191,7 @@ export function ChatHistoryList({
   onResume,
   onDelete,
   onClearAll,
+  onSetPinned,
 }: ChatHistoryListProps) {
   const [query, setQuery] = useState("");
   const [searchState, setSearchState] = useState<{
@@ -262,6 +294,7 @@ export function ChatHistoryList({
               matches={[]}
               onDelete={onDelete}
               onResume={onResume}
+              onSetPinned={onSetPinned}
               onView={onView}
             />
           ))}
@@ -274,6 +307,7 @@ export function ChatHistoryList({
               matches={result.messageMatches}
               onDelete={onDelete}
               onResume={onResume}
+              onSetPinned={onSetPinned}
               onView={onView}
             />
           ))}
