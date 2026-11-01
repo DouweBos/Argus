@@ -22,6 +22,15 @@ export type Screen =
   | { name: "session"; sessionId: string }
   | { name: "agent"; sessionId: string; agentId: string }
   | { name: "changes"; sessionId: string; mode: DiffMode }
+  /** One file's diff from Changes: `/git/:mode/diff?path=`. */
+  | { name: "fileDiff"; sessionId: string; mode: DiffMode; path: string }
+  /** Quick open's list of the session's files. */
+  | { name: "files"; sessionId: string }
+  /** `/sessions/:id/code?path=&line=`, as on the Mac and the phone. */
+  | { name: "file"; sessionId: string; path: string; line: number | null }
+  | { name: "search"; sessionId: string }
+  /** The session's terminals, one of them in front when the URL names it. */
+  | { name: "terminals"; sessionId: string; terminalId: string | null }
   | { name: "devices" }
   | { name: "device"; platform: RemotePlatform; deviceKey: string }
   | { name: "settings" };
@@ -65,10 +74,66 @@ function decode(segment: string): string {
   }
 }
 
+function queryOf(path: string): URLSearchParams {
+  const at = path.indexOf("?");
+
+  return new URLSearchParams(at === -1 ? "" : path.slice(at + 1).split("#")[0]);
+}
+
+/**
+ * The session's code, search, terminal and per-file diff screens, which the
+ * shared codec doesn't spell: the phone's paths for them (`ArgusRoute`'s
+ * `/code` keeps its `?path=&line=`).
+ */
+function sessionToolScreen(parts: string[], path: string): Screen | null {
+  if (parts[0] !== "sessions" || !parts[1]) {
+    return null;
+  }
+  const sessionId = parts[1];
+  const query = queryOf(path);
+  if (parts[2] === "code") {
+    if (parts[3] === "search") {
+      return { name: "search", sessionId };
+    }
+    const file = query.get("path");
+    if (parts.length === 3 && file) {
+      const line = Number(query.get("line"));
+
+      return {
+        name: "file",
+        sessionId,
+        path: file,
+        line: Number.isInteger(line) && line > 0 ? line : null,
+      };
+    }
+
+    // `/code` with no file, and `/code/quick-open`: the file list.
+    return { name: "files", sessionId };
+  }
+  if (parts[2] === "terminals") {
+    return { name: "terminals", sessionId, terminalId: parts[3] ?? null };
+  }
+  const file = query.get("path");
+  if (
+    parts[2] === "git" &&
+    (parts[3] === "branch" || parts[3] === "working") &&
+    parts[4] === "diff" &&
+    file
+  ) {
+    return { name: "fileDiff", sessionId, mode: parts[3], path: file };
+  }
+
+  return null;
+}
+
 /** A path (with any query) inside the app's base, read as a screen. */
 export function screenFromPath(path: string): Screen {
   const pathname = path.split(/[?#]/, 1)[0];
   const parts = pathname.split("/").filter(Boolean).map(decode);
+  const tool = sessionToolScreen(parts, path);
+  if (tool) {
+    return tool;
+  }
   if (parts[0] === "projects" && parts.length === 2) {
     return { name: "project", projectKey: parts[1] };
   }
@@ -108,9 +173,31 @@ export function screenFromPath(path: string): Screen {
   }
 }
 
-/** The path a screen lives at, without the query. */
+function sessionBase(sessionId: string): string {
+  return `/sessions/${encodeURIComponent(sessionId)}`;
+}
+
+/** The path a screen lives at, with only the query the screen itself needs. */
 export function pathForScreen(screen: Screen): string {
   switch (screen.name) {
+    case "files":
+      return `${sessionBase(screen.sessionId)}/code/quick-open`;
+    case "search":
+      return `${sessionBase(screen.sessionId)}/code/search`;
+    case "file": {
+      const query = new URLSearchParams({ path: screen.path });
+      if (screen.line) {
+        query.set("line", String(screen.line));
+      }
+
+      return `${sessionBase(screen.sessionId)}/code?${query.toString()}`;
+    }
+    case "terminals":
+      return screen.terminalId
+        ? `${sessionBase(screen.sessionId)}/terminals/${encodeURIComponent(screen.terminalId)}`
+        : `${sessionBase(screen.sessionId)}/terminals`;
+    case "fileDiff":
+      return `${sessionBase(screen.sessionId)}/git/${screen.mode}/diff?${new URLSearchParams({ path: screen.path }).toString()}`;
     case "projects":
       return "/";
     case "project":
@@ -165,7 +252,24 @@ export function screenPattern(screen: Screen): string {
       return "/sessions/:sessionId/agents";
     case "changes":
       return `/sessions/:sessionId/git/${screen.mode}`;
+    case "fileDiff":
+      return `/sessions/:sessionId/git/${screen.mode}/diff`;
+    case "files":
+      return "/sessions/:sessionId/code/quick-open";
+    case "file":
+      return "/sessions/:sessionId/code";
+    case "search":
+      return "/sessions/:sessionId/code/search";
+    case "terminals":
+      return screen.terminalId
+        ? "/terminals/:terminalId"
+        : "/sessions/:sessionId/terminals";
   }
+}
+
+/** The session a screen belongs to, if any. */
+export function sessionOfScreen(screen: Screen): string | null {
+  return "sessionId" in screen ? screen.sessionId : null;
 }
 
 /** Same screen, so one navigation per change and no duplicate history entries. */

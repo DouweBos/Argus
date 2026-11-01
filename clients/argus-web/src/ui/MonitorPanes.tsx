@@ -31,6 +31,7 @@ import { DevicesView } from "./DevicesView";
 import { Projects } from "./ProjectViews";
 import { DeviceRoute, ProjectRoute, SessionRedirect } from "./ScreenRoutes";
 import { useScreenTitle } from "./screenTitle";
+import { LazySessionTool, SessionToolActions } from "./SessionToolActions";
 import { Settings } from "./Settings";
 import { useScrollRestore } from "./useScrollRestore";
 
@@ -136,6 +137,12 @@ function ScreenBody({
       );
     case "settings":
       return <Settings />;
+    case "files":
+    case "file":
+    case "search":
+    case "terminals":
+    case "fileDiff":
+      return <LazySessionTool screen={screen} />;
   }
 }
 
@@ -288,16 +295,19 @@ function AgentDock({ agentId }: { agentId: string }) {
 
 function agentChrome(screen: Screen, onStopped: () => void) {
   if (screen.name !== "agent") {
-    return { actions: null, dock: null };
+    return { actions: <SessionToolActions screen={screen} />, dock: null };
   }
 
   return {
     actions: (
-      <AgentActions
-        agentId={screen.agentId}
-        sessionId={screen.sessionId}
-        onStopped={onStopped}
-      />
+      <>
+        <SessionToolActions screen={screen} />
+        <AgentActions
+          agentId={screen.agentId}
+          sessionId={screen.sessionId}
+          onStopped={onStopped}
+        />
+      </>
     ),
     dock: <AgentDock agentId={screen.agentId} />,
   };
@@ -422,7 +432,15 @@ export function DetailPane({
 function PaneIcon({ screen }: { screen: Screen }) {
   switch (screen.name) {
     case "changes":
+    case "fileDiff":
       return <Icons.BranchIcon size={14} />;
+    case "files":
+    case "file":
+      return <Icons.CodeIcon size={14} />;
+    case "search":
+      return <Icons.SearchIcon size={14} />;
+    case "terminals":
+      return <Icons.TerminalIcon size={14} />;
     case "devices":
     case "device":
       return <Icons.SimulatorIcon size={14} />;

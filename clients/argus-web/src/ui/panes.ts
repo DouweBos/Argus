@@ -9,19 +9,14 @@ import {
   paneFor,
   projectScreen,
   type Screen,
+  sessionOfScreen,
 } from "../routing/screens";
 import { useProjectsStore } from "../stores/projects";
 
 /** The master screen last on screen, for detail screens that belong to no project. */
 let lastMaster: Screen = HOME;
 
-function sessionOf(screen: Screen): string | null {
-  return screen.name === "agent" ||
-    screen.name === "session" ||
-    screen.name === "changes"
-    ? screen.sessionId
-    : null;
-}
+const sessionOf = sessionOfScreen;
 
 /**
  * What the master pane shows beside `screen`: itself when it is a master
@@ -47,9 +42,16 @@ export function parentOf(screen: Screen): Screen {
   switch (screen.name) {
     case "device":
       return { name: "devices" };
+    case "file":
+    case "search":
+      return { name: "files", sessionId: screen.sessionId };
+    case "fileDiff":
+      return { name: "changes", sessionId: screen.sessionId, mode: screen.mode };
     case "agent":
     case "session":
-    case "changes": {
+    case "changes":
+    case "files":
+    case "terminals": {
       const repoRoot = repoOfSession(screen.sessionId);
 
       return repoRoot ? projectScreen(repoRoot) : HOME;

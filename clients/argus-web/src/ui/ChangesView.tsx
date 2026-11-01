@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  Button,
   EmptyState,
   FileDiffCard,
   Icons,
@@ -15,14 +16,46 @@ import {
   Spinner,
   StatusDot,
 } from "@argus/peacock";
+import { appNavigate } from "../routing/router";
 import type { DiffMode as Mode } from "../routing/screens";
 import { useConnectionStore } from "../stores/connection";
 import { useGitStore } from "../stores/git";
+import { ViewFileButton } from "./FileDiffView";
 
 const MODE_OPTIONS = [
   { value: "branch" as const, label: "Vs base branch" },
   { value: "working" as const, label: "Uncommitted" },
 ];
+
+/** Open one file's diff on its own, or the file itself. */
+function ChangedFileActions({
+  deleted,
+  mode,
+  path,
+  sessionId,
+}: {
+  deleted: boolean;
+  mode: Mode;
+  path: string;
+  sessionId: string;
+}) {
+  const hasControl = useConnectionStore((s) => s.hasControl());
+
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => appNavigate({ name: "fileDiff", sessionId, mode, path })}
+      >
+        Open
+      </Button>
+      {hasControl && !deleted && (
+        <ViewFileButton sessionId={sessionId} path={path} />
+      )}
+    </>
+  );
+}
 
 /** `mode` is the route's: `/git/branch` or `/git/working`. */
 export function ChangesView({
@@ -118,7 +151,18 @@ export function ChangesView({
       ) : (
         <div className="aw-changes-files">
           {files.map((f) => (
-            <FileDiffCard key={f.newPath || f.oldPath} file={f} />
+            <FileDiffCard
+              key={f.newPath || f.oldPath}
+              file={f}
+              headerActions={
+                <ChangedFileActions
+                  sessionId={sessionId}
+                  mode={mode}
+                  path={f.newPath || f.oldPath}
+                  deleted={f.status === "D"}
+                />
+              }
+            />
           ))}
         </div>
       )}

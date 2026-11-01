@@ -9,6 +9,8 @@
  * `session_created`, `session_merged` and the rest when this client asks.
  */
 
+import type { ResultBucket } from "@argus/client-core";
+
 /** Which bundle is running: served by the computer, or the hosted app. */
 export type WebBuild = "hosted" | "network";
 
@@ -18,6 +20,14 @@ export type DurationBucket = "<10s" | "10s-1m" | "1m-10m" | "10m-1h" | "1h+";
 /** Where a launch URL came from. */
 export type LinkSource = "link" | "notification";
 
+/** Where a file was opened from; `link` is a URL straight to it. */
+export type FileViewSource = "changes" | "link" | "quick_open" | "search";
+
+/** The palette (Cmd/Ctrl+P) or the session's Files screen. */
+export type QuickOpenVia = "screen" | "shortcut";
+
+export type TerminalKind = "run" | "setup" | "shell";
+
 export interface EventMap {
   web_launched: { build: WebBuild; paired: boolean };
   web_paired: { has_control: boolean };
@@ -26,6 +36,14 @@ export interface EventMap {
   web_connection_lost: { connected_bucket: DurationBucket };
   web_reconnected: { offline_bucket: DurationBucket };
   web_host_switched: { computer_count: number };
+  web_file_viewed: { source: FileViewSource; language: string };
+  web_quick_open_used: { via: QuickOpenVia; picked: boolean };
+  web_file_search_run: {
+    regex: boolean;
+    result_bucket: ResultBucket;
+    truncated: boolean;
+  };
+  web_terminal_viewed: { kind: TerminalKind; live: boolean };
   telemetry_enabled: undefined;
   telemetry_disabled: undefined;
 }

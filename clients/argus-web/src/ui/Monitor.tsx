@@ -28,7 +28,12 @@ import {
   navigateBack,
   stripQuery,
 } from "../routing/router";
-import { paneFor, screenPattern, type Screen } from "../routing/screens";
+import {
+  paneFor,
+  screenPattern,
+  type Screen,
+  sessionOfScreen,
+} from "../routing/screens";
 import { useAppLocation } from "../routing/useAppLocation";
 import { useConnectionStore } from "../stores/connection";
 import { useDevicesStore } from "../stores/devices";
@@ -41,6 +46,7 @@ import {
 } from "../telemetry/links";
 import { captureScreen } from "../telemetry/telemetry";
 import { DetailPane, MasterPane, SinglePane } from "./MonitorPanes";
+import { QuickOpenPalette } from "./SessionToolActions";
 import { parentOf, useMasterScreen } from "./panes";
 import { TelemetryConsent } from "./TelemetryConsent";
 import { loadSidebarWidth, saveSidebarWidth } from "./sidebarWidth";
@@ -79,6 +85,10 @@ export function Monitor() {
     }
   }, [screen]);
 
+  const toolSession = sessionOfScreen(screen);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const closeQuickOpen = useCallback(() => setQuickOpen(false), []);
+
   useViewportInset();
   useKeyboardShortcuts({
     back,
@@ -86,7 +96,18 @@ export function Monitor() {
     onToggleSidebar: isWide
       ? () => setSidebarCollapsed((c) => !c)
       : undefined,
+    onQuickOpen: toolSession ? () => setQuickOpen(true) : undefined,
+    onSearchFiles: toolSession
+      ? () => appNavigate({ name: "search", sessionId: toolSession })
+      : undefined,
   });
+  const palette = quickOpen && toolSession && (
+    <QuickOpenPalette
+      currentFile={screen.name === "file" ? screen.path : null}
+      sessionId={toolSession}
+      onClose={closeQuickOpen}
+    />
+  );
 
   // Fetched once, not polled: this only decides where the device button in an
   // agent's header goes.
@@ -163,6 +184,7 @@ export function Monitor() {
     return (
       <div className="aw-shell">
         <SinglePane banner={offlineBanner} onBack={back} screen={screen} />
+        {palette}
         <TelemetryConsent />
         <ShortcutCheatsheet
           open={showShortcuts}
@@ -204,6 +226,7 @@ export function Monitor() {
           </div>
         )}
       </SplitShell>
+      {palette}
       <TelemetryConsent />
       <ShortcutCheatsheet
         open={showShortcuts}

@@ -246,3 +246,23 @@ export class FuzzyFileMatcher {
     return scorePath(needleOf(query), path, baseOffsetOf(path));
   }
 }
+
+/** A matched path as a row shows it: the file name and its directory, each with its own offsets. */
+export function splitMatchedPath(
+  path: string,
+  indices: readonly number[],
+): {
+  name: string;
+  nameIndices: number[];
+  directory: string;
+  directoryIndices: number[];
+} {
+  const base = baseOffsetOf(path);
+
+  return {
+    name: path.slice(base),
+    nameIndices: indices.filter((i) => i >= base).map((i) => i - base),
+    directory: base > 0 ? path.slice(0, base - 1) : "",
+    directoryIndices: indices.filter((i) => i < base - 1),
+  };
+}

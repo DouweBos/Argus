@@ -403,6 +403,21 @@ export class Transport {
     params: unknown,
     options: RequestOptions = {},
   ): Promise<T> {
+    return this.sequencedRequest<T>(method, params, options).then(
+      (r) => r.result,
+    );
+  }
+
+  /**
+   * A request whose answer carries the response's envelope `seq`, which
+   * orders it among events: a replay (`terminals.scrollback`) holds exactly
+   * what events sequenced before it carried.
+   */
+  sequencedRequest<T = unknown>(
+    method: string,
+    params: unknown,
+    options: RequestOptions = {},
+  ): Promise<{ result: T; seq: number }> {
     if (!this.session) {
       return Promise.reject(new RemoteError("offline", "not connected"));
     }
@@ -415,7 +430,7 @@ export class Transport {
       params,
     };
 
-    return new Promise<T>((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
         reject(new RemoteError("timeout", `${method} timed out`));
@@ -427,7 +442,7 @@ export class Transport {
             new RemoteError(res.error.code, res.error.message, res.error.data),
           );
         } else {
-          resolve(res.ok as T);
+          resolve({ result: res.ok as T, seq: res.seq });
         }
       });
       this.emit(env);

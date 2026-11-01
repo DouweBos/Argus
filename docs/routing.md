@@ -281,6 +281,11 @@ it can:
   | `/sessions/:sessionId/agents/:agentId` | An agent's chat. Without `:agentId` (or `/sessions/:id`) it opens the session's newest agent                                          |
   | `/sessions/:sessionId/git/branch`      | The session's changes against its base branch; any other `/git/*` sub-view opens this                                                 |
   | `/sessions/:sessionId/git/working`     | The session's uncommitted changes                                                                                                     |
+  | `/sessions/:sessionId/git/:mode/diff`  | One file's diff from Changes, `?path=` the file; `:mode` is `branch` or `working`                                                     |
+  | `/sessions/:sessionId/code`            | `?path=&line=` a file, read-only and highlighted, at a line. Without `?path=` it opens the file list below                            |
+  | `/sessions/:sessionId/code/quick-open` | The session's files, fuzzy-matched by name, changed files first (Cmd/Ctrl+P opens the same list over any session screen)              |
+  | `/sessions/:sessionId/code/search`     | Search across the worktree, with case, word and regex toggles (Cmd/Ctrl+Shift+F)                                                      |
+  | `/sessions/:sessionId/terminals`       | The session's terminals, read-only and live; `/terminals/:terminalId` puts one in front                                               |
   | `/devices`, `/devices/:platform/:key`  | Devices, and one device's live screen; an unknown device opens `/devices`                                                             |
   | `/settings`                            | Settings (web and iOS only)                                                                                                           |
 

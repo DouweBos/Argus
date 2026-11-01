@@ -13,6 +13,9 @@ interface Options {
   onShowShortcuts: () => void;
   /** Absent on narrow layouts, where there is no sidebar to toggle. */
   onToggleSidebar?: () => void;
+  /** Absent when the screen belongs to no session. */
+  onQuickOpen?: () => void;
+  onSearchFiles?: () => void;
 }
 
 /** What `Cmd+/` lists — the same set this hook binds. */
@@ -46,6 +49,20 @@ export const WEB_SHORTCUTS: readonly ShortcutCheatsheetEntry[] = [
     scopes: ["session"],
   },
   {
+    id: "quick-open",
+    label: "Open a file",
+    combo: "Cmd+P",
+    contexts: ["global"],
+    scopes: ["session"],
+  },
+  {
+    id: "search-files",
+    label: "Search in files",
+    combo: "Cmd+Shift+F",
+    contexts: ["global"],
+    scopes: ["session"],
+  },
+  {
     id: "shortcuts",
     label: "Show shortcuts",
     combo: "Cmd+/",
@@ -70,14 +87,23 @@ export function useKeyboardShortcuts({
   back,
   onShowShortcuts,
   onToggleSidebar,
+  onQuickOpen,
+  onSearchFiles,
 }: Options): void {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey) || e.altKey) {
         return;
       }
+      const key = e.key.toLowerCase();
 
-      if (e.key === "[") {
+      if (key === "p" && !e.shiftKey && onQuickOpen) {
+        e.preventDefault();
+        onQuickOpen();
+      } else if (key === "f" && e.shiftKey && onSearchFiles) {
+        e.preventDefault();
+        onSearchFiles();
+      } else if (e.key === "[") {
         e.preventDefault();
         back();
       } else if (e.key === "]") {
@@ -100,5 +126,5 @@ export function useKeyboardShortcuts({
     window.addEventListener("keydown", onKeyDown);
 
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [back, onShowShortcuts, onToggleSidebar]);
+  }, [back, onShowShortcuts, onToggleSidebar, onQuickOpen, onSearchFiles]);
 }

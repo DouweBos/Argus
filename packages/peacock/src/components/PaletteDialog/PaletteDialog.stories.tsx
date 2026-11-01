@@ -96,6 +96,16 @@ export const Grouped: Story = {
   ),
 };
 
+export const Inline: Story = {
+  args: {
+    ariaLabel: "Open a file",
+    groups: FILES,
+    inline: true,
+    placeholder: "File name",
+    query: "term",
+  },
+};
+
 export const Loading: Story = {
   args: {
     ariaLabel: "Open a file",

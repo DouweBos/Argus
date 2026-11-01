@@ -58,7 +58,9 @@ function depth(): number {
 
 function hrefFor(screen: Screen, hostId: string | null): string {
   const path = pathForScreen(screen);
-  const query = hostId ? `?host=${encodeURIComponent(hostId)}` : "";
+  // A screen may carry its own query (`/code?path=`); `host` joins it.
+  const joiner = path.includes("?") ? "&" : "?";
+  const query = hostId ? `${joiner}host=${encodeURIComponent(hostId)}` : "";
 
   return `${base()}${path.slice(1)}${query}${window.location.hash}`;
 }

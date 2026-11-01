@@ -681,3 +681,58 @@ button {
   font-size: 15px;
   letter-spacing: 1px;
 }
+
+/* Files and terminals fill the pane and scroll inside themselves. */
+.aw-file,
+.aw-terminals {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aw-file-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.aw-file-bar > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.aw-file-code {
+  flex: 1 1 auto;
+  min-height: 240px;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+}
+
+.aw-terminal-tabs {
+  display: flex;
+  overflow-x: auto;
+}
+
+.aw-terminal {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aw-terminal-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--font-size-xs);
+}
+
+.aw-terminal-view {
+  flex: 1 1 auto;
+  min-height: 280px;
+  border-radius: var(--border-radius-sm);
+}

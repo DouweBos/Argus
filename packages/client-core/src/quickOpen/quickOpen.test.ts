@@ -1,6 +1,6 @@
 import type { CodeSymbol, CodeSymbolKind } from "@argus/remote-protocol";
 import { describe, expect, it } from "vitest";
-import { FuzzyFileMatcher } from "./fuzzyFileMatcher";
+import { FuzzyFileMatcher, splitMatchedPath } from "./fuzzyFileMatcher";
 import { parseQuickOpenQuery } from "./query";
 import {
   mergeSymbols,
@@ -84,6 +84,23 @@ describe("fuzzyFileMatcher", () => {
     expect(big.search("file1999view").length).toBeGreaterThan(0);
     expect(big.search("fv")).toHaveLength(50);
     expect(performance.now() - started).toBeLessThan(4000);
+  });
+});
+
+describe("splitMatchedPath", () => {
+  it("splits offsets between the file name and its directory", () => {
+    expect(splitMatchedPath("Views/CodeView.swift", [0, 6, 10])).toEqual({
+      name: "CodeView.swift",
+      nameIndices: [0, 4],
+      directory: "Views",
+      directoryIndices: [0],
+    });
+    expect(splitMatchedPath("README.md", [0])).toEqual({
+      name: "README.md",
+      nameIndices: [0],
+      directory: "",
+      directoryIndices: [],
+    });
   });
 });
 

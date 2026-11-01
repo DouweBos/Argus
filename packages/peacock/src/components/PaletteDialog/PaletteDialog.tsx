@@ -41,17 +41,24 @@ export interface PaletteDialogProps {
   onQueryChange: (query: string) => void;
   groups: PaletteGroup[];
   onSelect: (item: PaletteItem) => void;
-  onClose: () => void;
+  /** Escape or a click outside; unused when `inline`. */
+  onClose?: () => void;
   /** Shown instead of results while they load. */
   loading?: boolean;
   /** Shown when no group has items. */
   emptyLabel?: ReactNode;
+  /** A screen's body instead of a modal: no overlay, fills its container. */
+  inline?: boolean;
+  /** Focus the field on mount; on by default. */
+  autoFocus?: boolean;
 }
 
+const noop = () => {};
+
 /**
- * A modal search-and-pick list, the shell of the open and quick-open
- * palettes: a query field, grouped rows, arrow keys and Enter to pick, Escape
- * or a click outside to close. Filtering is the caller's.
+ * A search-and-pick list, the shell of the open and quick-open palettes: a
+ * query field, grouped rows, arrow keys and Enter to pick, and as a modal,
+ * Escape or a click outside to close. Filtering is the caller's.
  */
 export function PaletteDialog({
   ariaLabel,
@@ -60,14 +67,16 @@ export function PaletteDialog({
   onQueryChange,
   groups,
   onSelect,
-  onClose,
+  onClose = noop,
   loading = false,
   emptyLabel = "No matches.",
+  inline = false,
+  autoFocus = true,
 }: PaletteDialogProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeItemRef = useRef<HTMLButtonElement>(null);
-  useDismissOnEscape(onClose);
+  useDismissOnEscape(onClose, !inline);
 
   const ordered = groups.flatMap((g) => g.items);
   const safeIndex = Math.min(Math.max(activeIndex, 0), ordered.length - 1);
@@ -77,8 +86,10 @@ export function PaletteDialog({
   }, [safeIndex]);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (autoFocus) {
+      inputRef.current?.focus();
+    }
+  }, [autoFocus]);
 
   const onOverlayClick = (e: MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -104,92 +115,100 @@ export function PaletteDialog({
 
   const indexOf = new Map(ordered.map((it, i) => [it.id, i]));
 
+  const panel = (
+    <div
+      aria-label={ariaLabel}
+      aria-modal={inline ? undefined : "true"}
+      className={`${styles.palette} ${inline ? styles.inline : ""}`}
+      role={inline ? "search" : "dialog"}
+    >
+      <div className={styles.searchRow}>
+        <SearchIcon size={14} />
+        <input
+          ref={inputRef}
+          aria-label={ariaLabel}
+          autoCapitalize="off"
+          autoComplete="off"
+          autoCorrect="off"
+          className={styles.input}
+          placeholder={placeholder}
+          spellCheck={false}
+          value={query}
+          onChange={(e) => {
+            onQueryChange(e.target.value);
+            setActiveIndex(0);
+          }}
+          onKeyDown={onKeyDown}
+        />
+        {!inline && <Kbd keys={["esc"]} />}
+      </div>
+
+      <div className={styles.results} role="listbox" aria-label={ariaLabel}>
+        {(loading || ordered.length === 0) && (
+          <div className={styles.empty}>
+            {loading ? <Spinner size="sm" /> : emptyLabel}
+          </div>
+        )}
+        {!loading &&
+          groups
+            .filter((g) => g.items.length > 0)
+            .map((g) => (
+              <div key={g.key} className={styles.group}>
+                {g.label && <div className={styles.groupHead}>{g.label}</div>}
+                {g.items.map((it) => {
+                  const index = indexOf.get(it.id) ?? -1;
+                  const active = index === safeIndex;
+
+                  return (
+                    <button
+                      key={it.id}
+                      ref={active ? activeItemRef : undefined}
+                      aria-selected={active}
+                      className={`${styles.item} ${active ? styles.itemActive : ""}`}
+                      role="option"
+                      type="button"
+                      onClick={() => onSelect(it)}
+                      onMouseEnter={() => setActiveIndex(index)}
+                    >
+                      {it.icon && (
+                        <span className={styles.itemIcon}>{it.icon}</span>
+                      )}
+                      <span className={styles.itemText}>
+                        <HighlightedText
+                          className={styles.itemTitle}
+                          indices={it.titleMatches}
+                          text={it.title}
+                        />
+                        {it.sublabel && (
+                          <HighlightedText
+                            className={styles.itemSub}
+                            indices={it.sublabelMatches}
+                            text={it.sublabel}
+                          />
+                        )}
+                      </span>
+                      {it.badge}
+                      {it.hint && <Kbd keys={it.hint} />}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+      </div>
+    </div>
+  );
+
+  if (inline) {
+    return panel;
+  }
+
   return (
     <div
       className={styles.overlay}
       onClick={onOverlayClick}
       role="presentation"
     >
-      <div
-        aria-label={ariaLabel}
-        aria-modal="true"
-        className={styles.palette}
-        role="dialog"
-      >
-        <div className={styles.searchRow}>
-          <SearchIcon size={14} />
-          <input
-            ref={inputRef}
-            aria-label={ariaLabel}
-            autoCapitalize="off"
-            autoComplete="off"
-            autoCorrect="off"
-            className={styles.input}
-            placeholder={placeholder}
-            spellCheck={false}
-            value={query}
-            onChange={(e) => {
-              onQueryChange(e.target.value);
-              setActiveIndex(0);
-            }}
-            onKeyDown={onKeyDown}
-          />
-          <Kbd keys={["esc"]} />
-        </div>
-
-        <div className={styles.results} role="listbox" aria-label={ariaLabel}>
-          {(loading || ordered.length === 0) && (
-            <div className={styles.empty}>
-              {loading ? <Spinner size="sm" /> : emptyLabel}
-            </div>
-          )}
-          {!loading &&
-            groups
-              .filter((g) => g.items.length > 0)
-              .map((g) => (
-                <div key={g.key} className={styles.group}>
-                  {g.label && <div className={styles.groupHead}>{g.label}</div>}
-                  {g.items.map((it) => {
-                    const index = indexOf.get(it.id) ?? -1;
-                    const active = index === safeIndex;
-
-                    return (
-                      <button
-                        key={it.id}
-                        ref={active ? activeItemRef : undefined}
-                        aria-selected={active}
-                        className={`${styles.item} ${active ? styles.itemActive : ""}`}
-                        role="option"
-                        type="button"
-                        onClick={() => onSelect(it)}
-                        onMouseEnter={() => setActiveIndex(index)}
-                      >
-                        {it.icon && (
-                          <span className={styles.itemIcon}>{it.icon}</span>
-                        )}
-                        <span className={styles.itemText}>
-                          <HighlightedText
-                            className={styles.itemTitle}
-                            indices={it.titleMatches}
-                            text={it.title}
-                          />
-                          {it.sublabel && (
-                            <HighlightedText
-                              className={styles.itemSub}
-                              indices={it.sublabelMatches}
-                              text={it.sublabel}
-                            />
-                          )}
-                        </span>
-                        {it.badge}
-                        {it.hint && <Kbd keys={it.hint} />}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-        </div>
-      </div>
+      {panel}
     </div>
   );
 }

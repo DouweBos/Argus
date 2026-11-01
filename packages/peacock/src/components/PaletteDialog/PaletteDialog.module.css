@@ -132,6 +132,34 @@
   white-space: nowrap;
 }
 
+.inline {
+  flex: 1 1 auto;
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.inline .searchRow {
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.inline .input {
+  font-size: 16px;
+}
+
+@media (min-width: 700px) {
+  .inline .input {
+    font-size: 14px;
+  }
+}
+
 @media (max-width: 600px) {
   .overlay {
     padding: var(--space-8) var(--space-6);

@@ -19,7 +19,15 @@ import {
 } from "./agents";
 import { installConnectionHooks, watchLiveness } from "./connection";
 import { receiveClaim, receiveDeviceState, resetDevices } from "./devices";
+import { resetFiles } from "./files";
+import { receiveFileSearch, resetFileSearch } from "./fileSearch";
 import { resetGit } from "./git";
+import {
+  receiveTerminalData,
+  receiveTerminalExit,
+  resetTerminals,
+  resyncTerminals,
+} from "./terminals";
 import { receiveHuddleChat, receiveHuddleState } from "./huddle";
 import { receiveListedAgentStatus, resetProjects } from "./projects";
 import {
@@ -87,6 +95,15 @@ const HANDLERS: Partial<Record<RemoteEventType, Handler>> = {
   "device.claim": (ev) => receiveClaim(payload<"device.claim">(ev)),
   "huddle.chat": (ev) => receiveHuddleChat(payload<"huddle.chat">(ev)),
   "huddle.state": (ev) => receiveHuddleState(payload<"huddle.state">(ev)),
+  "terminal.data": (ev) => {
+    const { terminal_id, data } = payload<"terminal.data">(ev);
+    receiveTerminalData(terminal_id, data, ev.seq);
+  },
+  "terminal.exit": (ev) => {
+    const { terminal_id, exit_code } = payload<"terminal.exit">(ev);
+    receiveTerminalExit(terminal_id, exit_code, ev.seq);
+  },
+  "files.search": (ev) => receiveFileSearch(payload<"files.search">(ev)),
 };
 
 export function routeEvent(event: EventEnvelope): void {
@@ -100,6 +117,9 @@ export function resetHostStores(): void {
   resetTranscripts();
   resetPrompts();
   resetGit();
+  resetFiles();
+  resetFileSearch();
+  resetTerminals();
   resetDevices();
 }
 
@@ -115,6 +135,7 @@ export function resyncAfterReconnect(): void {
   resyncTranscripts();
   resyncQueues();
   resyncAgentStatuses();
+  resyncTerminals();
 }
 
 /** Wire the domain stores to the connection. Call once, before `init()`. */

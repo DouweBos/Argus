@@ -75,8 +75,62 @@ describe("pathForScreen", () => {
     "/sessions/s1/agents/a1",
     "/sessions/s1/git/working",
     "/sessions/s1/git/branch",
+    "/sessions/s1/code/quick-open",
+    "/sessions/s1/code/search",
+    "/sessions/s1/code?path=src%2Fapp.ts&line=12",
+    "/sessions/s1/terminals",
+    "/sessions/s1/terminals/t1",
+    "/sessions/s1/git/working/diff?path=src%2Fapp.ts",
   ])("round-trips %s", (path) => {
     expect(pathForScreen(screenFromPath(path))).toBe(path);
+  });
+});
+
+describe("session tool screens", () => {
+  it.each<[string, Screen]>([
+    // The Mac's and the phone's `/code?path=&line=`.
+    [
+      "/sessions/s1/code?path=src/a.ts&line=4",
+      { name: "file", sessionId: "s1", path: "src/a.ts", line: 4 },
+    ],
+    [
+      "/sessions/s1/code?path=src/a.ts&line=x",
+      { name: "file", sessionId: "s1", path: "src/a.ts", line: null },
+    ],
+    ["/sessions/s1/code", { name: "files", sessionId: "s1" }],
+    ["/sessions/s1/code/search?host=h", { name: "search", sessionId: "s1" }],
+    [
+      "/sessions/s1/terminals/t%3A1",
+      { name: "terminals", sessionId: "s1", terminalId: "t:1" },
+    ],
+    [
+      "/sessions/s1/git/branch/diff?path=a.ts",
+      { name: "fileDiff", sessionId: "s1", mode: "branch", path: "a.ts" },
+    ],
+    // A diff with no file is the whole diff.
+    [
+      "/sessions/s1/git/working/diff",
+      { name: "changes", sessionId: "s1", mode: "working" },
+    ],
+  ])("reads %s", (path, screen) => {
+    expect(screenFromPath(path)).toEqual(screen);
+  });
+
+  it("names patterns, never paths or ids", () => {
+    expect(
+      screenPattern({ name: "file", sessionId: "s", path: "a.ts", line: 1 }),
+    ).toBe("/sessions/:sessionId/code");
+    expect(
+      screenPattern({ name: "terminals", sessionId: "s", terminalId: "t" }),
+    ).toBe("/terminals/:terminalId");
+    expect(
+      screenPattern({
+        name: "fileDiff",
+        sessionId: "s",
+        mode: "working",
+        path: "a.ts",
+      }),
+    ).toBe("/sessions/:sessionId/git/working/diff");
   });
 });
 
