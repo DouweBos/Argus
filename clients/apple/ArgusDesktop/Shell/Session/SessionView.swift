@@ -176,7 +176,7 @@ struct AgentTabBar: View {
     MacTelemetry.capture(.agentTabMenuUsed(action: action))
   }
 
-  /// The desktop's tab menu: rename, copy, stop, reveal, then the ways to close tabs.
+  /// The desktop's tab menu: rename, copy, pin, stop, reveal, then the ways to close tabs.
   @ViewBuilder private func menu(for agent: RemoteAgentStatus) -> some View {
     let ids = agents.map(\.agentId)
     let index = ids.firstIndex(of: agent.agentId) ?? 0
@@ -185,6 +185,11 @@ struct AgentTabBar: View {
       renaming = agent
     }
     Button("Copy Agent ID") { track("copy_id"); Clipboard.copy(agent.agentId) }
+    Button(agent.isPinned ? "Unpin Chat" : "Pin Chat") {
+      track(agent.isPinned ? "unpin" : "pin")
+      Task { await store.setPinned(agentId: agent.agentId, pinned: !agent.isPinned) }
+    }
+    .disabled(!store.canTogglePin(agentId: agent.agentId))
     Divider()
     Button("Stop Agent") { track("stop"); Task { await store.interrupt(agentId: agent.agentId) } }
       .disabled(agent.status != .running)
@@ -256,6 +261,13 @@ struct AgentTab: View {
               .foregroundStyle(.secondary)
               .help("Spawned by another agent")
               .accessibilityLabel("Subagent")
+          }
+          if agent.isPinned {
+            Image(systemName: Icon.pin)
+              .font(.scaled(size: 9, weight: .semibold))
+              .foregroundStyle(.secondary)
+              .help("Pinned: resumed when Argus restarts")
+              .accessibilityLabel("Pinned")
           }
           Text(name).lineLimit(1)
           if children > 0 {

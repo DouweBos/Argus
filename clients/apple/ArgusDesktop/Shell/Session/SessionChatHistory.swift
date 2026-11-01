@@ -93,6 +93,8 @@ struct RecentChatsSheet: View {
               view(entry)
             } resume: {
               Task { await resume(entry) }
+            } togglePin: {
+              Task { await togglePin(entry) }
             } delete: {
               Task { await delete([entry]) }
             }
@@ -136,6 +138,12 @@ struct RecentChatsSheet: View {
     MacTelemetry.capture(.chatHistoryUsed(action: .resume))
   }
 
+  /// Pinned, the host brings it back as a live agent on its next start.
+  private func togglePin(_ entry: RemoteStoppedAgent) async {
+    await store.setPinned(chat: entry, repoRoot: session.repoRoot, pinned: !entry.isPinned)
+    entries = store.chats(in: session) ?? entries
+  }
+
   private func delete(_ doomed: [RemoteStoppedAgent]) async {
     await store.deleteChatHistory(repoRoot: session.repoRoot, historyIds: doomed.map(\.historyId))
     await load()
@@ -157,13 +165,22 @@ private struct ChatHistoryRow: View {
   let matches: [ChatHistoryMatch]
   let open: () -> Void
   let resume: () -> Void
+  let togglePin: () -> Void
   let delete: () -> Void
 
   var body: some View {
     HStack(spacing: 10) {
       Button(action: open) {
         VStack(alignment: .leading, spacing: 2) {
-          Text(entry.title).lineLimit(1)
+          HStack(spacing: 4) {
+            if entry.isPinned {
+              Image(systemName: Icon.pin)
+                .font(.scaled(size: 9, weight: .semibold))
+                .foregroundStyle(theme.textSecondary)
+                .accessibilityLabel("Pinned")
+            }
+            Text(entry.title).lineLimit(1)
+          }
           HStack(spacing: 6) {
             Text(meta).font(.scaled(.caption)).foregroundStyle(theme.textSecondary).lineLimit(1)
             if entry.isImported {
@@ -181,6 +198,14 @@ private struct ChatHistoryRow: View {
       Button("Resume", action: resume)
         .controlSize(.small)
         .help("Continue this chat in a new agent")
+      if !entry.isImported {
+        Button(action: togglePin) {
+          Image(systemName: entry.isPinned ? Icon.pinSlash : Icon.pin)
+        }
+        .buttonStyle(.argusBorderless)
+        .help(entry.isPinned ? "Unpin: stop resuming it when Argus restarts" : "Pin: resume it when Argus restarts")
+        .accessibilityLabel(entry.isPinned ? "Unpin chat" : "Pin chat")
+      }
       Button(action: delete) {
         Image(systemName: "xmark")
       }
