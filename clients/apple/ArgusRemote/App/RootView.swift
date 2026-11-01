@@ -404,10 +404,17 @@ private struct DetailRoot: View {
   @Environment(Router.self) private var router
 
   var body: some View {
-    if let project = router.detailProject {
-      ProjectView(repoRoot: project.repoRoot, name: project.name)
-    } else {
-      RootView.sectionRoot(router.section)
+    Group {
+      if let project = router.detailProject {
+        ProjectView(repoRoot: project.repoRoot, name: project.name)
+      } else {
+        RootView.sectionRoot(router.section)
+      }
+    }
+    .task(id: router.section) {
+      guard let route = router.pendingDetail, router.detailProject == nil else { return }
+      router.pendingDetail = nil
+      router.detailStack = [route]
     }
   }
 }

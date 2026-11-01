@@ -257,6 +257,8 @@ final class Router {
   /// identity, which re-creates the `NavigationStack` and throws away a path
   /// set in the same update — so seeding a path underneath never arrived.
   var detailStack: [Route] = []
+  /// Pushed by the detail root once it shows the section `open(_:in:)` switched to.
+  var pendingDetail: Route?
 
 
   func path(for section: AppSection) -> [Route] { paths[section] ?? [] }
@@ -360,14 +362,22 @@ final class Router {
       return
     }
     if isSplit {
-      self.section = section
-      detailProject = nil
-      detailStack = [route]
       if case .session(let id, let label, let repoRoot) = route {
         sidebarSelection = .session(id: id, label: label, repoRoot: repoRoot, projectName: "")
       } else {
         sidebarSelection = .section(section)
       }
+      guard self.section != section || detailProject != nil else {
+        detailStack = [route]
+        return
+      }
+      // A new root and a push in one update loses the push (see `apply`), and
+      // a task queued here still runs before the new root is up: the detail
+      // root pushes it once it has appeared for the new section.
+      self.section = section
+      detailProject = nil
+      detailStack = []
+      pendingDetail = route
     } else {
       let tab = section.tab
       self.section = tab
