@@ -36,6 +36,19 @@ describe("diffMessages", () => {
       { op: "remove", index: 1, id: "b" },
     ]);
   });
+
+  it("removes a message replaced in place, so id-keyed viewers drop it", () => {
+    const a = msg("a");
+    const b = msg("b");
+    const c = msg("c");
+    const edited = msg("e");
+
+    expect(diffMessages([a, b, c], [a, edited])).toEqual([
+      { op: "remove", index: 2, id: "c" },
+      { op: "remove", index: 1, id: "b" },
+      { op: "append", index: 1, message: edited },
+    ]);
+  });
 });
 
 describe("diffMeta", () => {

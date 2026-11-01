@@ -21,17 +21,25 @@ export function diffMessages(
   if (prev === next) {
     return [];
   }
+  // Cut where the ids part (a rewind's replacement): clients keyed by id
+  // would keep the old message if it came as an update at the same index.
+  let common = Math.min(prev.length, next.length);
+  for (let i = 0; i < common; i++) {
+    if (prev[i]!.id !== next[i]!.id) {
+      common = i;
+      break;
+    }
+  }
   const ops: AgentTranscriptOp[] = [];
-  for (let i = prev.length - 1; i >= next.length; i--) {
+  for (let i = prev.length - 1; i >= common; i--) {
     ops.push({ op: "remove", index: i, id: prev[i]!.id });
   }
-  const common = Math.min(prev.length, next.length);
   for (let i = 0; i < common; i++) {
     if (prev[i] !== next[i]) {
       ops.push({ op: "update", index: i, message: next[i]! });
     }
   }
-  for (let i = prev.length; i < next.length; i++) {
+  for (let i = common; i < next.length; i++) {
     ops.push({ op: "append", index: i, message: next[i]! });
   }
 
