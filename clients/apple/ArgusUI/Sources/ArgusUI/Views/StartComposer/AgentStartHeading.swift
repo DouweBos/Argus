@@ -17,7 +17,8 @@ public struct AgentStartHeading<Project: View>: View {
         // Too narrow for one line (a phone, a long name), the project goes on its own.
         ViewThatFits(in: .horizontal) {
           HStack(alignment: .firstTextBaseline, spacing: 0) {
-            Text("What should we build in ")
+            // Centred, the trailing space hangs off the line and the project butts against "in".
+            Text("What should we build in ").multilineTextAlignment(.leading)
             project
             Text("?")
           }
