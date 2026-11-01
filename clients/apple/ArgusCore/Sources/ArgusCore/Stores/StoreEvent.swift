@@ -19,6 +19,8 @@ public enum StoreEvent: Sendable, Equatable {
     case add
     case remove
     case rename
+    /// An account that was signed out was signed in again.
+    case reauth
     /// A session pinned to one account from the chat input.
     case pin
   }

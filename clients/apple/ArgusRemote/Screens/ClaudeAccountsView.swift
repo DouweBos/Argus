@@ -8,27 +8,19 @@ struct ClaudeAccountsView: View {
   @Environment(HostStore.self) private var host
   @Environment(\.theme) private var theme
 
-  @State private var adding = false
-  @State private var loggingIn: LoginTarget?
   @State private var renaming: RemoteClaudeAccount?
+  @State private var useConsole = false
+  /// Asked the computer to open a sign-in, not answered yet.
+  @State private var startingLogin = false
+
+  private var accounts: [RemoteClaudeAccount] { host.claudeAccounts ?? [] }
 
   var body: some View {
     List {
       // No inline error: the app-wide toast already shows `lastError`.
-      if let login = host.claudeLogin, login.pending {
-        // A sign-in is always about some row; the banner is the way back to it.
-        Button {
-          loggingIn = LoginTarget(id: host.activeClaudeAccountId)
-        } label: {
-          Banner(text: pendingLoginText(login), tone: .accent)
-        }
-        .buttonStyle(.plain)
-        .listRowSeparator(.hidden)
-      }
-
-      if host.claudeAccounts?.isEmpty == false {
+      if !accounts.isEmpty {
         Section("Accounts") {
-          ForEach(host.claudeAccounts ?? []) { account in
+          ForEach(accounts) { account in
             AccountRow(
               account: account,
               active: account.id == host.activeClaudeAccountId,
@@ -36,17 +28,23 @@ struct ClaudeAccountsView: View {
             ) {
               Task { await host.setActiveClaudeAccount(id: account.id) }
             } onLogin: {
-              loggingIn = LoginTarget(id: account.id)
+              startLogin(accountId: account.id)
             } onRename: {
               renaming = account
             }
           }
         }
       }
+      // Sign-in runs here in the list, as on the Mac, rather than in a sheet.
+      if host.hasControl {
+        ClaudeSignInSection(
+          useConsole: $useConsole, starting: startingLogin, firstAccount: accounts.isEmpty
+        ) { startLogin(accountId: nil) }
+      }
     }
     .loadPhase(
       LoadPhase(
-        loaded: host.claudeAccounts != nil, error: nil, isEmpty: host.claudeAccounts?.isEmpty ?? true),
+        loaded: host.claudeAccounts != nil, error: nil, isEmpty: accounts.isEmpty && !host.hasControl),
       loading: "Loading accounts…"
     ) {
       EmptyState(
@@ -56,13 +54,6 @@ struct ClaudeAccountsView: View {
           + "whichever account Claude was signed into first.")
     }
     .scrollContentBackground(.hidden)
-    .safeAreaInset(edge: .bottom, spacing: 0) {
-      if host.hasControl {
-        Btn(label: "Add account", icon: Icon.plus) { adding = true }
-          .padding(theme.space)
-          .background(theme.bg)
-      }
-    }
     .navigationTitle("Claude Accounts")
     .navigationBarTitleDisplayMode(.inline)
     .task {
@@ -70,29 +61,120 @@ struct ClaudeAccountsView: View {
       await host.loadClaudeLoginStatus()
     }
     .refreshable { await host.refreshClaudeAccounts() }
-    .liveRefresh(enabled: host.connection == .ready) { await host.refreshClaudeAccounts() }
-    .sheet(isPresented: $adding) { AddAccountSheet() }
-    .sheet(item: $loggingIn) { target in
-      ClaudeLoginSheet(accountId: target.id)
+    .liveRefresh(enabled: host.connection == .ready) {
+      await host.refreshClaudeAccounts()
+      // The attempt runs on the computer, so follow what it reports.
+      if host.claudeLogin?.pending == true { await host.loadClaudeLoginStatus() }
+    }
+    .onChange(of: host.claudeLogin?.pending) { _, pending in
+      if pending == false { Task { await host.refreshClaudeAccounts() } }
     }
     .sheet(item: $renaming) { account in
       RenameSheet(account: account)
     }
   }
 
-  /// A dead token and a spent quota want different fixes, and only one of them
-  /// is signing in again — the banner says which the phone can actually do.
-  private func pendingLoginText(_ login: RemoteClaudeLoginState) -> String {
-    login.needsCode
-      ? "Claude on your computer is waiting for a code — tap to paste it."
-      : "Sign-in open on your computer — tap to follow along."
+  /// A new account with no id, or signing an existing one in again.
+  private func startLogin(accountId: String?) {
+    startingLogin = true
+    Task {
+      if let accountId {
+        _ = await host.startClaudeLogin(accountId: accountId, useConsole: useConsole)
+      } else {
+        _ = await host.addClaudeAccount(useConsole: useConsole)
+      }
+      startingLogin = false
+      await host.refreshClaudeAccounts()
+    }
   }
 }
 
-/// Which row a sign-in belongs to. `sheet(item:)` needs Identifiable, and an
-/// id-only payload keeps the sheet from holding a stale copy of the account.
-struct LoginTarget: Identifiable {
-  let id: String?
+/// Add an account (or, with none yet, sign in), then follow the attempt the
+/// computer runs. The browser can only open there, so a pasted code is the
+/// phone's own way to finish.
+private struct ClaudeSignInSection: View {
+  @Environment(HostStore.self) private var host
+  @Environment(\.theme) private var theme
+  @Binding var useConsole: Bool
+  let starting: Bool
+  let firstAccount: Bool
+  let start: () -> Void
+
+  @State private var code = ""
+  @State private var submitting = false
+  @FocusState private var codeFocused: Bool
+
+  private var login: RemoteClaudeLoginState? { host.claudeLogin }
+  private var pending: Bool { login?.pending == true }
+  private var trimmedCode: String { code.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+  var body: some View {
+    Section {
+      if starting {
+        HStack(spacing: 8) {
+          ProgressView()
+          MutedText("Opening the browser on your computer…")
+        }
+      } else if pending {
+        MutedText(
+          login?.needsCode == true
+            ? "Claude is waiting for the code the browser shows."
+            : "Waiting for you to approve in the browser on your computer…")
+        ThemedTextField(placeholder: "Paste the code", text: $code, input: .code, onSubmit: submit)
+          .focused($codeFocused)
+        HStack(spacing: 8) {
+          Btn(label: "Cancel sign-in", tone: .secondary, small: true, hugs: true) {
+            Task { await host.cancelClaudeLogin() }
+          }
+          .fixedSize()
+          Spacer(minLength: 0)
+          Btn(label: submitting ? "Signing in…" : "Sign in", small: true, icon: Icon.check, hugs: true, action: submit)
+            .fixedSize()
+            .disabled(trimmedCode.isEmpty || submitting)
+        }
+      } else {
+        if let error = login?.error {
+          Banner(text: error, tone: .danger)
+        } else if login?.ok == true {
+          Banner(text: "Signed in.", tone: .success)
+        }
+        Picker("Account type", selection: $useConsole) {
+          Text("Claude subscription").tag(false)
+          Text("Anthropic Console").tag(true)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        Btn(label: firstAccount ? "Sign in" : "Add account", icon: Icon.plus, action: start)
+      }
+    } header: {
+      Text(pending || starting ? "Complete sign-in" : firstAccount ? "Sign in" : "Add another account")
+    } footer: {
+      Text(caption)
+    }
+    .listRowSeparator(.hidden)
+    .onChange(of: login?.needsCode) { _, needsCode in
+      if needsCode == true { codeFocused = true }
+    }
+    .onChange(of: pending) { _, pending in
+      if !pending { code = "" }
+    }
+  }
+
+  private var caption: String {
+    if pending {
+      return "Finish on your computer, or paste the code the browser shows there."
+    }
+    return "A browser opens on your computer to approve access. Accounts already signed in stay signed in."
+  }
+
+  private func submit() {
+    guard !trimmedCode.isEmpty, !submitting else { return }
+    submitting = true
+    Task {
+      await host.submitClaudeLoginCode(trimmedCode)
+      submitting = false
+    }
+  }
 }
 
 private struct AccountRow: View {
@@ -161,148 +243,6 @@ private struct AccountRow: View {
       }
     } message: {
       Text("This clears the account from Argus; Claude's own credentials are untouched.")
-    }
-  }
-}
-
-/// Follows a sign-in that runs on the computer. The browser can only open
-/// there, so the phone's only path to finishing is the code the CLI prints
-/// when the browser flow isn't available.
-private struct ClaudeLoginSheet: View {
-  @Environment(HostStore.self) private var host
-  @Environment(\.dismiss) private var dismiss
-
-  let accountId: String?
-
-  @State private var code = ""
-  @State private var working = false
-  @FocusState private var codeFocused: Bool
-
-  private var state: RemoteClaudeLoginState? { host.claudeLogin }
-
-  var body: some View {
-    NavigationStack {
-      Screen {
-        if let error = host.lastError {
-          Banner(text: error, tone: .danger)
-        }
-        if state?.ok == true {
-          Banner(text: "Signed in.", tone: .success)
-        } else if let error = state?.error {
-          Banner(text: error, tone: .danger)
-        }
-
-        if state?.pending == true {
-          Banner(
-            text: "Claude is signing in on your computer. Finish it there, or paste "
-              + "the code it shows below.",
-            tone: .accent
-          )
-          Field(label: "Paste the code") {
-            ThemedTextField(placeholder: "Code from your computer", text: $code, input: .code)
-              .focused($codeFocused)
-          }
-          Btn(label: "Submit code", icon: Icon.check, action: submit)
-            .disabled(code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || working)
-          Btn(label: "Cancel sign-in", tone: .danger) {
-            Task {
-              await host.cancelClaudeLogin()
-              dismiss()
-            }
-          }
-        } else {
-          Banner(
-            text: "A browser opens on your computer to authorise Claude. It can't "
-              + "complete there from here — the code below is the phone's way in.",
-            tone: .accent
-          )
-          Btn(label: "Sign in on your computer", icon: Icon.web, action: start)
-            .disabled(working)
-        }
-      }
-      .navigationTitle("Sign In")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Done") { dismiss() }
-        }
-      }
-      .onAppear {
-        if state?.pending != true {
-          Task { await host.loadClaudeLoginStatus() }
-        }
-      }
-      // The attempt runs on the computer, so react to what the host reports.
-      .onChange(of: state?.needsCode) { _, needsCode in
-        if needsCode == true { codeFocused = true }
-      }
-      .onChange(of: state?.pending) { _, pending in
-        if pending == false { Task { await host.refreshClaudeAccounts() } }
-      }
-    }
-  }
-
-  private func start() {
-    working = true
-    Task {
-      await host.startClaudeLogin(accountId: accountId)
-      working = false
-      if host.claudeLogin?.needsCode == true { codeFocused = true }
-    }
-  }
-
-  private func submit() {
-    working = true
-    Task {
-      await host.submitClaudeLoginCode(code)
-      working = false
-      code = ""
-    }
-  }
-}
-
-private struct AddAccountSheet: View {
-  @Environment(HostStore.self) private var host
-  @Environment(\.dismiss) private var dismiss
-
-  @State private var useConsole = false
-
-  var body: some View {
-    NavigationStack {
-      Screen {
-        if let error = host.lastError {
-          Banner(text: error, tone: .danger)
-        }
-        Field(
-          label: "SUBSCRIPTION",
-          caption: "Which kind of Claude plan the new account is on."
-        ) {
-          Picker("Subscription", selection: $useConsole) {
-            Text("Claude subscription").tag(false)
-            Text("Anthropic Console").tag(true)
-          }
-          .pickerStyle(.segmented)
-          .labelsHidden()
-        }
-        Btn(label: "Add and sign in", icon: Icon.plus, action: add)
-      }
-      .navigationTitle("Add Account")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button("Cancel") { dismiss() }
-        }
-      }
-    }
-  }
-
-  /// The browser opens on the computer and the account it lands on isn't known
-  /// until the refresh arrives, so the sheet has nothing to wait for — close it
-  /// and let the list fill in.
-  private func add() {
-    Task {
-      await host.addClaudeAccount(useConsole: useConsole)
-      dismiss()
     }
   }
 }

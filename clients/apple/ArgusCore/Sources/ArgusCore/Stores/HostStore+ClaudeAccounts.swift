@@ -159,6 +159,7 @@ extension HostStore {
         as: Result.self)
       claudeLogin = RemoteClaudeLoginState(pending: true, needsCode: false)
       openLoginURL(result.url)
+      if accountId != nil { hooks.track(.claudeAccountChanged(action: .reauth)) }
       return true
     } catch {
       claudeLogin = nil
