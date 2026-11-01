@@ -81,9 +81,11 @@ extension HostStore {
     await loadStoppedAgents(repoRoot: repoRoot)
   }
 
-  /// A new agent on the chat's Claude session and runner; the host seeds its transcript.
+  /// A new agent on the chat's Claude session, runner, model, mode and effort; the host seeds its transcript.
   public func resumeChat(_ chat: RemoteStoppedAgent, sessionId: String) async -> RemoteAgentStatus? {
-    await spawnAgent(sessionId: sessionId, resumeSessionId: chat.runnerSessionId, runnerId: chat.runnerId)
+    await resume(
+      sessionId: sessionId, ref: chat.runnerSessionId, runnerId: chat.runnerId, model: chat.model,
+      mode: chat.permissionMode, effort: chat.effort)
   }
 
   /// A stopped agent picks up again only once its runner reported a session to resume.
@@ -91,9 +93,24 @@ extension HostStore {
     statusByAgent[agentId]?.runnerSessionId != nil
   }
 
-  /// A new agent in the same session, on the stopped one's conversation and runner.
+  /// A new agent in the same session, on the stopped one's conversation, runner, model, mode and effort.
   public func resumeAgent(_ agentId: String) async -> RemoteAgentStatus? {
     guard let status = statusByAgent[agentId], let ref = status.runnerSessionId else { return nil }
-    return await spawnAgent(sessionId: status.sessionId, resumeSessionId: ref, runnerId: status.runnerId)
+    return await resume(
+      sessionId: status.sessionId, ref: ref, runnerId: status.runnerId, model: status.model,
+      mode: status.permissionMode, effort: status.effort ?? effortByAgent[agentId])
+  }
+
+  /// A mode the gateway can't spawn (`trusted`) falls back to the host's default.
+  private func resume(
+    sessionId: String, ref: String, runnerId: String?, model: String?, mode: String?, effort: String?
+  ) async -> RemoteAgentStatus? {
+    guard
+      let agent = await spawnAgent(
+        sessionId: sessionId, model: model, permissionMode: mode.flatMap(RemotePermissionMode.init(rawValue:)),
+        resumeSessionId: ref, runnerId: runnerId)
+    else { return nil }
+    if let effort { await applyEffort(agentId: agent.agentId, level: effort) }
+    return agent
   }
 }

@@ -48,6 +48,8 @@ extension HostStore {
         description: description.flatMap(Self.nonBlank), branch: branch.flatMap(Self.nonBlank)),
       as: Result.self)
     statusByAgent[result.agent.agentId] = result.agent
+    // The host carried the source's effort over; the composer reads it from here.
+    if let effort = result.agent.effort { effortByAgent[result.agent.agentId] = effort }
     // A forked session lands in the source's project; list it before anyone opens it.
     let source = statusByAgent[agentId]?.sessionId
     if let repoRoot = source.flatMap({ repoRoot(forSessionId: $0) }) {

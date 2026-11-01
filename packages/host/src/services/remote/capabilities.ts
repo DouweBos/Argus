@@ -647,6 +647,7 @@ export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
     awaiting: agentAwaiting(a.agentId),
     limit_resume_at: limitResumeAt(a.agentId),
     limit_stalled: isLimitStalled(a.agentId),
+    ...(a.effort ? { effort: a.effort } : {}),
     ...(runnerSessionId ? { runner_session_id: runnerSessionId } : {}),
     runner_id: a.runner.id,
   };
@@ -1046,6 +1047,8 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         ended_at: e.endedAt,
         ...(e.importedFrom ? { imported_from: e.importedFrom } : {}),
         ...(e.runnerId ? { runner_id: e.runnerId } : {}),
+        ...(e.permissionMode ? { permission_mode: e.permissionMode } : {}),
+        ...(e.effort ? { effort: e.effort } : {}),
       }),
     );
 

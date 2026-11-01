@@ -84,6 +84,8 @@ export const RemoteAgentStatus = z.object({
   limit_resume_at: z.number().nullable().optional(),
   /** The last turn ended on a spent usage limit and none has got through since. */
   limit_stalled: z.boolean().optional(),
+  /** Effort last set on the agent; absent while it runs on the model's default. */
+  effort: z.string().optional(),
   /** Runner session id once the runner reported one, so a stopped agent can be resumed. */
   runner_session_id: z.string().optional(),
   /** The runner it runs on, so a resume picks the same one. */
@@ -111,6 +113,9 @@ export const RemoteStoppedAgent = z.object({
   imported_from: z.enum(["claude_code"]).optional(),
   /** The runner it ran on, so a resume picks the same one. Absent on older hosts. */
   runner_id: z.string().optional(),
+  /** Permission mode and effort it last ran with, so a resume keeps them. Absent on older records. */
+  permission_mode: z.string().optional(),
+  effort: z.string().optional(),
 });
 export type RemoteStoppedAgent = z.infer<typeof RemoteStoppedAgent>;
 

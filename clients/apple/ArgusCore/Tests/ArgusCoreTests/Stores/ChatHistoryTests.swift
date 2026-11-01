@@ -13,7 +13,7 @@ struct ChatHistoryTests {
         .utf8))
 
   private static func chat(_ id: String, branch: String, ended: Int, title: String = "chat") -> String {
-    #"{"history_id":"\#(id)","runner_session_id":"r-\#(id)","title":"\#(title)","branch":"\#(branch)","message_count":2,"started_at":0,"ended_at":\#(ended),"runner_id":"codex"}"#
+    #"{"history_id":"\#(id)","runner_session_id":"r-\#(id)","title":"\#(title)","branch":"\#(branch)","message_count":2,"started_at":0,"ended_at":\#(ended),"runner_id":"codex","model":"haiku","permission_mode":"plan","effort":"low"}"#
   }
 
   private func attached() async -> (HostStore, FakeBackend) {
@@ -43,7 +43,7 @@ struct ChatHistoryTests {
     #expect(HostStore.filterChats(chats, query: "login", hits: ("log", ["h1": []])).map(\.historyId) == ["h3"])
   }
 
-  @Test("resuming a chat picks the runner it ran on")
+  @Test("resuming a chat keeps the runner, model, mode and effort it ran on")
   func resumePassesRunner() async throws {
     let (store, backend) = await attached()
     backend.reply(.agentsSpawn, #"{"agent":{"agent_id":"a-1","session_id":"s-1","status":"idle","created_at":1}}"#)
@@ -54,14 +54,37 @@ struct ChatHistoryTests {
     let params = try #require(backend.params(.agentsSpawn))
     #expect(params["resume_session_id"] as? String == "r-h3")
     #expect(params["runner_id"] as? String == "codex")
+    #expect(params["model"] as? String == "haiku")
+    #expect(params["permission_mode"] as? String == "plan")
+    #expect(backend.params(.agentsSetEffort)?["level"] as? String == "low")
+    #expect(store.effortByAgent["a-1"] == "low")
   }
 
-  @Test("a stopped agent resumes on its own conversation and runner")
+  @Test("a mode the gateway can't spawn resumes on the host's default")
+  func resumeDropsTrusted() async throws {
+    let store = HostStore()
+    let backend = FakeBackend()
+    backend.reply(
+      .agentsStopped,
+      #"{"agents":[{"history_id":"h1","runner_session_id":"r-1","title":"t","branch":"feat/a","message_count":1,"started_at":0,"ended_at":1,"permission_mode":"trusted"}]}"#
+    )
+    backend.reply(.agentsSpawn, #"{"agent":{"agent_id":"a-1","session_id":"s-1","status":"idle","created_at":1}}"#)
+    await store.attach(backend)
+    let chat = try #require(await store.chatHistory(for: Self.session)?.first)
+
+    _ = await store.resumeChat(chat, sessionId: "s-1")
+
+    let params = try #require(backend.params(.agentsSpawn))
+    #expect(params["permission_mode"] == nil || params["permission_mode"] is NSNull)
+    #expect(backend.count(.agentsSetEffort) == 0)
+  }
+
+  @Test("a stopped agent resumes on its own conversation, runner, model, mode and effort")
   func resumeStoppedAgent() async throws {
     let (store, backend) = await attached()
     backend.reply(
       .agentsStatus,
-      #"{"agent":{"agent_id":"a-0","session_id":"s-1","status":"stopped","runner_session_id":"cli-0","runner_id":"codex"}}"#)
+      #"{"agent":{"agent_id":"a-0","session_id":"s-1","status":"stopped","runner_session_id":"cli-0","runner_id":"codex","model":"haiku","permission_mode":"review","effort":"high"}}"#)
     backend.reply(.agentsSpawn, #"{"agent":{"agent_id":"a-1","session_id":"s-1","status":"idle","created_at":1}}"#)
     #expect(!store.canResume(agentId: "a-0"))
     await store.loadAgentStatus(agentId: "a-0")
@@ -74,6 +97,9 @@ struct ChatHistoryTests {
     #expect(params["session_id"] as? String == "s-1")
     #expect(params["resume_session_id"] as? String == "cli-0")
     #expect(params["runner_id"] as? String == "codex")
+    #expect(params["model"] as? String == "haiku")
+    #expect(params["permission_mode"] as? String == "review")
+    #expect(backend.params(.agentsSetEffort)?["level"] as? String == "high")
   }
 
   @Test("a match splits around its hit by UTF-16 offsets")

@@ -40,7 +40,7 @@ export async function forkChatFromMessage(
   await startAgentInSession(newSession.id, {
     focus: true,
     resumeSessionId: newClaudeSessionId ?? undefined,
-    runnerId: getAgentState().agents[agentId]?.runner_id,
+    ...sourceSettings(agentId),
     seedFrom: { agentId, throughMessageId: forkMessageId },
   });
 }
@@ -70,7 +70,22 @@ export async function forkChatIntoNewAgent(
   await startAgentInSession(sessionId, {
     focus: true,
     resumeSessionId: newClaudeSessionId ?? undefined,
-    runnerId: getAgentState().agents[agentId]?.runner_id,
+    ...sourceSettings(agentId),
     seedFrom: { agentId, throughMessageId: forkMessageId },
   });
+}
+
+/** The source's runner, model and mode, so a fork doesn't fall back to the defaults. */
+function sourceSettings(agentId: string): {
+  model?: string;
+  permissionMode?: string;
+  runnerId?: string;
+} {
+  const source = getAgentState().agents[agentId];
+
+  return {
+    runnerId: source?.runner_id,
+    model: source?.model ?? undefined,
+    permissionMode: source?.permission_mode ?? undefined,
+  };
 }

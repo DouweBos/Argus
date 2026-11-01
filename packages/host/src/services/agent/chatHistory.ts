@@ -37,6 +37,9 @@ export interface ChatHistoryEntry {
    *  Resuming re-binds the new agent to it; a transcript belongs to the
    *  gateway that wrote it. */
   runnerId?: string;
+  /** Permission mode and effort it last ran with, so a resume keeps them. Absent on older records. */
+  permissionMode?: string;
+  effort?: string;
   totalCost?: number;
   totalDuration?: number;
   /** Set when the chat was read in from another app's history, not run here. */
@@ -175,6 +178,8 @@ export function saveConversation(
     sessionDescription: conversation.sessionDescription,
     model: conversation.model,
     runnerId: conversation.runnerId,
+    permissionMode: conversation.permissionMode,
+    effort: conversation.effort,
     totalCost: conversation.totalCost,
     totalDuration: conversation.totalDuration,
     importedFrom: conversation.importedFrom,

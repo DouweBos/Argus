@@ -159,6 +159,8 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
   public var limitResumeAt: Double?
   /// The last turn ended on a spent usage limit and none has got through since.
   public var limitStalled: Bool?
+  /// Effort last set on the agent; nil on the model's default or from older hosts.
+  public var effort: String?
   /// What a resume picks up, once the runner has reported a session; nil from older hosts.
   public var runnerSessionId: String?
   public var runnerId: String?
@@ -179,6 +181,7 @@ public struct RemoteAgentStatus: Codable, Hashable, Sendable, Identifiable {
     case awaiting
     case limitResumeAt = "limit_resume_at"
     case limitStalled = "limit_stalled"
+    case effort
     case runnerSessionId = "runner_session_id"
     case runnerId = "runner_id"
   }
@@ -200,6 +203,9 @@ public struct RemoteStoppedAgent: Codable, Hashable, Sendable, Identifiable {
   public var importedFrom: String?
   /// The runner it ran on, so a resume picks the same one. Nil from older hosts.
   public var runnerId: String?
+  /// The mode and effort it last ran with, so a resume keeps them. Nil on older records.
+  public var permissionMode: String?
+  public var effort: String?
 
   public var id: String { historyId }
   public var isImported: Bool { importedFrom != nil }
@@ -213,6 +219,8 @@ public struct RemoteStoppedAgent: Codable, Hashable, Sendable, Identifiable {
     case endedAt = "ended_at"
     case importedFrom = "imported_from"
     case runnerId = "runner_id"
+    case permissionMode = "permission_mode"
+    case effort
   }
 }
 

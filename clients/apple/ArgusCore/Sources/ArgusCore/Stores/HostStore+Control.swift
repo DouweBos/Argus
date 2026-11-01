@@ -401,8 +401,13 @@ extension HostStore {
   }
 
   public func setEffort(agentId: String, level: String?) async {
-    guard let backend else { return }
     hooks.track(.agentControlled(action: .effort))
+    await applyEffort(agentId: agentId, level: level)
+  }
+
+  /// `setEffort` without counting it as the user's: a resume carrying the old one over.
+  func applyEffort(agentId: String, level: String?) async {
+    guard let backend else { return }
     struct Params: Encodable {
       let agent_id: String
       let level: String?

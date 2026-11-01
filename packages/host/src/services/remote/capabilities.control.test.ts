@@ -77,6 +77,9 @@ vi.mock("../agent/chatHistory", () => ({
       messageCount: 2,
       createdAt: 0,
       endedAt: 0,
+      ...(i === 0
+        ? { model: "haiku", permissionMode: "plan", effort: "low" }
+        : {}),
     })),
   ),
 }));
@@ -420,6 +423,12 @@ describe("control capability gating", () => {
 
     expect(all.agents).toHaveLength(25);
     expect(capped.agents).toHaveLength(5);
+    // What a resume starts the new agent on.
+    expect(all.agents[0]).toMatchObject({
+      model: "haiku",
+      permission_mode: "plan",
+      effort: "low",
+    });
   });
 
   it("rewinds to an edited message", async () => {

@@ -40,7 +40,9 @@ struct MessageActionsTests {
     let store = HostStore()
     let backend = FakeBackend()
     backend.reply(
-      .agentsFork, #"{"session_id":"s-2","agent":{"agent_id":"a-2","session_id":"s-2","status":"idle","created_at":1}}"#)
+      .agentsFork,
+      #"{"session_id":"s-2","agent":{"agent_id":"a-2","session_id":"s-2","status":"idle","created_at":1,"model":"haiku","effort":"low"}}"#
+    )
     await store.attach(backend)
 
     let forked = try await store.fork(
@@ -51,7 +53,9 @@ struct MessageActionsTests {
     #expect(params["description"] as? String == "try it")
     #expect(params["branch"] == nil)
     #expect(forked.sessionId == "s-2")
-    #expect(store.statusByAgent["a-2"] != nil)
+    #expect(store.statusByAgent["a-2"]?.model == "haiku")
+    // The host carried the source's effort over; the composer shows it.
+    #expect(store.effortByAgent["a-2"] == "low")
   }
 
   @Test("a refused rewind throws for the sheet to show")

@@ -1768,6 +1768,7 @@ export async function setAgentEffort(
   }
 
   await session.handle.setEffort(level);
+  session.effort = level;
 
   emitHostEvent(`agent:effort-changed:${agentId}`, level);
   info(`[agent:${agentId}] effort changed to ${level ?? "(default)"}`);

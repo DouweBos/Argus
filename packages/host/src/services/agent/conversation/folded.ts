@@ -223,6 +223,7 @@ export function save(agentId: string): void {
   if (!conv.sessionId || conv.messages.length === 0 || !session) {
     return;
   }
+  const agent = appState.agents.get(agentId);
   try {
     saveConversation(session.repo_root, {
       id: crypto.randomUUID(),
@@ -235,6 +236,8 @@ export function save(agentId: string): void {
       sessionDescription: session.description ?? "",
       model: conv.model,
       runnerId: entry.runnerId,
+      permissionMode: agent?.permissionMode ?? undefined,
+      effort: agent?.effort ?? undefined,
       totalCost: conv.totalCost,
       totalDuration: conv.totalDuration,
       messageCount: conv.messages.length,

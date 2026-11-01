@@ -12,7 +12,14 @@ import { appState } from "../../../state";
 import { enqueueMessage } from "../messageQueue";
 
 const sent = vi.hoisted(() => [] as { agentId: string; text: string }[]);
-const saved = vi.hoisted(() => [] as { messageCount: number }[]);
+const saved = vi.hoisted(
+  () =>
+    [] as {
+      messageCount: number;
+      permissionMode?: string;
+      effort?: string;
+    }[],
+);
 const interrupted = vi.hoisted(() => [] as string[]);
 const followUps = vi.hoisted(() => ({
   asked: [] as string[],
@@ -313,6 +320,23 @@ describe("host conversation driver", () => {
     emitHostEvent(`agent:exit:${AGENT}`, 0);
 
     expect(saved.at(-1)?.messageCount).toBe(1);
+  });
+
+  it("saves the mode and effort a resume should keep", async () => {
+    addAgent();
+    Object.assign(appState.agents.get(AGENT)!, {
+      permissionMode: "plan",
+      effort: "low",
+    });
+    started();
+    line(INIT);
+    line(reply("Planned."));
+    emitHostEvent(`agent:exit:${AGENT}`, 0);
+
+    expect(saved.at(-1)).toMatchObject({
+      permissionMode: "plan",
+      effort: "low",
+    });
   });
 
   it("follows the conversation with revisioned deltas", async () => {

@@ -4,9 +4,10 @@
  */
 
 import type { AgentInfo } from "../models";
+import { warn } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { forkChatInSession, forkSession } from "../../session/manager";
-import { launchAgent } from "../agentService";
+import { launchAgent, setAgentEffort } from "../agentService";
 import { agentForkPoint, seedForkedConversation } from "./actions";
 
 export async function forkChatAt(
@@ -50,12 +51,21 @@ export async function forkChatAt(
     );
     resume = forked.claude_session_id;
   }
-  // The new agent's transcript starts as the chat up to the fork.
+  // The new agent's transcript starts as the chat up to the fork, on the
+  // source's runner, model and mode rather than the host's defaults.
   const agent = await launchAgent({
     sessionId,
+    model: source.model ?? undefined,
+    permissionMode: source.permissionMode ?? undefined,
+    runnerId: source.runner.id,
     resumeSessionId: resume ?? undefined,
     fresh: true,
   });
+  if (source.effort) {
+    await setAgentEffort(agent.agent_id, source.effort).catch((e: unknown) =>
+      warn(`[agent:${agent.agent_id}] fork kept no effort: ${String(e)}`),
+    );
+  }
   seedForkedConversation(
     agent.agent_id,
     { agentId, throughMessageId: messageId },

@@ -139,6 +139,8 @@ export const ChatHistoryEntry = z.object({
   /** Argus session the agent ran in — absent on older records. */
   argusSessionId: z.string().optional(),
   createdAt: z.number(),
+  /** Effort it last ran with, so a resume keeps it — absent on older records. */
+  effort: z.string().optional(),
   endedAt: z.number(),
   id: z.string(),
   /** Set when the chat was read in from another app's history, not run here. */
@@ -147,6 +149,8 @@ export const ChatHistoryEntry = z.object({
   model: z.string().optional(),
   /** Agent that spawned this one — absent on older records. */
   parentAgentId: z.string().optional(),
+  /** Permission mode it last ran with, so a resume keeps it — absent on older records. */
+  permissionMode: z.string().optional(),
   /**
    * Runner that produced the conversation — absent on older records. Resuming
    * re-binds the new agent to it.

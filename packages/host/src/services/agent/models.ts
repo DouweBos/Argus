@@ -166,6 +166,8 @@ export interface AgentSession {
    * (`bypassPermissions`) is still spawn-only.
    */
   permissionMode?: string | null;
+  /** Effort last set on the agent; null keeps the model's default. Carried into a fork or resume. */
+  effort?: string | null;
   /**
    * Mode the agent was in immediately before transitioning into `plan` —
    * stashed so that approving `ExitPlanMode` can restore the pre-plan mode
