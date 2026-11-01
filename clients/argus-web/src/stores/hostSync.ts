@@ -28,6 +28,11 @@ import {
   receivePrompt,
   resetPrompts,
 } from "./prompts";
+import {
+  connectionDown,
+  connectionForgotten,
+  connectionReady,
+} from "../telemetry/connectionEvents";
 import { pushWentOffline, registerPushOn, unregisterPush } from "./push";
 import {
   receiveDelta,
@@ -126,9 +131,16 @@ export function installHostSync(): void {
       }
       flushPendingDecisions(transport).catch(() => {});
       resyncAfterReconnect();
+      connectionReady();
     },
-    notReady: pushWentOffline,
-    reset: resetHostStores,
+    notReady: () => {
+      pushWentOffline();
+      connectionDown();
+    },
+    reset: () => {
+      connectionForgotten();
+      resetHostStores();
+    },
     unpairing: unregisterPush,
   });
   watchLiveness();

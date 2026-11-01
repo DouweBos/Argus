@@ -11,6 +11,7 @@ import {
 } from "../lib/notify";
 import { useConnectionStore } from "../stores/connection";
 import { accountFields } from "./accountFields";
+import { PrivacyField } from "./TelemetryConsent";
 import { usePushStore } from "../stores/push";
 import { webPushSupported, type WebPushState } from "../lib/webpush";
 import {
@@ -110,6 +111,7 @@ export function Settings() {
         </SettingsScreenField>
         {fields && <fields.Name />}
         <AppearanceField theme={theme} />
+        <PrivacyField />
         {fields && <fields.SignOut />}
       </div>
     );
@@ -140,6 +142,8 @@ export function Settings() {
       </SettingsScreenField>
 
       <AppearanceField theme={theme} />
+
+      <PrivacyField />
 
       <SettingsScreenField
         label="Notifications"

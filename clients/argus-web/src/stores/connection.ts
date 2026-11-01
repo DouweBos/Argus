@@ -94,10 +94,26 @@ const DISCONNECTED = {
   capabilities: [],
 } satisfies Partial<ConnectionState_>;
 
+/**
+ * The paired transport whose state is ours to report. One we are replacing
+ * or closing on purpose is cleared first, so its last "offline" is neither
+ * shown nor counted as a dropped connection.
+ */
+let live: Transport | null = null;
+
 export const useConnectionStore = create<ConnectionState_>()((set, get) => {
+  function dropTransport(): void {
+    const transport = get().transport;
+    live = null;
+    transport?.disconnect();
+  }
+
   function connect(identity: DeviceIdentity): Transport {
     const transport = new Transport(credentialsFor(identity), {
       onState: (connection) => {
+        if (transport !== live) {
+          return;
+        }
         set({ connection });
         if (connection === "ready") {
           // Push our display name once the secure channel is up, so the
@@ -123,6 +139,7 @@ export const useConnectionStore = create<ConnectionState_>()((set, get) => {
       onEvent: (event) => hooks.event(event),
       onMedia: (bytes) => media.push(bytes),
     }, TRANSPORT_OPTIONS);
+    live = transport;
     transport.connect();
 
     return transport;
@@ -145,7 +162,7 @@ export const useConnectionStore = create<ConnectionState_>()((set, get) => {
 
     pairComplete: (identity) => {
       saveIdentity(identity);
-      get().transport?.disconnect();
+      dropTransport();
       set({
         identity,
         deviceName: identity.name || defaultDeviceName(),
@@ -155,7 +172,7 @@ export const useConnectionStore = create<ConnectionState_>()((set, get) => {
     },
 
     openAccountHost: (identity) => {
-      get().transport?.disconnect();
+      dropTransport();
       hooks.reset();
       set({
         ...DISCONNECTED,
@@ -167,7 +184,7 @@ export const useConnectionStore = create<ConnectionState_>()((set, get) => {
     },
 
     closeHost: () => {
-      get().transport?.disconnect();
+      dropTransport();
       hooks.reset();
       set(DISCONNECTED);
     },
@@ -192,7 +209,7 @@ export const useConnectionStore = create<ConnectionState_>()((set, get) => {
 
     unpair: () => {
       hooks.unpairing(get().transport);
-      get().transport?.disconnect();
+      dropTransport();
       clearIdentity();
       hooks.reset();
       set(DISCONNECTED);
@@ -201,9 +218,8 @@ export const useConnectionStore = create<ConnectionState_>()((set, get) => {
     hasControl: () => get().capabilities.includes("control"),
 
     adopt: (transport) => {
-      const current = get().transport;
-      if (current && current !== transport) {
-        current.disconnect();
+      if (get().transport !== transport) {
+        dropTransport();
       }
       set({ transport });
     },

@@ -12,6 +12,7 @@ import { parseHuddleToken } from "../lib/huddleIdentity";
 import { defaultDeviceName, identityFromPairing } from "../lib/keystore";
 import { wsOrigin } from "../lib/origin";
 import { useConnectionStore } from "../stores/connection";
+import { capture } from "../telemetry/telemetry";
 import { HuddleGuest } from "./HuddleGuest";
 import { Monitor } from "./Monitor";
 
@@ -96,8 +97,14 @@ function Pair() {
         payload,
         {
         onSas: setSas,
-        onPaired: (result) => pairComplete(identityFromPairing(result)),
+        onPaired: (result) => {
+          capture("web_paired", {
+            has_control: result.capabilities.includes("control"),
+          });
+          pairComplete(identityFromPairing(result));
+        },
         onError: (m) => {
+          capture("web_pair_failed", { reason: "failed" });
           setError(m);
           setSas(null);
         },
@@ -116,6 +123,7 @@ function Pair() {
       clientRef.current = client;
       client.start();
     } catch {
+      capture("web_pair_failed", { reason: "invalid_code" });
       setError("That doesn't look like a valid pairing code.");
     }
   };

@@ -23,14 +23,17 @@ import {
 } from "../lib/webpush";
 import { openAgentById } from "../routing/open";
 import { appNavigate, navigateBack, stripQuery } from "../routing/router";
-import { paneFor, type Screen } from "../routing/screens";
+import { paneFor, screenPattern, type Screen } from "../routing/screens";
 import { useAppLocation } from "../routing/useAppLocation";
 import { useConnectionStore } from "../stores/connection";
 import { useDevicesStore } from "../stores/devices";
 import { usePromptsStore } from "../stores/prompts";
 import { usePushStore } from "../stores/push";
+import { reportLaunchLink, reportNotificationOpen } from "../telemetry/links";
+import { captureScreen } from "../telemetry/telemetry";
 import { DetailPane, MasterPane, SinglePane } from "./MonitorPanes";
 import { parentOf, useMasterScreen } from "./panes";
+import { TelemetryConsent } from "./TelemetryConsent";
 import { loadSidebarWidth, saveSidebarWidth } from "./sidebarWidth";
 import { useIsWide } from "./useIsWide";
 import { useKeyboardShortcuts, WEB_SHORTCUTS } from "./useKeyboardShortcuts";
@@ -57,6 +60,10 @@ export function Monitor() {
   );
   const back = useCallback(() => navigateBack(parentOf(screen)), [screen]);
 
+  const pattern = screenPattern(screen);
+  useEffect(() => captureScreen(pattern), [pattern]);
+  useEffect(() => reportLaunchLink(), []);
+
   useViewportInset();
   useKeyboardShortcuts({
     back,
@@ -78,7 +85,10 @@ export function Monitor() {
   // Let a notification click navigate to its agent — from this tab, or
   // forwarded by the service worker when a background push is tapped.
   useEffect(() => {
-    setNotificationOpener((agentId) => void openAgentById(agentId));
+    setNotificationOpener((agentId) => {
+      reportNotificationOpen();
+      void openAgentById(agentId);
+    });
     setNotificationDecider((agentId, toolUseId, decision) => {
       void usePromptsStore.getState().decidePrompt(agentId, toolUseId, decision);
     });
@@ -138,6 +148,7 @@ export function Monitor() {
     return (
       <div className="aw-shell">
         <SinglePane banner={offlineBanner} onBack={back} screen={screen} />
+        <TelemetryConsent />
         <ShortcutCheatsheet
           open={showShortcuts}
           scope="session"
@@ -178,6 +189,7 @@ export function Monitor() {
           </div>
         )}
       </SplitShell>
+      <TelemetryConsent />
       <ShortcutCheatsheet
         open={showShortcuts}
         scope="session"

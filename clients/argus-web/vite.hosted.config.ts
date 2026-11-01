@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
+import { webDefines } from "./vite.shared";
 
 const BASE = "/argus/app/";
 
@@ -46,6 +47,7 @@ export default defineConfig({
   root: resolve(__dirname, "hosted"),
   base: BASE,
   plugins: [react(), subresourceIntegrity()],
+  define: webDefines(),
   // The LAN build's service worker is for Web Push, which the hosted client doesn't use.
   publicDir: false,
   build: {

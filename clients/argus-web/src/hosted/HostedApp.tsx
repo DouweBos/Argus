@@ -19,6 +19,7 @@ import { Monitor } from "../ui/Monitor";
 import { ComputersScreen } from "./ComputersScreen";
 import { HostedFrame } from "./HostedFrame";
 import { JoinScreen } from "./JoinScreen";
+import { capture } from "../telemetry/telemetry";
 import { openComputer } from "./openComputer";
 import { SignInScreen } from "./SignInScreen";
 
@@ -71,10 +72,10 @@ function HostGate({ hostId }: { hostId: string }) {
   }, [refresh, hostId, attempt]);
 
   useEffect(() => {
-    if (computer && reachable) {
-      openComputer(computer);
+    if (computer && reachable && openComputer(computer)) {
+      capture("web_host_switched", { computer_count: computers.length });
     }
-  }, [computer, reachable]);
+  }, [computer, reachable, computers.length]);
 
   if (reachable || !refreshed) {
     return (

@@ -3,9 +3,9 @@
  * what Argus sends. Nothing else checks it against the code, so a new event
  * or prop could ship undocumented and the public page would quietly lie.
  *
- * This test reads every catalog — the host's `EventMap`, the iOS client's
- * `TelemetryEvent`, the Mac app's `MacTelemetryEvent`, Argus Server's
- * `ServerTelemetryEvent` — and the doc, and fails when they disagree, in
+ * This test reads every catalog — the host's `EventMap`, the web client's
+ * `EventMap`, the iOS client's `TelemetryEvent`, the Mac app's
+ * `MacTelemetryEvent`, Argus Server's `ServerTelemetryEvent` — and the doc, and fails when they disagree, in
  * either direction: undocumented events, undocumented props, documented
  * events that no longer exist, and catalog entries nothing ever sends.
  */
@@ -21,6 +21,10 @@ const REPO = path.resolve(
 );
 const DOC = path.join(REPO, "docs/telemetry-events.md");
 const HOST_CATALOG = path.join(REPO, "packages/host/src/telemetryEvents.ts");
+const WEB_CATALOG = path.join(
+  REPO,
+  "clients/argus-web/src/telemetry/events.ts",
+);
 const IOS_CATALOG = path.join(
   REPO,
   "clients/apple/ArgusRemote/Telemetry/TelemetryEvent.swift",
@@ -35,6 +39,7 @@ const SERVER_CATALOG = path.join(
 );
 /** Where a `capture(...)` call can plausibly live. */
 const HOST_SOURCES = ["packages", "app", "electron", "clients/argus-web/src"];
+const WEB_SOURCES = ["clients/argus-web/src"];
 const IOS_SOURCES = ["clients/apple/ArgusRemote"];
 const MAC_SOURCES = ["clients/apple/ArgusDesktop"];
 const SERVER_SOURCES = ["clients/apple/ArgusServer"];
@@ -183,15 +188,18 @@ function read(roots: string[], extensions: string[], exclude: string): string {
 const doc = fs.readFileSync(DOC, "utf-8");
 const rows = documentedRows(doc);
 const host = hostEvents(fs.readFileSync(HOST_CATALOG, "utf-8"));
+// Same `EventMap` shape as the host's, so the same parser reads it.
+const web = hostEvents(fs.readFileSync(WEB_CATALOG, "utf-8"));
 const ios = swiftEvents(fs.readFileSync(IOS_CATALOG, "utf-8"));
 const mac = swiftEvents(fs.readFileSync(MAC_CATALOG, "utf-8"));
 const server = swiftEvents(fs.readFileSync(SERVER_CATALOG, "utf-8"));
-const catalog = [...host, ...ios, ...mac, ...server];
+const catalog = [...host, ...web, ...ios, ...mac, ...server];
 
 describe("docs/telemetry-events.md", () => {
   it("reads both catalogs", () => {
     // A parser that silently matched nothing would pass every check below.
     expect(host.length).toBeGreaterThan(10);
+    expect(web.length).toBeGreaterThan(5);
     expect(ios.length).toBeGreaterThan(10);
     expect(mac.length).toBeGreaterThan(5);
     expect(server.length).toBeGreaterThan(5);
@@ -235,6 +243,14 @@ describe("telemetry catalogs", () => {
       .filter((event) => !sources.includes(event.usage))
       .map((event) => event.name);
     expect(dead, "in EventMap but never captured").toEqual([]);
+  });
+
+  it("declares no web event nothing sends", () => {
+    const sources = read(WEB_SOURCES, [".ts", ".tsx"], WEB_CATALOG);
+    const dead = web
+      .filter((event) => !sources.includes(event.usage))
+      .map((event) => event.name);
+    expect(dead, "in the web EventMap but never captured").toEqual([]);
   });
 
   it("declares no iOS event nothing sends", () => {

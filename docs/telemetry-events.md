@@ -15,12 +15,13 @@ install id and the app version.
 
 Events come from three channels: **main** (the Argus app process,
 covering lifecycle, sessions, merges, agents, org tasks), **renderer**
-(the UI, covering renderer lifecycle and feedback), and **ios** (the
-iOS client — see [iOS client](#ios-client)). Desktop has one PostHog
+(the UI, covering renderer lifecycle and feedback), **ios** (the
+iOS client — see [iOS client](#ios-client)) and **web** (the browser client —
+see [Web client](#web-client)). Desktop has one PostHog
 client, in the main process: the renderer sends its events over IPC and
 main does the talking, so there is no browser SDK in the app. The iOS
-client talks to PostHog directly, because it has to work unpaired and
-offline. In `presence` mode the renderer emits nothing — the heartbeat
+and web clients talk to PostHog directly, because they have to work unpaired
+and offline. In `presence` mode the renderer emits nothing — the heartbeat
 is sent from main only.
 
 ## What's attached to every event
@@ -445,6 +446,45 @@ MetricKit's job. Nothing is delivered in the simulator.
 
 All of it is gated on `full` mode. In `presence` the heartbeat is the
 only thing that leaves the phone.
+
+## Web client
+
+The browser client (`clients/argus-web`: the bundle the computer serves on
+its own address, and the hosted app at `/argus/app/`) talks to PostHog
+directly over its capture API, like the iOS client, with **its own install
+id**: a random UUID in the browser's `localStorage`. There is no SDK, so
+nothing is autocaptured, recorded or profiled; every request is one the
+client builds. Events carry `$process_person_profile: false` and
+`$geoip_disable: true`. Same two modes and the same wording as iOS, asked
+once (only in builds with a PostHog key) and changeable under Settings →
+Privacy. Builds without a key send nothing at all.
+
+The computer already captures `agent_started`, `session_created`,
+`session_merged` and the rest when the browser asks for them, so those are
+absent here on purpose.
+
+| Event                                      | When                                                                                       | Extra props                                                                                                                                    |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `$pageview`                                | Once per page load, in every mode                                                          | `$current_url: "argus-web:///"`, `$pathname: "/"`, `app_version`, `source: "heartbeat"`                                                        |
+| `$screen`                                  | A screen comes up                                                                          | `$screen_name` — the route pattern only (`/sessions/:sessionId/agents`, `/projects/:projectKey`), the phone's for the same screen; never an id |
+| `web_launched`                             | Telemetry is in full mode at page load, or opts up                                         | `build` (`network`, `hosted`), `paired` — the network bundle was already paired at load (always false in the hosted app)                       |
+| `web_paired`                               | This browser paired with a computer                                                        | `has_control`                                                                                                                                  |
+| `web_pair_failed`                          | Pairing failed                                                                             | `reason` (`invalid_code` — the pasted code didn't parse, `failed` — the handshake or confirmation failed)                                      |
+| `web_link_opened`                          | The page opened on a screen other than Home from a link, or a notification opened an agent | `screen` (route pattern), `via` (`link`, `notification`), `fallback` — the client lacks that screen and opened its parent                      |
+| `web_connection_lost`                      | A connection that was up dropped (closing a computer or signing out doesn't count)         | `connected_bucket` — how long it had been up (`<10s`, `10s-1m`, `1m-10m`, `10m-1h`, `1h+`)                                                     |
+| `web_reconnected`                          | The connection came back after a drop                                                      | `offline_bucket` — how long it was down, same buckets                                                                                          |
+| `web_host_switched`                        | The hosted app opened a computer from the account                                          | `computer_count` — how many computers the account has                                                                                          |
+| `telemetry_enabled` / `telemetry_disabled` | The privacy toggle moved                                                                   | — (shared with desktop and iOS on purpose: same signal)                                                                                        |
+
+`baseProps` in full mode: `app_version` (the Argus release the bundle
+shipped with), `client: "web"`, `platform: "web"`, `build`. The heartbeat
+skips all of it and carries `app_version` alone. No user agent, screen size,
+referrer or URL is sent.
+
+The hosted app's Content-Security-Policy has to allow the PostHog host
+(`connect-src https://eu.i.posthog.com`, or whatever `VITE_POSTHOG_HOST`
+names) for any of this to leave the page; until it does, the requests are
+blocked and nothing is sent.
 
 ## Mac app (beta)
 
