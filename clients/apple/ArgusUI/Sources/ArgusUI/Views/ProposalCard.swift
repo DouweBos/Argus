@@ -304,40 +304,49 @@ public struct ProposalCard: View {
     }
   #else
     /// The CTA, done and dismiss as buttons; the two that need a note behind a
-    /// menu, since five labelled buttons don't fit a phone's width.
+    /// menu, since five labelled buttons don't fit a phone's width. The menu
+    /// sits outside the flow so it stays on the first line instead of wrapping.
     private var phoneDecisions: some View {
-      FlowRow(spacing: 8) {
-        switch content.cta {
-        case .start(let label):
-          Btn(
-            label: startFailure == nil ? label : "Try again", small: true,
-            icon: startFailure == nil ? Icon.play : Icon.refresh
-          ) { actions.start(nil) }
-        case .cleanup(let label, _, _, _):
-          Btn(label: label, tone: .danger, small: true) { confirmingCleanup = true }
-        case .open(let label, let url):
-          Btn(label: label, tone: .secondary, small: true) { openURL(url) }
-        case nil:
-          EmptyView()
-        }
-        Btn(label: "Mark as done", tone: content.cta == nil ? .primary : .secondary, small: true, icon: Icon.check) {
-          begin(.resolve)
-        }
-        Btn(label: "Dismiss", tone: .ghost, small: true) { begin(.dismiss) }
-        Menu {
-          if case .start = content.cta {
-            Button("Start with a note…", systemImage: Icon.play) { begin(.startNote) }
-          }
-          Button("Request a revision…", systemImage: Icon.refresh) { begin(.revise) }
-        } label: {
-          Image(systemName: Icon.ellipsis)
-            .font(.scaled(size: 14, weight: .semibold))
-            .foregroundStyle(theme.textSecondary)
-            .frame(width: 44, height: 32)
-            .contentShape(.rect)
-        }
-        .accessibilityLabel("More decisions")
+      HStack(alignment: .top, spacing: 4) {
+        FlowRow(spacing: 8) { phoneButtons }
+        moreDecisions
       }
+    }
+
+    @ViewBuilder private var phoneButtons: some View {
+      switch content.cta {
+      case .start(let label):
+        Btn(
+          label: startFailure == nil ? label : "Try again", small: true,
+          icon: startFailure == nil ? Icon.play : Icon.refresh
+        ) { actions.start(nil) }
+      case .cleanup(let label, _, _, _):
+        Btn(label: label, tone: .danger, small: true) { confirmingCleanup = true }
+      case .open(let label, let url):
+        Btn(label: label, tone: .secondary, small: true) { openURL(url) }
+      case nil:
+        EmptyView()
+      }
+      Btn(label: "Mark as done", tone: content.cta == nil ? .primary : .secondary, small: true, icon: Icon.check) {
+        begin(.resolve)
+      }
+      Btn(label: "Dismiss", tone: .ghost, small: true) { begin(.dismiss) }
+    }
+
+    private var moreDecisions: some View {
+      Menu {
+        if case .start = content.cta {
+          Button("Start with a note…", systemImage: Icon.play) { begin(.startNote) }
+        }
+        Button("Request a revision…", systemImage: Icon.refresh) { begin(.revise) }
+      } label: {
+        Image(systemName: Icon.ellipsis)
+          .font(.scaled(size: 14, weight: .semibold))
+          .foregroundStyle(theme.textSecondary)
+          .frame(width: 44, height: 32)
+          .contentShape(.rect)
+      }
+      .accessibilityLabel("More decisions")
     }
   #endif
 
