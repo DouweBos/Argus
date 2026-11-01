@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@argus/client-core':
+        specifier: workspace:*
+        version: link:packages/client-core
       '@argus/host':
         specifier: workspace:*
         version: link:packages/host
@@ -231,6 +234,9 @@ importers:
 
   clients/argus-web:
     dependencies:
+      '@argus/client-core':
+        specifier: workspace:*
+        version: link:../../packages/client-core
       '@argus/peacock':
         specifier: workspace:*
         version: link:../../packages/peacock
@@ -280,6 +286,16 @@ importers:
       vite:
         specifier: ^7.0.4
         version: 7.3.1(@types/node@22.19.15)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  packages/client-core:
+    dependencies:
+      '@argus/remote-protocol':
+        specifier: workspace:*
+        version: link:../remote-protocol
+    devDependencies:
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
 
   packages/host:
     dependencies:

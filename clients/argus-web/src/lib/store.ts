@@ -16,7 +16,7 @@ import {
   applyDeltaMessages,
   deltaAction,
   type TranscriptCursor,
-} from "./transcriptDelta";
+} from "@argus/client-core";
 import type { DeviceIdentity } from "./keystore";
 import {
   fetchHostKey,

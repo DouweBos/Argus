@@ -60,6 +60,7 @@
     "gen:account-fixtures": "tsx scripts/gen-account-fixtures.ts"
   },
   "dependencies": {
+    "@argus/client-core": "workspace:*",
     "@argus/host": "workspace:*",
     "@argus/peacock": "workspace:*",
     "@argus/remote-client": "workspace:*",

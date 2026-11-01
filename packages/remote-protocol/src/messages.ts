@@ -6,8 +6,18 @@
 
 import { z } from "zod";
 import { LogEntry } from "./account/schema";
-import { REMOTE_EVENTS } from "./capabilities";
-import { HuddleChatPayload, HuddleStatePayload } from "./huddle";
+import {
+  REMOTE_EVENTS,
+  type RemoteEventType,
+  type RemoteMethod,
+} from "./capabilities";
+import {
+  HuddleChatPayload,
+  type HuddleMethod,
+  type HuddleMethodParams,
+  type HuddleMethodResult,
+  HuddleStatePayload,
+} from "./huddle";
 import {
   RemoteAgentCapabilities,
   RemoteAgentStatus,
@@ -1332,3 +1342,30 @@ export const EventPayloads = {
       .default([]),
   }),
 } as const;
+
+// --- Type-only views -------------------------------------------------------
+
+/** Everything a device may call on the gateway: the allowlist plus the huddle plane. */
+export type GatewayMethod = HuddleMethod | RemoteMethod;
+
+/**
+ * What a request for `M` carries. Types only, so a client that skips runtime
+ * validation can be typed from the catalog without shipping zod.
+ */
+export type GatewayParams<M extends GatewayMethod> = M extends RemoteMethod
+  ? z.input<(typeof MethodParams)[M]>
+  : M extends HuddleMethod
+    ? z.input<(typeof HuddleMethodParams)[M]>
+    : never;
+
+/** What the host answers `M` with. */
+export type GatewayResult<M extends GatewayMethod> = M extends RemoteMethod
+  ? z.output<(typeof MethodResult)[M]>
+  : M extends HuddleMethod
+    ? z.output<(typeof HuddleMethodResult)[M]>
+    : never;
+
+/** The payload of event `E`. */
+export type GatewayEventPayload<E extends RemoteEventType> = z.output<
+  (typeof EventPayloads)[E]
+>;

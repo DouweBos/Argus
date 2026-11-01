@@ -12,6 +12,7 @@
     "dev:hosted": "vite --config vite.hosted.config.ts"
   },
   "dependencies": {
+    "@argus/client-core": "workspace:*",
     "@argus/peacock": "workspace:*",
     "@argus/remote-client": "workspace:*",
     "@argus/remote-protocol": "workspace:*",

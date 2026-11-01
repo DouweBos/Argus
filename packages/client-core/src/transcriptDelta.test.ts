@@ -1,6 +1,10 @@
-import type { RemoteMessage, RemoteTranscriptDelta } from "./protocol";
+import type { RemoteMessage } from "@argus/remote-protocol";
 import { describe, expect, it } from "vitest";
-import { applyDeltaMessages, deltaAction } from "./transcriptDelta";
+import {
+  applyDeltaMessages,
+  deltaAction,
+  type RemoteTranscriptDelta,
+} from "./transcriptDelta";
 
 function msg(id: string, text = id): RemoteMessage {
   return { id, role: "assistant", text_blocks: [text], tool_calls: [] };

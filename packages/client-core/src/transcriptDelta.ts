@@ -3,7 +3,13 @@
  * refetching its tail on every event. Pure; the store keeps the cursors.
  */
 
-import type { RemoteMessage, RemoteTranscriptDelta } from "./protocol";
+import type {
+  GatewayEventPayload,
+  RemoteMessage,
+} from "@argus/remote-protocol";
+
+/** `agent.transcript`: what changed since `revision - 1`. */
+export type RemoteTranscriptDelta = GatewayEventPayload<"agent.transcript">;
 
 export interface TranscriptCursor {
   epoch: string;

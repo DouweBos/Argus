@@ -14,6 +14,7 @@ export default defineConfig({
     include: [
       "app/**/*.test.{ts,tsx}",
       "electron/**/*.test.ts",
+      "packages/client-core/src/**/*.test.ts",
       "packages/host/**/*.test.ts",
       "packages/peacock/src/**/*.test.{ts,tsx}",
       "packages/remote-client/src/**/*.test.ts",
