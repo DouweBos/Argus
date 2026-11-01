@@ -329,9 +329,14 @@ final class Router {
       let project = repoRoot.isEmpty ? nil : ProjectRef(repoRoot: repoRoot, name: projectName)
       let opened = Route.session(id: id, label: label, repoRoot: repoRoot)
       guard detailProject != project else {
-        // Same project already rooting the column: nothing about the root
-        // changes, so the push lands on its own.
-        detailStack = [opened]
+        // Same project already rooting the column. Another session still
+        // moves the sidebar's selection, which pops a push made with it.
+        if sidebarSelection == item {
+          detailStack = [opened]
+        } else {
+          detailStack = []
+          pendingDetail = opened
+        }
         break
       }
       // Changing what roots the column and pushing onto it in the same
