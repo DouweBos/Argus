@@ -50,6 +50,7 @@ public enum Icon {
   public static let pencil = "pencil"
   public static let scratchPad = "note.text"
   public static let pin = "pin"
+  public static let pinSlash = "pin.slash"
   public static let web = "globe"
   public static let eye = "eye"
   public static let copy = "doc.on.doc"

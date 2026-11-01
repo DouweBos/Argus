@@ -159,8 +159,8 @@ struct SessionView: View {
       PillTabBar(
         tabs: agents.map { agent in
           PillTab(
-            id: agent.agentId, title: Labels.agentName(agent, among: agents), symbol: Icon.agent,
-            indicator: agent.awaiting != nil)
+            id: agent.agentId, title: Labels.agentName(agent, among: agents),
+            symbol: agent.isPinned ? Icon.pin : Icon.agent, indicator: agent.awaiting != nil)
         },
         selection: focusedAgentId, compact: true
       ) { picked in
@@ -168,10 +168,21 @@ struct SessionView: View {
         focused = picked
         Telemetry.capture(.sessionUsed(action: .switchAgent))
       }
+      .tabContextMenu { id in tabMenu(id) }
       .padding(.horizontal, theme.space)
       .padding(.vertical, 6)
     }
     .overlay(alignment: .bottom) { Rectangle().fill(theme.border).frame(height: 1) }
+  }
+
+  /// Pinned, the computer resumes the chat whenever Argus restarts.
+  @ViewBuilder private func tabMenu(_ id: String) -> some View {
+    if host.hasControl, host.canTogglePin(agentId: id) {
+      let pinned = host.isPinned(agentId: id)
+      Button(pinned ? "Unpin chat" : "Pin chat", systemImage: pinned ? Icon.pinSlash : Icon.pin) {
+        Task { await host.setPinned(agentId: id, pinned: !pinned) }
+      }
+    }
   }
 
   @ViewBuilder private var content: some View {

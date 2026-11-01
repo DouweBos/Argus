@@ -96,9 +96,11 @@ extension HostStore {
   /// A new agent in the same session, on the stopped one's conversation, runner, model, mode and effort.
   public func resumeAgent(_ agentId: String) async -> RemoteAgentStatus? {
     guard let status = statusByAgent[agentId], let ref = status.runnerSessionId else { return nil }
-    return await resume(
+    let resumed = await resume(
       sessionId: status.sessionId, ref: ref, runnerId: status.runnerId, model: status.model,
       mode: status.permissionMode, effort: status.effort ?? effortByAgent[agentId])
+    if let resumed { notePinMoved(from: agentId, to: resumed) }
+    return resumed
   }
 
   /// A mode the gateway can't spawn (`trusted`) falls back to the host's default.

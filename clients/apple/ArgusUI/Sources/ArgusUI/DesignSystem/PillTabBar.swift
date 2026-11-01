@@ -33,6 +33,8 @@ public struct PillTabBar<ID: Hashable, Trailing: View>: View {
   let onSelect: (ID) -> Void
   /// Controls after the tabs inside the same capsule, e.g. a More menu.
   let trailing: Trailing
+  /// A long-press / right-click menu per tab, when set.
+  var tabMenu: ((ID) -> AnyView)?
 
   @Namespace private var namespace
 
@@ -86,6 +88,7 @@ public struct PillTabBar<ID: Hashable, Trailing: View>: View {
           .contentShape(Capsule())
         }
         .buttonStyle(.argusPlain)
+        .modifier(TabMenu(menu: tabMenu.map { menu in { menu(tab.id) } }))
         .help(tab.title)
         .accessibilityLabel(tab.title)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -102,6 +105,23 @@ public struct PillTabBar<ID: Hashable, Trailing: View>: View {
       }
     }
     .animation(.snappy(duration: 0.25), value: selection)
+  }
+}
+
+extension PillTabBar {
+  /// Give each tab a context menu.
+  public func tabContextMenu<Menu: View>(@ViewBuilder _ menu: @escaping (ID) -> Menu) -> Self {
+    var copy = self
+    copy.tabMenu = { AnyView(menu($0)) }
+    return copy
+  }
+}
+
+private struct TabMenu: ViewModifier {
+  let menu: (() -> AnyView)?
+
+  func body(content: Content) -> some View {
+    if let menu { content.contextMenu { menu() } } else { content }
   }
 }
 

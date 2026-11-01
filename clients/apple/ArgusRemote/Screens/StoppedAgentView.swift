@@ -20,6 +20,8 @@ struct StoppedAgentView: View {
   @State private var resuming = false
   @State private var confirmingDelete = false
 
+  private var chat: RemoteStoppedAgent? { host.stoppedChat(repoRoot: repoRoot, historyId: historyId) }
+
   private var key: String {
     HostStore.stoppedKey(repoRoot: repoRoot, historyId: historyId)
   }
@@ -71,6 +73,14 @@ struct StoppedAgentView: View {
         if let session {
           IconBtn(systemName: Icon.branch, label: "View changes") {
             router.push(.changes(sessionId: session.id, label: branch))
+          }
+        }
+        if host.hasControl, let chat, !chat.isImported, session != nil || chat.isPinned {
+          IconBtn(
+            systemName: chat.isPinned ? Icon.pinSlash : Icon.pin,
+            label: chat.isPinned ? "Unpin chat" : "Pin chat: resume it when Argus restarts"
+          ) {
+            Task { await host.setPinned(chat: chat, repoRoot: repoRoot, pinned: !chat.isPinned) }
           }
         }
         if host.hasControl {

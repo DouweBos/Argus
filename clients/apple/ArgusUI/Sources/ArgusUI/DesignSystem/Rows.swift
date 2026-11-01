@@ -83,7 +83,7 @@ public struct StoppedAgentRow: View {
 
   public var body: some View {
     VStack(alignment: .leading, spacing: 2) {
-      Label(agent.title, systemImage: Icon.history).lineLimit(1)
+      Label(agent.title, systemImage: agent.isPinned ? Icon.pin : Icon.history).lineLimit(1)
       HStack(spacing: 6) {
         Text(
           "\(Labels.timeAgo(agent.endedAt)) · \(agent.messageCount) messages"

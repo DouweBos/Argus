@@ -169,6 +169,12 @@ struct SessionDetailsView: View {
   private var agentSection: some View {
     Section {
       rowButton("Devices", icon: Icon.simulator, chevron: true) { openDevices() }
+      if control, let agentId, host.canTogglePin(agentId: agentId) {
+        let pinned = host.isPinned(agentId: agentId)
+        rowButton(pinned ? "Unpin chat" : "Pin chat", icon: pinned ? Icon.pinSlash : Icon.pin) {
+          Task { await host.setPinned(agentId: agentId, pinned: !pinned) }
+        }
+      }
       if let agentId, !host.isGone(agentId) {
         if let stackPush {
           rowButton("MCP servers", icon: Icon.mcp, chevron: true) { stackPush(.mcpServers(agentId: agentId)) }
