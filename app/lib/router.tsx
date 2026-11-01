@@ -50,34 +50,29 @@
  * mount is selected on the renderer side from the session record.
  */
 
+import type { ParsedRoute } from "@argus/client-core";
 import { useEffect } from "react";
 import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
-import {
-  type ParsedRoute,
-  parseRoute,
-  routePattern,
-  routeToPath,
-  withHostParam,
-} from "@argus/client-core";
+import * as codec from "@argus/client-core";
 import { capturePageview } from "./telemetry";
 
 // The codec is pure and shared with the web client; navigation stays here.
-export {
-  type AppView,
-  DEFAULT_USAGE_RANGE,
-  type GitSubView,
-  type IssueScope,
-  type ParsedRoute,
-  parseRoute,
-  type PullRequestRef,
-  routePattern,
-  routeToPath,
-  type SessionPanel,
-  type UsageRange,
-  type UsageTab,
-  withHostParam,
+export type {
+  AppView,
+  GitSubView,
+  IssueScope,
+  ParsedRoute,
+  PullRequestRef,
+  SessionPanel,
+  UsageRange,
+  UsageTab,
 } from "@argus/client-core";
+export const DEFAULT_USAGE_RANGE = codec.DEFAULT_USAGE_RANGE;
+export const parseRoute = codec.parseRoute;
+export const routePattern = codec.routePattern;
+export const routeToPath = codec.routeToPath;
+export const withHostParam = codec.withHostParam;
 
 // ---------------------------------------------------------------------------
 // Module-level navigator — lets non-hook code trigger navigation.
